@@ -171,7 +171,12 @@ class TestRunAgentViaLlm:
             )
 
     def test_known_role_with_mocked_loop_returns_answer(self, tmp_path):
-        """Mock AgentLoop.run() → 返回 mock answer JSON."""
+        """Mock AgentLoop.run() → 返回 mock answer JSON.
+
+        选项 B（2026-10-28）：GraphEngine 只做编排，单个 agent turn 仍由
+        AgentLoop 执行。所以接缝回到 build_agent_loop —— 这是设计意图，
+        不是回退事故。
+        """
         from strategy_research.core.agent import role_factory as factory
         from strategy_research.core.agent.loop import LoopResult
 
@@ -194,6 +199,11 @@ class TestRunAgentViaLlm:
 
         assert json.loads(result) == {"action": "search_external", "hypothesis": "test"}
         mock_loop.run.assert_called_once()
+        # 任务拼装契约：context → 历史输出 → 当前任务
+        full_task = mock_loop.run.call_args.args[0]
+        assert "## 之前 Agent 输出 (来自上一阶段)" in full_task
+        assert "## 当前任务" in full_task
+        assert full_task.index("第 1 阶段输出") < full_task.index("## 当前任务")
 
     def test_known_role_with_loop_error_returns_error_json(self, tmp_path):
         """AgentLoop.run() 返回 error → 应序列化成 JSON error."""
@@ -221,6 +231,8 @@ class TestRunAgentViaLlm:
         assert "error" in body
         assert "LLM 调用超时" in body["error"]
         assert body["iterations"] == 3
+        # 三字段契约：多一个键都是破坏
+        assert set(body) == {"error", "iterations", "tool_calls_made"}
 
 
 class TestSpawnAgentFallback:

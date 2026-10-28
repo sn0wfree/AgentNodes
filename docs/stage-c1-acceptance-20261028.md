@@ -41,16 +41,21 @@ PR 道冻结基线是 **100 条失败**（93 failed + 7 error，见
 八项等价性证据在 `tests/test_b1f_equivalence.py`：系统提示、上下文注入、
 压缩、权限闸门、流式、工具事件、历史顺序、错误路径。
 
-C1 三条链的等价性证据清单：
+C1 三条链的证据清单：
 
-| 链 | 必须证明的等价项 | 参照 |
+| 链 | 必须证明的项 | 参照 |
 |---|---|---|
-| **study** | ① 轮次结果 `RoundOutcome` 九字段等价<br>② `agent_outputs` 键集合与内容等价（researcher + 4 exec + 4 eval）<br>③ `study_phase` 事件序等价<br>④ HITL 暂停六字段等价 + payload 七字段<br>⑤ 恢复从 `claims` 续跑、不重跑 researcher/novelty<br>⑥ 预算入账等价 | `test_research_preset.py`（已有 graph vs legacy 对照）<br>`test_hitl_gate_graph.py` |
-| **swarm** | ① `SwarmResult.agent_results` 逐 agent `status/output/error` 等价<br>② 分层屏障语义（层内并行、层间等待）<br>③ 预算三维记账等价（含 token 维度——旧代码此项未执行）<br>④ `skip`/`retry` 分支语义<br>⑤ 层钩子调用序等价 | `test_agent_loop_swarm_parity.py`（16 条，已有）<br>`test_v05_unit_runtime_context.py` |
-| **workflow** | ① 节点 `AgentExecutionResult` 信封等价<br>② 段门 `awaiting_approval` → `approve/reject` → replan<br>③ planner 动态节点（`plan_*`）生成与拓扑序<br>④ 连续失败 2 次停止规则<br>⑤ `max_segments` 重规划上限 | `test_workflow_segment_loop.py`（20 条）<br>`test_workflow_node_types.py` |
+| **study** | ① 轮次结果 `RoundOutcome` 九字段<br>② `agent_outputs` 键集合与内容（researcher + 4 exec + 4 eval）<br>③ `study_phase` 事件序<br>④ HITL 暂停六字段 + payload 七字段<br>⑤ 恢复从 `claims` 续跑、不重跑 researcher/novelty<br>⑥ 预算入账 | `test_research_preset.py`<br>`test_hitl_gate_graph.py` |
+| **swarm** | ① `SwarmResult.agent_results` 逐 agent `status/output/error`<br>② 分层屏障语义（层内并行、层间等待）<br>③ 预算三维记账（含 token——旧代码此项未执行）<br>④ `skip`/`retry` 分支语义<br>⑤ 层钩子调用序 | `test_agent_loop_swarm_parity.py`<br>`test_v05_unit_runtime_context.py` |
+| **workflow** | ① 节点 `AgentExecutionResult` 信封<br>② 段门 `awaiting_approval` → `approve/reject` → replan<br>③ planner 动态节点（`plan_*`）生成与拓扑序<br>④ 连续失败 2 次停止规则<br>⑤ `max_segments` 重规划上限 | `test_workflow_segment_loop.py`<br>`test_workflow_node_types.py` |
 
-**判定方式**：新测试必须能在**旧路径仍然可用**时同时跑两条路径并比对。
-做不到这一点的项（例如旧路径已删），必须显式记录为「无法验证」，不许默认为通过。
+**判定方式（2026-10-28 修订）**：选项 B 下**执行体不换**（仍是 AgentLoop），
+所以这里的「等价」指的是**编排迁移前后同一轮次的结果不变**，
+而不是「新执行体 vs 旧执行体」。
+
+判定手段：迁移前用当前实现产出快照（`RoundOutcome` / `SwarmResult` /
+节点信封），迁移后逐字段比对。做不到快照的项必须显式记为「无法验证」，
+不许默认为通过。
 
 ### 2.2 门二：测试集合不缩水
 
@@ -186,27 +191,56 @@ workflow 需要动态子图 + 段门重规划，风险高一个量级。
 
 ---
 
-## 6. 终局判定：AgentLoop 什么时候算退役
+## 6. 终局判定：编排唯一，执行原语保留
 
-今天是 **3 个真实构造点**：
+> **2026-10-28 修订**：原判据「AgentLoop 构造点 ≤ 1」作废。
+> 见 `docs/stage-c1-wp-agent-node-design-20261028.md` §1-2 的实测依据。
 
-| 站点 | 归属 | 退役条件 |
+### 6.1 分工定义
+
+| 层 | 职责 | 数量 |
 |---|---|---|
-| `chat_loop.py:129` | chat 旧分支 | P5-1c（已挂起，`new_entry_enabled()` 默认 True） |
-| `role_factory.py:144` | study + workflow | study 迁完 + workflow 有结论（迁或明确不迁） |
-| `executor.py:347` | swarm + subagent | swarm 迁完 |
+| GraphEngine | 编排：节点/边/条件路由/中断/预算树/fanout | **恰好 1 个** |
+| AgentLoop | 单个 agent turn 的执行原语 | 3 个构造点，**合法** |
 
-**Founder 判定条件（写入架构门禁测试）**：
+架构目标精化为「**GraphEngine 是唯一编排 runtime**」，
+而不是「GraphEngine 是唯一 runtime」。
 
-> `AgentLoop` 的构造点 ≤ 1，且剩余的那一个属于已挂起的 P5-1c。
+原因是实测的：react 节点缺 AgentLoop 四项无条件能力
+（工具结果 30k 截断、瞬时错误重试 ×2、deny guard、只读并行），
+其中两项是真回归。用薄 react 替换 AgentLoop 会让长会话 context 膨胀、
+失败率上升——这不是架构简化，是能力退化。
 
-不到这个条件就宣布「C1 完成」是不诚实的：架构图上写着「GraphEngine
-唯一 runtime」，代码里还有三处在跑旧引擎。
+### 6.2 AgentLoop 的合法构造点
 
-**但允许部分完成**：study 迁完、workflow 明确不迁，
-则构造点降到 2（role_factory 的 workflow 分支 + executor 的 swarm 分支），
-此时验收结论应表述为「study 链完成，workflow 明确保留，swarm 待办」，
-而不是「C1 完成」。
+| 站点 | 归属 | 状态 |
+|---|---|---|
+| `role_factory.py` `build_agent_loop` | study / workflow 的执行 | ✅ 合法（唯一工厂） |
+| `executor.py:347` | swarm / subagent | ✅ 合法 |
+| `chat_loop.py:129` | chat 旧分支 | ⏳ P5-1c（已挂起） |
+
+### 6.3 真正的判定条件（已写入架构门禁测试）
+
+| 门禁 | 判据 |
+|---|---|
+| `test_graph_engine_is_the_only_orchestration_runtime` | 除 `graph_engine.py` 外，`core/` 不得 import `StateGraph` |
+| `test_domain_layers_use_the_agent_factory_not_raw_agentloop` | study/workflow/swarm 不得**绕过工厂**直接 new AgentLoop |
+
+**第二条的含义**：域层可以直接用 AgentLoop 概念，但必须经
+`role_factory`（提示装配、白名单、预算、权限全在那里接线）。
+绕过工厂才是违规——那样会静默丢掉所有接线。
+
+### 6.4 对 B2/B3 工量的影响（重要）
+
+这个修订大幅缩小了 B2/B3：
+
+| 链 | 原以为要做 | 实际要做 |
+|---|---|---|
+| study | 重写执行体 | **已经符合**：编排在 `graph_preset.py`，执行是 AgentLoop |
+| swarm | 重写执行体 | 把 `SwarmRuntime` 的层调度换成 GraphEngine 编排；执行体不动 |
+| workflow | 重写执行体 | 同上；但 dynamic subgraph / 段门重规划仍是真问题 |
+
+原估 6-9 天的 C1 搬迁，实际可能只需 2-3 天（swarm 编排迁移 + workflow 评估）。
 
 ---
 

@@ -136,6 +136,66 @@ def test_invariant_registry_covers_documented_set():
     assert {"INV-1", "INV-3", "INV-5", "INV-8", "INV-9"} <= ids
 
 
+# ── 选项 B：编排层 / 执行原语的分工 ─────────────────────
+
+
+def test_domain_layers_use_the_agent_factory_not_raw_agentloop():
+    """域层不直接 new AgentLoop，但**可以**经 role_factory 用它（选项 B）。
+
+    分工（2026-10-28 决策，见 docs/stage-c1-wp-agent-node-design-20261028.md）：
+      - GraphEngine = 编排层（节点/边/中断/预算树），唯一编排 runtime
+      - AgentLoop  = agent 执行原语（单 turn），**不是**第二套控制流
+
+    所以「域层出现 AgentLoop」本身不是违规——违规的是**绕过工厂**直接构造：
+    那样会跳过角色提示装配、工具白名单、预算与权限接线。
+
+    允许的构造点：
+      - core/agent/role_factory.py  → build_agent_loop（唯一构造点）
+      - core/agent/chat_loop.py     → chat 专用，P5-1c 待删
+      - core/agent/executor.py      → swarm 专用
+    """
+    violations: list[str] = []
+    for domain in ("study", "workflow", "swarm"):
+        for path in _iter_py(SRC / "core" / domain):
+            try:
+                tree = ast.parse(path.read_text(encoding="utf-8"))
+            except SyntaxError:  # pragma: no cover
+                continue
+            for node in ast.walk(tree):
+                if (
+                    isinstance(node, ast.Call)
+                    and isinstance(node.func, ast.Name)
+                    and node.func.id == "AgentLoop"
+                ):
+                    violations.append(
+                        f"{path.relative_to(SRC)}:{node.lineno} -> AgentLoop(...)"
+                    )
+    assert not violations, (
+        "域层绕过 role_factory 直接构造了 AgentLoop"
+        "（应用 run_agent_via_llm / agent_node）:\n"
+        + "\n".join(violations)
+    )
+
+
+def test_graph_engine_is_the_only_orchestration_runtime():
+    """除 GraphEngine 外，不得再出现第二套「按图跑节点」的编排器。
+
+    选项 B 下 AgentLoop 是执行原语，可以存在；但**编排**只能有一个。
+    判据：core/ 里 import StateGraph 的文件只能是 GraphEngine 本身。
+    """
+    violators: list[str] = []
+    for path in _iter_py(SRC / "core"):
+        if path.name == "graph_engine.py":
+            continue
+        try:
+            text = path.read_text(encoding="utf-8")
+        except Exception:
+            continue
+        if "from langgraph.graph import" in text and "StateGraph" in text:
+            violators.append(str(path.relative_to(SRC)))
+    assert not violators, "出现了第二个状态图编排器:\n" + "\n".join(violators)
+
+
 # ── 门退役契约（阶段 4）──────────────────────────────
 
 

@@ -3,9 +3,9 @@
   "commit": "4b0f3de0a615142d254df979faf605795934f238",
   "command": "pytest tests -q --tb=no -m 'not llm and not e2e and not slow'",
   "counts": {
-    "failed": 93,
+    "failed": 94,
     "error": 7,
-    "total": 100
+    "total": 101
   },
   "pytest_totals": {
     "failed": 93,
@@ -19,6 +19,7 @@
     "tests/test_api_container.py::TestBuildContainer::test_basic_build",
     "tests/test_api_container.py::TestBuildContainer::test_default_db_path",
     "tests/test_api_container.py::TestBuildContainer::test_services_wired_correctly",
+    "tests/test_auth_tokens_hardening.py::test_persisted_file_round_trip",
     "tests/test_bg_backtest.py::test_study_phase_iteration_budget_raised",
     "tests/test_bg_backtest.py::test_whitelist_has_bg_tool_for_long_task_roles",
     "tests/test_bg_tools.py::TestRunBgCommandTool::test_kill_action",
@@ -157,5 +158,8 @@
     "tests/test_tool_ctx_invoke.py": 1,
     "tests/test_tool_execution_step_hooks.py": 1,
     "tests/test_tool_kwargs_injection.py": 1
+  },
+  "post_freeze_additions": {
+    "tests/test_auth_tokens_hardening.py::test_persisted_file_round_trip": "Pre-existing, state-dependent. The test reloads api.auth_tokens with an empty JWT_SECRET and expects a fresh 32-byte secret to be written to the sandboxed HOME; if a secret file from an earlier test is already there it regenerates/reads inconsistently. Reproduced on unmodified HEAD 4b0f3de0 (git stash + run) -- unrelated to W-P."
   }
 }
