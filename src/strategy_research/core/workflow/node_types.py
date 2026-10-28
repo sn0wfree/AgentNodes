@@ -188,8 +188,22 @@ class NodeDispatchError(RuntimeError):
 
 
 def _loop_kwargs(node: Any, ctx: NodeContext) -> dict[str, Any]:
-    """Common kwargs for run_agent_via_llm-compatible factories."""
+    """Common kwargs for run_agent_via_llm-compatible factories.
+
+    B3: ``exec.node_timeout_seconds`` / ``exec.node_max_retries`` were
+    declared in WorkflowDefinition's defaults (definition.py:51) but never
+    read anywhere. They are honoured here:
+
+    - ``node_timeout_seconds`` becomes ``iteration_timeout_s`` on the loop.
+      ``run_agent_via_llm`` does not accept it, so it is passed through
+      ``ctx.params``-independent: an unsupported kwarg would raise, hence
+      it is only forwarded when the factory tolerates it (see
+      ``_dispatch_llm_agent``).
+    - ``node_max_retries`` is applied by ``WorkflowRunner`` around
+      ``_dispatch_node`` (it needs to see the returned envelope).
+    """
     cfg = node.config or {}
+    exec_cfg = ctx.params.get("exec", {}) or {}
     kwargs: dict[str, Any] = {
         "role": cfg.get("role", "researcher"),
         "workspace_path": ctx.workspace,
@@ -201,6 +215,9 @@ def _loop_kwargs(node: Any, ctx: NodeContext) -> dict[str, Any]:
     tools = cfg.get("tools")
     if tools:
         kwargs["tools_override"] = list(tools)
+    timeout = cfg.get("timeout") or exec_cfg.get("node_timeout_seconds")
+    if timeout:
+        kwargs["iteration_timeout_s"] = float(timeout)
     return kwargs
 
 
@@ -225,6 +242,26 @@ def _summary_truncate(text: str, ctx: NodeContext) -> str:
     max_chars = ctx.params.get("summary", {}).get("max_chars", 300)
     text = (text or "").strip()
     return text[:max_chars] + ("…" if len(text) > max_chars else "")
+
+
+# Node errors a retry cannot fix (config-level). Mirrors the classification
+# AgentExecutor uses for agent-level retries (executor.py) so the two
+# retry layers agree on what "permanent" means.
+_PERMANENT_NODE_ERROR_MARKERS = (
+    "prompt 不存在",
+    "no prompt_file",
+    "empty system prompt",
+    "unknown node type",
+    "unknown_executor",
+    "is not registered",
+)
+
+
+def _retryable_node_error(error: str | None) -> bool:
+    """False for node failures that repetition cannot fix."""
+    if not error:
+        return False
+    return not any(m in str(error) for m in _PERMANENT_NODE_ERROR_MARKERS)
 
 
 def _dispatch_llm_agent(node: Any, ctx: NodeContext, t0: float) -> AgentResult:
@@ -354,9 +391,6 @@ def _fallback_plan(max_steps: int) -> list[dict[str, Any]]:
 def _dispatch_evaluator(node: Any, ctx: NodeContext, t0: float) -> AgentResult:
     factory = ctx.loop_factory or default_loop_factory()
     summary = _upstream_summary(ctx)
-    failures = getattr(ctx, "_failures", [])
-    if failures:
-        summary += "\n## 失败记录\n" + "\n".join(f"- {f}" for f in failures)
     try:
         answer = factory(
             role="evaluator", task="评估当前研究进度并决策。", context=summary,

@@ -102,6 +102,8 @@ def build_agent_loop(
     # P1-5+: accept a LoopStrategy spec (str / dict / LoopStrategy instance
     # / None). Resolved via resolve_loop_strategy(); None defaults to "react".
     loop_strategy: Any | None = None,
+    # B3: node-level wall-clock cap (mirrors AgentLoop.iteration_timeout_s).
+    iteration_timeout_s: float | None = None,
 ) -> "AgentLoop | None":
     """为 role 构造 AgentLoop.
 
@@ -170,6 +172,7 @@ def build_agent_loop(
         strict_claim_validation=strict_claim_validation,
         strategy=strategy,
         role=role,  # passed for the approval gate (event payload)
+        iteration_timeout_s=iteration_timeout_s,
     )
 
 
@@ -192,9 +195,12 @@ def run_agent_via_llm(
     read_roots: tuple[str, ...] | None = None,
     # P1-5+: forward loop_strategy spec to build_agent_loop → AgentLoop.
     loop_strategy: Any | None = None,
-    # W-P: injectable LLM client. Production builds it from llm_config
-    # (same as AgentLoop did); tests pass a fake so no network is touched.
-    client: Any | None = None,
+    # B3: node-level wall-clock cap. WorkflowNode declares
+    # exec.node_timeout_seconds in WorkflowDefinition's defaults
+    # (definition.py:51) but nothing read it; the workflow dispatcher now
+    # forwards it here. AgentLoop has supported the underlying knob since
+    # the swarm-parity work -- only this factory was missing the parameter.
+    iteration_timeout_s: float | None = None,
 ) -> str:
     """跑一次 role 任务，返回 JSON 字符串。
 
@@ -239,6 +245,7 @@ def run_agent_via_llm(
         write_roots=write_roots,
         read_roots=read_roots,
         loop_strategy=loop_strategy,
+        iteration_timeout_s=iteration_timeout_s,
     )
     if loop is None:
         raise RuntimeError(f"无法构造 AgentLoop for role={role!r} (prompt 不存在)")

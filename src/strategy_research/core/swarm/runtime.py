@@ -53,6 +53,11 @@ class SwarmPreset:
     branches: list[dict[str, Any]] = field(default_factory=list)
     version: str = "1.0"
     # Budget fields (Phase 1.2: migrated from Study)
+    # B3 (2026-10-28): budget_token is carried through from the study/goal
+    # config but SwarmRuntime does not enforce it -- _budget_exceeded checks
+    # turn/time only. Kept as a field because goal/workflow.py:136 forwards
+    # it from a real study budget; deleting it would break that path.
+    # preset_loader warns when a preset YAML sets it, so the gap is loud.
     budget_token: int | None = None
     budget_turn: int | None = None
     budget_time_seconds: float | None = None

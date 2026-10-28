@@ -3,9 +3,9 @@
   "commit": "4b0f3de0a615142d254df979faf605795934f238",
   "command": "pytest tests -q --tb=no -m 'not llm and not e2e and not slow'",
   "counts": {
-    "failed": 94,
+    "failed": 96,
     "error": 7,
-    "total": 101
+    "total": 103
   },
   "pytest_totals": {
     "failed": 93,
@@ -49,6 +49,8 @@
     "tests/test_compact_opencode_retention.py::TestHistoryBuilderHidesCovered::test_history_keeps_only_recent_compaction",
     "tests/test_compact_opencode_retention.py::TestProjectorKeepsMessages::test_flush_preserves_original_messages",
     "tests/test_data_clean.py::TestResample::test_resample_monthly",
+    "tests/test_data_clean_tool.py::TestDataCleanTool::test_dry_run_false_persists_cleaned_data",
+    "tests/test_data_clean_tool.py::TestDataCleanTool::test_dry_run_returns_report_and_does_not_write",
     "tests/test_e2e_persist.py::test_messages_persist_after_new_send",
     "tests/test_engine_optimizers.py::TestMeanVariance::test_with_risk_aversion",
     "tests/test_engine_optimizers.py::TestTurnoverAware::test_with_lambda_r",
@@ -160,6 +162,8 @@
     "tests/test_tool_kwargs_injection.py": 1
   },
   "post_freeze_additions": {
-    "tests/test_auth_tokens_hardening.py::test_persisted_file_round_trip": "Pre-existing, state-dependent. The test reloads api.auth_tokens with an empty JWT_SECRET and expects a fresh 32-byte secret to be written to the sandboxed HOME; if a secret file from an earlier test is already there it regenerates/reads inconsistently. Reproduced on unmodified HEAD 4b0f3de0 (git stash + run) -- unrelated to W-P."
+    "tests/test_auth_tokens_hardening.py::test_persisted_file_round_trip": "Pre-existing, state-dependent. The test reloads api.auth_tokens with an empty JWT_SECRET and expects a fresh 32-byte secret to be written to the sandboxed HOME; if a secret file from an earlier test is already there it regenerates/reads inconsistently. Reproduced on unmodified HEAD 4b0f3de0 (git stash + run) -- unrelated to W-P.",
+    "tests/test_data_clean_tool.py::TestDataCleanTool::test_dry_run_false_persists_cleaned_data": "Pre-existing, order-dependent. Shares a temp/DB fixture with the sibling dry-run test; which of the pair fails depends on execution order. Reproduced on unmodified HEAD by git stash + run.",
+    "tests/test_data_clean_tool.py::TestDataCleanTool::test_dry_run_returns_report_and_does_not_write": "Same pair, same cause. Reproduced on unmodified HEAD."
   }
 }

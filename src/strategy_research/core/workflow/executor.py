@@ -30,6 +30,7 @@ from .definition import WorkflowDefinition, WorkflowNode, WorkflowSegment
 from .node_types import (
     NodeContext,
     NodeDispatchError,
+    _retryable_node_error,
     dispatch_node,
     register_builtin_tool_executors,
 )
@@ -306,7 +307,7 @@ class WorkflowRunner:
             emit_event=self.emit_event,
         )
         try:
-            return dispatch_node(node, ctx)
+            return self._execute_node_with_retry(node, ctx)
         except NodeDispatchError as exc:
             logger.warning("node %s dispatch failed: %s", node.id, exc)
             raise
@@ -314,6 +315,32 @@ class WorkflowRunner:
             return AgentResult(
                 agent_id=node.id, status=AgentStatus.ERROR, error=str(exc),
             )
+
+    def _execute_node_with_retry(
+        self, node: WorkflowNode, ctx: "NodeContext",
+    ) -> AgentResult:
+        """``dispatch_node`` plus the ``exec.node_max_retries`` contract (B3).
+
+        ``WorkflowDefinition``'s defaults declare ``node_max_retries: 2``
+        (definition.py:51) but nothing read it. Retries are applied here, at
+        the node boundary, and only for ERROR results -- a SUCCESS with a
+        bad verdict is a decision, not a failure to retry.
+        """
+        retries = int((self.params.get("exec", {}) or {}).get("node_max_retries", 0) or 0)
+        attempt = 0
+        result = dispatch_node(node, ctx)
+        while (
+            result.status == AgentStatus.ERROR
+            and attempt < retries
+            and _retryable_node_error(result.error)
+        ):
+            attempt += 1
+            logger.warning(
+                "node %s failed (attempt %d/%d), retrying: %s",
+                node.id, attempt, retries, result.error,
+            )
+            result = dispatch_node(node, ctx)
+        return result
 
     # ── Planner dynamic segment ───────────────────────────────
 

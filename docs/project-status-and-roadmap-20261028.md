@@ -154,7 +154,7 @@
 |---|---|---|---|---|
 | B1 | C1 阶段一：chat 链 | ✅ 已完成 | — | react 承接 chat 单轮，B1 八项等价证据在 `test_b1f_equivalence.py` |
 | B2 | ~~study 链迁 react~~ | **0d** | — | **已符合选项 B**：编排在 `graph_preset.py`，执行是 AgentLoop。原计划纯重复 |
-| B3 | C1 阶段二：swarm + workflow 的**编排**接入 GraphEngine | 1-2d / 评估后定 | B1 | 执行体不动。swarm：`SwarmRuntime` 层调度换成 GraphEngine 节点，agent 执行继续走 `AgentExecutor`（已有适配器，勿新写）。workflow：dynamic subgraph / 段门重规划仍是真问题，允许结论「不迁」（须文档化触发条件） |
+| B3 | C1 阶段二：swarm + workflow | ✅ **已完成（结论：不迁）** | — | 两条链的**执行层本就已统一**（都走 `AgentExecutor`）。实测：37 个 swarm preset 全部 `branches=False`；workflow 有 3 个真实结构缺口（动态子图/段门重规划/扇入信封）。迁移需给引擎加 3 原语换净减 150 行——不划算。改为修 8 项空声明。见 `stage-c1-b3-swarm-orchestration-design` 与 `stage-c1-b3-workflow-assessment` |
 | B4 | MemoryManager 事件化 + 旧会话栈退役 | 1-2d | B3 | 沿用 `projection_store.py` 现有写入路径，不新增写者 |
 | B5 | ContextHub W1/W2 | 2-3d | — | provider 协议已冻结（`core/context/protocol.py`），只加实现不加协议 |
 
@@ -170,12 +170,22 @@
 ## 7. 建议顺序
 
 ```
-B3（swarm 编排迁移，1-2d；workflow 评估是否迁或文档化不迁）
+B3 ✅（结论：不迁；8 项空声明已修）
    ↓
 B4（数据面收尾）→ B5（ContextHub 尾项）
    ↓
 A3（P5-1c，可随时插入）→ C1/C2（审计门 + 文档）
 ```
+
+**B3 的实际发现（2026-10-28）**：原估 1-2d 的「编排迁移」，调查后结论是**不该迁**：
+
+| 链 | 原以为要做 | 实际 |
+|---|---|---|
+| swarm | 层调度换 GraphEngine | 执行层早已走 `AgentExecutor`；层屏障≠图语义，迁移要给引擎加 3 原语 |
+| workflow | 同上 | 3 个结构缺口（动态子图/段门重规划/扇入信封），迁移是图变形不是续跑 |
+
+两条链的**执行层统一正是选项 B 的成果**，剩下的只有各自的调度循环。
+改为修 8 项声明了但从未执行的契约（见两份 B3 文档 §3）。
 
 **为什么 B3 只剩 1-2 天**：原估 6-10d 建立在「重写执行体」上。选项 B 确立后，
 agent 执行复用 `AgentLoop`（study 已如此）与 `AgentExecutor`（swarm/workflow

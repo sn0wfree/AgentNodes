@@ -10,6 +10,41 @@ from .types import AgentCall
 
 logger = logging.getLogger(__name__)
 
+# Actions the branch machinery understands. ``redirect`` is documented as
+# future work in runtime.py (_apply_branch_action) and only logs -- a preset
+# that asks for it must fail loudly instead of silently doing nothing.
+_SUPPORTED_BRANCH_ACTIONS = frozenset({"skip", "retry"})
+
+
+def _reject_unsupported(data: dict, path: Path) -> None:
+    """Fail loud on preset keys the runtime cannot honour (B3).
+
+    Two silent-failure classes are closed here:
+
+    - ``branches[].action: redirect`` -- runtime.py logs "not implemented"
+      and carries on. A user who wrote it believed it took effect.
+    - ``budget_token`` -- declared on SwarmPreset but never read
+      (``_budget_exceeded`` checks turn/time only), so a token budget would
+      silently never trigger.
+    """
+    for branch in data.get("branches") or []:
+        if not isinstance(branch, dict):
+            continue
+        action = branch.get("action")
+        if action and action not in _SUPPORTED_BRANCH_ACTIONS:
+            raise ValueError(
+                f"{path.name}: branch action {action!r} is not implemented "
+                f"(supported: {sorted(_SUPPORTED_BRANCH_ACTIONS)})"
+            )
+
+    if data.get("budget_token") is not None:
+        logger.warning(
+            "%s: 'budget_token' is not enforced by SwarmRuntime "
+            "(only budget_turn / budget_time_seconds are); ignoring it. "
+            "Remove the key or use one of the supported budgets.",
+            path.name,
+        )
+
 
 def load_preset(path: Path) -> SwarmPreset | None:
     """Load a swarm preset from a YAML file.
@@ -45,6 +80,8 @@ def load_preset(path: Path) -> SwarmPreset | None:
     if not isinstance(data, dict):
         logger.warning("Invalid preset format in %s", path)
         return None
+
+    _reject_unsupported(data, path)
 
     name = data.get("name", path.stem)
     description = data.get("description", "")

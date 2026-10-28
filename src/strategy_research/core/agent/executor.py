@@ -38,6 +38,9 @@ _AGENT_LOOP_KWARGS = (
 _NON_PROMPT_KEYS = frozenset(_AGENT_LOOP_KWARGS) | {
     "tools", "input_from", "executor_type", "python_function",
     "behavior", "loop_strategy", "timeout", "evidence_criterion",
+    # B3: was leaking into the prompt as "max_retries: 2" in the Current
+    # Context block — a per-node execution knob, not task context.
+    "max_retries",
 }
 
 
@@ -82,6 +85,27 @@ def first_two_sentences(text: str) -> str:
     if len(cjk) >= 2:
         return "".join(cjk[:2]).strip()[:400]
     return text[:400]
+
+
+# Errors that a retry cannot fix. Everything else (timeout / 5xx / malformed
+# response) gets another attempt. Mirrors the classification the AgentLoop
+# already uses for its stream→chat fallback (loop_progress.py:51-64), so the
+# two layers agree on what "permanent" means.
+_PERMANENT_ERROR_MARKERS = (
+    "LLMAuthError",
+    "LLMRateLimitError",
+    "LLMConfigError",
+    "LLMQuotaError",
+    "no prompt_file",
+    "empty system prompt",
+)
+
+
+def _is_retryable_execution_error(error: str | None) -> bool:
+    """False for failures that repetition cannot fix."""
+    if not error:
+        return False
+    return not any(marker in error for marker in _PERMANENT_ERROR_MARKERS)
 
 
 class AgentExecutor:
@@ -140,7 +164,7 @@ class AgentExecutor:
                 return self._exec_evaluator(
                     plugin, workspace, upstream_outputs, context, t0,
                 )
-            return self._exec_llm(
+            return self._exec_llm_with_retry(
                 plugin, task, workspace,
                 context=context,
                 upstream_outputs=upstream_outputs,
@@ -157,6 +181,48 @@ class AgentExecutor:
                 error=str(exc),
                 elapsed_s=round(time.perf_counter() - t0, 2),
             )
+
+    def _exec_llm_with_retry(
+        self,
+        plugin: AgentPlugin,
+        task: str,
+        workspace: Path,
+        *,
+        retries_attempted: int = 0,
+        **kwargs: Any,
+    ) -> AgentExecutionResult:
+        """``_exec_llm`` plus the ``max_retries`` contract (B3).
+
+        ``AgentNodeConfig.max_retries`` has been declared since the DAG
+        config landed but was never read anywhere -- a promise the code did
+        not keep. It is honoured here, at the node boundary, so a transient
+        provider failure does not lose the whole node.
+
+        Retries are **opt-in**: ``max_retries`` defaults to ``None``, and
+        swarm builds its node configs without it (runtime.py:369-374), so
+        existing behaviour is unchanged. Permanent failures (missing or
+        empty prompt) are not retried -- repeating them only burns time.
+        """
+        node = kwargs.get("node")
+        budget = getattr(node, "max_retries", None)
+        result = self._exec_llm(plugin, task, workspace, **kwargs)
+
+        if result.status != "error" or budget is None:
+            return result
+        if retries_attempted >= int(budget):
+            return result
+        if not _is_retryable_execution_error(result.error):
+            return result
+
+        logger.warning(
+            "agent %s failed (attempt %d/%d), retrying: %s",
+            plugin.id, retries_attempted + 1, int(budget), result.error,
+        )
+        return self._exec_llm_with_retry(
+            plugin, task, workspace,
+            retries_attempted=retries_attempted + 1,
+            **kwargs,
+        )
 
     # ── python executor ─────────────────────────────────────────
 
