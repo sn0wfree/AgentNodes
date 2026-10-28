@@ -723,6 +723,53 @@ class BaseTool(ABC):
         # ALLOW (one-shot or permanent) — gateway already persisted
         # the rule if permanent=True.
 
+    def enforce_permission_sync(self, kwargs: Dict[str, Any], ctx: Any) -> None:
+        """Synchronous permission gate for sync executors (B1-d).
+
+        ``react`` is a synchronous node, so it cannot await
+        ``ainvoke``. This applies the *rule* verdict synchronously —
+        DENY raises, ALLOW passes — and for ASK it falls back to the
+        documented fail-open path (no gateway handshake is possible
+        without a loop). That exactly matches the existing
+        ``ASK + no gateway`` semantics in ``_enforce_permission``
+        (``tools.py:684-692``), so chat behaviour is unchanged for
+        rule-allowed tools and SAFE for rule-denied ones.
+
+        Async callers (AgentLoop) keep using ``ainvoke`` and get the
+        full ASK handshake.
+        """
+        from ..permission import PermissionAction, PermissionDeniedError
+
+        evaluator = getattr(ctx, "permission_evaluator", None)
+        if evaluator is None:
+            return
+        decision = evaluator.evaluate(self.name, kwargs)
+        if decision.action == PermissionAction.ALLOW:
+            return
+        if decision.action == PermissionAction.DENY:
+            raise PermissionDeniedError(
+                f"Permission denied: {self.name} pattern={decision.pattern}",
+                rule=decision.rule,
+                target=decision.target,
+            )
+        # ASK: no async handshake available on this path.
+        gateway = getattr(ctx, "permission_gateway", None)
+        if gateway is None:
+            logger.warning(
+                "tool %s gated by ASK but no permission_gateway on ctx; "
+                "treating as allow", self.name,
+            )
+            return
+        # A gateway exists but we cannot await it synchronously. Deny
+        # rather than silently allowing: a configured gateway means the
+        # operator expects ASK to be honoured.
+        raise PermissionDeniedError(
+            f"Permission ASK for {self.name} requires an async executor; "
+            f"denied on the synchronous path",
+            rule=decision.rule,
+            target=decision.target,
+        )
+
     def _coerce_params(self, kwargs: Dict[str, Any]) -> Dict[str, Any]:
         """框架统一容错: 按 execute 显式签名注解, 仅在类型不匹配时触发。
 
@@ -810,18 +857,42 @@ class ToolRegistry:
         """Return all tools in OpenAI function calling format."""
         return [t.to_openai_schema() for t in self._tools.values()]
 
-    def execute(self, name: str, params: Dict[str, Any]) -> str:
+    def execute(
+        self, name: str, params: Dict[str, Any], *, ctx: Any = None,
+    ) -> str:
         """Execute a tool and guarantee a valid JSON return value.
 
         v2: routes through tool.invoke() so coercion + error fallback
         apply uniformly (composite tools get the same guarantees).
+
+        B1-d: ``ctx`` (a ``ToolContext``) is optional. When provided the
+        permission ruleset is enforced synchronously before invocation —
+        DENY raises, ASK without an obtainable answer is refused. Callers
+        that pass no ctx keep the legacy unprotected behaviour (tests,
+        script paths).
         """
         tool = self._tools.get(name)
         if not tool:
             return json.dumps({"status": "error", "error": f"Tool '{name}' not found"}, ensure_ascii=False)
         try:
-            return tool.invoke(dict(params))
+            if ctx is not None:
+                tool.enforce_permission_sync(dict(params), ctx)
+            invoke_kwargs = dict(params)
+            if ctx is not None:
+                invoke_kwargs["ctx"] = ctx
+            return tool.invoke(invoke_kwargs)
         except Exception as exc:
+            from ..permission import PermissionDeniedError
+
+            if isinstance(exc, PermissionDeniedError):
+                # Denied tools return a structured refusal, not an
+                # exception — the model should see why and adapt.
+                return json.dumps({
+                    "status": "error",
+                    "tool": name,
+                    "error": str(exc),
+                    "permission_denied": True,
+                }, ensure_ascii=False)
             logger.exception("Tool %s failed", name)
             return json.dumps({
                 "status": "error", "tool": name,

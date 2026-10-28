@@ -46,6 +46,8 @@ class SessionController:
         workspace: Any | None = None,
         extra_context: dict[str, Any] | None = None,
         context_hub: Any | None = None,
+        permission_evaluator: Any | None = None,
+        permission_gateway: Any | None = None,
     ) -> None:
         self._ep = entry_point
         self._client = client
@@ -60,6 +62,11 @@ class SessionController:
         self._workspace = workspace
         self._extra_context = extra_context
         self._context_hub = context_hub
+        # B1-d：权限闸门（evaluator 规则 + gateway ASK 审批）。不注入 =
+        # 无权限检查（测试/脚本路径）。生产 chat 必须注入，否则工具裸跑。
+        self._permission_evaluator = permission_evaluator
+        self._permission_gateway = permission_gateway
+        self._current_session_id: str = ""  # per-turn, set by _execute
         self._turn_counters: dict[str, int] = {}  # session_id -> 已发 turn 数
 
     # ── 驱动 ─────────────────────────────────────────────
@@ -91,6 +98,9 @@ class SessionController:
         self._sink("turn.admitted", {"turn_id": turn_id, "session_id": session_id})
         self._sink("run.started", {"run_id": run_id, "kind": request.kind.value})
 
+        # _build_engine keeps its zero-arg contract (tests replace it with
+        # a lambda); the current session reaches it via this attribute.
+        self._current_session_id = session_id
         engine = self._build_engine()
         # P5-1：payload 可携带已格式化历史（旧路径 _convert_messages_to_history 的
         # 输出同构）。顺序：历史在前、当前输入在后——调用方须在 emit 本轮事件
@@ -129,12 +139,19 @@ class SessionController:
     def _build_engine(self) -> GraphEngine:
         """正式构造路径（不再 monkey-patch）。engine_factory 优先。
 
+        Zero-argument by contract (tests inject ``lambda: engine``); the
+        per-turn session id arrives via ``_current_session_id``.
+
         P5-1b：有 registry 时用 react 节点（无工具调用时退化为单次 LLM 调用，
         有工具时自动进入循环）；否则退化为纯 llm 节点。
 
         B1-a：系统提示经 ``assemble_loop_parts`` 统一渲染——与
         ``build_chat_agent_loop`` 同一实现，保证 chat 两条路径的 prompt
         逐字节一致。
+
+        B1-d：react 路径注入 ``ctx_factory``（ToolContext 按 tool_call 构造）
+        ——权限 evaluator/gateway、workspace、session_id 全部经它传递。
+        不注入 = 工具裸跑（仅测试路径）。
         """
         if self._engine_factory is not None:
             return self._engine_factory()
@@ -142,10 +159,25 @@ class SessionController:
         system = self._resolve_system_prompt()
         engine = GraphEngine(sink=self._sink)
         if self._registry is not None:
+            from strategy_research.core.agent.tool_context import make_ctx_factory
             from strategy_research.core.runtimes.nodes.react import (
                 ReactConfig,
                 make_react_node,
             )
+
+            ctx_factory = None
+            if (
+                self._permission_evaluator is not None
+                or self._permission_gateway is not None
+                or self._workspace is not None
+            ):
+                ctx_factory = make_ctx_factory(
+                    workspace=self._workspace,
+                    session_id=self._current_session_id or None,
+                    permission_evaluator=self._permission_evaluator,
+                    permission_gateway=self._permission_gateway,
+                    emit_event=lambda kind, data: self._sink(kind, data),
+                )
 
             engine.add_node(
                 "react",
@@ -155,6 +187,7 @@ class SessionController:
                         system=system,
                         stream=self._stream,
                         max_iterations=self._max_iterations,
+                        ctx_factory=ctx_factory,
                     ),
                 ),
             )

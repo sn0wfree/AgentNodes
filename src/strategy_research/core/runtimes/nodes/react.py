@@ -24,6 +24,19 @@ from strategy_research.core.runtimes.run_budget import RunBudget
 EventSink = Callable[[str, dict], None]
 
 
+def _execute_tool(registry: Any, name: str, params: dict, ctx: Any) -> str:
+    """Execute via the registry, passing ``ctx`` only when we have one.
+
+    Real ``ToolRegistry.execute`` takes ``ctx`` as a keyword-only arg
+    (B1-d), but duck-typed registries in tests/scripts have the legacy
+    ``(name, params)`` signature. Passing ``ctx=None`` unconditionally
+    would break every such caller, so the no-ctx path keeps the old call.
+    """
+    if ctx is None:
+        return registry.execute(name, params)
+    return registry.execute(name, params, ctx=ctx)
+
+
 @dataclass
 class ReactConfig:
     max_iterations: int = 10
@@ -34,6 +47,11 @@ class ReactConfig:
     budget: RunBudget | None = None
     # P5-1b：流式（每轮 LLM 调用逐 chunk 发 text_delta/thinking_delta）
     stream: bool = False
+    # B1-d：工具上下文工厂 —— (tool_call_id, params) -> ToolContext | None。
+    # 权限闸门（evaluator/gateway）、workspace、session_id、emit_event 等
+    # 全部经 ToolContext 传递；不注入 = 无权限检查（旧行为，测试/脚本用）。
+    # 工厂由调用方提供，节点本身不 import 任何域类型。
+    ctx_factory: Callable[[str, dict], Any] | None = None
 
 
 def make_react_node(
@@ -90,7 +108,16 @@ def make_react_node(
 
             for tc in response.tool_calls:
                 emit("tool.started", {"run_id": run_id, "tool": tc.name, "iteration": iteration})
-                result = registry.execute(tc.name, dict(tc.arguments or {}))
+                params = dict(tc.arguments or {})
+                # B1-d：注入 ToolContext → 权限闸门生效（evaluator 判定 +
+                # DENY 拦截）。工厂为 None 时保持旧行为（无 ctx）。
+                ctx = None
+                if cfg.ctx_factory is not None:
+                    try:
+                        ctx = cfg.ctx_factory(tc.id, params)
+                    except Exception as exc:  # noqa: BLE001 — ctx 失败不崩节点
+                        emit("tool.ctx_failed", {"tool": tc.name, "error": str(exc)})
+                result = _execute_tool(registry, tc.name, params, ctx)
                 emit(
                     "tool.completed",
                     {"run_id": run_id, "tool": tc.name, "result_chars": len(result)},
