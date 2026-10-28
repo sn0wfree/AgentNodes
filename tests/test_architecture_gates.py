@@ -196,6 +196,22 @@ def test_graph_engine_is_the_only_orchestration_runtime():
     assert not violators, "出现了第二个状态图编排器:\n" + "\n".join(violators)
 
 
+def test_agentloop_capability_premise_holds():
+    """选项 B 的前提必须持续成立：AgentLoop 独有四项能力仍然在。
+
+    选项 B 保留 AgentLoop 作为执行原语的理由，是它无条件提供四项
+    react 节点没有的能力。若未来任何一项被移除，选项 B 的前提即消失，
+    应重新评估架构决策而不是继续沿用。
+
+    见 docs/stage-c1-wp-agent-node-design-20261028.md §1.1。
+    """
+    loop_tools = (SRC / "core" / "agent" / "loop_tools.py").read_text(encoding="utf-8")
+    assert "_TOOL_MAX_RETRIES" in loop_tools, "瞬时工具重试"
+    assert "_TOOL_RESULT_HISTORY_MAX" in loop_tools, "30k 工具结果截断"
+    assert "check_guards" in loop_tools, "单调 deny guard"
+    assert "_execute_tool_batch" in loop_tools, "只读工具并行"
+
+
 # ── 门退役契约（阶段 4）──────────────────────────────
 
 

@@ -102,20 +102,13 @@ def build_agent_loop(
     # P1-5+: accept a LoopStrategy spec (str / dict / LoopStrategy instance
     # / None). Resolved via resolve_loop_strategy(); None defaults to "react".
     loop_strategy: Any | None = None,
-    # W-P: node-level knobs. AgentLoop has supported both since the swarm
-    # parity work; they were simply never plumbed through this factory.
-    iteration_timeout_s: float | None = None,
-    on_event: Any | None = None,
 ) -> "AgentLoop | None":
     """为 role 构造 AgentLoop.
 
-    **DEPRECATED (W-P, 2026-10-28)**: production no longer calls this.
-    ``run_agent_via_llm`` now delegates to ``agent_node`` (react node), so
-    this function has no caller outside tests. Kept because three tests use
-    it to assert the role prompt + tool whitelist contract, which
-    ``agent_node`` also honours -- those assertions would otherwise have to
-    be rewritten against a private helper. Do **not** add new callers; the
-    C1 target is that no study/workflow/swarm path constructs an AgentLoop.
+    **选项 B（2026-10-28）**：这是 study/workflow 链的唯一 AgentLoop 构造点
+    （架构门禁 test_domain_layers_use_the_agent_factory_not_raw_agentloop
+    钉死域层不得绕过它）。GraphEngine 负责编排；单 agent turn 由这里构造的
+    AgentLoop 执行——它是执行原语，不是第二套控制流。
 
     Args:
         role: 9 角色名 (researcher / strategist / ...)
@@ -177,135 +170,7 @@ def build_agent_loop(
         strict_claim_validation=strict_claim_validation,
         strategy=strategy,
         role=role,  # passed for the approval gate (event payload)
-        iteration_timeout_s=iteration_timeout_s,
-        on_event=on_event,
     )
-
-
-def agent_node(
-    role: str,
-    workspace_path: Path,
-    strategy_name: str,
-    task: str,
-    *,
-    llm_config: Any | None = None,
-    max_iterations: int = 8,
-    tools_override: list[str] | None = None,
-    loop_strategy: Any | None = None,
-    iteration_timeout_s: float | None = None,
-    sink: Any | None = None,
-) -> dict:
-    """Execute one agent turn as a GraphEngine-ready node.
-
-    **Division of labour (option B, 2026-10-28)**: GraphEngine orchestrates
-    (nodes / edges / interrupts / budget tree); a single agent turn is still
-    executed by ``AgentLoop``. GraphEngine is the only *orchestration*
-    runtime -- AgentLoop is the execution primitive beneath it, not a second
-    control flow.
-
-    Why not a thin react loop: ``loop_tools.py`` gives every AgentLoop turn
-    four things the react node lacks, two of which are unconditional:
-
-    ==========================  ==========================================
-    tool result truncation      30k chars, loop_tools.py:214
-    transient tool retry        x2, loop_tools.py:144-159
-    monotonic deny guards       loop_tools.py:115
-    read-only tool parallelism  loop_tools.py:276-332
-    ==========================  ==========================================
-
-    Dropping the first two silently bloats long-session context and raises
-    transient failure rates, so the AgentLoop is kept as-is.
-
-    Returns an AgentResult-shaped dict so callers (workflow / swarm presets)
-    do not need to import ``AgentExecutionResult`` -- that type lives in
-    ``core/agent/executor.py`` and must not be a dependency of this module.
-
-    ``sink`` becomes the loop's ``on_event`` (same event vocabulary the
-    engine consumes).
-    """
-    import time as _time
-
-    t0 = _time.perf_counter()
-    loop = build_agent_loop(
-        role=role,
-        workspace_path=workspace_path,
-        strategy_name=strategy_name,
-        llm_config=llm_config,
-        max_iterations=max_iterations,
-        tools_override=tools_override,
-        loop_strategy=loop_strategy,
-        iteration_timeout_s=iteration_timeout_s,
-        on_event=sink,
-    )
-    if loop is None:
-        raise RuntimeError(f"无法构造 AgentLoop for role={role!r} (prompt 不存在)")
-
-    try:
-        result = loop.run(task)
-    except Exception as exc:  # noqa: BLE001 — node contract is a dict, not a raise
-        return _agent_result(
-            status="error",
-            error=f"{type(exc).__name__}: {exc}",
-            elapsed_s=_time.perf_counter() - t0,
-        )
-
-    return _agent_result(
-        status="error" if result.error else "success",
-        output=result.answer or "",
-        error=result.error,
-        iterations=result.iterations,
-        tool_calls_made=result.tool_calls_made,
-        elapsed_s=_time.perf_counter() - t0,
-        metrics={
-            "iterations": result.iterations,
-            "finished_reason": result.finished_reason,
-            **(result.metrics or {}),
-        },
-    )
-
-
-def _agent_result(
-    *,
-    status: str,
-    output: str = "",
-    error: str | None = None,
-    iterations: int = 0,
-    tool_calls_made: int = 0,
-    elapsed_s: float = 0.0,
-    metrics: dict | None = None,
-) -> dict:
-    """AgentResult-shaped dict (fields mirror AgentExecutionResult)."""
-    return {
-        "status": status,
-        "output": output,
-        "error": error,
-        "iterations": iterations,
-        "tool_calls_made": tool_calls_made,
-        "elapsed_s": elapsed_s,
-        "summary": _first_two_sentences(output),
-        "metrics": dict(metrics or {}),
-        "artifacts": {},
-    }
-
-
-def _first_two_sentences(text: str) -> str:
-    """Summary extraction (swarm parity; see executor.first_two_sentences).
-
-    Duplicated rather than imported so this module does not depend on
-    executor.py (W-W owns it).
-    """
-    import re
-
-    text = (text or "").strip()
-    if not text:
-        return ""
-    parts = re.split(r"(?<=[.!?。！？])\s+", text, maxsplit=2)
-    if len(parts) >= 2:
-        return " ".join(parts[:2]).strip()[:400]
-    cjk = re.split(r"(?<=[.!?。！？])", text, maxsplit=2)
-    if len(cjk) >= 2:
-        return "".join(cjk[:2]).strip()[:400]
-    return text[:400]
 
 
 def run_agent_via_llm(

@@ -129,6 +129,33 @@ react 继续只服务 chat 单轮，其 docstring 已声明「显式推迟」的
 
 ---
 
+## 4.5 less-is-more 终审（2026-10-28 第二次修正）
+
+用户确立「**能用现有代码就不新写**」约束后复审本方案，发现 §3 的
+`agent_node()` 本身违反它：
+
+| 事实 | 证据 |
+|---|---|
+| `agent_node` **零生产调用方**（只有测试用） | `git grep agent_node src/` 仅命中定义 |
+| 结果信封适配**已存在**：`AgentExecutor.execute()`（executor.py:101）已提供 `AgentExecutionResult` 信封 + per-node 超时推导（:337-345）+ `on_event` 转发 + `first_two_sentences` 导出 | executor.py |
+| `_first_two_sentences` 与 `executor.first_two_sentences` 逐字重复 | role_factory.py |
+
+**处置（全部删除）**：
+
+- `agent_node` / `_agent_result` / `_first_two_sentences` 删除；
+  `tests/test_agent_node.py` 删除。
+- `build_agent_loop` 的 `iteration_timeout_s` / `on_event` 透传一并撤销——
+  选项 B 下无调用方需要（swarm 走 `AgentExecutor`，它自己转发 loop_kwargs）。
+- 四项能力前提改由一条门禁断言看守：
+  `test_architecture_gates.py::test_agentloop_capability_premise_holds`。
+- W-W 迁移编排时直接复用 `AgentExecutor.execute()`，禁止再造第二适配器
+  （契约 §6.5 现有入口速查表）。
+
+**最终代码改动**（对比 HEAD `4b0f3de0`）：`role_factory.py` 仅 docstring 更新
+（记录选项 B 分工），净逻辑改动 **0 行**。这正是 less-is-more 应有的结果。
+
+---
+
 ## 5. 架构门禁（替换原判据）
 
 | 门禁 | 判据 | 理由 |

@@ -133,25 +133,30 @@
 
 ## 6. 下一步路线（按依赖排序）
 
+> **2026-10-28 修订（选项 B + less-is-more）**：B2/B3 的原始前提「执行体迁 react」
+> 已被推翻——实测 react 节点缺 AgentLoop 四项无条件能力（工具结果 30k 截断、
+> 瞬时错误重试、deny guard、只读并行），替换会造成真回归。架构目标精化为
+> 「GraphEngine 是唯一**编排** runtime，AgentLoop 是执行原语」。
+> 依据：`docs/stage-c1-wp-agent-node-design-20261028.md`。
+> **注意 B2 一行：study 链已经符合选项 B，无需迁移。**
+
 ### 立即可做（无需前置）
 
 | # | 事项 | 工期 | 说明 |
 |---|---|---|---|
-| A1 | **测试分道 + 预存阻塞清理** | 2-3d | ① 7 个 live/e2e 套件显式分道（当前会无限阻塞）；② 127 个预存失败按 §4 的族归类——**其中 ~44 个是 Windows 环境性或属旧执行体，建议随 C1 自然消失而非逐个修**；③ 修 `test_e2e_full_flow` 的 approval_timeout（一行参数）与 `alpha_zoo` 两条。**这是所有后续验收的基础** |
-| A2 | P5-3 SSE 单轨 | ~2d | 独立工程，8 生产 + 7 测试文件 |
+| A1 | **测试分道 + 预存阻塞清理** | ✅ 已完成 | 分道白名单 + 180s 兜底 + 失败基线（100→101 条，见 `tests/baselines/`） |
+| A2 | P5-3 SSE 单轨 | ✅ 已完成 | `_event_generator_v2` 走 `EventStore.subscribe`（`0d25b702`） |
 | A3 | P5-1c 旧 chat 分支 | 0.5-1d | 已挂起，业务稳定后 |
 
 ### 依赖链（执行面 + 数据面）
 
-| # | 事项 | 工期 | 依赖 |
-|---|---|---|---|
-| B1 | **C1 阶段一：chat 链迁 react 节点** | 2-3d | A1（验收基线） |
-| B2 | C1 阶段二：study 链迁（role_factory → react） | 2-3d | B1（模式验证） |
-| B3 | C1 阶段三：workflow + swarm 链 | 2-3d | B2 |
-| B4 | MemoryManager 事件化 + 旧会话栈退役 | 1-2d | B1-B3 |
-| B5 | ContextHub W1/W2（todos provider、ContextPlan 仲裁） | 2-3d | B1（react 是消费方） |
-
-**C1 总工期 6-10d**，是剩余工作中最大的一块，也是「GraphEngine 唯一 runtime」这条架构目标能否达成的关键。
+| # | 事项 | 工期 | 依赖 | less-is-more 审视 |
+|---|---|---|---|---|
+| B1 | C1 阶段一：chat 链 | ✅ 已完成 | — | react 承接 chat 单轮，B1 八项等价证据在 `test_b1f_equivalence.py` |
+| B2 | ~~study 链迁 react~~ | **0d** | — | **已符合选项 B**：编排在 `graph_preset.py`，执行是 AgentLoop。原计划纯重复 |
+| B3 | C1 阶段二：swarm + workflow 的**编排**接入 GraphEngine | 1-2d / 评估后定 | B1 | 执行体不动。swarm：`SwarmRuntime` 层调度换成 GraphEngine 节点，agent 执行继续走 `AgentExecutor`（已有适配器，勿新写）。workflow：dynamic subgraph / 段门重规划仍是真问题，允许结论「不迁」（须文档化触发条件） |
+| B4 | MemoryManager 事件化 + 旧会话栈退役 | 1-2d | B3 | 沿用 `projection_store.py` 现有写入路径，不新增写者 |
+| B5 | ContextHub W1/W2 | 2-3d | — | provider 协议已冻结（`core/context/protocol.py`），只加实现不加协议 |
 
 ### 收尾
 
@@ -165,17 +170,33 @@
 ## 7. 建议顺序
 
 ```
-A1（测试基线，2-3d）→ A2（SSE 单轨，2d）
-   ↓
-B1 → B2 → B3（C1 三阶段，6-9d，每阶段独立验收）
+B3（swarm 编排迁移，1-2d；workflow 评估是否迁或文档化不迁）
    ↓
 B4（数据面收尾）→ B5（ContextHub 尾项）
    ↓
 A3（P5-1c，可随时插入）→ C1/C2（审计门 + 文档）
 ```
 
-**为什么 A1 必须最先**：当前 12,900 条测试里有 ~6 个 live 套件会无限阻塞，任何全量验证都跑不完。没有可复现的绿/红基线，后续 6-9 天的 C1 迁移就是在盲飞。
-
-**为什么 C1 分三阶段而非一次做完**：三条链的复杂度差异大（chat 最简、study 有 HITL/预算、workflow/swarm 有并发语义）。每阶段独立验收 + 可回退，避免一次性 18k 行迁移的风险。
+**为什么 B3 只剩 1-2 天**：原估 6-10d 建立在「重写执行体」上。选项 B 确立后，
+agent 执行复用 `AgentLoop`（study 已如此）与 `AgentExecutor`（swarm/workflow
+已有适配器），要迁移的只有各链自己的**调度循环**。
 
 **A3（P5-1c）可以随时插入**：它不阻塞任何东西，纯粹是「入口只剩一条路」的整洁性收益。
+
+---
+
+## 8. less-is-more 约束（2026-10-28 起，约束所有 worker）
+
+> **能用现有代码就不新写；能改造完成就不重写。**
+
+执行细则（写入契约 `docs/stage-c1-team-contract-20261028.md` §11）：
+
+1. **写新函数前，先列出查过的现有入口**（类/函数名 + 为什么不能复用），
+   写进设计文档。查不到 = 禁止新写。
+2. **新代码零生产调用方 = 死代码**，下一次提交必须删除
+   （实例：W-P 首版的 `agent_node`，零调用方，已删）。
+3. **同包内纯函数禁止复制**，直接 import
+   （实例：`_first_two_sentences` 与 `executor.first_two_sentences`，已删）。
+4. **改造优先于新建**：扩展参数/注入点算改造；平行的第二套实现算新建。
+
+

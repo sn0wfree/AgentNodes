@@ -298,6 +298,41 @@ D:\tools\python312\python.exe scripts/c1_gate.py my.log --files test_workflow te
 
 ---
 
+## 6.5 less-is-more（2026-10-28 起，**硬约束**）
+
+> **能用现有代码就不新写；能改造完成就不重写。**
+
+背景：W-P 首版在零生产调用方的情况下新写了 `agent_node`（约 80 行）和一个
+与 `executor.first_two_sentences` 重复的 `_first_two_sentences`。全部删除。
+这条约束就是为防再次发生。
+
+执行细则：
+
+1. **新函数前先列现有入口**。设计文档里必须给出查过的类/函数名
+   + 为什么不能复用。列不出 = 禁止新写。
+2. **零生产调用方 = 死代码**。发现即删，不留「以后会用」。
+3. **同包纯函数禁止复制**，直接 import。「依赖方向」不适用于同包内的
+   无状态纯函数（如 summary 提取）。
+4. **改造优先于新建**。扩参数/加注入点 = 改造（允许）；
+   平行的第二套实现 = 新建（禁止）。
+5. **现有适配器优先复用**。swarm/workflow 的 agent 执行适配已存在于
+   `AgentExecutor.execute()`（信封/超时/事件齐全），编排迁移时直接用，
+   不要再造 `agent_node` 式的第二适配器。
+
+现有入口速查（写新代码前先查这张表）：
+
+| 需求 | 已有入口 | 不要再写 |
+|---|---|---|
+| study/workflow 跑一个 role | `role_factory.run_agent_via_llm` | 第二个 role 执行入口 |
+| swarm/workflow 执行 agent 节点 | `AgentExecutor.execute`（executor.py:101） | node 级适配器 |
+| chat 单轮带工具循环 | `make_react_node`（runtimes/nodes/react.py） | 第二个工具循环 |
+| role 提示/白名单装配 | `assemble_loop_parts`（loop_assembly.py） | 第二套装配核 |
+| 结果信封 | `AgentExecutionResult` / `LoopResult` / `RoundOutcome` | 第四种信封 |
+| 上下文收集 | `ContextHub.build`（core/context） | 第二套收集器 |
+| 预算 | `RunBudget.plan_call` | 第二套预算判定 |
+
+---
+
 ## 7. 环境陷阱（实测，会让方案直接失效）
 
 ### 7.1 worktree 默认不隔离代码（**最高优先级**）

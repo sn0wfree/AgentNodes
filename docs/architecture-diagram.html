@@ -151,14 +151,14 @@
   <text x="40" y="880" class="lyr">③ 执行面</text>
 
   <rect x="150" y="852" width="1039" height="64" rx="9" class="boxa"/>
-  <text x="166" y="876" class="bt">GraphEngine —— 包裹 langgraph · 支持环 · prepare / run / settle（唯一 runtime）</text>
+  <text x="166" y="876" class="bt">GraphEngine —— 包裹 langgraph · 支持环 · prepare / run / settle（唯一编排 runtime）</text>
   <text x="166" y="900" class="st">T1 协程层：进程内 asyncio（llm/react 节点 · 等 LLM 的轻活）｜ T2 进程层：cpu 节点 → ExecutorBridge → 常驻子进程池·单池+闸（烧 CPU 重活 · 可硬杀）｜ T3 沙箱层：不可信代码（两段式·占位）</text>
 
   <rect x="150" y="916" width="330" height="130" rx="9" class="box"/>
   <text x="166" y="940" class="bt">节点类型（每阶段开/关 ReAct）</text>
   <text x="166" y="962" class="st">llm 单发（关）· react 循环（开）</text>
   <text x="166" y="982" class="st">cpu → 子进程池 · graph 子图嵌套</text>
-  <text x="166" y="1002" class="st">react 内部 = 现 AgentLoop 平移</text>
+  <text x="166" y="1002" class="st">react 内部 = 现 AgentLoop 平移（执行原语保留 · 见 wp-agent-node 设计）</text>
   <text x="166" y="1030" class="sm">切 A1（引擎骨架 + 节点类型）</text>
   <rect x="500" y="916" width="330" height="130" rx="9" class="box"/>
   <text x="516" y="940" class="bt">Preset 注册表（图 = 纯数据）</text>
