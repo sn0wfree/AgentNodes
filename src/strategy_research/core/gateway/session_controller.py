@@ -48,6 +48,7 @@ class SessionController:
         context_hub: Any | None = None,
         permission_evaluator: Any | None = None,
         permission_gateway: Any | None = None,
+        compact_config: Any | None = None,
     ) -> None:
         self._ep = entry_point
         self._client = client
@@ -66,6 +67,10 @@ class SessionController:
         # 无权限检查（测试/脚本路径）。生产 chat 必须注入，否则工具裸跑。
         self._permission_evaluator = permission_evaluator
         self._permission_gateway = permission_gateway
+        # B1-c：mid-loop 压缩配置（None = 不压缩）。压缩器在构造引擎时
+        # 按当前 session 生成，复用 core/agent/compaction_runtime 的同一
+        # 实现（与 AgentLoop 路径语义一致）。
+        self._compact_config = compact_config
         self._current_session_id: str = ""  # per-turn, set by _execute
         self._turn_counters: dict[str, int] = {}  # session_id -> 已发 turn 数
 
@@ -188,6 +193,7 @@ class SessionController:
                         stream=self._stream,
                         max_iterations=self._max_iterations,
                         ctx_factory=ctx_factory,
+                        compactor=self._build_compactor(),
                     ),
                 ),
             )
@@ -202,6 +208,35 @@ class SessionController:
                 ),
             )
         return engine
+
+    def _build_compactor(self):
+        """B1-c: mid-loop compactor, or None when compaction is disabled.
+
+        Reuses ``core/agent/compaction_runtime.make_compactor`` — the same
+        implementation the AgentLoop mixin uses, so compression semantics
+        cannot drift between the two executors.
+        """
+        if self._compact_config is None:
+            return None
+        try:
+            from strategy_research.core.agent.compaction_runtime import (
+                make_compactor,
+            )
+
+            return make_compactor(
+                compact_config=self._compact_config,
+                model_context_tokens=getattr(
+                    self._client, "model_context_tokens", None,
+                ),
+                model_max_output_tokens=getattr(
+                    self._client, "model_max_output_tokens", None,
+                ),
+                llm_client=self._client,
+                session_id=self._current_session_id or None,
+            )
+        except Exception as exc:  # noqa: BLE001 — 压缩不可用不阻断 chat
+            self._sink("context.compactor_init_failed", {"error": str(exc)})
+            return None
 
     def _resolve_system_prompt(self) -> str | None:
         """Render the system prompt via the shared assembly core.

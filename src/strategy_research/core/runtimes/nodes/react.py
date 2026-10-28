@@ -52,6 +52,10 @@ class ReactConfig:
     # 全部经 ToolContext 传递；不注入 = 无权限检查（旧行为，测试/脚本用）。
     # 工厂由调用方提供，节点本身不 import 任何域类型。
     ctx_factory: Callable[[str, dict], Any] | None = None
+    # B1-c：mid-loop 上下文压缩 —— messages -> (messages, applied_layers)。
+    # 每次迭代前执行（与 AgentLoop 的 strategy/steps/compaction.py 同位置）。
+    # 同样注入而非 import：压缩实现在 core/agent（域），节点在平台层。
+    compactor: Callable[[list], tuple] | None = None
 
 
 def make_react_node(
@@ -79,6 +83,23 @@ def make_react_node(
         iteration = 0
 
         for iteration in range(1, cfg.max_iterations + 1):
+            # B1-c：迭代前压缩（必须在 LLM 调用之前 —— 压缩是为了
+            # 让本次调用放得下）。失败降级为事件，绝不打断本轮。
+            if cfg.compactor is not None:
+                try:
+                    compacted, applied = cfg.compactor(messages)
+                    if applied:
+                        messages = compacted
+                        emit("context.compacted", {
+                            "run_id": run_id,
+                            "iteration": iteration,
+                            "layers": list(applied),
+                        })
+                except Exception as exc:  # noqa: BLE001 — 压缩失败不崩节点
+                    emit("context.compact_failed", {
+                        "run_id": run_id, "error": str(exc),
+                    })
+
             allowed, reason = usage.plan_call()  # A5 INV-9：唯一预算入口
             if not allowed:
                 emit("budget.exhausted", {"run_id": run_id, "reason": reason})
