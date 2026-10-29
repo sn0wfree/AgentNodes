@@ -98,6 +98,66 @@ def build_prerun_context_provider(loop: Any, injectors: list[Any]) -> PreRunCont
     return PreRunContextProvider(loop, injectors)
 
 
+class _LoopFacade:
+    """The minimal ``loop`` surface the pre-run injectors actually read.
+
+    Both ``GoalContextInjector`` and ``MemoryRetrieverInjector`` only touch
+    ``enable_goal_injection`` / ``enable_memory_injection`` / ``session_id``
+    (context_injector.py:113,115,299,327) — no methods, no registry. So the
+    react path (which has no AgentLoop) can drive the very same injectors
+    through this adapter instead of growing a parallel implementation.
+    """
+
+    def __init__(
+        self,
+        *,
+        session_id: str | None = None,
+        enable_goal_injection: bool = True,
+        enable_memory_injection: bool = True,
+    ) -> None:
+        self.session_id = session_id
+        self.enable_goal_injection = enable_goal_injection
+        self.enable_memory_injection = enable_memory_injection
+
+
+class SessionScopedPreRunProvider(PreRunContextProvider):
+    """``PreRunContextProvider`` that takes the session from each query.
+
+    The hub is a process singleton while ``PreRunContextProvider`` binds its
+    loop once at construction. Copying the query's ``session_id`` onto the
+    facade before each ``provide`` keeps the hub stateless: the session lives
+    in the query, the facade is only a carrier.
+    """
+
+    def provide(self, query: ContextQuery) -> list[ContextItem]:
+        facade = self._loop
+        if isinstance(facade, _LoopFacade):
+            facade.session_id = query.session_id
+        return super().provide(query)
+
+
+def build_prerun_provider_for_session(
+    *,
+    enable_goal_injection: bool = True,
+    enable_memory_injection: bool = True,
+) -> SessionScopedPreRunProvider:
+    """Pre-run provider for the react path (no AgentLoop available).
+
+    Reuses the shipped injector chain end to end — the same
+    ``GoalContextInjector`` / ``MemoryRetrieverInjector`` the AgentLoop path
+    runs, so goal/memory block shapes cannot drift between executors.
+    """
+    from .context_injector import GoalContextInjector, MemoryRetrieverInjector
+
+    return SessionScopedPreRunProvider(
+        _LoopFacade(
+            enable_goal_injection=enable_goal_injection,
+            enable_memory_injection=enable_memory_injection,
+        ),
+        [GoalContextInjector(), MemoryRetrieverInjector()],
+    )
+
+
 class TodoContextProvider:
     """把 TodoStore 快照暴露为一条 ``kind="todo"`` 的上下文贡献（B5 W1）。
 
@@ -143,6 +203,8 @@ class TodoContextProvider:
 
 __all__ = [
     "PreRunContextProvider",
+    "SessionScopedPreRunProvider",
     "TodoContextProvider",
     "build_prerun_context_provider",
+    "build_prerun_provider_for_session",
 ]

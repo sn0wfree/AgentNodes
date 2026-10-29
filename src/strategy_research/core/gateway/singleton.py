@@ -63,17 +63,24 @@ def get_gateway(
 
 
 def _build_context_hub() -> Any | None:
-    """组装生产 chat 的 ContextHub（B5 R-1）。
+    """组装生产 chat 的 ContextHub（B5 R-1 + pre-run 收口）。
 
-    只注册 todos provider：PreRunContextProvider（goal/memory 桥接）需要
-    AgentLoop 实例，react 路径没有 loop——goal/memory 的 react 侧注入是
-    独立后续项（docs/stage-c1-b5-wiring-20261029.md §0）。
+    两个 provider：
+    - ``SessionScopedPreRunProvider``：goal/memory，复用 AgentLoop 那条
+      已验证的 injector 链（react 路径没有 loop，用 3 属性 facade 驱动）。
+    - ``TodoContextProvider``：todos 快照。
+
+    任一不可用则整体降级 None（与 registry 降级同款）。
     """
     try:
-        from ..agent.context_providers import TodoContextProvider
+        from ..agent.context_providers import (
+            TodoContextProvider,
+            build_prerun_provider_for_session,
+        )
         from ..context.hub import ContextHub
 
         hub = ContextHub()
+        hub.register(build_prerun_provider_for_session())
         hub.register(TodoContextProvider())
         return hub
     except Exception:  # noqa: BLE001 —— 上下文不可用不阻断 chat
