@@ -31,6 +31,7 @@ class Gateway:
         data_dir: str | Path | None = None,
         registry: Any | None = None,
         stream: bool = False,
+        context_hub: Any | None = None,
     ) -> None:
         self._events: list[tuple[str, dict]] = []
         self._external_sink = sink
@@ -43,6 +44,9 @@ class Gateway:
             # P5-1b：有 registry 时控制器默认图用 react 节点（无工具调用时
             # 退化为单次 LLM），否则纯 llm 节点。
             registry=registry, stream=stream,
+            # B5 R-1（选项 A）：组装根构造 ContextHub 并注入。None = 无上下
+            # 文注入——直构 controller 的测试路径行为不变。
+            context_hub=context_hub,
         )
         # 阶段 3b：PlatformStore（事件持久化 + blob + artifact 登记）
         self._store = None

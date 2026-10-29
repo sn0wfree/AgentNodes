@@ -47,13 +47,36 @@ def get_gateway(
                 registry = build_default_registry()
             except Exception:  # noqa: BLE001 —— 工具链不可用则退化为纯 LLM
                 registry = None
+        # B5 R-1（选项 A）：组装 ContextHub 并注入 Gateway。此前生产 chat
+        # 的 controller._context_hub 恒为 None——B1-b 的上下文注入只在旧
+        # /send_async 路径活着。失败降级 None（与 registry 降级同款）。
+        context_hub = _build_context_hub()
         gw = Gateway(
             client=client, system=system, sink=sink,
             registry=registry, stream=stream,
+            context_hub=context_hub,
         )
         gw.verify_invariants()  # A5：不变量违反即拒启
         _singleton["gw"] = gw
     return gw
+
+
+def _build_context_hub() -> Any | None:
+    """组装生产 chat 的 ContextHub（B5 R-1）。
+
+    只注册 todos provider：PreRunContextProvider（goal/memory 桥接）需要
+    AgentLoop 实例，react 路径没有 loop——goal/memory 的 react 侧注入是
+    独立后续项（docs/stage-c1-b5-wiring-20261029.md §0）。
+    """
+    try:
+        from ..agent.context_providers import TodoContextProvider
+        from ..context.hub import ContextHub
+
+        hub = ContextHub()
+        hub.register(TodoContextProvider())
+        return hub
+    except Exception:  # noqa: BLE001 —— 上下文不可用不阻断 chat
+        return None
 
 
 def reset_gateway() -> None:

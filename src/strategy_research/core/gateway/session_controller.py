@@ -175,6 +175,11 @@ class SessionController:
                 self._permission_evaluator is not None
                 or self._permission_gateway is not None
                 or self._workspace is not None
+                # B5 B-c：生产 chat（hub 已接线）的工具调用必须归属会话，
+                # 否则 todowrite 等落到共享 "default" 桶。仅带 session_id
+                # 的 ToolContext 不改变权限行为——enforce_permission_sync
+                # 在无 evaluator 时直接返回（tools.py:878-880）。
+                or self._context_hub is not None
             ):
                 ctx_factory = make_ctx_factory(
                     workspace=self._workspace,

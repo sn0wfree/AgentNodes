@@ -98,7 +98,51 @@ def build_prerun_context_provider(loop: Any, injectors: list[Any]) -> PreRunCont
     return PreRunContextProvider(loop, injectors)
 
 
+class TodoContextProvider:
+    """把 TodoStore 快照暴露为一条 ``kind="todo"`` 的上下文贡献（B5 W1）。
+
+    设计（docs/stage-c1-b5-contexthub-w1w2-design-20261028.md §2.1-2.2）：
+    - 数据源与渲染**复用** todo_tools 的 TodoStore / _format_todos_snapshot
+      ——与 AgentLoop 侧 TodosInjector 共用同一 formatter，格式不可能漂移。
+    - **单条 item**（整块快照），不拆逐条：拆条需要 todos 专用渲染器重建
+      ``<current-todos>`` 包装，违反「渲染归渲染器」，且 todo 总量
+      < 700 tokens，无裁剪收益。
+    - ``tokens`` 不填（0）：由中枢统一估算（W0 钉死的口径）。
+    - ``created_at`` 留空：TodoStore 不存时间戳，不编造。
+    - ``priority=0``：当前单来源（TodoStore），同 kind 内无比较对象；
+      留字段位是为了将来多来源（如 study 的 todos.md）接入时的降级序。
+    """
+
+    name = "todos"
+    scopes = frozenset({"session"})
+
+    def provide(self, query: ContextQuery) -> list[ContextItem]:
+        if not query.session_id:
+            return []
+        try:
+            from .builtin_tools.todo_tools import (
+                TodoStore,
+                _format_todos_snapshot,
+            )
+
+            todos = TodoStore.get(query.session_id)
+        except Exception:  # noqa: BLE001 — 不变式 4：provider 故障降级不外抛
+            return []
+        if not todos:
+            return []
+        return [ContextItem(
+            kind="todo",
+            content=_format_todos_snapshot(todos),
+            source=f"todo_store:{query.session_id}",
+            provider=self.name,
+            priority=0,
+            scope="session",
+            meta={"count": len(todos)},
+        )]
+
+
 __all__ = [
     "PreRunContextProvider",
+    "TodoContextProvider",
     "build_prerun_context_provider",
 ]

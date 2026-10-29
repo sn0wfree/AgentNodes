@@ -165,7 +165,15 @@ class TodoWriteTool(BaseTool):
     }
 
     def execute(self, ctx: ToolContext, **kwargs: Any) -> str:
-        session_id = str(kwargs.get("session_id") or "default")
+        # Session attribution (B5 B-a): explicit kwarg wins (the AgentLoop
+        # path injects it via _build_tool_kwargs); the ToolContext carried
+        # by the react path is the fallback; bare callers (scripts/REPL)
+        # stay in the shared "default" bucket.
+        session_id = str(
+            kwargs.get("session_id")
+            or getattr(ctx, "session_id", None)
+            or "default"
+        )
         emit_event = kwargs.get("emit_event")
 
         raw = kwargs.get("todos")
