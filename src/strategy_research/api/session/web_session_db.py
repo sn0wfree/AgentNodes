@@ -42,7 +42,24 @@ def _ensure_schema(conn: sqlite3.Connection) -> None:
     # messages.session_id FK has been declared since the original
     # schema, but was inert without this PRAGMA — see comments on
     # the message_parts table below.
+    #
+    # B4 hotfix: restore the caller's setting on the way out. PRAGMA
+    # foreign_keys is connection-scoped; leaving it ON permanently changed
+    # every shared connection (e.g. SQLiteStore's, now that _init_schema
+    # delegates here) and started enforcing FKs on paths that predate this
+    # schema -- raw event_log inserts broke.
+    _fk_before = conn.execute("PRAGMA foreign_keys").fetchone()[0]
     conn.execute("PRAGMA foreign_keys=ON")
+    # Stale FTS triggers must go before ANY DML on messages: the sync
+    # triggers reference messages_fts, so a database whose FTS table was
+    # dropped (or never rebuilt) makes even the message_type UPDATE below
+    # fail with "no such table: main.messages_fts". The rebuild block later
+    # recreates triggers, so dropping early is safe and idempotent.
+    for trig in ("messages_ai", "messages_ad", "messages_au"):
+        try:
+            conn.execute(f"DROP TRIGGER IF EXISTS {trig}")
+        except sqlite3.OperationalError as exc:
+            logger.warning("drop trigger %s: %s", trig, exc)
     # Main sessions table
     conn.execute("""
         CREATE TABLE IF NOT EXISTS sessions (
@@ -219,6 +236,9 @@ def _ensure_schema(conn: sqlite3.Connection) -> None:
 
     # FTS5 virtual table (graceful fallback if FTS5 not compiled in).
     _ensure_fts_table(conn)
+
+    # Restore the caller's FK setting (see comment at function head).
+    conn.execute(f"PRAGMA foreign_keys={int(_fk_before)}")
 
 
 def _run_schema_migrations(

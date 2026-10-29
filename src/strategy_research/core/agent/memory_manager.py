@@ -143,52 +143,23 @@ class SQLiteStore:
 
     @staticmethod
     def _init_schema(conn: sqlite3.Connection) -> None:
-        """Create tables with the unified session DB schema.
+        """Delegate to the single DDL owner (schema-dual-master hotfix).
 
-        Mirrors ``api.routers.web_session._ensure_schema`` so the two
-        creation orders (SQLiteStore first vs web_session first) produce
-        the same schema — the historical DDL divergence made whichever
-        created ``sessions``/``messages`` first silently win (e.g. a
-        ``user_id``-less variant breaking web_session inserts).
+        This class used to carry its own ``sessions``/``messages`` DDL, so
+        whichever of SQLiteStore / ``web_session_db._ensure_schema`` created
+        the database first silently decided the schema. A store created here
+        lacked ``message_parts``/``attempts``/FTS, and a later projector
+        flush then died with ``no such table: message_parts``.
+
+        ``web_session_db._ensure_schema`` is the one authoritative DDL (full
+        table set + versioned migrations). Lazy import: ``event_store`` is
+        imported at module level here, and it lazily imports the projector
+        from ``api.session`` (event_store.py) -- same precedent, so this
+        adds no new import direction.
         """
-        conn.execute(
-            """
-            CREATE TABLE IF NOT EXISTS sessions (
-                id TEXT PRIMARY KEY,
-                user_id TEXT NOT NULL DEFAULT 'anonymous',
-                title TEXT NOT NULL DEFAULT '新会话',
-                created_at REAL NOT NULL,
-                updated_at REAL NOT NULL,
-                starred INTEGER NOT NULL DEFAULT 0,
-                tags_json TEXT NOT NULL DEFAULT '[]',
-                message_count INTEGER NOT NULL DEFAULT 0,
-                archived INTEGER NOT NULL DEFAULT 0
-            )
-            """
-        )
-        conn.execute(
-            """
-            CREATE TABLE IF NOT EXISTS messages (
-                id TEXT PRIMARY KEY,
-                session_id TEXT NOT NULL,
-                role TEXT NOT NULL,
-                content TEXT NOT NULL DEFAULT '',
-                created_at REAL NOT NULL,
-                metadata_json TEXT,
-                FOREIGN KEY (session_id) REFERENCES sessions(id) ON DELETE CASCADE
-            )
-            """
-        )
-        # Columns added by either schema owner (idempotent ALTERs).
-        cols = {row[1] for row in conn.execute("PRAGMA table_info(messages)").fetchall()}
-        if "seq" not in cols:
-            conn.execute("ALTER TABLE messages ADD COLUMN seq INTEGER NOT NULL DEFAULT 0")
-        if "message_type" not in cols:
-            conn.execute("ALTER TABLE messages ADD COLUMN message_type TEXT DEFAULT 'assistant'")
-        conn.execute(
-            "CREATE INDEX IF NOT EXISTS idx_messages_session ON messages(session_id, seq)"
-        )
-        conn.commit()
+        from ...api.session.web_session_db import _ensure_schema
+
+        _ensure_schema(conn)
 
     def health_check(self) -> bool:
         """Verify DB is not corrupted. Cheap PRAGMA check."""
@@ -308,9 +279,17 @@ class SQLiteStore:
         return result
 
     def delete_session(self, session_id: str) -> None:
+        """Clear one session's messages, keeping the session row itself (D7 hotfix).
+
+        Deleting the ``sessions`` row used to cascade-break every subsequent
+        projector flush: ``messages.session_id`` and ``event_log.aggregate_id``
+        both reference it, so after ``/clear`` the confirmation message (and
+        everything else) failed with FOREIGN KEY constraint errors until some
+        other write path recreated the row. A session row with zero messages
+        is harmless; a missing one is not.
+        """
         conn = self._ensure_conn()
         conn.execute("DELETE FROM messages WHERE session_id = ?", (session_id,))
-        conn.execute("DELETE FROM sessions WHERE id = ?", (session_id,))
         conn.commit()
 
     def list_recent_sessions(self, limit: int = 10) -> list[str]:
@@ -417,8 +396,9 @@ class InMemoryStore:
             return list(self._data.get(session_id, []))
 
     def delete_session(self, session_id) -> None:
+        """Clear messages only — mirrors SQLiteStore.delete_session (D7 hotfix)."""
         with self._lock:
-            self._data.pop(session_id, None)
+            self._data[session_id] = []
 
     def list_recent_sessions(self, limit=10) -> list[str]:
         with self._lock:
