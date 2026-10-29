@@ -32,6 +32,7 @@ class Gateway:
         registry: Any | None = None,
         stream: bool = False,
         context_hub: Any | None = None,
+        context_policy: Any | None = None,
     ) -> None:
         self._events: list[tuple[str, dict]] = []
         self._external_sink = sink
@@ -47,6 +48,7 @@ class Gateway:
             # B5 R-1（选项 A）：组装根构造 ContextHub 并注入。None = 无上下
             # 文注入——直构 controller 的测试路径行为不变。
             context_hub=context_hub,
+            context_policy=context_policy,
         )
         # 阶段 3b：PlatformStore（事件持久化 + blob + artifact 登记）
         self._store = None

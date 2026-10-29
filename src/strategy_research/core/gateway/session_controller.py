@@ -46,6 +46,7 @@ class SessionController:
         workspace: Any | None = None,
         extra_context: dict[str, Any] | None = None,
         context_hub: Any | None = None,
+        context_policy: Any | None = None,
         permission_evaluator: Any | None = None,
         permission_gateway: Any | None = None,
         compact_config: Any | None = None,
@@ -63,6 +64,8 @@ class SessionController:
         self._workspace = workspace
         self._extra_context = extra_context
         self._context_hub = context_hub
+        # B5 W2：仲裁策略（None = 不保护的默认策略；只在有预算时生效）。
+        self._context_policy = context_policy
         # B1-d：权限闸门（evaluator 规则 + gateway ASK 审批）。不注入 =
         # 无权限检查（测试/脚本路径）。生产 chat 必须注入，否则工具裸跑。
         self._permission_evaluator = permission_evaluator
@@ -214,6 +217,21 @@ class SessionController:
             )
         return engine
 
+    def _model_limits(self) -> tuple[int | None, int | None]:
+        """(context_window, max_output) from the client's LLMConfig (B5 R-3).
+
+        The client exposes no such attributes -- the values live on
+        ``client.config`` (LLMConfig, config.py:164). Reading them off the
+        client silently yielded None, which sent ``make_compactor`` to its
+        8_000 fallback: chat was compressing at 8k tokens instead of 80% of
+        the model window, while AgentLoop (which reads LLMConfig) was not.
+        """
+        cfg = getattr(self._client, "config", None)
+        return (
+            getattr(cfg, "model_context_tokens", None),
+            getattr(cfg, "model_max_output_tokens", None),
+        )
+
     def _build_compactor(self):
         """B1-c: mid-loop compactor, or None when compaction is disabled.
 
@@ -228,14 +246,11 @@ class SessionController:
                 make_compactor,
             )
 
+            ctx_tokens, max_out = self._model_limits()
             return make_compactor(
                 compact_config=self._compact_config,
-                model_context_tokens=getattr(
-                    self._client, "model_context_tokens", None,
-                ),
-                model_max_output_tokens=getattr(
-                    self._client, "model_max_output_tokens", None,
-                ),
+                model_context_tokens=ctx_tokens,
+                model_max_output_tokens=max_out,
                 llm_client=self._client,
                 session_id=self._current_session_id or None,
             )
@@ -276,6 +291,19 @@ class SessionController:
             self._sink("system_prompt.render_failed", {"error": str(exc)})
             return None
 
+    def _context_budget_tokens(self) -> int | None:
+        """Token budget for context arbitration (B5 W2 / R-2).
+
+        Same source as the compaction threshold (``_model_limits``) so the
+        two cannot fight: arbitration trims *what goes in*, compaction
+        summarises *what is already there*. Unknown window -> None ->
+        no arbitration (safe degradation, per the design's §4.2).
+        """
+        ctx_tokens, _ = self._model_limits()
+        if not ctx_tokens:
+            return None
+        return max(1, int(ctx_tokens * 0.8))
+
     def _inject_context(self, messages: list[dict], session_id: str) -> list[dict]:
         """B1-b: prepend hub-collected context items (goal/memory) to the turn.
 
@@ -283,6 +311,10 @@ class SessionController:
         items are rendered as a single leading user block, matching the
         legacy ``full_task = blocks + "\\n\\n" + task`` shape. No hub
         registered → passthrough (test/sync paths).
+
+        B5 W2 (R-2): passes the token budget and policy so arbitration can
+        run. Both default to "nothing" when the model window is unknown, so
+        this is byte-identical to W0 behaviour on that path.
         """
         if self._context_hub is None or not messages:
             return messages
@@ -292,12 +324,30 @@ class SessionController:
             last = messages[-1]
             if last.get("role") != "user":
                 return messages
-            bundle = self._context_hub.build(
-                ContextQuery(
-                    task_text=str(last.get("content") or ""),
-                    session_id=session_id,
-                ),
+            query = ContextQuery(
+                task_text=str(last.get("content") or ""),
+                session_id=session_id,
             )
+            budget = self._context_budget_tokens()
+            if budget is None:
+                # No model window -> no arbitration -> call build() exactly
+                # as W0 did. Keeps duck-typed hubs (tests/scripts) working.
+                bundle = self._context_hub.build(query)
+            else:
+                try:
+                    bundle = self._context_hub.build(
+                        query,
+                        budget_tokens=budget,
+                        policy=self._context_policy,
+                    )
+                except TypeError:
+                    # Hub predates the W2 keyword args.
+                    bundle = self._context_hub.build(query)
+            if bundle.accounting.get("over_budget"):
+                self._sink("context.over_budget", {
+                    "total_tokens": bundle.accounting.get("total_tokens"),
+                    "dropped": len(bundle.dropped),
+                })
             if not bundle.items:
                 return messages
             prefix = "\n\n".join(item.content for item in bundle.items)

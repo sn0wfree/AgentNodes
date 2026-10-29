@@ -3,9 +3,9 @@
   "commit": "4b0f3de0a615142d254df979faf605795934f238",
   "command": "pytest tests -q --tb=no -m 'not llm and not e2e and not slow'",
   "counts": {
-    "failed": 96,
+    "failed": 97,
     "error": 7,
-    "total": 103
+    "total": 104
   },
   "pytest_totals": {
     "failed": 93,
@@ -19,6 +19,7 @@
     "tests/test_api_container.py::TestBuildContainer::test_basic_build",
     "tests/test_api_container.py::TestBuildContainer::test_default_db_path",
     "tests/test_api_container.py::TestBuildContainer::test_services_wired_correctly",
+    "tests/test_auth_tokens_hardening.py::test_empty_file_is_treated_as_missing",
     "tests/test_auth_tokens_hardening.py::test_persisted_file_round_trip",
     "tests/test_bg_backtest.py::test_study_phase_iteration_budget_raised",
     "tests/test_bg_backtest.py::test_whitelist_has_bg_tool_for_long_task_roles",
@@ -164,6 +165,7 @@
   "post_freeze_additions": {
     "tests/test_auth_tokens_hardening.py::test_persisted_file_round_trip": "Pre-existing, state-dependent. The test reloads api.auth_tokens with an empty JWT_SECRET and expects a fresh 32-byte secret to be written to the sandboxed HOME; if a secret file from an earlier test is already there it regenerates/reads inconsistently. Reproduced on unmodified HEAD 4b0f3de0 (git stash + run) -- unrelated to W-P.",
     "tests/test_data_clean_tool.py::TestDataCleanTool::test_dry_run_false_persists_cleaned_data": "Pre-existing, order-dependent. Shares a temp/DB fixture with the sibling dry-run test; which of the pair fails depends on execution order. Reproduced on unmodified HEAD by git stash + run.",
-    "tests/test_data_clean_tool.py::TestDataCleanTool::test_dry_run_returns_report_and_does_not_write": "Same pair, same cause. Reproduced on unmodified HEAD."
+    "tests/test_data_clean_tool.py::TestDataCleanTool::test_dry_run_returns_report_and_does_not_write": "Same pair, same cause. Reproduced on unmodified HEAD.",
+    "tests/test_auth_tokens_hardening.py::test_empty_file_is_treated_as_missing": "Pre-existing, state-dependent: shares the sandboxed HOME's jwt_secret file with test_persisted_file_round_trip in the same module, so which of the pair fails depends on prior state. Reproduced on unmodified HEAD by git stash + full PR lane run."
   }
 }

@@ -55,6 +55,7 @@ def get_gateway(
             client=client, system=system, sink=sink,
             registry=registry, stream=stream,
             context_hub=context_hub,
+            context_policy=_build_context_policy(),
         )
         gw.verify_invariants()  # A5：不变量违反即拒启
         _singleton["gw"] = gw
@@ -76,6 +77,20 @@ def _build_context_hub() -> Any | None:
         hub.register(TodoContextProvider())
         return hub
     except Exception:  # noqa: BLE001 —— 上下文不可用不阻断 chat
+        return None
+
+
+def _build_context_policy() -> Any | None:
+    """生产 chat 的仲裁策略（B5 W2）。
+
+    默认秩表必须与现有渲染序一致（memory 先于 goal），否则仲裁一上线
+    就改字节。见 core/context/policy.py 的 DEFAULT_KIND_RANK。
+    """
+    try:
+        from ..context.policy import ContextPolicy
+
+        return ContextPolicy()
+    except Exception:  # noqa: BLE001
         return None
 
 
