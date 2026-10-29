@@ -1,5 +1,7 @@
 # 阶段 3b 实施规划 — 数据面分库 + SSE 单轨 — 2026-10-26
 
+> ⚠ **已被取代**：3b 计划由 3c/阶段 4 的实测记录取代（见 `stage-3c-scheduler-migration-design-20261027.md`）。
+
 > 状态：**已确认（用户拍板），待实施**。
 > 范围：PlatformStore（分库 + 唯一写入者）+ SSE 单轨 + 灰度 flag 切换 + P-3 登记行落库。
 > 明确不做：T3 沙箱、Job Object、业务域改动、SSE 流式改进。

@@ -1,5 +1,7 @@
 # 新架构代码与测试矩阵梳理 — 2026-10-26
 
+> ⚠ **历史文档（已过时）**：静态清单。当前数据见 `project-status-and-roadmap-20261028.md` §1。
+
 > 范围：`core/orchestration/`（E1 契约层）· `core/gateway/`（Gateway 本体）· `core/runtimes/`（执行面）。
 > 用途：当前实现全貌 + 测试覆盖对照 + 已知缺口（下一刀依据）。
 

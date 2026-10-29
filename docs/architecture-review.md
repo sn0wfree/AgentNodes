@@ -1,5 +1,7 @@
 # Architecture Review & Refactoring Roadmap
 
+> ⚠ **历史文档**：早期架构评审（332 行）。结论已被 v6.2 取代。
+
 > **Status:** Draft (Phase 0, 2026-08-01)
 > **Author:** Architecture review
 > **Scope:** `quantnodes-strategy-research` v0.6.0

@@ -1,5 +1,7 @@
 # 目标架构 v3（借鉴 OpenClaw）— 重新规划
 
+> ⚠ **历史文档（已过时）**：v3 目标架构（借鉴 OpenClaw）。当前架构见 `architecture-diagram.html`（v6.2）。
+
 > 性质：**架构总纲**，取代 `architecture-v2-and-rsi-20261008.md` 的分层部分；行动项仍以 `refactor-master-plan-20261008.md` 为准（本文件为其上位约束）。
 > 依据：OpenClaw 架构对标（`industry-benchmark-openclaw-20261008.md` · `openclaw-architecture.html`）· 本仓四遍评审。
 > 核心转变：**从「6 层 + 4 中枢」改为「1 控制面 + N 执行面 + 1 上下文所有者」**。

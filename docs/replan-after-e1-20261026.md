@@ -1,5 +1,7 @@
 # E1 后重新规划（修订版）— 2026-10-26
 
+> ⚠ **历史文档**：纵向切片计划，已执行完毕。
+
 > ⚠ **2026-10-26 二次修订（v2）**：见 `replan-v2-capability-dependencies-20261026.md`。
 > 触发：阶段 3b-3 把 flag 默认改开后 12 个 scheduler 测试失败——**study 执行依赖 research preset（B1）**。
 > 主要变更：①入口迁移改为**按能力依赖**排期，scheduler 迁移必须等 B1；②新增**双门灰度**（chat/CLI 默认开，study 默认关）；③B1 拆为 B1-a（GraphEngine 阶段图）+ B1-b（research preset）并**前移到 scheduler 迁移之前**；④工期 ~22d → ~24d；⑤迁移测试方法论：**投递成功 ≠ 功能等价**。

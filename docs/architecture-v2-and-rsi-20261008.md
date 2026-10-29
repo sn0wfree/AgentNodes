@@ -1,5 +1,7 @@
 # 目标架构 v2 + RSI 定位 — 2026-10（讨论汇总）
 
+> ⚠ **历史文档（已过时）**：v2 目标架构。当前架构见 `architecture-diagram.html`（v6.2）。
+
 > 输入：五遍评审（`architecture-reeval` / `architecture-reeval2` / `agent-design-reeval` / `goal-alignment-review` / `dsh-plugin-reeval`）+ 接缝规范（`plug-in-contract-design`）+ 中枢边界（`context-hub-membership-rule`）+ G1/G2 规格。
 > 性质：**汇总设计**（行动项仍以 `refactor-master-plan-20261008.md` 为准，本文是其上位架构）。
 > 新增议题：**RSI（递归自我改进）**——能否引入、放在哪、怎么不失控。

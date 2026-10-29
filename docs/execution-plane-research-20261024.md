@@ -1,5 +1,7 @@
 # 执行面业界调研 — 2026-10-24
 
+> 📌 **精化说明**：文中「GraphEngine 唯一 runtime」已被选项 B 精化为「唯一**编排** runtime，AgentLoop 是执行原语」——见 `stage-c1-wp-agent-node-design-20261028.md`。
+
 > 问题：v6 执行面（AgentRuntime 协议 + 3 runtime + executor 子进程）如何落地——进程模型、事件回流、取消、隔离、资源上限、安全。
 > 对象：agent 宿主（Claude Code · Codex CLI · OpenClaw）· 工作流引擎（Temporal · LangGraph Server）· 计算框架（Jupyter · Ray · Dask）。
 > 结论先行：**业界收敛为三层执行分类法（进程内 / 常驻子进程池 / OS 沙箱·远端）；我们适配「runtime 进程内 + executor 池 + 沙箱占位」，Windows 现实约束下进程边界是当前唯一可用隔离**。

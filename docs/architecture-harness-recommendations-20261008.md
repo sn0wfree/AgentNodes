@@ -1,5 +1,7 @@
 # 架构与 Harness 建议 — 2026-10-08
 
+> ⚠ **历史文档**：v3 时期的 harness 建议。当前状态见 `project-status-and-roadmap-20261028.md`。
+
 > 性质：调研记录（观点 + 证据），非实施方案。
 > 视角：架构师 + agent-harness 工程师双重视角。
 > 基线：commit `5ef9bc4`；扫描数据引自 `docs/structure-debt-survey-20261008.md`。
