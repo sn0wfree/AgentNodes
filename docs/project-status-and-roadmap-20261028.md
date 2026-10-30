@@ -155,15 +155,21 @@
 | B1 | C1 阶段一：chat 链 | ✅ 已完成 | — | react 承接 chat 单轮，B1 八项等价证据在 `test_b1f_equivalence.py` |
 | B2 | ~~study 链迁 react~~ | **0d** | — | **已符合选项 B**：编排在 `graph_preset.py`，执行是 AgentLoop。原计划纯重复 |
 | B3 | C1 阶段二：swarm + workflow | ✅ **已完成（结论：不迁）** | — | 两条链的**执行层本就已统一**（都走 `AgentExecutor`）。实测：37 个 swarm preset 全部 `branches=False`；workflow 有 3 个真实结构缺口（动态子图/段门重规划/扇入信封）。迁移需给引擎加 3 原语换净减 150 行——不划算。改为修 8 项空声明。见 `stage-c1-b3-swarm-orchestration-design` 与 `stage-c1-b3-workflow-assessment` |
-| B4 | MemoryManager 事件化 + 旧会话栈退役 | 1-2d | B3 | 沿用 `projection_store.py` 现有写入路径，不新增写者 |
-| B5 | ContextHub W1/W2 | 2-3d | — | provider 协议已冻结（`core/context/protocol.py`），只加实现不加协议 |
+| B4 | MemoryManager 事件化 + 旧会话栈退役 | ✅ **已完成** | — | 五刀：七项决策（`249545ee`）→ append 事件化（`73351b3d`）→ 消费方迁移（`1b7e905e`）→ 旧栈退役（`594441df`）。`core/session/` 只剩 `unified.py`；messages 单写者门禁以预期白名单通过（只剩 projector + persist_message） |
+| B5 | ContextHub W1/W2 | ✅ **已完成** | — | 接线（`1a9f2c49`，选项 A）→ 仲裁 + 预算取数修正（`db8bc7b8`）→ goal/memory 入 react（`38ad7786`）。协议零改动 |
 
 ### 收尾
 
-| # | 事项 | 工期 |
-|---|---|---|
-| C1 | 审计门② 五项（清单 §6） | 1d |
-| C2 | 文档对齐（253 份 md 中去重/归档过期项） | 1-2d |
+| # | 事项 | 工期 | 状态 |
+|---|---|---|---|
+| C1 | 审计门② 五项（清单 §6） | 1d | ✅ `5b38a8a7`（含性能基线） |
+| C2 | 文档对齐（273 份 md 去重/归档） | 1-2d | ✅ `e3d1712b`（索引 + 16 份状态横幅） |
+
+### 当前唯一待办
+
+| # | 事项 | 状态 | 说明 |
+|---|---|---|---|
+| **A3 / P5-1c** | 删旧 chat 分支 + `new_entry_enabled` 门 | ⏸ **挂起（用户决策：业务稳定后）** | 清单已按 B4/B5 复核更新：`docs/todo-remove-legacy-chat-branch-20261027.md` |
 
 ---
 
@@ -172,9 +178,13 @@
 ```
 B3 ✅（结论：不迁；8 项空声明已修）
    ↓
-B4（数据面收尾）→ B5（ContextHub 尾项）
+B4 ✅（七项决策 → 事件化 → 消费方迁移 → 旧栈退役）
    ↓
-A3（P5-1c，可随时插入）→ C1/C2（审计门 + 文档）
+B5 ✅（接线 → 仲裁 → goal/memory 入 react）
+   ↓
+C1 ✅（审计门②）→ C2 ✅（文档治理）
+   ↓
+A3 / P5-1c ⏸（唯一待办，等业务稳定）
 ```
 
 **B3 的实际发现（2026-10-28）**：原估 1-2d 的「编排迁移」，调查后结论是**不该迁**：
@@ -187,11 +197,9 @@ A3（P5-1c，可随时插入）→ C1/C2（审计门 + 文档）
 两条链的**执行层统一正是选项 B 的成果**，剩下的只有各自的调度循环。
 改为修 8 项声明了但从未执行的契约（见两份 B3 文档 §3）。
 
-**为什么 B3 只剩 1-2 天**：原估 6-10d 建立在「重写执行体」上。选项 B 确立后，
-agent 执行复用 `AgentLoop`（study 已如此）与 `AgentExecutor`（swarm/workflow
-已有适配器），要迁移的只有各链自己的**调度循环**。
-
-**A3（P5-1c）可以随时插入**：它不阻塞任何东西，纯粹是「入口只剩一条路」的整洁性收益。
+**A3（P5-1c）是当前唯一未完成项**，不阻塞任何东西，纯粹是「入口只剩一条路」
+的整洁性收益。按用户决策等业务稳定后执行；届时先删已成死代码的
+`_run_agent_loop_background`（见待办清单 §0.2 N4）。
 
 ---
 
