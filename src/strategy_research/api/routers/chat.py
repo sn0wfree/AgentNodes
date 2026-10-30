@@ -744,7 +744,7 @@ async def _send_via_gateway(session_id: str, content: str, *, wait: bool = False
     # 消费者在跑且未要求 wait：用户消息此刻落库，答案经 run.answer 由
     # persist 桥落库并补 agent_done；HTTP 立即返回两态回执。
     if gw.consumer_running() and not wait:
-        _install_chat_event_bridge(
+        _unsub = _install_chat_event_bridge(
             gw, session_id, assistant_mid_holder,
             service=service, persist=True,
         )
@@ -765,28 +765,32 @@ async def _send_via_gateway(session_id: str, content: str, *, wait: bool = False
         }
 
     # ── ③ 执行（同步路径：kind 过滤；wait=true 时只等不驱动）────
-    _install_chat_event_bridge(gw, session_id, assistant_mid_holder)
-    if gw.consumer_running() and wait:
-        run = await asyncio.get_running_loop().run_in_executor(
-            None,
-            lambda: gw.wait_turn(
-                receipt.session_id or session_id,
-                timeout=_chat_wait_timeout(),
-            ),
-        )
-        if run is None:
-            raise HTTPException(
-                status_code=504,
-                detail={"error": "wait_timeout",
-                        "hint": "turn 未在时限内完成；请改用 SSE 订阅"},
+    _unsub = _install_chat_event_bridge(gw, session_id, assistant_mid_holder)
+    try:
+        if gw.consumer_running() and wait:
+            run = await asyncio.get_running_loop().run_in_executor(
+                None,
+                lambda: gw.wait_turn(
+                    receipt.session_id or session_id,
+                    timeout=_chat_wait_timeout(),
+                ),
             )
-    else:
-        runs = await asyncio.get_running_loop().run_in_executor(
-            None, lambda: gw.run_once({WorkKind.CHAT}),
-        )
-        if not runs:
-            raise HTTPException(status_code=504, detail="no run executed")
-        run = runs[-1]
+            if run is None:
+                raise HTTPException(
+                    status_code=504,
+                    detail={"error": "wait_timeout",
+                            "hint": "turn 未在时限内完成；请改用 SSE 订阅"},
+                )
+        else:
+            runs = await asyncio.get_running_loop().run_in_executor(
+                None, lambda: gw.run_once({WorkKind.CHAT}),
+            )
+            if not runs:
+                raise HTTPException(status_code=504, detail="no run executed")
+            run = runs[-1]
+    finally:
+        # R7：兜底注销（bridge 在收尾事件时已自注销，这里幂等）
+        _unsub()
     if not run.ok:
         _push_sse("error", {"message_id": run.run_id, "error": run.error or ""}, session_id)
         _push_sse("agent_done", {"message_id": run.run_id, "status": "error"}, session_id)
@@ -848,7 +852,7 @@ def _chat_wait_timeout() -> float:
 def _install_chat_event_bridge(
     gw: Any, session_id: str, message_id_holder: dict[str, str],
     *, service: Any = None, persist: bool = False,
-) -> None:
+) -> Any:
     """把引擎的平台事件翻译成前端词表并推 SSE（P5-1b）。
 
     引擎事件（node.started / text_delta / tool.started）是平台观测语义；
@@ -859,13 +863,42 @@ def _install_chat_event_bridge(
     ``run.answer`` → assistant_message 落库 + agent_done；
     ``run.failed`` / ``run.settled{fenced}`` → error + agent_done。
     消费者线程里没有人替请求做这些（请求早已返回 receipt）。
+
+    R7：返回注销函数。**收尾事件后自动注销**——否则旧 bridge 闭包会
+    一直存活，用旧 message_id 推送重复 SSE（同一 session 第二次请求时
+    出现重复文本），且 sink 链随请求数线性增长。调用方也应在 finally
+    里兜底注销。
     """
     mapping = {
         "tool.started": "tool_call",
         "tool.completed": "tool_result",
     }
+    state: dict[str, Any] = {"unsubscribe": None, "closed": False}
+
+    def _close() -> None:
+        if state["closed"]:
+            return
+        state["closed"] = True
+        unsub = state.get("unsubscribe")
+        if callable(unsub):
+            try:
+                unsub()
+            except Exception:  # noqa: BLE001
+                logger.debug("bridge unsubscribe failed", exc_info=True)
 
     def bridge(kind: str, data: dict) -> None:
+        try:
+            _bridge_body(kind, data)
+        finally:
+            # 收尾事件 → 本 turn 结束 → 注销，防累积/重复推送
+            if kind in ("run.answer", "run.failed"):
+                _close()
+            elif kind == "run.settled" and (
+                data.get("fenced") or not data.get("ok", True)
+            ):
+                _close()
+
+    def _bridge_body(kind: str, data: dict) -> None:
         if persist:
             if kind == "run.answer":
                 mid = str(data.get("run_id") or "")
@@ -915,7 +948,15 @@ def _install_chat_event_bridge(
         except Exception:  # noqa: BLE001
             logger.debug("sse bridge push failed: %s", out_kind, exc_info=True)
 
-    gw.install_sink(bridge)
+    # R7：注册到集合（不再链式累积），把注销函数交给 bridge 自用。
+    # 优先 add_sink；鸭子类型替身只有 install_sink 时退回（返回 None，
+    # 自注销退化为 no-op——测试路径无泄漏）。
+    adder = getattr(gw, "add_sink", None)
+    if callable(adder):
+        state["unsubscribe"] = adder(bridge)
+    else:
+        gw.install_sink(bridge)
+    return _close
 
 
 @router.post("/send")

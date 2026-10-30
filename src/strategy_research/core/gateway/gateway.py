@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import logging
 import threading
+import time
 from pathlib import Path
 from typing import Any, Callable
 
@@ -46,7 +47,14 @@ class Gateway:
         workspace: str | Path | None = None,
     ) -> None:
         self._events: list[tuple[str, dict]] = []
-        self._external_sink = sink
+        # R7：外部 sink 集合（替代原链式 _external_sink）+ 代际表。
+        self._sinks: set[Callable[[str, dict], None]] = set()
+        self._sink_lock = threading.Lock()
+        self._turn_gen: dict[str, int] = {}      # session_id -> 已入队轮数
+        self._turn_done_gen: dict[str, int] = {} # session_id -> 已完成轮数
+        # 构造时的 sink 进集合（与 add_sink 同路径，语义一致）。
+        if sink is not None:
+            self._sinks.add(sink)
         combined = self._combined_sink
         # R2.2：fence 先建——EntryPoint 的 steer 路由用它查活跃 run。
         self.fence = SessionFence()
@@ -95,6 +103,7 @@ class Gateway:
         self._consumer_stop = threading.Event()
         self._turn_results: dict[str, RunResult] = {}  # session_id -> 最近一次
         self._turn_done: dict[str, threading.Event] = {}
+        self._turn_lock = threading.Lock()
 
     @property
     def store(self):
@@ -108,32 +117,51 @@ class Gateway:
 
     def _combined_sink(self, kind: str, data: dict) -> None:
         self._default_sink(kind, data)
-        if self._external_sink is not None:
-            self._external_sink(kind, data)
+        # R7：广播给所有外部 sink（集合快照遍历，防并发修改）。
+        with self._sink_lock:
+            sinks = tuple(self._sinks)
+        for sink in sinks:
+            try:
+                sink(kind, data)
+            except Exception:  # noqa: BLE001 —— 单个 sink 失败不影响其他
+                logger.debug("external sink failed: %s", kind, exc_info=True)
         # R2.1b：有工单入队即唤醒消费者（无消费者时是 no-op set）。
         if kind == "work.enqueued":
             self._consumer_wake.set()
+        # R7：代际推进——wait_turn 据此区分「上一轮」与「这一轮」。
+        if kind == "work.enqueued":
+            sid = str(data.get("session_id") or "")
+            if sid:
+                with self._sink_lock:
+                    self._turn_gen[sid] = self._turn_gen.get(sid, 0) + 1
 
-    def install_sink(self, sink: Callable[[str, dict], None]) -> None:
-        """追加一个外部 sink（P5-1b：用于把引擎事件转发到 SSE）。
+    def add_sink(self, sink: Callable[[str, dict], None]) -> Callable[[], None]:
+        """注册外部 sink，返回**注销函数**（幂等）——R7 修复 sink 累积。
 
-        与构造时的 ``sink`` 并存（不替换内部缓冲）。转发异常只记日志，
-        不能影响引擎主路径。
+        此前 `install_sink` 每调用一次就把前一个 sink 包一层闭包，永不释放：
+        每个 `/chat/send` 都调一次 → 链长随请求数线性增长；更严重的是旧
+        bridge 闭包捕获旧请求的 message_id，同一 session 第二次请求时旧
+        bridge 仍存活 → **重复 SSE 事件**（前端出现重复文本）。
+
+        改为集合 + 锁：注册/注销 O(1)，广播遍历快照。sink 之间互不影响，
+        互不嵌套。
         """
-        prev = self._external_sink
+        with self._sink_lock:
+            self._sinks.add(sink)
 
-        def chained(kind: str, data: dict) -> None:
-            if prev is not None:
-                try:
-                    prev(kind, data)
-                except Exception:  # noqa: BLE001
-                    logger.debug("previous sink failed: %s", kind, exc_info=True)
-            try:
-                sink(kind, data)
-            except Exception:  # noqa: BLE001
-                logger.debug("installed sink failed: %s", kind, exc_info=True)
+        def unsubscribe() -> None:
+            with self._sink_lock:
+                self._sinks.discard(sink)
 
-        self._external_sink = chained
+        return unsubscribe
+
+    def install_sink(self, sink: Callable[[str, dict], None]) -> Callable[[], None]:
+        """[兼容别名] 等价于 add_sink，返回注销函数。
+
+        消费者必须调用返回的函数（或由 bridge 在收尾时自注销），
+        否则仍是累积——新代码请直接用 ``add_sink``。
+        """
+        return self.add_sink(sink)
 
     def _default_sink(self, kind: str, data: dict) -> None:
         self._events.append((kind, data))
@@ -186,10 +214,13 @@ class Gateway:
         self._consumer_thread.start()
 
     def _consume_once(self, kinds: Any) -> None:
-        """run_once + 按 session 记录结果（wait=true 等待原语的产出端）。"""
+        """run_once + 按 session 记录结果并推进完成代际（wait_turn 的产出端）。"""
         for result in self.run_once(kinds):
             sid = result.turn_id.split("#", 1)[0]
-            self._turn_results[sid] = result
+            with self._turn_lock:
+                # A3：只保留最近一次，不再无限累积
+                self._turn_results[sid] = result
+                self._turn_done_gen[sid] = self._turn_done_gen.get(sid, 0) + 1
             done = self._turn_done.setdefault(sid, threading.Event())
             done.set()
 
@@ -199,17 +230,33 @@ class Gateway:
         )
 
     def wait_turn(self, session_id: str, timeout: float | None = None) -> RunResult | None:
-        """等待该 session 最近提交的 turn 完成（E1=C 的等待原语）。
+        """等待该 session **本次提交之后**完成的下一个 turn。
 
         只等待、不驱动——执行始终是消费者的事。超时返回 None。
+
+        R7 修复：此前用「事件已 set」判断，事件永不 clear，同一 session
+        第二次调用会立即返回上一轮的 RunResult。现改为**代际比较**——
+        记录调用时刻的完成代际，等待它前进。
         """
-        done = self._turn_done.get(session_id)
-        if done is None:
-            # 提交后还没有任何结果：注册事件再等（防 check-then-event 竞态）
+        deadline = None if timeout is None else time.monotonic() + timeout
+        with self._turn_lock:
+            start_gen = self._turn_done_gen.get(session_id, 0)
+        while True:
             done = self._turn_done.setdefault(session_id, threading.Event())
-        if not done.wait(timeout):
-            return None
-        return self._turn_results.get(session_id)
+            remaining = (
+                None if deadline is None else max(0.0, deadline - time.monotonic())
+            )
+            if deadline is not None and remaining == 0.0:
+                return None
+            done.wait(remaining)
+            with self._turn_lock:
+                if self._turn_done_gen.get(session_id, 0) > start_gen:
+                    result = self._turn_results.get(session_id)
+                    # 新一轮已到：清事件，让下一次 wait 重新阻塞
+                    done.clear()
+                    return result
+            if deadline is not None and time.monotonic() >= deadline:
+                return None
 
     def stop_consumer(self, grace: float = 5.0) -> None:
         """置停止位并等待在跑 turn 收尾（grace 秒）；线程不可硬杀。"""
