@@ -107,3 +107,4 @@ tests/_user_home_sandbox/
 # graphify code graph (regenerable)
 graphify-out/
 
+".quantnodes/"  
