@@ -122,7 +122,11 @@ class DAGPlanner:
     ) -> list[str] | None:
         if not self._llm_is_available():
             return None
-        from .agent.prompt_builder import PromptBuilderFactory
+        # P0 修复（2026-10-31）：层级错误的一级相对导入（`.agent` 解析为
+        # study.agent，不存在）让 LLM 规划路径永远 ImportError，静默回退
+        # 关键字匹配——「LLM 驱动 DAG 生成」实际从未生效。与模块头部
+        # `from ..agent.dag_config import ...` 同级。
+        from ..agent.prompt_builder import PromptBuilderFactory
 
         system_prompt = PromptBuilderFactory.get("planner").build_system_prompt(
             "planner", {},
