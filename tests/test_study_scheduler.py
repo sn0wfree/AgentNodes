@@ -168,9 +168,9 @@ def test_same_study_key_blocks_until_released(store, goal_store, monkeypatch):
     Archived: the v1 chat/study mutex was removed in 2026-09 because
     v2 single-identity made it a no-op (study.session_id == study_id,
     so ``is_session_processing(study.session_id)`` is always False).
-    See src/strategy_research/core/study/_archived/chat_mutex_legacy.py.
+    The legacy module was deleted with the _archived/ cleanup (E1).
     """
-    pytest.skip("v1 chat/study mutex removed in v2; see _archived/chat_mutex_legacy.py")
+    pytest.skip("v1 chat/study mutex removed in v2; deleted in the E1 cleanup")
     _patch_round(monkeypatch)
     goal, study = _setup(store, goal_store)
     svc = FakeSessionService()

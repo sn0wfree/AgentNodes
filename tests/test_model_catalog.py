@@ -105,9 +105,34 @@ def test_models_dev_id_mapping_complete():
 
 # ── 4. Disk cache ───────────────────────────────────────────────────
 
+# 罐头 TOML：让 refresh_async 的单测确定性（此前 4 个测试打真网
+# models.dev，网络抖动即 flaky——E 收尾时发现）。断言中的 128_000
+# 与此处的 context 值一致，意图（缓存/合并逻辑）不变。
+_CANNED_GPT4O_MINI_TOML = """\
+[limit]
+context = 128000
+output = 4096
+
+[modalities]
+input = ["text", "image"]
+
+tool_call = true
+description = "canned gpt-4o-mini for tests"
+"""
+
+
+def _mock_fetch(monkeypatch, toml_text: str = _CANNED_GPT4O_MINI_TOML) -> None:
+    """把 ModelCatalog._fetch_toml 替换为返回罐头 TOML（不打网）。"""
+
+    async def fake_fetch(self, dev_id, model):
+        return toml_text
+
+    monkeypatch.setattr(ModelCatalog, "_fetch_toml", fake_fetch)
+
 
 def test_disk_cache_written_after_refresh(tmp_path, monkeypatch):
     """refresh_async writes ~/.quantnodes/model_catalog.json on success."""
+    _mock_fetch(monkeypatch)
     cache_path = Path(os.environ["HOME"]) / ".quantnodes" / "model_catalog.json"
 
     async def run():
@@ -127,6 +152,7 @@ def test_disk_cache_written_after_refresh(tmp_path, monkeypatch):
 
 def test_cached_entry_returned_after_refresh(tmp_path, monkeypatch):
     """After refresh, get_info returns source='cached' (disk cache)."""
+    _mock_fetch(monkeypatch)
 
     async def setup():
         catalog = ModelCatalog()
@@ -306,8 +332,9 @@ def test_user_config_wins_over_disk_cache():
 # ── 7. Refresh merges user_config on top of fetched ────────────────────
 
 
-def test_refresh_async_merges_user_overrides_on_top_of_fetched(tmp_path):
+def test_refresh_async_merges_user_overrides_on_top_of_fetched(tmp_path, monkeypatch):
     """When both fetch and user_config succeed, user wins for context_tokens."""
+    _mock_fetch(monkeypatch)
     from strategy_research.core.llm.config import LLMConfig
 
     cfg = LLMConfig(
@@ -325,9 +352,9 @@ def test_refresh_async_merges_user_overrides_on_top_of_fetched(tmp_path):
     info = asyncio.run(run())
     # User override wins
     assert info.context_tokens == 500_000
-    # Other fields come from fetched — but do NOT assert specific capability
-    # flags: models.dev data has drifted before (gpt-4o-mini supports_vision
-    # flipped), and this test must not depend on external data contents.
+    # Other fields come from fetched — source must be "fetched" (merge
+    # happened), but capability flags are not asserted: they come from
+    # the canned TOML now, not live models.dev data.
     assert info.source == "fetched"
 
 

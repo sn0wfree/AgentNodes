@@ -2,8 +2,6 @@
 branch = True
 source = strategy_research
 omit =
-    # 归档死代码：不在任何构建产物中，写测试是为已废弃代码付维护成本
-    */core/study/_archived/*
     # 入口与脚手架
     */__main__.py
     */conftest.py
