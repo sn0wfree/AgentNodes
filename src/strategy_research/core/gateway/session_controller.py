@@ -140,10 +140,16 @@ class SessionController:
             "turn_id": turn_id,
             "run_id": run_id,
         }
+        # R2.2：steer 注入通道——react 节点在安全点 drain（只追加）。
+        mailbox = self._ep.mailbox_for(request.session_key)
+        if mailbox is not None:
+            state["steer_inbox"] = mailbox.steer_inbox()
         try:
             final = engine.run(state)
             answer = str(final.get("answer", ""))
         except Exception as exc:  # noqa: BLE001 —— 引擎崩溃不拖垮控制器
+            if mailbox is not None:
+                mailbox.promote_steer()  # turn 已死：滞留 steer 转正常队
             if token is not None:
                 # 本 run 已死：释放以免挡住同 session 的下一个 turn。
                 self._fence.release(token)
@@ -176,6 +182,10 @@ class SessionController:
         # chat bridge 据此发 assistant_message（消费者模型下请求线程
         # 看不到 RunResult，事件流是答案的唯一通道）。
         self._sink("run.answer", {"run_id": run_id, "content": answer})
+
+        # R2.2：turn 收尾——未被安全点消费的 steer 转正常队（不丢消息）。
+        if mailbox is not None:
+            mailbox.promote_steer()
 
         self._sink(
             "run.settled",

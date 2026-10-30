@@ -22,12 +22,16 @@ class EntryPoint:
         cap: int = DEFAULT_CAP,
         clock: Callable[[], float] | None = None,
         sink: EventSink | None = None,
+        is_session_active: Callable[[str], object] | None = None,
     ) -> None:
         import time
 
         self._clock = clock or time.time
         self._sink = sink
         self._cap = cap
+        # R2.2：steer 路由查询（session_id -> 是否有活跃 run）。生产由
+        # Gateway 注入 fence.active_run；None = 全部按「无活跃」处理。
+        self._is_active = is_session_active
         self._mailboxes: dict[str, Mailbox] = {}
         self._sessions: dict[str, str] = {}  # session_key -> session_id
         self._idempotency: dict[str, tuple[str, Receipt]] = {}  # key -> (digest, receipt)
@@ -49,7 +53,17 @@ class EntryPoint:
                 return prior_receipt  # 等价重试：原回执原样返回
 
         mailbox = self._mailbox_for(request.session_key)
-        receipt = mailbox.submit(request, resolve_session=self._resolve_session)
+        # R2.2：steer 路由——用 fence 查该会话是否有活跃 run（物理 id）。
+        session_id = self._sessions.get(request.session_key)
+        if self._is_active is not None and session_id:
+            active = bool(self._is_active(session_id))
+        else:
+            active = None
+        receipt = mailbox.submit(
+            request,
+            resolve_session=self._resolve_session,
+            is_session_active=active,
+        )
 
         if request.idempotency_key and receipt.accepted:
             self._idempotency[request.idempotency_key] = (

@@ -145,13 +145,13 @@ def test_entry_rejection_emits_no_event_but_sidepaths_do():
     ep.submit(make_req(queue_mode=QueueMode.COLLECT))
     assert probe.events == []
 
-    # steer v1 降级必须发事件（不静默）
+    # steer 无活跃 run → 直接成正常 turn，必须发事件（不静默，R2.2）
     probe2 = EventProbe()
     ep2 = EntryPoint(sink=probe2)
     ep2.submit(make_req(queue_mode=QueueMode.STEER))
-    downgrades = probe2.of("steer.downgraded")
-    assert len(downgrades) == 1
-    assert downgrades[0]["session_id"]
+    became = probe2.of("steer.became_turn")
+    assert len(became) == 1
+    assert became[0]["session_id"]
 
 
 def test_deadline_expiry_emits_expired_event():

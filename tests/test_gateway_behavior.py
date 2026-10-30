@@ -121,7 +121,7 @@ def test_events_include_full_eight_stations():
     gw.run_once()
     kinds = events.kinds()
     for station in (
-        "steer.downgraded",   # api_chat 默认 steer → v1 降级
+        "steer.became_turn",  # api_chat 默认 steer；无活跃 run → 直接成 turn（R2.2）
         "work.enqueued",
         "turn.admitted",
         "run.started",

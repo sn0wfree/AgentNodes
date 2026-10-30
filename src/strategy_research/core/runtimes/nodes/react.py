@@ -100,6 +100,21 @@ def make_react_node(
                         "run_id": run_id, "error": str(exc),
                     })
 
+            # R2.2：steer 安全点（每次 LLM 调用前）——合批注入、只追加。
+            # drain 发 steer.applied 事件（mailbox 的 sink）；这里只管把
+            # 文本追加为 user 消息。llm 单发节点无循环，steer 由
+            # promote_steer 在 turn 收尾转正常队。
+            inbox = state.get("steer_inbox")
+            if inbox is not None:
+                try:
+                    drained = inbox.drain()
+                except Exception:  # noqa: BLE001 — 注入失败不崩节点
+                    drained = []
+                if drained:
+                    messages.append(
+                        {"role": "user", "content": "\n\n".join(drained)}
+                    )
+
             allowed, reason = usage.plan_call()  # A5 INV-9：唯一预算入口
             if not allowed:
                 emit("budget.exhausted", {"run_id": run_id, "reason": reason})

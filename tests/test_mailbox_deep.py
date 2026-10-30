@@ -158,12 +158,12 @@ def test_enqueued_event_has_depth():
     assert enq[0]["mode"] == "followup"
 
 
-def test_steer_downgrade_event_has_session_id():
+def test_steer_became_turn_event_has_session_id():
     mb, rec = make_mailbox()
     mb.submit(make_req(mode=QueueMode.STEER), resolve_session=lambda k: "s")
-    downgrades = rec.of("steer.downgraded")
-    assert len(downgrades) == 1
-    assert downgrades[0]["session_id"] == "sess-x"
+    became = rec.of("steer.became_turn")
+    assert len(became) == 1
+    assert became[0]["session_id"] == "sess-x"
 
 
 # ── 并发安全（线程级） ──────────────────────────────────

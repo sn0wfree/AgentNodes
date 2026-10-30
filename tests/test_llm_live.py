@@ -197,7 +197,7 @@ def test_i_full_slice_two_turns(live_client):
     assert run1.turn_id.endswith("#1") and run2.turn_id.endswith("#2")
     assert run1.run_id.endswith(":r0") and run2.run_id.endswith(":r0")
     for expected in (
-        "steer.downgraded", "work.enqueued", "turn.admitted",
+        "steer.became_turn", "work.enqueued", "turn.admitted",
         "run.started", "node.started", "node.completed", "run.settled",
     ):
         assert expected in events, expected

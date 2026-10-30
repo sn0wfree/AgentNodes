@@ -98,9 +98,9 @@ def test_full_slice_single_turn():
     assert len(llm.calls) == 1
     assert llm.calls[0][-1] == {"role": "user", "content": "什么是动量因子？"}
 
-    # 事件流八站齐全：api_chat 默认 steer → 降级事件先于入队（契约语义）
+    # 事件流八站齐全：api_chat 默认 steer → 无活跃 run 直接成 turn（R2.2）
     kinds = probe.kinds()
-    assert kinds[0] == "steer.downgraded"
+    assert kinds[0] == "steer.became_turn"
     assert kinds[1] == "work.enqueued"
     assert "turn.admitted" in kinds
     assert "run.started" in kinds

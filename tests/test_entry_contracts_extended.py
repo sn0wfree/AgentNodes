@@ -47,28 +47,28 @@ def test_default_queue_mode_table(source: SourceKind, expected: QueueMode):
     assert DEFAULT_QUEUE_MODE[source] is expected
 
 
-def test_api_chat_default_goes_through_steer_downgrade():
-    """API chat 默认 steer：v1 必须走降级路径并留下事件（不能悄悄变成 followup）。"""
+def test_api_chat_default_goes_through_steer_became_turn():
+    """API chat 默认 steer：无活跃 run 时直接成 turn 并留事件（不静默）。"""
     probe = EventProbe()
     ep = EntryPoint(sink=probe)
     receipt = ep.submit(make_req(source=SourceKind.API_CHAT))  # queue_mode=None
     assert receipt.accepted
-    assert len(probe.of("steer.downgraded")) == 1
+    assert len(probe.of("steer.became_turn")) == 1
 
 
-def test_cli_default_does_not_emit_downgrade():
+def test_cli_default_does_not_emit_steer_event():
     probe = EventProbe()
     ep = EntryPoint(sink=probe)
     ep.submit(make_req(source=SourceKind.CLI))
-    assert probe.of("steer.downgraded") == []
+    assert probe.of("steer.became_turn") == []
 
 
 def test_explicit_queue_mode_overrides_source_default():
     probe = EventProbe()
     ep = EntryPoint(sink=probe)
-    # api_chat 默认 steer，但显式 followup 应跳过降级事件
+    # api_chat 默认 steer，但显式 followup 不发 steer 事件
     ep.submit(make_req(source=SourceKind.API_CHAT, queue_mode=QueueMode.FOLLOWUP))
-    assert probe.of("steer.downgraded") == []
+    assert probe.of("steer.became_turn") == []
 
 
 # ── deadline 混批 ────────────────────────────────────────

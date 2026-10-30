@@ -5,8 +5,11 @@
 语义（全部快同步、纯内存；持久化属 0.4 数据面）：
 - FOLLOWUP：FIFO 入队。
 - INTERRUPT：插队到队首（取消当前 turn 属 A2 准入语义，本骨架只保证排序优先）。
-- STEER：v1 仲裁器一律**显式降级为 followup**（注入能力 A4 后启用），
-  降级必须发事件（steer.downgraded）——不静默。
+- STEER（R2.2 真注入）：submit 时按 `is_session_active` 路由——
+  有活跃 run → 进 per-session steer 队（cap steer_cap，溢出最旧转主队），
+  由 react 节点在安全点 `drain_steer()` 合批注入（只追加）；无活跃 run →
+  直接作正常 turn 排队（steer.became_turn）。turn 收尾后仍滞留的 steer
+  由 `promote_steer()` 转主队——不丢消息、不静默（INV-6）。
 - COLLECT：contracts.validate 已在入口拒绝，到不了这里。
 - cap（默认 20）溢出 → summarize 策略：最旧两条合并为一条摘要项
   （保持排序位、保留被合并者 id），拒绝点全系统仅此一处之后的入口校验。
@@ -58,6 +61,7 @@ class QueueItem:
 
 
 DEFAULT_CAP = 20
+DEFAULT_STEER_CAP = 5
 
 EventSink = Callable[[str, dict], None]
 SessionResolver = Callable[[str], str]  # session_key -> session_id（惰性创建）
@@ -71,14 +75,17 @@ class Mailbox:
         session_id: str,
         *,
         cap: int = DEFAULT_CAP,
+        steer_cap: int = DEFAULT_STEER_CAP,
         clock: Callable[[], float] = time.time,
         sink: EventSink | None = None,
     ) -> None:
         self.session_id = session_id
         self.cap = cap
+        self.steer_cap = steer_cap
         self._clock = clock
         self._sink = sink or (lambda kind, data: None)
         self._queue: deque[QueueItem] = deque()
+        self._steer: deque[WorkRequest] = deque()  # R2.2：待注入 steer
 
     # ── 入口 ─────────────────────────────────────────────
 
@@ -87,8 +94,14 @@ class Mailbox:
         request: WorkRequest,
         *,
         resolve_session: SessionResolver,
+        is_session_active: bool | None = None,
     ) -> Receipt:
-        """入口校验 + 入队。两级拒绝的第一级在此完成（无副作用返回 rejected）。"""
+        """入口校验 + 入队。两级拒绝的第一级在此完成（无副作用返回 rejected）。
+
+        ``is_session_active``（R2.2）：该 session 是否有活跃 run（由
+        EntryPoint 用 fence 查询注入）。STEER 工单据此路由：活跃 → steer
+        队等待安全点注入；不活跃 → 直接作正常 turn。
+        """
         reason = validate_work_request(request)
         if reason is not None:
             return Receipt.reject(reason)
@@ -96,6 +109,10 @@ class Mailbox:
         self.expire_due()
 
         mode = request.queue_mode or DEFAULT_QUEUE_MODE.get(request.source, QueueMode.FOLLOWUP)
+
+        if mode is QueueMode.STEER and is_session_active:
+            return self._submit_steer(request, resolve_session)
+
         now = self._clock()
         item = QueueItem(
             request=request,
@@ -104,10 +121,9 @@ class Mailbox:
         )
 
         if mode is QueueMode.STEER:
-            # v1 仲裁器：steer 一律显式降级 followup（A4 启用真注入）。
-            # 必须发事件——不静默（契约 §2.2 细则 2）。
+            # 无活跃 run：steer 直接成为下一个正常 turn（不静默）。
             self._sink(
-                "steer.downgraded",
+                "steer.became_turn",
                 {"session_id": self.session_id, "kind": request.kind.value},
             )
 
@@ -129,6 +145,83 @@ class Mailbox:
             },
         )
         return Receipt.ok(resolve_session(request.session_key))
+
+    # ── steer（R2.2 真注入）────────────────────────────────
+
+    def _submit_steer(
+        self,
+        request: WorkRequest,
+        resolve_session: SessionResolver,
+    ) -> Receipt:
+        """有活跃 run 的 steer：入 steer 队，等 react 安全点注入。
+
+        steer 队满（steer_cap）→ 最旧一条转主队（不丢弃、不静默）。
+        """
+        self._steer.append(request)
+        if len(self._steer) > self.steer_cap:
+            oldest = self._steer.popleft()
+            self._queue.append(
+                QueueItem(request=oldest, enqueued_at=self._clock())
+            )
+            self._sink(
+                "steer.overflow_to_queue",
+                {
+                    "session_id": self.session_id,
+                    "label": oldest.kind.value,
+                    "depth": len(self._queue),
+                },
+            )
+        self._sink(
+            "steer.queued",
+            {"session_id": self.session_id, "depth": len(self._steer)},
+        )
+        return Receipt.ok(resolve_session(request.session_key))
+
+    def steer_inbox(self) -> "SteerInbox":
+        """注入通道：controller 放进 engine state，react 节点在安全点 drain。"""
+        return SteerInbox(self)
+
+    def drain_steer(self) -> list[str]:
+        """取走全部待注入文本（合批由调用方 join）。发 steer.applied——不静默。"""
+        texts: list[str] = []
+        while self._steer:
+            req = self._steer.popleft()
+            text = req.payload.get("text")
+            if isinstance(text, str) and text:
+                texts.append(text)
+        if texts:
+            self._sink(
+                "steer.applied",
+                {"session_id": self.session_id, "count": len(texts)},
+            )
+        return texts
+
+    def promote_steer(self) -> int:
+        """turn 收尾后仍滞留的 steer 转主队（下一个 turn 执行）——不丢消息。
+
+        场景：answer 在 steer 到达前已定（无后续安全点）、或 llm 单发节点
+        无循环。发出 became_turn + work.enqueued（唤醒消费者）。
+        """
+        promoted = 0
+        while self._steer:
+            req = self._steer.popleft()
+            item = QueueItem(request=req, enqueued_at=self._clock())
+            self._queue.append(item)
+            promoted += 1
+            self._sink(
+                "steer.became_turn",
+                {"session_id": self.session_id, "kind": req.kind.value},
+            )
+            self._sink(
+                "work.enqueued",
+                {
+                    "session_id": self.session_id,
+                    "mode": "followup",
+                    "depth": len(self._queue),
+                    "label": item.label,
+                },
+            )
+        return promoted
 
     # ── 消费者接口（A2 SessionController 使用；E1 由测试驱动） ──
 
@@ -244,3 +337,16 @@ class Mailbox:
                 del self._queue[idx]
                 return item
         return None
+
+
+class SteerInbox:
+    """steer 注入通道（R2.2）：controller 放进 engine state，节点 drain。
+
+    只暴露 drain()——引擎不能反向操作队列（红线：注入只追加、不开 run）。
+    """
+
+    def __init__(self, mailbox: Mailbox) -> None:
+        self._mb = mailbox
+
+    def drain(self) -> list[str]:
+        return self._mb.drain_steer()

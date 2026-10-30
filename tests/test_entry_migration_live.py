@@ -41,7 +41,7 @@ def test_gateway_path_real_llm_via_flag(live_client, monkeypatch):
     assert runs and runs[0].ok, runs[0].error if runs else "no run"
     assert runs[0].answer.strip()
     # 事件流完整
-    for expected in ("steer.downgraded", "work.enqueued", "turn.admitted",
+    for expected in ("steer.became_turn", "work.enqueued", "turn.admitted",
                      "run.started", "node.started", "node.completed", "run.settled"):
         assert expected in events, expected
 

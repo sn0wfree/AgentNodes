@@ -38,8 +38,11 @@ class Gateway:
         self._events: list[tuple[str, dict]] = []
         self._external_sink = sink
         combined = self._combined_sink
-        self.entry = EntryPoint(sink=combined)
+        # R2.2：fence 先建——EntryPoint 的 steer 路由用它查活跃 run。
         self.fence = SessionFence()
+        self.entry = EntryPoint(
+            sink=combined, is_session_active=self.fence.active_run,
+        )
         self.controller = SessionController(
             self.entry, client=client, system=system, sink=combined,
             engine_factory=engine_factory,
