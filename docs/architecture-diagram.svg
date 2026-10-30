@@ -53,7 +53,7 @@
 
   <rect x="166" y="220" width="1007" height="44" rx="6" class="boxg"/>
   <text x="180" y="240" class="st">✅ 协议端点（薄 · 无状态 · 快同步）：契约校验 · 幂等去重 · 转发 mailbox —— 入口不是一个层</text>
-  <text x="180" y="258" class="sm">宿主 ✅ R2（server.py 启停消费者 · grace）：qs gateway 独立宿主 ⏳ · fold 重建 ⏳</text>
+  <text x="180" y="258" class="sm">宿主 ✅ R2/B2（server.py 启停消费者·recover fold）· qs gateway 独立宿主 ⏳</text>
 
   <rect x="166" y="282" width="320" height="190" rx="8" class="box"/>
   <text x="180" y="306" class="bt">mailbox</text>
@@ -246,7 +246,7 @@
   <text x="1276" y="666" class="st">✅ 统一库事件化（B4/B5）· 文档治理（C2）</text>
   <text x="1276" y="688" class="st">✅ R1-R7：fence · 消费者 · steer · 老化 · 串行域</text>
   <text x="1276" y="710" class="st">✅ 数据面 P-3/协议 · ModelHub · Director · interrupt</text>
-  <text x="1276" y="732" class="st">⏳ 未建：fold 重建 · 7 阶段/6 真值控制器 · 容量组闸</text>
+  <text x="1276" y="732" class="st">⏳ 未建：7 阶段/6 真值控制器 · 容量组闸 · 独立宿主进程</text>
   <text x="1276" y="754" class="st">⏹ 判定不做：cpu 节点 · graph 子图 · lane · RunContext 包</text>
   <text x="1276" y="776" class="st">⏸ 延后：方法论归位（前置=解循环导入）· 分库(D2)</text>
   <text x="1276" y="798" class="st">⏸ 挂起：P5-1c 删旧 chat 分支（触发=R2 上线一周无回归）</text>

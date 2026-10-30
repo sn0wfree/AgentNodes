@@ -113,6 +113,12 @@ class EntryPoint:
     def session_id_for(self, session_key: str) -> str | None:
         return self._sessions.get(session_key)
 
+    def restore_session(self, session_key: str, session_id: str) -> None:
+        """B2：fold 恢复 session_key → uuid 映射（同 key 落回同一 aggregate）。"""
+        existing = self._sessions.get(session_key)
+        if existing is None:
+            self._sessions[session_key] = session_id
+
     # ── 内部 ─────────────────────────────────────────────
 
     def _mailbox_for(self, session_key: str) -> Mailbox:

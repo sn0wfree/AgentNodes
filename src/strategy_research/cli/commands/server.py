@@ -25,6 +25,16 @@ def _start_gateway_consumer() -> Any | None:
         from strategy_research.core.orchestration import WorkKind
 
         gw = get_gateway()
+        # B2：先恢复状态（fold），再启动消费者——「恢复状态，不恢复执行」。
+        try:
+            stats = gw.recover()
+            print(
+                f"✓ 事件流恢复：{stats.get('sessions', 0)} 个 session、"
+                f"{stats.get('turns', 0)} 个 turn 计数、"
+                f"{stats.get('interrupted', 0)} 个中断 run 已标记"
+            )
+        except Exception as exc:  # noqa: BLE001
+            print(f"⚠ 事件流恢复失败（继续启动）: {exc}")
         gw.start_consumer(kinds={WorkKind.CHAT})
         print("✓ Gateway 常驻消费者已启动（/chat/send 走 receipt 契约）")
         return gw

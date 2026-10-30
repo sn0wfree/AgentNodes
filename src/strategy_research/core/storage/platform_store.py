@@ -475,6 +475,25 @@ class PlatformStore:
             for r in rows
         ]
 
+    def iter_session_ids(self) -> list[str]:
+        """枚举有 event_log 的全部 session id（B2 fold 用）。
+
+        不依赖 session_registry（惰性登记，可能为空）：
+        per-session 模式扫 sessions/ 目录文件名；单库模式查 distinct。
+        """
+        ids: list[str] = []
+        if self._db_path_mode:
+            with self._lock:
+                conn = self._get_session_conn("single")
+                rows = conn.execute(
+                    "SELECT DISTINCT aggregate_id FROM event_log"
+                ).fetchall()
+            ids = [str(r[0]) for r in rows if r[0]]
+        else:
+            if self._sessions_dir.exists():
+                ids = sorted(p.stem for p in self._sessions_dir.glob("*.sqlite"))
+        return ids
+
     # ── 工件登记（P-3） ──────────────────────────────────
 
     def register_artifact(self, artifact: Artifact) -> None:

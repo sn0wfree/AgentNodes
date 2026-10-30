@@ -188,6 +188,69 @@ class Gateway:
         """
         return self._cancel_active_run(session_id, reason)
 
+    # ── B2：fold 重建 ────────────────────────────────────
+
+    _TERMINAL_RUN_EVENTS = ("run.settled", "run.failed", "run.interrupted")
+
+    def recover(self) -> dict[str, int]:
+        """从事件流重建内存状态（fold）。幂等，可重复调用。
+
+        恢复（「恢复状态，不恢复执行」）：
+        - turn 计数器：下一 turn 续号，不与历史撞号（P-4）；
+        - session_key → uuid 映射：同 key 提交落回同一 aggregate；
+        - in-flight run：`run.started` 无 terminal 配对 → 发
+          `run.interrupted`（重试靠重提，不自动续跑——auto_resume=false）。
+
+        不恢复（定稿明说）：mailbox 待办（payload 不在事件流，重试靠
+        重提）、幂等表、steer 队。无 store 时 no-op。
+        """
+        if self._store is None:
+            return {"sessions": 0, "turns": 0, "interrupted": 0}
+        stats = {"sessions": 0, "turns": 0, "interrupted": 0}
+        for sid in self._store.iter_session_ids():
+            if not sid:
+                continue
+            events = self._store.replay(sid, kinds=[
+                "turn.admitted", "run.started",
+                "run.settled", "run.failed", "run.interrupted",
+            ])
+            if not events:
+                continue
+            stats["sessions"] += 1
+            max_turn = 0
+            session_key: str | None = None
+            started: dict[str, bool] = {}
+            terminal: set[str] = set()
+            for ev in events:
+                if ev.kind == "turn.admitted":
+                    # turn_id = "{uuid}#{n}"
+                    _, _, suffix = str(ev.data.get("turn_id", "")).rpartition("#")
+                    if suffix.isdigit():
+                        max_turn = max(max_turn, int(suffix))
+                    sk = ev.data.get("session_key")
+                    if isinstance(sk, str) and sk:
+                        session_key = sk
+                elif ev.kind == "run.started":
+                    rid = str(ev.data.get("run_id") or "")
+                    if rid:
+                        started[rid] = True
+                elif ev.kind in self._TERMINAL_RUN_EVENTS:
+                    rid = str(ev.data.get("run_id") or "")
+                    if rid:
+                        terminal.add(rid)
+            if max_turn:
+                self.controller._turn_counters[sid] = max_turn
+                stats["turns"] += 1
+            if session_key:
+                self.entry.restore_session(session_key, sid)
+            for rid in started:
+                if rid not in terminal:
+                    self._store.emit(sid, "run.interrupted", {
+                        "run_id": rid, "reason": "restart",
+                    })
+                    stats["interrupted"] += 1
+        return stats
+
     def _default_sink(self, kind: str, data: dict) -> None:
         self._events.append((kind, data))
         # 阶段 3b：事件持久化到 PlatformStore（如果配置了）

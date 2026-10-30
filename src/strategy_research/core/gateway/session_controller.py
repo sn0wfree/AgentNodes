@@ -129,7 +129,13 @@ class SessionController:
         turn_id = f"{session_id}#{self._turn_counters[session_id]}"
         run_id = f"{turn_id}:r0"
 
-        self._sink("turn.admitted", {"turn_id": turn_id, "session_id": session_id})
+        # B2：session_key 进事件——fold 恢复 EntryPoint._sessions 映射的
+        # 唯一来源（增量字段，向后兼容）。
+        self._sink("turn.admitted", {
+            "turn_id": turn_id,
+            "session_id": session_id,
+            "session_key": request.session_key,
+        })
         self._sink("run.started", {"run_id": run_id, "kind": request.kind.value})
         # R1 fence ①：认领即超越（INV-5）。域=物理 session id（R3：chat 与
         # automation 同域互斥）。None = 不设防（直构测试路径）。
