@@ -112,3 +112,28 @@ if __name__ == .__main__.:
 3. 每轮结束跑全量，报告「A/B/C 三档实际覆盖率」+ 新增测试数
 
 选 2 或 3 的话，需要先决策 `_archived/` 的处置（删除 or 保留并排除）。
+
+---
+
+## 6. 执行结果（2026-10-31 收官）
+
+选了**选项 1**，已完成（E1 阶段顺带删除了 `_archived/`，分母因此少 1,485 死码）：
+
+```
+scripts/cov_gate.py --min 90 → 全绿
+A 平台内核   4,844 stmts ·   428 miss · 91.2% ✅
+B 研究域     7,146 stmts ·   710 miss · 90.1% ✅
+C 能力层    10,004 stmts ·   993 miss · 90.1% ✅
+活跃核心合计 21,994 stmts · 2,131 miss · 90.3%
+```
+
+- 门禁：`scripts/cov_gate.py`（三档分别断言，`term`/`term-missing` 双格式兼容）；
+  配套 `.coveragerc`（`branch=True` + 归档/数据加载器/交互向导豁免）。
+- 同轮验收：`scripts/c1_gate.py` 对冻结基线（104 条）无失败集扩张。
+- 过程中修掉两个**真实产品缺陷**（覆盖率工作的副产物，详见交付总结）：
+  1. `study/dag_planner.py` 一级相对导入 `.agent` 写错（应为 `..agent`），
+     LLM 规划路径自始静默死亡，永远走关键词兜底；
+  2. `agent/context_injector.py` GoalContinuationInjector 对非 str content
+     未做 str() 归一，提前抛 AttributeError，未走文档承诺的 TypeError 容忍路径。
+- 未覆盖的 ~2,100 条里，CLI 交互层与防御性 except 占大头；按 §3.2 方法论
+  不为其写测试。后续若清偿 104 条历史基线失败，覆盖率只会升不会降。

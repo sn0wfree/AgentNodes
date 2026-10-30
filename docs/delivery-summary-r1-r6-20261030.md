@@ -248,3 +248,37 @@ P5-1c 删旧 chat 分支（⏸ 触发条件已定）。
 | 验收工具 | `scripts/c1_gate.py`（失败集）、`scripts/c1_inventory.py`（测试数） |
 | 冻结基线 | `tests/baselines/pr-lane-failures.json`（104）· `pr-lane-nodeids.json`（12997） |
 | 新增测试（共 100） | `tests/test_r1_fence_wiring.py`(7) · `test_r2_consumer.py`(9) · `test_r2_steer.py`(6) · `test_r2_aging.py`(5) · `test_r3_session_domain.py`(5) · `test_r4_data_plane.py`(9) · `test_r5_model_hub.py`(9) · `test_r6_director.py`(18) · `test_r7_sink_and_wait.py`(10) · `test_b1_interrupt.py`(10) · `test_b2_fold.py`(7) · `test_b3_status.py`(5) |
+
+---
+
+## 十一、覆盖率冲刺收官（2026-10-31 补充）
+
+目标「单元测试覆盖率提升至 90% 以上」已达成，口径为**活跃核心**
+（A 平台内核 + B 研究域 + C 能力层，排除 CLI 交互向导与外部数据加载器，
+依据 `docs/coverage-90-plan-20261030.md`）：
+
+```
+scripts/cov_gate.py --min 90 → 全绿（a5f40255）
+A 平台内核 91.2% · B 研究域 90.1% · C 能力层 90.1% · 合计 90.3%
+（21,994 语句 / 2,131 未覆盖）
+```
+
+配套验收：
+
+- `scripts/c1_gate.py` 对冻结基线（104 条）**无失败集扩张**；
+- 重型 e2e 组首次全绿（P0 SSE 假死修复后）：sse 4/4 · webui 7/7 ·
+  full_flow 10/10 · playwright 8/8 · gated 10/10（诊断记录
+  `docs/known-bug-sse-send-deadlock-20261030.md`）。
+
+覆盖率工作副产物——两个此前不可见的**真实产品缺陷**：
+
+| 缺陷 | 症状 | 修复 |
+|---|---|---|
+| `study/dag_planner.py` 一级相对导入写错（`.agent` 应为 `..agent`） | LLM 规划路径自项目引入起**静默死亡**，永远走关键词兜底 | 改正导入；LLM 规划路径恢复可达 |
+| `agent/context_injector.py` GoalContinuation 对非 str content 未归一 | 测试替身/异常 provider 提前抛 AttributeError，未走文档承诺的 TypeError 容忍路径 | `str()` 归一后进入容忍分支 |
+
+新增测试 84 个（checkpoint 恢复 / monitor / 流式聚合 / combo / 数据工具
+校验 / continuation guard / AgentLoop 集成等），提交 `16a3c010` + `a5f40255`。
+
+遗留（不在本目标内）：API/CLI 档（D/E）未做 90% 断言；104 条历史基线
+失败清偿维持原计划（阶段收尾顺手清）。
