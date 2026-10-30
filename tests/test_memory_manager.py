@@ -2,7 +2,6 @@
 from __future__ import annotations
 
 from pathlib import Path
-from types import SimpleNamespace
 
 import pytest
 
@@ -62,11 +61,17 @@ class TestUnifiedMemoryManagerBasic:
         assert msgs == []
 
     async def test_use_cache_false_rebuilds(self, mm):
+        """B4 Step 1: append invalidates rather than primes the cache.
+
+        The write path is now an event the projector materialises, possibly in
+        another process, so the local cache cannot be assumed fresh. A read
+        repopulates it.
+        """
         await mm.append("s1", "user", "hi")
-        assert mm._cache.get("s1") is not None
-        mm._cache.invalidate("s1")
+        assert mm._cache.get("s1") is None, "append must invalidate, not prime"
         msgs = await mm.get("s1", use_cache=False)
         assert len(msgs) == 1
+        assert mm._cache.get("s1") is not None, "a read repopulates the cache"
 
     async def test_clear_keeps_history_and_marks_boundary(self, mm):
         """B4 D1: /clear resets the context window, it does not destroy history.
@@ -81,8 +86,10 @@ class TestUnifiedMemoryManagerBasic:
         await mm.append("s1", "user", "hi")
         await mm.clear("s1")
         msgs = await mm.get("s1")
-        assert len(msgs) == 1, "history must survive /clear"
-        marker = msgs[0]
+        # The original message survives, plus one boundary marker (B4 Step 1
+        # made append write through the projector, so both rows are real).
+        assert len(msgs) == 2, "history must survive /clear"
+        marker = msgs[-1]
         assert marker["role"] == "system"
         assert marker["message_type"] == "compaction"
         assert marker["metadata"]["compacted_until_seq"] == 0
@@ -92,8 +99,10 @@ class TestUnifiedMemoryManagerBasic:
 
 
 class TestCacheIntegration:
-    async def test_write_through_populates_cache(self, mm):
+    async def test_read_populates_cache(self, mm):
+        """B4 Step 1: the cache is a read-through layer, not a write mirror."""
         await mm.append("s1", "user", "hi")
+        await mm.get("s1")
         cached = mm._cache.get("s1")
         assert cached is not None
         assert cached[0]["content"] == "hi"
@@ -156,69 +165,44 @@ class TestAutoRepair:
 
 class TestEmergencyBuffer:
     async def test_emergency_buffer_used_when_backend_fails(self, mm):
-        def broken_insert(*args, **kwargs):
+        """B4 Step 1: the write path is the event emit, so that is what fails."""
+        def broken_emit(*args, **kwargs):
             raise RuntimeError("simulated DB failure")
-        original = mm._backend.insert_message
-        mm._backend.insert_message = broken_insert
+
+        original = mm._emit_event
+        mm._emit_event = broken_emit
         try:
             msg_id = await mm.append("s1", "user", "hi")
             assert msg_id.startswith("emergency_")
-            # Emergency buffer should have the failed write
             assert "s1" in mm._emergency_buffer
             assert len(mm._emergency_buffer["s1"]) == 1
             assert mm._emergency_buffer["s1"][0]["content"] == "hi"
         finally:
-            mm._backend.insert_message = original
+            mm._emit_event = original
 
     async def test_emergency_buffer_reported_in_health(self, mm):
         def broken(*args, **kwargs):
             raise RuntimeError("test")
-        original = mm._backend.insert_message
-        mm._backend.insert_message = broken
+
+        original = mm._emit_event
+        mm._emit_event = broken
         try:
             await mm.append("s1", "user", "hi")
         finally:
-            mm._backend.insert_message = original
+            mm._emit_event = original
         report = mm.health_report()
         assert report.emergency_buffer_active is True
         assert report.emergency_buffer_session_count >= 1
 
 
-# ── Compact (two-phase commit) ───────────────────────────────────
-
-
-class TestCompaction:
-    async def test_compact_invalidates_cache(self, mm):
-        for i in range(10):
-            await mm.append("s1", "user", f"msg-{i}")
-        assert mm._cache.get("s1") is not None
-        strategy = SimpleNamespace(summary="summary", keep_recent=2)
-        ok = await mm.compact("s1", strategy)
-        assert ok is True
-        assert mm._cache.get("s1") is None
-
-    async def test_compact_phase1_failure_keeps_cache(self, mm):
-        await mm.append("s1", "user", "hi")
-        assert mm._cache.get("s1") is not None
-        original = mm._backend.compact_messages
-        mm._backend.compact_messages = lambda *a, **kw: False
-        try:
-            strategy = SimpleNamespace(summary="x", keep_recent=2)
-            ok = await mm.compact("s1", strategy)
-            assert ok is False
-            assert mm._cache.get("s1") is not None
-        finally:
-            mm._backend.compact_messages = original
-
-    async def test_compact_actually_reduces_messages(self, mm):
-        for i in range(10):
-            await mm.append("s1", "user", f"msg-{i}")
-        strategy = SimpleNamespace(summary="summary text", keep_recent=2)
-        ok = await mm.compact("s1", strategy)
-        assert ok is True
-        msgs = await mm.get("s1")
-        assert len(msgs) <= 3
-        assert any(m["message_type"] == "compaction" for m in msgs)
+# ── Compaction (moved out of MemoryManager) ──────────────────────
+#
+# B4 Step 1 deleted ``UnifiedMemoryManager.compact()``: it had zero
+# production callers, and /compact is implemented by
+# SessionService.compact_history, which emits ``compact.ended`` and lets the
+# projector write the marker. Keeping a direct-SQL twin after eventisation
+# would have reintroduced a second writer. The behaviour it tested is
+# covered by the projection tests (compact handler + marker shape).
 
 
 # ── Dynamic avg-tokens estimator ──────────────────────────────────
@@ -267,6 +251,8 @@ class TestHealthReport:
     async def test_health_after_writes(self, mm):
         await mm.append("s1", "user", "hi")
         await mm.append("s1", "assistant", "hello")
+        # B4 Step 1: writes invalidate the cache; a read warms it.
+        await mm.get("s1")
         report = mm.health_report()
         assert report.cache_session_count >= 1
 

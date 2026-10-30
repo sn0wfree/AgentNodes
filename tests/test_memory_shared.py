@@ -109,9 +109,11 @@ class TestCrossProcessSqlite:
         # Fresh instance sees the boundary the other process wrote
         mm_c = UnifiedMemoryManager(db_path=shared_db, cache_config=cfg)
         msgs = await mm_c.get("s1")
-        assert len(msgs) == 1
-        assert msgs[0]["message_type"] == "compaction"
-        assert msgs[0]["metadata"]["compacted_until_seq"] == 0
+        # B4 Step 1: append writes through the projector, so the original
+        # message plus the marker are both visible cross-process.
+        assert len(msgs) == 2
+        assert msgs[-1]["message_type"] == "compaction"
+        assert msgs[-1]["metadata"]["compacted_until_seq"] == 0
         mm_c.close()
 
 

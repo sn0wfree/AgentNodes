@@ -217,6 +217,25 @@ class SQLiteStore:
 
     # ── CRUD operations (caller holds self._lock) ─────────────────
 
+    def ensure_session_row(self, session_id: str) -> None:
+        """Make sure the FK anchor row exists (B4 Step 1).
+
+        The projector inserts into ``messages`` with ``foreign_keys=ON``, so a
+        missing ``sessions`` row makes every flush fail with "FOREIGN KEY
+        constraint failed" and the message silently never materialises.
+        Event-emitting callers must create the anchor first; this is the same
+        statement ``insert_message`` has always run inline.
+        """
+        conn = self._ensure_conn()
+        ts = time.time()
+        conn.execute(
+            """INSERT INTO sessions (id, user_id, created_at, updated_at)
+            VALUES (?, 'anonymous', ?, ?)
+            ON CONFLICT(id) DO UPDATE SET updated_at = excluded.updated_at""",
+            (session_id, ts, ts),
+        )
+        conn.commit()
+
     def insert_message(
         self, session_id: str, role: str, content: str,
         metadata: dict | None = None,
@@ -666,16 +685,27 @@ class UnifiedMemoryManager:
         except Exception as exc:  # noqa: BLE001 — clear must not fail the caller
             logger.warning("clear() marker emit failed for %s: %s", session_id, exc)
 
-    def _emit_clear_marker(self, session_id: str) -> None:
-        """Emit the compaction boundary that /clear represents."""
-        # Lazy import: event_store imports this module at module level.
+    def _emit_event(self, session_id: str, event_type: str, payload: dict) -> None:
+        """Emit through a lazily built EventStore (B4 Step 1).
+
+        ``flush_to_messages=True`` is essential: without it the event lands in
+        event_log but the projector never materialises the messages row, so
+        ``append`` would appear to succeed while ``get`` returned nothing.
+
+        Lazy import: ``event_store`` imports this module at module level.
+        The instance is kept because it owns a SQLite connection.
+        """
         from .event_store import EventStore
 
         store = getattr(self, "_event_store", None)
         if store is None:
             store = EventStore(self._db_path, flush_to_messages=True)
             self._event_store = store
-        store.emit(
+        store.emit(session_id, event_type, payload)
+
+    def _emit_clear_marker(self, session_id: str) -> None:
+        """Emit the compaction boundary that /clear represents."""
+        self._emit_event(
             session_id,
             "compact.ended",
             {"summary": "[context cleared]", "reason": "manual"},
@@ -683,37 +713,10 @@ class UnifiedMemoryManager:
 
     async def compact(self, session_id: str, strategy: Any) -> bool:
         """Two-phase commit: SQLite write first, cache invalidate only if Phase 1 succeeds."""
-        async with await self._locks.get(session_id):
-            # Phase 1: SQLite compact
-            try:
-                summary = getattr(strategy, "summary", None) or "compaction summary"
-                keep_recent = getattr(strategy, "keep_recent", 4)
-                ok = self._backend.compact_messages(
-                    session_id, summary, keep_recent,
-                )
-            except Exception as exc:
-                self._last_compaction_failures += 1
-                logger.error(
-                    "compact Phase 1 failed for session %s: %s",
-                    session_id, exc,
-                )
-                return False
-            if not ok:
-                self._last_compaction_failures += 1
-                return False
-
-            # Phase 2: invalidate cache (best-effort)
-            try:
-                self._cache.invalidate(session_id)
-                self._estimator.invalidate()
-                self._last_compaction_at = time.time()
-            except Exception as exc:
-                logger.warning(
-                    "compact Phase 2 (cache invalidate) failed: %s; "
-                    "SQLite already updated, next get() will cold-load",
-                    exc,
-                )
-            return True
+    # B4 Step 1: ``compact()`` was deleted. It had zero production callers --
+    # /compact is implemented by SessionService.compact_history, which emits
+    # ``compact.ended`` and lets the projector write the marker. Keeping a
+    # direct-SQL twin would have been a second writer after eventisation.
 
     def list_recent_sessions(self, limit: int = 10) -> list[str]:
         try:
@@ -748,43 +751,63 @@ class UnifiedMemoryManager:
     async def _primary_append(
         self, session_id, role, content, metadata, message_type,
     ) -> str:
-        # Per-session lock (sync lock; SQLiteStore uses RLock)
-        seq = 0  # simple monotonic per-session
-        # Use sync acquire/release pattern for SQLiteStore
-        if hasattr(self._backend, "_lock"):
-            with self._backend._lock:  # type: ignore[attr-defined]
-                # Calculate next seq
-                existing = self._backend.list_messages(session_id)
-                seq = len(existing)
-                msg_id = self._backend.insert_message(
-                    session_id, role, content, metadata, message_type, seq,
-                )
-        else:
-            msg_id = self._backend.insert_message(
-                session_id, role, content, metadata, message_type, seq,
-            )
+        """Persist one message by emitting an event (B4 Step 1).
 
-        # Cache update (WRITE_THROUGH: cache reflects SQLite state)
-        # Important: re-read from backend (NOT cache) so cross-process writes
-        # are reflected. The cache is per-process; SQLite is the shared truth.
-        if self._cache_config.write_policy == WritePolicyT.WRITE_THROUGH:
-            try:
-                fresh = self._backend.list_messages(session_id)
-                self._cache.set(session_id, fresh)
-            except Exception:
-                # Fallback: append to existing cache if backend read fails
-                existing = self._cache.get(session_id) or []
-                existing.append({
-                    "id": msg_id,
-                    "session_id": session_id,
-                    "role": role,
-                    "content": content,
-                    "created_at": time.time(),
-                    "message_type": message_type,
-                    **({"metadata": metadata} if metadata else {}),
-                })
-                self._cache.set(session_id, existing)
+        Before this, MemoryManager INSERTed into ``messages`` directly, which
+        made it a second writer alongside the projector and left the two
+        disagreeing on ``seq`` (mm: ``len(existing)``, projector: ``len+1``).
+        Now it emits the boundary event and lets ``ProjectionStore`` be the
+        only writer -- which is what the architecture's single-writer rule
+        asks for, and what the write-whitelist gate enforces.
+
+        The message id is minted here because the projector requires it in the
+        payload (``_on_message_received`` reads ``data["message_id"]``); the
+        return value contract (an id string) is unchanged.
+
+        Cache: invalidated, not refreshed. The projector may run in another
+        process, so the local cache cannot be trusted after the emit -- the
+        next ``get()`` re-reads from SQLite.
+        """
+        msg_id = str(uuid.uuid4())
+        if role == "user":
+            event_type = "message_received"
+            payload: dict[str, Any] = {
+                "message_id": msg_id,
+                "user_message_id": msg_id,
+                "role": "user",
+                "content": content,
+            }
+        else:
+            event_type = "assistant_message"
+            payload = {
+                "message_id": msg_id,
+                "content": content,
+                "message_type": message_type,
+            }
+        if metadata:
+            # D7 made the projector merge this; without it the public
+            # `append(metadata=...)` signature would silently drop it again.
+            payload["metadata"] = metadata
+
+        # The projector's insert needs the sessions anchor row or it fails FK.
+        self._ensure_session_anchor(session_id)
+        self._emit_event(session_id, event_type, payload)
+        self._cache.invalidate(session_id)
         return msg_id
+
+    def _ensure_session_anchor(self, session_id: str) -> None:
+        """Create the sessions row through whichever backend is active."""
+        ensure = getattr(self._backend, "ensure_session_row", None)
+        if callable(ensure):
+            try:
+                ensure(session_id)
+                return
+            except Exception as exc:  # noqa: BLE001 — log and keep going
+                logger.warning(
+                    "ensure_session_row failed for %s: %s", session_id, exc,
+                )
+                return
+        # In-memory / duck-typed backends have no FK constraint to satisfy.
 
     @property
     def is_degraded(self) -> bool:

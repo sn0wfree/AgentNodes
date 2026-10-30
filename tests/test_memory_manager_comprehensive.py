@@ -5,19 +5,18 @@ from __future__ import annotations
 import asyncio
 import sys
 from pathlib import Path
-from types import SimpleNamespace
 
 import pytest
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
 
+from strategy_research.core.agent.cache import CacheConfig
 from strategy_research.core.agent.memory_manager import (
     InMemoryStore,
     MemoryManagerFactory,
     SQLiteStore,
     UnifiedMemoryManager,
 )
-from strategy_research.core.agent.cache import CacheConfig
 
 
 @pytest.fixture
@@ -96,9 +95,11 @@ class TestMemoryManagerClear:
         loop.run_until_complete(mgr.append("s1", "user", "hello"))
         loop.run_until_complete(mgr.clear("s1"))
         msgs = loop.run_until_complete(mgr.get("s1"))
-        assert len(msgs) == 1
-        assert msgs[0]["message_type"] == "compaction"
-        assert msgs[0]["metadata"]["compacted_until_seq"] == 0
+        # B4 Step 1: append now writes through the projector, so both the
+        # original message and the marker are real rows.
+        assert len(msgs) == 2
+        assert msgs[-1]["message_type"] == "compaction"
+        assert msgs[-1]["metadata"]["compacted_until_seq"] == 0
         loop.close()
 
     def test_clear_empty_session(self, mgr):
@@ -107,31 +108,11 @@ class TestMemoryManagerClear:
         loop.close()
 
 
-# ── compact ───────────────────────────────────────────────────────
-
-
-class TestMemoryManagerCompact:
-    def test_compact_reduces_messages(self, mgr):
-        loop = asyncio.new_event_loop()
-        for i in range(10):
-            loop.run_until_complete(mgr.append("s1", "user", f"msg{i}"))
-        strategy = SimpleNamespace(summary="Summary of conversation", keep_recent=2)
-        result = loop.run_until_complete(mgr.compact("s1", strategy))
-        assert result is True
-        msgs = loop.run_until_complete(mgr.get("s1"))
-        assert len(msgs) <= 3  # summary + keep_recent
-        loop.close()
-
-    def test_compact_invalidates_cache(self, mgr):
-        loop = asyncio.new_event_loop()
-        for i in range(5):
-            loop.run_until_complete(mgr.append("s1", "user", f"msg{i}"))
-        loop.run_until_complete(mgr.get("s1"))  # Warm cache
-        strategy = SimpleNamespace(summary="Summary", keep_recent=1)
-        loop.run_until_complete(mgr.compact("s1", strategy))
-        cached = mgr._cache.get("s1")
-        assert cached is None
-        loop.close()
+# ── compact (moved out of MemoryManager) ──────────────────────────
+#
+# B4 Step 1 deleted ``compact()``: zero production callers, and /compact is
+# SessionService.compact_history -> compact.ended -> projector. The two
+# tests below were about that deleted method, so they went with it.
 
 
 # ── list_recent_sessions ─────────────────────────────────────────
