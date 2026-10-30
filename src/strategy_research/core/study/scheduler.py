@@ -742,12 +742,20 @@ class StudyScheduler:
 
         mailbox 空即退出（懒启动、不常驻空转）；下次 submit 再起。
         执行体仍是 scheduler 的 ``_run_one_study``（见设计 §2）。
+
+        R3.2：同 session 串行域——chat turn（fence 域=物理 session id）
+        在跑时不取单，工单留队；0.5s 退避等待，与 chat 消费者的跳过
+        检查构成两侧互斥。
         """
         from strategy_research.core.orchestration import WorkKind
 
         gw = _get_gateway_singleton()
         mailbox = gw.entry.mailbox_for(f"automation:{session_id}")
         while not self._shutdown and mailbox is not None:
+            fence = getattr(gw, "fence", None)
+            if fence is not None and fence.active_run(session_id) is not None:
+                await asyncio.sleep(0.5)
+                continue
             request = mailbox.poll_due({WorkKind.AUTOMATION})
             if request is None:
                 break
@@ -783,6 +791,20 @@ class StudyScheduler:
 
     async def _run_one_study(self, study_id: str) -> None:
         _dlog("sched", "_run_one_study start study=%s", study_id)
+        # R3.2：同 session 串行域——study 执行期间占栏（fence 域=物理
+        # session id，与 chat turn 同域），chat 消费者据此跳过排队；
+        # 结束/崩溃即释放。同 session 的另一个 study 先到先占，本任务
+        # 等待（home_session 语义：同 session 的事按序来）。
+        gw = _get_gateway_singleton()
+        fence = getattr(gw, "fence", None)
+        study0 = self.store.get_study(study_id)
+        fence_token = None
+        if fence is not None and study0 is not None and study0.session_id:
+            while fence.active_run(study0.session_id) is not None and not self._shutdown:
+                await asyncio.sleep(0.5)
+            fence_token = fence.claim(
+                study0.session_id, f"study:{study_id}:r0",
+            )
         # G1: per-user cap first, then the global cap. Acquiring the
         # user slot before the global one means a user at their own
         # ceiling never consumes global capacity they cannot use anyway.
@@ -814,6 +836,8 @@ class StudyScheduler:
         finally:
             if user_sem is not None:
                 user_sem.release()
+            if fence_token is not None:
+                fence.release(fence_token)  # R3.2：崩溃/收尾都释放，不挡 chat
 
     async def _run_one_study_locked(self, study_id: str) -> None:
         _dlog("sched", "_run_one_study_locked study=%s", study_id)

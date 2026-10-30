@@ -83,7 +83,7 @@ def _inv_settle_passes_fence() -> bool:
     class _SupersedingEngine:
         def run(self, state: dict) -> dict:
             fence.claim(
-                str(state.get("session_id") or ""),
+                str(state.get("fence_domain") or ""),
                 f"{state.get('run_id')}:next",
             )
             return {"answer": "stale"}

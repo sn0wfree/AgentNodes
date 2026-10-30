@@ -33,7 +33,7 @@
   <rect x="939" y="20" width="250" height="66" rx="9" class="box"/>
   <text x="955" y="44" class="bt">MCP</text>
   <text x="955" y="64" class="st">对外工具协议</text>
-  <text x="150" y="106" class="sm">哑适配器：只构造 WorkRequest + 订阅事件流 ✅ chat/schedule 已接 · ⏳ CLI/MCP 适配器暂无调用方</text>
+  <text x="150" y="106" class="sm">哑适配器：只构造 WorkRequest + 订阅事件流 ✅ chat/schedule/CLI(TUI) 已接 · MCP 无 chat 出口（N/A）</text>
   <line x1="275" y1="112" x2="275" y2="146" class="arb"/>
   <line x1="538" y1="112" x2="538" y2="146" class="arb"/>
   <line x1="801" y1="112" x2="801" y2="146" class="arb"/>
@@ -69,8 +69,8 @@
   <text x="512" y="330" class="st">turn 准入：谁下一个可以跑（消费者常驻）</text>
   <text x="512" y="350" class="st">✅ 准入 · P-4 身份 · 4 队列模式 · fence · steer</text>
   <text x="512" y="370" class="st">⏳ 7 阶段 · 6 真值（常驻消费者 ✅ R2）</text>
-  <text x="512" y="390" class="st">⏳ home_session_key（fence 挂根 ✅ R1）</text>
-  <text x="512" y="410" class="sm">session=串行域 ✅（turn 不分类型同一条队）</text>
+  <text x="512" y="390" class="st">✅ session=串行域跨 kind（R3：fence 物理域互斥）</text>
+  <text x="512" y="410" class="sm">⏳ home_session_key（语义已由 R3 串行域承担）</text>
   <text x="512" y="428" class="sm">turn={sid}#n · run=:{turn}:r0 · 现由 run_once 同步驱动</text>
 
   <rect x="830" y="282" width="343" height="190" rx="8" class="boxd"/>
@@ -244,10 +244,10 @@
   <text x="1276" y="622" class="st">✅ 已上线：E1 契约/mailbox · GraphEngine llm+react</text>
   <text x="1276" y="644" class="st">✅ 控制器 1a · ContextHub · 不变量 ×6 · turn/run id</text>
   <text x="1276" y="666" class="st">✅ 统一库事件化（B4/B5）· 文档治理（C2）</text>
-  <text x="1276" y="688" class="st">✅ R1/R2：fence 挂根 · 常驻消费者 · steer 注入 · 老化</text>
+  <text x="1276" y="688" class="st">✅ R1-R3：fence · 常驻消费者 · steer · 老化 · 跨kind串行</text>
   <text x="1276" y="710" class="st">⚠ 建而未接线：PlatformStore</text>
-  <text x="1276" y="732" class="st">⏳ 未建：Director · RuntimeHub · 容量组闸 · interrupt 级联</text>
-  <text x="1276" y="754" class="st">⏳ cpu/graph 节点 · 方法论归位 · P-3/P-5 · 分库 · home_session</text>
+  <text x="1276" y="732" class="st">⏳ 未建：Director · RuntimeHub · 容量组闸语义 · interrupt 级联</text>
+  <text x="1276" y="754" class="st">⏳ cpu/graph 节点 · 方法论归位 · P-3/P-5 · 分库</text>
   <text x="1276" y="776" class="st">⏸ 挂起：P5-1c 删旧 chat 分支（触发=R2 上线一周无回归）</text>
 
   <rect x="1260" y="820" width="300" height="380" rx="10" class="boxg"/>

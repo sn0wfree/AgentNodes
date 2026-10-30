@@ -87,7 +87,7 @@ def test_normal_turn_releases_fence():
     ep.submit(chat())
     runs = controller.run_pending()
     assert len(runs) == 1 and runs[0].ok
-    assert fence.active_run(ep.session_id_for("chat:s")) is None
+    assert fence.active_run("s") is None
     assert probe.of("run.fenced") == []
 
 
@@ -100,7 +100,7 @@ def test_superseded_run_is_fenced():
     class SupersedingEngine:
         def run(self, state):
             fence.claim(
-                str(state.get("session_id") or ""),
+                str(state.get("fence_domain") or ""),
                 f"{state.get('run_id')}:next",
             )
             return {"answer": "stale"}
@@ -123,8 +123,7 @@ def test_superseded_run_is_fenced():
     assert settled[-1]["fenced"] is True
 
     # 栅栏归超越者持有：active 指向后继 run，先到者未误释放
-    sid = ep.session_id_for("chat:s")
-    assert fence.active_run(sid) == f"{runs[0].run_id}:next"
+    assert fence.active_run("s") == f"{runs[0].run_id}:next"
 
 
 # ── C. 无 fence 等价 ─────────────────────────────────────
@@ -158,7 +157,7 @@ def test_two_consecutive_turns_both_pass():
     ep.submit(chat("q2"))
     runs = controller.run_pending()
     assert [r.ok for r in runs] == [True, True]
-    assert fence.active_run(ep.session_id_for("chat:s")) is None
+    assert fence.active_run("s") is None
 
 
 # ── F. 引擎崩 + fence ────────────────────────────────────
@@ -173,7 +172,7 @@ def test_engine_crash_releases_fence():
     runs = controller.run_pending()
     assert runs[0].ok is False
     assert probe.of("run.failed")
-    assert fence.active_run(ep.session_id_for("chat:s")) is None
+    assert fence.active_run("s") is None
 
     ep.submit(chat("ok"))
     reruns = controller.run_pending()

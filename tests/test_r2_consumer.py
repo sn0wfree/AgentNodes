@@ -94,7 +94,7 @@ def test_run_answer_absent_when_fenced():
     class SupersedingEngine:
         def run(self, state):
             fence.claim(
-                str(state.get("session_id") or ""),
+                str(state.get("fence_domain") or ""),
                 f"{state.get('run_id')}:next",
             )
             return {"answer": "stale"}

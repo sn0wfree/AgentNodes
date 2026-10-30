@@ -78,7 +78,7 @@ def test_steer_with_active_run_goes_to_steer_queue():
     assert len(probe.of("steer.became_turn")) == 1
 
     sid = ep.session_id_for("chat:s")
-    fence.claim(sid, f"{sid}#1:r0")  # 模拟活跃 run
+    fence.claim("s", f"{sid}#1:r0")  # 模拟活跃 run（fence 域=物理 id "s"）
     receipt = ep.submit(make_req(text="插话"))
     assert receipt.accepted
     assert len(probe.of("steer.queued")) == 1
@@ -94,7 +94,6 @@ def test_steer_injected_at_safety_point():
     fence = SessionFence()
     probe = Probe()
     ep = EntryPoint(sink=probe, is_session_active=fence.active_run)
-    sid_for = ep.session_id_for
 
     drained_seen: list[list[str]] = []
 
@@ -110,10 +109,10 @@ def test_steer_injected_at_safety_point():
         fence=fence, engine_factory=lambda: Engine(),
     )
     ep.submit(make_req(text="首轮", mode=QueueMode.FOLLOWUP))
-    sid = sid_for("chat:s")
-    fence.claim(sid, f"{sid}#1:r0")
+    token = fence.claim("s", "s#1:r0")  # 提交期模拟活跃 run（域=物理 id，R3）
     ep.submit(make_req(text="看一下回测"))
     ep.submit(make_req(text="再加个止损"))
+    fence.release(token)  # 释放后控制器才消费（R3：占用即跳过）
 
     runs = controller.run_pending()
     assert runs[0].ok

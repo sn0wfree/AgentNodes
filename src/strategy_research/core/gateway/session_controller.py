@@ -21,6 +21,15 @@ from strategy_research.core.runtimes.graph_engine import GraphEngine
 EventSink = Callable[[str, dict], None]
 
 
+def _fence_domain(session_key: str) -> str:
+    """R3：fence 域 = 物理 session id（剥掉 chat:/automation: 等 kind 前缀）。
+
+    chat:{X} 与 automation:{X} 必须落到同一个串行域——session=串行域，
+    turn 不分类型同一条队。study 侧（scheduler）直接持物理 id，与此对齐。
+    """
+    return session_key.split(":", 1)[1] if ":" in session_key else session_key
+
+
 @dataclass(frozen=True)
 class RunResult:
     turn_id: str
@@ -92,6 +101,14 @@ class SessionController:
         """
         results: list[RunResult] = []
         for session_key, mailbox in list(self._ep.iter_mailboxes()):
+            # R3.2：同 session 跨 kind 串行——活跃 run（study round 或其他
+            # 来源的 turn）在跑时跳过该 session，工单留队，消费者下轮
+            # poll 再来。不超越、不加锁（fence 语义保持「claim 即超越」，
+            # 正常路径经此检查不再出现同域竞争性 claim）。
+            if self._fence is not None and self._fence.active_run(
+                _fence_domain(session_key)
+            ):
+                continue
             while True:
                 request = mailbox.poll_due(kinds)
                 if request is None:
@@ -109,9 +126,11 @@ class SessionController:
 
         self._sink("turn.admitted", {"turn_id": turn_id, "session_id": session_id})
         self._sink("run.started", {"run_id": run_id, "kind": request.kind.value})
-        # R1 fence ①：认领即超越（INV-5）——后到的 run 使先到的 token 失效。
+        # R1 fence ①：认领即超越（INV-5）。域=物理 session id（R3：chat 与
+        # automation 同域互斥）。None = 不设防（直构测试路径）。
+        fence_domain = _fence_domain(request.session_key)
         token = (
-            self._fence.claim(session_id, run_id)
+            self._fence.claim(fence_domain, run_id)
             if self._fence is not None
             else None
         )
@@ -144,6 +163,8 @@ class SessionController:
         mailbox = self._ep.mailbox_for(request.session_key)
         if mailbox is not None:
             state["steer_inbox"] = mailbox.steer_inbox()
+        # R3：fence 域随 state 可见（测试引擎按域超越；引擎本身不修改它）。
+        state["fence_domain"] = fence_domain
         try:
             final = engine.run(state)
             answer = str(final.get("answer", ""))
