@@ -159,8 +159,8 @@ def check_cancelled(runner: Any, session: str, sid: str) -> str | None:
 
     Extracted from _run_loop and _monitor_phase to eliminate duplication.
     """
+    from .contracts import ShutdownReason
     from .models import StudyStatus
-    from .runner import ShutdownReason
 
     if not runner.control.cancelled:
         return None

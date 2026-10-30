@@ -32,36 +32,30 @@ from .store import StudyStore
 
 logger = logging.getLogger(__name__)
 
-# v2 review-cycle tuning (design §10/§11)
-SR_STUDY_MAX_DEVIATION = 3          # consecutive high deviations → stop
-SR_STUDY_COLLECT_INTERVAL = 5       # force info collection every K rounds
-SR_STUDY_MAX_DISCARD = 5            # consecutive discards → stagnation stop
-
-# Agent resilience (Step B of round/retry/loop fix)
-SR_AGENT_MAX_ITER = 50              # high-iteration default for complex agents
-SR_AGENT_NO_PROGRESS_WINDOW = 5     # tolerate 5 identical tool calls before approval gate
-SR_AGENT_MAX_PARSE_RETRIES = 2      # retries per round on parse_failed
-SR_AGENT_PARSE_BACKOFF_BASE = 5.0   # base seconds for parse_failed backoff
-SR_AGENT_PARSE_BACKOFF_MAX = 30.0   # cap on backoff wait
-
-# Agent names whose parse_failed output triggers round-level retry
-_PARSE_FAILED_AGENT_KEYS: tuple[str, ...] = (
-    "data_quality_output",
-    "factor_analyst_output",
-    "strategist_output",
-    "portfolio_construction_output",
+# 调参常量与停因枚举下沉到 contracts（解 phase_engine↔runner 循环导入，
+# docs/break-circular-import-design-20261030.md）。此处 re-export 保持
+# 旧路径 `from .runner import ShutdownReason` 可用。
+from .contracts import (  # noqa: E402
+    SR_AGENT_MAX_ITER,
+    SR_AGENT_MAX_PARSE_RETRIES,
+    SR_AGENT_NO_PROGRESS_WINDOW,
+    SR_AGENT_PARSE_BACKOFF_BASE,
+    SR_AGENT_PARSE_BACKOFF_MAX,
+    SR_STUDY_COLLECT_INTERVAL,
+    SR_STUDY_MAX_DEVIATION,
+    SR_STUDY_MAX_DISCARD,
+    ShutdownReason,
+    parse_failed_agents,
+)
+from .contracts import (  # noqa: E402
+    _PARSE_FAILED_AGENT_KEYS as _parse_failed_agent_keys,
 )
 
-
-def _parse_failed_agents(exec_result: dict) -> list[str]:
-    """Return the names of agents that returned parse_failed for this round."""
-    failed: list[str] = []
-    for key in _PARSE_FAILED_AGENT_KEYS:
-        out = exec_result.get(key)
-        if isinstance(out, dict) and out.get("error") == "parse_failed":
-            # key like "data_quality_output" → "data_quality"
-            failed.append(key[: -len("_output")])
-    return failed
+# Agent names whose parse_failed output triggers round-level retry
+# （_PARSE_FAILED_AGENT_KEYS / _parse_failed_agents 已下沉 contracts；
+#  此处保留旧私有名 re-export，供既有调用方使用。）
+_PARSE_FAILED_AGENT_KEYS = _parse_failed_agent_keys
+_parse_failed_agents = parse_failed_agents
 
 
 def _dlog(module: str, msg: str, *args) -> None:
@@ -71,24 +65,7 @@ def _dlog(module: str, msg: str, *args) -> None:
 
 
 # ── shutdown reasons ────────────────────────────────────────────────
-
-
-class ShutdownReason:
-    TARGETS_MET = "targets_met"
-    MAX_ROUNDS = "max_rounds"
-    STAGNATION = "stagnation"
-    BUDGET = "budget_exceeded"
-    CANCELLED = "cancelled"
-    PAUSED = "paused"
-    ERROR = "error"
-    EARLY_STOPPED = "early_stopped"
-    NOVELTY_REJECTED = "novelty_rejected"
-    # v2 review cycle (design §10.2/§10.3)
-    REPEATED_DEVIATION = "repeated_deviation"
-    REVIEW_FAILED = "review_failed"
-    DISCARD_STREAK = "stagnation_discard_streak"
-    # v2 monitor (design §15)
-    NEEDS_REFRESH = "needs_refresh"
+# ShutdownReason 已下沉到 .contracts（本文件顶部 re-export）。
 
 
 # ── metric target comparison (reused from executor.py) ──────────────

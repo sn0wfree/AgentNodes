@@ -14,8 +14,16 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
+from .contracts import (
+    SR_AGENT_MAX_ITER,
+    SR_AGENT_MAX_PARSE_RETRIES,
+    SR_AGENT_PARSE_BACKOFF_BASE,
+    SR_AGENT_PARSE_BACKOFF_MAX,
+    SR_STUDY_COLLECT_INTERVAL,
+    SR_STUDY_MAX_DEVIATION,
+    ShutdownReason,
+)
 from .metric_targets import meets_metric_targets, metric_pass_set
-from .runner import SR_AGENT_MAX_ITER
 
 logger = logging.getLogger(__name__)
 
@@ -753,12 +761,7 @@ def _run_execution_with_parse_retry(
 ) -> dict:
     """Wrap run_execution_phase with parse_failed auto-recovery."""
     from ..autoresearch import run_execution_phase
-    from .runner import (
-        SR_AGENT_MAX_PARSE_RETRIES,
-        SR_AGENT_PARSE_BACKOFF_BASE,
-        SR_AGENT_PARSE_BACKOFF_MAX,
-        _parse_failed_agents,
-    )
+    from .contracts import parse_failed_agents as _parse_failed_agents
 
     study = runner._get_study()
     last_failed_agents: list[str] = []
@@ -829,8 +832,6 @@ def _run_review_cycle(
     from strategy_research.core.study import review_loop as rl
     from strategy_research.core.study import round_manifest as rm
     from strategy_research.core.study import state_store as ss
-
-    from .runner import SR_STUDY_COLLECT_INTERVAL, SR_STUDY_MAX_DEVIATION, ShutdownReason
 
     study = runner._get_study()
     sid = study.study_id
