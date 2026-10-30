@@ -1,7 +1,8 @@
-# 交付总结：R1–R6 重构（2026-10-30）
+# 交付总结：R1–R6 重构 + R7/B1–B3 收尾（2026-10-30）
 
 > 分支：`refactor/v6-gateway` · 起点 `376144a9`（v6.3 架构图 + 路线图）
-> 终点 `ba0a8678`（R6 Director）· 13 个提交 · 40 文件 · +6561/−178 行
+> 终点 `605996be`（B3）· 22 个提交 · 51 文件 · +8318/−206 行
+> 架构图上所有「待建」格子已收口（建成、判定不做、或挂起且有触发条件）。
 > 验收标准：`docs/stage-c1-acceptance-20261028.md` 三道门（行为等价 /
 > 测试不减 / 失败集不扩大）。
 
@@ -9,16 +10,18 @@
 
 ## 一、一句话结论
 
-按 `docs/roadmap-next-20261030.md` 的 R1–R6 计划**全部完成**；其中 R3/R5/R6
-经勘查后**大幅缩减范围**（三项判定不做、一项延后），依据全部写入评估文档。
-每阶段三道门全过：失败集始终 ⊆ 104 条冻结基线且**零新增**，**0 个测试消失**。
-本轮新增 **68 个测试**（8 个文件）。
+按 `docs/roadmap-next-20261030.md` 的 R1–R6 计划**全部完成**；随后 R7
+（自纠技术债）与 B1–B3（interrupt / fold / 状态查询）收尾，架构图上所有
+「待建」格子关闭。其中 R3/R5/R6/B3 经勘查**大幅缩减范围**（8 项判定不做、
+一项延后），依据全部写入评估文档。每阶段三道门全过：失败集始终 ⊆ 104 条
+冻结基线且**零新增**，**0 个测试消失**。本轮共新增 **100 个测试**（12 个
+文件）。
 
-> 关于「冻结清单 9839 → 12965」：这不是本轮新增。起点 9839 那条基线
+> 关于「冻结清单 9839 → 12997」：这不是本轮新增。起点 9839 那条基线
 > （`1b7e905e`）本身就不完整——R2.3 重冻时发现约 3000 条**早已存在但
 > 从未入基线**的测试（最大一块是 `test_alpha_zoo.py` 的 2302 条）。
 > 按门禁指引在同一次提交里重冻（`359a52f3`），使后续 worker 从真实
-> 基线出发。本轮真正的新增是 68 个。
+> 基线出发。本轮真正的新增是 100 个。
 
 ---
 
@@ -32,6 +35,10 @@
 | **R4** | P-3 工件登记接线（round metrics >64KB → 指针）；PROTOCOL_VERSION 单一来源 + replay 严格校验 | `eaf68451` `ca8a157a` | 98⊆104 · +14/0 删 |
 | **R5** | ModelHub：provider/model 解析唯一入口，未知 provider 拒绝不降级 | `153eee1a` `5e88a414` | 98⊆104 · +9/0 删 |
 | **R6** | 确定性 Director：停因 → 下一步建议，只发事件不自动执行 | `29cb52b7` `ba0a8678` | 101⊆104 · +18/0 删 |
+| **R7** | 技术债修复：sink 累积（重复 SSE）、wait_turn 返旧结果、结果无界 | `0e5b636d` `620d51d6` | 98⊆104 · +10/0 删 |
+| **B1** | interrupt 语义：CancelScope 节点边界取消活跃 run | `b4d5af8e` `65025fbb` | 101⊆104 · +10/0 删 |
+| **B2** | fold 重建：重启恢复 turn 计数/session 映射/标记中断 run | `949ffe7a` `816b1b71` | 99⊆104 · +7/0 删 |
+| **B3** | 状态查询 `session_status`；7 阶段/6 真值判定不做 | `be0f81fe` `605996be` | 99⊆104 · +5/0 删 |
 
 ---
 
@@ -95,9 +102,55 @@
 - 命名避开了 `models.py` 里已有的 `StudyDirective`（用户发给 study 的
   指令，方向相反）。
 
+### 3.6 R7：R2 引入的技术债（自纠）
+
+| 缺陷 | 后果 | 修法 |
+|---|---|---|
+| `install_sink` 闭包链式累积 | 链长随请求数线性增长；更糟的是旧 bridge 捕获旧 message_id，**同一 session 第二次请求出现重复 SSE 文本** | 改集合+锁，`add_sink` 返回注销函数；bridge 收尾事件自动注销，调用方 finally 兜底 |
+| `wait_turn` 返旧结果 | `_turn_done` 事件永不 clear，第二次 `?wait=true` 0.000s 拿到上一轮答案 | 改代际比较（`work.enqueued` 推进入队代际，完成推进完成代际，等待前进） |
+| `_turn_results` 无界 | 每 session 留含全文的 RunResult | 锁内只保留最近一条 |
+
+实测确认：修复前第二次 wait 耗时 0.000s 返回旧答案；sink 调 5 次是 5 层嵌套。
+
+### 3.7 B1：interrupt 语义补齐
+
+`QueueMode.INTERRUPT` 此前只插队、**不取消正在跑的 turn**。补齐：
+
+- `CancelScope`（单向、线程安全）作为 `state["cancel_scope"]` 传递；
+- 引擎在**节点边界**（进入前/结束后）检查，节点抛 `RunCancelled` 也吸收；
+- 被取消的 run：发 `run.cancelled` + `settled{cancelled:True}`，**不发
+  `run.answer`**（与 R1 的「陈旧产物不落库」同一原则），fence 照常释放；
+- 触发：interrupt 工单有活跃 run 时先取消再入队；`Gateway.cancel_session()`。
+- **不强杀节点内部**——Python 无法安全杀线程，边界取消已满足体验要求。
+
+### 3.8 B2：fold 重建（重启恢复状态）
+
+此前重启即丢 turn 计数（**turn_id 撞号**，P-4 身份被破坏）、session 映射
+（事件流分叉）、in-flight run（无影无踪）。现在 `Gateway.recover()`：
+
+- turn 计数从 `turn.admitted` 取 max → 续号不撞号（端到端：3 turn 后重启
+  → 新 turn `#4`）；
+- session_key→uuid 映射恢复（同 key 落回同一 aggregate）；
+- `run.started` 无 terminal 配对 → `run.interrupted{reason:"restart"}`，幂等；
+- **auto_resume=false 兑现**：mailbox 待办不重建（定稿「重试靠重提」）；
+- 宿主顺序改为 `recover()` → `start_consumer()`。
+- 过程中发现 `list_sessions()` 依赖的 `session_registry` **零调用方**（永远
+  为空）——改为 `iter_session_ids()` 直接扫存储层。
+
+### 3.9 B3：状态查询 + 两个死概念的判定
+
+- **「7 阶段状态机」**（OpenClaw 对标：idle/admitting/…/mutating）与现有
+  事件生命周期**一一同构**，且控制器单线程串行（R3），阶段机要管理的并发
+  状态转换不存在 → ⏹ 不做；
+- **「6 正交真值」从未被定义**——全库只有一行注释引用，枚举值不存在，
+  所属的 RunHandle 形态已被 v6 取代 → ⏹ 死概念关闭；
+- **真缺口**：receipt 契约没有非阻塞 poll 端（唯一原语 `wait_turn` 是
+  阻塞的）。补 `Gateway.session_status(session_key)`：active/queued/
+  last_turn_id/last_ok/last_answer，全读已有内存状态，与 B2 语义一致。
+
 ---
 
-## 四、判定「不做」的四项（含依据与重开条件）
+## 四、判定「不做」的项（含依据与重开条件）
 
 | 项 | 判定 | 依据 | 重开条件 |
 |---|---|---|---|
@@ -106,6 +159,9 @@
 | **subagent lane** | ⏹ 不做 | subagent 当前同步串行 + 每 turn 上限 5，不存在并发打爆 provider | subagent 改为并行执行时 |
 | **preset Tier 0 治理** | ⏹ 不做 | 冻结机制要保护「可被外部修改的 preset 文件」，当前不存在（research preset 在代码里，swarm preset 全扁平） | preset 真正外置为可编辑文件时 |
 | **RunContext 包对象** | ⏹ 不做 | 图上 6 项约束已全部以散装 state 键存在（run_budget/sink/cancel Event/steer_inbox/run_id/fence_domain） | 出现第 7 个需贯穿的约束时 |
+| **7 阶段状态机** | ⏹ 不做 | 与现有事件生命周期一一同构（admitted/started/settled/cancelled/fenced）；单线程串行下无并发状态转换可管理 | 控制器引入并发准入时 |
+| **6 正交真值** | ⏹ 关闭 | **从未被定义**（全库仅一行注释引用，枚举值不存在），所属 RunHandle 形态已被 v6 取代 | ——（死概念） |
+| **interrupt 级联子 run 树** | ⏹ 不做 | 无子图节点；fanout 分支级联已实现 | graph 子图落地时 |
 
 **延后一项**：方法论归位 `core/study/method/`。前置条件：先解
 `phase_engine ↔ runner` **循环导入**（36KB ↔ 54KB）——那是独立的一刀，
@@ -132,6 +188,7 @@ R3 勘查发现 `ChatSession._run_via_gateway` 早已接 Gateway（`QNODES_NEW_E
 | 3 | ModelHub 把 `auto` 误判为非法 provider | 4 个既有 singleton 测试失败 |
 | 4 | 老化初版把 aged 与 interrupt 同优先级扫描 → 后到 interrupt 仍抢先 | 调试脚本显示 `first: u2` 而非 aged 项 |
 | 5 | fence 域最初用 EntryPoint uuid，与 scheduler 物理 id 不同空间 | 设计时发现（未上线） |
+| 6 | B2 的 recover 用 `list_sessions()` 枚举——其依赖的 `session_registry` **零调用方**（永远为空），会静默找不到 session | 实现时核实调用方发现 → 改 `iter_session_ids()` 扫存储层 |
 
 ---
 
@@ -141,23 +198,30 @@ R3 勘查发现 `ChatSession._run_via_gateway` 早已接 Gateway（`QNODES_NEW_E
 |---|---|---|
 | `/chat/send` 默认回 receipt 不回 `reply` | WebUI/CLI/TUI **无感**（前端 `send` 响应类型本就是 `unknown`，渲染走 SSE；TUI 走进程内流式） | `?wait=true` 保留旧行为；无消费者时自动回落 |
 | `steer.downgraded` 事件 → `steer.became_turn` / `steer.queued` / `steer.applied` | 消费该事件的代码（本仓库内 8 处测试已改） | 无外部消费方 |
-| 新增事件：`run.answer`、`run.fenced`、`work.aged`、`artifact.registered`、`study.directive` | 旧消费方对未知 kind 天然忽略 | 向后兼容 |
+| 新增事件：`run.answer`、`run.fenced`、`work.aged`、`artifact.registered`、`study.directive`、`run.cancelled`、`run.interrupted`、`turn.admitted`(+session_key) | 旧消费方对未知 kind 天然忽略 | 向后兼容 |
 | 未知 provider 从「静默降级」变「明确报错」 | 配错 provider 的部署会在启动时报错 | 这是有意的修复 |
+| INTERRUPT 工单现在**会取消活跃 run**（此前只插队） | automation 提交的工单在 chat turn 跑着时会打断它——这是定稿语义的兑现，不是回归 | 无 |
+| 修复重复 SSE：同一 session 连续请求不再叠加旧 bridge | 第二次请求起事件恢复单次推送（此前是 bug） | 修复 |
 
 ---
 
 ## 八、当前架构状态（v6.3 图已同步）
 
 **已实线（✅）**：Gateway 单进程内核 · WorkRequest 两态回执 · mailbox
-（lane 串行 / cap20+摘要 / steer 注入 / 优先级老化 / deadline）·
-SessionController（准入 + P-4 身份 + fence + 跨 kind 串行 + 常驻消费者）·
-GraphEngine 唯一编排（llm/react/fanout-t1/t2）· ContextHub（collect→
-arbitrate→render + 预算仲裁 + 压缩同源）· 不变量 ×6 · 平台数据面
-（统一库事件化 + P-3 登记 + P-5 指针 + PROTOCOL_VERSION）· ModelHub ·
-Director（确定性）· CLI/TUI/API/schedule 四渠道统一入口。
+（lane 串行 / cap20+摘要 / steer 注入 / 优先级老化 / deadline / interrupt
+取消）· SessionController（准入 + P-4 身份 + fence + 跨 kind 串行 +
+常驻消费者 + 取消 + 状态查询）· GraphEngine 唯一编排（llm/react/
+fanout-t1/t2 + 节点边界取消）· ContextHub（collect→arbitrate→render +
+预算仲裁 + 压缩同源）· 不变量 ×6 · 平台数据面（统一库事件化 + P-3 登记
++ P-5 指针 + PROTOCOL_VERSION + fold 重建）· ModelHub · Director
+（确定性）· CLI/TUI/API/schedule 四渠道统一入口。
 
-**仍开（⏳）**：7 阶段/6 真值控制器完整版 · 容量组闸语义 · interrupt 级联 ·
-每 session 分库（D2 延后）· 全局 session 登记 · 方法论归位（⏸ 有前置）·
+**判定不做（⏹，有据可查）**：cpu 节点 · graph 子图 · subagent lane ·
+preset Tier 0 · RunContext 包对象 · 7 阶段状态机 · 6 正交真值 · interrupt
+级联子 run 树（全表见 §四）。
+
+**仍开（⏳/⏸）**：容量组闸语义 · 独立宿主进程（qs gateway）· 每 session
+分库（D2 延后）· 全局 session 登记 · 方法论归位（⏸ 前置=解循环导入）·
 P5-1c 删旧 chat 分支（⏸ 触发条件已定）。
 
 ---
@@ -170,8 +234,7 @@ P5-1c 删旧 chat 分支（⏸ 触发条件已定）。
 | 2 | 104 条历史基线失败清偿 | 各阶段收尾顺手清（D4），不单独立项 |
 | 3 | 解 `phase_engine↔runner` 循环导入 | 方法论归位的前置，本身即可作为独立一刀 |
 | 4 | 每 session 分库 | 重开条件：单库 >2GB 或出现归档需求 |
-| 5 | interrupt 级联取消 | 有真实中断需求时 |
-| 6 | 合回 `main` | Refactor 分支已在 main 前方 13+ 提交，建议在 P5-1c 前合一次 |
+| 5 | 合回 `main` | **用户已明确：暂不合，保持 `refactor/v6-gateway` 分支** |
 
 ---
 
@@ -179,9 +242,9 @@ P5-1c 删旧 chat 分支（⏸ 触发条件已定）。
 
 | 内容 | 位置 |
 |---|---|
-| 阶段设计/评估文档 | `docs/stage-r1-fence-wiring-design-20261030.md` · `stage-r2-consumer-steer-aging-design-20261030.md` · `stage-r3-session-domain-design-20261030.md` · `stage-r4-data-plane-design-20261030.md` · `stage-r5-execution-plane-assessment-20261030.md` · `stage-r6-research-domain-assessment-20261030.md` |
+| 阶段设计/评估文档 | `docs/stage-r1-fence-wiring-design-20261030.md` · `stage-r2-consumer-steer-aging-design-20261030.md` · `stage-r3-session-domain-design-20261030.md` · `stage-r4-data-plane-design-20261030.md` · `stage-r5-execution-plane-assessment-20261030.md` · `stage-r6-research-domain-assessment-20261030.md` · `stage-r7-r2-techdebt-design-20261030.md` · `stage-b1-interrupt-design-20261030.md` · `stage-b2-fold-recovery-design-20261030.md` · `stage-b3-controller-assessment-20261030.md` |
 | 路线图（本轮的输入） | `docs/roadmap-next-20261030.md` |
 | 架构图（已同步） | `docs/architecture-diagram.html` / `.svg`（v6.3） |
 | 验收工具 | `scripts/c1_gate.py`（失败集）、`scripts/c1_inventory.py`（测试数） |
-| 冻结基线 | `tests/baselines/pr-lane-failures.json`（104）· `pr-lane-nodeids.json`（12965） |
-| 新增测试（共 68） | `tests/test_r1_fence_wiring.py`(7) · `test_r2_consumer.py`(9) · `test_r2_steer.py`(6) · `test_r2_aging.py`(5) · `test_r3_session_domain.py`(5) · `test_r4_data_plane.py`(9) · `test_r5_model_hub.py`(9) · `test_r6_director.py`(18) |
+| 冻结基线 | `tests/baselines/pr-lane-failures.json`（104）· `pr-lane-nodeids.json`（12997） |
+| 新增测试（共 100） | `tests/test_r1_fence_wiring.py`(7) · `test_r2_consumer.py`(9) · `test_r2_steer.py`(6) · `test_r2_aging.py`(5) · `test_r3_session_domain.py`(5) · `test_r4_data_plane.py`(9) · `test_r5_model_hub.py`(9) · `test_r6_director.py`(18) · `test_r7_sink_and_wait.py`(10) · `test_b1_interrupt.py`(10) · `test_b2_fold.py`(7) · `test_b3_status.py`(5) |
