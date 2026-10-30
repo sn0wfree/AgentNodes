@@ -1,0 +1,37 @@
+[run]
+branch = True
+source = strategy_research
+omit =
+    # 归档死代码：不在任何构建产物中，写测试是为已废弃代码付维护成本
+    */core/study/_archived/*
+    # 入口与脚手架
+    */__main__.py
+    */conftest.py
+    # 交互式向导（需要真人输入，单元测试价值低）
+    */cli/onboard.py
+    # 外部数据源加载器（网络协议客户端，用集成测试而非单元测试验证）
+    */core/data_source/akshare_loader.py
+    */core/data_source/ifind_loader.py
+    */core/data_source/tushare_loader.py
+
+[report]
+# 不追求 100%：防御性 except 与类型检查分支无法有意义地覆盖
+exclude_lines =
+    pragma: no cover
+    raise NotImplementedError
+    if TYPE_CHECKING:
+    if __name__ == .__main__.:
+    \.\.\.
+    except ImportError:
+    @abstractmethod
+    # 平台降级路径：明确标注为「不可达则降级」的分支
+    pragma: no branch
+
+# 分档说明：全库口径含归档与外部集成，不作为门槛。
+# 门槛由 scripts/cov_gate.py 按 A/B/C 三档分别断言（见 docs/coverage-90-plan-20261030.md）。
+show_missing = True
+skip_covered = False
+precision = 1
+
+[html]
+directory = tmp/coverage_html
