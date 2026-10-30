@@ -207,7 +207,7 @@ async def get_hangs_report(
     the C.2 daily-drive signal for threshold tuning.
     """
     _verify_admin(x_admin_token)
-    from strategy_research.core.study.hanging_events import HangingEventsStore
+    from strategy_research.core.observability.hanging_events import HangingEventsStore
 
     with HangingEventsStore() as store:
         rep = store.report(hours=hours, limit=limit)

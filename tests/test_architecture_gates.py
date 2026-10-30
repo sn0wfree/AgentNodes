@@ -9,7 +9,30 @@ import ast
 from pathlib import Path
 
 SRC = Path(__file__).resolve().parents[1] / "src" / "strategy_research"
-PLATFORM_PKGS = ("gateway", "orchestration", "runtimes", "storage", "context")
+# 接缝加固（docs/seam-hardening-design-20261030.md）：llm/memory 入严格集。
+# agent 不进——builtin_tools 是能力适配器，合法包装域工具（组合根职责）。
+PLATFORM_PKGS = (
+    "gateway", "orchestration", "runtimes", "storage", "context",
+    "llm", "memory",
+)
+# 研究域全家（v6.3 图 ⑤ 层）：backtest/autoresearch 是产品 IP 的一部分。
+RESEARCH_DOMAIN_PKGS = (
+    "study", "goal", "hypothesis", "backtest", "autoresearch",
+)
+# 研究域→平台触点白名单（门禁实测，非估算：9 个文件）。
+# 新增触点 = 有意决策，须改此表并在 docs/seam-contract-platform-research-20261030.md
+# 登记理由。`study/_archived/` 豁免。
+STUDY_PLATFORM_TOUCHPOINTS: dict[str, set[str]] = {
+    "graph_preset.py": {"runtimes"},        # GraphEngine 公共 API（阶段图）
+    "phase_engine.py": {"agent"},            # build_agent_loop 能力工厂
+    "dag_planner.py": {"agent"},             # AgentPlugin/Registry/DAG 配置
+    "runner.py": {"agent", "observability", "utils"},
+    "runner_knowledge.py": {"agent"},
+    "scheduler.py": {"gateway", "orchestration", "utils", "observability"},
+    "scenario_router.py": {"llm"},           # 场景路由自建 provider 客户端
+    "state_utils.py": {"observability"},     # trace 上下文
+    "store.py": {"storage"},                 # sqlite 工具（域自己的库）
+}
 
 
 def _iter_py(root: Path):
@@ -71,20 +94,55 @@ def _violations(root: Path, prefixes: tuple[str, ...]) -> list[str]:
 
 
 def test_platform_never_imports_study_domain():
-    """core/{gateway,orchestration,runtimes,storage,context} 不得 import core/study。
+    """平台严格子层不得 import 研究域全家（study/goal/hypothesis/backtest/autoresearch）。
 
-    research preset 作为域件住在 core/study/graph_preset.py 并 import
-    GraphEngine——方向是 域→平台。反过来（平台 import 域）会把研究域
-    变成平台的隐含依赖，破坏「⑤ 研究域独立成层」。
-    （相对导入由 _imports 解析为绝对名后匹配，无绕过空间。）
+    接缝加固（docs/seam-hardening-design-20261030.md）：v6.3 图 ⑤ 研究域
+    独立成层，方向必须是 域→平台。llm/memory 随本刀入严格集（实测零引用，
+    只锁不修）。（相对导入由 _imports 解析为绝对名后匹配，无绕过空间。）
     """
+    banned = tuple(
+        f"strategy_research.core.{p}" for p in RESEARCH_DOMAIN_PKGS
+    ) + tuple(f"core.{p}" for p in RESEARCH_DOMAIN_PKGS)
     all_v: list[str] = []
     for pkg in PLATFORM_PKGS:
-        all_v.extend(_violations(
-            SRC / "core" / pkg,
-            ("strategy_research.core.study", "core.study"),
-        ))
+        all_v.extend(_violations(SRC / "core" / pkg, banned))
     assert not all_v, "平台层反向依赖研究域:\n" + "\n".join(all_v)
+
+
+def test_study_platform_touchpoints_are_whitelisted():
+    """研究域→平台的耦合面锁定为白名单（拆分就绪的看门人）。
+
+    方向合法（域→平台），但新触点必须是有意的：加文件 = 改此表 +
+    在 docs/seam-contract-platform-research-20261030.md 登记理由。
+    `study/_archived/` 是隔离区，不参与。
+    """
+    root = SRC / "core" / "study"
+    allowed_sublayers = tuple(f"strategy_research.core.{s}" for s in (
+        "agent", "llm", "runtimes", "gateway", "orchestration",
+        "context", "storage", "memory", "utils", "observability",
+        "permission",
+    ))
+    violations: list[str] = []
+    for path in _iter_py(root):
+        rel = path.relative_to(root)
+        if "_archived" in rel.parts or rel.name == "__init__.py":
+            continue
+        allowed = STUDY_PLATFORM_TOUCHPOINTS.get(rel.name, set())
+        for module, lineno in _imports(path):
+            for m in _matches_all(module, allowed_sublayers):
+                sub = m.split(".")[2]
+                if sub not in allowed:
+                    violations.append(
+                        f"study/{rel}:{lineno} -> {module} "
+                        f"(子层 {sub!r} 不在白名单；如属有意，更新 "
+                        f"STUDY_PLATFORM_TOUCHPOINTS 并登记接缝契约)"
+                    )
+    assert not violations, "研究域→平台出现未登记触点:\n" + "\n".join(violations)
+
+
+def _matches_all(module: str, prefixes: tuple[str, ...]) -> list[str]:
+    """返回 module 命中的全部前缀（边界感知）。"""
+    return [p for p in prefixes if _matches(module, p)]
 
 
 def test_context_hub_never_imports_producers():

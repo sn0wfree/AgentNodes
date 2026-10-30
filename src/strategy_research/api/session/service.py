@@ -689,7 +689,7 @@ class SessionService:
                     )
                     # C1.3: hanging events for observability
                     try:
-                        from ...core.study.hanging_events import record_event
+                        from ...core.observability.hanging_events import record_event
                         record_event(
                             "chat_attempt_stall",
                             session_id=session_id,

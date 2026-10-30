@@ -1,7 +1,7 @@
 {
-  "generated_at": "2026-10-30T07:48:51+00:00",
-  "commit": "be0f81feb37a294123ac22bed6c316818399ab5f",
-  "count": 12997,
+  "generated_at": "2026-10-30T09:26:32+00:00",
+  "commit": "40598b998788a694a87f94770277746a11a23a8e",
+  "count": 12998,
   "nodeids": [
     "tests/test_admin_kill_switch.py::TestAdminAuth::test_admin_disabled_503",
     "tests/test_admin_kill_switch.py::TestAdminAuth::test_health_check_no_auth_required",
@@ -2895,6 +2895,7 @@
     "tests/test_architecture_gates.py::test_platform_never_imports_study_domain",
     "tests/test_architecture_gates.py::test_research_graph_gate_is_retired",
     "tests/test_architecture_gates.py::test_sandbox_home_is_outside_real_home",
+    "tests/test_architecture_gates.py::test_study_platform_touchpoints_are_whitelisted",
     "tests/test_architecture_gates.py::test_user_home_is_sandboxed_during_tests",
     "tests/test_archive_race.py::TestArchiveRace::test_cancel_signal_does_not_overwrite_archived",
     "tests/test_archive_race.py::TestArchiveRace::test_current_db_status_returns_none_for_missing_row",

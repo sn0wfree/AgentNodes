@@ -967,7 +967,7 @@ class StudyScheduler:
                 continue
             _dlog("sched", "watchdog: heartbeat stale study=%s age=%.0fs",
                   sid, age)
-            from .hanging_events import record_event
+            from ..observability.hanging_events import record_event
             record_event(
                 "watchdog_interrupt",
                 study_id=sid,
@@ -1003,7 +1003,7 @@ class StudyScheduler:
                 continue
             _dlog("sched", "watchdog: bg task stalled task=%s log=%s",
                   handle.task_id, handle.log_path)
-            from .hanging_events import record_event
+            from ..observability.hanging_events import record_event
             record_event(
                 "log_stall",
                 study_id=handle.owner,

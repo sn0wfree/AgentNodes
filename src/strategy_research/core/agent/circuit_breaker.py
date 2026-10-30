@@ -149,7 +149,7 @@ class ToolLoopCircuitBreaker:
         self._state = BreakerState.OPEN
         self._opened_at = time.monotonic()
         logger.warning("Circuit breaker OPEN: %s", reason)
-        from ..study.hanging_events import record_event
+        from ..observability.hanging_events import record_event
         record_event(
             "circuit_breaker_open",
             session_id=getattr(self, "session_id", None),

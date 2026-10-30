@@ -902,7 +902,7 @@ def _dispatch_session(args, parsers) -> int:
 
 def _dispatch_hangs(args, parsers) -> int:
     """Dispatch the hangs report subcommand."""
-    from strategy_research.core.study.hanging_events import HangingEventsStore
+    from strategy_research.core.observability.hanging_events import HangingEventsStore
 
     with HangingEventsStore() as store:
         rep = store.report(hours=args.hours, limit=args.limit)

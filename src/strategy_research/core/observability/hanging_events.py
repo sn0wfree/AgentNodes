@@ -17,7 +17,9 @@ import time
 from pathlib import Path
 from typing import Any
 
-from .store import _default_db_path
+from ..storage.sqlite import resolve_db_path
+
+_DB_PATH_ENV = "QUANTNODES_RESEARCH_GOAL_DB_PATH"
 
 # 与 scheduler watchdog / agent 熔断器共用的事件种类
 EVENT_WALLCLOCK = "wallclock_timeout"
@@ -61,7 +63,10 @@ class HangingEventsStore:
     """
 
     def __init__(self, db_path: Path | str | None = None) -> None:
-        self.db_path = Path(db_path) if db_path is not None else _default_db_path()
+        self.db_path = (
+            Path(db_path) if db_path is not None
+            else resolve_db_path("goals.db", _DB_PATH_ENV)
+        )
         self.db_path.parent.mkdir(parents=True, exist_ok=True)
         self._conn = sqlite3.connect(str(self.db_path), timeout=30.0)
         self._conn.row_factory = sqlite3.Row
@@ -78,6 +83,9 @@ class HangingEventsStore:
                     self._conn.close()
                 except sqlite3.Error:
                     pass
+                # 置 None：让「已关闭」可被调用方观测（也防后续误用拿到
+                # 已关闭的连接）。_get_conn 在 _conn 为 None 时会重开。
+                self._conn = None
                 self._closed = True
 
     def __enter__(self) -> "HangingEventsStore":
