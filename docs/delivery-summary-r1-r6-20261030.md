@@ -1,0 +1,187 @@
+# 交付总结：R1–R6 重构（2026-10-30）
+
+> 分支：`refactor/v6-gateway` · 起点 `376144a9`（v6.3 架构图 + 路线图）
+> 终点 `ba0a8678`（R6 Director）· 13 个提交 · 40 文件 · +6561/−178 行
+> 验收标准：`docs/stage-c1-acceptance-20261028.md` 三道门（行为等价 /
+> 测试不减 / 失败集不扩大）。
+
+---
+
+## 一、一句话结论
+
+按 `docs/roadmap-next-20261030.md` 的 R1–R6 计划**全部完成**；其中 R3/R5/R6
+经勘查后**大幅缩减范围**（三项判定不做、一项延后），依据全部写入评估文档。
+每阶段三道门全过：失败集始终 ⊆ 104 条冻结基线且**零新增**，**0 个测试消失**。
+本轮新增 **68 个测试**（8 个文件）。
+
+> 关于「冻结清单 9839 → 12965」：这不是本轮新增。起点 9839 那条基线
+> （`1b7e905e`）本身就不完整——R2.3 重冻时发现约 3000 条**早已存在但
+> 从未入基线**的测试（最大一块是 `test_alpha_zoo.py` 的 2302 条）。
+> 按门禁指引在同一次提交里重冻（`359a52f3`），使后续 worker 从真实
+> 基线出发。本轮真正的新增是 68 个。
+
+---
+
+## 二、交付清单
+
+| 阶段 | 交付 | 提交 | 门禁结果 |
+|---|---|---|---|
+| **R1** | fence 挂根：`SessionFence` 接进控制器 settle 路径（claim→validate→release）；INV-4 进不变量注册表 | `823c237e` | 99⊆104 · 0 删 |
+| **R2** | 常驻消费者 + `run.answer` 事件；`/chat/send` 改 receipt + `?wait=true`（E1=C）；steer 真注入（删降级桩）；优先级老化 | `ee7ac66a` `11d8b8a0` `4d673660` `359a52f3` | 100⊆104 · 0 删 |
+| **R3** | 同 session 跨 kind 串行域：fence 域=物理 session id；chat 消费者跳过被占、study 占栏/等待/释放 | `2db83143` `bbd76b72` | 99⊆104 · +5/0 删 |
+| **R4** | P-3 工件登记接线（round metrics >64KB → 指针）；PROTOCOL_VERSION 单一来源 + replay 严格校验 | `eaf68451` `ca8a157a` | 98⊆104 · +14/0 删 |
+| **R5** | ModelHub：provider/model 解析唯一入口，未知 provider 拒绝不降级 | `153eee1a` `5e88a414` | 98⊆104 · +9/0 删 |
+| **R6** | 确定性 Director：停因 → 下一步建议，只发事件不自动执行 | `29cb52b7` `ba0a8678` | 101⊆104 · +18/0 删 |
+
+---
+
+## 三、做了什么（按能力）
+
+### 3.1 并发正确性
+
+- **写栅栏（fence）真正上线**：此前 `SessionFence` 建好有测试但零调用方。
+  现在控制器的每个 turn：准入 `claim` → 执行 → **`run.settled{ok:True}`
+  之前 `validate`** → 通过才 `release`。被超越的 run 发 `run.fenced`，
+  陈旧答案不落库。**INV-4「产物落库必过 fence」从文档承诺变成可执行检查**。
+- **同 session 跨 kind 串行**：此前 chat turn 与 study round 走两条独立
+  队列，**互不感知地并发**读写同一 session。现在 fence 域统一为物理
+  session id（剥掉 `chat:`/`automation:` 前缀），两侧互相可见：
+  study 跑着 → chat 排队；chat 跑着 → study 不取单。「同实体永不并行」
+  首次对全部 kind 成立。
+- 实现细节修正：fence 最初按 EntryPoint 的 uuid 域 claim，与 scheduler
+  持有的物理 id 不是同一命名空间——不统一就会串域。
+
+### 3.2 chat 执行模型
+
+- **常驻消费者**：`Gateway.start_consumer/stop_consumer` + `wait_turn`
+  等待原语。由 `qs webui-serve` / `qs api-serve` 宿主启停（带 grace），
+  测试/直构路径不启动。
+- **`/chat/send` 契约（E1=C，用户拍板）**：默认 submit 即回 receipt、
+  答案走 SSE；`?wait=true` 保留同步 reply 给外部脚本用户。**无消费者时
+  自动回落原同步路径**——既有 API 测试零改动全绿。
+- **答案进事件流**：新增 `run.answer` 事件（过 fence 才发）。消费者模型下
+  请求线程看不到 `RunResult`，事件流成为答案唯一通道。
+- **steer 真注入**：有活跃 run → 入 steer 队（cap 5，溢出转主队）；
+  react 循环边界安全点合批注入（只追加、不新开 run）；turn 收尾滞留项
+  晋升主队不丢消息。`steer.downgraded` 临时桩删除。
+- **优先级老化**：三级取件 —— 到龄（aged）> interrupt > FIFO。
+  普通项等满 `aging_s`（默认 15s）后压过所有后到 interrupt，防 automation
+  饿死用户消息；`work.aged` 事件 + ConfigHub 可配。
+
+### 3.3 数据面
+
+- **P-3 工件登记上线**：`ArtifactChannel` 此前完整实现（含 13 个测试）
+  但**零调用方**。现在 study round 的 metrics 超过 64KB 时落盘到
+  `studies/<id>/rounds/R-n/artifacts/` 并写登记行，`study_round` 事件只带
+  指针。小 metrics 事件逐字节不变。**回测结果是第一个真实用户**。
+- **PlatformStore 生产接线**：singleton 按 workspace 注入 data_dir，
+  `QNODES_PLATFORM_STORE=0` 可关闭，构造失败降级不阻断 chat。
+- **PROTOCOL_VERSION**：成为事件信封 `schema_v` 唯一来源；`replay` 遇
+  不匹配版本抛 `ProtocolVersionError`（不猜跨版本语义），
+  `strict_version=False` 留给迁移。
+
+### 3.4 模型解析
+
+- **ModelHub**：解析序（显式 > profile > provider 默认）集中到一处。
+  关键行为修正：`get_provider` 对未知 provider 静默回落 `FallbackAdapter`，
+  ModelHub 改为**明确拒绝**（图上红线「不支持则拒绝，不降级」）。
+  `auto` 保留为文档定义的合法模式（这条我最初判错，被 4 个既有测试纠正）。
+
+### 3.5 研究自治
+
+- **确定性 Director**：13 个停因 → 4 类动作（continue/rescope/escalate/stop）
+  规则表，未知停因一律 escalate。红线三重保证：不 import 预算对象、
+  纯函数无副作用、只发 `study.directive` 事件**绝不自动 submit**。
+- 命名避开了 `models.py` 里已有的 `StudyDirective`（用户发给 study 的
+  指令，方向相反）。
+
+---
+
+## 四、判定「不做」的四项（含依据与重开条件）
+
+| 项 | 判定 | 依据 | 重开条件 |
+|---|---|---|---|
+| **cpu 节点** | ⏹ 不做 | 动机已被满足两次：回测支持 `background=True` → 子进程；fanout-t2 已接 ExecutorBridge 进程池。再建是第三条等价路径 | 出现非回测的 CPU 密集步骤需要嵌图内并行 |
+| **graph 子图** | ⏹ 不做 | 零用户——所有图都是扁平 `add_node` | 出现「阶段内部本身是有环/多分支的子流程」 |
+| **subagent lane** | ⏹ 不做 | subagent 当前同步串行 + 每 turn 上限 5，不存在并发打爆 provider | subagent 改为并行执行时 |
+| **preset Tier 0 治理** | ⏹ 不做 | 冻结机制要保护「可被外部修改的 preset 文件」，当前不存在（research preset 在代码里，swarm preset 全扁平） | preset 真正外置为可编辑文件时 |
+| **RunContext 包对象** | ⏹ 不做 | 图上 6 项约束已全部以散装 state 键存在（run_budget/sink/cancel Event/steer_inbox/run_id/fence_domain） | 出现第 7 个需贯穿的约束时 |
+
+**延后一项**：方法论归位 `core/study/method/`。前置条件：先解
+`phase_engine ↔ runner` **循环导入**（36KB ↔ 54KB）——那是独立的一刀，
+不属于「换目录」。
+
+---
+
+## 五、R3 勘误（重要）
+
+v6.3 架构图审计时我判定「CLI/MCP 入口适配器无调用方」——**对 CLI 是错的**。
+R3 勘查发现 `ChatSession._run_via_gateway` 早已接 Gateway（`QNODES_NEW_ENTRY`
+默认开，有 3 个测试）。同时 study 也早已走 `automation:{session}` mailbox
+（阶段 3c/4 完成）。因此 R3 的原计划三分之二已存在，真实缺口只剩跨 kind
+串行域。图已更正。
+
+---
+
+## 六、过程中修掉的真实缺陷
+
+| # | 缺陷 | 发现方式 |
+|---|---|---|
+| 1 | `_fence_domain` 被误插进 `@dataclass` 装饰器与类之间 → 全模块 import 崩 | 测试收集报 `'function' object has no attribute '__mro__'` |
+| 2 | R4 给 runner 加 `artifacts=` 参数，破坏鸭子类型测试替身 | **门禁②捕获**：`test_stage3c_scheduler_migration` 不在基线 → 修实现不改测试 |
+| 3 | ModelHub 把 `auto` 误判为非法 provider | 4 个既有 singleton 测试失败 |
+| 4 | 老化初版把 aged 与 interrupt 同优先级扫描 → 后到 interrupt 仍抢先 | 调试脚本显示 `first: u2` 而非 aged 项 |
+| 5 | fence 域最初用 EntryPoint uuid，与 scheduler 物理 id 不同空间 | 设计时发现（未上线） |
+
+---
+
+## 七、对外契约变化（需知会使用方）
+
+| 变化 | 影响 | 兼容 |
+|---|---|---|
+| `/chat/send` 默认回 receipt 不回 `reply` | WebUI/CLI/TUI **无感**（前端 `send` 响应类型本就是 `unknown`，渲染走 SSE；TUI 走进程内流式） | `?wait=true` 保留旧行为；无消费者时自动回落 |
+| `steer.downgraded` 事件 → `steer.became_turn` / `steer.queued` / `steer.applied` | 消费该事件的代码（本仓库内 8 处测试已改） | 无外部消费方 |
+| 新增事件：`run.answer`、`run.fenced`、`work.aged`、`artifact.registered`、`study.directive` | 旧消费方对未知 kind 天然忽略 | 向后兼容 |
+| 未知 provider 从「静默降级」变「明确报错」 | 配错 provider 的部署会在启动时报错 | 这是有意的修复 |
+
+---
+
+## 八、当前架构状态（v6.3 图已同步）
+
+**已实线（✅）**：Gateway 单进程内核 · WorkRequest 两态回执 · mailbox
+（lane 串行 / cap20+摘要 / steer 注入 / 优先级老化 / deadline）·
+SessionController（准入 + P-4 身份 + fence + 跨 kind 串行 + 常驻消费者）·
+GraphEngine 唯一编排（llm/react/fanout-t1/t2）· ContextHub（collect→
+arbitrate→render + 预算仲裁 + 压缩同源）· 不变量 ×6 · 平台数据面
+（统一库事件化 + P-3 登记 + P-5 指针 + PROTOCOL_VERSION）· ModelHub ·
+Director（确定性）· CLI/TUI/API/schedule 四渠道统一入口。
+
+**仍开（⏳）**：7 阶段/6 真值控制器完整版 · 容量组闸语义 · interrupt 级联 ·
+每 session 分库（D2 延后）· 全局 session 登记 · 方法论归位（⏸ 有前置）·
+P5-1c 删旧 chat 分支（⏸ 触发条件已定）。
+
+---
+
+## 九、下一步（按优先级）
+
+| # | 事项 | 前置 / 触发 |
+|---|---|---|
+| 1 | **P5-1c 删旧 chat 分支** | R2 上线一周无回归。入口 `docs/todo-remove-legacy-chat-branch-20261027.md` §0.3，第一步 ⓿ 删死代码 `_run_agent_loop_background` |
+| 2 | 104 条历史基线失败清偿 | 各阶段收尾顺手清（D4），不单独立项 |
+| 3 | 解 `phase_engine↔runner` 循环导入 | 方法论归位的前置，本身即可作为独立一刀 |
+| 4 | 每 session 分库 | 重开条件：单库 >2GB 或出现归档需求 |
+| 5 | interrupt 级联取消 | 有真实中断需求时 |
+| 6 | 合回 `main` | Refactor 分支已在 main 前方 13+ 提交，建议在 P5-1c 前合一次 |
+
+---
+
+## 十、证据索引
+
+| 内容 | 位置 |
+|---|---|
+| 阶段设计/评估文档 | `docs/stage-r1-fence-wiring-design-20261030.md` · `stage-r2-consumer-steer-aging-design-20261030.md` · `stage-r3-session-domain-design-20261030.md` · `stage-r4-data-plane-design-20261030.md` · `stage-r5-execution-plane-assessment-20261030.md` · `stage-r6-research-domain-assessment-20261030.md` |
+| 路线图（本轮的输入） | `docs/roadmap-next-20261030.md` |
+| 架构图（已同步） | `docs/architecture-diagram.html` / `.svg`（v6.3） |
+| 验收工具 | `scripts/c1_gate.py`（失败集）、`scripts/c1_inventory.py`（测试数） |
+| 冻结基线 | `tests/baselines/pr-lane-failures.json`（104）· `pr-lane-nodeids.json`（12965） |
+| 新增测试（共 68） | `tests/test_r1_fence_wiring.py`(7) · `test_r2_consumer.py`(9) · `test_r2_steer.py`(6) · `test_r2_aging.py`(5) · `test_r3_session_domain.py`(5) · `test_r4_data_plane.py`(9) · `test_r5_model_hub.py`(9) · `test_r6_director.py`(18) |
