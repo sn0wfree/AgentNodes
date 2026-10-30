@@ -1277,11 +1277,28 @@ async def _event_generator_v2(
     yield ": connected\n\n"
     yield "retry: 3000\n\n"
 
-    store = _get_session_service().event_store
+    # P0 修复（2026-10-31）：SessionService 上承载 EventStore 的属性是
+    # `event_bus`（见 service.py:70 docstring「event_bus: EventStore for
+    # event_log + SSE + projector flush」）。此前写成 `event_store`——
+    # 属性不存在，SSE 流在首轮 resume 时即 AttributeError：WebUI 实时
+    # 时间线全坏，且客户端挂着连接时整个响应任务崩掉。被 PR 门排除的
+    # test_sse_e2e 首次完整运行暴露（docs/known-bug-sse-send-deadlock）。
+    store = _get_session_service().event_bus
     event_count = 0
     emitted_id = ""
     try:
-        async for event in store.subscribe(session_id):
+        # P0 修复之二（2026-10-31）：心跳改为**时间制**——SSE 保活语义
+        # 要求「15s 无活动必须发心跳」。超时逻辑在 subscribe 内部的
+        # queue.get 上（见 EventStore.subscribe keepalive_after）——在
+        # 端点层对 __anext__ 套 wait_for 会杀死整条流。
+        async for event in store.subscribe(
+            session_id, keepalive_after=_SSE_HEARTBEAT_INTERVAL_S,
+        ):
+            if event is None:  # keepalive tick → 心跳 comment 帧
+                event_count += 1
+                yield _heartbeat_sse(event_count)
+                continue
+
             # Last-Event-ID recovery: skip everything up to and including
             # the id the client already saw.
             if last_id and event.id != last_id and not emitted_id:
@@ -1293,8 +1310,6 @@ async def _event_generator_v2(
             yield _format_event_v2(event)
             emitted_id = event.id
             event_count += 1
-            if event_count % 4 == 0:
-                yield _heartbeat_sse(event_count)
     except asyncio.CancelledError:
         logger.info("[SSE] client disconnected session=%s events=%d",
                     session_id, event_count)
@@ -1338,3 +1353,8 @@ def _heartbeat_sse(count: int) -> str:
     reference implementation.
     """
     return ": heartbeat\n\n"
+
+
+# P0 修复之二：时间制心跳间隔（秒）。与 test_sse_e2e 的 15s 等待、
+# EventSource 的 3 分钟空闲超时对齐——空闲 15s 必发保活帧。
+_SSE_HEARTBEAT_INTERVAL_S = 15.0

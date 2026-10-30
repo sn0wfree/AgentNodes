@@ -2,10 +2,11 @@
 
 Tests the SSE infrastructure end-to-end with a real server.
 
-⚠ 整文件 skip（P0 已知 bug）：有 SSE 订阅者时 send_async 服务端死锁，
-首个用例即挂死全套件。复现脚本 scripts/repro_sse_send_deadlock.py，
-勘查与排除记录 docs/known-bug-sse-send-deadlock-20261030.md。
-修复后删除本 skip。
+历史注记：2026-10-30 首次完整 e2e 运行时本文件挂死——根因是
+`_event_generator_v2` 引用了 SessionService 上不存在的 `event_store`
+属性（正确为 `event_bus`），SSE 流首轮 resume 即 AttributeError，
+崩溃的响应任务把客户端连接吊死。修复后本文件全绿；勘查记录见
+docs/known-bug-sse-send-deadlock-20261030.md。
 """
 
 from __future__ import annotations
@@ -21,11 +22,6 @@ from pathlib import Path
 
 import pytest
 import requests
-
-pytestmark = pytest.mark.skip(
-    reason="P0: SSE 订阅期间 send_async 服务端死锁 — "
-           "docs/known-bug-sse-send-deadlock-20261030.md"
-)
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
 
@@ -75,6 +71,21 @@ def sse_server():
         cmd, cwd=str(REPO_ROOT), env=env,
         stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
     )
+    # P0 修复（2026-10-31）：必须排水！PIPE 缓冲（~64KB）填满后，服务端
+    # 事件循环线程在 logging 写 stdout 时永久阻塞——整个服务器假死
+    # （/health 无响应、send_async 挂死）。此前 fixture 从不读管道，
+    # test1 的 INFO 日志量足以填满缓冲，test2 起全部请求冻结。
+    # 诊断记录：docs/known-bug-sse-send-deadlock-20261030.md §6。
+    server_logs: list[str] = []
+
+    def _drain() -> None:
+        try:
+            for line in proc.stdout:  # type: ignore[union-attr]
+                server_logs.append(line)
+        except Exception:
+            pass
+
+    threading.Thread(target=_drain, daemon=True).start()
     try:
         _wait_for_http(f"{base_url}/health")
         yield {"base_url": base_url, "proc": proc, "port": port}

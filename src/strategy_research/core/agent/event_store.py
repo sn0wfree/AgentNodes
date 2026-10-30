@@ -324,11 +324,22 @@ class EventStore:
         self._broadcast_live(event.aggregate_id, event)
         self._fan_out_parent(event.aggregate_id, event)
 
-    async def subscribe(self, session_id: str) -> AsyncIterator[EventV2]:
+    async def subscribe(
+        self,
+        session_id: str,
+        *,
+        keepalive_after: float | None = None,
+    ) -> AsyncIterator[EventV2 | None]:
         """Async iterator: yield cache replay + live events as they arrive.
 
         Combines replay (catch up on missed events) + live (future events).
         Use ``break`` or ``CancelledError`` to stop.
+
+        ``keepalive_after``（P0 修复之二）：空闲超过该秒数时 yield ``None``
+        ——SSE 端点把它翻译成 comment 行心跳。**必须在 subscribe 内部做
+        wait_for**：在端点层对 ``__anext__()`` 套 wait_for 会把
+        CancelledError 注入生成器帧，直接杀死整条流（2026-10-31 教训）。
+        取消 `queue.get()` 本身是安全的（无副作用，队列不损）。
         """
         # 1. Replay cache first
         cached = self._cache.get(session_id)
@@ -355,7 +366,16 @@ class EventStore:
             self._live_queues.setdefault(session_id, []).append(queue)
         try:
             while True:
-                event = await queue.get()
+                if keepalive_after is not None:
+                    try:
+                        event = await asyncio.wait_for(
+                            queue.get(), timeout=keepalive_after,
+                        )
+                    except asyncio.TimeoutError:
+                        yield None  # keepalive tick（端点翻译成心跳帧）
+                        continue
+                else:
+                    event = await queue.get()
                 yield event
         except asyncio.CancelledError:
             pass
