@@ -35,6 +35,10 @@ def _start_gateway_consumer() -> Any | None:
             )
         except Exception as exc:  # noqa: BLE001
             print(f"⚠ 事件流恢复失败（继续启动）: {exc}")
+        # E2：配置指纹进事件流（audit 对账；失败只降级）
+        fp = gw.emit_config_fingerprint()
+        if fp:
+            print(f"✓ 配置指纹：{fp}")
         gw.start_consumer(kinds={WorkKind.CHAT})
         print("✓ Gateway 常驻消费者已启动（/chat/send 走 receipt 契约）")
         return gw

@@ -188,6 +188,28 @@ class Gateway:
         """
         return self._cancel_active_run(session_id, reason)
 
+    # ── E2：配置指纹进事件流 ─────────────────────────────
+
+    def emit_config_fingerprint(self) -> str | None:
+        """把平台配置的 sha256 指纹写入事件流（audit 对账用）。
+
+        指纹经 ``SENSITIVE_KEYS`` 剔除敏感字段（当前 PlatformConfig 不含
+        密钥字段，机制保留）；事件只带指纹哈希，不带配置内容。
+        失败降级返回 None，不阻断启动。
+        """
+        try:
+            from ..orchestration.config_hub import (
+                config_fingerprint,
+                load_platform_config,
+            )
+
+            fp = config_fingerprint(load_platform_config())
+            self._combined_sink("config.fingerprint", {"fingerprint": fp})
+            return fp
+        except Exception:  # noqa: BLE001 —— audit 事件失败不阻断启动
+            logger.debug("config fingerprint emit failed", exc_info=True)
+            return None
+
     # ── B3：状态查询 ─────────────────────────────────────
 
     def session_status(self, session_key: str) -> dict[str, Any]:

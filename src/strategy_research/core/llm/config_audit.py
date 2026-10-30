@@ -117,6 +117,17 @@ DEFAULT_LLM_JSON_PATH: Final[Path] = _QUANTNODES_DIR / "llm.json"
 DEFAULT_DOTENV_PATH: Final[Path] = _QUANTNODES_DIR / ".env"
 
 
+def _key_fingerprint(value: str) -> str:
+    """脱敏指纹：sha256 前 12 hex（E2）。
+
+    可对账（同一 key 恒得同一指纹）而不可还原——替代旧版「打印前 8 字符」
+    的部分明文暴露（用户红线：显示必须脱敏）。
+    """
+    import hashlib
+
+    return "sha256:" + hashlib.sha256(value.encode("utf-8")).hexdigest()[:12]
+
+
 def detect_issues(
     llm_json_path: Path | None = None,
     env_path: Path | None = None,
@@ -145,7 +156,8 @@ def detect_issues(
             code="C1",
             severity="error",
             description=(
-                f"api_key in llm.json is plaintext ({llm['api_key'][:8]}...). "
+                f"api_key in llm.json is plaintext "
+                f"(fingerprint {_key_fingerprint(llm['api_key'])}). "
                 "Should be an env:LLM_API_KEY reference."
             ),
             fixable=True,
