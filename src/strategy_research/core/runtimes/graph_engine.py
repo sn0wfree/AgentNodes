@@ -30,6 +30,7 @@ from typing import Any, Callable
 from langgraph.graph import END as _LG_END
 from langgraph.graph import StateGraph
 
+from .cancel_scope import RunCancelled
 from .run_budget import RunBudget
 
 EventSink = Callable[[str, dict], None]
@@ -286,6 +287,12 @@ class GraphEngine:
                 data = {"node": name, "reason": "max_hops", "hops": hops["n"]}
                 self._sink("graph.interrupted", data)
                 return {**state, INTERRUPT_KEY: data}
+            # B1：节点边界取消（进入前）——interrupt 语义的安全点。
+            scope = state.get("cancel_scope")
+            if scope is not None and getattr(scope, "cancelled", False):
+                data = {"node": name, "reason": f"cancelled:{scope.reason}"}
+                self._sink("graph.interrupted", data)
+                return {**state, INTERRUPT_KEY: data}
             started = time.perf_counter()
             self._sink("node.started", {"node": name})
             try:
@@ -299,6 +306,16 @@ class GraphEngine:
                 data: dict[str, Any] = {"node": name, "reason": gi.reason}
                 if gi.data is not None:
                     data["data"] = gi.data
+                self._sink("graph.interrupted", data)
+                return {**state, INTERRUPT_KEY: data}
+            except RunCancelled as rc:
+                # B1：节点执行中检测到取消（节点自己抛，或边界检查）
+                data = {"node": name, "reason": f"cancelled:{rc.reason}"}
+                self._sink("graph.interrupted", data)
+                return {**state, INTERRUPT_KEY: data}
+            # B1：节点边界取消（结束后）——下一节点不再启动。
+            if scope is not None and getattr(scope, "cancelled", False):
+                data = {"node": name, "reason": f"cancelled:{scope.reason}"}
                 self._sink("graph.interrupted", data)
                 return {**state, INTERRUPT_KEY: data}
             self._sink(

@@ -16,6 +16,7 @@ from dataclasses import dataclass
 from typing import Any, Callable
 
 from strategy_research.core.orchestration import EntryPoint, WorkRequest
+from strategy_research.core.runtimes.cancel_scope import CancelScope
 from strategy_research.core.runtimes.graph_engine import GraphEngine
 
 EventSink = Callable[[str, dict], None]
@@ -60,6 +61,7 @@ class SessionController:
         permission_gateway: Any | None = None,
         compact_config: Any | None = None,
         fence: Any | None = None,
+        cancel_registry: Any | None = None,
     ) -> None:
         self._ep = entry_point
         self._client = client
@@ -87,6 +89,9 @@ class SessionController:
         # R1：写栅栏（INV-4/INV-5）。None = 不设防（直构测试路径，与
         # permission_gateway 同型先例）；生产由 Gateway 注入唯一实例。
         self._fence = fence
+        # B1：活跃 run 的 CancelScope 注册表（session_id -> CancelScope）。
+        # None = 不注册（不可取消，测试/脚本路径）。生产由 Gateway 注入。
+        self._cancel_registry = cancel_registry
         self._current_session_id: str = ""  # per-turn, set by _execute
         self._turn_counters: dict[str, int] = {}  # session_id -> 已发 turn 数
 
@@ -165,6 +170,11 @@ class SessionController:
             state["steer_inbox"] = mailbox.steer_inbox()
         # R3：fence 域随 state 可见（测试引擎按域超越；引擎本身不修改它）。
         state["fence_domain"] = fence_domain
+        # B1：取消信号——节点边界检查；注册到 registry 供 interrupt/cancel 触发。
+        scope = CancelScope()
+        state["cancel_scope"] = scope
+        if self._cancel_registry is not None:
+            self._cancel_registry[fence_domain] = scope
         try:
             final = engine.run(state)
             answer = str(final.get("answer", ""))
@@ -177,6 +187,31 @@ class SessionController:
             self._sink("run.failed", {"run_id": run_id, "error": str(exc)})
             self._sink("run.settled", {"run_id": run_id, "ok": False})
             return RunResult(turn_id, run_id, ok=False, error=str(exc))
+        finally:
+            if self._cancel_registry is not None:
+                # 只清自己（被后继 run 覆盖时不误删）
+                if self._cancel_registry.get(fence_domain) is scope:
+                    self._cancel_registry.pop(fence_domain, None)
+
+        # B1：被取消 → 不产生 run.answer（无产物），照常释放栅栏，
+        # settled 标 cancelled=True（陈旧答案不落库对中断同样成立）。
+        if scope.cancelled or "interrupt" in final:
+            if token is not None:
+                self._fence.release(token)
+            if mailbox is not None:
+                mailbox.promote_steer()
+            self._sink("run.cancelled", {
+                "run_id": run_id,
+                "session_id": session_id,
+                "reason": scope.reason or "interrupt",
+            })
+            self._sink("run.settled", {
+                "run_id": run_id, "ok": False, "cancelled": True,
+            })
+            return RunResult(
+                turn_id, run_id, ok=False,
+                error=f"cancelled: {scope.reason or 'interrupt'}",
+            )
 
         # R1 fence ②：settled 事件本身就是「产物成立」的声明，必须先过
         # 栅栏（INV-4）。被超越 → 陈旧产物不得落库，也不 release（栅栏

@@ -61,8 +61,9 @@
   <text x="180" y="350" class="st">深度 cap 20 · 溢出 summarize ✅（拒绝唯一处）</text>
   <text x="180" y="370" class="st">steer ✅ 真注入（R2：安全点合批·只追加）</text>
   <text x="180" y="390" class="st">优先级老化 ✅（R2：aging_s 领先有界）</text>
-  <text x="180" y="418" class="sm">默认 ✅：cli=followup · api_chat=steer</text>
-  <text x="180" y="436" class="sm">automation=interrupt · collect 留位</text>
+  <text x="180" y="410" class="st">interrupt ✅ B1（取消活跃 run·节点边界）</text>
+  <text x="180" y="428" class="sm">默认：cli=followup · api_chat=steer</text>
+  <text x="180" y="446" class="sm">automation=interrupt · collect 留位</text>
 
   <rect x="498" y="282" width="320" height="190" rx="8" class="box"/>
   <text x="512" y="306" class="bt">SessionController</text>
@@ -243,11 +244,11 @@
   <text x="1276" y="622" class="st">✅ 已上线：E1 契约/mailbox · GraphEngine llm+react</text>
   <text x="1276" y="644" class="st">✅ 控制器 1a · ContextHub · 不变量 ×6 · turn/run id</text>
   <text x="1276" y="666" class="st">✅ 统一库事件化（B4/B5）· 文档治理（C2）</text>
-  <text x="1276" y="688" class="st">✅ R1-R6：fence · 消费者 · steer · 老化 · 串行域</text>
-  <text x="1276" y="710" class="st">✅ 数据面 P-3/协议 · ModelHub · Director(确定性)</text>
-  <text x="1276" y="732" class="st">⏳ 未建：容量组闸语义 · interrupt 级联 · 每 session 分库</text>
+  <text x="1276" y="688" class="st">✅ R1-R7：fence · 消费者 · steer · 老化 · 串行域</text>
+  <text x="1276" y="710" class="st">✅ 数据面 P-3/协议 · ModelHub · Director · interrupt</text>
+  <text x="1276" y="732" class="st">⏳ 未建：fold 重建 · 7 阶段/6 真值控制器 · 容量组闸</text>
   <text x="1276" y="754" class="st">⏹ 判定不做：cpu 节点 · graph 子图 · lane · RunContext 包</text>
-  <text x="1276" y="776" class="st">⏸ 延后：方法论归位（前置=解循环导入）</text>
+  <text x="1276" y="776" class="st">⏸ 延后：方法论归位（前置=解循环导入）· 分库(D2)</text>
   <text x="1276" y="798" class="st">⏸ 挂起：P5-1c 删旧 chat 分支（触发=R2 上线一周无回归）</text>
 
   <rect x="1260" y="820" width="300" height="380" rx="10" class="boxg"/>

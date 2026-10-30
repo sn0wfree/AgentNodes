@@ -9,7 +9,13 @@ from __future__ import annotations
 import uuid
 from typing import Callable, Iterable
 
-from .contracts import Receipt, RejectReason, WorkRequest, validate_work_request
+from .contracts import (
+    QueueMode,
+    Receipt,
+    RejectReason,
+    WorkRequest,
+    validate_work_request,
+)
 from .mailbox import DEFAULT_AGING_S, DEFAULT_CAP, EventSink, Mailbox
 
 
@@ -24,6 +30,7 @@ class EntryPoint:
         clock: Callable[[], float] | None = None,
         sink: EventSink | None = None,
         is_session_active: Callable[[str], object] | None = None,
+        on_interrupt: Callable[[str], object] | None = None,
     ) -> None:
         import time
 
@@ -31,6 +38,9 @@ class EntryPoint:
         self._sink = sink
         self._cap = cap
         self._aging_s = aging_s
+        # B1：interrupt 工单到达时的取消回调（session_id -> bool）。
+        # None = 只插队不取消（旧行为，测试/直构路径）。
+        self._on_interrupt = on_interrupt
         # R2.2：steer 路由查询（session_id -> 是否有活跃 run）。生产由
         # Gateway 注入 fence.active_run；None = 全部按「无活跃」处理。
         self._is_active = is_session_active
@@ -67,6 +77,17 @@ class EntryPoint:
             active = bool(self._is_active(physical))
         else:
             active = None
+        # B1：interrupt 语义——有活跃 run 时先触发取消，再照常入队
+        # （定稿：「取消该捕获的活跃 turn，打断输入优先接 next」）。
+        if (
+            request.queue_mode is QueueMode.INTERRUPT
+            and active
+            and self._on_interrupt is not None
+        ):
+            try:
+                self._on_interrupt(physical)
+            except Exception:  # noqa: BLE001 —— 取消失败不阻断入队
+                pass
         receipt = mailbox.submit(
             request,
             resolve_session=self._resolve_session,

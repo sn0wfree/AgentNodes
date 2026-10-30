@@ -58,8 +58,13 @@ class Gateway:
         combined = self._combined_sink
         # R2.2：fence 先建——EntryPoint 的 steer 路由用它查活跃 run。
         self.fence = SessionFence()
+        # B1：活跃 run 的 CancelScope 注册表（物理 session id -> scope）。
+        self._cancel_scopes: dict[str, Any] = {}
         self.entry = EntryPoint(
-            sink=combined, is_session_active=self.fence.active_run,
+            sink=combined,
+            is_session_active=self.fence.active_run,
+            # B1：interrupt 工单在有活跃 run 时触发取消（定稿语义）。
+            on_interrupt=self._cancel_active_run,
         )
         self.controller = SessionController(
             self.entry, client=client, system=system, sink=combined,
@@ -67,6 +72,9 @@ class Gateway:
             # R1：写栅栏注入——控制器 settle 前过 fence（INV-4），
             # 认领即超越（INV-5）。同一实例供 verify_invariants 检查。
             fence=self.fence,
+            # B1：取消注册表——控制器把每次 run 的 CancelScope 挂上去，
+            # interrupt/cancel_session 据此触发取消。
+            cancel_registry=self._cancel_scopes,
             # P5-1b：有 registry 时控制器默认图用 react 节点（无工具调用时
             # 退化为单次 LLM），否则纯 llm 节点。
             registry=registry, stream=stream,
@@ -162,6 +170,23 @@ class Gateway:
         否则仍是累积——新代码请直接用 ``add_sink``。
         """
         return self.add_sink(sink)
+
+    # ── B1：取消 ─────────────────────────────────────────
+
+    def _cancel_active_run(self, session_id: str, reason: str = "interrupt") -> bool:
+        """置该 session 活跃 run 的取消位（interrupt 语义）。无活跃 run → False。"""
+        scope = self._cancel_scopes.get(session_id)
+        if scope is None:
+            return False
+        scope.cancel(reason=reason)
+        return True
+
+    def cancel_session(self, session_id: str, *, reason: str = "user") -> bool:
+        """对外取消 API：取消该 session 的活跃 run（幂等）。
+
+        返回 True=已发出取消信号；False=当前无活跃 run（不报错）。
+        """
+        return self._cancel_active_run(session_id, reason)
 
     def _default_sink(self, kind: str, data: dict) -> None:
         self._events.append((kind, data))
