@@ -73,13 +73,13 @@
   <text x="512" y="410" class="sm">⏳ home_session_key（语义已由 R3 串行域承担）</text>
   <text x="512" y="428" class="sm">turn={sid}#n · run=:{turn}:r0 · 现由 run_once 同步驱动</text>
 
-  <rect x="830" y="282" width="343" height="190" rx="8" class="boxd"/>
-  <text x="844" y="306" class="bt">Director（策略）⏳</text>
-  <text x="844" y="330" class="st">停因 → 动作 · propose_next</text>
-  <text x="844" y="350" class="st">产出 = BranchContext（复用）</text>
-  <text x="844" y="370" class="st">以 followup 提交 mailbox</text>
-  <text x="844" y="396" class="sm">红线：不读预算 · 不得自行开 run</text>
-  <text x="844" y="414" class="sm">（唯一开 run 路径 = admission）</text>
+  <rect x="830" y="282" width="343" height="190" rx="8" class="box"/>
+  <text x="844" y="306" class="bt">Director（策略）✅ 确定性版</text>
+  <text x="844" y="330" class="st">✅ 停因 → 动作 · propose_next（R6）</text>
+  <text x="844" y="350" class="st">✅ 产出 study.directive 事件（不自动执行）</text>
+  <text x="844" y="370" class="st">✅ 红线：不读预算 · 不自行开 run</text>
+  <text x="844" y="396" class="sm">⏳ LLM 自由导演（无需求，属新功能）</text>
+  <text x="844" y="414" class="sm">core/study/director.py · 停因映射表</text>
 
   <rect x="166" y="492" width="320" height="190" rx="8" class="box"/>
   <text x="180" y="516" class="bt">ModelHub（RuntimeHub 模型侧）✅</text>
@@ -107,9 +107,9 @@
   <text x="844" y="600" class="st">⏳ 插件注册任务 · 宿主单定时器 · deadline 持久化</text>
   <text x="844" y="626" class="sm">切 C5 收敛 ⏳ · 1.6 协议化 ⏳</text>
 
-  <rect x="166" y="746" width="1007" height="64" rx="8" class="boxd"/>
-  <text x="180" y="770" class="bt">RunContext（turn 准备产物 · per-run 非全局）⏳ 未建</text>
-  <text x="180" y="792" class="st">预算快照 · EventSink · CancelScope · TraceView · 注入通道 —— 回答「在什么约束下跑」，不含「做什么」（预算门 BudgetGate 原语已有）</text>
+  <rect x="166" y="746" width="1007" height="64" rx="8" class="box"/>
+  <text x="180" y="770" class="bt">RunContext（turn 准备产物 · per-run 非全局）—— 机制已存在，散装 state 键</text>
+  <text x="180" y="792" class="st">state["run_budget"]（可切片）· sink 注入 · cancel Event · state["steer_inbox"] · run_id/session_id/fence_domain · trace 绑定 —— 包成对象 ⏹ 不做（纯改名）</text>
 
   <rect x="166" y="690" width="1007" height="46" rx="8" class="boxd"/>
   <text x="180" y="708" class="bt">容量组闸（闸不是队 · 等待在 mailbox）⏳ 未建</text>
@@ -134,8 +134,8 @@
   <text x="516" y="940" class="bt">Preset 注册表（图 = 纯数据）</text>
   <text x="516" y="962" class="st">chat = 单 react 节点退化图 ✅</text>
   <text x="516" y="982" class="st">research = 方法论阶段图 ✅（study graph_preset）</text>
-  <text x="516" y="1002" class="st">【Tier 0 冻结】治理分级 ⏳ · Tier 1 提案 ⏳</text>
-  <text x="516" y="1030" class="sm">切 B1-a/b ✅ · D2 提案通道 ⏳</text>
+  <text x="516" y="1002" class="st">【Tier 0 冻结】治理分级 ⏹ 不做（无可编辑 preset 文件）</text>
+  <text x="516" y="1030" class="sm">切 B1-a/b ✅ · D2 提案通道 ⏳ 无消费方</text>
   <rect x="850" y="916" width="339" height="130" rx="9" class="box"/>
   <text x="866" y="940" class="bt">执行红线（引擎性质 · 不入配置）</text>
   <text x="866" y="962" class="st">图根 = turn，走 mailbox 准入 ✅</text>
@@ -189,7 +189,7 @@
   <text x="166" y="1402" class="bt">研究方法论（不动）</text>
   <text x="166" y="1424" class="st">假设→派生→证伪(claims)</text>
   <text x="166" y="1444" class="st">→ AEGIS 门 → 两阶段 journal</text>
-  <text x="166" y="1466" class="sm">⏳ 归位 core/study/method/（仍在 phase_engine.py）</text>
+  <text x="166" y="1466" class="sm">⏸ 归位 core/study/method/ 延后（前置：先解 phase_engine↔runner 循环导入）</text>
   <rect x="413" y="1378" width="250" height="100" rx="9" class="box"/>
   <text x="429" y="1402" class="bt">研究账本</text>
   <text x="429" y="1424" class="st">hypothesis/claims/journal/study</text>
@@ -243,11 +243,11 @@
   <text x="1276" y="622" class="st">✅ 已上线：E1 契约/mailbox · GraphEngine llm+react</text>
   <text x="1276" y="644" class="st">✅ 控制器 1a · ContextHub · 不变量 ×6 · turn/run id</text>
   <text x="1276" y="666" class="st">✅ 统一库事件化（B4/B5）· 文档治理（C2）</text>
-  <text x="1276" y="688" class="st">✅ R1-R5：fence · 消费者 · steer · 老化 · 串行域</text>
-  <text x="1276" y="710" class="st">✅ 数据面 P-3/协议版本 · 模型侧 ModelHub</text>
-  <text x="1276" y="732" class="st">⏳ 未建：Director · 容量组闸语义 · interrupt 级联</text>
-  <text x="1276" y="754" class="st">⏹ 判定不做：cpu 节点 · graph 子图 · subagent lane（R5）</text>
-  <text x="1276" y="776" class="st">⏳ 方法论归位 · 分库(D2 延后) · 全局 session 登记</text>
+  <text x="1276" y="688" class="st">✅ R1-R6：fence · 消费者 · steer · 老化 · 串行域</text>
+  <text x="1276" y="710" class="st">✅ 数据面 P-3/协议 · ModelHub · Director(确定性)</text>
+  <text x="1276" y="732" class="st">⏳ 未建：容量组闸语义 · interrupt 级联 · 每 session 分库</text>
+  <text x="1276" y="754" class="st">⏹ 判定不做：cpu 节点 · graph 子图 · lane · RunContext 包</text>
+  <text x="1276" y="776" class="st">⏸ 延后：方法论归位（前置=解循环导入）</text>
   <text x="1276" y="798" class="st">⏸ 挂起：P5-1c 删旧 chat 分支（触发=R2 上线一周无回归）</text>
 
   <rect x="1260" y="820" width="300" height="380" rx="10" class="boxg"/>

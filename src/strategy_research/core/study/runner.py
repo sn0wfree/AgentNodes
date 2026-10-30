@@ -229,7 +229,27 @@ class AutoresearchRunner(RunnerAegisMixin, RunnerKnowledgeMixin):
         # every log line + emitted event carries trace_id.
         from ..observability import bind_trace
         with bind_trace(trace_id=self._trace_id, study_id=sid):
-            return await self._run_lifecycle(sid, session)
+            reason = await self._run_lifecycle(sid, session)
+            self._emit_directive(sid, session, reason)
+            return reason
+
+    def _emit_directive(self, sid: str, session: str, reason: str) -> None:
+        """R6：Director 产出「下一步建议」并只发事件——**不自动开 run**。
+
+        红线（架构图 ② Director 格）：不读预算、不得自行开 run。
+        是否执行建议由上层/人工决定；本方法无副作用（除一条事件）。
+        失败绝不影响 study 收尾。
+        """
+        try:
+            from .director import propose_next
+
+            last = self.study_store.get_study(sid)
+            proposal = propose_next(
+                last, str(reason), metrics=getattr(last, "last_metrics", None),
+            )
+            self._emit(session, "study.directive", proposal.to_dict())
+        except Exception:  # noqa: BLE001 —— 建议失败不影响收尾
+            logger.debug("directive proposal failed study=%s", sid, exc_info=True)
 
     async def _run_lifecycle(self, sid: str, session: str) -> str:
         self._emit(session, "study_started", {"study_id": sid, "round": self._get_study().current_round})
