@@ -142,12 +142,15 @@ class AutoresearchRunner(RunnerAegisMixin, RunnerKnowledgeMixin):
         control: ControlToken | None = None,
         emitter: EventEmitter | None = None,
         goal_store: Any = None,
+        artifacts: Any = None,
     ) -> None:
         self.study = study
         self.study_id = study.study_id
         self.study_store = store
         self.control = control or ControlToken()
         self.emitter = emitter or NullEmitter()
+        # R4：P-3 通道（大结果落盘+登记，事件只带指针）。None = 现行为。
+        self._artifacts = artifacts
         self._own_goal_store = goal_store is None
         self._goal_store = goal_store or _state_utils.open_goal_store()
         # AEGIS state
@@ -717,10 +720,33 @@ class AutoresearchRunner(RunnerAegisMixin, RunnerKnowledgeMixin):
             _dlog("loop", "round %d: harvested %d stale bg tasks", round_num, killed)
 
         # ── SSE: study_round ───────────────────────────────────
+        # R4（P-3）：metrics 超过阈值 → 落盘 + 登记，事件只带指针；
+        # 小 metrics（绝大多数）原样进事件——字节不变（等价门）。
+        round_metrics = metrics
+        if self._artifacts is not None:
+            try:
+                maybe = self._artifacts.maybe_artifact(
+                    session_id=session,
+                    payload=metrics,
+                    kind="round_metrics",
+                    run_id=f"{sid}:R{round_num}",
+                    study_id=sid,
+                    round_id=f"R{round_num}",
+                )
+                if maybe is not metrics:
+                    round_metrics = maybe.to_dict()
+                    self._emit(session, "artifact.registered", {
+                        "study_id": sid, "round": round_num,
+                        "kind": "round_metrics",
+                        **round_metrics,
+                    })
+            except Exception:  # noqa: BLE001 —— 落盘失败降级为内联
+                logger.warning("artifact channel failed round=%s", round_num,
+                               exc_info=True)
         self._emit(session, "study_round", {
             "study_id": sid, "round": round_num,
             "run": result.get("run_name", ""),
-            "metrics": metrics, "verdict": verdict,
+            "metrics": round_metrics, "verdict": verdict,
         })
 
         # ── SSE: study_budget (per-round accounting) ─────────

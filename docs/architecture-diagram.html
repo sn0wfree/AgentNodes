@@ -195,17 +195,16 @@
   <text x="429" y="1228" class="st">✅ projector 边界折叠 · WAL 并发</text>
   <text x="429" y="1248" class="st">⏳ 每 session 一库 · platform.sqlite</text>
   <text x="429" y="1268" class="sm">owner=PlatformStore ⏳ 已建未接线</text>
-  <rect x="676" y="1162" width="250" height="100" rx="9" class="boxd"/>
-  <text x="692" y="1186" class="bt">工件登记（P-3 · 待建）</text>
-  <text x="692" y="1208" class="st">⏳ PlatformStore 登记 API 已建 · 未接线</text>
-  <text x="692" y="1228" class="st">大产物唯一通道 · 两步可见</text>
-  <text x="692" y="1248" class="sm">回测结果是第一个用户 · 兼跨会话发现</text>
-  <rect x="939" y="1162" width="250" height="100" rx="9" class="boxd"/>
-  <text x="955" y="1186" class="bt">身份原语 + 指针（P-4/5）</text>
+  <rect x="676" y="1162" width="250" height="100" rx="9" class="box"/>
+  <text x="692" y="1186" class="bt">工件登记（P-3）✅</text>
+  <text x="692" y="1208" class="st">✅ ArtifactChannel 接线（R4）：round metrics</text>
+  <text x="692" y="1228" class="st">>64KB 落盘 + 登记，事件只带指针</text>
+  <text x="692" y="1248" class="sm">D-4 布局 studies/&lt;id&gt;/rounds/R-n/artifacts/</text>
+  <text x="955" y="1186" class="bt">身份原语 + 指针（P-4/5）✅</text>
   <text x="955" y="1208" class="st">✅ turn→run 派生 id（{sid}#n · :r0）</text>
-  <text x="955" y="1228" class="st">⏳ 子 run/artifact 层 · 血统三件套</text>
-  <text x="955" y="1248" class="st">⏳ P-5 指针四件套</text>
-  <text x="955" y="1268" class="sm">切 B4 部分 ✅ · turn:run=1:N · 不变量 8</text>
+  <text x="955" y="1228" class="st">✅ P-5 指针四件套 {uri,sha256,bytes,schema_v}</text>
+  <text x="955" y="1248" class="st">✅ sha256 校验读回 · 篡改即拒</text>
+  <text x="955" y="1268" class="sm">⏳ 子 run/artifact 层血统 · turn:run=1:N · 不变量 8</text>
 
   <rect x="150" y="1272" width="1039" height="34" rx="8" class="boxa"/>
   <text x="166" y="1294" class="st">接缝规则：研究域不许私开存储通道 —— 大产物走登记(P-3) · 事实走事件流(P-1) · id 挂血统(P-4)</text>
@@ -244,7 +243,7 @@
   <text x="166" y="1526" class="bt">接缝规范</text>
   <text x="166" y="1550" class="st">L1 窄协议 ✅ · L2 统一注册 ⏳（5 套注册表并存）· L3 一致性套件 ⏳</text>
   <text x="166" y="1570" class="st">hook 红线 ✅：只读不改控制流（与 OpenClaw 一致）</text>
-  <text x="166" y="1590" class="st">PROTOCOL_VERSION ⏳ 全库 0 处（切 B3）</text>
+  <text x="166" y="1590" class="st">PROTOCOL_VERSION ✅ R4（单版本+拒绝 · replay 校验）</text>
   <rect x="690" y="1500" width="499" height="130" rx="10" class="boxa"/>
   <text x="706" y="1526" class="bt">基因组（RSI）· 只改行为工件</text>
   <text x="706" y="1550" class="st">Tier 0 冻结（预算/停止/状态机/scope）· Tier 1 提案制 · Tier 2 可自改</text>
@@ -276,10 +275,10 @@
   <text x="1276" y="622" class="st">✅ 已上线：E1 契约/mailbox · GraphEngine llm+react</text>
   <text x="1276" y="644" class="st">✅ 控制器 1a · ContextHub · 不变量 ×6 · turn/run id</text>
   <text x="1276" y="666" class="st">✅ 统一库事件化（B4/B5）· 文档治理（C2）</text>
-  <text x="1276" y="688" class="st">✅ R1-R3：fence · 常驻消费者 · steer · 老化 · 跨kind串行</text>
-  <text x="1276" y="710" class="st">⚠ 建而未接线：PlatformStore</text>
+  <text x="1276" y="688" class="st">✅ R1-R4：fence · 消费者 · steer · 老化 · 串行域 · P-3</text>
+  <text x="1276" y="710" class="st">✅ 数据面：PlatformStore 接线 · 指针四件套 · 协议版本</text>
   <text x="1276" y="732" class="st">⏳ 未建：Director · RuntimeHub · 容量组闸语义 · interrupt 级联</text>
-  <text x="1276" y="754" class="st">⏳ cpu/graph 节点 · 方法论归位 · P-3/P-5 · 分库</text>
+  <text x="1276" y="754" class="st">⏳ cpu/graph 节点 · 方法论归位 · 分库(D2 延后) · 全局 session 登记</text>
   <text x="1276" y="776" class="st">⏸ 挂起：P5-1c 删旧 chat 分支（触发=R2 上线一周无回归）</text>
 
   <rect x="1260" y="820" width="300" height="380" rx="10" class="boxg"/>
@@ -364,11 +363,11 @@
 <tr><td class="k">上下文</td><td>ContextHub 建成并接线（collect→arbitrate→render + 预算仲裁 + 超限事件）✅；旧 ContextBuilder 仍在服务旧分支（P5-1c ⏸）</td><td><b>ContextHub 独占</b>（= OpenClaw Prompt Assembly）+ 稳定前缀 + 分层预算</td></tr>
 <tr><td class="k">并发正确性</td><td><b>fence 挂根 ✅（R1）</b>：控制器 settle 前过 SessionFence，被超越的 run 被拦（run.fenced）；INV-4 进注册表；interrupt 级联取消 ⏳</td><td>activeRunId 认领 + 提交校验（fence 挂根）</td></tr>
 <tr><td class="k">研究方法论</td><td>仍在 phase_engine.py，core/study/method/ 未建</td><td><b>core/study/method/ 独立成域——不动</b></td></tr>
-<tr><td class="k">平台数据面</td><td>统一单库（event+message+goal/todo，B4 单一写者·事件化）✅；每 session 一库 ⏳；PlatformStore 已建未接线 ⚠；P-4 turn/run id ✅ · P-3/P-5 ⏳</td><td>每 session 自包含 SQLite + platform.sqlite 全局小库 + 工件登记/指针</td></tr>
+<tr><td class="k">平台数据面</td><td>统一单库（event+message+goal/todo，B4 单一写者·事件化）✅；<b>P-3 登记接线 ✅ R4（round metrics &gt;64KB 转指针）</b>；P-5 四件套 ✅；PROTOCOL_VERSION ✅ R4（单版本+拒绝）；PlatformStore 生产接线 ✅；每 session 一库 ⏳（D2 延后）</td><td>每 session 自包含 SQLite + platform.sqlite 全局小库 + 工件登记/指针</td></tr>
 </tbody>
 </table>
 
-<p style="color:#64748b;font-size:12.5px;margin-top:10px">v5.1 → v6：入口层塌进 Gateway，管线 8 段收 4 段，回执两态。v6 → v6.1：mailbox 落细则（先序后闸 / cap 20 / 老化）、新增容量组闸横带、home_session 落图、执行面标 T1/T2/T3。v6.1 → v6.2：执行面三 runtime 收敛为 <b>GraphEngine 唯一 runtime</b> + 四种节点类型 + preset 治理分级；DagRuntime 除名。数据层拆分：平台数据面并入平台虚线框，研究域独立成第 ⑤ 层。<b>v6.2 → v6.3（2026-10-30）：对照代码逐格核实，虚实线与 ✅/⏳/⏸ 标注对齐实现现状。</b>已上线：E1 契约/两态回执、mailbox（cap20+溢出摘要+4 队列模式）、SessionController 1a 最小版（P-4 身份）、GraphEngine（llm/react · react 内部=AgentLoop 平移）、fanout-t2→ExecutorBridge、ContextHub（接线+仲裁+压缩同源）、不变量 ×5+verify_all、统一库事件化（B4 单一写者）、文档治理。建而未接线 ⚠：SessionFence、PlatformStore。仍未建 ⏳：RuntimeHub、容量组闸、优先级老化、steer 真注入（现为降级桩）、独立 cpu/graph 节点、Director、RunContext、方法论归位 core/study/method/、P-3/P-5、每 session 分库、Scheduler 唯一、PROTOCOL_VERSION、宿主进程（qs gateway）。挂起 ⏸：P5-1c 删旧 chat 分支（唯一待办，docs/todo-remove-legacy-chat-branch-20261027.md）。<b>R1（2026-10-30）：fence 挂根 ✅</b>——SessionFence 接进 SessionController（claim→validate→release），INV-4「产物落库必过 fence」进注册表，⚠ 孤儿清一个；剩余孤儿仅 PlatformStore。详细勘查见 docs/stage-r1-fence-wiring-design-20261030.md。<b>R2（2026-10-30，E1=C 用户拍板）✅</b>：常驻消费者（server.py 宿主启停 · grace）、run.answer 事件、/chat/send receipt 型 + ?wait=true（无消费者回落同步）、steer 真注入（fence 路由 + react 安全点合批 + 滞留晋升，降级桩删除）、优先级老化（aged&gt;interrupt&gt;FIFO · work.aged · ConfigHub aging_s）。设计见 docs/stage-r2-consumer-steer-aging-design-20261030.md。<b>R3（2026-10-30，勘查后重定界）✅</b>：CLI/TUI 入口核实早已接（更正此前误判）；study 早已走 automation mailbox（阶段 3c/4）；真实缺口=同 session 跨 kind 裸并发——fence 域统一为物理 session id，chat 消费者跳过被占 session、study 执行占栏/等待/释放，session=串行域对全部 kind 成立。设计见 docs/stage-r3-session-domain-design-20261030.md。</p>
+<p style="color:#64748b;font-size:12.5px;margin-top:10px">v5.1 → v6：入口层塌进 Gateway，管线 8 段收 4 段，回执两态。v6 → v6.1：mailbox 落细则（先序后闸 / cap 20 / 老化）、新增容量组闸横带、home_session 落图、执行面标 T1/T2/T3。v6.1 → v6.2：执行面三 runtime 收敛为 <b>GraphEngine 唯一 runtime</b> + 四种节点类型 + preset 治理分级；DagRuntime 除名。数据层拆分：平台数据面并入平台虚线框，研究域独立成第 ⑤ 层。<b>v6.2 → v6.3（2026-10-30）：对照代码逐格核实，虚实线与 ✅/⏳/⏸ 标注对齐实现现状。</b>已上线：E1 契约/两态回执、mailbox（cap20+溢出摘要+4 队列模式）、SessionController 1a 最小版（P-4 身份）、GraphEngine（llm/react · react 内部=AgentLoop 平移）、fanout-t2→ExecutorBridge、ContextHub（接线+仲裁+压缩同源）、不变量 ×5+verify_all、统一库事件化（B4 单一写者）、文档治理。建而未接线 ⚠：SessionFence、PlatformStore。仍未建 ⏳：RuntimeHub、容量组闸、优先级老化、steer 真注入（现为降级桩）、独立 cpu/graph 节点、Director、RunContext、方法论归位 core/study/method/、P-3/P-5、每 session 分库、Scheduler 唯一、PROTOCOL_VERSION、宿主进程（qs gateway）。挂起 ⏸：P5-1c 删旧 chat 分支（唯一待办，docs/todo-remove-legacy-chat-branch-20261027.md）。<b>R1（2026-10-30）：fence 挂根 ✅</b>——SessionFence 接进 SessionController（claim→validate→release），INV-4「产物落库必过 fence」进注册表，⚠ 孤儿清一个；剩余孤儿仅 PlatformStore。详细勘查见 docs/stage-r1-fence-wiring-design-20261030.md。<b>R2（2026-10-30，E1=C 用户拍板）✅</b>：常驻消费者（server.py 宿主启停 · grace）、run.answer 事件、/chat/send receipt 型 + ?wait=true（无消费者回落同步）、steer 真注入（fence 路由 + react 安全点合批 + 滞留晋升，降级桩删除）、优先级老化（aged&gt;interrupt&gt;FIFO · work.aged · ConfigHub aging_s）。设计见 docs/stage-r2-consumer-steer-aging-design-20261030.md。<b>R3（2026-10-30，勘查后重定界）✅</b>：CLI/TUI 入口核实早已接（更正此前误判）；study 早已走 automation mailbox（阶段 3c/4）；真实缺口=同 session 跨 kind 裸并发——fence 域统一为物理 session id，chat 消费者跳过被占 session、study 执行占栏/等待/释放，session=串行域对全部 kind 成立。设计见 docs/stage-r3-session-domain-design-20261030.md。<b>R4（2026-10-30，D2=延后分库）✅</b>：P-5 指针四件套与 ArtifactChannel 本就完整（13 测试）但零调用方——现接进生产：singleton 注入 data_dir、Gateway 暴露 artifacts、study round metrics 超 64KB 转指针落 D-4 目录并登记、回测结果是第一个真实用户；PROTOCOL_VERSION 成为事件信封唯一来源，replay 遇不匹配版本明确拒绝（不猜语义）。设计见 docs/stage-r4-data-plane-design-20261030.md。</p>
 
 <footer>
   骨架参考：<b>docs/openclaw-architecture.html</b> · 总纲：<b>docs/architecture-v3-openclaw-inspired.md</b> ·

@@ -163,17 +163,16 @@
   <text x="429" y="1228" class="st">✅ projector 边界折叠 · WAL 并发</text>
   <text x="429" y="1248" class="st">⏳ 每 session 一库 · platform.sqlite</text>
   <text x="429" y="1268" class="sm">owner=PlatformStore ⏳ 已建未接线</text>
-  <rect x="676" y="1162" width="250" height="100" rx="9" class="boxd"/>
-  <text x="692" y="1186" class="bt">工件登记（P-3 · 待建）</text>
-  <text x="692" y="1208" class="st">⏳ PlatformStore 登记 API 已建 · 未接线</text>
-  <text x="692" y="1228" class="st">大产物唯一通道 · 两步可见</text>
-  <text x="692" y="1248" class="sm">回测结果是第一个用户 · 兼跨会话发现</text>
-  <rect x="939" y="1162" width="250" height="100" rx="9" class="boxd"/>
-  <text x="955" y="1186" class="bt">身份原语 + 指针（P-4/5）</text>
+  <rect x="676" y="1162" width="250" height="100" rx="9" class="box"/>
+  <text x="692" y="1186" class="bt">工件登记（P-3）✅</text>
+  <text x="692" y="1208" class="st">✅ ArtifactChannel 接线（R4）：round metrics</text>
+  <text x="692" y="1228" class="st">>64KB 落盘 + 登记，事件只带指针</text>
+  <text x="692" y="1248" class="sm">D-4 布局 studies/&lt;id&gt;/rounds/R-n/artifacts/</text>
+  <text x="955" y="1186" class="bt">身份原语 + 指针（P-4/5）✅</text>
   <text x="955" y="1208" class="st">✅ turn→run 派生 id（{sid}#n · :r0）</text>
-  <text x="955" y="1228" class="st">⏳ 子 run/artifact 层 · 血统三件套</text>
-  <text x="955" y="1248" class="st">⏳ P-5 指针四件套</text>
-  <text x="955" y="1268" class="sm">切 B4 部分 ✅ · turn:run=1:N · 不变量 8</text>
+  <text x="955" y="1228" class="st">✅ P-5 指针四件套 {uri,sha256,bytes,schema_v}</text>
+  <text x="955" y="1248" class="st">✅ sha256 校验读回 · 篡改即拒</text>
+  <text x="955" y="1268" class="sm">⏳ 子 run/artifact 层血统 · turn:run=1:N · 不变量 8</text>
 
   <rect x="150" y="1272" width="1039" height="34" rx="8" class="boxa"/>
   <text x="166" y="1294" class="st">接缝规则：研究域不许私开存储通道 —— 大产物走登记(P-3) · 事实走事件流(P-1) · id 挂血统(P-4)</text>
@@ -212,7 +211,7 @@
   <text x="166" y="1526" class="bt">接缝规范</text>
   <text x="166" y="1550" class="st">L1 窄协议 ✅ · L2 统一注册 ⏳（5 套注册表并存）· L3 一致性套件 ⏳</text>
   <text x="166" y="1570" class="st">hook 红线 ✅：只读不改控制流（与 OpenClaw 一致）</text>
-  <text x="166" y="1590" class="st">PROTOCOL_VERSION ⏳ 全库 0 处（切 B3）</text>
+  <text x="166" y="1590" class="st">PROTOCOL_VERSION ✅ R4（单版本+拒绝 · replay 校验）</text>
   <rect x="690" y="1500" width="499" height="130" rx="10" class="boxa"/>
   <text x="706" y="1526" class="bt">基因组（RSI）· 只改行为工件</text>
   <text x="706" y="1550" class="st">Tier 0 冻结（预算/停止/状态机/scope）· Tier 1 提案制 · Tier 2 可自改</text>
@@ -244,10 +243,10 @@
   <text x="1276" y="622" class="st">✅ 已上线：E1 契约/mailbox · GraphEngine llm+react</text>
   <text x="1276" y="644" class="st">✅ 控制器 1a · ContextHub · 不变量 ×6 · turn/run id</text>
   <text x="1276" y="666" class="st">✅ 统一库事件化（B4/B5）· 文档治理（C2）</text>
-  <text x="1276" y="688" class="st">✅ R1-R3：fence · 常驻消费者 · steer · 老化 · 跨kind串行</text>
-  <text x="1276" y="710" class="st">⚠ 建而未接线：PlatformStore</text>
+  <text x="1276" y="688" class="st">✅ R1-R4：fence · 消费者 · steer · 老化 · 串行域 · P-3</text>
+  <text x="1276" y="710" class="st">✅ 数据面：PlatformStore 接线 · 指针四件套 · 协议版本</text>
   <text x="1276" y="732" class="st">⏳ 未建：Director · RuntimeHub · 容量组闸语义 · interrupt 级联</text>
-  <text x="1276" y="754" class="st">⏳ cpu/graph 节点 · 方法论归位 · P-3/P-5 · 分库</text>
+  <text x="1276" y="754" class="st">⏳ cpu/graph 节点 · 方法论归位 · 分库(D2 延后) · 全局 session 登记</text>
   <text x="1276" y="776" class="st">⏸ 挂起：P5-1c 删旧 chat 分支（触发=R2 上线一周无回归）</text>
 
   <rect x="1260" y="820" width="300" height="380" rx="10" class="boxg"/>

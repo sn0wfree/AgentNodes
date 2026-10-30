@@ -19,6 +19,14 @@ from strategy_research.core.orchestration import EntryPoint
 logger = logging.getLogger(__name__)
 
 
+def _resolve_workspace() -> Path:
+    """workspace 根（P-5 指针的 URI 根）：SR_WORKSPACE_PATH 或 cwd。"""
+    import os
+
+    env = os.environ.get("SR_WORKSPACE_PATH")
+    return Path(env) if env else Path.cwd()
+
+
 class Gateway:
     """单进程内核：入口 + 控制器 + fence + 事件存储 + 不变量自检。"""
 
@@ -34,6 +42,8 @@ class Gateway:
         stream: bool = False,
         context_hub: Any | None = None,
         context_policy: Any | None = None,
+        artifact_channel: Any | None = None,
+        workspace: str | Path | None = None,
     ) -> None:
         self._events: list[tuple[str, dict]] = []
         self._external_sink = sink
@@ -63,6 +73,20 @@ class Gateway:
             from strategy_research.core.storage.platform_store import PlatformStore
 
             self._store = PlatformStore(data_dir=data_dir)
+        # R4：artifact 通道（P-3）——执行层的大结果落盘 + 登记，事件只带
+        # 指针。显式注入优先；否则 store 可用时自建（workspace 为 URI 根）。
+        # None = 现行为（测试/无 store 路径，事件内容逐字节不变）。
+        self._artifacts = artifact_channel
+        if self._artifacts is None and self._store is not None:
+            ws = workspace or _resolve_workspace()
+            try:
+                from strategy_research.core.storage.artifact_channel import (
+                    ArtifactChannel,
+                )
+
+                self._artifacts = ArtifactChannel(self._store, ws)
+            except Exception:  # noqa: BLE001 —— 通道不可用不阻断 chat
+                logger.debug("artifact channel unavailable", exc_info=True)
         # 保持兼容：_build_engine 仍可访问（A1 preset 注册表会替换）
         # R2.1b：常驻消费者状态（start_consumer 显式启动，构造不启动——
         # 测试/直构路径零影响）。
@@ -76,6 +100,11 @@ class Gateway:
     def store(self):
         """PlatformStore（可能为 None——data_dir 未配置时纯内存模式）。"""
         return self._store
+
+    @property
+    def artifacts(self):
+        """P-3 artifact 通道（可能为 None——store 未配置时）。"""
+        return self._artifacts
 
     def _combined_sink(self, kind: str, data: dict) -> None:
         self._default_sink(kind, data)

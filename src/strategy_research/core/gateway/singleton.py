@@ -51,15 +51,49 @@ def get_gateway(
         # 的 controller._context_hub 恒为 None——B1-b 的上下文注入只在旧
         # /send_async 路径活着。失败降级 None（与 registry 降级同款）。
         context_hub = _build_context_hub()
+        ws = _resolve_workspace()
         gw = Gateway(
             client=client, system=system, sink=sink,
             registry=registry, stream=stream,
             context_hub=context_hub,
             context_policy=_build_context_policy(),
+            # R4：PlatformStore + artifact 通道（P-3 登记）。
+            # QNODES_PLATFORM_STORE=0 可关闭（灰度回退位）；构造失败降级 None。
+            data_dir=_platform_data_dir(ws),
+            workspace=ws,
         )
         gw.verify_invariants()  # A5：不变量违反即拒启
         _singleton["gw"] = gw
     return gw
+
+
+def _resolve_workspace() -> Any:
+    """workspace 根（SR_WORKSPACE_PATH 或 cwd）——与 gateway._resolve_workspace 同源。"""
+    import os
+    from pathlib import Path
+
+    env = os.environ.get("SR_WORKSPACE_PATH")
+    return Path(env) if env else Path.cwd()
+
+
+def _platform_data_dir(workspace: Any) -> Any | None:
+    """P-3/P-1 持久化目录；None = 纯内存（现行为）。
+
+    关闭开关：``QNODES_PLATFORM_STORE=0``（测试/排障）。目录创建失败也只
+    降级 None——chat 不因数据面不可用而中断。
+    """
+    import os
+
+    if os.environ.get("QNODES_PLATFORM_STORE", "").strip().lower() in (
+        "0", "false", "no", "off",
+    ):
+        return None
+    try:
+        data_dir = workspace / ".quantnodes" / "platform"
+        data_dir.mkdir(parents=True, exist_ok=True)
+        return data_dir
+    except Exception:  # noqa: BLE001 —— 数据面不可用不阻断 chat
+        return None
 
 
 def _build_context_hub() -> Any | None:

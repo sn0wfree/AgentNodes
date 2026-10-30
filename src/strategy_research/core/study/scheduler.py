@@ -856,9 +856,23 @@ class StudyScheduler:
         control = ControlToken()
         self._control_tokens[study_id] = control
         emitter = self._make_emitter(study)
-        executor = AutoresearchRunner(
-            study, self.store, control=control, emitter=emitter,
-        )
+        runner_kwargs: dict[str, Any] = {
+            "control": control, "emitter": emitter,
+        }
+        # R4：P-3 通道。鸭子类型 runner（测试替身）可能不接受该参数——
+        # 有则传，无则退回旧签名（与 _execute_tool 的兼容写法同型）。
+        _artifacts = self._artifact_channel()
+        if _artifacts is not None:
+            try:
+                import inspect
+
+                if "artifacts" in inspect.signature(
+                    AutoresearchRunner.__init__
+                ).parameters:
+                    runner_kwargs["artifacts"] = _artifacts
+            except (TypeError, ValueError):
+                pass
+        executor = AutoresearchRunner(study, self.store, **runner_kwargs)
         self._active_executors[study_id] = executor
         _dlog("sched", "marking RUNNING study=%s", study_id)
         # v2 §15.2: a recovered MONITORING study keeps its status; the runner
@@ -1025,6 +1039,18 @@ class StudyScheduler:
             return make_event_bus_emitter(study.session_id,
                                           self.session_service.event_bus)
         return NullEmitter()
+
+    def _artifact_channel(self) -> Any | None:
+        """R4：P-3 通道（与 chat 侧同一 Gateway 实例上的组装产物）。
+
+        None 时 runner 保持现行为（metrics 内联进事件）。取不到 Gateway
+        不报错——study 不因数据面不可用而失败。
+        """
+        try:
+            gw = _get_gateway_singleton()
+            return getattr(gw, "artifacts", None)
+        except Exception:  # noqa: BLE001
+            return None
 
     def _emit_event(self, session_id: str, event: str, data: dict) -> None:
         if self.session_service is None:

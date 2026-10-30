@@ -22,6 +22,23 @@ from datetime import datetime
 from enum import Enum
 from typing import Any, Mapping
 
+# R4：协议版本（事件信封 schema_v 的唯一来源）。单版本 + 拒绝，不做协商：
+# 回放/订阅遇到不认识的版本必须明确报错，不能猜语义（fail-fast）。
+PROTOCOL_VERSION = "1"
+
+
+class ProtocolVersionError(Exception):
+    """事件版本与本进程 PROTOCOL_VERSION 不匹配 → 拒绝回放/订阅。"""
+
+
+def check_event_version(schema_v: str | None) -> None:
+    """校验事件信封版本；None 视为历史默认（"1"）。不匹配即抛。"""
+    if (schema_v or "1") != PROTOCOL_VERSION:
+        raise ProtocolVersionError(
+            f"事件 schema_v={schema_v!r} 与本进程协议版本 "
+            f"{PROTOCOL_VERSION!r} 不匹配——拒绝回放（不做跨版本猜测）"
+        )
+
 
 class WorkKind(str, Enum):
     """工单种类。session 不分 turn 类型（P-2 定案），kind 只影响 payload 窄化与路由。"""

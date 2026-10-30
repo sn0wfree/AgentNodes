@@ -201,7 +201,7 @@ class PlatformStore:
         data: dict[str, Any],
         *,
         run_id: str | None = None,
-        schema_v: str = "1",
+        schema_v: str | None = None,
         session_key: str | None = None,
         parent_event_id: str | None = None,
         branch_id: str = "main",
@@ -209,7 +209,14 @@ class PlatformStore:
         """追加事件到 canonical event_log（P-1 信封，S1）。
 
         seq 由 ``append_event_row`` 按 (aggregate_id, branch_id) 原子分配。
+        schema_v 默认取 PROTOCOL_VERSION（R4：单一来源）。
         """
+        if schema_v is None:
+            from strategy_research.core.orchestration.contracts import (
+                PROTOCOL_VERSION,
+            )
+
+            schema_v = PROTOCOL_VERSION
         row = {
             "id": str(uuid.uuid4()),
             "aggregate_id": session_id,
@@ -367,11 +374,24 @@ class PlatformStore:
         from_seq: int = 0,
         kinds: list[str] | None = None,
         limit: int = 1000,
+        strict_version: bool = True,
     ) -> list[Event]:
-        """按 session 从指定 seq 起重放事件（fold 用；兼容旧 API）。"""
+        """按 session 从指定 seq 起重放事件（fold 用；兼容旧 API）。
+
+        R4：``strict_version=True`` 时逐行校验 schema_v——不匹配即抛
+        ProtocolVersionError（不猜跨版本语义）。需要读取历史旧版本做
+        迁移时显式传 False。
+        """
+        from strategy_research.core.orchestration.contracts import (
+            check_event_version,
+        )
+
         rows = self.replay_rows(
             session_id, from_seq=from_seq, types=kinds, limit=limit,
         )
+        if strict_version:
+            for r in rows:
+                check_event_version(r["schema_v"])
         return [
             Event(
                 seq=r["seq"], ts=r["time_created"], kind=r["type"],
