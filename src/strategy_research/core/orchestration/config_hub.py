@@ -42,11 +42,12 @@ class GatewayConfig:
 
 @dataclass(frozen=True)
 class MailboxConfig:
-    """mailbox 段：cap / 溢出策略（契约 §5 不变量 9）。"""
+    """mailbox 段：cap / 溢出策略（契约 §5 不变量 9）/ 优先级老化（R2.3）。"""
 
     cap: int = 20
     overflow: str = "summarize"  # summarize / old / new（v1 仅 summarize 实装）
     expire_on_poll: bool = True
+    aging_s: float = 15.0  # 普通项等待超过此秒数后不再被 interrupt 无限插队；0=禁用
 
 
 @dataclass(frozen=True)
@@ -177,6 +178,8 @@ def _finalize(config: PlatformConfig) -> PlatformConfig:
         raise ConfigError(f"mailbox.overflow 非法: {config.mailbox.overflow!r}")
     if config.mailbox.cap < 1:
         raise ConfigError("mailbox.cap 必须 >= 1")
+    if config.mailbox.aging_s < 0:
+        raise ConfigError("mailbox.aging_s 必须 >= 0（0 = 禁用老化）")
     return config
 
 

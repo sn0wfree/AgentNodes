@@ -47,6 +47,7 @@ class QueueItem:
     is_summary: bool = False
     summarized_ids: tuple[str, ...] = ()
     interrupt: bool = False
+    aged: bool = False  # R2.3：等待超过 aging_s 后升入 interrupt 级（只发一次事件）
 
     @property
     def label(self) -> str:
@@ -62,6 +63,7 @@ class QueueItem:
 
 DEFAULT_CAP = 20
 DEFAULT_STEER_CAP = 5
+DEFAULT_AGING_S = 15.0
 
 EventSink = Callable[[str, dict], None]
 SessionResolver = Callable[[str], str]  # session_key -> session_id（惰性创建）
@@ -76,12 +78,14 @@ class Mailbox:
         *,
         cap: int = DEFAULT_CAP,
         steer_cap: int = DEFAULT_STEER_CAP,
+        aging_s: float = DEFAULT_AGING_S,
         clock: Callable[[], float] = time.time,
         sink: EventSink | None = None,
     ) -> None:
         self.session_id = session_id
         self.cap = cap
         self.steer_cap = steer_cap
+        self.aging_s = aging_s
         self._clock = clock
         self._sink = sink or (lambda kind, data: None)
         self._queue: deque[QueueItem] = deque()
@@ -226,12 +230,13 @@ class Mailbox:
     # ── 消费者接口（A2 SessionController 使用；E1 由测试驱动） ──
 
     def poll_due(self, kinds: Iterable[WorkKind] | None = None) -> WorkRequest | None:
-        """取下一个可执行工单：interrupt 优先，其后 FIFO；过期项在此惰性出清。
+        """取下一个可执行工单：interrupt/aged 优先，其后 FIFO；过期项在此惰性出清。
 
         kinds：可选的 kind 过滤（消费者只领自己负责的工单）。不匹配的工单
         **留在队列**，不丢弃；interrupt 优先级在过滤后的集合内生效。
         """
         self.expire_due()
+        self._apply_aging()
         if not self._queue:
             return None
         if kinds is None:
@@ -239,6 +244,33 @@ class Mailbox:
         allowed = {k if isinstance(k, WorkKind) else WorkKind(k) for k in kinds}
         item = self._pop_next_where(lambda it: it.request.kind in allowed)
         return item.request if item is not None else None
+
+    def _apply_aging(self) -> int:
+        """R2.3：普通项等待 ≥ aging_s 后升入 interrupt 级——领先有界。
+
+        automation 的 interrupt 不能无限插队饿死用户消息；到龄只发一次
+        work.aged 事件（不静默，INV-6）。aging_s <= 0 = 禁用。
+        """
+        if self.aging_s <= 0 or not self._queue:
+            return 0
+        now = self._clock()
+        boosted = 0
+        for item in self._queue:
+            if item.interrupt or item.aged or item.is_summary:
+                continue
+            waited = now - item.enqueued_at
+            if waited >= self.aging_s:
+                item.aged = True
+                boosted += 1
+                self._sink(
+                    "work.aged",
+                    {
+                        "session_id": self.session_id,
+                        "label": item.label,
+                        "waited_s": round(waited, 3),
+                    },
+                )
+        return boosted
 
     def peek_depth(self, kinds: Iterable[WorkKind] | None = None) -> int:
         self.expire_due()
@@ -320,14 +352,20 @@ class Mailbox:
             )
 
     def _pop_next(self) -> QueueItem:
-        """interrupt 优先，其后 FIFO。"""
+        """interrupt/aged 优先，其后 FIFO。"""
         return self._pop_next_where(lambda item: True)  # type: ignore[return-value]
 
     def _pop_next_where(self, predicate: Callable[[QueueItem], bool]) -> QueueItem | None:
-        """在满足 predicate 的项中取：interrupt 优先，其后 FIFO。
+        """三级取件：到龄(aged) > interrupt > FIFO。
 
-        不满足 predicate 的项原位保留（kind 过滤消费用完即还）。
+        R2.3 领先有界的落点：interrupt 最多领先 aging_s——普通项一旦到龄
+        就排到所有 interrupt 之前（FIFO 保序）。不满足 predicate 的项原位
+        保留（kind 过滤消费用完即还）。
         """
+        for idx, item in enumerate(self._queue):
+            if item.aged and not item.is_summary and predicate(item):
+                del self._queue[idx]
+                return item
         for idx, item in enumerate(self._queue):
             if item.interrupt and not item.is_summary and predicate(item):
                 del self._queue[idx]

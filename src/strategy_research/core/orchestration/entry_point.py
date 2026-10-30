@@ -10,7 +10,7 @@ import uuid
 from typing import Callable, Iterable
 
 from .contracts import Receipt, RejectReason, WorkRequest, validate_work_request
-from .mailbox import DEFAULT_CAP, EventSink, Mailbox
+from .mailbox import DEFAULT_AGING_S, DEFAULT_CAP, EventSink, Mailbox
 
 
 class EntryPoint:
@@ -20,6 +20,7 @@ class EntryPoint:
         self,
         *,
         cap: int = DEFAULT_CAP,
+        aging_s: float = DEFAULT_AGING_S,
         clock: Callable[[], float] | None = None,
         sink: EventSink | None = None,
         is_session_active: Callable[[str], object] | None = None,
@@ -29,6 +30,7 @@ class EntryPoint:
         self._clock = clock or time.time
         self._sink = sink
         self._cap = cap
+        self._aging_s = aging_s
         # R2.2：steer 路由查询（session_id -> 是否有活跃 run）。生产由
         # Gateway 注入 fence.active_run；None = 全部按「无活跃」处理。
         self._is_active = is_session_active
@@ -92,6 +94,7 @@ class EntryPoint:
             mailbox = Mailbox(
                 session_key,
                 cap=self._cap,
+                aging_s=self._aging_s,
                 clock=self._clock,
                 sink=self._sink,
             )

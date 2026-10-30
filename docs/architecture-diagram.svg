@@ -53,22 +53,22 @@
 
   <rect x="166" y="220" width="1007" height="44" rx="6" class="boxg"/>
   <text x="180" y="240" class="st">✅ 协议端点（薄 · 无状态 · 快同步）：契约校验 · 幂等去重 · 转发 mailbox —— 入口不是一个层</text>
-  <text x="180" y="258" class="sm">宿主 ⏳（qs gateway · workers=1 自检 · fold 重建 · grace）：现为 API 进程内单例（singleton.py）</text>
+  <text x="180" y="258" class="sm">宿主 ✅ R2（server.py 启停消费者 · grace）：qs gateway 独立宿主 ⏳ · fold 重建 ⏳</text>
 
   <rect x="166" y="282" width="320" height="190" rx="8" class="box"/>
   <text x="180" y="306" class="bt">mailbox</text>
   <text x="180" y="330" class="st">session lane 先串行 ✅ · 容量组闸放行 ⏳</text>
   <text x="180" y="350" class="st">深度 cap 20 · 溢出 summarize ✅（拒绝唯一处）</text>
-  <text x="180" y="370" class="st">steer ⏳ 现降级 followup（真注入待 A4）</text>
-  <text x="180" y="390" class="st">优先级老化 ⏳（领先有界防饿死）</text>
+  <text x="180" y="370" class="st">steer ✅ 真注入（R2：安全点合批·只追加）</text>
+  <text x="180" y="390" class="st">优先级老化 ✅（R2：aging_s 领先有界）</text>
   <text x="180" y="418" class="sm">默认 ✅：cli=followup · api_chat=steer</text>
   <text x="180" y="436" class="sm">automation=interrupt · collect 留位</text>
 
   <rect x="498" y="282" width="320" height="190" rx="8" class="box"/>
   <text x="512" y="306" class="bt">SessionController</text>
-  <text x="512" y="330" class="st">turn 准入：谁下一个可以跑（1a 最小版）</text>
-  <text x="512" y="350" class="st">✅ 准入 · P-4 身份 · 4 队列模式 · 驱动引擎</text>
-  <text x="512" y="370" class="st">⏳ 7 阶段 · 6 真值 · 常驻消费者</text>
+  <text x="512" y="330" class="st">turn 准入：谁下一个可以跑（消费者常驻）</text>
+  <text x="512" y="350" class="st">✅ 准入 · P-4 身份 · 4 队列模式 · fence · steer</text>
+  <text x="512" y="370" class="st">⏳ 7 阶段 · 6 真值（常驻消费者 ✅ R2）</text>
   <text x="512" y="390" class="st">⏳ home_session_key（fence 挂根 ✅ R1）</text>
   <text x="512" y="410" class="sm">session=串行域 ✅（turn 不分类型同一条队）</text>
   <text x="512" y="428" class="sm">turn={sid}#n · run=:{turn}:r0 · 现由 run_once 同步驱动</text>
@@ -244,10 +244,11 @@
   <text x="1276" y="622" class="st">✅ 已上线：E1 契约/mailbox · GraphEngine llm+react</text>
   <text x="1276" y="644" class="st">✅ 控制器 1a · ContextHub · 不变量 ×6 · turn/run id</text>
   <text x="1276" y="666" class="st">✅ 统一库事件化（B4/B5）· 文档治理（C2）</text>
-  <text x="1276" y="688" class="st">⚠ 建而未接线：PlatformStore（SessionFence ✅ 已接 R1）</text>
-  <text x="1276" y="710" class="st">⏳ 未建：Director · RuntimeHub · 容量组闸 · steer 注入</text>
-  <text x="1276" y="732" class="st">⏳ cpu/graph 节点 · 方法论归位 · P-3/P-5 · 分库</text>
-  <text x="1276" y="754" class="st">⏸ 挂起：P5-1c 删旧 chat 分支（唯一待办）</text>
+  <text x="1276" y="688" class="st">✅ R1/R2：fence 挂根 · 常驻消费者 · steer 注入 · 老化</text>
+  <text x="1276" y="710" class="st">⚠ 建而未接线：PlatformStore</text>
+  <text x="1276" y="732" class="st">⏳ 未建：Director · RuntimeHub · 容量组闸 · interrupt 级联</text>
+  <text x="1276" y="754" class="st">⏳ cpu/graph 节点 · 方法论归位 · P-3/P-5 · 分库 · home_session</text>
+  <text x="1276" y="776" class="st">⏸ 挂起：P5-1c 删旧 chat 分支（触发=R2 上线一周无回归）</text>
 
   <rect x="1260" y="820" width="300" height="380" rx="10" class="boxg"/>
   <text x="1276" y="846" class="bt">决策记录</text>

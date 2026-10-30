@@ -85,22 +85,22 @@
 
   <rect x="166" y="220" width="1007" height="44" rx="6" class="boxg"/>
   <text x="180" y="240" class="st">✅ 协议端点（薄 · 无状态 · 快同步）：契约校验 · 幂等去重 · 转发 mailbox —— 入口不是一个层</text>
-  <text x="180" y="258" class="sm">宿主 ⏳（qs gateway · workers=1 自检 · fold 重建 · grace）：现为 API 进程内单例（singleton.py）</text>
+  <text x="180" y="258" class="sm">宿主 ✅ R2（server.py 启停消费者 · grace）：qs gateway 独立宿主 ⏳ · fold 重建 ⏳</text>
 
   <rect x="166" y="282" width="320" height="190" rx="8" class="box"/>
   <text x="180" y="306" class="bt">mailbox</text>
   <text x="180" y="330" class="st">session lane 先串行 ✅ · 容量组闸放行 ⏳</text>
   <text x="180" y="350" class="st">深度 cap 20 · 溢出 summarize ✅（拒绝唯一处）</text>
-  <text x="180" y="370" class="st">steer ⏳ 现降级 followup（真注入待 A4）</text>
-  <text x="180" y="390" class="st">优先级老化 ⏳（领先有界防饿死）</text>
+  <text x="180" y="370" class="st">steer ✅ 真注入（R2：安全点合批·只追加）</text>
+  <text x="180" y="390" class="st">优先级老化 ✅（R2：aging_s 领先有界）</text>
   <text x="180" y="418" class="sm">默认 ✅：cli=followup · api_chat=steer</text>
   <text x="180" y="436" class="sm">automation=interrupt · collect 留位</text>
 
   <rect x="498" y="282" width="320" height="190" rx="8" class="box"/>
   <text x="512" y="306" class="bt">SessionController</text>
-  <text x="512" y="330" class="st">turn 准入：谁下一个可以跑（1a 最小版）</text>
-  <text x="512" y="350" class="st">✅ 准入 · P-4 身份 · 4 队列模式 · 驱动引擎</text>
-  <text x="512" y="370" class="st">⏳ 7 阶段 · 6 真值 · 常驻消费者</text>
+  <text x="512" y="330" class="st">turn 准入：谁下一个可以跑（消费者常驻）</text>
+  <text x="512" y="350" class="st">✅ 准入 · P-4 身份 · 4 队列模式 · fence · steer</text>
+  <text x="512" y="370" class="st">⏳ 7 阶段 · 6 真值（常驻消费者 ✅ R2）</text>
   <text x="512" y="390" class="st">⏳ home_session_key（fence 挂根 ✅ R1）</text>
   <text x="512" y="410" class="sm">session=串行域 ✅（turn 不分类型同一条队）</text>
   <text x="512" y="428" class="sm">turn={sid}#n · run=:{turn}:r0 · 现由 run_once 同步驱动</text>
@@ -276,10 +276,11 @@
   <text x="1276" y="622" class="st">✅ 已上线：E1 契约/mailbox · GraphEngine llm+react</text>
   <text x="1276" y="644" class="st">✅ 控制器 1a · ContextHub · 不变量 ×6 · turn/run id</text>
   <text x="1276" y="666" class="st">✅ 统一库事件化（B4/B5）· 文档治理（C2）</text>
-  <text x="1276" y="688" class="st">⚠ 建而未接线：PlatformStore（SessionFence ✅ 已接 R1）</text>
-  <text x="1276" y="710" class="st">⏳ 未建：Director · RuntimeHub · 容量组闸 · steer 注入</text>
-  <text x="1276" y="732" class="st">⏳ cpu/graph 节点 · 方法论归位 · P-3/P-5 · 分库</text>
-  <text x="1276" y="754" class="st">⏸ 挂起：P5-1c 删旧 chat 分支（唯一待办）</text>
+  <text x="1276" y="688" class="st">✅ R1/R2：fence 挂根 · 常驻消费者 · steer 注入 · 老化</text>
+  <text x="1276" y="710" class="st">⚠ 建而未接线：PlatformStore</text>
+  <text x="1276" y="732" class="st">⏳ 未建：Director · RuntimeHub · 容量组闸 · interrupt 级联</text>
+  <text x="1276" y="754" class="st">⏳ cpu/graph 节点 · 方法论归位 · P-3/P-5 · 分库 · home_session</text>
+  <text x="1276" y="776" class="st">⏸ 挂起：P5-1c 删旧 chat 分支（触发=R2 上线一周无回归）</text>
 
   <rect x="1260" y="820" width="300" height="380" rx="10" class="boxg"/>
   <text x="1276" y="846" class="bt">决策记录</text>
@@ -317,8 +318,8 @@
 <tbody>
 <tr><td class="k">① 变工单</td><td>渠道把一句话包成 WorkRequest（哑适配器，只干这个）✅ chat/schedule 已接；⏳ CLI/MCP</td><td>queue_mode 五行表</td></tr>
 <tr><td class="k">② 收单</td><td>协议端点验格式查重，回执两态；此后一切走事件流 ✅</td><td>两态回执 · 不静默</td></tr>
-<tr><td class="k">③ 排队</td><td>进会话 mailbox，一会话一事 ✅ cap 20+溢出摘要；⏳ 优先级老化 · steer 真注入（现降级 followup）</td><td>cap 20 · 优先级老化 · home_session</td></tr>
-<tr><td class="k">④ 发令</td><td>✅ 签 run_id（P-4 身份）+ fence 认领 → turn 开跑；⏳ 容量闸 · 7 阶段</td><td>7 阶段 · 6 真值 · fence</td></tr>
+<tr><td class="k">③ 排队</td><td>进会话 mailbox，一会话一事 ✅ cap 20+溢出摘要+老化；✅ steer 真注入（R2：无活跃 run 直接成 turn，有活跃 run 安全点合批注入）</td><td>cap 20 · 优先级老化 · home_session</td></tr>
+<tr><td class="k">④ 发令</td><td>✅ 签 run_id（P-4 身份）+ fence 认领 → turn 开跑（常驻消费者驱动 ✅ R2）；⏳ 容量闸 · 7 阶段</td><td>7 阶段 · 6 真值 · fence</td></tr>
 <tr><td class="k">⑤ 选图</td><td>✅ chat=单 react 节点退化图 · research 方法论阶段图 ✅；⏳ 治理分级</td><td>Preset 注册表 · 治理分级</td></tr>
 <tr><td class="k">⑥ 跑图</td><td>✅ GraphEngine 逐节点执行（llm/react · react 内部=AgentLoop 平移）；⏳ cpu/graph 节点</td><td>节点类型 · 两级准入 · 取消连坐 ✅（fanout）</td></tr>
 <tr><td class="k">⑦ 重活下放</td><td>⏳ 独立 cpu 节点未建；✅ fanout-t2 已可派发 ExecutorBridge 进程池（F4）</td><td>ExecutorBridge · 容量组联动</td></tr>
@@ -333,10 +334,10 @@
 <tr><td class="k">T1 / T2 / T3 执行三层</td><td><b>T1 协程</b>＝进程内 asyncio，跑等 LLM 的轻活（llm/react 节点）✅；<b>T2 进程</b>＝常驻子进程池，跑烧 CPU 的重活（真并行·崩溃隔离·可硬杀——GIL 排除线程/协程）—— fanout-t2 已接 ExecutorBridge ✅，独立 cpu 节点 ⏳；<b>T3 沙箱</b>＝OS 级隔离跑不可信代码（Windows 暂无业界方案，占位）⏳</td></tr>
 <tr><td class="k">turn / run</td><td>turn＝会话中被准入的一次执行权（<b>串行单位</b>，并行全在 turn 内）；run＝一次执行实例，子 run 挂在根 run 成树。派生 id 已在 SessionController 签发 ✅（{sid}#n → :r0）</td></tr>
 <tr><td class="k">mailbox</td><td>会话内的等待队列——<b>所有排队都发生在这</b>，闸不排队 ✅</td></tr>
-<tr><td class="k">steer / followup / interrupt</td><td>插话注入当前 run（安全点、只追加）⏳ 现一律降级 followup / 排队等下一 turn ✅ / 打断当前 turn（级联取消整棵子 run 树）⏳（fanout 分支级联 ✅）</td></tr>
+<tr><td class="k">steer / followup / interrupt</td><td>插话注入当前 run（安全点、只追加）✅ R2（fence 路由·合批·滞留晋升）/ 排队等下一 turn ✅ / 打断当前 turn（级联取消整棵子 run 树）⏳（fanout 分支级联 ✅）</td></tr>
 <tr><td class="k">lane（通道）</td><td>同 key 请求的专用串行道：session lane 保 turn 顺序 ✅；<b>subagent:{session}</b> 子代理通道（默认并发 8，不碰 mailbox 防自锁）⏳</td></tr>
 <tr><td class="k">cap 20 · 溢出 summarize</td><td>mailbox 深度上限；满了把最旧的等待消息摘要化——<b>全系统唯一拒绝点</b> ✅</td></tr>
-<tr><td class="k">优先级老化</td><td>高优先级只能领先有限时间（~15s 量级），之后不得继续插队——防 automation 饿死用户消息 ⏳</td></tr>
+<tr><td class="k">优先级老化</td><td>高优先级只能领先有限时间（aging_s 默认 15s），之后普通项排到所有 interrupt 之前——防 automation 饿死用户消息 ✅ R2（work.aged 事件·ConfigHub 可配）</td></tr>
 <tr><td class="k">容量组闸</td><td>每类活的最大并发槽位（chat 宽 / study 窄=executor 池上限 / cron 隔离）；<b>满→排队不拒绝</b>，running 不抢占 ⏳</td></tr>
 <tr><td class="k">fence（栅栏）</td><td>写权限认领（activeRunId）+ 提交校验：被取代/被取消的 run <b>陈旧产物不落库</b> ✅ R1 已挂根（claim→run→validate→release；被超越 emit run.fenced + settled{fenced:True}；INV-4 进注册表）</td></tr>
 <tr><td class="k">fold 重建</td><td>重启后从事件流重放算出状态（<b>恢复状态，不恢复执行</b>——被打断的 run 标 interrupted，重试靠重提）⏳</td></tr>
@@ -357,8 +358,8 @@
 <table>
 <thead><tr><th style="width:150px">面</th><th style="width:420px">现状（10-30 核实）</th><th>v6 目标</th></tr></thead>
 <tbody>
-<tr><td class="k">入口</td><td>chat + schedule 两渠道走 WorkRequest 统一通道（默认开）；CLI/MCP 适配器无调用方；旧 chat 分支待删（P5-1c ⏸）</td><td><b>1 份 WorkRequest 契约 · 1 个协议端点</b>（薄 · 无状态）——入口不是一个层，渠道全量</td></tr>
-<tr><td class="k">控制面</td><td>Gateway 内核已在 chat 生产（1a 最小版：准入+P-4 身份+驱动）；mailbox cap20+溢出摘要 ✅；7 阶段/常驻消费者/home_session/fence 接线 ⏳；StudyScheduler 未收编</td><td><b>Gateway 单进程</b>：mailbox + SessionController 唯一 owner；chat 与 study 共用</td></tr>
+<tr><td class="k">入口</td><td>chat + schedule 两渠道走 WorkRequest 统一通道（默认开）；<b>/chat/send = receipt 型 + ?wait=true（E1=C ✅ R2）</b>；CLI/MCP 适配器无调用方；旧 chat 分支待删（P5-1c ⏸）</td><td><b>1 份 WorkRequest 契约 · 1 个协议端点</b>（薄 · 无状态）——入口不是一个层，渠道全量</td></tr>
+<tr><td class="k">控制面</td><td>Gateway 内核在 chat 生产（准入+P-4 身份+驱动+**常驻消费者 ✅ R2**+steer ✅+老化 ✅+fence ✅ R1）；7 阶段/6 真值/home_session ⏳；StudyScheduler 未收编</td><td><b>Gateway 单进程</b>：mailbox + SessionController 唯一 owner；chat 与 study 共用</td></tr>
 <tr><td class="k">执行面</td><td>GraphEngine 唯一编排 ✅ · llm/react ✅（react 内部=AgentLoop 平移，选项 B）；fanout-t2 进程池 ✅；独立 cpu/graph 节点 ⏳</td><td><b>GraphEngine</b>（包裹 langgraph）唯一 runtime + 四种节点类型 + preset 治理分级（research = Tier 0 冻结）</td></tr>
 <tr><td class="k">上下文</td><td>ContextHub 建成并接线（collect→arbitrate→render + 预算仲裁 + 超限事件）✅；旧 ContextBuilder 仍在服务旧分支（P5-1c ⏸）</td><td><b>ContextHub 独占</b>（= OpenClaw Prompt Assembly）+ 稳定前缀 + 分层预算</td></tr>
 <tr><td class="k">并发正确性</td><td><b>fence 挂根 ✅（R1）</b>：控制器 settle 前过 SessionFence，被超越的 run 被拦（run.fenced）；INV-4 进注册表；interrupt 级联取消 ⏳</td><td>activeRunId 认领 + 提交校验（fence 挂根）</td></tr>
@@ -367,7 +368,7 @@
 </tbody>
 </table>
 
-<p style="color:#64748b;font-size:12.5px;margin-top:10px">v5.1 → v6：入口层塌进 Gateway，管线 8 段收 4 段，回执两态。v6 → v6.1：mailbox 落细则（先序后闸 / cap 20 / 老化）、新增容量组闸横带、home_session 落图、执行面标 T1/T2/T3。v6.1 → v6.2：执行面三 runtime 收敛为 <b>GraphEngine 唯一 runtime</b> + 四种节点类型 + preset 治理分级；DagRuntime 除名。数据层拆分：平台数据面并入平台虚线框，研究域独立成第 ⑤ 层。<b>v6.2 → v6.3（2026-10-30）：对照代码逐格核实，虚实线与 ✅/⏳/⏸ 标注对齐实现现状。</b>已上线：E1 契约/两态回执、mailbox（cap20+溢出摘要+4 队列模式）、SessionController 1a 最小版（P-4 身份）、GraphEngine（llm/react · react 内部=AgentLoop 平移）、fanout-t2→ExecutorBridge、ContextHub（接线+仲裁+压缩同源）、不变量 ×5+verify_all、统一库事件化（B4 单一写者）、文档治理。建而未接线 ⚠：SessionFence、PlatformStore。仍未建 ⏳：RuntimeHub、容量组闸、优先级老化、steer 真注入（现为降级桩）、独立 cpu/graph 节点、Director、RunContext、方法论归位 core/study/method/、P-3/P-5、每 session 分库、Scheduler 唯一、PROTOCOL_VERSION、宿主进程（qs gateway）。挂起 ⏸：P5-1c 删旧 chat 分支（唯一待办，docs/todo-remove-legacy-chat-branch-20261027.md）。<b>R1（2026-10-30）：fence 挂根 ✅</b>——SessionFence 接进 SessionController（claim→validate→release），INV-4「产物落库必过 fence」进注册表，⚠ 孤儿清一个；剩余孤儿仅 PlatformStore。详细勘查见 docs/stage-r1-fence-wiring-design-20261030.md。</p>
+<p style="color:#64748b;font-size:12.5px;margin-top:10px">v5.1 → v6：入口层塌进 Gateway，管线 8 段收 4 段，回执两态。v6 → v6.1：mailbox 落细则（先序后闸 / cap 20 / 老化）、新增容量组闸横带、home_session 落图、执行面标 T1/T2/T3。v6.1 → v6.2：执行面三 runtime 收敛为 <b>GraphEngine 唯一 runtime</b> + 四种节点类型 + preset 治理分级；DagRuntime 除名。数据层拆分：平台数据面并入平台虚线框，研究域独立成第 ⑤ 层。<b>v6.2 → v6.3（2026-10-30）：对照代码逐格核实，虚实线与 ✅/⏳/⏸ 标注对齐实现现状。</b>已上线：E1 契约/两态回执、mailbox（cap20+溢出摘要+4 队列模式）、SessionController 1a 最小版（P-4 身份）、GraphEngine（llm/react · react 内部=AgentLoop 平移）、fanout-t2→ExecutorBridge、ContextHub（接线+仲裁+压缩同源）、不变量 ×5+verify_all、统一库事件化（B4 单一写者）、文档治理。建而未接线 ⚠：SessionFence、PlatformStore。仍未建 ⏳：RuntimeHub、容量组闸、优先级老化、steer 真注入（现为降级桩）、独立 cpu/graph 节点、Director、RunContext、方法论归位 core/study/method/、P-3/P-5、每 session 分库、Scheduler 唯一、PROTOCOL_VERSION、宿主进程（qs gateway）。挂起 ⏸：P5-1c 删旧 chat 分支（唯一待办，docs/todo-remove-legacy-chat-branch-20261027.md）。<b>R1（2026-10-30）：fence 挂根 ✅</b>——SessionFence 接进 SessionController（claim→validate→release），INV-4「产物落库必过 fence」进注册表，⚠ 孤儿清一个；剩余孤儿仅 PlatformStore。详细勘查见 docs/stage-r1-fence-wiring-design-20261030.md。<b>R2（2026-10-30，E1=C 用户拍板）✅</b>：常驻消费者（server.py 宿主启停 · grace）、run.answer 事件、/chat/send receipt 型 + ?wait=true（无消费者回落同步）、steer 真注入（fence 路由 + react 安全点合批 + 滞留晋升，降级桩删除）、优先级老化（aged&gt;interrupt&gt;FIFO · work.aged · ConfigHub aging_s）。设计见 docs/stage-r2-consumer-steer-aging-design-20261030.md。</p>
 
 <footer>
   骨架参考：<b>docs/openclaw-architecture.html</b> · 总纲：<b>docs/architecture-v3-openclaw-inspired.md</b> ·
