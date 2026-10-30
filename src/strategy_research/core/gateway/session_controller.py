@@ -50,6 +50,7 @@ class SessionController:
         permission_evaluator: Any | None = None,
         permission_gateway: Any | None = None,
         compact_config: Any | None = None,
+        fence: Any | None = None,
     ) -> None:
         self._ep = entry_point
         self._client = client
@@ -74,6 +75,9 @@ class SessionController:
         # 按当前 session 生成，复用 core/agent/compaction_runtime 的同一
         # 实现（与 AgentLoop 路径语义一致）。
         self._compact_config = compact_config
+        # R1：写栅栏（INV-4/INV-5）。None = 不设防（直构测试路径，与
+        # permission_gateway 同型先例）；生产由 Gateway 注入唯一实例。
+        self._fence = fence
         self._current_session_id: str = ""  # per-turn, set by _execute
         self._turn_counters: dict[str, int] = {}  # session_id -> 已发 turn 数
 
@@ -105,6 +109,12 @@ class SessionController:
 
         self._sink("turn.admitted", {"turn_id": turn_id, "session_id": session_id})
         self._sink("run.started", {"run_id": run_id, "kind": request.kind.value})
+        # R1 fence ①：认领即超越（INV-5）——后到的 run 使先到的 token 失效。
+        token = (
+            self._fence.claim(session_id, run_id)
+            if self._fence is not None
+            else None
+        )
 
         # _build_engine keeps its zero-arg contract (tests replace it with
         # a lambda); the current session reaches it via this attribute.
@@ -134,9 +144,32 @@ class SessionController:
             final = engine.run(state)
             answer = str(final.get("answer", ""))
         except Exception as exc:  # noqa: BLE001 —— 引擎崩溃不拖垮控制器
+            if token is not None:
+                # 本 run 已死：释放以免挡住同 session 的下一个 turn。
+                self._fence.release(token)
             self._sink("run.failed", {"run_id": run_id, "error": str(exc)})
             self._sink("run.settled", {"run_id": run_id, "ok": False})
             return RunResult(turn_id, run_id, ok=False, error=str(exc))
+
+        # R1 fence ②：settled 事件本身就是「产物成立」的声明，必须先过
+        # 栅栏（INV-4）。被超越 → 陈旧产物不得落库，也不 release（栅栏
+        # 归超越者持有）。
+        if token is not None:
+            verdict = self._fence.validate(token)
+            if not verdict.ok:
+                self._sink("run.fenced", {
+                    "run_id": run_id,
+                    "session_id": session_id,
+                    "reason": verdict.reason,
+                })
+                self._sink("run.settled", {
+                    "run_id": run_id, "ok": False, "fenced": True,
+                })
+                return RunResult(
+                    turn_id, run_id, ok=False, error=f"fenced: {verdict.reason}",
+                )
+            # R1 fence ③：正常收尾释放（仅 active 可释放，不误伤后继者）。
+            self._fence.release(token)
 
         self._sink(
             "run.settled",

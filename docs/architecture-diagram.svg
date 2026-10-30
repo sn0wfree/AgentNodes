@@ -68,8 +68,8 @@
   <text x="512" y="306" class="bt">SessionController</text>
   <text x="512" y="330" class="st">turn 准入：谁下一个可以跑（1a 最小版）</text>
   <text x="512" y="350" class="st">✅ 准入 · P-4 身份 · 4 队列模式 · 驱动引擎</text>
-  <text x="512" y="370" class="st">⏳ 7 阶段 · 6 真值 · 常驻消费者 · fence 接线</text>
-  <text x="512" y="390" class="st">⏳ home_session_key · fence 已建零调用</text>
+  <text x="512" y="370" class="st">⏳ 7 阶段 · 6 真值 · 常驻消费者</text>
+  <text x="512" y="390" class="st">⏳ home_session_key（fence 挂根 ✅ R1）</text>
   <text x="512" y="410" class="sm">session=串行域 ✅（turn 不分类型同一条队）</text>
   <text x="512" y="428" class="sm">turn={sid}#n · run=:{turn}:r0 · 现由 run_once 同步驱动</text>
 
@@ -140,7 +140,7 @@
   <text x="866" y="940" class="bt">执行红线（引擎性质 · 不入配置）</text>
   <text x="866" y="962" class="st">图根 = turn，走 mailbox 准入 ✅</text>
   <text x="866" y="982" class="st">取消连坐 ✅（fanout 级联+5s 硬杀）· 事件带 run_id ✅</text>
-  <text x="866" y="1002" class="st">fence 挂根 ⏳（零调用）· subagent lane ⏳</text>
+  <text x="866" y="1002" class="st">fence 挂根 ✅（R1：claim→validate→release）· subagent lane ⏳</text>
   <text x="866" y="1030" class="sm">cpu 子 run 不得为 study round ⏳（随节点）</text>
 
   <!-- ═══ ④ 平台数据面（框内） ═══ -->
@@ -223,7 +223,7 @@
   <rect x="1260" y="180" width="300" height="110" rx="10" class="box"/>
   <text x="1276" y="206" class="bt">InvariantLayer · 底线 ✅</text>
   <text x="1276" y="230" class="st">预算 · 停止 · 状态机 · scope</text>
-  <text x="1276" y="250" class="st">✅ 5 条不变量 + verify_all()（已上线）</text>
+  <text x="1276" y="250" class="st">✅ 6 条不变量 + verify_all()（INV-4 随 R1 进表）</text>
   <text x="1276" y="274" class="st">独立于插件 · 不可被覆盖</text>
 
   <rect x="1260" y="310" width="300" height="100" rx="10" class="box"/>
@@ -242,9 +242,9 @@
   <rect x="1260" y="570" width="300" height="230" rx="10" class="boxg"/>
   <text x="1276" y="596" class="bt">落地状态速览（10-30 核实）</text>
   <text x="1276" y="622" class="st">✅ 已上线：E1 契约/mailbox · GraphEngine llm+react</text>
-  <text x="1276" y="644" class="st">✅ 控制器 1a · ContextHub · 不变量 ×5 · turn/run id</text>
+  <text x="1276" y="644" class="st">✅ 控制器 1a · ContextHub · 不变量 ×6 · turn/run id</text>
   <text x="1276" y="666" class="st">✅ 统一库事件化（B4/B5）· 文档治理（C2）</text>
-  <text x="1276" y="688" class="st">⚠ 建而未接线：SessionFence · PlatformStore</text>
+  <text x="1276" y="688" class="st">⚠ 建而未接线：PlatformStore（SessionFence ✅ 已接 R1）</text>
   <text x="1276" y="710" class="st">⏳ 未建：Director · RuntimeHub · 容量组闸 · steer 注入</text>
   <text x="1276" y="732" class="st">⏳ cpu/graph 节点 · 方法论归位 · P-3/P-5 · 分库</text>
   <text x="1276" y="754" class="st">⏸ 挂起：P5-1c 删旧 chat 分支（唯一待办）</text>

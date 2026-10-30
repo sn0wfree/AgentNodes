@@ -42,6 +42,9 @@ class Gateway:
         self.controller = SessionController(
             self.entry, client=client, system=system, sink=combined,
             engine_factory=engine_factory,
+            # R1：写栅栏注入——控制器 settle 前过 fence（INV-4），
+            # 认领即超越（INV-5）。同一实例供 verify_invariants 检查。
+            fence=self.fence,
             # P5-1b：有 registry 时控制器默认图用 react 节点（无工具调用时
             # 退化为单次 LLM），否则纯 llm 节点。
             registry=registry, stream=stream,

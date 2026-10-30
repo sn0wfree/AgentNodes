@@ -62,6 +62,51 @@ def _inv_fence_supersedes() -> bool:
     return ok
 
 
+def _inv_settle_passes_fence() -> bool:
+    """INV-4：产物落库必过 fence——被超越的 run 拿不到 ok=True 的 settle。
+
+    行为检查（非源码 grep）：真 SessionController + 真 SessionFence +
+    stub engine（run 中途以新 run_id 超越同一 session，模拟抢占）→
+    断言 RunResult.ok 为 False 且事件流含 run.fenced。控制器是唯一
+    落库发起方，检查它即覆盖全系统。
+    """
+    from ..orchestration import EntryPoint, SourceKind, WorkKind, WorkRequest
+    from .fencing import SessionFence
+    from .session_controller import SessionController
+
+    fence = SessionFence()
+    events: list[tuple[str, dict]] = []
+
+    def sink(kind: str, data: dict) -> None:
+        events.append((kind, data))
+
+    class _SupersedingEngine:
+        def run(self, state: dict) -> dict:
+            fence.claim(
+                str(state.get("session_id") or ""),
+                f"{state.get('run_id')}:next",
+            )
+            return {"answer": "stale"}
+
+    ep = EntryPoint(sink=sink)
+    ep.submit(
+        WorkRequest(
+            kind=WorkKind.CHAT,
+            source=SourceKind.CLI,
+            session_key="chat:inv4",
+            payload={"text": "x"},
+        )
+    )
+    controller = SessionController(
+        ep, client=object(), sink=sink,
+        fence=fence, engine_factory=lambda: _SupersedingEngine(),
+    )
+    results = controller.run_pending()
+    if len(results) != 1 or results[0].ok:
+        return False
+    return any(kind == "run.fenced" for kind, _ in events)
+
+
 def _inv_config_fail_fast() -> bool:
     """INV-8：非法配置必须抛 ConfigError（不猜默认）。"""
     from ..orchestration.config_hub import ConfigError, load_platform_config
@@ -113,6 +158,7 @@ def _inv_llm_calls_budgeted() -> bool:
 _REGISTRY: tuple[Invariant, ...] = (
     Invariant("INV-1", "workers 恒为 1（多 worker = 多 Gateway）", _inv_workers_pinned, "E1"),
     Invariant("INV-3", "唯一开 turn 路径 = admission；入口拒绝无副作用", _inv_entry_reject_no_side_effects, "E1"),
+    Invariant("INV-4", "产物落库必过 fence：settle 前校验，被超越即拒", _inv_settle_passes_fence, "R1"),
     Invariant("INV-5", "fence 认领即超越：同 turn 至多一活跃 run", _inv_fence_supersedes, "A3"),
     Invariant("INV-8", "配置 fail-fast：非法配置拒启", _inv_config_fail_fast, "E1"),
     Invariant("INV-9", "所有 LLM 调用必经 RunBudget.plan_call", _inv_llm_calls_budgeted, "A1"),
