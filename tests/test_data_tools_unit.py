@@ -127,3 +127,105 @@ def test_summarize_fetch_result_empty_and_none():
     assert count == 0
     assert summary["EMPTY"]["status"] == "empty"
     assert summary["NONE"]["status"] == "empty"
+
+
+# ── GetMarketDataTool 参数校验路径（不打网）──────────────────
+
+
+@pytest.fixture()
+def gm_ctx(tmp_path):
+    return ToolContext(workspace=tmp_path, session_id="s-gm")
+
+
+def test_get_market_data_comma_string_codes_split(gm_ctx):
+    """codes 传逗号字符串 → 拆分后进空码校验。"""
+    from strategy_research.core.agent.builtin_tools.data_tools import (
+        GetMarketDataTool,
+    )
+
+    out = json.loads(GetMarketDataTool().execute(
+        ctx=gm_ctx, codes=" , ", start_date="2023-01-01",
+        end_date="2023-12-31", persist=False,
+    ))
+    # 全空拆分后 → empty codes 错误（覆盖 135 行拆分 + 155 空码分支）
+    assert out["status"] == "error"
+    assert "codes" in json.dumps(out)
+
+
+def test_get_market_data_wrong_shape_codes(gm_ctx):
+    """codes 传 int → wrong shape 错误（覆盖 136-137）。"""
+    from strategy_research.core.agent.builtin_tools.data_tools import (
+        GetMarketDataTool,
+    )
+
+    out = json.loads(GetMarketDataTool().execute(
+        ctx=gm_ctx, codes=12345, start_date="2023-01-01",
+        end_date="2023-12-31", persist=False,
+    ))
+    assert out["status"] == "error"
+    assert "wrong shape" in json.dumps(out)
+
+
+def test_get_market_data_missing_dates(gm_ctx):
+    """空日期字符串 → actionable error（覆盖 162-168）。"""
+    from strategy_research.core.agent.builtin_tools.data_tools import (
+        GetMarketDataTool,
+    )
+
+    out = json.loads(GetMarketDataTool().execute(
+        ctx=gm_ctx, codes=["600519.SH"], start_date="", end_date="",
+        persist=False))
+    assert out["status"] == "error"
+    assert "start_date" in json.dumps(out)
+
+
+def test_get_market_data_invalid_date_range(gm_ctx):
+    """start > end → ValueError → actionable（覆盖 172-173）。"""
+    from strategy_research.core.agent.builtin_tools.data_tools import (
+        GetMarketDataTool,
+    )
+
+    out = json.loads(GetMarketDataTool().execute(
+        ctx=gm_ctx, codes=["600519.SH"], start_date="2023-12-31",
+        end_date="2023-01-01", persist=False,
+    ))
+    assert out["status"] == "error"
+
+
+def test_get_market_data_list_codes_no_source(gm_ctx, monkeypatch):
+    """合法 list codes + 无可用源 → NoAvailableSourceError 分支（238-245）。"""
+    from strategy_research.core.agent.builtin_tools.data_tools import (
+        GetMarketDataTool,
+    )
+    import strategy_research.core.data_source.registry as dsr
+
+    monkeypatch.setattr(dsr, "resolve_loader",
+                        lambda *a, **k: (_ for _ in ()).throw(
+                            dsr.NoAvailableSourceError("no source")))
+    out = json.loads(GetMarketDataTool().execute(
+        ctx=gm_ctx, codes=["600519.SH"], start_date="2023-01-01",
+        end_date="2023-12-31", persist=False,
+    ))
+    assert out["status"] == "error"
+    assert "no available data source" in json.dumps(out)
+
+
+def test_get_market_data_fetch_exception(gm_ctx, monkeypatch):
+    """fetch 阶段任意异常 → fetch failed 分支（246-251）。"""
+    from strategy_research.core.agent.builtin_tools.data_tools import (
+        GetMarketDataTool,
+    )
+    import strategy_research.core.data_source.registry as dsr
+
+    class BoomLoader:
+        def is_available(self):
+            return True
+
+    monkeypatch.setattr(dsr, "resolve_loader", lambda *a, **k: BoomLoader())
+    monkeypatch.setattr(
+        dsr, "LOADER_REGISTRY", {"akshare": BoomLoader})
+    out = json.loads(GetMarketDataTool().execute(
+        ctx=gm_ctx, codes=["600519.SH"], start_date="2023-01-01",
+        end_date="2023-12-31", persist=False,
+    ))
+    assert out["status"] == "error"

@@ -107,4 +107,9 @@ tests/_user_home_sandbox/
 # graphify code graph (regenerable)
 graphify-out/
 
-".quantnodes/"  
+# runtime session state (created when server/e2e runs with repo as CWD);
+# was previously written as ".quantnodes/" with literal quotes — never matched
+.quantnodes/
+
+# local scratch logs (coverage runs, repro scripts)
+tmp/

@@ -198,7 +198,9 @@ class GoalContinuationInjector:
         # output (see docs/rootcause-goal-injection-maxiter.md).
         # Non-JSON / malformed / partial responses still get the
         # continuation nudge — that is the injector's intended purpose.
-        c = (getattr(response, "content", "") or "").strip()
+        # str() 归一：非 str content（测试替身/异常 provider）走 TypeError
+        # 容忍路径而非 AttributeError（与本函数下方注释承诺一致）。
+        c = str(getattr(response, "content", "") or "").strip()
         if c.startswith("{") and c.endswith("}"):
             try:
                 import json as _json
