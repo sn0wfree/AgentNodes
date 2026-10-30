@@ -63,6 +63,10 @@ def make_loop(ws: Path, llm, *, trace_dir: Path | None = None, max_iterations: i
         max_iterations=max_iterations,
         trace_dir=trace_dir,
         session_id="e2e-test",
+        # 离线 e2e：无人值守审批。gate 若触发（连续相同工具调用），
+        # 1s 超时后按 policy 收尾——否则 no_progress 用例会等 1800s。
+        approval_timeout=1.0,
+        approval_on_timeout="reject",
     )
     loop.client.chat = llm.chat
     return loop
@@ -229,7 +233,14 @@ class TestFullFlow:
         assert second["status"] == "ok"
 
     def test_no_progress_termination(self, workspace):
-        """重复相同工具调用 → no_progress 终止."""
+        """重复相同工具调用 → 审批 gate 触发 → 超时按 policy 收尾。
+
+        历史注记：本用例最初断言 finished_reason == "no_progress"——
+        该终止路径后来被 no-progress 审批 gate 取代（连续相同工具
+        调用改为请求人工批准，超时按 policy 处理）。离线 e2e 无人
+        守批 → 1s 超时 + reject policy → approval_timeout_rejected。
+        「重复调用会被拦截」的守护意图不变。
+        """
         same = tc("get_market_data", codes=["600519.SH"],
                   start_date="2023-01-01", end_date="2023-12-31")
         llm = ScriptedLLM([
@@ -238,10 +249,11 @@ class TestFullFlow:
             resp("再取一次。", [same]),
             resp("再取一次。", [same]),
             resp("再取一次。", [same]),
+            resp("再取一次。", [same]),
         ])
         loop = make_loop(workspace, llm, max_iterations=12)
         r = loop.run("重复")
-        assert r.finished_reason == "no_progress"
+        assert r.finished_reason == "approval_timeout_rejected"
         assert r.iterations <= 8
 
 

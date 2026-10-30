@@ -101,23 +101,32 @@ class TestE2EFlow:
         for sid in session_ids:
             assert sid in listed_ids
 
-    def test_event_buffer_replay_chain(self, client):
-        """Verify SSE event replay chain works across multiple events."""
-        from strategy_research.api.sse_buffer import sse_buffer
+    def test_event_buffer_replay_chain(self, tmp_path):
+        """Verify SSE event replay chain works across multiple events.
 
-        session_id = "replay-test"
-        # Push 3 events
-        eid1 = sse_buffer.push("text_delta", '{"text":"a"}', session_id)
-        eid2 = sse_buffer.push("text_delta", '{"text":"b"}', session_id)
-        eid3 = sse_buffer.push("text_delta", '{"text":"c"}', session_id)
+        历史注记：旧实现走 api.sse_buffer（A2 已退役——SSE 单轨归
+        EventStore.subscribe）。重放语义等价改写为对 EventStore 的验证：
+        push 3 个事件 → 从中间 id 回放应得到其后的事件。
+        """
+        from pathlib import Path
 
-        # Replay from eid1 → should return eid2 and eid3
-        events = sse_buffer.replay_from(eid1, session_id)
+        from strategy_research.core.agent.event_store import EventStore
+
+        store = EventStore(db_path=tmp_path / "replay.db")
+        eid1 = store.emit("replay-test", "text_delta", {"text": "a"}).id
+        eid2 = store.emit("replay-test", "text_delta", {"text": "b"}).id
+        eid3 = store.emit("replay-test", "text_delta", {"text": "c"}).id
+
+        # seq 语义：from_seq 严格大于（1-based，三个事件 seq=1,2,3）。
+        # Replay from eid1 (seq=1) → should return eid2 and eid3
+        events = store.replay("replay-test", from_seq=1)
         assert [e.id for e in events] == [eid2, eid3]
 
-        # Replay from eid2 → should return only eid3
-        events = sse_buffer.replay_from(eid2, session_id)
+        # Replay from eid2 (seq=2) → should return only eid3
+        events = store.replay("replay-test", from_seq=2)
         assert [e.id for e in events] == [eid3]
+
+        store._backend.close()  # Windows：释放文件句柄（WAL 附属文件随库清理）
 
     def test_get_nonexistent_session(self, client):
         """Getting non-existent session returns 404."""

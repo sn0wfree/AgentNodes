@@ -11,6 +11,7 @@ import os
 import socket
 import subprocess
 import sys
+import threading
 import time
 from pathlib import Path
 from typing import Iterator
@@ -133,6 +134,16 @@ def backend_server(built_frontend: Path) -> Iterator[dict]:
         stdout=subprocess.PIPE,
         stderr=subprocess.STDOUT,
     )
+    # P0 同款修复（2026-10-31）：PIPE 不排水会在缓冲填满后冻死服务端
+    # 事件循环（logging 写 stdout 阻塞）。后台线程持续排水。
+    def _drain() -> None:
+        try:
+            for _line in proc.stdout:  # type: ignore[union-attr]
+                pass  # 丢弃（诊断时可改为收集）
+        except Exception:
+            pass
+
+    threading.Thread(target=_drain, daemon=True).start()
 
     try:
         _wait_for_http(f"{base_url}/health", timeout=30.0)
