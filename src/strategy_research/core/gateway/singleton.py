@@ -33,9 +33,19 @@ def get_gateway(
         from .gateway import Gateway
 
         if client is None:
-            from strategy_research.core.llm import LLMConfig, OpenAICompatClient
+            # R5：ModelHub 是 provider/model 解析的唯一入口（解析序集中 +
+            # 非法 provider 拒绝而非静默降级）。等价于原来的
+            # OpenAICompatClient(LLMConfig.load())。
+            from strategy_research.core.llm.model_hub import get_client
 
-            client = OpenAICompatClient(LLMConfig.load())
+            try:
+                client = get_client()
+            except Exception as exc:  # noqa: BLE001 —— 解析失败给出可操作错误
+                raise RuntimeError(
+                    f"LLM provider/model 解析失败：{exc}。"
+                    "请检查 ~/.quantnodes/llm.json 的 provider 是否为已注册值"
+                    "（deepseek/kimi/minimax/nvidia/openai/qwen/siliconflow）。"
+                ) from exc
         # P5-1b：默认装配内置工具链（shell 工具需显式 opt-in，见
         # build_default_registry 的注释）。无 workspace 时用只读工具集。
         if registry is None:

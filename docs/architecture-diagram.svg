@@ -81,14 +81,14 @@
   <text x="844" y="396" class="sm">红线：不读预算 · 不得自行开 run</text>
   <text x="844" y="414" class="sm">（唯一开 run 路径 = admission）</text>
 
-  <rect x="166" y="492" width="320" height="190" rx="8" class="boxd"/>
-  <text x="180" y="516" class="bt">RuntimeHub ⏳</text>
-  <text x="180" y="540" class="st">解析每个 turn 用什么执行：</text>
-  <text x="180" y="560" class="st">preset 图 + provider/模型绑定（未建）</text>
-  <text x="180" y="580" class="st">⏳ 解析序 model &gt; provider &gt; auto &gt; 回退</text>
-  <text x="180" y="600" class="st">⏳ 不支持则拒绝 · RPM/TPM 限流</text>
-  <text x="180" y="620" class="st">（排队不拒绝）</text>
-  <text x="180" y="638" class="sm">⏳ 暂由 role_factory / preset_loader 分担</text>
+  <rect x="166" y="492" width="320" height="190" rx="8" class="box"/>
+  <text x="180" y="516" class="bt">ModelHub（RuntimeHub 模型侧）✅</text>
+  <text x="180" y="540" class="st">✅ provider/model 解析唯一入口（R5）</text>
+  <text x="180" y="560" class="st">解析序：显式 &gt; profile &gt; provider 默认</text>
+  <text x="180" y="580" class="st">✅ 未知 provider 拒绝（不降级）</text>
+  <text x="180" y="600" class="st">⏳ preset 图绑定（当前无用户）</text>
+  <text x="180" y="620" class="st">⏳ RPM/TPM 限流（当前无并发压力）</text>
+  <text x="180" y="638" class="sm">docs/stage-r5-execution-plane-assessment-20261030.md</text>
 
   <rect x="498" y="492" width="320" height="190" rx="8" class="box"/>
   <text x="512" y="516" class="bt">ContextHub（= Prompt Assembly）</text>
@@ -127,9 +127,9 @@
   <rect x="150" y="916" width="330" height="130" rx="9" class="box"/>
   <text x="166" y="940" class="bt">节点类型（每阶段开/关 ReAct）</text>
   <text x="166" y="962" class="st">llm 单发（关）✅ · react 循环（开）✅</text>
-  <text x="166" y="982" class="st">cpu 独立节点 ⏳ · graph 子图 ⏳ · fanout ✅ t1/t2</text>
+  <text x="166" y="982" class="st">cpu ⏹ 不做（等价物已有）· graph ⏹ 无用户 · fanout ✅</text>
   <text x="166" y="1002" class="st">react 内部 = AgentLoop 平移 ✅（选项 B 落地）</text>
-  <text x="166" y="1030" class="sm">切 A1 ✅（llm/react 上线）· cpu/graph 节点 ⏳</text>
+  <text x="166" y="1030" class="sm">切 A1 ✅（llm/react 上线）· cpu/graph 见 R5 评估</text>
   <rect x="500" y="916" width="330" height="130" rx="9" class="box"/>
   <text x="516" y="940" class="bt">Preset 注册表（图 = 纯数据）</text>
   <text x="516" y="962" class="st">chat = 单 react 节点退化图 ✅</text>
@@ -140,8 +140,8 @@
   <text x="866" y="940" class="bt">执行红线（引擎性质 · 不入配置）</text>
   <text x="866" y="962" class="st">图根 = turn，走 mailbox 准入 ✅</text>
   <text x="866" y="982" class="st">取消连坐 ✅（fanout 级联+5s 硬杀）· 事件带 run_id ✅</text>
-  <text x="866" y="1002" class="st">fence 挂根 ✅（R1：claim→validate→release）· subagent lane ⏳</text>
-  <text x="866" y="1030" class="sm">cpu 子 run 不得为 study round ⏳（随节点）</text>
+  <text x="866" y="1002" class="st">fence 挂根 ✅ · subagent lane ⏹（无并发问题）</text>
+  <text x="866" y="1030" class="sm">cpu 子 run 不得为 study round ⏹（随 cpu 节点）</text>
 
   <!-- ═══ ④ 平台数据面（框内） ═══ -->
   <line x1="430" y1="1046" x2="430" y2="1096" class="arb"/>
@@ -243,11 +243,12 @@
   <text x="1276" y="622" class="st">✅ 已上线：E1 契约/mailbox · GraphEngine llm+react</text>
   <text x="1276" y="644" class="st">✅ 控制器 1a · ContextHub · 不变量 ×6 · turn/run id</text>
   <text x="1276" y="666" class="st">✅ 统一库事件化（B4/B5）· 文档治理（C2）</text>
-  <text x="1276" y="688" class="st">✅ R1-R4：fence · 消费者 · steer · 老化 · 串行域 · P-3</text>
-  <text x="1276" y="710" class="st">✅ 数据面：PlatformStore 接线 · 指针四件套 · 协议版本</text>
-  <text x="1276" y="732" class="st">⏳ 未建：Director · RuntimeHub · 容量组闸语义 · interrupt 级联</text>
-  <text x="1276" y="754" class="st">⏳ cpu/graph 节点 · 方法论归位 · 分库(D2 延后) · 全局 session 登记</text>
-  <text x="1276" y="776" class="st">⏸ 挂起：P5-1c 删旧 chat 分支（触发=R2 上线一周无回归）</text>
+  <text x="1276" y="688" class="st">✅ R1-R5：fence · 消费者 · steer · 老化 · 串行域</text>
+  <text x="1276" y="710" class="st">✅ 数据面 P-3/协议版本 · 模型侧 ModelHub</text>
+  <text x="1276" y="732" class="st">⏳ 未建：Director · 容量组闸语义 · interrupt 级联</text>
+  <text x="1276" y="754" class="st">⏹ 判定不做：cpu 节点 · graph 子图 · subagent lane（R5）</text>
+  <text x="1276" y="776" class="st">⏳ 方法论归位 · 分库(D2 延后) · 全局 session 登记</text>
+  <text x="1276" y="798" class="st">⏸ 挂起：P5-1c 删旧 chat 分支（触发=R2 上线一周无回归）</text>
 
   <rect x="1260" y="820" width="300" height="380" rx="10" class="boxg"/>
   <text x="1276" y="846" class="bt">决策记录</text>
