@@ -222,20 +222,18 @@ class ResearchApp(App):
     def _probe_latest_session_title(self) -> Optional[str]:
         """Return the most-recent persisted session's title, or None.
 
-        Uses the existing ``SessionDB`` (``core/session/db.py``). Failures
-        are swallowed and treated as "no prior session" — fresh start is
-        always a valid choice.
+        B4 Step 3: reads the unified DB. The legacy ``SessionDB`` was queried
+        here before, and its dataclass had no ``title`` field, so this always
+        returned "(untitled)".
         """
         try:
-            from strategy_research.core.session.db import SessionDB
-            db = SessionDB()
-            sessions = db.list_sessions(workspace=None, limit=1)
+            from strategy_research.core.session.unified import list_sessions
+            sessions = list_sessions(limit=1)
         except Exception:
             return None
         if not sessions:
             return None
-        title = getattr(sessions[0], "title", "") or "(untitled)"
-        return title
+        return sessions[0].get("title") or "(untitled)"
 
     def _on_resume_choice(self, choice: tuple[bool, Optional[str]]) -> None:
         """Callback: take the (resume, pending_input) tuple."""
@@ -252,30 +250,38 @@ class ResearchApp(App):
             self.session.enqueue(pending_input)
 
     def _resume_most_recent_session(self) -> None:
-        """Restore history + session_id from the most-recent persisted session."""
+        """Restore history + session_id from the most-recent persisted session.
+
+        B4 Step 3: this never actually worked. It read ``session.session_id``
+        and ``session.title`` off the legacy dataclass, neither of which
+        existed -- ``session_id`` was always None and the method returned
+        early. The unified row has a real ``id``, so resume now functions.
+        """
         try:
-            from strategy_research.core.session.db import SessionDB
-            db = SessionDB()
-            sessions = db.list_sessions(workspace=None, limit=1)
+            from strategy_research.core.session.unified import (
+                get_messages,
+                list_sessions,
+            )
+            sessions = list_sessions(limit=1)
         except Exception:
             self._write_transcript("[muted]Could not load prior session.[/muted]")
             return
         if not sessions:
             return
-        sid = getattr(sessions[0], "session_id", None)
-        title = getattr(sessions[0], "title", "(untitled)") or "(untitled)"
-        if sid is None:
+        sid = sessions[0].get("id")
+        title = sessions[0].get("title") or "(untitled)"
+        if not sid:
             return
         self.ctx.session_id = sid
         try:
-            messages = db.get_messages(sid, limit=20)
+            messages = get_messages(sid, limit=20)
             history = [
-                {"role": m.role, "content": m.content}
+                {"role": m["role"], "content": m["content"]}
                 for m in messages
-                if m.role in {"user", "assistant"}
-                and (m.content or "").strip()
+                if m["role"] in {"user", "assistant"}
+                and (m["content"] or "").strip()
                 # Skip compaction events (opencode-aligned, hidden from UI)
-                and (getattr(m, "message_type", None) or m.role) != "compaction"
+                and (m.get("message_type") or m["role"]) != "compaction"
             ][-6:]
         except Exception:
             history = []

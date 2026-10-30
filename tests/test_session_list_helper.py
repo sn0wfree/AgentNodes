@@ -63,3 +63,112 @@ def test_limit_is_floored_at_one(tmp_path: Path):
     db = tmp_path / "s.db"
     _make_db(db, [("s1", "t", 1.0, 2.0)])
     assert len(list_sessions(db, limit=0)) == 1
+
+
+# ── B4 Step 3: the other readers migrated off the legacy stack ──
+
+
+def _seed_with_messages(path: Path) -> None:
+    import sqlite3
+
+    from strategy_research.api.session.web_session_db import _ensure_schema
+
+    conn = sqlite3.connect(str(path))
+    _ensure_schema(conn)
+    conn.execute(
+        "INSERT INTO sessions (id, user_id, title, created_at, updated_at) "
+        "VALUES ('s1', 'u', 'Research', 1.0, 2.0)",
+    )
+    for i, (role, content) in enumerate([
+        ("user", "hello momentum"), ("assistant", "reply about momentum"),
+        ("user", "other"),
+    ]):
+        conn.execute(
+            "INSERT INTO messages (id, session_id, role, content, created_at, seq, message_type) "
+            "VALUES (?, 's1', ?, ?, ?, ?, ?)",
+            (f"m{i}", role, content, 10.0 + i, i + 1, "user" if role == "user" else "assistant"),
+        )
+    conn.commit()
+    conn.close()
+
+
+def test_get_session_returns_real_columns(tmp_path: Path):
+    """The legacy dataclass had no session_id/title/workspace; this does."""
+    from strategy_research.core.session.unified import get_session
+
+    db = tmp_path / "s.db"
+    _seed_with_messages(db)
+    row = get_session("s1", db)
+    assert row["id"] == "s1"
+    assert row["title"] == "Research"
+    assert "updated_at" in row
+
+
+def test_get_session_missing_returns_none(tmp_path: Path):
+    from strategy_research.core.session.unified import get_session
+
+    db = tmp_path / "s.db"
+    _seed_with_messages(db)
+    assert get_session("nope", db) is None
+
+
+def test_get_messages_uses_created_at(tmp_path: Path):
+    """The legacy field was `timestamp`; the unified column is created_at."""
+    from strategy_research.core.session.unified import get_messages
+
+    db = tmp_path / "s.db"
+    _seed_with_messages(db)
+    msgs = get_messages("s1", db_path=db)
+    assert len(msgs) == 3
+    assert msgs[0]["role"] == "user"
+    assert "created_at" in msgs[0]
+    assert "timestamp" not in msgs[0]
+
+
+def test_get_messages_ordered_by_seq(tmp_path: Path):
+    from strategy_research.core.session.unified import get_messages
+
+    db = tmp_path / "s.db"
+    _seed_with_messages(db)
+    contents = [m["content"] for m in get_messages("s1", db_path=db)]
+    assert contents == ["hello momentum", "reply about momentum", "other"]
+
+
+def test_search_messages_like(tmp_path: Path):
+    from strategy_research.core.session.unified import search_messages
+
+    db = tmp_path / "s.db"
+    _seed_with_messages(db)
+    hits = search_messages("momentum", db_path=db)
+    assert len(hits) == 2
+    assert all("momentum" in h["content"] for h in hits)
+
+
+def test_search_messages_blank_query_returns_empty(tmp_path: Path):
+    from strategy_research.core.session.unified import search_messages
+
+    db = tmp_path / "s.db"
+    _seed_with_messages(db)
+    assert search_messages("   ", db_path=db) == []
+
+
+def test_delete_session_removes_row_and_messages(tmp_path: Path):
+    from strategy_research.core.session.unified import (
+        delete_session,
+        get_messages,
+        get_session,
+    )
+
+    db = tmp_path / "s.db"
+    _seed_with_messages(db)
+    assert delete_session("s1", db) is True
+    assert get_session("s1", db) is None
+    assert get_messages("s1", db_path=db) == []
+
+
+def test_delete_missing_session_returns_false(tmp_path: Path):
+    from strategy_research.core.session.unified import delete_session
+
+    db = tmp_path / "s.db"
+    _seed_with_messages(db)
+    assert delete_session("nope", db) is False

@@ -14,7 +14,11 @@ import pytest
 from strategy_research.cli.tui.app import ResearchApp
 from strategy_research.cli.tui.widgets import TranscriptView
 
-RESEARCHAPP_KW = {"model": "m", "version": "0.4.2"}
+# ``skip_resume`` keeps on_mount from pushing the resume modal. These tests
+# exercise the streaming routes, not session resume -- and since B4 Step 3
+# the resume probe reads the unified DB, which can legitimately contain
+# sessions, so leaving it on would block pilot.pause() behind a modal.
+RESEARCHAPP_KW = {"model": "m", "version": "0.4.2", "skip_resume": True}
 
 
 # ─────────────────────────────────────────────────────────────────────────────

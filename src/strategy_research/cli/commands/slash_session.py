@@ -34,16 +34,17 @@ def _resolve_console(console: Any = None) -> Console:
 
 
 def cmd_history(*, console: Any = None, limit: int = 10) -> int:
-    """``/history`` — list the most recent sessions."""
+    """``/history`` — list the most recent sessions (B4 Step 3).
+
+    Used to require ``STRATEGY_RESEARCH_SESSIONS_DB`` and read the legacy
+    stack; it now reads the unified DB like everything else, so it works out
+    of the box. (The old path was also broken: it read ``session_id`` /
+    ``status`` off a dataclass that had neither.)
+    """
     console = _resolve_console(console)
-    db_path = _resolve_db_path()
-    if not db_path:
-        console.print("[yellow]STRATEGY_RESEARCH_SESSIONS_DB not set; nothing to list.[/yellow]")
-        return 0
     try:
-        from strategy_research.core.session.db import SessionDB
-        db = SessionDB(db_path)
-        sessions = db.list_sessions(limit=limit)
+        from strategy_research.core.session.unified import list_sessions
+        sessions = list_sessions(limit=limit)
     except Exception as exc:  # noqa: BLE001
         console.print(f"[red]/history failed:[/red] {exc}")
         return 1
@@ -55,30 +56,26 @@ def cmd_history(*, console: Any = None, limit: int = 10) -> int:
     table = Table(show_header=True, header_style="bold")
     table.add_column("ID")
     table.add_column("Title")
-    table.add_column("Status")
+    table.add_column("Updated")
+    from datetime import datetime
     for s in sessions:
-        sid = getattr(s, "session_id", "?")
-        title = (getattr(s, "title", "") or "")[:60]
-        status = str(getattr(s, "status", ""))
-        table.add_row(sid[:12], title, status)
+        sid = s.get("id") or "?"
+        title = (s.get("title") or "")[:60]
+        updated = datetime.fromtimestamp(s.get("updated_at") or 0).strftime("%Y-%m-%d %H:%M")
+        table.add_row(sid[:12], title, updated)
     console.print(table)
     return 0
 
 
 def cmd_search(query: str, *, console: Any = None, limit: int = 10) -> int:
-    """``/search <query>`` — FTS5 search over session messages."""
+    """``/search <query>`` — LIKE search over session messages (B4 Step 3)."""
     console = _resolve_console(console)
     if not query.strip():
         console.print("[red]Usage:[/red] /search <query>")
         return 1
-    db_path = _resolve_db_path()
-    if not db_path:
-        console.print("[yellow]STRATEGY_RESEARCH_SESSIONS_DB not set; nothing to search.[/yellow]")
-        return 0
     try:
-        from strategy_research.core.session.db import SessionDB
-        db = SessionDB(db_path)
-        matches = db.search_messages(query, limit=limit)
+        from strategy_research.core.session.unified import search_messages
+        matches = search_messages(query, limit=limit)
     except Exception as exc:  # noqa: BLE001
         console.print(f"[red]/search failed:[/red] {exc}")
         return 1
@@ -92,9 +89,9 @@ def cmd_search(query: str, *, console: Any = None, limit: int = 10) -> int:
     table.add_column("Role")
     table.add_column("Snippet")
     for m in matches:
-        sid = str(getattr(m, "session_id", "?"))[:12]
-        role = str(getattr(m, "role", ""))
-        snippet = (str(getattr(m, "content", "")) or "")[:80]
+        sid = str(m.get("session_id") or "?")[:12]
+        role = str(m.get("role") or "")
+        snippet = (str(m.get("content") or ""))[:80]
         table.add_row(sid, role, snippet)
     console.print(table)
     return 0

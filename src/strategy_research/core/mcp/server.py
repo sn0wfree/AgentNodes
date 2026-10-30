@@ -633,16 +633,18 @@ class MCPServer:
 
     def _register_session_tools(self) -> None:
         def list_sessions(**kwargs: Any) -> str:
-            from ..session import SessionDB
-            db = SessionDB()
-            sessions = db.list_sessions()
-            return json.dumps([{"id": s.id, "workspace": s.workspace} for s in sessions], ensure_ascii=False)
+            # B4 Step 3: unified DB (the legacy SessionDB dataclass had no
+            # `workspace` field, so this payload was mostly null).
+            from ..session.unified import list_sessions as _list
+            rows = _list()
+            return json.dumps(
+                [{"id": r["id"], "title": r["title"]} for r in rows],
+                ensure_ascii=False,
+            )
 
         def search_messages(query: str = "", **kwargs: Any) -> str:
-            from ..session import SessionDB
-            db = SessionDB()
-            results = db.search_messages(query)
-            return json.dumps(results, ensure_ascii=False)
+            from ..session.unified import search_messages as _search
+            return json.dumps(_search(query), ensure_ascii=False)
 
         self.register(MCPTool(
             name="list_sessions",
