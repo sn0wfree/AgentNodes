@@ -188,6 +188,32 @@ class Gateway:
         """
         return self._cancel_active_run(session_id, reason)
 
+    # ── B3：状态查询 ─────────────────────────────────────
+
+    def session_status(self, session_key: str) -> dict[str, Any]:
+        """非阻塞状态快照（receipt 契约的 poll 端）。
+
+        全部读已有内存状态，无新状态机。重启后（B2 recover）last_* 为空、
+        active=False——诚实反映「恢复状态不恢复执行」。
+        """
+        session_id = self.entry.session_id_for(session_key) or ""
+        # fence 域 = 物理 session id（剥 kind 前缀，R3 约定）
+        domain = session_key.split(":", 1)[-1]
+        run_id = str(self.fence.active_run(domain) or "")
+        last = self._turn_results.get(session_id) if session_id else None
+        return {
+            "session_key": session_key,
+            "session_id": session_id,
+            "active": bool(run_id),
+            "active_run_id": run_id,
+            "queued": (self.entry.mailbox_for(session_key).peek_depth()
+                       if self.entry.mailbox_for(session_key) is not None else 0),
+            "last_turn_id": last.turn_id if last else "",
+            "last_ok": (last.ok if last else None),
+            "last_answer": (last.answer if last else ""),
+            "last_error": (last.error if last else None),
+        }
+
     # ── B2：fold 重建 ────────────────────────────────────
 
     _TERMINAL_RUN_EVENTS = ("run.settled", "run.failed", "run.interrupted")

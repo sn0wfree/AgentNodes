@@ -1,7 +1,7 @@
 {
-  "generated_at": "2026-10-30T07:31:31+00:00",
-  "commit": "949ffe7a96c0b6b26e002cc00ace31ed378e31a6",
-  "count": 12992,
+  "generated_at": "2026-10-30T07:48:51+00:00",
+  "commit": "be0f81feb37a294123ac22bed6c316818399ab5f",
+  "count": 12997,
   "nodeids": [
     "tests/test_admin_kill_switch.py::TestAdminAuth::test_admin_disabled_503",
     "tests/test_admin_kill_switch.py::TestAdminAuth::test_health_check_no_auth_required",
@@ -3094,6 +3094,11 @@
     "tests/test_b2_fold.py::test_session_key_mapping_restored",
     "tests/test_b2_fold.py::test_settled_runs_not_marked",
     "tests/test_b2_fold.py::test_turn_counter_restored_after_restart",
+    "tests/test_b3_status.py::test_active_run_is_visible",
+    "tests/test_b3_status.py::test_cancelled_turn_shows_failure",
+    "tests/test_b3_status.py::test_completed_turn_is_visible",
+    "tests/test_b3_status.py::test_queued_turn_is_visible_not_active",
+    "tests/test_b3_status.py::test_unknown_session_is_all_empty",
     "tests/test_b5_prerun_react.py::test_goal_block_injected",
     "tests/test_b5_prerun_react.py::test_goal_disabled_skips_injection",
     "tests/test_b5_prerun_react.py::test_memory_block_injected",
