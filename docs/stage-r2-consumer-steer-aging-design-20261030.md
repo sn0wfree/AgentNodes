@@ -22,7 +22,13 @@
 
 ## 1. E1 决策：chat HTTP 契约（R2.1 的分水岭）
 
-### 选项 A：submit 即回 receipt，答案只走 SSE（推荐）
+> **✅ 定案（2026-10-30，用户拍板）：选项 C——receipt + `?wait=true`。**
+> 执行一律改消费者驱动；`/chat/send` 默认立即回 receipt，`?wait=true`
+> 时请求线程**只等待**消费者产出（不驱动执行）。消费者未运行的场景
+> （API 测试、直构）自动回落现同步路径——生产/测试行为由「消费者是否
+> 在跑」自然分流，不加 flag。
+
+### 选项 A：submit 即回 receipt，答案只走 SSE
 
 ```
 POST /chat/send
@@ -43,6 +49,12 @@ POST /chat/send
 常驻消费者只服务后台；chat 仍请求内驱动。R2 缩水为「R2.3 老化 +
 automation 预留」，steer 真注入无限期推迟，与架构图 `api_chat=steer`
 的定稿语义持续背离。
+
+### 选项 C：receipt + wait（✅ 已选）
+
+- 默认：submit 即回 receipt（同 A）；
+- `?wait=true`：请求等消费者完成，响应携带 reply（外部同步用户零破坏）；
+- `wait=true` 只等不驱动——执行模型仍是消费者，同步语义是糖不是旁路。
 
 ---
 

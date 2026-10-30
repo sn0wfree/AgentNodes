@@ -6,6 +6,7 @@ import asyncio
 import json
 import logging
 import os
+import time
 from typing import TYPE_CHECKING, Any, Optional
 
 from fastapi import APIRouter, Header, HTTPException, Query, Request
@@ -681,7 +682,7 @@ def _get_gateway():
     return get_gateway()
 
 
-async def _send_via_gateway(session_id: str, content: str) -> dict:
+async def _send_via_gateway(session_id: str, content: str, *, wait: bool = False) -> dict:
     """新路径：WorkRequest → EntryPoint → 准入 → 引擎 → 事件流。
 
     P5-1：补齐历史注入与持久化，**照抄旧路径的两条机制**（不改选型）：
@@ -692,6 +693,13 @@ async def _send_via_gateway(session_id: str, content: str) -> dict:
     - Gateway 装配 tool registry（shell 工具按 ``_shell_tools_enabled`` 门禁）
     - 引擎事件经 ``install_sink`` 转发为前端词表（text_delta / tool_call / …）
     - 末尾补发 ``agent_done``
+
+    R2.1c（E1=C）：消费者在跑且未要求 wait → **receipt 路径**——submit 后
+    立即返回 ``{accepted, message_id, session_id}``，答案经 ``run.answer``
+    事件由 persist 桥落库并补 agent_done；请求线程不再驱动执行。
+    同步路径（消费者未跑 = 测试/直构；或 ``wait=true``）保持现契约：
+    阻塞至 turn 完成、响应携带 reply。wait=true 只是**等待**，执行仍是
+    消费者的事（无消费者时回落请求内驱动）。
 
     顺序关键：**先读历史、再 emit 本轮事件**——否则当前轮会被重复注入。
     """
@@ -722,7 +730,6 @@ async def _send_via_gateway(session_id: str, content: str) -> dict:
     gw = _get_gateway()
     user_mid = str(_uuid.uuid4())
     assistant_mid_holder: dict[str, str] = {}
-    _install_chat_event_bridge(gw, session_id, assistant_mid_holder)
 
     receipt = gw.entry.submit(
         api_chat_request(session_id, content, history=history)
@@ -733,13 +740,53 @@ async def _send_via_gateway(session_id: str, content: str) -> dict:
             detail={"error": "entry_rejected", "reason": str(receipt.reason)},
         )
 
-    # ── ③ 执行（kind 过滤：chat 只领 CHAT；AUTOMATION 归 scheduler）──
-    runs = await asyncio.get_running_loop().run_in_executor(
-        None, lambda: gw.run_once({WorkKind.CHAT}),
-    )
-    if not runs:
-        raise HTTPException(status_code=504, detail="no run executed")
-    run = runs[-1]
+    # ── ②-b receipt 路径（R2.1c，E1=C）────────────────────────
+    # 消费者在跑且未要求 wait：用户消息此刻落库，答案经 run.answer 由
+    # persist 桥落库并补 agent_done；HTTP 立即返回两态回执。
+    if gw.consumer_running() and not wait:
+        _install_chat_event_bridge(
+            gw, session_id, assistant_mid_holder,
+            service=service, persist=True,
+        )
+        try:
+            service.event_bus.emit(session_id, "message_received", {
+                "message_id": user_mid,
+                "user_message_id": user_mid,
+                "role": "user",
+                "content": content,
+                "created_at": _time.time(),
+            })
+        except Exception as exc:  # noqa: BLE001 —— 落库失败不阻断受理
+            logger.warning("send_via_gateway: user persist failed: %s", exc)
+        return {
+            "accepted": True,
+            "message_id": user_mid,
+            "session_id": receipt.session_id or session_id,
+        }
+
+    # ── ③ 执行（同步路径：kind 过滤；wait=true 时只等不驱动）────
+    _install_chat_event_bridge(gw, session_id, assistant_mid_holder)
+    if gw.consumer_running() and wait:
+        run = await asyncio.get_running_loop().run_in_executor(
+            None,
+            lambda: gw.wait_turn(
+                receipt.session_id or session_id,
+                timeout=_chat_wait_timeout(),
+            ),
+        )
+        if run is None:
+            raise HTTPException(
+                status_code=504,
+                detail={"error": "wait_timeout",
+                        "hint": "turn 未在时限内完成；请改用 SSE 订阅"},
+            )
+    else:
+        runs = await asyncio.get_running_loop().run_in_executor(
+            None, lambda: gw.run_once({WorkKind.CHAT}),
+        )
+        if not runs:
+            raise HTTPException(status_code=504, detail="no run executed")
+        run = runs[-1]
     if not run.ok:
         _push_sse("error", {"message_id": run.run_id, "error": run.error or ""}, session_id)
         _push_sse("agent_done", {"message_id": run.run_id, "status": "error"}, session_id)
@@ -789,14 +836,29 @@ def _push_sse(kind: str, data: dict, session_id: str) -> None:
         logger.debug("sse push failed (%s): %s", kind, exc)
 
 
+def _chat_wait_timeout() -> float:
+    """wait=true 的等待上限（秒）。turn 可能很长，默认 300s。"""
+    raw = os.environ.get("QNODES_CHAT_WAIT_TIMEOUT", "").strip()
+    try:
+        return float(raw) if raw else 300.0
+    except ValueError:
+        return 300.0
+
+
 def _install_chat_event_bridge(
     gw: Any, session_id: str, message_id_holder: dict[str, str],
+    *, service: Any = None, persist: bool = False,
 ) -> None:
     """把引擎的平台事件翻译成前端词表并推 SSE（P5-1b）。
 
     引擎事件（node.started / text_delta / tool.started）是平台观测语义；
     前端需要 tool_call / tool_result / text_delta 等产品语义。翻译层放这里，
     不改引擎。
+
+    R2.1c：``persist=True``（receipt 路径）时，桥还承担收尾——
+    ``run.answer`` → assistant_message 落库 + agent_done；
+    ``run.failed`` / ``run.settled{fenced}`` → error + agent_done。
+    消费者线程里没有人替请求做这些（请求早已返回 receipt）。
     """
     mapping = {
         "tool.started": "tool_call",
@@ -804,6 +866,38 @@ def _install_chat_event_bridge(
     }
 
     def bridge(kind: str, data: dict) -> None:
+        if persist:
+            if kind == "run.answer":
+                mid = str(data.get("run_id") or "")
+                message_id_holder["id"] = mid
+                if service is not None:
+                    try:
+                        service.event_bus.emit(session_id, "assistant_message", {
+                            "message_id": mid,
+                            "role": "assistant",
+                            "content": str(data.get("content") or ""),
+                            "created_at": time.time(),
+                        })
+                    except Exception:  # noqa: BLE001 —— 落库失败不吞 SSE
+                        logger.warning(
+                            "bridge: assistant persist failed", exc_info=True)
+                _push_sse("agent_done", {
+                    "message_id": mid, "status": "completed",
+                }, session_id)
+                return
+            if kind == "run.failed" or (
+                kind == "run.settled" and data.get("fenced")
+            ):
+                mid = str(data.get("run_id") or "")
+                reason = str(data.get("error") or data.get("reason") or "")
+                _push_sse("error", {
+                    "message_id": mid, "error": reason,
+                }, session_id)
+                _push_sse("agent_done", {
+                    "message_id": mid, "status": "error",
+                }, session_id)
+                return
+
         out_kind = mapping.get(kind)
         if out_kind is None:
             # text_delta / thinking_delta / thinking_done / stream.failed 直通
@@ -844,7 +938,12 @@ async def send_sync(body: ChatMessage, request: Request):
     # ── 阶段 3a 灰度分支（QNODES_NEW_ENTRY=1 时走新架构） ──────────
     from strategy_research.core.gateway import new_entry_enabled
     if new_entry_enabled():
-        return await _send_via_gateway(body.session_id, body.content)
+        # R2.1c（E1=C）：?wait=true 保留同步 reply 语义（外部脚本用户）；
+        # 默认 receipt 型——submit 即回，答案走 SSE。
+        wait = (request.query_params.get("wait") or "").strip().lower() in (
+            "1", "true", "yes",
+        )
+        return await _send_via_gateway(body.session_id, body.content, wait=wait)
 
     service = _get_session_service()
     result = await service.send_message(

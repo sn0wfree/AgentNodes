@@ -171,6 +171,12 @@ class SessionController:
             # R1 fence ③：正常收尾释放（仅 active 可释放，不误伤后继者）。
             self._fence.release(token)
 
+        # R2.1a：答案进事件流（「一切事实经事件流」）。fenced 的 run 在
+        # 上方提前 return，陈旧答案不会出现在事件流里。消费方：
+        # chat bridge 据此发 assistant_message（消费者模型下请求线程
+        # 看不到 RunResult，事件流是答案的唯一通道）。
+        self._sink("run.answer", {"run_id": run_id, "content": answer})
+
         self._sink(
             "run.settled",
             {"run_id": run_id, "ok": True, "answer_chars": len(answer)},

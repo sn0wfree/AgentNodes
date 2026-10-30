@@ -10,6 +10,27 @@ Contains:
 from __future__ import annotations
 
 from pathlib import Path
+from typing import Any
+
+
+def _start_gateway_consumer() -> Any | None:
+    """R2.1b：宿主启动常驻消费者（E1=C receipt 契约的执行主体）。
+
+    仅真实服务入口调用——测试经 create_app/TestClient 走同步回落路径。
+    惰性构造 Gateway；LLM 未配置等失败只降级（/chat/send 回落同步语义），
+    不阻断服务启动。--reload 开发模式不启动（app 在 reloader 子进程重建）。
+    """
+    try:
+        from strategy_research.core.gateway import get_gateway
+        from strategy_research.core.orchestration import WorkKind
+
+        gw = get_gateway()
+        gw.start_consumer(kinds={WorkKind.CHAT})
+        print("✓ Gateway 常驻消费者已启动（/chat/send 走 receipt 契约）")
+        return gw
+    except Exception as exc:  # noqa: BLE001
+        print(f"⚠ Gateway 消费者未启动（/chat/send 回落同步语义）: {exc}")
+        return None
 
 
 def cmd_webui_serve(args) -> int:
@@ -76,7 +97,12 @@ def cmd_webui_serve(args) -> int:
             static_dir=static_dir,
             cors_origins=env_config.get("cors_origins"),
         )
-        uvicorn.run(app, host=args.host, port=args.port)
+        gw = _start_gateway_consumer()
+        try:
+            uvicorn.run(app, host=args.host, port=args.port)
+        finally:
+            if gw is not None:
+                gw.stop_consumer()
 
     return 0
 
@@ -115,7 +141,12 @@ def cmd_api_serve(args) -> int:
             goal_db_path=getattr(args, "goal_db", None),
             hypotheses_path=getattr(args, "hypotheses_path", None),
         )
-        uvicorn.run(app, host=args.host, port=args.port)
+        gw = _start_gateway_consumer()
+        try:
+            uvicorn.run(app, host=args.host, port=args.port)
+        finally:
+            if gw is not None:
+                gw.stop_consumer()
 
     return 0
 

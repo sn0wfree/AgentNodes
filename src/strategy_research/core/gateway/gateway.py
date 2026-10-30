@@ -8,6 +8,7 @@
 from __future__ import annotations
 
 import logging
+import threading
 from pathlib import Path
 from typing import Any, Callable
 
@@ -60,6 +61,13 @@ class Gateway:
 
             self._store = PlatformStore(data_dir=data_dir)
         # 保持兼容：_build_engine 仍可访问（A1 preset 注册表会替换）
+        # R2.1b：常驻消费者状态（start_consumer 显式启动，构造不启动——
+        # 测试/直构路径零影响）。
+        self._consumer_thread: threading.Thread | None = None
+        self._consumer_wake = threading.Event()
+        self._consumer_stop = threading.Event()
+        self._turn_results: dict[str, RunResult] = {}  # session_id -> 最近一次
+        self._turn_done: dict[str, threading.Event] = {}
 
     @property
     def store(self):
@@ -70,6 +78,9 @@ class Gateway:
         self._default_sink(kind, data)
         if self._external_sink is not None:
             self._external_sink(kind, data)
+        # R2.1b：有工单入队即唤醒消费者（无消费者时是 no-op set）。
+        if kind == "work.enqueued":
+            self._consumer_wake.set()
 
     def install_sink(self, sink: Callable[[str, dict], None]) -> None:
         """追加一个外部 sink（P5-1b：用于把引擎事件转发到 SSE）。
@@ -112,6 +123,69 @@ class Gateway:
         AUTOMATION（3c kind 归属），默认 None = 全部。
         """
         return self.controller.run_pending(kinds)
+
+    # ── R2.1b：常驻消费者 ─────────────────────────────────
+
+    def start_consumer(
+        self, *, kinds: Any = None, poll_interval: float = 0.2,
+    ) -> None:
+        """后台 daemon 线程循环 run_once(kinds)。
+
+        幂等：已在跑则 no-op。构造不启动——由宿主（API lifespan）显式
+        启动，测试/直构路径保持同步语义。唤醒 = work.enqueued 置位 +
+        poll_interval 兜底轮询；循环体就是现有 run_once，零新执行语义。
+        """
+        if self._consumer_thread is not None and self._consumer_thread.is_alive():
+            return
+        self._consumer_stop.clear()
+
+        def _loop() -> None:
+            while not self._consumer_stop.is_set():
+                try:
+                    self._consume_once(kinds)
+                except Exception:  # noqa: BLE001 —— 单轮失败不杀消费者
+                    logger.exception("gateway consumer iteration failed")
+                self._consumer_wake.wait(poll_interval)
+                self._consumer_wake.clear()
+
+        self._consumer_thread = threading.Thread(
+            target=_loop, name="gateway-consumer", daemon=True,
+        )
+        self._consumer_thread.start()
+
+    def _consume_once(self, kinds: Any) -> None:
+        """run_once + 按 session 记录结果（wait=true 等待原语的产出端）。"""
+        for result in self.run_once(kinds):
+            sid = result.turn_id.split("#", 1)[0]
+            self._turn_results[sid] = result
+            done = self._turn_done.setdefault(sid, threading.Event())
+            done.set()
+
+    def consumer_running(self) -> bool:
+        return bool(
+            self._consumer_thread is not None and self._consumer_thread.is_alive()
+        )
+
+    def wait_turn(self, session_id: str, timeout: float | None = None) -> RunResult | None:
+        """等待该 session 最近提交的 turn 完成（E1=C 的等待原语）。
+
+        只等待、不驱动——执行始终是消费者的事。超时返回 None。
+        """
+        done = self._turn_done.get(session_id)
+        if done is None:
+            # 提交后还没有任何结果：注册事件再等（防 check-then-event 竞态）
+            done = self._turn_done.setdefault(session_id, threading.Event())
+        if not done.wait(timeout):
+            return None
+        return self._turn_results.get(session_id)
+
+    def stop_consumer(self, grace: float = 5.0) -> None:
+        """置停止位并等待在跑 turn 收尾（grace 秒）；线程不可硬杀。"""
+        self._consumer_stop.set()
+        self._consumer_wake.set()
+        thread = self._consumer_thread
+        if thread is not None and thread.is_alive():
+            thread.join(grace)
 
     # ── 观测 ─────────────────────────────────────────────
 
