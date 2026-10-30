@@ -562,7 +562,7 @@ def _study_start_cmd(rest: list[str], session_id: str) -> str:
         # v2 §17.1: --guidance-file / --gates-file → single guidance.md
         from pathlib import Path
 
-        from ...core.study import guidance as gd
+        from ...core.study.method import guidance as gd
         guidance_text = gd.compose_guidance_text(
             Path(ws),
             guidance_file=flags["guidance_file"],

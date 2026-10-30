@@ -21,7 +21,7 @@ from typing import TYPE_CHECKING, Any, Protocol
 from ..observability import new_trace_id
 from . import budget as _budget
 from . import state_utils as _state_utils
-from .metric_targets import metric_pass_set as _metric_pass_set  # noqa: F401  (re-export for tests)
+from .method.metric_targets import metric_pass_set as _metric_pass_set  # noqa: F401  (re-export for tests)
 from .models import StudyRecord, StudyStatus
 
 if TYPE_CHECKING:
@@ -69,7 +69,7 @@ def _dlog(module: str, msg: str, *args) -> None:
 
 
 # ── metric target comparison (reused from executor.py) ──────────────
-from .metric_targets import acceptance_config_from_targets, meets_metric_targets  # noqa: F401
+from .method.metric_targets import acceptance_config_from_targets, meets_metric_targets  # noqa: F401
 
 # ── event emitter protocol ──────────────────────────────────────────
 
@@ -529,10 +529,10 @@ class AutoresearchRunner(RunnerAegisMixin, RunnerKnowledgeMixin):
         # folded into verdict=="keep", same as the phases branch).
         _study_now = self._get_study()
         if _study_now.metric_targets:
-            from .metric_targets import (
+            from .method.metric_targets import (
                 meets_metric_targets as _meets,
             )
-            from .metric_targets import (
+            from .method.metric_targets import (
                 metric_pass_set as _pass_set,
             )
             _m = resumed.get("metrics", {})
@@ -761,7 +761,7 @@ class AutoresearchRunner(RunnerAegisMixin, RunnerKnowledgeMixin):
         sb_extra: dict = {}
         try:
             if self._goal_store is not None and self._get_study().goal_id:
-                from .claims import summarize_prediction_accuracy
+                from .method.claims import summarize_prediction_accuracy
                 _entries = self._goal_store.list_journal_entries(
                     self._get_study().goal_id, limit=10)
                 sb_extra = summarize_prediction_accuracy(_entries)
@@ -1217,7 +1217,7 @@ class AutoresearchRunner(RunnerAegisMixin, RunnerKnowledgeMixin):
             )
             metrics = dict(state.best_metrics or {})
 
-        from strategy_research.core.study.metric_targets import target_failures
+        from strategy_research.core.study.method.metric_targets import target_failures
         failures = target_failures(metrics, study.metric_targets or [])
         meets = bool(study.metric_targets) and not failures
         notes.extend(failures)

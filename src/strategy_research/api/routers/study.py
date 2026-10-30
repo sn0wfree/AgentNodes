@@ -929,7 +929,7 @@ async def study_knowledge(request: Request, study_id: str):
 @router.get("/{study_id}/guidance", response_model=StudyGuidanceResponse)
 async def study_guidance(request: Request, study_id: str):
     """v2: guidance.md content + parsed gates (design §13.4)."""
-    from ...core.study import guidance as gd
+    from ...core.study.method import guidance as gd
     study = _owned_study(request, study_id)
     g = gd.load_guidance(Path(study.workspace_path), study_id)
     if g.source is None:

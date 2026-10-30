@@ -120,12 +120,15 @@ def test_study_platform_touchpoints_are_whitelisted():
     allowed_sublayers = tuple(f"strategy_research.core.{s}" for s in (
         "agent", "llm", "runtimes", "gateway", "orchestration",
         "context", "storage", "memory", "utils", "observability",
-        "permission",
+        "permission", "strategy_acceptance",
     ))
     violations: list[str] = []
     for path in _iter_py(root):
         rel = path.relative_to(root)
         if "_archived" in rel.parts or rel.name == "__init__.py":
+            continue
+        # D1：method/ 子包由专属门禁管辖（见 test_method_never_imports_engine）
+        if "method" in rel.parts:
             continue
         allowed = STUDY_PLATFORM_TOUCHPOINTS.get(rel.name, set())
         for module, lineno in _imports(path):

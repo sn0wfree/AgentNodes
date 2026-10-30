@@ -14,7 +14,7 @@ from unittest.mock import MagicMock
 import pytest
 
 from strategy_research.core.goal.store import GoalStore
-from strategy_research.core.study.claims import (
+from strategy_research.core.study.method.claims import (
     normalize_predictions,
     summarize_prediction_accuracy,
     validate_predictions,

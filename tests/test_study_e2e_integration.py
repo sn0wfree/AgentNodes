@@ -275,17 +275,17 @@ class TestStateStore:
 
 class TestAttribution:
     def test_flipped(self):
-        from strategy_research.core.study.attribution import classify_attribution, AttributionOutcome
+        from strategy_research.core.study.method.attribution import classify_attribution, AttributionOutcome
         result = classify_attribution(["calmar"], set(), {"calmar"})
         assert result["calmar"] == AttributionOutcome.FLIPPED
 
     def test_regressed(self):
-        from strategy_research.core.study.attribution import classify_attribution, AttributionOutcome
+        from strategy_research.core.study.method.attribution import classify_attribution, AttributionOutcome
         result = classify_attribution(["calmar"], {"calmar"}, set())
         assert result["calmar"] == AttributionOutcome.REGRESSED
 
     def test_precision(self):
-        from strategy_research.core.study.attribution import compute_precision, AttributionOutcome
+        from strategy_research.core.study.method.attribution import compute_precision, AttributionOutcome
         attr = {"a": AttributionOutcome.FLIPPED, "b": AttributionOutcome.REGRESSED}
         precision, hits, total = compute_precision(attr)
         assert hits == 1

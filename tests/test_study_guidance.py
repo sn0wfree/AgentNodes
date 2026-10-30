@@ -10,7 +10,7 @@ from __future__ import annotations
 
 import pytest
 
-from strategy_research.core.study import guidance as gd
+from strategy_research.core.study.method import guidance as gd
 
 # ── frontmatter parsing ─────────────────────────────────────────────
 

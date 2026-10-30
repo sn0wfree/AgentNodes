@@ -6,7 +6,7 @@ from typing import Any
 
 logger = logging.getLogger(__name__)
 
-from . import aegis as _aegis
+from .method import aegis as _aegis
 
 
 class RunnerAegisMixin:

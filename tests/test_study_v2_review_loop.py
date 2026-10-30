@@ -9,7 +9,7 @@ from __future__ import annotations
 
 import json
 
-from strategy_research.core.study import review_loop as rl
+from strategy_research.core.study.method import review_loop as rl
 from strategy_research.core.study import state_store as ss
 from strategy_research.core.study.runner import (
     SR_STUDY_MAX_DEVIATION,

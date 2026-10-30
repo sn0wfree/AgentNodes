@@ -23,7 +23,7 @@ from .contracts import (
     SR_STUDY_MAX_DEVIATION,
     ShutdownReason,
 )
-from .metric_targets import meets_metric_targets, metric_pass_set
+from .method.metric_targets import meets_metric_targets, metric_pass_set
 
 logger = logging.getLogger(__name__)
 
@@ -156,7 +156,7 @@ def run_round_phases(
 
     # AEGIS: Attribution + Journal + Regression Gate
     passed_now = metric_pass_set(outcome.metrics, metric_targets)
-    from .attribution import classify_attribution
+    from .method.attribution import classify_attribution
     attribution = classify_attribution(outcome.predicted_affected, runner._prev_passed, passed_now)
 
     lever = outcome.strategist_output.get("action", "unknown") if isinstance(outcome.strategist_output, dict) else "unknown"
@@ -174,7 +174,7 @@ def run_round_phases(
     runner._scoreboard.update([lever], attribution, gating_outcome, round_num, round_num)
 
     # ── v2 artifacts: manifest + summary.md + journal.md ──
-    from .aegis import verdict_reason as _verdict_reason
+    from .method.aegis import verdict_reason as _verdict_reason
     vreason = _verdict_reason(outcome.eval_result, outcome.strategist_output)
     if gate_violations:
         gate_reason = "guidance gates: " + ",".join(v["id"] for v in gate_violations)
@@ -279,8 +279,8 @@ def _prepare_round_preamble(
         _create_run_dir,
         read_current_state,
     )
-    from strategy_research.core.study import guidance as gd
-    from strategy_research.core.study import review_loop as rl
+    from strategy_research.core.study.method import guidance as gd
+    from strategy_research.core.study.method import review_loop as rl
     from strategy_research.core.study import round_manifest as rm
     from strategy_research.core.study import state_store as ss
 
@@ -567,7 +567,7 @@ _ENGINE_BRANCHES: dict[str, Any] = {
 
 def _check_guidance_gates(guidance: Any, metrics: dict) -> list[dict]:
     """Hard-check guidance gates; returns violating gate dicts."""
-    from strategy_research.core.study import guidance as gd
+    from strategy_research.core.study.method import guidance as gd
     violations: list[dict] = []
     if not guidance.gates:
         return violations
@@ -612,7 +612,7 @@ def _capture_round_claims(
     Claims are optional by design (graceful degradation): missing or
     malformed predictions simply store ``{}`` — never fails the round.
     """
-    from .claims import normalize_predictions
+    from .method.claims import normalize_predictions
     if not isinstance(researcher_output, dict):
         return {}
     study = runner._get_study()
@@ -659,7 +659,7 @@ def _record_journal_and_regression(
     entry exists (e.g. HITL resume path), fall back to append+fill so the
     AEGIS journal never loses the round.
     """
-    from .claims import validate_predictions
+    from .method.claims import validate_predictions
     study = runner._get_study()
     session = study.session_id
     changeset = strategist_output.get("changes") if isinstance(strategist_output, dict) else None
@@ -829,7 +829,7 @@ def _run_review_cycle(
         run_agent_via_llm,
         should_use_real_llm,
     )
-    from strategy_research.core.study import review_loop as rl
+    from strategy_research.core.study.method import review_loop as rl
     from strategy_research.core.study import round_manifest as rm
     from strategy_research.core.study import state_store as ss
 

@@ -114,7 +114,7 @@ def test_run_monitor_check_returns_reason_without_keep_dir(tmp_path, monkeypatch
 
 
 def test_target_failures_collects_all():
-    from strategy_research.core.study.metric_targets import target_failures
+    from strategy_research.core.study.method.metric_targets import target_failures
 
     targets = [
         {"name": "calmar", "op": ">=", "value": 0.5},
