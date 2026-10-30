@@ -1,64 +1,42 @@
 """Extracted from cli.py — session management commands.
 
 Contains:
-- cmd_session_stats
 - cmd_session_list
 - cmd_session_show
 - cmd_session_search
 - cmd_session_delete
+
+B4 D3: ``cmd_session_stats`` was retired with the legacy
+``core.session.db`` metrics logger. ``EventStore.health_report()`` is the
+current source of write-path/backend health; run
+``pytest tests/test_event_store_comprehensive.py -k health`` or call it from
+Python.
 """
 
 from __future__ import annotations
 
 
-def cmd_session_stats(args) -> int:
-    """查看写入统计。"""
-    from strategy_research.core.session import SessionDB
-
-    db = SessionDB()
-    stats = db.metrics_logger.get_stats()
-
-    if not stats or stats.get("total_writes", 0) == 0:
-        print("暂无写入记录")
-        return 0
-
-    print("=== Session 写入统计 ===")
-    print(f"  总写入次数: {stats.get('total_writes', 0)}")
-    print(f"  总消息数:   {stats.get('total_messages', 0)}")
-    print(f"  成功率:     {stats.get('success_rate', 0):.1%}")
-    print(f"  平均速率:   {stats.get('avg_rate', 0):.0f} 条/秒")
-    print(f"  最大速率:   {stats.get('max_rate', 0):.0f} 条/秒")
-    print(f"  最小速率:   {stats.get('min_rate', 0):.0f} 条/秒")
-    print(f"  平均耗时:   {stats.get('avg_duration', 0):.3f}s")
-    print(f"  总耗时:     {stats.get('total_duration', 0):.3f}s")
-
-    # 显示最近记录
-    recent = db.metrics_logger.get_recent(n=args.recent)
-    if recent:
-        print(f"\n=== 最近 {len(recent)} 条记录 ===")
-        for r in reversed(recent):
-            status = "✓" if r["ok"] else "✗"
-            print(f"  {status} {r['count']} 条, {r['duration']:.3f}s, {r['rate']:.0f} 条/秒")
-
-    return 0
-
-
 def cmd_session_list(args) -> int:
-    """列出会话。"""
-    from strategy_research.core.session import SessionDB
+    """列出会话（统一库，B4 D5）。
 
-    db = SessionDB()
-    sessions = db.list_sessions(limit=args.limit)
+    原先走 ``core.session.db.SessionDB``（旧栈，schema 不同）。改用
+    ``core.session.unified.list_sessions``——与 CLI/TUI/MCP 共用同一查询。
+    """
+    from strategy_research.core.session.unified import list_sessions
+
+    sessions = list_sessions(limit=args.limit)
 
     if not sessions:
         print("暂无会话")
         return 0
 
+    from datetime import datetime
+
     print(f"=== 会话列表 (共 {len(sessions)} 个) ===")
     for s in sessions:
-        from datetime import datetime
-        created = datetime.fromtimestamp(s.created_at).strftime("%Y-%m-%d %H:%M")
-        print(f"  {s.id[:16]:16s}  {created}  {s.workspace or '(global)'}")
+        created = datetime.fromtimestamp(s["updated_at"]).strftime("%Y-%m-%d %H:%M")
+        title = s.get("title") or "(untitled)"
+        print(f"  {s['id'][:16]:16s}  {created}  {title}")
 
     return 0
 

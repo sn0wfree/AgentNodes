@@ -85,12 +85,20 @@ class TestMemoryManagerCRUD:
 
 
 class TestMemoryManagerClear:
-    def test_clear_removes_messages(self, mgr):
+    def test_clear_keeps_history_and_marks_boundary(self, mgr):
+        """B4 D1: /clear resets the context window, it does not delete rows.
+
+        Renamed from ``test_clear_removes_messages``: the old assertion
+        (``msgs == []``) encoded the bug. History stays queryable; the marker
+        tells the history filter where the context was cut.
+        """
         loop = asyncio.new_event_loop()
         loop.run_until_complete(mgr.append("s1", "user", "hello"))
         loop.run_until_complete(mgr.clear("s1"))
         msgs = loop.run_until_complete(mgr.get("s1"))
-        assert msgs == []
+        assert len(msgs) == 1
+        assert msgs[0]["message_type"] == "compaction"
+        assert msgs[0]["metadata"]["compacted_until_seq"] == 0
         loop.close()
 
     def test_clear_empty_session(self, mgr):

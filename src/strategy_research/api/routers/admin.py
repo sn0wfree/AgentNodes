@@ -167,24 +167,28 @@ async def get_session_metrics(
                         description="Number of recent WriteMetric rows to include"),
     x_admin_token: str | None = Header(None),
 ) -> dict[str, Any]:
-    """Surface the in-memory ``MetricsLogger`` for the session DB.
+    """Write-path health (B4 D3: legacy metrics logger retired).
 
-    Stats are aggregated across every write recorded by the running
-    process (in-memory ring, capped at 10_000). The endpoint is the
-    HTTP twin of the existing ``strategy-research session stats`` CLI
-    command — prefer the CLI for long-running scraping, use HTTP for
-    ad-hoc ops checks.
+    Previously surfaced ``core.session.db.MetricsLogger`` -- an in-memory ring
+    tied to the legacy session stack that B4 retires. ``EventStore`` is now
+    the single write path, so its self-report is the honest replacement:
+    backend kind, degraded flag, cache hit/miss, evictions. The response
+    shape changed with it; no frontend calls this endpoint (only a generated
+    type existed).
+
+    Kept as a route rather than deleted so operators with a bookmark get a
+    real answer instead of a 404.
     """
     _verify_admin(x_admin_token)
-    from strategy_research.core.session import SessionDB
+    from strategy_research.core.agent.event_store import EventStore
+    from strategy_research.core.agent.memory_manager import resolve_session_db_path
 
-    db = SessionDB()
-    stats = db.metrics_logger.get_stats()
-    return {
-        "status": "ok",
-        "stats": stats,
-        "recent": db.metrics_logger.get_recent(n=recent),
-    }
+    # health_report() only reads in-process cache/subscriber state, so the
+    # store is discarded immediately -- no connection is left open.
+    health = EventStore(
+        resolve_session_db_path(), flush_to_messages=False,
+    ).health_report()
+    return {"status": "ok", "health": health, "recent": []}
 
 
 @router.get("/hangs/report")

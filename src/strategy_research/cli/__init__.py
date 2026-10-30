@@ -31,7 +31,6 @@ from .commands.session import (
     cmd_session_list,
     cmd_session_search,
     cmd_session_show,
-    cmd_session_stats,
 )
 from .commands.skills import cmd_skills_list, cmd_skills_search, cmd_skills_show
 from .commands.swarm import (
@@ -885,7 +884,9 @@ def main() -> int:
 def _dispatch_session(args, parsers) -> int:
     """Dispatch the session subcommand."""
     if args.session_command == "stats":
-        return cmd_session_stats(args)
+        # B4 D3: retired with the legacy metrics logger.
+        print("session stats 已退役（B4 D3）。写入健康请用 EventStore.health_report()。")
+        return 0
     elif args.session_command == "list":
         return cmd_session_list(args)
     elif args.session_command == "show":

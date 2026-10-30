@@ -341,7 +341,14 @@ function SessionRow({
               <Star className="h-3 w-3 flex-shrink-0 fill-yellow-400 text-yellow-400" />
             )}
             <span className="flex-1 truncate text-sm">{sess.title}</span>
-            <span className="text-xs text-slate-500">{sess.message_count}</span>
+            {/* B4 D2: message_count was removed from this row. It is
+                maintained only by the legacy persist path, so on every
+                session written through the projector it reads 0 (measured:
+                93/93 sessions) -- a permanently wrong number. The accurate
+                value is GET /sessions/{id}/messages -> total, which this
+                list view cannot afford (it would be one request per row).
+                The per-session count still shows in TokenCard, where the
+                message list is already loaded. */}
           </div>
           <div className="flex items-center justify-between">
             <span className="text-xs text-slate-500">

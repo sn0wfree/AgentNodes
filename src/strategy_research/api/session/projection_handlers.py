@@ -103,6 +103,10 @@ def _on_message_received(
         # Duplicate — first event wins
         return
     msg_seq = len(state.messages) + 1
+    # B4 D7: MemoryManager.append() takes a `metadata` kwarg and publishes it
+    # on the event; without this merge it was silently dropped, so the public
+    # signature promised something the storage layer discarded.
+    metadata: Dict[str, Any] = dict(data.get("metadata") or {})
     state.messages[message_id] = ProjectedMessage(
         id=message_id,
         session_id=event.aggregate_id,
@@ -111,6 +115,7 @@ def _on_message_received(
         message_type="user",
         created_at=event.time_created,
         seq=msg_seq,
+        metadata=metadata,
     )
 
 def _on_assistant_message(
@@ -144,7 +149,10 @@ def _on_assistant_message(
             state.messages[message_id].metadata["agent_id"] = event.data["agent_id"]
         return
     msg_seq = len(state.messages) + 1
-    metadata: Dict[str, Any] = {}
+    # B4 D7: merge caller metadata (same note as _on_message_received).
+    # agent_id is applied after, so a structural id cannot be shadowed by a
+    # caller-supplied duplicate.
+    metadata: Dict[str, Any] = dict(event.data.get("metadata") or {})
     # Propagate agent_id from event data
     if "agent_id" in event.data:
         metadata["agent_id"] = event.data["agent_id"]
@@ -182,7 +190,10 @@ def _ensure_assistant_message(
         return msg
     # Lazy-create
     msg_seq = len(state.messages) + 1
-    metadata: Dict[str, Any] = {}
+    # B4 D7: merge caller metadata (same note as _on_message_received).
+    # agent_id is applied after, so a structural id cannot be shadowed by a
+    # caller-supplied duplicate.
+    metadata: Dict[str, Any] = dict(event.data.get("metadata") or {})
     # Propagate agent_id from event data
     if "agent_id" in event.data:
         metadata["agent_id"] = event.data["agent_id"]

@@ -75,12 +75,19 @@ def test_flush_after_clear_does_not_hit_fk(unified_db: Path):
 
 
 def test_clear_via_manager_preserves_recent_sessions(mm: UnifiedMemoryManager):
+    """B4 D1: clear keeps the session row AND the history, marking a boundary.
+
+    (Before D1 it kept the row but wiped the messages; that still destroyed
+    history, contrary to the documented /clear semantics.)
+    """
     import asyncio
 
     mm._backend.insert_message("s1", "user", "hi")
     asyncio.run(mm.clear("s1"))
     assert "s1" in mm._backend.list_recent_sessions(limit=10)
-    assert mm._backend.list_messages("s1") == []
+    remaining = mm._backend.list_messages("s1")
+    assert len(remaining) == 1, "history survives; only a marker is appended"
+    assert remaining[0]["message_type"] == "compaction"
 
 
 # ── Dual-master: SQLiteStore-first must still yield the full schema ──

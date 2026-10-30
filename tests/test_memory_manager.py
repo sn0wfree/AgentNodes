@@ -68,11 +68,24 @@ class TestUnifiedMemoryManagerBasic:
         msgs = await mm.get("s1", use_cache=False)
         assert len(msgs) == 1
 
-    async def test_clear_removes_session(self, mm):
+    async def test_clear_keeps_history_and_marks_boundary(self, mm):
+        """B4 D1: /clear resets the context window, it does not destroy history.
+
+        The old name was ``test_clear_removes_session`` and it asserted an
+        empty list. That encoded the bug: /clear deleted rows while its own
+        documented semantics say "clear the context, keep the history".
+        Now it appends a compaction marker whose ``compacted_until_seq`` is 0,
+        which the history filter reads as "everything before this is out of
+        context".
+        """
         await mm.append("s1", "user", "hi")
         await mm.clear("s1")
         msgs = await mm.get("s1")
-        assert msgs == []
+        assert len(msgs) == 1, "history must survive /clear"
+        marker = msgs[0]
+        assert marker["role"] == "system"
+        assert marker["message_type"] == "compaction"
+        assert marker["metadata"]["compacted_until_seq"] == 0
 
 
 # ── Cache integration ─────────────────────────────────────────────

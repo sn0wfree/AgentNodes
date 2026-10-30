@@ -598,6 +598,9 @@ class UnifiedMemoryManager:
         self._estimator = DynamicAvgTokenEstimator(self, cache_config)
         self._last_compaction_at = 0.0
         self._last_compaction_failures = 0
+        # B4 D1: lazily created EventStore used only to record the /clear
+        # context boundary. Held so close() can release its connection.
+        self._event_store: Any | None = None
 
     # ── Public API ────────────────────────────────────────────────
 
@@ -642,13 +645,41 @@ class UnifiedMemoryManager:
         return msgs
 
     async def clear(self, session_id: str) -> None:
-        try:
-            self._backend.delete_session(session_id)
-        except Exception:
-            pass
+        """Reset the LLM's context window without destroying history (B4 D1).
+
+        The documented semantics of /clear are "clear the context, keep the
+        history" (slash_commands.py:821-829), but this used to DELETE the
+        rows -- so the history really was gone, and (before the D7 hotfix)
+        the sessions row too, which broke every later write.
+
+        Now it emits ``compact.ended``. ``_on_compact`` with no
+        ``compacted_until_seq`` records 0, which the history filter reads as
+        "everything before this point is out of context" -- history stays
+        queryable, the model stops seeing it. No new event type: the marker
+        is exactly what manual compaction already produces.
+        """
         self._cache.invalidate(session_id)
         await self._locks.clear(session_id)
         self._emergency_buffer.pop(session_id, None)
+        try:
+            self._emit_clear_marker(session_id)
+        except Exception as exc:  # noqa: BLE001 — clear must not fail the caller
+            logger.warning("clear() marker emit failed for %s: %s", session_id, exc)
+
+    def _emit_clear_marker(self, session_id: str) -> None:
+        """Emit the compaction boundary that /clear represents."""
+        # Lazy import: event_store imports this module at module level.
+        from .event_store import EventStore
+
+        store = getattr(self, "_event_store", None)
+        if store is None:
+            store = EventStore(self._db_path, flush_to_messages=True)
+            self._event_store = store
+        store.emit(
+            session_id,
+            "compact.ended",
+            {"summary": "[context cleared]", "reason": "manual"},
+        )
 
     async def compact(self, session_id: str, strategy: Any) -> bool:
         """Two-phase commit: SQLite write first, cache invalidate only if Phase 1 succeeds."""
@@ -760,6 +791,18 @@ class UnifiedMemoryManager:
         return getattr(self, "_degraded", False)
 
     def close(self) -> None:
+        # B4 D1: release the lazily created clear-marker EventStore first.
+        store = getattr(self, "_event_store", None)
+        if store is not None:
+            try:
+                # EventStore owns a SQLiteStore; close that directly (the
+                # store itself has no close(), only its backend does).
+                backend = getattr(store, "backend", None)
+                if backend is not None:
+                    backend.close()
+            except Exception:  # noqa: BLE001 — close must not raise
+                pass
+            self._event_store = None
         if hasattr(self, "_sqlite_store"):
             self._sqlite_store.close()
 

@@ -90,6 +90,13 @@ class TestCrossProcessSqlite:
         mm_b.close()
 
     async def test_clear_visible_across_instances(self, shared_db):
+        """B4 D1: the clear marker must be readable by other instances.
+
+        Before D1 this asserted ``msgs == []`` because clear deleted rows.
+        The cross-instance property under test is unchanged -- a clear done
+        by one process must be observable by another -- only the observable
+        artifact is now a compaction marker instead of an empty list.
+        """
         cfg = CacheConfig(min_entries=10)
         mm_a = UnifiedMemoryManager(db_path=shared_db, cache_config=cfg)
         await mm_a.append("s1", "user", "data")
@@ -97,11 +104,14 @@ class TestCrossProcessSqlite:
 
         mm_b = UnifiedMemoryManager(db_path=shared_db, cache_config=cfg)
         await mm_b.clear("s1")
+        mm_b.close()
 
-        # Fresh instance sees the cleared state
+        # Fresh instance sees the boundary the other process wrote
         mm_c = UnifiedMemoryManager(db_path=shared_db, cache_config=cfg)
         msgs = await mm_c.get("s1")
-        assert msgs == []
+        assert len(msgs) == 1
+        assert msgs[0]["message_type"] == "compaction"
+        assert msgs[0]["metadata"]["compacted_until_seq"] == 0
         mm_c.close()
 
 
