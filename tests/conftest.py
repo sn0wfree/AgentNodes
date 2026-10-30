@@ -465,9 +465,11 @@ _LANE_SLOW_FILES = frozenset({
     "test_tool_retry.py",             # 8.1s
     "test_system_api.py",             # 7.3s
     "test_all_tools.py",              # 5.4s
-    "test_session_triggers.py",       # perf-baseline bulk insert ~10s on Windows
+    # test_session_triggers.py removed (B4 Step 4-5): it tested the retired
+    # legacy session stack.
     # not listed (covered by other lanes): test_chat_real_llm (llm),
-    # test_integration + test_goal_e2e (e2e)
+    # test_goal_e2e (e2e). test_integration was retired with the same legacy
+    # stack in B4 Step 4-5.
 })
 
 

@@ -236,38 +236,12 @@ class SQLiteStore:
         )
         conn.commit()
 
-    def insert_message(
-        self, session_id: str, role: str, content: str,
-        metadata: dict | None = None,
-        message_type: str = "assistant",
-        seq: int = 0,
-    ) -> str:
-        conn = self._ensure_conn()
-        msg_id = str(uuid.uuid4())
-        ts = time.time()
-        meta_json = json.dumps(metadata, ensure_ascii=False) if metadata else None
-        try:
-            # Parent row first — foreign_keys=ON enforces the FK.
-            conn.execute(
-                """INSERT INTO sessions (id, user_id, created_at, updated_at, message_count)
-                VALUES (?, 'anonymous', ?, ?, 1)
-                ON CONFLICT(id) DO UPDATE SET
-                    message_count = message_count + 1,
-                    updated_at = excluded.updated_at""",
-                (session_id, ts, ts),
-            )
-            conn.execute(
-                """INSERT INTO messages
-                (id, session_id, role, content, created_at, metadata_json,
-                 message_type, seq)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?)""",
-                (msg_id, session_id, role, content, ts, meta_json, message_type, seq),
-            )
-            conn.commit()
-            return msg_id
-        except sqlite3.OperationalError as exc:
-            logger.error("SQLite insert_message failed: %s", exc)
-            raise
+    # B4 Step 4: ``insert_message`` and ``compact_messages`` were deleted.
+    # Both wrote ``INSERT INTO messages`` directly, which made this class a
+    # second writer beside the projector (the write-whitelist gate flagged
+    # it). append() emits events now, and compaction goes through
+    # SessionService.compact_history -> compact.ended -> projector. Neither
+    # method had a production caller left.
 
     def list_messages(self, session_id: str) -> list[Message]:
         conn = self._ensure_conn()
@@ -319,47 +293,9 @@ class SQLiteStore:
         ).fetchall()
         return [r[0] for r in rows]
 
-    def compact_messages(
-        self, session_id: str, summary: str, keep_recent: int = 4,
-    ) -> bool:
-        """Replace all but last N messages with a single summary entry.
-
-        Used by compaction strategy. Returns True on success.
-        """
-        conn = self._ensure_conn()
-        try:
-            # Get all messages, keep last N
-            rows = conn.execute(
-                """SELECT id, created_at, seq FROM messages
-                   WHERE session_id = ?
-                   ORDER BY created_at ASC, seq ASC""",
-                (session_id,),
-            ).fetchall()
-            if len(rows) <= keep_recent + 1:
-                return True  # not enough to compact
-
-            to_delete = [r[0] for r in rows[:-keep_recent]]
-            cutoff_ts = rows[-keep_recent][1] if keep_recent > 0 else time.time()
-            summary_id = str(uuid.uuid4())
-
-            # Delete old messages
-            placeholders = ",".join("?" * len(to_delete))
-            conn.execute(
-                f"DELETE FROM messages WHERE id IN ({placeholders})",
-                to_delete,
-            )
-            # Insert summary at cutoff time
-            conn.execute(
-                """INSERT INTO messages
-                (id, session_id, role, content, created_at, message_type)
-                VALUES (?, ?, 'system', ?, ?, 'compaction')""",
-                (summary_id, session_id, summary, cutoff_ts - 0.001),
-            )
-            conn.commit()
-            return True
-        except sqlite3.OperationalError as exc:
-            logger.error("SQLite compact_messages failed: %s", exc)
-            return False
+    # B4 Step 4: compact_messages deleted — see the note above
+    # list_messages. It wrote INSERT INTO messages, making this a second
+    # writer; compaction now flows through the projector.
 
     def close(self) -> None:
         if self._conn:
@@ -423,23 +359,7 @@ class InMemoryStore:
         with self._lock:
             return list(self._data.keys())[:limit]
 
-    def compact_messages(self, session_id, summary, keep_recent=4) -> bool:
-        with self._lock:
-            msgs = self._data.get(session_id, [])
-            if len(msgs) <= keep_recent + 1:
-                return True
-            kept = msgs[-keep_recent:]
-            summary_msg: Message = {
-                "id": str(uuid.uuid4()),
-                "session_id": session_id,
-                "role": "system",
-                "content": summary,
-                "created_at": time.time(),
-                "message_type": "compaction",
-                "seq": 0,
-            }
-            self._data[session_id] = [summary_msg] + kept
-            return True
+    # B4 Step 4: compact_messages deleted alongside the SQLiteStore twin.
 
     def close(self) -> None:
         pass

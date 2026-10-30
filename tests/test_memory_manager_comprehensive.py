@@ -149,37 +149,28 @@ class TestMemoryManagerHealth:
 
 
 # ── InMemoryStore ─────────────────────────────────────────────────
+#
+# B4 Step 4: ``insert_message`` / ``compact_messages`` were deleted from both
+# stores (they were direct writers beside the projector). The tests that
+# exercised them went with the methods; what remains covers the degraded
+# backend's health/close surface and read-only session listing.
 
 
 class TestInMemoryStore:
-    def test_insert_and_list(self):
-        store = InMemoryStore()
-        store.insert_message("s1", "user", "hello")
-        msgs = store.list_messages("s1")
-        assert len(msgs) == 1
-        assert msgs[0]["content"] == "hello"
-
-    def test_delete_session(self):
-        store = InMemoryStore()
-        store.insert_message("s1", "user", "hello")
-        store.delete_session("s1")
-        assert store.list_messages("s1") == []
-
     def test_health_check(self):
         store = InMemoryStore()
         assert store.health_check() is True
 
-    def test_compact_messages(self):
+    def test_delete_session_clears_messages(self):
         store = InMemoryStore()
-        for i in range(10):
-            store.insert_message("s1", "user", f"msg{i}")
-        result = store.compact_messages("s1", summary="Summary", keep_recent=2)
-        assert result is True
+        store._data["s1"] = [{"id": "m1", "role": "user", "content": "hi"}]
+        store.delete_session("s1")
+        assert store.list_messages("s1") == []
 
     def test_list_recent_sessions(self):
         store = InMemoryStore()
-        store.insert_message("s1", "user", "hi")
-        store.insert_message("s2", "user", "hi")
+        store._data["s1"] = []
+        store._data["s2"] = []
         sessions = store.list_recent_sessions()
         assert "s1" in sessions
         assert "s2" in sessions
@@ -189,13 +180,6 @@ class TestInMemoryStore:
 
 
 class TestSQLiteStoreDirect:
-    def test_insert_and_list(self, tmp_path):
-        store = SQLiteStore(tmp_path / "direct.db")
-        store.insert_message("s1", "user", "hello")
-        msgs = store.list_messages("s1")
-        assert len(msgs) == 1
-        store.close()
-
     def test_health_check(self, tmp_path):
         store = SQLiteStore(tmp_path / "health.db")
         assert store.health_check() is True
@@ -205,12 +189,23 @@ class TestSQLiteStoreDirect:
         store = SQLiteStore(tmp_path / "close.db")
         store.close()  # should not raise
 
-    def test_compact_messages(self, tmp_path):
-        store = SQLiteStore(tmp_path / "compact.db")
-        for i in range(10):
-            store.insert_message("s1", "user", f"msg{i}")
-        result = store.compact_messages("s1", summary="Summary", keep_recent=2)
-        assert result is True
-        msgs = store.list_messages("s1")
-        assert len(msgs) <= 3
+    def test_schema_created_on_open(self, tmp_path):
+        """Opening the store yields the full unified schema.
+
+        Pins the dual-master hotfix (c161b0aa): ``_init_schema`` delegates to
+        ``web_session_db._ensure_schema``, so ``message_parts`` exists even
+        when SQLiteStore is what created the file.
+        """
+        from strategy_research.api.session.web_session_db import _ensure_schema
+
+        db = tmp_path / "schema.db"
+        store = SQLiteStore(db)
+        conn = store._ensure_conn()  # schema is applied on first connection
+        _ensure_schema(conn)
+        tables = {
+            r[0] for r in conn.execute(
+                "SELECT name FROM sqlite_master WHERE type='table'"
+            ).fetchall()
+        }
         store.close()
+        assert {"sessions", "messages", "message_parts"} <= tables

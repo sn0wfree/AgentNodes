@@ -470,7 +470,6 @@ class AgentLoop(
             config=config, registry=self.registry,
             memory=memory, workspace=workspace,
             system_prompt=system_prompt,
-            session_manager=getattr(self, '_session_manager', None),
         )
         self.client = OpenAICompatClient(config)
         # Track tool_calls per iteration for no_progress detection

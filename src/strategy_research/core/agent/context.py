@@ -87,7 +87,6 @@ class ContextBuilder:
         workspace: Path | None = None,
         system_prompt: str | None = None,
         user_message_prefix: str | None = None,
-        session_manager: Any | None = None,
     ):
         self.config = config
         self.registry = registry
@@ -95,7 +94,6 @@ class ContextBuilder:
         self.workspace = workspace
         self._custom_system_prompt = system_prompt
         self._user_message_prefix = user_message_prefix
-        self._session_manager = session_manager
         # Snapshot memory ONCE at construction (frozen).
         self._memory_snapshot = memory.snapshot if memory else ""
         self._system_prompt_cache: str | None = None
@@ -208,11 +206,13 @@ class ContextBuilder:
     def _recall_relevant(self, task: str, max_entries: int = 5) -> str:
         """Find relevant memories and format as text block.
 
-        P2-e: Combines PersistentMemory (workspace-level) + SessionDB (cross-session).
+        B4 Step 4-5: the cross-session branch was removed with the legacy
+        session stack. ``session_manager`` was threaded through AgentLoop but
+        no domain caller ever supplied one (measured: zero assembly points),
+        so the branch was dead. PersistentMemory recall is unaffected.
         """
         lines: list[str] = []
 
-        # 1. PersistentMemory (workspace-level)
         if self.memory:
             try:
                 entries = self.memory.find_relevant(task)[:max_entries]
@@ -220,17 +220,6 @@ class ContextBuilder:
                     lines.append(f"- {e.title}: {e.description or '(no desc)'}")
             except Exception as exc:  # noqa: BLE001
                 logger.warning("memory find_relevant failed: %s", exc)
-
-        # 2. SessionDB (cross-session) — P2-e
-        if self._session_manager:
-            try:
-                session_results = self._session_manager.search_messages(task, limit=max_entries)
-                for r in session_results:
-                    role = r.get("role", "?")
-                    content = (r.get("content", "") or "")[:200]
-                    lines.append(f"- [session:{role}] {content}")
-            except Exception as exc:  # noqa: BLE001
-                logger.debug("SessionDB search failed: %s", exc)
 
         return "\n".join(lines[:max_entries])
 

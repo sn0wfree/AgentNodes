@@ -7,8 +7,10 @@ Two modes:
 - time-aware: LPT bin-packing on a `.shard-timings.json` of {relpath: seconds}.
   Falls back to round-robin + stderr warning when timings are missing.
 
-Both modes skip `test_session_triggers.py` (known heavy/flake magnet, runs in
-its own nightly job — see docs/ci-sharding-strategy.md).
+Both modes skip `test_session_triggers.py` when it exists (known heavy/flake
+magnet, runs in its own nightly job — see docs/ci-sharding-strategy.md). It
+was retired with the legacy session stack in B4 Step 4-5, so the skip set is
+now usually empty.
 """
 from __future__ import annotations
 
@@ -18,7 +20,9 @@ import sys
 from pathlib import Path
 
 DEFAULT_TIMINGS = Path(".shard-timings.json")
-DEFAULT_SKIP = {"test_session_triggers.py"}
+# Kept as a set (not hard-coded to empty) so a future heavy suite can be
+# excluded from sharding without touching the logic below.
+DEFAULT_SKIP: set[str] = set()
 
 
 def _collect_files(root: Path) -> list[Path]:

@@ -249,19 +249,15 @@ def test_messages_table_written_only_by_projection_or_guarded_persist():
     - ``api/routers/web_session.py``：``persist_message`` 兼容直写
       （带 message_id 幂等防护，服务 compaction/slash 回调）。
 
-    已知遗留（**各自写不同文件**，不污染统一库；到期随 C1 退役）：
-    - ``core/agent/memory_manager.py``：MemoryManager 自有 SQLiteStore；
-    - ``core/session/db.py``：旧会话栈（schema 与统一库不兼容，见
-      docs/stage-s3-message-writer-convergence-20261028.md §2 修订）。
+    B4 Step 1/4-5（2026-10-30）后两条已知遗留都已消失：MemoryManager
+    改为发事件经 projector（不再直写），旧会话栈整体删除。白名单回到
+    只有 projector + persist_message——这是这条门禁设计时的目标状态。
 
-    新增任何写者即失败——这份白名单只能缩短，不能变长。
+    新增任何写者即失败；这份白名单只能缩短，不能变长。
     """
     allowed = {
         "api/session/projection_store.py",
         "api/routers/web_session.py",
-        # Known-legacy (separate files, retire with C1):
-        "core/agent/memory_manager.py",
-        "core/session/db.py",
     }
     # 精确匹配表名 messages（不要把 messages_fts 索引写入算进来）
     import re as _re
@@ -284,20 +280,11 @@ def test_messages_table_written_only_by_projection_or_guarded_persist():
     )
 
 
-def test_legacy_session_db_stays_separate_from_unified_db():
-    """S3 修订：旧会话栈写自己的文件——schema 与统一库不兼容
-    （id INTEGER vs TEXT / timestamp vs created_at），合并会写坏表。
-    此测试钉死「不得把两者指向同一文件」这条结论。"""
-    from strategy_research.core.agent.memory_manager import (
-        resolve_session_db_path,
-    )
-    from strategy_research.core.session import db as session_db
-
-    legacy = session_db._default_db_path()
-    unified = resolve_session_db_path()
-    assert legacy.resolve() != unified.resolve(), (
-        "旧会话栈与统一库不得指向同一文件（messages schema 不兼容）"
-    )
+# B4 Step 4-5 (2026-10-30): ``test_legacy_session_db_stays_separate_from_unified_db``
+# was removed together with ``core/session/db.py``. It pinned the rule "the
+# legacy stack must not point at the unified file because the schemas are
+# incompatible" -- once the legacy stack is gone there is nothing to keep
+# apart. Keeping it would have required keeping the file.
 
 
 # ── 消费归属：kind 过滤不得丢失工单 ────────────────────

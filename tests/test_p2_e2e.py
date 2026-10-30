@@ -13,7 +13,6 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
-from strategy_research.core.agent.context import ContextBuilder
 from strategy_research.core.agent.loop import AgentLoop
 from strategy_research.core.agent.tools import ToolRegistry
 from strategy_research.core.hooks.composite import AgentHook, CompositeHook
@@ -192,89 +191,13 @@ class TestAgentLoopHookIntegration:
         assert result.success
 
 
-# ── ContextBuilder Cross-Session Memory Tests ──────────────
+# ── ContextBuilder Cross-Session Memory Tests (removed) ────
 
-
-class TestContextBuilderCrossSession:
-    """Test ContextBuilder with SessionDB integration (P2-e)."""
-
-    def test_recall_includes_session_results(self):
-        mock_session_manager = MagicMock()
-        mock_session_manager.search_messages.return_value = [
-            {"role": "assistant", "content": "past strategy insight"},
-            {"role": "user", "content": "what about momentum?"},
-        ]
-
-        config = LLMConfig(model="test", api_key="test")
-        registry = ToolRegistry()
-
-        builder = ContextBuilder(
-            config=config,
-            registry=registry,
-            session_manager=mock_session_manager,
-        )
-
-        recalled = builder._recall_relevant("momentum strategy")
-        assert "past strategy insight" in recalled
-        assert "what about momentum?" in recalled
-        assert "session:" in recalled  # tagged as session memory
-
-    def test_recall_combines_persistent_and_session(self):
-        mock_memory = MagicMock()
-        entry = MagicMock()
-        entry.title = "workspace memory"
-        entry.description = "a note"
-        mock_memory.find_relevant.return_value = [entry]
-        mock_memory.snapshot = "snapshot"
-
-        mock_session_manager = MagicMock()
-        mock_session_manager.search_messages.return_value = [
-            {"role": "assistant", "content": "session memory"},
-        ]
-
-        config = LLMConfig(model="test", api_key="test")
-        registry = ToolRegistry()
-
-        builder = ContextBuilder(
-            config=config,
-            registry=registry,
-            memory=mock_memory,
-            session_manager=mock_session_manager,
-        )
-
-        recalled = builder._recall_relevant("test query")
-        assert "workspace memory" in recalled
-        assert "session memory" in recalled
-
-    def test_recall_session_error_handled(self):
-        mock_session_manager = MagicMock()
-        mock_session_manager.search_messages.side_effect = RuntimeError("DB error")
-
-        config = LLMConfig(model="test", api_key="test")
-        registry = ToolRegistry()
-
-        builder = ContextBuilder(
-            config=config,
-            registry=registry,
-            session_manager=mock_session_manager,
-        )
-
-        # Should not raise
-        recalled = builder._recall_relevant("test query")
-        assert isinstance(recalled, str)
-
-    def test_recall_no_session_manager(self):
-        config = LLMConfig(model="test", api_key="test")
-        registry = ToolRegistry()
-
-        builder = ContextBuilder(
-            config=config,
-            registry=registry,
-            session_manager=None,
-        )
-
-        recalled = builder._recall_relevant("test query")
-        assert recalled == ""
+# B4 Step 4-5 (2026-10-30): ``TestContextBuilderCrossSession`` went with the
+# feature it tested. ContextBuilder used to accept a ``session_manager`` for
+# cross-session recall, but no caller ever supplied one (measured: zero
+# assembly points) and the manager itself was the retired legacy stack.
+# PersistentMemory recall is still covered by test_context_builder.py.
 
 
 # ── CLI Session Commands Tests ─────────────────────────────
