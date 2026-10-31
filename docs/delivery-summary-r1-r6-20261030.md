@@ -282,3 +282,36 @@ A 平台内核 91.2% · B 研究域 90.1% · C 能力层 90.1% · 合计 90.3%
 
 遗留（不在本目标内）：API/CLI 档（D/E）未做 90% 断言；104 条历史基线
 失败清偿维持原计划（阶段收尾顺手清）。
+
+---
+
+## 十二、深度统一：执行核收敛 + checkpoint 收口（2026-10-31 补充）
+
+背景：checkpoint 盘点发现「两套执行核 + 两套恢复机制」。用户拍板
+**方案 B（深度统一）**，设计见
+`docs/deep-unification-graph-engine-design-20261031.md`。
+
+**B1 · SwarmRuntime 层循环退役**（提交 7dc07b35）：`execute()` 变为
+SwarmPreset → GraphEngine 编译器——每层 `(split → fanout → join)` 链，
+层屏障语义保真；契约（SwarmPreset/AgentResult/SwarmHook/cancel）零改动，
+三个消费面（goal workflow ×3 / CLI swarm ×2 / MCP ×1）一行未动。
+引擎侧仅加 opt-in `include_result`（branch.settled 事件携带结果，
+完成序逐条交付桥接 on_agent_complete）。至此**全系统执行核收敛为
+GraphEngine 一个**：chat / study / fanout 原生 + goal/CLI/MCP swarm 经编译器。
+
+**B2 · checkpoint 收口**：层间自动存档（`GoalWorkflowHook.on_layer_complete
+→ runner.checkpoint()`，此前 checkpoint() 零调用方、崩溃即丢）；
+`/goal checkpoint resume` 改调 `resume_from_checkpoint + resume_and_continue`
+——从断点层真续跑（pre_completed + 引擎原语 `run(start=layer_k)`），
+替换 v0.5.1 的「只展示」。恢复原语自此与 study 轮恢复（plan A）同源。
+
+验收：行为等价（受影响 24 套件 568 测试**零修改**全绿）+ 15 个新语义锁
+测试（hook 线程/完成序、should_stop 每层、预算层边界中断、未注册 agent
+静默排除 vs stub、resume 重放、CLI 端到端续跑）。
+
+附带修正的认知：旧 `_execute_layer` 的 retry 分支实际是**空转**（重试
+agent 已有结果即被跳过）——本刀按「行为等价」原样保留并在设计文档 §3
+决定 B 注明，未顺手"修"（等价优先，修语义属另一个决策）。
+
+边界：core/workflow 定义系统（webui workflow 特性）未迁——同模式可将来
+另开一刀；study plan A 不动；忠实 DAG 边（多后继）留作引擎演进项。

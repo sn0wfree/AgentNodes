@@ -187,6 +187,11 @@ SwarmRuntime 编译时置 True，sink 桥接到 on_agent_complete。
 3. **langgraph 双跳开销**：每层两个节点（split/join），max_hops 需 ≥ 2×层数+余量。
 4. **事件量**：SwarmRuntime 默认 sink=None（今天也无引擎事件），hook 之外
    不新增事件面；要接事件流属后续增强，不在本刀。
+5. **retry 分支空转（现状保真）**：旧 `_execute_layer` 对「已有结果的
+   agent」一律跳过（`if agent_id in result.agent_results: continue`），
+   因此 P3.7 的 retry 动作实际从未真正重跑过 agent。本刀按行为等价
+   原样保留（split 节点同样排除已有结果者）；要不要让 retry 真重跑
+   属语义变更，不在等价刀内做——若做，改 split 过滤条件即可。
 
 ---
 
