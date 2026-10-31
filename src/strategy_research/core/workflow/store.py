@@ -58,6 +58,7 @@ CREATE TABLE IF NOT EXISTS node_outputs (
     node_id      TEXT NOT NULL,
     status       TEXT NOT NULL DEFAULT 'pending',
     summary      TEXT NOT NULL DEFAULT '',
+    output       TEXT NOT NULL DEFAULT '',
     artifacts    TEXT NOT NULL DEFAULT '{}',
     metrics      TEXT NOT NULL DEFAULT '{}',
     error        TEXT,
@@ -118,7 +119,25 @@ class WorkflowStore:
                 statement = statement.strip()
                 if statement:
                     self._conn.execute(statement)  # type: ignore[union-attr]
+            self._migrate()  # type: ignore[union-attr]
             self._conn.commit()  # type: ignore[union-attr]
+
+    def _migrate(self) -> None:
+        """Additive column migrations for DBs created before R-B0.
+
+        ``node_outputs.output`` carries the node's full text output so
+        ``WorkflowRunner.resume_from_store`` can rebuild ``pre_completed``
+        after a restart (rows written earlier have an empty string; those
+        runs can resume but downstream nodes see no upstream text).
+        """
+        cols = {
+            row[1] for row in
+            self._conn.execute("PRAGMA table_info(node_outputs)")  # type: ignore[union-attr]
+        }
+        if cols and "output" not in cols:
+            self._conn.execute(  # type: ignore[union-attr]
+                "ALTER TABLE node_outputs ADD COLUMN output TEXT NOT NULL DEFAULT ''"
+            )
 
     def close(self) -> None:
         with self._lock:
@@ -255,11 +274,13 @@ class WorkflowStore:
         with self._lock:
             conn.execute(
                 "INSERT OR REPLACE INTO node_outputs "
-                "(run_id, segment_idx, node_id, status, summary, artifacts, metrics, error, elapsed_s) "
-                "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
+                "(run_id, segment_idx, node_id, status, summary, output, "
+                "artifacts, metrics, error, elapsed_s) "
+                "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
                 (run_id, segment_idx, result.agent_id,
                  result.status.value if hasattr(result.status, "value") else str(result.status),
                  result.summary or result.output or "",
+                 result.output or "",
                  json.dumps(result.artifacts or {}, ensure_ascii=False, default=str),
                  json.dumps(result.metrics or {}, ensure_ascii=False, default=str),
                  result.error, result.elapsed_s or 0.0),
@@ -271,6 +292,39 @@ class WorkflowStore:
             "SELECT * FROM node_outputs WHERE run_id = ? ORDER BY segment_idx", (run_id,),
         ).fetchall()
         return cast(list[dict[str, Any]], [_row_to_dict(r) for r in rows])
+
+    def rebuild_agent_results(self, run_id: str) -> dict[str, Any]:
+        """Rebuild ``{node_id: AgentResult}`` from persisted node outputs.
+
+        R-B2: used by ``WorkflowRunner.resume_from_store`` to restore
+        ``pre_completed`` in a fresh process. Only SUCCESS rows are
+        restored — a failed node must re-run on resume (its stored
+        envelope carries an error, not a usable downstream output).
+        """
+        from ..swarm.runtime import AgentResult, AgentStatus
+
+        rebuilt: dict[str, Any] = {}
+        for row in self.list_node_outputs(run_id):
+            if row.get("status") != AgentStatus.SUCCESS.value:
+                continue
+            try:
+                artifacts = json.loads(row.get("artifacts") or "{}")
+            except (json.JSONDecodeError, TypeError):
+                artifacts = {}
+            try:
+                metrics = json.loads(row.get("metrics") or "{}")
+            except (json.JSONDecodeError, TypeError):
+                metrics = {}
+            rebuilt[row["node_id"]] = AgentResult(
+                agent_id=row["node_id"],
+                status=AgentStatus.SUCCESS,
+                output=row.get("output") or "",
+                summary=row.get("summary") or "",
+                artifacts=artifacts,
+                metrics=metrics,
+                elapsed_s=float(row.get("elapsed_s") or 0.0),
+            )
+        return rebuilt
 
     # ── Approvals ─────────────────────────────────────────────
 
