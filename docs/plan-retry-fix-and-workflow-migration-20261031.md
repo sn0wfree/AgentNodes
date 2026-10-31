@@ -3,8 +3,14 @@
 > 输入：深度统一 B1 的遗留项两项，用户已拍板两者都做。
 > 前置勘查：`core/swarm/runtime.py`（split 过滤 / `_apply_branch_action`）、
 > `core/workflow/`（executor 段循环 / node_types / definition / store）、
-> `api/routers/workflow.py`（22 个端点）、24 个测试文件 280 个用例。
+> `api/routers/workflow.py`（22 个端点）、24 个测试文件。
 > 验收门沿用：行为等价 / 测试不减 / 失败集不扩大 + `cov_gate --min 90`。
+
+> **修订（2026-10-31 二次评估）**：初版有三处判断经复核后修正——
+> ① R-B 的「state 落库」方案不成立（WorkflowStore 无 output 列，且引擎
+> state 含不可序列化对象）→ 改为「run 级重建」；② R-A 优先级下调
+> （全库零 branches 配置，属"有承诺无用户"）；③ R-B3 工作量上调
+> （段循环测试 20 例紧密耦合待删私有方法）。详见 §5「二次评估勘误」。
 
 ---
 
@@ -13,16 +19,19 @@
 | | R-A retry 空转 | R-B workflow 迁引擎 |
 |---|---|---|
 | 性质 | **语义缺陷修复**（行为会变，且是变好） | **架构迁移**（行为必须逐字节等价） |
-| 半径 | `runtime.py` 两处（split 过滤 + retry 动作）+ 测试 | 6 模块 / 22 端点 / 280 用例 |
+| 半径 | `runtime.py` 两处（split 过滤 + retry 动作）+ 测试 | 6 模块 / 22 端点 / 230 用例 |
 | 状态机 | 无（层内过滤条件） | **有**（段切分 + 审批门 + replan 环 + 断点续跑） |
-| 工期 | 0.5d | 3–4d |
+| 用户 | **零**（全库无 branches 配置） | webui workflow 特性（4 个出厂模板） |
+| 工期 | 0.5d | **5d**（修订：原 3–4d） |
 | 风险 | 低（局部） | 中高（有状态编排 + 审批暂停恢复） |
 
-**顺序：R-A 先做**（独立可合入、无冲突），再做 R-B。
+**顺序（修订）：R-B1 先行，R-A 降为 P2 并行插入。**
+理由：R-B 是架构主线（消灭最后一个自研调度器），R-A 是"有承诺无用户"
+的旁支；先做主线能在影子编译阶段尽早暴露真实障碍。
 
 ---
 
-## 1. R-A · retry 空转修复（0.5d）
+## 1. R-A · retry 空转修复（0.5d，P2）
 
 ### 1.1 缺陷确认（代码级）
 
@@ -111,19 +120,32 @@ B1 已按「行为等价」原样保留并在设计文档 §6 注明，现在修
 `pre_completed` 跳过、失败计数、事件发射）。动态性是「节点内部循环」而非
 「动态拓扑」——这与 study 的 phase 内部逻辑同构。
 
-**决定 B · 审批门的暂停/恢复**
+**决定 B · 审批门的暂停/恢复（修订：run 级重建，不落 state）**
 
-现状：`approve()` 在**同一 runner 实例**上继续（runner 存在 `_active_runners`
-里跨请求保活）。引擎化后：
-- gate 节点抛 `GraphInterrupt("approval_required", data={node_id, segment_idx})`
-  → `run()` 返回带 `__interrupt__` 的 state；
-- runner 把 **state 序列化入 WorkflowStore**（新表列或复用
-  `params_snapshot`/`run_node_outputs`）→ 进程重启也能恢复（现状不能，
-  因为 runner 实例在内存）；
-- `approve()` → 反序列化 state → pop `__interrupt__` → `run(state, start=下一段)`
-  → 逐步持久化。
-- **这是净增益**：现状 runner 实例丢失即无法审批续跑（进程重启 = 卡死在
-  awaiting），引擎化后 state 在库里。
+现状：`approve()` 在**同一 runner 实例**上继续（runner 存在
+`_get_run_registry()` 里跨请求保活，routers/workflow.py:635-637：实例不在
+即 404）。**全库无任何 resume 路径**——进程重启后 awaiting 的 run 永久卡死。
+
+初版设想「state 序列化入 WorkflowStore」经复核**不成立**：
+
+| 障碍 | 实测证据 |
+|---|---|
+| store 存不下执行产物 | `node_outputs` 列只有 `status/summary/artifacts/metrics/error/elapsed_s`——**没有 `output`**（store.py:253-266）；下游节点靠 `AgentResult.output` 做 upstream |
+| 引擎 state 不可序列化 | state 含 `AgentResult` 对象、节点闭包（捕获 `NodeContext`/`loop_factory`） |
+| 需要的是极小集合 | 审批恢复真正只缺 `segment_idx` + `pre_completed` 的 output |
+
+**修订方案 · 两层**：
+
+1. **前置小刀 R-B0（0.5d）**：`node_outputs` 增列 `output TEXT`（SQLite
+   `ALTER TABLE ADD COLUMN` 是 O(1) 且向后兼容），`save_node_output` 写入、
+   `list_node_outputs` 读出。
+2. **R-B2 实现 `resume_from_store(run_id)`**：从 `runs.segment_idx` +
+   `node_outputs` 重建 `pre_completed: dict[str, AgentResult]` → 编译图 →
+   `run(state, start=f"segment_{n}")`。**不引入任何序列化格式**，只用现有
+   关系数据；`approve()` 走同一函数。
+
+**净增益保留**：进程重启后 approve 仍可续跑（现状 404 卡死）。但表述改为
+「run 级重建」，而非「state 落库」。
 
 **决定 C · 事件流契约不变**
 
@@ -138,13 +160,14 @@ B1 已按「行为等价」原样保留并在设计文档 §6 注明，现在修
 `NodeContext` 原样保留（`dispatch_node` 签名不变），只是构造点从"段循环里"
 移到"节点 fn 闭包里"。零语义变化。
 
-### 2.3 分刀（每刀独立可合入）
+### 2.3 分刀（每刀独立可合入；工时已按二次评估修订）
 
 | 刀 | 内容 | 工期 | 验收 |
 |---|---|---|---|
-| **R-B1** | 引入 `WorkflowGraphCompiler`（新模块，不改 executor）：`WorkflowDefinition → GraphEngine`（无审批、无 replan 的最简路径），并用它跑 **test_workflow_e2e / node_contracts** 这两组作为影子验证（parallel run 对比结果，不替换） | 1d | 影子对比：同一 definition + 同 fake dispatch → 结果逐字段一致 |
-| **R-B2** | `WorkflowRunner` 主路径切到编译器（含审批门 GraphInterrupt + state 持久化 + approve 恢复）；保留旧 `_run_loop` 作为 `legacy_runner` 开关 | 1.5d | 280 用例中除 segment_loop 内部实现断言外全绿；审批 e2e 通过 |
-| **R-B3** | replan 环（evaluator → planner 条件边）+ plan_steps 内联节点 + 删旧 `_run_loop`/`_run_segment`/`_run_plan_steps` 段循环；新增「重启后 approve 续跑」测试 | 1d | 全量绿；库存只增不减；失败集不扩大 |
+| **R-B0** | `node_outputs` 增列 `output TEXT`（`ALTER TABLE ADD COLUMN`，向后兼容）+ save/read 接线 | 0.5d | 新旧库均可读写；列存得下 `AgentResult.output` |
+| **R-B1** | 引入 `WorkflowGraphCompiler`（新模块，不改 executor）：`WorkflowDefinition → GraphEngine`（无审批、无 replan 的最简路径），用 **test_workflow_e2e / node_contracts** 做**影子验证**（parallel run 对比，不替换） | 1d | 影子对比：同 definition + 同 fake dispatch → 结果逐字段一致；事件序列逐条一致 |
+| **R-B2** | 主路径切编译器：段子图 + approval gate 抛 `GraphInterrupt` + `resume_from_store(run_id)`（从 store 重建 pre_completed）；保留旧 `_run_loop` 为临时开关 | 1.5d | 230 例中除 segment_loop 内部实现断言外全绿；审批 e2e 通过；新增「跨实例 approve 续跑」测试 |
+| **R-B3** | replan 环（evaluator → planner 条件边）+ `plan_steps` 内联节点 + 删旧 `_run_loop`/`_run_segment`/`_run_plan_steps`；**重写 `test_workflow_segment_loop.py` 20 例**（它们直接调待删私有方法） | **1.5d** | 全量绿；库存只增不减；失败集不扩大 |
 | **R-B4** | 清尾：架构图 webui workflow 格翻 ✅；交付总结；cov_gate | 0.5d | 四道门全绿 |
 
 **关键风险与对策**
@@ -152,7 +175,8 @@ B1 已按「行为等价」原样保留并在设计文档 §6 注明，现在修
 | 风险 | 对策 |
 |---|---|
 | 事件名映射错位（前端依赖） | R-B1 影子模式下 dump 两边事件序列做逐条 diff，差异即失败 |
-| 审批续跑跨进程 | R-B2 的 state 持久化是净增益，但要加「序列化往返」测试（含 AgentResult） |
+| 审批续跑跨进程 | 走 `resume_from_store` 重建（R-B0 补 output 列）；测试用「新实例 + 同 store」模拟重启 |
+| **段循环测试耦合待删私有方法** | `test_workflow_segment_loop.py` 20 例直接调 `_run_loop`/`_run_segment`/`_execute_segment_nodes`/`_do_replan`，R-B3 必须整文件重写——已计入 1.5d |
 | replan 图内环 + max_hops 冲突 | `max_hops` 按 `(段数+plan 步数) × (max_segments+1) × 2` 动态计算；业务上限仍在 replan_count |
 | 段循环里的「连续 2 步失败即停」规则 | 搬到 join 节点 / plan_steps 节点内部，行为不变（保持原判定位置） |
 | 旧 `legacy_runner` 开关长期滞留 | R-B3 删除，不允许长期双轨（less-is-more）；若 R-B2 出现回归才临时启用 |
@@ -162,23 +186,25 @@ B1 已按「行为等价」原样保留并在设计文档 §6 注明，现在修
 - 不改 `WorkflowDefinition` JSON schema / 前端协议（端点全保）；
 - 不把 workflow 的 approval 语义并进 Gateway 的 mailbox/审批（那是另一层，
   属后续「统一审批面」话题）；
-- 不迁 `core/workflow/dag.py`（纯拓扑工具，被 goal/swarm 共用，保持中立）。
+- 不迁 `core/workflow/dag.py`（纯拓扑工具，被 goal/swarm 共用，保持中立）；
+- **不做引擎 state 序列化**（见决定 B：改 run 级重建）。
 
 ---
 
-## 3. 总顺序与工期
+## 3. 总顺序与工期（修订版）
 
 ```
-R-A（0.5d，先合）
+R-B0 store 补 output 列（0.5d）
   └→ R-B1 影子编译（1d）
-       └→ R-B2 主路径切换（1.5d）
-            └→ R-B3 replan + 删旧循环（1d）
+       └→ R-B2 主路径切换 + resume_from_store（1.5d）
+            └→ R-B3 replan + 重写段循环测试 + 删旧循环（1.5d）
                  └→ R-B4 清尾（0.5d）
-合计 ≈ 4.5d 单人
+R-A（0.5d，P2，与主线无文件冲突，可任意时点插入）
+合计 ≈ 5d 单人（R-B 4.5d + R-A 0.5d）
 ```
 
-R-A 与 R-B 无文件冲突（R-A 只碰 `swarm/runtime.py`；R-B 只碰 `core/workflow/`
-与 `api/routers/workflow.py`），R-A 可先独立合入。
+R-A 与 R-B 无文件冲突（R-A 只碰 `swarm/runtime.py`；R-B 碰 `core/workflow/`
+与 `api/routers/workflow.py`）。
 
 ## 4. 完成后全系统执行核分布
 
@@ -189,9 +215,18 @@ R-A 与 R-B 无文件冲突（R-A 只碰 `swarm/runtime.py`；R-B 只碰 `core/w
 | fanout preset | GraphEngine |
 | goal / CLI / MCP swarm | GraphEngine（B1 编译器） |
 | **webui workflow（R-B）** | **GraphEngine（R-B 编译器）** |
-| 恢复原语 | 全部 `__interrupt__` + state + `run(start=)` |
+| 恢复原语 | 全部 `__interrupt__` + state + `run(start=)`（goal/workflow 另加 store 级 run 重建） |
 
-## 5. 一句话
+## 5. 二次评估勘误（2026-10-31 复核）
+
+| # | 初版判断 | 复核结论 | 影响 |
+|---|---|---|---|
+| 1 | 「state 序列化入 WorkflowStore，**净增益**」 | **不成立**：`node_outputs` 无 `output` 列；引擎 state 含不可序列化对象 | 改为 R-B0 补列 + `resume_from_store` run 级重建；新增 0.5d |
+| 2 | 「R-A 先做，0.5d」 | 方向对但**优先级过高**：全库 4 模板 + 6 preset **零 branches 配置**，属"有承诺无用户" | 降为 P2，不占关键路径；R-B1 先行 |
+| 3 | 「workflow 测试 280 例，R-B3 除少数内部断言外全绿」 | **280 含 50 例 goal 域**；core 实为 230 例；且 `test_workflow_segment_loop.py` **20 例直接调待删私有方法**，需整文件重写 | R-B3 由 1d → 1.5d；总数 3–4d → 5d |
+| 4 | 「重启即卡死是缺陷」 | **成立**：`registry.get(run_id)` 为 None 即 404（routers/workflow.py:635-637），全库零 resume 路径 | 保留为 R-B2 的核心增益，但解法改为 run 级重建 |
+
+## 6. 一句话
 
 > R-A 修一个「文档承诺了但从未生效」的语义缺陷（retry 空转），
 > 用显式 retry_queue 让重跑真正发生；R-B 把最后一个自研调度器
