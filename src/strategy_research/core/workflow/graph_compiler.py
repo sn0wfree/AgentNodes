@@ -78,6 +78,9 @@ class WorkflowGraphCompiler:
         llm_config: Any | None = None,
         loop_factory: Callable[..., str] | None = None,
         emit_event: Callable[[str, dict[str, Any]], None] | None = None,
+        on_node_result: Callable[[str, int, AgentResult], None] | None = None,
+        on_segment_start: Callable[[int, list[str]], None] | None = None,
+        on_segment_done: Callable[[int, list[str]], None] | None = None,
     ) -> None:
         self.definition = definition
         self.workspace = Path(workspace)
@@ -88,6 +91,11 @@ class WorkflowGraphCompiler:
         self.llm_config = llm_config
         self.loop_factory = loop_factory
         self.emit_event = emit_event or (lambda _t, _d: None)
+        # R-B2: persistence hook — (node_id, segment_idx, result).
+        self.on_node_result = on_node_result or (lambda _n, _s, _r: None)
+        # R-B2: segment lifecycle hooks (run_segments table writes).
+        self.on_segment_start = on_segment_start or (lambda _i, _n: None)
+        self.on_segment_done = on_segment_done or (lambda _i, _n: None)
         self.segments: list[WorkflowSegment] = definition.segment_cut()
         self._node_by_id = {n.id: n for n in definition.nodes}
         self._order_index = {
@@ -96,6 +104,10 @@ class WorkflowGraphCompiler:
         # segment index → name of the node that ends that segment
         # (gate when an approval follows, else the segment-done marker).
         self._terminal_of_segment: dict[int, str] = {}
+        # node id → segment index (for the persistence hook)
+        self._segment_of_node: dict[str, int] = {
+            nid: seg.index for seg in self.segments for nid in seg.node_ids
+        }
 
     # ── Public ────────────────────────────────────────────────
 
@@ -244,6 +256,7 @@ class WorkflowGraphCompiler:
                 result = AgentResult(agent_id=node.id, status=AgentStatus.ERROR,
                                      error=str(exc))
             run.results[node.id] = result
+            self.on_node_result(node.id, self._segment_of_node.get(node.id, 0), result)
             self._emit(run, "node_completed", {
                 "node_id": node.id, "type": node.type,
                 "status": result.status.value,
@@ -280,6 +293,7 @@ class WorkflowGraphCompiler:
     def _make_segment_start_fn(self, seg: WorkflowSegment) -> Callable[[dict], dict]:
         def fn(state: dict) -> dict:
             run: CompiledRunState = state["run"]
+            self.on_segment_start(seg.index, seg.node_ids)
             self._emit(run, "segment_started", {
                 "segment_idx": seg.index, "nodes": seg.node_ids,
             })
@@ -290,6 +304,7 @@ class WorkflowGraphCompiler:
     def _make_segment_done_fn(self, seg: WorkflowSegment) -> Callable[[dict], dict]:
         def fn(state: dict) -> dict:
             run: CompiledRunState = state["run"]
+            self.on_segment_done(seg.index, seg.node_ids)
             self._emit(run, "segment_completed", {
                 "segment_idx": seg.index,
                 "results": {
@@ -412,6 +427,7 @@ class WorkflowGraphCompiler:
                     result = AgentResult(agent_id=node_id, status=AgentStatus.ERROR,
                                          error=str(exc))
                 run.results[node_id] = result
+                self.on_node_result(node_id, self._segment_of_node.get(node_id, 0), result)
                 self._emit(run, "node_completed", {
                     "node_id": node_id, "type": node.type,
                     "status": result.status.value,

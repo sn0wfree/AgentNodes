@@ -86,6 +86,9 @@ class WorkflowRunner:
         self._plan: list[dict[str, Any]] = []
         self._plan_reason = ""
         self._t0 = time.perf_counter()
+        # R-B2: the graph compiler is the main path; the legacy segment
+        # loop stays reachable for one release (deleted in R-B3).
+        self._use_legacy_loop = False
 
     # ── Public API ────────────────────────────────────────────
 
@@ -121,6 +124,55 @@ class WorkflowRunner:
                 self._run_loop()
         return True
 
+    @classmethod
+    def resume_from_store(
+        cls,
+        run_id: str,
+        definition: WorkflowDefinition,
+        workspace: Path,
+        objective: str,
+        *,
+        store: WorkflowStore | None = None,
+        **kwargs: Any,
+    ) -> "WorkflowRunner | None":
+        """Rebuild a runner from persisted state (R-B2).
+
+        Solves the "restart = stuck forever" gap: ``/approve`` used to
+        require the live runner instance (registry.get → 404 after a
+        restart). ``pre_completed`` is rebuilt from ``node_outputs``
+        (R-B0 added the ``output`` column) and execution resumes at the
+        first segment with pending nodes.
+
+        Returns None when the run does not exist or is already terminal.
+        """
+        store = store or WorkflowStore()
+        run = store.get_run(run_id)
+        if run is None or run.get("status") in _TERMINAL_STATUSES:
+            return None
+        runner = cls(
+            definition=definition,
+            workspace=workspace,
+            objective=objective or run.get("objective", ""),
+            store=store,
+            run_id=run_id,
+            **kwargs,
+        )
+        runner.pre_completed = store.rebuild_agent_results(run_id)
+        runner.segment_idx = int(run.get("segment_idx") or 0)
+        try:
+            runner.findings = list(json.loads(run.get("findings") or "[]"))
+            runner.failures = list(json.loads(run.get("failures") or "[]"))
+        except (json.JSONDecodeError, TypeError):
+            pass
+        runner.status = "running"
+        store.update_run(run_id, status="running")
+        runner._emit("run_resumed", {
+            "run_id": run_id,
+            "completed_nodes": sorted(runner.pre_completed),
+            "segment_idx": runner.segment_idx,
+        })
+        return runner
+
     def status_snapshot(self) -> dict[str, Any]:
         return {
             "run_id": self.run_id,
@@ -139,6 +191,130 @@ class WorkflowRunner:
     # ── Main loop ─────────────────────────────────────────────
 
     def _run_loop(self) -> None:
+        """Drive execution via the graph compiler (R-B2).
+
+        The legacy segment loop is kept behind ``_use_legacy_loop`` for one
+        release (plan §2.3 R-B2) and deleted in R-B3. The public contract
+        (status / approve / pre_completed / snapshot) is unchanged: the
+        compiler's run state is mirrored back after every run.
+        """
+        if self._use_legacy_loop:
+            self._run_loop_legacy()
+            return
+
+        from .graph_compiler import APPROVAL_REASON, WorkflowGraphCompiler
+
+        compiler = WorkflowGraphCompiler(
+            self.definition,
+            workspace=self.workspace,
+            objective=self.objective,
+            params=self.params,
+            strategy_name=self.strategy_name,
+            session_id=self.session_id,
+            llm_config=self.llm_config,
+            loop_factory=self.loop_factory,
+            emit_event=self._emit,
+            on_node_result=self._persist_node_result,
+            on_segment_start=self._persist_segment_start,
+            on_segment_done=self._persist_segment_done,
+        )
+
+        # Resume point: the first segment that still has unexecuted nodes.
+        start = self._resume_start(compiler)
+        run_state = compiler.run(
+            pre_completed=self.pre_completed,
+            start=start,
+        )
+        self._sync_from_compiler(run_state, compiler)
+
+    def _resume_start(self, compiler) -> str | None:
+        """Which node to start the graph at (None = default entry).
+
+        A segment counts as done only when all its nodes are in
+        pre_completed. For the first pending segment, the approval gate
+        that guards it is decisive:
+
+        - approval still ``awaiting`` → start at the gate so it
+          re-interrupts (the run stays paused until the user responds);
+        - approval already ``approved`` → start at the segment entry,
+          stepping past the gate;
+        - no gate → start at the segment entry.
+        """
+        if not self.pre_completed:
+            return None
+        for seg in compiler.segments:
+            if not any(nid not in self.pre_completed for nid in seg.node_ids):
+                continue
+            if seg.approval_after:
+                record = self.store.get_approval(self.run_id, seg.approval_after)
+                if record is None or record.get("status") != "approved":
+                    return compiler._gate_name(seg)
+            return compiler._segment_entry(seg)
+        return None
+
+    def _persist_node_result(self, node_id: str, segment_idx: int,
+                             result: AgentResult) -> None:
+        self.store.save_node_output(self.run_id, segment_idx, result)
+        self._emit("node_completed", {
+            "run_id": self.run_id, "node_id": node_id,
+            "status": result.status.value if hasattr(result.status, "value")
+            else str(result.status),
+            "summary": (result.summary or "")[:120],
+        })
+
+    def _persist_segment_start(self, segment_idx: int, nodes: list[str]) -> None:
+        self.store.upsert_segment(self.run_id, segment_idx, nodes,
+                                  status="running")
+
+    def _persist_segment_done(self, segment_idx: int, nodes: list[str]) -> None:
+        self.store.upsert_segment(self.run_id, segment_idx, nodes,
+                                  status="completed")
+
+    def _sync_from_compiler(self, run_state, compiler) -> None:
+        """Mirror compiled run state back onto the runner's public fields."""
+        from .graph_compiler import APPROVAL_REASON
+
+        self.pre_completed = dict(run_state.results)
+        for reason in run_state.failures:
+            if reason not in self.failures:
+                self.failures.append(reason)
+
+        # segment_idx: first segment with pending nodes (UI progress).
+        advanced = 0
+        for seg in compiler.segments:
+            if all(nid in self.pre_completed for nid in seg.node_ids):
+                advanced = seg.index + 1
+            else:
+                break
+        self.segment_idx = advanced
+        self.store.update_run(self.run_id, segment_idx=self.segment_idx,
+                              failures=self.failures)
+
+        reason = run_state.stopped_reason
+        if reason == APPROVAL_REASON:
+            # 旧路径在 _approval_status() 里惰性建审批记录；编译器路径
+            # 在 gate 中断后补建，保证 approve()/UI 能查到 awaiting 记录。
+            gate = self._current_gate()
+            if gate is not None and self.store.get_approval(
+                self.run_id, gate.id) is None:
+                self.store.create_approval(self.run_id, gate.id)
+            self.status = "awaiting"
+            self.store.update_run(self.run_id, status="awaiting")
+            return
+        if reason in ("segment_failures", "node_dispatch_error"):
+            self.status = "completed" if reason == "segment_failures" else "failed"
+            self.store.update_run(self.run_id, status=self.status)
+            if reason == "node_dispatch_error":
+                self._emit("run_failed", {
+                    "run_id": self.run_id,
+                    "error": "节点配置错误（NodeDispatchError）",
+                })
+            return
+        self.status = "completed"
+        self.store.update_run(self.run_id, status="completed",
+                              findings=self.findings)
+
+    def _run_loop_legacy(self) -> None:
         max_iterations = (len(self.segments) * 2 + 8) * (self.params.get("exec", {}).get("max_segments", 3) + 1)
         iterations = 0
         while self.status not in _TERMINAL_STATUSES and iterations < max_iterations:

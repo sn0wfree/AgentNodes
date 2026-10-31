@@ -54,12 +54,18 @@ def _definition(name: str, tmp_path: Path):
 
 
 def _run_old(name, tmp_path, *, loop_factory, events):
+    """Legacy segment loop, forced via the temporary switch (R-B2).
+
+    After R-B2 the runner's default path IS the compiler, so the shadow
+    comparison must pin the legacy loop explicitly.
+    """
     store = WorkflowStore(db_path=tmp_path / "old.db")
     runner = WorkflowRunner(
         _definition(name, tmp_path), tmp_path, "研究动量策略",
         store=store, loop_factory=loop_factory,
         emit_event=lambda t, d: events.append(t),
     )
+    runner._use_legacy_loop = True
     runner.start()
     return runner
 
