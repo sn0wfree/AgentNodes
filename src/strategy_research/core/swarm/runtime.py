@@ -61,6 +61,9 @@ class SwarmPreset:
     budget_token: int | None = None
     budget_turn: int | None = None
     budget_time_seconds: float | None = None
+    # R-A: 同一 agent 因 branches[].action=retry 被重跑的次数上限。
+    # 1 = 每个 agent 最多重跑一次，防「条件恒真 → 无限重跑」。
+    branch_max_retries: int = 1
 
 
 @dataclass
@@ -269,6 +272,11 @@ class SwarmRuntime:
             "layers": layers,
             "budget_turns": 0,
             "budget_time": 0.0,
+            # R-A: agents the branch rules asked to re-run. The split node
+            # normally skips anything already in agent_results; membership
+            # here overrides that (see _make_split_node).
+            "retry_queue": {},
+            "retry_count": {},
         }
         return engine.run(state, start=f"layer_{start_layer}")
 
@@ -287,7 +295,7 @@ class SwarmRuntime:
             if kind != "branch.settled":
                 return
             aid = data.get("payload")
-            if not aid or aid in result.agent_results:
+            if not aid:
                 return
             status = data.get("status")
             if status == "ok":
@@ -302,6 +310,9 @@ class SwarmRuntime:
                     agent_id=aid, status=AgentStatus.ERROR,
                     error=str(data.get("error") or status or "unknown"),
                 )
+            # R-A: a retried agent legitimately settles twice — the later
+            # result replaces the earlier one (insertion order is kept by
+            # dict semantics, so final_output still means "last completed").
             result.agent_results[aid] = ar
             self._emit(hooks, "on_agent_complete", aid, ar, {})
 
@@ -325,11 +336,15 @@ class SwarmRuntime:
                 logger.info("SwarmRuntime budget exceeded at layer %d", i)
                 raise GraphInterrupt("budget_exceeded")
             self._emit(hooks, "on_layer_start", i, state["layers"][i], {})
+            retry_queue: dict = state["retry_queue"]
             pending = [
                 aid for aid in state["layers"][i]
-                if aid not in state["agent_results"]
-                and self._find_agent(preset.agents, aid) is not None
+                if self._find_agent(preset.agents, aid) is not None
+                and (aid not in state["agent_results"] or aid in retry_queue)
             ]
+            # 重跑名额在进入本层时就消费掉：同层重复命中不会再跑第二次。
+            for aid in pending:
+                retry_queue.pop(aid, None)
             return {**state, "branches": pending}
 
         return split
@@ -373,10 +388,23 @@ class SwarmRuntime:
                     state["budget_turns"] += 1
             state["budget_time"] = time.perf_counter() - t0
             if preset.branches:
-                self._evaluate_branches_after_layer(
+                retried = self._evaluate_branches_after_layer(
                     preset.branches, state["agent_results"],
                     state["layers"], i,
                 )
+                # R-A: 把 retry 目标排进重跑队列（此前只是加回层、
+                # 又被 split 的"已有结果即跳过"过滤掉——空转）。
+                max_retries = int(getattr(preset, "branch_max_retries", 1) or 0)
+                for aid in retried or ():
+                    used = state["retry_count"].get(aid, 0)
+                    if used >= max_retries:
+                        logger.info(
+                            "branch retry cap reached for %s (%d)", aid, used,
+                        )
+                        continue
+                    state["retry_count"][aid] = used + 1
+                    state["retry_queue"][aid] = True
+                    self._emit(hooks, "on_branch_retry", aid, used + 1, {})
             self._emit(
                 hooks, "on_layer_complete",
                 i, state["layers"][i], dict(state["agent_results"]),
@@ -700,8 +728,14 @@ class SwarmRuntime:
         agent_results: dict[str, AgentResult],
         layers: list[list[str]],
         layer_idx: int,
-    ) -> None:
-        """Evaluate branches after a layer and log applied skip/retry."""
+    ) -> list[str]:
+        """Evaluate branches after a layer; return the retry targets.
+
+        R-A: the returned list is what the split node must honour by
+        actually re-running those agents (previously the retry action only
+        appended the id back to a layer, where the "already has a result"
+        filter then discarded it — a no-op).
+        """
         layer_results = self._build_layer_results(agent_results)
         skip, retry = self._apply_branches(
             branches, layer_results, layers, layer_idx,
@@ -711,6 +745,7 @@ class SwarmRuntime:
                 "Branches after layer %d: skip=%s retry=%s",
                 layer_idx, skip, retry,
             )
+        return retry
 
     def _build_layer_results(
         self,
