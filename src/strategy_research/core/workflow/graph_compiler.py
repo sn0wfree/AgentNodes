@@ -61,6 +61,7 @@ class CompiledRunState:
     plan: list[dict[str, Any]] = field(default_factory=list)
     events: list[tuple[str, dict[str, Any]]] = field(default_factory=list)
     stopped_reason: str = ""
+    replan_count: int = 0
 
 
 class WorkflowGraphCompiler:
@@ -126,6 +127,7 @@ class WorkflowGraphCompiler:
         # 段终端 → 下一段（或 END）。审批门属于"被它门控的那一段"之前：
         # 旧 runner 在 _run_loop 顶部查 segments[idx].approval_after，即在
         # 跑该段之前暂停。因此门节点挂在上一段终端与该段入口之间。
+        last_terminal = self._terminal_of_segment[len(self.segments) - 1]
         for i in range(len(self.segments)):
             terminal = self._terminal_of_segment[i]
             if i + 1 < len(self.segments):
@@ -135,7 +137,8 @@ class WorkflowGraphCompiler:
                 else:
                     nxt = self._segment_entry(nxt_seg)
             else:
-                nxt = END
+                # 末段：先判 replan（R-B3），否则收尾。
+                nxt = self._replan_name() if self._has_replan() else END
             engine.add_conditional_edge(terminal, self._make_router(nxt), None)
 
         # 门 → 它门控的那一段入口（获批后 run(start=...) 也走同一条路径）。
@@ -143,16 +146,54 @@ class WorkflowGraphCompiler:
             if seg.approval_after:
                 engine.add_edge(self._gate_name(seg), self._segment_entry(seg))
 
+        if self._has_replan():
+            self._compile_replan(engine, last_terminal)
+
         return engine
 
+    # ── Replan loop (R-B3) ────────────────────────────────────
+
+    def _has_replan(self) -> bool:
+        """A replan loop needs both a planner and an evaluator node."""
+        return any(n.type == "planner" for n in self.definition.nodes) and any(
+            n.type == "evaluator" for n in self.definition.nodes
+        )
+
+    def _compile_replan(self, engine: GraphEngine, last_terminal: str) -> None:
+        """末段之后的环：判 verdict → 重跑 planner → 新 plan 步骤 → 回判。
+
+        对齐旧 `_run_loop` 的尾部语义：
+        - `_last_decision_verdict() == "replan"` 且 replan_count < max_segments
+          → 重规划（清旧 plan_* 结果 → 重跑 planner → 跑新 plan 步骤）；
+        - 否则 `_finish_stop("全部步骤完成")`。
+
+        图形态：replan 节点（判 + 计 + 清）→ planner 复用节点 → plan 展开节点
+        → 回到 replan 节点。业务上限由 replan_count 控制；引擎 max_hops 兜底。
+        """
+        replan_name = self._replan_name()
+        engine.add_node(replan_name, self._make_replan_fn())
+        engine.add_conditional_edge(replan_name, self._make_replan_router(), None)
+
+        # 重跑 planner：复用同一 node fn（幂等：results 里清掉后才重跑）。
+        planner = next(n for n in self.definition.nodes if n.type == "planner")
+        engine.add_node(self._replan_planner_name(), self._make_node_fn(planner))
+        engine.add_edge(replan_name, self._replan_planner_name())
+
+        plan_name = self._replan_plan_name()
+        engine.add_node(plan_name, self._make_plan_fn(planner))
+        engine.add_edge(self._replan_planner_name(), plan_name)
+        engine.add_edge(plan_name, replan_name)  # 环
+
     def run(self, pre_completed: dict[str, AgentResult] | None = None,
-            *, start: str | None = None) -> CompiledRunState:
+            *, start: str | None = None,
+            forced_replan: bool = False) -> CompiledRunState:
         """Compile + execute; returns the final state object."""
         engine = self.compile(pre_completed)
         state = {
             "run": self._run_state,
             "pre_completed": dict(pre_completed or {}),
             "start_segment": 0,
+            "forced_replan": forced_replan,
         }
         if start is not None:
             state["pre_completed"] = dict(pre_completed or {})
@@ -289,6 +330,79 @@ class WorkflowGraphCompiler:
             return state
 
         return fn
+
+    def _make_replan_fn(self) -> Callable[[dict], dict]:
+        """replan 判定节点（对齐旧 _run_loop 尾部 + _do_replan）。
+
+        顺序：取最后一个 decision → 若 verdict 不是 replan 或已达上限
+        → 发 run_completed 并路由 END；否则 replan_count += 1、清掉旧
+        plan_* 结果（重跑）、发 plan_replan，然后进入重跑 planner 节点。
+        """
+
+        def fn(state: dict) -> dict:
+            run: CompiledRunState = state["run"]
+            max_segments = int(
+                (self.params.get("exec", {}) or {}).get("max_segments", 3) or 0
+            )
+            forced = bool(state.get("forced_replan"))
+            if not forced and self._last_verdict(run) != "replan":
+                # 正常收尾：对齐旧 _finish()。
+                run.stopped_reason = "completed"
+                self._emit(run, "run_completed", {
+                    "reason": "全部步骤完成",
+                    "completed_nodes": sorted(run.results),
+                })
+                return state
+            if run.replan_count >= max_segments:
+                run.stopped_reason = f"达到最大重规划次数（{max_segments}）"
+                self._emit(run, "run_completed", {
+                    "reason": run.stopped_reason,
+                    "completed_nodes": sorted(run.results),
+                })
+                return state
+            run.replan_count += 1
+            # forced 只消费一次：之后的循环由 evaluator verdict 决定。
+            state["forced_replan"] = False
+            # 清掉旧的 plan_* 结果，让重跑的 planner 展开出新步骤时不被跳过。
+            for key in [k for k in run.results if k.startswith("plan_")]:
+                del run.results[key]
+            planner = next(n for n in self.definition.nodes if n.type == "planner")
+            run.results.pop(planner.id, None)   # 强制重跑 planner
+            reason = self._last_decision_reason(run) or "评估要求重新规划"
+            self._emit(run, "plan_replan", {"reason": reason})
+            return state
+
+        return fn
+
+    def _make_replan_router(self) -> Callable[[dict], str]:
+        def route(state: dict) -> str:
+            run: CompiledRunState = state["run"]
+            if INTERRUPT_KEY in state or run.stopped_reason:
+                return END
+            if self._last_verdict(run) != "replan":
+                return END
+            max_segments = int(
+                (self.params.get("exec", {}) or {}).get("max_segments", 3) or 0
+            )
+            return self._replan_planner_name() if run.replan_count < max_segments else END
+
+        return route
+
+    @staticmethod
+    def _last_verdict(run: CompiledRunState) -> str:
+        for result in reversed(list(run.results.values())):
+            decision = (result.artifacts or {}).get("decision")
+            if isinstance(decision, dict):
+                return str(decision.get("verdict", "continue"))
+        return "continue"
+
+    @staticmethod
+    def _last_decision_reason(run: CompiledRunState) -> str:
+        for result in reversed(list(run.results.values())):
+            decision = (result.artifacts or {}).get("decision")
+            if isinstance(decision, dict):
+                return str(decision.get("reason", ""))
+        return ""
 
     def _make_segment_start_fn(self, seg: WorkflowSegment) -> Callable[[dict], dict]:
         def fn(state: dict) -> dict:
@@ -480,6 +594,15 @@ class WorkflowGraphCompiler:
 
     def _gate_name(self, seg: WorkflowSegment) -> str:
         return f"s{seg.index}_gate"
+
+    def _replan_name(self) -> str:
+        return "__replan"
+
+    def _replan_planner_name(self) -> str:
+        return "__replan_planner"
+
+    def _replan_plan_name(self) -> str:
+        return "__replan_plan"
 
 
 __all__ = [

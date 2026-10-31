@@ -86,9 +86,8 @@ class WorkflowRunner:
         self._plan: list[dict[str, Any]] = []
         self._plan_reason = ""
         self._t0 = time.perf_counter()
-        # R-B2: the graph compiler is the main path; the legacy segment
-        # loop stays reachable for one release (deleted in R-B3).
-        self._use_legacy_loop = False
+        # 用户拒绝审批 → 下一轮强制 replan
+        self._forced_replan = False
 
     # ── Public API ────────────────────────────────────────────
 
@@ -114,14 +113,14 @@ class WorkflowRunner:
             self.store.update_run(self.run_id, status="running")
             self._run_loop()
         else:
-            # Rejected → replan from the planner (new plan with reason)
+            # Rejected → replan from the planner (new plan with reason).
+            # Stashed as a forced replan; the graph is re-entered at the
+            # replan node so the planner runs again with the reason.
             self.status = "running"
             self.store.update_run(self.run_id, status="running")
             self._plan_reason = f"用户拒绝执行，请调整计划。编辑意见：{json.dumps(edits or {}, ensure_ascii=False)}"
-            if not self._do_replan():
-                return True
-            if self.status == "running":
-                self._run_loop()
+            self._forced_replan = True
+            self._run_loop()
         return True
 
     @classmethod
@@ -191,17 +190,13 @@ class WorkflowRunner:
     # ── Main loop ─────────────────────────────────────────────
 
     def _run_loop(self) -> None:
-        """Drive execution via the graph compiler (R-B2).
+        """Drive execution via the graph compiler.
 
-        The legacy segment loop is kept behind ``_use_legacy_loop`` for one
-        release (plan §2.3 R-B2) and deleted in R-B3. The public contract
-        (status / approve / pre_completed / snapshot) is unchanged: the
-        compiler's run state is mirrored back after every run.
+        R-B2 switched the main path; R-B3 deleted the legacy segment loop.
+        The public contract (status / approve / pre_completed / snapshot)
+        is unchanged: the compiler's run state is mirrored back after
+        every run.
         """
-        if self._use_legacy_loop:
-            self._run_loop_legacy()
-            return
-
         from .graph_compiler import APPROVAL_REASON, WorkflowGraphCompiler
 
         compiler = WorkflowGraphCompiler(
@@ -219,12 +214,17 @@ class WorkflowRunner:
             on_segment_done=self._persist_segment_done,
         )
 
-        # Resume point: the first segment that still has unexecuted nodes.
-        start = self._resume_start(compiler)
+        # Resume point: forced replan (approval rejected) wins — the user
+        # asked for a new plan, so re-enter the replan loop rather than
+        # pressing on with the old one.
+        forced = bool(self._forced_replan)
+        start = "__replan" if forced else self._resume_start(compiler)
         run_state = compiler.run(
             pre_completed=self.pre_completed,
             start=start,
+            forced_replan=forced,
         )
+        self._forced_replan = False
         self._sync_from_compiler(run_state, compiler)
 
     def _resume_start(self, compiler) -> str | None:
@@ -275,6 +275,7 @@ class WorkflowRunner:
         from .graph_compiler import APPROVAL_REASON
 
         self.pre_completed = dict(run_state.results)
+        self.replan_count = run_state.replan_count
         for reason in run_state.failures:
             if reason not in self.failures:
                 self.failures.append(reason)
@@ -313,162 +314,6 @@ class WorkflowRunner:
         self.status = "completed"
         self.store.update_run(self.run_id, status="completed",
                               findings=self.findings)
-
-    def _run_loop_legacy(self) -> None:
-        max_iterations = (len(self.segments) * 2 + 8) * (self.params.get("exec", {}).get("max_segments", 3) + 1)
-        iterations = 0
-        while self.status not in _TERMINAL_STATUSES and iterations < max_iterations:
-            iterations += 1
-            if self._budget_exceeded():
-                self._finish_stop("时间预算超限")
-                return
-
-            gate = self._current_gate()
-            if gate is not None and self._approval_status(gate.id) == "awaiting":
-                self.status = "awaiting"
-                self.store.update_run(self.run_id, status="awaiting")
-                self._emit("awaiting_approval", {
-                    "run_id": self.run_id, "node_id": gate.id,
-                    "segment_idx": self.segment_idx,
-                    "preview": "执行暂停，等待人工确认",
-                })
-                return  # wait for approve()
-
-            if self.segment_idx < len(self.segments):
-                segment = self.segments[self.segment_idx]
-                self._run_segment(segment)
-                continue
-
-            # All static segments done → evaluate the final decision
-            if self._last_decision_verdict() == "replan":
-                if not self._do_replan():
-                    return
-                continue
-            self._finish()
-            return
-
-        if self.status not in _TERMINAL_STATUSES:
-            self._fail("执行循环异常终止（超过最大迭代）")
-
-    def _run_segment(self, segment: WorkflowSegment) -> None:
-        self.status = "running"
-        self.store.upsert_segment(self.run_id, segment.index, segment.node_ids, status="running")
-        self._emit("segment_started", {"run_id": self.run_id, "segment_idx": segment.index,
-                                       "nodes": segment.node_ids})
-        t0 = time.perf_counter()
-        try:
-            results = self._execute_segment_nodes(segment)
-            self._emit("segment_completed", {"run_id": self.run_id, "segment_idx": segment.index,
-                                             "results": {k: v.summary for k, v in results.items()}})
-        except WorkflowRunError as exc:
-            self.store.upsert_segment(self.run_id, segment.index, segment.node_ids,
-                                      status="failed", error=str(exc))
-            self._fail(str(exc))
-            return
-        self.store.upsert_segment(self.run_id, segment.index, segment.node_ids,
-                                  status="completed",
-                                  elapsed_s=round(time.perf_counter() - t0, 2))
-        self.segment_idx += 1
-
-    def _execute_segment_nodes(self, segment: WorkflowSegment) -> dict[str, AgentResult]:
-        """Execute a segment's nodes in topological order, skipping completed."""
-        from ..workflow.dag import topological_layers
-
-        node_by_id = {n.id: n for n in segment.nodes}
-        adj: dict[str, list[str]] = {n.id: [] for n in segment.nodes}
-        for edge in segment.edges:
-            adj[edge.target].append(edge.source)
-        results: dict[str, AgentResult] = {}
-        failures_this_segment: list[str] = []
-
-        for layer in topological_layers(adj):
-            for node_id in layer:
-                if node_id in self.pre_completed:
-                    results[node_id] = self.pre_completed[node_id]
-                    continue
-                node = node_by_id[node_id]
-                result = self._execute_node(node, results)
-                results[node_id] = result
-                self.pre_completed[node_id] = result
-                self.store.save_node_output(self.run_id, segment.index, result)
-                self._emit("node_completed", {
-                    "run_id": self.run_id, "node_id": node.id, "type": node.type,
-                    "status": result.status.value if hasattr(result.status, "value") else str(result.status),
-                    "summary": result.summary[:120],
-                })
-                if result.status == AgentStatus.ERROR:
-                    failures_this_segment.append(node.id)
-                    self.failures.append(f"{node.id}: {result.error or 'unknown'}")
-                    self.store.update_run(self.run_id, failures=self.failures)
-
-                # Planner expansion: run the produced plan steps right after
-                # the planner, before any downstream node (e.g. evaluator).
-                if node.type == "planner" and result.artifacts.get("plan"):
-                    self._plan = list(result.artifacts["plan"])
-                    self._emit("plan_created", {
-                        "run_id": self.run_id, "steps": [s["id"] for s in self._plan],
-                    })
-                    self._run_plan_steps(results, failures_this_segment)
-                    if self.status in _TERMINAL_STATUSES:
-                        return results
-
-        if len(failures_this_segment) >= 2:
-            # Rule layer: 2 consecutive failures → stop
-            self.failures.append("连续 2 步失败，规则层判定停止")
-            self.store.update_run(self.run_id, failures=self.failures)
-            self._finish_stop("连续 2 步失败，规则层判定停止")
-        return results
-
-    def _run_plan_steps(
-        self,
-        results: dict[str, AgentResult],
-        failures_this_segment: list[str],
-    ) -> None:
-        """Execute planner-produced steps (plan_*) with internal dependencies."""
-        from ..workflow.dag import topological_layers
-
-        nodes: list[WorkflowNode] = []
-        for step in self._plan:
-            sid = step["id"]
-            if not sid.startswith("plan_"):
-                sid = f"plan_{sid}"
-                step["id"] = sid
-            cfg: dict[str, Any] = {"role": "researcher", "tools": step.get("tools") or [],
-                                   "prompt_text": step.get("description", "")}
-            nodes.append(WorkflowNode(id=sid, type=step.get("type", "llm_agent"),
-                                      label=step.get("title", sid), config=cfg))
-        if not nodes:
-            self._plan = []
-            return
-
-        adj: dict[str, list[str]] = {n.id: [] for n in nodes}
-        for step in self._plan:
-            for dep in step.get("depends_on") or []:
-                dep_id = dep if dep.startswith("plan_") else f"plan_{dep}"
-                if dep_id in adj and dep_id != step["id"]:
-                    adj[step["id"]].append(dep_id)
-        node_by_id = {n.id: n for n in nodes}
-        dynamic_segment_idx = -1
-
-        for layer in topological_layers(adj):
-            for node_id in layer:
-                if node_id in self.pre_completed:
-                    results[node_id] = self.pre_completed[node_id]
-                    continue
-                node = node_by_id[node_id]
-                result = self._execute_node(node, results)
-                results[node_id] = result
-                self.pre_completed[node_id] = result
-                self.store.save_node_output(self.run_id, dynamic_segment_idx, result)
-                self._emit("node_completed", {
-                    "run_id": self.run_id, "node_id": node.id, "type": node.type,
-                    "status": result.status.value if hasattr(result.status, "value") else str(result.status),
-                    "summary": result.summary[:120],
-                })
-                if result.status == AgentStatus.ERROR:
-                    failures_this_segment.append(node.id)
-                    self.failures.append(f"{node.id}: {result.error or 'unknown'}")
-                    self.store.update_run(self.run_id, failures=self.failures)
 
     def _execute_node(self, node: WorkflowNode, results: dict[str, AgentResult]) -> AgentResult:
         ctx = NodeContext(
@@ -517,82 +362,6 @@ class WorkflowRunner:
             )
             result = dispatch_node(node, ctx)
         return result
-
-    # ── Planner dynamic segment ───────────────────────────────
-
-    def _run_dynamic_segment(self) -> None:
-        """Execute planner-produced steps (plan_*) — used by replan."""
-        results = dict(self.pre_completed)
-        failures: list[str] = []
-        self._run_plan_steps(results, failures)
-
-    def _finish(self) -> None:
-        self._finish_stop("全部步骤完成")
-
-    def _last_decision(self) -> dict[str, Any] | None:
-        for result in reversed(list(self.pre_completed.values())):
-            decision = result.artifacts.get("decision")
-            if decision and isinstance(decision, dict):
-                return decision
-        return None
-
-    def _last_decision_verdict(self) -> str:
-        decision = self._last_decision()
-        if decision:
-            return str(decision.get("verdict", "continue"))
-        return "continue"
-
-    def _do_replan(self) -> bool:
-        """Run planner again with the previous plan + reason; execute new steps."""
-        max_segments = self.params.get("exec", {}).get("max_segments", 3)
-        if self.replan_count >= max_segments:
-            self._finish_stop(f"达到最大重规划次数（{max_segments}）")
-            return False
-        self.replan_count += 1
-
-        # Drop stale dynamic step results (plan_* ids) from pre_completed
-        stale = [k for k in self.pre_completed if k.startswith("plan_")]
-        for key in stale:
-            del self.pre_completed[key]
-
-        planner_nodes = [n for n in self.definition.nodes if n.type == "planner"]
-        if not planner_nodes:
-            self._finish_stop("评估要求重规划但没有 planner 节点")
-            return False
-
-        reason = self._plan_reason or self._last_decision_reason()
-        self._emit("plan_replan", {"run_id": self.run_id, "reason": reason})
-        self._plan_reason = ""
-
-        # Re-run the planner node
-        planner = planner_nodes[0]
-        ctx = NodeContext(
-            workspace=self.workspace, strategy_name=self.strategy_name,
-            objective=self.objective, session_id=self.session_id,
-            upstream=self._evaluator_upstream(), params=self.params,
-            llm_config=self.llm_config, loop_factory=self.loop_factory,
-            emit_event=self.emit_event,
-        )
-        result = dispatch_node(planner, ctx)
-        self.pre_completed[planner.id] = result
-        self.store.save_node_output(self.run_id, 0, result)
-        if result.status != AgentStatus.SUCCESS:
-            self._fail(f"重规划失败：{result.error}")
-            return False
-        self._plan = result.artifacts.get("plan", [])
-        self._emit("plan_created", {"run_id": self.run_id,
-                                    "steps": [s["id"] for s in self._plan]})
-        self._run_dynamic_segment()
-        return True
-
-    def _last_decision_reason(self) -> str:
-        decision = self._last_decision()
-        if decision:
-            return str(decision.get("reason", ""))
-        return "评估要求重新规划"
-
-    def _evaluator_upstream(self) -> dict[str, AgentResult]:
-        return self.pre_completed
 
     # ── Approval gates ────────────────────────────────────────
 
