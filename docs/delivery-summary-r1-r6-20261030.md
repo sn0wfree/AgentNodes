@@ -315,3 +315,28 @@ agent 已有结果即被跳过）——本刀按「行为等价」原样保留�
 
 边界：core/workflow 定义系统（webui workflow 特性）未迁——同模式可将来
 另开一刀；study plan A 不动；忠实 DAG 边（多后继）留作引擎演进项。
+
+---
+
+## 十三、workflow 定义系统迁引擎（R-B0…R-B4，2026-10-31）
+
+上一节的边界项已完成。设计见
+`docs/plan-retry-fix-and-workflow-migration-20261031.md`（含二次评估勘误）。
+
+| 刀 | 内容 | 提交 |
+|---|---|---|
+| **R-B0** | `node_outputs` 增列 `output`（老库自动 ALTER、幂等）+ `rebuild_agent_results` | bcb49500 |
+| **R-B1** | 新建 `WorkflowGraphCompiler`（definition → GraphEngine），影子验证 7/7 | b1a15f04 |
+| **R-B2** | `WorkflowRunner` 主路径切编译器；`resume_from_store` 关掉「重启即卡死」 | e8b19445 |
+| **R-B3** | 编译器内 replan 环；删旧段循环（executor.py 708 → 476 行） | 62a831c6 |
+
+**关键修正**（二次评估推翻初版方案）：WorkflowStore 只存 summary 不存
+output，且引擎 state 含不可序列化对象——「state 落库」不成立，改为
+**run 级重建**（补 output 列 + 从关系数据重建 pre_completed）。
+
+**顺手修掉的产品缺陷**：`/approve` 原先依赖内存里的 runner 实例，
+进程重启即 404 永久卡死；现在任何实例都能从 store 重建并续跑。
+
+**验收**：40 个 R-B 测试全绿（store 列 / 影子对比 / resume / 段循环 20 例，
+其中 3 个此前失败的 replan 用例现全部通过）；完整 workflow 回归 293 passed，
+仅剩 4 个冻结基线内的 CLIExecutor 失败。
