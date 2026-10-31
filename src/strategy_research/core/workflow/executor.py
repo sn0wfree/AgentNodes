@@ -326,35 +326,6 @@ class WorkflowRunner:
                         return node
         return None
 
-    def _approval_status(self, node_id: str) -> str:
-        record = self.store.get_approval(self.run_id, node_id)
-        if record is None:
-            self.store.create_approval(self.run_id, node_id)
-            return "awaiting"
-        return record["status"]
-
-    # ── Budgets ───────────────────────────────────────────────
-
-    def _budget_exceeded(self) -> bool:
-        budget = self.definition.budget or {}
-        time_limit = budget.get("time_seconds")
-        if time_limit and (time.perf_counter() - self._t0) > float(time_limit):
-            return True
-        return False
-
-    # ── Terminal ──────────────────────────────────────────────
-
-    def _finish_stop(self, reason: str) -> None:
-        self.status = "completed"
-        self.store.update_run(self.run_id, status="completed", findings=self.findings)
-        self._emit("run_completed", {"run_id": self.run_id, "reason": reason,
-                                     "completed_nodes": sorted(self.pre_completed.keys())})
-
-    def _fail(self, reason: str) -> None:
-        self.status = "failed"
-        self.store.update_run(self.run_id, status="failed", failures=self.failures)
-        self._emit("run_failed", {"run_id": self.run_id, "error": reason})
-
     # ── Persistence / events ──────────────────────────────────
 
     def _persist_run(self) -> None:

@@ -66,8 +66,8 @@ def _err(err: str = "LLMServerError: 503") -> AgentResult:
 
 
 def _wf_executor():
-    """The executor module — patched by object, not by string path."""
-    from strategy_research.core.workflow import executor as wf_executor
+    """The module that owns node retry after the R-B migration."""
+    from strategy_research.core.workflow import graph_compiler as wf_executor
 
     return wf_executor
 
@@ -77,13 +77,19 @@ def _ok() -> AgentResult:
 
 
 def _runner(tmp_path, params):
+    """R-B3: node retry now lives in WorkflowGraphCompiler._dispatch_with_retry.
+
+    The contract (exec.node_max_retries at the node boundary) is unchanged;
+    only its host moved when the segment loop was deleted.
+    """
     from strategy_research.core.workflow.definition import WorkflowDefinition
-    from strategy_research.core.workflow.executor import WorkflowRunner
+    from strategy_research.core.workflow.graph_compiler import WorkflowGraphCompiler
     definition = WorkflowDefinition(name="t", params=params)
-    return WorkflowRunner(
-        definition=definition,
+    return WorkflowGraphCompiler(
+        definition,
         workspace=tmp_path,
         objective="o",
+        params=params,
         strategy_name="s",
     )
 
@@ -101,7 +107,7 @@ def test_node_retries_on_transient_error(tmp_path):
         _wf_executor(), "dispatch_node",
         side_effect=fake_dispatch,
     ):
-        result = runner._execute_node_with_retry(node, _ctx(tmp_path))
+        result = runner._dispatch_with_retry(node, _ctx(tmp_path))
 
     assert result.status == AgentStatus.SUCCESS
     assert calls["n"] == 2
@@ -120,7 +126,7 @@ def test_node_retries_stop_at_budget(tmp_path):
         _wf_executor(), "dispatch_node",
         side_effect=fake_dispatch,
     ):
-        result = runner._execute_node_with_retry(node, _ctx(tmp_path))
+        result = runner._dispatch_with_retry(node, _ctx(tmp_path))
 
     assert result.status == AgentStatus.ERROR
     assert calls["n"] == 3  # 1 + 2 retries
@@ -141,7 +147,7 @@ def test_no_retry_when_config_absent(tmp_path):
         _wf_executor(), "dispatch_node",
         side_effect=fake_dispatch,
     ):
-        runner._execute_node_with_retry(node, _ctx(tmp_path))
+        runner._dispatch_with_retry(node, _ctx(tmp_path))
 
     assert calls["n"] == 1
 
@@ -159,7 +165,7 @@ def test_permanent_node_error_is_not_retried(tmp_path):
         _wf_executor(), "dispatch_node",
         side_effect=fake_dispatch,
     ):
-        runner._execute_node_with_retry(node, _ctx(tmp_path))
+        runner._dispatch_with_retry(node, _ctx(tmp_path))
 
     assert calls["n"] == 1
 

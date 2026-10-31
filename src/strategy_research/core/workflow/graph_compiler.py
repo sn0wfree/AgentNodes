@@ -165,7 +165,7 @@ class WorkflowGraphCompiler:
         对齐旧 `_run_loop` 的尾部语义：
         - `_last_decision_verdict() == "replan"` 且 replan_count < max_segments
           → 重规划（清旧 plan_* 结果 → 重跑 planner → 跑新 plan 步骤）；
-        - 否则 `_finish_stop("全部步骤完成")`。
+        - 否则以「全部步骤完成」收尾（旧 `_finish()` 的同义动作）。
 
         图形态：replan 节点（判 + 计 + 清）→ planner 复用节点 → plan 展开节点
         → 回到 replan 节点。业务上限由 replan_count 控制；引擎 max_hops 兜底。
