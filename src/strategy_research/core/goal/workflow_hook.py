@@ -178,6 +178,11 @@ class GoalWorkflowHook:
             except Exception:  # noqa: BLE001
                 logger.warning("Failed to capture layer result for %s", aid)
 
+        # 深度统一 B2（docs/deep-unification-graph-engine-design-20261031.md
+        # 决定 E）：层间自动存档——每层完成即落 checkpoint，崩溃恢复不再
+        # 依赖手动 /goal checkpoint save。
+        self._auto_checkpoint()
+
         # Phase 1.3: Check metric targets if configured
         if self._metric_targets and not self._completed:
             metrics = self._extract_metrics(results)
@@ -225,6 +230,23 @@ class GoalWorkflowHook:
         if runner_state and getattr(runner_state, "cancelled", False):
             return True
         return self._completed
+
+    def _auto_checkpoint(self) -> None:
+        """层间自动存档：``runner.checkpoint()``（state + layer_results）。
+
+        静默降级：存档失败（磁盘/序列化）只告警——它是恢复优化，不是
+        执行依赖。无 goal_id（runner 尚未 start）时跳过。
+        """
+        runner = self._runner
+        if runner is None or not getattr(runner, "_goal_id", ""):
+            return
+        try:
+            runner.checkpoint()
+        except Exception as exc:  # noqa: BLE001
+            logger.warning(
+                "Auto-checkpoint failed for goal %s: %s",
+                runner._goal_id, exc,
+            )
 
     # ── Internal helpers ───────────────────────────────────────
 

@@ -687,12 +687,13 @@ def _cmd_checkpoint_list(console: Console, session_id: Optional[str]) -> int:
 
 def _cmd_checkpoint_resume(console: Console, session_id: str,
                            goal_id: str) -> int:
-    """Resume from a checkpoint.
+    """Resume from a checkpoint and continue execution.
 
-    Restores state into the store and re-emits the goal summary. For
-    DAG workflows, true re-execution is Phase 4 v0.5.3 P1.3 — this v0.5.1
-    implementation restores metadata so the user can inspect prior state
-    and re-issue ``/goal start`` if needed.
+    深度统一 B2（docs/deep-unification-graph-engine-design-20261031.md
+    决定 E）：装载 workflow 配置 → ``GoalWorkflowRunner.resume_from_checkpoint``
+    → ``resume_and_continue()``——pre_completed + ``run(start=layer_k)``
+    从断点层续跑，已完成 agent 不重跑。workflow 名缺失或装载失败时
+    回退为检视模式（v0.5.1 行为：还原元数据供检查）。
     """
     try:
         from strategy_research.core.goal.checkpoint_store import CheckpointStore
@@ -725,20 +726,65 @@ def _cmd_checkpoint_resume(console: Console, session_id: str,
     layer_results = data.get("layer_results", {})
     meta = data.get("meta", {})
 
-    body = (
-        f"goal_id: {goal_id[:12]}\n"
-        f"workflow: {meta.get('workflow_name', '')}\n"
-        f"created: {meta.get('created_at', '')[:19]}\n"
-        f"status: {state.get('goal_status', '?')}\n"
-        f"protocol: {state.get('protocol', '?')}\n"
-        f"\n"
-        f"[dim]criteria: {len(layer_results.get('criteria', []))} | "
-        f"evidence: {len(layer_results.get('evidence', []))}[/dim]"
+    def _show(note: str, is_error: bool = False) -> int:
+        body = (
+            f"goal_id: {goal_id[:12]}\n"
+            f"workflow: {meta.get('workflow_name', '')}\n"
+            f"created: {meta.get('created_at', '')[:19]}\n"
+            f"status: {state.get('goal_status', '?')}\n"
+            f"protocol: {state.get('protocol', '?')}\n"
+            f"\n"
+            f"[dim]criteria: {len(layer_results.get('criteria', []))} | "
+            f"evidence: {len(layer_results.get('evidence', []))}[/dim]\n"
+            f"\n{'[red]' if is_error else '[yellow]'}{note}"
+            f"{'[/red]' if is_error else '[/yellow]'}"
+        )
+        console.print(Panel(body, title="Checkpoint", border_style="cyan"))
+        return 1 if is_error else 0
+
+    workflow_name = str(meta.get("workflow_name", "") or "")
+    if not workflow_name:
+        return _show(
+            "checkpoint 未记录 workflow 名，无法续跑；"
+            "请用 /goal start --workflow 重跑。"
+        )
+
+    from strategy_research.core.goal.workflow import GoalWorkflowRunner
+    from strategy_research.core.goal.workflow_config import load_goal_workflow
+
+    try:
+        config = load_goal_workflow(workflow_name)
+    except Exception as exc:  # noqa: BLE001
+        return _show(
+            f"workflow '{workflow_name}' 装载失败（{exc}）；已保留检视模式。",
+            is_error=True,
+        )
+
+    runner = GoalWorkflowRunner.resume_from_checkpoint(
+        session_id=session_id,
+        goal_id=goal_id,
+        config=config,
+        workspace=Path.cwd(),
     )
-    console.print(Panel(body, title="Resumed checkpoint", border_style="cyan"))
+    if runner is None:
+        return _show("checkpoint 状态还原失败。", is_error=True)
+
     console.print(
-        "[dim]Note: full DAG re-execution is Phase 4 v0.5.3 (P1.3). "
-        "Re-issue /goal start --workflow to re-run.[/dim]"
+        f"[cyan]Resuming workflow:[/cyan] {config.name} "
+        f"from layer {state.get('current_layer', 0)} "
+        f"({len(layer_results)} captured results)"
+    )
+    try:
+        resumed_goal = asyncio.run(runner.resume_and_continue())
+    except Exception as exc:  # noqa: BLE001
+        console.print(f"[red]Resume failed:[/red] {exc}")
+        return 1
+
+    progress = runner.get_progress()
+    console.print(
+        f"[green]Resumed + finished:[/green] goal={resumed_goal[:12]} "
+        f"status={progress.get('status', 'unknown')} "
+        f"evidence={progress.get('evidence_count', 0)}"
     )
     return 0
 

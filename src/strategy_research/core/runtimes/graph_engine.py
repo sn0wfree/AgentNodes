@@ -46,7 +46,13 @@ _MAX_HOPS_BACKSTOP = 5
 
 @dataclass(frozen=True)
 class _FanoutSpec:
-    """fanout 复合节点声明（挂在拆分节点上）。详见 stage-f1/f4 设计。"""
+    """fanout 复合节点声明（挂在拆分节点上）。详见 stage-f1/f4 设计。
+
+    ``include_result=True`` 时 branch.settled 事件额外携带
+    ``payload/result/error``——供调用方把逐分支结果桥接到自己的
+    契约（如 SwarmRuntime 的 on_agent_complete，需完成序逐条交付）。
+    默认 False：agent 输出可能很大，不进事件负载。
+    """
 
     worker: WorkerFn
     join: str
@@ -54,6 +60,7 @@ class _FanoutSpec:
     max_parallel: int
     executor: Any = None
     cancel_timeout: float = 5.0
+    include_result: bool = False
 
 
 def _t2_branch_entry(worker: WorkerFn, payload: Any, ctx: dict) -> dict:
@@ -172,6 +179,7 @@ class GraphEngine:
         max_parallel: int = 8,
         executor: Any = None,
         cancel_timeout: float = 5.0,
+        include_result: bool = False,
     ) -> "GraphEngine":
         """fanout 复合节点（多 subagent 并行，F1/F4）。
 
@@ -189,6 +197,9 @@ class GraphEngine:
         失败两档：分支普通异常 → 记 error、其余照跑、汇合照常；
         分支抛 GraphInterrupt → 连坐（未起跑分支记 cancelled）、汇合不执行、
         state 带 ``__interrupt__``。
+
+        ``include_result=True``：branch.settled 事件携带 payload/result/error
+        （完成序逐条交付，供调用方桥接逐分支契约）。
         """
         self._require_node(source, "add_fanout source")
         self._require_node(join, "add_fanout join")
@@ -209,6 +220,7 @@ class GraphEngine:
         self._fanouts[source] = _FanoutSpec(
             worker=worker, join=join, mode=mode, max_parallel=max_parallel,
             executor=executor, cancel_timeout=cancel_timeout,
+            include_result=include_result,
         )
         # 声明即覆盖：拆分节点的出边强制指向汇合节点。
         self._out[source] = ("edge", join)
@@ -406,13 +418,18 @@ class GraphEngine:
             for fut in as_completed(futures):
                 entry = fut.result()
                 by_ordinal[entry["ordinal"]] = entry
-                self._sink("branch.settled", {
+                data = {
                     "node": node_name,
                     "branch_id": entry["branch_id"],
                     "ordinal": entry["ordinal"],
                     "status": entry["status"],
                     "seconds": entry["seconds"],
-                })
+                }
+                if spec.include_result:
+                    data["payload"] = entry.get("payload")
+                    data["result"] = entry.get("result")
+                    data["error"] = entry.get("error")
+                self._sink("branch.settled", data)
 
         results = [by_ordinal[i + 1] for i in range(len(branches))]
         if slices:
@@ -541,11 +558,16 @@ class GraphEngine:
         results = [entries[i + 1] for i in range(len(branches))]
 
         for entry in results:
-            self._sink("branch.settled", {
+            data = {
                 "node": node_name, "branch_id": entry["branch_id"],
                 "ordinal": entry["ordinal"], "status": entry["status"],
                 "seconds": entry["seconds"],
-            })
+            }
+            if spec.include_result:
+                data["payload"] = entry.get("payload")
+                data["result"] = entry.get("result")
+                data["error"] = entry.get("error")
+            self._sink("branch.settled", data)
         if slices:
             parent_budget.absorb(*slices)
         out = {**state, "fanout_results": results}

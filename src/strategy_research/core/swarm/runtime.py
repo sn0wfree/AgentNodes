@@ -15,11 +15,11 @@ from __future__ import annotations
 import logging
 import time
 import uuid
-from concurrent.futures import ThreadPoolExecutor, as_completed
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
 
+from ..runtimes import END, INTERRUPT_KEY, GraphEngine, GraphInterrupt
 from ..workflow.dag import topological_layers
 from .types import AgentCall, AgentStatus, SwarmHook
 
@@ -122,6 +122,26 @@ class SwarmRuntime:
     ) -> SwarmResult:
         """Execute a swarm preset with optional lifecycle hooks.
 
+        深度统一（docs/deep-unification-graph-engine-design-20261031.md）：
+        自研层循环退役，execute 编译为 GraphEngine 图——每层一个
+        ``(split → fanout → join)`` 复合节点，join 条件路由到下一层或 END。
+
+        契约与行为逐条等价：
+
+        - **层屏障调度**：等整层完成再进下层（topological_layers → 层链）；
+        - **层内并行**：fanout t1 线程池，``max_parallel=self._max_workers``；
+        - **hook 时序**：on_layer_start（split 节点）→ on_agent_complete
+          （引擎 as_completed 循环内逐条桥接：完成序、execute 调用线程、
+          先插入 agent_results 后发 hook）→ on_layer_complete（join 节点）；
+          should_stop 每层后查询；
+        - **预算**：turn（累计成功数）/time（累计耗时）两维，层边界检查；
+          token 有意不强制（B3 定稿，preset_loader 告警）；
+        - **cancel(run_id)**：split 节点查 ``_active_runs`` → GraphInterrupt
+          在层边界停图，部分结果照常组装；
+        - **branches（P3.7）**：join 节点后 skip/retry 原地改写剩余层；
+        - **恢复**：pre_completed 灌入 agent_results，``run(start=layer_k)``
+          ——与 study 轮恢复共用同一引擎原语。
+
         Args:
             preset: Swarm preset defining agents + DAG.
             workspace: Filesystem root for prompt files.
@@ -131,7 +151,7 @@ class SwarmRuntime:
             pre_completed: Optional dict of agent_id → AgentResult for
                 agents that already executed in a prior run. Their
                 outputs are loaded into ``result.agent_results`` before
-                the loop starts, so downstream layers see them via
+                the graph runs, so downstream layers see them via
                 ``_gather_upstream`` and skip re-execution.
             start_layer: Index of the first layer to actually execute
                 (0-based). Earlier layers' agents should appear in
@@ -151,66 +171,31 @@ class SwarmRuntime:
                 result.agent_results[aid] = ar
         t0 = time.perf_counter()
 
-        # Phase 1.2: Budget tracking (migrated from Study)
-        budget_turns = 0
-        budget_time = 0.0
-
         try:
-            layers = topological_layers(preset.dag)
-            branches = preset.branches or []
+            layers = [list(layer) for layer in topological_layers(preset.dag)]
 
-            for layer_idx, layer in enumerate(layers):
-                if layer_idx < start_layer:
-                    # Pre-completed layer — skip execution but still
-                    # notify the hook so UI state stays consistent.
-                    self._emit(hooks, "on_layer_start", layer_idx, layer, {})
-                    self._emit(
-                        hooks, "on_layer_complete",
-                        layer_idx, layer,
-                        {aid: r for aid, r in result.agent_results.items()},
-                    )
-                    continue
-
-                if run_id not in self._active_runs:
-                    break  # cancelled via cancel(run_id)
-
-                # Phase 1.2: Check budget before layer
-                if self._budget_exceeded(preset, budget_turns, budget_time):
-                    logger.info("SwarmRuntime budget exceeded at layer %d", layer_idx)
-                    break
-
-                # ── Hook: on_layer_start
+            # Pre-completed layers: fire the lifecycle hooks (no execution)
+            # so UI state stays consistent on resume — same as the old
+            # loop's skip branch.
+            for layer_idx in range(min(max(start_layer, 0), len(layers))):
+                layer = layers[layer_idx]
                 self._emit(hooks, "on_layer_start", layer_idx, layer, {})
-
-                self._execute_layer(
-                    layer, preset, workspace, task, result, hooks,
-                )
-
-                # Phase 1.2: Accumulate budget from executed agents
-                for agent_id in layer:
-                    ar = result.agent_results.get(agent_id)
-                    if ar and ar.status == AgentStatus.SUCCESS:
-                        budget_turns += 1
-                budget_time = time.perf_counter() - t0
-
-                # ── Hook: on_layer_complete
                 self._emit(
                     hooks, "on_layer_complete",
-                    layer_idx, layer,
-                    {aid: r for aid, r in result.agent_results.items()},
+                    layer_idx, layer, dict(result.agent_results),
                 )
 
-                # ── Branch evaluation (P3.7): skip / retry on remaining layers
-                if branches:
-                    self._evaluate_branches_after_layer(
-                        branches, result.agent_results,
-                        layers, layer_idx,
+            if layers and start_layer < len(layers):
+                state = self._run_via_graph(
+                    preset, workspace, task, hooks, result,
+                    layers, max(start_layer, 0), run_id, t0,
+                )
+                interrupt = state.get(INTERRUPT_KEY)
+                if isinstance(interrupt, dict):
+                    logger.info(
+                        "Swarm run %s stopped at layer boundary: %s",
+                        run_id, interrupt.get("reason"),
                     )
-
-                # ── Hook: should_stop
-                if self._any_hook_should_stop(hooks):
-                    logger.info("SwarmRuntime stopped by hook at layer %d", layer_idx)
-                    break
 
             result.success = all(
                 r.status == AgentStatus.SUCCESS
@@ -228,6 +213,191 @@ class SwarmRuntime:
             result.elapsed_s = round(time.perf_counter() - t0, 2)
 
         return result
+
+    # ── Graph compilation (deep unification B1) ────────────────
+
+    def _run_via_graph(
+        self,
+        preset: SwarmPreset,
+        workspace: Path,
+        task: str,
+        hooks: list[SwarmHook],
+        result: SwarmResult,
+        layers: list[list[str]],
+        start_layer: int,
+        run_id: str,
+        t0: float,
+    ) -> dict:
+        """编译 SwarmPreset → GraphEngine 图并执行。
+
+        每层：split（cancel/budget 在层边界裁决 → on_layer_start → 拆出
+        待跑 agent）→ fanout t1（worker = ``_execute_agent`` 原样；settled
+        事件桥接 agent_results 插入 + on_agent_complete）→ join（预算记账
+        → branches 改写剩余层 → on_layer_complete）→ 条件路由
+        （should_stop → END，否则下一层）。``state["agent_results"]`` 与
+        ``result.agent_results`` 是同一对象——节点直接改写，执行完即成。
+        """
+        engine = GraphEngine(
+            sink=self._make_hook_bridge(hooks, result),
+            max_hops=2 * len(layers) + 10,
+        )
+        worker = self._make_layer_worker(preset, workspace, task)
+
+        for i, _layer in enumerate(layers):
+            split_name, join_name = f"layer_{i}", f"join_{i}"
+            engine.add_node(split_name, self._make_split_node(
+                i, preset, hooks, run_id, t0,
+            ))
+            engine.add_node(join_name, self._make_join_node(
+                i, preset, hooks, t0,
+            ))
+            engine.add_fanout(
+                split_name, worker, join_name,
+                mode="t1", max_parallel=self._max_workers,
+                include_result=True,
+            )
+            # 条件边统一覆盖（含末层——should_stop 每层后都要查询，
+            # 与旧循环的检查点位置一致）。
+            nxt = f"layer_{i + 1}" if i + 1 < len(layers) else END
+            engine.add_conditional_edge(
+                join_name, self._make_join_router(hooks, nxt), None,
+            )
+
+        state = {
+            "run_id": run_id,
+            "agent_results": result.agent_results,
+            "layers": layers,
+            "budget_turns": 0,
+            "budget_time": 0.0,
+        }
+        return engine.run(state, start=f"layer_{start_layer}")
+
+    def _make_hook_bridge(
+        self, hooks: list[SwarmHook], result: SwarmResult,
+    ):
+        """branch.settled → agent_results 插入 + on_agent_complete。
+
+        引擎在 as_completed 循环里逐条发 settled（完成序、execute 调用
+        线程），与旧 ``_execute_layer`` 的 ``future.result()`` 循环逐条
+        等价：先插入 agent_results，后发 hook（顺序保真）。异常路径合成
+        ERROR AgentResult——与旧的 future 异常分支同形。
+        """
+
+        def sink(kind: str, data: dict) -> None:
+            if kind != "branch.settled":
+                return
+            aid = data.get("payload")
+            if not aid or aid in result.agent_results:
+                return
+            status = data.get("status")
+            if status == "ok":
+                ar = data.get("result")
+                if not isinstance(ar, AgentResult):
+                    ar = AgentResult(
+                        agent_id=aid, status=AgentStatus.ERROR,
+                        error="worker returned non-AgentResult",
+                    )
+            else:
+                ar = AgentResult(
+                    agent_id=aid, status=AgentStatus.ERROR,
+                    error=str(data.get("error") or status or "unknown"),
+                )
+            result.agent_results[aid] = ar
+            self._emit(hooks, "on_agent_complete", aid, ar, {})
+
+        return sink
+
+    def _make_split_node(
+        self, i: int, preset: SwarmPreset, hooks: list[SwarmHook],
+        run_id: str, t0: float,
+    ):
+        """split 节点：cancel/budget 在层边界裁决（→ GraphInterrupt），
+        然后 on_layer_start + 拆出待跑 agent。未注册 agent 静默排除是
+        旧 ``_execute_layer`` 的行为（_find_agent 为 None → continue），
+        保真保留。"""
+
+        def split(state: dict) -> dict:
+            if run_id not in self._active_runs:
+                raise GraphInterrupt("cancelled")
+            if self._budget_exceeded(
+                preset, state["budget_turns"], state["budget_time"],
+            ):
+                logger.info("SwarmRuntime budget exceeded at layer %d", i)
+                raise GraphInterrupt("budget_exceeded")
+            self._emit(hooks, "on_layer_start", i, state["layers"][i], {})
+            pending = [
+                aid for aid in state["layers"][i]
+                if aid not in state["agent_results"]
+                and self._find_agent(preset.agents, aid) is not None
+            ]
+            return {**state, "branches": pending}
+
+        return split
+
+    def _make_layer_worker(
+        self, preset: SwarmPreset, workspace: Path, task: str,
+    ):
+        """fanout worker：单个 agent 执行（``_execute_agent`` 原样）。
+
+        防御：worker 抛 GraphInterrupt 会被引擎当分支中断连坐——agent
+        执行不该有引擎语义，转成 ERROR AgentResult（与旧的 future 异常
+        分支同形）。
+        """
+
+        def worker(agent_id: str, branch_state: dict) -> AgentResult:
+            agent_call = self._find_agent(preset.agents, agent_id)
+            try:
+                upstream = self._gather_upstream(
+                    agent_id, preset.dag, branch_state["agent_results"],
+                )
+                return self._execute_agent(agent_call, workspace, task, upstream)
+            except GraphInterrupt as gi:
+                return AgentResult(
+                    agent_id=agent_id, status=AgentStatus.ERROR,
+                    error=f"unexpected interrupt: {gi.reason}",
+                )
+
+        return worker
+
+    def _make_join_node(
+        self, i: int, preset: SwarmPreset, hooks: list[SwarmHook], t0: float,
+    ):
+        """join 节点：预算记账（与旧循环同口径）→ branches skip/retry
+        原地改写剩余层 → on_layer_complete。agent_results 已由 sink 桥接
+        按完成序插入，此处不再重复。"""
+
+        def join(state: dict) -> dict:
+            for aid in state["layers"][i]:
+                ar = state["agent_results"].get(aid)
+                if ar and ar.status == AgentStatus.SUCCESS:
+                    state["budget_turns"] += 1
+            state["budget_time"] = time.perf_counter() - t0
+            if preset.branches:
+                self._evaluate_branches_after_layer(
+                    preset.branches, state["agent_results"],
+                    state["layers"], i,
+                )
+            self._emit(
+                hooks, "on_layer_complete",
+                i, state["layers"][i], dict(state["agent_results"]),
+            )
+            return state
+
+        return join
+
+    def _make_join_router(self, hooks: list[SwarmHook], next_node: str):
+        """join 出边：任一 hook should_stop → END（与旧循环的层后检查
+        同位置），否则下一层。"""
+
+        def route(state: dict) -> str:
+            if self._any_hook_should_stop(hooks):
+                logger.info(
+                    "SwarmRuntime stopped by hook before %s", next_node,
+                )
+                return END
+            return next_node
+
+        return route
 
     def cancel(self, run_id: str) -> bool:
         """Cancel a running swarm."""
@@ -507,63 +677,6 @@ class SwarmRuntime:
             if a.agent_name == agent_id:
                 return a
         return None
-
-    def _execute_layer(
-        self,
-        layer: list[str],
-        preset: SwarmPreset,
-        workspace: Path,
-        task: str,
-        result: SwarmResult,
-        hooks: list[SwarmHook] | None,
-    ) -> None:
-        """Run one layer's agents in parallel, collecting outputs."""
-        with ThreadPoolExecutor(max_workers=self._max_workers) as executor:
-            layer_futures_local: dict[Any, str] = {}
-            for agent_id in layer:
-                # Skip agents already completed in a prior run.
-                if agent_id in result.agent_results:
-                    continue
-                agent_call = self._find_agent(preset.agents, agent_id)
-                if agent_call is None:
-                    continue
-
-                upstream = self._gather_upstream(
-                    agent_id, preset.dag, result.agent_results,
-                )
-                future = executor.submit(
-                    self._execute_agent,
-                    agent_call, workspace, task, upstream,
-                )
-                layer_futures_local[future] = agent_id
-
-            for future in as_completed(layer_futures_local):
-                agent_id = layer_futures_local[future]
-                try:
-                    agent_result = future.result()
-                    result.agent_results[agent_id] = agent_result
-
-                    # ── Hook: on_agent_complete
-                    self._emit(
-                        hooks, "on_agent_complete",
-                        agent_id, agent_result, {},
-                    )
-
-                except Exception as exc:  # noqa: BLE001
-                    # AgentStatus has no FAILED member — an exception in
-                    # the handler used to crash with AttributeError
-                    # instead of recording the agent failure.
-                    result.agent_results[agent_id] = AgentResult(
-                        agent_id=agent_id,
-                        status=AgentStatus.ERROR,
-                        error=str(exc),
-                    )
-                    self._emit(
-                        hooks, "on_agent_complete",
-                        agent_id,
-                        result.agent_results[agent_id],
-                        {},
-                    )
 
     def _gather_upstream(
         self,
