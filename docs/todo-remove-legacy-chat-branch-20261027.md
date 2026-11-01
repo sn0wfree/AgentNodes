@@ -106,3 +106,55 @@ P5-1 + P5-1b 已把新路径补齐到与旧路径等价：
 - `p5-1-chat-gateway-parity-design-20261027.md`（历史/持久化设计）
 - `p5-1b-streaming-tools-design-20261027.md`（流式/工具链设计）
 - `stage-4-cleanup-checklist-20261027.md` §7（阶段 5 待办清单）
+
+---
+
+## 7. 执行记录（2026-11-01）：完成第 ⓿ 步，其余保持
+
+按 §0.3 的顺序，**只做了第 ⓿ 步**（删真死代码），未动入口分支。
+
+### 已完成 ⓿：删 `_run_agent_loop_background` 及其专属 helper
+
+| 项 | 内容 |
+|---|---|
+| 删除 | `api/routers/chat.py` 214–525 行（313 行） |
+| 涉及符号 | `_PartAccumulator`（含 12 个 `_on_*` 方法）、`_persist_user_message`、`_auto_title_and_notify`、`_persist_assistant_message`、`_emit_config_error`、`_emit_agent_done`、`_emit_agent_error`、`_run_agent_loop_background`、`_run_test_script` |
+| 删除依据 | 全库零调用方（仅剩注释与文档字符串引用）；每个 helper 的引用数都是「定义 + 死函数内调用」= 2 |
+| 保留 | `api/session/part_accumulate.py` 是**另一份实现**，被 `loop_events.py` / `service.py` 使用，属活代码 |
+| 文件规模 | chat.py 1360 → 1047 行（−23%） |
+
+**连带清理一个自指测试**：`tests/test_text_part_routing.py` 的最后一个用例
+（80 行）注释里写着「We replicate the relevant branches here」——它复刻
+`_run_agent_loop_background` 的 on_event 逻辑再自己断言。源实现删除后，
+被测对象变成测试自己写的模拟，价值归零。已删除；同文件其余 10 个用例测的
+是活的 `_accumulate_part`，保留。
+
+### 未做：入口分支与 `new_entry_enabled`（有意保留）
+
+§0.3 的 ①–④ 步（删 CLI/API 分支、删门函数）**没有执行**，原因不是技术
+障碍，而是决策性质不同：
+
+`new_entry_enabled()` 读取 `QNODES_NEW_ENTRY` 环境变量，是**生产可回退
+开关**（见 `entry_adapters.py:22-35`）。删除它意味着放弃「出问题时退回旧
+路径」的能力——这是一次不可逆的生产行为变更，不是死代码清理。
+
+按 §3 的自检清单，第 1 项仍未结：
+
+| # | 检查项 | 状态 |
+|---|---|---|
+| 1 | `/send_async` 端点是否随 SessionService 一起删 | ❌ **未评估**——它独立于 `/send`，走 SessionService 的队列，删门会连带影响 |
+| 2 | `loop_stream` / SSE 事件名一致性 | ✅ B5 已验（新路径 install_sink） |
+| 3 | study / goal / hypothesis 是否依赖 SessionService | ⚠️ 部分依赖（`/study` 命令拦截仍在 chat.py 内） |
+| 4 | CLI `_run_via_gateway` 可用 | ✅ 已接 |
+| 5 | 全量回归 | ✅ 本次 PR lane 分片跑过 |
+
+**结论**：第 ⓿ 步的收益（−313 行死代码、−80 行自指测试）已经拿到，且零
+风险。①–④ 步需要一个明确的产品决策：**是否接受失去 `QNODES_NEW_ENTRY=0`
+回退能力**。在做出该决策前，门保持现状是诚实的——它标记的是「灰度开关」，
+不再是「两条活跃路径」（旧路径的实际执行代码已经不存在了）。
+
+### 下一步若要继续
+
+1. 先评估 §3 第 1 项（`/send_async` 与 SessionService 的归属）；
+2. 再决定 `QNODES_NEW_ENTRY` 是否退役（这决定 ①–④ 能否执行）；
+3. 若退役：按原顺序 ① CLI → ② API → ③ 观察 → ④ 删门，各自独立提交。
