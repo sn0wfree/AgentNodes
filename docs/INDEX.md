@@ -10,9 +10,11 @@
 | 想 10 分钟了解项目 | `code-map.md` · `architecture-framework.svg` |
 | **想看重构后的架构细节** | **`architecture-current-20261008.md`**（契约/连接/与旧架构差异） |
 | **想看架构讨论全貌（讨论纪要）** | **`architecture-discussion-record-20261008.md`**（★ 讨论线索 / 发现 / 决策 / 落地顺序 / 文档索引） |
-| **想看目标架构（汇总终版）** | **`architecture-diagram.html`（v6.3 · 2026-10-30 对照代码核实，✅/⏳ 标注与实现一致）**· `architecture-v3-openclaw-inspired.md`（总纲）· `architecture-discussion-record-20261008.md`（讨论线索） |
+| **想看目标架构（汇总终版）** | **`architecture-diagram.html`（v6.5 · 2026-11-01 对照代码复核：执行面全路径收敛 · 恢复原语统一 · ✅/⏳/⏸/⏹ 与实现一致）**· `architecture-v3-openclaw-inspired.md`（总纲）· `architecture-discussion-record-20261008.md`（讨论线索） |
 | 想看 OpenClaw 原生架构与对标 | `openclaw-architecture.html`（原生图 + 同构对照）· `industry-benchmark-openclaw-20261008.md`（逐维度） |
-| **想知道接下来做什么（总计划）** | **`roadmap-next-20261030.md`（★ R1–R6 · 基于 v6.3 核实 · 四个决策点）**；历史主线 `refactor-master-plan-20261008.md` |
+| **想知道接下来做什么（总计划）** | **`roadmap-next-20261030.md`（★ R1–R6 · 四个决策点）**；**`delivery-summary-r1-r6-20261030.md`（★ 交付总结：R1-R7/B1-B3/D1/E1-E2/深度统一 B1-B3/R-A/R-B0-B4 + §九 当前待办 + §十四 现状定稿）**；历史主线 `refactor-master-plan-20261008.md` |
+| **想知道执行面为什么是单一引擎** | **`deep-unification-graph-engine-design-20261031.md`**（SwarmRuntime 编译器）· **`plan-retry-fix-and-workflow-migration-20261031.md`**（R-A retry + R-B0–R-B4 workflow 迁引擎，含二次评估勘误） |
+| **想知道怎么跑测试（lane 与分片）** | **`test-marker-lanes-design.md` §9（★ 本地验证矩阵：为什么 lane 是进程隔离契约 · 179s/245s/12s 实测 · 为何不用 xdist）** · `scripts/run_test_matrix.py` |
 | **想知道平台/研究域怎么分（拆分评估）** | **`seam-contract-platform-research-20261030.md`（★ 接缝契约：方向规则 / 9 触点白名单 / 禁触清单 / 4 条拆分触发条件）**· 设计 `seam-hardening-design-20261030.md` |
 | 想看架构评估（4 遍论证依据） | `architecture-reeval-20261008.md`（依赖方向）· `architecture-reeval2-20261008.md`（SSE 双轨）· `agent-design-reeval-20261008.md`（上下文仲裁）· `goal-alignment-review-20261008.md`（自主性） |
 | 想知道现在干净吗 | `structure-debt-third-pass-20261008.md` · `structure-debt-fourth-pass-20261008.md`（spec 同步面） |

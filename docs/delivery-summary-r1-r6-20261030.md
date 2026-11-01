@@ -228,13 +228,18 @@ P5-1c 删旧 chat 分支（⏸ 触发条件已定）。
 
 ## 九、下一步（按优先级）
 
-| # | 事项 | 前置 / 触发 |
-|---|---|---|
-| 1 | **P5-1c 删旧 chat 分支** | R2 上线一周无回归。入口 `docs/todo-remove-legacy-chat-branch-20261027.md` §0.3，第一步 ⓿ 删死代码 `_run_agent_loop_background` |
-| 2 | 104 条历史基线失败清偿 | 各阶段收尾顺手清（D4），不单独立项 |
-| 3 | 解 `phase_engine↔runner` 循环导入 | 方法论归位的前置，本身即可作为独立一刀 |
-| 4 | 每 session 分库 | 重开条件：单库 >2GB 或出现归档需求 |
-| 5 | 合回 `main` | **用户已明确：暂不合，保持 `refactor/v6-gateway` 分支** |
+> **2026-11-01 更新**：原 #2（104 条基线）与 #3（循环导入）已完成——基线
+> 现存 61 条在跑、43 条自然通过；循环导入已解（`study/contracts.py`）。
+> 当前真实待办见下表。
+
+| # | 事项 | 前置 / 触发 | 状态 |
+|---|---|---|---|
+| 1 | **P5-1c 删旧 chat 分支** | R2 于 10-30 上线，按「一周无回归」**11-06 到期**。入口 `docs/todo-remove-legacy-chat-branch-20261027.md` §0.3，第一步 ⓿ 删死代码 `_run_agent_loop_background` | ⏸ 待触发 |
+| 2 | **D2 提案通道消费方** | 无前置。Director 已发 `study.directive` 事件但全库零消费方（唯一 emit 在 `study/runner.py:227`）——自主闭环差最后一环。估 1–2d | ⏳ 空白 |
+| 3 | **架构图 v6.5 定稿** | 已完成（2026-11-01）：48 个 ⏳ 逐格复核，翻格已完成项、修 1 个嵌套标签 bug | ✅ |
+| 4 | **L2 统一注册 / CapabilityRegistry** | 无前置但性价比低。实测 **11 套 Registry 类**（图上曾误写 5 套）。建议维持「触碰到时顺带收敛」 | ⏳ 建议不做 |
+| 5 | 每 session 分库 | 重开条件：单库 >2GB 或出现归档需求 | ⏳ D2 延后 |
+| 6 | 合回 `main` | **用户已明确：暂不合，保持 `refactor/v6-gateway` 分支** | ⏸ 挂起 |
 
 ---
 
@@ -243,9 +248,11 @@ P5-1c 删旧 chat 分支（⏸ 触发条件已定）。
 | 内容 | 位置 |
 |---|---|
 | 阶段设计/评估文档 | `docs/stage-r1-fence-wiring-design-20261030.md` · `stage-r2-consumer-steer-aging-design-20261030.md` · `stage-r3-session-domain-design-20261030.md` · `stage-r4-data-plane-design-20261030.md` · `stage-r5-execution-plane-assessment-20261030.md` · `stage-r6-research-domain-assessment-20261030.md` · `stage-r7-r2-techdebt-design-20261030.md` · `stage-b1-interrupt-design-20261030.md` · `stage-b2-fold-recovery-design-20261030.md` · `stage-b3-controller-assessment-20261030.md` |
+| 深度统一设计 | `docs/deep-unification-graph-engine-design-20261031.md`（B1/B2/B3）· `docs/plan-retry-fix-and-workflow-migration-20261031.md`（R-A / R-B0–R-B4，含二次评估勘误） |
 | 路线图（本轮的输入） | `docs/roadmap-next-20261030.md` |
-| 架构图（已同步） | `docs/architecture-diagram.html` / `.svg`（v6.3） |
-| 验收工具 | `scripts/c1_gate.py`（失败集）、`scripts/c1_inventory.py`（测试数） |
+| 架构图（已同步） | `docs/architecture-diagram.html` / `.svg`（**v6.5，2026-11-01**） |
+| 验证矩阵 | `scripts/run_test_matrix.py`（分 lane + 分片并行）· `docs/test-marker-lanes-design.md` §9 |
+| 验收工具 | `scripts/c1_gate.py`（失败集）· `scripts/c1_inventory.py`（测试数）· `scripts/cov_gate.py`（覆盖率三档） |
 | 冻结基线 | `tests/baselines/pr-lane-failures.json`（104）· `pr-lane-nodeids.json`（12997） |
 | 新增测试（共 100） | `tests/test_r1_fence_wiring.py`(7) · `test_r2_consumer.py`(9) · `test_r2_steer.py`(6) · `test_r2_aging.py`(5) · `test_r3_session_domain.py`(5) · `test_r4_data_plane.py`(9) · `test_r5_model_hub.py`(9) · `test_r6_director.py`(18) · `test_r7_sink_and_wait.py`(10) · `test_b1_interrupt.py`(10) · `test_b2_fold.py`(7) · `test_b3_status.py`(5) |
 
@@ -395,3 +402,50 @@ output，且引擎 state 含不可序列化对象——「state 落库」不成�
 
 **这两个缺陷都修完后，冻结基线里 2 条（`test_empty_file_is_treated_as_missing`、
 `test_persisted_file_round_trip`）已不再失败。**
+
+---
+
+## 十四、文档同步与现状定稿（2026-11-01）
+
+### 架构图升 v6.5
+
+架构图此前停在 v6.4（10-30），48 个 ⏳ 标记与代码脱节。本次对照代码
+**逐格复核**后更新：
+
+| 变更 | 依据 |
+|---|---|
+| 执行面「唯一编排 runtime」→「**全路径收敛**」 | B1（goal/CLI/MCP swarm 经编译器）+ R-B（webui workflow 经编译器），两套自研调度器已删除 |
+| PlatformStore「已建未接线」→「**生产接线**」 | `gateway.py:91`、`event_store.py:114` 实测注入 |
+| 脱敏指纹 ⏳ → ✅ | `gateway.emit_config_fingerprint()` + `server.py:39` |
+| 「5 套注册表并存」→「**11 套** Registry 类并存」 | 原数据是错的，实测 11 个 `class *Registry` |
+| 落地速览 | 改为 v6.5 现状：单一引擎、恢复原语统一、覆盖率三档 ≥90%、分片验证 7.5min；未建项与挂起项分开列 |
+
+同步修掉一个**原有的** HTML 结构 bug：`PROTOCOL_VERSION` 那行缺
+`</text>` 闭合，导致下一行被嵌套（渲染时视觉上会重叠）。HTML 与 SVG
+两份都已修，并加了结构校验（`text` 开闭数相等、无跨标签嵌套）。
+
+### 保留为真实未完成（不虚报）
+
+逐项核实后确认这些**确实没做**，标记维持 ⏳：
+
+- **稳定前缀**：全库无 `stable_prefix` 实现（ContextHub 只做了 collect/arbitrate/render）
+- **hypothesis provider**：无任何 HypothesisProvider 代码
+- **subagent lane**：无实现（R5 判定「无并发问题」不做）
+- **容量组闸**：无 CapacityGroup（等待真实并发压力触发）
+- **每 session 分库**：仍是统一单库（D2 延后）
+- **cpu 节点 / graph 子图**：R5 判定不做（等价物已有 / 零用户）
+- **L2 统一注册**：11 套并存
+
+### 当前质量门（2026-11-01 实测）
+
+| 门 | 结果 |
+|---|---|
+| 覆盖率（A/B/C 三档） | A 91.1% / B 90.2% / C 90.5% ✅ |
+| 失败集（c1_gate） | clean——61 条在跑，全部落在冻结基线 104 内 ✅ |
+| 测试库存（c1_inventory） | +178 增 / 0 删 ✅ |
+| e2e lane | 84 passed / 0 failed ✅ |
+| browser lane | 10 passed / 0 skipped ✅ |
+| 完整三层验证耗时 | 约 7.5 分钟（分片并行） |
+
+基线里 **43 条已自然通过**（含 JWT 修复治好的 2 条），说明「清偿历史账」
+这个方向在按 D4 原则缓慢收敛，无需单独立项。
