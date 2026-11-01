@@ -430,10 +430,11 @@ _LANE_E2E_FILES = frozenset({
     "test_integration.py",
     "test_p3_integration.py",
     # A1 (2026-10-28): these five were never tagged, so the PR lane ran
-    # them and hung indefinitely (live uvicorn + socket waits; full_flow
-    # waits 1800s on a stale approval gate). Tagging them is what makes
-    # any full-suite verification finish at all.
-    "test_e2e_full_flow.py",        # approval wait 1800s (stale test)
+    # them and hung indefinitely (live uvicorn + socket waits).
+    # NOTE: the 1800s approval wait in test_e2e_full_flow.py was fixed at
+    # the source (make_loop passes approval_timeout=1.0); the lane tag is
+    # still correct because the file drives a live uvicorn process.
+    "test_e2e_full_flow.py",        # live uvicorn
     "test_e2e_chat.py",             # live uvicorn
     "test_e2e_comprehensive.py",    # live uvicorn
     "test_webui_e2e.py",            # live uvicorn

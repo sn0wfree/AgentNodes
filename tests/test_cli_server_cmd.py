@@ -32,23 +32,30 @@ class TestWebUIServe:
 
     @pytest.fixture
     def mock_app_factory(self):
-        """mock create_app + configure_from_env + webui router。"""
+        """mock create_app + configure_from_env.
+
+        A third patch targeted ``strategy_research.webui.routes.router``,
+        but that module was deleted in the W3 structure cleanup (see
+        api/app.py:240) — the webui router is mounted inside create_app()
+        now, and the mocked ``router`` was never asserted. It only kept
+        working because serial collection order let some other test make
+        the attribute resolvable; under xdist it raised AttributeError.
+        """
         with patch("strategy_research.api.app.create_app") as create, \
-             patch("strategy_research.api.app.configure_from_env") as config, \
-             patch("strategy_research.webui.routes.router") as router:
+             patch("strategy_research.api.app.configure_from_env") as config:
             fake_app = MagicMock()
             create.return_value = fake_app
             config.return_value = {
                 "static_dir": "/tmp/static",
                 "cors_origins": ["*"],
             }
-            yield create, config, fake_app, router
+            yield create, config, fake_app
 
     def test_runs_uvicorn_with_args(self, mock_uvicorn, mock_app_factory):
         """uvicorn.run() 被调用时 host/port 来自 args。"""
         from strategy_research.cli.commands.server import cmd_webui_serve
 
-        create, config, fake_app, router = mock_app_factory
+        create, config, fake_app = mock_app_factory
         args = argparse.Namespace(
             host="0.0.0.0",
             port=9999,
@@ -72,7 +79,7 @@ class TestWebUIServe:
         """webui router is now mounted inside create_app() (survives --reload)."""
         from strategy_research.cli.commands.server import cmd_webui_serve
 
-        create, config, fake_app, router = mock_app_factory
+        create, config, fake_app = mock_app_factory
         args = argparse.Namespace(
             host="127.0.0.1", port=8766, reload=False,
             workspace=".", static_dir=None,
@@ -88,7 +95,7 @@ class TestWebUIServe:
         """无 args.static_dir 时从 env_config 取。"""
         from strategy_research.cli.commands.server import cmd_webui_serve
 
-        create, config, fake_app, router = mock_app_factory
+        create, config, fake_app = mock_app_factory
         config.return_value = {"static_dir": "/env/static", "cors_origins": ["*"]}
         args = argparse.Namespace(
             host="127.0.0.1", port=8766, reload=False,
@@ -106,7 +113,7 @@ class TestWebUIServe:
         """args.static_dir 优先级高于 env。"""
         from strategy_research.cli.commands.server import cmd_webui_serve
 
-        create, config, fake_app, router = mock_app_factory
+        create, config, fake_app = mock_app_factory
         config.return_value = {"static_dir": "/env/static", "cors_origins": ["*"]}
         args = argparse.Namespace(
             host="127.0.0.1", port=8766, reload=False,
@@ -124,7 +131,7 @@ class TestWebUIServe:
         from strategy_research.cli import llm_config_check
         from strategy_research.cli.commands.server import cmd_webui_serve
 
-        create, config, fake_app, router = mock_app_factory
+        create, config, fake_app = mock_app_factory
         qdir = tmp_path / ".quantnodes"
         qdir.mkdir()
         monkeypatch.setattr(llm_config_check, "QUANTNODES_DIR", qdir)
@@ -155,7 +162,7 @@ class TestWebUIServe:
         from strategy_research.cli import llm_config_check
         from strategy_research.cli.commands.server import cmd_webui_serve
 
-        create, config, fake_app, router = mock_app_factory
+        create, config, fake_app = mock_app_factory
         # 重定向到一个不存在的目录
         monkeypatch.setattr(llm_config_check, "QUANTNODES_DIR", Path("/nonexistent"))
         monkeypatch.setattr(llm_config_check, "LLM_JSON_PATH", Path("/nonexistent/llm.json"))

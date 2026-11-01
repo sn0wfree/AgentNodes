@@ -111,9 +111,28 @@ def main() -> int:
         action="store_true",
         help="Print a one-line summary of this shard to stderr.",
     )
+    ap.add_argument(
+        "--exclude",
+        action="append",
+        default=[],
+        metavar="GLOB",
+        help=(
+            "Skip files matching this glob when packing. Needed because the "
+            "cost model does not know about -m marker filters: test_alpha_zoo.py "
+            "costs 418s and got a whole shard to itself, but `-m 'not slow'` "
+            "then deselected it, leaving that shard empty."
+        ),
+    )
     args = ap.parse_args()
 
     files = _collect_files(Path(args.root))
+    if args.exclude:
+        import fnmatch
+
+        files = [
+            p for p in files
+            if not any(fnmatch.fnmatch(p.name, pat) for pat in args.exclude)
+        ]
     if not files:
         return 0
 
