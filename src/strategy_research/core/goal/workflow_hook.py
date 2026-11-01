@@ -71,6 +71,9 @@ class GoalWorkflowHook:
         self._event_bus = event_bus
         self._completed = False
         self._evidence_count = 0
+        # agents that already contributed evidence — keeps the count
+        # idempotent when swarm retry re-runs an agent
+        self._evidence_agents: set[str] = set()
         self._layer_results: dict[str, Any] = {}  # P1.3: saved/restored on checkpoint
         # Phase 1.3: metric targets for quantitative goal completion
         self._metric_targets = metric_targets
@@ -143,11 +146,22 @@ class GoalWorkflowHook:
         if criterion_idx >= 0:
             collected = self._collect_evidence(agent_id, output_text, criterion_idx)
             if collected:
-                self._evidence_count += 1
-                logger.info(
-                    "GoalWorkflowHook: collected evidence from %s (total=%d)",
-                    agent_id, self._evidence_count,
-                )
+                # 幂等：同一 agent 重跑（swarm branches[].action=retry）会
+                # 再次触发本回调，但那是同一次逻辑产出的替换，不是新证据。
+                # 只把首次完成的 agent 计入计数，否则 evidence_count 会翻倍，
+                # 可能让 goal 的证据门槛提前达标。
+                if agent_id not in self._evidence_agents:
+                    self._evidence_agents.add(agent_id)
+                    self._evidence_count += 1
+                    logger.info(
+                        "GoalWorkflowHook: collected evidence from %s (total=%d)",
+                        agent_id, self._evidence_count,
+                    )
+                else:
+                    logger.info(
+                        "GoalWorkflowHook: %s re-ran; evidence replaced (total=%d)",
+                        agent_id, self._evidence_count,
+                    )
 
         # Save to RunStore
         if self._run_store and self._run_id:
