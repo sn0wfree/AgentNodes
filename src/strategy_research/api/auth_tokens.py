@@ -74,8 +74,14 @@ def _load_secret() -> bytes:
     path = Path.home() / ".quantnodes" / "jwt_secret"
     try:
         if path.exists():
-            existing = path.read_bytes().strip()
-            if existing:
+            existing = path.read_bytes()
+            # An all-whitespace file is treated as missing. Do NOT use
+            # ``strip()``: the secret is 32 random bytes and may legitimately
+            # begin or end with whitespace bytes (\r, \n, space). Stripping
+            # silently shortens the secret, so a token signed before the
+            # restart fails verification after it (observed as an
+            # intermittent HMAC mismatch on Windows, where \r is common).
+            if existing.strip():
                 _SECRET_CACHE = existing
                 return _SECRET_CACHE
             # Empty file: treat as missing and (re-)create below.
@@ -90,7 +96,16 @@ def _load_secret() -> bytes:
         # the file exists with default umask (often world-readable on
         # shared systems). Falls back to write_bytes+chmod if the file
         # already exists (race recovery).
-        fd = os.open(path, os.O_WRONLY | os.O_CREAT | os.O_EXCL, 0o600)
+        #
+        # O_BINARY is required on Windows: without it the CRT opens the fd
+        # in text mode and every 0x0A byte in the random secret is written
+        # as 0x0D 0x0A. The file then holds 33-34 bytes while the cache
+        # holds 32, so after a restart the persisted secret no longer
+        # matches the one that signed existing tokens (all JWTs break, and
+        # a token issued before the restart fails verification after it).
+        flags = os.O_WRONLY | os.O_CREAT | os.O_EXCL
+        flags |= getattr(os, "O_BINARY", 0)
+        fd = os.open(path, flags, 0o600)
         try:
             os.write(fd, _SECRET_CACHE)
         finally:

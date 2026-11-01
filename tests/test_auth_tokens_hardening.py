@@ -28,13 +28,28 @@ _posix_only = pytest.mark.skipif(
 import pytest
 
 
+def _current_at():
+    """The live auth_tokens module (after any importlib.reload)."""
+    import importlib
+    import sys
+
+    key = "strategy_research.api.auth_tokens"
+    if key not in sys.modules:
+        importlib.import_module(key)
+    return sys.modules[key]
+
+
 @pytest.fixture(autouse=True)
 def _reset_secret_cache(tmp_path, monkeypatch):
     """Reset the module-level _SECRET_CACHE between tests so each test
-    re-evaluates the resolution order from scratch."""
-    import strategy_research.api.auth_tokens as at
+    re-evaluates the resolution order from scratch.
 
-    at._SECRET_CACHE = None
+    Uses ``sys.modules`` rather than a captured module object: ``_reload()``
+    replaces the module in place but tests that reload get a *new* module
+    dict, so resetting a stale reference would leave the live cache dirty
+    and leak state into the next test.
+    """
+    _current_at()._SECRET_CACHE = None
     # Redirect HOME so the persisted-file path is per-test.
     # Windows: Path.home() reads USERPROFILE (or HOMEDRIVE+HOMEPATH), NOT HOME —
     # setting HOME alone left these tests writing to the real
@@ -46,7 +61,7 @@ def _reset_secret_cache(tmp_path, monkeypatch):
     # Default: do NOT allow the dev secret fallback.
     monkeypatch.delenv("STRATEGY_RESEARCH_ALLOW_DEV_SECRET", raising=False)
     yield
-    at._SECRET_CACHE = None
+    _current_at()._SECRET_CACHE = None
 
 
 def _reload():
@@ -84,6 +99,52 @@ def test_persisted_file_round_trip(tmp_path, monkeypatch):
     at._SECRET_CACHE = None
     s2 = at._load_secret()
     assert s2 == s1
+
+
+def test_persisted_secret_is_byte_exact_on_disk(tmp_path, monkeypatch):
+    """The on-disk file must hold exactly the 32 bytes that were cached.
+
+    Regression (2026-11-01): ``os.open`` on Windows without ``O_BINARY``
+    opens in text mode, so every 0x0A in the random secret was written as
+    0x0D 0x0A. The file held 33-34 bytes while the cache held 32 — after a
+    restart the persisted secret no longer matched, silently invalidating
+    every JWT issued before it.
+
+    The secret is pinned to a value that *contains* 0x0A: a random secret
+    only hits that 1 time in ~8, which is exactly why the bug shipped
+    unnoticed (the flake needed both a bad secret and a fresh HOME).
+    """
+    monkeypatch.setenv("JWT_SECRET", "")
+    at = _reload()
+    pinned = bytes(range(10, 42))          # 32 bytes, includes 0x0A at index 0
+    monkeypatch.setattr(at.secrets, "token_bytes", lambda n: pinned)
+
+    secret = at._load_secret()
+    assert secret == pinned
+    raw = (Path.home() / ".quantnodes" / "jwt_secret").read_bytes()
+    assert len(raw) == 32, f"file holds {len(raw)} bytes, expected 32"
+    assert raw == secret
+    # And a reload round-trips byte-identically.
+    at._SECRET_CACHE = None
+    assert at._load_secret() == secret
+
+
+def test_load_secret_does_not_strip_whitespace_bytes(tmp_path, monkeypatch):
+    """A secret that begins/ends with whitespace must not be shortened.
+
+    ``read_bytes().strip()`` used to trim 0x09-0x0D / 0x20 from the edges,
+    producing a cache that differed from the stored value. Only an
+    entirely-blank file is treated as missing.
+    """
+    monkeypatch.setenv("JWT_SECRET", "")
+    at = _reload()
+    secret_file = Path.home() / ".quantnodes" / "jwt_secret"
+    secret_file.parent.mkdir(parents=True, exist_ok=True)
+    payload = b"\n" + b"x" * 30 + b"\r"
+    secret_file.write_bytes(payload)
+
+    at._SECRET_CACHE = None
+    assert at._load_secret() == payload
 
 
 @_posix_only
@@ -214,9 +275,12 @@ def test_verify_token_returns_none_on_tampered_signature(tmp_path, monkeypatch):
     at = _reload()
     token = at.create_token("alice")
     encoded, sig = token.rsplit(".", 1)
-    # Flip one byte of the signature.
-    flipped = sig[:-1] + ("A" if sig[-1] != "A" else "B")
-    bad = f"{encoded}.{flipped}"
+    # Flip the signature deterministically: append a char instead of
+    # mutating the last one. The old version had a 1-in-64 chance of
+    # producing a still-valid signature (base64 '/' or '+' last char),
+    # which made this test intermittently fail.
+    bad = f"{encoded}.{sig}A"
+    assert bad != token
     assert at.verify_token(bad) is None
 
 
