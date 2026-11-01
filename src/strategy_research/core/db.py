@@ -22,11 +22,19 @@ def get_db_path(workspace_path: Path) -> Path:
 
 
 def get_connection(workspace_path: Path, read_only: bool = False):
-    """获取 DuckDB 连接。
+    """获取 DuckDB 连接；不可用时返回 None。
 
     Note: DuckDB is a single-writer database — concurrent processes
     writing the same workspace DB can raise "Could not set lock".
     Callers should serialize writes (or use read_only=True for reads).
+
+    read_only=True on a workspace whose DB has never been created is a
+    normal situation (fresh workspace, or a strategy that never imported
+    data). DuckDB raises ``IOException: database does not exist`` there,
+    but every caller treats ``None`` as "no data" — so we convert that
+    specific case to None instead of letting it crash. Regression: the
+    data-readiness gate promises C0 "database unavailable -> fail check"
+    but used to raise instead, taking the whole pre-flight down.
     """
     try:
         import duckdb
@@ -35,7 +43,17 @@ def get_connection(workspace_path: Path, read_only: bool = False):
         return None
 
     db_path = get_db_path(workspace_path)
-    return duckdb.connect(str(db_path), read_only=read_only)
+    if read_only and not db_path.exists():
+        return None
+    try:
+        return duckdb.connect(str(db_path), read_only=read_only)
+    except Exception as exc:  # noqa: BLE001
+        if read_only:
+            # Any read-only failure means "no usable database here"; the
+            # callers' contract is an empty result, not an exception.
+            print(f"⚠️  无法只读打开 {db_path.name}: {exc}")
+            return None
+        raise
 
 
 # ============================================================

@@ -27,10 +27,24 @@ BANDS: dict[str, tuple[str, ...]] = {
     "C 能力层": (
         "core/agent/", "core/memory/", "core/swarm/", "core/workflow/",
     ),
+    # H：core/ 顶层的单文件研究工具（db / backtest / compute_factor /
+    # factor_validate / data_readiness / data_import / config_runner）。
+    # 它们没有子包前缀，前面的分档都匹配不到——2026-11-01 复核前
+    # 3,966 行落在这条缝里，只 66%，而 db.py 有 18 处生产调用。
+    # 前缀 "core/" 会命中所有子包，所以该档在聚合时跳过“已被前面档位
+    # 消费”的行（见 aggregate()）。
+    "H 研究工具核心": ("core/",),
 }
 
 # 永不进入分母的目录（与 .coveragerc 的 omit 对齐）
 EXCLUDED = ("/_archived/",)
+
+# 数据加载 / 回测引擎：外部数据源与重型数值计算，投产比低，
+# 显式排除在门禁外（不假装它们被覆盖）。
+EXTERNAL_HEAVY = (
+    "core/data_source/", "core/backtest_engine/", "core/alpha_zoo/",
+    "core/portfolio/", "core/export/", "core/validation/",
+)
 
 
 def parse_rows(log_path: str) -> list[tuple[str, int, int, int]]:
@@ -66,26 +80,32 @@ def main() -> int:
         print("2: 未解析到任何模块行", file=sys.stderr)
         return 2
 
+    # 先归入窄档位（A/B/C），H 是「core/ 兜底」必须最后消费剩余行；
+    # 数据加载/回测引擎显式排除，不计入任何档位。
+    narrow = [n for n in BANDS if n != "H 研究工具核心"]
     agg = {name: [0, 0] for name in BANDS}
     for p, st, miss, _pct in rows:
         if any(x in p for x in EXCLUDED):
             continue
-        for name, prefixes in BANDS.items():
-            if p.startswith(prefixes):
-                agg[name][0] += st
-                agg[name][1] += miss
-                break
+        if p.startswith(EXTERNAL_HEAVY):
+            continue
+        hit = next((n for n in narrow if p.startswith(BANDS[n])), None)
+        if hit is None and p.startswith(BANDS["H 研究工具核心"]):
+            hit = "H 研究工具核心"
+        if hit is not None:
+            agg[hit][0] += st
+            agg[hit][1] += miss
 
     failed: list[str] = []
-    print(f"{'档位':<14} {'语句':>7} {'未覆盖':>7} {'覆盖率':>8}  判定")
+    print(f"{'档位':<16} {'语句':>7} {'未覆盖':>7} {'覆盖率':>8}  判定")
     for name in BANDS:
         st, miss = agg[name]
         if st == 0:
-            print(f"{name:<14} {0:7d} {0:7d} {'n/a':>8}  跳过")
+            print(f"{name:<16} {0:7d} {0:7d} {'n/a':>8}  跳过")
             continue
         pct = 100.0 * (st - miss) / st
         ok = pct >= args.min
-        print(f"{name:<14} {st:7d} {miss:7d} {pct:7.1f}%  {'✅' if ok else '❌'}")
+        print(f"{name:<16} {st:7d} {miss:7d} {pct:7.1f}%  {'✅' if ok else '❌'}")
         if not ok:
             failed.append(f"{name} {pct:.1f}% < {args.min}%")
 
@@ -93,7 +113,7 @@ def main() -> int:
     total_miss = sum(v[1] for v in agg.values())
     if total_st:
         print(
-            f"\n活跃核心合计: {total_st} 语句 · {total_miss} 未覆盖 · "
+            f"\n门禁覆盖合计: {total_st} 语句 · {total_miss} 未覆盖 · "
             f"{100.0*(total_st-total_miss)/total_st:.1f}%"
         )
 
