@@ -200,13 +200,23 @@ class LoopProgressMixin:
         self._trace_and_emit("agent_approval_requested", approval_payload)
 
         # 3. Wait for response (synchronous — caller's thread blocks here).
+        #
+        # 决策可能**先于** gate 到达：生产里用户在 agent 还没走到这里时
+        # 就点了批准/拒绝。此前实现在等待前无条件下 `clear()` 并把
+        # `_approval_response` 置 None——提前到达的决策被静默丢弃，然后
+        # 一路阻塞到 `approval_timeout`（默认 1800s）。
+        #
+        # 顺序必须严格是 clear → 查 response → wait：这样任一时刻到达的
+        # 决策都只可能落在「response 已置」或「event 已置」其一，两端都
+        # 能接住，不会出现 event 被清而 response 仍在的空洞。
         self._approval_event.clear()
         if self._approval_response is not None:
-            # Drain any prior response that wasn't consumed.
-            self._approval_response = None
-        approved = self._approval_event.wait(timeout=self._approval_timeout)
+            approved = True          # 提前到达（或与 clear 擦肩），直接消费
+        else:
+            approved = self._approval_event.wait(timeout=self._approval_timeout)
         decision = self._approval_response
         self._approval_response = None
+        self._approval_event.clear()   # 消费完毕，复位供下一轮使用
 
         if decision == "reject":
             result.finished_reason = "user_rejected"

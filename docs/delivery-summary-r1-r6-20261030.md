@@ -363,8 +363,17 @@ output，且引擎 state 含不可序列化对象——「state 落库」不成�
 | 测试库存 | c1_inventory **+173 增 / 0 删** ✅ |
 | 代码量 | executor.py **708 → 391 行**（-45%），旧段循环彻底出清 |
 
-**一次时序 flaky 的如实记录**：`test_p0_loop_fixes::test_rejected_no_progress_exits`
-在最终全量里失败过一次（该测试用 `sleep(0.2)` 后台审批 + 5s 超时，依赖线程调度；
-历史 13 次全量从未失败）。单跑与整文件跑均通过，紧接着的复跑也未复现，
-c1_gate 判 clean——按「失败集不扩大」门禁属可接受，但它确实是并发下的脆弱点，
-未在本轮修（属测试稳健性债，与迁移无关）。
+**一次时序失败 → 追下去是产品缺陷（已修）**：最终全量里
+`test_p0_loop_fixes::test_rejected_no_progress_exits` 失败过一次。
+起初判为测试脆弱，但确定性复现证明是**产品竞态**：
+
+`_check_no_progress` 在等待用户决策前无条件 `clear()` 事件并把
+`_approval_response` 置 None。生产里用户可能在 agent 还没走到审批门时
+就点了批准/拒绝（人机交互的正常时序，不是边缘情况）——决策被静默丢弃，
+然后阻塞到 `approval_timeout`（**默认 1800 秒**）。测试的 `sleep(0.2)`
+只是在负载下恰好落进这个窗口。
+
+修复：等待顺序改为 `clear → 查 response → wait`，提前到达的决策被立即
+消费；消费后复位，供下一轮使用（第三个别有用心的测试锁住「上一轮决策
+不得泄漏到下一轮」）。新增 `tests/test_loop_approval_race.py` 三个
+**确定性**用例（不靠 sleep 竞速），重复 5 次全稳，耗时从 11.3s 降到 1.8s。
