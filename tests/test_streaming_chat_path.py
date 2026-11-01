@@ -78,16 +78,18 @@ class TestChatPathStreaming:
     """B1: chat path uses stream_mode=True → text_delta events fire."""
 
     def test_session_uses_stream_mode_true(self):
-        """Verify the source: the chat path is streaming.
-        ``ChatSession._run_agent_loop`` routes through
-        ``build_chat_agent_loop``, which forces ``stream_mode=True``."""
+        """Verify the pipeline is streaming.
+
+        P5-1c ④ deleted ``ChatSession._run_agent_loop`` (the direct
+        ``build_chat_agent_loop`` path). The TUI now goes through the
+        Gateway, so the streaming invariant must be asserted where the
+        loop is actually built: ``build_chat_agent_loop`` still forces
+        ``stream_mode=True``, and the react node uses it.
+        """
         import inspect
 
-        from strategy_research.cli.tui.session import ChatSession
         from strategy_research.core.agent import chat_loop
 
-        src = inspect.getsource(ChatSession._run_agent_loop)
-        assert "build_chat_agent_loop" in src
         loop_src = inspect.getsource(chat_loop.build_chat_agent_loop)
         assert "stream_mode=True" in loop_src
 

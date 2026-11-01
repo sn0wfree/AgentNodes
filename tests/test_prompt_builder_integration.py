@@ -68,10 +68,20 @@ class TestPhase5CallSitesUseFactory:
         assert "from ..routers.chat import _get_system_prompt" not in src
 
     def test_tui_session_routes_through_factory(self):
+        """P5-1c ④ 后 TUI 不再直接构造 AgentLoop。
+
+        旧实现里 ``session.py`` 通过 ``build_chat_agent_loop`` 走统一 prompt
+        工厂；现在它只接 Gateway（``_run_via_gateway``），prompt 装配发生在
+        引擎侧（``runtimes/nodes/react.py`` → AgentLoop → 同一 factory）。
+        所以这里断言的是**新链路的完整性**，而不是旧的字符串存在。
+        """
         from strategy_research.cli.tui import session as tui_session
 
         src = open(tui_session.__file__, encoding="utf-8").read()
-        self._assert_routed(src, "tui/session.py")
+        assert "_run_via_gateway" in src, "TUI 必须经 Gateway 入口"
+        # 旧直连路径必须彻底消失
+        assert "build_chat_agent_loop" not in src
+        assert "_run_agent_loop" not in src.replace("_run_agent_loop_background", "")
         assert "_CHAT_PROMPT_PATH" not in src
         assert "_load_role_system_prompt" not in src
 

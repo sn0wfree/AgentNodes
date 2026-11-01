@@ -70,16 +70,35 @@ def _shard_files(shard: int, shards: int, exclude: list[str]) -> list[str]:
 
 
 def _run(files: list[str], extra: list[str],
-         extra_env: dict[str, str] | None = None) -> tuple[int, float, str, str]:
+         extra_env: dict[str, str] | None = None,
+         *, isolate: str | None = None) -> tuple[int, float, str, str]:
     """Run pytest on ``files``.
 
     File lists go through an ``@argfile`` rather than the command line:
     a single shard of this suite is ~646 paths, which exceeds the Windows
     CreateProcess limit (32767 chars) with ``FileNotFoundError: [WinError 206]
     filename or extension too long``.
+
+    ``isolate``: per-shard scratch tag. When set, the shard gets its own
+    ``--basetemp`` and ``-p no:cacheprovider`` so parallel shards never share
+    pytest's tmp root or ``.pytest_cache`` — sharing them caused flaky
+    PermissionError / ImportError storms on Windows (four shards race on the
+    same directories).
+
+    The scratch root lives under the SYSTEM temp dir, not the repo: pytest
+    would otherwise create tmp_path inside the git worktree, and tests that
+    assert "not a git repo" (e.g. GitDiffTool) then walk up and find the
+    repo — a failure mode my first attempt at this fix introduced.
     """
     env = dict(os.environ)
     env.update(extra_env or {})
+    args = list(extra)
+    if isolate:
+        import tempfile
+
+        scratch = Path(tempfile.gettempdir()) / "qn-pytest-shards" / isolate
+        scratch.mkdir(parents=True, exist_ok=True)
+        args += [f"--basetemp={scratch / 'tmp'}", "-p", "no:cacheprovider"]
     tmp_dir = Path.cwd() / ".pytest_args"
     tmp_dir.mkdir(exist_ok=True)
     argfile = tmp_dir / f"shard-{os.getpid()}-{time.perf_counter_ns()}.txt"
@@ -87,7 +106,7 @@ def _run(files: list[str], extra: list[str],
     t0 = time.perf_counter()
     try:
         proc = subprocess.run(
-            [sys.executable, "-m", "pytest", f"@{argfile}", *extra],
+            [sys.executable, "-m", "pytest", f"@{argfile}", *args],
             capture_output=True, text=True, encoding="utf-8", errors="replace",
             env=env,
         )
@@ -128,7 +147,7 @@ def run_pr(shards: int, cov: bool, jobs: int,
         extra_args = ["-q", "--tb=short",
                       "--reruns=2", "--reruns-delay=1",
                       "-m", "not llm and not e2e and not slow", *shard_extra]
-        results[shard_idx] = _run(files, extra_args)
+        results[shard_idx] = _run(files, extra_args, isolate=f"shard{shard_idx}")
 
     from concurrent.futures import ThreadPoolExecutor
 

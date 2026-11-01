@@ -158,3 +158,63 @@ P5-1 + P5-1b 已把新路径补齐到与旧路径等价：
 1. 先评估 §3 第 1 项（`/send_async` 与 SessionService 的归属）；
 2. 再决定 `QNODES_NEW_ENTRY` 是否退役（这决定 ①–④ 能否执行）；
 3. 若退役：按原顺序 ① CLI → ② API → ③ 观察 → ④ 删门，各自独立提交。
+
+---
+
+## 8. 完成记录（2026-11-01）：P5-1c 全部收口
+
+用户决策：**退役 `QNODES_NEW_ENTRY` 回退能力**。①–④ 步已执行完毕。
+
+### 前置核实（决定了退役是否有损失）
+
+执行前确认了「回退路径是否真的可用」：
+
+| 检查 | 结论 |
+|---|---|
+| `new_entry_enabled()` 默认值 | **恒 True**（`entry_adapters.py`）——文档里写的「legacy (default)」是**过时的**，代码早已默认走新路径 |
+| `QNODES_NEW_ENTRY=0` 走到哪 | `SessionService.send_message` → `_run_attempt`（自己的 AgentLoop 执行 + 队列），与 chat.py 的死代码无关 |
+| 那条路是否完整 | ✅ 完整可用（有独立的 `_run_attempt` / `_process_session_queue`） |
+
+所以这次退役**确实放弃了真实可用的回退能力**，不是「反正已经坏了」。
+用户的判断是「旧路径既然不再被使用和维护，保留开关的假安全感不如删掉」。
+
+### 执行清单
+
+| 步 | 内容 | 文件 |
+|---|---|---|
+| ① | CLI 分支：`_run_agent_loop` 整函数删除（93 行），`dispatch` 直连 `_run_via_gateway` | `cli/tui/session.py` |
+| ② | API `/send`：删除 SessionService 直连分支（含 504 超时路径），恒走 `_send_via_gateway` | `api/routers/chat.py` |
+| ③ | 门函数本体 `new_entry_enabled()` + 两处导出 | `core/gateway/entry_adapters.py`、`__init__.py` |
+| ④ | 测试侧清理（见下） | 7 个文件 |
+
+### 测试侧变更
+
+| 文件 | 处置 |
+|---|---|
+| `test_entry_flags.py` | **整份删除**（4 个用例全在测门） |
+| `test_entry_adapters.py` | 删 3 个 flag 用例（25 保留） |
+| `test_gateway_entry.py` | 删 3 个 flag 用例（10 保留） |
+| `test_cli_gateway_path.py` | 「flag off 走 legacy」改为**断言门已退役**；「flag on」改为直接测 `_run_via_gateway` |
+| `test_tui_event_routing.py` | 删 `TestSessionRunAgentLoop` 整个 class（104 行，全测已删函数） |
+| `test_webui_api.py` | 删 `test_send_sync`（23 行，测 legacy 504 超时路径） |
+| `test_r2_consumer.py` / `test_p51_chat_persistence.py` / `test_p51b_live.py` / `test_entry_migration_live.py` | 去掉 setenv/delenv/import/assert 残留 |
+
+### 代码量变化
+
+| 文件 | 之前 | 现在 |
+|---|---:|---:|
+| `api/routers/chat.py` | 1360 | 1047（⓿ 步）→ **1024**（② 步，−23） |
+| `cli/tui/session.py` | 543 | **450**（① 步，−93） |
+| `core/gateway/entry_adapters.py` | 108 | **94**（③ 步，−14） |
+| `tests/test_tui_event_routing.py` | 347 | **243**（−104） |
+
+### 现在的入口事实
+
+- **一条路径**：`/send` 与 CLI `dispatch` 都只走 WorkRequest → mailbox → SessionController → GraphEngine
+- **没有回退开关**：`QNODES_NEW_ENTRY` 不再被读取（残留的只有文档说明与「门已退役」断言）
+- **SessionService 仍在**：它服务于 `/send_async` 与 TUI 的队列语义，**不属于本次退役范围**（§3 第 1 项的答案：`/send_async` 独立保留）
+
+### 若要回退
+
+`git revert` 这几个提交即可（⓿ 步与 ①–④ 步是独立的 commit）。但注意：⓿ 步删的
+`_run_agent_loop_background` 是零调用死代码，revert 它没有必要。

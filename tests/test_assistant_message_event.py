@@ -165,20 +165,15 @@ class TestAssistantMessageEmission:
 
 
 class TestNoRedundantDone:
-    """A3: _run_agent_loop must NOT call append_done() (iter_end handles it)."""
+    """A3: iter_end is the canonical Done. marker source.
 
-    def test_session_run_agent_loop_does_not_call_append_done(self):
-        """Verify the source: _run_agent_loop no longer contains append_done."""
-        import inspect
-
-        from strategy_research.cli.tui.session import ChatSession
-
-        src = inspect.getsource(ChatSession._run_agent_loop)
-        # The fix removed the redundant append_done() call.
-        # Defensive close (end_streaming) may still be present.
-        assert "tv.append_done" not in src, (
-            "_run_agent_loop must not call append_done() — iter_end route handler is canonical"
-        )
+    The original case here asserted that
+    ``ChatSession._run_agent_loop`` did not call ``append_done()``. That
+    method was deleted in P5-1c ④ (the legacy AgentLoop path is gone), so
+    the assertion has no subject. The invariant it protected — "only
+    iter_end appends Done." — is still verified below against
+    ``route_agent_event``.
+    """
 
     def test_route_agent_event_iter_end_calls_append_done(self):
         """Verify the canonical Done. marker source: route_agent_event iter_end."""

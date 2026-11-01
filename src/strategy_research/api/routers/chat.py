@@ -650,52 +650,25 @@ def _install_chat_event_bridge(
 async def send_sync(body: ChatMessage, request: Request):
     """Send a message synchronously (non-streaming).
 
-    Two paths (阶段 3a 灰度):
-    - legacy (default): unified SessionService (event-log persistence, FIFO
-      queue, conversation-history context).
-    - new (QNODES_NEW_ENTRY=1): WorkRequest -> EntryPoint -> mailbox ->
-      SessionController -> GraphEngine, events collected in-process.
+    唯一路径（P5-1c ④ 起）：WorkRequest → EntryPoint → mailbox →
+    SessionController → GraphEngine，事件在进程内收集。
 
-    The ownership check is shared by both paths.
+    ``?wait=true`` 保留同步 reply 语义（外部脚本用户）；默认 receipt 型
+    ——submit 即回，答案走 SSE。
+
+    旧的 SessionService 直连分支已删除（`QNODES_NEW_ENTRY` 回退开关退役）。
     """
     # Ownership check: only the session owner may post messages
     from .web_session import _fetch_session_owned, _get_db
     user_id = getattr(request.state, "user_id", "anonymous")
     _fetch_session_owned(_get_db(), body.session_id, user_id)
 
-    # ── 阶段 3a 灰度分支（QNODES_NEW_ENTRY=1 时走新架构） ──────────
-    from strategy_research.core.gateway import new_entry_enabled
-    if new_entry_enabled():
-        # R2.1c（E1=C）：?wait=true 保留同步 reply 语义（外部脚本用户）；
-        # 默认 receipt 型——submit 即回，答案走 SSE。
-        wait = (request.query_params.get("wait") or "").strip().lower() in (
-            "1", "true", "yes",
-        )
-        return await _send_via_gateway(body.session_id, body.content, wait=wait)
-
-    service = _get_session_service()
-    result = await service.send_message(
-        session_id=body.session_id,
-        content=body.content,
-        allow_shell_tools=_shell_tools_enabled(),
+    # R2.1c（E1=C）：?wait=true 保留同步 reply 语义（外部脚本用户）；
+    # 默认 receipt 型——submit 即回，答案走 SSE。
+    wait = (request.query_params.get("wait") or "").strip().lower() in (
+        "1", "true", "yes",
     )
-    if result.get("error") == "queue_full":
-        raise HTTPException(status_code=429, detail=result)
-
-    attempt_id = result.get("attempt_id")
-    outcome = await service.wait_for_attempt(
-        body.session_id, attempt_id,
-    ) if attempt_id else None
-    if outcome is None:
-        raise HTTPException(
-            status_code=504, detail="LLM response timed out",
-        )
-    return {
-        "message_id": result.get("message_id"),
-        "attempt_id": attempt_id,
-        "reply": outcome.get("summary", ""),
-        "status": outcome.get("status"),
-    }
+    return await _send_via_gateway(body.session_id, body.content, wait=wait)
 
 
 @router.get("/events")

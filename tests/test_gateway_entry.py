@@ -11,7 +11,6 @@ from strategy_research.core.gateway import (
     api_chat_request,
     cli_request,
     mcp_request,
-    new_entry_enabled,
     scheduler_request,
 )
 from strategy_research.core.orchestration import QueueMode, SourceKind, WorkKind
@@ -59,23 +58,6 @@ def test_adapters_strip_protocol_fields():
     """payload 白名单：adapter 只传业务字段。"""
     req = api_chat_request("s", "x")
     assert set(req.payload) == {"text"}
-
-
-def test_feature_flag_on_by_default(monkeypatch):
-    monkeypatch.delenv("QNODES_NEW_ENTRY", raising=False)
-    assert new_entry_enabled() is True  # 阶段 3b 起默认开
-
-
-@pytest.mark.parametrize("value", ["1", "true", "YES", "on"])
-def test_feature_flag_on_variants(monkeypatch, value):
-    monkeypatch.setenv("QNODES_NEW_ENTRY", value)
-    assert new_entry_enabled() is True
-
-
-@pytest.mark.parametrize("value", ["0", "false", "NO", "off"])
-def test_feature_flag_off_variants(monkeypatch, value):
-    monkeypatch.setenv("QNODES_NEW_ENTRY", value)
-    assert new_entry_enabled() is False
 
 
 # ── Gateway 组装 ─────────────────────────────────────────

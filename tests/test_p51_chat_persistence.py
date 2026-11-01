@@ -38,7 +38,6 @@ class FakeClient:
 def env(tmp_path: Path, monkeypatch):
     db_path = tmp_path / "test.db"
     monkeypatch.setenv("SR_WORKSPACE_PATH", str(tmp_path))
-    monkeypatch.delenv("QNODES_NEW_ENTRY", raising=False)  # 新路径默认开
 
     import strategy_research.api.routers.web_session as ws
     import strategy_research.api.session.web_session_db as wsdb

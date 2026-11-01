@@ -7,7 +7,6 @@ from strategy_research.core.gateway.entry_adapters import (
     api_chat_request,
     cli_request,
     mcp_request,
-    new_entry_enabled,
     scheduler_request,
     submit_via_entry,
 )
@@ -138,29 +137,6 @@ def test_submit_via_entry_rejects_collect():
     receipt = submit_via_entry(ep, req)
     assert not receipt.accepted
     assert receipt.reason is RejectReason.UNSUPPORTED_QUEUE_MODE
-
-
-# ── feature flag ────────────────────────────────────────
-
-
-@pytest.mark.parametrize("value", ["0", "false", "off", "no", "FALSE", " Off "])
-def test_flag_explicit_off_values(monkeypatch, value):
-    """阶段 3b：显式关闭值 → False（回退旧路径的唯一方式）。"""
-    monkeypatch.setenv("QNODES_NEW_ENTRY", value)
-    assert new_entry_enabled() is False
-
-
-@pytest.mark.parametrize("value", ["", "1", "true", "TRUE", "yes", "on", " On ", "garbage"])
-def test_flag_on_values(monkeypatch, value):
-    """默认开启：未设/空串/任意非关闭值 都视为开启（阶段 3b 变更）。"""
-    monkeypatch.setenv("QNODES_NEW_ENTRY", value)
-    assert new_entry_enabled() is True
-
-
-def test_flag_unset_is_on(monkeypatch):
-    """未设置环境变量时默认开启（阶段 3b：新架构已验证）。"""
-    monkeypatch.delenv("QNODES_NEW_ENTRY", raising=False)
-    assert new_entry_enabled() is True
 
 
 # ── 空/异常输入 ─────────────────────────────────────────

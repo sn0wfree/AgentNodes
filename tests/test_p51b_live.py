@@ -1,7 +1,7 @@
 """P5-1b 真实验证：新 chat 路径的流式 / 工具 / 历史 / 持久化（真实 MiniMax）。
 
 运行：
-    $env:QNODES_LIVE_LLM="1"; $env:QNODES_NEW_ENTRY="1"
+    $env:QNODES_LIVE_LLM="1";
     py -3.12 -m pytest tests/test_p51b_live.py -m llm -v
 """
 from __future__ import annotations

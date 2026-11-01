@@ -1,7 +1,7 @@
 """阶段 3a 灰度验证：flag 打开后 /send 走新架构（真实 MiniMax）。
 
 运行：
-    $env:QNODES_LIVE_LLM="1"; $env:QNODES_NEW_ENTRY="1"
+    $env:QNODES_LIVE_LLM="1";
     py -3.12 -m pytest tests/test_entry_migration_live.py -m llm -v
 """
 from __future__ import annotations
@@ -25,10 +25,8 @@ requires_live = pytest.mark.skipif(
 @requires_live
 def test_gateway_path_real_llm_via_flag(live_client, monkeypatch):
     """flag 打开 → api_chat_request → Gateway → 真实回答。"""
-    monkeypatch.setenv("QNODES_NEW_ENTRY", "1")
-    from strategy_research.core.gateway import Gateway, api_chat_request, new_entry_enabled
+    from strategy_research.core.gateway import Gateway, api_chat_request
 
-    assert new_entry_enabled()
 
     events: list[str] = []
     gw = Gateway(client=live_client, sink=lambda k, d: events.append(k))
@@ -49,7 +47,6 @@ def test_gateway_path_real_llm_via_flag(live_client, monkeypatch):
 @requires_live
 def test_gateway_two_turns_same_session(live_client, monkeypatch):
     """同一 session 两轮：turn 编号递增，run 派生正确。"""
-    monkeypatch.setenv("QNODES_NEW_ENTRY", "1")
     from strategy_research.core.gateway import Gateway, api_chat_request
 
     gw = Gateway(client=live_client)

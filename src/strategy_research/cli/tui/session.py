@@ -130,7 +130,7 @@ class ChatSession:
 
         # Sync interactive mode (chat/goal) based on active GoalStore state.
         # Must run AFTER process_turn (which may create/complete a goal)
-        # and BEFORE _run_agent_loop (which needs the mode to select prompt).
+        # and BEFORE the gateway dispatch (which reads the mode).
         self._sync_interactive_mode()
 
         # Refresh the GoalPanel widget with current goal data.
@@ -157,7 +157,9 @@ class ChatSession:
                 Text(f"\u276f {text.strip()}", style="bold cyan")
             )
             try:
-                await self._run_agent_loop(text.strip())
+                # P5-1c ④：唯一入口 = Gateway（WorkRequest → mailbox →
+                # 准入 → 引擎 → 事件流）。旧的直连 AgentLoop 分支已删除。
+                await self._run_via_gateway(text.strip())
             except Exception as exc:  # noqa: BLE001
                 self._write_transcript(f"[red]Agent error:[/red] {exc}")
             # Refresh header stats now that the assistant message has
@@ -222,99 +224,6 @@ class ChatSession:
         """Render the captured ANSI/marked-up text into the transcript."""
         self._write_transcript(captured_text)
 
-    async def _run_agent_loop(self, task: str) -> None:
-        """Build an AgentLoop with on_event routed to app, run the task.
-
-        Falls back to a thin streaming wrapper if AgentLoop construction
-        fails (e.g. missing role prompt). This unifies the event-driven
-        flow for plain-text chat with the role-based autoresearch path.
-
-        阶段 3a 灰度（QNODES_NEW_ENTRY=1）：改走 Gateway（WorkRequest →
-        mailbox → 准入 → 引擎 → 事件流）。历史仍用 MemoryManager，
-        事件经 app.route_agent_event 呈现，用户可见行为一致。
-        """
-        from strategy_research.core.gateway import new_entry_enabled
-
-        if new_entry_enabled():
-            await self._run_via_gateway(task)
-            return
-
-        cfg = None
-        try:
-            from strategy_research.core.llm import LLMConfig
-            cfg = LLMConfig.load()
-        except Exception:
-            pass
-
-        # Select system prompt based on interactive mode.
-        # Chat mode → conversational prompt (natural language output).
-        # Goal mode → researcher prompt (structured JSON output).
-        mode = getattr(self.ctx, "interactive_mode", "chat")
-        role = "researcher" if mode == "goal" else "chat"
-
-        # Phase 7+8: history via MemoryManager (shared SQLite at
-        # ~/.quantnodes/sessions.db). Falls back to self.ctx.history if
-        # MemoryManager cannot be constructed (e.g. SQLite driver missing).
-        session_id = getattr(self.ctx, "session_id", "cli")
-        try:
-            from strategy_research.core.agent.memory_manager import (
-                get_default_memory_manager,
-            )
-            mm = get_default_memory_manager()
-            full_history = await mm.get(session_id)
-            # ctx.history ends with the current user message; exclude it
-            history = full_history[:-1] if len(full_history) > 1 else None
-        except Exception:
-            history = list(self.ctx.history[:-1]) if len(self.ctx.history) > 1 else None
-
-        from strategy_research.core.agent.chat_loop import build_chat_agent_loop
-
-        loop = build_chat_agent_loop(
-            config=cfg or self.llm_client.config,
-            session_id=session_id,
-            role=role,
-            on_event=self.app.route_agent_event,
-            workspace=None,
-        )
-        # Ensure the core loop's legacy compaction persister is wired
-        # (TUI process has no API app; registers once, idempotent).
-        try:
-            from ...api.routers.web_session import persist_message
-            from ...core.agent.loop import register_compaction_persister
-            register_compaction_persister(persist_message)
-        except Exception:  # noqa: BLE001
-            pass
-
-        # Inject user message into loop's internal state via _build_messages
-        # mirror - we just call loop.arun(task) and let it build messages.
-        result = await loop.arun(task, history=history)
-
-        # Phase 7+8: persist via MemoryManager (shared SQLite with web).
-        # append() degrades internally to an emergency buffer on failure
-        # (never raises), so detect the degradation and keep ctx.history
-        # in sync (legacy in-memory path) when it happens.
-        if result.answer:
-            try:
-                user_msg_id = await mm.append(session_id, "user", task)
-                asst_msg_id = await mm.append(session_id, "assistant", result.answer)
-                if str(user_msg_id).startswith("emergency_") or str(asst_msg_id).startswith("emergency_"):
-                    self.ctx.history.append({"role": "assistant", "content": result.answer})
-            except Exception:
-                # Fallback: keep ctx.history in sync (legacy path)
-                self.ctx.history.append({"role": "assistant", "content": result.answer})
-
-        # End streaming lifecycle (defensive close in case no
-        # ``assistant_message`` event arrived).
-        try:
-            self.app.stop_thinking()
-            self.app.end_streaming()
-        except Exception:
-            pass
-
-        # Done. marker is emitted by ``iter_end`` route handler — no
-        # redundant append_done() here (which previously caused the
-        # "• Done." ×2 bug).
-
     async def _run_via_gateway(self, task: str) -> None:
         """阶段 3a：CLI 走新架构（Gateway 引擎 + MemoryManager 历史）。"""
         import asyncio
@@ -373,7 +282,7 @@ class ChatSession:
     def _sync_interactive_mode(self) -> None:
         """Sync ``ctx.interactive_mode`` with GoalStore.
 
-        Called after each turn (post-``process_turn``, pre-``_run_agent_loop``)
+        Called after each turn (post-``process_turn``, pre-gateway-dispatch)
         so the mode reflects the current goal state.
 
         - No active goal → ``"chat"`` (conversational prompt)

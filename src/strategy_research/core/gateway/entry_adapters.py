@@ -19,22 +19,6 @@ from strategy_research.core.orchestration import (
 )
 
 
-def new_entry_enabled() -> bool:
-    """chat/CLI 入口是否走 Gateway（**恒 True，阶段 4 只保留回退开关**）。
-
-    删除条件：Gateway chat 路径补齐历史注入 + 事件持久化 + message_id 签发
-    后，旧 SessionService 分支删除（阶段 5，见
-    docs/stage-4-cleanup-checklist-20261027.md §1.1）。
-    在此之前设 QNODES_NEW_ENTRY=0 仍可回退旧路径。
-    """
-    import os
-
-    value = os.environ.get("QNODES_NEW_ENTRY", "").strip().lower()
-    if value in ("0", "false", "no", "off"):
-        return False
-    return True
-
-
 def research_graph_enabled() -> bool:
     """[阶段 4 已退役] phases 分支恒走 GraphEngine 阶段图。
 

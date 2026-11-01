@@ -163,12 +163,12 @@ def _purge_hypothesis_sqlite_env(monkeypatch):
 def _isolate_gate_flags():
     """Snapshot/restore every ``QNODES_*`` and ``SR_*`` env var per test.
 
-    Stage 4: gate flags (``QNODES_NEW_ENTRY``, ``QNODES_NEW_ENTRY_STUDY``,
-    ``QNODES_RESEARCH_GRAPH``) and tunables (``SR_STUDY_MAX_CONCURRENT``,
-    ``SR_STUDY_HEARTBEAT_TIMEOUT``, ...) are read at call time by many
-    modules. Tests that set them via ``os.environ`` directly and forget to
-    restore leak into later tests — one of the documented order-dependent
-    failure sources. ``monkeypatch`` handles tests that use it; this fixture
+    Stage 4: gate flags (``QNODES_NEW_ENTRY_STUDY``, ``QNODES_RESEARCH_GRAPH``)
+    and tunables (``SR_STUDY_MAX_CONCURRENT``, ``SR_STUDY_HEARTBEAT_TIMEOUT``,
+    ...) are read at call time by many modules. Tests that set them via
+    ``os.environ`` directly and forget to restore leak into later tests — one
+    of the documented order-dependent failure sources. ``monkeypatch``
+    handles tests that use it; this fixture
     closes the hole for raw ``os.environ`` writes.
 
     Session defaults (``SR_WORKSPACE_PATH`` etc.) are set by other autouse

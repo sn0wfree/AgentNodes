@@ -10,42 +10,22 @@ import asyncio
 import pytest
 
 
-def test_cli_flag_off_keeps_legacy_path(monkeypatch):
-    # 阶段 3b：默认开启，故显式设为 0 才能测回退路径
-    monkeypatch.setenv("QNODES_NEW_ENTRY", "0")
+def test_cli_has_no_legacy_agent_loop_path(monkeypatch):
+    """P5-1c ④：门退役后 CLI 只有 Gateway 一条路径。
+
+    曾经这里测 `QNODES_NEW_ENTRY=0` 回退到直连 AgentLoop 的分支；该分支
+    （`ChatSession._run_agent_loop`）已随门一起删除，所以现在的契约是
+    「不存在直连路径、不存在门函数」。
+    """
+    import strategy_research.core.gateway as gw
     from strategy_research.cli.tui.session import ChatSession
 
-    src = ChatSession._run_agent_loop.__doc__ or ""
-    assert "阶段 3a 灰度" in src or True  # 文档标记存在
-
-    # flag off：_run_via_gateway 不应被调用
-    called = {"gateway": False}
-
-    async def fake_gateway(self, task):
-        called["gateway"] = True
-
-    monkeypatch.setattr(ChatSession, "_run_via_gateway", fake_gateway)
-
-    class _Stop(Exception):
-        pass
-
-    # 早期退出：LLMConfig 之后会失败，但我们只关心 gateway 是否被调用
-    async def run():
-        session = ChatSession.__new__(ChatSession)
-        session.ctx = type("C", (), {"interactive_mode": "chat", "session_id": "cli", "history": []})()
-        session.llm_client = type("L", (), {"config": None})()
-        session.app = type("A", (), {"route_agent_event": lambda *a: None})()
-        try:
-            await ChatSession._run_agent_loop(session, "hi")
-        except Exception:  # noqa: BLE001
-            pass
-        return called["gateway"]
-
-    assert asyncio.run(run()) is False
+    assert not hasattr(gw, "new_entry_enabled"), "门函数应已退役"
+    assert not hasattr(ChatSession, "_run_agent_loop"), "旧直连分支应已删除"
+    assert hasattr(ChatSession, "_run_via_gateway"), "Gateway 路径必须在"
 
 
 def test_cli_flag_on_dispatches_to_gateway(tmp_path, monkeypatch):
-    monkeypatch.setenv("QNODES_NEW_ENTRY", "1")
     monkeypatch.setenv("QUANTNODES_RESEARCH_GOAL_DB_PATH", str(tmp_path / "g.db"))
     monkeypatch.setenv("QUANTNODES_RESEARCH_HYPOTHESES_PATH", str(tmp_path / "h.json"))
 
@@ -66,7 +46,9 @@ def test_cli_flag_on_dispatches_to_gateway(tmp_path, monkeypatch):
     async def run():
         session = ChatSession.__new__(ChatSession)
         session.ctx = type("C", (), {"interactive_mode": "chat", "session_id": "cli", "history": []})()
-        await ChatSession._run_agent_loop(session, "你好")
+        # P5-1c ④：门已退役，dispatch 恒走 _run_via_gateway；这里直接调用
+        # 该唯一路径，避免为构造完整 TUI 状态而引入无关依赖。
+        await ChatSession._run_via_gateway(session, "你好")
 
     asyncio.run(run())
     assert called["gateway"] is True
