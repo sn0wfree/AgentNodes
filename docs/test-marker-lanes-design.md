@@ -151,3 +151,68 @@ push main 无过滤全量 job、函数级打标、sharding 的 `DEFAULT_SKIP` �
 - **push to main**：无过滤（含 llm/e2e/slow 全量；`test_alpha_zoo` 418s 归 LPT 后的最重 shard，merge 后无反馈时限故可接受）
 
 实现：`Run tests` step 内按 `github.event_name` 组装 FILTER 变量，12 分片矩阵不变（无额外 job、无 yaml 分叉）。nightly 仍独立负责真 LLM eval（llm lane 的 pytest 面也在此全量里跑）。
+
+
+---
+
+## 9. 本地验证矩阵（2026-11-01）：为什么必须分进程
+
+### 事故：混合全量制造假回归
+
+为「跑完整 e2e」而去掉 `-m "not e2e"`，把 e2e 与单元测试放进**同一进程**，
+结果：
+
+| 现象 | 实测 |
+|---|---|
+| 单元全量（正确命令） | 393s |
+| 混合全量 | 694–878s，最坏一次 **10986s（3 小时）** |
+| 假回归 | 5 个：`test_study_e2e_integration`×4、`test_webui_e2e`×1 |
+| 排查成本 | 约 1 小时（8 次全量 + 二分） |
+
+这 5 个用例单独跑、成对跑、按文件跑**都通过**，只在同进程混跑时失败：
+`AutoresearchRunner` 构造会 `open_goal_store()` 打开真实 DB；`test_webui_e2e`
+驱动 live uvicorn 与 `test_webui_api`（基线中长期失败）共享 app 单例。
+
+**结论：lane 白名单不是分类标签，是进程隔离契约。** 跨 lane 混跑会破坏它。
+
+### 正确做法：scripts/run_test_matrix.py
+
+复刻 CI 的做法，按文件分片、每片独立进程并行：
+
+```
+python scripts/run_test_matrix.py                    # 全部 lane
+python scripts/run_test_matrix.py --lane pr --shards 4
+python scripts/run_test_matrix.py --lane pr --cov --shards 1   # 覆盖率需单分片
+```
+
+实测（12 核机器）：
+
+| lane | 时间 | 结果 |
+|---|---|---|
+| pr（4 分片并行，含 --reruns=2） | 179s | c1_gate clean（61 失败全在基线） |
+| e2e | 245s | 84 passed |
+| browser（SR_RUN_BROWSER_TESTS=1） | 12s | 10 passed |
+| **合计** | **约 7.5 分钟** | 三层全覆盖 |
+
+### 为什么不用 pytest-xdist
+
+试过。`-n 4` 能把 PR 门压到 120s，但同进程并发破坏了依赖隐式导入顺序的
+用例，失败集不稳定。文件级分片的**进程隔离**才是正确解法——CI 早在
+2026-10-08 就选了这条路。xdist 已卸载，不进依赖。
+
+它暴露的那个 bug 独立成立：`test_cli_server_cmd.py` 的 6 个用例 patch
+`strategy_research.webui.routes.router`，而该模块在 W3 结构债清理中已删除
+（api/app.py:240）。串行能过纯属别的测试先导入过的副作用，patch 的
+`router` 变量从未被断言。已删除该残留 patch。
+
+### scripts/pytest_shard.py 的 --exclude
+
+成本模型不知道 `-m` 过滤：`test_alpha_zoo.py`（418s，标记 slow）会独占
+一个分片，随后被 `-m "not slow"` 全部反选，该 worker 空转。
+`run_test_matrix.py` 从 conftest 的 lane 白名单自动生成排除项，避免两处漂移。
+
+### 纪律
+
+- **不要**跨 lane 混跑（`pytest tests` 不带 `-m`）
+- **不要**在迭代循环里每次带 `--cov`（额外 30–50%）；攒完改动跑一次
+- 失败集判定一律用 `scripts/c1_gate.py <合并日志>`，不看单次数字
