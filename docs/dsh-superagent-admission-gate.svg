@@ -1,0 +1,128 @@
+<svg viewBox="0 0 1120 872" width="1120" height="872" xmlns="http://www.w3.org/2000/svg" font-family="-apple-system, 'PingFang SC', 'Microsoft YaHei', sans-serif">
+  <style>
+    .ttl{font-size:19px;font-weight:600;fill:#0f172a}
+    .sec{font-size:14px;font-weight:600;fill:#334155}
+    .bt{font-size:13.5px;font-weight:600;fill:#0f172a}
+    .st{font-size:12px;fill:#475569}
+    .sm{font-size:11.5px;fill:#94a3b8}
+    .mono{font-family:ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;font-size:12px;fill:#0f172a}
+    .lbl{font-size:11.5px;fill:#0369a1}
+    .ok{font-size:12.5px;font-weight:600;fill:#0c4a6e}
+    .box{fill:#fff;stroke:#cbd5e1;stroke-width:1}
+    .boxb{fill:#e0f2fe;stroke:#7dd3fc;stroke-width:1.2}
+    .boxa{fill:#fef3c7;stroke:#fcd34d;stroke-width:1.2}
+    .boxr{fill:#fee2e2;stroke:#fca5a5;stroke-width:1.2}
+    .boxg{fill:#f8fafc;stroke:#cbd5e1;stroke-width:1}
+    .fl{stroke:#0ea5e9;stroke-width:1.3;fill:none;marker-end:url(#a1)}
+    .fld{stroke:#94a3b8;stroke-width:1.2;fill:none;stroke-dasharray:4 4;marker-end:url(#a3)}
+  </style>
+  <defs>
+    <marker id="a1" markerWidth="9" markerHeight="9" refX="7" refY="4" orient="auto">
+      <path d="M0,0 L7,4 L0,8" fill="none" stroke="#0ea5e9" stroke-width="1.3"/></marker>
+    <marker id="a3" markerWidth="9" markerHeight="9" refX="7" refY="4" orient="auto">
+      <path d="M0,0 L7,4 L0,8" fill="none" stroke="#94a3b8" stroke-width="1.2"/></marker>
+  </defs>
+
+  <text x="36" y="32" class="ttl">dsh-superagent 准入门闸决策阶梯</text>
+  <text x="36" y="54" class="sm">src/policy.ts · settingsPolicy().gate() 第 191–211 行 · 逐条判定，首个成立者生效；全不成立才拒绝</text>
+
+  <!-- 机器闸门 -->
+  <text x="36" y="92" class="sec">A. 非人消息（bot / CI）：走 machineGate，最多只能拿到 inferred</text>
+
+  <rect x="36" y="106" width="404" height="40" rx="6" class="boxg"/>
+  <text x="50" y="131" class="mono">!trigger.human</text>
+  <line x1="440" y1="126" x2="474" y2="126" class="fl"/>
+
+  <rect x="478" y="86" width="606" height="34" rx="6" class="box"/>
+  <text x="492" y="107" class="st">actor.id 存在但不在 bot 名单 → 拒绝 not_human</text>
+
+  <rect x="478" y="130" width="606" height="34" rx="6" class="box"/>
+  <text x="492" y="151" class="st">范围不可见（!listened 或 !(addressed || observed)）→ 拒绝 not_human</text>
+
+  <rect x="478" y="174" width="606" height="34" rx="6" class="box"/>
+  <text x="492" y="195" class="st">名单内 bot：mode=off → 拒绝 admission_ignored；否则 inferred · via bot</text>
+
+  <rect x="36" y="222" width="404" height="40" rx="6" class="boxg"/>
+  <text x="50" y="247" class="st">CI（无发送者，actor.id 为空）</text>
+  <line x1="440" y1="242" x2="474" y2="242" class="fl"/>
+  <rect x="478" y="204" width="606" height="72" rx="6" class="box"/>
+  <text x="492" y="226" class="st">查表 unlistedUnaddressed 单元格</text>
+  <text x="492" y="246" class="sm">= inferred 且 mode≠off → inferred · via admission</text>
+  <text x="492" y="264" class="sm">其余（含 mode=off）→ 拒绝 admission_ignored</text>
+
+  <!-- 人消息阶梯 -->
+  <text x="36" y="308" class="sec">B. 人写的消息：六道判定，自上而下第一个成立者决定结果</text>
+
+  <rect x="36" y="322" width="404" height="38" rx="6" class="boxb"/>
+  <text x="50" y="346" class="mono">allowedSender(actor) &amp;&amp; trigger.addressed</text>
+  <line x1="440" y1="341" x2="474" y2="341" class="fl"/>
+  <rect x="478" y="322" width="606" height="38" rx="6" class="box"/>
+  <text x="492" y="346" class="ok">explicit · via addressed　（名单内的人直接 @ 智能体）</text>
+
+  <rect x="36" y="370" width="404" height="38" rx="6" class="boxb"/>
+  <text x="50" y="394" class="mono">admission === 'explicit'</text>
+  <line x1="440" y1="389" x2="474" y2="389" class="fl"/>
+  <rect x="478" y="370" width="606" height="38" rx="6" class="box"/>
+  <text x="492" y="394" class="ok">explicit · via admission　（准入表某格设为 explicit，优先于 follow-up）</text>
+
+  <rect x="36" y="418" width="404" height="52" rx="6" class="boxb"/>
+  <text x="50" y="437" class="mono">¬(addressed='direct' &amp;&amp; !allowed)</text>
+  <text x="50" y="456" class="mono">&amp;&amp; (allowed || mode≠off) &amp;&amp; participating(thread, tickets)</text>
+  <line x1="440" y1="444" x2="474" y2="444" class="fl"/>
+  <rect x="478" y="418" width="606" height="52" rx="6" class="box"/>
+  <text x="492" y="438" class="ok">allowed ? explicit : inferred · via followup</text>
+  <text x="492" y="456" class="sm">该 Thread 上已有工单 → 视为后续跟进（follow-up）</text>
+
+  <rect x="36" y="480" width="404" height="38" rx="6" class="boxb"/>
+  <text x="50" y="504" class="mono">admission === 'inferred' &amp;&amp; mode ≠ 'off'</text>
+  <line x1="440" y1="499" x2="474" y2="499" class="fl"/>
+  <rect x="478" y="480" width="606" height="38" rx="6" class="box"/>
+  <text x="492" y="504" class="ok">inferred · via admission</text>
+
+  <rect x="36" y="528" width="404" height="48" rx="6" class="boxr"/>
+  <text x="50" y="547" class="bt">以上皆不成立 → 拒绝</text>
+  <text x="50" y="565" class="sm">!allowed → not_a_member</text>
+  <line x1="440" y1="552" x2="474" y2="552" class="fl"/>
+  <rect x="478" y="528" width="606" height="48" rx="6" class="box"/>
+  <text x="492" y="547" class="sm">receivable &amp;&amp; admission='ignore' → admission_ignored</text>
+  <text x="492" y="565" class="sm">其余 → no_mention</text>
+
+  <!-- 准入表 -->
+  <text x="36" y="616" class="sec">C. 准入表：三格语义（admissionOf：表[row][cell] ?? ADMISSION_DEFAULTS[cell]）</text>
+
+  <rect x="36" y="630" width="380" height="26" rx="0" class="boxg" style="fill:#e2e8f0"/>
+  <text x="50" y="648" class="bt">发送者 × 是否 @ 智能体</text>
+  <rect x="416" y="630" width="250" height="26" rx="0" class="boxg" style="fill:#e2e8f0"/>
+  <text x="430" y="648" class="bt">cell 名</text>
+  <rect x="666" y="630" width="120" height="26" rx="0" class="boxg" style="fill:#e2e8f0"/>
+  <text x="680" y="648" class="bt">默认值</text>
+  <rect x="786" y="630" width="298" height="26" rx="0" class="boxg" style="fill:#e2e8f0"/>
+  <text x="800" y="648" class="bt">可选值</text>
+
+  <line x1="36" y1="656" x2="1084" y2="656" stroke="#cbd5e1"/>
+  <text x="50" y="676" class="st">在名单 · 未 @</text>
+  <text x="430" y="676" class="mono">listedUnaddressed</text>
+  <text x="680" y="676" class="mono">inferred</text>
+  <text x="800" y="676" class="st">inferred / ignore</text>
+
+  <line x1="36" y1="684" x2="1084" y2="684" stroke="#e2e8f0"/>
+  <text x="50" y="704" class="st">不在名单 · @</text>
+  <text x="430" y="704" class="mono">unlistedAddressed</text>
+  <text x="680" y="704" class="mono">ignore</text>
+  <text x="800" y="704" class="st">explicit / inferred / ignore</text>
+
+  <line x1="36" y1="712" x2="1084" y2="712" stroke="#e2e8f0"/>
+  <text x="50" y="732" class="st">不在名单 · 未 @</text>
+  <text x="430" y="732" class="mono">unlistedUnaddressed</text>
+  <text x="680" y="732" class="mono">ignore</text>
+  <text x="800" y="732" class="st">inferred / ignore</text>
+  <line x1="36" y1="740" x2="1084" y2="740" stroke="#cbd5e1"/>
+
+  <text x="36" y="764" class="sm">未 @ 的消息只有在 receivable = addressed || (listened &amp;&amp; observed) 成立时才会查表；否则直接按 ignore 处理，不进表。</text>
+
+  <!-- 文档偏差 -->
+  <text x="36" y="796" class="sec">D. 文档与实现的偏差（详见 dsh-superagent-research-20261031.md §4）</text>
+  <text x="36" y="818" class="sm">F1（低）不在名单的人「私信」智能体时被排除在 follow-up 之外，只能走准入表 —— 002 未记录，且会改变判定结果</text>
+  <text x="36" y="836" class="sm">F2（中）accept 还要求 direction（intent/目标已定/无需设计决策）+ intent_evidence —— 002 只写了「至少一条匹配规则」</text>
+  <text x="36" y="854" class="sm">F3–F5（低）via 多一个 listed（兼容值）· 拒绝原因选取顺序未文档化 · 老 Mandate 跳过「Source 仍在监听」检查</text>
+</svg>

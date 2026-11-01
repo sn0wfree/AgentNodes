@@ -47,6 +47,8 @@
 
 `agentic-design-application.md` · `Agentic 设计框架与 Prime Agent 调研报告.md` · `AI因子挖掘Agent研报梳理与QuantaAlpha深研.md` · `deepseek-harness-research.md` · `agentquant-research-20260902.md`
 
+**`dsh-superagent-research-20261031.md`**（DeepSeek Super-agent 文章 + 开源原型 + 准入表代码核对 · 配图 `dsh-superagent-engine-architecture.svg` / `dsh-superagent-admission-gate.svg`）
+
 ## 6.5 重构计划（当前主线）
 
 **`refactor-plan-20261008.md`**（Phases 0-5 · 里程碑 · 护栏） · **`refactor-readiness-20261008.md`**（切入点 A-E + 架构/流程/数据流三图） · `industry-research-20261008.md`（借鉴清单）
