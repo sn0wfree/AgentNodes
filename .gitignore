@@ -113,3 +113,6 @@ graphify-out/
 
 # local scratch logs (coverage runs, repro scripts)
 tmp/
+
+# run_test_matrix.py transient argfiles (pytest @file)
+.pytest_args/

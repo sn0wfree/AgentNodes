@@ -69,15 +69,30 @@ def _shard_files(shard: int, shards: int, exclude: list[str]) -> list[str]:
     return [ln.strip() for ln in (proc.stdout or "").splitlines() if ln.strip()]
 
 
-def _run(args: list[str], extra_env: dict[str, str] | None = None) -> tuple[int, float, str, str]:
+def _run(files: list[str], extra: list[str],
+         extra_env: dict[str, str] | None = None) -> tuple[int, float, str, str]:
+    """Run pytest on ``files``.
+
+    File lists go through an ``@argfile`` rather than the command line:
+    a single shard of this suite is ~646 paths, which exceeds the Windows
+    CreateProcess limit (32767 chars) with ``FileNotFoundError: [WinError 206]
+    filename or extension too long``.
+    """
     env = dict(os.environ)
     env.update(extra_env or {})
+    tmp_dir = Path.cwd() / ".pytest_args"
+    tmp_dir.mkdir(exist_ok=True)
+    argfile = tmp_dir / f"shard-{os.getpid()}-{time.perf_counter_ns()}.txt"
+    argfile.write_text("\n".join(files), encoding="utf-8")
     t0 = time.perf_counter()
-    proc = subprocess.run(
-        [sys.executable, "-m", "pytest", *args],
-        capture_output=True, text=True, encoding="utf-8", errors="replace",
-        env=env,
-    )
+    try:
+        proc = subprocess.run(
+            [sys.executable, "-m", "pytest", f"@{argfile}", *extra],
+            capture_output=True, text=True, encoding="utf-8", errors="replace",
+            env=env,
+        )
+    finally:
+        argfile.unlink(missing_ok=True)
     elapsed = time.perf_counter() - t0
     out = proc.stdout or ""
     tail = out.strip().splitlines()[-1:] or ["(no output)"]
@@ -110,16 +125,22 @@ def run_pr(shards: int, cov: bool, jobs: int,
     def work(shard_idx: int, files: list[str]) -> None:
         # 覆盖率是进程级的：多分片会互相覆盖 .coverage，只在单分片时启用
         shard_extra = extra if shards == 1 else []
-        args = [*files, "-q", "--tb=short",
-                "--reruns=2", "--reruns-delay=1",
-                "-m", "not llm and not e2e and not slow", *shard_extra]
-        results[shard_idx] = _run(args)
+        extra_args = ["-q", "--tb=short",
+                      "--reruns=2", "--reruns-delay=1",
+                      "-m", "not llm and not e2e and not slow", *shard_extra]
+        results[shard_idx] = _run(files, extra_args)
 
     from concurrent.futures import ThreadPoolExecutor
 
     with ThreadPoolExecutor(max_workers=max(1, jobs)) as pool:
-        for shard_idx, files in plans:
+        futures = [
             pool.submit(work, shard_idx, files)
+            for shard_idx, files in plans
+        ]
+    # .result() propagates any exception raised inside a worker; without it
+    # a crashed shard silently leaves results[shard_idx] unset (KeyError).
+    for fut in futures:
+        fut.result()
 
     total = time.perf_counter() - t_start
     failed: list[str] = []
@@ -173,7 +194,8 @@ def main() -> int:
     if "e2e" in lanes:
         print("\n=== lane e2e ===", flush=True)
         rc, elapsed, tail, _out = _run(
-            ["tests", "-q", "--tb=short", "-m", "e2e"]
+            ["tests"],
+            ["-q", "--tb=short", "-m", "e2e"]
             + ([] if args.no_reruns else ["--reruns=2"]))
         print(f"    {elapsed:6.1f}s  rc={rc}  {tail}")
         results.append(("e2e", rc, elapsed, tail))
@@ -181,7 +203,8 @@ def main() -> int:
     if "browser" in lanes:
         print("\n=== lane browser ===", flush=True)
         rc, elapsed, tail, _out = _run(
-            ["tests/test_webui_e2e_playwright.py", "-q", "--tb=short"],
+            ["tests/test_webui_e2e_playwright.py"],
+            ["-q", "--tb=short"],
             {"SR_RUN_BROWSER_TESTS": "1"},
         )
         print(f"    {elapsed:6.1f}s  rc={rc}  {tail}")
