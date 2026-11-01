@@ -340,3 +340,31 @@ output，且引擎 state 含不可序列化对象——「state 落库」不成�
 **验收**：40 个 R-B 测试全绿（store 列 / 影子对比 / resume / 段循环 20 例，
 其中 3 个此前失败的 replan 用例现全部通过）；完整 workflow 回归 293 passed，
 仅剩 4 个冻结基线内的 CLIExecutor 失败。
+
+### R-A · retry 空转修复
+
+`branches[].action=retry` 此前是**空转**：动作把目标加回剩余层，但 split 节点
+的「已有结果即跳过」过滤又把它丢掉——而 retry 的前置条件恰恰是「目标已跑过」。
+现改为显式 `retry_queue` 穿过图状态：split 接受「无结果 **或** 在重跑队列」
+者，队列项在准入时消费（一次命中一次重跑），由新字段
+`SwarmPreset.branch_max_retries`（默认 1）封顶防无限重跑；重跑结果覆盖旧值、
+插入序保留，`on_branch_retry` 钩子可观测。6 个测试锁定。提交 d589f777。
+
+**优先级说明**：全库 4 个 workflow 模板 + 6 个 goal preset **零 branches 配置**，
+属"有承诺无用户"，故定为 P2 并排在主线之后。
+
+### 最终门禁
+
+| 门 | 结果 |
+|---|---|
+| 行为等价 | workflow 全量回归 293 passed + swarm 82 passed |
+| 覆盖率 | cov_gate A 91.1% / B 90.1% / **C 90.4%**（合计 90.5%）✅ |
+| 失败集 | c1_gate **clean**（96/104 基线内，无扩张）✅ |
+| 测试库存 | c1_inventory **+173 增 / 0 删** ✅ |
+| 代码量 | executor.py **708 → 391 行**（-45%），旧段循环彻底出清 |
+
+**一次时序 flaky 的如实记录**：`test_p0_loop_fixes::test_rejected_no_progress_exits`
+在最终全量里失败过一次（该测试用 `sleep(0.2)` 后台审批 + 5s 超时，依赖线程调度；
+历史 13 次全量从未失败）。单跑与整文件跑均通过，紧接着的复跑也未复现，
+c1_gate 判 clean——按「失败集不扩大」门禁属可接受，但它确实是并发下的脆弱点，
+未在本轮修（属测试稳健性债，与迁移无关）。
