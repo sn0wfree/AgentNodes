@@ -632,3 +632,45 @@ close **值**补、缺 volume 用 0）——首批测试的断言是错的（写
 
 到 90% 还差约 400 行。大块：`alpha_zoo_convert` AST 深分支 ~137、
 `autoresearch.run_research_round` ~122、其余分散 ~950（单文件 <50）。
+
+---
+
+## 十七、H 档收口与 8 个新缺陷（2026-11-02 当日）
+
+### 17.1 覆盖率推进
+
+| 文件 | 起点 | 现在 |
+|---|---:|---:|
+| `alpha_zoo_convert.py` | 58.4% | **91.6%** |
+| `autoresearch.py` | 69.7% | **81.9%** |
+| `backtest.py` | 67.5% | **91.1%** |
+| `data_import.py` | 43.3% | **82.6%** |
+| `scheduled_research/cli.py` | 70.3% | **93.8%** |
+| `data_readiness.py` | 69.7% | **92.1%** |
+| `engine/optimizers/base.py` | 59.5% | **89.4%** |
+| `strategy_acceptance/cli.py` | 31.6% | **100%** |
+| `config_runner.py` | 34.6% | **82.2%** |
+| `engine/cli.py` | 54.2% | **80.2%** |
+| **H 档整体** | **85.5%** | 见 §17.3 |
+
+新增测试约 350 条，分布在 11 个新文件。
+
+### 17.2 本轮新发现的真实缺陷（#9–#16）
+
+| # | 缺陷 | 后果 |
+|---|---|---|
+| 9 | `cap=1` 让 `_coalesce_if_full` 死循环 | MemoryError，进程卡死 |
+| 10 | `MailboxConfig` 声明但从未传入 `EntryPoint` | `QNODES_MAILBOX__*` 全不生效 |
+| 11 | `full_like(a, v)` 返回 `a` 而非 `v` | 10 个 alpha 因子的迁移产出语义错误 |
+| 12 | `_update_refs_in_expr` 只遍历一层 list | 重赋值链在嵌套表达式上断裂 |
+| 13 | `(a>1) \| (b>2)` 被单条件正则先截获 | 整个 or 与 fill 被静默丢弃 |
+| 14 | `EventStore._replay` 绕过版本校验；`except` 又吞掉校验异常 | 跨版本事件被静默读入 |
+| 15 | `scheduled_research/cli.py` 用 `...study` 而非 `..study` | `schedule run` / `schedule start` 从未可用 |
+| 16 | `data_readiness` C7：错导入 + `clean_data` 元组未解包 | C7 检查上线以来从未执行过 |
+
+**共同模式**：全部被 `except Exception` 或「降级为 warn」吞掉，功能静默
+失效而无崩溃。这已是本项目最主要的缺陷类别——比崩溃更难发现，因为
+测试和日志都显示「一切正常」。
+
+另修一处退出码纪律问题：`engine <unknown-subcommand>` 打印用法后返回
+`0`（成功）。已改为 `2`（用法错误）。

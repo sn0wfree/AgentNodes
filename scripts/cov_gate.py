@@ -2,7 +2,16 @@
 
 为什么不用 `--cov-fail-under=90`：全库口径含归档死代码（1,485 条 0%）
 与外部数据加载器，一刀切要么永远达不到，要么逼着给死代码写测试。
-本脚本按「活跃核心」三档分别断言，口径见 docs/coverage-90-plan-20261030.md。
+本脚本按四档分别断言，口径见 docs/coverage-90-plan-20261030.md。
+
+四档：A 平台内核 / B 研究域 / C 能力层 / H 研究工具核心（core 剩余兜底）。
+
+H 档的定位（2026-11-02 复核）：它兜住 core/ 下**未被 A/B/C 认领的一切**，
+实测 98 个文件 / 8,538 条语句，除顶层单文件外还含 engine/、utils/、
+permission/、skills/、mcp/、tools/、hooks/、web/、scheduled_research/、
+strategy_acceptance/ 等完整子包。曾评估「把子包按架构归位到 A/B/C」，
+结果是 A 91.8 / B 89.7 / C 89.8 / H 81.2——红从一档变三档，只是把
+问题挪位置，故维持现状并如实命名。
 
 用法：
     pytest tests -q --cov=strategy_research --cov-report=term > cov.log 2>&1
