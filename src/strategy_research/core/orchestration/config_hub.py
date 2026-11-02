@@ -45,6 +45,7 @@ class MailboxConfig:
     """mailbox 段：cap / 溢出策略（契约 §5 不变量 9）/ 优先级老化（R2.3）。"""
 
     cap: int = 20
+    steer_cap: int = 5  # steer 队上限；溢出最旧一条转主队（不丢弃）
     overflow: str = "summarize"  # summarize / old / new（v1 仅 summarize 实装）
     expire_on_poll: bool = True
     aging_s: float = 15.0  # 普通项等待超过此秒数后不再被 interrupt 无限插队；0=禁用
@@ -176,8 +177,8 @@ def _finalize(config: PlatformConfig) -> PlatformConfig:
         raise ConfigError("gateway.workers 恒为 1（分库与 mailbox 的单写者前提）")
     if config.mailbox.overflow not in ("summarize", "old", "new"):
         raise ConfigError(f"mailbox.overflow 非法: {config.mailbox.overflow!r}")
-    if config.mailbox.cap < 1:
-        raise ConfigError("mailbox.cap 必须 >= 1")
+    if config.mailbox.cap < 2:
+        raise ConfigError("mailbox.cap 必须 >= 2（摘要合并按两条一组，cap<2 无法收缩）")
     if config.mailbox.aging_s < 0:
         raise ConfigError("mailbox.aging_s 必须 >= 0（0 = 禁用老化）")
     return config

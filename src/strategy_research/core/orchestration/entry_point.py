@@ -16,7 +16,13 @@ from .contracts import (
     WorkRequest,
     validate_work_request,
 )
-from .mailbox import DEFAULT_AGING_S, DEFAULT_CAP, EventSink, Mailbox
+from .mailbox import (
+    DEFAULT_AGING_S,
+    DEFAULT_CAP,
+    DEFAULT_STEER_CAP,
+    EventSink,
+    Mailbox,
+)
 
 
 class EntryPoint:
@@ -26,6 +32,7 @@ class EntryPoint:
         self,
         *,
         cap: int = DEFAULT_CAP,
+        steer_cap: int = DEFAULT_STEER_CAP,
         aging_s: float = DEFAULT_AGING_S,
         clock: Callable[[], float] | None = None,
         sink: EventSink | None = None,
@@ -37,6 +44,7 @@ class EntryPoint:
         self._clock = clock or time.time
         self._sink = sink
         self._cap = cap
+        self._steer_cap = steer_cap
         self._aging_s = aging_s
         # B1：interrupt 工单到达时的取消回调（session_id -> bool）。
         # None = 只插队不取消（旧行为，测试/直构路径）。
@@ -127,6 +135,7 @@ class EntryPoint:
             mailbox = Mailbox(
                 session_key,
                 cap=self._cap,
+                steer_cap=self._steer_cap,
                 aging_s=self._aging_s,
                 clock=self._clock,
                 sink=self._sink,

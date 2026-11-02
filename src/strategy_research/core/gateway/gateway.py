@@ -28,6 +28,17 @@ def _resolve_workspace() -> Path:
     return Path(env) if env else Path.cwd()
 
 
+def _mailbox_config() -> Any:
+    """读 mailbox 段配置（cap / steer_cap / aging_s）。
+
+    装载失败一律回落到 dataclass 默认值——**但**只有显式配置了非法值时才
+    会抛 ConfigError；那种情况按 fail-fast 直接冒泡（配错不能静默按默认跑）。
+    """
+    from ..orchestration.config_hub import load_platform_config
+
+    return load_platform_config().mailbox
+
+
 class Gateway:
     """单进程内核：入口 + 控制器 + fence + 事件存储 + 不变量自检。"""
 
@@ -60,8 +71,16 @@ class Gateway:
         self.fence = SessionFence()
         # B1：活跃 run 的 CancelScope 注册表（物理 session id -> scope）。
         self._cancel_scopes: dict[str, Any] = {}
+        # R2.3/E2：mailbox 的 cap / steer_cap / aging_s 来自平台配置
+        # （QNODES_MAILBOX__CAP 等）。此前声明了却从未传入——配置静默失效，
+        # 恒用 mailbox.py 的模块默认值。装载失败按 fail-fast 处理（配错必须
+        # 报错，见 config_hub 契约），但仅在显式配置了 env/file 时才可能抛。
+        mail_cfg = _mailbox_config()
         self.entry = EntryPoint(
             sink=combined,
+            cap=mail_cfg.cap,
+            steer_cap=mail_cfg.steer_cap,
+            aging_s=mail_cfg.aging_s,
             is_session_active=self.fence.active_run,
             # B1：interrupt 工单在有活跃 run 时触发取消（定稿语义）。
             on_interrupt=self._cancel_active_run,

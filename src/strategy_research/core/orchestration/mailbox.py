@@ -83,6 +83,10 @@ class Mailbox:
         sink: EventSink | None = None,
     ) -> None:
         self.session_id = session_id
+        if cap < 2:
+            # 合并单元是「两条 → 一条」：cap=0/1 时队列一旦非空就无法被
+            # 摘要收缩，_coalesce_if_full 会死循环。宁可开机报错。
+            raise ValueError(f"cap 必须 >= 2（得到 {cap}）；摘要合并按两条一组")
         self.cap = cap
         self.steer_cap = steer_cap
         self.aging_s = aging_s
@@ -319,33 +323,26 @@ class Mailbox:
         self.expire_due()
 
     def _coalesce_if_full(self) -> None:
-        """cap 溢出 → summarize：最旧两条合并为一条摘要项（排序位保持）。"""
+        """cap 溢出 → summarize：最旧两条合并为一条摘要项（排序位保持）。
+
+        合并单元是「两条 → 一条」，每轮严格减少队列长度 1——这是循环能
+        终止的唯一依据。因此 cap 必须 >= 2：cap=1 时队列一旦非空就永远
+        满足 ``len >= cap``，而合并又无法把 1 条压到 0 条，会造成死循环
+        （2026-11-02 复核发现的真实缺陷；``Mailbox.__init__`` 已拒收 cap<2）。
+        """
         while len(self._queue) >= self.cap:
             oldest = self._queue.popleft()
-            second = self._queue.popleft() if self._queue else None
-            if second is None:
-                # 只剩一条也满（cap==1 的极端）：直接摘要它自己
-                merged_ids = (oldest.label,)
-                merged = QueueItem(
-                    request=oldest.request,
-                    enqueued_at=oldest.enqueued_at,
-                    is_summary=True,
-                    summarized_ids=merged_ids,
-                )
-                self._queue.appendleft(merged)
-            else:
-                merged_ids = (oldest.label, second.label)
-                if oldest.is_summary:
-                    merged_ids = oldest.summarized_ids + (
-                        second.label,
-                    )
-                merged = QueueItem(
-                    request=second.request,
-                    enqueued_at=oldest.enqueued_at,
-                    is_summary=True,
-                    summarized_ids=merged_ids,
-                )
-                self._queue.appendleft(merged)
+            second = self._queue.popleft()
+            merged_ids = (oldest.label, second.label)
+            if oldest.is_summary:
+                merged_ids = oldest.summarized_ids + (second.label,)
+            merged = QueueItem(
+                request=second.request,
+                enqueued_at=oldest.enqueued_at,
+                is_summary=True,
+                summarized_ids=merged_ids,
+            )
+            self._queue.appendleft(merged)
             self._sink(
                 "work.summarized",
                 {"session_id": self.session_id, "merged": list(merged_ids)},
