@@ -556,12 +556,33 @@ DuckDB 对不存在的库抛 `IOException: database does not exist`，但 20 个
 
 距 90% 还差约 700 行。剩余大块：
 
-| 文件 | miss |
-|---|---:|
-| `alpha_zoo_convert.py` | 232（一次性迁移工具，投产比最低）|
-| `autoresearch.py` | 142 |
-| `hooks/composite.py` + `engine/optimizers/base.py` + `web/fetch.py` | 26+49+39 |
-| `db.py` 残余错误分支 | ~143 |
+### 2026-11-02 续推（用户决定不排除 alpha_zoo_convert）
 
-`db.py` 与 `autoresearch.py` 仍值得推进；`alpha_zoo_convert` 建议明确标注为
-「一次性工具，不纳入 90% 门槛」，而不是永远拖着一个红档。
+| 文件 | 起点 | 现在 |
+|---|---:|---:|
+| `alpha_zoo_convert.py` | 53.9% | **71.2%** |
+| `autoresearch.py` | 60.9% | **65.7%** |
+| `hooks/composite.py` | 75.7% | **≈92%** |
+| `web/fetch.py` | 15.5% | **≈88%** |
+| **H 档整体** | 82.1% | **83.4%** |
+
+门禁合计 88.2% → **88.5%**。
+
+`alpha_zoo_convert` 的 49 个测试覆盖中间层转换规则（rolling/ewm 链合并、
+np./pd. 前缀调用、ref 解析、span-from-alpha 换算）——原来只有端到端测试，
+中间的每条规则都没有断言。这里的错误会让生成的 YAML 因子与原 .py
+**静默不等价**：迁移看起来成功，实际算的是别的东西。
+
+### 剩余缺口（约 1,416 行 miss）
+
+| 文件 | miss | 性质 |
+|---|---:|---|
+| `db.py` | ~143 | 错误分支与旧库迁移路径 |
+| `autoresearch.py` | 122 | run_research_round 主流程（需 mock 全部 agent spawn）|
+| `mcp/server.py` | 62 | 各工具注册函数体 |
+| `alpha_zoo_convert.py` | 137 | AST 分析器深分支 |
+| 其他 core 顶层 | ~950 | 分散 |
+
+`autoresearch.py` 剩下的 122 行集中在 `run_research_round`——它把 researcher
+→ execution → evaluation 三个阶段串起来，需要 mock 整个 agent spawn 管线
+才能测。这是「值得测但成本高」的一类，不是「不值得测」。
