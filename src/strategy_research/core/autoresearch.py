@@ -117,7 +117,10 @@ def save_agent_record(
         保存的文件路径
     """
     agents_dir = run_dir / "agents"
-    agents_dir.mkdir(exist_ok=True)
+    # parents=True: run_research_round 事前用 _create_run_dir 建好整棵树，
+    # 但本函数是公开辅助（29 处调用方，含 CLI 与 study），传入只含末端
+    # 目录的路径时不该崩。零风险加固。
+    agents_dir.mkdir(parents=True, exist_ok=True)
 
     record = {
         "agent": agent_name,
