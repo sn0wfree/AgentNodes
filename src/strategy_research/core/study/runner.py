@@ -1142,6 +1142,43 @@ class AutoresearchRunner(RunnerAegisMixin, RunnerKnowledgeMixin):
         # event so the UI can show a copyable trace_id for log correlation.
         _state_utils.emit_with_trace(self.emitter, session_id, event, data)
 
+    def _make_agent_on_event(self, session_id: str):
+        """Agent 事件出口：轮内 9 个 agent 的执行轨迹 → study emitter。
+
+        之前 ``role_factory.build_agent_loop`` 不接受 ``on_event``，study
+        里 agent 的 llm_request / iter_start / tool_call 全部丢弃——研究是
+        核心业务，其执行轨迹不可见（2026-11-02 接线，设计见
+        docs/study-goal-agent-events-design-20261102.md）。
+
+        三件事在这层做：
+        1. **白名单过滤**（SUMMARY_EVENT_TYPES）：AgentLoop 对每个流式
+           chunk 都发 text_delta/thinking_delta；chat 全量转发是 SSE 语义，
+           study 不需要，不过滤一轮就是几千行 event_log。
+        2. **大字段剥离**：llm_request 的 system_prompt/tools_schema 在
+           chat 路径经 forwarder offload 到 trace-blobs；这里的 sink 直发
+           EventStore，必须先剥（保留 hash/len 指纹）。
+        3. 复用 ``self._emit``：emit_with_trace 自动并入 ContextVar 的
+           trace_id/study_id/round_num（_run_one_round 已绑定），事件与
+           study_* 汇总事件在同一 aggregate 下可联查。
+
+        emitter 为 NullEmitter（无 service 接线，如 CLI 直跑）时下游
+        no-op，本回调退化为纯过滤开销。
+        """
+        from ..observability import (
+            SUMMARY_EVENT_TYPES,
+            strip_llm_request_fields,
+        )
+
+        def on_event(event_type: str, data: dict) -> None:
+            if event_type not in SUMMARY_EVENT_TYPES:
+                return
+            self._emit(
+                session_id, event_type,
+                strip_llm_request_fields(event_type, dict(data)),
+            )
+
+        return on_event
+
     def _open_goal_store(self):
         return _state_utils.open_goal_store()
 

@@ -467,6 +467,7 @@ def _run_phases_branch(ctx: BranchContext) -> RoundOutcome | dict:
         keep_recent=study.keep_recent, round_num=ctx.round_num,
         runs_dir=ctx.runs_dir,
         loop_strategy=runner._loop_strategy,
+        on_event=runner._make_agent_on_event(session),
     )
     runner._emit(session, "study_phase", {
         "study_id": ctx.sid, "round": ctx.round_num,
@@ -522,6 +523,7 @@ def _run_phases_branch(ctx: BranchContext) -> RoundOutcome | dict:
         behavior=study.behavior, max_retries=3,
         max_iterations=SR_AGENT_MAX_ITER,
         loop_strategy=runner._loop_strategy,
+        on_event=runner._make_agent_on_event(session),
     )
     runner._emit(session, "study_phase", {
         "study_id": ctx.sid, "round": ctx.round_num,
@@ -776,6 +778,7 @@ def _run_execution_with_parse_retry(
             results_tsv=results_tsv,
             round_num=round_num,
             loop_strategy=runner._loop_strategy,
+            on_event=runner._make_agent_on_event(session),
         )
         last_failed_agents = _parse_failed_agents(result)
         if not last_failed_agents:

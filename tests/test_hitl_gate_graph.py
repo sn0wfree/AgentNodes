@@ -78,6 +78,10 @@ class FakeRunner:
     def _emit(self, session: str, kind: str, data: dict) -> None:
         self.domain_events.append((session, kind, data))
 
+    def _make_agent_on_event(self, session_id: str):
+        # phase_engine 的新契约（agent 事件接线）；桩里不产事件。
+        return None
+
     def _check_novelty(self, hypothesis: str, predicted_affected: list):
         return (self.novel, "" if self.novel else "duplicate hypothesis")
 
@@ -379,6 +383,8 @@ def test_runner_resume_dispatch_reads_payload_and_maps_dict(tmp_path, monkeypatc
         _get_study=lambda: study,
         _emit=lambda session, kind, data: None,
         _loop_strategy=None,
+        # agent 事件接线（2026-11-02）的新 runner 契约；桩不产事件。
+        _make_agent_on_event=lambda session_id: None,
     )
 
     result = AutoresearchRunner._resume_round_via_graph(

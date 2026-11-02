@@ -75,6 +75,10 @@ class FakeRunner:
     def _emit(self, session: str, kind: str, data: dict) -> None:
         self.domain_events.append((session, kind, data))
 
+    def _make_agent_on_event(self, session_id: str):
+        # phase_engine 的新契约（agent 事件接线）；桩里不产事件。
+        return None
+
     def _check_novelty(self, hypothesis: str, predicted_affected: list):
         return (self.novel, "" if self.novel else "duplicate hypothesis")
 
@@ -159,10 +163,27 @@ def test_phase_functions_receive_identical_args(tmp_path, monkeypatch):
         "researcher", "claims", "execution", "evaluation",
     ]
     assert [c[0] for c in graph_calls] == [c[0] for c in legacy_calls]
-    assert graph_calls[0] == legacy_calls[0]  # researcher 参数逐项相等
+
+    def _comparable(call):
+        """call 形如 (名字, *位置参数, kwargs字典)；kwargs 里的 on_event 是
+        每次新建的回调对象——剥离后比较，另断言两路都传了（agent 事件
+        接线，2026-11-02）。"""
+        kwargs = call[-1]
+        stripped = {k: v for k, v in kwargs.items() if k != "on_event"}
+        return (*call[:-1], stripped)
+
+    def _has_on_event(call):
+        # FakeRunner._make_agent_on_event 返回 None（桩不产事件），
+        # 这里只断言「接线存在」——键在 kwargs 里。
+        return "on_event" in call[-1]
+
+    assert _comparable(graph_calls[0]) == _comparable(legacy_calls[0])
+    assert _has_on_event(graph_calls[0]) and _has_on_event(legacy_calls[0])
     assert graph_calls[1][1:] == legacy_calls[1][1:]  # 存证参数（回测前）
-    assert graph_calls[2] == legacy_calls[2]  # execution 参数逐项相等
-    assert graph_calls[3] == legacy_calls[3]  # evaluation 参数逐项相等
+    assert _comparable(graph_calls[2]) == _comparable(legacy_calls[2])
+    assert _has_on_event(graph_calls[2]) and _has_on_event(legacy_calls[2])
+    assert _comparable(graph_calls[3]) == _comparable(legacy_calls[3])
+    assert _has_on_event(graph_calls[3]) and _has_on_event(legacy_calls[3])
 
 
 def test_domain_event_sequence_identical(tmp_path, monkeypatch):

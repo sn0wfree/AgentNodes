@@ -259,10 +259,67 @@ A1 之前旧会话的后向兼容回退。
 | 事件表 + 报告 | `src/strategy_research/core/study/hanging_events.py` |
 | 事件埋点 | `core/llm/openai_client.py`、`core/study/scheduler.py`、`core/agent/loop.py`、`core/agent/circuit_breaker.py` |
 | trace context + JSON | `core/observability/trace.py` |
+| agent 事件词汇表 | `core/observability/event_vocab.py`（SUMMARY_EVENT_TYPES） |
 | trace 绑定点 | `api/session/service.py`、`core/agent/loop.py`、`core/study/runner.py` |
 | 轮次详情端点 | `api/routers/study.py`（artifacts/manifest/diff/adopt/redo/hanging_events/actions） |
 | 状态机矩阵 | `core/study/models.py::ACTION_MATRIX` + `allowed_actions()` |
-| 测试 | `tests/test_study_dump.py`、`tests/test_admin_metrics.py`、`tests/test_hanging_events.py`、`tests/test_trace_context.py`、`tests/test_study_round_detail.py`、`tests/test_study_actions.py` |
+| 测试 | `tests/test_study_dump.py`、`tests/test_admin_metrics.py`、`tests/test_hanging_events.py`、`tests/test_trace_context.py`、`tests/test_study_round_detail.py`、`tests/test_study_actions.py`、`tests/test_agent_event_wiring.py` |
+
+---
+
+## 8. study/goal 的 agent 事件（2026-11-02 接线）
+
+设计：`docs/study-goal-agent-events-design-20261102.md`。
+
+**此前**：agent 级事件（`llm_request` / `iter_start` / `tool_call` / …）只在
+chat 路径可见（`on_event=forwarder` → event_log）。study 的 9 个研究 agent
+与 goal/swarm 的全部 agent 执行轨迹**被丢弃**——`build_agent_loop` 不接受
+`on_event`，`SwarmRuntime` 调 executor 时也没传。研究是核心业务，其执行
+轨迹不可见是最大的观测盲区。
+
+**现在**：两条链都接通了，且共用同一张白名单。
+
+```
+study 链（进 event_log，与 study_* 同 aggregate 可联查）
+  phase_engine → run_*_phase(on_event=runner._make_agent_on_event(session))
+    → _make_spawn_fn（注入 data["agent"]=名字）→ spawn_agent
+    → run_agent_via_llm → build_agent_loop → AgentLoop(on_event=…)
+  sink 三件事：白名单过滤 / llm_request 大字段剥离 / 复用 _emit（自动带
+  ContextVar 的 trace_id/study_id/round_num；emitter 为 NullEmitter 时零成本）
+
+goal 链（进 WorkflowEventBus 观察者总线）
+  SwarmRuntime(on_event=goal._agent_event_bridge())
+    → _wrap_agent_on_event（白名单 + 注 agent 名）→ executor.execute(on_event=…)
+  与 agent_start/agent_complete 层级事件并存；观察者按类型自取。
+```
+
+### 8.1 白名单：`SUMMARY_EVENT_TYPES`
+
+`AgentLoop._emit` 对每个流式 chunk 都发 `text_delta`/`thinking_delta`。
+chat 全量转发是 SSE 语义；study 一轮 9 agent × 每 LLM 调用几百 chunk，
+不过滤就是每轮几千行 event_log。白名单（`core/observability/event_vocab.py`）
+只放总结级类型，与 `TraceProjection` 的投影口径一致。
+
+### 8.2 大字段剥离
+
+`llm_request` 携带 `system_prompt` / `tools_schema` 全文（各 1–3 万字符）。
+chat 路径经 `_LoopEventForwarder` offload 到 trace-blobs；study 的 sink 直发
+EventStore，必须先剥——保留 `system_prompt_hash` / `tools_hash` /
+`system_prompt_len` 指纹（定位「prompt 变没变」足够，体积差三个量级）。
+
+### 8.3 CLI/MCP 的 SR_LOG_JSON 开关
+
+`setup_trace_logging()` 此前唯一生产调用点是 `api/app.py`——CLI/TUI/MCP
+进程既无 TraceFilter 也无 JsonFormatter，trace_id 关联只在 Web 生效。
+现在：
+
+| 入口 | 行为 |
+|---|---|
+| Web | 不变（`create_app` 装配，`SR_LOG_JSON` 可选） |
+| CLI/TUI | `SR_LOG_JSON=1` 时才建 stderr handler + JSON 格式 + trace 过滤；**默认零改动**（TUI 是全屏界面，无条件挂 handler 会刷穿渲染） |
+| MCP stdio | `serve_stdio` 总是装配 `basicConfig` + TraceFilter（此前进程无 handler，INFO 日志全部不可见）；日志落 stderr，stdout 只走协议帧，`SR_LOG_JSON=1` 同样生效 |
+
+CLI 日志走 stderr（`logging.basicConfig` 默认），不会污染 TUI 的 stdout 渲染。
 
 ---
 

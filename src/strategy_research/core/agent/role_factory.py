@@ -104,6 +104,8 @@ def build_agent_loop(
     loop_strategy: Any | None = None,
     # B3: node-level wall-clock cap (mirrors AgentLoop.iteration_timeout_s).
     iteration_timeout_s: float | None = None,
+    # Agent 事件出口（study/goal 可观测性接线）。None = 现行为（事件丢弃）。
+    on_event: Any | None = None,
 ) -> "AgentLoop | None":
     """为 role 构造 AgentLoop.
 
@@ -173,6 +175,7 @@ def build_agent_loop(
         strategy=strategy,
         role=role,  # passed for the approval gate (event payload)
         iteration_timeout_s=iteration_timeout_s,
+        on_event=on_event,
     )
 
 
@@ -201,6 +204,8 @@ def run_agent_via_llm(
     # forwards it here. AgentLoop has supported the underlying knob since
     # the swarm-parity work -- only this factory was missing the parameter.
     iteration_timeout_s: float | None = None,
+    # Agent 事件出口：透传给 build_agent_loop → AgentLoop(on_event=…)。
+    on_event: Any | None = None,
 ) -> str:
     """跑一次 role 任务，返回 JSON 字符串。
 
@@ -246,6 +251,7 @@ def run_agent_via_llm(
         read_roots=read_roots,
         loop_strategy=loop_strategy,
         iteration_timeout_s=iteration_timeout_s,
+        on_event=on_event,
     )
     if loop is None:
         raise RuntimeError(f"无法构造 AgentLoop for role={role!r} (prompt 不存在)")

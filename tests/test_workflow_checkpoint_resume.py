@@ -184,7 +184,8 @@ def test_resume_and_continue_error_on_runtime_failure(cp_env, tmp_path, monkeypa
         def execute(self, *a, **k):
             raise RuntimeError("runtime exploded")
 
-    monkeypatch.setattr(rt_mod, "SwarmRuntime", lambda: Boom())
+    # *a/**k：SwarmRuntime 现在接受 on_event=（agent 事件接线），桩要兼容。
+    monkeypatch.setattr(rt_mod, "SwarmRuntime", lambda *a, **k: Boom())
     events: list[str] = []
     restored._event_bus.emit = lambda *a, **k: events.append(a[0])
 

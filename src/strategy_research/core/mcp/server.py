@@ -856,8 +856,37 @@ class MCPServer:
         ))
 
     def serve_stdio(self) -> None:
-        """Serve via stdin/stdout (blocking)."""
+        """Serve via stdin/stdout (blocking).
+
+        stdout 只走 MCP 协议帧；logging 默认 StreamHandler 落 **stderr**，
+        所以 SR_LOG_JSON=1 的 JSON 日志不会混进协议帧——与 Web/CLI 同一
+        开关语义（json_output=None 读环境变量）。
+        """
+        import logging
+        import os
         import sys
+
+        # 两级点号 = core/。三级（...observability）会解析到
+        # strategy_research.observability——不存在。今天第四次修这个错误类
+        # （此前：MCP validate_run、scheduled_research/cli、data_readiness）。
+        from ..observability import setup_trace_logging
+
+        try:
+            # 此前 MCP 进程没有任何 handler——INFO 日志全部不可见
+            # （logging 无 handler 时只剩 lastResort 的 WARNING 兜底）。
+            log_level = getattr(
+                logging,
+                os.environ.get("SR_LOG_LEVEL", "INFO").upper(),
+                logging.INFO,
+            )
+            logging.basicConfig(
+                level=log_level,
+                format="%(asctime)s %(levelname)s %(name)s: %(message)s",
+                datefmt="%H:%M:%S",
+            )
+            setup_trace_logging(log_level=log_level)
+        except Exception:  # noqa: BLE001 — 日志装配失败不能阻断 MCP
+            pass
         logger.info("MCP server '%s' starting on stdio", self.name)
         print(json.dumps({"server": self.name, "tools": self.list_tools()}))
         for line in sys.stdin:

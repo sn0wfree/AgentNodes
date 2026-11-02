@@ -588,6 +588,7 @@ def spawn_agent(
     write_roots: tuple[str, ...] | None = None,
     read_roots: tuple[str, ...] | None = None,
     loop_strategy: Any | None = None,
+    on_event: Any | None = None,
 ) -> str:
     """Spawn a single agent (real LLM or stub) and return JSON text.
 
@@ -600,6 +601,8 @@ def spawn_agent(
     - Otherwise → stub whose output pattern depends on ``behavior``
       ('static' / 'varying' / 'improving'), driven by the
       ``AUTORESEARCH_BEHAVIOR`` env var when no explicit override given.
+
+    ``on_event`` 透传给 AgentLoop（agent 事件出口）。None = 事件丢弃。
     """
     from strategy_research.core.agent.role_factory import (
         run_agent_via_llm,
@@ -628,6 +631,7 @@ def spawn_agent(
                 write_roots=write_roots,
                 read_roots=read_roots,
                 loop_strategy=loop_strategy,
+                on_event=on_event,
             )
         except Exception as exc:
             # 真 LLM 失败 → 退到 stub, 不让主循环崩
@@ -813,6 +817,7 @@ def run_research_round(
     inter_agent_sleep: float = 0.0,
     previous_summary: dict | None = None,
     directives: str | None = None,
+    on_event: Any | None = None,
 ) -> dict:
     """Execute one autoresearch round and return a structured result.
 
@@ -899,10 +904,15 @@ def run_research_round(
 
     def _spawn(name: str, prevs: list) -> dict:
         # retry_agent_spawn parses raw output internally and returns a dict.
+        agent_on_event = on_event
+        if agent_on_event is not None:
+            def agent_on_event(event_type: str, data: dict, _n=name, _f=on_event):
+                _f(event_type, {**data, "agent": _n})
         out = retry_agent_spawn(
             lambda: spawn_agent(
                 name, path, strategy_name, current_state, prevs,
                 behavior=behavior,
+                on_event=agent_on_event,
             ),
             name,
             max_retries=max_retries,
@@ -1145,9 +1155,20 @@ def _make_spawn_fn(
     write_roots: tuple[str, ...] | None = None,
     read_roots: tuple[str, ...] | None = None,
     loop_strategy: Any | None = None,
+    on_event: Any | None = None,
 ):
-    """Create the _spawn closure for agent execution."""
+    """Create the _spawn closure for agent execution.
+
+    ``on_event``: agent 事件出口 ``(event_type, data) -> None``。这里是在
+    转发链上**唯一**知道「当前 spawn 的是哪个 agent」的位置，所以 agent
+    名在这里注入（``data["agent"] = name``），下游 sink 只管过滤与落库。
+    None = 现行为（事件丢弃）。
+    """
     def _spawn(name: str, prevs: list) -> dict:
+        agent_on_event = on_event
+        if agent_on_event is not None:
+            def agent_on_event(event_type: str, data: dict, _n=name, _f=on_event):
+                _f(event_type, {**data, "agent": _n})
         out = retry_agent_spawn(
             lambda: spawn_agent(
                 name, path, strategy_name, current_state, prevs,
@@ -1159,6 +1180,7 @@ def _make_spawn_fn(
                 read_roots=read_roots,
                 max_iterations=max_iterations,
                 loop_strategy=loop_strategy,
+                on_event=agent_on_event,
             ),
             name,
             max_retries=max_retries,
@@ -1186,6 +1208,7 @@ def run_researcher_phase(
     round_num: int = 1,
     runs_dir: Path | None = None,
     loop_strategy: Any | None = None,
+    on_event: Any | None = None,
 ) -> dict:
     """Phase 1: run researcher agent + lazy detection + hypothesis registration.
 
@@ -1226,6 +1249,7 @@ def run_researcher_phase(
         path, strategy_name, state, behavior, max_retries,
         max_iterations=max_iterations,
         loop_strategy=loop_strategy,
+        on_event=on_event,
     )
     researcher_output = spawn("researcher", [])
     save_agent_record(run_dir, "researcher", 2, state, researcher_output)
@@ -1253,6 +1277,7 @@ def run_execution_phase(
     results_tsv: Path | None = None,
     round_num: int | None = None,
     loop_strategy: Any | None = None,
+    on_event: Any | None = None,
 ) -> dict:
     """Phase 2: data_quality → factor_analyst → strategist → portfolio → backtest.
 
@@ -1269,6 +1294,7 @@ def run_execution_phase(
         path, strategy_name, current_state, behavior, max_retries,
         max_iterations=max_iterations, inter_agent_sleep=inter_agent_sleep,
         loop_strategy=loop_strategy,
+        on_event=on_event,
     )
 
     dq = spawn("data_quality", [researcher_output])
@@ -1326,6 +1352,7 @@ def run_evaluation_phase(
     max_iterations: int = 8,
     acceptance_config=None,
     loop_strategy: Any | None = None,
+    on_event: Any | None = None,
 ) -> dict:
     """Phase 3: risk_controller → attribution_analyst → anti_overfit → backtest_diag → decide.
 
@@ -1348,6 +1375,7 @@ def run_evaluation_phase(
         path, strategy_name, {}, behavior, max_retries,
         max_iterations=max_iterations,
         loop_strategy=loop_strategy,
+        on_event=on_event,
     )
 
     risk = spawn("risk_controller", [metrics])

@@ -110,8 +110,18 @@ class SwarmRuntime:
     def __init__(
         self,
         max_workers: int = 4,
+        on_event: Any | None = None,
     ) -> None:
+        """``on_event``: agent 事件出口 ``(event_type, data) -> None``。
+
+        每个 LLM agent 的内部轨迹（llm_request / iter_start / tool_call /
+        …）经白名单过滤后回传调用方；data 注入 ``agent`` 字段区分归属。
+        之前 ``executor.execute`` 支持 ``on_event``（executor.py 已传给
+        AgentLoop）但这里调用时没传——goal/swarm 的 agent 执行轨迹一直
+        不可见（2026-11-02 接线）。None = 现行为（事件丢弃）。
+        """
         self._max_workers = max_workers
+        self._on_event = on_event
         self._active_runs: dict[str, bool] = {}
 
     def execute(
@@ -488,6 +498,30 @@ class SwarmRuntime:
         """Register a Python function to be called for python_executor agents."""
         cls._python_executors[name] = fn
 
+    def _wrap_agent_on_event(self, agent_name: str):
+        """把 AgentExecutor 的事件回调包一层：注入 agent 名 + 白名单过滤。
+
+        过滤放 runtime 侧（而不是每个调用方）：调用方拿到的必然是干净流。
+        ``self._on_event`` 为 None 时返回 None——executor/AgentLoop 对
+        None 的处理就是丢弃，零开销。
+        """
+        if self._on_event is None:
+            return None
+
+        from ..observability import (
+            SUMMARY_EVENT_TYPES,
+            strip_llm_request_fields,
+        )
+
+        def on_event(event_type: str, data: dict) -> None:
+            if event_type not in SUMMARY_EVENT_TYPES:
+                return
+            payload = strip_llm_request_fields(event_type, dict(data))
+            payload["agent"] = agent_name
+            self._on_event(event_type, payload)
+
+        return on_event
+
     def _execute_agent(
         self,
         agent_call: AgentCall,
@@ -577,11 +611,13 @@ class SwarmRuntime:
         )
 
         executor = AgentExecutor(reg)
+        agent_on_event = self._wrap_agent_on_event(str(plugin_id))
         result = executor.execute(
             plugin, task, workspace,
             context=ctx,
             upstream_outputs=upstream if upstream else None,
             node=node,
+            on_event=agent_on_event,
         )
 
         # Map unified status to SwarmRuntime's AgentStatus enum.

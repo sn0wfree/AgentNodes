@@ -321,6 +321,29 @@ class GoalWorkflowRunner:
     def event_bus(self) -> "WorkflowEventBus":
         return self._event_bus
 
+    def _agent_event_bridge(self):
+        """agent 级事件 → WorkflowEventBus 的适配回调。
+
+        SwarmRuntime 的 agent 事件（llm_request / iter_start / tool_call /
+        …，已经 runtime 侧按 SUMMARY_EVENT_TYPES 白名单过滤并注入 agent
+        字段）转发到既有观察者总线，与 agent_start / agent_complete 这些
+        层级事件并存——观察者按类型自取。异常隔离照搬 bus.emit 的约定：
+        一个坏观察者不能拖垮工作流（bus 内部已兜，这里不再包）。
+
+        此前 goal/swarm 的 agent 执行轨迹完全不可见：executor 本就支持
+        on_event（executor.py 已传给 AgentLoop），但 runtime 调用时没传
+        （2026-11-02 接线，docs/study-goal-agent-events-design-20261102.md）。
+        """
+        from ..observability import strip_llm_request_fields
+
+        def on_event(event_type: str, data: dict) -> None:
+            self._event_bus.emit(
+                event_type, **strip_llm_request_fields(event_type, dict(data)),
+            )
+
+        return on_event
+
+
     def subscribe(self, observer: Any) -> None:
         self._event_bus.subscribe(observer)
 
@@ -531,7 +554,7 @@ class GoalWorkflowRunner:
 
         # 5. Build SwarmRuntime
         from ..swarm.runtime import SwarmRuntime
-        runtime = SwarmRuntime()  # P8: controller removed
+        runtime = SwarmRuntime(on_event=self._agent_event_bridge())
 
         # 6. Execute via SwarmRuntime (in thread since it's sync)
         try:
@@ -664,7 +687,7 @@ class GoalWorkflowRunner:
 
         # Convert config → SwarmPreset (same as start)
         preset = self._config.to_swarm_preset()
-        runtime = SwarmRuntime()  # P8: controller removed
+        runtime = SwarmRuntime(on_event=self._agent_event_bridge())
 
         try:
             # Need the original objective for prompts; reload from goal
@@ -774,7 +797,7 @@ class GoalWorkflowRunner:
 
         preset = self._config.to_swarm_preset()
         from ..swarm.runtime import SwarmRuntime
-        runtime = SwarmRuntime()  # P8: controller removed
+        runtime = SwarmRuntime(on_event=self._agent_event_bridge())
 
         try:
             result = await asyncio.to_thread(
