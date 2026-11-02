@@ -335,7 +335,12 @@ def _check_cleaning(
     warn 不阻塞。
     """
     try:
-        from ..tools.data_clean import clean_data
+        # 一级点号 = core/；两级会解析到 strategy_research.tools（不存在）。
+        # 此前是 ``..tools``，于是 C7 每条路径都抛 ImportError，被下面的
+        # ``except Exception`` 吞成 "行级统计不可用" 的 warn——**C7 检查
+        # 从未真正执行过**（2026-11-02 补测发现；与 MCP validate_run、
+        # scheduled_research/cli 的同一个错误类）。
+        from .tools.data_clean import clean_data
         from .db import get_connection
 
         conn = get_connection(workspace_path, read_only=True)
@@ -351,7 +356,10 @@ def _check_cleaning(
             conn.close()
         if df.empty:
             return []
-        report = clean_data(df, "standard", None, None, dry_run=True)
+        # clean_data 返回 ``(cleaned_df, CleaningReport)`` 二元组——此前当成
+        # 单个对象直接取 .duplicates_removed，必然 AttributeError，然后被
+        # 下面的 except 吞成 warn。两处一起导致 C7 永远是「不可用」。
+        _cleaned, report = clean_data(df, "standard", None, None, dry_run=True)
         issues: list[str] = []
         if report.duplicates_removed:
             issues.append(f"重复行 {report.duplicates_removed}")

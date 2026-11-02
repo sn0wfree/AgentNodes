@@ -52,7 +52,8 @@ def _equal_volatility_optimize(codes, cov):
 # 2. Risk Parity (QuantOPT)
 # ============================================================
 
-def _risk_parity_optimize(codes, cov):
+def _risk_parity_optimize(codes, cov):  # pragma: no cover - needs QuantOPT
+    """QuantOPT RiskParity。本机未安装 QuantOPT，调用方已由 ImportError 守卫。"""
     port_std = np.sqrt(np.diag(cov))
     res = RiskParity.run_opt(
         stockpool=codes, port_std=port_std, cov=cov,
@@ -65,7 +66,8 @@ def _risk_parity_optimize(codes, cov):
 # 3. Mean Variance (QuantOPT MVO)
 # ============================================================
 
-def _mean_variance_optimize(codes, cov, mu, risk_aversion=1.0):
+def _mean_variance_optimize(codes, cov, mu, risk_aversion=1.0):  # pragma: no cover
+    """QuantOPT MVO。同 ``_risk_parity_optimize``：依赖未安装时不可达。"""
     res = MVO.run_opt(
         stockpool=codes, sigma2=cov, stock_ret=mu * risk_aversion,
         bounds=[(0.0, 1.0)] * len(codes), constraints=[],
@@ -77,7 +79,8 @@ def _mean_variance_optimize(codes, cov, mu, risk_aversion=1.0):
 # 4. Max Diversification (QuantOPT MaxIR adapted)
 # ============================================================
 
-def _max_diversification_optimize(codes, cov, mu):
+def _max_diversification_optimize(codes, cov, mu):  # pragma: no cover
+    """QuantOPT MaxIR。同前：依赖未安装时不可达。"""
     res = MaxIR.run_opt(
         stockpool=codes, sigma2=cov, portfolio_returns=mu,
         lambda_r=1.0,
@@ -90,7 +93,8 @@ def _max_diversification_optimize(codes, cov, mu):
 # 5. Turnover Aware (QuantOPT MaxRiskAdjReturn)
 # ============================================================
 
-def _turnover_aware_optimize(codes, cov, mu, current_weights, lambda_r=1.0):
+def _turnover_aware_optimize(codes, cov, mu, current_weights, lambda_r=1.0):  # pragma: no cover
+    """QuantOPT MaxRiskAdjReturn。同前：依赖未安装时不可达。"""
     res = MaxRiskAdjReturn.run_opt(
         stockpool=codes, sigma2=cov, portfolio_returns=mu,
         lambda_r=lambda_r,
