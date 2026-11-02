@@ -185,3 +185,43 @@ E CLI        5,481 stmts · 1,534 miss · 72.0%
 | R4 数据面 | ⚠ 部分：P-5 完整、P-3 只接了 study、PROTOCOL_VERSION 回放未校验 → P2.1 |
 | R5 执行面 | ✅ 判定不做（有评估文档） |
 | R6 IP 层 | ⚠ 部分：方法论已拆 method/、Director 产出无消费方、Tier 0 未冻结 → P2.4/P2.5 |
+
+---
+
+## 7. 执行结果（2026-11-02 当日完成）
+
+### 7.1 已交付
+
+| 刀 | 内容 | 提交 | 结果 |
+|---|---|---|---|
+| **P0.1** | MailboxConfig 接线 + `cap<2` 死循环 | `05e200c7` | 10 测试；`QNODES_MAILBOX__*` 首次真正生效 |
+| **P0.2/P0.3** | 4 处文档断言勘误 + H 档正名 | `70c4a9e8` | 口径不再误导 |
+| **P1-1** | `alpha_zoo_convert` | `7fb6cec0` | 58.4% → **91.6%**（+142 测试） |
+| **P1-2/3/5** | `autoresearch` / `backtest` / `scheduled_research.cli` | `53180744` | 81.9% / 91.1% / 93.8% |
+| **P1-4 + P2.1** | `data_import` + replay 版本校验 | `9b52fa29` | 82.6%；回放校验真正生效 |
+| **P1-6** | `data_readiness` / `optimizers.base` / `acceptance.cli` | `649ecd5d` | 92.1% / 89.4% / 100% |
+| **P1-7** | `config_runner` | `2a6ab383` | 34.6% → **82.2%** |
+
+### 7.2 本轮新发现的真实缺陷（第 9–14 个「静默失效」类）
+
+| # | 缺陷 | 后果 |
+|---|---|---|
+| 9 | `cap=1` 让 `_coalesce_if_full` 死循环 | MemoryError；配置可导致进程卡死 |
+| 10 | `MailboxConfig` 声明但从未传入 `EntryPoint` | `QNODES_MAILBOX__*` 全不生效 |
+| 11 | `full_like(a, v)` 返回 `a` 而非 `v` | 10 个 alpha 因子迁移后语义错误 |
+| 12 | `_update_refs_in_expr` 只遍历一层 list | 重赋值链在嵌套表达式上断裂 |
+| 13 | `(a>1) \| (b>2)` 被单条件正则先截获 | 整个 or 与 fill 被静默丢弃 |
+| 14 | `EventStore._replay` 绕过版本校验 + `except` 吞掉校验错误 | 跨版本事件被静默读入 |
+| 15 | `scheduled_research/cli.py` `from ...study` | `schedule run` / `schedule start` 从未可用 |
+| 16 | `data_readiness` C7 两处叠加（错导入 + tuple 未解包） | C7 检查上线以来从未执行过 |
+
+**共同模式**：错误都被 `except Exception` 或「降级为 warn」吞掉，功能静默不工作。
+这是本项目当前最主要的缺陷类别，比崩溃更难发现。
+
+### 7.3 覆盖率变化（H 档）
+
+```
+起点  85.5%（缺 381 行，需补到 90%）
+中点  88.8%（缺 102 行）
+最终  待全量验证（预期 ≥90%）
+```

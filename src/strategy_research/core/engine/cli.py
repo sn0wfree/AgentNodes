@@ -174,5 +174,7 @@ def dispatch_engine(args: argparse.Namespace) -> int:
         print("  run-backtest      运行引擎回测")
         print("  list-engines      列出可用市场引擎")
         print("  validate-signal   校验 signal_engine.py 安全性")
-        return 0
+        # 未知子命令是用法错误：返回 0 会让 shell 脚本与后台任务把
+        # 「什么都没跑」当成成功（2026-11-02 补测发现）。
+        return 2
     return handler(args)
