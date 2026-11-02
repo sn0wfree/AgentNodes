@@ -593,14 +593,27 @@ np./pd. 前缀调用、ref 解析、span-from-alpha 换算）——原来只有�
 错误降级契约也钉住了：**所有 reader 在 DB 打不开时返回 False/空值永不抛**
 （20+ 个函数），所有 writer 打不开时抛——调用方的降级逻辑依赖这个不对称。
 
-### 剩余缺口（约 1,310 行 miss）
+### 2026-11-02 第七批（db.py 收尾）
 
-| 文件 | miss | 性质 |
-|---|---:|---|
-| `alpha_zoo_convert.py` | ~137 | AST 分析器深分支 |
-| `autoresearch.py` | ~122 | run_research_round 主流程（需 mock 全部 agent spawn）|
-| `db.py` | ~118 | 剩余错误分支 |
-| 其他 core 顶层 | ~900 | 分散（单文件均 <50）|
+| 文件 | 上一轮 | 现在 |
+|---|---:|---:|
+| `db.py` | 75.6% | **85.9%**（execute 错误降级契约 27 测试）|
+| **H 档整体** | 84.7% | **85.5%** |
 
-到 90% 还差约 530 行。`db.py` 与 `autoresearch.py` 的大块仍是「值得测但
-需要 mock 管线」的类型；分散的 900 行适合继续分批扫尾。
+门禁合计 88.9% → **89.1%**。
+
+又一个真实缺陷：**混合大小写 OHLCV 列名让 save_ohlcv_to_db 崩溃**。
+归一化只处理 date/asset_code 两类列名，`Close` 逃过后，缺失列补齐执行
+`df["open"] = df["close"]` → KeyError，整个保存崩掉。修复：归一化表
+加入 OHLCV 五列的小写映射。同时钉住补齐语义（缺 open/high/low 用
+close **值**补、缺 volume 用 0）——首批测试的断言是错的（写成等于 10.0）。
+
+错误降级契约全部钉住（BoomConn 模式，execute 即抛 + close 追踪）：
+所有 writer 异常 → False + 关连接；所有 reader 异常 → 空值 + 关连接。
+另覆盖成功路径分支：空/None 条目跳过、trade_date 索引与大写列名归一化、
+无日期行跳过（0 行）。
+
+### 剩余缺口（约 1,235 行 miss）
+
+到 90% 还差约 400 行。大块：`alpha_zoo_convert` AST 深分支 ~137、
+`autoresearch.run_research_round` ~122、其余分散 ~950（单文件 <50）。
