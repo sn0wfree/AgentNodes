@@ -523,3 +523,45 @@ DuckDB 对不存在的库抛 `IOException: database does not exist`，但 20 个
 `__init__.py` re-export，全库零实例化、零测试引用。`alpha_zoo_convert.py`
 （549 行）虽有零生产调用方，但有两个专门的测试文件在跑它，属一次性迁移
 工具仍被验证，保留不动。
+
+---
+
+## 十六、H 档推进与三个产品缺陷（2026-11-02 续）
+
+### 覆盖率推进
+
+| 文件 | 起点 | 现在 | 增量 |
+|---|---:|---:|---:|
+| `core/compute_factor.py` | 42.6% | **87.0%** | +44.4 |
+| `core/scheduled_research/cli.py` | 15.0% | **70.3%** | +55.3 |
+| `core/mcp/server.py` | 63.4% | **81.6%** | +18.2 |
+| `core/config_runner.py` | 63.8% | **71.4%** | +7.6 |
+| `core/db.py` | 40.5% | **69.8%** | +29.3 |
+| **H 档整体** | 75.2% | **82.1%** | +6.9 |
+
+门禁合计覆盖率 87.4% → **88.2%**；A/B/C 三档保持 ≥90%（91.0 / 90.2 / 90.4）。
+
+### 补测暴露的三个真实产品缺陷（全部已修）
+
+| 缺陷 | 后果 |
+|---|---|
+| **MCP 截断标记恒为 False** | `_package_fetch_result` 先 `tail(max_rows)` 再比较 `n_rows > max_rows`——截断后行数永远不大于上限，`truncated` 永远是 False。MCP 客户端**无从得知自己看到的是部分数据** |
+| **MCP `param_map` schema 侧不生效** | 注释与 handler 都说「MCP 名 → agent 名」，但 schema 用了正向映射（拿 agent 名查 MCP 键的字典），永远查不到，于是 schema 里保留 agent 名。客户端按 schema 传 agent 名，翻译逻辑永不触发。已改为反向映射 |
+| **`schedule list` 永远列不出任务** | job 里存的是 resolve 过的绝对 workspace，而 CLI 默认 workspace 是 `"."`，字符串比较永不相等 → 恒显示「暂无定时任务」。列表命令在默认用法下不可用。已改为查询前 resolve |
+
+这三个都属于「静默失效」型：不报错、不崩溃，只是功能不生效。与之前的
+审批竞态、JWT 密钥损坏、retry 空转同一类别。
+
+### H 档剩余
+
+距 90% 还差约 700 行。剩余大块：
+
+| 文件 | miss |
+|---|---:|
+| `alpha_zoo_convert.py` | 232（一次性迁移工具，投产比最低）|
+| `autoresearch.py` | 142 |
+| `hooks/composite.py` + `engine/optimizers/base.py` + `web/fetch.py` | 26+49+39 |
+| `db.py` 残余错误分支 | ~143 |
+
+`db.py` 与 `autoresearch.py` 仍值得推进；`alpha_zoo_convert` 建议明确标注为
+「一次性工具，不纳入 90% 门槛」，而不是永远拖着一个红档。
