@@ -53,11 +53,12 @@ def _package_fetch_result(data: dict, max_rows: int) -> tuple[dict, int, bool]:
         if df is None or df.empty:
             result_data[code] = []
             continue
-        rows = df.tail(max_rows).reset_index()
-        n_rows = len(rows)
-        total_rows += n_rows
-        if n_rows > max_rows:
+        # 先量原始长度再截断：比较 tail 之后的结果会让 truncated 恒为
+        # False（n_rows 永远 <= max_rows），客户端无从得知数据被截断。
+        if len(df) > max_rows:
             truncated = True
+        rows = df.tail(max_rows).reset_index()
+        total_rows += len(rows)
         result_data[code] = _df_to_records(rows)
     return result_data, total_rows, truncated
 
@@ -187,8 +188,12 @@ def _wrap_base_tool(
     required = list(parameters.get("required", []))
 
     if param_map:
-        properties = {param_map.get(k, k): v for k, v in properties.items()}
-        required = [param_map.get(n, n) for n in required]
+        # Schema 侧展示 MCP 名（客户端按 schema 传参，handler 再翻译成
+        # agent 名）——所以这里要**反向**映射。用正向 get 查不到键，
+        # schema 会原样保留 agent 名，翻译逻辑永远不会触发。
+        reverse = {agent: mcp for mcp, agent in param_map.items()}
+        properties = {reverse.get(k, k): v for k, v in properties.items()}
+        required = [reverse.get(n, n) for n in required]
     if include_workspace and "workspace" not in properties:
         properties["workspace"] = {"type": "string", "description": "工作区路径（必填）"}
         required.append("workspace")
