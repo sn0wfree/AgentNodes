@@ -98,7 +98,7 @@
   <text x="512" y="580" class="st">⏳ 稳定前缀 · 目录在下（前缀不变）</text>
   <text x="512" y="600" class="st">✅ 压缩同源 make_compactor（=AgentLoop）</text>
   <text x="512" y="626" class="sm">Provider：goal/memory/todo ✅ · hypothesis ⏳</text>
-  <text x="512" y="644" class="sm">独占 ⏳：旧 ContextBuilder 待 P5-1c 删除</text>
+  <text x="512" y="644" class="sm">独占 ✅（P5-1c 完成，旧分支已删）</text>
 
   <rect x="830" y="492" width="343" height="190" rx="8" class="box"/>
   <text x="844" y="516" class="bt">Scheduler（唯一）⏳ · EventStore ✅</text>
@@ -259,7 +259,7 @@
   <text x="1276" y="902" class="st">✅ 覆盖率三档 ≥90% · 失败集门 clean · 分片验证 7.5min</text>
   <text x="1276" y="924" class="st">⏹ 判定不做：cpu 节点 · graph 子图 · lane · RunContext 包</text>
   <text x="1276" y="946" class="st">✅ 接缝加固 · 循环导入已解 · 覆盖率分档门</text>
-  <text x="1276" y="968" class="st">✅ 方法论归位（D1）· ⏸ P5-1c（触发 11-06）</text>
+  <text x="1276" y="968" class="st">✅ 方法论归位（D1）· ✅ 入口唯一（P5-1c 完成）</text>
 
   <rect x="1260" y="990" width="300" height="420" rx="10" class="boxg"/>
   <text x="1276" y="1016" class="bt">决策记录（选录）</text>
