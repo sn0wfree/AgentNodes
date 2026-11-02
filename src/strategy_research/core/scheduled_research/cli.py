@@ -124,7 +124,11 @@ def cmd_schedule_create(args) -> int:
 def cmd_schedule_list(args) -> int:
     """List scheduled research jobs."""
     store = ScheduledResearchStore()
-    workspace = args.workspace if hasattr(args, "workspace") and args.workspace else None
+    # workspace 在 job 里存的是绝对路径（create 时做了 resolve），所以这里的
+    # 过滤值也必须 resolve。"." 与 "/abs/path/ws" 做字符串比较永远不相等，
+    # 会让 `schedule list`（默认 workspace="."）永远显示「暂无定时任务」。
+    raw = getattr(args, "workspace", None)
+    workspace = str(Path(raw).resolve()) if raw else None
     jobs = store.list_jobs(workspace=workspace)
 
     if not jobs:
