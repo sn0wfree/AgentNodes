@@ -26,7 +26,8 @@ exclude_lines =
     pragma: no branch
 
 # 分档说明：全库口径含归档与外部集成，不作为门槛。
-# 门槛由 scripts/cov_gate.py 按 A/B/C 三档分别断言（见 docs/coverage-90-plan-20261030.md）。
+# 门槛由 scripts/cov_gate.py 按四档分别断言（见 docs/coverage-90-plan-20261030.md）：
+#   A 平台内核 / B 研究域 / C 能力层 / H 研究工具核心（core 下未被前三档认领的剩余）
 show_missing = True
 skip_covered = False
 precision = 1

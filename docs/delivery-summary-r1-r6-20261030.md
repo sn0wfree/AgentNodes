@@ -74,25 +74,40 @@
 - **优先级老化**：三级取件 —— 到龄（aged）> interrupt > FIFO。
   普通项等满 `aging_s`（默认 15s）后压过所有后到 interrupt，防 automation
   饿死用户消息；`work.aged` 事件 + ConfigHub 可配。
+  ⚠ **2026-11-02 复核勘误**：「ConfigHub 可配」当时是假的——
+  `MailboxConfig.cap`/`aging_s` 声明了但从未传进 `EntryPoint`，
+  `QNODES_MAILBOX__*` 环境变量完全不生效。已于 `05e200c7` 接线并加测；
+  同时修掉 `cap=1` 的 `_coalesce_if_full` 死循环（现拒绝 cap<2）。
 
 ### 3.3 数据面
 
 - **P-3 工件登记上线**：`ArtifactChannel` 此前完整实现（含 13 个测试）
   但**零调用方**。现在 study round 的 metrics 超过 64KB 时落盘到
   `studies/<id>/rounds/R-n/artifacts/` 并写登记行，`study_round` 事件只带
-  指针。小 metrics 事件逐字节不变。**回测结果是第一个真实用户**。
+  指针。小 metrics 事件逐字节不变。**首个真实用户 = study round metrics**
+  （`kind="round_metrics"`，`study/runner.py:728`）。
+  ⚠ **2026-11-02 复核勘误**：本节原写「回测结果是第一个真实用户」——不实，
+  回测产物至今未接 P-3。另：`status` 恒为 `"registered"`（无「两步可见」
+  中间态），`PlatformStore.list_artifacts` 零生产调用方（跨会话无出口）。
 - **PlatformStore 生产接线**：singleton 按 workspace 注入 data_dir，
   `QNODES_PLATFORM_STORE=0` 可关闭，构造失败降级不阻断 chat。
-- **PROTOCOL_VERSION**：成为事件信封 `schema_v` 唯一来源；`replay` 遇
-  不匹配版本抛 `ProtocolVersionError`（不猜跨版本语义），
-  `strict_version=False` 留给迁移。
+- **PROTOCOL_VERSION**：成为**经 PlatformStore 写入**的事件信封 `schema_v`
+  唯一来源；该路径 `replay` 遇不匹配版本抛 `ProtocolVersionError`
+  （不猜跨版本语义），`strict_version=False` 留给迁移。
+  ⚠ **2026-11-02 复核勘误**：`core/agent/event_store.py:512` 的 `_replay`
+  走 `PlatformStore.replay_rows` **不做版本校验**；`core/events/event_v2.py`
+  的 `to_row()` 也不含 `schema_v`（靠 DDL DEFAULT `'1'`）。故「唯一来源」
+  与「回放即拒」两条都不成立于全路径——见 `docs/next-phase-plan-20261102.md` B3。
 
 ### 3.4 模型解析
 
-- **ModelHub**：解析序（显式 > profile > provider 默认）集中到一处。
+- **ModelHub**：解析序（显式 > profile > provider 默认）集中到**一处实现**。
   关键行为修正：`get_provider` 对未知 provider 静默回落 `FallbackAdapter`，
   ModelHub 改为**明确拒绝**（图上红线「不支持则拒绝，不降级」）。
   `auto` 保留为文档定义的合法模式（这条我最初判错，被 4 个既有测试纠正）。
+  ⚠ **2026-11-02 复核勘误**：实现集中了，但**调用点没集中**——只有
+  `gateway/singleton.py:39-42` 一处经 ModelHub，其余 ~19 处仍直调
+  `LLMConfig.load()`（api 6 / cli 5 / core 若干）。改 provider 要改 19 个地方。
 
 ### 3.5 研究自治
 
