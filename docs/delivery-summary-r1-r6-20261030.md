@@ -573,16 +573,34 @@ np./pd. 前缀调用、ref 解析、span-from-alpha 换算）——原来只有�
 中间的每条规则都没有断言。这里的错误会让生成的 YAML 因子与原 .py
 **静默不等价**：迁移看起来成功，实际算的是别的东西。
 
-### 剩余缺口（约 1,416 行 miss）
+### 2026-11-02 第六批（db 错误分支 + MCP stdio）
+
+| 文件 | 上一轮 | 现在 |
+|---|---:|---:|
+| `db.py` | 69.8% | **75.6%**（错误降级契约 25 测试）|
+| `mcp/server.py` | 81.6% | **91.7%**（stdio 传输层 + 校验分支 15 测试）|
+| **H 档整体** | 82.1% | **84.7%** |
+
+门禁合计 88.5% → **88.9%**。
+
+又两个真实缺陷：
+
+| 缺陷 | 后果 |
+|---|---|
+| **MCP `validate_run` 相对导入错误** | `from .validation import ...` 解析到 `core/mcp/validation`（不存在）。**MCP 客户端调用 validate_run 永远得到 "No module named"**——这个工具上线以来从未工作过。已改为 `..validation` |
+| init_db 容错名单确认 | "write-write conflict / already exists" 视为已初始化（True），其他 execute 错误为 False——get_connection 抛则冒泡（try 只包 execute）|
+
+错误降级契约也钉住了：**所有 reader 在 DB 打不开时返回 False/空值永不抛**
+（20+ 个函数），所有 writer 打不开时抛——调用方的降级逻辑依赖这个不对称。
+
+### 剩余缺口（约 1,310 行 miss）
 
 | 文件 | miss | 性质 |
 |---|---:|---|
-| `db.py` | ~143 | 错误分支与旧库迁移路径 |
-| `autoresearch.py` | 122 | run_research_round 主流程（需 mock 全部 agent spawn）|
-| `mcp/server.py` | 62 | 各工具注册函数体 |
-| `alpha_zoo_convert.py` | 137 | AST 分析器深分支 |
-| 其他 core 顶层 | ~950 | 分散 |
+| `alpha_zoo_convert.py` | ~137 | AST 分析器深分支 |
+| `autoresearch.py` | ~122 | run_research_round 主流程（需 mock 全部 agent spawn）|
+| `db.py` | ~118 | 剩余错误分支 |
+| 其他 core 顶层 | ~900 | 分散（单文件均 <50）|
 
-`autoresearch.py` 剩下的 122 行集中在 `run_research_round`——它把 researcher
-→ execution → evaluation 三个阶段串起来，需要 mock 整个 agent spawn 管线
-才能测。这是「值得测但成本高」的一类，不是「不值得测」。
+到 90% 还差约 530 行。`db.py` 与 `autoresearch.py` 的大块仍是「值得测但
+需要 mock 管线」的类型；分散的 900 行适合继续分批扫尾。
