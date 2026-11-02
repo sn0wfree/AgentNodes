@@ -221,14 +221,18 @@ def cmd_schedule_delete(args) -> int:
 
 def _build_study_scheduler():
     """In-process StudyScheduler (NullEmitter — no SSE in CLI context)."""
-    from ...study import StudyScheduler, StudyStore
+    # 两级点号 = core/；三级会解析到 strategy_research.study（不存在）。
+    # 此前是 ``...study``，导致 ``schedule run`` / ``schedule start`` 在
+    # 第一行就 ModuleNotFoundError——这两个命令从未真正跑起来过
+    # （2026-11-02 补测发现；与 MCP validate_run 的同一个错误类）。
+    from ..study import StudyScheduler, StudyStore
 
     return StudyScheduler(StudyStore(), session_service=None)
 
 
 async def _run_job_and_wait(job_id: str) -> int:
     """Dispatch a job once and wait for its study to reach a terminal state."""
-    from ...study import StudyStatus, StudyStore
+    from ..study import StudyStatus, StudyStore
 
     store = ScheduledResearchStore()
     job = store.get(job_id)
