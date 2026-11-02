@@ -280,6 +280,10 @@ def save_ohlcv_to_db(
                     col_map[col] = "date"
                 elif cl in ("code", "symbol", "ticker", "asset"):
                     col_map[col] = "asset_code"
+                elif cl in ("open", "high", "low", "close", "volume"):
+                    # OHLCV 列名统一小写——否则 "Close" 逃过归一化后，
+                    # 下面的缺失列补齐会拿小写 "close" 取值而 KeyError
+                    col_map[col] = cl
             if col_map:
                 df = df.rename(columns=col_map)
 
