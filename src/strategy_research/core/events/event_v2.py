@@ -40,6 +40,22 @@ import uuid
 from dataclasses import dataclass, field
 from typing import Any, Dict, Optional, Set
 
+
+def _protocol_version() -> str:
+    """当前协议版本（延迟导入：contracts 依赖本模块的事件形状）。
+
+    导入失败时回落到 "1"——事件写入不应因为版本常量不可用而失败；
+    读取侧（EventStore._replay / PlatformStore.replay）仍有强制校验。
+    """
+    try:
+        from strategy_research.core.orchestration.contracts import (
+            PROTOCOL_VERSION,
+        )
+
+        return PROTOCOL_VERSION
+    except Exception:  # noqa: BLE001 —— 降级不阻断写入
+        return "1"
+
 # ── Event type registry ─────────────────────────────────────────────
 #
 # Centralized list of all event types in the system. New event types
@@ -351,6 +367,10 @@ class EventV2:
             "parent_event_id": self.parent_event_id,
             "branch_id": self.branch_id,
             "time_created": self.time_created,
+            # R4 补漏：schema_v 必须显式写入。此前依赖 event_log 的 DDL
+            # DEFAULT '1'——那意味着「协议版本唯一来源」实际上不在代码里，
+            # 而在建表语句里；改 PROTOCOL_VERSION 也不会影响写入。
+            "schema_v": _protocol_version(),
         }
 
     @classmethod

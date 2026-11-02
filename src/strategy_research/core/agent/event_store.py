@@ -23,6 +23,7 @@ from pathlib import Path
 from typing import Any, AsyncIterator, Callable
 
 from ..events.event_v2 import EventV2
+from ..orchestration.contracts import ProtocolVersionError
 from .cache import CacheConfig, SessionCache, SessionLockMap
 from .memory_manager import InMemoryStore, SQLiteStore, resolve_db_path
 
@@ -516,6 +517,16 @@ class EventStore:
                     branch_id=branch_id,
                     limit=limit,
                 )
+                # R4 补漏：回放必须校验协议版本。此前这条路径直接跳过
+                # check_event_version，于是「PROTOCOL_VERSION 是唯一来源、
+                # 回放遇不匹配即拒」只对 PlatformStore.replay() 成立，
+                # 而 EventStore（真正的回放入口）可以静默读入不兼容版本。
+                from strategy_research.core.orchestration.contracts import (
+                    check_event_version,
+                )
+
+                for row in rows:
+                    check_event_version(row.get("schema_v"))
                 return [EventV2.from_row(r) for r in rows]
             else:
                 # InMemoryStore — apply the same filters in Python so the
@@ -536,10 +547,16 @@ class EventStore:
                 if limit is not None:
                     events = events[:limit]
                 return events
+        except ProtocolVersionError:
+            # 版本不匹配**不能**降级成「没有历史」。吞掉它等于把「数据损坏」
+            # 伪装成「这台机器上还没有事件」，调用方会静默按空历史继续跑，
+            # 用不兼容的语义重建状态。必须穿透到调用方（P2.1）。
+            raise
         except Exception:
-            # Degraded: callers treat [] as "no history", which is
-            # indistinguishable from a corrupt/unreadable DB unless we
-            # log. Keep the contract ([]) but make the failure visible.
+            # 其他读取失败（DB 打不开、行损坏）仍按既有契约降级为 []：
+            # callers treat [] as "no history", which is indistinguishable
+            # from a corrupt/unreadable DB unless we log. Keep the contract
+            # ([]) but make the failure visible.
             logger.exception("_replay: read failed for %s", session_id)
             return []
 
