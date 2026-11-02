@@ -112,8 +112,12 @@ def _apply_call_special(func: str, yaml_args: list) -> tuple[str, object]:
     if func == "ones_like":
         return func, {"value": 1.0}
     if func == "full_like":
-        if yaml_args:
-            return func, yaml_args[0] if len(yaml_args) > 1 else {"value": 1.0}
+        # numpy: full_like(a, fill_value) —— 第一个参数只是形状/类型参考，
+        # 第二个才是填充值。原实现返回 yaml_args[0]，把形状参考当成填充值：
+        # ``np.full_like(x, 7)`` 会产出 ``ref x`` 而不是 ``7``，语义完全错误
+        # 且不报错（2026-11-02 补测发现；alpha_zoo 里 10 个文件用到）。
+        if len(yaml_args) > 1:
+            return func, yaml_args[1]
         return func, {"value": 1.0}
     return func, _NO_EARLY_RETURN
 
@@ -243,7 +247,26 @@ def _handle_where_method(
     source = arg.get("source", "")
     import re
     op_map = {"Gt": "gt", "Lt": "lt", "GtE": "gte", "LtE": "lte", "Eq": "eq", "NotEq": "neq"}
-    not_op_map = {"Gt": "lte", "Lt": "gte", "GtE": "lt", "LtE": "gt", "Eq": "neq", "NotEq": "eq"}
+
+    # 位或组合必须优先判定：``(a > 1) | (b > 2)`` 里含两个 Compare，
+    # 下面的单条件正则会先命中第一个，**静默丢掉第二个分支和 or 结构**。
+    # 那样的 YAML 与原 .py 不等价且毫无报错——故先处理 BitOr；认不出
+    # 操作数时宁可拒绝转换（文件记 skipped），也不猜。
+    if "op=BitOr()" in source:
+        m_or = re.search(
+            r"BinOp\(left=Name\(id='(\w+)'.*?op=BitOr\(\).*?right=Name\(id='(\w+)'",
+            source,
+        )
+        if not m_or:
+            return _NO_EARLY_RETURN
+        return {"op": "where", "args": [
+            converted_obj,
+            {"op": "or_", "args": [
+                {"ref": m_or.group(1)},
+                {"ref": m_or.group(2)},
+            ]},
+            convert(args[1]) if len(args) > 1 else converted_obj,
+        ]}
 
     m = re.search(r"ops=\[(Gt|Lt|GtE|LtE|Eq|NotEq)\(\)\].*?comparators=\[Constant\(value=(\d+\.?\d*)\)\]", source)
     if m:
@@ -251,25 +274,6 @@ def _handle_where_method(
         return {"op": "where", "args": [
             converted_obj,
             {"op": cmp_op, "args": [converted_obj, {"value": float(m.group(2))}]}
-        ]}
-    m2 = re.search(r"Not\(Compare\(left=Name\(id='(\w+)'\).*?ops=\[(Gt|Lt|GtE|LtE|Eq|NotEq)\(\)\].*?comparators=\[Constant\(value=(\d+\.?\d*)\)\]\)", source)
-    if m2:
-        cmp_op = not_op_map.get(m2.group(2), "lte")
-        inner_ref = {"ref": m2.group(1)}
-        return {"op": "where", "args": [
-            converted_obj,
-            {"op": cmp_op, "args": [inner_ref, {"value": float(m2.group(3))}]},
-            args[1] if len(args) > 1 else converted_obj
-        ]}
-    m3 = re.search(r"BinOp\(left=Name\(id='(\w+)'.*?op=BitOr\(\).*?right=Name\(id='(\w+)'", source)
-    if m3:
-        a_ref = {"ref": m3.group(1)}
-        b_ref = {"ref": m3.group(2)}
-        fill_val = convert(args[1]) if len(args) > 1 else converted_obj
-        return {"op": "where", "args": [
-            converted_obj,
-            {"op": "or_", "args": [a_ref, b_ref]},
-            fill_val
         ]}
     return _NO_EARLY_RETURN
 
@@ -525,18 +529,21 @@ class ComputeFunctionAnalyzer(ast.NodeVisitor):
                 self._update_refs_in_expr(expr, base, prev)
 
     def _update_refs_in_expr(self, expr, old_name, new_name):
-        """递归更新表达式中的引用。"""
-        if not isinstance(expr, dict):
-            return
-        if expr.get("_type") == "ref" and expr.get("name") == old_name:
-            expr["name"] = new_name
-        for key, val in expr.items():
-            if isinstance(val, dict):
+        """递归更新表达式中的引用。
+
+        必须递归进 list（含嵌套 list）：表达式里 ``args`` 是 list，其元素
+        还可以再是 list（例如 where 的三元参数）。只遍历一层会让深层 ref
+        保留旧名，重赋值链在那种表达式上会断——链断后 YAML 引用到已被覆盖
+        的变量名，因子语义静默错误（2026-11-02 补测发现）。
+        """
+        if isinstance(expr, dict):
+            if expr.get("_type") == "ref" and expr.get("name") == old_name:
+                expr["name"] = new_name
+            for _key, val in expr.items():
                 self._update_refs_in_expr(val, old_name, new_name)
-            elif isinstance(val, list):
-                for item in val:
-                    if isinstance(item, dict):
-                        self._update_refs_in_expr(item, old_name, new_name)
+        elif isinstance(expr, list):
+            for item in expr:
+                self._update_refs_in_expr(item, old_name, new_name)
 
     def visit_Return(self, node):
         """处理 return 语句"""
