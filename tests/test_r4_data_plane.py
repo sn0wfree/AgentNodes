@@ -127,7 +127,7 @@ def test_pointer_roundtrip_and_tamper(channel, tmp_path):
 
 def test_runner_keeps_metrics_inline_without_channel():
     """_artifacts=None → 现行为（等价门）。"""
-    from strategy_research.core.study.runner import AutoresearchRunner
+    from strategy_research.apps.study.runner import AutoresearchRunner
 
     assert hasattr(AutoresearchRunner, "__init__")
     import inspect

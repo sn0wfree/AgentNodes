@@ -17,7 +17,7 @@ import pytest
 
 def _bare_runner(**attrs):
     """Build an AutoresearchRunner without running its heavy __init__."""
-    from strategy_research.core.study.runner import AutoresearchRunner, ControlToken
+    from strategy_research.apps.study.runner import AutoresearchRunner, ControlToken
 
     runner = AutoresearchRunner.__new__(AutoresearchRunner)
     # __init__ is skipped, so provide the attributes methods read:
@@ -31,7 +31,7 @@ def _bare_runner(**attrs):
 # ── _wait_for_approval ──────────────────────────────────────
 
 @pytest.mark.asyncio
-@patch("strategy_research.core.study.runner.time.time")
+@patch("strategy_research.apps.study.runner.time.time")
 async def test_wait_for_approval_returns_approved(mock_time):
     from types import SimpleNamespace
 
@@ -46,7 +46,7 @@ async def test_wait_for_approval_returns_approved(mock_time):
 
 
 @pytest.mark.asyncio
-@patch("strategy_research.core.study.runner.time.time")
+@patch("strategy_research.apps.study.runner.time.time")
 async def test_wait_for_approval_returns_rejected(mock_time):
     """Rejection must be distinguishable from timeout (B2 flip side)."""
     from types import SimpleNamespace
@@ -67,7 +67,7 @@ async def test_wait_for_approval_times_out(monkeypatch):
         return None
 
     monkeypatch.setattr(asyncio, "sleep", _no_sleep)
-    import strategy_research.core.study.runner as runner_mod
+    import strategy_research.apps.study.runner as runner_mod
 
     clock = {"now": 0.0}
     monkeypatch.setattr(runner_mod.time, "time", lambda: clock["now"])

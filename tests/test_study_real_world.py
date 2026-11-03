@@ -25,13 +25,13 @@ import pytest
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
 
-from strategy_research.core.study.runner import (
+from strategy_research.apps.study.runner import (
     AutoresearchRunner,
     ShutdownReason,
     meets_metric_targets,
 )
-from strategy_research.core.study.models import StudyStatus, StudyAction, ACTION_MATRIX
-from strategy_research.core.study.state_store import StudyState
+from strategy_research.apps.study.models import StudyStatus, StudyAction, ACTION_MATRIX
+from strategy_research.apps.study.state_store import StudyState
 
 
 # ── Workspace setup ──────────────────────────────────────────────
@@ -72,7 +72,7 @@ class TestStudyCreation:
         """Create a study with a real workspace structure."""
         ws = _create_real_workspace(tmp_path)
 
-        from strategy_research.core.study.bootstrap import create_study_record
+        from strategy_research.apps.study.bootstrap import create_study_record
 
         study = create_study_record(
             owner_session_id="test-session",
@@ -100,7 +100,7 @@ class TestStudyCreation:
         """Study directory should be created with proper structure."""
         ws = _create_real_workspace(tmp_path)
 
-        from strategy_research.core.study.bootstrap import create_study_record
+        from strategy_research.apps.study.bootstrap import create_study_record
 
         study = create_study_record(
             owner_session_id="test-session",
@@ -172,7 +172,7 @@ class TestMetricEvaluation:
     def test_improving_behavior_reaches_targets(self):
         """With 'improving' behavior, metrics should improve over rounds."""
         # Simulate the improving stub behavior
-        from strategy_research.core.study.stub_agents import _stub_researcher
+        from strategy_research.apps.study.stub_agents import _stub_researcher
 
         # Round 1: baseline
         output1 = json.loads(_stub_researcher(1, [], "improving"))
@@ -184,7 +184,7 @@ class TestMetricEvaluation:
 
     def test_static_behavior_never_improves(self):
         """With 'static' behavior, metrics should stay constant."""
-        from strategy_research.core.study.stub_agents import _stub_researcher
+        from strategy_research.apps.study.stub_agents import _stub_researcher
 
         output1 = json.loads(_stub_researcher(1, [], "static"))
         output2 = json.loads(_stub_researcher(2, [], "static"))
@@ -194,7 +194,7 @@ class TestMetricEvaluation:
 
     def test_varying_behavior_varies(self):
         """With 'varying' behavior, metrics should vary."""
-        from strategy_research.core.study.stub_agents import _stub_researcher
+        from strategy_research.apps.study.stub_agents import _stub_researcher
 
         outputs = []
         for i in range(5):
@@ -257,22 +257,22 @@ class TestEarlyStop:
 class TestStateTransitions:
     def test_queued_to_running(self):
         """Study should transition from QUEUED to RUNNING."""
-        from strategy_research.core.study.models import StudyStatus, StudyAction, ACTION_MATRIX
+        from strategy_research.apps.study.models import StudyStatus, StudyAction, ACTION_MATRIX
         assert StudyAction.CANCEL in ACTION_MATRIX[StudyStatus.QUEUED]
 
     def test_running_to_paused(self):
         """Study should transition from RUNNING to PAUSED."""
-        from strategy_research.core.study.models import StudyStatus, StudyAction, ACTION_MATRIX
+        from strategy_research.apps.study.models import StudyStatus, StudyAction, ACTION_MATRIX
         assert StudyAction.PAUSE in ACTION_MATRIX[StudyStatus.RUNNING]
 
     def test_paused_to_running(self):
         """Study should transition from PAUSED to RUNNING."""
-        from strategy_research.core.study.models import StudyStatus, StudyAction, ACTION_MATRIX
+        from strategy_research.apps.study.models import StudyStatus, StudyAction, ACTION_MATRIX
         assert StudyAction.CONTINUE in ACTION_MATRIX[StudyStatus.PAUSED]
 
     def test_complete_cancelled_allow_continue_archive(self):
         """COMPLETE/CANCELLED expose CONTINUE + ARCHIVE."""
-        from strategy_research.core.study.models import StudyStatus, StudyAction, ACTION_MATRIX
+        from strategy_research.apps.study.models import StudyStatus, StudyAction, ACTION_MATRIX
         for status in (StudyStatus.COMPLETE, StudyStatus.CANCELLED):
             acts = ACTION_MATRIX.get(status, frozenset())
             assert StudyAction.CONTINUE in acts, status
@@ -281,7 +281,7 @@ class TestStateTransitions:
 
     def test_retryable_states_allow_continue_and_archive(self):
         """ERROR/BUDGET_LIMITED/EARLY_STOPPED/NEEDS_REFRESH allow CONTINUE + ARCHIVE."""
-        from strategy_research.core.study.models import StudyStatus, StudyAction, ACTION_MATRIX
+        from strategy_research.apps.study.models import StudyStatus, StudyAction, ACTION_MATRIX
         for status in (StudyStatus.ERROR, StudyStatus.BUDGET_LIMITED,
                        StudyStatus.EARLY_STOPPED, StudyStatus.NEEDS_REFRESH):
             acts = ACTION_MATRIX.get(status, frozenset())
@@ -343,7 +343,7 @@ def _make_runner(**kwargs):
         early_stop_patience=kwargs.get("early_stop_patience", 3),
     )
 
-    from strategy_research.core.study.runner import AutoresearchRunner
+    from strategy_research.apps.study.runner import AutoresearchRunner
 
     store = MagicMock()
     store.get_study.return_value = study

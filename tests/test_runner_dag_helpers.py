@@ -19,7 +19,7 @@ from unittest.mock import MagicMock
 
 import pytest
 
-from strategy_research.core.study.runner import AutoresearchRunner
+from strategy_research.apps.study.runner import AutoresearchRunner
 
 
 def _bare_runner() -> AutoresearchRunner:

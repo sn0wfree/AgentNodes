@@ -207,7 +207,7 @@ async def user_data(user_id: str, admin: str = Depends(require_admin)):
     _target_user(user_id, admin)
     import sqlite3
 
-    from ...core.study.store import _default_db_path as _study_db_path
+    from strategy_research.apps.study.store import _default_db_path as _study_db_path
     from .web_session import _get_db_path
 
     data: dict[str, Any] = {"user_id": user_id}

@@ -9,7 +9,7 @@ import pytest
 
 from strategy_research.core.agent.plugin import AgentPlugin
 from strategy_research.core.agent.registry import AgentPluginRegistry
-from strategy_research.core.study.dag_planner import (
+from strategy_research.apps.study.dag_planner import (
     DAGPlanner,
     PlannerConstraints,
 )
@@ -171,7 +171,7 @@ class TestLLMPath:
 
 class TestBootstrapAutoCompose:
     def test_auto_compose_writes_graph(self, tmp_path: Path, monkeypatch):
-        from strategy_research.core.study.bootstrap import init_study_dir
+        from strategy_research.apps.study.bootstrap import init_study_dir
 
         # Setup workspace with strategy
         ws = tmp_path / "ws"
@@ -195,7 +195,7 @@ class TestBootstrapAutoCompose:
         assert "nodes" in data and len(data["nodes"]) > 0
 
     def test_no_auto_compose_uses_default(self, tmp_path: Path):
-        from strategy_research.core.study.bootstrap import init_study_dir
+        from strategy_research.apps.study.bootstrap import init_study_dir
 
         ws = tmp_path / "ws"
         (ws / "strategies" / "foo").mkdir(parents=True)

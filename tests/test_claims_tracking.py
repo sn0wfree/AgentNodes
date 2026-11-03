@@ -14,7 +14,7 @@ from unittest.mock import MagicMock
 import pytest
 
 from strategy_research.core.goal.store import GoalStore
-from strategy_research.core.study.method.claims import (
+from strategy_research.apps.study.method.claims import (
     normalize_predictions,
     summarize_prediction_accuracy,
     validate_predictions,
@@ -226,7 +226,7 @@ class TestCaptureRoundClaims:
             "hypothesis": "momentum works",
             "predictions": {"sharpe": {"direction": "up", "expected": 0.8}},
         }
-        from strategy_research.core.study.phase_engine import _capture_round_claims
+        from strategy_research.apps.study.phase_engine import _capture_round_claims
         captured = _capture_round_claims(
             runner, 3, researcher_output, ["sharpe"],
             [{"name": "sharpe"}],
@@ -242,7 +242,7 @@ class TestCaptureRoundClaims:
             "hypothesis": "h",
             "predictions": {"sharpe": "garbage"},
         }
-        from strategy_research.core.study.phase_engine import _capture_round_claims
+        from strategy_research.apps.study.phase_engine import _capture_round_claims
         captured = _capture_round_claims(
             runner, 3, researcher_output, ["sharpe"], [{"name": "sharpe"}])
         assert captured == {}
@@ -252,7 +252,7 @@ class TestCaptureRoundClaims:
     def test_capture_store_failure_never_raises(self):
         runner = self._runner()
         runner._goal_store.append_journal_entry.side_effect = RuntimeError("db down")
-        from strategy_research.core.study.phase_engine import _capture_round_claims
+        from strategy_research.apps.study.phase_engine import _capture_round_claims
         captured = _capture_round_claims(
             runner, 3, {"hypothesis": "h", "predictions": PREDICTIONS},
             ["sharpe"], [{"name": "sharpe"}])
@@ -272,7 +272,7 @@ class TestRecordJournalAndRegression:
     def test_fill_path_uses_captured_predictions(self):
         runner = self._runner()
         runner._goal_store.fill_journal_attribution.return_value = True
-        from strategy_research.core.study.phase_engine import _record_journal_and_regression
+        from strategy_research.apps.study.phase_engine import _record_journal_and_regression
         _record_journal_and_regression(
             runner, 1, "hyp", ["sharpe"], "optimize", {},
             "accepted", {"sharpe": "flipped"},
@@ -292,7 +292,7 @@ class TestRecordJournalAndRegression:
     def test_fallback_append_when_no_captured_entry(self):
         runner = self._runner()
         runner._goal_store.fill_journal_attribution.return_value = False
-        from strategy_research.core.study.phase_engine import _record_journal_and_regression
+        from strategy_research.apps.study.phase_engine import _record_journal_and_regression
         _record_journal_and_regression(
             runner, 1, "hyp", ["sharpe"], "optimize", {},
             "accepted", {"sharpe": "flipped"},
@@ -303,7 +303,7 @@ class TestRecordJournalAndRegression:
         runner = self._runner()
         runner._goal_store.fill_journal_attribution.return_value = True
         runner._goal_store.fill_journal_prediction_outcome.side_effect = RuntimeError("x")
-        from strategy_research.core.study.phase_engine import _record_journal_and_regression
+        from strategy_research.apps.study.phase_engine import _record_journal_and_regression
         # must not raise
         _record_journal_and_regression(
             runner, 1, "hyp", ["sharpe"], "optimize", {},

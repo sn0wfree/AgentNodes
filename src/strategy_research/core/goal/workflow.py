@@ -399,7 +399,7 @@ class GoalWorkflowRunner:
         while True:
             await asyncio.sleep(interval)
             try:
-                from ...core.study.runner import meets_metric_targets
+                from strategy_research.apps.study.runner import meets_metric_targets
                 metrics = await asyncio.to_thread(
                     self._run_monitor_check, strategy_name,
                 )

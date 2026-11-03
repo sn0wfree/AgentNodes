@@ -15,7 +15,7 @@ from pathlib import Path
 import httpx
 import pytest
 
-from strategy_research.core.study.models import (
+from strategy_research.apps.study.models import (
     StudyAction,
     StudyStatus,
     allowed_actions,
@@ -71,7 +71,7 @@ def _env(tmp_path: Path, monkeypatch):
     )
     conn.commit()
     conn.close()
-    from strategy_research.core.study import StudyStore
+    from strategy_research.apps.study import StudyStore
 
     store = StudyStore()
     rec = store.create_study(
@@ -195,8 +195,8 @@ def test_scheduler_redo_rewinds_state_and_db(tmp_path, monkeypatch):
     monkeypatch.setenv("QUANTNODES_RESEARCH_HYPOTHESES_PATH", str(tmp_path / "h.json"))
     import asyncio
 
-    from strategy_research.core.study import StudyScheduler, StudyStore
-    from strategy_research.core.study import state_store as ss
+    from strategy_research.apps.study import StudyScheduler, StudyStore
+    from strategy_research.apps.study import state_store as ss
 
     store = StudyStore()
     rec = store.create_study(
@@ -241,7 +241,7 @@ def test_scheduler_redo_rejects_running(tmp_path, monkeypatch):
     monkeypatch.setenv("QUANTNODES_RESEARCH_HYPOTHESES_PATH", str(tmp_path / "h.json"))
     import asyncio
 
-    from strategy_research.core.study import StudyScheduler, StudyStore
+    from strategy_research.apps.study import StudyScheduler, StudyStore
 
     store = StudyStore()
     rec = store.create_study(
@@ -271,7 +271,7 @@ def test_per_user_cap_blocks_third_study(tmp_path, monkeypatch):
     monkeypatch.setenv("SR_STUDY_MAX_PER_USER", "2")
     import asyncio
 
-    from strategy_research.core.study import StudyScheduler, StudyStore
+    from strategy_research.apps.study import StudyScheduler, StudyStore
 
     store = StudyStore()
     ids = []
@@ -318,7 +318,7 @@ def test_idor_blocks_other_users_study(tmp_path, monkeypatch):
     monkeypatch.setenv("SR_ENFORCE_STUDY_IDOR", "1")
     import sqlite3
     from strategy_research.api.auth_tokens import create_token
-    from strategy_research.core.study import StudyStore
+    from strategy_research.apps.study import StudyStore
 
     # sessions: owner-1 属于 alice，owner-2 属于 bob
     conn = sqlite3.connect(str(tmp_path / "sessions.db"))
@@ -384,7 +384,7 @@ def test_idor_allows_own_study(tmp_path, monkeypatch):
     monkeypatch.setenv("SR_ENFORCE_STUDY_IDOR", "1")
     import sqlite3
     from strategy_research.api.auth_tokens import create_token
-    from strategy_research.core.study import StudyStore
+    from strategy_research.apps.study import StudyStore
 
     conn = sqlite3.connect(str(tmp_path / "sessions.db"))
     conn.executescript(
@@ -429,7 +429,7 @@ def test_idor_enforcement_off_allows_cross_user(tmp_path, monkeypatch):
     monkeypatch.setenv("SR_ENFORCE_STUDY_IDOR", "0")
     import sqlite3
     from strategy_research.api.auth_tokens import create_token
-    from strategy_research.core.study import StudyStore
+    from strategy_research.apps.study import StudyStore
 
     conn = sqlite3.connect(str(tmp_path / "sessions.db"))
     conn.executescript(
@@ -491,7 +491,7 @@ def test_idor_empty_owner_denied_for_named_user(tmp_path, monkeypatch):
     monkeypatch.setenv("QUANTNODES_RESEARCH_HYPOTHESES_PATH", str(tmp_path / "h.json"))
     monkeypatch.setenv("SR_ENFORCE_STUDY_IDOR", "1")
     from strategy_research.api.auth_tokens import create_token
-    from strategy_research.core.study import StudyStore
+    from strategy_research.apps.study import StudyStore
 
     store = StudyStore()
     rec = store.create_study(
@@ -562,7 +562,7 @@ class TestArchiveActionMatrix:
 
 def test_store_archive_sets_status_and_metadata(tmp_path, monkeypatch):
     """store.archive_study sets ARCHIVED + archived_at/archived_by."""
-    from strategy_research.core.study import StudyStore
+    from strategy_research.apps.study import StudyStore
 
     store = StudyStore()
     rec = store.create_study(
@@ -584,7 +584,7 @@ def test_store_archive_sets_status_and_metadata(tmp_path, monkeypatch):
 
 def test_store_unarchive_clears_metadata_and_sets_interrupted(tmp_path, monkeypatch):
     """store.unarchive_study reverts ARCHIVED -> INTERRUPTED + clears archive fields."""
-    from strategy_research.core.study import StudyStore
+    from strategy_research.apps.study import StudyStore
 
     store = StudyStore()
     rec = store.create_study(
@@ -602,7 +602,7 @@ def test_store_unarchive_clears_metadata_and_sets_interrupted(tmp_path, monkeypa
 
 def test_list_studies_excludes_archived_by_default(tmp_path, monkeypatch):
     """list_studies() default behavior: ARCHIVED rows are hidden."""
-    from strategy_research.core.study import StudyStore
+    from strategy_research.apps.study import StudyStore
 
     store = StudyStore()
     visible = store.create_study(
@@ -632,7 +632,7 @@ def test_list_studies_excludes_archived_by_default(tmp_path, monkeypatch):
 async def test_available_actions_includes_archive(_env):
     """HTTP: GET /available_actions surfaces archive for COMPLETE."""
     study_id, _ = _env
-    from strategy_research.core.study import StudyStore
+    from strategy_research.apps.study import StudyStore
     with StudyStore() as store:
         store.archive_study(study_id)  # already archived
     app = _build_asgi_app()
@@ -741,7 +741,7 @@ class TestRetryRoundNumbering:
 
     def test_store_reset_round_counter_append_keeps_history(self, tmp_path):
         """mode='append' must NOT touch current_round or delete rounds."""
-        from strategy_research.core.study import StudyStore
+        from strategy_research.apps.study import StudyStore
         import os
         os.environ["QUANTNODES_RESEARCH_GOAL_DB_PATH"] = str(tmp_path / "append.db")
         store = StudyStore()
@@ -767,7 +767,7 @@ class TestRetryRoundNumbering:
 
     def test_store_reset_round_counter_restart_clears_history(self, tmp_path):
         """mode='restart' must wipe rounds + reset current_round to 1."""
-        from strategy_research.core.study import StudyStore
+        from strategy_research.apps.study import StudyStore
         import os
         os.environ["QUANTNODES_RESEARCH_GOAL_DB_PATH"] = str(tmp_path / "restart.db")
         store = StudyStore()
@@ -790,7 +790,7 @@ class TestRetryRoundNumbering:
 
     def test_scheduler_retry_default_mode_is_append(self):
         """retry() defaults to mode='append' (no clear)."""
-        from strategy_research.core.study.scheduler import StudyScheduler
+        from strategy_research.apps.study.scheduler import StudyScheduler
         from unittest.mock import MagicMock
         sched = StudyScheduler.__new__(StudyScheduler)
         sched.store = MagicMock()
@@ -803,16 +803,16 @@ class TestRetryRoundNumbering:
 
     def test_scheduler_retry_passes_mode_to_store(self):
         """retry(mode='restart') should call reset_round_counter with mode='restart'."""
-        from strategy_research.core.study.scheduler import StudyScheduler
+        from strategy_research.apps.study.scheduler import StudyScheduler
         from unittest.mock import MagicMock
-        from strategy_research.core.study.models import StudyStatus
+        from strategy_research.apps.study.models import StudyStatus
 
         sched = StudyScheduler.__new__(StudyScheduler)
         sched.store = MagicMock()
         sched._emit_event = MagicMock()
 
         # Build a fake study record that's in a retryable state.
-        from strategy_research.core.study.models import (
+        from strategy_research.apps.study.models import (
             StudyRecord, StudyAction, allowed_actions,
         )
         rec = StudyRecord(
@@ -846,8 +846,8 @@ async def test_dispatch_retry_accepts_mode_field(_env, monkeypatch):
     fake.continue_study = AsyncMock(return_value=True)
     monkeypatch.setattr(routers_study, "_get_study_scheduler", lambda: fake)
 
-    from strategy_research.core.study import StudyStore
-    from strategy_research.core.study.models import StudyStatus
+    from strategy_research.apps.study import StudyStore
+    from strategy_research.apps.study.models import StudyStatus
     with StudyStore() as s:
         s.update_execution_status(study_id, StudyStatus.ERROR)
 

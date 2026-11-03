@@ -20,7 +20,7 @@ import pytest
 
 from strategy_research.core.goal import GoalStore
 from strategy_research.core.goal.context import default_goal_criteria
-from strategy_research.core.study import StudyStatus, StudyStore
+from strategy_research.apps.study import StudyStatus, StudyStore
 
 
 @pytest.fixture
@@ -81,7 +81,7 @@ def test_monitoring_study_appears_in_recovery_scan(store):
 # ── B7: monitor check reason / missing keep dir ───────────────
 
 def _bare_runner(**attrs):
-    from strategy_research.core.study.runner import AutoresearchRunner
+    from strategy_research.apps.study.runner import AutoresearchRunner
     runner = AutoresearchRunner.__new__(AutoresearchRunner)
     for k, v in attrs.items():
         setattr(runner, k, v)
@@ -103,7 +103,7 @@ def test_run_monitor_check_returns_reason_without_keep_dir(tmp_path, monkeypatch
         objective="x", workspace_path=str(ws), strategy_name="demo",
         metric_targets=[{"name": "calmar", "op": ">=", "value": 0.5}],
     )
-    from strategy_research.core.study.bootstrap import init_study_dir
+    from strategy_research.apps.study.bootstrap import init_study_dir
     init_study_dir(ws, rec.study_id, "demo", "x")
     study = s.get_study(rec.study_id)
     runner = _bare_runner(_get_study=lambda: study)
@@ -114,7 +114,7 @@ def test_run_monitor_check_returns_reason_without_keep_dir(tmp_path, monkeypatch
 
 
 def test_target_failures_collects_all():
-    from strategy_research.core.study.method.metric_targets import target_failures
+    from strategy_research.apps.study.method.metric_targets import target_failures
 
     targets = [
         {"name": "calmar", "op": ">=", "value": 0.5},
@@ -147,7 +147,7 @@ def test_round_run_dirs_sorted(tmp_path, monkeypatch):
 # ── B10: queued-cancel + archived write guards ────────────────
 
 def test_cancel_queued_study_without_token(store):
-    from strategy_research.core.study.scheduler import StudyScheduler
+    from strategy_research.apps.study.scheduler import StudyScheduler
 
     rec = _create(store)  # status=queued, no token ever created
     sched = StudyScheduler.__new__(StudyScheduler)

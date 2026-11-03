@@ -13,7 +13,7 @@ from pathlib import Path
 
 import pytest
 
-from strategy_research.core.study.engine_common import (
+from strategy_research.apps.study.engine_common import (
     SESSION_DB_FILENAME,
     ensure_study_session,
     get_study_session_db_path,
@@ -146,7 +146,7 @@ def study_store(tmp_path: Path, monkeypatch) -> None:
     """StudyStore pointed at a fresh per-test goals DB, with one study seeded."""
     db_path = tmp_path / "goals.db"
     monkeypatch.setenv("QUANTNODES_RESEARCH_GOAL_DB_PATH", str(db_path))
-    from strategy_research.core.study.store import StudyStore
+    from strategy_research.apps.study.store import StudyStore
     store = StudyStore(db_path=db_path)
     store.create_study(
         owner_session_id="tester", goal_id=None, objective="o",

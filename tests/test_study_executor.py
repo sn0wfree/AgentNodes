@@ -27,14 +27,14 @@ import pytest
 
 from strategy_research.core.goal import GoalStore
 from strategy_research.core.goal.context import default_goal_criteria
-from strategy_research.core.study.runner import (
+from strategy_research.apps.study.runner import (
     AutoresearchRunner,
     ControlToken,
     ShutdownReason,
     meets_metric_targets,
 )
-from strategy_research.core.study.models import StudyStatus
-from strategy_research.core.study.store import StudyStore
+from strategy_research.apps.study.models import StudyStatus
+from strategy_research.apps.study.store import StudyStore
 
 # ── fixtures ────────────────────────────────────────────────────────
 
@@ -132,15 +132,15 @@ def _round_lambda(metrics, verdict="keep", stagnation=False, e2_passed=False):
 
 def _patch_round(monkeypatch, fn, *, cooldown=0.0):
     monkeypatch.setattr(
-        "strategy_research.core.study.runner.AutoresearchRunner."
+        "strategy_research.apps.study.runner.AutoresearchRunner."
         "_run_one_round", fn,
     )
     monkeypatch.setattr(
-        "strategy_research.core.study.runner.AutoresearchRunner."
+        "strategy_research.apps.study.runner.AutoresearchRunner."
         "_round_cooldown", lambda self: cooldown,
     )
     monkeypatch.setattr(
-        "strategy_research.core.study.runner.AutoresearchRunner."
+        "strategy_research.apps.study.runner.AutoresearchRunner."
         "_maybe_load_previous_summary", lambda self, study: None,
     )
 
@@ -275,7 +275,7 @@ class TestRunnerShutdown:
 
         _patch_round(monkeypatch, _round)
         monkeypatch.setattr(
-            "strategy_research.core.study.runner.AutoresearchRunner."
+            "strategy_research.apps.study.runner.AutoresearchRunner."
             "_wait_until_resumed", _wait,
         )
         emitter = CollectingEmitter()
@@ -382,7 +382,7 @@ class TestDirectiveInjection:
     def test_format_directives(self):
         from dataclasses import dataclass
 
-        from strategy_research.core.study.runner import AutoresearchRunner
+        from strategy_research.apps.study.runner import AutoresearchRunner
         @dataclass
         class D:
             content: str
@@ -397,7 +397,7 @@ class TestDirectiveInjection:
 
     def test_empty_directives_list_format(self):
         """Empty input still wraps in user-directives block (no items)."""
-        from strategy_research.core.study.runner import AutoresearchRunner
+        from strategy_research.apps.study.runner import AutoresearchRunner
         out = AutoresearchRunner._format_directives([])
         assert out.startswith("<user-directives>")
         assert "no directives" not in out  # still a valid block

@@ -13,11 +13,11 @@ import json
 from types import SimpleNamespace
 
 from strategy_research.kernel.runtimes import INTERRUPT_KEY
-from strategy_research.core.study.graph_preset import (
+from strategy_research.apps.study.graph_preset import (
     build_research_engine,
     run_phases_via_graph,
 )
-from strategy_research.core.study.phase_engine import BranchContext, RoundOutcome
+from strategy_research.apps.study.phase_engine import BranchContext, RoundOutcome
 
 RESEARCHER_RESULT = {
     "researcher_output": {
@@ -103,8 +103,8 @@ def make_ctx(tmp_path, runner: FakeRunner) -> BranchContext:
 
 def _install_phase_fakes(monkeypatch) -> None:
     import strategy_research.apps.autoresearch as ar
-    import strategy_research.core.study.graph_preset as gp
-    import strategy_research.core.study.phase_engine as pe
+    import strategy_research.apps.study.graph_preset as gp
+    import strategy_research.apps.study.phase_engine as pe
 
     monkeypatch.setattr(
         ar, "run_researcher_phase",
@@ -256,7 +256,7 @@ def test_empty_hypothesis_passes_gate_through(tmp_path, monkeypatch):
 def test_unknown_interrupt_becomes_abort_not_crash(tmp_path, monkeypatch):
     """max_hops 等非审批中断 → abort dict 跳轮（runner 预算入账 + continue），
     绝不落到 RoundOutcome 构造去 KeyError 崩轮。"""
-    import strategy_research.core.study.graph_preset as gp
+    import strategy_research.apps.study.graph_preset as gp
 
     _install_phase_fakes(monkeypatch)
     runner = FakeRunner(hitl=True)
@@ -282,8 +282,8 @@ def test_unknown_interrupt_becomes_abort_not_crash(tmp_path, monkeypatch):
 def _install_resume_fakes(monkeypatch, calls: list) -> dict:
     """记录调用序的 phase fakes；返回喂给 resume 的 interrupt payload。"""
     import strategy_research.apps.autoresearch as ar
-    import strategy_research.core.study.graph_preset as gp
-    import strategy_research.core.study.phase_engine as pe
+    import strategy_research.apps.study.graph_preset as gp
+    import strategy_research.apps.study.phase_engine as pe
 
     payload_researcher = {
         "hypothesis": "h1",
@@ -325,7 +325,7 @@ def test_resume_continues_from_claims_without_rerun(tmp_path, monkeypatch):
     """方案 A 核心：claims 起跑、researcher/novelty/gate 不重跑；claims 拿到
     payload 里的 researcher_output（决策注入，防 n8n 弊病：恢复值不得被
     重新推导遮蔽）。"""
-    import strategy_research.core.study.graph_preset as gp
+    import strategy_research.apps.study.graph_preset as gp
 
     calls: list = []
     payload = _install_resume_fakes(monkeypatch, calls)
@@ -361,7 +361,7 @@ def test_runner_resume_dispatch_reads_payload_and_maps_dict(tmp_path, monkeypatc
     import json as _json
     from types import SimpleNamespace as NS
 
-    from strategy_research.core.study.runner import AutoresearchRunner
+    from strategy_research.apps.study.runner import AutoresearchRunner
 
     calls: list = []
     payload = _install_resume_fakes(monkeypatch, calls)
@@ -408,7 +408,7 @@ def test_runner_resume_dispatch_reads_payload_and_maps_dict(tmp_path, monkeypatc
 
 
 def test_study_store_hitl_roundtrip(tmp_path):
-    from strategy_research.core.study.store import StudyStore
+    from strategy_research.apps.study.store import StudyStore
 
     db = tmp_path / "hitl.db"
     with StudyStore(db_path=db) as store:
@@ -431,7 +431,7 @@ def test_study_store_hitl_migration_from_pre_hitl_db(tmp_path):
     """旧库（无 hitl 列）打开即迁移：列补齐、旧行默认关门。"""
     import sqlite3
 
-    from strategy_research.core.study.store import StudyStore
+    from strategy_research.apps.study.store import StudyStore
 
     db = tmp_path / "legacy.db"
     with StudyStore(db_path=db) as store:

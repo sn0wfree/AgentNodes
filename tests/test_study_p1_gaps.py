@@ -12,8 +12,8 @@ import pytest
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
 
-from strategy_research.core.study.runner import AutoresearchRunner, ShutdownReason
-from strategy_research.core.study.models import StudyStatus
+from strategy_research.apps.study.runner import AutoresearchRunner, ShutdownReason
+from strategy_research.apps.study.models import StudyStatus
 
 
 # ── Review fail_count escalation ─────────────────────────────────
@@ -59,14 +59,14 @@ class TestReviewFailCount:
 class TestSchedulerShutdown:
     def test_control_token_cancelled(self):
         """Cancel sets control token."""
-        from strategy_research.core.study.runner import ControlToken
+        from strategy_research.apps.study.runner import ControlToken
         ct = ControlToken()
         assert ct.cancelled is False
         ct.cancelled = True
         assert ct.cancelled is True
 
     def test_control_token_paused(self):
-        from strategy_research.core.study.runner import ControlToken
+        from strategy_research.apps.study.runner import ControlToken
         ct = ControlToken()
         assert ct.paused is False
         ct.paused = True
@@ -79,13 +79,13 @@ class TestSchedulerShutdown:
 class TestBootstrapValidation:
     def test_validate_workspace_strategy_rejects_slash(self):
         """Strategy names with / are rejected."""
-        from strategy_research.core.study.bootstrap import validate_workspace_strategy
+        from strategy_research.apps.study.bootstrap import validate_workspace_strategy
         with pytest.raises(ValueError, match="path separators"):
             validate_workspace_strategy(Path("/tmp"), "bad/name")
 
     def test_validate_workspace_strategy_rejects_dot(self):
         """Strategy names starting with . are rejected."""
-        from strategy_research.core.study.bootstrap import validate_workspace_strategy
+        from strategy_research.apps.study.bootstrap import validate_workspace_strategy
         with pytest.raises(ValueError, match="path separators"):
             validate_workspace_strategy(Path("/tmp"), ".hidden")
 
@@ -111,7 +111,7 @@ class TestRunnerExceptionPath:
 
 class TestStateStoreEdgeCases:
     def test_study_state_defaults(self):
-        from strategy_research.core.study.state_store import StudyState
+        from strategy_research.apps.study.state_store import StudyState
         state = StudyState()
         assert state.last_completed_round == 0
         assert state.best_metrics == {}
@@ -119,7 +119,7 @@ class TestStateStoreEdgeCases:
         assert state.review_fail_count == 0
 
     def test_study_state_fields(self):
-        from strategy_research.core.study.state_store import StudyState
+        from strategy_research.apps.study.state_store import StudyState
         state = StudyState(
             last_completed_round=5,
             best_metrics={"calmar": 1.5},

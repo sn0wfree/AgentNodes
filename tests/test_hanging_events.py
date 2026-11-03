@@ -229,7 +229,7 @@ class TestStudyHangingEventsApi:
         conn.commit()
         conn.close()
         from strategy_research.api.auth_tokens import create_token
-        from strategy_research.core.study import StudyStore
+        from strategy_research.apps.study import StudyStore
 
         store = StudyStore()
         rec = store.create_study(

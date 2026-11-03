@@ -11,11 +11,11 @@ import pytest
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
 
-from strategy_research.core.study.runner import (
+from strategy_research.apps.study.runner import (
     AutoresearchRunner,
     ShutdownReason,
 )
-from strategy_research.core.study.models import (
+from strategy_research.apps.study.models import (
     StudyRecord,
     StudyStatus,
     StudyAction,

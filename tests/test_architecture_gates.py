@@ -117,7 +117,7 @@ def test_study_platform_touchpoints_are_whitelisted():
     在 docs/seam-contract-platform-research-20261030.md 登记理由。
     `study/_archived/` 是隔离区，不参与。
     """
-    root = SRC / "core" / "study"
+    root = SRC / "apps" / "study"
     allowed_sublayers = tuple(f"strategy_research.core.{s}" for s in (
         "agent", "llm", "runtimes", "gateway", "orchestration",
         "context", "storage", "memory", "utils", "observability",
@@ -294,7 +294,7 @@ def test_research_graph_gate_is_retired():
 
 def test_phase_engine_has_no_gate_import():
     """phase_engine 不再 import research_graph_enabled（门接线已移除）。"""
-    path = SRC / "core" / "study" / "phase_engine.py"
+    path = SRC / "apps" / "study" / "phase_engine.py"
     source = path.read_text(encoding="utf-8")
     # 允许文档字符串提及，但不得有实际调用
     assert "research_graph_enabled()" not in source

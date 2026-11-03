@@ -15,8 +15,8 @@ from pathlib import Path
 
 import pytest
 
-from strategy_research.core.study.graph import GraphEdge, GraphNode, StudyGraph
-from strategy_research.core.study.graph_templates import (
+from strategy_research.apps.study.graph import GraphEdge, GraphNode, StudyGraph
+from strategy_research.apps.study.graph_templates import (
     DEFAULT_STANDARD_GRAPH,
     EXPLORE_GRAPH,
     MINIMAL_GRAPH,

@@ -25,7 +25,7 @@ def test_all_entries_share_one_gateway_instance(tmp_path, monkeypatch):
 
     from strategy_research.api.routers.chat import _get_gateway as router_gw
     from strategy_research.cli.tui.session import _get_cli_gateway as cli_gw
-    from strategy_research.core.study.scheduler import _get_gateway_singleton
+    from strategy_research.apps.study.scheduler import _get_gateway_singleton
 
     a = router_gw()
     b = cli_gw()

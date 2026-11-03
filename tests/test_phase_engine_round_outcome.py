@@ -17,7 +17,7 @@ import dataclasses
 
 import pytest
 
-from strategy_research.core.study.phase_engine import RoundOutcome
+from strategy_research.apps.study.phase_engine import RoundOutcome
 
 REQUIRED_FIELDS = {
     "metrics",
@@ -77,7 +77,7 @@ def test_dispatch_table_shape_is_phases_only():
     """One dispatch key — P5-2 retired the langgraph branch; unknown
     values (incl. legacy 'langgraph' rows) are handled by
     _resolve_branch_fn's fallback (warning -> phases)."""
-    from strategy_research.core.study import phase_engine
+    from strategy_research.apps.study import phase_engine
 
     assert set(phase_engine._ENGINE_BRANCHES) == {"phases"}
     assert phase_engine._ENGINE_BRANCHES["phases"] is phase_engine._run_phases_branch
@@ -90,7 +90,7 @@ def test_resolve_engine_passes_unknown_values_through(monkeypatch):
     the resolution layer silently rewriting them."""
     from types import SimpleNamespace
 
-    from strategy_research.core.study.phase_engine import _resolve_engine
+    from strategy_research.apps.study.phase_engine import _resolve_engine
 
     monkeypatch.delenv("SR_STUDY_DAG_ENGINE", raising=False)
     study = SimpleNamespace(engine="not_a_real_engine")

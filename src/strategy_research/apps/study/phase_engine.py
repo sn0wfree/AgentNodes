@@ -101,7 +101,7 @@ def run_round_phases(
         generate_run_summary,
         save_run_summary,
     )
-    from strategy_research.core.study import round_manifest as rm
+    from strategy_research.apps.study import round_manifest as rm
 
     ctx, state, inherited_from = _prepare_round_preamble(
         runner, round_num, previous_summary, directive_text,
@@ -168,7 +168,7 @@ def run_round_phases(
     )
 
     # AEGIS: Scoreboard
-    from ..goal.scoreboard import LeverScoreboard
+    from strategy_research.core.goal.scoreboard import LeverScoreboard
     if not hasattr(runner, "_scoreboard"):
         runner._scoreboard = LeverScoreboard()
     runner._scoreboard.update([lever], attribution, gating_outcome, round_num, round_num)
@@ -279,10 +279,10 @@ def _prepare_round_preamble(
         _create_run_dir,
         read_current_state,
     )
-    from strategy_research.core.study.method import guidance as gd
-    from strategy_research.core.study.method import review_loop as rl
-    from strategy_research.core.study import round_manifest as rm
-    from strategy_research.core.study import state_store as ss
+    from strategy_research.apps.study.method import guidance as gd
+    from strategy_research.apps.study.method import review_loop as rl
+    from strategy_research.apps.study import round_manifest as rm
+    from strategy_research.apps.study import state_store as ss
 
     study = runner._get_study()
     sid = study.study_id
@@ -569,7 +569,7 @@ _ENGINE_BRANCHES: dict[str, Any] = {
 
 def _check_guidance_gates(guidance: Any, metrics: dict) -> list[dict]:
     """Hard-check guidance gates; returns violating gate dicts."""
-    from strategy_research.core.study.method import guidance as gd
+    from strategy_research.apps.study.method import guidance as gd
     violations: list[dict] = []
     if not guidance.gates:
         return violations
@@ -713,7 +713,7 @@ def _update_round_state(
     strategy_changes: Any,
 ) -> None:
     """Persist state.json + DB mirror for the completed round."""
-    from strategy_research.core.study import state_store as ss
+    from strategy_research.apps.study import state_store as ss
 
     state.last_completed_round = round_num
     if verdict == "keep":
@@ -832,9 +832,9 @@ def _run_review_cycle(
         run_agent_via_llm,
         should_use_real_llm,
     )
-    from strategy_research.core.study.method import review_loop as rl
-    from strategy_research.core.study import round_manifest as rm
-    from strategy_research.core.study import state_store as ss
+    from strategy_research.apps.study.method import review_loop as rl
+    from strategy_research.apps.study import round_manifest as rm
+    from strategy_research.apps.study import state_store as ss
 
     study = runner._get_study()
     sid = study.study_id

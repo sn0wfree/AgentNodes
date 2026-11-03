@@ -9,9 +9,9 @@ from __future__ import annotations
 
 import json
 
-from strategy_research.core.study.method import review_loop as rl
-from strategy_research.core.study import state_store as ss
-from strategy_research.core.study.runner import (
+from strategy_research.apps.study.method import review_loop as rl
+from strategy_research.apps.study import state_store as ss
+from strategy_research.apps.study.runner import (
     SR_STUDY_MAX_DEVIATION,
     ShutdownReason,
 )
@@ -173,13 +173,13 @@ def test_runner_high_deviation_stops_after_3(tmp_path, monkeypatch):
     import itertools
 
     import strategy_research.apps.autoresearch as ar_mod
-    from strategy_research.core.study.bootstrap import init_study_dir as _init_study_dir
+    from strategy_research.apps.study.bootstrap import init_study_dir as _init_study_dir
     from strategy_research.core.goal import GoalStore
     from strategy_research.core.goal.context import default_goal_criteria
-    from strategy_research.core.study import runner as runner_mod
-    from strategy_research.core.study.runner import AutoresearchRunner, ControlToken
-    from strategy_research.core.study.scheduler import NullEmitter
-    from strategy_research.core.study.store import StudyStore
+    from strategy_research.apps.study import runner as runner_mod
+    from strategy_research.apps.study.runner import AutoresearchRunner, ControlToken
+    from strategy_research.apps.study.scheduler import NullEmitter
+    from strategy_research.apps.study.store import StudyStore
 
     monkeypatch.setenv("QUANTNODES_RESEARCH_GOAL_DB_PATH", str(tmp_path / "g.db"))
     monkeypatch.setenv("QUANTNODES_RESEARCH_HYPOTHESES_PATH", str(tmp_path / "h.json"))
@@ -261,7 +261,7 @@ def test_runner_high_deviation_stops_after_3(tmp_path, monkeypatch):
         todos = (ws / "study" / study.study_id / "todos.md").read_text(encoding="utf-8")
         assert "纠正方向" in todos
         # manifest phase-2 overlay present on the last round
-        from strategy_research.core.study import round_manifest as rm
+        from strategy_research.apps.study import round_manifest as rm
         m = rm.load_manifest(ws, study.study_id, st.last_completed_round)
         assert m is not None and m.get("review", {}).get("deviation") == "high"
 

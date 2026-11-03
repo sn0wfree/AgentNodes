@@ -178,7 +178,7 @@ def test_study_phase_iteration_budget_raised():
     """Study 场景三 phase 传 max_iterations=10（观察窗预算），CLI 默认 8 不动."""
     import inspect
 
-    import strategy_research.core.study.runner as runner_mod
+    import strategy_research.apps.study.runner as runner_mod
     src = inspect.getsource(runner_mod.AutoresearchRunner._run_one_round_impl)
     assert src.count("max_iterations=10") == 3
     import strategy_research.apps.autoresearch as ar

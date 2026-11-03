@@ -10,11 +10,11 @@ from __future__ import annotations
 import dataclasses
 from types import SimpleNamespace
 
-from strategy_research.core.study.graph_preset import (
+from strategy_research.apps.study.graph_preset import (
     build_research_engine,
     run_phases_via_graph,
 )
-from strategy_research.core.study.phase_engine import (
+from strategy_research.apps.study.phase_engine import (
     BranchContext,
     _resolve_branch_fn,
     _run_phases_branch,
@@ -121,8 +121,8 @@ def _install_phase_fakes(monkeypatch, calls: list) -> None:
     monkeypatch.setattr(ar, "run_execution_phase", fake_execution)
     monkeypatch.setattr(ar, "run_evaluation_phase", fake_evaluation)
     # 两条路径的 lookup 点都换成同一个 fake（patch where used）
-    import strategy_research.core.study.graph_preset as gp
-    import strategy_research.core.study.phase_engine as pe
+    import strategy_research.apps.study.graph_preset as gp
+    import strategy_research.apps.study.phase_engine as pe
 
     monkeypatch.setattr(pe, "_capture_round_claims", fake_claims)
     monkeypatch.setattr(gp, "_capture_round_claims", fake_claims)
@@ -298,7 +298,7 @@ def test_branch_unknown_engine_fallback(monkeypatch):
 def test_langgraph_engine_value_falls_back_to_graph(monkeypatch):
     """P5-2 退役后：engine='langgraph' 走回落（warning → 图路径），
     灰度门环境变量不影响解析。"""
-    from strategy_research.core.study.graph_preset import run_phases_via_graph
+    from strategy_research.apps.study.graph_preset import run_phases_via_graph
 
     monkeypatch.setenv("QNODES_RESEARCH_GRAPH", "1")
     assert _resolve_branch_fn("langgraph") is run_phases_via_graph

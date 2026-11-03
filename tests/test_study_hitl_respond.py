@@ -63,7 +63,7 @@ def app_env(tmp_path: Path, monkeypatch):
     conn.commit()
     conn.close()
 
-    from strategy_research.core.study import StudyStore
+    from strategy_research.apps.study import StudyStore
 
     with StudyStore() as store:
         study_rec = store.create_study(
@@ -104,7 +104,7 @@ async def test_respond_approve_normalizes_to_approved(app_env):
     assert r.status_code == 200
     assert r.json()["decision"] == "approved"
 
-    from strategy_research.core.study import StudyStore
+    from strategy_research.apps.study import StudyStore
     with StudyStore() as store:
         row = store.get_interrupt(intr.interrupt_id)
     assert row.status == "approved"
@@ -123,7 +123,7 @@ async def test_respond_reject_normalizes_to_rejected(app_env):
             json={"decision": "reject"},
         )
     assert r.status_code == 200
-    from strategy_research.core.study import StudyStore
+    from strategy_research.apps.study import StudyStore
     with StudyStore() as store:
         row = store.get_interrupt(intr.interrupt_id)
     assert row.status == "rejected"
@@ -143,7 +143,7 @@ async def test_respond_with_payload_does_not_crash(app_env):
             json={"decision": "approve", "payload": {"note": "ok"}},
         )
     assert r.status_code == 200, r.text
-    from strategy_research.core.study import StudyStore
+    from strategy_research.apps.study import StudyStore
     with StudyStore() as store:
         row = store.get_interrupt(intr.interrupt_id)
     assert row.response is not None and "ok" in row.response
@@ -169,7 +169,7 @@ async def test_respond_past_participle_still_accepted(app_env):
 async def test_respond_rejects_foreign_interrupt(tmp_path, app_env, monkeypatch):
     """An interrupt belonging to another study must not be writable via
     this study's URL path (cross-study write primitive)."""
-    from strategy_research.core.study import StudyStore
+    from strategy_research.apps.study import StudyStore
 
     with StudyStore() as store:
         other_rec = store.create_study(
@@ -207,7 +207,7 @@ async def test_respond_rejects_foreign_interrupt(tmp_path, app_env, monkeypatch)
 
 
 def test_store_get_interrupt_by_id(app_env):
-    from strategy_research.core.study import StudyStore
+    from strategy_research.apps.study import StudyStore
 
     intr = app_env["interrupt"]
     with StudyStore() as store:

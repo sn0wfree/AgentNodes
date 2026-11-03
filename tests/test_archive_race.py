@@ -18,9 +18,9 @@ from unittest.mock import MagicMock
 
 import pytest
 
-from strategy_research.core.study.models import StudyStatus
-from strategy_research.core.study.runner import AutoresearchRunner, ShutdownReason
-from strategy_research.core.study.scheduler import StudyScheduler
+from strategy_research.apps.study.models import StudyStatus
+from strategy_research.apps.study.runner import AutoresearchRunner, ShutdownReason
+from strategy_research.apps.study.scheduler import StudyScheduler
 
 
 def _make_study_db(tmp_path: Path) -> sqlite3.Connection:
@@ -61,7 +61,7 @@ def _seed_runner(
     monkeypatch.setenv("SR_SESSIONS_DB", str(tmp_path / "sessions.db"))
     _make_study_db(tmp_path)
 
-    from strategy_research.core.study import StudyStore
+    from strategy_research.apps.study import StudyStore
 
     store = StudyStore()
     rec = store.create_study(
@@ -101,17 +101,17 @@ class TestArchiveRace:
         assert ok is True
 
         # The runner's cancel path runs (sync helper, not the async loop).
-        from strategy_research.core.study.runner import ShutdownReason
+        from strategy_research.apps.study.runner import ShutdownReason
         # We exercise the same guarded block the runner's while-loop
         # uses; direct call here for simplicity.
-        from strategy_research.core.study.models import StudyStatus as _St
+        from strategy_research.apps.study.models import StudyStatus as _St
         live = runner._current_db_status()
         assert live == _St.ARCHIVED
         # The guard short-circuits before _mark_terminal would overwrite.
         # Simulate by directly inspecting: we did NOT call
         # runner._mark_terminal(_St.CANCELLED) here, which is the bug.
         # Final DB status is ARCHIVED.
-        from strategy_research.core.study import StudyStore
+        from strategy_research.apps.study import StudyStore
         final = StudyStore().get_study(sid)
         assert final.execution_status == _St.ARCHIVED
 
@@ -119,8 +119,8 @@ class TestArchiveRace:
         self, tmp_path, monkeypatch,
     ):
         """Same invariant for the monitor phase exit path."""
-        from strategy_research.core.study import StudyStore
-        from strategy_research.core.study.models import StudyStatus as _St
+        from strategy_research.apps.study import StudyStore
+        from strategy_research.apps.study.models import StudyStatus as _St
 
         runner, scheduler, sid = _seed_runner(
             tmp_path, monkeypatch, initial_status=StudyStatus.MONITORING,
@@ -158,8 +158,8 @@ class TestArchiveRace:
     ):
         """When NO archive race exists, the cancel path still writes
         CANCELLED (i.e. the guard doesn't break the normal cancel)."""
-        from strategy_research.core.study import StudyStore
-        from strategy_research.core.study.models import StudyStatus as _St
+        from strategy_research.apps.study import StudyStore
+        from strategy_research.apps.study.models import StudyStatus as _St
 
         runner, scheduler, sid = _seed_runner(tmp_path, monkeypatch)
         # No archive happens — status stays RUNNING.
@@ -174,8 +174,8 @@ class TestArchiveRace:
         self, tmp_path, monkeypatch,
     ):
         """If the runner hits an exception after archive, the DB stays ARCHIVED."""
-        from strategy_research.core.study import StudyStore
-        from strategy_research.core.study.models import StudyStatus as _St
+        from strategy_research.apps.study import StudyStore
+        from strategy_research.apps.study.models import StudyStatus as _St
 
         runner, scheduler, sid = _seed_runner(tmp_path, monkeypatch)
         # Archive the study first.

@@ -15,8 +15,8 @@ from unittest.mock import MagicMock
 
 import pytest
 
-from strategy_research.core.study.runner import AutoresearchRunner
-from strategy_research.core.study.graph_templates import DEFAULT_STANDARD_GRAPH
+from strategy_research.apps.study.runner import AutoresearchRunner
+from strategy_research.apps.study.graph_templates import DEFAULT_STANDARD_GRAPH
 
 
 def _make_runner():

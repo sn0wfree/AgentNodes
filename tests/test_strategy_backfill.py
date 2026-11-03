@@ -23,7 +23,7 @@ from pathlib import Path
 
 import pytest
 
-from strategy_research.core.study.bootstrap import (
+from strategy_research.apps.study.bootstrap import (
     _create_minimal_strategy,
     _ensure_strategy_runnable,
     validate_workspace_strategy,

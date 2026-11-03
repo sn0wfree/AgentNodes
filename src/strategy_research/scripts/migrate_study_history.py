@@ -28,7 +28,7 @@ import time
 import uuid
 from pathlib import Path
 
-from strategy_research.core.study.engine_common import SESSION_DB_FILENAME
+from strategy_research.apps.study.engine_common import SESSION_DB_FILENAME
 
 # Event types that are only useful for live streaming, not historical replay
 # These are skipped when migrating to event_log since the projector doesn't

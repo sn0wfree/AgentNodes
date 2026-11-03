@@ -38,7 +38,7 @@ def test_lifespan_invokes_recover_on_startup(_env, monkeypatch):
         calls.append(True)
         return []
 
-    from strategy_research.core.study import StudyScheduler
+    from strategy_research.apps.study import StudyScheduler
     monkeypatch.setattr(StudyScheduler, "recover_on_startup", fake_recover)
 
     app = create_app()
@@ -52,7 +52,7 @@ def test_lifespan_recover_handles_running_study(_env, monkeypatch):
     INTERRUPTED (per recover policy: running → interrupted, manual resume).
     """
     from strategy_research.api.app import create_app
-    from strategy_research.core.study import StudyStatus, StudyStore
+    from strategy_research.apps.study import StudyStatus, StudyStore
 
     # Pre-seed a "left over from prior process" RUNNING study.
     store = StudyStore()

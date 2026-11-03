@@ -135,7 +135,7 @@ async def _monitor_repair_rounds(runner: Any) -> bool:
     sid = study.study_id
     session = study.session_id
     path = Path(study.workspace_path)
-    from strategy_research.core.study import state_store as ss
+    from strategy_research.apps.study import state_store as ss
     state = ss.load(path, sid)
     base_round = state.last_completed_round or study.current_round or 0
 

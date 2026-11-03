@@ -61,7 +61,7 @@ def _study_tree(tmp_path: Path, monkeypatch):
     conn.commit()
     conn.close()
 
-    from strategy_research.core.study import StudyStore
+    from strategy_research.apps.study import StudyStore
 
     store = StudyStore()
     rec = store.create_study(

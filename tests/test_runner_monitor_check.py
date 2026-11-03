@@ -15,8 +15,8 @@ from pathlib import Path
 
 import pytest
 
-from strategy_research.core.study import state_store as ss
-from strategy_research.core.study.runner import AutoresearchRunner
+from strategy_research.apps.study import state_store as ss
+from strategy_research.apps.study.runner import AutoresearchRunner
 
 
 @pytest.fixture

@@ -138,14 +138,14 @@ class AutoresearchRunner(RunnerAegisMixin, RunnerKnowledgeMixin):
         # Agent resilience: resolve loop strategy from study's evolved config
         # or default to ExplorerStrategy (max_iter=50, no_progress_window=5).
         try:
-            from ..agent.strategy.profile_resolver import resolve_loop_strategy
+            from strategy_research.core.agent.strategy.profile_resolver import resolve_loop_strategy
             loop_cfg = getattr(study, "loop_config", None)
             if loop_cfg:
                 self._loop_strategy = resolve_loop_strategy(
                     {"name": "explorer", "config": loop_cfg}
                 )
             else:
-                from ..agent.strategy.explorer import ExplorerStrategyFactory
+                from strategy_research.core.agent.strategy.explorer import ExplorerStrategyFactory
                 self._loop_strategy = ExplorerStrategyFactory.create()
         except Exception as exc:  # noqa: BLE001
             logger.debug("strategy resolution failed, falling back to default: %s", exc)
@@ -298,7 +298,7 @@ class AutoresearchRunner(RunnerAegisMixin, RunnerKnowledgeMixin):
         sid: str,
     ) -> str | None:
         """Check post-round shutdown conditions; returns stop reason or None."""
-        from strategy_research.core.study import state_store as _ss
+        from strategy_research.apps.study import state_store as _ss
 
         # targets met (E2: targets ∧ keep ∧ gates pass)
         if result.get("e2_passed"):
@@ -462,7 +462,7 @@ class AutoresearchRunner(RunnerAegisMixin, RunnerKnowledgeMixin):
         _strategy = study.strategy_name
         _graph = self._load_graph(_path, sid)
         from strategy_research.apps.autoresearch import read_current_state
-        from strategy_research.core.study import round_manifest as rm
+        from strategy_research.apps.study import round_manifest as rm
         _round_dir = rm.round_dir(_path, sid, round_num)
         _run_dirs = sorted(
             d for d in _round_dir.iterdir()
@@ -827,7 +827,7 @@ class AutoresearchRunner(RunnerAegisMixin, RunnerKnowledgeMixin):
         # strategy_name / workspace_path may have been updated).
         previous_summary = self._maybe_load_previous_summary(self._get_study())
         # v2: best score comes from state.json (keep-only, design §8.4)
-        from strategy_research.core.study import state_store as ss
+        from strategy_research.apps.study import state_store as ss
         state = ss.load(Path(self._get_study().workspace_path), sid)
         best_calmar = (state.best_metrics or {}).get("calmar")
         if best_calmar is not None:
@@ -1220,7 +1220,7 @@ class AutoresearchRunner(RunnerAegisMixin, RunnerKnowledgeMixin):
         from datetime import datetime, timezone
 
         from strategy_research.apps.backtest import run_backtest_script
-        from strategy_research.core.study import state_store as ss
+        from strategy_research.apps.study import state_store as ss
 
         study = self._get_study()
         sid = study.study_id
@@ -1255,7 +1255,7 @@ class AutoresearchRunner(RunnerAegisMixin, RunnerKnowledgeMixin):
             )
             metrics = dict(state.best_metrics or {})
 
-        from strategy_research.core.study.method.metric_targets import target_failures
+        from strategy_research.apps.study.method.metric_targets import target_failures
         failures = target_failures(metrics, study.metric_targets or [])
         meets = bool(study.metric_targets) and not failures
         notes.extend(failures)

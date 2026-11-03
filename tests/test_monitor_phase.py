@@ -10,8 +10,8 @@ from types import SimpleNamespace
 
 import pytest
 
-from strategy_research.core.study.monitor import monitor_phase
-from strategy_research.core.study.models import StudyStatus
+from strategy_research.apps.study.monitor import monitor_phase
+from strategy_research.apps.study.models import StudyStatus
 
 
 class Probe:

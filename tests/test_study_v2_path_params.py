@@ -27,7 +27,7 @@ from strategy_research.apps.backtest import (
     run_backtest_script,
     update_results_tsv,
 )
-from strategy_research.core.study.runner import AutoresearchRunner
+from strategy_research.apps.study.runner import AutoresearchRunner
 
 
 def _write_strategy(strat_dir: Path, name: str = "demo") -> None:

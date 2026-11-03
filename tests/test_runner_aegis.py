@@ -8,14 +8,14 @@ import os
 import pytest
 
 from strategy_research.core.goal.store import GoalStore
-from strategy_research.core.study.runner import (
+from strategy_research.apps.study.runner import (
     AutoresearchRunner,
     ControlToken,
     ShutdownReason,
     _metric_pass_set,
     meets_metric_targets,
 )
-from strategy_research.core.study.store import StudyStore
+from strategy_research.apps.study.store import StudyStore
 
 
 @pytest.fixture(autouse=True)

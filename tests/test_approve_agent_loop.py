@@ -22,13 +22,13 @@ import pytest
 @pytest.fixture
 def store(tmp_path, monkeypatch):
     monkeypatch.setenv("QUANTNODES_RESEARCH_GOAL_DB_PATH", str(tmp_path / "g.db"))
-    from strategy_research.core.study.store import StudyStore
+    from strategy_research.apps.study.store import StudyStore
     return StudyStore(db_path=tmp_path / "g.db")
 
 
 def test_approve_agent_loop_returns_false_when_no_runner(store):
     """With no active executor, approve_agent_loop returns False."""
-    from strategy_research.core.study.scheduler import StudyScheduler
+    from strategy_research.apps.study.scheduler import StudyScheduler
 
     sched = StudyScheduler(store=store)
     # No active runners — should return False (no-op)
@@ -44,7 +44,7 @@ def test_approve_agent_loop_returns_false_when_runner_has_no_agent_loop(store):
     to assert ``True`` and verify the approval is forwarded.
     """
     from unittest.mock import MagicMock
-    from strategy_research.core.study.scheduler import StudyScheduler
+    from strategy_research.apps.study.scheduler import StudyScheduler
 
     sched = StudyScheduler(store=store)
 
@@ -66,7 +66,7 @@ def test_approve_agent_loop_returns_false_when_runner_has_no_agent_loop(store):
 def test_approve_agent_loop_calls_approve_when_runner_has_loop(store):
     """When runner DOES have agent_loop, the method calls approve_loop."""
     from unittest.mock import MagicMock
-    from strategy_research.core.study.scheduler import StudyScheduler
+    from strategy_research.apps.study.scheduler import StudyScheduler
 
     sched = StudyScheduler(store=store)
 

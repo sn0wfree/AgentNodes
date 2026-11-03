@@ -12,12 +12,12 @@ from types import SimpleNamespace
 
 import pytest
 
-from strategy_research.core.study.contracts import (
+from strategy_research.apps.study.contracts import (
     SR_STUDY_MAX_DISCARD,
     ShutdownReason,
 )
-from strategy_research.core.study.models import StudyStatus
-from strategy_research.core.study.runner import AutoresearchRunner
+from strategy_research.apps.study.models import StudyStatus
+from strategy_research.apps.study.runner import AutoresearchRunner
 
 
 class Probe:
@@ -142,7 +142,7 @@ def test_stop_conditions_discard_streak(monkeypatch):
     r = make_runner()
     r._budget_exceeded = lambda: False
 
-    import strategy_research.core.study.state_store as ss
+    import strategy_research.apps.study.state_store as ss
 
     monkeypatch.setattr(
         ss, "load",
@@ -157,7 +157,7 @@ def test_stop_conditions_returns_none_when_healthy(monkeypatch):
     r = make_runner()
     r._budget_exceeded = lambda: False
 
-    import strategy_research.core.study.state_store as ss
+    import strategy_research.apps.study.state_store as ss
 
     monkeypatch.setattr(ss, "load", lambda p, s: SimpleNamespace(discard_streak=0))
     assert r._check_stop_conditions({}, {}, "keep", 3, "s", "st-1") is None
@@ -287,7 +287,7 @@ def test_load_graph_falls_back_on_malformed(tmp_path: Path):
 
 def test_load_graph_reads_valid(tmp_path: Path):
     """合法 graph.json 应被读出（与回退图区分：节点数一致即可）。"""
-    from strategy_research.core.study import graph as graph_mod
+    from strategy_research.apps.study import graph as graph_mod
 
     r = make_runner()
     default = r._load_graph(tmp_path, "st-1")  # 缺失 → 回退

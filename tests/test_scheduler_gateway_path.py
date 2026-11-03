@@ -13,8 +13,8 @@ from pathlib import Path
 
 import pytest
 
-from strategy_research.core.study import StudyScheduler, StudyStatus, StudyStore
-from strategy_research.core.study.models import StudyRecord
+from strategy_research.apps.study import StudyScheduler, StudyStatus, StudyStore
+from strategy_research.apps.study.models import StudyRecord
 
 
 @pytest.fixture(autouse=True)
@@ -62,7 +62,7 @@ def test_submit_uses_mailbox_only(store):
     assert not hasattr(sched, "_session_queues")
     assert not hasattr(sched, "_session_consumers")
 
-    from strategy_research.core.study.scheduler import _get_gateway_singleton
+    from strategy_research.apps.study.scheduler import _get_gateway_singleton
 
     gw = _get_gateway_singleton()
     mailbox = gw.entry.mailbox_for("automation:sess-1")

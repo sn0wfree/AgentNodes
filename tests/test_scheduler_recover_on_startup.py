@@ -20,8 +20,8 @@ import pytest
 
 from strategy_research.core.goal import GoalStore
 from strategy_research.core.goal.context import default_goal_criteria
-from strategy_research.core.study.store import StudyStore
-from strategy_research.core.study.models import StudyStatus
+from strategy_research.apps.study.store import StudyStore
+from strategy_research.apps.study.models import StudyStatus
 
 
 @pytest.fixture
@@ -63,7 +63,7 @@ async def test_running_becomes_interrupted(env):
     sid = _create_study_with_status(store, env, StudyStatus.RUNNING)
     assert store.get_study(sid).execution_status == StudyStatus.RUNNING
 
-    from strategy_research.core.study.scheduler import StudyScheduler
+    from strategy_research.apps.study.scheduler import StudyScheduler
     sched = StudyScheduler(store=store)
     sched.submit = lambda study: asyncio.sleep(0)
 
@@ -79,7 +79,7 @@ async def test_paused_stays_paused(env):
     store = StudyStore()
     sid = _create_study_with_status(store, env, StudyStatus.PAUSED)
 
-    from strategy_research.core.study.scheduler import StudyScheduler
+    from strategy_research.apps.study.scheduler import StudyScheduler
     sched = StudyScheduler(store=store)
     sched.submit = lambda study: asyncio.sleep(0)
 
@@ -96,7 +96,7 @@ async def test_queued_is_recovered(env):
     store = StudyStore()
     sid = _create_study_with_status(store, env, StudyStatus.QUEUED)
 
-    from strategy_research.core.study.scheduler import StudyScheduler
+    from strategy_research.apps.study.scheduler import StudyScheduler
     sched = StudyScheduler(store=store)
     sched.submit = lambda study: asyncio.sleep(0)
 
@@ -125,7 +125,7 @@ async def test_stale_workspace_becomes_error(env):
     )
     store.update_execution_status(study.study_id, StudyStatus.RUNNING)
 
-    from strategy_research.core.study.scheduler import StudyScheduler
+    from strategy_research.apps.study.scheduler import StudyScheduler
     sched = StudyScheduler(store=store)
     sched.submit = lambda study: asyncio.sleep(0)
 
@@ -148,7 +148,7 @@ async def test_mixed_statuses_correctly_transition(env):
         StudyStatus.QUEUED: _create_study_with_status(store, env, StudyStatus.QUEUED),
     }
 
-    from strategy_research.core.study.scheduler import StudyScheduler
+    from strategy_research.apps.study.scheduler import StudyScheduler
     sched = StudyScheduler(store=store)
     sched.submit = lambda study: asyncio.sleep(0)
 

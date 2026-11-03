@@ -102,7 +102,7 @@ def test_engine_internal_fields_not_required():
 def test_real_phase_engine_types_satisfy_protocols():
     """集成确认：真引擎 dataclass 结构上满足中立协议（零改动引擎）。"""
     phase_engine = pytest.importorskip(
-        "strategy_research.core.study.phase_engine", reason="引擎导入链较重"
+        "strategy_research.apps.study.phase_engine", reason="引擎导入链较重"
     )
     outcome = phase_engine.RoundOutcome(
         metrics={}, verdict="pass", eval_result={}, agent_outputs={},

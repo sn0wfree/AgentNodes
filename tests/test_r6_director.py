@@ -9,7 +9,7 @@ from types import SimpleNamespace
 
 import pytest
 
-from strategy_research.core.study.director import (
+from strategy_research.apps.study.director import (
     ACTION_ESCALATE,
     ACTION_RESCOPE,
     ACTION_STOP,
@@ -104,7 +104,7 @@ def test_proposal_is_pure_no_side_effects():
 
 def test_runner_emits_directive_event_after_lifecycle():
     """run() 收尾必须发 study.directive；且不发任何「自动开 run」信号。"""
-    from strategy_research.core.study.runner import AutoresearchRunner
+    from strategy_research.apps.study.runner import AutoresearchRunner
 
     events: list[tuple[str, dict]] = []
 

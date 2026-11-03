@@ -16,8 +16,8 @@ from strategy_research.kernel.gateway import (
     scheduler_request,
 )
 from strategy_research.kernel.orchestration import EntryPoint, WorkKind
-from strategy_research.core.study import StudyScheduler, StudyStatus, StudyStore
-from strategy_research.core.study.models import StudyRecord
+from strategy_research.apps.study import StudyScheduler, StudyStatus, StudyStore
+from strategy_research.apps.study.models import StudyRecord
 
 
 @pytest.fixture(autouse=True)
@@ -166,7 +166,7 @@ class _FakeRunner:
 def test_submit_routes_to_mailbox_and_consumer_executes(monkeypatch, tmp_path):
     """执行等价：工单不只进 mailbox，还要真的被执行体消费。"""
     monkeypatch.setenv("QNODES_NEW_ENTRY_STUDY", "1")
-    import strategy_research.core.study.scheduler as sched_mod
+    import strategy_research.apps.study.scheduler as sched_mod
 
     _FakeRunner.instances.clear()
     monkeypatch.setattr(sched_mod, "AutoresearchRunner", _FakeRunner)

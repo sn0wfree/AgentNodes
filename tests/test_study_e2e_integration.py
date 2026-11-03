@@ -17,18 +17,18 @@ import pytest
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
 
-from strategy_research.core.study.runner import (
+from strategy_research.apps.study.runner import (
     AutoresearchRunner,
     ShutdownReason,
     meets_metric_targets,
 )
-from strategy_research.core.study.models import (
+from strategy_research.apps.study.models import (
     StudyStatus,
     StudyAction,
     ACTION_MATRIX,
     MetricTarget,
 )
-from strategy_research.core.study.state_store import StudyState
+from strategy_research.apps.study.state_store import StudyState
 
 
 # ── Helpers ───────────────────────────────────────────────────────
@@ -275,17 +275,17 @@ class TestStateStore:
 
 class TestAttribution:
     def test_flipped(self):
-        from strategy_research.core.study.method.attribution import classify_attribution, AttributionOutcome
+        from strategy_research.apps.study.method.attribution import classify_attribution, AttributionOutcome
         result = classify_attribution(["calmar"], set(), {"calmar"})
         assert result["calmar"] == AttributionOutcome.FLIPPED
 
     def test_regressed(self):
-        from strategy_research.core.study.method.attribution import classify_attribution, AttributionOutcome
+        from strategy_research.apps.study.method.attribution import classify_attribution, AttributionOutcome
         result = classify_attribution(["calmar"], {"calmar"}, set())
         assert result["calmar"] == AttributionOutcome.REGRESSED
 
     def test_precision(self):
-        from strategy_research.core.study.method.attribution import compute_precision, AttributionOutcome
+        from strategy_research.apps.study.method.attribution import compute_precision, AttributionOutcome
         attr = {"a": AttributionOutcome.FLIPPED, "b": AttributionOutcome.REGRESSED}
         precision, hits, total = compute_precision(attr)
         assert hits == 1

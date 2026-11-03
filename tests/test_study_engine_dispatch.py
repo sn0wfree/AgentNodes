@@ -19,7 +19,7 @@ class TestEngineDispatch:
         """
         from types import SimpleNamespace
 
-        from strategy_research.core.study.phase_engine import _resolve_engine
+        from strategy_research.apps.study.phase_engine import _resolve_engine
 
         monkeypatch.setenv("SR_STUDY_DAG_ENGINE", "1")
         study = SimpleNamespace(engine="phases")
@@ -34,7 +34,7 @@ class TestEngineDispatch:
         """
         from types import SimpleNamespace
 
-        from strategy_research.core.study import phase_engine
+        from strategy_research.apps.study import phase_engine
 
         assert "dag" not in phase_engine._ENGINE_BRANCHES
         assert "langgraph" not in phase_engine._ENGINE_BRANCHES
@@ -42,7 +42,7 @@ class TestEngineDispatch:
             study = SimpleNamespace(engine=legacy)
             assert phase_engine._resolve_engine(study, round_num=1) == legacy
             # fallback resolution lands on the graph path
-            from strategy_research.core.study.graph_preset import (
+            from strategy_research.apps.study.graph_preset import (
                 run_phases_via_graph,
             )
             assert phase_engine._resolve_branch_fn(legacy) is run_phases_via_graph

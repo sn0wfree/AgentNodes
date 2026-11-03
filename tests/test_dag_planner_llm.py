@@ -12,7 +12,7 @@ import pytest
 
 from strategy_research.core.agent.plugin import AgentPlugin
 from strategy_research.core.agent.registry import AgentPluginRegistry
-from strategy_research.core.study.dag_planner import DAGPlanner, PlannerConstraints
+from strategy_research.apps.study.dag_planner import DAGPlanner, PlannerConstraints
 
 
 def _plugin(pid: str, keywords=()) -> AgentPlugin:

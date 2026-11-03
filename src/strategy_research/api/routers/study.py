@@ -78,7 +78,7 @@ async def _study_dump(session_id: str, study_id: str | None) -> dict:
     """
     from datetime import datetime, timezone
 
-    from ...core.study.models import StudyStatus as _SS
+    from strategy_research.apps.study.models import StudyStatus as _SS
 
     sched = _get_study_scheduler()
     now = datetime.now(timezone.utc).isoformat()
@@ -270,7 +270,7 @@ async def study_start(req: StudyStartRequest, request: Request):
 
     import asyncio
 
-    from ...core.study.bootstrap import create_study_record
+    from strategy_research.apps.study.bootstrap import create_study_record
 
     try:
         if req.executor_type == "workflow":
@@ -284,7 +284,7 @@ async def study_start(req: StudyStartRequest, request: Request):
                     "use POST /api/goal/workflow/start for DAG workflows"
                 ),
             )
-        from ...core.study import StudyStatus
+        from strategy_research.apps.study import StudyStatus
         # AEGIS: round-based AutoresearchRunner via the scheduler.
         # Shared orchestration (validation / ledger / autonomous dir)
         # lives in core/study/bootstrap.py. Scenario routing inside may
@@ -367,7 +367,7 @@ async def study_list(
         from .web_session import _fetch_session_owned, _get_db
         user_id = getattr(request.state, "user_id", None) or "anonymous"
         _fetch_session_owned(_get_db(), session_id, user_id)
-    from ...core.study import StudyStatus, StudyStore
+    from strategy_research.apps.study import StudyStatus, StudyStore
     try:
         status_enum = StudyStatus(status) if status else None
     except ValueError:
@@ -441,7 +441,7 @@ async def study_status(
     user_id = getattr(request.state, "user_id", None) or "anonymous"
     _fetch_session_owned(_get_db(), session_id, user_id)
     from ...core.goal import GoalStore
-    from ...core.study import StudyStore
+    from strategy_research.apps.study import StudyStore
     with StudyStore() as store:
         if study_id:
             study = store.get_study(study_id)
@@ -520,7 +520,7 @@ async def study_summary(request: Request, response: Response, study_id: str):
 
     # ── Cache miss: full DB read ────────────────────────────────
     from ...core.goal import GoalStore
-    from ...core.study import StudyStore
+    from strategy_research.apps.study import StudyStore
     with StudyStore() as store:
         recent_rounds = store.list_rounds(study_id, limit=5)
 
@@ -536,7 +536,7 @@ async def study_summary(request: Request, response: Response, study_id: str):
 
     budget_data = None
     try:
-        from ...core.study.state_store import load as load_state
+        from strategy_research.apps.study.state_store import load as load_state
         state = load_state(Path(study.workspace_path), study.study_id)
         budget_data = {
             "budget_used_turns": state.budget_used_turns,
@@ -602,7 +602,7 @@ async def study_pause(request: Request, study_id: str):
     sid = _study_session_id(study_id)
     if sid is None:
         raise HTTPException(status_code=404, detail="study not active")
-    from ...core.study import StudyStatus, StudyStore
+    from strategy_research.apps.study import StudyStatus, StudyStore
     with StudyStore() as store:
         study = store.get_study(study_id)
     if study is not None and study.execution_status not in (
@@ -632,7 +632,7 @@ async def study_resume(request: Request, study_id: str):
     sched = _get_study_scheduler()
 
     # Check current status to decide resume path
-    from ...core.study import StudyStatus, StudyStore
+    from strategy_research.apps.study import StudyStatus, StudyStore
     with StudyStore() as store:
         study = store.get_study(study_id)
     if study is None:
@@ -706,7 +706,7 @@ async def study_directive(request: Request, study_id: str, req: DirectiveRequest
     if sid is None:
         raise HTTPException(status_code=404, detail="study not found")
 
-    from ...core.study import StudyStore
+    from strategy_research.apps.study import StudyStore
     try:
         with StudyStore() as store:
             directive = store.add_directive(
@@ -745,7 +745,7 @@ async def study_directive(request: Request, study_id: str, req: DirectiveRequest
 async def study_directives_list(request: Request, study_id: str):
     """List pending + consumed directives for a study (audit trail)."""
     _owned_study(request, study_id)  # IDOR: caller must own the study
-    from ...core.study import StudyStore
+    from strategy_research.apps.study import StudyStore
     with StudyStore() as store:
         study = store.get_study(study_id)
         if study is None:
@@ -799,7 +799,7 @@ async def study_interrupt_respond(
         raise HTTPException(status_code=404, detail="study not found")
 
     status_value = _DECISION_ALIASES[req.decision]
-    from ...core.study import StudyStore
+    from strategy_research.apps.study import StudyStore
 
     # The interrupt must belong to this study — global ids are not a trust boundary.
     with StudyStore() as store:
@@ -843,7 +843,7 @@ async def study_pending_interrupt(request: Request, study_id: str):
     the card state is rebuilt from the DB here.
     """
     _owned_study(request, study_id)
-    from ...core.study import StudyStore
+    from strategy_research.apps.study import StudyStore
 
     with StudyStore() as store:
         interrupt = store.get_latest_pending_interrupt(study_id)
@@ -882,7 +882,7 @@ async def study_rounds_list(
     offset: int = 0, limit: int = 20,
 ):
     """v2: paginated round history (study_rounds table)."""
-    from ...core.study import StudyStore
+    from strategy_research.apps.study import StudyStore
     _owned_study(request, study_id)
     with StudyStore() as store:
         rows = store.list_rounds(study_id, limit=offset + limit)
@@ -901,7 +901,7 @@ async def study_rounds_list(
 @router.get("/{study_id}/journal", response_model=StudyJournalResponse)
 async def study_journal(request: Request, study_id: str):
     """v2: journal.md content (append-only archive, single source)."""
-    from ...core.study.round_manifest import journal_path
+    from strategy_research.apps.study.round_manifest import journal_path
     study = _owned_study(request, study_id)
     p = journal_path(Path(study.workspace_path), study_id)
     content = p.read_text(encoding="utf-8") if p.exists() else ""
@@ -929,7 +929,7 @@ async def study_knowledge(request: Request, study_id: str):
 @router.get("/{study_id}/guidance", response_model=StudyGuidanceResponse)
 async def study_guidance(request: Request, study_id: str):
     """v2: guidance.md content + parsed gates (design §13.4)."""
-    from ...core.study.method import guidance as gd
+    from strategy_research.apps.study.method import guidance as gd
     study = _owned_study(request, study_id)
     g = gd.load_guidance(Path(study.workspace_path), study_id)
     if g.source is None:
@@ -948,7 +948,7 @@ async def study_guidance(request: Request, study_id: str):
 @router.get("/{study_id}/rounds/{round_num}/summary_md", response_model=StudyRoundSummaryMdResponse)
 async def study_round_summary_md(request: Request, study_id: str, round_num: int):
     """v2: single-round summary.md content."""
-    from ...core.study import round_manifest as rm
+    from strategy_research.apps.study import round_manifest as rm
     study = _owned_study(request, study_id)
     p = rm.summary_path(Path(study.workspace_path), study_id, round_num)
     if not p.exists():
@@ -971,7 +971,7 @@ def _round_run_dirs(workspace_path: Path, study_id: str, round_num: int) -> list
     this helper must agree on which run is "the" round content — the
     lexically latest (matches _create_run_dir's zero-padded naming).
     """
-    from ...core.study import round_manifest as rm
+    from strategy_research.apps.study import round_manifest as rm
     rd = rm.round_dir(workspace_path, study_id, round_num)
     if not rd.exists():
         return []
@@ -990,7 +990,7 @@ async def study_round_artifacts(request: Request, study_id: str, round_num: int)
     backtest logs...).
     """
     study = _owned_study(request, study_id)
-    from ...core.study import round_manifest as rm
+    from strategy_research.apps.study import round_manifest as rm
     rd = rm.round_dir(Path(study.workspace_path), study_id, round_num)
     if not rd.exists():
         raise HTTPException(status_code=404, detail="round dir not found")
@@ -1016,7 +1016,7 @@ async def study_round_artifacts(request: Request, study_id: str, round_num: int)
 async def study_round_manifest(request: Request, study_id: str, round_num: int):
     """Round manifest.json content (hypothesis / changes / metrics / next)."""
     study = _owned_study(request, study_id)
-    from ...core.study import round_manifest as rm
+    from strategy_research.apps.study import round_manifest as rm
     m = rm.load_manifest(Path(study.workspace_path), study_id, round_num)
     if m is None:
         raise HTTPException(status_code=404, detail="round manifest not found")
@@ -1236,8 +1236,8 @@ _ACTION_META: dict[str, dict] = {
 @router.get("/{study_id}/available_actions", response_model=StudyAvailableActionsResponse)
 async def study_available_actions(request: Request, study_id: str):
     """Actions the current status permits (drives the UI's buttons)."""
-    from ...core.study import StudyStore
-    from ...core.study.models import allowed_actions
+    from strategy_research.apps.study import StudyStore
+    from strategy_research.apps.study.models import allowed_actions
     _owned_study(request, study_id)
     with StudyStore() as store:
         study = store.get_study(study_id)
@@ -1295,7 +1295,7 @@ async def _act_unarchive(sched, study_id: str, body, study, reason) -> dict:
 
 
 async def _act_redo(sched, study_id: str, body, study, reason) -> dict:
-    from ...core.study.models import StudyStatus
+    from strategy_research.apps.study.models import StudyStatus
 
     round_num = body.round_num if body and body.round_num else study.current_round
     if study.execution_status == StudyStatus.RUNNING:
@@ -1363,14 +1363,14 @@ async def study_dispatch_action(
     Returns 409 when the action is not allowed in the current status —
     the UI must render buttons only from ``available_actions``.
     """
-    from ...core.study import StudyStore
+    from strategy_research.apps.study import StudyStore
     _owned_study(request, study_id)
     with StudyStore() as store:
         study = store.get_study(study_id)
         if study is None:
             raise HTTPException(status_code=404, detail="study not found")
 
-    from ...core.study.models import StudyAction, allowed_actions
+    from strategy_research.apps.study.models import StudyAction, allowed_actions
     # Backward-compat: map deprecated action names to CONTINUE
     _DEPRECATED_TO_CONTINUE = {"resume", "resume_interrupted", "retry"}
     try:
@@ -1408,7 +1408,7 @@ async def study_dispatch_action(
             response_model=StudyObjectiveHistoryResponse)
 async def study_objective_history(request: Request, study_id: str):
     """Audit trail of objective replacements (newest first)."""
-    from ...core.study import StudyStore
+    from strategy_research.apps.study import StudyStore
     _owned_study(request, study_id)
     with StudyStore() as store:
         if store.get_study(study_id) is None:
@@ -1444,8 +1444,8 @@ async def study_graph(request: Request, study_id: str):
     """
     from pathlib import Path as _Path
 
-    from ...core.study.graph import StudyGraph
-    from ...core.study.graph_templates import DEFAULT_STANDARD_GRAPH
+    from strategy_research.apps.study.graph import StudyGraph
+    from strategy_research.apps.study.graph_templates import DEFAULT_STANDARD_GRAPH
     study = _owned_study(request, study_id)
     ws = _Path(study.workspace_path)
     persisted = True
@@ -1473,8 +1473,8 @@ async def study_update_graph(
     Only editable when the study is ``paused`` or ``interrupted`` —
     mutating a running study would orphan its in-flight agent state.
     """
-    from ...core.study.graph import StudyGraph
-    from ...core.study.models import StudyStatus
+    from strategy_research.apps.study.graph import StudyGraph
+    from strategy_research.apps.study.models import StudyStatus
     study = _owned_study(request, study_id)
     if study.execution_status not in (StudyStatus.PAUSED, StudyStatus.INTERRUPTED):
         raise HTTPException(
@@ -1484,7 +1484,7 @@ async def study_update_graph(
                 f"current={study.execution_status.value}"
             ),
         )
-    from ...core.study.graph import GraphEdge, GraphNode
+    from strategy_research.apps.study.graph import GraphEdge, GraphNode
     nodes = tuple(
         GraphNode(id=n.id, type=n.type, label=n.label,
                   config=dict(n.config), enabled=n.enabled)
@@ -1560,7 +1560,7 @@ async def study_round_redo(
     Destructive (removes the round's run dir + DB row); the study must
     not be currently running.
     """
-    from ...core.study import StudyStatus, StudyStore
+    from strategy_research.apps.study import StudyStatus, StudyStore
     _owned_study(request, study_id)
     with StudyStore() as store:
         study = store.get_study(study_id)
@@ -1610,7 +1610,7 @@ async def study_plan_dag(body: dict):
           "exclude_agents": []
         }
     """
-    from ...core.study.dag_planner import (
+    from strategy_research.apps.study.dag_planner import (
         DAGPlanner,
         PlannerConstraints,
     )

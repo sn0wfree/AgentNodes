@@ -19,7 +19,7 @@ from pathlib import Path
 import httpx
 import pytest
 
-from strategy_research.core.study.models import (
+from strategy_research.apps.study.models import (
     StudyAction,
     StudyStatus,
     allowed_actions,
@@ -71,7 +71,7 @@ def _env(tmp_path: Path, monkeypatch):
     conn.commit()
     conn.close()
 
-    from strategy_research.core.study import StudyStore
+    from strategy_research.apps.study import StudyStore
 
     store = StudyStore()
     rec = store.create_study(
@@ -111,7 +111,7 @@ class TestReplaceObjectiveMatrix:
 
 def test_store_queue_writes_history_and_updates_study(_env):
     study_id, _ = _env
-    from strategy_research.core.study import StudyStore
+    from strategy_research.apps.study import StudyStore
 
     store = StudyStore()
     new_obj = "低估值反转因子选股策略（动量失效后切换）"
@@ -141,7 +141,7 @@ def test_store_queue_writes_history_and_updates_study(_env):
 
 def test_store_mark_pending_applied(_env):
     study_id, _ = _env
-    from strategy_research.core.study import StudyStore
+    from strategy_research.apps.study import StudyStore
 
     store = StudyStore()
     store.queue_objective_replace(
@@ -158,7 +158,7 @@ def test_store_mark_pending_applied(_env):
 
 def test_store_history_ordered_newest_first(_env):
     study_id, _ = _env
-    from strategy_research.core.study import StudyStore
+    from strategy_research.apps.study import StudyStore
 
     store = StudyStore()
     store.queue_objective_replace(
@@ -181,7 +181,7 @@ def test_store_history_ordered_newest_first(_env):
 
 def test_store_rejects_empty_objective(_env):
     study_id, _ = _env
-    from strategy_research.core.study import StudyStore
+    from strategy_research.apps.study import StudyStore
 
     store = StudyStore()
     with pytest.raises(ValueError, match="must not be empty"):
@@ -192,7 +192,7 @@ def test_store_rejects_empty_objective(_env):
 
 def test_store_rejects_too_short_objective(_env):
     study_id, _ = _env
-    from strategy_research.core.study import StudyStore
+    from strategy_research.apps.study import StudyStore
 
     store = StudyStore()
     with pytest.raises(ValueError, match="too short"):

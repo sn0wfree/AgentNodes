@@ -4,7 +4,7 @@ from __future__ import annotations
 from types import SimpleNamespace
 from unittest.mock import MagicMock
 
-from strategy_research.core.study.state_utils import (
+from strategy_research.apps.study.state_utils import (
     emit_with_trace,
     format_directives,
     mark_terminal,

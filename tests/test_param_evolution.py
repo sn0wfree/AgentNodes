@@ -8,7 +8,7 @@ from unittest.mock import MagicMock
 import pytest
 
 from strategy_research.core.agent.strategy.loop_strategy import LoopConfig
-from strategy_research.core.study.loop_evolution import (
+from strategy_research.apps.study.loop_evolution import (
     BOUNDS,
     _crossover,
     _estimate_fitness,
@@ -32,7 +32,7 @@ def _isolate_db(tmp_path, monkeypatch):
 
 @pytest.fixture
 def study_store():
-    from strategy_research.core.study.store import StudyStore
+    from strategy_research.apps.study.store import StudyStore
     return StudyStore()
 
 
@@ -51,7 +51,7 @@ def _fake_study(status="complete", calmar=1.5, rounds=3):
     s.current_round = rounds
     s.max_rounds = 10
     s.workspace_path = "/tmp/ws"
-    from strategy_research.core.study.models import StudyStatus
+    from strategy_research.apps.study.models import StudyStatus
     s.execution_status = StudyStatus(status) if isinstance(status, str) else status
     s.loop_config = {"max_iterations": 20}
     return s
@@ -179,7 +179,7 @@ class TestFitnessRecording:
 class TestBootstrapInjection:
     def test_create_study_record_readsevolved_config(self, monkeypatch):
         """When no loop_config passed, bootstrap reads from global KV."""
-        from strategy_research.core.study import store as _store_mod
+        from strategy_research.apps.study import store as _store_mod
         monkeypatch.setattr(_store_mod, "StudyStore", MagicMock)
         mock_store = MagicMock()
         mock_store.return_value.__enter__ = MagicMock(return_value=mock_store)

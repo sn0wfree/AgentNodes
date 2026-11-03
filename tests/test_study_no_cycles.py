@@ -18,7 +18,7 @@ from pathlib import Path
 
 import pytest
 
-STUDY = Path(__file__).resolve().parents[1] / "src" / "strategy_research" / "core" / "study"
+STUDY = Path(__file__).resolve().parents[1] / "src" / "strategy_research" / "apps" / "study"
 
 # 引擎相关模块（解环的当事方 + 新契约模块）
 ENGINE_MODULES = ("runner", "phase_engine", "engine_common", "contracts")
@@ -93,7 +93,7 @@ def test_contracts_is_a_leaf():
 
 def test_runner_reexports_contract_symbols():
     """旧路径 `from .runner import ShutdownReason` 等继续可用（re-export）。"""
-    from strategy_research.core.study import runner
+    from strategy_research.apps.study import runner
 
     assert runner.ShutdownReason.TARGETS_MET == "targets_met"
     assert runner.SR_AGENT_MAX_ITER == 50
@@ -105,7 +105,7 @@ def test_runner_reexports_contract_symbols():
 
 def test_contract_values_unchanged():
     """搬迁必须逐字保真——这些值决定等待/重试/停止行为。"""
-    from strategy_research.core.study.contracts import (
+    from strategy_research.apps.study.contracts import (
         SR_AGENT_MAX_ITER,
         SR_AGENT_MAX_PARSE_RETRIES,
         SR_AGENT_NO_PROGRESS_WINDOW,
@@ -146,7 +146,7 @@ def test_contract_values_unchanged():
 
 
 def test_parse_failed_agents_behaviour():
-    from strategy_research.core.study.contracts import parse_failed_agents
+    from strategy_research.apps.study.contracts import parse_failed_agents
 
     assert parse_failed_agents({"strategist_output": {"error": "parse_failed"}}) == [
         "strategist"
@@ -157,7 +157,7 @@ def test_parse_failed_agents_behaviour():
 
 def test_same_object_across_both_paths():
     """runner 的 re-export 与 contracts 必须是同一对象（不能各拷一份）。"""
-    from strategy_research.core.study import contracts, runner
+    from strategy_research.apps.study import contracts, runner
 
     assert runner.ShutdownReason is contracts.ShutdownReason
     assert runner.SR_AGENT_MAX_ITER == contracts.SR_AGENT_MAX_ITER

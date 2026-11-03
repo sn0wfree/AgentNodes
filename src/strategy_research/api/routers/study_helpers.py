@@ -8,7 +8,7 @@ from typing import TYPE_CHECKING
 from fastapi import HTTPException, Request
 
 if TYPE_CHECKING:
-    from ...core.study.scheduler import StudyScheduler
+    from strategy_research.apps.study.scheduler import StudyScheduler
 
 logger = logging.getLogger(__name__)
 
@@ -74,7 +74,7 @@ def _get_study_scheduler():
     ``/study start`` wrote the row — the consumer loop then saw no
     study and silently exited.
     """
-    from ...core.study import StudyScheduler, StudyStore
+    from strategy_research.apps.study import StudyScheduler, StudyStore
     from .chat import _get_session_service
 
     db_path = str(StudyStore().db_path)
@@ -184,7 +184,7 @@ def _study_session_id(study_id: str) -> str | None:
     study_id (no sessions row exists for it) — ownership is verified via
     ``owner_session_id`` (the creator's chat session, which has a row).
     """
-    from ...core.study import StudyStore
+    from strategy_research.apps.study import StudyStore
     with StudyStore() as store:
         study = store.get_study(study_id)
     return study.owner_session_id if study else None
@@ -215,7 +215,7 @@ def _owned_study(request: Request, study_id: str):
     """
     import os as _os
 
-    from ...core.study import StudyStore
+    from strategy_research.apps.study import StudyStore
     with StudyStore() as store:
         study = store.get_study(study_id)
         if study is None:

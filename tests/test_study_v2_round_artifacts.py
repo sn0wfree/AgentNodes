@@ -14,9 +14,9 @@ from pathlib import Path
 
 import pytest
 
-from strategy_research.core.study.bootstrap import init_study_dir as _init_study_dir
-from strategy_research.core.study import StudyStore
-from strategy_research.core.study.round_manifest import (
+from strategy_research.apps.study.bootstrap import init_study_dir as _init_study_dir
+from strategy_research.apps.study import StudyStore
+from strategy_research.apps.study.round_manifest import (
     append_journal_md,
     build_manifest,
     load_manifest,
@@ -25,7 +25,7 @@ from strategy_research.core.study.round_manifest import (
     resolve_adopted_run_for_start,
     save_manifest,
 )
-from strategy_research.core.study.state_store import (
+from strategy_research.apps.study.state_store import (
     init,
     load,
     save,
@@ -228,9 +228,9 @@ def test_runner_round_artifacts_end_to_end(store, goal_store, monkeypatch, tmp_p
     rounds/round_NNNN/run_XXXX/strategy.py + manifest.json + summary.md +
     journal.md + state.json."""
 
-    from strategy_research.core.study import runner as runner_mod
-    from strategy_research.core.study.runner import AutoresearchRunner
-    from strategy_research.core.study.scheduler import NullEmitter
+    from strategy_research.apps.study import runner as runner_mod
+    from strategy_research.apps.study.runner import AutoresearchRunner
+    from strategy_research.apps.study.scheduler import NullEmitter
 
     ws = tmp_path / "ws"
     (ws / "strategies" / "demo").mkdir(parents=True)
@@ -302,7 +302,7 @@ def test_runner_round_artifacts_end_to_end(store, goal_store, monkeypatch, tmp_p
     )
 
     async def main():
-        from strategy_research.core.study import state_store as ss
+        from strategy_research.apps.study import state_store as ss
         reason = await runner.run()
         assert reason == runner_mod.ShutdownReason.MAX_ROUNDS
         root = ws / "study" / study.study_id

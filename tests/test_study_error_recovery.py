@@ -11,11 +11,11 @@ import pytest
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
 
-from strategy_research.core.study.runner import (
+from strategy_research.apps.study.runner import (
     AutoresearchRunner,
     ShutdownReason,
 )
-from strategy_research.core.study.models import StudyStatus
+from strategy_research.apps.study.models import StudyStatus
 
 
 def _make_study(**kwargs):
@@ -129,19 +129,19 @@ class TestBudgetEdgeCases:
 class TestStateTransitions:
     def test_queued_to_running(self):
         """Study should transition from QUEUED to RUNNING."""
-        from strategy_research.core.study.models import StudyStatus, StudyAction, ACTION_MATRIX
+        from strategy_research.apps.study.models import StudyStatus, StudyAction, ACTION_MATRIX
         # QUEUED allows CANCEL, not RUNNING directly
         # The scheduler handles the transition
         assert StudyAction.CANCEL in ACTION_MATRIX[StudyStatus.QUEUED]
 
     def test_running_to_paused(self):
         """Study should transition from RUNNING to PAUSED."""
-        from strategy_research.core.study.models import StudyStatus, StudyAction, ACTION_MATRIX
+        from strategy_research.apps.study.models import StudyStatus, StudyAction, ACTION_MATRIX
         assert StudyAction.PAUSE in ACTION_MATRIX[StudyStatus.RUNNING]
 
     def test_paused_to_running(self):
         """Study should transition from PAUSED to RUNNING."""
-        from strategy_research.core.study.models import StudyStatus, StudyAction, ACTION_MATRIX
+        from strategy_research.apps.study.models import StudyStatus, StudyAction, ACTION_MATRIX
         assert StudyAction.CONTINUE in ACTION_MATRIX[StudyStatus.PAUSED]
 
 

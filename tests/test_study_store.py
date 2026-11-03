@@ -10,14 +10,14 @@ from pathlib import Path
 
 import pytest
 
-from strategy_research.core.study import (
+from strategy_research.apps.study import (
     ACTIVE_EXECUTION_STATUSES,
     StudyRecord,
     StudyStatus,
     StudyStore,
     default_metric_targets,
 )
-from strategy_research.core.study.models import MetricTarget
+from strategy_research.apps.study.models import MetricTarget
 
 # ── fixtures ─────────────────────────────────────────────────────────
 
@@ -481,7 +481,7 @@ class TestStudyMonitoring:
         assert c.study_id not in due_ids
 
     def test_monitoring_status_in_active_set(self):
-        from strategy_research.core.study.models import (
+        from strategy_research.apps.study.models import (
             ACTIVE_EXECUTION_STATUSES,
             StudyStatus,
         )

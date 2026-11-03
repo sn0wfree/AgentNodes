@@ -24,18 +24,18 @@ _TEST_WS.mkdir(parents=True, exist_ok=True)
 
 import pytest
 
-from strategy_research.core.study.method.attribution import (
+from strategy_research.apps.study.method.attribution import (
     AttributionOutcome,
     classify_attribution,
     compute_precision,
 )
-from strategy_research.core.study.runner import (
+from strategy_research.apps.study.runner import (
     acceptance_config_from_targets,
 )
-from strategy_research.core.study.runner import (
+from strategy_research.apps.study.runner import (
     meets_metric_targets as executor_meets_metric_targets,
 )
-from strategy_research.core.study.models import (
+from strategy_research.apps.study.models import (
     ACTIVE_EXECUTION_STATUSES,
     MetricTarget,
     StudyDirective,
@@ -43,7 +43,7 @@ from strategy_research.core.study.models import (
     StudyStatus,
     default_metric_targets,
 )
-from strategy_research.core.study.runner import (
+from strategy_research.apps.study.runner import (
     AutoresearchRunner,
     ControlToken,
     NullEmitter,
@@ -51,12 +51,12 @@ from strategy_research.core.study.runner import (
     _metric_pass_set,
     meets_metric_targets,
 )
-from strategy_research.core.study.scheduler import (
+from strategy_research.apps.study.scheduler import (
     StudyScheduler,
     _EventBusEmitter,
     make_event_bus_emitter,
 )
-from strategy_research.core.study.store import StudyStore
+from strategy_research.apps.study.store import StudyStore
 
 # ── fixtures ────────────────────────────────────────────────────────
 
@@ -895,7 +895,7 @@ class TestSchedulerControl:
 
     def test_pause_resume_cycle(self, store, goal_store, monkeypatch):
         """Test pause → resume via runner control token (no scheduler race)."""
-        from strategy_research.core.study import runner as runner_mod
+        from strategy_research.apps.study import runner as runner_mod
 
         round_states = []
 
@@ -950,7 +950,7 @@ class TestSchedulerControl:
 class TestSchedulerEmitter:
     def test_emitter_factory_used(self, store, goal_store, monkeypatch):
         """When emitter_factory is provided, it should be called."""
-        from strategy_research.core.study import runner as runner_mod
+        from strategy_research.apps.study import runner as runner_mod
         factory_calls = []
 
         def my_factory(session_id):
@@ -1024,7 +1024,7 @@ class TestSchedulerEmitEvent:
 
 class TestSchedulerRecover:
     def test_recover_queued_resubmitted(self, store, goal_store, monkeypatch, tmp_path):
-        from strategy_research.core.study import runner as runner_mod
+        from strategy_research.apps.study import runner as runner_mod
 
         def _round(self, r, prev, directives_text=None):
             return {
@@ -1073,7 +1073,7 @@ class TestSchedulerRecover:
         asyncio.run(main())
 
     def test_recover_multiple_sessions(self, store, goal_store, monkeypatch, tmp_path):
-        from strategy_research.core.study import runner as runner_mod
+        from strategy_research.apps.study import runner as runner_mod
 
         def _round(self, r, prev, directives_text=None):
             return {
@@ -1324,7 +1324,7 @@ class TestStudyStatusEnum:
 
 class TestRunnerRunException:
     def test_exception_in_run_loop_sets_error(self, store, goal_store, monkeypatch):
-        from strategy_research.core.study import runner as runner_mod
+        from strategy_research.apps.study import runner as runner_mod
 
         def _failing_round(self, r, prev, directives_text=None):
             raise RuntimeError("round exploded")
@@ -1357,7 +1357,7 @@ class TestRunnerRunException:
 
 class TestRunnerGoalStoreClose:
     def test_own_goal_store_closed_on_success(self, store, goal_store, monkeypatch):
-        from strategy_research.core.study import runner as runner_mod
+        from strategy_research.apps.study import runner as runner_mod
 
         def _round(self, r, prev, directives_text=None):
             return {
@@ -1407,7 +1407,7 @@ class TestSchedulerShutdown:
         asyncio.run(main())
 
     def test_shutdown_cancels_control_tokens(self, store, goal_store, monkeypatch):
-        from strategy_research.core.study import runner as runner_mod
+        from strategy_research.apps.study import runner as runner_mod
 
         def _round(self, r, prev, directives_text=None):
             return {

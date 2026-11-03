@@ -430,8 +430,8 @@ def create_study_record(
         )
         # Goal ledger under the study's own identity: parallel studies
         # never supersede each other's goals (supersede=False).
-        from ..goal import GoalStore
-        from ..goal.context import default_goal_criteria
+        from strategy_research.core.goal import GoalStore
+        from strategy_research.core.goal.context import default_goal_criteria
 
         goal_store = GoalStore()
         goal = goal_store.replace_goal(

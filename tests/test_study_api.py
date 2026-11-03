@@ -106,7 +106,7 @@ async def test_start_auto_creates_strategy(_app_env):
     Note: We can't fully test the start endpoint because it triggers the
     scheduler in the background. Instead, test the auto-creation logic directly.
     """
-    from strategy_research.core.study.bootstrap import _create_minimal_strategy
+    from strategy_research.apps.study.bootstrap import _create_minimal_strategy
 
     strat_dir = _app_env / "strategies" / "auto_created_strat"
     assert not strat_dir.exists()
@@ -186,7 +186,7 @@ async def test_status_unknown_session_returns_404(_app_env):
 async def test_summary_other_users_study_denied(_app_env, tmp_path, monkeypatch):
     """SDOR: study-id-derived endpoints enforce owner-session matching.
     A different user cannot read another user's study summary (403)."""
-    from strategy_research.core.study import StudyStore
+    from strategy_research.apps.study import StudyStore
 
     db_path = tmp_path / "goals.db"
     with StudyStore(db_path=db_path) as store:
@@ -242,7 +242,7 @@ async def test_status_unauthenticated_returns_401(_app_env):
 async def test_summary_returns_strategy_and_round_fields(_app_env, tmp_path, monkeypatch):
     """summary 端点应返回 strategy_name/workspace_path/timestamps，
     且不因 round 记录缺 factor_failures 而 500。"""
-    from strategy_research.core.study import StudyStore
+    from strategy_research.apps.study import StudyStore
 
     db_path = tmp_path / "goals.db"
     with StudyStore(db_path=db_path) as store:
@@ -285,7 +285,7 @@ async def test_summary_returns_strategy_and_round_fields(_app_env, tmp_path, mon
 def _seed_study(_app_env, tmp_path, monkeypatch, *, objective="test objective",
                 goal_id=None):
     """Create a study row in the goals.db used by the API layer."""
-    from strategy_research.core.study import StudyStore
+    from strategy_research.apps.study import StudyStore
 
     db_path = tmp_path / "goals.db"
     with StudyStore(db_path=db_path) as store:
@@ -447,7 +447,7 @@ async def test_summary_goal_snapshot_and_scoreboard(_app_env, tmp_path, monkeypa
 @pytest.mark.asyncio
 async def test_list_filter_by_session_id(_app_env, tmp_path, monkeypatch):
     """list?session_id= 应只返回该 session 的 study。"""
-    from strategy_research.core.study import StudyStore
+    from strategy_research.apps.study import StudyStore
 
     db_path = tmp_path / "goals.db"
     with StudyStore(db_path=db_path) as store:
@@ -481,7 +481,7 @@ async def test_list_filter_by_status_returns_matching_only(
     _app_env, tmp_path, monkeypatch
 ):
     """list?status=running 应只返回该 execution_status 的 study。"""
-    from strategy_research.core.study import StudyStatus, StudyStore
+    from strategy_research.apps.study import StudyStatus, StudyStore
 
     db_path = tmp_path / "goals.db"
     with StudyStore(db_path=db_path) as store:
@@ -524,7 +524,7 @@ async def test_list_filter_by_status_returns_matching_only(
 @pytest.mark.asyncio
 async def test_list_limit_caps_results(_app_env, tmp_path, monkeypatch):
     """list?limit=N 应最多返回 N 条 study（且限定当前用户的 sessions）。"""
-    from strategy_research.core.study import StudyStore
+    from strategy_research.apps.study import StudyStore
 
     db_path = tmp_path / "goals.db"
     with StudyStore(db_path=db_path) as store:
@@ -674,7 +674,7 @@ async def test_status_returns_no_study_when_session_has_none(_app_env, monkeypat
 @pytest.mark.asyncio
 async def test_status_returns_active_study_for_session(_app_env, tmp_path, monkeypatch):
     """GET /status?session_id= 应返回该 session 的 active study。"""
-    from strategy_research.core.study import StudyStatus, StudyStore
+    from strategy_research.apps.study import StudyStatus, StudyStore
 
     db_path = tmp_path / "goals.db"
     with StudyStore(db_path=db_path) as store:
@@ -704,7 +704,7 @@ async def test_status_returns_active_study_for_session(_app_env, tmp_path, monke
 @pytest.mark.asyncio
 async def test_status_returns_study_by_id(_app_env, tmp_path, monkeypatch):
     """GET /status?study_id= 直接查询某个 study（不依赖 session 过滤）。"""
-    from strategy_research.core.study import StudyStore
+    from strategy_research.apps.study import StudyStore
 
     db_path = tmp_path / "goals.db"
     with StudyStore(db_path=db_path) as store:
@@ -737,7 +737,7 @@ async def test_status_includes_goal_snapshot_when_goal_linked(_app_env, tmp_path
     """study.goal_id 存在时，summary 应包含 goal_snapshot。"""
     from strategy_research.core.goal import GoalStore
     from strategy_research.core.goal.store import RiskTier
-    from strategy_research.core.study import StudyStore
+    from strategy_research.apps.study import StudyStore
 
     db_path = tmp_path / "goals.db"
     with GoalStore(db_path=db_path) as gs:
@@ -775,7 +775,7 @@ async def test_resume_interrupted_study_calls_resume_interrupted(
     from unittest.mock import AsyncMock, MagicMock
 
     from strategy_research.api.routers import study as study_router
-    from strategy_research.core.study import StudyStatus, StudyStore
+    from strategy_research.apps.study import StudyStatus, StudyStore
 
     db_path = tmp_path / "goals.db"
     with StudyStore(db_path=db_path) as store:
@@ -809,7 +809,7 @@ async def test_resume_interrupted_failure_returns_400(_app_env, tmp_path, monkey
     from unittest.mock import AsyncMock, MagicMock
 
     from strategy_research.api.routers import study as study_router
-    from strategy_research.core.study import StudyStatus, StudyStore
+    from strategy_research.apps.study import StudyStatus, StudyStore
 
     db_path = tmp_path / "goals.db"
     with StudyStore(db_path=db_path) as store:
@@ -964,7 +964,7 @@ async def test_guidance_endpoint_global_fallback_and_404(_app_env, tmp_path, mon
 @pytest.mark.asyncio
 async def test_summary_includes_monitor_state(_app_env, tmp_path, monkeypatch):
     """B4: summary 应返回 monitor_state（drift_count/last_check_at/interval）。"""
-    from strategy_research.core.study import StudyStore
+    from strategy_research.apps.study import StudyStore
 
     db_path = tmp_path / "goals.db"
     with StudyStore(db_path=db_path) as store:

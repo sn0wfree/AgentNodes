@@ -11,8 +11,8 @@ from types import SimpleNamespace
 
 import pytest
 
-from strategy_research.core.study.models import StudyStatus
-from strategy_research.core.study.scheduler import StudyScheduler
+from strategy_research.apps.study.models import StudyStatus
+from strategy_research.apps.study.scheduler import StudyScheduler
 
 
 # ── 假件 ─────────────────────────────────────────────────

@@ -691,7 +691,7 @@ async def chat_events(
         # even after the session row was deleted or never created.
         if exc.status_code == 404 and session_id.startswith("study_"):
             try:
-                from ...core.study.engine_common import ensure_study_session
+                from strategy_research.apps.study.engine_common import ensure_study_session
                 ensure_study_session(
                     _get_db_path(), session_id,
                     f"Study: {session_id}",

@@ -193,9 +193,9 @@ class _RecordingEmitter:
 
 
 def _runner_with(emitter, tmp_path):
-    from strategy_research.core.study.models import StudyRecord, StudyStatus
-    from strategy_research.core.study.runner import AutoresearchRunner
-    from strategy_research.core.study.store import StudyStore
+    from strategy_research.apps.study.models import StudyRecord, StudyStatus
+    from strategy_research.apps.study.runner import AutoresearchRunner
+    from strategy_research.apps.study.store import StudyStore
 
     store = StudyStore(db_path=tmp_path / "s.db")
     rec = StudyRecord(

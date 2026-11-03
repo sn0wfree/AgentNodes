@@ -3,7 +3,7 @@ from __future__ import annotations
 
 import pytest
 
-from strategy_research.core.study.method.metric_targets import (
+from strategy_research.apps.study.method.metric_targets import (
     acceptance_config_from_targets,
     meets_metric_targets,
     metric_pass_set,

@@ -21,13 +21,13 @@ import pytest
 
 from strategy_research.core.goal import GoalStore
 from strategy_research.core.goal.context import default_goal_criteria
-from strategy_research.core.study import (
+from strategy_research.apps.study import (
     StudyScheduler,
     StudyStatus,
     StudyStore,
 )
-from strategy_research.core.study import runner as runner_mod
-from strategy_research.core.study.runner import ControlToken
+from strategy_research.apps.study import runner as runner_mod
+from strategy_research.apps.study.runner import ControlToken
 
 
 @pytest.fixture(autouse=True)
@@ -563,7 +563,7 @@ def test_resolve_session_user_id_resolves_real_user(tmp_path, monkeypatch):
     """A session owned by a user resolves to the real user id, not the session."""
     import sqlite3
 
-    from strategy_research.core.study import StudyScheduler, StudyStore
+    from strategy_research.apps.study import StudyScheduler, StudyStore
 
     db = tmp_path / "sessions.db"
     monkeypatch.setenv("SR_SESSIONS_DB", str(db))
@@ -586,7 +586,7 @@ def test_resolve_session_user_id_falls_back_to_session_id(tmp_path, monkeypatch)
     """Unknown sessions (or a closed DB) fall back to the session id itself."""
     import sqlite3
 
-    from strategy_research.core.study import StudyScheduler, StudyStore
+    from strategy_research.apps.study import StudyScheduler, StudyStore
 
     db = tmp_path / "sessions.db"
     monkeypatch.setenv("SR_SESSIONS_DB", str(db))
@@ -609,7 +609,7 @@ def test_per_user_semaphores_keyed_by_real_user(monkeypatch):
     """Studies owned by the SAME user share one per-user semaphore;
     a different user gets a separate one — so the cap applies per user,
     not per session."""
-    import strategy_research.core.study.scheduler as sched_mod
+    import strategy_research.apps.study.scheduler as sched_mod
 
     monkeypatch.setattr(sched_mod, "SR_STUDY_MAX_PER_USER", 1)
     monkeypatch.setattr(sched_mod, "SR_STUDY_MAX_CONCURRENT", 10)

@@ -15,13 +15,13 @@ from pathlib import Path
 from typing import Any
 
 # ── W-split re-exports ──────────────────────────────────────────────
-from strategy_research.core.study.lazy_detect import detect_lazy_behavior  # noqa: E402,F401
-from strategy_research.core.study.run_summary import (  # noqa: E402,F401
+from strategy_research.apps.study.lazy_detect import detect_lazy_behavior  # noqa: E402,F401
+from strategy_research.apps.study.run_summary import (  # noqa: E402,F401
     generate_run_summary,
     load_run_summary,
     save_run_summary,
 )
-from strategy_research.core.study.stub_agents import _stub_agent_output  # noqa: E402,F401
+from strategy_research.apps.study.stub_agents import _stub_agent_output  # noqa: E402,F401
 
 logger = logging.getLogger(__name__)
 

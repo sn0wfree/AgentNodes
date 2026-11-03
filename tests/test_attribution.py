@@ -1,5 +1,5 @@
 """Tests for study/attribution.py — AEGIS attribution classifier."""
-from strategy_research.core.study.method.attribution import (
+from strategy_research.apps.study.method.attribution import (
     AttributionOutcome,
     classify_attribution,
     compute_precision,

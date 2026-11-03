@@ -15,7 +15,7 @@ from pathlib import Path
 
 import pytest
 
-from strategy_research.core.study import scenario_router as sr
+from strategy_research.apps.study import scenario_router as sr
 
 
 def _inp(objective="逐个调整参数找最优组合",

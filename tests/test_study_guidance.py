@@ -10,7 +10,7 @@ from __future__ import annotations
 
 import pytest
 
-from strategy_research.core.study.method import guidance as gd
+from strategy_research.apps.study.method import guidance as gd
 
 # ── frontmatter parsing ─────────────────────────────────────────────
 
@@ -203,15 +203,15 @@ def test_runner_gate_hard_check_forces_discard(tmp_path, monkeypatch):
     import asyncio
 
     import strategy_research.apps.autoresearch as ar_mod
-    from strategy_research.core.study.bootstrap import init_study_dir as _init_study_dir
+    from strategy_research.apps.study.bootstrap import init_study_dir as _init_study_dir
     from strategy_research.core.goal import GoalStore
     from strategy_research.core.goal.context import default_goal_criteria
-    from strategy_research.core.study import round_manifest as rm
-    from strategy_research.core.study import runner as runner_mod
-    from strategy_research.core.study import state_store as ss
-    from strategy_research.core.study.runner import AutoresearchRunner, ControlToken
-    from strategy_research.core.study.scheduler import NullEmitter
-    from strategy_research.core.study.store import StudyStore
+    from strategy_research.apps.study import round_manifest as rm
+    from strategy_research.apps.study import runner as runner_mod
+    from strategy_research.apps.study import state_store as ss
+    from strategy_research.apps.study.runner import AutoresearchRunner, ControlToken
+    from strategy_research.apps.study.scheduler import NullEmitter
+    from strategy_research.apps.study.store import StudyStore
 
     monkeypatch.setenv("QUANTNODES_RESEARCH_GOAL_DB_PATH", str(tmp_path / "g.db"))
     monkeypatch.setenv("QUANTNODES_RESEARCH_HYPOTHESES_PATH", str(tmp_path / "h.json"))
@@ -298,15 +298,15 @@ def test_runner_gate_no_violation_keeps_verdict(tmp_path, monkeypatch):
     import asyncio
 
     import strategy_research.apps.autoresearch as ar_mod
-    from strategy_research.core.study.bootstrap import init_study_dir as _init_study_dir
+    from strategy_research.apps.study.bootstrap import init_study_dir as _init_study_dir
     from strategy_research.core.goal import GoalStore
     from strategy_research.core.goal.context import default_goal_criteria
-    from strategy_research.core.study import round_manifest as rm
-    from strategy_research.core.study import runner as runner_mod
-    from strategy_research.core.study import state_store as ss
-    from strategy_research.core.study.runner import AutoresearchRunner, ControlToken
-    from strategy_research.core.study.scheduler import NullEmitter
-    from strategy_research.core.study.store import StudyStore
+    from strategy_research.apps.study import round_manifest as rm
+    from strategy_research.apps.study import runner as runner_mod
+    from strategy_research.apps.study import state_store as ss
+    from strategy_research.apps.study.runner import AutoresearchRunner, ControlToken
+    from strategy_research.apps.study.scheduler import NullEmitter
+    from strategy_research.apps.study.store import StudyStore
 
     monkeypatch.setenv("QUANTNODES_RESEARCH_GOAL_DB_PATH", str(tmp_path / "g.db"))
     monkeypatch.setenv("QUANTNODES_RESEARCH_HYPOTHESES_PATH", str(tmp_path / "h.json"))

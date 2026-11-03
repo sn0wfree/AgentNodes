@@ -116,7 +116,7 @@ class _FakeStore:
 
 def _make_scheduler(store, fence):
     """构造带假 gateway 的 StudyScheduler（不碰真单例——打桩取栅栏路径）。"""
-    from strategy_research.core.study.scheduler import StudyScheduler
+    from strategy_research.apps.study.scheduler import StudyScheduler
 
     sched = StudyScheduler(store)
     sched._per_user_limit = 0
@@ -126,7 +126,7 @@ def _make_scheduler(store, fence):
 
     gw = _FakeGW()
     gw.fence = fence
-    import strategy_research.core.study.scheduler as sched_mod
+    import strategy_research.apps.study.scheduler as sched_mod
 
     original = sched_mod._get_gateway_singleton
     sched_mod._get_gateway_singleton = lambda: gw

@@ -114,7 +114,7 @@ def _goal_start(args: str, session_id: str, store: Any) -> str:
     The study record is created for tracking but not submitted to the scheduler.
     """
     from ...core.goal.context import default_goal_criteria
-    from ...core.study import StudyStore
+    from strategy_research.apps.study import StudyStore
 
     objective = args or "Research goal"
 
@@ -513,7 +513,7 @@ def _default_workspace() -> str:
 
 
 def _study_start_cmd(rest: list[str], session_id: str) -> str:
-    from ...core.study import StudyStatus, StudyStore, default_metric_targets
+    from strategy_research.apps.study import StudyStatus, StudyStore, default_metric_targets
 
     # Check for active study first (one task per session)
     with StudyStore() as _chk:
@@ -562,7 +562,7 @@ def _study_start_cmd(rest: list[str], session_id: str) -> str:
         # v2 §17.1: --guidance-file / --gates-file → single guidance.md
         from pathlib import Path
 
-        from ...core.study.method import guidance as gd
+        from strategy_research.apps.study.method import guidance as gd
         guidance_text = gd.compose_guidance_text(
             Path(ws),
             guidance_file=flags["guidance_file"],
@@ -637,7 +637,7 @@ def _is_flag_value(tokens, t) -> bool:
 
 
 def _study_status_cmd(session_id: str) -> str:
-    from ...core.study import StudyStore
+    from strategy_research.apps.study import StudyStore
     with StudyStore() as store:
         study = store.get_active_study(session_id)
     if study is None:
@@ -662,7 +662,7 @@ def _study_status_cmd(session_id: str) -> str:
 
 
 def _study_list_cmd(rest: list[str]) -> str:
-    from ...core.study import StudyStatus, StudyStore
+    from strategy_research.apps.study import StudyStatus, StudyStore
     status = None
     for tok in rest:
         if tok.startswith("status=") or tok.startswith("s="):
@@ -696,7 +696,7 @@ def _study_control_cmd(action: str, study_id: str) -> str:
 
 def _study_redirect_cmd(study_id: str, directive: str, session_id: str) -> str:
     """Append a mid-execution directive to a study."""
-    from ...core.study import StudyStore
+    from strategy_research.apps.study import StudyStore
     issued_by = f"chat:{session_id}"
     try:
         with StudyStore() as store:

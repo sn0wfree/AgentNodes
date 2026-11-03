@@ -3,7 +3,7 @@ import os
 
 import pytest
 
-from strategy_research.core.study.store import StudyStore
+from strategy_research.apps.study.store import StudyStore
 
 
 @pytest.fixture(autouse=True)

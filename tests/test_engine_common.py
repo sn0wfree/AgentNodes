@@ -13,8 +13,8 @@ from types import SimpleNamespace
 
 import pytest
 
-from strategy_research.core.study import engine_common as ec
-from strategy_research.core.study.contracts import ShutdownReason
+from strategy_research.apps.study import engine_common as ec
+from strategy_research.apps.study.contracts import ShutdownReason
 
 
 # ── safe_json_loads ──────────────────────────────────────
@@ -174,7 +174,7 @@ class _GuardRunner:
 
 
 def test_check_cancelled_returns_none_when_running():
-    from strategy_research.core.study.models import StudyStatus
+    from strategy_research.apps.study.models import StudyStatus
 
     runner = _GuardRunner(cancelled=False, live_status=StudyStatus.RUNNING)
     assert ec.check_cancelled(runner, "s", "sid") is None
@@ -182,7 +182,7 @@ def test_check_cancelled_returns_none_when_running():
 
 
 def test_check_cancelled_marks_terminal():
-    from strategy_research.core.study.models import StudyStatus
+    from strategy_research.apps.study.models import StudyStatus
 
     runner = _GuardRunner(cancelled=True, live_status=StudyStatus.RUNNING)
     assert ec.check_cancelled(runner, "s", "sid") == ShutdownReason.CANCELLED
@@ -191,7 +191,7 @@ def test_check_cancelled_marks_terminal():
 
 
 def test_check_cancelled_preserves_archived_status():
-    from strategy_research.core.study.models import StudyStatus
+    from strategy_research.apps.study.models import StudyStatus
 
     runner = _GuardRunner(cancelled=True, live_status=StudyStatus.ARCHIVED)
     assert ec.check_cancelled(runner, "s", "sid") == ShutdownReason.CANCELLED

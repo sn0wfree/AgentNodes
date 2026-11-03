@@ -16,7 +16,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
 
 PHASE_ENGINE = (
     Path(__file__).resolve().parents[1]
-    / "src/strategy_research/core/study/phase_engine.py"
+    / "src/strategy_research/apps/study/phase_engine.py"
 )
 
 

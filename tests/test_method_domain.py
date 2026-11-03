@@ -10,7 +10,7 @@ from __future__ import annotations
 import ast
 from pathlib import Path
 
-METHOD = Path(__file__).resolve().parents[1] / "src" / "strategy_research" / "core" / "study" / "method"
+METHOD = Path(__file__).resolve().parents[1] / "src" / "strategy_research" / "apps" / "study" / "method"
 
 # 执行侧模块：method/ 不得 import 它们
 ENGINE_MODULES = frozenset({
@@ -35,7 +35,7 @@ def _imports(path: Path) -> set[str]:
                 if node.level >= 2 and node.module:
                     out.add(node.module.split(".")[0])
             elif node.module and node.module.startswith(
-                "strategy_research.core.study."
+                "strategy_research.apps.study."
             ):
                 out.add(node.module.split(".")[3])
         elif isinstance(node, ast.Import):
@@ -60,16 +60,16 @@ def test_method_never_imports_engine():
 
 def test_engine_imports_method_one_way():
     """执行侧引用 method/ 是合法方向（抽几处锚点确认接线存在）。"""
-    import strategy_research.core.study.phase_engine as pe  # noqa: F401
-    import strategy_research.core.study.runner_aegis as ra  # noqa: F401
+    import strategy_research.apps.study.phase_engine as pe  # noqa: F401
+    import strategy_research.apps.study.runner_aegis as ra  # noqa: F401
 
-    from strategy_research.core.study.method import aegis, claims  # noqa: F401
-    from strategy_research.core.study.method import metric_targets  # noqa: F401
+    from strategy_research.apps.study.method import aegis, claims  # noqa: F401
+    from strategy_research.apps.study.method import metric_targets  # noqa: F401
 
 
 def test_method_modules_importable():
     """6 个域件从新家可导入（导出符号抽查）。"""
-    from strategy_research.core.study.method import (
+    from strategy_research.apps.study.method import (
         aegis,
         attribution,
         claims,

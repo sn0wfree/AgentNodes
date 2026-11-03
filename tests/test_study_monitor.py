@@ -15,9 +15,9 @@ import pytest
 
 from strategy_research.core.goal import GoalStore
 from strategy_research.core.goal.context import default_goal_criteria
-from strategy_research.core.study import StudyStatus, StudyStore
-from strategy_research.core.study import state_store as ss
-from strategy_research.core.study.runner import (
+from strategy_research.apps.study import StudyStatus, StudyStore
+from strategy_research.apps.study import state_store as ss
+from strategy_research.apps.study.runner import (
     AutoresearchRunner,
     ControlToken,
     NullEmitter,
@@ -63,7 +63,7 @@ def _make_runner(env, *, monitor_interval: int | None = 60, status=None,
         budget_turn=budget_turn,
     )
     store.update_goal_id(study.study_id, goal.goal_id)
-    from strategy_research.core.study.bootstrap import init_study_dir as _init_study_dir
+    from strategy_research.apps.study.bootstrap import init_study_dir as _init_study_dir
     _init_study_dir(env, study.study_id, "demo", "x")
     if status is not None:
         store.update_execution_status(study.study_id, status)
@@ -111,7 +111,7 @@ def _patch_monitor_check(monkeypatch, results: list[dict]):
 
     # _monitor_sleep is a module-level function in monitor.py since the
     # runner refactor — patch it there (the loop calls it unqualified).
-    import strategy_research.core.study.monitor as monitor_mod
+    import strategy_research.apps.study.monitor as monitor_mod
 
     async def _no_sleep(interval):
         return None
@@ -288,7 +288,7 @@ def test_emitted_events_carry_trace_id(env, monkeypatch):
         max_rounds=None, monitor_interval_seconds=None,
     )
     store.update_goal_id(study.study_id, goal.goal_id)
-    from strategy_research.core.study.bootstrap import init_study_dir as _init_study_dir
+    from strategy_research.apps.study.bootstrap import init_study_dir as _init_study_dir
     _init_study_dir(env, study.study_id, "demo", "x")
 
     collector = _Collector()

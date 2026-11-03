@@ -218,7 +218,7 @@ class ExecutorTestCase(unittest.IsolatedAsyncioTestCase):
         self.store.add(job)
 
         with patch(
-            "strategy_research.core.study.bootstrap.create_study_record"
+            "strategy_research.apps.study.bootstrap.create_study_record"
         ) as mock_create:
             mock_create.return_value = MagicMock(study_id="study_bridge_1")
             await executor._tick()

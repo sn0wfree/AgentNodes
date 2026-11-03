@@ -25,8 +25,8 @@ class RunnerKnowledgeMixin:
             run_agent_via_llm,
             should_use_real_llm,
         )
-        from strategy_research.core.study.method import review_loop as rl
-        from strategy_research.core.study import state_store as ss
+        from strategy_research.apps.study.method import review_loop as rl
+        from strategy_research.apps.study import state_store as ss
 
         sid = self._get_study().study_id
         path = Path(self._get_study().workspace_path).resolve()

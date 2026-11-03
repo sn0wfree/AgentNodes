@@ -1646,7 +1646,7 @@ class GoalStore:
                 f"{regressed_tag}"
             )
         # Claims calibration (F: falsifiable-prediction self-calibration)
-        from ..study.method.claims import summarize_prediction_accuracy
+        from strategy_research.apps.study.method.claims import summarize_prediction_accuracy
         stats = summarize_prediction_accuracy(entries)
         if stats["n_predictions"]:
             hit = stats["direction_hit_rate"]

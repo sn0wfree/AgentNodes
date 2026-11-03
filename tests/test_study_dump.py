@@ -16,8 +16,8 @@ import pytest
 from fastapi.testclient import TestClient
 
 from strategy_research.api.app import create_app
-from strategy_research.core.study.models import StudyStatus
-from strategy_research.core.study.store import StudyStore
+from strategy_research.apps.study.models import StudyStatus
+from strategy_research.apps.study.store import StudyStore
 
 # ── fixtures ──────────────────────────────────────────────────────────
 
@@ -207,7 +207,7 @@ class TestStudyDumpEndpoint:
 
 class TestSchedulerDumpHelpers:
     def test_dump_concurrency_no_active(self, admin_env):
-        from strategy_research.core.study.scheduler import StudyScheduler, StudyStore
+        from strategy_research.apps.study.scheduler import StudyScheduler, StudyStore
         with StudyStore() as store:  # close the connection — leaks cause lock flakes
             sched = StudyScheduler(store)
         snap = sched.dump_concurrency()
@@ -218,7 +218,7 @@ class TestSchedulerDumpHelpers:
         assert snap["semaphore_limit"] >= 1
 
     def test_dump_watchdog_alive_is_false_before_ensure(self, admin_env):
-        from strategy_research.core.study.scheduler import StudyScheduler, StudyStore
+        from strategy_research.apps.study.scheduler import StudyScheduler, StudyStore
         with StudyStore() as store:  # close the connection — leaks cause lock flakes
             sched = StudyScheduler(store)
         snap = sched.dump_watchdog()
@@ -228,7 +228,7 @@ class TestSchedulerDumpHelpers:
         assert snap["heartbeat_timeout_s"] >= 60
 
     def test_dump_session_queues_empty(self, admin_env):
-        from strategy_research.core.study.scheduler import StudyScheduler, StudyStore
+        from strategy_research.apps.study.scheduler import StudyScheduler, StudyStore
         with StudyStore() as store:  # close the connection — leaks cause lock flakes
             sched = StudyScheduler(store)
         assert sched.dump_session_queues() == {}

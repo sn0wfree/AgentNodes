@@ -15,7 +15,7 @@ from strategy_research.core.agent.context_injector import (
     MemoryRetrieverInjector,
 )
 from strategy_research.core.goal.workflow_hook import GoalWorkflowHook
-from strategy_research.core.study.scheduler import StudyScheduler
+from strategy_research.apps.study.scheduler import StudyScheduler
 
 
 # ── workflow_hook 收尾分支（B 档）─────────────────────────
@@ -189,7 +189,7 @@ def test_hook_collect_evidence_store_append_failure():
 
 def test_scheduler_dump_methods():
     """dump_* 观测方法返回 JSON-able dict（不抛）。"""
-    from strategy_research.core.study.scheduler import StudyScheduler
+    from strategy_research.apps.study.scheduler import StudyScheduler
 
     class MinimalStore:
         def get_study(self, sid):
@@ -203,7 +203,7 @@ def test_scheduler_dump_methods():
 
 
 def test_scheduler_shutdown_idempotent():
-    from strategy_research.core.study.scheduler import StudyScheduler
+    from strategy_research.apps.study.scheduler import StudyScheduler
 
     class MinimalStore:
         def get_study(self, sid):

@@ -115,9 +115,9 @@ def test_build_study_scheduler_has_no_session_service(monkeypatch):
             captured["session_service"] = session_service
 
     monkeypatch.setattr(
-        "strategy_research.core.study.StudyScheduler", FakeScheduler, raising=False)
+        "strategy_research.apps.study.StudyScheduler", FakeScheduler, raising=False)
     monkeypatch.setattr(
-        "strategy_research.core.study.StudyStore", lambda *a, **k: object(), raising=False)
+        "strategy_research.apps.study.StudyStore", lambda *a, **k: object(), raising=False)
     cli._build_study_scheduler()
     assert captured["session_service"] is None
 
@@ -137,7 +137,7 @@ def test_run_without_study_id_returns_1(monkeypatch, capsys):
     monkeypatch.setattr(cli, "_build_study_scheduler", lambda: object())
     monkeypatch.setattr(cli, "ScheduledResearchExecutor", FakeExecutor)
     monkeypatch.setattr(
-        "strategy_research.core.study.StudyStore", lambda: FakeStudyStore([]), raising=False)
+        "strategy_research.apps.study.StudyStore", lambda: FakeStudyStore([]), raising=False)
     code = cli.cmd_schedule_run(argparse.Namespace(job_id="j1"))
     assert code == 1
     assert "未产生 study" in capsys.readouterr().out
@@ -152,7 +152,7 @@ def test_run_reports_terminal_status_and_rounds(monkeypatch, capsys):
     records = [FakeStudy("running"), FakeStudy("complete", rounds=4),
                FakeStudy("complete", rounds=4)]
     monkeypatch.setattr(
-        "strategy_research.core.study.StudyStore", lambda: FakeStudyStore(records),
+        "strategy_research.apps.study.StudyStore", lambda: FakeStudyStore(records),
         raising=False)
     monkeypatch.setattr(asyncio, "sleep", _no_sleep)
 
@@ -170,7 +170,7 @@ def test_run_prints_metrics_and_error_when_present(monkeypatch, capsys):
     monkeypatch.setattr(cli, "ScheduledResearchExecutor", FakeExecutor)
     rec = FakeStudy("error", metrics={"calmar": 0.3}, error="data missing")
     monkeypatch.setattr(
-        "strategy_research.core.study.StudyStore", lambda: FakeStudyStore([rec]),
+        "strategy_research.apps.study.StudyStore", lambda: FakeStudyStore([rec]),
         raising=False)
 
     cli.cmd_schedule_run(argparse.Namespace(job_id="j1"))
@@ -186,7 +186,7 @@ def test_run_exits_when_study_record_disappears(monkeypatch, capsys):
     monkeypatch.setattr(cli, "_build_study_scheduler", lambda: object())
     monkeypatch.setattr(cli, "ScheduledResearchExecutor", FakeExecutor)
     monkeypatch.setattr(
-        "strategy_research.core.study.StudyStore", lambda: FakeStudyStore([None]),
+        "strategy_research.apps.study.StudyStore", lambda: FakeStudyStore([None]),
         raising=False)
 
     assert cli.cmd_schedule_run(argparse.Namespace(job_id="j1")) == 0

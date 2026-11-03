@@ -19,8 +19,8 @@ from strategy_research.core.goal import GoalStore
 from strategy_research.core.scheduled_research.executor import ScheduledResearchExecutor
 from strategy_research.core.scheduled_research.models import JobStatus, ScheduledResearchJob
 from strategy_research.core.scheduled_research.store import ScheduledResearchStore
-from strategy_research.core.study import StudyScheduler, StudyStatus, StudyStore
-from strategy_research.core.study import runner as runner_mod
+from strategy_research.apps.study import StudyScheduler, StudyStatus, StudyStore
+from strategy_research.apps.study import runner as runner_mod
 
 
 @pytest.fixture(autouse=True)
