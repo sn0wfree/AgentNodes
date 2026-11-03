@@ -167,7 +167,7 @@ def cmd_api_serve(args) -> int:
 
 def cmd_mcp_serve(args) -> int:
     """启动 MCP 服务器。"""
-    from strategy_research.core.mcp import MCPServer
+    from strategy_research.interfaces.mcp import MCPServer
 
     server = MCPServer()
     server.register_default_tools()
@@ -183,7 +183,7 @@ def cmd_mcp_serve(args) -> int:
 
 def cmd_mcp_list_tools(args) -> int:
     """列出所有 MCP 工具。"""
-    from strategy_research.core.mcp import MCPServer
+    from strategy_research.interfaces.mcp import MCPServer
 
     server = MCPServer()
     server.register_default_tools()

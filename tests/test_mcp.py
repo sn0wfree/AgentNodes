@@ -6,7 +6,7 @@ import json
 
 import pytest
 
-from strategy_research.core.mcp.server import MCPServer, MCPTool
+from strategy_research.interfaces.mcp.server import MCPServer, MCPTool
 
 
 class TestMCPTool:

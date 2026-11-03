@@ -9,7 +9,7 @@ import pytest
 
 @pytest.fixture
 def server():
-    from strategy_research.core.mcp.server import MCPServer
+    from strategy_research.interfaces.mcp.server import MCPServer
     s = MCPServer()
     s.register_default_tools()
     return s

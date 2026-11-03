@@ -341,7 +341,7 @@ def test_mcp_serve_stdio_wires_logging(monkeypatch, tmp_path):
     """MCP serve_stdio 挂 TraceFilter；协议响应仍走 stdout 的 JSON 帧。"""
     import json as json_mod
 
-    from strategy_research.core.mcp.server import MCPServer
+    from strategy_research.interfaces.mcp.server import MCPServer
 
     srv = MCPServer(name="t")
     monkeypatch.setattr("sys.stdin", iter([
@@ -352,7 +352,7 @@ def test_mcp_serve_stdio_wires_logging(monkeypatch, tmp_path):
 
 def test_mcp_tools_list_roundtrip_after_logging_wiring():
     """装配日志后 MCP 协议功能不受影响。"""
-    from strategy_research.core.mcp.server import MCPServer
+    from strategy_research.interfaces.mcp.server import MCPServer
 
     srv = MCPServer(name="t")
     srv.serve_stdio.__doc__  # noqa: B018 — 确认方法存在

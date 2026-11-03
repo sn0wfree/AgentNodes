@@ -33,9 +33,10 @@ ORDER = ["L1", "L2", "L3", "L4"]  # index 0 = highest
 
 LAYER_MEMBERSHIP: dict[str, str] = {
     # L1 interfaces
+    "strategy_research.interfaces": "L1",  # 物理层目录（逐模块迁移中）
     "strategy_research.api": "L1",
     "strategy_research.cli": "L1",
-    "strategy_research.core.mcp": "L1",
+    "strategy_research.interfaces.mcp": "L1",
     # L2 apps (research IP)
     "strategy_research.apps": "L2",  # 物理层目录（逐模块迁移中，见 docs/physical-layer-migration-plan-20261103.md）
     "strategy_research.apps.alpha_zoo_yaml": "L2",

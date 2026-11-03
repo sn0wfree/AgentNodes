@@ -12,8 +12,8 @@ import numpy as np
 import pandas as pd
 import pytest
 
-from strategy_research.core.mcp import server as mcp_server
-from strategy_research.core.mcp.server import (
+from strategy_research.interfaces.mcp import server as mcp_server
+from strategy_research.interfaces.mcp.server import (
     MCPTool,
     MCPServer,
     _df_to_records,

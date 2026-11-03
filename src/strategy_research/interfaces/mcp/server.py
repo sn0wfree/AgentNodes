@@ -18,8 +18,8 @@ import logging
 from pathlib import Path
 from typing import Any, Callable
 
-from ..agent.builtin_tools.utils import tool_err
-from ..agent.tools import BaseTool, ToolContext, _schema_from_signature
+from strategy_research.core.agent.builtin_tools.utils import tool_err
+from strategy_research.core.agent.tools import BaseTool, ToolContext, _schema_from_signature
 
 logger = logging.getLogger(__name__)
 
@@ -73,8 +73,8 @@ def _handle_get_market_data(
     force_refresh: bool,
 ) -> str:
     """Handle the get_market_data MCP tool call."""
-    from ..data_source.base import validate_date_range
-    from ..data_source.registry import NoAvailableSourceError
+    from strategy_research.core.data_source.base import validate_date_range
+    from strategy_research.core.data_source.registry import NoAvailableSourceError
 
     if not codes:
         return json.dumps({"status": "error", "error": "codes is required"}, ensure_ascii=False)
@@ -130,8 +130,8 @@ def _resolve_market_loader(
     Returns ``(loader, effective_source)``; ``(None, "")`` when an explicit
     source is registered but unavailable.
     """
-    from ..data_source.registry import LOADER_REGISTRY, resolve_loader
-    from ..data_source.utils import detect_market
+    from strategy_research.core.data_source.registry import LOADER_REGISTRY, resolve_loader
+    from strategy_research.core.data_source.utils import detect_market
 
     if source and source in LOADER_REGISTRY:
         loader = LOADER_REGISTRY[source]()
@@ -268,7 +268,7 @@ class MCPServer:
 
     def _register_skill_tools(self) -> None:
         def list_skills(**kwargs: Any) -> str:
-            from ..skills import SkillRegistry
+            from strategy_research.core.skills import SkillRegistry
             skills_dir = Path(__file__).parent.parent.parent / "templates" / ".skills"
             registry = SkillRegistry()
             registry.load_directory(skills_dir)
@@ -276,7 +276,7 @@ class MCPServer:
             return json.dumps([{"name": s.name, "category": s.category, "description": s.description} for s in skills], ensure_ascii=False)
 
         def load_skill(name: str = "", **kwargs: Any) -> str:
-            from ..skills import SkillRegistry
+            from strategy_research.core.skills import SkillRegistry
             skills_dir = Path(__file__).parent.parent.parent / "templates" / ".skills"
             registry = SkillRegistry()
             registry.load_directory(skills_dir)
@@ -306,7 +306,7 @@ class MCPServer:
         def start_research_goal(objective: str = "", session_id: str = "default", **kwargs: Any) -> str:
             # Phase B: 真接 GoalStore (替代旧 stub 返回假数据)
             try:
-                from ..goal import GoalStore, RiskTier
+                from strategy_research.core.goal import GoalStore, RiskTier
                 store = GoalStore()
                 goal = store.replace_goal(
                     session_id=session_id,
@@ -326,7 +326,7 @@ class MCPServer:
 
         def get_research_goal(session_id: str = "default", **kwargs: Any) -> str:
             try:
-                from ..goal import GoalStore
+                from strategy_research.core.goal import GoalStore
                 store = GoalStore()
                 goal = store.get_current_goal(session_id)
                 if goal is None:
@@ -380,7 +380,7 @@ class MCPServer:
             **kwargs: Any,
         ) -> str:
             try:
-                from ..goal import EvidenceInput, GoalStore
+                from strategy_research.core.goal import EvidenceInput, GoalStore
                 store = GoalStore()
                 if not goal_id:
                     return json.dumps({"status": "error", "error": "goal_id is required"}, ensure_ascii=False)
@@ -419,7 +419,7 @@ class MCPServer:
             **kwargs: Any,
         ) -> str:
             try:
-                from ..goal import GoalStatus, GoalStore
+                from strategy_research.core.goal import GoalStatus, GoalStore
                 store = GoalStore()
                 if not goal_id:
                     return json.dumps({"status": "error", "error": "goal_id is required"}, ensure_ascii=False)
@@ -490,7 +490,7 @@ class MCPServer:
 
     def _register_hypothesis_tools(self) -> None:
         def list_hypotheses(**kwargs: Any) -> str:
-            from ..hypothesis import HypothesisRegistry
+            from strategy_research.core.hypothesis import HypothesisRegistry
             registry = HypothesisRegistry()
             hyps = registry.list()
             return json.dumps([{"id": h.hypothesis_id, "title": h.title, "status": h.status} for h in hyps], ensure_ascii=False)
@@ -505,7 +505,7 @@ class MCPServer:
     def _register_backtest_tools(self) -> None:
         # Agent registry's 4-step orchestrated run_backtest (config_load →
         # data_prepare → data_gate → engine_run); MCP params map 1:1.
-        from ..agent.builtin_tools.backtest_tools import RunBacktestTool
+        from strategy_research.core.agent.builtin_tools.backtest_tools import RunBacktestTool
 
         self.register(_wrap_base_tool(
             RunBacktestTool(),
@@ -521,8 +521,8 @@ class MCPServer:
                 # 注意：必须是 ``..validation``（core/validation）。写成
                 # ``.validation`` 会解析到 core/mcp/validation——不存在，
                 # MCP 客户端调用 validate_run 永远得到 "No module named"。
-                from ..validation import MarketType, run_validation
-                from ..validation.cli import _build_synthetic_trades, _load_nav_synthetic
+                from strategy_research.core.validation import MarketType, run_validation
+                from strategy_research.core.validation.cli import _build_synthetic_trades, _load_nav_synthetic
 
                 run_path = Path(run_dir).resolve()
                 market_enum = MarketType(market)
@@ -566,7 +566,7 @@ class MCPServer:
 
     def _register_factor_tools(self) -> None:
         # Agent registry's compute_factor (expression → factor_code).
-        from ..agent.builtin_tools.factor_tools import ComputeFactorTool
+        from strategy_research.core.agent.builtin_tools.factor_tools import ComputeFactorTool
 
         self.register(_wrap_base_tool(
             ComputeFactorTool(),
@@ -578,7 +578,7 @@ class MCPServer:
         def search_memory(query: str = "", limit: int = 5, **kwargs: Any) -> str:
             # Phase B: 真接 PersistentMemory.find_relevant (替代旧 stub 空列表)
             try:
-                from ..memory import PersistentMemory
+                from strategy_research.core.memory import PersistentMemory
                 mem = PersistentMemory()
                 entries = mem.find_relevant(query, max_results=limit)
                 return json.dumps({
@@ -599,7 +599,7 @@ class MCPServer:
 
         def add_memory(title: str = "", content: str = "", memory_type: str = "project", **kwargs: Any) -> str:
             try:
-                from ..memory import PersistentMemory
+                from strategy_research.core.memory import PersistentMemory
                 mem = PersistentMemory()
                 path = mem.add(title, content, memory_type=memory_type)
                 return json.dumps({
@@ -643,7 +643,7 @@ class MCPServer:
         def list_sessions(**kwargs: Any) -> str:
             # B4 Step 3: unified DB (the legacy SessionDB dataclass had no
             # `workspace` field, so this payload was mostly null).
-            from ..session.unified import list_sessions as _list
+            from strategy_research.core.session.unified import list_sessions as _list
             rows = _list()
             return json.dumps(
                 [{"id": r["id"], "title": r["title"]} for r in rows],
@@ -651,7 +651,7 @@ class MCPServer:
             )
 
         def search_messages(query: str = "", **kwargs: Any) -> str:
-            from ..session.unified import search_messages as _search
+            from strategy_research.core.session.unified import search_messages as _search
             return json.dumps(_search(query), ensure_ascii=False)
 
         self.register(MCPTool(
@@ -673,8 +673,9 @@ class MCPServer:
 
     def _register_swarm_tools(self) -> None:
         def list_swarm_presets(**kwargs: Any) -> str:
-            from ..swarm import list_presets
-            presets_dir = Path(__file__).parent.parent / "swarm" / "presets"
+            import strategy_research.core.swarm as swarm_module
+            from strategy_research.core.swarm import list_presets
+            presets_dir = Path(swarm_module.__file__).parent / "presets"  # 层无关：跟随 swarm 包实际位置
             presets = list_presets(presets_dir)
             return json.dumps([{"name": p.name, "description": p.description, "agents": len(p.agents)} for p in presets], ensure_ascii=False)
 
@@ -686,7 +687,7 @@ class MCPServer:
         ))
 
     def _register_web_tools(self) -> None:
-        from ..agent.builtin_tools.web_tools import (
+        from strategy_research.core.agent.builtin_tools.web_tools import (
             ReadDocumentTool,
             ReadUrlTool,
             WebSearchTool,
@@ -729,13 +730,13 @@ class MCPServer:
         ))
 
         # Agent-registry tools with matching MCP contracts (no duplication)
-        from ..agent.builtin_tools.data_tools import ListDataSourcesTool, SearchSymbolTool
+        from strategy_research.core.agent.builtin_tools.data_tools import ListDataSourcesTool, SearchSymbolTool
 
         self.register(_wrap_base_tool(ListDataSourcesTool()))
         self.register(_wrap_base_tool(SearchSymbolTool()))
 
     def _register_swarm_execution_tools(self) -> None:
-        from ..swarm.run_store import RunStore
+        from strategy_research.core.swarm.run_store import RunStore
         run_store = RunStore()
 
         def run_swarm(
@@ -755,9 +756,10 @@ class MCPServer:
 
             from pathlib import Path
 
-            from ..swarm import SwarmRuntime, load_preset
+            import strategy_research.core.swarm as swarm_module
+            from strategy_research.core.swarm import SwarmRuntime, load_preset
 
-            presets_dir = Path(__file__).parent.parent / "swarm" / "presets"
+            presets_dir = Path(swarm_module.__file__).parent / "presets"  # 层无关：跟随 swarm 包实际位置
             preset = None
             for ext in ("*.yaml", "*.yml"):
                 for f in presets_dir.glob(ext):
@@ -871,7 +873,7 @@ class MCPServer:
         try:
             # MCP 面日志必须走 stderr——stdout 是 JSON-RPC 协议帧通道。
             # 统一入口（docs/logging-unified-entry-design-20261102.md §4.1）。
-            from ..observability import configure_logging
+            from strategy_research.core.observability import configure_logging
 
             configure_logging("mcp")
         except Exception:  # noqa: BLE001 — 日志装配失败不能阻断 MCP

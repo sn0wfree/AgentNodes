@@ -234,7 +234,7 @@ class TestMCPListTools:
             },
         ]
 
-        with patch("strategy_research.core.mcp.MCPServer", return_value=fake_server):
+        with patch("strategy_research.interfaces.mcp.MCPServer", return_value=fake_server):
             args = argparse.Namespace()
             rc = cmd_mcp_list_tools(args)
 
@@ -257,7 +257,7 @@ class TestMCPListTools:
             },
         ]
 
-        with patch("strategy_research.core.mcp.MCPServer", return_value=fake_server):
+        with patch("strategy_research.interfaces.mcp.MCPServer", return_value=fake_server):
             args = argparse.Namespace()
             rc = cmd_mcp_list_tools(args)
 
