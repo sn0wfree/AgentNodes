@@ -5,7 +5,7 @@ from dataclasses import asdict
 from enum import Enum
 from pathlib import Path
 
-from ..storage.sqlite import resolve_db_path
+from strategy_research.foundation.storage.sqlite import resolve_db_path
 
 _DB_PATH_ENV = "QUANTNODES_RESEARCH_GOAL_DB_PATH"
 

@@ -12,7 +12,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
 
-from strategy_research.core.storage.event_schema import (
+from strategy_research.foundation.storage.event_schema import (
     _existing_unique_sets,
     ensure_event_log_schema,
     migrate_event_log_unique,

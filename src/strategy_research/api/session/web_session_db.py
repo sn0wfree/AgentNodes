@@ -230,7 +230,7 @@ def _ensure_schema(conn: sqlite3.Connection) -> None:
     # and provides efficient replay (WHERE aggregate_id = ? ORDER BY seq).
     # The (type, time_created) index supports time-range queries by event
     # type (e.g. "all tool_result events in the last hour").
-    from ...core.storage.event_schema import ensure_event_log_schema
+    from strategy_research.foundation.storage.event_schema import ensure_event_log_schema
 
     ensure_event_log_schema(conn)
 
@@ -277,7 +277,7 @@ def _run_schema_migrations(
         # the new UNIQUE is already present). parent_event_id and
         # branch_id columns are backfilled inside ensure_event_log_schema,
         # which runs unconditionally in _ensure_schema above.
-        from ...core.storage.event_schema import migrate_event_log_unique
+        from strategy_research.foundation.storage.event_schema import migrate_event_log_unique
         migrate_event_log_unique(conn)
         conn.execute("PRAGMA user_version = 6")
 

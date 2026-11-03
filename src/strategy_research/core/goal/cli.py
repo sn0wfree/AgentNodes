@@ -142,7 +142,7 @@ def cmd_goal_audit(args: argparse.Namespace) -> int:
     # Write audit row directly via raw SQL (no status change)
     from datetime import datetime, timezone
 
-    from ..storage.sqlite import json_dumps, new_id, write_transaction
+    from strategy_research.foundation.storage.sqlite import json_dumps, new_id, write_transaction
 
     audit_id = new_id("audit")
     now = datetime.now(timezone.utc).isoformat()

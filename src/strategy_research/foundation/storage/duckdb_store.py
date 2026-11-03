@@ -21,7 +21,10 @@ from typing import Any, Optional, cast
 
 import pandas as pd
 
-from ...core import db as _db
+# 绝对路径（2026-11-03 W4c）：本模块原在 core/storage/，用 `from ...core import db`
+# 依赖所在深度；搬入 foundation/storage/ 后该相对路径只是「巧合正确」。
+# db 属 apps（W4d 搬迁），此处先用旧路径，届时前缀改写追平。
+from strategy_research.core import db as _db
 
 
 class DuckDBDataStore:

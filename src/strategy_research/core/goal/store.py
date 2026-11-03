@@ -9,7 +9,7 @@ import threading
 from pathlib import Path
 from typing import Any, cast
 
-from ..storage.sqlite import (
+from strategy_research.foundation.storage.sqlite import (
     connect,
     json_dumps,
     json_loads,

@@ -8,7 +8,7 @@ from __future__ import annotations
 import hashlib
 import threading
 
-from strategy_research.core.storage.platform_store import Artifact, PlatformStore
+from strategy_research.foundation.storage.platform_store import Artifact, PlatformStore
 
 
 def test_concurrent_emit_all_persisted(tmp_path):

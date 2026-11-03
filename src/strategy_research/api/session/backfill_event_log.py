@@ -62,7 +62,7 @@ def backfill_event_log(
     conn.row_factory = sqlite3.Row
     try:
         # Ensure event_log table exists (canonical schema — P0-1 A1).
-        from ...core.storage.event_schema import ensure_event_log_schema
+        from strategy_research.foundation.storage.event_schema import ensure_event_log_schema
 
         ensure_event_log_schema(conn)
 

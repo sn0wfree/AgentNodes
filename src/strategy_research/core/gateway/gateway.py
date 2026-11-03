@@ -105,7 +105,7 @@ class Gateway:
         # 阶段 3b：PlatformStore（事件持久化 + blob + artifact 登记）
         self._store = None
         if data_dir is not None:
-            from strategy_research.core.storage.platform_store import PlatformStore
+            from strategy_research.foundation.storage.platform_store import PlatformStore
 
             self._store = PlatformStore(data_dir=data_dir)
         # R4：artifact 通道（P-3）——执行层的大结果落盘 + 登记，事件只带
@@ -115,7 +115,7 @@ class Gateway:
         if self._artifacts is None and self._store is not None:
             ws = workspace or _resolve_workspace()
             try:
-                from strategy_research.core.storage.artifact_channel import (
+                from strategy_research.foundation.storage.artifact_channel import (
                     ArtifactChannel,
                 )
 

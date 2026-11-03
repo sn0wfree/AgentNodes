@@ -20,7 +20,7 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
-from strategy_research.core.storage.platform_store import Artifact, PlatformStore
+from strategy_research.foundation.storage.platform_store import Artifact, PlatformStore
 
 # 超过此大小的结果转 artifact（字节）。64KB 与单事件载荷上限一致。
 ARTIFACT_THRESHOLD_BYTES = 64 * 1024

@@ -17,7 +17,7 @@ from pathlib import Path
 from typing import TYPE_CHECKING, Any
 
 from strategy_research.foundation.observability.logging_setup import dual_log
-from ..storage.sqlite import (
+from strategy_research.foundation.storage.sqlite import (
     connect,
     json_dumps,
     json_loads,

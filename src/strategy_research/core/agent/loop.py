@@ -511,7 +511,7 @@ class AgentLoop(
         override = getattr(self, "_data_store_override", None)
         if override is not None:
             return override
-        from ..storage import get_store
+        from strategy_research.foundation.storage import get_store
         return get_store()
 
     def _build_sandbox(self):

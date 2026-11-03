@@ -17,7 +17,7 @@ import time
 from pathlib import Path
 from typing import List
 
-from ..storage.sqlite import connect, resolve_db_path, synchronized
+from strategy_research.foundation.storage.sqlite import connect, resolve_db_path, synchronized
 from .models import JobStatus, ScheduledResearchJob
 
 logger = logging.getLogger(__name__)

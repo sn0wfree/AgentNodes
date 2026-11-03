@@ -92,7 +92,7 @@ LAYER_MEMBERSHIP: dict[str, str] = {
     "strategy_research.kernel.seq_generator": "L3",
     # L4 foundation
     "strategy_research.core.llm": "L4",
-    "strategy_research.core.storage": "L4",
+    "strategy_research.foundation.storage": "L4",
     "strategy_research.foundation.observability": "L4",
     "strategy_research.core.utils": "L4",
     "strategy_research.foundation.web": "L4",

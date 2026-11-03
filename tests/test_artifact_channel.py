@@ -5,12 +5,12 @@ import json
 
 import pytest
 
-from strategy_research.core.storage.artifact_channel import (
+from strategy_research.foundation.storage.artifact_channel import (
     ARTIFACT_THRESHOLD_BYTES,
     ArtifactChannel,
     ArtifactPointer,
 )
-from strategy_research.core.storage.platform_store import PlatformStore
+from strategy_research.foundation.storage.platform_store import PlatformStore
 
 
 @pytest.fixture

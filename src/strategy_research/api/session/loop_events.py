@@ -237,7 +237,7 @@ class _LoopEventForwarder:
             # file write above so a write failure doesn't leave a
             # dangling ref_count=1.
             try:
-                from ...core.storage.blob_schema import (
+                from strategy_research.foundation.storage.blob_schema import (
                     ensure_blob_refs_schema,
                     record_blob_offload,
                 )

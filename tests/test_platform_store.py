@@ -3,7 +3,7 @@ from __future__ import annotations
 
 import pytest
 
-from strategy_research.core.storage.platform_store import Artifact, PlatformStore
+from strategy_research.foundation.storage.platform_store import Artifact, PlatformStore
 
 
 @pytest.fixture

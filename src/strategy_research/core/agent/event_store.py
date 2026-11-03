@@ -110,7 +110,7 @@ class EventStore:
         # SQLite 访问转调行级 API。兼容单库模式指向既有 .session.db（S2 拆分）。
         self._ps = None
         if not isinstance(self._backend, InMemoryStore):
-            from ..storage.platform_store import PlatformStore
+            from strategy_research.foundation.storage.platform_store import PlatformStore
 
             self._ps = PlatformStore(db_path=self._db_path)
 
@@ -119,7 +119,7 @@ class EventStore:
             # In-memory store doesn't persist; event_log lives only in cache
             return
         conn = self._backend._ensure_conn()  # type: ignore[attr-defined]
-        from ..storage.event_schema import (
+        from strategy_research.foundation.storage.event_schema import (
             ensure_event_log_schema,
             migrate_event_log_unique,
         )
