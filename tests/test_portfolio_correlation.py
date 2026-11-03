@@ -4,7 +4,7 @@ from __future__ import annotations
 import pandas as pd
 import pytest
 
-from strategy_research.core.portfolio.correlation import (
+from strategy_research.apps.portfolio.correlation import (
     avg_correlation,
     correlation_matrix,
     correlation_pairs,

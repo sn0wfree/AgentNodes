@@ -5,8 +5,8 @@ import numpy as np
 import pandas as pd
 import pytest
 
-from strategy_research.core.portfolio.metrics import portfolio_metrics
-from strategy_research.core.portfolio.models import PortfolioMetrics
+from strategy_research.apps.portfolio.metrics import portfolio_metrics
+from strategy_research.apps.portfolio.models import PortfolioMetrics
 
 
 def _curve(values, start="2024-01-01") -> pd.Series:

@@ -754,7 +754,7 @@ def _build_parser() -> tuple[argparse.ArgumentParser, dict[str, argparse.Argumen
     add_accept_subparsers(subparsers)
 
     # portfolio (P3-d) — 组合回测 / 策略相关性
-    from strategy_research.core.portfolio.cli import add_portfolio_subparsers
+    from strategy_research.apps.portfolio.cli import add_portfolio_subparsers
     add_portfolio_subparsers(subparsers)
 
     # api serve

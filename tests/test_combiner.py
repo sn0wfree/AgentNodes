@@ -11,7 +11,7 @@ import pandas as pd
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
 
-from strategy_research.core.portfolio.combiner import (
+from strategy_research.apps.portfolio.combiner import (
     combine_equity_curves,
     equal_weight,
     risk_parity,

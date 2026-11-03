@@ -9,19 +9,19 @@ import pandas as pd
 import pytest
 import yaml
 
-from strategy_research.core.portfolio.combiner import (
+from strategy_research.apps.portfolio.combiner import (
     combine_equity_curves,
     equal_weight,
     risk_parity,
     sharpe_weight,
 )
-from strategy_research.core.portfolio.correlation import (
+from strategy_research.apps.portfolio.correlation import (
     avg_correlation,
     correlation_matrix,
     correlation_pairs,
 )
-from strategy_research.core.portfolio.metrics import portfolio_metrics
-from strategy_research.core.portfolio.models import (
+from strategy_research.apps.portfolio.metrics import portfolio_metrics
+from strategy_research.apps.portfolio.models import (
     CorrelationPair,
     PortfolioConfig,
     PortfolioMetrics,
@@ -278,7 +278,7 @@ class TestCLI:
 
         output_dir = tmp_path / "output"
 
-        from strategy_research.core.portfolio.cli import cmd_portfolio_run
+        from strategy_research.apps.portfolio.cli import cmd_portfolio_run
 
         args = type("Args", (), {"config": str(config_path), "output_dir": str(output_dir)})()
         cmd_portfolio_run(args)
@@ -301,7 +301,7 @@ class TestCLI:
             run_dir = strat_dir / "runs" / "run_0001"
             run_dir.mkdir(parents=True)
 
-        from strategy_research.core.portfolio.cli import cmd_portfolio_list
+        from strategy_research.apps.portfolio.cli import cmd_portfolio_list
 
         args = type("Args", (), {"strategy_dir": str(tmp_path / "strategies")})()
         cmd_portfolio_list(args)
@@ -320,7 +320,7 @@ class TestCLI:
             json.dumps(metrics), encoding="utf-8"
         )
 
-        from strategy_research.core.portfolio.cli import cmd_portfolio_show
+        from strategy_research.apps.portfolio.cli import cmd_portfolio_show
 
         args = type("Args", (), {"result_dir": str(result_dir)})()
         cmd_portfolio_show(args)
@@ -335,7 +335,7 @@ class TestCLI:
             eq = _make_equity("2024-01-02", 50, 0.001 if name == "A" else 0.0005)
             eq.to_csv(run_dir / "equity_curve.csv", header=True)
 
-        from strategy_research.core.portfolio.cli import cmd_portfolio_correlate
+        from strategy_research.apps.portfolio.cli import cmd_portfolio_correlate
 
         args = type("Args", (), {"strategy_dir": str(tmp_path / "strategies"), "output": None})()
         cmd_portfolio_correlate(args)

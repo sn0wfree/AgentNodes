@@ -36,7 +36,7 @@ class TestPortfolioCliWiring:
         parser = argparse.ArgumentParser()
         subparsers = parser.add_subparsers(dest="command")
         # 直接调用 add_portfolio_subparsers
-        from strategy_research.core.portfolio.cli import add_portfolio_subparsers
+        from strategy_research.apps.portfolio.cli import add_portfolio_subparsers
         add_portfolio_subparsers(subparsers)
 
         # 解析每个子命令, 提供必需参数
