@@ -25,7 +25,7 @@ def _build_factor_panel(
     Assets with insufficient bars or failed factor computation are
     skipped. Duplicated index rows are deduplicated (keep first).
     """
-    from ...tools.data_transforms import long_to_single_asset_wide
+    from strategy_research.apps.tools.data_transforms import long_to_single_asset_wide
 
     factor_panel = {}
     for asset_code in assets:
@@ -44,7 +44,7 @@ def _build_factor_panel(
 
 def _build_ret_panel(df, assets, forward_days: int) -> dict:
     """Build the forward-return panel (close pct_change shifted -forward_days)."""
-    from ...tools.data_transforms import long_to_single_asset_wide
+    from strategy_research.apps.tools.data_transforms import long_to_single_asset_wide
 
     ret_panel = {}
     for asset_code in assets:
@@ -325,7 +325,7 @@ class ComputeFactorTool(BaseTool):
             )
 
         # Build single-asset wide DataFrame (date index, ohlcv columns)
-        from ...tools.data_transforms import long_to_single_asset_wide
+        from strategy_research.apps.tools.data_transforms import long_to_single_asset_wide
 
         asset_df = long_to_single_asset_wide(prices_df, asset=asset, value_cols="ohlcv")
 
