@@ -7,7 +7,7 @@ Covers:
 """
 from __future__ import annotations
 
-from strategy_research.core.agent.builtin_tools import build_default_registry
+from strategy_research.kernel.agent.builtin_tools import build_default_registry
 from strategy_research.core.agent.tools import BaseTool, make_strict_schema
 
 # ── make_strict_schema: pure schema rewriting ────────────────

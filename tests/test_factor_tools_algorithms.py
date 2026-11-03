@@ -12,7 +12,7 @@ import numpy as np
 import pandas as pd
 import pytest
 
-from strategy_research.core.agent.builtin_tools.factor_tools import (
+from strategy_research.kernel.agent.builtin_tools.factor_tools import (
     _build_ret_panel,
     _compute_daily_ic_series,
     _compute_quintile_returns,

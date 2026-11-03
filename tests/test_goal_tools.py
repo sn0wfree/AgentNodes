@@ -7,8 +7,8 @@ from unittest.mock import patch
 
 import pytest
 
-from strategy_research.core.agent.builtin_tools import build_default_registry
-from strategy_research.core.agent.builtin_tools.goal_tools import (
+from strategy_research.kernel.agent.builtin_tools import build_default_registry
+from strategy_research.kernel.agent.builtin_tools.goal_tools import (
     AddEvidenceTool,
     CompleteGoalTool,
     CreateGoalTool,
@@ -43,7 +43,7 @@ class TestGoalTools:
     def test_create_goal_tool(self, workspace, tmp_goal_db):
         store, db_path = tmp_goal_db
         tool = CreateGoalTool()
-        with patch("strategy_research.core.agent.builtin_tools.goal_tools._get_store", return_value=store):
+        with patch("strategy_research.kernel.agent.builtin_tools.goal_tools._get_store", return_value=store):
             result = tool.execute(
                 ctx=ToolContext(session_id="test-session"),
                 objective="Analyze momentum factor IC",
@@ -57,7 +57,7 @@ class TestGoalTools:
     def test_create_goal_tool_empty_objective(self, workspace, tmp_goal_db):
         store, db_path = tmp_goal_db
         tool = CreateGoalTool()
-        with patch("strategy_research.core.agent.builtin_tools.goal_tools._get_store", return_value=store):
+        with patch("strategy_research.kernel.agent.builtin_tools.goal_tools._get_store", return_value=store):
             result = tool.execute(
                 ctx=ToolContext(session_id="test-session"),
                 objective="",
@@ -75,7 +75,7 @@ class TestGoalTools:
             criteria=["Criterion 1"],
         )
         tool = AddEvidenceTool()
-        with patch("strategy_research.core.agent.builtin_tools.goal_tools._get_store", return_value=store):
+        with patch("strategy_research.kernel.agent.builtin_tools.goal_tools._get_store", return_value=store):
             result = tool.execute(
                 ctx=ToolContext(session_id="test-session"),
                 text="IC mean = 0.06, IR = 0.5",
@@ -87,7 +87,7 @@ class TestGoalTools:
     def test_add_evidence_tool_no_goal(self, workspace, tmp_goal_db):
         store, db_path = tmp_goal_db
         tool = AddEvidenceTool()
-        with patch("strategy_research.core.agent.builtin_tools.goal_tools._get_store", return_value=store):
+        with patch("strategy_research.kernel.agent.builtin_tools.goal_tools._get_store", return_value=store):
             result = tool.execute(
                 ctx=ToolContext(session_id="test-session"),
                 text="Some evidence",
@@ -104,7 +104,7 @@ class TestGoalTools:
             criteria=["C1"],
         )
         tool = AddEvidenceTool()
-        with patch("strategy_research.core.agent.builtin_tools.goal_tools._get_store", return_value=store):
+        with patch("strategy_research.kernel.agent.builtin_tools.goal_tools._get_store", return_value=store):
             result = tool.execute(
                 ctx=ToolContext(session_id="test-session"),
                 text="",
@@ -131,7 +131,7 @@ class TestGoalTools:
             evidence=EvidenceInput(text="Evidence for criterion", criterion_id=criterion_id, source_type="test"),
         )
         tool = CompleteGoalTool()
-        with patch("strategy_research.core.agent.builtin_tools.goal_tools._get_store", return_value=store):
+        with patch("strategy_research.kernel.agent.builtin_tools.goal_tools._get_store", return_value=store):
             result = tool.execute(
                 ctx=ToolContext(session_id="test-session"),
                 recap="Research complete",
@@ -143,7 +143,7 @@ class TestGoalTools:
     def test_complete_goal_tool_no_goal(self, workspace, tmp_goal_db):
         store, db_path = tmp_goal_db
         tool = CompleteGoalTool()
-        with patch("strategy_research.core.agent.builtin_tools.goal_tools._get_store", return_value=store):
+        with patch("strategy_research.kernel.agent.builtin_tools.goal_tools._get_store", return_value=store):
             result = tool.execute(
                 ctx=ToolContext(session_id="test-session"),
             )
@@ -161,7 +161,7 @@ class TestGoalTools:
         criteria = store.list_criteria(goal.goal_id)
         assert len(criteria) == 2
         tool = AddEvidenceTool()
-        with patch("strategy_research.core.agent.builtin_tools.goal_tools._get_store", return_value=store):
+        with patch("strategy_research.kernel.agent.builtin_tools.goal_tools._get_store", return_value=store):
             result = tool.execute(
                 ctx=ToolContext(session_id="test-session"),
                 text="IC mean = 0.06, IR = 0.5",
@@ -181,7 +181,7 @@ class TestGoalTools:
             objective="Test goal",
             criteria=["Criterion 1", "Criterion 2"],
         )
-        with patch("strategy_research.core.agent.builtin_tools.goal_tools._get_store", return_value=store):
+        with patch("strategy_research.kernel.agent.builtin_tools.goal_tools._get_store", return_value=store):
             result = AddEvidenceTool().execute(
                 ctx=ToolContext(session_id="test-session"),
                 text="All observations collected",
@@ -203,7 +203,7 @@ class TestGoalTools:
             criteria=["Criterion 1"],
         )
         tool = CompleteGoalTool()
-        with patch("strategy_research.core.agent.builtin_tools.goal_tools._get_store", return_value=store):
+        with patch("strategy_research.kernel.agent.builtin_tools.goal_tools._get_store", return_value=store):
             result = tool.execute(
                 ctx=ToolContext(session_id="test-session"),
             )
@@ -221,7 +221,7 @@ class TestGoalTools:
             criteria=["C1", "C2"],
         )
         tool = GetGoalStatusTool()
-        with patch("strategy_research.core.agent.builtin_tools.goal_tools._get_store", return_value=store):
+        with patch("strategy_research.kernel.agent.builtin_tools.goal_tools._get_store", return_value=store):
             result = tool.execute(
                 ctx=ToolContext(session_id="test-session"),
             )
@@ -235,7 +235,7 @@ class TestGoalTools:
     def test_get_goal_status_tool_no_goal(self, workspace, tmp_goal_db):
         store, db_path = tmp_goal_db
         tool = GetGoalStatusTool()
-        with patch("strategy_research.core.agent.builtin_tools.goal_tools._get_store", return_value=store):
+        with patch("strategy_research.kernel.agent.builtin_tools.goal_tools._get_store", return_value=store):
             result = tool.execute(
                 ctx=ToolContext(session_id="test-session"),
             )
@@ -251,7 +251,7 @@ class TestGoalTools:
             criteria=["Only criterion"],
         )
         tool = AddEvidenceTool()
-        with patch("strategy_research.core.agent.builtin_tools.goal_tools._get_store", return_value=store):
+        with patch("strategy_research.kernel.agent.builtin_tools.goal_tools._get_store", return_value=store):
             result = tool.execute(
                 ctx=ToolContext(session_id="test-session"),
                 text="Free-form note",
@@ -274,7 +274,7 @@ class TestGoalTools:
         criteria = store.list_criteria(goal.goal_id)
         target = criteria[0].criterion_id
         tool = AddEvidenceTool()
-        with patch("strategy_research.core.agent.builtin_tools.goal_tools._get_store", return_value=store):
+        with patch("strategy_research.kernel.agent.builtin_tools.goal_tools._get_store", return_value=store):
             result = tool.execute(
                 ctx=ToolContext(session_id="test-session"),
                 text="Only for C1",
@@ -294,14 +294,14 @@ class TestGoalTools:
             objective="Test goal",
             criteria=["C1", "C2"],
         )
-        with patch("strategy_research.core.agent.builtin_tools.goal_tools._get_store", return_value=store):
+        with patch("strategy_research.kernel.agent.builtin_tools.goal_tools._get_store", return_value=store):
             result = AddEvidenceTool().execute(
                 ctx=ToolContext(session_id="test-session"),
                 text="Covers all",
             )
         data = json.loads(result)
         assert data["progress_percent"] == 100.0
-        with patch("strategy_research.core.agent.builtin_tools.goal_tools._get_store", return_value=store):
+        with patch("strategy_research.kernel.agent.builtin_tools.goal_tools._get_store", return_value=store):
             result = GetGoalStatusTool().execute(
                 ctx=ToolContext(session_id="test-session"),
             )
@@ -316,7 +316,7 @@ class TestGoalTools:
             criteria=["C1"],
         )
         tool = AddEvidenceTool()
-        with patch("strategy_research.core.agent.builtin_tools.goal_tools._get_store", return_value=store):
+        with patch("strategy_research.kernel.agent.builtin_tools.goal_tools._get_store", return_value=store):
             result = tool.execute(
                 ctx=ToolContext(session_id="test-session"),
                 text="Bad criterion",
@@ -339,7 +339,7 @@ class TestGoalTools:
             criteria=["C2"],
         )
         tool = ListGoalsTool()
-        with patch("strategy_research.core.agent.builtin_tools.goal_tools._get_store", return_value=store):
+        with patch("strategy_research.kernel.agent.builtin_tools.goal_tools._get_store", return_value=store):
             result = tool.execute(ctx=ToolContext())
         data = json.loads(result)
         assert data["status"] == "ok"
@@ -358,7 +358,7 @@ class TestGoalTools:
             criteria=["C2"],
         )
         tool = ListGoalsTool()
-        with patch("strategy_research.core.agent.builtin_tools.goal_tools._get_store", return_value=store):
+        with patch("strategy_research.kernel.agent.builtin_tools.goal_tools._get_store", return_value=store):
             result = tool.execute(
                 ctx=ToolContext(session_id="s1"),
             )
@@ -505,7 +505,7 @@ class TestGoalLifecycle:
         db_path = tmp_path / "lifecycle_goals.db"
         store = GoalStore(db_path=db_path)
 
-        with patch("strategy_research.core.agent.builtin_tools.goal_tools._get_store", return_value=store):
+        with patch("strategy_research.kernel.agent.builtin_tools.goal_tools._get_store", return_value=store):
             # 1. Create goal
             create_tool = CreateGoalTool()
             result = json.loads(create_tool.execute(

@@ -16,7 +16,7 @@ from pathlib import Path
 
 import pytest
 
-from strategy_research.core.agent.builtin_tools.file_tools import ReadFileTool
+from strategy_research.kernel.agent.builtin_tools.file_tools import ReadFileTool
 from strategy_research.core.agent.combo import CompositeTool
 from strategy_research.core.agent.context import ContextBuilder
 from strategy_research.core.agent.tool_result import ToolResult, from_any, render_for_llm

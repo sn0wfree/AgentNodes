@@ -11,7 +11,7 @@ from pathlib import Path
 
 import pytest
 
-from strategy_research.core.agent.builtin_tools import build_default_registry
+from strategy_research.kernel.agent.builtin_tools import build_default_registry
 from strategy_research.core.agent.tools import ToolContext
 
 # ── Fixtures ────────────────────────────────────────────────────
@@ -170,7 +170,7 @@ class TestUnwrapInRealTools:
 
     def test_unwrap_happens_before_dataframe_creation(self, registry, workspace):
         """The LLM shape {"item": [...]} is unwrapped before column check."""
-        from strategy_research.core.agent.builtin_tools.data_tools import ImportDataTool
+        from strategy_research.kernel.agent.builtin_tools.data_tools import ImportDataTool
         tool = ImportDataTool()
         result = json.loads(tool.invoke({
             "ctx": ToolContext(workspace=workspace),

@@ -13,7 +13,7 @@ import inspect
 
 import pytest
 
-from strategy_research.core.agent.builtin_tools import build_default_registry
+from strategy_research.kernel.agent.builtin_tools import build_default_registry
 from strategy_research.core.agent.tools import (
     _INJECTED_PARAMS,
     EFFECT_DB,
@@ -144,7 +144,7 @@ class TestGuidanceConsistency:
         assert "commit_market_data" not in doc
         # 代码 fix_msg 无残留（v1.2.0 拆分为组合步骤后, workflow 文案在
         # EngineRunStep / DataReadinessStep 中）
-        from strategy_research.core.agent.builtin_tools import (
+        from strategy_research.kernel.agent.builtin_tools import (
             DataReadinessStep,
             EngineRunStep,
             RunBacktestTool,
@@ -160,7 +160,7 @@ class TestGuidanceConsistency:
         doc = inspect.getdoc(tool)
         assert "get_market_data" in doc
         assert "commit_market_data" not in doc
-        from strategy_research.core.agent.builtin_tools import ComputeFactorTool
+        from strategy_research.kernel.agent.builtin_tools import ComputeFactorTool
         src = inspect.getsource(ComputeFactorTool.execute)
         assert "commit_market_data" not in src
 

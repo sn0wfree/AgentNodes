@@ -44,7 +44,7 @@ def assemble_loop_parts(
     - ``loop_strategy``: ``resolve_loop_strategy`` turns a spec
       (str / dict / LoopStrategy / None) into a resolved strategy.
     """
-    from .builtin_tools import build_default_registry
+    from strategy_research.kernel.agent.builtin_tools import build_default_registry
     from .prompt_builder import PromptBuilderFactory
 
     if registry is None:

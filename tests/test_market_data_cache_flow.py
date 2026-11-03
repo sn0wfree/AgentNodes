@@ -59,7 +59,7 @@ def gmd():
     # Stub the loader registry + market detection so the tool finds the
     # fake loader without network.
     import strategy_research.apps.data_source.registry as dsr
-    from strategy_research.core.agent.builtin_tools.data_tools import (
+    from strategy_research.kernel.agent.builtin_tools.data_tools import (
         GetMarketDataTool,
     )
     dsr.LOADER_REGISTRY["fake"] = _FakeLoader
@@ -187,7 +187,7 @@ class TestGetMarketDataEdgeCases:
 
 class TestCommitMarketDataRetired:
     def test_commit_market_data_not_in_registry(self):
-        from strategy_research.core.agent.builtin_tools import build_default_registry
+        from strategy_research.kernel.agent.builtin_tools import build_default_registry
         reg = build_default_registry()
         assert reg.get("commit_market_data") is None
         assert reg.get("get_market_data") is not None

@@ -391,7 +391,7 @@ def test_memory_retriever_inject_pre_run_disabled(monkeypatch):
 
 
 def test_list_goals_invalid_status_is_actionable(tmp_path, monkeypatch):
-    from strategy_research.core.agent.builtin_tools.goal_tools import (
+    from strategy_research.kernel.agent.builtin_tools.goal_tools import (
         ListGoalsTool,
     )
     from strategy_research.apps.goal.store import GoalStore

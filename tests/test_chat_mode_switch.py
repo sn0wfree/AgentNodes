@@ -128,7 +128,7 @@ class TestPromptSelection:
             capture_agent_loop_init,
         )
         monkeypatch.setattr(
-            "strategy_research.core.agent.builtin_tools.build_default_registry",
+            "strategy_research.kernel.agent.builtin_tools.build_default_registry",
             mock.MagicMock(return_value=None),
         )
         monkeypatch.setattr(
@@ -167,7 +167,7 @@ class TestPromptSelection:
             capture_agent_loop_init,
         )
         monkeypatch.setattr(
-            "strategy_research.core.agent.builtin_tools.build_default_registry",
+            "strategy_research.kernel.agent.builtin_tools.build_default_registry",
             mock.MagicMock(return_value=None),
         )
         monkeypatch.setattr(

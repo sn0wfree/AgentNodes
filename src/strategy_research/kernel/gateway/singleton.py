@@ -50,7 +50,7 @@ def get_gateway(
         # build_default_registry 的注释）。无 workspace 时用只读工具集。
         if registry is None:
             try:
-                from strategy_research.core.agent.builtin_tools import (
+                from strategy_research.kernel.agent.builtin_tools import (
                     build_default_registry,
                 )
 

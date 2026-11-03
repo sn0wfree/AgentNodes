@@ -12,8 +12,8 @@ import pytest
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
 
-from strategy_research.core.agent.builtin_tools import backtest_tools as bt
-from strategy_research.core.agent.builtin_tools.bg_tools import RunBgCommandTool
+from strategy_research.kernel.agent.builtin_tools import backtest_tools as bt
+from strategy_research.kernel.agent.builtin_tools.bg_tools import RunBgCommandTool
 from strategy_research.core.agent.tools import ToolContext
 
 

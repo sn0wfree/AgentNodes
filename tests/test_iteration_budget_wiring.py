@@ -129,7 +129,7 @@ class TestRunWithAgentForwardsBudget(unittest.TestCase):
                     "AL", (), {"arun": fake_agent_arun, "max_iterations": kw.get("max_iterations")}
                 )(),
             ),
-            patch("strategy_research.core.agent.builtin_tools.build_default_registry", return_value=None),
+            patch("strategy_research.kernel.agent.builtin_tools.build_default_registry", return_value=None),
         ):
             # exercise _run_with_agent directly with a bounded budget
             async def run():

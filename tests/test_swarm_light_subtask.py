@@ -1,7 +1,7 @@
 """Unit tests for A6 light subtasks: toolset + budget on AgentNodeConfig / task tool."""
 from __future__ import annotations
 
-from strategy_research.core.agent.builtin_tools.subagent_tool import SubAgentTool
+from strategy_research.kernel.agent.builtin_tools.subagent_tool import SubAgentTool
 from strategy_research.core.agent.dag_config import AgentNodeConfig
 from strategy_research.core.agent.toolsets import TOOLSETS
 

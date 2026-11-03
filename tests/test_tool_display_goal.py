@@ -9,11 +9,11 @@ import json
 
 import pytest
 
-from strategy_research.core.agent.builtin_tools.display_tools import (
+from strategy_research.kernel.agent.builtin_tools.display_tools import (
     ShowChartTool,
     ShowReportTool,
 )
-from strategy_research.core.agent.builtin_tools.goal_tools import (
+from strategy_research.kernel.agent.builtin_tools.goal_tools import (
     GetGoalStatusTool,
     ListGoalsTool,
 )

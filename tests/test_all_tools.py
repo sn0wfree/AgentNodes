@@ -7,7 +7,7 @@ from pathlib import Path
 
 import pytest
 
-from strategy_research.core.agent.builtin_tools import (
+from strategy_research.kernel.agent.builtin_tools import (
     BenchmarkComparison,
     DrawdownAnalysis,
     FactorAnalysisTool,
@@ -22,7 +22,7 @@ from strategy_research.core.agent.builtin_tools import (
     StrategyCompare,
     build_default_registry,
 )
-from strategy_research.core.agent.builtin_tools.data_tools import (
+from strategy_research.kernel.agent.builtin_tools.data_tools import (
     GetMarketDataTool,
     ImportDataTool,
     ListDataSourcesTool,
@@ -634,7 +634,7 @@ class TestWebTools:
     def test_web_search_missing_deps(self):
         """Web tools may not be available if dependencies are missing."""
         try:
-            from strategy_research.core.agent.builtin_tools.web_tools import WebSearchTool
+            from strategy_research.kernel.agent.builtin_tools.web_tools import WebSearchTool
             tool = WebSearchTool()
             # Just verify it can be instantiated
             assert tool.name == "websearch"
@@ -644,7 +644,7 @@ class TestWebTools:
     def test_read_url_missing_url(self):
         """缺必填参数由框架拦截 (TypeError → loop 重试/兜底)。"""
         try:
-            from strategy_research.core.agent.builtin_tools.web_tools import ReadUrlTool
+            from strategy_research.kernel.agent.builtin_tools.web_tools import ReadUrlTool
             tool = ReadUrlTool()
             with pytest.raises(TypeError):
                 tool.execute(ctx=ToolContext())
@@ -654,7 +654,7 @@ class TestWebTools:
     def test_read_document_missing_path(self):
         """缺必填参数由框架拦截 (TypeError → loop 重试/兜底)。"""
         try:
-            from strategy_research.core.agent.builtin_tools.web_tools import ReadDocumentTool
+            from strategy_research.kernel.agent.builtin_tools.web_tools import ReadDocumentTool
             tool = ReadDocumentTool()
             with pytest.raises(TypeError):
                 tool.execute(ctx=ToolContext())

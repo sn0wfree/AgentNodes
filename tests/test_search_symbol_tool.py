@@ -8,8 +8,8 @@ import types
 import pandas as pd
 import pytest
 
-from strategy_research.core.agent.builtin_tools import build_default_registry
-from strategy_research.core.agent.builtin_tools.data_tools import SearchSymbolTool
+from strategy_research.kernel.agent.builtin_tools import build_default_registry
+from strategy_research.kernel.agent.builtin_tools.data_tools import SearchSymbolTool
 
 
 def _fake_akshare(df: pd.DataFrame) -> types.ModuleType:

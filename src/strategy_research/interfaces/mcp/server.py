@@ -18,7 +18,7 @@ import logging
 from pathlib import Path
 from typing import Any, Callable
 
-from strategy_research.core.agent.builtin_tools.utils import tool_err
+from strategy_research.kernel.agent.builtin_tools.utils import tool_err
 from strategy_research.core.agent.tools import BaseTool, ToolContext, _schema_from_signature
 
 logger = logging.getLogger(__name__)
@@ -505,7 +505,7 @@ class MCPServer:
     def _register_backtest_tools(self) -> None:
         # Agent registry's 4-step orchestrated run_backtest (config_load →
         # data_prepare → data_gate → engine_run); MCP params map 1:1.
-        from strategy_research.core.agent.builtin_tools.backtest_tools import RunBacktestTool
+        from strategy_research.kernel.agent.builtin_tools.backtest_tools import RunBacktestTool
 
         self.register(_wrap_base_tool(
             RunBacktestTool(),
@@ -566,7 +566,7 @@ class MCPServer:
 
     def _register_factor_tools(self) -> None:
         # Agent registry's compute_factor (expression → factor_code).
-        from strategy_research.core.agent.builtin_tools.factor_tools import ComputeFactorTool
+        from strategy_research.kernel.agent.builtin_tools.factor_tools import ComputeFactorTool
 
         self.register(_wrap_base_tool(
             ComputeFactorTool(),
@@ -687,7 +687,7 @@ class MCPServer:
         ))
 
     def _register_web_tools(self) -> None:
-        from strategy_research.core.agent.builtin_tools.web_tools import (
+        from strategy_research.kernel.agent.builtin_tools.web_tools import (
             ReadDocumentTool,
             ReadUrlTool,
             WebSearchTool,
@@ -730,7 +730,7 @@ class MCPServer:
         ))
 
         # Agent-registry tools with matching MCP contracts (no duplication)
-        from strategy_research.core.agent.builtin_tools.data_tools import ListDataSourcesTool, SearchSymbolTool
+        from strategy_research.kernel.agent.builtin_tools.data_tools import ListDataSourcesTool, SearchSymbolTool
 
         self.register(_wrap_base_tool(ListDataSourcesTool()))
         self.register(_wrap_base_tool(SearchSymbolTool()))

@@ -6,7 +6,7 @@ import logging
 from pathlib import Path
 from typing import cast
 
-from ..tools import (
+from strategy_research.core.agent.tools import (
     BaseTool,
     ToolContext,
 )

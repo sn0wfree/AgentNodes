@@ -89,7 +89,7 @@ def test_build_agent_loop_forwards_on_event(monkeypatch):
     real = loop_mod.AgentLoop
     monkeypatch.setattr(loop_mod, "AgentLoop", FakeLoop)
 
-    import strategy_research.core.agent.builtin_tools as bt
+    import strategy_research.kernel.agent.builtin_tools as bt
     monkeypatch.setattr(bt, "build_default_registry", lambda: object())
 
     import strategy_research.core.agent.loop_assembly as la

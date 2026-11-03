@@ -18,7 +18,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
 
 from strategy_research.kernel.events.event_v2 import EventType, EventV2
 from strategy_research.api.session.projector import ProjectedSession, Projector
-from strategy_research.core.agent.builtin_tools.display_tools import (
+from strategy_research.kernel.agent.builtin_tools.display_tools import (
     ShowChartTool,
     ShowReportTool,
     _downsample,

@@ -52,7 +52,7 @@ def fake_registry(monkeypatch):
     """Patch ``build_default_registry`` to return a deterministic registry."""
     fake = _FakeRegistry(["read", "list", "run_backtest", "websearch"])
     monkeypatch.setattr(
-        "strategy_research.core.agent.builtin_tools.build_default_registry",
+        "strategy_research.kernel.agent.builtin_tools.build_default_registry",
         lambda: fake,
     )
     return fake

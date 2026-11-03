@@ -353,7 +353,7 @@ class AgentExecutor:
         t0: float,
     ) -> AgentExecutionResult:
         from strategy_research.foundation.llm import LLMConfig
-        from .builtin_tools import build_default_registry
+        from strategy_research.kernel.agent.builtin_tools import build_default_registry
         from .loop import AgentLoop
         from .prompt_builder import PromptBuilderFactory
 

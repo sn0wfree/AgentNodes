@@ -17,8 +17,8 @@ from unittest.mock import MagicMock
 
 import pytest
 
-from strategy_research.core.agent.builtin_tools import build_default_registry
-from strategy_research.core.agent.builtin_tools.subagent_tool import (
+from strategy_research.kernel.agent.builtin_tools import build_default_registry
+from strategy_research.kernel.agent.builtin_tools.subagent_tool import (
     MAX_SUBAGENTS,
     SubAgentTool,
 )
@@ -713,7 +713,7 @@ class TestBatchOfDelegates:
 
 class TestForwardEvent:
     def test_lifecycle_events_pass_through(self):
-        from strategy_research.core.agent.builtin_tools.subagent_tool import _forward_event
+        from strategy_research.kernel.agent.builtin_tools.subagent_tool import _forward_event
 
         seen: list[tuple[str, dict]] = []
         _forward_event(lambda et, d: seen.append((et, d)), "sub-1", "msg-1", "subagent_started", {"a": 1})
@@ -723,7 +723,7 @@ class TestForwardEvent:
         assert seen[1][1]["b"] == 2
 
     def test_child_events_namespaced(self):
-        from strategy_research.core.agent.builtin_tools.subagent_tool import _forward_event
+        from strategy_research.kernel.agent.builtin_tools.subagent_tool import _forward_event
 
         seen: list[tuple[str, dict]] = []
         _forward_event(lambda et, d: seen.append((et, d)), "sub-1", "msg-1", "tool_call", {"name": "read"})
@@ -737,12 +737,12 @@ class TestForwardEvent:
         assert seen[0][1]["name"] == "read"
 
     def test_none_callback_is_noop(self):
-        from strategy_research.core.agent.builtin_tools.subagent_tool import _forward_event
+        from strategy_research.kernel.agent.builtin_tools.subagent_tool import _forward_event
 
         _forward_event(None, "sub-1", "msg-1", "tool_call", {"x": 1})  # must not raise
 
     def test_unknown_event_type_passes_through_unchanged(self):
-        from strategy_research.core.agent.builtin_tools.subagent_tool import _forward_event
+        from strategy_research.kernel.agent.builtin_tools.subagent_tool import _forward_event
 
         seen: list[tuple[str, dict]] = []
         _forward_event(lambda et, d: seen.append((et, d)), "sub-1", "msg-1", "thinking_delta", {"t": "..."})

@@ -133,7 +133,7 @@ class TestTodosInjectorEdgeCases:
         messages: list[dict[str, Any]] = []
         import unittest.mock as mock
         with mock.patch(
-            "strategy_research.core.agent.builtin_tools.todo_tools.TodoStore"
+            "strategy_research.kernel.agent.builtin_tools.todo_tools.TodoStore"
         ) as MockStore:
             MockStore.get.return_value = []
             inj.inject_per_iteration(loop, messages)
@@ -148,9 +148,9 @@ class TestTodosInjectorEdgeCases:
         import unittest.mock as mock
 
         with mock.patch(
-            "strategy_research.core.agent.builtin_tools.todo_tools.TodoStore"
+            "strategy_research.kernel.agent.builtin_tools.todo_tools.TodoStore"
         ) as MockStore, mock.patch(
-            "strategy_research.core.agent.builtin_tools.todo_tools._format_todos_snapshot"
+            "strategy_research.kernel.agent.builtin_tools.todo_tools._format_todos_snapshot"
         ) as mock_fmt:
             MockStore.get.return_value = [{"task": "a"}]
             mock_fmt.return_value = "## Todos\n- a"

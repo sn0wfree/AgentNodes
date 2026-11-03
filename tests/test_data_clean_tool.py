@@ -13,7 +13,7 @@ import numpy as np
 import pandas as pd
 import pytest
 
-from strategy_research.core.agent.builtin_tools import (
+from strategy_research.kernel.agent.builtin_tools import (
     DataCleanTool,
     build_default_registry,
 )

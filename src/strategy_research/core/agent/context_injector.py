@@ -151,7 +151,7 @@ class TodosInjector:
         if not loop.session_id:
             return
         try:
-            from .builtin_tools.todo_tools import TodoStore, _format_todos_snapshot
+            from strategy_research.kernel.agent.builtin_tools.todo_tools import TodoStore, _format_todos_snapshot
             todos = TodoStore.get(loop.session_id)
         except Exception:  # noqa: BLE001
             return

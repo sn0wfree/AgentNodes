@@ -8,7 +8,7 @@ from pathlib import Path
 
 import pytest
 
-from strategy_research.core.agent.builtin_tools import (
+from strategy_research.kernel.agent.builtin_tools import (
     ComputeFactorTool,
     GitDiffTool,
     ListFilesTool,

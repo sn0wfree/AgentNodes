@@ -164,7 +164,7 @@ def test_c7_included_when_requested(workspace: Path):
 
 
 def test_run_backtest_gate_blocks_and_does_not_create_run(workspace: Path):
-    from strategy_research.core.agent.builtin_tools import RunBacktestTool
+    from strategy_research.kernel.agent.builtin_tools import RunBacktestTool
     from strategy_research.core.agent.tools import ToolContext
 
     sdir = workspace / "strategies" / "s1"
@@ -187,7 +187,7 @@ def test_run_backtest_gate_blocks_and_does_not_create_run(workspace: Path):
 
 
 def test_run_backtest_gate_ok_runs(workspace: Path):
-    from strategy_research.core.agent.builtin_tools import RunBacktestTool
+    from strategy_research.kernel.agent.builtin_tools import RunBacktestTool
     from strategy_research.core.agent.tools import ToolContext
 
     sdir = workspace / "strategies" / "s1"
@@ -207,7 +207,7 @@ def test_run_backtest_gate_ok_runs(workspace: Path):
 
 
 def test_check_data_tool_returns_report(workspace: Path):
-    from strategy_research.core.agent.builtin_tools.data_tools import CheckDataTool
+    from strategy_research.kernel.agent.builtin_tools.data_tools import CheckDataTool
     from strategy_research.core.agent.tools import ToolContext
 
     sdir = workspace / "strategies" / "s1"
@@ -226,7 +226,7 @@ def test_check_data_tool_returns_report(workspace: Path):
 
 
 def test_check_data_tool_explicit_mode(workspace: Path):
-    from strategy_research.core.agent.builtin_tools.data_tools import CheckDataTool
+    from strategy_research.kernel.agent.builtin_tools.data_tools import CheckDataTool
     from strategy_research.core.agent.tools import ToolContext
 
     out = CheckDataTool().execute(
@@ -243,7 +243,7 @@ def test_check_data_tool_explicit_mode(workspace: Path):
 
 def test_check_data_tool_missing_strategy(workspace: Path):
     """缺必填参数由框架拦截 (TypeError → loop 重试/兜底)。"""
-    from strategy_research.core.agent.builtin_tools.data_tools import CheckDataTool
+    from strategy_research.kernel.agent.builtin_tools.data_tools import CheckDataTool
     from strategy_research.core.agent.tools import ToolContext
 
     with pytest.raises(TypeError):

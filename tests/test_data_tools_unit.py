@@ -10,7 +10,7 @@ import json
 
 import pytest
 
-from strategy_research.core.agent.builtin_tools.data_tools import (
+from strategy_research.kernel.agent.builtin_tools.data_tools import (
     CheckDataTool,
     ImportDataTool,
     ListDataSourcesTool,
@@ -139,7 +139,7 @@ def gm_ctx(tmp_path):
 
 def test_get_market_data_comma_string_codes_split(gm_ctx):
     """codes 传逗号字符串 → 拆分后进空码校验。"""
-    from strategy_research.core.agent.builtin_tools.data_tools import (
+    from strategy_research.kernel.agent.builtin_tools.data_tools import (
         GetMarketDataTool,
     )
 
@@ -154,7 +154,7 @@ def test_get_market_data_comma_string_codes_split(gm_ctx):
 
 def test_get_market_data_wrong_shape_codes(gm_ctx):
     """codes 传 int → wrong shape 错误（覆盖 136-137）。"""
-    from strategy_research.core.agent.builtin_tools.data_tools import (
+    from strategy_research.kernel.agent.builtin_tools.data_tools import (
         GetMarketDataTool,
     )
 
@@ -168,7 +168,7 @@ def test_get_market_data_wrong_shape_codes(gm_ctx):
 
 def test_get_market_data_missing_dates(gm_ctx):
     """空日期字符串 → actionable error（覆盖 162-168）。"""
-    from strategy_research.core.agent.builtin_tools.data_tools import (
+    from strategy_research.kernel.agent.builtin_tools.data_tools import (
         GetMarketDataTool,
     )
 
@@ -181,7 +181,7 @@ def test_get_market_data_missing_dates(gm_ctx):
 
 def test_get_market_data_invalid_date_range(gm_ctx):
     """start > end → ValueError → actionable（覆盖 172-173）。"""
-    from strategy_research.core.agent.builtin_tools.data_tools import (
+    from strategy_research.kernel.agent.builtin_tools.data_tools import (
         GetMarketDataTool,
     )
 
@@ -194,7 +194,7 @@ def test_get_market_data_invalid_date_range(gm_ctx):
 
 def test_get_market_data_list_codes_no_source(gm_ctx, monkeypatch):
     """合法 list codes + 无可用源 → NoAvailableSourceError 分支（238-245）。"""
-    from strategy_research.core.agent.builtin_tools.data_tools import (
+    from strategy_research.kernel.agent.builtin_tools.data_tools import (
         GetMarketDataTool,
     )
     import strategy_research.apps.data_source.registry as dsr
@@ -212,7 +212,7 @@ def test_get_market_data_list_codes_no_source(gm_ctx, monkeypatch):
 
 def test_get_market_data_fetch_exception(gm_ctx, monkeypatch):
     """fetch 阶段任意异常 → fetch failed 分支（246-251）。"""
-    from strategy_research.core.agent.builtin_tools.data_tools import (
+    from strategy_research.kernel.agent.builtin_tools.data_tools import (
         GetMarketDataTool,
     )
     import strategy_research.apps.data_source.registry as dsr

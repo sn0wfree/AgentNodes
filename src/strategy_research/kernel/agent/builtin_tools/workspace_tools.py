@@ -6,7 +6,7 @@ import logging
 import subprocess
 from pathlib import Path
 
-from ..tools import (
+from strategy_research.core.agent.tools import (
     BaseTool,
     ToolContext,
 )

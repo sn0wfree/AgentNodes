@@ -91,7 +91,7 @@ def build_gateway(
     deny: Iterable[str] | None = None,
 ) -> ToolGateway:
     """Build the default registry and wrap it in a filtered gateway."""
-    from .builtin_tools import build_default_registry
+    from strategy_research.kernel.agent.builtin_tools import build_default_registry
 
     registry = build_default_registry(workspace)
     return ToolGateway(registry, toolset=toolset, allow=allow, deny=deny)

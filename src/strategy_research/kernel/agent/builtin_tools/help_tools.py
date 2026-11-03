@@ -5,7 +5,7 @@ from __future__ import annotations
 import inspect
 import logging
 
-from ..tools import (
+from strategy_research.core.agent.tools import (
     BaseTool,
     ToolContext,
     ToolRegistry,

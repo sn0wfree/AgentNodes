@@ -16,7 +16,7 @@ from pathlib import Path
 
 import pytest
 
-from strategy_research.core.agent.builtin_tools.todo_tools import (
+from strategy_research.kernel.agent.builtin_tools.todo_tools import (
     TodoStore,
     TodoWriteTool,
     _format_todos_snapshot,
@@ -166,7 +166,7 @@ class TestTodoStore:
 
 class TestTodoLoopIntegration:
     async def test_todos_injected_into_following_iterations(self):
-        from strategy_research.core.agent.builtin_tools import build_default_registry
+        from strategy_research.kernel.agent.builtin_tools import build_default_registry
 
         events: list[tuple[str, dict]] = []
         mock = MockLLM([
@@ -196,7 +196,7 @@ class TestTodoLoopIntegration:
         assert "[in_progress] 加载数据" in injected[0]["content"]
 
     async def test_todo_updated_event_emitted_through_loop(self):
-        from strategy_research.core.agent.builtin_tools import build_default_registry
+        from strategy_research.kernel.agent.builtin_tools import build_default_registry
 
         events: list[tuple[str, dict]] = []
         mock = MockLLM([

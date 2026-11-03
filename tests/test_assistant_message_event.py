@@ -15,7 +15,7 @@ import tempfile
 from pathlib import Path
 from typing import Any
 
-from strategy_research.core.agent.builtin_tools import build_default_registry
+from strategy_research.kernel.agent.builtin_tools import build_default_registry
 from strategy_research.core.agent.loop import AgentLoop
 from strategy_research.foundation.llm import LLMConfig, LLMResponse, ToolCall
 

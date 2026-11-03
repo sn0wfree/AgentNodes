@@ -9,7 +9,7 @@ import numpy as np
 import pandas as pd
 import pytest
 
-from strategy_research.core.agent.builtin_tools import (
+from strategy_research.kernel.agent.builtin_tools import (
     FactorAnalysisTool,
     FactorCrossSectionalAnalysis,
     FactorICDecay,
@@ -18,7 +18,7 @@ from strategy_research.core.agent.builtin_tools import (
     PatternRecognitionTool,
     build_default_registry,
 )
-from strategy_research.core.agent.builtin_tools.data_tools import (
+from strategy_research.kernel.agent.builtin_tools.data_tools import (
     GetMarketDataTool,
     ImportDataTool,
     ListDataSourcesTool,

@@ -77,7 +77,7 @@ def build_chat_agent_loop(
         ``{tool_list}`` still renders from the default registry (so the LLM
         sees what tools are available even without a workspace).
     """
-    from .builtin_tools import build_default_registry
+    from strategy_research.kernel.agent.builtin_tools import build_default_registry
     from .loop_assembly import assemble_loop_parts
 
     # Tool registry (default: all built-in tools)

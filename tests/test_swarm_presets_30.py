@@ -208,7 +208,7 @@ class TestToolWhitelistsValid:
 
     @pytest.mark.parametrize("preset_name", NEW_PRESETS)
     def test_tools_exist_in_registry(self, all_presets, preset_name):
-        from strategy_research.core.agent.builtin_tools import build_default_registry
+        from strategy_research.kernel.agent.builtin_tools import build_default_registry
         registry = build_default_registry()
         registered_tools = set(registry._tools.keys())
 

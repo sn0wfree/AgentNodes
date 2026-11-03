@@ -14,7 +14,7 @@ from pathlib import Path
 import pytest
 
 from strategy_research.core.agent.loop import AgentLoop
-from strategy_research.core.agent.builtin_tools import build_default_registry
+from strategy_research.kernel.agent.builtin_tools import build_default_registry
 from strategy_research.foundation.llm import LLMConfig, LLMResponse, ToolCall
 
 
@@ -145,7 +145,7 @@ def test_combo_requires_registry_and_category():
 
 def test_combo_simple_sequence(ws):
     """read_file 两步串联（纯文件 op，离线）。"""
-    from strategy_research.core.agent.builtin_tools import build_default_registry
+    from strategy_research.kernel.agent.builtin_tools import build_default_registry
     from strategy_research.core.agent.combo import CompositeTool
     from strategy_research.core.agent.tools import ToolContext
 

@@ -7,7 +7,7 @@ from pathlib import Path
 
 import pytest
 
-from strategy_research.core.agent.builtin_tools import build_default_registry
+from strategy_research.kernel.agent.builtin_tools import build_default_registry
 from strategy_research.core.agent.loop import AgentLoop, LoopResult, _tool_call_hash
 from strategy_research.core.agent.tools import ToolRegistry
 from strategy_research.foundation.llm import LLMConfig, LLMResponse, ToolCall

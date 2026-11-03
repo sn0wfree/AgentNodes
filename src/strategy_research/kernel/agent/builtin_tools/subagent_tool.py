@@ -18,7 +18,7 @@ from pathlib import Path
 from typing import Any
 
 from strategy_research.foundation.llm.config import LLMConfig
-from ..tools import EFFECT_FS, BaseTool, ToolRegistry
+from strategy_research.core.agent.tools import EFFECT_FS, BaseTool, ToolRegistry
 
 logger = logging.getLogger(__name__)
 
@@ -147,7 +147,7 @@ class SubAgentTool(BaseTool):
         Excludes ``delegate_to_agent`` (no nested delegation) and applies
         the optional whitelist on top.
         """
-        from ..tools import ToolRegistry as TR
+        from strategy_research.core.agent.tools import ToolRegistry as TR
 
         filtered = TR()
         if parent_registry is not None:
@@ -176,7 +176,7 @@ class SubAgentTool(BaseTool):
         tools_whitelist: list[str] | None = kwargs.get("tools")
         toolset_name: str | None = kwargs.get("toolset")
         if tools_whitelist is None and toolset_name:
-            from ..toolsets import resolve_toolset
+            from strategy_research.core.agent.toolsets import resolve_toolset
 
             tools_whitelist = resolve_toolset(toolset_name)
         max_iterations = min(kwargs.get("max_iterations", 10), 20)
@@ -218,10 +218,10 @@ class SubAgentTool(BaseTool):
 
         # ── Build child agent via unified AgentExecutor ──────────
         try:
-            from ..dag_config import AgentNodeConfig
-            from ..executor import AgentExecutor
-            from ..plugin import AgentPlugin
-            from ..registry import get_default_registry
+            from strategy_research.core.agent.dag_config import AgentNodeConfig
+            from strategy_research.core.agent.executor import AgentExecutor
+            from strategy_research.core.agent.plugin import AgentPlugin
+            from strategy_research.core.agent.registry import get_default_registry
 
             # Filtered registry (exclude delegate_to_agent + toolset whitelist)
             parent_registry: ToolRegistry | None = kwargs.get("_parent_registry")

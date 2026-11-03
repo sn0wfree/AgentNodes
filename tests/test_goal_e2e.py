@@ -7,12 +7,12 @@ from pathlib import Path
 
 import pytest
 
-from strategy_research.core.agent.builtin_tools import (
+from strategy_research.kernel.agent.builtin_tools import (
     FactorCrossSectionalAnalysis,
     FactorICDecay,
     FactorQuintileReturns,
 )
-from strategy_research.core.agent.builtin_tools.data_tools import ImportDataTool
+from strategy_research.kernel.agent.builtin_tools.data_tools import ImportDataTool
 from strategy_research.core.agent.tools import ToolContext
 from strategy_research.apps.config_runner import load_data
 from strategy_research.apps.db import init_db, save_ohlcv_to_db

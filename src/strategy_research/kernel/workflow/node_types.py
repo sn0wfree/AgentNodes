@@ -100,7 +100,7 @@ def register_builtin_tool_executors() -> int:
     Each wrapper calls the underlying BaseTool with a ToolContext
     (workspace injected).  Returns the number registered.
     """
-    from strategy_research.core.agent.builtin_tools import build_default_registry
+    from strategy_research.kernel.agent.builtin_tools import build_default_registry
 
     registry = build_default_registry()
     count = 0

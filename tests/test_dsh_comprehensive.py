@@ -595,7 +595,7 @@ class TestRegistryAdvanced:
 class TestPluginDiscoveryAdvanced:
     def test_discover_with_no_entry_points_module(self):
         """Handles missing importlib.metadata gracefully."""
-        from strategy_research.core.agent.builtin_tools import _discover_tool_plugins
+        from strategy_research.kernel.agent.builtin_tools import _discover_tool_plugins
         r = ToolRegistry()
         # Mock the import inside _discover_tool_plugins to fail
         with patch("importlib.metadata.entry_points", side_effect=ImportError("no module")):
@@ -609,7 +609,7 @@ class TestPluginDiscoveryAdvanced:
 
     def test_discover_with_broken_entry_point(self):
         """Broken entry point is logged and skipped."""
-        from strategy_research.core.agent.builtin_tools import _discover_tool_plugins
+        from strategy_research.kernel.agent.builtin_tools import _discover_tool_plugins
         r = ToolRegistry()
         ep = MagicMock()
         ep.name = "broken"

@@ -653,7 +653,7 @@ async def test_chat_session_dispatches_plain_text_to_llm():
     # ``from .loop import AgentLoop``) — patching loop.AgentLoop is a no-op
     # once chat_loop has already been imported by earlier tests.
     with mock.patch("strategy_research.core.agent.chat_loop.AgentLoop") as MockLoop, \
-         mock.patch("strategy_research.core.agent.builtin_tools.build_default_registry", return_value=None), \
+         mock.patch("strategy_research.kernel.agent.builtin_tools.build_default_registry", return_value=None), \
          mock.patch(
              # Force the degraded in-memory path: with the shared session
              # DB unavailable, the assistant reply lands in ctx.history

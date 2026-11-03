@@ -180,7 +180,7 @@ class TodoContextProvider:
         if not query.session_id:
             return []
         try:
-            from .builtin_tools.todo_tools import (
+            from strategy_research.kernel.agent.builtin_tools.todo_tools import (
                 TodoStore,
                 _format_todos_snapshot,
             )

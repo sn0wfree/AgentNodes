@@ -14,7 +14,7 @@ from unittest.mock import MagicMock
 
 import pytest
 
-from strategy_research.core.agent.builtin_tools.todo_tools import (
+from strategy_research.kernel.agent.builtin_tools.todo_tools import (
     TodoStore,
     TodoWriteTool,
 )
@@ -193,7 +193,7 @@ def _submit(controller, session_id: str):
 
 
 def _all_todo_buckets():
-    from strategy_research.core.agent.builtin_tools.todo_tools import TodoStore
+    from strategy_research.kernel.agent.builtin_tools.todo_tools import TodoStore
 
     return {k: v for k, v in TodoStore._todos.items() if v}
 

@@ -12,7 +12,7 @@ from types import SimpleNamespace
 
 import pytest
 
-from strategy_research.core.agent.builtin_tools.workspace_tools import (
+from strategy_research.kernel.agent.builtin_tools.workspace_tools import (
     ListSkillsTool,
     LoadSkillTool,
 )

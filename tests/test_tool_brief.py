@@ -10,7 +10,7 @@ import json
 
 import pytest
 
-from strategy_research.core.agent.builtin_tools import (
+from strategy_research.kernel.agent.builtin_tools import (
     ToolHelpTool,
     build_default_registry,
 )

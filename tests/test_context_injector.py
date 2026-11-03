@@ -137,9 +137,9 @@ class TestTodosInjector:
         import unittest.mock as mock
         fake_block = "## Todos\n- item1"
         with mock.patch(
-            "strategy_research.core.agent.builtin_tools.todo_tools.TodoStore"
+            "strategy_research.kernel.agent.builtin_tools.todo_tools.TodoStore"
         ) as MockStore, mock.patch(
-            "strategy_research.core.agent.builtin_tools.todo_tools._format_todos_snapshot",
+            "strategy_research.kernel.agent.builtin_tools.todo_tools._format_todos_snapshot",
             return_value=fake_block,
         ):
             MockStore.get.return_value = [{"task": "item1"}]
