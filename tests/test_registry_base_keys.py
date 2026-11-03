@@ -1,7 +1,7 @@
 """Unit tests for core.registry — generic typed Registry."""
 from __future__ import annotations
 
-from strategy_research.core.registry import Registry
+from strategy_research.foundation.registry import Registry
 
 
 class TestKeysContract:

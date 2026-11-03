@@ -95,7 +95,7 @@ LAYER_MEMBERSHIP: dict[str, str] = {
     "strategy_research.core.observability": "L4",
     "strategy_research.core.utils": "L4",
     "strategy_research.core.web": "L4",
-    "strategy_research.core.registry": "L4",  # v7.2: 通用 typed Registry 基类（零语义原语）
+    "strategy_research.foundation.registry": "L4",  # v7.2: 通用 typed Registry 基类（零语义原语）
     "strategy_research.foundation.config_loader": "L4",
     "strategy_research.foundation": "L4",  # W0 试点：层目录 __init__
     "strategy_research.foundation.errors": "L4",

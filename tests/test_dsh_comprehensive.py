@@ -24,7 +24,7 @@ from strategy_research.core.agent.context_injector import (
 )
 from strategy_research.core.agent.loop import AgentLoop, LoopResult
 from strategy_research.core.agent.tools import ToolGuard, ToolRegistry, BaseTool
-from strategy_research.core.registry import Registry
+from strategy_research.foundation.registry import Registry
 
 
 # ══════════════════════════════════════════════════════════════════

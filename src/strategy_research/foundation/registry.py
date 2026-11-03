@@ -6,7 +6,7 @@ and size queries.
 
 Usage::
 
-    from strategy_research.core.registry import Registry
+    from strategy_research.foundation.registry import Registry
 
     class ToolRegistry(Registry[BaseTool]):
         def register(self, tool):
