@@ -8,8 +8,8 @@ from pathlib import Path
 
 import pytest
 
-from strategy_research.core.hypothesis import HypothesisRegistry
-from strategy_research.core.hypothesis.cli import (
+from strategy_research.apps.hypothesis import HypothesisRegistry
+from strategy_research.apps.hypothesis.cli import (
     add_hypothesis_subparsers,
     cmd_hypothesis_create,
     cmd_hypothesis_link,

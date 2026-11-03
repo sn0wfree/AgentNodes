@@ -490,7 +490,7 @@ class MCPServer:
 
     def _register_hypothesis_tools(self) -> None:
         def list_hypotheses(**kwargs: Any) -> str:
-            from strategy_research.core.hypothesis import HypothesisRegistry
+            from strategy_research.apps.hypothesis import HypothesisRegistry
             registry = HypothesisRegistry()
             hyps = registry.list()
             return json.dumps([{"id": h.hypothesis_id, "title": h.title, "status": h.status} for h in hyps], ensure_ascii=False)

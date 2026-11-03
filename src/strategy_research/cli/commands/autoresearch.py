@@ -76,7 +76,7 @@ def _register_researcher_hypothesis(
     """
     try:
         from strategy_research.core.goal import GoalStore
-        from strategy_research.core.hypothesis import HypothesisRegistry
+        from strategy_research.apps.hypothesis import HypothesisRegistry
 
         thesis = researcher_output.get("hypothesis", "")
         if not thesis:

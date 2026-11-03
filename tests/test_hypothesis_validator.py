@@ -6,11 +6,11 @@ import numpy as np
 import pandas as pd
 import pytest
 
-from strategy_research.core.hypothesis.registry import (
+from strategy_research.apps.hypothesis.registry import (
     Hypothesis,
     HypothesisRegistry,
 )
-from strategy_research.core.hypothesis.validator import (
+from strategy_research.apps.hypothesis.validator import (
     DEFAULT_CRITERIA,
     ValidationResult,
     validate_hypothesis,

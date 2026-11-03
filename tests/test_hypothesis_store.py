@@ -7,7 +7,7 @@ from pathlib import Path
 
 import pytest
 
-from strategy_research.core.hypothesis import Hypothesis, HypothesisStore
+from strategy_research.apps.hypothesis import Hypothesis, HypothesisStore
 
 
 @pytest.fixture
@@ -320,7 +320,7 @@ class TestNoJsonMigration:
 class TestRegistrySqliteMode:
     def test_registry_with_db_path_uses_sqlite(self, tmp_path: Path):
         """Passing db_path to HypothesisRegistry enables SQLite mode."""
-        from strategy_research.core.hypothesis import HypothesisRegistry
+        from strategy_research.apps.hypothesis import HypothesisRegistry
         db_path = tmp_path / "reg.db"
         reg = HypothesisRegistry(db_path=db_path)
         h = reg.create(title="via registry", thesis="t")
@@ -330,7 +330,7 @@ class TestRegistrySqliteMode:
 
     def test_registry_default_still_uses_json(self, tmp_path: Path):
         """Without db_path, registry uses JSON file storage."""
-        from strategy_research.core.hypothesis import HypothesisRegistry
+        from strategy_research.apps.hypothesis import HypothesisRegistry
         json_path = tmp_path / "fallback.json"
         reg = HypothesisRegistry(path=json_path)
         reg.create(title='via json', thesis='t')

@@ -322,7 +322,7 @@ def test_retrieve_hypotheses_registry_error_returns_empty(monkeypatch):
 
     inj = MemoryRetrieverInjector(include_hypotheses=True)
 
-    import strategy_research.core.hypothesis.registry as hr
+    import strategy_research.apps.hypothesis.registry as hr
 
     class Boom:
         def __init__(self):
@@ -336,7 +336,7 @@ def test_retrieve_hypotheses_scores_and_sorts(monkeypatch):
     from strategy_research.core.agent.context_injector import (
         MemoryRetrieverInjector,
     )
-    import strategy_research.core.hypothesis.registry as hr
+    import strategy_research.apps.hypothesis.registry as hr
 
     rows = [
         {"title": "无关条目", "id": "r1"},

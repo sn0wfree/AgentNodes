@@ -347,7 +347,7 @@ class MemoryRetrieverInjector:
 
     def _retrieve_hypotheses(self, loop: AgentLoop, task: str) -> list[Any]:
         try:
-            from ..hypothesis.registry import HypothesisRegistry
+            from strategy_research.apps.hypothesis.registry import HypothesisRegistry
 
             reg = HypothesisRegistry()
             items = getattr(reg, "list_hypotheses", None) or getattr(reg, "list", None)

@@ -35,7 +35,7 @@ def goal_store():
 
 @pytest.fixture
 def registry():
-    from strategy_research.core.hypothesis import HypothesisRegistry
+    from strategy_research.apps.hypothesis import HypothesisRegistry
     return HypothesisRegistry()
 
 
@@ -65,7 +65,7 @@ class TestOnGoalCompleteHook:
 
     def test_linked_testing_hyp_not_transitioned(self, goal_store, registry):
         """A testing hypothesis cannot jump to monitoring (illegal transition); should remain testing."""
-        from strategy_research.core.hypothesis import VALID_TRANSITIONS
+        from strategy_research.apps.hypothesis import VALID_TRANSITIONS
         # Confirm testing→monitoring is NOT allowed
         assert "monitoring" not in VALID_TRANSITIONS.get("testing", set())
 
@@ -253,7 +253,7 @@ class TestAutoresearchGoalHelpers:
         from strategy_research.cli.commands.autoresearch import (
             _register_researcher_hypothesis,
         )
-        from strategy_research.core.hypothesis import HypothesisRegistry
+        from strategy_research.apps.hypothesis import HypothesisRegistry
 
         goal_store.replace_goal(
             session_id="ar_reg",
@@ -287,7 +287,7 @@ class TestAutoresearchGoalHelpers:
         from strategy_research.cli.commands.autoresearch import (
             _register_researcher_hypothesis,
         )
-        from strategy_research.core.hypothesis import HypothesisRegistry
+        from strategy_research.apps.hypothesis import HypothesisRegistry
 
         goal_store.replace_goal(
             session_id="ar_idem",

@@ -42,7 +42,7 @@ LAYER_MEMBERSHIP: dict[str, str] = {
     "strategy_research.apps.alpha_zoo_yaml": "L2",
     "strategy_research.core.study": "L2",
     "strategy_research.core.goal": "L2",
-    "strategy_research.core.hypothesis": "L2",
+    "strategy_research.apps.hypothesis": "L2",
     "strategy_research.apps.alpha_zoo": "L2",
     "strategy_research.apps.alpha_zoo_adapter": "L2",
     "strategy_research.apps.alpha_zoo_convert": "L2",

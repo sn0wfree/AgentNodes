@@ -66,7 +66,7 @@ async def hypothesis_create(req: HypothesisCreateRequest, request: Request):
     try:
         from pathlib import Path
 
-        from ...core.hypothesis import HypothesisRegistry
+        from strategy_research.apps.hypothesis import HypothesisRegistry
 
         hyp_path = getattr(request.app.state, "hypotheses_path", None)
         registry = HypothesisRegistry(path=Path(hyp_path) if hyp_path else None)
@@ -92,7 +92,7 @@ async def hypothesis_list(
     try:
         from pathlib import Path
 
-        from ...core.hypothesis import HypothesisRegistry
+        from strategy_research.apps.hypothesis import HypothesisRegistry
 
         hyp_path = getattr(request.app.state, "hypotheses_path", None)
         registry = HypothesisRegistry(path=Path(hyp_path) if hyp_path else None)
@@ -120,7 +120,7 @@ async def hypothesis_search(
     try:
         from pathlib import Path
 
-        from ...core.hypothesis import HypothesisRegistry
+        from strategy_research.apps.hypothesis import HypothesisRegistry
 
         hyp_path = getattr(request.app.state, "hypotheses_path", None)
         registry = HypothesisRegistry(path=Path(hyp_path) if hyp_path else None)
@@ -143,7 +143,7 @@ async def hypothesis_get(hypothesis_id: str, request: Request):
     try:
         from pathlib import Path
 
-        from ...core.hypothesis import HypothesisRegistry
+        from strategy_research.apps.hypothesis import HypothesisRegistry
 
         hyp_path = getattr(request.app.state, "hypotheses_path", None)
         registry = HypothesisRegistry(path=Path(hyp_path) if hyp_path else None)
@@ -163,7 +163,7 @@ async def hypothesis_update(req: HypothesisUpdateRequest, request: Request):
     try:
         from pathlib import Path
 
-        from ...core.hypothesis import HypothesisRegistry
+        from strategy_research.apps.hypothesis import HypothesisRegistry
 
         hyp_path = getattr(request.app.state, "hypotheses_path", None)
         registry = HypothesisRegistry(path=Path(hyp_path) if hyp_path else None)

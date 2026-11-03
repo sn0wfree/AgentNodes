@@ -64,7 +64,7 @@ class TestGoalHypothesisValidationLifecycle:
         assert store.get_current_goal("sess_e2e") is not None
 
         # 2. Hypothesis was auto-created
-        from strategy_research.core.hypothesis import HypothesisRegistry
+        from strategy_research.apps.hypothesis import HypothesisRegistry
         h_list = HypothesisRegistry().list()
         assert len(h_list) == 1
         hyp = h_list[0]
@@ -95,7 +95,7 @@ class TestGoalHypothesisValidationLifecycle:
         assert "walk_forward" in results
 
         # 4. Link validation to hypothesis
-        from strategy_research.core.hypothesis import HypothesisRegistry
+        from strategy_research.apps.hypothesis import HypothesisRegistry
         reg = HypothesisRegistry()
         reg.link_backtest(
             hyp.hypothesis_id,

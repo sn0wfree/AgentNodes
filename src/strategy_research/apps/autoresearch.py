@@ -705,7 +705,7 @@ def _study_register_hypothesis(
     """Register the researcher's hypothesis and link it to the study goal."""
     try:
         from strategy_research.core.goal import GoalStore
-        from strategy_research.core.hypothesis import HypothesisRegistry
+        from strategy_research.apps.hypothesis import HypothesisRegistry
 
         thesis = researcher_output.get("hypothesis", "")
         if not thesis:

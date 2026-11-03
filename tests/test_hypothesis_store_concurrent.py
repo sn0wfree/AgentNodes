@@ -11,7 +11,7 @@ from pathlib import Path
 
 import pytest
 
-from strategy_research.core.hypothesis.store import HypothesisStore
+from strategy_research.apps.hypothesis.store import HypothesisStore
 
 
 @pytest.fixture

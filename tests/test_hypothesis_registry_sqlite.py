@@ -13,7 +13,7 @@ from pathlib import Path
 
 import pytest
 
-from strategy_research.core.hypothesis import Hypothesis, HypothesisRegistry
+from strategy_research.apps.hypothesis import Hypothesis, HypothesisRegistry
 
 
 @pytest.fixture

@@ -181,8 +181,8 @@ def test_hypothesis_list_scoped_to_owner(setup) -> None:
     start = client.post("/api/goal/start", headers=setup["alice"],
                         json={"session_id": "sess-alice", "objective": "alice study"})
     goal_id = start.json()["goal_id"]
-    from strategy_research.core.hypothesis import HypothesisRegistry
-    from strategy_research.core.hypothesis.store import default_db_path
+    from strategy_research.apps.hypothesis import HypothesisRegistry
+    from strategy_research.apps.hypothesis.store import default_db_path
 
     reg = HypothesisRegistry(path=default_db_path())
     alice_hyp = reg.create(title="alice hyp", thesis="t")

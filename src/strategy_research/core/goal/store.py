@@ -1034,7 +1034,7 @@ class GoalStore:
         Failures are swallowed (logged at most) to avoid breaking the loop.
         """
         try:
-            from ..hypothesis import HypothesisRegistry
+            from strategy_research.apps.hypothesis import HypothesisRegistry
             registry = HypothesisRegistry()
             linked = registry.list_by_goal(goal_id)
             for hyp in linked:

@@ -1264,7 +1264,7 @@ class AgentLoop(
         if not self.session_id or not self.strategy_name:
             return
         try:
-            from ..hypothesis import HypothesisAutoCreator
+            from strategy_research.apps.hypothesis import HypothesisAutoCreator
             creator = HypothesisAutoCreator()
             hyp = creator.maybe_auto_create(
                 session_id=self.session_id,

@@ -6,7 +6,7 @@ from pathlib import Path
 
 import pytest
 
-from strategy_research.core.hypothesis import (
+from strategy_research.apps.hypothesis import (
     VALID_TRANSITIONS,
     Hypothesis,
     HypothesisRegistry,

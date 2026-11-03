@@ -57,7 +57,7 @@ class TestHypothesisAutoCreate:
     def test_creates_on_first_call(self, cfg, registry):
         loop = _make_loop(cfg, registry, session_id="s1", strategy_name="mom_v1")
         loop._maybe_auto_create_hypothesis("initial momentum thesis")
-        from strategy_research.core.hypothesis import HypothesisRegistry
+        from strategy_research.apps.hypothesis import HypothesisRegistry
         h = HypothesisRegistry().list()
         assert len(h) == 1
         assert h[0].signal_definition == "mom_v1"
@@ -67,7 +67,7 @@ class TestHypothesisAutoCreate:
         loop = _make_loop(cfg, registry, session_id="s1", strategy_name="mom_v1")
         loop._maybe_auto_create_hypothesis("first")
         loop._maybe_auto_create_hypothesis("second")
-        from strategy_research.core.hypothesis import HypothesisRegistry
+        from strategy_research.apps.hypothesis import HypothesisRegistry
         h = HypothesisRegistry().list()
         assert len(h) == 1
 
@@ -78,7 +78,7 @@ class TestHypothesisAutoCreate:
             enable_hypothesis_auto_create=False,
         )
         loop._maybe_auto_create_hypothesis("task")
-        from strategy_research.core.hypothesis import HypothesisRegistry
+        from strategy_research.apps.hypothesis import HypothesisRegistry
         assert HypothesisRegistry().list() == []
 
     def test_trace_records_creation(self, cfg, registry):
@@ -151,7 +151,7 @@ class TestFullRunIntegration:
         # No goal context block
         assert not any("<current-research-goal>" in m["content"] for m in user_msgs)
         # But hypothesis was auto-created
-        from strategy_research.core.hypothesis import HypothesisRegistry
+        from strategy_research.apps.hypothesis import HypothesisRegistry
         # Note: no strategy_name set → no auto-create
         assert HypothesisRegistry().list() == []
 
@@ -179,7 +179,7 @@ class TestHypothesisAutoCreateDuringRun:
 
         loop.run("initial task for alpha_xyz")
 
-        from strategy_research.core.hypothesis import HypothesisRegistry
+        from strategy_research.apps.hypothesis import HypothesisRegistry
         h = HypothesisRegistry().list()
         assert len(h) == 1
         assert h[0].signal_definition == "alpha_xyz"

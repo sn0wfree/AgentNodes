@@ -14,7 +14,7 @@ from pathlib import Path
 
 import pytest
 
-from strategy_research.core.hypothesis import (
+from strategy_research.apps.hypothesis import (
     HYPOTHESIS_STATUSES,
     Hypothesis,
     HypothesisAutoCreator,
@@ -365,5 +365,5 @@ class TestEnvOverride:
         custom = tmp_path / "custom_hyp.json"
         monkeypatch.setenv("QUANTNODES_RESEARCH_HYPOTHESES_PATH", str(custom))
         # default_hypotheses_path() reads env
-        from strategy_research.core.hypothesis.registry import default_hypotheses_path
+        from strategy_research.apps.hypothesis.registry import default_hypotheses_path
         assert default_hypotheses_path() == custom.expanduser()

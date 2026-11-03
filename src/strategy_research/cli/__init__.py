@@ -739,7 +739,7 @@ def _build_parser() -> tuple[argparse.ArgumentParser, dict[str, argparse.Argumen
     add_goal_subparsers(subparsers)
 
     # hypothesis (P3-b)
-    from strategy_research.core.hypothesis.cli import add_hypothesis_subparsers
+    from strategy_research.apps.hypothesis.cli import add_hypothesis_subparsers
     add_hypothesis_subparsers(subparsers)
 
     # validation (P3-c)
@@ -1024,7 +1024,7 @@ def _dispatch_goal(args, parsers) -> int:
 
 def _dispatch_hypothesis(args, parsers) -> int:
     """Dispatch the hypothesis subcommand."""
-    from strategy_research.core.hypothesis.cli import (
+    from strategy_research.apps.hypothesis.cli import (
         cmd_hypothesis_create,
         cmd_hypothesis_link,
         cmd_hypothesis_list,
