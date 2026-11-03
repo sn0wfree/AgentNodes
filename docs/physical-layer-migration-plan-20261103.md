@@ -1,247 +1,186 @@
-# 物理分层迁移计划 — core/ → foundation · kernel · apps · interfaces
+# 物理分层迁移计划 v2 — 逐模块搬迁（tests-green 每 step）
 
-日期：2026-11-03　分支：`refactor/v6-gateway`　状态：**已批准，分 5 批执行**
-前置：`docs/layered-skeleton-design-20261103.md`（层定义与依赖矩阵）·
-`docs/adr/ADR-000/002/003`（基线口径与处置决策）
+日期：2026-11-03　分支：`refactor/v6-gateway`　状态：**已批准 · 逐模块执行**
+v1（大爆炸批次）已于同日废弃——首次试运行批 1 即失败：AST 改写工具把多行
+import 压成单行（20 处语法损坏），暴露出「一次性改写 1,200 处」的工具风险。
+已回滚至 `07e1e6d5`，工作树干净。教训与本 v2 方案见 §1。
+
+前置：`layered-skeleton-design-20261103.md`（层定义）·
+`ADR-000`（物理口径基线 55）· `ADR-002/003`（处置决策）·
+`docs/w0-2-triage-20261103.md`（失败归因基线：102F/13959P）
 
 ---
 
-## 1. 动机
+## 1. 方法论：逐模块搬迁 + 兼容锚点
 
-架构图与 `test_layer_matrix` 门禁已用 L1–L4 表达依赖方向，但**物理目录仍是 `core/` 一坨**。
-层归属只存在于一个 60 条的手写字典里，带来三个具体问题：
+### 1.1 为什么逐模块可行（两条机制发现）
 
-| 问题 | 现状证据 |
-|---|---|
-| 新人加文件要查表才知该放哪层 | `tests/test_layer_matrix.py:34-99` 的 `LAYER_MEMBERSHIP` 手工维护 |
-| 覆盖率分档与层不对齐 | `scripts/cov_gate.py:30-59` 用 `core/gateway/` 这类路径前缀手写匹配 |
-| 「层」是叙事而非结构 | `ls src/strategy_research` 只看到 `core/`，看不到四层 |
+**机制一：深度保持**。`core/X/...` → `<layer>/X/...` 目录深度不变，因此：
+- 被搬包**内部**的相对导入（`from .store import`）——同包同深度，**不用改**
+- 被搬包内的 `Path(__file__).parents[N]`——**不用改**（N 指向的位置不变）
+- 指向**未搬迁**包的引用——旧路径仍在 `core/`，**不用改**
+- 只有**跨层引用**（指向已搬层或本包被他人引用）需要改写
 
-迁移后：**顶层目录即层**，门禁成员表可退化为派生规则，`cov_gate` 的 band 前缀天然对齐。
+**机制二：改写 = 纯文本前缀替换**。跨层引用一律改写为**绝对导入**
+`strategy_research.<layer>.<pkg>`，三种形态（import 语句 / 函数体 lazy import /
+字符串字面量）用同一规则、同一正则命中。不做 AST 级语句重组——v1 失败的根源
+就是试图重组多行 import 语句。
 
-## 2. 目标结构
-
-```
-src/strategy_research/
-├── __init__.py                  # _TEMPLATES_DIR 不变（templates 留顶层）
-├── foundation/                  # L4 · 零业务知识
-│   ├── __init__.py
-│   ├── llm/ storage/ observability/ utils/ web/
-│   └── registry.py config_loader.py errors.py git.py
-├── kernel/                      # L3 · 平台机制
-│   ├── __init__.py
-│   ├── gateway/ orchestration/ runtimes/ workflow/ context/
-│   ├── agent/ swarm/ events/ session/ memory/ skills/
-│   ├── hooks/ permission/ scheduled_research/
-│   └── seq_generator.py
-├── apps/                        # L2 · 研究域 IP
-│   ├── __init__.py
-│   ├── study/ goal/ hypothesis/ alpha_zoo*/ backtest*/ validation/ portfolio/
-│   ├── data_source/ data_import.py data_readiness.py compute_factor.py
-│   ├── engine/ tools/ db.py config_runner.py factor_validate.py
-│   ├── strategy_acceptance/ autoresearch.py export/ run_card.py
-│   └── workspace_setup.py preflight.py
-├── interfaces/                  # L1 · 哑适配器
-│   ├── __init__.py
-│   └── api/ cli/ mcp/
-├── templates/                   # 保持原位（package-data，避免 5 处配置连锁）
-└── scripts/                     # dev 脚本不动（门禁已 prune "scripts"）
-```
-
-`core/` 在批 4 后**整体消失**（含 `core/__init__.py`）。
-
-### 2.1 为什么 templates 留在顶层
-
-`templates/` 是 package-data 不是 Python 包，动它就牵动 5 处配置：
-
-| 位置 | 内容 |
-|---|---|
-| `pyproject.toml:81` | `strategy_research = ["templates/**/*", "templates/.prompts/**/*"]` |
-| `MANIFEST.in:1-3` | `recursive-include src/strategy_research/templates ...` ×3 |
-| `src/strategy_research/__init__.py:10` | `_TEMPLATES_DIR = Path(__file__).parent / "templates"` |
-| 5 处 loader | `prompt_builder` / `bootstrap` / `builtin` / `workspace_tools` / `mcp/server` 的 `parents[N]/"templates"` |
-| `templates/` 无 `__init__.py` | 移入 `apps/` 后需补，或改 `py-modules` 显式声明 |
-
-逻辑上它仍属 L2（门禁成员表照旧 `templates → L2`），只是不参与物理分层。
-
-## 3. 实测爆破面
-
-数据源：graphify AST 全量图（45,877 节点 / 88,873 边）+ 逐文件核查。
-
-| 项 | 数量 | 说明 |
-|---|---:|---|
-| 生产代码跨层 import 语句 | **396** | 122 文件；前 15 个占 47% |
-| 测试 → 生产 import 语句 | **811** | 476 测试文件，约 2:1 —— **真正的大头** |
-| 点号字符串（monkeypatch / uvicorn / importlib / `__import__`） | ~200 | 静默失败源 |
-| 深度变化文件 | **117** | `api/`(37) `cli/`(70) `templates/`(3) 各 +1 层 |
-| 深度保持文件 | **1,281** | 全部 `core/*`（`core/X/...` → `layer/X/...`） |
-
-**关键事实**：`core/X/...` → `<layer>/X/...` 深度不变 ⇒ 包内相对导入与
-`Path(__file__).parents[N]` 全部不受影响；**只有跨层引用需要改写**。
-
-### 3.1 头部集中度（改写工作量分布）
-
-| 文件 | 跨层语句 | 层 | 流向 |
-|---|---:|---|---|
-| `core/mcp/server.py` | 27 | L1 | L2:12 · L3:14 · L4:1 |
-| `cli/__init__.py` | 23 | L1 | L2:20 · L3:2 · L4:1 |
-| `api/routers/study.py` | 16 | L1 | L2:13 · L3:1 · L4:2 |
-| `api/routers/workflow.py` | 12 | L1 | L2:3 · L3:9 |
-| `cli/commands/slash_goal.py` | 12 | L1 | L2:12 |
-| `core/agent/loop.py` | 10 | L3 | L2:2 · L4:8 |
-
-52 个文件只有 1 条跨层语句——尾部很长但单点小。
-
-## 4. 执行方式：5 批，自顶向下
-
-自顶向下的理由：`interfaces` 零入边（实测 L2→L1=0、L4→L1=0），第一批改动面最小、
-方法论可验证；越往下入边越多。每批 = `git mv` + 全库改写指向该层的 import + 门禁同步。
-
-| 批 | 层 | 移动 | 待改写（按目标层计） | 特别处理 |
-|---|---|---|---:|---|
-| **1** | interfaces | `api/` `cli/` → `interfaces/`；`core/mcp/` → `interfaces/mcp/` | 测试→L1 **149** | 深度+1 的路径常量、`pyproject` console target、uvicorn target 字符串 |
-| **2** | apps | 25 个包/文件 → `apps/`（含 `alpha_zoo` 876 文件 / 408 yaml） | L1→L2 109 · L3→L2 38 · L4→L2 3 · 测试→L2 **307** | `core.tools` vs `core.agent.tools` 必须完整前缀匹配 |
-| **3** | kernel | 15 包 + `seq_generator.py` → `kernel/` | L1→L3 86 · L2→L3 26 · L4→L3 3 · 测试→L3 **215** | 3 处 `"core"` 字面量路径 |
-| **4** | foundation | llm/storage/observability/utils/web + registry/config_loader/errors/git | L1→L4 44 · L2→L4 46 · L3→L4 39 · 测试→L4 **140** | 删 `core/`；`.coveragerc` omit |
-| **5** | — | 门禁与配置收口 | — | 见 §4.5 |
-
-### 4.1 批 1 细节（interfaces）
-
-移动：
-- `api/` → `interfaces/api/`（37 文件，深度 +1）
-- `cli/` → `interfaces/cli/`（70 文件，深度 +1）
-- `core/mcp/` → `interfaces/mcp/`（2 文件，深度不变）
-
-**深度敏感路径修正**（因 +1 层必须调整，否则坏）：
-- `api/routers/agents.py:21-24` `parents[3]` → `parents[4]`
-- `api/app.py:233` 4 个 `.parent` → 5 个
-- `cli/commands/skills.py:18,45,71` 3 个 `.parent` → 4 个
-- `cli/_auto_onboard.py:41` `parents[2]` → `parents[3]`
-- `cli/commands/swarm.py:19,38,76` 3→4（`"core"` 字面量批 3 再改）
-
-配置：
-- `pyproject.toml:73-75` 两个 console target → `strategy_research.interfaces.cli.__main__:main`
-- uvicorn target 字符串：`cli/commands/server.py:100,146` · `tests/conftest_e2e.py:122` ·
-  `tests/test_chat_e2e_playwright.py:69` · `tests/test_chat_real_llm.py:80,366` · `tests/test_sse_e2e.py:65`
-
-### 4.2 批 2 细节（apps）
-
-移动清单（25 项）：`study` `goal` `hypothesis` `alpha_zoo` `alpha_zoo_adapter.py`
-`alpha_zoo_convert.py` `alpha_zoo_ops.py` `alpha_zoo_yaml.py` `backtest.py`
-`backtest_engine` `backtest_models.py` `validation` `portfolio` `data_source`
-`data_import.py` `data_readiness.py` `compute_factor.py` `factor_validate.py`
-`engine` `tools` `db.py` `config_runner.py` `strategy_acceptance` `autoresearch.py`
-`export` `run_card.py` `workspace_setup.py` `preflight.py`
-
-**重点风险**：`core/tools`（数据工具）与 `core/agent/tools`（BaseTool 框架）是
-两个不同包，改写必须完整前缀精确匹配，否则会把框架引用误改成研究工具路径。
-
-### 4.3 批 3 细节（kernel）
-
-移动：`gateway` `orchestration` `runtimes` `workflow` `context` `agent` `swarm`
-`events` `session` `memory` `skills` `hooks` `permission` `scheduled_research`
-`seq_generator.py`
-
-**3 处 `"core"` 字面量路径**（不是 import，纯字符串拼接）：
-- `interfaces/api/routers/study.py:1642` — `parents[3] / "core" / "swarm" / "presets"`
-- `interfaces/cli/commands/swarm.py:19,38,76` — 同上
-- `apps/study/dag_planner.py:74-76` — 同上
-
-### 4.4 批 4 细节（foundation）
-
-移动：`llm` `storage` `observability` `utils` `web` `registry.py`
-`config_loader.py` `errors.py` `git.py`；完成后删除 `core/`。
-
-配置收尾：
-- `.coveragerc:11-13` 三条 `*/core/data_source/*` omit → `apps/data_source/*`
-
-### 4.5 批 5 细节（门禁与配置收口）
-
-| 文件 | 改动 |
-|---|---|
-| `tests/test_layer_matrix.py` | `LAYER_MEMBERSHIP` 60 条字典 → **派生规则**（顶层目录 = 层）+ 例外表（`templates`→L2）；`SKIP_MODULES` 调整；基线数值不变 |
-| `tests/test_architecture_gates.py` | `SRC/"core"/pkg` → 层路径；**修掉 `:137` `split(".")[2]` 位置索引**（改按层前缀判定） |
-| `tests/test_print_governance.py` | `EXEMPT_FILES` 键改 `kernel/engine/base.py` 等 |
-| `scripts/cov_gate.py` | band 前缀全量改层名（**不改会让 `"core/"` catch-all 吞掉一切**） |
-| `pyproject.toml` | `[tool.ruff.lint.per-file-ignores]` 4 条路径 glob；`package-data` **不动** |
-
-## 5. 迁移工具
-
-新增 `scripts/migrate_layers.py`（一次性工具，保留可审计）。
+### 1.2 每 step 协议（7 步，测试前后必须绿）
 
 ```
-python scripts/migrate_layers.py --batch interfaces --dry-run   # 预演
-python scripts/migrate_layers.py --batch interfaces             # 执行
-python scripts/migrate_layers.py --verify                       # 残留检查
+ 1. graphify affected "core.<pkg>"        # 定位受影响测试（不 grep）
+ 2. git mv core/<pkg>  <layer>/<pkg>
+ 3. 改写被搬包内部跨层引用为绝对路径       # 量小（个位数），可人工审
+ 4. 全库前缀改写 core.<pkg> → <layer>.<pkg>
+    # 一条正则三形态命中：import 语句 / lazy import / 字符串字面量
+ 5. 门禁成员表 +2 行（旧路径保留至批 5 统一删）
+ 6. 验证：受影响测试 + 门禁组 + import 冒烟
+ 7. commit（一包一 commit，可独立回滚）
 ```
 
-三阶段：`git mv` → AST import 改写（绝对导入 + 相对导入跨层判定 + 字符串字面量）
-→ 报告与残留检查。
+### 1.3 兼容锚点策略（不建 sys.modules 别名）
 
-**安全设计**：
-- 前缀表按长度降序匹配，`core.agent.tools` 不会被 `core.tools` 规则命中
-- 相对导入（`level > 0`）**不改写**——同深度移动后仍然有效；跨层引用本就写成绝对导入
-- 裸前缀 key（`api` / `core.agent`）只在整段匹配时生效，不误伤 `api_client` 这类标识符
-- `--verify` 扫 `src/` `tests/` `scripts/` `evals/` `examples/` + 配置文件，任何
-  `strategy_research.core.` 残留即退出码 1
+不引入 meta-path 别名层（用户此前已否决）。旧导入路径**立即改写**，不留过渡态。
+依据：graphify 实测入边最多 139 条（goal），单包改写是全库文本前缀替换，
+`sed` 级操作可验证；别名层反而引入「忘了删」的永久债。
 
-## 6. 不在本次范围（用户决定：单独开工作项）
+## 2. 数据底册
 
-3 个**本来就已经断**的路径 bug，机械调整层数会把它变成另一种 bug，因此原样保留、
-只记录为 **W2-6**：
+### 2.1 入边排名（55 包全量，2026-11-03 修正版）
 
-1. `core/agent/prompt_builder.py:364` — `parent.parent` 少一层，指向不存在的
-   `core/templates/.prompts`（auto-discovery 静默返回 `{}`）
-2. `core/agent/builtin_tools/workspace_tools.py:308,395` — 从 4 深文件
-   `parent.parent.parent` 多算一层 → `core/templates/.skills`（被 `.is_dir()` 静默吞掉）
-3. `tests/test_print_governance.py:88` — `_py_files("study")` 解析到
-   `src/strategy_research/study`，该目录不存在（门禁相当于空转）
+物理口径（每语句计 1）；`src` = 生产引用，`tests` = 测试引用。
 
-## 7. 验证（每批完成后）
+| # | 包 | 入边 | src | tests | 目标层 |
+|--:|---|---:|---:|---:|---|
+| 1 | `alpha_zoo_yaml.py` | 1 | 0 | 1 | apps |
+| 2 | `seq_generator.py` | 1 | 0 | 1 | kernel |
+| 3 | `errors.py` | 1 | 1 | 0 | foundation |
+| 4 | `preflight.py` | 1 | 1 | 0 | apps |
+| 5 | `alpha_zoo_convert.py` | 2 | 0 | 2 | apps |
+| 6 | `alpha_zoo_adapter.py` | 2 | 1 | 1 | apps |
+| 7 | `config_loader.py` | 2 | 1 | 1 | foundation |
+| 8 | `export/` | 2 | 1 | 1 | apps |
+| 9 | `factor_validate.py` | 2 | 1 | 1 | apps |
+| 10 | `run_card.py` | 2 | 1 | 1 | apps |
+| 11 | `workspace_setup.py` | 2 | 1 | 1 | apps |
+| 12 | `backtest_engine/` | 3 | 0 | 3 | apps |
+| 13 | `alpha_zoo_ops.py` | 3 | 2 | 1 | apps |
+| 14 | `data_readiness.py` | 3 | 2 | 1 | apps |
+| 15 | `git.py` | 3 | 3 | 0 | foundation |
+| 16 | `registry.py` | 4 | 0 | 4 | foundation |
+| 17 | `alpha_zoo/` | 4 | 2 | 2 | apps |
+| 18 | `mcp/` | 5 | 1 | 4 | interfaces |
+| 19 | `config_runner.py` | 5 | 4 | 1 | apps |
+| 20 | `data_import.py` | 5 | 4 | 1 | apps |
+| 21 | `permission/` | 7 | 3 | 4 | kernel |
+| 22 | `skills/` | 7 | 3 | 4 | kernel |
+| 23 | `backtest_models.py` | 7 | 5 | 2 | apps |
+| 24 | `tools/` | 7 | 5 | 2 | apps |
+| 25 | `web/` | 7 | 5 | 2 | foundation |
+| 26 | `hooks/` | 8 | 2 | 6 | kernel |
+| 27 | `portfolio/` | 9 | 1 | 8 | apps |
+| 28 | `memory/` | 11 | 5 | 6 | kernel |
+| 29 | `compute_factor.py` | 11 | 7 | 4 | apps |
+| 30 | `backtest.py` | 12 | 10 | 2 | apps |
+| 31 | `session/` | 12 | 10 | 2 | kernel |
+| 32 | `strategy_acceptance/` | 13 | 8 | 5 | apps |
+| 33 | `context/` | 14 | 6 | 8 | kernel |
+| 34 | `autoresearch.py` | 16 | 12 | 4 | apps |
+| 35 | `hypothesis/` | 19 | 9 | 10 | apps |
+| 36 | `data_source/` | 20 | 17 | 3 | apps |
+| 37 | `scheduled_research/` | 25 | 9 | 16 | kernel |
+| 38 | `validation/` | 26 | 10 | 16 | apps |
+| 39 | `db.py` | 26 | 21 | 5 | apps |
+| 40 | `gateway/` | 31 | 6 | 25 | kernel |
+| 41 | `events/` | 32 | 5 | 27 | kernel |
+| 42 | `observability/` | 32 | 25 | 7 | foundation |
+| 43 | `runtimes/` | 33 | 9 | 24 | kernel |
+| 44 | `storage/` | 34 | 17 | 17 | foundation |
+| 45 | `swarm/` | 37 | 16 | 21 | kernel |
+| 46 | `api/` | 51 | 4 | 47 | interfaces |
+| 47 | `engine/` | 55 | 2 | 53 | apps |
+| 48 | `orchestration/` | 57 | 16 | 41 | kernel |
+| 49 | `workflow/` | 58 | 18 | 40 | kernel |
+| 50 | `utils/` | 62 | 35 | 27 | foundation |
+| 51 | `agent/` | 64 | 64 | 0 | kernel |
+| 52 | `cli/` | 104 | 6 | 98 | interfaces |
+| 53 | `study/` | 127 | 28 | 99 | apps |
+| 54 | `llm/` | 127 | 42 | 85 | foundation |
+| 55 | `goal/` | 139 | 61 | 78 | apps |
+
+数据口径：graphify AST 图（88,873 边），语句去重（文件 × 行 × 目标包）；
+单文件包第一版脚本漏计的缺陷已修正（`.py` 后缀匹配 bug）。
+已知数据缺口：`core/agent` 的 tests=0 与 ToolContext tests 连接数据矛盾，
+执行时用 `graphify affected` 现场复核，不依赖本表。
+
+## 3. 波次编排（入边升序，每 step 一 commit）
+
+| 波 | 入边区间 | 包数 | 累计验证意义 |
+|---|---|---:|---|
+| **W0 试点** | 0–1 | 1 | `errors.py`：全库第 3 小入边，协议首次全链路验证 |
+| **W1** | 1–3 | 13 | 协议在小入边包上固化 |
+| **W2** | 4–9 | 12 | mcp/interfaces 进入；apps 单文件群 |
+| **W3** | 11–20 | 9 | 中等体量；`autoresearch.py`/`hypothesis` |
+| **W4** | 25–37 | 9 | 重包：`db`(26) `gateway`(31) `events`(32) `observability`(32) `runtimes`(33) `storage`(34) `swarm`(37) |
+| **W5** | 51–64 | 6 | `api`(51) `engine`(55) `orchestration`(57) `workflow`(58) `utils`(62) `agent`(64) |
+| **W6 巨型收尾** | 100+ | 4 | `cli`(104) `study`(127) `llm`(127) `goal`(139) |
+| **W7 清理** | — | — | 删 `core/` 空壳 · 删门禁旧路径行 · `cov_gate`/ruff/coveragerc 路径 · graphify 重扫 |
+
+### 3.1 家族绑定（同 commit 移动的关联件）
+
+| 主包 | 同 commit 关联件 | 原因 |
+|---|---|---|
+| `alpha_zoo` | `alpha_zoo_adapter.py` `alpha_zoo_convert.py` `alpha_zoo_ops.py` `alpha_zoo_yaml.py` | 兄弟模块互引（convert:1000 引 alpha_zoo） |
+| `backtest.py` | `backtest_models.py` `backtest_engine/` | 三件一体 |
+| `agent/` | — | 22k 单包，可内部再分（先 `builtin_tools` 后其余）见 §3.2 |
+
+### 3.2 agent 22k 特例（W5 内部再分）
+
+agent 是单包 22k、入边 64（全 src）。整包一 commit 的 diff 过大，内部分三步，
+每步独立绿：① `strategy/` + `sandbox/` + `runtime/`（~2.4k）② `builtin_tools/`
+（6.7k，W1-1 已证是研究适配器集中地）③ 根层其余（loop/compact/event_store 等 ~12.6k）。
+
+## 4. 工具
+
+`scripts/migrate_layers.py` 保留 `--verify`（残留扫描）；**逐包改写不再用它**
+（v1 失败教训：AST 语句重组有行合并缺陷）。每 step 用轻量前缀替换脚本
+（`tmp/` 下按需生成，模式 = §1.2 第 4 步），替换后必跑：
 
 ```bash
-# 1. 零残留
-python scripts/migrate_layers.py --verify
+# 多行 import 完整性自检（v1 失败的回归门）
+python -m compileall -q src/strategy_research tests
+```
 
-# 2. 冒烟
-python -c "import strategy_research"
-python -c "import strategy_research.interfaces.api.app"
+## 5. 验证门（每 step）
 
-# 3. 门禁（基线不变：L2>L1 1 · L3>L1 2 · L3>L2 46 · L4>L2 2 · L4>L3 4）
+```bash
+# 受影响测试（graphify affected 输出 + 包自有 tests/test_<pkg>*）
+pytest <受影响清单> -q
+# 门禁组
 pytest tests/test_layer_matrix.py tests/test_architecture_gates.py \
        tests/test_print_governance.py -q
-
-# 4. 全量（失败集不劣于迁移前）
-pytest tests -q
-
-# 5. 覆盖率四段仍 ≥90
-python scripts/cov_gate.py
+# 冒烟
+python -c "import strategy_research"
 ```
 
-全部 5 批完成后：
-```bash
-# 6. graphify 重扫，核对跨层矩阵与门禁一致
-python -m graphify extract . --code-only --no-cluster --out tmp/graphify2
-```
-7. 更新 `docs/layered-skeleton-design-20261103.md` §2（成员表 → 目录结构）与架构图 v8.5。
+波次结束加跑全量 `pytest tests -q`（失败集不劣于 102F 基线的对应子集）。
 
-## 8. 风险与回滚
+## 6. 不在本次范围
 
-| 风险 | 缓解 |
-|---|---|
-| 改写脚本误伤（`core/tools` vs `core/agent/tools`） | 完整前缀精确匹配 + `--dry-run` 逐条 review + `--verify` |
-| 探针漏改（`__import__` / uvicorn target / entry points） | 显式点位清单（§4.1），批 1 一次性处理 |
-| 覆盖率分档静默失效（`cov_gate` 的 `"core/"` catch-all） | 每批同步改 band 前缀；批 5 实跑核对 |
-| 中间态红灯 | 每批独立 commit；`git reset --hard <batch>^` 回到上一批绿点 |
-| 门禁在批 1-4 期间误判 | `LAYER_MEMBERSHIP` 每批增量添加新层前缀（旧 key 保留到批 5 统一清理） |
+- W2-6 三个既有路径 bug（`prompt_builder:364` / `workspace_tools:308,395` /
+  `test_print_governance:88`）——原样保留，搬迁后单独修
+- W1-6 alpha NaN 缺陷 · W1-7 研究域测试桩 · W1-10 compact 六项
+- lazy import 44 条：不碰（W4-1 门禁规则工作项决定是否单独归类）
 
-## 9. 进度追踪
+## 7. 进度追踪（每 step 更新）
 
-| 批 | 状态 | commit |
-|---|---|---|
-| 工具 | 进行中 | — |
-| 1 interfaces | 待执行 | — |
-| 2 apps | 待执行 | — |
-| 3 kernel | 待执行 | — |
-| 4 foundation | 待执行 | — |
-| 5 门禁收口 | 待执行 | — |
+| 包 | 波 | 目标层 | 状态 | commit |
+|---|---|---|---|---|
+| `errors.py` | W0 | foundation | 待执行 | — |
+| 其余 54 包 | W1–W6 | — | 待执行 | — |
+
+## 8. 回滚
+
+每 step 一 commit：`git revert <sha>` 即回到上一步；波次结束跑全量做整波验证。
+`core/` 空壳在 W7 前始终保留，任何一步回滚都不会产生悬空路径。
