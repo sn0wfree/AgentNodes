@@ -18,7 +18,7 @@ import numpy as np
 import pandas as pd
 import pytest
 
-from strategy_research.core import config_runner as cr
+from strategy_research.apps import config_runner as cr
 
 
 def _panel(cols=("A", "B"), n=60) -> pd.DataFrame:
@@ -70,7 +70,7 @@ def test_expression_factor_skipped_without_panels(caplog):
     panel = _panel()
     s = _Strategy([{"name": "ret", "code": "ts_return(close, 5)"}])
     out = {}
-    with caplog.at_level(logging.WARNING, logger="strategy_research.core.config_runner"):
+    with caplog.at_level(logging.WARNING, logger="strategy_research.apps.config_runner"):
         s._compute_expression_factor(
             "ret", "ts_return(close, 5)", panel.index[-1], panel, None, out)
     assert out == {}  # 不写入任何值
@@ -93,7 +93,7 @@ def test_expression_factor_failure_is_recorded_per_asset(caplog):
     panel = _panel(cols=("A",))
     s = _Strategy([{"name": "bad", "code": "nonexistent_func(close)"}])
     out = {}
-    with caplog.at_level(logging.WARNING, logger="strategy_research.core.config_runner"):
+    with caplog.at_level(logging.WARNING, logger="strategy_research.apps.config_runner"):
         s._compute_expression_factor(
             "bad", "nonexistent_func(close)", panel.index[-1], panel,
             {"A": _ohlcv(len(panel))}, out)
@@ -148,7 +148,7 @@ def test_single_alpha_failure_is_recorded(monkeypatch, caplog):
 
     panel = _panel()
     s = _Strategy([{"name": "a1", "alpha_id": "gtja191_001"}])
-    with caplog.at_level(logging.WARNING, logger="strategy_research.core.config_runner"):
+    with caplog.at_level(logging.WARNING, logger="strategy_research.apps.config_runner"):
         out = s._compute_factor_values(panel.index[-1], panel)
     assert "a1" not in out
     assert s.factor_failures
@@ -184,7 +184,7 @@ def test_batch_failure_is_recorded(monkeypatch, caplog):
 
     panel = _panel()
     s = _Strategy([{"name": "combo", "alpha_ids": ["x"]}])
-    with caplog.at_level(logging.WARNING, logger="strategy_research.core.config_runner"):
+    with caplog.at_level(logging.WARNING, logger="strategy_research.apps.config_runner"):
         out = s._compute_factor_values(panel.index[-1], panel)
     assert "combo" not in out
     assert s.factor_failures

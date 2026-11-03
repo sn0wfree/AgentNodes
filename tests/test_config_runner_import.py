@@ -17,7 +17,7 @@ class TestConfigRunnerImport:
 
     def test_on_risk_check_imports_backtest_utils(self):
         """The on_risk_check method should resolve backtest_utils without error."""
-        from strategy_research.core.config_runner import FactorStrategy
+        from strategy_research.apps.config_runner import FactorStrategy
 
         inst = FactorStrategy.__new__(FactorStrategy)
         inst.params = {"max_weight": 0.25}
@@ -133,7 +133,7 @@ factors:
         return ws
 
     def test_run_from_yaml_with_expression_factor(self, strategy_workspace: Path):
-        from strategy_research.core.config_runner import run_from_yaml
+        from strategy_research.apps.config_runner import run_from_yaml
 
         result = run_from_yaml(
             strategy_workspace / "strategies" / "e2e_strat" / "config.yaml",
@@ -143,14 +143,14 @@ factors:
         assert "ann_return" in result.metrics
 
     def test_compute_weights_loads_price_data(self, strategy_workspace: Path):
-        from strategy_research.core.config_runner import (
+        from strategy_research.apps.config_runner import (
             create_engine,
             create_strategy,
             load_data,
         )
 
         cfg_yaml = strategy_workspace / "strategies" / "e2e_strat" / "config.yaml"
-        from strategy_research.core.config_runner import load_yaml_config
+        from strategy_research.apps.config_runner import load_yaml_config
 
         cfg = load_yaml_config(cfg_yaml)
         strategy = create_strategy(cfg, workspace_path=strategy_workspace)
@@ -171,7 +171,7 @@ factors:
         first row → the whole column became NaN → inverse_vol weights came
         out NaN → nav stayed flat at 1.0 (ann_return 0).
         """
-        from strategy_research.core.config_runner import run_from_yaml
+        from strategy_research.apps.config_runner import run_from_yaml
 
         ws = tmp_path / "ws"
         ws.mkdir()
@@ -270,7 +270,7 @@ factors:
     code: ts_return(close, 20)
     weight: 1.0
 """
-        from strategy_research.core.config_runner import load_data, load_yaml_config
+        from strategy_research.apps.config_runner import load_data, load_yaml_config
 
         ws = self._make_workspace(tmp_path, cfg_text, ["000001.SZ", "600519.SH"])
         cfg = load_yaml_config(ws / "strategies" / "e2e_strat" / "config.yaml")
@@ -293,7 +293,7 @@ factors:
     code: ts_return(close, 20)
     weight: 1.0
 """
-        from strategy_research.core.config_runner import run_from_yaml
+        from strategy_research.apps.config_runner import run_from_yaml
 
         ws = self._make_workspace(tmp_path, cfg_text, ["000001.SZ", "600519.SH"])
         result = run_from_yaml(
@@ -321,7 +321,7 @@ factors:
     code: ts_return(close, 20)
     weight: 1.0
 """
-        from strategy_research.core.config_runner import run_from_yaml
+        from strategy_research.apps.config_runner import run_from_yaml
 
         ws = self._make_workspace(tmp_path, cfg_text, ["000001.SZ"])
         result = run_from_yaml(
@@ -338,7 +338,7 @@ factors:
     def test_all_scores_invalid_returns_empty_weights(self, tmp_path):
         """Every factor fails on every asset → scores empty → empty weights
         (engine keeps nav flat) instead of selecting score=0 ghosts."""
-        from strategy_research.core.config_runner import run_from_yaml
+        from strategy_research.apps.config_runner import run_from_yaml
 
         cfg_text = """strategy:
   name: e2e_strat

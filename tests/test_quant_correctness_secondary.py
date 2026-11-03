@@ -62,7 +62,7 @@ class TestRiskFreeRate:
         assert StrategyEngine(risk_free_rate=0.05).risk_free_rate == 0.05
 
     def test_yaml_backtest_rf_wiring(self):
-        from strategy_research.core.config_runner import create_engine
+        from strategy_research.apps.config_runner import create_engine
 
         eng = create_engine({"backtest": {"risk_free_rate": 0.025}})
         assert eng.risk_free_rate == pytest.approx(0.025)

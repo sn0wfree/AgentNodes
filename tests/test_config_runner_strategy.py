@@ -17,7 +17,7 @@ import numpy as np
 import pandas as pd
 import pytest
 
-from strategy_research.core import config_runner as cr
+from strategy_research.apps import config_runner as cr
 
 
 def _factor_strategy(tmp_path=None, factors=None, params=None, codes=None):

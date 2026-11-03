@@ -1,4 +1,4 @@
-"""H 档补测 —— `core/config_runner.py` 的配置装配与数据加载编排。
+"""H 档补测 —— `apps/config_runner.py` 的配置装配与数据加载编排。
 
 此前 63.8%，缺口是三块**纯逻辑**：
 1. risk 子配置（vol_targeting / trend_filter / stop_loss）的启用分支
@@ -17,7 +17,7 @@ from pathlib import Path
 import pandas as pd
 import pytest
 
-from strategy_research.core import config_runner as cr
+from strategy_research.apps import config_runner as cr
 from strategy_research.core import db
 
 

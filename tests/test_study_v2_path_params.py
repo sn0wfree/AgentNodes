@@ -133,7 +133,7 @@ def test_run_backtest_from_yaml_custom_layout(tmp_path, monkeypatch):
         nav_daily=None,
     )
     monkeypatch.setattr(
-        "strategy_research.core.config_runner.run_from_yaml",
+        "strategy_research.apps.config_runner.run_from_yaml",
         lambda yaml_path, ws: fake,
     )
     result = run_backtest_from_yaml(

@@ -321,7 +321,7 @@ class ConfigLoadStep(BaseTool):
         strategy_name: str,
         yaml_path: str | None = None,
     ) -> dict:
-        from ...config_runner import load_yaml_config
+        from strategy_research.apps.config_runner import load_yaml_config
 
         if yaml_path is not None:
             yaml_path = str(workspace / yaml_path)
@@ -369,7 +369,7 @@ class DataPrepareStep(BaseTool):
         workspace,
         cfg: dict,
     ) -> dict:
-        from ...config_runner import load_data
+        from strategy_research.apps.config_runner import load_data
 
         try:
             df = load_data(cfg, workspace)

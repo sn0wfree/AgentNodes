@@ -44,7 +44,7 @@ def ws(tmp_path) -> Path:
 
 
 def _run(ws: Path, monkeypatch, result=None, **kw):
-    from strategy_research.core import config_runner
+    from strategy_research.apps import config_runner
 
     fake = result or FakeResult()
     monkeypatch.setattr(config_runner, "run_from_yaml", lambda *a, **k: fake)
@@ -156,7 +156,7 @@ def test_warnings_from_result_are_propagated(ws, monkeypatch):
 
 
 def test_runner_exception_is_captured_not_raised(ws, monkeypatch):
-    from strategy_research.core import config_runner
+    from strategy_research.apps import config_runner
     monkeypatch.setattr(
         config_runner, "run_from_yaml",
         lambda *a, **k: (_ for _ in ()).throw(RuntimeError("boom")),

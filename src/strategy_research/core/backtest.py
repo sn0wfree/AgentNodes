@@ -555,7 +555,7 @@ def run_backtest_from_yaml(
         return {"success": False, "run": "", "metrics": {}, "error": f"配置文件不存在: {resolved_yaml}"}
 
     try:
-        from .config_runner import run_from_yaml
+        from strategy_research.apps.config_runner import run_from_yaml
         result = run_from_yaml(str(resolved_yaml), workspace_path)
 
         # 保存结果

@@ -102,7 +102,7 @@ class TestFactorStrategyAlphaZoo:
 
     def test_factor_strategy_accepts_code_factor(self):
         """方式 1: code 因子（表达式）应正常计算。"""
-        from strategy_research.core.config_runner import FactorStrategy
+        from strategy_research.apps.config_runner import FactorStrategy
 
         fs = FactorStrategy(
             factors=[{
@@ -120,7 +120,7 @@ class TestFactorStrategyAlphaZoo:
     def test_factor_strategy_accepts_alpha_id_factor(self, monkeypatch: pytest.MonkeyPatch):
         """方式 2: alpha_id 因子（Alpha Zoo）应调用 compute_as_wide。"""
         from strategy_research.apps import alpha_zoo_adapter as aza_module
-        from strategy_research.core import config_runner
+        from strategy_research.apps import config_runner
 
         class MockAlphaZoo:
             def compute_as_wide(self, alpha_id, prices, **kwargs):
@@ -153,7 +153,7 @@ class TestFactorStrategyAlphaZoo:
     def test_factor_strategy_accepts_alpha_ids_combined(self, monkeypatch: pytest.MonkeyPatch):
         """方式 3: alpha_ids 组合因子应调用 compute_batch。"""
         from strategy_research.apps import alpha_zoo_adapter as aza_module
-        from strategy_research.core import config_runner
+        from strategy_research.apps import config_runner
 
         class MockAlphaZoo:
             def compute_batch(self, alpha_ids, prices, **kwargs):
@@ -184,7 +184,7 @@ class TestFactorStrategyAlphaZoo:
 
     def test_factor_strategy_handles_empty_factor(self):
         """空 factors 列表应正常返回等权 top_n。"""
-        from strategy_research.core.config_runner import FactorStrategy
+        from strategy_research.apps.config_runner import FactorStrategy
 
         fs = FactorStrategy(
             factors=[],
@@ -199,7 +199,7 @@ class TestFactorStrategyAlphaZoo:
 
     def test_factor_strategy_skips_invalid_factor_gracefully(self, capsys):
         """无效因子（无 code / alpha_id / alpha_ids）应被跳过。"""
-        from strategy_research.core.config_runner import FactorStrategy
+        from strategy_research.apps.config_runner import FactorStrategy
 
         fs = FactorStrategy(
             factors=[

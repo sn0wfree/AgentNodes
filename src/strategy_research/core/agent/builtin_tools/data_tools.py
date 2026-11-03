@@ -701,7 +701,7 @@ class CheckDataTool(BaseTool):
             base = ctx.strategy_dir if ctx.strategy_dir is not None else workspace / "strategies" / strategy_name
             cfg_path = base / "config.yaml"
             if cfg_path.exists():
-                from ...config_runner import load_yaml_config
+                from strategy_research.apps.config_runner import load_yaml_config
 
                 try:
                     cfg = load_yaml_config(cfg_path)

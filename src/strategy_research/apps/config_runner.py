@@ -14,15 +14,15 @@ import yaml
 
 logger = logging.getLogger(__name__)
 
-from .db import load_price_data
-from .utils.backtest_config import (
+from strategy_research.core.db import load_price_data
+from strategy_research.core.utils.backtest_config import (
     BacktestConfig,
     CostConfig,
     StopLossConfig,
     TrendFilterConfig,
     VolTargetingConfig,
 )
-from .utils.strategy_engine import BacktestResult, StrategyEngine
+from strategy_research.core.utils.strategy_engine import BacktestResult, StrategyEngine
 
 # ============================================================
 # 1. YAML 加载
@@ -115,7 +115,7 @@ def _is_data_fresh(workspace_path: Path, strategy_name: str, end_date: str) -> b
     """Check if DuckDB data is fresh enough (ends within 7 days of end_date)."""
     from datetime import datetime
     try:
-        from .db import get_connection
+        from strategy_research.core.db import get_connection
         conn = get_connection(workspace_path, read_only=True)
         if conn is None:
             return False
@@ -182,9 +182,9 @@ def load_data(cfg: dict, workspace_path: Path) -> pd.DataFrame:
         # 2. Cache miss — fetch online
         if codes:
             try:
-                from .data_source.registry import resolve_loader
-                from .data_source.utils import detect_market
-                from .db import save_ohlcv_to_db
+                from strategy_research.core.data_source.registry import resolve_loader
+                from strategy_research.core.data_source.utils import detect_market
+                from strategy_research.core.db import save_ohlcv_to_db
 
                 market = detect_market(codes[0]) if codes else "a_share"
                 loader = resolve_loader(market)  # auto-select best source
@@ -208,9 +208,9 @@ def load_data(cfg: dict, workspace_path: Path) -> pd.DataFrame:
     # --- Online fetch (auto/tencent/akshare/etc) ---
     if codes:
         try:
-            from .data_source.registry import resolve_loader
-            from .data_source.utils import detect_market
-            from .db import save_ohlcv_to_db
+            from strategy_research.core.data_source.registry import resolve_loader
+            from strategy_research.core.data_source.utils import detect_market
+            from strategy_research.core.db import save_ohlcv_to_db
 
             market = detect_market(codes[0]) if codes else "a_share"
             loader = resolve_loader(market)
@@ -312,7 +312,7 @@ class FactorStrategy:
                 "FactorStrategy needs workspace_path and strategy_name to load OHLCV. "
                 "Pass them to create_strategy(cfg, workspace_path=...)."
             )
-        from .db import get_connection
+        from strategy_research.core.db import get_connection
 
         conn = get_connection(self.workspace_path, read_only=True)
         if conn is None:
@@ -374,7 +374,7 @@ class FactorStrategy:
     ) -> dict[str, Any]:
         """Compute per-factor values (expression / single alpha / combined)."""
         from strategy_research.apps.alpha_zoo_adapter import AlphaZooAdapter
-        from .tools.data_transforms import (
+        from strategy_research.core.tools.data_transforms import (
             is_wide_close_format,
             long_to_wide_ohlcv_per_asset,
         )
@@ -463,7 +463,7 @@ class FactorStrategy:
         factor_values: dict[str, Any],
     ) -> None:
         """Evaluate an expression factor per-asset into a wide DataFrame."""
-        from .compute_factor import FactorComputeError, compute_factor
+        from strategy_research.core.compute_factor import FactorComputeError, compute_factor
 
         if ohlcv_panels is None:
             logger.warning(
@@ -549,7 +549,7 @@ class FactorStrategy:
         date: pd.Timestamp,
     ) -> dict[str, float]:
         """自定义风控."""
-        from .utils.backtest_utils import apply_max_weight, normalize_weights
+        from strategy_research.core.utils.backtest_utils import apply_max_weight, normalize_weights
 
         max_weight = self.params.get("max_weight", 0.25)
         weights = apply_max_weight(weights, max_weight)
