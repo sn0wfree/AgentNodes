@@ -1,4 +1,4 @@
-"""Tests for core/config_loader.py (Phase 2.1)."""
+"""Tests for foundation/config_loader.py (Phase 2.1)."""
 
 from __future__ import annotations
 
@@ -9,7 +9,7 @@ from tempfile import TemporaryDirectory
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
 
-from strategy_research.core.config_loader import (
+from strategy_research.foundation.config_loader import (
     ConfigBuilder,
     known_keys_filter,
     load_layered_config,

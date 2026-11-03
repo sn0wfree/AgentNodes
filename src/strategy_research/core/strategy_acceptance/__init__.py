@@ -310,7 +310,7 @@ def load_config(
     malformed YAML raises ``yaml.YAMLError`` (transparent from PyYAML).
     Unknown keys are silently ignored (forward-compat).
     """
-    from ..config_loader import load_layered_config, scalar_key_filter
+    from strategy_research.foundation.config_loader import load_layered_config, scalar_key_filter
 
     user_path = user_config if user_config is not None else (
         Path.home() / ".quantnodes-research" / "acceptance.yaml"
