@@ -373,7 +373,7 @@ class FactorStrategy:
         self, date: pd.Timestamp, price_panel: pd.DataFrame
     ) -> dict[str, Any]:
         """Compute per-factor values (expression / single alpha / combined)."""
-        from .alpha_zoo_adapter import AlphaZooAdapter
+        from strategy_research.apps.alpha_zoo_adapter import AlphaZooAdapter
         from .tools.data_transforms import (
             is_wide_close_format,
             long_to_wide_ohlcv_per_asset,

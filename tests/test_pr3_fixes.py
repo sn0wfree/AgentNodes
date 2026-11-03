@@ -119,7 +119,7 @@ class TestFactorStrategyAlphaZoo:
 
     def test_factor_strategy_accepts_alpha_id_factor(self, monkeypatch: pytest.MonkeyPatch):
         """方式 2: alpha_id 因子（Alpha Zoo）应调用 compute_as_wide。"""
-        from strategy_research.core import alpha_zoo_adapter as aza_module
+        from strategy_research.apps import alpha_zoo_adapter as aza_module
         from strategy_research.core import config_runner
 
         class MockAlphaZoo:
@@ -152,7 +152,7 @@ class TestFactorStrategyAlphaZoo:
 
     def test_factor_strategy_accepts_alpha_ids_combined(self, monkeypatch: pytest.MonkeyPatch):
         """方式 3: alpha_ids 组合因子应调用 compute_batch。"""
-        from strategy_research.core import alpha_zoo_adapter as aza_module
+        from strategy_research.apps import alpha_zoo_adapter as aza_module
         from strategy_research.core import config_runner
 
         class MockAlphaZoo:

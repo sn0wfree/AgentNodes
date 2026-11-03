@@ -2,7 +2,7 @@
 
 This module consolidates the previously duplicated loading logic that lived in
 both ``core/alpha_zoo/__init__.py`` (``compute_alpha``) and
-``core/alpha_zoo_adapter.py`` (``AlphaZooAdapter.compute_as_wide``).
+``apps/alpha_zoo_adapter.py`` (``AlphaZooAdapter.compute_as_wide``).
 
 Loading order (priority high → low):
     1. YAML config in ``core/alpha_zoo/<zoo>/<alpha>.yaml``

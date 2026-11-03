@@ -16,7 +16,7 @@ import numpy as np
 import pandas as pd
 import pytest
 
-from strategy_research.core.alpha_zoo_adapter import AlphaZooAdapter
+from strategy_research.apps.alpha_zoo_adapter import AlphaZooAdapter
 
 warnings.filterwarnings("ignore")
 
@@ -411,7 +411,7 @@ def test_alpha_loader_class_importable():
 
 def test_alpha_zoo_adapter_module_path():
     """The legacy import path still works (backward compat)."""
-    from strategy_research.core.alpha_zoo_adapter import AlphaZooAdapter
+    from strategy_research.apps.alpha_zoo_adapter import AlphaZooAdapter
     assert AlphaZooAdapter is not None
 
 

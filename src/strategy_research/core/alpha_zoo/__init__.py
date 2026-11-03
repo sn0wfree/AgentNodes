@@ -23,7 +23,7 @@ from .loader import (
 )
 
 # Backward-compat alias — historically ``AlphaZooAdapter`` lived in
-# ``core/alpha_zoo_adapter.py``; new code should import ``AlphaLoader``
+# ``apps/alpha_zoo_adapter.py``; new code should import ``AlphaLoader``
 # from ``core.alpha_zoo.loader`` directly.
 AlphaZooAdapter = AlphaLoader
 

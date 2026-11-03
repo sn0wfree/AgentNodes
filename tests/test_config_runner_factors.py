@@ -130,7 +130,7 @@ class _FakeAdapter:
 
 
 def test_single_alpha_factor_written(monkeypatch):
-    import strategy_research.core.alpha_zoo_adapter as adapter_mod
+    import strategy_research.apps.alpha_zoo_adapter as adapter_mod
 
     fake = _FakeAdapter()
     monkeypatch.setattr(adapter_mod, "AlphaZooAdapter", lambda: fake)
@@ -143,7 +143,7 @@ def test_single_alpha_factor_written(monkeypatch):
 
 
 def test_single_alpha_failure_is_recorded(monkeypatch, caplog):
-    import strategy_research.core.alpha_zoo_adapter as adapter_mod
+    import strategy_research.apps.alpha_zoo_adapter as adapter_mod
     monkeypatch.setattr(adapter_mod, "AlphaZooAdapter", lambda: _FakeAdapter("boom"))
 
     panel = _panel()
@@ -156,7 +156,7 @@ def test_single_alpha_failure_is_recorded(monkeypatch, caplog):
 
 
 def test_alpha_combination_is_unstacked(monkeypatch):
-    import strategy_research.core.alpha_zoo_adapter as adapter_mod
+    import strategy_research.apps.alpha_zoo_adapter as adapter_mod
     monkeypatch.setattr(adapter_mod, "AlphaZooAdapter", lambda: _FakeAdapter())
 
     panel = _panel()
@@ -168,7 +168,7 @@ def test_alpha_combination_is_unstacked(monkeypatch):
 
 
 def test_empty_batch_result_is_skipped(monkeypatch):
-    import strategy_research.core.alpha_zoo_adapter as adapter_mod
+    import strategy_research.apps.alpha_zoo_adapter as adapter_mod
     monkeypatch.setattr(adapter_mod, "AlphaZooAdapter", lambda: _FakeAdapter("empty"))
 
     panel = _panel()
@@ -179,7 +179,7 @@ def test_empty_batch_result_is_skipped(monkeypatch):
 
 
 def test_batch_failure_is_recorded(monkeypatch, caplog):
-    import strategy_research.core.alpha_zoo_adapter as adapter_mod
+    import strategy_research.apps.alpha_zoo_adapter as adapter_mod
     monkeypatch.setattr(adapter_mod, "AlphaZooAdapter", lambda: _FakeAdapter("boom"))
 
     panel = _panel()
@@ -193,7 +193,7 @@ def test_batch_failure_is_recorded(monkeypatch, caplog):
 
 def test_adapter_is_lazily_created_once(monkeypatch):
     """多个 alpha 因子共用同一个 adapter 实例（只构造一次）。"""
-    import strategy_research.core.alpha_zoo_adapter as adapter_mod
+    import strategy_research.apps.alpha_zoo_adapter as adapter_mod
 
     created = {"n": 0}
 
