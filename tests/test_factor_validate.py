@@ -17,7 +17,7 @@ import numpy as np
 import pandas as pd
 import pytest
 
-from strategy_research.core.factor_validate import (
+from strategy_research.apps.factor_validate import (
     SCORE_WEIGHTS,
     compute_6d_scores,
     compute_data_fingerprint,

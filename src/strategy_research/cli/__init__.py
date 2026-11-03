@@ -419,7 +419,7 @@ def cmd_validate(args: argparse.Namespace) -> int:
 
     import pandas as pd
 
-    from strategy_research.core.factor_validate import validate_factor
+    from strategy_research.apps.factor_validate import validate_factor
 
     # 加载价格数据 (简单示例: 从 CSV 加载)
     prices_file = path / "data" / "prices.csv"

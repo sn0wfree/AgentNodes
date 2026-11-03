@@ -1,4 +1,4 @@
-"""H 档补测 —— `core/factor_validate.py` 的评分子函数。
+"""H 档补测 —— `apps/factor_validate.py` 的评分子函数。
 
 为什么优先这个文件：它是**纯数学**（IC/IR/六个维度的 0–1 评分），没有
 网络、没有 DB、没有时钟依赖——不存在「外部依赖没法测」的理由。此前
@@ -14,7 +14,7 @@ import numpy as np
 import pandas as pd
 import pytest
 
-from strategy_research.core import factor_validate as fv
+from strategy_research.apps import factor_validate as fv
 
 
 # ── score_stability ─────────────────────────────────────────

@@ -441,7 +441,7 @@ def validate_factor(
             "fail_reasons": list[str],
         }
     """
-    from .compute_factor import compute_factor
+    from strategy_research.core.compute_factor import compute_factor
 
     # 计算因子值
     if factor_values is None:
