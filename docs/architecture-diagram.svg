@@ -93,6 +93,14 @@
   <rect x="166" y="790" width="588" height="40" rx="6" class="box"/>
   <text x="180" y="808" class="st">RunContext（per-run 约束：budget/sink/cancel/steer_inbox/trace）· kernel</text>
   <text x="180" y="824" class="sm">机制已存在（散装 state 键）· 包成对象 ⏹ 不做（纯改名）</text>
+  <rect x="150" y="846" width="300" height="68" rx="8" class="boxb"/>
+  <text x="166" y="866" class="bt">ConfigHub · 配置中心 ✅</text>
+  <text x="166" y="884" class="st">✅ 分层装载 · fail-fast 启动校验</text>
+  <text x="166" y="902" class="sm">✅ 敏感隔离（key 指纹化）· 治理分级 ⏳ · kernel</text>
+  <rect x="470" y="846" width="300" height="68" rx="8" class="boxd"/>
+  <text x="486" y="866" class="bt">CapabilityRegistry · 供给 ⏳</text>
+  <text x="486" y="884" class="st">resolve(kind, **criteria) 供给端口回调</text>
+  <text x="486" y="902" class="sm">⏳ 切 0.6/0.7 = G2b：清 92 条 L3→L2 直连</text>
   <line x1="772" y1="868" x2="854" y2="868" class="arpu"/>
   <text x="813" y="858" font-size="11" fill="#7c3aed" text-anchor="middle" font-family="monospace">端口回调</text>
   <line x1="854" y1="902" x2="772" y2="902" class="arb"/>
@@ -196,77 +204,68 @@
   <text x="1276" y="230" class="st">预算 · 停止 · 状态机 · scope</text>
   <text x="1276" y="250" class="st">✅ 6 条不变量 + verify_all()（INV-4 随 R1 进表）</text>
   <text x="1276" y="274" class="st">独立于插件 · 不可被覆盖</text>
-  <rect x="1260" y="310" width="300" height="100" rx="10" class="box"/>
-  <text x="1276" y="336" class="bt">CapabilityRegistry · 供给 ⏳</text>
-  <text x="1276" y="360" class="st">resolve(kind, **criteria)</text>
-  <text x="1276" y="380" class="st">⏳ 未实现：11 套 Registry 类并存</text>
-  <text x="1276" y="398" class="sm">切 0.6 · 0.7 ＝ G2b 端口化的正题</text>
-  <rect x="1260" y="430" width="300" height="120" rx="10" class="boxb"/>
-  <text x="1276" y="456" class="hub">ConfigHub · 配置中心 ✅（E2 敏感收口）</text>
-  <text x="1276" y="480" class="st">✅ 分层装载：代码默认 &lt; 文件 &lt; 环境变量</text>
-  <text x="1276" y="500" class="st">✅ 敏感隔离（E2：key 不进事件流·审计指纹化）</text>
-  <text x="1276" y="520" class="st">✅ fail-fast 启动校验 · ✅ 脱敏指纹进事件流（E2）</text>
-  <text x="1276" y="544" class="sm">E1 骨架 ✅ · E2 敏感收口 ✅ · 治理分级随 Tier1 提案通道</text>
-  <rect x="1260" y="570" width="300" height="150" rx="10" class="box"/>
-  <text x="1276" y="596" class="bt">质量门禁 ✅（CI 可接）</text>
-  <text x="1276" y="620" class="st">✅ 架构门禁 ×16 + 四层依赖总表（test_layer_matrix 棘轮）</text>
-  <text x="1276" y="640" class="st">✅ 接缝门禁：脊→翼单向 + 9 触点白名单</text>
-  <text x="1276" y="660" class="st">✅ method/ 门禁：禁 method→engine（D1）</text>
-  <text x="1276" y="680" class="st">✅ 覆盖率分档 cov_gate（A/B/C ≥90）+ 双基线门</text>
-  <text x="1276" y="700" class="st">✅ AST 无环门禁（study 引擎模块）</text>
-  <rect x="1260" y="740" width="300" height="250" rx="10" class="boxg"/>
-  <text x="1276" y="766" class="bt">落地状态速览（11-03 · v7.4）</text>
-  <text x="1276" y="792" class="st">✅ 已上线：E1 契约/mailbox · 控制器 1a · 不变量 ×6</text>
-  <text x="1276" y="814" class="st">✅ R1-R7 + B1-B3：fence · 消费者 · steer · 老化 · 串行域</text>
-  <text x="1276" y="836" class="st">✅ 执行面单一引擎：B1 swarm 编译器 · R-B workflow 编译器</text>
-  <text x="1276" y="858" class="st">✅ 恢复原语统一：interrupt + state + run(start=)</text>
-  <text x="1276" y="880" class="st">✅ 入口唯一（P5-1c）· ContextHub 独占 ✅</text>
-  <text x="1276" y="902" class="st">✅ 数据面 P-3/P-5/协议 · ModelHub · Director · 接缝门禁</text>
-  <text x="1276" y="924" class="st">✅ 四层骨架：审计 + 矩阵门禁（基线 107）+ 脊-翼图 v7.x</text>
-  <text x="1276" y="946" class="st">✅ 日志统一入口：configure_logging(surface) 策略表（待全量验证）</text>
-  <text x="1276" y="968" class="st">⏳ 未建：容量组闸 · 独立宿主 · 每 session 分库 · L2 注册</text>
-  <rect x="1260" y="1010" width="300" height="420" rx="10" class="boxg"/>
-  <text x="1276" y="1036" class="bt">决策记录（选录）</text>
-  <text x="1276" y="1062" class="st" style="fill:#0369a1">✓ Gateway 化 · 挂载式单进程宿主（10-24）</text>
-  <text x="1276" y="1082" class="st" style="fill:#0369a1">✓ queue_mode 定稿：api_chat=steer · collect 留位</text>
-  <text x="1276" y="1102" class="st" style="fill:#0369a1">✓ mailbox 直收 · 两态回执（v6 取代 place 五态）</text>
-  <text x="1276" y="1122" class="st" style="fill:#0369a1">✓ Director 产出复用 BranchContext · apps 寄宿控制面</text>
-  <text x="1276" y="1142" class="st" style="fill:#0369a1">✓ session=串行域 · home_session · cap/老化</text>
-  <text x="1276" y="1162" class="st" style="fill:#0369a1">✓ ConfigHub 配置中心 · 平台参数收口（10-26）</text>
-  <text x="1276" y="1182" class="st" style="fill:#0369a1">✓ 数据面定案：分库+身份+登记（10-26）</text>
-  <text x="1276" y="1202" class="st" style="fill:#0369a1">✓ 选项 B：AgentLoop=执行原语 · GraphEngine 只编排（10-28）</text>
-  <text x="1276" y="1222" class="st" style="fill:#0369a1">✓ B4 统一库+事件化+旧会话栈退役（10-29）</text>
-  <text x="1276" y="1242" class="st" style="fill:#0369a1">✓ B5 ContextHub 生产接线 · 文档治理（10-29）</text>
-  <text x="1276" y="1262" class="st" style="fill:#0369a1">✓ 深度统一：swarm 层循环退役（10-31）</text>
-  <text x="1276" y="1282" class="st" style="fill:#0369a1">✓ 层名定稿 interfaces/apps/kernel/foundation（11-03）</text>
-  <text x="1276" y="1302" class="st" style="fill:#0369a1">✓ kernel 三子带 + tools→apps / registry→foundation（11-03）</text>
-  <text x="1276" y="1322" class="st" style="fill:#0369a1">✓ v7.3 foundation 独立底座带（11-03）</text>
-  <text x="1276" y="1342" class="st" style="fill:#0369a1">✓ v7.4 脊-翼双平面 · 否决真合并三层（11-03）</text>
-  <line x1="1276" y1="1362" x2="1544" y2="1362" stroke="#e2e8f0"/>
-  <text x="1276" y="1384" class="sm">骨架参考：openclaw-architecture.html</text>
-  <text x="1276" y="1404" class="sm">总纲：architecture-v3-openclaw-inspired.md</text>
-  <rect x="1260" y="1450" width="300" height="430" rx="10" class="boxb"/>
-  <text x="1276" y="1474" class="bt">依赖阶梯（静态 · 只许向下）</text>
-  <rect x="1276" y="1486" width="110" height="28" rx="6" class="box"/><text x="1284" y="1505" class="st" font-weight="600">L1 interfaces</text>
-  <text x="1396" y="1505" class="sm">29.5k 行</text>
-  <line x1="1331" y1="1514" x2="1331" y2="1532" class="arb"/>
-  <rect x="1276" y="1532" width="110" height="28" rx="6" class="box"/><text x="1284" y="1551" class="st" font-weight="600">L2 apps</text>
-  <text x="1396" y="1551" class="sm">57.6k · 43%</text>
-  <line x1="1331" y1="1560" x2="1331" y2="1578" class="arb"/>
-  <rect x="1276" y="1578" width="110" height="28" rx="6" class="box"/><text x="1284" y="1597" class="st" font-weight="600">L3 kernel</text>
-  <text x="1396" y="1597" class="sm">35.7k 行</text>
-  <line x1="1331" y1="1606" x2="1331" y2="1624" class="arb"/>
-  <rect x="1276" y="1624" width="110" height="28" rx="6" class="box"/><text x="1284" y="1643" class="st" font-weight="600">L4 foundation</text>
-  <text x="1396" y="1643" class="sm">10.8k · 8%</text>
-  <text x="1276" y="1672" class="sm">编号 = 依赖 DAG 的拓扑排名；</text>
-  <text x="1276" y="1692" class="sm">唯一与接缝规则自洽的分配：</text>
-  <text x="1276" y="1710" class="sm">kernel 不得 import apps ⇒ 排 apps 后</text>
-  <text x="1276" y="1736" class="sm">管线 ≠ 编号：左侧脊-翼 = 运行时旅程，</text>
-  <text x="1276" y="1754" class="sm">此阶梯 = 静态依赖，两轴正交。</text>
-  <text x="1276" y="1774" class="sm">DAG 七边图见 ⑦。</text>
-  <text x="1276" y="1800" class="sm">G2b 后唯一「向上」的是端口回调——</text>
-  <text x="1276" y="1818" class="sm">调用向上 · import 向下（经端口）。</text>
-  <text x="1276" y="1848" class="sm">各层跨层边数详见 ⑦ DAG / 矩阵。</text>
+
+
+  <rect x="1260" y="310" width="300" height="150" rx="10" class="box"/>
+  <text x="1276" y="336" class="bt">质量门禁 ✅（CI 可接）</text>
+  <text x="1276" y="360" class="st">✅ 架构门禁 ×16 + 四层依赖总表（test_layer_matrix 棘轮）</text>
+  <text x="1276" y="380" class="st">✅ 接缝门禁：脊→翼单向 + 9 触点白名单</text>
+  <text x="1276" y="400" class="st">✅ method/ 门禁：禁 method→engine（D1）</text>
+  <text x="1276" y="420" class="st">✅ 覆盖率分档 cov_gate（A/B/C ≥90）+ 双基线门</text>
+  <text x="1276" y="440" class="st">✅ AST 无环门禁（study 引擎模块）</text>
+  <rect x="1260" y="480" width="300" height="250" rx="10" class="boxg"/>
+  <text x="1276" y="506" class="bt">落地状态速览（11-03 · v7.4）</text>
+  <text x="1276" y="532" class="st">✅ 已上线：E1 契约/mailbox · 控制器 1a · 不变量 ×6</text>
+  <text x="1276" y="554" class="st">✅ R1-R7 + B1-B3：fence · 消费者 · steer · 老化 · 串行域</text>
+  <text x="1276" y="576" class="st">✅ 执行面单一引擎：B1 swarm 编译器 · R-B workflow 编译器</text>
+  <text x="1276" y="598" class="st">✅ 恢复原语统一：interrupt + state + run(start=)</text>
+  <text x="1276" y="620" class="st">✅ 入口唯一（P5-1c）· ContextHub 独占 ✅</text>
+  <text x="1276" y="642" class="st">✅ 数据面 P-3/P-5/协议 · ModelHub · Director · 接缝门禁</text>
+  <text x="1276" y="664" class="st">✅ 四层骨架：审计 + 矩阵门禁（基线 107）+ 脊-翼图 v7.x</text>
+  <text x="1276" y="686" class="st">✅ 日志统一入口：configure_logging(surface) 策略表（待全量验证）</text>
+  <text x="1276" y="708" class="st">⏳ 未建：容量组闸 · 独立宿主 · 每 session 分库 · L2 注册</text>
+  <rect x="1260" y="750" width="300" height="420" rx="10" class="boxg"/>
+  <text x="1276" y="776" class="bt">决策记录（选录）</text>
+  <text x="1276" y="802" class="st" style="fill:#0369a1">✓ Gateway 化 · 挂载式单进程宿主（10-24）</text>
+  <text x="1276" y="822" class="st" style="fill:#0369a1">✓ queue_mode 定稿：api_chat=steer · collect 留位</text>
+  <text x="1276" y="842" class="st" style="fill:#0369a1">✓ mailbox 直收 · 两态回执（v6 取代 place 五态）</text>
+  <text x="1276" y="862" class="st" style="fill:#0369a1">✓ Director 产出复用 BranchContext · apps 寄宿控制面</text>
+  <text x="1276" y="882" class="st" style="fill:#0369a1">✓ session=串行域 · home_session · cap/老化</text>
+  <text x="1276" y="902" class="st" style="fill:#0369a1">✓ ConfigHub 配置中心 · 平台参数收口（10-26）</text>
+  <text x="1276" y="922" class="st" style="fill:#0369a1">✓ 数据面定案：分库+身份+登记（10-26）</text>
+  <text x="1276" y="942" class="st" style="fill:#0369a1">✓ 选项 B：AgentLoop=执行原语 · GraphEngine 只编排（10-28）</text>
+  <text x="1276" y="962" class="st" style="fill:#0369a1">✓ B4 统一库+事件化+旧会话栈退役（10-29）</text>
+  <text x="1276" y="982" class="st" style="fill:#0369a1">✓ B5 ContextHub 生产接线 · 文档治理（10-29）</text>
+  <text x="1276" y="1002" class="st" style="fill:#0369a1">✓ 深度统一：swarm 层循环退役（10-31）</text>
+  <text x="1276" y="1022" class="st" style="fill:#0369a1">✓ 层名定稿 interfaces/apps/kernel/foundation（11-03）</text>
+  <text x="1276" y="1042" class="st" style="fill:#0369a1">✓ kernel 三子带 + tools→apps / registry→foundation（11-03）</text>
+  <text x="1276" y="1062" class="st" style="fill:#0369a1">✓ v7.3 foundation 独立底座带（11-03）</text>
+  <text x="1276" y="1082" class="st" style="fill:#0369a1">✓ v7.4 脊-翼双平面 · 否决真合并三层（11-03）</text>
+  <line x1="1276" y1="1102" x2="1544" y2="1102" stroke="#e2e8f0"/>
+  <text x="1276" y="1124" class="sm">骨架参考：openclaw-architecture.html</text>
+  <text x="1276" y="1144" class="sm">总纲：architecture-v3-openclaw-inspired.md</text>
+  <rect x="1260" y="1190" width="300" height="430" rx="10" class="boxb"/>
+  <text x="1276" y="1214" class="bt">依赖阶梯（静态 · 只许向下）</text>
+  <rect x="1276" y="1226" width="110" height="28" rx="6" class="box"/><text x="1284" y="1245" class="st" font-weight="600">L1 interfaces</text>
+  <text x="1396" y="1245" class="sm">29.5k 行</text>
+  <line x1="1331" y1="1254" x2="1331" y2="1272" class="arb"/>
+  <rect x="1276" y="1272" width="110" height="28" rx="6" class="box"/><text x="1284" y="1291" class="st" font-weight="600">L2 apps</text>
+  <text x="1396" y="1291" class="sm">57.6k · 43%</text>
+  <line x1="1331" y1="1300" x2="1331" y2="1318" class="arb"/>
+  <rect x="1276" y="1318" width="110" height="28" rx="6" class="box"/><text x="1284" y="1337" class="st" font-weight="600">L3 kernel</text>
+  <text x="1396" y="1337" class="sm">35.7k 行</text>
+  <line x1="1331" y1="1346" x2="1331" y2="1364" class="arb"/>
+  <rect x="1276" y="1364" width="110" height="28" rx="6" class="box"/><text x="1284" y="1383" class="st" font-weight="600">L4 foundation</text>
+  <text x="1396" y="1383" class="sm">10.8k · 8%</text>
+  <text x="1276" y="1412" class="sm">编号 = 依赖 DAG 的拓扑排名；</text>
+  <text x="1276" y="1432" class="sm">唯一与接缝规则自洽的分配：</text>
+  <text x="1276" y="1450" class="sm">kernel 不得 import apps ⇒ 排 apps 后</text>
+  <text x="1276" y="1476" class="sm">管线 ≠ 编号：左侧脊-翼 = 运行时旅程，</text>
+  <text x="1276" y="1494" class="sm">此阶梯 = 静态依赖，两轴正交。</text>
+  <text x="1276" y="1514" class="sm">DAG 七边图见 ⑦。</text>
+  <text x="1276" y="1540" class="sm">G2b 后唯一「向上」的是端口回调——</text>
+  <text x="1276" y="1558" class="sm">调用向上 · import 向下（经端口）。</text>
+  <text x="1276" y="1588" class="sm">各层跨层边数详见 ⑦ DAG / 矩阵。</text>
   <line x1="430" y1="1504" x2="430" y2="1518" class="arb"/>
   <line x1="1000" y1="1504" x2="1000" y2="1518" class="arb"/>
   <text x="40" y="1548" class="lyr">⑥ foundation（L4 · 共同底座）</text>
