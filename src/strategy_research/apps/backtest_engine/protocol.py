@@ -1,7 +1,7 @@
 """BacktestEngine + Strategy Protocols (P0-3).
 
 P0-2.B unified ``BacktestResult`` (canonical dataclass lives in
-``core/backtest_models.py``). P0-3 takes the next step: collapse the
+``apps/backtest_models.py``). P0-3 takes the next step: collapse the
 two backtest entry points — ``StrategyEngine.run`` (YAML path,
 ``utils.strategy_engine``) and ``run_backtest`` (Callback path,
 ``utils.backtest_engine``) — behind a single ``BacktestEngine`` Protocol.
@@ -30,7 +30,7 @@ from typing import Any, Protocol, runtime_checkable
 
 import pandas as pd
 
-from strategy_research.core.backtest_models import BacktestResult
+from strategy_research.apps.backtest_models import BacktestResult
 
 
 @runtime_checkable

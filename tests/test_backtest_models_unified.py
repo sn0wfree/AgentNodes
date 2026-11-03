@@ -1,6 +1,6 @@
 """P0-2 F — unified BacktestResult tests.
 
-Covers: canonical dataclass in core/backtest_models.py, both legacy
+Covers: canonical dataclass in apps/backtest_models.py, both legacy
 import paths (``utils.backtest_engine`` and ``utils.strategy_engine``)
 still work and resolve to the same class with the unified 5-field
 shape.
@@ -14,7 +14,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
 
 import pandas as pd
 
-from strategy_research.core.backtest_models import BacktestResult
+from strategy_research.apps.backtest_models import BacktestResult
 
 
 class TestCanonicalBacktestResult:

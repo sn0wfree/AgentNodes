@@ -85,7 +85,7 @@ class BacktestCallbacks:
 # .backtest_engine import BacktestResult``) continue to work; both
 # fields are now uniformly available, including ``factor_failures``
 # (default empty list when the callback-based engine doesn't populate it).
-from ..backtest_models import BacktestResult
+from strategy_research.apps.backtest_models import BacktestResult
 
 
 # ============================================================

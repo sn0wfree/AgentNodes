@@ -51,10 +51,10 @@ class BaseStrategy:
 # 2. 结果
 # ============================================================
 # P0-2 Phase F: BacktestResult is now defined canonically in
-# core/backtest_models.py. Re-export here so legacy imports keep
+# apps/backtest_models.py. Re-export here so legacy imports keep
 # working. The unified dataclass includes ``factor_failures`` (default
 # empty list).
-from ..backtest_models import BacktestResult
+from strategy_research.apps.backtest_models import BacktestResult
 
 
 # ============================================================

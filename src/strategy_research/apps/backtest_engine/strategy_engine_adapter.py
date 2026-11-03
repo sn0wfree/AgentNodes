@@ -19,7 +19,7 @@ from typing import Any
 
 import pandas as pd
 
-from strategy_research.core.backtest_models import BacktestResult
+from strategy_research.apps.backtest_models import BacktestResult
 from strategy_research.core.utils.strategy_engine import StrategyEngine
 
 

@@ -49,7 +49,7 @@ LAYER_MEMBERSHIP: dict[str, str] = {
     "strategy_research.apps.alpha_zoo_ops": "L2",
     "strategy_research.core.backtest": "L2",
     "strategy_research.apps.backtest_engine": "L2",
-    "strategy_research.core.backtest_models": "L2",
+    "strategy_research.apps.backtest_models": "L2",
     "strategy_research.core.validation": "L2",
     "strategy_research.core.portfolio": "L2",
     "strategy_research.core.data_source": "L2",

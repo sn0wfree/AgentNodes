@@ -7,6 +7,6 @@ call sites keep working.
 
 from __future__ import annotations
 
-from .utils.backtest_models import BacktestResult
+from strategy_research.core.utils.backtest_models import BacktestResult
 
 __all__ = ["BacktestResult"]

@@ -31,7 +31,7 @@ from strategy_research.apps.backtest_engine.callback_engine_adapter import (
 from strategy_research.apps.backtest_engine.strategy_engine_adapter import (
     StrategyEngineAdapter,
 )
-from strategy_research.core.backtest_models import BacktestResult
+from strategy_research.apps.backtest_models import BacktestResult
 from strategy_research.core.utils.backtest_config import BacktestConfig
 from strategy_research.core.utils.backtest_engine import (
     BacktestCallbacks,
