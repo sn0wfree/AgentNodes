@@ -1,9 +1,9 @@
-"""Tests for core/run_card.py — 极简 Trust Layer Run Card 生成器."""
+"""Tests for apps/run_card.py — 极简 Trust Layer Run Card 生成器."""
 from __future__ import annotations
 
 import json
 
-from strategy_research.core.run_card import (
+from strategy_research.apps.run_card import (
     BACKTEST_SUMMARY_KEYS,
     SCHEMA_VERSION,
     write_run_card,

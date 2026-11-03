@@ -62,7 +62,7 @@ LAYER_MEMBERSHIP: dict[str, str] = {
     "strategy_research.core.autoresearch": "L2",
     "strategy_research.core.engine": "L2",
     "strategy_research.apps.export": "L2",
-    "strategy_research.core.run_card": "L2",
+    "strategy_research.apps.run_card": "L2",
     "strategy_research.core.workspace_setup": "L2",
     "strategy_research.apps.preflight": "L2",
     "strategy_research.core.tools": "L2",  # v7.2: 研究数据工具实现（data_clean/transforms），仅被 apps 侧引用

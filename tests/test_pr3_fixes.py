@@ -21,7 +21,7 @@ class TestRunCardWhitelist:
 
     def test_whitelist_includes_run_strategy_action(self):
         """SCHEMA_VERSION 升级 + 白名单含 run/strategy/action。"""
-        from strategy_research.core.run_card import BACKTEST_SUMMARY_KEYS
+        from strategy_research.apps.run_card import BACKTEST_SUMMARY_KEYS
         assert "run" in BACKTEST_SUMMARY_KEYS
         assert "strategy" in BACKTEST_SUMMARY_KEYS
         assert "action" in BACKTEST_SUMMARY_KEYS
@@ -32,7 +32,7 @@ class TestRunCardWhitelist:
 
     def test_run_card_includes_run_strategy_action(self, tmp_path: Path):
         """write_run_card(config={"run":..., "strategy":..., "action":...}) 应保留 3 个键。"""
-        from strategy_research.core.run_card import write_run_card
+        from strategy_research.apps.run_card import write_run_card
 
         run_dir = tmp_path / "runs" / "run_0001"
         run_dir.mkdir(parents=True)
@@ -56,7 +56,7 @@ class TestRunCardWhitelist:
 
     def test_run_card_schema_version_bumped(self, tmp_path: Path):
         """SCHEMA_VERSION 应升级到 0.3（数据溯源 + artifact refs）。"""
-        from strategy_research.core.run_card import SCHEMA_VERSION, write_run_card
+        from strategy_research.apps.run_card import SCHEMA_VERSION, write_run_card
 
         assert SCHEMA_VERSION == "0.3", "schema version should be bumped to 0.3"
 
@@ -67,7 +67,7 @@ class TestRunCardWhitelist:
 
     def test_run_card_md_contains_new_keys(self, tmp_path: Path):
         """生成的 Markdown 应包含 run/strategy/action 表格行。"""
-        from strategy_research.core.run_card import write_run_card
+        from strategy_research.apps.run_card import write_run_card
 
         run_dir = tmp_path / "runs" / "run_0001"
         run_dir.mkdir(parents=True)

@@ -22,7 +22,7 @@ from .db import (
 )
 from .git import git_commit as git_commit
 from .git import git_commit_rich, git_get_hash
-from .run_card import write_run_card
+from strategy_research.apps.run_card import write_run_card
 
 logger = logging.getLogger(__name__)
 
