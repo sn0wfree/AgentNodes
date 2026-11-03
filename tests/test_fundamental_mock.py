@@ -18,7 +18,7 @@ from _fixtures.fundamental_mock import (
     make_market_benchmark_panel,
 )
 
-from strategy_research.core.alpha_zoo import compute_alpha
+from strategy_research.apps.alpha_zoo import compute_alpha
 
 warnings.filterwarnings("ignore")
 

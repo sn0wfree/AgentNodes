@@ -10,7 +10,7 @@
 加载优先级: YAML 优先，.py 作为 fallback。
 
 实现已迁移至 ``loader.py`` (Phase 1.2 重构)。本文件保留向后兼容的
-re-export，使得 ``from strategy_research.core.alpha_zoo import compute_alpha``
+re-export，使得 ``from strategy_research.apps.alpha_zoo import compute_alpha``
 等调用无需修改。
 """
 

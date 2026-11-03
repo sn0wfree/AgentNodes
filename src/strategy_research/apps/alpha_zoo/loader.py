@@ -112,7 +112,7 @@ def _resolve_alpha_module_path(zoo_name: str, alpha_name: str, py_file: Path) ->
     """Build the dotted module path for a .py alpha file."""
     # alpha_name may carry a "alpha_" prefix already; module path uses the file stem.
     module_name = py_file.stem
-    return f"strategy_research.core.alpha_zoo.{zoo_name}.{module_name}"
+    return f"strategy_research.apps.alpha_zoo.{zoo_name}.{module_name}"
 
 
 # ── Public: validation (used by both YAML and py paths) ─────────────

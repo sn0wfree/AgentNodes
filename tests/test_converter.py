@@ -208,7 +208,7 @@ def test_normalize_handles_list():
 # 真实 alpha 文件转换测试
 # ============================================================
 
-ALPHA101_DIR = Path("src/strategy_research/core/alpha_zoo/alpha101")
+ALPHA101_DIR = Path("src/strategy_research/apps/alpha_zoo/alpha101")
 
 
 @pytest.mark.parametrize("alpha_num", [1, 2, 4, 5, 10, 11, 12])

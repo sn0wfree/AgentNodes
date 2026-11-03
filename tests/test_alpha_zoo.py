@@ -17,7 +17,7 @@ import numpy as np
 import pandas as pd
 import pytest
 
-from strategy_research.core.alpha_zoo import compute_alpha, list_alphas
+from strategy_research.apps.alpha_zoo import compute_alpha, list_alphas
 
 warnings.filterwarnings("ignore")
 
@@ -196,8 +196,8 @@ def _try_compute_py_fallback(alpha_id, panel):
         if alpha_id.startswith(zid):
             short_name = alpha_id[len(zid) + 1:]
             candidates.extend([
-                f"strategy_research.core.alpha_zoo.{zid}.{short_name}",
-                f"strategy_research.core.alpha_zoo.{zid}.alpha_{short_name}",
+                f"strategy_research.apps.alpha_zoo.{zid}.{short_name}",
+                f"strategy_research.apps.alpha_zoo.{zid}.alpha_{short_name}",
             ])
             break
     for modname in candidates:

@@ -365,31 +365,31 @@ __alpha_meta__ = {
 
 def test_parse_alpha_id_basic():
     """parse_alpha_id('alpha101_alpha_001') -> ('alpha101', 'alpha_001')."""
-    from strategy_research.core.alpha_zoo import parse_alpha_id
+    from strategy_research.apps.alpha_zoo import parse_alpha_id
     assert parse_alpha_id("alpha101_alpha_001") == ("alpha101", "alpha_001")
 
 
 def test_parse_alpha_id_strips_zoo_prefix():
     """parse_alpha_id('alpha101_001') -> ('alpha101', '001')."""
-    from strategy_research.core.alpha_zoo import parse_alpha_id
+    from strategy_research.apps.alpha_zoo import parse_alpha_id
     assert parse_alpha_id("alpha101_001") == ("alpha101", "001")
 
 
 def test_parse_alpha_id_qlib158():
     """qlib158 prefix preserved."""
-    from strategy_research.core.alpha_zoo import parse_alpha_id
+    from strategy_research.apps.alpha_zoo import parse_alpha_id
     assert parse_alpha_id("qlib158_beta5") == ("qlib158", "beta5")
 
 
 def test_parse_alpha_id_academic_underscore_name():
     """academic allows underscores in the name."""
-    from strategy_research.core.alpha_zoo import parse_alpha_id
+    from strategy_research.apps.alpha_zoo import parse_alpha_id
     assert parse_alpha_id("academic_carhart_mom") == ("academic", "carhart_mom")
 
 
 def test_parse_alpha_id_invalid_raises_value_error():
     """Invalid id raises ValueError."""
-    from strategy_research.core.alpha_zoo import parse_alpha_id
+    from strategy_research.apps.alpha_zoo import parse_alpha_id
     with pytest.raises(ValueError):
         parse_alpha_id("invalid")
     with pytest.raises(ValueError):
@@ -398,14 +398,14 @@ def test_parse_alpha_id_invalid_raises_value_error():
 
 def test_parse_alpha_id_unknown_zoo_raises():
     """Unknown zoo prefix raises ValueError."""
-    from strategy_research.core.alpha_zoo import parse_alpha_id
+    from strategy_research.apps.alpha_zoo import parse_alpha_id
     with pytest.raises(ValueError):
         parse_alpha_id("nonexistent_zoo_001")
 
 
 def test_alpha_loader_class_importable():
     """AlphaLoader is the canonical class; AlphaZooAdapter kept as alias."""
-    from strategy_research.core.alpha_zoo import AlphaLoader
+    from strategy_research.apps.alpha_zoo import AlphaLoader
     assert AlphaLoader is AlphaZooAdapter
 
 
