@@ -24,7 +24,7 @@ from strategy_research.core.agent.builtin_tools.todo_tools import (
 )
 from strategy_research.core.agent.loop import AgentLoop
 from strategy_research.core.agent.tools import ToolContext
-from strategy_research.core.llm import LLMConfig, LLMResponse, ToolCall
+from strategy_research.foundation.llm import LLMConfig, LLMResponse, ToolCall
 
 
 def todo_resp(todos: list[dict], call_id: str = "todo-1") -> LLMResponse:

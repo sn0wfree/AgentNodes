@@ -251,7 +251,7 @@ def parse_tool_arguments(
     Returns:
         Parsed dict. Returns {} if all layers fail.
     """
-    from ..agent.structured_output import get_parser
+    from strategy_research.foundation.structured_output import get_parser
 
     result = get_parser().parse(raw_args, schema)
     return result.data or {}

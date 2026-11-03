@@ -104,8 +104,8 @@ def _build_llm_client():
     except Exception:
         pass
     try:
-        from strategy_research.core.llm.config import LLMConfig
-        from strategy_research.core.llm.openai_client import OpenAICompatClient
+        from strategy_research.foundation.llm.config import LLMConfig
+        from strategy_research.foundation.llm.openai_client import OpenAICompatClient
         cfg = LLMConfig.load()
         if not cfg.api_key:
             return None, cfg.model or "unknown"

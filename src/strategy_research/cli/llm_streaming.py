@@ -25,9 +25,9 @@ from typing import Any, AsyncIterator, Iterable, List, Optional
 from strategy_research.cli.interactive.main import InteractiveContext
 from strategy_research.cli.tui.messages import WriteTranscript
 from strategy_research.cli.tui.widgets import TranscriptView
-from strategy_research.core.llm.errors import LLMError
-from strategy_research.core.llm.openai_client import OpenAICompatClient
-from strategy_research.core.llm.parser import StreamChunk
+from strategy_research.foundation.llm.errors import LLMError
+from strategy_research.foundation.llm.openai_client import OpenAICompatClient
+from strategy_research.foundation.llm.parser import StreamChunk
 
 logger = logging.getLogger(__name__)
 

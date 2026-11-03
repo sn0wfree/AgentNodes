@@ -349,12 +349,12 @@ class TestCompactMessages:
 
 class TestLLMConfigCompactConfig:
     def test_compact_config_in_llm_config(self):
-        from strategy_research.core.llm.config import LLMConfig
+        from strategy_research.foundation.llm.config import LLMConfig
         cfg = LLMConfig(compact_config=CompactConfig(microcompact_ratio=0.6))
         assert cfg.compact_config is not None
         assert cfg.compact_config.microcompact_ratio == 0.6
 
     def test_default_none(self):
-        from strategy_research.core.llm.config import LLMConfig
+        from strategy_research.foundation.llm.config import LLMConfig
         cfg = LLMConfig()
         assert cfg.compact_config is None

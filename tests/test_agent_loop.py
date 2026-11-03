@@ -10,8 +10,8 @@ import pytest
 from strategy_research.core.agent.builtin_tools import build_default_registry
 from strategy_research.core.agent.loop import AgentLoop, LoopResult, _tool_call_hash
 from strategy_research.core.agent.tools import ToolRegistry
-from strategy_research.core.llm import LLMConfig, LLMResponse, ToolCall
-from strategy_research.core.llm.errors import LLMAuthError
+from strategy_research.foundation.llm import LLMConfig, LLMResponse, ToolCall
+from strategy_research.foundation.llm.errors import LLMAuthError
 
 # ── Helpers ──────────────────────────────────────────────────────────
 

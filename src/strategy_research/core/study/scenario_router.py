@@ -185,8 +185,8 @@ def detect_asset_universe(strategy_name: str | None,
 # ── LLM call ────────────────────────────────────────────────────────
 
 def _default_llm_client():
-    from ..llm.config import LLMConfig
-    from ..llm.openai_client import OpenAICompatClient
+    from strategy_research.foundation.llm.config import LLMConfig
+    from strategy_research.foundation.llm.openai_client import OpenAICompatClient
 
     cfg = LLMConfig.load(load_dotenv=True)
     return OpenAICompatClient(cfg)

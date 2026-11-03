@@ -21,7 +21,7 @@ from strategy_research.core.agent.tools import (
     ToolError,
     ToolRegistry,
 )
-from strategy_research.core.llm import LLMConfig, ToolCall
+from strategy_research.foundation.llm import LLMConfig, ToolCall
 
 
 class V2Tool(BaseTool):

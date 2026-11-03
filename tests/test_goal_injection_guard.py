@@ -26,7 +26,7 @@ import pytest
 from strategy_research.core.agent.context_injector import (
     GoalContinuationInjector,
 )
-from strategy_research.core.llm import LLMResponse
+from strategy_research.foundation.llm import LLMResponse
 
 GOOD_JSON = json.dumps({
     "action": "optimize_param",

@@ -15,7 +15,7 @@ import pytest
 
 from strategy_research.core.agent.loop import AgentLoop
 from strategy_research.core.agent.tools import BaseTool, ToolRegistry
-from strategy_research.core.llm import LLMConfig, LLMResponse, ToolCall
+from strategy_research.foundation.llm import LLMConfig, LLMResponse, ToolCall
 
 
 class EventSink:
@@ -193,7 +193,7 @@ class TestThinkingDone:
         loop = _make_loop(sink)
 
         # Stub streaming path
-        from strategy_research.core.llm.parser import StreamChunk
+        from strategy_research.foundation.llm.parser import StreamChunk
 
         def fake_stream(messages, tools=None):
             yield StreamChunk(delta_content="hel")
@@ -269,7 +269,7 @@ class TestErrorEvent:
         sink = EventSink()
         loop = _make_loop(sink)
 
-        from strategy_research.core.llm.errors import LLMRateLimitError
+        from strategy_research.foundation.llm.errors import LLMRateLimitError
 
         loop.client = mock.MagicMock()
         loop.client.chat = mock.MagicMock(side_effect=LLMRateLimitError("rate"))

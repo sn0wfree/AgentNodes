@@ -22,7 +22,7 @@ _TOOL_RESULT_HISTORY_MAX = 30000
 from .runtime.sync_bridge import _run_coro_in_sync
 
 if TYPE_CHECKING:
-    from ..llm.parser import ToolCall
+    from strategy_research.foundation.llm.parser import ToolCall
     from .loop import LoopResult
 
 class LoopToolsMixin:

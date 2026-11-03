@@ -21,7 +21,7 @@ from strategy_research.core.agent.combo import CompositeTool
 from strategy_research.core.agent.context import ContextBuilder
 from strategy_research.core.agent.tool_result import ToolResult, from_any, render_for_llm
 from strategy_research.core.agent.tools import ToolContext, ToolRegistry
-from strategy_research.core.llm import LLMConfig
+from strategy_research.foundation.llm import LLMConfig
 
 
 # ── tool_result.py ───────────────────────────────────────────────

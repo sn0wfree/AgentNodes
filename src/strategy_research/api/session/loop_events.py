@@ -12,7 +12,7 @@ if TYPE_CHECKING:
     from .models import Attempt
     from .service import SessionService
 
-from ...core.llm.config import LLMConfig
+from strategy_research.foundation.llm.config import LLMConfig
 from .part_accumulate import _accumulate_part
 
 logger = logging.getLogger(__name__)

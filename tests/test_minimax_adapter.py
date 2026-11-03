@@ -8,8 +8,8 @@ from __future__ import annotations
 
 import pytest
 
-from strategy_research.core.llm.errors import LLMConfigError, LLMQuotaError
-from strategy_research.core.llm.provider import get_provider
+from strategy_research.foundation.llm.errors import LLMConfigError, LLMQuotaError
+from strategy_research.foundation.llm.provider import get_provider
 
 
 @pytest.fixture
@@ -79,7 +79,7 @@ class TestMinimaxConfigError:
     def test_llm_config_error_in_stream_required_list(self):
         """LLMConfigError is a stream-required error (no stream→achat fallback)."""
         from strategy_research.core.agent.loop import AgentLoop
-        from strategy_research.core.llm.errors import LLMConfigError
+        from strategy_research.foundation.llm.errors import LLMConfigError
 
         # _is_stream_required_error is a static method, test it directly
         exc = LLMConfigError("test")

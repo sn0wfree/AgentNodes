@@ -67,7 +67,7 @@ def _patch_llm_load(monkeypatch, *, model=None, raises=False):
     """
     if raises:
         monkeypatch.setattr(
-            "strategy_research.core.llm.config.LLMConfig.load",
+            "strategy_research.foundation.llm.config.LLMConfig.load",
             mock.MagicMock(side_effect=RuntimeError("simulated load failure")),
         )
         return
@@ -76,7 +76,7 @@ def _patch_llm_load(monkeypatch, *, model=None, raises=False):
         return SimpleNamespace(model=model)
 
     monkeypatch.setattr(
-        "strategy_research.core.llm.config.LLMConfig.load",
+        "strategy_research.foundation.llm.config.LLMConfig.load",
         fake_load,
     )
 
@@ -278,12 +278,12 @@ class TestBuildLlmClientTupleReturn:
         from strategy_research.cli.__main__ import _build_llm_client
 
         monkeypatch.setattr(
-            "strategy_research.core.llm.config.LLMConfig.load",
+            "strategy_research.foundation.llm.config.LLMConfig.load",
             lambda: SimpleNamespace(api_key="sk-test", model="minimax-M3"),
         )
         # Stub OpenAICompatClient so __init__ doesn't hit the network
         monkeypatch.setattr(
-            "strategy_research.core.llm.openai_client.OpenAICompatClient",
+            "strategy_research.foundation.llm.openai_client.OpenAICompatClient",
             lambda cfg: mock.MagicMock(spec=["config"]),
         )
 
@@ -296,7 +296,7 @@ class TestBuildLlmClientTupleReturn:
         from strategy_research.cli.__main__ import _build_llm_client
 
         monkeypatch.setattr(
-            "strategy_research.core.llm.config.LLMConfig.load",
+            "strategy_research.foundation.llm.config.LLMConfig.load",
             mock.MagicMock(side_effect=RuntimeError("config load fail")),
         )
         result = _build_llm_client()
@@ -306,7 +306,7 @@ class TestBuildLlmClientTupleReturn:
         from strategy_research.cli.__main__ import _build_llm_client
 
         monkeypatch.setattr(
-            "strategy_research.core.llm.config.LLMConfig.load",
+            "strategy_research.foundation.llm.config.LLMConfig.load",
             lambda: SimpleNamespace(api_key="", model="minimax-M3"),
         )
         client, model = _build_llm_client()

@@ -3,14 +3,14 @@ from __future__ import annotations
 
 from types import SimpleNamespace
 
-from strategy_research.core.llm.config import (
+from strategy_research.foundation.llm.config import (
     _DEFAULT_MAX_TOKENS,
     _MIN_OUTPUT_TOKENS,
     resolve_max_tokens,
 )
-from strategy_research.core.llm.provider.deepseek import DeepSeekAdapter
-from strategy_research.core.llm.provider.minimax import MiniMaxAdapter
-from strategy_research.core.llm.provider.openai import OpenAIAdapter
+from strategy_research.foundation.llm.provider.deepseek import DeepSeekAdapter
+from strategy_research.foundation.llm.provider.minimax import MiniMaxAdapter
+from strategy_research.foundation.llm.provider.openai import OpenAIAdapter
 
 
 def _cfg(**kw):

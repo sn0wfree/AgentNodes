@@ -85,7 +85,7 @@ def _profile_effective(
     on any error.
     """
     try:
-        from strategy_research.core.llm.config import LLMConfig
+        from strategy_research.foundation.llm.config import LLMConfig
 
         cfg = LLMConfig.load()
         resolved_provider = cfg.provider or ""

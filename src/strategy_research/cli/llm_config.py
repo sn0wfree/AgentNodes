@@ -14,7 +14,7 @@ import os
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
-    from ..core.llm.config import LLMConfig
+    from strategy_research.foundation.llm.config import LLMConfig
 
 _LLM_PARENT = argparse.ArgumentParser(
     add_help=False,
@@ -77,7 +77,7 @@ def build_llm_config(args: argparse.Namespace | None = None,
     Returns:
         Fully merged LLMConfig.
     """
-    from strategy_research.core.llm import LLMConfig
+    from strategy_research.foundation.llm import LLMConfig
     overrides = cli_overrides if cli_overrides is not None else _cli_overrides_from_args(args)
     return LLMConfig.load(cli_overrides=overrides)
 
@@ -88,7 +88,7 @@ def _cmd_llm_list_profiles() -> int:
     The yaml/profile system was retired in v0.5.0. This command is kept
     for backward compatibility with any user muscle memory / scripts.
     """
-    from strategy_research.core.llm.config import find_llm_config_path
+    from strategy_research.foundation.llm.config import find_llm_config_path
     p = find_llm_config_path()
     print(f"# LLM config now lives at: {p}")
     print("# (profile system retired; use `quantnodes-research init` to reconfigure)")

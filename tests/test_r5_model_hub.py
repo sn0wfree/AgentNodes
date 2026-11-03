@@ -6,7 +6,7 @@ from __future__ import annotations
 
 import pytest
 
-from strategy_research.core.llm.model_hub import (
+from strategy_research.foundation.llm.model_hub import (
     ModelBinding,
     ModelHubError,
     get_client,
@@ -82,8 +82,8 @@ def test_provider_without_registered_default_still_resolves_via_global_fallback(
     这条锁定「ModelHub 不改动装载器语义」——model 兜底属 LLMConfig，
     ModelHub 只保证 provider 合法 + 结果非空。
     """
-    from strategy_research.core.llm.provider import register_provider
-    from strategy_research.core.llm.provider.base import ProviderAdapter
+    from strategy_research.foundation.llm.provider import register_provider
+    from strategy_research.foundation.llm.provider.base import ProviderAdapter
 
     class _NoDefault(ProviderAdapter):
         default_base_url = "http://x"
@@ -96,7 +96,7 @@ def test_provider_without_registered_default_still_resolves_via_global_fallback(
         assert b.provider == "tests-nodefault"
         assert b.model  # 全局兜底提供了 model
     finally:
-        from strategy_research.core.llm.provider import _REGISTRY
+        from strategy_research.foundation.llm.provider import _REGISTRY
         _REGISTRY.pop("tests-nodefault", None)
 
 
@@ -112,8 +112,8 @@ def test_get_client_returns_configured_client(no_config):
 
 def test_get_client_matches_load_without_overrides(no_config):
     """等价门：无 overrides 时与 OpenAICompatClient(LLMConfig.load()) 同参。"""
-    from strategy_research.core.llm.config import LLMConfig
-    from strategy_research.core.llm.openai_client import OpenAICompatClient
+    from strategy_research.foundation.llm.config import LLMConfig
+    from strategy_research.foundation.llm.openai_client import OpenAICompatClient
 
     no_config.write_text(
         '{"llm": {"provider": "minimax", "model": "eq-model"}}',

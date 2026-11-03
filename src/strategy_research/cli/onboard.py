@@ -805,7 +805,7 @@ def _run_onboarding_test_mode(
 ) -> Path | None:
     """Test-mode onboarding: pops items from ``inputs``, no TTY interaction."""
     # ── Step 0: config audit (auto-apply in test mode) ──────────────
-    from strategy_research.core.llm.config_audit import (
+    from strategy_research.foundation.llm.config_audit import (
         detect_issues,
         fix_issues,
     )
@@ -904,7 +904,7 @@ def _run_onboarding_tty(
         )
 
     # ── Step 0: config audit (detect + fix C1-C5) ──────────────────────
-    from strategy_research.core.llm.config_audit import (
+    from strategy_research.foundation.llm.config_audit import (
         detect_issues,
         fix_issues,
         format_report,

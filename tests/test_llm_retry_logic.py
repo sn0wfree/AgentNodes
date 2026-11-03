@@ -12,7 +12,7 @@ import email.utils
 import httpx
 import pytest
 
-from strategy_research.core.llm.openai_client import (
+from strategy_research.foundation.llm.openai_client import (
     _backoff_delay,
     _build_headers,
     _extract_error_code,
@@ -224,7 +224,7 @@ def test_build_headers_merges_adapter_headers():
 
 
 def test_build_headers_missing_key_raises():
-    from strategy_research.core.llm.errors import LLMConfigError
+    from strategy_research.foundation.llm.errors import LLMConfigError
 
     with pytest.raises(LLMConfigError):
         _build_headers(_Cfg(api_key=""), adapter=_Adapter())

@@ -12,7 +12,7 @@ from strategy_research.core.agent.loop import (
     AgentLoop,
     LoopResult,
 )
-from strategy_research.core.llm import LLMConfig, LLMResponse, ToolCall
+from strategy_research.foundation.llm import LLMConfig, LLMResponse, ToolCall
 
 # ── Helpers ──────────────────────────────────────────────────────────
 

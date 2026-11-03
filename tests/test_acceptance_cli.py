@@ -137,7 +137,7 @@ def test_workspace_config_path_is_honoured(tmp_path, capsys):
 def test_invoke_llm_client_init_failure_returns_2(tmp_path, capsys, monkeypatch):
     p = _metrics_file(tmp_path)
 
-    import strategy_research.core.llm as llm_mod
+    import strategy_research.foundation.llm as llm_mod
 
     def boom_load(*a, **k):
         raise RuntimeError("no api key")
@@ -151,7 +151,7 @@ def test_invoke_llm_client_init_failure_returns_2(tmp_path, capsys, monkeypatch)
 def test_invoke_llm_evaluate_failure_returns_2(tmp_path, capsys, monkeypatch):
     p = _metrics_file(tmp_path)
 
-    import strategy_research.core.llm as llm_mod
+    import strategy_research.foundation.llm as llm_mod
     import strategy_research.apps.strategy_acceptance.cli as cli_mod
 
     monkeypatch.setattr(llm_mod.LLMConfig, "load", staticmethod(lambda: object()))
@@ -173,7 +173,7 @@ def test_invoke_llm_evaluate_failure_returns_2(tmp_path, capsys, monkeypatch):
 def test_invoke_llm_success_prints_comparison(tmp_path, capsys, monkeypatch):
     p = _metrics_file(tmp_path)
 
-    import strategy_research.core.llm as llm_mod
+    import strategy_research.foundation.llm as llm_mod
     import strategy_research.apps.strategy_acceptance.cli as cli_mod
 
     monkeypatch.setattr(llm_mod.LLMConfig, "load", staticmethod(lambda: object()))

@@ -197,7 +197,7 @@ def _build_llm_config():
     except Exception:
         pass
     try:
-        from strategy_research.core.llm.config import LLMConfig
+        from strategy_research.foundation.llm.config import LLMConfig
         cfg = LLMConfig.load()
         return cfg
     except Exception as exc:
@@ -260,7 +260,7 @@ async def send_async(body: ChatMessage, request: Request):
     service = _get_session_service()
     # Chat mode: bounded iteration budget from llm.json (default 50).
     # Prevents a failing tool loop from growing the prompt unboundedly.
-    from strategy_research.core.llm.config import LLMConfig
+    from strategy_research.foundation.llm.config import LLMConfig
     try:
         _cfg = LLMConfig.load()
         _max_iter = _cfg.max_iterations

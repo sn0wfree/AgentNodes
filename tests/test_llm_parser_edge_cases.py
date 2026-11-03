@@ -9,8 +9,8 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
 
-from strategy_research.core.llm.errors import LLMMalformedResponseError
-from strategy_research.core.llm.parser import (
+from strategy_research.foundation.llm.errors import LLMMalformedResponseError
+from strategy_research.foundation.llm.parser import (
     LLMResponse,
     ToolCall,
     _chunk_from_dict,
@@ -18,7 +18,7 @@ from strategy_research.core.llm.parser import (
     parse_stream_chunk,
     parse_tool_arguments,
 )
-from strategy_research.core.llm.provider.deepseek import DeepSeekAdapter
+from strategy_research.foundation.llm.provider.deepseek import DeepSeekAdapter
 
 # ── Helpers ──────────────────────────────────────────────────────────
 

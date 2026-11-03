@@ -102,6 +102,6 @@ class TestPrintGovernance:
     def test_docstring_examples_not_counted(self):
         """Sanity: openai_client.py 的 docstring 里有 print 示例文本，
         AST 扫描必须不算运行时调用（否则规则 1 会误伤）。"""
-        raw = (SRC / "core" / "llm" / "openai_client.py").read_text(encoding="utf-8")
+        raw = (SRC / "foundation" / "llm" / "openai_client.py").read_text(encoding="utf-8")
         assert "print(resp.content)" in raw       # 文本里存在
-        assert _print_calls(SRC / "core" / "llm" / "openai_client.py") == []
+        assert _print_calls(SRC / "foundation" / "llm" / "openai_client.py") == []

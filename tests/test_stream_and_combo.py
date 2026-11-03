@@ -18,7 +18,7 @@ from strategy_research.core.agent.combo import (
 )
 from strategy_research.core.agent.loop import AgentLoop
 from strategy_research.core.agent.tools import ToolContext, ToolRegistry
-from strategy_research.core.llm import LLMConfig, LLMResponse, ToolCall
+from strategy_research.foundation.llm import LLMConfig, LLMResponse, ToolCall
 
 
 # ── combo.py execute 路径 ────────────────────────────────

@@ -9,7 +9,7 @@ from typing import Any
 import httpx
 import pytest
 
-from strategy_research.core.llm import (
+from strategy_research.foundation.llm import (
     LLMAuthError,
     LLMConfig,
     LLMConfigError,
@@ -20,8 +20,8 @@ from strategy_research.core.llm import (
     LLMTimeoutError,
     OpenAICompatClient,
 )
-from strategy_research.core.llm import openai_client as oc_mod
-from strategy_research.core.llm.parser import (
+from strategy_research.foundation.llm import openai_client as oc_mod
+from strategy_research.foundation.llm.parser import (
     parse_chat_response,
     parse_stream_chunk,
     parse_tool_arguments,

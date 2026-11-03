@@ -12,6 +12,7 @@ from __future__ import annotations
 
 import json
 from pathlib import Path
+from typing import Any
 from unittest.mock import MagicMock
 
 import pytest
@@ -23,7 +24,7 @@ from strategy_research.core.agent.builtin_tools.subagent_tool import (
 )
 from strategy_research.core.agent.loop import AgentLoop
 from strategy_research.core.agent.tools import BaseTool, ToolRegistry
-from strategy_research.core.llm import LLMConfig, LLMResponse, ToolCall
+from strategy_research.foundation.llm import LLMConfig, LLMResponse, ToolCall
 
 # ── Helpers ──────────────────────────────────────────────────────────
 

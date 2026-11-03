@@ -26,8 +26,8 @@ _posix_only = pytest.mark.skipif(
 )
 
 from strategy_research.cli.commands import llm as llm_cmd
-from strategy_research.core.llm import LLMConfig
-from strategy_research.core.llm.config import (
+from strategy_research.foundation.llm import LLMConfig
+from strategy_research.foundation.llm.config import (
     ENV_PROFILE_ACTIVE,
 )
 
@@ -58,7 +58,7 @@ PROFILE_JSON = {
 def fake_llm_json(tmp_path: Path, monkeypatch) -> Path:
     p = tmp_path / "llm.json"
     monkeypatch.setattr(
-        "strategy_research.core.llm.config._resolve_bridge_path",
+        "strategy_research.foundation.llm.config._resolve_bridge_path",
         lambda env: p,
     )
     return p
@@ -235,7 +235,7 @@ def cli_paths(tmp_path: Path, monkeypatch) -> tuple[Path, Path]:
     monkeypatch.setattr(llm_cmd, "LLM_JSON_PATH", llm_json)
     monkeypatch.setattr(llm_cmd, "DOTENV_PATH", dotenv)
     monkeypatch.setattr(
-        "strategy_research.core.llm.config._resolve_bridge_path",
+        "strategy_research.foundation.llm.config._resolve_bridge_path",
         lambda env: llm_json,
     )
     return llm_json, dotenv
@@ -430,7 +430,7 @@ class TestProfileResolutionEdge:
                     "profiles": {"minimax": {"provider": "minimax"}}}
         }))
         with caplog.at_level(logging.WARNING,
-                             logger="strategy_research.core.llm.config"):
+                             logger="strategy_research.foundation.llm.config"):
             cfg = LLMConfig.load()
         assert cfg.provider == "openai"  # base untouched
         assert "ghost" in caplog.text

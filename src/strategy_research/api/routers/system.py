@@ -67,8 +67,8 @@ async def system_info():
     # Load full LLMConfig (carries user overrides) and resolve model info
     model_info = None
     try:
-        from strategy_research.core.llm.config import LLMConfig
-        from strategy_research.core.llm.model_catalog import get_model_info
+        from strategy_research.foundation.llm.config import LLMConfig
+        from strategy_research.foundation.llm.model_catalog import get_model_info
 
         llm_config = LLMConfig.load()
         provider = llm_config.provider
@@ -107,8 +107,8 @@ async def refresh_model_info(body: ModelInfoRefreshRequest):
     are applied on top of fetched values so the user's declared
     context window always wins.
     """
-    from strategy_research.core.llm.config import LLMConfig
-    from strategy_research.core.llm.model_catalog import refresh_model_info
+    from strategy_research.foundation.llm.config import LLMConfig
+    from strategy_research.foundation.llm.model_catalog import refresh_model_info
 
     # Resolve provider/model — explicit body wins, else current LLMConfig
     provider = body.provider
@@ -146,7 +146,7 @@ async def get_llm_config():
     profile is honoured), the active profile name, and a provider
     catalogue for the settings UI. API keys are always masked.
     """
-    from strategy_research.core.llm.config import LLMConfig
+    from strategy_research.foundation.llm.config import LLMConfig
 
     config = {
         "provider": "",
@@ -294,7 +294,7 @@ def _provider_catalog() -> list[dict]:
     suggested models come from the onboarding provider catalogue when
     available.
     """
-    from strategy_research.core.llm.provider import (
+    from strategy_research.foundation.llm.provider import (
         _REGISTRY,  # noqa: PLC2701
         get_provider_defaults,
     )

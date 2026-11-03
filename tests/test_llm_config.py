@@ -21,9 +21,9 @@ from pathlib import Path
 
 import pytest
 
-import strategy_research.core.llm.config as _cfg_mod
-from strategy_research.core.llm import LLMConfig
-from strategy_research.core.llm.config import (
+import strategy_research.foundation.llm.config as _cfg_mod
+from strategy_research.foundation.llm import LLMConfig
+from strategy_research.foundation.llm.config import (
     DEFAULT_LLM_CONFIG_PATH,
     ENV_API_KEY,
     ENV_BASE_URL,
@@ -52,7 +52,7 @@ def fake_llm_json(tmp_path: Path, monkeypatch) -> Path:
     """Bridge-shaped JSON file pointing LLMConfig at tmp_path."""
     p = tmp_path / "llm.json"
     monkeypatch.setattr(
-        "strategy_research.core.llm.config._resolve_bridge_path",
+        "strategy_research.foundation.llm.config._resolve_bridge_path",
         lambda env: p,
     )
     return p
@@ -81,7 +81,7 @@ class TestCodeDefaults:
         assert cfg.temperature == 0.7
         # max_tokens falls through to the global conservative default when
         # no provider is specified (provider="auto" → no provider default).
-        from strategy_research.core.llm.config import _DEFAULT_MAX_TOKENS
+        from strategy_research.foundation.llm.config import _DEFAULT_MAX_TOKENS
         assert cfg.max_tokens == _DEFAULT_MAX_TOKENS
         assert cfg.timeout_s == 60.0
         assert cfg.max_retries == 3

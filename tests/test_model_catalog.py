@@ -15,7 +15,7 @@ from pathlib import Path
 
 import pytest
 
-from strategy_research.core.llm.model_catalog import (
+from strategy_research.foundation.llm.model_catalog import (
     MODELS_DEV_ID,
     ModelCatalog,
     models_dev_id,
@@ -69,7 +69,7 @@ def test_get_info_finds_kimi_via_moonshotai_alias():
 
 
 def test_get_info_uses_default_fallback_for_unknown_provider():
-    from strategy_research.core.llm.model_catalog import _load_default_fallback
+    from strategy_research.foundation.llm.model_catalog import _load_default_fallback
 
     fallback = _load_default_fallback()
     info = ModelCatalog().get_info("weird-llm", "X-1")
@@ -240,7 +240,7 @@ def test_get_info_returns_cached_when_disk_cache_exists_but_no_bundled():
 
 def test_user_config_context_tokens_overrides_bundled():
     """LLMConfig.model_context_tokens wins over bundled data."""
-    from strategy_research.core.llm.config import LLMConfig
+    from strategy_research.foundation.llm.config import LLMConfig
 
     cfg = LLMConfig(
         provider="minimax",
@@ -255,7 +255,7 @@ def test_user_config_context_tokens_overrides_bundled():
 
 def test_user_config_can_be_partial():
     """Only model_context_tokens set; other fields fall through to defaults."""
-    from strategy_research.core.llm.config import LLMConfig
+    from strategy_research.foundation.llm.config import LLMConfig
 
     cfg = LLMConfig(
         provider="minimax",
@@ -273,7 +273,7 @@ def test_user_config_can_be_partial():
 
 def test_user_config_none_falls_through_to_bundled():
     """When user_config is given but model_context_tokens is None, fall through."""
-    from strategy_research.core.llm.config import LLMConfig
+    from strategy_research.foundation.llm.config import LLMConfig
 
     cfg = LLMConfig(
         provider="minimax",
@@ -288,7 +288,7 @@ def test_user_config_none_falls_through_to_bundled():
 
 def test_user_config_wins_over_disk_cache():
     """User config overrides even when disk cache has a fresh entry."""
-    from strategy_research.core.llm.config import LLMConfig
+    from strategy_research.foundation.llm.config import LLMConfig
 
     # Write a fresh disk cache entry with a different context value
     cache_path = Path(os.environ["HOME"]) / ".quantnodes" / "model_catalog.json"
@@ -335,7 +335,7 @@ def test_user_config_wins_over_disk_cache():
 def test_refresh_async_merges_user_overrides_on_top_of_fetched(tmp_path, monkeypatch):
     """When both fetch and user_config succeed, user wins for context_tokens."""
     _mock_fetch(monkeypatch)
-    from strategy_research.core.llm.config import LLMConfig
+    from strategy_research.foundation.llm.config import LLMConfig
 
     cfg = LLMConfig(
         provider="openai",
@@ -369,7 +369,7 @@ def test_refresh_async_failure_serves_real_data_not_synthesized_override():
     """
     from unittest.mock import patch
 
-    from strategy_research.core.llm.config import LLMConfig
+    from strategy_research.foundation.llm.config import LLMConfig
 
     cfg = LLMConfig(
         provider="openai",

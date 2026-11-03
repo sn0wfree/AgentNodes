@@ -14,7 +14,7 @@ from strategy_research.core.agent.executor import (
 )
 from strategy_research.core.agent.registry import AgentPluginRegistry
 from strategy_research.core.agent.loop import AgentLoop
-from strategy_research.core.llm import LLMConfig, LLMResponse
+from strategy_research.foundation.llm import LLMConfig, LLMResponse
 
 PLUGINS = {p.id: p for p in BUILTIN_PLUGINS}
 _orig_loop_init = AgentLoop.__init__
@@ -213,7 +213,7 @@ class TestLLMExec:
         plugin = PLUGINS["researcher"]
 
         def fail_chat(messages, **kwargs):
-            from strategy_research.core.llm.errors import LLMError
+            from strategy_research.foundation.llm.errors import LLMError
             raise LLMError("quota exceeded")
 
         orig, _ = self._patch_loop(fail_chat)

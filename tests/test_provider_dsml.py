@@ -20,14 +20,14 @@ from __future__ import annotations
 
 import pytest
 
-from strategy_research.core.llm.provider import (
+from strategy_research.foundation.llm.provider import (
     DeepSeekAdapter,
     MiniMaxAdapter,
     OpenAIAdapter,
     QwenAdapter,
     SiliconFlowAdapter,
 )
-from strategy_research.core.llm.provider._dsml_patterns import (
+from strategy_research.foundation.llm.provider._dsml_patterns import (
     _DSML_BLOCK_RE,
     _DSML_OPEN_RE,
     _DSML_TOKEN_RE,
@@ -296,7 +296,7 @@ class TestStreamDsmlFixer:
 
     @staticmethod
     def _run(tokens: list[str]) -> str:
-        from strategy_research.core.llm.provider._dsml_patterns import (
+        from strategy_research.foundation.llm.provider._dsml_patterns import (
             StreamDsmlFixer,
         )
 
@@ -360,7 +360,7 @@ class TestStreamDsmlFixer:
         assert self._run(["<", "tool", "ing guide"]) == "<tooling guide"
 
     def test_adapter_fix_delta_per_field(self) -> None:
-        from strategy_research.core.llm.provider import DeepSeekAdapter
+        from strategy_research.foundation.llm.provider import DeepSeekAdapter
 
         a = DeepSeekAdapter()
         # reasoning_content with a tokenized block; content with plain text.
@@ -372,7 +372,7 @@ class TestStreamDsmlFixer:
         assert out["content"] == "answer"
 
     def test_default_passthrough_for_other_providers(self) -> None:
-        from strategy_research.core.llm.provider import MiniMaxAdapter
+        from strategy_research.foundation.llm.provider import MiniMaxAdapter
 
         a = MiniMaxAdapter()
         delta = {"content": " x ", "reasoning_content": " y "}
@@ -383,8 +383,8 @@ class TestRawFieldsPersistOriginal:
     """P3: StreamChunk carries raw (pre-cleanup) text for event_log."""
 
     def test_raw_thinking_preserved(self) -> None:
-        from strategy_research.core.llm.parser import _chunk_from_dict
-        from strategy_research.core.llm.provider import DeepSeekAdapter
+        from strategy_research.foundation.llm.parser import _chunk_from_dict
+        from strategy_research.foundation.llm.provider import DeepSeekAdapter
 
         payload = {
             "choices": [{
@@ -402,8 +402,8 @@ class TestRawFieldsPersistOriginal:
         assert chunk.raw_content == "answer"
 
     def test_raw_equals_cleaned_when_no_markup(self) -> None:
-        from strategy_research.core.llm.parser import _chunk_from_dict
-        from strategy_research.core.llm.provider import DeepSeekAdapter
+        from strategy_research.foundation.llm.parser import _chunk_from_dict
+        from strategy_research.foundation.llm.provider import DeepSeekAdapter
 
         payload = {
             "choices": [{"delta": {"reasoning_content": " me", "content": " x"}}],

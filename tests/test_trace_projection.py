@@ -30,7 +30,7 @@ def _emit_llm_request(
 ) -> None:
     """Emit an llm_request through the real forwarder (so offload applies)."""
     from strategy_research.api.session.service import _LoopEventForwarder
-    from strategy_research.core.llm import LLMConfig
+    from strategy_research.foundation.llm import LLMConfig
 
     fwd = _LoopEventForwarder(
         service=None,
@@ -137,7 +137,7 @@ def test_projection_reconstructs_llm_response_content(tmp_path, monkeypatch) -> 
     store = _store(tmp_path)
 
     from strategy_research.api.session.service import _LoopEventForwarder
-    from strategy_research.core.llm import LLMConfig
+    from strategy_research.foundation.llm import LLMConfig
 
     fwd = _LoopEventForwarder(
         service=None, attempt=_Attempt(), accumulated_parts=[],

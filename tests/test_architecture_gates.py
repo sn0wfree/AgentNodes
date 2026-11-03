@@ -399,7 +399,7 @@ def test_user_home_is_sandboxed_during_tests():
     assert Path.home() == _home_sandbox.SANDBOX_HOME
     assert os.path.expanduser("~") == str(_home_sandbox.SANDBOX_HOME)
     # 模块级常量（import 时求值）也在沙箱里
-    from strategy_research.core.llm import quantnodes_bridge
+    from strategy_research.foundation.llm import quantnodes_bridge
 
     assert str(_home_sandbox.SANDBOX_HOME) in str(quantnodes_bridge.CONFIG_PATH)
 

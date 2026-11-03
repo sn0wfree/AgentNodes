@@ -1,8 +1,8 @@
 """Tests for StructuredOutputParser (Phase 9: 4-layer degradation)."""
 from __future__ import annotations
 
-from strategy_research.core.agent.structured_output import StructuredOutputParser
-from strategy_research.core.llm.parser import parse_tool_arguments
+from strategy_research.foundation.structured_output import StructuredOutputParser
+from strategy_research.foundation.llm.parser import parse_tool_arguments
 
 # ── StructuredOutputParser.parse() ─────────────────────────────────
 

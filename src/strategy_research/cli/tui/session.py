@@ -341,7 +341,7 @@ class ChatSession:
             # Get model from LLM config
             model = "unknown"
             try:
-                from strategy_research.core.llm.config import LLMConfig
+                from strategy_research.foundation.llm.config import LLMConfig
                 cfg = LLMConfig.load()
                 model = cfg.model
             except Exception as exc:  # noqa: BLE001

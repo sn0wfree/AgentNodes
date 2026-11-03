@@ -3,9 +3,9 @@ from __future__ import annotations
 
 import pytest
 
-from strategy_research.core.llm.errors import LLMQuotaError
-from strategy_research.core.llm.provider import get_provider
-from strategy_research.core.llm.provider.nvidia import NvidiaAdapter
+from strategy_research.foundation.llm.errors import LLMQuotaError
+from strategy_research.foundation.llm.provider import get_provider
+from strategy_research.foundation.llm.provider.nvidia import NvidiaAdapter
 
 
 @pytest.fixture

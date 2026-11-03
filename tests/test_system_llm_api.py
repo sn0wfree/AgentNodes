@@ -20,7 +20,7 @@ from unittest.mock import patch
 import pytest
 from fastapi.testclient import TestClient
 
-from strategy_research.core.llm.config import ENV_PROFILE_ACTIVE
+from strategy_research.foundation.llm.config import ENV_PROFILE_ACTIVE
 
 PROFILE_JSON = {
     "llm": {
@@ -90,11 +90,11 @@ def isolated(tmp_path: Path, monkeypatch):
         "strategy_research.api.routers.system._DOTENV_PATH", dotenv
     )
     monkeypatch.setattr(
-        "strategy_research.core.llm.config._resolve_bridge_path",
+        "strategy_research.foundation.llm.config._resolve_bridge_path",
         lambda env: llm_json,
     )
     monkeypatch.setattr(
-        "strategy_research.core.llm.config._try_load_dotenv", lambda: None
+        "strategy_research.foundation.llm.config._try_load_dotenv", lambda: None
     )
     for k in ("OPENAI_API_KEY", "LLM_API_KEY", "MINIMAX_API_KEY",
               "NVIDIA_API_KEY", "OPENAI_MODEL", "OPENAI_BASE_URL",
@@ -283,11 +283,11 @@ class TestCheckLLMConfig:
         monkeypatch.setattr(lcc, "LLM_JSON_PATH", llm_json)
         monkeypatch.setattr(lcc, "DOTENV_PATH", dotenv)
         monkeypatch.setattr(
-            "strategy_research.core.llm.config._resolve_bridge_path",
+            "strategy_research.foundation.llm.config._resolve_bridge_path",
             lambda env: llm_json,
         )
         monkeypatch.setattr(
-            "strategy_research.core.llm.config._try_load_dotenv", lambda: None
+            "strategy_research.foundation.llm.config._try_load_dotenv", lambda: None
         )
         monkeypatch.setenv("MINIMAX_API_KEY", "sk-minimax-real")
         for k in ("OPENAI_API_KEY", "LLM_API_KEY"):
@@ -310,11 +310,11 @@ class TestCheckLLMConfig:
         monkeypatch.setattr(lcc, "LLM_JSON_PATH", llm_json)
         monkeypatch.setattr(lcc, "DOTENV_PATH", dotenv)
         monkeypatch.setattr(
-            "strategy_research.core.llm.config._resolve_bridge_path",
+            "strategy_research.foundation.llm.config._resolve_bridge_path",
             lambda env: llm_json,
         )
         monkeypatch.setattr(
-            "strategy_research.core.llm.config._try_load_dotenv", lambda: None
+            "strategy_research.foundation.llm.config._try_load_dotenv", lambda: None
         )
         for k in ("OPENAI_API_KEY", "LLM_API_KEY", "MINIMAX_API_KEY"):
             monkeypatch.delenv(k, raising=False)

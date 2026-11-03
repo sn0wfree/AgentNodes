@@ -3,7 +3,7 @@ from __future__ import annotations
 
 import pytest
 
-from strategy_research.core.llm.provider.fallback import FallbackAdapter
+from strategy_research.foundation.llm.provider.fallback import FallbackAdapter
 
 
 @pytest.fixture

@@ -12,7 +12,7 @@ from __future__ import annotations
 import unittest
 from unittest.mock import MagicMock, patch
 
-from strategy_research.core.llm.config import LLMConfig
+from strategy_research.foundation.llm.config import LLMConfig
 
 
 class TestSendMessageDefault(unittest.TestCase):

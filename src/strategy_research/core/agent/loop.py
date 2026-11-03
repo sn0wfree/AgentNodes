@@ -44,8 +44,8 @@ from typing import Any, Callable
 from strategy_research.foundation.git import git_commit
 from strategy_research.kernel.hooks.composite import CompositeHook
 from strategy_research.kernel.hooks.context import AgentHookContext
-from ..llm import LLMConfig, LLMResponse, OpenAICompatClient, ToolCall
-from ..llm.errors import LLMError
+from strategy_research.foundation.llm import LLMConfig, LLMResponse, OpenAICompatClient, ToolCall
+from strategy_research.foundation.llm.errors import LLMError
 from strategy_research.kernel.memory.persistent import PersistentMemory
 from strategy_research.foundation.utils.ids import SessionId
 from .circuit_breaker import RetryPolicy, ToolLoopCircuitBreaker

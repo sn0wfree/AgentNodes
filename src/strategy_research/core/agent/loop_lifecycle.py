@@ -12,7 +12,7 @@ logger = logging.getLogger(__name__)
 from strategy_research.foundation.utils.token_utils import estimate_tokens
 
 if TYPE_CHECKING:
-    from ..llm.parser import LLMResponse
+    from strategy_research.foundation.llm.parser import LLMResponse
     from .loop import LoopResult
 
 class LoopLifecycleMixin:

@@ -122,7 +122,7 @@ class JsonFormatter(logging.Formatter):
 
     Output shape::
 
-        {"ts":"13:45:01","level":"INFO","logger":"strategy_research.core.llm.openai_client",
+        {"ts":"13:45:01","level":"INFO","logger":"strategy_research.foundation.llm.openai_client",
          "trace_id":"a1b2c3d4e5f6","session_id":"sess-1","study_id":"st-9","round_num":3,
          "msg":"stream retryable status 429 (attempt 1/3)"}
     """

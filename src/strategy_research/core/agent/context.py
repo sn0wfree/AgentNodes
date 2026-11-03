@@ -20,7 +20,7 @@ from pathlib import Path
 from typing import Any
 
 from ..agent.tools import ToolRegistry
-from ..llm.config import LLMConfig
+from strategy_research.foundation.llm.config import LLMConfig
 from strategy_research.kernel.memory.persistent import PersistentMemory
 
 logger = logging.getLogger(__name__)

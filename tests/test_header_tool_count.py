@@ -106,7 +106,7 @@ class TestSessionReadsToolCountFromApp:
 
         session = ChatSession(ctx, app=app)
         # Replace LLMConfig.load to avoid disk hits
-        from strategy_research.core.llm.config import LLMConfig
+        from strategy_research.foundation.llm.config import LLMConfig
         with mock.patch.object(LLMConfig, "load", side_effect=Exception("nope")):
             session._update_header_stats()
 

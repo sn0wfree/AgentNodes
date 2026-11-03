@@ -197,7 +197,7 @@ class ResearchApp(App):
         # 1) Resolve model
         model = self._model
         try:
-            from strategy_research.core.llm.config import LLMConfig
+            from strategy_research.foundation.llm.config import LLMConfig
             cfg = LLMConfig.load()
             if cfg.model:
                 model = cfg.model

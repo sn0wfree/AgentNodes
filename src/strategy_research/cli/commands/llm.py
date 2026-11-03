@@ -23,7 +23,7 @@ from datetime import datetime
 from pathlib import Path
 
 from strategy_research.cli.commands.registry import cli_command
-from strategy_research.core.llm.config import _try_load_dotenv as _load_dotenv
+from strategy_research.foundation.llm.config import _try_load_dotenv as _load_dotenv
 
 _load_dotenv()
 
@@ -37,7 +37,7 @@ DOTENV_PATH = QUANTNODES_DIR / ".env"
 
 def _registry_providers() -> dict[str, dict[str, str]]:
     """provider name → {base_url, model} from adapter defaults."""
-    from strategy_research.core.llm.provider import (
+    from strategy_research.foundation.llm.provider import (
         _REGISTRY,  # noqa: PLC2701
         get_provider_defaults,
     )
@@ -142,7 +142,7 @@ def _backup_llm_json(llm_json_path: Path | None = None) -> Path | None:
 
 def _profile_defaults(name: str) -> dict:
     """Build a profile dict for ``name`` from adapter defaults + key var."""
-    from strategy_research.core.llm.provider import get_provider_defaults
+    from strategy_research.foundation.llm.provider import get_provider_defaults
 
     d = get_provider_defaults(name)
     profile: dict = {"provider": name}
@@ -181,7 +181,7 @@ def _action_list() -> int:
 
 
 def _action_show() -> int:
-    from strategy_research.core.llm import LLMConfig
+    from strategy_research.foundation.llm import LLMConfig
 
     cfg = LLMConfig.load()
     masked = cfg.masked_dict()

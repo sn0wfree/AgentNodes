@@ -8,8 +8,8 @@ import logging
 from typing import TYPE_CHECKING, Any
 
 if TYPE_CHECKING:
-    from ..llm.errors import LLMError
-    from ..llm.parser import LLMResponse, ToolCall
+    from strategy_research.foundation.llm.errors import LLMError
+    from strategy_research.foundation.llm.parser import LLMResponse, ToolCall
     from .loop import LoopResult
 
 logger = logging.getLogger(__name__)
@@ -55,7 +55,7 @@ class LoopProgressMixin:
         (return True → no fallback). Everything else (timeout, server,
         malformed SSE, JSON parse errors) gets one ``achat()`` retry.
         """
-        from ..llm.errors import (
+        from strategy_research.foundation.llm.errors import (
             LLMAuthError,
             LLMConfigError,
             LLMQuotaError,

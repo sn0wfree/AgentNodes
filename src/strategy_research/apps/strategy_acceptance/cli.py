@@ -75,7 +75,7 @@ def cmd_accept(args: argparse.Namespace) -> int:
 
     if args.invoke_llm:
         try:
-            from strategy_research.core.llm import LLMConfig, OpenAICompatClient
+            from strategy_research.foundation.llm import LLMConfig, OpenAICompatClient
             llm_cfg = LLMConfig.load()
             client = OpenAICompatClient(llm_cfg)
         except Exception as exc:                                # noqa: BLE001

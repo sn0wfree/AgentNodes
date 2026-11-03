@@ -35,7 +35,7 @@ import os
 from pathlib import Path
 from typing import Any, Mapping
 
-from ..agent.compact import CompactConfig
+from strategy_research.foundation.compact_config import CompactConfig
 from .quantnodes_bridge import (
     CONFIG_PATH as QUANTNODES_LLM_JSON,
 )

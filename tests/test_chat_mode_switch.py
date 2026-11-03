@@ -132,7 +132,7 @@ class TestPromptSelection:
             mock.MagicMock(return_value=None),
         )
         monkeypatch.setattr(
-            "strategy_research.core.llm.LLMConfig.load",
+            "strategy_research.foundation.llm.LLMConfig.load",
             mock.MagicMock(return_value=SimpleNamespace(api_key="sk-test")),
         )
 
@@ -171,7 +171,7 @@ class TestPromptSelection:
             mock.MagicMock(return_value=None),
         )
         monkeypatch.setattr(
-            "strategy_research.core.llm.LLMConfig.load",
+            "strategy_research.foundation.llm.LLMConfig.load",
             mock.MagicMock(return_value=SimpleNamespace(api_key="sk-test")),
         )
 

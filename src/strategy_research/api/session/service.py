@@ -22,7 +22,7 @@ from typing import Any, Optional
 
 from strategy_research.core.agent.compact import CompactConfig, compact_messages
 from strategy_research.core.agent.event_store import EventStore
-from strategy_research.core.llm import LLMConfig
+from strategy_research.foundation.llm import LLMConfig
 
 from .models import Attempt, AttemptId, AttemptStatus, Message, MessageId, SessionId
 from .store import SessionStore
@@ -1234,7 +1234,7 @@ class SessionService:
             if cfg:
                 model_context_tokens = cfg.model_context_tokens
                 try:
-                    from strategy_research.core.llm import OpenAICompatClient
+                    from strategy_research.foundation.llm import OpenAICompatClient
                     llm_client = OpenAICompatClient(cfg)
                 except Exception:
                     pass

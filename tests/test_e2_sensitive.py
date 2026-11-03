@@ -9,7 +9,7 @@ from pathlib import Path
 
 import pytest
 
-from strategy_research.core.llm.config_audit import (
+from strategy_research.foundation.llm.config_audit import (
     _key_fingerprint,
     detect_issues,
 )

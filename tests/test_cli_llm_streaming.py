@@ -17,8 +17,8 @@ from strategy_research.cli.llm_streaming import (
     stream_chat_to_tui,
 )
 from strategy_research.cli.tui.session import ChatSession
-from strategy_research.core.llm.errors import LLMError, LLMTimeoutError
-from strategy_research.core.llm.parser import StreamChunk
+from strategy_research.foundation.llm.errors import LLMError, LLMTimeoutError
+from strategy_research.foundation.llm.parser import StreamChunk
 
 
 @pytest.fixture(autouse=True)

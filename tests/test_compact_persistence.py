@@ -20,7 +20,7 @@ from strategy_research.core.agent.loop import (
     AgentLoop,
     compaction_persister_registered,
 )
-from strategy_research.core.llm.config import LLMConfig
+from strategy_research.foundation.llm.config import LLMConfig
 
 # ── _resolve_threshold_tokens (opencode formula) ────────────
 

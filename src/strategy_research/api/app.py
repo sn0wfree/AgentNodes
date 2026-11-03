@@ -324,8 +324,8 @@ async def _refresh_model_catalog_async() -> None:
     """
     await asyncio.sleep(5)
     try:
-        from ..core.llm.config import LLMConfig
-        from ..core.llm.model_catalog import refresh_model_info
+        from strategy_research.foundation.llm.config import LLMConfig
+        from strategy_research.foundation.llm.model_catalog import refresh_model_info
 
         llm_config = LLMConfig.load()
         provider = llm_config.provider

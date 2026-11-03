@@ -37,7 +37,7 @@ def cmd_compact_show(args: Any = None) -> int:
 def _build_effective_config() -> CompactConfig:
     """Load the user's CompactConfig from llm.json (or defaults)."""
     try:
-        from strategy_research.core.llm.config import find_llm_config_path, load_config
+        from strategy_research.foundation.llm.config import find_llm_config_path, load_config
 
         config_path = find_llm_config_path()
         config = load_config(config_path=config_path)
@@ -50,7 +50,7 @@ def _build_effective_config() -> CompactConfig:
 def _get_model_context() -> tuple[int | None, int | None]:
     """Return (model_context_tokens, model_max_output_tokens) from LLMConfig."""
     try:
-        from strategy_research.core.llm.config import find_llm_config_path, load_config
+        from strategy_research.foundation.llm.config import find_llm_config_path, load_config
 
         config_path = find_llm_config_path()
         config = load_config(config_path=config_path)

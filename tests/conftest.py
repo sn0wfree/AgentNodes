@@ -131,7 +131,7 @@ def _purge_llm_env(monkeypatch):
     ):
         monkeypatch.delenv(var, raising=False)
 
-    import strategy_research.core.llm.config as _cfg
+    import strategy_research.foundation.llm.config as _cfg
     monkeypatch.setattr(_cfg, "_try_load_dotenv", lambda: None)
 
 
@@ -384,7 +384,7 @@ def real_llm_config():
     for var in ("USERPROFILE", "HOME"):
         monkeypatch.setenv(var, str(_home_sandbox.REAL_HOME))
 
-    from strategy_research.core.llm import LLMConfig
+    from strategy_research.foundation.llm import LLMConfig
 
     cfg = LLMConfig.load()
     if not cfg.api_key:
@@ -396,7 +396,7 @@ def real_llm_config():
 
 @pytest.fixture(scope="session")
 def live_client(real_llm_config):
-    from strategy_research.core.llm import OpenAICompatClient
+    from strategy_research.foundation.llm import OpenAICompatClient
 
     return OpenAICompatClient(real_llm_config)
 

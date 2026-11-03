@@ -36,7 +36,7 @@ def get_gateway(
             # R5：ModelHub 是 provider/model 解析的唯一入口（解析序集中 +
             # 非法 provider 拒绝而非静默降级）。等价于原来的
             # OpenAICompatClient(LLMConfig.load())。
-            from strategy_research.core.llm.model_hub import get_client
+            from strategy_research.foundation.llm.model_hub import get_client
 
             try:
                 client = get_client()

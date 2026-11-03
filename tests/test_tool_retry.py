@@ -14,7 +14,7 @@ import pytest
 from strategy_research.core.agent import loop as loop_mod
 from strategy_research.core.agent.loop import AgentLoop, LoopResult
 from strategy_research.core.agent.tools import BaseTool, ToolRegistry
-from strategy_research.core.llm import LLMConfig, ToolCall
+from strategy_research.foundation.llm import LLMConfig, ToolCall
 
 
 class FlakyTool(BaseTool):

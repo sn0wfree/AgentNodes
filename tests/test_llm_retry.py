@@ -11,13 +11,13 @@ import email.utils
 import httpx
 import pytest
 
-from strategy_research.core.llm import (
+from strategy_research.foundation.llm import (
     LLMConfig,
     LLMRateLimitError,
     LLMServerError,
     OpenAICompatClient,
 )
-from strategy_research.core.llm import openai_client as oc_mod
+from strategy_research.foundation.llm import openai_client as oc_mod
 
 # ── Fixtures ─────────────────────────────────────────────────────────
 
@@ -125,7 +125,7 @@ class TestChatRetry:
             return httpx.Response(401, json={"error": {"message": "unauthorized"}})
 
         client = OpenAICompatClient(fast_config, transport=httpx.MockTransport(handler))
-        from strategy_research.core.llm import LLMAuthError
+        from strategy_research.foundation.llm import LLMAuthError
         with pytest.raises(LLMAuthError):
             client.chat([{"role": "user", "content": "hi"}])
         assert call_count == 1  # no retry on auth errors
@@ -302,7 +302,7 @@ class TestStreamRetry:
             call_count += 1
             return httpx.Response(401, json={"error": {"message": "unauth"}})
 
-        from strategy_research.core.llm import LLMAuthError
+        from strategy_research.foundation.llm import LLMAuthError
         client = OpenAICompatClient(fast_config, transport=httpx.MockTransport(handler))
         with pytest.raises(LLMAuthError):
             list(client.stream([{"role": "user", "content": "hi"}]))
@@ -403,7 +403,7 @@ class TestStreamMidStreamNoRetry:
         transport = FailingTransport()
         client = OpenAICompatClient(fast_config, transport=transport)
 
-        from strategy_research.core.llm import LLMError
+        from strategy_research.foundation.llm import LLMError
         with pytest.raises(LLMError):
             for _chunk in client.stream([{"role": "user", "content": "hi"}]):
                 pass
@@ -442,7 +442,7 @@ class TestStreamMidStreamNoRetry:
         transport = FailingAsyncTransport()
         client = OpenAICompatClient(fast_config, transport=transport)
 
-        from strategy_research.core.llm import LLMError
+        from strategy_research.foundation.llm import LLMError
         with pytest.raises(LLMError):
             async for _ in client.astream([{"role": "user", "content": "hi"}]):
                 pass

@@ -21,7 +21,7 @@ from strategy_research.core.agent.tools import (
     BaseTool,
     ToolRegistry,
 )
-from strategy_research.core.llm import LLMConfig
+from strategy_research.foundation.llm import LLMConfig
 
 
 class SampleEffectTool(BaseTool):

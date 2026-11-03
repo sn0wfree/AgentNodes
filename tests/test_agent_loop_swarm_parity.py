@@ -22,7 +22,7 @@ from strategy_research.core.agent.loop import (
     WRAP_UP_RATIO,
     AgentLoop,
 )
-from strategy_research.core.llm import LLMConfig, LLMResponse, ToolCall
+from strategy_research.foundation.llm import LLMConfig, LLMResponse, ToolCall
 
 # ── Helpers ──────────────────────────────────────────────────────────
 

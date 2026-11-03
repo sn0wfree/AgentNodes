@@ -155,7 +155,7 @@ class TestLLMErrorIntegration(unittest.TestCase):
             ConfigError,
             StrategyResearchError,
         )
-        from strategy_research.core.llm.errors import LLMAuthError, LLMError
+        from strategy_research.foundation.llm.errors import LLMAuthError, LLMError
 
         # LLMAuthError inherits from LLMError → ConfigError → StrategyResearchError
         self.assertTrue(issubclass(LLMAuthError, StrategyResearchError))

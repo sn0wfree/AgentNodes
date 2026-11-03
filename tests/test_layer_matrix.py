@@ -91,7 +91,7 @@ LAYER_MEMBERSHIP: dict[str, str] = {
     "strategy_research.kernel": "L3",  # 物理层目录（逐模块迁移中）
     "strategy_research.kernel.seq_generator": "L3",
     # L4 foundation
-    "strategy_research.core.llm": "L4",
+    "strategy_research.foundation.llm": "L4",
     "strategy_research.foundation.storage": "L4",
     "strategy_research.foundation.observability": "L4",
     "strategy_research.foundation.utils": "L4",

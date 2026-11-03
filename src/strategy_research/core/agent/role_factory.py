@@ -73,7 +73,7 @@ def should_use_real_llm() -> bool:
         return False
 
     try:
-        from ...core.llm import LLMConfig
+        from strategy_research.foundation.llm import LLMConfig
         cfg = LLMConfig.load()
         # api_key 为空 / 占位 → 不走真 LLM
         if not cfg.api_key or cfg.api_key in ("", "your-api-key-here", "sk-placeholder"):
@@ -136,7 +136,7 @@ def build_agent_loop(
     from ...core.agent.loop import AgentLoop
     from ...core.agent.loop_assembly import assemble_loop_parts
     from ...core.agent.strategy.profile_resolver import resolve_loop_strategy
-    from ...core.llm import LLMConfig
+    from strategy_research.foundation.llm import LLMConfig
 
     # Single-source registry + prompt + strategy (phase 3, shared with
     # chat_loop — see docs/phase3-dual-factory-design.md).

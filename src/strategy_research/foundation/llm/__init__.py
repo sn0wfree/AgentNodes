@@ -19,7 +19,7 @@ Layered configuration (higher overrides lower):
 
 Typical usage:
 
-    from strategy_research.core.llm import LLMConfig, OpenAICompatClient
+    from strategy_research.foundation.llm import LLMConfig, OpenAICompatClient
 
     cfg = LLMConfig.load(profile="deepseek")
     client = OpenAICompatClient(cfg)

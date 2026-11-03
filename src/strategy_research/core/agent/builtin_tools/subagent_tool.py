@@ -17,7 +17,7 @@ import uuid
 from pathlib import Path
 from typing import Any
 
-from ...llm.config import LLMConfig
+from strategy_research.foundation.llm.config import LLMConfig
 from ..tools import EFFECT_FS, BaseTool, ToolRegistry
 
 logger = logging.getLogger(__name__)
