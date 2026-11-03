@@ -21,8 +21,10 @@ import numpy as np
 import pandas as pd
 import yaml
 
-from .alpha_zoo_ops import ALPHA_ZOO_OPS
-from .compute_factor import OPERATORS
+# 兄弟模块尚未随本步搬迁（W1 后续 step / W2 alpha_zoo 主包），
+# 暂用旧绝对路径；对应包搬迁时会全库前缀改写追平。
+from strategy_research.core.alpha_zoo_ops import ALPHA_ZOO_OPS
+from strategy_research.core.compute_factor import OPERATORS
 
 # ============================================================
 # YAML 加载

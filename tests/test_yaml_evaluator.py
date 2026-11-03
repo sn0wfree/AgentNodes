@@ -20,7 +20,7 @@ import pandas as pd
 import pytest
 import yaml
 
-from strategy_research.core.alpha_zoo_yaml import (
+from strategy_research.apps.alpha_zoo_yaml import (
     _get_operator,
     _where_df,
     compute_alpha_from_yaml,
