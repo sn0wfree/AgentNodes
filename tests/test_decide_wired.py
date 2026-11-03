@@ -159,7 +159,7 @@ class TestDecideWiredIntoAutoresearch:
     def test_stagnation_stop_breaks_loop(self, workspace_path, monkeypatch):
         """连续 N 轮 reject → stagnation_triggered → 退出循环."""
         from strategy_research.cli.commands.autoresearch import cmd_autoresearch
-        from strategy_research.core.strategy_acceptance import AcceptanceDecision
+        from strategy_research.apps.strategy_acceptance import AcceptanceDecision
 
         call_count = {"n": 0}
 
@@ -179,7 +179,7 @@ class TestDecideWiredIntoAutoresearch:
         # cli.py cmd_autoresearch 内部 `from ... import decide as make_decision`,
         # 所以要 patch 真正的 strategy_acceptance.decide 模块, 不是 cli.make_decision
         monkeypatch.setattr(
-            "strategy_research.core.strategy_acceptance.decide", stagnation_decide,
+            "strategy_research.apps.strategy_acceptance.decide", stagnation_decide,
         )
 
         args = self._make_args(workspace_path, max_rounds=10)
@@ -248,7 +248,7 @@ class TestDecideCallArgs:
     def test_decide_called_with_metrics(self, workspace_path, monkeypatch):
         """decide() 收到的 metrics 来自 backtest."""
         from strategy_research.cli.commands.autoresearch import cmd_autoresearch
-        from strategy_research.core.strategy_acceptance import AcceptanceDecision
+        from strategy_research.apps.strategy_acceptance import AcceptanceDecision
 
         captured = {}
 
@@ -265,7 +265,7 @@ class TestDecideCallArgs:
             )
 
         monkeypatch.setattr(
-            "strategy_research.core.strategy_acceptance.decide", capture_decide,
+            "strategy_research.apps.strategy_acceptance.decide", capture_decide,
         )
 
         args = self._make_args(workspace_path)
@@ -285,7 +285,7 @@ class TestHardThresholdStillWorks:
     """HardThresholdRule 通过 metrics 字段判定, 与 autoresearch 集成正常."""
 
     def test_low_calmar_results_in_reject(self):
-        from strategy_research.core.strategy_acceptance import AcceptanceConfig, decide
+        from strategy_research.apps.strategy_acceptance import AcceptanceConfig, decide
         decision = decide(
             metrics={"calmar": -0.5, "sharpe": -0.5, "max_dd": -0.8,
                      "ann_return": -0.5, "trades": 10},
@@ -295,7 +295,7 @@ class TestHardThresholdStillWorks:
         assert decision.hard_passed is False
 
     def test_high_quality_results_in_accept(self):
-        from strategy_research.core.strategy_acceptance import AcceptanceConfig, decide
+        from strategy_research.apps.strategy_acceptance import AcceptanceConfig, decide
         decision = decide(
             metrics={"calmar": 1.5, "sharpe": 1.2, "max_dd": -0.05,
                      "ann_return": 0.25, "trades": 100},

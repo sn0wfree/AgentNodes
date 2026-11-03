@@ -180,7 +180,7 @@ def _researcher_node(ctx: BranchContext) -> Callable[[dict], dict]:
     runner, study, session = ctx.runner, ctx.study, ctx.session
 
     def node(state: dict) -> dict:
-        from strategy_research.core.autoresearch import run_researcher_phase
+        from strategy_research.apps.autoresearch import run_researcher_phase
 
         from .runner import SR_AGENT_MAX_ITER
 
@@ -358,7 +358,7 @@ def _evaluation_node(ctx: BranchContext) -> Callable[[dict], dict]:
     runner, study = ctx.runner, ctx.study
 
     def node(state: dict) -> dict:
-        from strategy_research.core.autoresearch import run_evaluation_phase
+        from strategy_research.apps.autoresearch import run_evaluation_phase
 
         from .runner import SR_AGENT_MAX_ITER
 

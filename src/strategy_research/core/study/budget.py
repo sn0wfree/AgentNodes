@@ -86,7 +86,7 @@ def complete_goal(
 
 def round_cooldown(study: Any) -> float:
     """Calculate cooldown seconds for the next round."""
-    from strategy_research.core.autoresearch import get_cooldown_seconds
+    from strategy_research.apps.autoresearch import get_cooldown_seconds
     return get_cooldown_seconds(
         study.cooldown_base * 2, study.cooldown_jitter * 2, study.min_cooldown * 2,
     )
@@ -98,7 +98,7 @@ def maybe_load_previous_summary(study: Any) -> dict | None:
         runs_dir = Path(study.workspace_path) / "strategies" / study.strategy_name / "runs"
         if not runs_dir.exists():
             return None
-        from strategy_research.core.autoresearch import load_run_summary
+        from strategy_research.apps.autoresearch import load_run_summary
         nums: list[int] = []
         for d in runs_dir.iterdir():
             if d.is_dir() and d.name.startswith("run_"):

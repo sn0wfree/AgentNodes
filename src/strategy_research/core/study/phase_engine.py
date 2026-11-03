@@ -97,7 +97,7 @@ def run_round_phases(
     This is the main entry point for the phase engine, extracted from
     runner._run_one_round_impl.
     """
-    from strategy_research.core.autoresearch import (
+    from strategy_research.apps.autoresearch import (
         generate_run_summary,
         save_run_summary,
     )
@@ -275,7 +275,7 @@ def _prepare_round_preamble(
     injection) lives here so the main function's complexity budget goes
     to dispatch + finalization.
     """
-    from strategy_research.core.autoresearch import (
+    from strategy_research.apps.autoresearch import (
         _create_run_dir,
         read_current_state,
     )
@@ -443,7 +443,7 @@ def _run_phases_branch(ctx: BranchContext) -> RoundOutcome | dict:
     Returns ``RoundOutcome`` for the shared finalization, or the abort
     payload dict when the novelty gate rejects the hypothesis.
     """
-    from strategy_research.core.autoresearch import (
+    from strategy_research.apps.autoresearch import (
         run_evaluation_phase,
         run_researcher_phase,
     )
@@ -762,7 +762,7 @@ def _run_execution_with_parse_retry(
     round_num: int,
 ) -> dict:
     """Wrap run_execution_phase with parse_failed auto-recovery."""
-    from ..autoresearch import run_execution_phase
+    from strategy_research.apps.autoresearch import run_execution_phase
     from .contracts import parse_failed_agents as _parse_failed_agents
 
     study = runner._get_study()

@@ -12,7 +12,7 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
-from strategy_research.core.autoresearch import spawn_agent
+from strategy_research.apps.autoresearch import spawn_agent
 
 
 class TestSpawnAgentLoopStrategy:

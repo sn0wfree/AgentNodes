@@ -87,7 +87,7 @@ def _register_builtin_executors() -> None:
         )
 
     try:
-        from ..strategy_acceptance import decide as _decide_fn
+        from strategy_research.apps.strategy_acceptance import decide as _decide_fn
 
         def _decide_executor(metrics=None, **kwargs):
             llm_verdict = kwargs.get("llm_verdict")

@@ -750,7 +750,7 @@ def _build_parser() -> tuple[argparse.ArgumentParser, dict[str, argparse.Argumen
     add_engine_subparsers(subparsers)
 
     # strategy acceptance (P6 Step 0) — 离线验收调试工具
-    from strategy_research.core.strategy_acceptance.cli import add_accept_subparsers
+    from strategy_research.apps.strategy_acceptance.cli import add_accept_subparsers
     add_accept_subparsers(subparsers)
 
     # portfolio (P3-d) — 组合回测 / 策略相关性
@@ -1056,7 +1056,7 @@ def _dispatch_engine(args, parsers) -> int:
 
 def _dispatch_accept(args, parsers) -> int:
     """Dispatch the accept subcommand."""
-    from strategy_research.core.strategy_acceptance.cli import cmd_accept
+    from strategy_research.apps.strategy_acceptance.cli import cmd_accept
     return cmd_accept(args)
 
 

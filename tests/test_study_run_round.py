@@ -20,7 +20,7 @@ from unittest.mock import patch
 
 import pytest
 
-from strategy_research.core.autoresearch import run_research_round
+from strategy_research.apps.autoresearch import run_research_round
 
 
 @pytest.fixture(autouse=True)

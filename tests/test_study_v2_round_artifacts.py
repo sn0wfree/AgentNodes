@@ -285,7 +285,7 @@ def test_runner_round_artifacts_end_to_end(store, goal_store, monkeypatch, tmp_p
             "verdict": "keep",
         }
 
-    import strategy_research.core.autoresearch as ar_mod
+    import strategy_research.apps.autoresearch as ar_mod
     monkeypatch.setattr(ar_mod, "run_researcher_phase", _fake_researcher)
     monkeypatch.setattr(ar_mod, "run_execution_phase", _fake_execution)
     monkeypatch.setattr(ar_mod, "run_evaluation_phase", _fake_evaluation)

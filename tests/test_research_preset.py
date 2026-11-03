@@ -99,7 +99,7 @@ def make_ctx(tmp_path, runner: FakeRunner) -> BranchContext:
 
 
 def _install_phase_fakes(monkeypatch, calls: list) -> None:
-    import strategy_research.core.autoresearch as ar
+    import strategy_research.apps.autoresearch as ar
 
     def fake_researcher(path, strategy, current_state, run_dir, **kwargs):
         calls.append(("researcher", str(path), strategy, dict(current_state), kwargs))
@@ -204,7 +204,7 @@ def test_domain_event_sequence_identical(tmp_path, monkeypatch):
 
 
 def test_non_dict_researcher_defense_identical(tmp_path, monkeypatch):
-    import strategy_research.core.autoresearch as ar
+    import strategy_research.apps.autoresearch as ar
 
     _install_phase_fakes(monkeypatch, [])
     # 后装者生效：researcher 返回字符串占位（覆盖 _install 里的 dict fake）

@@ -461,7 +461,7 @@ class AutoresearchRunner(RunnerAegisMixin, RunnerKnowledgeMixin):
         _path = Path(study.workspace_path).resolve()
         _strategy = study.strategy_name
         _graph = self._load_graph(_path, sid)
-        from strategy_research.core.autoresearch import read_current_state
+        from strategy_research.apps.autoresearch import read_current_state
         from strategy_research.core.study import round_manifest as rm
         _round_dir = rm.round_dir(_path, sid, round_num)
         _run_dirs = sorted(
@@ -1011,7 +1011,7 @@ class AutoresearchRunner(RunnerAegisMixin, RunnerKnowledgeMixin):
         self, run_dir: Path, agent_id: str, result: Any,
     ) -> None:
         """Persist an agent's output to ``run_dir/<agent_id>.json``."""
-        from ..autoresearch import save_agent_record
+        from strategy_research.apps.autoresearch import save_agent_record
         try:
             # result is a dict from save_agent_outputs, not an object
             output_data = result.get("output", result) if isinstance(result, dict) else result

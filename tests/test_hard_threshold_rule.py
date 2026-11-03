@@ -3,7 +3,7 @@ from __future__ import annotations
 
 from types import SimpleNamespace
 
-from strategy_research.core.strategy_acceptance.rules import HardThresholdRule, RuleResult
+from strategy_research.apps.strategy_acceptance.rules import HardThresholdRule, RuleResult
 
 
 def _cfg(**overrides):

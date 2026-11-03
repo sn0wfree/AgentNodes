@@ -1,4 +1,4 @@
-"""H 档补测（P1-2）—— `core/autoresearch.py` 的状态读取与重试梯。
+"""H 档补测（P1-2）—— `apps/autoresearch.py` 的状态读取与重试梯。
 
 补齐四块真实分支：
 
@@ -18,7 +18,7 @@ from pathlib import Path
 
 import pytest
 
-from strategy_research.core import autoresearch as ar
+from strategy_research.apps import autoresearch as ar
 
 
 # ── read_current_state ────────────────────────────────────

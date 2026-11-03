@@ -14,7 +14,7 @@ from pathlib import Path
 
 import pytest
 
-from strategy_research.core.strategy_acceptance import cli as acc_cli
+from strategy_research.apps.strategy_acceptance import cli as acc_cli
 
 
 def _args(**kw) -> argparse.Namespace:
@@ -152,7 +152,7 @@ def test_invoke_llm_evaluate_failure_returns_2(tmp_path, capsys, monkeypatch):
     p = _metrics_file(tmp_path)
 
     import strategy_research.core.llm as llm_mod
-    import strategy_research.core.strategy_acceptance.cli as cli_mod
+    import strategy_research.apps.strategy_acceptance.cli as cli_mod
 
     monkeypatch.setattr(llm_mod.LLMConfig, "load", staticmethod(lambda: object()))
     monkeypatch.setattr(llm_mod, "OpenAICompatClient", lambda cfg: object())
@@ -174,7 +174,7 @@ def test_invoke_llm_success_prints_comparison(tmp_path, capsys, monkeypatch):
     p = _metrics_file(tmp_path)
 
     import strategy_research.core.llm as llm_mod
-    import strategy_research.core.strategy_acceptance.cli as cli_mod
+    import strategy_research.apps.strategy_acceptance.cli as cli_mod
 
     monkeypatch.setattr(llm_mod.LLMConfig, "load", staticmethod(lambda: object()))
     monkeypatch.setattr(llm_mod, "OpenAICompatClient", lambda cfg: object())

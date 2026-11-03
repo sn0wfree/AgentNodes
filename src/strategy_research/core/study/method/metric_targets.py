@@ -109,7 +109,7 @@ def acceptance_config_from_targets(
     Called lazily (imports strategy_acceptance) so importing this module
     does not eagerly load the acceptance module.
     """
-    from strategy_research.core.strategy_acceptance import DEFAULT_CONFIG
+    from strategy_research.apps.strategy_acceptance import DEFAULT_CONFIG
 
     if not targets:
         return DEFAULT_CONFIG

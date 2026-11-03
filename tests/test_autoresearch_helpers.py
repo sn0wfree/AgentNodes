@@ -1,4 +1,4 @@
-"""H 档补测 —— `core/autoresearch.py` 的输入编排辅助函数。
+"""H 档补测 —— `apps/autoresearch.py` 的输入编排辅助函数。
 
 142 行未覆盖。选这批**纯函数**（无 LLM、无子进程）：
 - ``parse_agent_output``：五级 JSON 提取降级梯（直解 → ```json → ``` →
@@ -15,7 +15,7 @@ from pathlib import Path
 
 import pytest
 
-from strategy_research.core import autoresearch as ar
+from strategy_research.apps import autoresearch as ar
 
 
 # ── parse_agent_output 降级梯 ───────────────────────────────

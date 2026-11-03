@@ -111,7 +111,7 @@ def test_build_agent_loop_forwards_on_event(monkeypatch):
 
 def test_spawn_agent_forwards_on_event(monkeypatch):
     """spawn_agent → run_agent_via_llm 的 on_event 透传。"""
-    import strategy_research.core.autoresearch as ar
+    import strategy_research.apps.autoresearch as ar
 
     calls = {}
     monkeypatch.setattr(
@@ -128,7 +128,7 @@ def test_spawn_agent_forwards_on_event(monkeypatch):
 
 def test_make_spawn_fn_injects_agent_name():
     """agent 名在 _make_spawn_fn 注入——只有它知道当前 spawn 的是谁。"""
-    import strategy_research.core.autoresearch as ar
+    import strategy_research.apps.autoresearch as ar
 
     seen: list[tuple[str, dict]] = []
     monkey_env = {"stub": True}
@@ -150,7 +150,7 @@ def test_spawn_real_llm_receives_agent_named_callback(monkeypatch):
     包装语义在 _make_spawn_fn 验证（spawn_agent 走的同一约定）：回调收到的
     data 必须带 agent 字段，且不污染上游 dict。
     """
-    import strategy_research.core.autoresearch as ar
+    import strategy_research.apps.autoresearch as ar
 
     captured: dict = {}
     monkeypatch.setattr(

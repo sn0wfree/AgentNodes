@@ -181,6 +181,6 @@ def test_study_phase_iteration_budget_raised():
     import strategy_research.core.study.runner as runner_mod
     src = inspect.getsource(runner_mod.AutoresearchRunner._run_one_round_impl)
     assert src.count("max_iterations=10") == 3
-    import strategy_research.core.autoresearch as ar
+    import strategy_research.apps.autoresearch as ar
     sig = inspect.signature(ar.run_researcher_phase)
     assert sig.parameters["max_iterations"].default == 8  # CLI 默认不变

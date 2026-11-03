@@ -921,7 +921,7 @@ def _register_builtin_executors() -> None:
         logger.debug("backtest module not available, python_executor not registered")
 
     try:
-        from ..strategy_acceptance import decide as _decide_fn
+        from strategy_research.apps.strategy_acceptance import decide as _decide_fn
 
         def _decide_executor(metrics=None, **kwargs):
             """Run decide() for keep/discard decision."""

@@ -9,7 +9,7 @@ from tempfile import TemporaryDirectory
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
 
-from strategy_research.core.strategy_acceptance import (
+from strategy_research.apps.strategy_acceptance import (
     DEFAULT_CONFIG,
     AcceptanceConfig,
     AcceptanceDecision,
@@ -229,30 +229,30 @@ class TestLoadConfig(unittest.TestCase):
 class TestCoerceMetrics(unittest.TestCase):
 
     def test_normal_values_via_decide(self) -> None:
-        from strategy_research.core.strategy_acceptance import _coerce_metrics
+        from strategy_research.apps.strategy_acceptance import _coerce_metrics
         result = _coerce_metrics({"calmar": 1.5, "sharpe": 0.8, "max_dd": -0.2, "trades": 50})
         self.assertEqual(result["calmar"], 1.5)
         self.assertEqual(result["trades"], 50)
 
     def test_non_numeric_string_via_decide(self) -> None:
-        from strategy_research.core.strategy_acceptance import _coerce_metrics
+        from strategy_research.apps.strategy_acceptance import _coerce_metrics
         result = _coerce_metrics({"calmar": "bad"})
         self.assertEqual(result["calmar"], 0.0)
 
     def test_none_values_via_decide(self) -> None:
-        from strategy_research.core.strategy_acceptance import _coerce_metrics
+        from strategy_research.apps.strategy_acceptance import _coerce_metrics
         result = _coerce_metrics({"calmar": None, "trades": None})
         self.assertEqual(result["calmar"], 0.0)
         self.assertEqual(result["trades"], 0)
 
     def test_max_drawdown_alias(self) -> None:
-        from strategy_research.core.strategy_acceptance import _coerce_metrics
+        from strategy_research.apps.strategy_acceptance import _coerce_metrics
         result = _coerce_metrics({"max_drawdown": -0.25, "ann_turnover": 3.5})
         self.assertEqual(result["max_dd"], -0.25)
         self.assertEqual(result["turnover"], 3.5)
 
     def test_missing_max_dd_is_negative_inf(self) -> None:
-        from strategy_research.core.strategy_acceptance import _coerce_metrics
+        from strategy_research.apps.strategy_acceptance import _coerce_metrics
         result = _coerce_metrics({})
         self.assertEqual(result["max_dd"], float("-inf"))
 

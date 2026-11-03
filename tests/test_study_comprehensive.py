@@ -357,12 +357,12 @@ class TestMetricPassSet:
 
 class TestAcceptanceConfigFromTargets:
     def test_none_returns_default(self):
-        from strategy_research.core.strategy_acceptance import DEFAULT_CONFIG
+        from strategy_research.apps.strategy_acceptance import DEFAULT_CONFIG
         result = acceptance_config_from_targets(None)
         assert result is DEFAULT_CONFIG
 
     def test_empty_returns_default(self):
-        from strategy_research.core.strategy_acceptance import DEFAULT_CONFIG
+        from strategy_research.apps.strategy_acceptance import DEFAULT_CONFIG
         result = acceptance_config_from_targets([])
         assert result is DEFAULT_CONFIG
 
@@ -389,17 +389,17 @@ class TestAcceptanceConfigFromTargets:
         assert result.hard_max_dd_min == -0.25
 
     def test_unknown_metric_name_ignored(self):
-        from strategy_research.core.strategy_acceptance import DEFAULT_CONFIG
+        from strategy_research.apps.strategy_acceptance import DEFAULT_CONFIG
         result = acceptance_config_from_targets([{"name": "unknown", "op": ">=", "value": 1.0}])
         assert result is DEFAULT_CONFIG
 
     def test_none_name_skipped(self):
-        from strategy_research.core.strategy_acceptance import DEFAULT_CONFIG
+        from strategy_research.apps.strategy_acceptance import DEFAULT_CONFIG
         result = acceptance_config_from_targets([{"name": None, "op": ">=", "value": 1.0}])
         assert result is DEFAULT_CONFIG
 
     def test_none_value_skipped(self):
-        from strategy_research.core.strategy_acceptance import DEFAULT_CONFIG
+        from strategy_research.apps.strategy_acceptance import DEFAULT_CONFIG
         result = acceptance_config_from_targets([{"name": "calmar", "op": ">=", "value": None}])
         assert result is DEFAULT_CONFIG
 

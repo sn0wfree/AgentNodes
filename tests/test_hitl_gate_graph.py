@@ -102,7 +102,7 @@ def make_ctx(tmp_path, runner: FakeRunner) -> BranchContext:
 
 
 def _install_phase_fakes(monkeypatch) -> None:
-    import strategy_research.core.autoresearch as ar
+    import strategy_research.apps.autoresearch as ar
     import strategy_research.core.study.graph_preset as gp
     import strategy_research.core.study.phase_engine as pe
 
@@ -234,7 +234,7 @@ def test_hitl_off_run_returns_round_outcome(tmp_path, monkeypatch):
 
 
 def test_empty_hypothesis_passes_gate_through(tmp_path, monkeypatch):
-    import strategy_research.core.autoresearch as ar
+    import strategy_research.apps.autoresearch as ar
 
     _install_phase_fakes(monkeypatch)
     monkeypatch.setattr(
@@ -281,7 +281,7 @@ def test_unknown_interrupt_becomes_abort_not_crash(tmp_path, monkeypatch):
 
 def _install_resume_fakes(monkeypatch, calls: list) -> dict:
     """记录调用序的 phase fakes；返回喂给 resume 的 interrupt payload。"""
-    import strategy_research.core.autoresearch as ar
+    import strategy_research.apps.autoresearch as ar
     import strategy_research.core.study.graph_preset as gp
     import strategy_research.core.study.phase_engine as pe
 

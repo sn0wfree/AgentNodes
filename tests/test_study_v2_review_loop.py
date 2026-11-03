@@ -172,7 +172,7 @@ def test_runner_high_deviation_stops_after_3(tmp_path, monkeypatch):
     import asyncio
     import itertools
 
-    import strategy_research.core.autoresearch as ar_mod
+    import strategy_research.apps.autoresearch as ar_mod
     from strategy_research.core.study.bootstrap import init_study_dir as _init_study_dir
     from strategy_research.core.goal import GoalStore
     from strategy_research.core.goal.context import default_goal_criteria

@@ -243,7 +243,7 @@ def evaluate_or_skip(
         return None
     if client is None:
         try:
-            from ..llm import LLMConfig, OpenAICompatClient
+            from strategy_research.core.llm import LLMConfig, OpenAICompatClient
             client = OpenAICompatClient(LLMConfig.load())
         except Exception as exc:                                # noqa: BLE001
             logger.warning("evaluate_or_skip: LLM client init failed: %s", exc)

@@ -15,13 +15,13 @@ from pathlib import Path
 from typing import Any
 
 # ── W-split re-exports ──────────────────────────────────────────────
-from .study.lazy_detect import detect_lazy_behavior  # noqa: E402,F401
-from .study.run_summary import (  # noqa: E402,F401
+from strategy_research.core.study.lazy_detect import detect_lazy_behavior  # noqa: E402,F401
+from strategy_research.core.study.run_summary import (  # noqa: E402,F401
     generate_run_summary,
     load_run_summary,
     save_run_summary,
 )
-from .study.stub_agents import _stub_agent_output  # noqa: E402,F401
+from strategy_research.core.study.stub_agents import _stub_agent_output  # noqa: E402,F401
 
 logger = logging.getLogger(__name__)
 
@@ -277,7 +277,7 @@ def retry_agent_spawn(
     Returns:
         解析后的字典
     """
-    from .agent.circuit_breaker import RetryPolicy
+    from strategy_research.core.agent.circuit_breaker import RetryPolicy
 
     policy = RetryPolicy(
         max_retries=max_retries,
@@ -868,10 +868,10 @@ def run_research_round(
     # Local imports keep the module import graph light for callers that
     # only need the helpers above.
     from strategy_research.core.backtest import run_backtest_script
-    from strategy_research.core.strategy_acceptance import (
+    from strategy_research.apps.strategy_acceptance import (
         decide as make_decision,
     )
-    from strategy_research.core.strategy_acceptance import (
+    from strategy_research.apps.strategy_acceptance import (
         load_config as load_acceptance_config,
     )
 
@@ -1289,7 +1289,7 @@ def run_execution_phase(
         {data_quality_output, factor_analyst_output, strategist_output,
          portfolio_construction_output, backtest_result, metrics, backtest_error}
     """
-    from strategy_research.core.autoresearch import save_agent_record
+    from strategy_research.apps.autoresearch import save_agent_record
     from strategy_research.core.backtest import run_backtest_script
 
     path = Path(workspace_path).resolve()
@@ -1365,11 +1365,11 @@ def run_evaluation_phase(
          anti_overfit_analyst_output, backtest_diagnostics_output,
          decision, verdict, aoa_llm_verdict}
     """
-    from strategy_research.core.autoresearch import save_agent_record
-    from strategy_research.core.strategy_acceptance import (
+    from strategy_research.apps.autoresearch import save_agent_record
+    from strategy_research.apps.strategy_acceptance import (
         decide as make_decision,
     )
-    from strategy_research.core.strategy_acceptance import (
+    from strategy_research.apps.strategy_acceptance import (
         load_config as load_acceptance_config,
     )
 

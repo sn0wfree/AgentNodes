@@ -10,7 +10,7 @@ from tempfile import TemporaryDirectory
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
 
-from strategy_research.core.autoresearch import (
+from strategy_research.apps.autoresearch import (
     build_agent_prompt,
     detect_lazy_behavior,
     generate_run_summary,

@@ -1,4 +1,4 @@
-"""H 档补测（P1-2b）—— `core/autoresearch.py` 的 run 目录与阶段函数。
+"""H 档补测（P1-2b）—— `apps/autoresearch.py` 的 run 目录与阶段函数。
 
 - ``_create_run_dir``：run 编号必须单调递增（重启后从 max+1 继续），
   且能接受外部 runs_dir（study 场景）。
@@ -16,7 +16,7 @@ from pathlib import Path
 
 import pytest
 
-from strategy_research.core import autoresearch as ar
+from strategy_research.apps import autoresearch as ar
 
 
 # ── _create_run_dir ───────────────────────────────────────
@@ -178,7 +178,7 @@ def test_evaluation_phase_runs_four_agents_then_decides(tmp_path, monkeypatch):
     calls: list = []
     _install_spawn(monkeypatch, calls)
 
-    from strategy_research.core import strategy_acceptance as sa
+    from strategy_research.apps import strategy_acceptance as sa
 
     class _Decision:
         accept = True
@@ -223,7 +223,7 @@ def test_evaluation_phase_maps_llm_verdict_fields(tmp_path, monkeypatch):
 
     monkeypatch.setattr(ar, "_make_spawn_fn", fake_make_spawn)
 
-    from strategy_research.core import strategy_acceptance as sa
+    from strategy_research.apps import strategy_acceptance as sa
     monkeypatch.setattr(sa, "decide", lambda **kw: captured.update(kw) or _FakeDecision())
     monkeypatch.setattr(sa, "load_config", lambda **kw: object())
 
@@ -242,7 +242,7 @@ def test_evaluation_phase_maps_llm_verdict_fields(tmp_path, monkeypatch):
 def test_evaluation_phase_discards_when_rejected(tmp_path, monkeypatch):
     _install_spawn(monkeypatch, [])
 
-    from strategy_research.core import strategy_acceptance as sa
+    from strategy_research.apps import strategy_acceptance as sa
     monkeypatch.setattr(sa, "decide", lambda **kw: _RejectDecision())
     monkeypatch.setattr(sa, "load_config", lambda **kw: object())
 

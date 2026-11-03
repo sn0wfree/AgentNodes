@@ -122,7 +122,7 @@ class TestMetricPassSet:
 
 class TestAcceptanceConfigFromTargets:
     def test_empty_returns_default(self):
-        from strategy_research.core.strategy_acceptance import DEFAULT_CONFIG
+        from strategy_research.apps.strategy_acceptance import DEFAULT_CONFIG
         assert acceptance_config_from_targets(None) is DEFAULT_CONFIG
         assert acceptance_config_from_targets([]) is DEFAULT_CONFIG
 
@@ -139,7 +139,7 @@ class TestAcceptanceConfigFromTargets:
         assert cfg.hard_max_dd_min == pytest.approx(-0.2)
 
     def test_unknown_names_ignored(self):
-        from strategy_research.core.strategy_acceptance import DEFAULT_CONFIG
+        from strategy_research.apps.strategy_acceptance import DEFAULT_CONFIG
         cfg = acceptance_config_from_targets([{"name": "not_a_field", "value": 1}])
         assert cfg.hard_calmar_min == DEFAULT_CONFIG.hard_calmar_min
 

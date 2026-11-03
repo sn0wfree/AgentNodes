@@ -125,15 +125,15 @@ def _finalize_autoresearch_round(
 
     Returns ``(verdict, decision)``.
     """
-    from strategy_research.core.autoresearch import (
+    from strategy_research.apps.autoresearch import (
         generate_run_summary,
         load_run_summary,
         save_run_summary,
     )
-    from strategy_research.core.strategy_acceptance import (
+    from strategy_research.apps.strategy_acceptance import (
         decide as make_decision,
     )
-    from strategy_research.core.strategy_acceptance import (
+    from strategy_research.apps.strategy_acceptance import (
         load_config as load_acceptance_config,
     )
 
@@ -204,7 +204,7 @@ def _run_cli_lazy_detection(
     run_dir: Path,
 ) -> None:
     """Run lazy detection for the round (CLI variant with console output)."""
-    from strategy_research.core.autoresearch import (
+    from strategy_research.apps.autoresearch import (
         detect_lazy_behavior,
         read_agent_history,
         save_laziness_report,
@@ -240,7 +240,7 @@ def _run_execution_agents(
     min_cooldown: float, max_retries: int, run_dir: Path,
 ) -> tuple[dict, dict, dict, dict]:
     """Step 3: spawn execution agents (DQ → factor → strategist → portfolio)."""
-    from strategy_research.core.autoresearch import (
+    from strategy_research.apps.autoresearch import (
         get_cooldown_seconds,
         retry_agent_spawn,
         save_agent_record,
@@ -321,7 +321,7 @@ def _run_evaluation_agents(
     jitter: float, min_cooldown: float, max_retries: int, run_dir: Path,
 ) -> tuple[dict, dict, dict, dict]:
     """Step 5: spawn evaluation agents (risk → attribution → anti-overfit → diag)."""
-    from strategy_research.core.autoresearch import (
+    from strategy_research.apps.autoresearch import (
         get_cooldown_seconds,
         retry_agent_spawn,
         save_agent_record,
@@ -398,7 +398,7 @@ def _run_evaluation_agents(
 
 def cmd_autoresearch(args: argparse.Namespace) -> int:
     """执行 autoresearch 命令 - 运行自动化研究循环。"""
-    from strategy_research.core.autoresearch import (
+    from strategy_research.apps.autoresearch import (
         DEFAULT_KEEP_RECENT,
         get_cooldown_seconds,
         read_current_state,
@@ -600,7 +600,7 @@ def _spawn_agent(agent_name: str, workspace_path: Path, strategy_name: str,
 
     返回: JSON 字符串, 调用方 parse_agent_output() 解码.
     """
-    from strategy_research.core.autoresearch import spawn_agent
+    from strategy_research.apps.autoresearch import spawn_agent
 
     return spawn_agent(
         agent_name, workspace_path, strategy_name,
