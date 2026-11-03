@@ -15,8 +15,8 @@ import pytest
 
 from strategy_research.core.agent.loop import AgentLoop
 from strategy_research.core.agent.tools import ToolRegistry
-from strategy_research.core.hooks.composite import AgentHook, CompositeHook
-from strategy_research.core.hooks.context import AgentHookContext
+from strategy_research.kernel.hooks.composite import AgentHook, CompositeHook
+from strategy_research.kernel.hooks.context import AgentHookContext
 from strategy_research.core.llm.config import LLMConfig
 
 # ── Test Hooks ─────────────────────────────────────────────

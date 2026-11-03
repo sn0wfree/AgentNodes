@@ -13,12 +13,12 @@ from typing import Any
 
 import pytest
 
-from strategy_research.core.hooks.composite import (
+from strategy_research.kernel.hooks.composite import (
     AgentHook,
     CompositeHook,
     NoOpHook,
 )
-from strategy_research.core.hooks.context import AgentHookContext
+from strategy_research.kernel.hooks.context import AgentHookContext
 from strategy_research.foundation.web import fetch as web_fetch
 
 

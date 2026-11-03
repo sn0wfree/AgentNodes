@@ -83,7 +83,7 @@ LAYER_MEMBERSHIP: dict[str, str] = {
     "strategy_research.core.swarm": "L3",
     "strategy_research.core.agent": "L3",
     "strategy_research.core.context": "L3",
-    "strategy_research.core.hooks": "L3",
+    "strategy_research.kernel.hooks": "L3",
     "strategy_research.kernel.permission": "L3",
     "strategy_research.core.memory": "L3",
     "strategy_research.kernel.skills": "L3",

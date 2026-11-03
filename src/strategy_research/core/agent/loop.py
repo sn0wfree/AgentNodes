@@ -42,8 +42,8 @@ from pathlib import Path
 from typing import Any, Callable
 
 from strategy_research.foundation.git import git_commit
-from ..hooks.composite import CompositeHook
-from ..hooks.context import AgentHookContext
+from strategy_research.kernel.hooks.composite import CompositeHook
+from strategy_research.kernel.hooks.context import AgentHookContext
 from ..llm import LLMConfig, LLMResponse, OpenAICompatClient, ToolCall
 from ..llm.errors import LLMError
 from ..memory.persistent import PersistentMemory
