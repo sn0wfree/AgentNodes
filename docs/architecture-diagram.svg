@@ -151,53 +151,37 @@
   <text x="842" y="176" class="bt">我们的 IP · 不动</text>
   <text x="842" y="196" class="st">工单在 ③ 执行面经端口进入研究域代码</text>
   <text x="842" y="212" class="sm">翼位置 = 工作发生的时间点 · 非重要性排序</text>
-  <rect x="842" y="226" width="331" height="96" rx="9" class="boxa"/>
-  <text x="858" y="248" class="bt">研究方法论</text>
-  <text x="858" y="268" class="st">假设→派生→证伪(claims)→AEGIS 门→journal</text>
-  <text x="858" y="288" class="sm">✅ method/ 归位（D1）· 禁 method→engine</text>
-  <rect x="842" y="334" width="331" height="110" rx="9" class="box"/>
-  <text x="858" y="356" class="bt">执行组件</text>
-  <text x="858" y="376" class="st">runner / scheduler / phase_engine</text>
-  <text x="858" y="394" class="st">director.py（停因建议 · apps ⚠）</text>
-  <text x="858" y="414" class="sm">graph_preset = 方法论阶段图（B1）</text>
-  <rect x="842" y="456" width="331" height="90" rx="9" class="box"/>
-  <text x="858" y="478" class="bt">研究账本</text>
-  <text x="858" y="498" class="st">hypothesis / claims / journal / study</text>
-  <text x="858" y="516" class="sm">真源 · 写入者 · 生命周期 · 幂等</text>
-  <rect x="842" y="558" width="331" height="90" rx="9" class="box"/>
-  <text x="858" y="580" class="bt">市场数据 market.duckdb</text>
-  <text x="858" y="600" class="st">价格 · 因子 · 读多写少</text>
-  <text x="858" y="618" class="sm">接入任务专写（独立写者）· D-3</text>
-  <rect x="842" y="660" width="331" height="90" rx="9" class="box"/>
-  <text x="858" y="682" class="bt">回测结果 + round 目录</text>
-  <text x="858" y="702" class="st">studies/{id}/rounds/ 布局（D-4 定）</text>
-  <text x="858" y="720" class="sm">登记走 P-3 · strategy.py 可 git · P-5 指针</text>
-  <rect x="842" y="762" width="331" height="90" rx="9" class="box"/>
-  <text x="858" y="784" class="bt">数据工具 core/tools（v7.2→apps）</text>
-  <text x="858" y="804" class="st">data_clean · data_transforms</text>
-  <text x="858" y="822" class="sm">仅被 config_runner/data_readiness/db 引用</text>
-  <rect x="842" y="864" width="331" height="74" rx="9" class="boxg"/>
-  <text x="858" y="884" class="st" style="font-weight:600">两条缝（结构并列 · 方向不对称）</text>
-  <text x="858" y="904" class="sm">⇢ 端口回调：kernel 驱动 apps（G2b 清 92）</text>
-  <text x="858" y="922" class="sm">⇠ 服务使用：apps 用平台（9 触点白名单）</text>
-  <rect x="842" y="950" width="331" height="554" rx="9" class="boxg"/>
-  <text x="858" y="972" class="bt">成员与体量速览（11-03 审计）</text>
-  <text x="858" y="996" class="st">apps：22 包 · 57.6k 行（全库 43%）</text>
-  <text x="858" y="1018" class="sm">study 10.9k · goal 6.1k · alpha_zoo 25.7k</text>
-  <text x="858" y="1038" class="sm">engine 2.4k · data_source 2.1k · hypothesis 1.5k</text>
-  <text x="858" y="1058" class="sm">compute_factor 1.4k · autoresearch 1.4k · db 1.3k</text>
-  <text x="858" y="1078" class="sm">strategy_acceptance 1.0k · 其余 ~4k · templates 0.5k</text>
-  <text x="858" y="1104" class="st">kernel：35.7k 行 —— 三子带</text>
-  <text x="858" y="1126" class="sm">控制面 4.1k（②本带）· 执行面 6.0k（③本带）</text>
-  <text x="858" y="1148" class="sm">能力面 24.6k：agent 22k 独大 · context</text>
-  <text x="858" y="1168" class="sm">hooks · permission · memory · skills · seq_gen(退役)</text>
-  <text x="858" y="1194" class="st">interfaces：29.5k（api 15.2k · cli 13.3k · mcp 0.9k）</text>
-  <text x="858" y="1216" class="st">foundation：10.8k（8% · 与 llmwikify 11% 同级）</text>
-  <text x="858" y="1246" class="sm">编号（L1→L4）与依赖阶梯 → 右栏侧边栏；</text>
-  <text x="858" y="1266" class="sm">DAG 七边图 → ⑦。两轴正交：本图 = 运行时旅程。</text>
-  <text x="858" y="1294" class="sm">G2b 后唯一「向上」的是端口回调——</text>
-  <text x="858" y="1314" class="sm">调用向上 · import 向下（经端口），</text>
-  <text x="858" y="1334" class="sm">这正是依赖倒置的全部意义。</text>
+  <rect x="842" y="240" width="331" height="96" rx="9" class="boxa"/>
+  <text x="858" y="262" class="bt">研究方法论</text>
+  <text x="858" y="282" class="st">假设→派生→证伪(claims)→AEGIS 门→journal</text>
+  <text x="858" y="302" class="sm">✅ method/ 归位（D1）· 禁 method→engine</text>
+  <rect x="842" y="396" width="331" height="110" rx="9" class="box"/>
+  <text x="858" y="418" class="bt">执行组件</text>
+  <text x="858" y="438" class="st">runner / scheduler / phase_engine</text>
+  <text x="858" y="456" class="st">director.py（停因建议 · apps ⚠）</text>
+  <text x="858" y="476" class="sm">graph_preset = 方法论阶段图（B1）</text>
+  <rect x="842" y="566" width="331" height="90" rx="9" class="box"/>
+  <text x="858" y="588" class="bt">研究账本</text>
+  <text x="858" y="608" class="st">hypothesis / claims / journal / study</text>
+  <text x="858" y="626" class="sm">真源 · 写入者 · 生命周期 · 幂等</text>
+  <rect x="842" y="716" width="331" height="90" rx="9" class="box"/>
+  <text x="858" y="738" class="bt">市场数据 market.duckdb</text>
+  <text x="858" y="758" class="st">价格 · 因子 · 读多写少</text>
+  <text x="858" y="776" class="sm">接入任务专写（独立写者）· D-3</text>
+  <rect x="842" y="866" width="331" height="90" rx="9" class="box"/>
+  <text x="858" y="888" class="bt">回测结果 + round 目录</text>
+  <text x="858" y="908" class="st">studies/{id}/rounds/ 布局（D-4 定）</text>
+  <text x="858" y="926" class="sm">登记走 P-3 · strategy.py 可 git · P-5 指针</text>
+  <rect x="842" y="1016" width="331" height="90" rx="9" class="box"/>
+  <text x="858" y="1038" class="bt">数据工具 core/tools（v7.2→apps）</text>
+  <text x="858" y="1058" class="st">data_clean · data_transforms</text>
+  <text x="858" y="1076" class="sm">仅被 config_runner/data_readiness/db 引用</text>
+  <rect x="842" y="1166" width="331" height="74" rx="9" class="boxg"/>
+  <text x="858" y="1186" class="st" style="font-weight:600">两条缝（结构并列 · 方向不对称）</text>
+  <text x="858" y="1206" class="sm">⇢ 端口回调：kernel 驱动 apps（G2b 清 92）</text>
+  <text x="858" y="1224" class="sm">⇠ 服务使用：apps 用平台（9 触点白名单）</text>
+  <text x="858" y="1268" class="sm">编号阶梯 / 成员体量速览 → 右栏侧边栏；</text>
+  <text x="858" y="1290" class="sm">本翼只放研究域业务组件（运行时旅程视角）。</text>
   <text x="1260" y="168" class="lyr">中枢与护栏</text>
   <rect x="1260" y="180" width="300" height="110" rx="10" class="box"/>
   <text x="1276" y="206" class="bt">InvariantLayer · 底线 ✅</text>
@@ -266,6 +250,22 @@
   <text x="1276" y="1540" class="sm">G2b 后唯一「向上」的是端口回调——</text>
   <text x="1276" y="1558" class="sm">调用向上 · import 向下（经端口）。</text>
   <text x="1276" y="1588" class="sm">各层跨层边数详见 ⑦ DAG / 矩阵。</text>
+  <rect x="1260" y="1640" width="300" height="400" rx="10" class="boxg"/>
+  <text x="1276" y="1664" class="bt">成员与体量速览（11-03 审计）</text>
+  <text x="1276" y="1688" class="st">apps：22 包 · 57.6k 行（全库 43%）</text>
+  <text x="1276" y="1710" class="sm">study 10.9k · alpha_zoo 25.7k · goal 6.1k</text>
+  <text x="1276" y="1730" class="sm">engine 2.4k · data_source 2.1k</text>
+  <text x="1276" y="1750" class="sm">hypothesis 1.5k · compute_factor 1.4k</text>
+  <text x="1276" y="1770" class="sm">autoresearch 1.4k · db 1.3k</text>
+  <text x="1276" y="1790" class="sm">strategy_acceptance 1.0k · 其余 ~4k</text>
+  <text x="1276" y="1816" class="st">kernel：35.7k —— 三子带</text>
+  <text x="1276" y="1838" class="sm">控制面 4.1k（②）· 执行面 6.0k（③）</text>
+  <text x="1276" y="1858" class="sm">能力面 24.6k：agent 22k 独大</text>
+  <text x="1276" y="1878" class="sm">context/hooks/permission/memory/skills</text>
+  <text x="1276" y="1904" class="st">interfaces：29.5k（api 15.2k · cli 13.3k）</text>
+  <text x="1276" y="1926" class="st">foundation：10.8k（8% · llmwikify 11% 同级）</text>
+  <text x="1276" y="1952" class="sm">口径：AST import 扫描；行数含空行注释；</text>
+  <text x="1276" y="1972" class="sm">scripts/templates 不计入门禁。</text>
   <line x1="430" y1="1504" x2="430" y2="1518" class="arb"/>
   <line x1="1000" y1="1504" x2="1000" y2="1518" class="arb"/>
   <text x="40" y="1548" class="lyr">⑥ foundation（L4 · 共同底座）</text>
