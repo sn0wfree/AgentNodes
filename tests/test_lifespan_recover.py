@@ -13,7 +13,7 @@ from pathlib import Path
 import pytest
 from fastapi.testclient import TestClient
 
-from strategy_research.api.routers import study_helpers
+from strategy_research.interfaces.api.routers import study_helpers
 
 
 @pytest.fixture
@@ -30,7 +30,7 @@ def _env(tmp_path: Path, monkeypatch):
 
 def test_lifespan_invokes_recover_on_startup(_env, monkeypatch):
     """``recover_on_startup`` must be awaited during lifespan startup."""
-    from strategy_research.api.app import create_app
+    from strategy_research.interfaces.api.app import create_app
 
     calls: list[bool] = []
 
@@ -51,7 +51,7 @@ def test_lifespan_recover_handles_running_study(_env, monkeypatch):
     """End-to-end: pre-seed a RUNNING study; after lifespan it becomes
     INTERRUPTED (per recover policy: running → interrupted, manual resume).
     """
-    from strategy_research.api.app import create_app
+    from strategy_research.interfaces.api.app import create_app
     from strategy_research.apps.study import StudyStatus, StudyStore
 
     # Pre-seed a "left over from prior process" RUNNING study.

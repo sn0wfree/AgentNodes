@@ -84,7 +84,7 @@ def _create_schema(temp_db) -> None:
 
 def _run_migration(temp_db) -> None:
     """Run the migration directly on the temp DB."""
-    from strategy_research.api.routers.web_session import _migrate_text_part_ids
+    from strategy_research.interfaces.api.routers.web_session import _migrate_text_part_ids
     conn = sqlite3.connect(str(temp_db))
     conn.row_factory = sqlite3.Row
     _migrate_text_part_ids(conn)

@@ -17,8 +17,8 @@ import pytest
 def _build_asgi_app():
     from fastapi import FastAPI
 
-    from strategy_research.api.middleware import AuthMiddleware
-    from strategy_research.api.routers import workflow
+    from strategy_research.interfaces.api.middleware import AuthMiddleware
+    from strategy_research.interfaces.api.routers import workflow
 
     app = FastAPI()
     app.add_middleware(AuthMiddleware)
@@ -27,7 +27,7 @@ def _build_asgi_app():
 
 
 def _client(app):
-    from strategy_research.api.auth_tokens import create_token
+    from strategy_research.interfaces.api.auth_tokens import create_token
 
     return httpx.AsyncClient(
         transport=httpx.ASGITransport(app=app), base_url="http://test",
@@ -52,7 +52,7 @@ def _fake_runner(progress: dict | None = None) -> SimpleNamespace:
 @pytest.fixture(autouse=True)
 def _clean_runners():
     """Reset module-level _active_runners dict around every test."""
-    from strategy_research.api.routers import workflow as wf_router
+    from strategy_research.interfaces.api.routers import workflow as wf_router
 
     wf_router._active_runners.clear()
     yield
@@ -93,7 +93,7 @@ async def test_status_unknown_goal_returns_not_found():
 async def test_status_returns_runner_progress():
     import time
     app = _build_asgi_app()
-    from strategy_research.api.routers import workflow as wf_router
+    from strategy_research.interfaces.api.routers import workflow as wf_router
 
     runner = _fake_runner({"status": "running", "progress": 75})
     wf_router._active_runners["g-1"] = {
@@ -117,7 +117,7 @@ async def test_status_returns_runner_progress():
 async def test_status_prunes_terminal_entries():
     """Completed runners are pruned on access; subsequent reads return not_found."""
     app = _build_asgi_app()
-    from strategy_research.api.routers import workflow as wf_router
+    from strategy_research.interfaces.api.routers import workflow as wf_router
 
     runner = _fake_runner({"status": "completed", "hook_completed": True})
     wf_router._active_runners["g-done"] = {
@@ -145,7 +145,7 @@ async def test_pause_unknown_goal_returns_404():
 @pytest.mark.asyncio
 async def test_pause_invokes_runner_pause():
     app = _build_asgi_app()
-    from strategy_research.api.routers import workflow as wf_router
+    from strategy_research.interfaces.api.routers import workflow as wf_router
 
     runner = _fake_runner()
     wf_router._active_runners["g-1"] = {
@@ -170,7 +170,7 @@ async def test_resume_unknown_goal_returns_404():
 @pytest.mark.asyncio
 async def test_resume_invokes_runner_resume():
     app = _build_asgi_app()
-    from strategy_research.api.routers import workflow as wf_router
+    from strategy_research.interfaces.api.routers import workflow as wf_router
 
     runner = _fake_runner()
     wf_router._active_runners["g-1"] = {
@@ -198,7 +198,7 @@ async def test_directive_unknown_goal_returns_404():
 @pytest.mark.asyncio
 async def test_directive_passes_content_to_runner():
     app = _build_asgi_app()
-    from strategy_research.api.routers import workflow as wf_router
+    from strategy_research.interfaces.api.routers import workflow as wf_router
 
     runner = _fake_runner()
     wf_router._active_runners["g-1"] = {

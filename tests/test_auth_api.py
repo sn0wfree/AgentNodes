@@ -5,16 +5,16 @@ from __future__ import annotations
 import pytest
 from fastapi.testclient import TestClient
 
-from strategy_research.api.app import create_app
-from strategy_research.api.auth_tokens import create_token
-from strategy_research.api.routers import auth as auth_router
+from strategy_research.interfaces.api.app import create_app
+from strategy_research.interfaces.api.auth_tokens import create_token
+from strategy_research.interfaces.api.routers import auth as auth_router
 
 
 @pytest.fixture
 def client(tmp_path, monkeypatch):
     """Isolated user DB under tmp_path (never touches ~/.quantnodes)."""
-    import strategy_research.api.user_db as user_db
-    from strategy_research.api.routers import auth as auth_router
+    import strategy_research.interfaces.api.user_db as user_db
+    from strategy_research.interfaces.api.routers import auth as auth_router
     real_get = user_db.get_user_db
     monkeypatch.setattr(user_db, "get_user_db", lambda *a, **k: real_get(tmp_path))
     monkeypatch.setattr(auth_router, "_user_db", None)
@@ -88,7 +88,7 @@ def test_change_password_second_user_isolated(client: TestClient) -> None:
     the first user's change (regression: previous global hash scan
     updated the FIRST match, which could be the wrong account)."""
     db = auth_router._get_user_db()
-    from strategy_research.api.user_db import hash_password
+    from strategy_research.interfaces.api.user_db import hash_password
     db.create_user("bob", "Bob", hash_password("shared"))
     db.create_user("alice", "Alice", hash_password("shared"))
 
@@ -108,7 +108,7 @@ def test_change_password_second_user_isolated(client: TestClient) -> None:
 def test_change_password_updates_token_users_hash(client: TestClient) -> None:
     """The change applies to the token-bound account specifically."""
     db = auth_router._get_user_db()
-    from strategy_research.api.user_db import hash_password
+    from strategy_research.interfaces.api.user_db import hash_password
     db.create_user("bob", "Bob", hash_password("bobpass"))
     bob = db.get_user_by_username("bob")
 

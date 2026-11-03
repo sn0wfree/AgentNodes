@@ -28,7 +28,7 @@ def _force_status(store, study_id: str, status: StudyStatus) -> None:
 
 
 def _bearer(user_id: str = "tester") -> dict:
-    from strategy_research.api.auth_tokens import create_token
+    from strategy_research.interfaces.api.auth_tokens import create_token
 
     return {"Authorization": f"Bearer {create_token(user_id)}"}
 
@@ -36,9 +36,9 @@ def _bearer(user_id: str = "tester") -> dict:
 def _build_asgi_app():
     from fastapi import FastAPI
 
-    from strategy_research.api.middleware import AuthMiddleware
-    from strategy_research.api.routers import chat, study
-    from strategy_research.api.routers.web_session import router as session_router
+    from strategy_research.interfaces.api.middleware import AuthMiddleware
+    from strategy_research.interfaces.api.routers import chat, study
+    from strategy_research.interfaces.api.routers.web_session import router as session_router
 
     app = FastAPI()
     app.add_middleware(AuthMiddleware)
@@ -317,7 +317,7 @@ def test_idor_blocks_other_users_study(tmp_path, monkeypatch):
     monkeypatch.setenv("QUANTNODES_RESEARCH_HYPOTHESES_PATH", str(tmp_path / "h.json"))
     monkeypatch.setenv("SR_ENFORCE_STUDY_IDOR", "1")
     import sqlite3
-    from strategy_research.api.auth_tokens import create_token
+    from strategy_research.interfaces.api.auth_tokens import create_token
     from strategy_research.apps.study import StudyStore
 
     # sessions: owner-1 属于 alice，owner-2 属于 bob
@@ -349,7 +349,7 @@ def test_idor_blocks_other_users_study(tmp_path, monkeypatch):
     )
     study_id = rec.study_id
 
-    from strategy_research.api.app import create_app
+    from strategy_research.interfaces.api.app import create_app
     from fastapi.testclient import TestClient
 
     client = TestClient(
@@ -383,7 +383,7 @@ def test_idor_allows_own_study(tmp_path, monkeypatch):
     monkeypatch.setenv("QUANTNODES_RESEARCH_HYPOTHESES_PATH", str(tmp_path / "h.json"))
     monkeypatch.setenv("SR_ENFORCE_STUDY_IDOR", "1")
     import sqlite3
-    from strategy_research.api.auth_tokens import create_token
+    from strategy_research.interfaces.api.auth_tokens import create_token
     from strategy_research.apps.study import StudyStore
 
     conn = sqlite3.connect(str(tmp_path / "sessions.db"))
@@ -410,7 +410,7 @@ def test_idor_allows_own_study(tmp_path, monkeypatch):
         owner_session_id="owner-1", goal_id=None, objective="alice's study",
         workspace_path=str(tmp_path), strategy_name="demo",
     )
-    from strategy_research.api.app import create_app
+    from strategy_research.interfaces.api.app import create_app
     from fastapi.testclient import TestClient
 
     client = TestClient(
@@ -428,7 +428,7 @@ def test_idor_enforcement_off_allows_cross_user(tmp_path, monkeypatch):
     monkeypatch.setenv("QUANTNODES_RESEARCH_HYPOTHESES_PATH", str(tmp_path / "h.json"))
     monkeypatch.setenv("SR_ENFORCE_STUDY_IDOR", "0")
     import sqlite3
-    from strategy_research.api.auth_tokens import create_token
+    from strategy_research.interfaces.api.auth_tokens import create_token
     from strategy_research.apps.study import StudyStore
 
     conn = sqlite3.connect(str(tmp_path / "sessions.db"))
@@ -455,7 +455,7 @@ def test_idor_enforcement_off_allows_cross_user(tmp_path, monkeypatch):
         owner_session_id="owner-9", goal_id=None, objective="bob's",
         workspace_path=str(tmp_path), strategy_name="demo",
     )
-    from strategy_research.api.app import create_app
+    from strategy_research.interfaces.api.app import create_app
     from fastapi.testclient import TestClient
 
     client = TestClient(
@@ -472,8 +472,8 @@ def test_idor_unknown_study_404(tmp_path, monkeypatch):
     monkeypatch.setenv("QUANTNODES_RESEARCH_HYPOTHESES_PATH", str(tmp_path / "h.json"))
     monkeypatch.setenv("SR_ENFORCE_STUDY_IDOR", "1")
     monkeypatch.setenv("SR_SESSIONS_DB", str(tmp_path / "sessions.db"))
-    from strategy_research.api.auth_tokens import create_token
-    from strategy_research.api.app import create_app
+    from strategy_research.interfaces.api.auth_tokens import create_token
+    from strategy_research.interfaces.api.app import create_app
     from fastapi.testclient import TestClient
 
     client = TestClient(
@@ -490,7 +490,7 @@ def test_idor_empty_owner_denied_for_named_user(tmp_path, monkeypatch):
     monkeypatch.setenv("QUANTNODES_RESEARCH_GOAL_DB_PATH", str(tmp_path / "g.db"))
     monkeypatch.setenv("QUANTNODES_RESEARCH_HYPOTHESES_PATH", str(tmp_path / "h.json"))
     monkeypatch.setenv("SR_ENFORCE_STUDY_IDOR", "1")
-    from strategy_research.api.auth_tokens import create_token
+    from strategy_research.interfaces.api.auth_tokens import create_token
     from strategy_research.apps.study import StudyStore
 
     store = StudyStore()
@@ -515,7 +515,7 @@ def test_idor_empty_owner_denied_for_named_user(tmp_path, monkeypatch):
     conn.close()
     monkeypatch.setenv("SR_SESSIONS_DB", str(tmp_path / "sessions.db"))
 
-    from strategy_research.api.app import create_app
+    from strategy_research.interfaces.api.app import create_app
     from fastapi.testclient import TestClient
 
     client = TestClient(
@@ -839,7 +839,7 @@ class TestRetryRoundNumbering:
 async def test_dispatch_retry_accepts_mode_field(_env, monkeypatch):
     """HTTP: POST /actions/retry (deprecated → CONTINUE) with mode='restart'."""
     study_id, _ = _env
-    from strategy_research.api.routers import study as routers_study
+    from strategy_research.interfaces.api.routers import study as routers_study
     from unittest.mock import AsyncMock, MagicMock
 
     fake = MagicMock()

@@ -157,7 +157,7 @@ class SQLiteStore:
         from ``api.session`` (event_store.py) -- same precedent, so this
         adds no new import direction.
         """
-        from ...api.session.web_session_db import _ensure_schema
+        from strategy_research.interfaces.api.session.web_session_db import _ensure_schema
 
         _ensure_schema(conn)
 

@@ -196,7 +196,7 @@ class TestSQLiteStoreDirect:
         ``web_session_db._ensure_schema``, so ``message_parts`` exists even
         when SQLiteStore is what created the file.
         """
-        from strategy_research.api.session.web_session_db import _ensure_schema
+        from strategy_research.interfaces.api.session.web_session_db import _ensure_schema
 
         db = tmp_path / "schema.db"
         store = SQLiteStore(db)

@@ -16,7 +16,7 @@ import pytest
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
 
-from strategy_research.api.session.projector import (
+from strategy_research.interfaces.api.session.projector import (
     ProjectedSession,
     Projector,
 )
@@ -146,7 +146,7 @@ class TestProjectedSessionRoundTrip:
         raw dicts. from_dict must rebuild ProjectedPart objects or
         parts_in_order() (which reads .seq) crashes with
         AttributeError on the snapshot round-trip path."""
-        from strategy_research.api.session.projector import (
+        from strategy_research.interfaces.api.session.projector import (
             ProjectedMessage,
             ProjectedPart,
         )
@@ -176,7 +176,7 @@ class TestProjectedSessionRoundTrip:
         assert s2.messages["m1"].open_thinking_part_id is None
 
     def test_round_trip_preserves_message_fields(self):
-        from strategy_research.api.session.projector import ProjectedMessage
+        from strategy_research.interfaces.api.session.projector import ProjectedMessage
         s = ProjectedSession(session_id="s", last_seq=2)
         s.messages["m1"] = ProjectedMessage(
             id="m1", session_id="s", role="user",
@@ -250,7 +250,7 @@ class TestProjectSeedsFromSnapshot:
         # Seed a snapshot directly at seq 100 with 100 messages.
         prior = ProjectedSession(session_id="s1", last_seq=100)
         for i in range(1, 101):
-            from strategy_research.api.session.projector import ProjectedMessage
+            from strategy_research.interfaces.api.session.projector import ProjectedMessage
             prior.messages[f"m{i}"] = ProjectedMessage(
                 id=f"m{i}", session_id="s1", role="user",
                 content=str(i), seq=i, parts={},
@@ -285,7 +285,7 @@ class TestProjectSeedsFromSnapshot:
         # Seed snapshot at seq=100 with 100 messages.
         prior = ProjectedSession(session_id="s1", last_seq=100)
         for i in range(1, 101):
-            from strategy_research.api.session.projector import ProjectedMessage
+            from strategy_research.interfaces.api.session.projector import ProjectedMessage
             prior.messages[f"m{i}"] = ProjectedMessage(
                 id=f"m{i}", session_id="s1", role="user",
                 content=str(i), seq=i, parts={},

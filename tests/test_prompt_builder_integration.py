@@ -22,7 +22,7 @@ class TestPhase5RemovedLegacyPaths:
     def test_chat_py_no_more_get_system_prompt(self):
         """``from .chat import _get_system_prompt`` must raise ImportError."""
         with __import__("pytest").raises(ImportError):
-            from strategy_research.api.routers.chat import _get_system_prompt  # noqa: F401
+            from strategy_research.interfaces.api.routers.chat import _get_system_prompt  # noqa: F401
 
     def test_no_chat_prompt_path_constant(self):
         """``from cli.tui import _CHAT_PROMPT_PATH`` must raise ImportError."""
@@ -52,7 +52,7 @@ class TestPhase5CallSitesUseFactory:
         ), f"{file} should reference PromptBuilderFactory or build_chat_agent_loop"
 
     def test_chat_py_routes_through_factory(self):
-        from strategy_research.api.routers import chat
+        from strategy_research.interfaces.api.routers import chat
 
         src = open(chat.__file__, encoding="utf-8").read()
         self._assert_routed(src, "chat.py")
@@ -61,7 +61,7 @@ class TestPhase5CallSitesUseFactory:
         )
 
     def test_service_py_routes_through_factory(self):
-        from strategy_research.api.session import service
+        from strategy_research.interfaces.api.session import service
 
         src = open(service.__file__, encoding="utf-8").read()
         self._assert_routed(src, "service.py")

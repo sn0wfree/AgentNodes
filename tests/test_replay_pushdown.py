@@ -109,7 +109,7 @@ class TestTraceProjectionConsumesFilteredReplay:
     async def test_projection_only_deserializes_trace_types(
         self, es: EventStore,
     ) -> None:
-        from strategy_research.api.session.trace_projection import TraceProjection
+        from strategy_research.interfaces.api.session.trace_projection import TraceProjection
         # 95 deltas + 5 trace events.
         for i in range(95):
             _emit(es, "s1", EventType.TEXT_DELTA)

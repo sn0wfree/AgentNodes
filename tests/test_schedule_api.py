@@ -20,9 +20,9 @@ from strategy_research.kernel.scheduled_research.store import ScheduledResearchS
 def _build_asgi_app():
     from fastapi import FastAPI
 
-    from strategy_research.api.middleware import AuthMiddleware
-    from strategy_research.api.routers import chat, schedule, study
-    from strategy_research.api.routers.web_session import router as session_router
+    from strategy_research.interfaces.api.middleware import AuthMiddleware
+    from strategy_research.interfaces.api.routers import chat, schedule, study
+    from strategy_research.interfaces.api.routers.web_session import router as session_router
 
     app = FastAPI()
     app.add_middleware(AuthMiddleware)
@@ -76,7 +76,7 @@ def _app_env(tmp_path: Path, monkeypatch):
 
 
 def _bearer(user_id: str = "tester") -> dict:
-    from strategy_research.api.auth_tokens import create_token
+    from strategy_research.interfaces.api.auth_tokens import create_token
 
     return {"Authorization": f"Bearer {create_token(user_id)}"}
 

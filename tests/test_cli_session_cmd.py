@@ -28,7 +28,7 @@ def _make_sessions_db(tmp_path: Path) -> Path:
     """
     import sqlite3
 
-    from strategy_research.api.session.web_session_db import _ensure_schema
+    from strategy_research.interfaces.api.session.web_session_db import _ensure_schema
 
     db_path = tmp_path / "sessions.db"
     conn = sqlite3.connect(str(db_path))

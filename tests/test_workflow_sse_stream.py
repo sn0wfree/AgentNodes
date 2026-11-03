@@ -69,7 +69,7 @@ class _StubRunner:
 async def test_workflow_event_stream_initial_frame_is_named_progress():
     """First emitted frame must be `event: progress` carrying the full
     progress dict (so the frontend progress handler can sync DAG nodes)."""
-    from strategy_research.api.routers.workflow import workflow_event_stream
+    from strategy_research.interfaces.api.routers.workflow import workflow_event_stream
 
     runner = _StubRunner()
     frames: list[str] = []
@@ -99,7 +99,7 @@ async def test_workflow_event_stream_agent_complete_emits_dag_update():
     """Each agent_complete observer event must surface as
     `event: dag_update` with {node_id, status=success} so the DAG panel
     updates individual nodes without waiting for the next heartbeat."""
-    from strategy_research.api.routers.workflow import workflow_event_stream
+    from strategy_research.interfaces.api.routers.workflow import workflow_event_stream
 
     runner = _StubRunner()
     gen = workflow_event_stream(runner)
@@ -132,7 +132,7 @@ async def test_workflow_event_stream_agent_complete_emits_dag_update():
 async def test_workflow_event_stream_layer_start_refreshes_progress():
     """layer_start must emit a named `progress` frame so the frontend
     sees current_layer moving without polling."""
-    from strategy_research.api.routers.workflow import workflow_event_stream
+    from strategy_research.interfaces.api.routers.workflow import workflow_event_stream
 
     runner = _StubRunner()
     runner._state.current_layer = 0
@@ -177,7 +177,7 @@ async def test_workflow_event_stream_heartbeat_when_idle():
     """When the queue is empty past the 1s timeout, the stream emits
     a `progress` heartbeat so the frontend gets fresh state without
     backend action."""
-    from strategy_research.api.routers.workflow import workflow_event_stream
+    from strategy_research.interfaces.api.routers.workflow import workflow_event_stream
 
     runner = _StubRunner()
     gen = workflow_event_stream(runner)

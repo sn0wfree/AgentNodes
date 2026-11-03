@@ -39,9 +39,9 @@ def event_bus():
 def session_service(temp_db, event_bus):
     import sqlite3
 
-    from strategy_research.api.routers.web_session import _ensure_schema
-    from strategy_research.api.session.service import SessionService
-    from strategy_research.api.session.store import SessionStore
+    from strategy_research.interfaces.api.routers.web_session import _ensure_schema
+    from strategy_research.interfaces.api.session.service import SessionService
+    from strategy_research.interfaces.api.session.store import SessionStore
     conn = sqlite3.connect(str(temp_db))
     try:
         _ensure_schema(conn)
@@ -67,7 +67,7 @@ def stub_runner(monkeypatch):
         await asyncio.sleep(0.02)
 
     monkeypatch.setattr(
-        "strategy_research.api.session.service.SessionService._run_attempt",
+        "strategy_research.interfaces.api.session.service.SessionService._run_attempt",
         fake_run,
     )
     return calls
@@ -75,7 +75,7 @@ def stub_runner(monkeypatch):
 
 def _ensure_session(store, session_id: str) -> None:
     """Create the session row if it doesn't already exist."""
-    from strategy_research.api.routers.web_session import _get_db
+    from strategy_research.interfaces.api.routers.web_session import _get_db
 
     conn = _get_db()
     row = conn.execute(
@@ -180,7 +180,7 @@ async def test_attempt_exception_does_not_stop_queue(
         # Subsequent calls succeed silently
 
     monkeypatch.setattr(
-        "strategy_research.api.session.service.SessionService._run_attempt",
+        "strategy_research.interfaces.api.session.service.SessionService._run_attempt",
         flaky_run,
     )
 

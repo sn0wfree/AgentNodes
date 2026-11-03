@@ -41,8 +41,8 @@ class TestWebUIServe:
         working because serial collection order let some other test make
         the attribute resolvable; under xdist it raised AttributeError.
         """
-        with patch("strategy_research.api.app.create_app") as create, \
-             patch("strategy_research.api.app.configure_from_env") as config:
+        with patch("strategy_research.interfaces.api.app.create_app") as create, \
+             patch("strategy_research.interfaces.api.app.configure_from_env") as config:
             fake_app = MagicMock()
             create.return_value = fake_app
             config.return_value = {

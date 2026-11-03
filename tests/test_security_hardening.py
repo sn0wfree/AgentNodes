@@ -19,7 +19,7 @@ from fastapi.testclient import TestClient
 
 @pytest.fixture
 def app():
-    from strategy_research.api.app import create_app
+    from strategy_research.interfaces.api.app import create_app
     return create_app(workspace_path=None)
 
 
@@ -106,7 +106,7 @@ class TestTokenForgery:
 
     def test_expired_token_rejected(self, client):
 
-        from strategy_research.api.auth_tokens import create_token
+        from strategy_research.interfaces.api.auth_tokens import create_token
 
         expired = create_token("admin", ttl=-100)
         resp = client.get("/api/goal/status", headers={
@@ -145,7 +145,7 @@ class TestSessionIDOR:
         import time
         import uuid
 
-        from strategy_research.api.user_db import get_user_db, hash_password
+        from strategy_research.interfaces.api.user_db import get_user_db, hash_password
         db = get_user_db()
         with sqlite3.connect(str(db._db_path)) as conn:
             conn.execute(

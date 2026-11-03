@@ -41,7 +41,7 @@ class TestTypedIds:
 
     def test_service_layer_uses_typed_ids(self):
         """SessionService.cancel accepts AttemptId."""
-        from strategy_research.api.session.service import SessionService
+        from strategy_research.interfaces.api.session.service import SessionService
         import inspect
 
         sig = inspect.signature(SessionService.cancel)
@@ -50,7 +50,7 @@ class TestTypedIds:
         assert param.annotation is not None
 
     def test_service_cancel_session_uses_typed_ids(self):
-        from strategy_research.api.session.service import SessionService
+        from strategy_research.interfaces.api.session.service import SessionService
         import inspect
 
         sig = inspect.signature(SessionService.cancel_session)

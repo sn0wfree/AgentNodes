@@ -23,7 +23,7 @@ def test_all_entries_share_one_gateway_instance(tmp_path, monkeypatch):
     (tmp_path / "c.json").write_text('{"llm": {"enabled": false}}', encoding="utf-8")
     monkeypatch.setenv("LLM_API_KEY", "dummy")
 
-    from strategy_research.api.routers.chat import _get_gateway as router_gw
+    from strategy_research.interfaces.api.routers.chat import _get_gateway as router_gw
     from strategy_research.cli.tui.session import _get_cli_gateway as cli_gw
     from strategy_research.apps.study.scheduler import _get_gateway_singleton
 

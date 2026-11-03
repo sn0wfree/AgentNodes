@@ -52,9 +52,9 @@ def _make_user(client, admin: dict, username: str, password: str = "pw") -> dict
 @pytest.fixture
 def setup(tmp_path, monkeypatch):
     """Isolated app with tmp session DB + user DB + goal/hypothesis paths."""
-    import strategy_research.api.user_db as user_db
-    from strategy_research.api.routers import auth as auth_router
-    from strategy_research.api.app import create_app
+    import strategy_research.interfaces.api.user_db as user_db
+    from strategy_research.interfaces.api.routers import auth as auth_router
+    from strategy_research.interfaces.api.app import create_app
 
     monkeypatch.setattr(auth_router, "_DEFAULT_ITERATIONS", 1000)
     monkeypatch.setattr(user_db, "hash_password",

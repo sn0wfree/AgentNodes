@@ -12,7 +12,7 @@ from pathlib import Path
 
 import pytest
 
-from strategy_research.api.user_db import (
+from strategy_research.interfaces.api.user_db import (
     UserDB,
     get_user_db,
     hash_password,

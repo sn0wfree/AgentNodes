@@ -11,8 +11,8 @@ import pytest
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
 
-from strategy_research.api.auth_tokens import create_token
-from strategy_research.api.routers.workflow import router
+from strategy_research.interfaces.api.auth_tokens import create_token
+from strategy_research.interfaces.api.routers.workflow import router
 
 
 @pytest.fixture

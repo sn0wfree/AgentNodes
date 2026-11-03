@@ -235,7 +235,7 @@ class TestStoragePathResolution:
 
     def test_create_app_still_works(self, monkeypatch):
         monkeypatch.delenv("HYPOTHESIS_USE_SQLITE", raising=False)
-        from strategy_research.api.app import create_app
+        from strategy_research.interfaces.api.app import create_app
         app = create_app()
         assert app is not None
 

@@ -8,7 +8,7 @@ import time
 from pathlib import Path
 
 import pytest
-import strategy_research.api.session.web_session_db as _wsdb
+import strategy_research.interfaces.api.session.web_session_db as _wsdb
 
 ROOT_PATH = Path(__file__).resolve().parents[1]
 SRC_PATH = ROOT_PATH / "src"
@@ -20,13 +20,13 @@ sys.path.insert(0, str(ROOT_PATH))
 def temp_db(tmp_path, monkeypatch):
     db_path = tmp_path / "test.db"
     monkeypatch.setenv("SR_WORKSPACE_PATH", str(tmp_path))
-    import strategy_research.api.routers.web_session as ws
+    import strategy_research.interfaces.api.routers.web_session as ws
     monkeypatch.setattr(_wsdb, "_get_db_path", lambda: db_path)
     yield db_path
 
 
 def _ensure_schema(db_path: Path) -> None:
-    import strategy_research.api.routers.web_session as ws
+    import strategy_research.interfaces.api.routers.web_session as ws
     with ws._get_db() as conn:
         ws._ensure_schema(conn)
 
@@ -54,7 +54,7 @@ def _insert_message_with_parts(db_path: Path, sid: str, parts: list, ts: float =
     import uuid
     mid = str(uuid.uuid4())
     parts_json = json.dumps(parts, ensure_ascii=False)
-    import strategy_research.api.routers.web_session as ws
+    import strategy_research.interfaces.api.routers.web_session as ws
     with ws._get_db() as conn:
         # Ensure column exists for the test (commit 6 dropped it).
         # Use a fresh table-create for each new test to avoid schema
@@ -167,7 +167,7 @@ class TestBackfillMessageParts:
         # Insert with parts_json=null (need to re-add the column)
         import uuid
 
-        import strategy_research.api.routers.web_session as ws
+        import strategy_research.interfaces.api.routers.web_session as ws
         mid = str(uuid.uuid4())
         with ws._get_db() as conn:
             if not ws._has_column(conn, "messages", "parts_json"):
@@ -191,7 +191,7 @@ class TestBackfillMessageParts:
         db_path = temp_db
         _ensure_schema(db_path)
         # Use a single connection to ensure schema cache consistency
-        import strategy_research.api.routers.web_session as ws
+        import strategy_research.interfaces.api.routers.web_session as ws
         with ws._get_db() as conn:
             conn.execute(
                 "INSERT INTO sessions (id, user_id, title, created_at, updated_at) "

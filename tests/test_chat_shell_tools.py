@@ -7,7 +7,7 @@ from __future__ import annotations
 
 import pytest
 
-from strategy_research.api.routers.chat import _shell_tools_enabled
+from strategy_research.interfaces.api.routers.chat import _shell_tools_enabled
 
 
 @pytest.mark.parametrize("value", ["1", "true", "TRUE", "True", "yes", "YES"])

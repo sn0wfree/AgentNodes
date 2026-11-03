@@ -161,7 +161,7 @@ class TestFlushPreservesMetadata(unittest.TestCase):
         preserve the existing metadata when the projection has none."""
         import tempfile
 
-        from strategy_research.api.session.projector import Projector
+        from strategy_research.interfaces.api.session.projector import Projector
 
         with tempfile.TemporaryDirectory(ignore_cleanup_errors=True) as tmp:
             db = self._db_with_messages(Path(tmp))
@@ -236,7 +236,7 @@ class TestGetMessagesMostRecent(unittest.TestCase):
         (not the oldest 1..100)."""
         import tempfile
 
-        from strategy_research.api.session.store import SessionStore
+        from strategy_research.interfaces.api.session.store import SessionStore
 
         with tempfile.TemporaryDirectory(ignore_cleanup_errors=True) as tmp:
             db = self._db_with_messages(Path(tmp), 120)
@@ -246,7 +246,7 @@ class TestGetMessagesMostRecent(unittest.TestCase):
             conn = sqlite3.connect(str(db))
             conn.row_factory = sqlite3.Row
             with patch(
-                "strategy_research.api.routers.web_session._get_db",
+                "strategy_research.interfaces.api.routers.web_session._get_db",
                 return_value=conn,
             ):
                 msgs = store.get_messages("s0", limit=100)
@@ -263,7 +263,7 @@ class TestCompactNoSelfConfig(unittest.TestCase):
         """compact_history referenced self.config (never set) → every
         /compact failed with AttributeError. Empty history must return
         cleanly without touching config."""
-        from strategy_research.api.session.service import SessionService
+        from strategy_research.interfaces.api.session.service import SessionService
 
         store = MagicMock()
         store.get_messages.return_value = []

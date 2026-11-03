@@ -10,6 +10,7 @@ import logging
 from pathlib import Path
 from typing import Any
 
+import strategy_research
 from fastapi import APIRouter
 
 logger = logging.getLogger(__name__)
@@ -19,7 +20,7 @@ router = APIRouter()
 # ── Schema cache ───────────────────────────────────────────────────────
 
 _PROMPTS_DIR = (
-    Path(__file__).resolve().parent.parent.parent
+    Path(strategy_research.__file__).parent
     / "templates" / ".prompts"
 )
 

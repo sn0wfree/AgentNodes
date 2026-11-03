@@ -18,7 +18,7 @@ SRC = Path(__file__).resolve().parents[1] / "src" / "strategy_research"
 
 def test_format_event_v2_wire_shape():
     """EventV2 -> SSE frame: id from .id, event from .type, data as JSON."""
-    from strategy_research.api.routers.chat import _format_event_v2
+    from strategy_research.interfaces.api.routers.chat import _format_event_v2
     from strategy_research.kernel.events.event_v2 import EventV2
 
     ev = EventV2.create(
@@ -35,7 +35,7 @@ def test_format_event_v2_wire_shape():
 
 def test_format_event_v2_handles_non_json_payload():
     """Defensive: unserialisable payload degrades to {} instead of raising."""
-    from strategy_research.api.routers.chat import _format_event_v2
+    from strategy_research.interfaces.api.routers.chat import _format_event_v2
     from strategy_research.kernel.events.event_v2 import EventV2
 
     ev = EventV2.create(

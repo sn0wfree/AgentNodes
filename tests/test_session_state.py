@@ -15,8 +15,8 @@ from __future__ import annotations
 import pytest
 from fastapi.testclient import TestClient
 
-from strategy_research.api.app import create_app
-from strategy_research.api.auth_tokens import create_token
+from strategy_research.interfaces.api.app import create_app
+from strategy_research.interfaces.api.auth_tokens import create_token
 
 
 @pytest.fixture
@@ -156,7 +156,7 @@ class _FakeRunner:
 
 def test_shape_workflow_from_live_runner():
     """A live runner surfaces DAG nodes (status-mapped) + edges."""
-    from strategy_research.api.routers.web_session import (
+    from strategy_research.interfaces.api.routers.web_session import (
         _shape_workflow_for_frontend,
     )
 
@@ -175,7 +175,7 @@ def test_shape_workflow_from_live_runner():
 
 def test_shape_agents_from_workflow():
     """Agent roster derives id/status from the workflow snapshot."""
-    from strategy_research.api.routers.web_session import (
+    from strategy_research.interfaces.api.routers.web_session import (
         _shape_agents_for_frontend,
         _shape_workflow_for_frontend,
     )
@@ -196,7 +196,7 @@ def test_shape_agents_from_workflow():
 
 def test_shape_agents_empty_without_workflow():
     """No workflow → no agents."""
-    from strategy_research.api.routers.web_session import (
+    from strategy_research.interfaces.api.routers.web_session import (
         _shape_agents_for_frontend,
     )
 

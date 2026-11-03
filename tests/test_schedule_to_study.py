@@ -214,7 +214,7 @@ def test_app_lifespan_starts_daemon_and_migrates(tmp_path, monkeypatch, ws):
 
     from fastapi.testclient import TestClient
 
-    from strategy_research.api.app import create_app
+    from strategy_research.interfaces.api.app import create_app
 
     started = {}
 

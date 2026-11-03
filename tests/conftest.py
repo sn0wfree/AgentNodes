@@ -39,12 +39,21 @@ _CANARY_DIRS = (
 
 def _snapshot_real_config() -> dict[str, tuple[int, float]]:
     """记录真实配置目录的 文件名→(大小, mtime) 指纹（递归，跳过沙箱自身）。"""
+    sandbox_root = _home_sandbox.SANDBOX_HOME
     snapshot: dict[str, tuple[int, float]] = {}
     for root in _CANARY_DIRS:
         if not root.exists():
             continue
         for path in root.rglob("*"):
             if path.is_file():
+                # xdist worker 继承主进程被 apply() 污染的 USERPROFILE 时，
+                # REAL_HOME 会误指向沙箱本身——此时扫描的是沙箱，必须排除，
+                # 否则任何写 model_catalog.json 的测试都会误报"绕过沙箱"。
+                try:
+                    if sandbox_root in path.resolve().parents:
+                        continue
+                except OSError:
+                    continue
                 try:
                     stat = path.stat()
                     snapshot[str(path)] = (stat.st_size, stat.st_mtime)
@@ -290,7 +299,7 @@ def _close_session_services():
     (``web_session._ensure_schema``) fails with ``database is locked``.
     """
     yield
-    import strategy_research.api.routers.chat as _chat_mod
+    import strategy_research.interfaces.api.routers.chat as _chat_mod
 
     cache = _chat_mod._session_service_cache
     for svc in cache.values():
@@ -323,7 +332,7 @@ def _close_session_services():
         pass
 
     # Drop thread-local web_session connections on the main thread.
-    import strategy_research.api.routers.web_session as _ws_mod
+    import strategy_research.interfaces.api.routers.web_session as _ws_mod
 
     tl = getattr(_ws_mod, "_db_thread_local", None)
     if tl is not None:

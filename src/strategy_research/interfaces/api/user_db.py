@@ -1,7 +1,7 @@
 """SQLite-backed user store — replaces in-memory dict for persistence.
 
 Usage:
-    from strategy_research.api.user_db import get_user_db
+    from strategy_research.interfaces.api.user_db import get_user_db
     db = get_user_db("/path/to/workspace")
     db.create_user("admin", "Admin", hash_password("admin"))
     user = db.get_user_by_username("admin")

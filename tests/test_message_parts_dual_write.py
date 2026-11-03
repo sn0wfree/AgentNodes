@@ -8,7 +8,7 @@ The read path is unchanged in this commit. Commit 5 will switch it.
 """
 from __future__ import annotations
 
-import strategy_research.api.session.web_session_db as _wsdb
+import strategy_research.interfaces.api.session.web_session_db as _wsdb
 
 import json
 import sqlite3
@@ -28,14 +28,14 @@ def temp_db(monkeypatch, tmp_path):
     db_path = tmp_path / "test.db"
     monkeypatch.setenv("SR_WORKSPACE_PATH", str(tmp_path))
     # Patch _get_db_path to return our temp db
-    import strategy_research.api.routers.web_session as ws
+    import strategy_research.interfaces.api.routers.web_session as ws
     monkeypatch.setattr(_wsdb, "_get_db_path", lambda: db_path)
     monkeypatch.setattr(ws, "_get_db_path", lambda: db_path)
     # Re-import the module so it picks up the patch
     yield db_path
     # Cleanup: close any open connection
     try:
-        from strategy_research.api.routers.web_session import _get_db
+        from strategy_research.interfaces.api.routers.web_session import _get_db
         with _get_db():
             pass
     except Exception:
@@ -44,7 +44,7 @@ def temp_db(monkeypatch, tmp_path):
 
 def _ensure_schema(db_path: Path) -> None:
     """Run _ensure_schema on the test DB; fixture owns the path patch."""
-    import strategy_research.api.routers.web_session as ws
+    import strategy_research.interfaces.api.routers.web_session as ws
     with ws._get_db() as conn:
         ws._ensure_schema(conn)
 
@@ -75,7 +75,7 @@ class TestMessagePartsDualWrite:
         sid = "test-sess-1"
         _create_session(db_path, sid)
 
-        from strategy_research.api.routers.web_session import persist_message
+        from strategy_research.interfaces.api.routers.web_session import persist_message
 
         parts = [
             {"type": "text", "id": "t1", "text": "hello"},
@@ -120,7 +120,7 @@ class TestMessagePartsDualWrite:
         sid = "test-sess-2"
         _create_session(db_path, sid)
 
-        from strategy_research.api.routers.web_session import persist_message
+        from strategy_research.interfaces.api.routers.web_session import persist_message
         msg_id = persist_message(
             session_id=sid, role="user", content="hi", parts=None,
         )
@@ -138,7 +138,7 @@ class TestMessagePartsDualWrite:
         sid = "test-sess-3"
         _create_session(db_path, sid)
 
-        from strategy_research.api.routers.web_session import persist_message
+        from strategy_research.interfaces.api.routers.web_session import persist_message
         parts = [{"type": "text", "text": str(i)} for i in range(10)]
         msg_id = persist_message(
             session_id=sid, role="assistant", content="x", parts=parts,
@@ -167,7 +167,7 @@ class TestMessagePartsDualWrite:
         sid = "test-sess-4"
         _create_session(db_path, sid)
 
-        from strategy_research.api.routers.web_session import _get_db, _row_to_message, persist_message
+        from strategy_research.interfaces.api.routers.web_session import _get_db, _row_to_message, persist_message
 
         parts = [
             {"type": "text", "id": "t1", "text": "hi"},
@@ -203,7 +203,7 @@ class TestMessagePartsDualWrite:
         sid = "test-sess-5"
         _create_session(db_path, sid)
 
-        from strategy_research.api.routers.web_session import persist_message
+        from strategy_research.interfaces.api.routers.web_session import persist_message
 
         persist_message(
             session_id=sid, role="assistant", content="x",
@@ -221,7 +221,7 @@ class TestMessagePartsDualWrite:
         sid = "test-sess-6"
         _create_session(db_path, sid)
 
-        from strategy_research.api.routers.web_session import persist_message
+        from strategy_research.interfaces.api.routers.web_session import persist_message
         persist_message(
             session_id=sid, role="assistant", content="x",
             parts=[{"type": "text", "text": "a"}, {"type": "text", "text": "b"}],
@@ -246,7 +246,7 @@ class TestMessagePartsDualWrite:
         sid = "test-sess-7"
         _create_session(db_path, sid)
 
-        from strategy_research.api.routers.web_session import persist_message
+        from strategy_research.interfaces.api.routers.web_session import persist_message
         # Mix of valid and invalid parts
         parts = [
             {"type": "text", "text": "valid"},

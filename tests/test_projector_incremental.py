@@ -18,7 +18,7 @@ from pathlib import Path
 from tests._fixtures.legacy_event_bus_v2 import EventBusV2
 from strategy_research.kernel.events.event_v2 import EventV2
 from tests._fixtures.legacy_events import EventBus
-from strategy_research.api.session.projector import Projector
+from strategy_research.interfaces.api.session.projector import Projector
 
 
 def _setup_db(db_path: Path) -> None:

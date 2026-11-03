@@ -138,7 +138,7 @@ def test_round_run_dirs_sorted(tmp_path, monkeypatch):
     for name in ("run_0003", "run_0001", "run_0002"):
         (round_dir / name).mkdir(parents=True, exist_ok=True)
 
-    from strategy_research.api.routers.study import _round_run_dirs
+    from strategy_research.interfaces.api.routers.study import _round_run_dirs
     dirs = _round_run_dirs(ws, "st-1", 3)
     assert [d.name for d in dirs] == ["run_0001", "run_0002", "run_0003"]
     assert dirs[-1].name == "run_0003"

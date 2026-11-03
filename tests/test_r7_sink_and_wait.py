@@ -133,7 +133,7 @@ def test_wait_turn_times_out_when_no_turn():
 
 
 def test_bridge_unsubscribes_after_terminal_event():
-    from strategy_research.api.routers import chat as chat_mod
+    from strategy_research.interfaces.api.routers import chat as chat_mod
 
     gw = Gateway(client=FakeClient())
     holder: dict[str, str] = {}
@@ -151,7 +151,7 @@ def test_bridge_unsubscribes_after_terminal_event():
 
 
 def test_bridge_stays_registered_until_terminal():
-    from strategy_research.api.routers import chat as chat_mod
+    from strategy_research.interfaces.api.routers import chat as chat_mod
 
     gw = Gateway(client=FakeClient())
     close = chat_mod._install_chat_event_bridge(
@@ -164,7 +164,7 @@ def test_bridge_stays_registered_until_terminal():
 
 def test_two_requests_same_session_do_not_duplicate_events():
     """连续两个请求：第一个的 bridge 已注销，不会重复推送。"""
-    from strategy_research.api.routers import chat as chat_mod
+    from strategy_research.interfaces.api.routers import chat as chat_mod
 
     gw = Gateway(client=FakeClient())
     delivered: list[str] = []

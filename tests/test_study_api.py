@@ -17,9 +17,9 @@ import pytest
 def _build_asgi_app():
     from fastapi import FastAPI
 
-    from strategy_research.api.middleware import AuthMiddleware
-    from strategy_research.api.routers import chat, study
-    from strategy_research.api.routers.web_session import router as session_router
+    from strategy_research.interfaces.api.middleware import AuthMiddleware
+    from strategy_research.interfaces.api.routers import chat, study
+    from strategy_research.interfaces.api.routers.web_session import router as session_router
 
     app = FastAPI()
     app.add_middleware(AuthMiddleware)
@@ -76,7 +76,7 @@ def _app_env(tmp_path: Path, monkeypatch):
 
 
 def _bearer(user_id: str = "tester") -> dict:
-    from strategy_research.api.auth_tokens import create_token
+    from strategy_research.interfaces.api.auth_tokens import create_token
 
     return {"Authorization": f"Bearer {create_token(user_id)}"}
 
@@ -302,7 +302,7 @@ def _seed_study(_app_env, tmp_path, monkeypatch, *, objective="test objective",
 
 
 def _api_client():
-    from strategy_research.api.auth_tokens import create_token
+    from strategy_research.interfaces.api.auth_tokens import create_token
 
     return httpx.AsyncClient(transport=httpx.ASGITransport(app=_build_asgi_app()),
                              base_url="http://test",
@@ -580,7 +580,7 @@ async def test_start_autoresearch_returns_study_id(_app_env, monkeypatch):
     """autoresearch 路径：mock scheduler.submit，期望返回 study_id + goal_id + queued。"""
     from unittest.mock import AsyncMock, MagicMock
 
-    from strategy_research.api.routers import study as study_router
+    from strategy_research.interfaces.api.routers import study as study_router
 
     sched = MagicMock()
     sched.submit = AsyncMock()
@@ -611,7 +611,7 @@ async def test_start_invalid_objective_returns_400(_app_env, monkeypatch):
     """空 objective → GoalStore ValueError → 400。"""
     from unittest.mock import MagicMock
 
-    from strategy_research.api.routers import study as study_router
+    from strategy_research.interfaces.api.routers import study as study_router
 
     sched = MagicMock()
     sched.submit = MagicMock()
@@ -635,7 +635,7 @@ async def test_start_internal_error_returns_500(_app_env, monkeypatch):
     """GoalStore 抛非 HTTP 异常 → 500。"""
     from unittest.mock import MagicMock, patch
 
-    from strategy_research.api.routers import study as study_router
+    from strategy_research.interfaces.api.routers import study as study_router
 
     sched = MagicMock()
     sched.submit = MagicMock()
@@ -774,7 +774,7 @@ async def test_resume_interrupted_study_calls_resume_interrupted(
     """INTERRUPTED 状态的 study 应走 sched.resume_interrupted 路径。"""
     from unittest.mock import AsyncMock, MagicMock
 
-    from strategy_research.api.routers import study as study_router
+    from strategy_research.interfaces.api.routers import study as study_router
     from strategy_research.apps.study import StudyStatus, StudyStore
 
     db_path = tmp_path / "goals.db"
@@ -808,7 +808,7 @@ async def test_resume_interrupted_failure_returns_400(_app_env, tmp_path, monkey
     """resume_interrupted 返回 False → 400。"""
     from unittest.mock import AsyncMock, MagicMock
 
-    from strategy_research.api.routers import study as study_router
+    from strategy_research.interfaces.api.routers import study as study_router
     from strategy_research.apps.study import StudyStatus, StudyStore
 
     db_path = tmp_path / "goals.db"
@@ -839,7 +839,7 @@ async def test_resume_unknown_study_returns_404(_app_env, monkeypatch):
     """resume 不存在的 study_id → 404。"""
     from unittest.mock import MagicMock
 
-    from strategy_research.api.routers import study as study_router
+    from strategy_research.interfaces.api.routers import study as study_router
 
     sched = MagicMock()
     sched.resume = MagicMock()
@@ -864,7 +864,7 @@ async def test_start_rejects_strategy_name_with_path_traversal(_app_env, monkeyp
 
     from unittest.mock import AsyncMock, MagicMock
 
-    from strategy_research.api.routers import study as study_router
+    from strategy_research.interfaces.api.routers import study as study_router
 
     sched = MagicMock()
     sched.submit = AsyncMock()
@@ -890,7 +890,7 @@ async def test_start_accepts_plain_strategy_name(_app_env, monkeypatch):
     """A1: 合法的 strategy_name 仍然通过。"""
     from unittest.mock import AsyncMock, MagicMock
 
-    from strategy_research.api.routers import study as study_router
+    from strategy_research.interfaces.api.routers import study as study_router
 
     sched = MagicMock()
     sched.submit = AsyncMock()

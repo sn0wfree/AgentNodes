@@ -7,7 +7,7 @@ from unittest.mock import patch, MagicMock
 import httpx
 import pytest
 
-from strategy_research.api.auth_tokens import create_token
+from strategy_research.interfaces.api.auth_tokens import create_token
 
 
 def _bearer(user_id: str = "tester") -> dict:
@@ -16,8 +16,8 @@ def _bearer(user_id: str = "tester") -> dict:
 
 def _build_app():
     from fastapi import FastAPI
-    from strategy_research.api.middleware import AuthMiddleware
-    from strategy_research.api.routers import search as search_router
+    from strategy_research.interfaces.api.middleware import AuthMiddleware
+    from strategy_research.interfaces.api.routers import search as search_router
     app = FastAPI()
     app.add_middleware(AuthMiddleware)
     app.include_router(search_router.router)

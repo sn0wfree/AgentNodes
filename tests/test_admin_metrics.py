@@ -15,7 +15,7 @@ from __future__ import annotations
 import pytest
 from fastapi.testclient import TestClient
 
-from strategy_research.api.app import create_app
+from strategy_research.interfaces.api.app import create_app
 
 _TOKEN = "test-admin-secret-metrics"
 

@@ -14,7 +14,8 @@ from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 from starlette.middleware.cors import CORSMiddleware
 
-from .. import __version__
+import strategy_research
+from strategy_research import __version__
 
 logger = logging.getLogger(__name__)
 
@@ -230,7 +231,7 @@ def create_app(
     # React SPA under webui/static (mounted below) + /api/* REST.
 
     # Serve static files if available
-    static_path = Path(static_dir) if static_dir else Path(__file__).parent.parent.parent.parent / "webui" / "static"
+    static_path = Path(static_dir) if static_dir else Path(strategy_research.__file__).parent.parent.parent / "webui" / "static"
     if static_path.exists():
         _mount_static_files(app, static_path)
     else:

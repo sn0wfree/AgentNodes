@@ -10,8 +10,8 @@ from fastapi.testclient import TestClient
 
 @pytest.fixture
 def client():
-    from strategy_research.api.app import create_app
-    from strategy_research.api.auth_tokens import create_token
+    from strategy_research.interfaces.api.app import create_app
+    from strategy_research.interfaces.api.auth_tokens import create_token
 
     app = create_app()
     c = TestClient(app)
@@ -104,7 +104,7 @@ class TestChatAPI:
                 "status": status,
             }
         svc.send_message = _send
-        return patch("strategy_research.api.routers.chat._get_session_service",
+        return patch("strategy_research.interfaces.api.routers.chat._get_session_service",
                      return_value=svc)
 
     def test_send_async(self, client):
@@ -200,7 +200,7 @@ class TestMessages:
         assert res.status_code == 404
 
     def test_persist_message_via_helper(self, client):
-        from strategy_research.api.routers.web_session import (
+        from strategy_research.interfaces.api.routers.web_session import (
             _get_db,
             persist_message,
         )
@@ -225,7 +225,7 @@ class TestMessages:
         assert sess["message_count"] == 1
 
     def test_persist_message_with_parts(self, client):
-        from strategy_research.api.routers.web_session import persist_message
+        from strategy_research.interfaces.api.routers.web_session import persist_message
         sid = self._create_session(client)
         parts = [
             {"type": "text", "text": "Hello"},
@@ -242,7 +242,7 @@ class TestMessages:
 
     def test_delete_session_cascades_messages(self, client):
         """Soft-delete preserves messages (no CASCADE)."""
-        from strategy_research.api.routers.web_session import persist_message
+        from strategy_research.interfaces.api.routers.web_session import persist_message
         sid = self._create_session(client)
         persist_message(session_id=sid, role="user", content="msg1")
         persist_message(session_id=sid, role="assistant", content="reply")
@@ -252,7 +252,7 @@ class TestMessages:
         # Delete session (soft-delete)
         client.delete(f"/api/chat/session/{sid}")
         # Messages should still be there (soft delete preserves them)
-        from strategy_research.api.routers.web_session import _get_db
+        from strategy_research.interfaces.api.routers.web_session import _get_db
         conn = _get_db()
         count = conn.execute(
             "SELECT COUNT(*) AS c FROM messages WHERE session_id = ?", (sid,)
@@ -293,7 +293,7 @@ class TestMessages:
         assert res.json()["archived"] is True
 
     def test_messages_pagination(self, client):
-        from strategy_research.api.routers.web_session import persist_message
+        from strategy_research.interfaces.api.routers.web_session import persist_message
         sid = self._create_session(client)
         for i in range(5):
             persist_message(
@@ -310,7 +310,7 @@ class TestMessages:
 
 class TestAutoTitle:
     def test_auto_title_from_first_message(self, client):
-        from strategy_research.api.routers.web_session import (
+        from strategy_research.interfaces.api.routers.web_session import (
             _get_db,
             auto_title_session,
         )
@@ -325,7 +325,7 @@ class TestAutoTitle:
         assert row["title"].endswith("…") or len("帮我设计一个 alpha 策略") <= 30
 
     def test_auto_title_skips_non_default(self, client):
-        from strategy_research.api.routers.web_session import (
+        from strategy_research.interfaces.api.routers.web_session import (
             auto_title_session,
         )
         res = client.post("/api/chat/session", json={"title": "Custom"})
@@ -334,12 +334,12 @@ class TestAutoTitle:
         assert new_title is None
 
     def test_auto_title_truncates_long(self, client):
-        from strategy_research.api.routers.web_session import auto_title_session
+        from strategy_research.interfaces.api.routers.web_session import auto_title_session
         res = client.post("/api/chat/session", json={"title": "新会话"})
         sid = res.json()["id"]
         long = "x" * 100
         auto_title_session(sid, long)
-        from strategy_research.api.routers.web_session import _get_db
+        from strategy_research.interfaces.api.routers.web_session import _get_db
         conn = _get_db()
         row = conn.execute("SELECT title FROM sessions WHERE id = ?", (sid,)).fetchone()
         # Should be 29 chars + "…" = 30 chars total (max_len=30)
@@ -348,7 +348,7 @@ class TestAutoTitle:
 
 class TestFTSSearch:
     def test_search_returns_hits(self, client):
-        from strategy_research.api.routers.web_session import persist_message
+        from strategy_research.interfaces.api.routers.web_session import persist_message
         res = client.post("/api/chat/session", json={"title": "搜索测试"})
         sid = res.json()["id"]
         persist_message(
@@ -381,7 +381,7 @@ class TestFTSSearch:
         assert res.json()["hits"] == []
 
     def test_search_filters_archived(self, client):
-        from strategy_research.api.routers.web_session import persist_message
+        from strategy_research.interfaces.api.routers.web_session import persist_message
         res = client.post("/api/chat/session", json={"title": "归档"})
         sid = res.json()["id"]
         persist_message(session_id=sid, role="user", content="uniquearchword123")
@@ -448,7 +448,7 @@ class TestFTSMigration:
 
     def test_rebuilds_when_wrong_tokenizer(self, tmp_path, monkeypatch):
         """DB with unicode61 tokenizer → _ensure_schema rebuilds as trigram."""
-        from strategy_research.api.routers import web_session
+        from strategy_research.interfaces.api.routers import web_session
 
         db_path = tmp_path / "test_malformed.db"
         self._create_db_with_unicode61(db_path)
@@ -474,7 +474,7 @@ class TestFTSMigration:
 
     def test_backfills_messages_after_rebuild(self, tmp_path, monkeypatch):
         """Existing messages must be searchable after the rebuild."""
-        from strategy_research.api.routers import web_session
+        from strategy_research.interfaces.api.routers import web_session
 
         db_path = tmp_path / "test_backfill.db"
         self._create_db_with_unicode61(db_path)
@@ -498,7 +498,7 @@ class TestFTSMigration:
 
     def test_idempotent_when_already_trigram(self, tmp_path, monkeypatch, caplog):
         """Calling _ensure_schema twice must not rebuild a healthy FTS table."""
-        from strategy_research.api.routers import web_session
+        from strategy_research.interfaces.api.routers import web_session
 
         db_path = tmp_path / "test_idempotent.db"
         self._create_db_with_unicode61(db_path)
@@ -519,7 +519,7 @@ class TestFTSMigration:
         # Second call → must not drop/recreate
         caplog.clear()
         import logging
-        caplog.set_level(logging.WARNING, logger="strategy_research.api.routers.web_session")
+        caplog.set_level(logging.WARNING, logger="strategy_research.interfaces.api.routers.web_session")
         conn = sqlite3.connect(str(db_path))
         try:
             web_session._ensure_schema(conn)

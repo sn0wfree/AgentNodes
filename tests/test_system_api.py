@@ -10,7 +10,7 @@ from fastapi.testclient import TestClient
 
 @pytest.fixture
 def client():
-    from strategy_research.api.app import create_app
+    from strategy_research.interfaces.api.app import create_app
 
     app = create_app(workspace_path=None)
     return TestClient(app)

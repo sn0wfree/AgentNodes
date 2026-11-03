@@ -31,7 +31,7 @@ class TestStudyTodosEndpoint:
         """GET /{id}/todos should return todos.md content."""
         ws, study_dir = _create_study_with_files(tmp_path)
 
-        from strategy_research.api.routers.study import study_todos
+        from strategy_research.interfaces.api.routers.study import study_todos
         from fastapi import Request
 
         study = SimpleNamespace(
@@ -42,7 +42,7 @@ class TestStudyTodosEndpoint:
         request = MagicMock(spec=Request)
         request.state.user_id = "test-user"
 
-        with patch("strategy_research.api.routers.study._owned_study", return_value=study):
+        with patch("strategy_research.interfaces.api.routers.study._owned_study", return_value=study):
             result = asyncio.run(study_todos(request, "test-study"))
 
         assert result["status"] == "ok"
@@ -54,7 +54,7 @@ class TestStudyTodosEndpoint:
         ws = tmp_path / "workspace"
         ws.mkdir(parents=True, exist_ok=True)
 
-        from strategy_research.api.routers.study import study_todos
+        from strategy_research.interfaces.api.routers.study import study_todos
         from fastapi import Request
 
         study = SimpleNamespace(
@@ -65,7 +65,7 @@ class TestStudyTodosEndpoint:
         request = MagicMock(spec=Request)
         request.state.user_id = "test-user"
 
-        with patch("strategy_research.api.routers.study._owned_study", return_value=study):
+        with patch("strategy_research.interfaces.api.routers.study._owned_study", return_value=study):
             result = asyncio.run(study_todos(request, "test-study"))
 
         assert result["status"] == "ok"
@@ -77,7 +77,7 @@ class TestStudyKnowledgeEndpoint:
         """GET /{id}/knowledge should return knowledge.md content."""
         ws, study_dir = _create_study_with_files(tmp_path)
 
-        from strategy_research.api.routers.study import study_knowledge
+        from strategy_research.interfaces.api.routers.study import study_knowledge
         from fastapi import Request
 
         study = SimpleNamespace(
@@ -88,7 +88,7 @@ class TestStudyKnowledgeEndpoint:
         request = MagicMock(spec=Request)
         request.state.user_id = "test-user"
 
-        with patch("strategy_research.api.routers.study._owned_study", return_value=study):
+        with patch("strategy_research.interfaces.api.routers.study._owned_study", return_value=study):
             result = asyncio.run(study_knowledge(request, "test-study"))
 
         assert result["status"] == "ok"
@@ -100,7 +100,7 @@ class TestStudyKnowledgeEndpoint:
         ws = tmp_path / "workspace"
         ws.mkdir(parents=True, exist_ok=True)
 
-        from strategy_research.api.routers.study import study_knowledge
+        from strategy_research.interfaces.api.routers.study import study_knowledge
         from fastapi import Request
 
         study = SimpleNamespace(
@@ -111,7 +111,7 @@ class TestStudyKnowledgeEndpoint:
         request = MagicMock(spec=Request)
         request.state.user_id = "test-user"
 
-        with patch("strategy_research.api.routers.study._owned_study", return_value=study):
+        with patch("strategy_research.interfaces.api.routers.study._owned_study", return_value=study):
             result = asyncio.run(study_knowledge(request, "test-study"))
 
         assert result["status"] == "ok"

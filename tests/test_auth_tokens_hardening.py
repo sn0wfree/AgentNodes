@@ -33,7 +33,7 @@ def _current_at():
     import importlib
     import sys
 
-    key = "strategy_research.api.auth_tokens"
+    key = "strategy_research.interfaces.api.auth_tokens"
     if key not in sys.modules:
         importlib.import_module(key)
     return sys.modules[key]
@@ -66,7 +66,7 @@ def _reset_secret_cache(tmp_path, monkeypatch):
 
 def _reload():
     """Reload the module to re-evaluate module-level constants if any."""
-    import strategy_research.api.auth_tokens as at
+    import strategy_research.interfaces.api.auth_tokens as at
 
     importlib.reload(at)
     return at

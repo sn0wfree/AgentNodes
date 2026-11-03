@@ -1,6 +1,6 @@
 """EventV2 — typed event envelope for the event_log table (Level 3, B1 commit 2).
 
-P0-1 A2 (2026-08-15): moved from ``strategy_research.api.session.event_v2``
+P0-1 A2 (2026-08-15): moved from ``strategy_research.interfaces.api.session.event_v2``
 to ``strategy_research.kernel.events.event_v2`` so ``core/agent/event_store``
 can depend on it without inverting the core/api layering. The public surface
 (EventV2, EventType, is_known_event_type) is unchanged; only the import

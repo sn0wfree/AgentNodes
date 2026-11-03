@@ -16,7 +16,7 @@ from pathlib import Path
 import pytest
 from fastapi.testclient import TestClient
 
-from strategy_research.api.app import create_app
+from strategy_research.interfaces.api.app import create_app
 from strategy_research.foundation.observability.hanging_events import (
     EVENT_CHAT_STALL,
     EVENT_CIRCUIT_OPEN,
@@ -228,7 +228,7 @@ class TestStudyHangingEventsApi:
         )
         conn.commit()
         conn.close()
-        from strategy_research.api.auth_tokens import create_token
+        from strategy_research.interfaces.api.auth_tokens import create_token
         from strategy_research.apps.study import StudyStore
 
         store = StudyStore()

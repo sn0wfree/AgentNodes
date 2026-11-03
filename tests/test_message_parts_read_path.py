@@ -25,15 +25,15 @@ def temp_db(tmp_path, monkeypatch):
     monkeypatch.setenv("SR_WORKSPACE_PATH", str(tmp_path))
     # 路径解析发生在 web_session_db 模块内（router 的同名重导出只影响
     # router 自身的名字，不会改变 web_session_db 里的解析），两个模块都要 patch。
-    import strategy_research.api.routers.web_session as ws
-    import strategy_research.api.session.web_session_db as _wsdb
+    import strategy_research.interfaces.api.routers.web_session as ws
+    import strategy_research.interfaces.api.session.web_session_db as _wsdb
     monkeypatch.setattr(_wsdb, "_get_db_path", lambda: db_path)
     monkeypatch.setattr(ws, "_get_db_path", lambda: db_path)
     yield db_path
 
 
 def _ensure_schema(db_path: Path) -> None:
-    import strategy_research.api.routers.web_session as ws
+    import strategy_research.interfaces.api.routers.web_session as ws
     with ws._get_db() as conn:
         ws._ensure_schema(conn)
 
@@ -59,7 +59,7 @@ class TestRowToMessageWithParts:
         db_path = temp_db
         _ensure_schema(db_path)
         _create_session(db_path, "sess-1")
-        from strategy_research.api.routers.web_session import _row_to_message, persist_message
+        from strategy_research.interfaces.api.routers.web_session import _row_to_message, persist_message
 
         # Create a message with message_parts
         parts = [
@@ -99,7 +99,7 @@ class TestRowToMessageWithParts:
         db_path = temp_db
         _ensure_schema(db_path)
         _create_session(db_path, "sess-1")
-        from strategy_research.api.routers.web_session import _get_db, _row_to_message
+        from strategy_research.interfaces.api.routers.web_session import _get_db, _row_to_message
 
         mid = str(uuid.uuid4())
         with _get_db() as conn:
@@ -133,7 +133,7 @@ class TestRowToMessageWithParts:
         db_path = temp_db
         _ensure_schema(db_path)
         _create_session(db_path, "sess-1")
-        from strategy_research.api.routers.web_session import _get_db, _row_to_message
+        from strategy_research.interfaces.api.routers.web_session import _get_db, _row_to_message
 
         mid = str(uuid.uuid4())
         with _get_db() as conn:
@@ -160,7 +160,7 @@ class TestRowToMessageWithParts:
         db_path = temp_db
         _ensure_schema(db_path)
         _create_session(db_path, "sess-1")
-        from strategy_research.api.routers.web_session import _row_to_message, persist_message
+        from strategy_research.interfaces.api.routers.web_session import _row_to_message, persist_message
 
         msg_id = persist_message(
             session_id="sess-1", role="user", content="hello", parts=None,
@@ -182,7 +182,7 @@ class TestRowToMessageWithParts:
         db_path = temp_db
         _ensure_schema(db_path)
         _create_session(db_path, "sess-1")
-        from strategy_research.api.routers.web_session import _row_to_message, persist_message
+        from strategy_research.interfaces.api.routers.web_session import _row_to_message, persist_message
 
         msg_id = persist_message(
             session_id="sess-1", role="assistant", content="⚠️ error msg",
@@ -205,7 +205,7 @@ class TestListMessagesReadsMessageParts:
         _ensure_schema(db_path)
         _create_session(db_path, "sess-1")
 
-        from strategy_research.api.routers.web_session import persist_message
+        from strategy_research.interfaces.api.routers.web_session import persist_message
 
         # Create a message with message_parts (Level 2 normal path)
         parts = [
@@ -218,7 +218,7 @@ class TestListMessagesReadsMessageParts:
         )
 
         # Manually call list_messages' underlying logic
-        from strategy_research.api.routers.web_session import _get_db
+        from strategy_research.interfaces.api.routers.web_session import _get_db
         with _get_db() as conn:
             conn.row_factory = sqlite3.Row
             rows = conn.execute(
@@ -226,7 +226,7 @@ class TestListMessagesReadsMessageParts:
                 ("sess-1",),
             ).fetchall()
             # Replicate list_messages's batch fetch
-            from strategy_research.api.routers.web_session import _row_to_message
+            from strategy_research.interfaces.api.routers.web_session import _row_to_message
             message_ids = [r["id"] for r in rows]
             placeholders = ",".join("?" * len(message_ids))
             parts_rows = conn.execute(
@@ -261,7 +261,7 @@ class TestListMessagesReadsMessageParts:
         _create_session(db_path, "sess-1")
         import uuid as _uuid
 
-        from strategy_research.api.routers.web_session import _get_db, _row_to_message
+        from strategy_research.interfaces.api.routers.web_session import _get_db, _row_to_message
 
         # Insert a user message with no parts anywhere
         mid = str(_uuid.uuid4())

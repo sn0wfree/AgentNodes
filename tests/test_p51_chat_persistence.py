@@ -39,8 +39,8 @@ def env(tmp_path: Path, monkeypatch):
     db_path = tmp_path / "test.db"
     monkeypatch.setenv("SR_WORKSPACE_PATH", str(tmp_path))
 
-    import strategy_research.api.routers.web_session as ws
-    import strategy_research.api.session.web_session_db as wsdb
+    import strategy_research.interfaces.api.routers.web_session as ws
+    import strategy_research.interfaces.api.session.web_session_db as wsdb
 
     monkeypatch.setattr(ws, "_get_db_path", lambda: db_path)
     monkeypatch.setattr(wsdb, "_get_db_path", lambda: db_path)
@@ -50,7 +50,7 @@ def env(tmp_path: Path, monkeypatch):
     reset_gateway()
 
     client = FakeClient()
-    from strategy_research.api.app import create_app
+    from strategy_research.interfaces.api.app import create_app
 
     app = create_app()
 
@@ -61,7 +61,7 @@ def env(tmp_path: Path, monkeypatch):
 
     with TestClient(app) as tc:
         # P5-5①: /api/chat/ 不再公开——测试带认证头
-        from strategy_research.api.auth_tokens import create_token
+        from strategy_research.interfaces.api.auth_tokens import create_token
 
         tc.headers.update({"Authorization": f"Bearer {create_token('tester')}"})
         # 建会话

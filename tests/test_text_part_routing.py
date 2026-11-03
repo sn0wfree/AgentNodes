@@ -9,7 +9,7 @@ Reference: docs/text-part-routing.md
 """
 from __future__ import annotations
 
-from strategy_research.api.session.service import _accumulate_part
+from strategy_research.interfaces.api.session.service import _accumulate_part
 
 # ─────────────────────────────────────────────────────────────────────────────
 # _accumulate_part: text.started / text_delta / text.ended lifecycle

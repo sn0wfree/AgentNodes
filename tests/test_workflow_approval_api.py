@@ -20,8 +20,8 @@ from strategy_research.kernel.workflow.builtin import user_dir
 def _build_asgi_app():
     from fastapi import FastAPI
 
-    from strategy_research.api.middleware import AuthMiddleware
-    from strategy_research.api.routers import workflow
+    from strategy_research.interfaces.api.middleware import AuthMiddleware
+    from strategy_research.interfaces.api.routers import workflow
 
     app = FastAPI()
     app.add_middleware(AuthMiddleware)
@@ -30,7 +30,7 @@ def _build_asgi_app():
 
 
 def _client(app):
-    from strategy_research.api.auth_tokens import create_token
+    from strategy_research.interfaces.api.auth_tokens import create_token
 
     return httpx.AsyncClient(
         transport=httpx.ASGITransport(app=app), base_url="http://test",
@@ -73,16 +73,16 @@ def api_env(tmp_path: Path, monkeypatch):
     """
     monkeypatch.setenv("SR_WORKSPACE_PATH", str(tmp_path))
     monkeypatch.setenv("SR_ADMIN_TOKEN", "test-admin-token")
-    import strategy_research.api.routers.workflow as wf
+    import strategy_research.interfaces.api.routers.workflow as wf
     wf._run_store = None
     wf._run_registry = None
     # Session DB under tmp + seed session s1 owned by tester
-    import strategy_research.api.session.web_session_db as wsdb
+    import strategy_research.interfaces.api.session.web_session_db as wsdb
     monkeypatch.setattr(wsdb, "_get_db_path", lambda: str(tmp_path / "sessions.db"))
     import asyncio as _asyncio
     from types import SimpleNamespace as _NS
 
-    from strategy_research.api.routers.web_session import (
+    from strategy_research.interfaces.api.routers.web_session import (
         WebSessionCreate,
         create_session,
     )

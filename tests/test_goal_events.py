@@ -16,7 +16,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
 
 from strategy_research.kernel.events.event_v2 import EventType, EventV2
-from strategy_research.api.session.projector import ProjectedSession, Projector
+from strategy_research.interfaces.api.session.projector import ProjectedSession, Projector
 from strategy_research.apps.goal.events import (
     CHANGE_TYPE_COMPLETE,
     CHANGE_TYPE_CREATE,
@@ -240,7 +240,7 @@ class TestGoalInHistory(unittest.TestCase):
     """goal messages enter LLM context as system; compaction hides them."""
 
     def _convert(self, messages, keep_all=False):
-        from strategy_research.api.session.service import SessionService
+        from strategy_research.interfaces.api.session.service import SessionService
 
         # _convert_messages_to_history is an instance method that does
         # not touch self; bypass __init__ with __new__ (stateless).

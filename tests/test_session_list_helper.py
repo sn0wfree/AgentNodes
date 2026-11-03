@@ -16,7 +16,7 @@ from strategy_research.kernel.session.unified import list_sessions
 
 
 def _make_db(path: Path, rows: list[tuple]) -> None:
-    from strategy_research.api.session.web_session_db import _ensure_schema
+    from strategy_research.interfaces.api.session.web_session_db import _ensure_schema
 
     conn = sqlite3.connect(str(path))
     _ensure_schema(conn)
@@ -71,7 +71,7 @@ def test_limit_is_floored_at_one(tmp_path: Path):
 def _seed_with_messages(path: Path) -> None:
     import sqlite3
 
-    from strategy_research.api.session.web_session_db import _ensure_schema
+    from strategy_research.interfaces.api.session.web_session_db import _ensure_schema
 
     conn = sqlite3.connect(str(path))
     _ensure_schema(conn)

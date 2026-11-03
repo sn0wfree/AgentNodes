@@ -88,8 +88,8 @@ def _setup_full_db(db_path: Path) -> None:
 @pytest.fixture
 def service(tmp_path, monkeypatch):
     from tests._fixtures.legacy_events import EventBus
-    from strategy_research.api.session.service import SessionService
-    from strategy_research.api.session.store import SessionStore
+    from strategy_research.interfaces.api.session.service import SessionService
+    from strategy_research.interfaces.api.session.store import SessionStore
 
     monkeypatch.setenv("SR_WORKSPACE_PATH", str(tmp_path))
     db = tmp_path / "test.db"
@@ -138,7 +138,7 @@ async def test_persona_persists_and_reaches_run(service, monkeypatch):
         await asyncio.sleep(0.02)
 
     monkeypatch.setattr(
-        "strategy_research.api.session.service.SessionService._run_attempt",
+        "strategy_research.interfaces.api.session.service.SessionService._run_attempt",
         fake_run,
     )
     result = await service.send_message(sid, "hello", persona="strategist")
@@ -159,7 +159,7 @@ async def test_persona_omitted_stays_none(service, monkeypatch):
         await asyncio.sleep(0.02)
 
     monkeypatch.setattr(
-        "strategy_research.api.session.service.SessionService._run_attempt",
+        "strategy_research.interfaces.api.session.service.SessionService._run_attempt",
         fake_run,
     )
     await service.send_message(sid, "hello")
@@ -168,7 +168,7 @@ async def test_persona_omitted_stays_none(service, monkeypatch):
 
 
 def test_personas_endpoint_lists_roles():
-    from strategy_research.api.routers.chat import list_personas
+    from strategy_research.interfaces.api.routers.chat import list_personas
 
     resp = asyncio.run(list_personas())
     ids = [p["id"] for p in resp["personas"]]

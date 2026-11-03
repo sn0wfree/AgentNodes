@@ -21,8 +21,8 @@ import pytest
 def _build_asgi_app():
     from fastapi import FastAPI
 
-    from strategy_research.api.middleware import AuthMiddleware
-    from strategy_research.api.routers import run
+    from strategy_research.interfaces.api.middleware import AuthMiddleware
+    from strategy_research.interfaces.api.routers import run
 
     app = FastAPI()
     app.add_middleware(AuthMiddleware)
@@ -31,7 +31,7 @@ def _build_asgi_app():
 
 
 def _auth_headers() -> dict:
-    from strategy_research.api.auth_tokens import create_token
+    from strategy_research.interfaces.api.auth_tokens import create_token
 
     return {"Authorization": f"Bearer {create_token('tester')}"}
 

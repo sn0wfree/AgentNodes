@@ -44,7 +44,7 @@ def test_summary_vocabulary_covers_core_lifecycle():
 
 def test_vocabulary_matches_trace_projection():
     """与 TraceProjection 的投影口径一致——两个词汇表漂移就是两套真相。"""
-    from strategy_research.api.session import trace_projection as tp
+    from strategy_research.interfaces.api.session import trace_projection as tp
 
     projected = set(tp.SUMMARY_EVENT_TYPES) if hasattr(
         tp, "SUMMARY_EVENT_TYPES") else set()

@@ -29,7 +29,7 @@ def _emit_llm_request(
     iteration: int = 1,
 ) -> None:
     """Emit an llm_request through the real forwarder (so offload applies)."""
-    from strategy_research.api.session.service import _LoopEventForwarder
+    from strategy_research.interfaces.api.session.service import _LoopEventForwarder
     from strategy_research.foundation.llm import LLMConfig
 
     fwd = _LoopEventForwarder(
@@ -64,7 +64,7 @@ def test_projection_reconstructs_offloaded_fields(tmp_path, monkeypatch) -> None
     big_tools = "[" + ",".join(f"t{i}" for i in range(3000)) + "]"
     _emit_llm_request(store, system_prompt=big_prompt, tools_schema=big_tools)
 
-    from strategy_research.api.session.trace_projection import TraceProjection
+    from strategy_research.interfaces.api.session.trace_projection import TraceProjection
 
     records = TraceProjection(store).project("sess-1")
     assert len(records) == 1
@@ -79,7 +79,7 @@ def test_projection_keeps_small_fields_inline(tmp_path) -> None:
     store = _store(tmp_path)
     _emit_llm_request(store, system_prompt="short sys", tools_schema="[]")
 
-    from strategy_research.api.session.trace_projection import TraceProjection
+    from strategy_research.interfaces.api.session.trace_projection import TraceProjection
 
     records = TraceProjection(store).project("sess-1")
     assert len(records) == 1
@@ -95,7 +95,7 @@ def test_projection_orders_and_limits(tmp_path) -> None:
     for i in range(1, 4):
         _emit_llm_request(store, system_prompt=f"sys-{i}", tools_schema="[]", iteration=i)
 
-    from strategy_research.api.session.trace_projection import TraceProjection
+    from strategy_research.interfaces.api.session.trace_projection import TraceProjection
 
     records = TraceProjection(store).project("sess-1", limit=2)
     assert [r["iteration"] for r in records] == [2, 3]
@@ -111,7 +111,7 @@ def test_projection_type_filter(tmp_path, monkeypatch) -> None:
     store.emit("sess-1", "text_delta", {"delta": "hi"})
     store.emit("sess-1", "tool_result", {"name": "ls", "result": "ok"})
 
-    from strategy_research.api.session.trace_projection import TraceProjection
+    from strategy_research.interfaces.api.session.trace_projection import TraceProjection
 
     recs = TraceProjection(store).project("sess-1")
     assert [r["type"] for r in recs] == ["llm_request", "tool_result"]
@@ -125,7 +125,7 @@ def test_projection_type_filter(tmp_path, monkeypatch) -> None:
 
 def test_projection_empty_session(tmp_path) -> None:
     """A session with no events yields no records."""
-    from strategy_research.api.session.trace_projection import TraceProjection
+    from strategy_research.interfaces.api.session.trace_projection import TraceProjection
 
     assert TraceProjection(_store(tmp_path)).project("sess-missing") == []
 
@@ -136,7 +136,7 @@ def test_projection_reconstructs_llm_response_content(tmp_path, monkeypatch) -> 
     monkeypatch.setenv("SR_LLM_REQUEST_OFFLOAD_THRESHOLD", "64")
     store = _store(tmp_path)
 
-    from strategy_research.api.session.service import _LoopEventForwarder
+    from strategy_research.interfaces.api.session.service import _LoopEventForwarder
     from strategy_research.foundation.llm import LLMConfig
 
     fwd = _LoopEventForwarder(
@@ -150,7 +150,7 @@ def test_projection_reconstructs_llm_response_content(tmp_path, monkeypatch) -> 
         "content": big_content, "content_preview": big_content[:200],
     })
 
-    from strategy_research.api.session.trace_projection import TraceProjection
+    from strategy_research.interfaces.api.session.trace_projection import TraceProjection
 
     records = TraceProjection(store).project("sess-1")
     assert len(records) == 1
@@ -169,7 +169,7 @@ def test_projection_no_offload_when_missing_blob(tmp_path, monkeypatch) -> None:
     for f in blob_dir.glob("*.txt"):
         f.unlink()
 
-    from strategy_research.api.session.trace_projection import TraceProjection
+    from strategy_research.interfaces.api.session.trace_projection import TraceProjection
 
     records = TraceProjection(store).project("sess-1")
     assert len(records) == 1

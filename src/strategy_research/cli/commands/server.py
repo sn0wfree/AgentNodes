@@ -53,7 +53,7 @@ def cmd_webui_serve(args) -> int:
 
     import uvicorn
 
-    from strategy_research.api.app import configure_from_env, create_app
+    from strategy_research.interfaces.api.app import configure_from_env, create_app
     from strategy_research.cli.llm_config_check import check_llm_config
 
     # Read env config (CORS_ORIGINS, JWT_SECRET, STATIC_DIR)
@@ -97,7 +97,7 @@ def cmd_webui_serve(args) -> int:
             os.environ["STATIC_DIR"] = str(Path(static_dir).resolve())
 
         uvicorn.run(
-            "strategy_research.api.app:create_app",
+            "strategy_research.interfaces.api.app:create_app",
             factory=True,
             host=args.host,
             port=args.port,
@@ -127,7 +127,7 @@ def cmd_api_serve(args) -> int:
 
     import uvicorn
 
-    from strategy_research.api.app import create_app
+    from strategy_research.interfaces.api.app import create_app
 
     workspace = Path(args.workspace)
 
@@ -143,7 +143,7 @@ def cmd_api_serve(args) -> int:
             os.environ["SR_HYPOTHESES_PATH"] = args.hypotheses_path
 
         uvicorn.run(
-            "strategy_research.api.app:create_app",
+            "strategy_research.interfaces.api.app:create_app",
             factory=True,
             host=args.host,
             port=args.port,

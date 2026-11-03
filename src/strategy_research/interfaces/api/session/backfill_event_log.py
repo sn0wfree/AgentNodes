@@ -15,10 +15,10 @@ The backfill is idempotent: if a session already has events in
 event_log, it's skipped. Use --force to overwrite.
 
 Usage:
-    python -m strategy_research.api.session.backfill_event_log
-    python -m strategy_research.api.session.backfill_event_log --db-path /path/to.db
-    python -m strategy_research.api.session.backfill_event_log --session 700dc7f7
-    python -m strategy_research.api.session.backfill_event_log --force
+    python -m strategy_research.interfaces.api.session.backfill_event_log
+    python -m strategy_research.interfaces.api.session.backfill_event_log --db-path /path/to.db
+    python -m strategy_research.interfaces.api.session.backfill_event_log --session 700dc7f7
+    python -m strategy_research.interfaces.api.session.backfill_event_log --force
 """
 from __future__ import annotations
 

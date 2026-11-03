@@ -144,7 +144,7 @@ class _FakeAttempt:
 
 
 def _make_forwarder(bus, cfg=None):
-    from strategy_research.api.session.service import _LoopEventForwarder
+    from strategy_research.interfaces.api.session.service import _LoopEventForwarder
 
     attempt = _FakeAttempt()
     if cfg is None:

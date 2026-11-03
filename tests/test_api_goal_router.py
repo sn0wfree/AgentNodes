@@ -14,8 +14,8 @@ import pytest
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
 
-from strategy_research.api.middleware import AuthMiddleware
-from strategy_research.api.routers.goal import router as goal_router
+from strategy_research.interfaces.api.middleware import AuthMiddleware
+from strategy_research.interfaces.api.routers.goal import router as goal_router
 
 
 @pytest.fixture
@@ -63,7 +63,7 @@ def client(app):
 
 def auth_header(user_id: str = "tester"):
     """生成有效 HMAC-SHA256 签名 token（AuthMiddleware 要求的格式）。"""
-    from strategy_research.api.auth_tokens import create_token
+    from strategy_research.interfaces.api.auth_tokens import create_token
 
     return {"Authorization": f"Bearer {create_token(user_id)}"}
 
@@ -505,7 +505,7 @@ class TestGoalIsolation:
         """
         import sqlite3
 
-        from strategy_research.api.routers.web_session import _get_db_path
+        from strategy_research.interfaces.api.routers.web_session import _get_db_path
 
         with sqlite3.connect(str(_get_db_path())) as conn:
             now = 1.0
@@ -550,7 +550,7 @@ class TestGoalIsolation:
         # other 用户在自己的 session 建 goal
         import sqlite3
 
-        from strategy_research.api.routers.web_session import _get_db_path
+        from strategy_research.interfaces.api.routers.web_session import _get_db_path
 
         with sqlite3.connect(str(_get_db_path())) as conn:
             now = 1.0

@@ -19,9 +19,9 @@ import uuid
 import pytest
 from fastapi.testclient import TestClient
 
-from strategy_research.api.app import create_app
-from strategy_research.api.auth_tokens import create_token
-from strategy_research.api.session.models import Attempt, AttemptStatus
+from strategy_research.interfaces.api.app import create_app
+from strategy_research.interfaces.api.auth_tokens import create_token
+from strategy_research.interfaces.api.session.models import Attempt, AttemptStatus
 
 
 @pytest.fixture
@@ -36,10 +36,10 @@ def temp_db(monkeypatch, tmp_path):
 
 @pytest.fixture
 def session_service(temp_db):
-    from strategy_research.api.routers.web_session import _get_db
+    from strategy_research.interfaces.api.routers.web_session import _get_db
     from tests._fixtures.legacy_events import EventBus
-    from strategy_research.api.session.service import SessionService
-    from strategy_research.api.session.store import SessionStore
+    from strategy_research.interfaces.api.session.service import SessionService
+    from strategy_research.interfaces.api.session.store import SessionStore
     _get_db().close()  # ensure schema exists on temp_db
 
     bus = EventBus()
@@ -131,7 +131,7 @@ def test_terminal_attempts_excluded(session_service):
 
 @pytest.fixture
 def client(monkeypatch, session_service):
-    from strategy_research.api.routers import chat as chat_router
+    from strategy_research.interfaces.api.routers import chat as chat_router
 
     monkeypatch.setattr(chat_router, "_get_session_service", lambda: session_service)
     app = create_app()

@@ -318,8 +318,8 @@ def test_messages_table_written_only_by_projection_or_guarded_persist():
     新增任何写者即失败；这份白名单只能缩短，不能变长。
     """
     allowed = {
-        "api/session/projection_store.py",
-        "api/routers/web_session.py",
+        "interfaces/api/session/projection_store.py",
+        "interfaces/api/routers/web_session.py",
     }
     # 精确匹配表名 messages（不要把 messages_fts 索引写入算进来）
     import re as _re

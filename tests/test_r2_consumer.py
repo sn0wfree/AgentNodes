@@ -150,7 +150,7 @@ def test_wait_turn_unknown_session_times_out():
 
 
 def test_bridge_persist_mode_emits_assistant_message():
-    from strategy_research.api.routers.chat import _install_chat_event_bridge
+    from strategy_research.interfaces.api.routers.chat import _install_chat_event_bridge
 
     class FakeEventBus:
         def __init__(self) -> None:
@@ -190,7 +190,7 @@ def test_bridge_persist_mode_emits_assistant_message():
 
 
 def test_bridge_persist_mode_reports_failure():
-    from strategy_research.api.routers import chat as chat_mod
+    from strategy_research.interfaces.api.routers import chat as chat_mod
 
     class FakeGW:
         def install_sink(self, sink):
@@ -261,8 +261,8 @@ def test_receipt_contract_and_async_persistence(tmp_path, monkeypatch):
     db_path = tmp_path / "r2.db"
     monkeypatch.setenv("SR_WORKSPACE_PATH", str(tmp_path))
     
-    import strategy_research.api.routers.web_session as ws
-    import strategy_research.api.session.web_session_db as wsdb
+    import strategy_research.interfaces.api.routers.web_session as ws
+    import strategy_research.interfaces.api.session.web_session_db as wsdb
 
     monkeypatch.setattr(ws, "_get_db_path", lambda: db_path)
     monkeypatch.setattr(wsdb, "_get_db_path", lambda: db_path)
@@ -270,13 +270,13 @@ def test_receipt_contract_and_async_persistence(tmp_path, monkeypatch):
     from strategy_research.kernel.gateway import reset_gateway
 
     reset_gateway()
-    from strategy_research.api.app import create_app
+    from strategy_research.interfaces.api.app import create_app
     from strategy_research.kernel.gateway.singleton import get_gateway
 
     get_gateway(client=ApiClient())
     app = create_app()
     with __import__("fastapi.testclient", fromlist=["TestClient"]).TestClient(app) as tc:
-        from strategy_research.api.auth_tokens import create_token
+        from strategy_research.interfaces.api.auth_tokens import create_token
 
         tc.headers.update({"Authorization": f"Bearer {create_token('tester')}"})
         tc.post("/api/chat/session", json={"id": "sess-r2", "title": "t"})
@@ -316,8 +316,8 @@ def test_sync_fallback_when_no_consumer(tmp_path, monkeypatch):
     db_path = tmp_path / "r2b.db"
     monkeypatch.setenv("SR_WORKSPACE_PATH", str(tmp_path))
     
-    import strategy_research.api.routers.web_session as ws
-    import strategy_research.api.session.web_session_db as wsdb
+    import strategy_research.interfaces.api.routers.web_session as ws
+    import strategy_research.interfaces.api.session.web_session_db as wsdb
 
     monkeypatch.setattr(ws, "_get_db_path", lambda: db_path)
     monkeypatch.setattr(wsdb, "_get_db_path", lambda: db_path)
@@ -325,7 +325,7 @@ def test_sync_fallback_when_no_consumer(tmp_path, monkeypatch):
     from strategy_research.kernel.gateway import reset_gateway
 
     reset_gateway()
-    from strategy_research.api.app import create_app
+    from strategy_research.interfaces.api.app import create_app
     from strategy_research.kernel.gateway.singleton import get_gateway
 
     get_gateway(client=ApiClient())
@@ -333,7 +333,7 @@ def test_sync_fallback_when_no_consumer(tmp_path, monkeypatch):
     from fastapi.testclient import TestClient
 
     with TestClient(app) as tc:
-        from strategy_research.api.auth_tokens import create_token
+        from strategy_research.interfaces.api.auth_tokens import create_token
 
         tc.headers.update({"Authorization": f"Bearer {create_token('tester')}"})
         tc.post("/api/chat/session", json={"id": "sess-r2", "title": "t"})

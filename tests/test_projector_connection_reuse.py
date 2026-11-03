@@ -17,7 +17,7 @@ import pytest
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
 
-from strategy_research.api.session.projector import (
+from strategy_research.interfaces.api.session.projector import (
     Projector,
     ProjectedMessage,
     ProjectedSession,

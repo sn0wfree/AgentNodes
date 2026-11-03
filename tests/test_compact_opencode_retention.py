@@ -16,7 +16,7 @@ import tempfile
 import unittest
 from pathlib import Path
 
-from strategy_research.api.session.projector import Projector
+from strategy_research.interfaces.api.session.projector import Projector
 
 
 def _setup_db(db_path: Path) -> None:
@@ -267,7 +267,7 @@ class TestHistoryBuilderHidesCovered(unittest.TestCase):
 
     def test_history_hides_covered_messages(self) -> None:
         """LLM context hides messages before the compaction boundary."""
-        from strategy_research.api.session.service import SessionService
+        from strategy_research.interfaces.api.session.service import SessionService
 
         messages = self._build_session()
         self.assertEqual(len(messages), 8)  # 6 + marker + current turn in DB
@@ -288,7 +288,7 @@ class TestHistoryBuilderHidesCovered(unittest.TestCase):
 
     def test_history_keeps_only_recent_compaction(self) -> None:
         """Only the most recent compaction marker enters LLM context."""
-        from strategy_research.api.session.service import SessionService
+        from strategy_research.interfaces.api.session.service import SessionService
 
         for i in range(6):
             self._emit(

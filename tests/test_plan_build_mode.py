@@ -2,8 +2,8 @@
 
 from __future__ import annotations
 
-from strategy_research.api.routers.chat import ChatMessage
-from strategy_research.api.session.models import Attempt
+from strategy_research.interfaces.api.routers.chat import ChatMessage
+from strategy_research.interfaces.api.session.models import Attempt
 
 # ── ChatMessage schema ────────────────────────────────────────────
 
@@ -80,14 +80,14 @@ class TestPlanModeTools:
     """Plan mode restricts tools to read-only set."""
 
     def test_plan_readonly_tools_is_set(self):
-        from strategy_research.api.session.service import _PLAN_READONLY_TOOLS
+        from strategy_research.interfaces.api.session.service import _PLAN_READONLY_TOOLS
         assert "read" in _PLAN_READONLY_TOOLS
         assert "websearch" in _PLAN_READONLY_TOOLS
         assert "run_backtest" not in _PLAN_READONLY_TOOLS
 
     def test_plan_mode_sets_allowed_tools(self):
         """When mode='plan', allowed_tools is set to readonly list."""
-        from strategy_research.api.session.service import (
+        from strategy_research.interfaces.api.session.service import (
             _PLAN_READONLY_TOOLS,
             _plan_mode_allowed_tools,
         )
@@ -95,7 +95,7 @@ class TestPlanModeTools:
 
     def test_build_mode_no_tool_restriction(self):
         """When mode='build', allowed_tools stays None (all tools)."""
-        from strategy_research.api.session.service import _plan_mode_allowed_tools
+        from strategy_research.interfaces.api.session.service import _plan_mode_allowed_tools
         assert _plan_mode_allowed_tools("build") is None
 
 
@@ -106,16 +106,16 @@ class TestThinkingInjection:
     """Thinking params are injected into system prompt."""
 
     def test_thinking_off_injects_instruction(self):
-        from strategy_research.api.session.service import _thinking_instructions
+        from strategy_research.interfaces.api.session.service import _thinking_instructions
         assert "Do NOT use thinking/reasoning blocks" in _thinking_instructions("off")
 
     def test_thinking_on_injects_instruction(self):
-        from strategy_research.api.session.service import _thinking_instructions
+        from strategy_research.interfaces.api.session.service import _thinking_instructions
         assert "Use extended thinking for complex analysis" in _thinking_instructions("on")
 
     def test_thinking_auto_no_injection(self):
         """Auto mode should not inject any instruction."""
-        from strategy_research.api.session.service import _thinking_instructions
+        from strategy_research.interfaces.api.session.service import _thinking_instructions
         assert _thinking_instructions("auto") == ""
 
 
@@ -128,7 +128,7 @@ class TestSendAsyncPassesFields:
     def test_send_async_includes_mode(self):
         import inspect
 
-        from strategy_research.api.routers.chat import send_async
+        from strategy_research.interfaces.api.routers.chat import send_async
         source = inspect.getsource(send_async)
         assert "mode=_mode" in source
         assert "body.mode" in source
@@ -136,14 +136,14 @@ class TestSendAsyncPassesFields:
     def test_send_async_includes_model(self):
         import inspect
 
-        from strategy_research.api.routers.chat import send_async
+        from strategy_research.interfaces.api.routers.chat import send_async
         source = inspect.getsource(send_async)
         assert "model=body.model" in source
 
     def test_send_async_includes_thinking(self):
         import inspect
 
-        from strategy_research.api.routers.chat import send_async
+        from strategy_research.interfaces.api.routers.chat import send_async
         source = inspect.getsource(send_async)
         assert "thinking=body.thinking" in source
 
@@ -151,7 +151,7 @@ class TestSendAsyncPassesFields:
         """Plan mode should set max_iterations to 1."""
         import inspect
 
-        from strategy_research.api.routers.chat import send_async
+        from strategy_research.interfaces.api.routers.chat import send_async
         source = inspect.getsource(send_async)
         assert '_max_iter_eff = 1 if _mode == "plan"' in source
 
@@ -159,6 +159,6 @@ class TestSendAsyncPassesFields:
         """Plan mode should disable shell tools (via _shell_tools_enabled)."""
         import inspect
 
-        from strategy_research.api.routers.chat import send_async
+        from strategy_research.interfaces.api.routers.chat import send_async
         source = inspect.getsource(send_async)
         assert "_shell_tools_enabled(_mode)" in source

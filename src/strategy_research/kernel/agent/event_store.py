@@ -607,7 +607,7 @@ class EventStore:
         """Lazy-import Projector to avoid circular imports at startup."""
         if self._projector is None and self._flush_to_messages:
             try:
-                from strategy_research.api.session.projector import Projector
+                from strategy_research.interfaces.api.session.projector import Projector
                 self._projector = Projector(self._db_path)
             except Exception as exc:
                 logger.warning("Failed to create Projector: %s", exc)

@@ -51,7 +51,7 @@ class TestPersistPropagatesErrors:
         )
 
         with patch(
-            "strategy_research.api.routers.web_session.persist_message",
+            "strategy_research.interfaces.api.routers.web_session.persist_message",
             side_effect=RuntimeError("DB connection lost"),
         ) as mock_persist:
             with compaction_persister_registered(mock_persist):
@@ -70,7 +70,7 @@ class TestPersistPropagatesErrors:
             "strategy_research.kernel.agent.loop.logger"
         ) as mock_logger:
             with patch(
-                "strategy_research.api.routers.web_session.persist_message",
+                "strategy_research.interfaces.api.routers.web_session.persist_message",
                 side_effect=RuntimeError("DB error"),
             ) as mock_persist:
                 with compaction_persister_registered(mock_persist):

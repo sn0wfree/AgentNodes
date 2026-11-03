@@ -18,14 +18,14 @@ from types import SimpleNamespace
 import httpx
 import pytest
 
-from strategy_research.api.auth_tokens import create_token
+from strategy_research.interfaces.api.auth_tokens import create_token
 
 
 def _build_app():
     from fastapi import FastAPI
 
-    from strategy_research.api.middleware import AuthMiddleware
-    from strategy_research.api.routers import workflow
+    from strategy_research.interfaces.api.middleware import AuthMiddleware
+    from strategy_research.interfaces.api.routers import workflow
 
     app = FastAPI()
     app.add_middleware(AuthMiddleware)
@@ -43,8 +43,8 @@ def _client(app, user: str = "tester"):
 @pytest.fixture()
 def env(tmp_path: Path, monkeypatch):
     """App + seeded sessions: s1→tester, s2→alice; runners reset."""
-    import strategy_research.api.routers.workflow as wf
-    import strategy_research.api.session.web_session_db as wsdb
+    import strategy_research.interfaces.api.routers.workflow as wf
+    import strategy_research.interfaces.api.session.web_session_db as wsdb
 
     monkeypatch.setenv("SR_WORKSPACE_PATH", str(tmp_path))
     monkeypatch.setenv("SR_ADMIN_TOKEN", "test-admin-token")
@@ -54,7 +54,7 @@ def env(tmp_path: Path, monkeypatch):
     wf._active_runners.clear()
 
     async def _seed() -> None:
-        from strategy_research.api.routers.web_session import (
+        from strategy_research.interfaces.api.routers.web_session import (
             WebSessionCreate,
             create_session,
         )

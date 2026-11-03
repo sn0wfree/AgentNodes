@@ -16,9 +16,9 @@ from unittest.mock import AsyncMock, patch
 import pytest
 from fastapi.testclient import TestClient
 
-from strategy_research.api.app import create_app
-from strategy_research.api.auth_tokens import create_token
-import strategy_research.api.session.web_session_db as _wsdb
+from strategy_research.interfaces.api.app import create_app
+from strategy_research.interfaces.api.auth_tokens import create_token
+import strategy_research.interfaces.api.session.web_session_db as _wsdb
 
 
 @pytest.fixture
@@ -33,7 +33,7 @@ def client(tmp_path, monkeypatch):
     Mirrors the fixture in test_chat_send_sync_run_traversal.py so the
     tests in this file share the canonical harness.
     """
-    import strategy_research.api.routers.web_session as ws
+    import strategy_research.interfaces.api.routers.web_session as ws
     monkeypatch.setattr(_wsdb, "_get_db_path", lambda: str(tmp_path / "sr.db"))
     monkeypatch.setattr(ws, "_get_db_path", lambda: str(tmp_path / "sr.db"))
     return TestClient(create_app())
@@ -95,7 +95,7 @@ class TestSlashCommandIntercepts:
             # Patch the SessionService.send_message on the singleton
             # returned by _get_session_service. We grab the singleton
             # lazily — patch the module attribute before the first call.
-            import strategy_research.api.routers.chat as chat_router
+            import strategy_research.interfaces.api.routers.chat as chat_router
             cache = chat_router._session_service_cache
             cache.clear()
             original_get = chat_router._get_session_service
@@ -132,7 +132,7 @@ class TestSlashCommandIntercepts:
         sid = _new_session(client, auth_headers)
 
         send_mock = AsyncMock()
-        import strategy_research.api.routers.chat as chat_router
+        import strategy_research.interfaces.api.routers.chat as chat_router
         chat_router._session_service_cache.clear()
         real_service = chat_router._get_session_service()
         real_service.send_message = send_mock  # type: ignore[attr-defined]
@@ -179,7 +179,7 @@ class TestSlashCommandIntercepts:
                 {"clear": clear_mock, "get": AsyncMock(return_value=[])},
             )(),
         ):
-            import strategy_research.api.routers.chat as chat_router
+            import strategy_research.interfaces.api.routers.chat as chat_router
             chat_router._session_service_cache.clear()
             real_service = chat_router._get_session_service()
             real_service.send_message = AsyncMock(  # type: ignore[attr-defined]

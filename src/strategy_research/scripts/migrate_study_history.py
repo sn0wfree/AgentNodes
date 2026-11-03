@@ -208,7 +208,7 @@ def migrate_study_history(study_id: str, workspace_path: str, reset: bool = Fals
     # Flush projector to materialize messages + message_parts
     if session_rows:
         print("\nFlushing projector...")
-        from strategy_research.api.session.projector import Projector
+        from strategy_research.interfaces.api.session.projector import Projector
         proj = Projector(db_path)
         for (session_id, *_rest) in session_rows:
             try:

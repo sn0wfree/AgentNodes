@@ -8,8 +8,8 @@ from __future__ import annotations
 
 import logging
 
-from strategy_research.api.session.models import Message
-from strategy_research.api.session.service import SessionService
+from strategy_research.interfaces.api.session.models import Message
+from strategy_research.interfaces.api.session.service import SessionService
 
 
 def _msg(role: str, content: str, message_id: str, message_type: str | None = None) -> Message:
@@ -58,7 +58,7 @@ class TestOldSessionsCompat:
         # No compactions in history
         assert all("<conversation-checkpoint>" not in h.get("content", "") for h in history)
         # No "hiding" log (no compactions to hide)
-        with caplog.at_level(logging.DEBUG, logger="strategy_research.api.session.service"):
+        with caplog.at_level(logging.DEBUG, logger="strategy_research.interfaces.api.session.service"):
             SessionService._convert_messages_to_history(messages)
         hidden_logs = [r for r in caplog.records if "hiding" in r.message]
         assert len(hidden_logs) == 0

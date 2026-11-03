@@ -6,8 +6,8 @@ from fastapi.testclient import TestClient
 
 @pytest.fixture
 def client():
-    from strategy_research.api.app import create_app
-    from strategy_research.api.auth_tokens import create_token
+    from strategy_research.interfaces.api.app import create_app
+    from strategy_research.interfaces.api.auth_tokens import create_token
 
     app = create_app()
     c = TestClient(app)
@@ -48,7 +48,7 @@ class TestE2EFlow:
 
         svc = MagicMock()
         svc.send_message = _send
-        with patch("strategy_research.api.routers.chat._get_session_service",
+        with patch("strategy_research.interfaces.api.routers.chat._get_session_service",
                    return_value=svc):
             res = client.post("/api/chat/send_async", json={
                 "session_id": session_id,

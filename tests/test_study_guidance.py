@@ -457,7 +457,7 @@ def test_compose_missing_file_raises(tmp_path):
 
 class TestCliGuidanceFlags:
     def test_parse_study_flags(self):
-        from strategy_research.api.routers.slash_commands import _parse_study_flags
+        from strategy_research.interfaces.api.routers.slash_commands import _parse_study_flags
         flags = _parse_study_flags([
             "--workspace", "/ws", "--strategy", "demo",
             "--guidance-file", "docs/guide.md",
@@ -482,7 +482,7 @@ class TestCliGuidanceFlags:
             encoding="utf-8",
         )
 
-        from strategy_research.api.routers.slash_commands import _study_start_cmd
+        from strategy_research.interfaces.api.routers.slash_commands import _study_start_cmd
         resp = _study_start_cmd(
             ["研究目标", "--workspace", str(ws), "--strategy", "demo",
              "--guidance-file", "guide.md", "--gates-file", "gates.yaml",
@@ -508,7 +508,7 @@ class TestCliGuidanceFlags:
         (strat_dir / "strategy.py").write_text("PARAMS = {}\n", encoding="utf-8")
         (tmp_path / "evil.md").write_text("x", encoding="utf-8")
 
-        from strategy_research.api.routers.slash_commands import _study_start_cmd
+        from strategy_research.interfaces.api.routers.slash_commands import _study_start_cmd
         resp = _study_start_cmd(
             ["t", "--workspace", str(ws), "--strategy", "demo",
              "--guidance-file", "../evil.md", "--max-rounds", "1"],

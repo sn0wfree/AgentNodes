@@ -15,7 +15,7 @@ from pathlib import Path
 import pytest
 from fastapi.testclient import TestClient
 
-from strategy_research.api.app import create_app
+from strategy_research.interfaces.api.app import create_app
 from strategy_research.apps.study.models import StudyStatus
 from strategy_research.apps.study.store import StudyStore
 

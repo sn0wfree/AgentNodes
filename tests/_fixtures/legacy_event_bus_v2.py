@@ -63,7 +63,7 @@ class EventBusV2:
     def _get_projector(self):
         """Lazy-get the projector instance."""
         if self._projector is None:
-            from strategy_research.api.session.projector import Projector
+            from strategy_research.interfaces.api.session.projector import Projector
             self._projector = Projector(self.db_path)
         return self._projector
 

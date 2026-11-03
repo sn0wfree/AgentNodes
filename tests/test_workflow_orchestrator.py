@@ -265,7 +265,7 @@ def draft_client(tmp_path, monkeypatch):
     monkeypatch.setenv("SR_WORKSPACE_PATH", str(tmp_path))
     from fastapi.testclient import TestClient
 
-    from strategy_research.api.app import create_app
+    from strategy_research.interfaces.api.app import create_app
 
     app = create_app()
     app.state.user_id = "tester"
@@ -273,7 +273,7 @@ def draft_client(tmp_path, monkeypatch):
 
 
 def _draft_auth_headers():
-    from strategy_research.api.auth_tokens import create_token
+    from strategy_research.interfaces.api.auth_tokens import create_token
     return {"Authorization": f"Bearer {create_token('draft-tester')}"}
 
 

@@ -54,7 +54,7 @@ class TestPlanDagAsync:
         the event loop during the synchronous LLM call."""
         import inspect
 
-        from strategy_research.api.routers.study import study_plan_dag
+        from strategy_research.interfaces.api.routers.study import study_plan_dag
         src = inspect.getsource(study_plan_dag)
         assert "asyncio.to_thread" in src
         assert "planner.plan" in src

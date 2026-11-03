@@ -10,8 +10,12 @@ Covers:
 from __future__ import annotations
 
 from pathlib import Path
+from typing import TYPE_CHECKING
 
 import pytest
+
+if TYPE_CHECKING:
+    from strategy_research.interfaces.api.session.store import SessionStore
 
 
 @pytest.fixture(autouse=True)
@@ -24,7 +28,7 @@ def _env(tmp_path: Path, monkeypatch):
 
 class TestChatAttemptTimeout:
     def test_timeout_env_default_is_600(self):
-        from strategy_research.api.session.service import _CHAT_ATTEMPT_TIMEOUT
+        from strategy_research.interfaces.api.session.service import _CHAT_ATTEMPT_TIMEOUT
         assert _CHAT_ATTEMPT_TIMEOUT == 600
 
     def test_timeout_zero_disables(self, monkeypatch):
@@ -32,7 +36,7 @@ class TestChatAttemptTimeout:
         # Reimport to pick up env change
         import importlib
 
-        import strategy_research.api.session.service as svc_mod
+        import strategy_research.interfaces.api.session.service as svc_mod
         importlib.reload(svc_mod)
         assert svc_mod._CHAT_ATTEMPT_TIMEOUT == 0
         # Restore for other tests
@@ -42,7 +46,7 @@ class TestChatAttemptTimeout:
 
 class TestListActiveAttemptsIncludesFailed:
     def _make_store(self, tmp_path: Path) -> "SessionStore":
-        from strategy_research.api.session.store import SessionStore
+        from strategy_research.interfaces.api.session.store import SessionStore
         db = tmp_path / "chat_c1.db"
         store = SessionStore(str(db))
         # Create the required tables (normally done by web_session._ensure_schema).
@@ -108,8 +112,8 @@ class TestListActiveAttemptsIncludesFailed:
         return store
 
     def test_failed_attempts_included(self, tmp_path):
-        from strategy_research.api.session.models import Attempt, AttemptStatus
-        from strategy_research.api.session.service import SessionService
+        from strategy_research.interfaces.api.session.models import Attempt, AttemptStatus
+        from strategy_research.interfaces.api.session.service import SessionService
 
         store = self._make_store(tmp_path)
         for i in range(3):
@@ -132,8 +136,8 @@ class TestListActiveAttemptsIncludesFailed:
             assert fa["error"], "failed attempt must have error"
 
     def test_failed_attempts_limited_to_5(self, tmp_path):
-        from strategy_research.api.session.models import Attempt, AttemptStatus
-        from strategy_research.api.session.service import SessionService
+        from strategy_research.interfaces.api.session.models import Attempt, AttemptStatus
+        from strategy_research.interfaces.api.session.service import SessionService
 
         store = self._make_store(tmp_path)
         for i in range(8):

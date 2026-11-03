@@ -11,8 +11,8 @@ from pathlib import Path
 
 import pytest
 
-from strategy_research.api.routers.auth import _verify_password
-from strategy_research.api.user_db import UserDB, seed_admin_if_empty
+from strategy_research.interfaces.api.routers.auth import _verify_password
+from strategy_research.interfaces.api.user_db import UserDB, seed_admin_if_empty
 
 
 @pytest.fixture

@@ -50,7 +50,7 @@ def _write_dotenv(data: dict[str, str]) -> None:
 @router.get("/info")
 async def system_info():
     """Return system information for the settings modal."""
-    from strategy_research.api.user_db import get_user_db
+    from strategy_research.interfaces.api.user_db import get_user_db
     from strategy_research.cli.llm_config_check import check_llm_config
 
     db = get_user_db()

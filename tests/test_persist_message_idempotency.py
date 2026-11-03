@@ -15,8 +15,8 @@ import pytest
 @pytest.fixture
 def db(tmp_path, monkeypatch):
     """Point the web_session DB helpers at a temp file and bootstrap schema."""
-    import strategy_research.api.routers.web_session as ws
-    import strategy_research.api.session.web_session_db as wsdb
+    import strategy_research.interfaces.api.routers.web_session as ws
+    import strategy_research.interfaces.api.session.web_session_db as wsdb
 
     db_path = tmp_path / "s3.db"
     monkeypatch.setattr(ws, "_get_db_path", lambda: db_path)
@@ -46,7 +46,7 @@ def _count(db_path, session_id: str) -> tuple[int, int]:
 
 def test_second_write_with_same_id_is_skipped(db):
     """同一 message_id 二次写入：不抛错、不产生第二行、不重复计数。"""
-    from strategy_research.api.routers.web_session import persist_message
+    from strategy_research.interfaces.api.routers.web_session import persist_message
 
     first = persist_message(
         session_id="s1", role="assistant", content="hello",
@@ -66,7 +66,7 @@ def test_second_write_with_same_id_is_skipped(db):
 
 def test_distinct_ids_still_insert(db):
     """不同 message_id 正常写入（防护不能误伤正常路径）。"""
-    from strategy_research.api.routers.web_session import persist_message
+    from strategy_research.interfaces.api.routers.web_session import persist_message
 
     persist_message(session_id="s1", role="user", content="a",
                     message_id="m1", message_type="user")
@@ -77,7 +77,7 @@ def test_distinct_ids_still_insert(db):
 
 def test_projector_then_persist_same_id_keeps_one_row(db):
     """模拟 projector 先写、persist_message 后到的次序（真实竞态）。"""
-    from strategy_research.api.routers.web_session import persist_message
+    from strategy_research.interfaces.api.routers.web_session import persist_message
 
     conn = sqlite3.connect(str(db))
     conn.execute(

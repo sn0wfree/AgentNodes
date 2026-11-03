@@ -13,8 +13,8 @@ import pytest
 def _build_app():
     from fastapi import FastAPI
 
-    from strategy_research.api.middleware import AuthMiddleware
-    from strategy_research.api.routers.validation import router as v_router
+    from strategy_research.interfaces.api.middleware import AuthMiddleware
+    from strategy_research.interfaces.api.routers.validation import router as v_router
 
     app = FastAPI()
     app.add_middleware(AuthMiddleware)
@@ -25,7 +25,7 @@ def _build_app():
 def _client(app):
     import httpx
 
-    from strategy_research.api.auth_tokens import create_token
+    from strategy_research.interfaces.api.auth_tokens import create_token
 
     return httpx.AsyncClient(
         transport=httpx.ASGITransport(app=app), base_url="http://test",

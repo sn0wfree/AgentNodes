@@ -5,7 +5,7 @@ from __future__ import annotations
 import pytest
 from fastapi.testclient import TestClient
 
-from strategy_research.api.app import create_app
+from strategy_research.interfaces.api.app import create_app
 from strategy_research.kernel.agent.compact import (
     reset_compaction_metrics,
 )
@@ -40,7 +40,7 @@ def _reset_state():
     from strategy_research.kernel.agent import compact as compact_mod
     compact_mod.reset_compaction_metrics()
     # Clear audit log
-    from strategy_research.api.routers import admin as admin_mod
+    from strategy_research.interfaces.api.routers import admin as admin_mod
     admin_mod._audit_log.clear()
     # Reset keep_all override
     compact_mod.set_keep_all_override(False)
@@ -255,8 +255,8 @@ class TestModuleFunctions:
 class TestMetricsIntegration:
     def test_filter_increments_metrics(self):
         """_convert_messages_to_history should increment filter_calls."""
-        from strategy_research.api.session.models import Message
-        from strategy_research.api.session.service import SessionService
+        from strategy_research.interfaces.api.session.models import Message
+        from strategy_research.interfaces.api.session.service import SessionService
         from strategy_research.kernel.agent import compact as compact_mod
 
         compact_mod.reset_compaction_metrics()

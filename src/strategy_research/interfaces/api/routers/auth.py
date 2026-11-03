@@ -141,7 +141,7 @@ def _get_user_db():
     """
     global _user_db
     if _user_db is None:
-        from strategy_research.api.user_db import get_user_db, seed_admin_if_empty
+        from strategy_research.interfaces.api.user_db import get_user_db, seed_admin_if_empty
         _user_db = get_user_db()
         seed_admin_if_empty(_user_db)
     return _user_db
@@ -153,7 +153,7 @@ def _get_user_db():
 # SR_ALLOW_REGISTRATION=1, used by E2E tests / single-user setups).
 # Manual DB insertion alternative:
 #   python3 -c "
-#   from strategy_research.api.user_db import get_user_db, hash_password
+#   from strategy_research.interfaces.api.user_db import get_user_db, hash_password
 #   db = get_user_db()
 #   db.create_user('myuser', 'My User', hash_password('mypassword'))
 #   "
