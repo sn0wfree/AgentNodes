@@ -5,7 +5,7 @@ from concurrent.futures import ThreadPoolExecutor
 
 import pytest
 
-from strategy_research.core.seq_generator import SeqGenerator, get_default_generator
+from strategy_research.kernel.seq_generator import SeqGenerator, get_default_generator
 
 
 class TestSeqGeneratorBasics:
@@ -110,7 +110,7 @@ class TestSeqGeneratorThreadSafety:
 class TestGetDefaultGenerator:
     def test_returns_singleton(self):
         # Reset for test isolation
-        import strategy_research.core.seq_generator as mod
+        import strategy_research.kernel.seq_generator as mod
         mod._default_generator = None
 
         g1 = get_default_generator()
@@ -118,7 +118,7 @@ class TestGetDefaultGenerator:
         assert g1 is g2
 
     def test_singleton_persists_state_across_calls(self):
-        import strategy_research.core.seq_generator as mod
+        import strategy_research.kernel.seq_generator as mod
         mod._default_generator = None
         g1 = get_default_generator()
         seq1 = g1.next("shared-session")
