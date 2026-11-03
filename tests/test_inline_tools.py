@@ -13,7 +13,7 @@ from __future__ import annotations
 
 import pytest
 
-from strategy_research.cli.tui.widgets.transcript import TranscriptView
+from strategy_research.interfaces.cli.tui.widgets.transcript import TranscriptView
 
 # ---------------------------------------------------------------- helpers
 

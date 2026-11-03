@@ -14,8 +14,8 @@ from unittest import mock
 import pytest
 
 from strategy_research import _TEMPLATES_DIR
-from strategy_research.cli.interactive.main import InteractiveContext
-from strategy_research.cli.tui.session import ChatSession
+from strategy_research.interfaces.cli.interactive.main import InteractiveContext
+from strategy_research.interfaces.cli.tui.session import ChatSession
 
 _CHAT_PROMPT_PATH = _TEMPLATES_DIR / ".prompts" / "chat.md"
 

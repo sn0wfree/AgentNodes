@@ -51,7 +51,7 @@ def _write_dotenv(data: dict[str, str]) -> None:
 async def system_info():
     """Return system information for the settings modal."""
     from strategy_research.interfaces.api.user_db import get_user_db
-    from strategy_research.cli.llm_config_check import check_llm_config
+    from strategy_research.interfaces.cli.llm_config_check import check_llm_config
 
     db = get_user_db()
 
@@ -192,7 +192,7 @@ async def update_llm_config(body: LLMConfigUpdate):
       ``<PROVIDER>_API_KEY`` convention; masked values are never
       written back.
     """
-    from strategy_research.cli.commands.llm import (
+    from strategy_research.interfaces.cli.commands.llm import (
         _atomic_write_llm_json,
         _backup_llm_json,
         _write_dotenv,
@@ -256,28 +256,28 @@ async def update_llm_config(body: LLMConfigUpdate):
 
 
 def _load_llm_json(path: Path) -> dict:
-    from strategy_research.cli.commands.llm import (
+    from strategy_research.interfaces.cli.commands.llm import (
         _load_llm_json as _cli_load_llm_json,
     )
     return _cli_load_llm_json(path)
 
 
 def _load_profiles(path: Path) -> dict[str, dict]:
-    from strategy_research.cli.commands.llm import (
+    from strategy_research.interfaces.cli.commands.llm import (
         _load_profiles as _cli_load_profiles,
     )
     return _cli_load_profiles(path)
 
 
 def _active_profile(path: Path) -> str | None:
-    from strategy_research.cli.commands.llm import (
+    from strategy_research.interfaces.cli.commands.llm import (
         _active_profile as _cli_active_profile,
     )
     return _cli_active_profile(path)
 
 
 def _key_var_for(name: str) -> str:
-    from strategy_research.cli.commands.llm import _key_var_for as _cli_kv
+    from strategy_research.interfaces.cli.commands.llm import _key_var_for as _cli_kv
     return _cli_kv(name)
 
 
@@ -303,7 +303,7 @@ def _provider_catalog() -> list[dict]:
     dotenv = _read_dotenv()
 
     try:
-        from strategy_research.cli.onboard import PROVIDERS as ONBOARD
+        from strategy_research.interfaces.cli.onboard import PROVIDERS as ONBOARD
         labels = {p.key: (p.label, p.suggested_models)
                   for p in ONBOARD}
     except (ImportError, AttributeError, KeyError):

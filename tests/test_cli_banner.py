@@ -5,7 +5,7 @@ from __future__ import annotations
 import pytest
 from rich.console import Console
 
-from strategy_research.cli.ui.banner import (
+from strategy_research.interfaces.cli.ui.banner import (
     _build_logo,
     _gradient_color,
     print_banner,

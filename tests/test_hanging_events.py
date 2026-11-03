@@ -136,7 +136,7 @@ class TestHangsCli:
         import argparse
         import importlib
 
-        cli_mod = importlib.import_module("strategy_research.cli")
+        cli_mod = importlib.import_module("strategy_research.interfaces.cli")
         args = argparse.Namespace(hours=24, limit=50)
         rc = cli_mod._dispatch_hangs(args, {})
         out = capsys.readouterr().out
@@ -150,7 +150,7 @@ class TestHangsCli:
         import argparse
         import importlib
 
-        cli_mod = importlib.import_module("strategy_research.cli")
+        cli_mod = importlib.import_module("strategy_research.interfaces.cli")
         args = argparse.Namespace(hours=24, limit=50)
         rc = cli_mod._dispatch_hangs(args, {})
         out = capsys.readouterr().out

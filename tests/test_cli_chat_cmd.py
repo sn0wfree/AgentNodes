@@ -7,7 +7,7 @@ from dataclasses import dataclass, field
 import pytest
 from rich.console import Console
 
-from strategy_research.cli.commands.slash_chat import (
+from strategy_research.interfaces.cli.commands.slash_chat import (
     cmd_clear,
     cmd_debug,
     cmd_journal,

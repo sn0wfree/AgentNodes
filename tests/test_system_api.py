@@ -52,7 +52,7 @@ def test_info_includes_model_info_when_llm_configured(client):
     }
     cfg = _make_llm_config(provider="minimax", model="minimax-M3")
     with patch(
-        "strategy_research.cli.llm_config_check.check_llm_config",
+        "strategy_research.interfaces.cli.llm_config_check.check_llm_config",
         return_value=fake_llm,
     ), patch(
         "strategy_research.foundation.llm.config.LLMConfig.load",
@@ -79,7 +79,7 @@ def test_info_model_info_none_when_unconfigured(client):
     }
     cfg = _make_llm_config(provider="auto", model="unknown")
     with patch(
-        "strategy_research.cli.llm_config_check.check_llm_config",
+        "strategy_research.interfaces.cli.llm_config_check.check_llm_config",
         return_value=fake_llm,
     ), patch(
         "strategy_research.foundation.llm.config.LLMConfig.load",
@@ -106,7 +106,7 @@ def test_info_respects_user_config_override(client):
         model_context_tokens=2_500_000,
     )
     with patch(
-        "strategy_research.cli.llm_config_check.check_llm_config",
+        "strategy_research.interfaces.cli.llm_config_check.check_llm_config",
         return_value=fake_llm,
     ), patch(
         "strategy_research.foundation.llm.config.LLMConfig.load",
@@ -130,7 +130,7 @@ def test_refresh_endpoint_returns_model_info(client, auth_headers):
     }
     cfg = _make_llm_config(provider="openai", model="gpt-4o-mini")
     with patch(
-        "strategy_research.cli.llm_config_check.check_llm_config",
+        "strategy_research.interfaces.cli.llm_config_check.check_llm_config",
         return_value=fake_llm,
     ), patch(
         "strategy_research.foundation.llm.config.LLMConfig.load",
@@ -158,7 +158,7 @@ def test_refresh_endpoint_uses_current_config_when_no_body(client, auth_headers)
     }
     cfg = _make_llm_config(provider="minimax", model="minimax-M3")
     with patch(
-        "strategy_research.cli.llm_config_check.check_llm_config",
+        "strategy_research.interfaces.cli.llm_config_check.check_llm_config",
         return_value=fake_llm,
     ), patch(
         "strategy_research.foundation.llm.config.LLMConfig.load",
@@ -180,7 +180,7 @@ def test_refresh_endpoint_400_when_no_llm(client, auth_headers):
     }
     cfg = _make_llm_config(provider="auto", model="unknown")
     with patch(
-        "strategy_research.cli.llm_config_check.check_llm_config",
+        "strategy_research.interfaces.cli.llm_config_check.check_llm_config",
         return_value=fake_llm,
     ), patch(
         "strategy_research.foundation.llm.config.LLMConfig.load",

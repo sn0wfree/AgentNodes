@@ -32,7 +32,7 @@ from __future__ import annotations
 
 from unittest import mock
 
-from strategy_research.cli.tui.widgets.goal_panel import (
+from strategy_research.interfaces.cli.tui.widgets.goal_panel import (
     GoalPanel,
     _criterion_icon,
     _progress_bar,
@@ -181,7 +181,7 @@ class TestGoalTemplate:
 
 class TestEvidenceDetection:
     def test_detect_quantitative_evidence(self):
-        from strategy_research.cli.tui.session import ChatSession
+        from strategy_research.interfaces.cli.tui.session import ChatSession
         result = ChatSession.detect_evidence_in_response(
             "动量因子在 2020-2023 年间的年化收益为 12.3%，夏普比率 0.85"
         )
@@ -190,7 +190,7 @@ class TestEvidenceDetection:
         assert "年化收益" in result["matched_pattern"]
 
     def test_detect_medium_confidence(self):
-        from strategy_research.cli.tui.session import ChatSession
+        from strategy_research.interfaces.cli.tui.session import ChatSession
         result = ChatSession.detect_evidence_in_response(
             "通过回测数据分析，该策略在过去5年表现稳定"
         )
@@ -198,17 +198,17 @@ class TestEvidenceDetection:
         assert result["confidence"] == "medium"
 
     def test_no_evidence_plain_text(self):
-        from strategy_research.cli.tui.session import ChatSession
+        from strategy_research.interfaces.cli.tui.session import ChatSession
         result = ChatSession.detect_evidence_in_response("hello world")
         assert result is None
 
     def test_no_evidence_short_text(self):
-        from strategy_research.cli.tui.session import ChatSession
+        from strategy_research.interfaces.cli.tui.session import ChatSession
         result = ChatSession.detect_evidence_in_response("hi")
         assert result is None
 
     def test_no_evidence_empty(self):
-        from strategy_research.cli.tui.session import ChatSession
+        from strategy_research.interfaces.cli.tui.session import ChatSession
         assert ChatSession.detect_evidence_in_response("") is None
         assert ChatSession.detect_evidence_in_response("   ") is None
 
@@ -218,13 +218,13 @@ class TestEvidenceDetection:
 
 class TestContinuationControl:
     def test_default_not_paused(self):
-        from strategy_research.cli.tui.session import ChatSession
+        from strategy_research.interfaces.cli.tui.session import ChatSession
         ctx = mock.MagicMock()
         session = ChatSession(ctx)
         assert session._goal_continuation_paused is False
 
     def test_toggle_pauses(self):
-        from strategy_research.cli.tui.session import ChatSession
+        from strategy_research.interfaces.cli.tui.session import ChatSession
         ctx = mock.MagicMock()
         session = ChatSession(ctx)
         session._write_transcript = mock.MagicMock()
@@ -233,7 +233,7 @@ class TestContinuationControl:
         assert session._goal_continuation_paused is True
 
     def test_toggle_resumes(self):
-        from strategy_research.cli.tui.session import ChatSession
+        from strategy_research.interfaces.cli.tui.session import ChatSession
         ctx = mock.MagicMock()
         session = ChatSession(ctx)
         session._write_transcript = mock.MagicMock()

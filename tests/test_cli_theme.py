@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import pytest
 
-from strategy_research.cli.theme import (
+from strategy_research.interfaces.cli.theme import (
     Theme,
     _build_styles,
     _is_dark_terminal,

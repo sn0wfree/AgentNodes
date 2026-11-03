@@ -207,40 +207,40 @@ class TestCLISessionCommands:
     """Test CLI session show/search/delete commands."""
 
     def test_session_show_help(self):
-        from strategy_research.cli import main
+        from strategy_research.interfaces.cli import main
         with patch("sys.argv", ["quantnodes-research", "session", "show", "--help"]):
             with pytest.raises(SystemExit) as exc_info:
                 main()
             assert exc_info.value.code == 0
 
     def test_session_search_help(self):
-        from strategy_research.cli import main
+        from strategy_research.interfaces.cli import main
         with patch("sys.argv", ["quantnodes-research", "session", "search", "--help"]):
             with pytest.raises(SystemExit) as exc_info:
                 main()
             assert exc_info.value.code == 0
 
     def test_session_delete_help(self):
-        from strategy_research.cli import main
+        from strategy_research.interfaces.cli import main
         with patch("sys.argv", ["quantnodes-research", "session", "delete", "--help"]):
             with pytest.raises(SystemExit) as exc_info:
                 main()
             assert exc_info.value.code == 0
 
     def test_session_show_nonexistent(self):
-        from strategy_research.cli import cmd_session_show
+        from strategy_research.interfaces.cli import cmd_session_show
         args = argparse.Namespace(session_id="nonexistent_123")
         result = cmd_session_show(args)
         assert result == 1
 
     def test_session_delete_nonexistent(self):
-        from strategy_research.cli import cmd_session_delete
+        from strategy_research.interfaces.cli import cmd_session_delete
         args = argparse.Namespace(session_id="nonexistent_123")
         result = cmd_session_delete(args)
         assert result == 1
 
     def test_session_search_empty(self):
-        from strategy_research.cli import cmd_session_search
+        from strategy_research.interfaces.cli import cmd_session_search
         args = argparse.Namespace(query="xyz_nonexistent_query_12345", limit=10)
         result = cmd_session_search(args)
         assert result == 0

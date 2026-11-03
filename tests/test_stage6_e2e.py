@@ -7,7 +7,7 @@ from __future__ import annotations
 
 from unittest import mock
 
-from strategy_research.cli.tui.app import ResearchApp
+from strategy_research.interfaces.cli.tui.app import ResearchApp
 
 
 class TestE2EConversationFlow:

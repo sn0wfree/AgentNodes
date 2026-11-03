@@ -179,7 +179,7 @@ class TestNoRedundantDone:
         """Verify the canonical Done. marker source: route_agent_event iter_end."""
         import inspect
 
-        from strategy_research.cli.tui.app import ResearchApp
+        from strategy_research.interfaces.cli.tui.app import ResearchApp
 
         src = inspect.getsource(ResearchApp.route_agent_event)
         # iter_end branch should call tv.append_done()

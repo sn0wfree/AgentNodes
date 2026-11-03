@@ -165,7 +165,7 @@ def test_cli_resume_continues_from_checkpoint(tmp_path, monkeypatch):
         workflow_name=str(yaml_path),
     )
 
-    from strategy_research.cli.commands.slash_goal import _cmd_checkpoint_resume
+    from strategy_research.interfaces.cli.commands.slash_goal import _cmd_checkpoint_resume
 
     console = Console(record=True)
     rc = _cmd_checkpoint_resume(console, sid, gid)
@@ -194,7 +194,7 @@ def test_cli_resume_falls_back_to_inspect_without_workflow_name(
         layer_results={},
         workflow_name="",
     )
-    from strategy_research.cli.commands.slash_goal import _cmd_checkpoint_resume
+    from strategy_research.interfaces.cli.commands.slash_goal import _cmd_checkpoint_resume
 
     console = Console(record=True)
     rc = _cmd_checkpoint_resume(console, sid, gid)

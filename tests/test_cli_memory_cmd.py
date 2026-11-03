@@ -7,7 +7,7 @@ from pathlib import Path
 import pytest
 from rich.console import Console
 
-from strategy_research.cli.commands.slash_memory import (
+from strategy_research.interfaces.cli.commands.slash_memory import (
     cmd_forget,
     cmd_list,
     cmd_search,

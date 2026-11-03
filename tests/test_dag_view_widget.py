@@ -23,11 +23,11 @@ class TestDAGViewRendering:
     """DAGView should render the DAG correctly."""
 
     async def test_mount_renders_dag(self):
-        from strategy_research.cli.tui.app import ResearchApp
+        from strategy_research.interfaces.cli.tui.app import ResearchApp
 
         app = ResearchApp(skip_resume=True)
         async with app.run_test() as pilot:
-            from strategy_research.cli.tui.widgets.dag_view import DAGView
+            from strategy_research.interfaces.cli.tui.widgets.dag_view import DAGView
             dag_view = DAGView(
                 dag={"A": [], "B": ["A"]},
                 workflow_name="test",
@@ -37,8 +37,8 @@ class TestDAGViewRendering:
             assert dag_view.is_mounted
 
     async def test_update_dag(self):
-        from strategy_research.cli.tui.app import ResearchApp
-        from strategy_research.cli.tui.widgets.dag_view import DAGView
+        from strategy_research.interfaces.cli.tui.app import ResearchApp
+        from strategy_research.interfaces.cli.tui.widgets.dag_view import DAGView
 
         app = ResearchApp(skip_resume=True)
         async with app.run_test() as pilot:
@@ -51,8 +51,8 @@ class TestDAGViewRendering:
             # Should not crash
 
     async def test_update_status(self):
-        from strategy_research.cli.tui.app import ResearchApp
-        from strategy_research.cli.tui.widgets.dag_view import DAGView
+        from strategy_research.interfaces.cli.tui.app import ResearchApp
+        from strategy_research.interfaces.cli.tui.widgets.dag_view import DAGView
 
         app = ResearchApp(skip_resume=True)
         async with app.run_test() as pilot:
@@ -63,8 +63,8 @@ class TestDAGViewRendering:
             await pilot.pause()
 
     async def test_set_selected(self):
-        from strategy_research.cli.tui.app import ResearchApp
-        from strategy_research.cli.tui.widgets.dag_view import DAGView
+        from strategy_research.interfaces.cli.tui.app import ResearchApp
+        from strategy_research.interfaces.cli.tui.widgets.dag_view import DAGView
 
         app = ResearchApp(skip_resume=True)
         async with app.run_test() as pilot:
@@ -83,8 +83,8 @@ class TestDAGViewNavigation:
     """Keyboard bindings should navigate the DAG."""
 
     async def test_j_k_navigation(self):
-        from strategy_research.cli.tui.app import ResearchApp
-        from strategy_research.cli.tui.widgets.dag_view import DAGView
+        from strategy_research.interfaces.cli.tui.app import ResearchApp
+        from strategy_research.interfaces.cli.tui.widgets.dag_view import DAGView
 
         app = ResearchApp(skip_resume=True)
         async with app.run_test() as pilot:
@@ -105,8 +105,8 @@ class TestDAGViewNavigation:
             assert dag_view._selected == nodes[1]
 
     async def test_h_l_parent_child(self):
-        from strategy_research.cli.tui.app import ResearchApp
-        from strategy_research.cli.tui.widgets.dag_view import DAGView
+        from strategy_research.interfaces.cli.tui.app import ResearchApp
+        from strategy_research.interfaces.cli.tui.widgets.dag_view import DAGView
 
         app = ResearchApp(skip_resume=True)
         async with app.run_test() as pilot:
@@ -125,8 +125,8 @@ class TestDAGViewNavigation:
             assert dag_view._selected == "B"
 
     async def test_close_view(self):
-        from strategy_research.cli.tui.app import ResearchApp
-        from strategy_research.cli.tui.widgets.dag_view import DAGView
+        from strategy_research.interfaces.cli.tui.app import ResearchApp
+        from strategy_research.interfaces.cli.tui.widgets.dag_view import DAGView
 
         app = ResearchApp(skip_resume=True)
         async with app.run_test() as pilot:

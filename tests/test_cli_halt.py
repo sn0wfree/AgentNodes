@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import pytest
 
-from strategy_research.cli.halt import (
+from strategy_research.interfaces.cli.halt import (
     HALT,
     HaltError,
     clear_halt,

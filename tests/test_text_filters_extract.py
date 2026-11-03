@@ -17,7 +17,7 @@ Covered cases:
 """
 from __future__ import annotations
 
-from strategy_research.cli.tui.text_filters import extract_thinking_tags
+from strategy_research.interfaces.cli.tui.text_filters import extract_thinking_tags
 
 
 class TestEmptyInput:

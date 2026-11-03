@@ -5,8 +5,8 @@ from __future__ import annotations
 import pytest
 from rich.console import Console
 
-from strategy_research.cli.commands.help import render_help_table, run
-from strategy_research.cli.commands.slash_router import SLASH_COMMANDS
+from strategy_research.interfaces.cli.commands.help import render_help_table, run
+from strategy_research.interfaces.cli.commands.slash_router import SLASH_COMMANDS
 
 
 @pytest.fixture

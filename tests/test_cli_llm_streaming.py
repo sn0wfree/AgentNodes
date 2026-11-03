@@ -11,12 +11,12 @@ from unittest import mock
 
 import pytest
 
-from strategy_research.cli.llm_streaming import (
+from strategy_research.interfaces.cli.llm_streaming import (
     _build_messages,
     _consume_sync_stream,
     stream_chat_to_tui,
 )
-from strategy_research.cli.tui.session import ChatSession
+from strategy_research.interfaces.cli.tui.session import ChatSession
 from strategy_research.foundation.llm.errors import LLMError, LLMTimeoutError
 from strategy_research.foundation.llm.parser import StreamChunk
 
@@ -222,7 +222,7 @@ class _FakeTranscriptViewSink:
                 self._re_render_folder(idx, expand=False)
         self._active_folder_idx = None
         self._stream_baseline = len(self.lines)
-        from strategy_research.cli.tui.widgets.streaming_text import StreamingText
+        from strategy_research.interfaces.cli.tui.widgets.streaming_text import StreamingText
         self._streamer = StreamingText()
         self._streamer.start()
 
@@ -578,7 +578,7 @@ async def test_re_render_preserves_inter_folder_content():
 @pytest.mark.asyncio
 async def test_fake_app_write_transcript_helper():
     """Bug C: ResearchApp._write_transcript delegates to write_transcript."""
-    from strategy_research.cli.tui.app import ResearchApp
+    from strategy_research.interfaces.cli.tui.app import ResearchApp
 
     app = ResearchApp(skip_resume=True)
     # Should not raise AttributeError.

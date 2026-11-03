@@ -9,8 +9,8 @@ from __future__ import annotations
 
 import argparse
 
-from strategy_research.cli import _build_parser
-from strategy_research.cli.commands.registry import registered_commands
+from strategy_research.interfaces.cli import _build_parser
+from strategy_research.interfaces.cli.commands.registry import registered_commands
 
 # Commands that live in the registry (core_commands.py + llm.py).
 REGISTRY_COMMANDS = frozenset({

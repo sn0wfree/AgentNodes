@@ -9,7 +9,7 @@ from __future__ import annotations
 
 import pytest
 
-from strategy_research.cli.tui.widgets.transcript import TranscriptView
+from strategy_research.interfaces.cli.tui.widgets.transcript import TranscriptView
 
 # ── helpers ──────────────────────────────────────────────────────────
 
@@ -107,7 +107,7 @@ class TestWriteMarkdown:
 class TestWriteAssistantMessage:
     def test_replaces_active_streamer(self, tv: TranscriptView):
         """streaming area is truncated; markdown appended."""
-        from strategy_research.cli.tui.widgets.streaming_text import StreamingText
+        from strategy_research.interfaces.cli.tui.widgets.streaming_text import StreamingText
         tv._stream_baseline = 5
         tv._streamer = StreamingText()
         tv._streamer.start()

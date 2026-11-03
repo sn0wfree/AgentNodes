@@ -3,8 +3,8 @@ from __future__ import annotations
 
 import argparse
 
-from strategy_research.cli import _build_parser
-from strategy_research.cli.commands.merged import (
+from strategy_research.interfaces.cli import _build_parser
+from strategy_research.interfaces.cli.commands.merged import (
     add_backtest_parser,
     add_check_parser,
     dispatch_backtest,
@@ -50,14 +50,14 @@ class TestMergedCommandsPresent:
 class TestDispatchRouting:
     def test_backtest_run_calls_cmd_run(self, monkeypatch):
         calls = []
-        import strategy_research.cli.commands.merged as m
+        import strategy_research.interfaces.cli.commands.merged as m
 
         monkeypatch.setattr(
             m, "cmd_run", lambda args: calls.append("run") or 0,
             raising=False,
         )
         # dispatch imports from package; patch package attr
-        import strategy_research.cli as cli_pkg
+        import strategy_research.interfaces.cli as cli_pkg
 
         monkeypatch.setattr(cli_pkg, "cmd_run", lambda args: calls.append("run") or 0)
         ns = argparse.Namespace(backtest_command="run", path=".")
@@ -65,7 +65,7 @@ class TestDispatchRouting:
         assert calls == ["run"]
 
     def test_backtest_rerun_calls_cmd_evaluate(self, monkeypatch):
-        import strategy_research.cli as cli_pkg
+        import strategy_research.interfaces.cli as cli_pkg
 
         calls = []
         monkeypatch.setattr(cli_pkg, "cmd_evaluate", lambda args: calls.append("ev") or 0)
@@ -74,7 +74,7 @@ class TestDispatchRouting:
         assert calls == ["ev"]
 
     def test_backtest_replay_calls_cmd_reproduce(self, monkeypatch):
-        import strategy_research.cli as cli_pkg
+        import strategy_research.interfaces.cli as cli_pkg
 
         calls = []
         monkeypatch.setattr(cli_pkg, "cmd_reproduce", lambda args: calls.append("rp") or 0)
@@ -83,7 +83,7 @@ class TestDispatchRouting:
         assert calls == ["rp"]
 
     def test_check_factor_calls_cmd_validate(self, monkeypatch):
-        import strategy_research.cli as cli_pkg
+        import strategy_research.interfaces.cli as cli_pkg
 
         calls = []
         monkeypatch.setattr(cli_pkg, "cmd_validate", lambda args: calls.append("v") or 0)

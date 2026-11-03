@@ -209,7 +209,7 @@ class TestOnGoalCompleteHook:
 class TestAutoresearchGoalHelpers:
     def test_append_backtest_evidence_links_to_active_goal(self, goal_store):
         """_append_backtest_evidence should append to the active goal's criterion."""
-        from strategy_research.cli.commands.autoresearch import (
+        from strategy_research.interfaces.cli.commands.autoresearch import (
             _append_backtest_evidence,
         )
 
@@ -237,7 +237,7 @@ class TestAutoresearchGoalHelpers:
 
     def test_append_backtest_evidence_no_active_goal(self):
         """Without an active goal, the helper should silently return without crashing."""
-        from strategy_research.cli.commands.autoresearch import (
+        from strategy_research.interfaces.cli.commands.autoresearch import (
             _append_backtest_evidence,
         )
         # No goal exists for this session — should not crash
@@ -250,7 +250,7 @@ class TestAutoresearchGoalHelpers:
 
     def test_register_researcher_hypothesis_creates_and_links(self, goal_store):
         """_register_researcher_hypothesis creates and links a hypothesis to the active goal."""
-        from strategy_research.cli.commands.autoresearch import (
+        from strategy_research.interfaces.cli.commands.autoresearch import (
             _register_researcher_hypothesis,
         )
         from strategy_research.apps.hypothesis import HypothesisRegistry
@@ -284,7 +284,7 @@ class TestAutoresearchGoalHelpers:
 
     def test_register_researcher_hypothesis_idempotent(self, goal_store):
         """Calling register twice with the same thesis should not duplicate."""
-        from strategy_research.cli.commands.autoresearch import (
+        from strategy_research.interfaces.cli.commands.autoresearch import (
             _register_researcher_hypothesis,
         )
         from strategy_research.apps.hypothesis import HypothesisRegistry

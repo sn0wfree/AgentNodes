@@ -9,7 +9,7 @@ class TestCLI:
         import sys
 
         result = subprocess.run(
-            [sys.executable, "-m", "strategy_research.cli", "webui", "serve", "--help"],
+            [sys.executable, "-m", "strategy_research.interfaces.cli", "webui", "serve", "--help"],
             capture_output=True, text=True, encoding="utf-8", errors="replace",
         )
         assert result.returncode == 0

@@ -10,7 +10,7 @@ import pytest
 class TestFirstExistingDotenv:
     def test_returns_none_when_no_files(self, tmp_path, monkeypatch):
         """三个候选都不存在 → None。"""
-        from strategy_research.cli import _auto_onboard
+        from strategy_research.interfaces.cli import _auto_onboard
 
         fake_q = tmp_path / "q.env"
         fake_p = tmp_path / "p.env"
@@ -25,7 +25,7 @@ class TestFirstExistingDotenv:
 
     def test_returns_first_existing(self, tmp_path, monkeypatch):
         """HOME 候选存在 → 返回它（不检查后续）。"""
-        from strategy_research.cli import _auto_onboard
+        from strategy_research.interfaces.cli import _auto_onboard
 
         fake_q = tmp_path / "q.env"
         fake_q.write_text("KEY=value")
@@ -45,7 +45,7 @@ class TestFirstExistingDotenv:
 class TestMigrateLegacyEnv:
     def test_skips_when_new_exists(self, tmp_path, monkeypatch):
         """新位置已有 .env → 不复制。"""
-        from strategy_research.cli import _auto_onboard
+        from strategy_research.interfaces.cli import _auto_onboard
 
         qdir = tmp_path / ".quantnodes"
         qdir.mkdir()
@@ -67,7 +67,7 @@ class TestMigrateLegacyEnv:
 
     def test_copies_legacy_when_new_missing(self, tmp_path, monkeypatch):
         """新位置无文件 + 老位置有 → 复制。"""
-        from strategy_research.cli import _auto_onboard
+        from strategy_research.interfaces.cli import _auto_onboard
 
         qdir = tmp_path / ".quantnodes"
         qdir.mkdir()
@@ -94,7 +94,7 @@ class TestMigrateLegacyEnv:
 class TestMaybeRunOnboarding:
     def test_non_tty_returns_true(self):
         """非 TTY → 直接返回 True，不跑 wizard。"""
-        from strategy_research.cli import _auto_onboard
+        from strategy_research.interfaces.cli import _auto_onboard
 
         # In test environment, stdin/stdout aren't TTYs
         with pytest.MonkeyPatch.context() as mp:
@@ -106,7 +106,7 @@ class TestMaybeRunOnboarding:
 
     def test_tty_with_existing_env_returns_true(self, tmp_path, monkeypatch):
         """TTY + 已有 .env → 跳过 wizard，返回 True。"""
-        from strategy_research.cli import _auto_onboard
+        from strategy_research.interfaces.cli import _auto_onboard
 
         qdir = tmp_path / ".quantnodes"
         qdir.mkdir()

@@ -7,7 +7,7 @@ from pathlib import Path
 import pytest
 from rich.console import Console
 
-from strategy_research.cli.commands.slash_goal import (
+from strategy_research.interfaces.cli.commands.slash_goal import (
     cmd_cancel,
     cmd_complete,
     cmd_evidence,
@@ -90,7 +90,7 @@ class TestCmdComplete:
     def test_completes_after_evidence(self, console, fresh_db):
         cmd_start("Investigate", console=console)
         # Get the current goal
-        from strategy_research.cli.commands.slash_goal import _store
+        from strategy_research.interfaces.cli.commands.slash_goal import _store
         snapshot = _store().get_current_snapshot("cli")
         assert snapshot is not None
         criteria = snapshot.get("criteria", [])

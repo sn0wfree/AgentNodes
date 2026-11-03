@@ -37,11 +37,11 @@ from unittest import mock
 
 import pytest
 
-from strategy_research.cli.interactive.main import InteractiveContext
-from strategy_research.cli.tui.app import ResearchApp
-from strategy_research.cli.tui.keybindings import TUI_BINDINGS
-from strategy_research.cli.tui.session import ChatSession
-from strategy_research.cli.tui.widgets.mode_bar import ModeBar
+from strategy_research.interfaces.cli.interactive.main import InteractiveContext
+from strategy_research.interfaces.cli.tui.app import ResearchApp
+from strategy_research.interfaces.cli.tui.keybindings import TUI_BINDINGS
+from strategy_research.interfaces.cli.tui.session import ChatSession
+from strategy_research.interfaces.cli.tui.widgets.mode_bar import ModeBar
 
 # ================================================================
 # ModeBar widget

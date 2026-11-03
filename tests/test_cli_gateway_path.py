@@ -18,7 +18,7 @@ def test_cli_has_no_legacy_agent_loop_path(monkeypatch):
     「不存在直连路径、不存在门函数」。
     """
     import strategy_research.kernel.gateway as gw
-    from strategy_research.cli.tui.session import ChatSession
+    from strategy_research.interfaces.cli.tui.session import ChatSession
 
     assert not hasattr(gw, "new_entry_enabled"), "门函数应已退役"
     assert not hasattr(ChatSession, "_run_agent_loop"), "旧直连分支应已删除"
@@ -33,7 +33,7 @@ def test_cli_flag_on_dispatches_to_gateway(tmp_path, monkeypatch):
 
     reset_gateway()
 
-    from strategy_research.cli.tui.session import ChatSession
+    from strategy_research.interfaces.cli.tui.session import ChatSession
 
     called = {"gateway": False, "task": None}
 
@@ -64,7 +64,7 @@ def test_cli_gateway_singleton_reused(tmp_path, monkeypatch):
     (tmp_path / "cfg.json").write_text('{"llm": {"enabled": false}}', encoding="utf-8")
     monkeypatch.setenv("LLM_API_KEY", "dummy")
 
-    from strategy_research.cli.tui.session import _get_cli_gateway
+    from strategy_research.interfaces.cli.tui.session import _get_cli_gateway
 
     a = _get_cli_gateway()
     b = _get_cli_gateway()

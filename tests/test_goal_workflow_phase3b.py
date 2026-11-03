@@ -206,7 +206,7 @@ class TestCheckpointStore:
 
 class TestGoalPanelOnWorkflowEvent:
     def test_agent_complete_updates_panel(self):
-        from strategy_research.cli.tui.widgets.goal_panel import GoalPanel
+        from strategy_research.interfaces.cli.tui.widgets.goal_panel import GoalPanel
         panel = GoalPanel()
         panel.update_goal(
             objective="test",
@@ -225,7 +225,7 @@ class TestGoalPanelOnWorkflowEvent:
         assert panel._evidence_count == 1
 
     def test_workflow_completed_sets_status(self):
-        from strategy_research.cli.tui.widgets.goal_panel import GoalPanel
+        from strategy_research.interfaces.cli.tui.widgets.goal_panel import GoalPanel
         panel = GoalPanel()
         panel.update_goal(objective="test", status="active")
         panel.on_workflow_event("workflow_completed", {})
@@ -233,14 +233,14 @@ class TestGoalPanelOnWorkflowEvent:
         assert panel._progress == 100.0
 
     def test_workflow_failed_sets_status(self):
-        from strategy_research.cli.tui.widgets.goal_panel import GoalPanel
+        from strategy_research.interfaces.cli.tui.widgets.goal_panel import GoalPanel
         panel = GoalPanel()
         panel.update_goal(objective="test", status="active")
         panel.on_workflow_event("workflow_failed", {"error": "boom"})
         assert panel._status == "error"
 
     def test_unknown_event_does_not_crash(self):
-        from strategy_research.cli.tui.widgets.goal_panel import GoalPanel
+        from strategy_research.interfaces.cli.tui.widgets.goal_panel import GoalPanel
         panel = GoalPanel()
         panel.update_goal(objective="test", status="active")
         # Should not raise

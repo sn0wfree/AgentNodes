@@ -4,7 +4,7 @@ from __future__ import annotations
 import io
 from contextlib import redirect_stdout
 
-from strategy_research.cli.commands.compact_show import cmd_compact_show
+from strategy_research.interfaces.cli.commands.compact_show import cmd_compact_show
 
 
 class TestCompactShow:

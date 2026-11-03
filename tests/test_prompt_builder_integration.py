@@ -27,7 +27,7 @@ class TestPhase5RemovedLegacyPaths:
     def test_no_chat_prompt_path_constant(self):
         """``from cli.tui import _CHAT_PROMPT_PATH`` must raise ImportError."""
         with __import__("pytest").raises(ImportError):
-            from strategy_research.cli.tui import _CHAT_PROMPT_PATH  # noqa: F401
+            from strategy_research.interfaces.cli.tui import _CHAT_PROMPT_PATH  # noqa: F401
 
     def test_no_load_role_system_prompt_function(self):
         """``from role_factory import _load_role_system_prompt`` must raise."""
@@ -75,7 +75,7 @@ class TestPhase5CallSitesUseFactory:
         引擎侧（``runtimes/nodes/react.py`` → AgentLoop → 同一 factory）。
         所以这里断言的是**新链路的完整性**，而不是旧的字符串存在。
         """
-        from strategy_research.cli.tui import session as tui_session
+        from strategy_research.interfaces.cli.tui import session as tui_session
 
         src = open(tui_session.__file__, encoding="utf-8").read()
         assert "_run_via_gateway" in src, "TUI 必须经 Gateway 入口"

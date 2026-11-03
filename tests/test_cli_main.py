@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import pytest
 
-from strategy_research.cli.interactive.main import (
+from strategy_research.interfaces.cli.interactive.main import (
     InteractiveContext,
     dispatch_slash,
     main,
@@ -107,7 +107,7 @@ class TestProcessTurn:
         assert rc in (0, 1)
 
     def test_bare_word_halt_trips(self):
-        from strategy_research.cli.halt import clear_halt, is_halted
+        from strategy_research.interfaces.cli.halt import clear_halt, is_halted
         clear_halt()
         rc = process_turn("halt")
         assert rc == 0
@@ -115,7 +115,7 @@ class TestProcessTurn:
         clear_halt()
 
     def test_bare_word_resume_clears(self):
-        from strategy_research.cli.halt import clear_halt, is_halted, trip_halt
+        from strategy_research.interfaces.cli.halt import clear_halt, is_halted, trip_halt
         trip_halt()
         rc = process_turn("resume")
         assert rc == 0

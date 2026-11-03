@@ -120,7 +120,7 @@ class TestDecideWiredIntoAutoresearch:
 
     def test_cmd_autoresearch_invokes_decide(self, workspace_path, monkeypatch):
         """1 轮 autoresearch 后, summary.json 应包含 acceptance_decision 字段."""
-        from strategy_research.cli.commands.autoresearch import cmd_autoresearch
+        from strategy_research.interfaces.cli.commands.autoresearch import cmd_autoresearch
         args = self._make_args(workspace_path)
         cmd_autoresearch(args)
 
@@ -141,7 +141,7 @@ class TestDecideWiredIntoAutoresearch:
 
     def test_summary_verdict_matches_decision_accept(self, workspace_path, monkeypatch):
         """summary.verdict 应与 decision.accept 一致."""
-        from strategy_research.cli.commands.autoresearch import cmd_autoresearch
+        from strategy_research.interfaces.cli.commands.autoresearch import cmd_autoresearch
         args = self._make_args(workspace_path)
         cmd_autoresearch(args)
 
@@ -158,7 +158,7 @@ class TestDecideWiredIntoAutoresearch:
 
     def test_stagnation_stop_breaks_loop(self, workspace_path, monkeypatch):
         """连续 N 轮 reject → stagnation_triggered → 退出循环."""
-        from strategy_research.cli.commands.autoresearch import cmd_autoresearch
+        from strategy_research.interfaces.cli.commands.autoresearch import cmd_autoresearch
         from strategy_research.apps.strategy_acceptance import AcceptanceDecision
 
         call_count = {"n": 0}
@@ -197,7 +197,7 @@ class TestDecideWiredIntoAutoresearch:
 
     def test_results_tsv_records_verdict(self, workspace_path, monkeypatch):
         """results.tsv 应记录最终 verdict (keep/discard)."""
-        from strategy_research.cli.commands.autoresearch import cmd_autoresearch
+        from strategy_research.interfaces.cli.commands.autoresearch import cmd_autoresearch
         args = self._make_args(workspace_path)
         cmd_autoresearch(args)
 
@@ -247,7 +247,7 @@ class TestDecideCallArgs:
 
     def test_decide_called_with_metrics(self, workspace_path, monkeypatch):
         """decide() 收到的 metrics 来自 backtest."""
-        from strategy_research.cli.commands.autoresearch import cmd_autoresearch
+        from strategy_research.interfaces.cli.commands.autoresearch import cmd_autoresearch
         from strategy_research.apps.strategy_acceptance import AcceptanceDecision
 
         captured = {}

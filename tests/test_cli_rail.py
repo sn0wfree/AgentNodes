@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from rich.console import Console, Group
 
-from strategy_research.cli.ui.rail import RailRunDashboard, RailStep
+from strategy_research.interfaces.cli.ui.rail import RailRunDashboard, RailStep
 
 
 def _render_to_text(dashboard) -> str:

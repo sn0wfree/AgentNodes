@@ -19,7 +19,7 @@ Covered cases:
 """
 from __future__ import annotations
 
-from strategy_research.cli.tui.content_formatter import reformat_body_content
+from strategy_research.interfaces.cli.tui.content_formatter import reformat_body_content
 
 
 class TestEmptyInput:

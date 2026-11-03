@@ -9,8 +9,8 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
 
-from strategy_research.cli.commands import core_commands  # noqa: F401  (registration side effect)
-from strategy_research.cli.commands.registry import (
+from strategy_research.interfaces.cli.commands import core_commands  # noqa: F401  (registration side effect)
+from strategy_research.interfaces.cli.commands.registry import (
     cli_command,
     dispatch,
     register_command,
@@ -49,7 +49,7 @@ class TestRegistryBasics(unittest.TestCase):
         # Since core_commands registers on import, we have to re-import.
         import importlib
 
-        import strategy_research.cli.commands.core_commands as cc
+        import strategy_research.interfaces.cli.commands.core_commands as cc
         importlib.reload(cc)
 
     def test_registered_commands_returns_list(self):
@@ -65,7 +65,7 @@ class TestRegistryBasics(unittest.TestCase):
         # Re-register
         import importlib
 
-        import strategy_research.cli.commands.core_commands as cc
+        import strategy_research.interfaces.cli.commands.core_commands as cc
         importlib.reload(cc)
         self.assertGreater(len(registered_commands()), 0)
 
@@ -153,7 +153,7 @@ class TestWireCommands(unittest.TestCase):
         reset_registry()
         import importlib
 
-        import strategy_research.cli.commands.core_commands as cc
+        import strategy_research.interfaces.cli.commands.core_commands as cc
         importlib.reload(cc)
 
     def test_wire_all_registered(self):

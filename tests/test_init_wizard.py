@@ -2,17 +2,17 @@
 
 Covers:
 
-* :func:`strategy_research.cli.onboard.run_onboarding` (the prompt-toolkit
+* :func:`strategy_research.interfaces.cli.onboard.run_onboarding` (the prompt-toolkit
   5-step wizard used by both init paths).
-* :func:`strategy_research.cli.onboard.is_onboarded`.
-* :func:`strategy_research.cli.onboard._save_partial` /
+* :func:`strategy_research.interfaces.cli.onboard.is_onboarded`.
+* :func:`strategy_research.interfaces.cli.onboard._save_partial` /
   :func:`_finalize_llm_json` / :func:`_save_tokens_to_dotenv`
   (atomic JSON write + dotenv write, both chmod 0600).
-* :func:`strategy_research.cli._auto_onboard._maybe_run_onboarding`
+* :func:`strategy_research.interfaces.cli._auto_onboard._maybe_run_onboarding`
   (the auto-trigger on bare ``quantnodes-research`` invocations).
-* :func:`strategy_research.cli._auto_onboard._migrate_legacy_env`
+* :func:`strategy_research.interfaces.cli._auto_onboard._migrate_legacy_env`
   (one-shot copy of legacy ``.env`` files).
-* :func:`strategy_research.cli.__init__.cmd_run_onboarding` (the explicit
+* :func:`strategy_research.interfaces.cli.__init__.cmd_run_onboarding` (the explicit
   CLI path driven by ``quantnodes-research init``).
 
 All tests operate against ``llm_json_path`` + ``dotenv_path`` (test-only
@@ -29,12 +29,12 @@ from unittest.mock import patch
 
 import pytest
 
-from strategy_research.cli._auto_onboard import (
+from strategy_research.interfaces.cli._auto_onboard import (
     _first_existing_dotenv_path,
     _maybe_run_onboarding,
     _migrate_legacy_env,
 )
-from strategy_research.cli.onboard import (
+from strategy_research.interfaces.cli.onboard import (
     _finalize_llm_json,
     _save_partial,
     _save_tokens_to_dotenv,
@@ -267,17 +267,17 @@ class TestEnvProbe:
         home_env = tmp_path / "home.env"
         home_env.write_text("LLM_API_KEY=sk-home")
         monkeypatch.setattr(
-            "strategy_research.cli._auto_onboard._QUANTNODES_DOTENV_PATH",
+            "strategy_research.interfaces.cli._auto_onboard._QUANTNODES_DOTENV_PATH",
             home_env,
         )
         cwd_env = tmp_path / "cwd.env"
         cwd_env.write_text("LLM_API_KEY=sk-cwd")
         monkeypatch.setattr(
-            "strategy_research.cli._auto_onboard._CWD_DOTENV_PATH",
+            "strategy_research.interfaces.cli._auto_onboard._CWD_DOTENV_PATH",
             cwd_env,
         )
         monkeypatch.setattr(
-            "strategy_research.cli._auto_onboard._PROJECT_DOTENV_PATH",
+            "strategy_research.interfaces.cli._auto_onboard._PROJECT_DOTENV_PATH",
             tmp_path / "missing.env",
         )
         assert _first_existing_dotenv_path() == tmp_path / "home.env"
@@ -286,15 +286,15 @@ class TestEnvProbe:
         self, tmp_path: Path, monkeypatch
     ):
         monkeypatch.setattr(
-            "strategy_research.cli._auto_onboard._QUANTNODES_DOTENV_PATH",
+            "strategy_research.interfaces.cli._auto_onboard._QUANTNODES_DOTENV_PATH",
             tmp_path / "missing1.env",
         )
         monkeypatch.setattr(
-            "strategy_research.cli._auto_onboard._PROJECT_DOTENV_PATH",
+            "strategy_research.interfaces.cli._auto_onboard._PROJECT_DOTENV_PATH",
             tmp_path / "missing2.env",
         )
         monkeypatch.setattr(
-            "strategy_research.cli._auto_onboard._CWD_DOTENV_PATH",
+            "strategy_research.interfaces.cli._auto_onboard._CWD_DOTENV_PATH",
             tmp_path / "missing3.env",
         )
         assert _first_existing_dotenv_path() is None
@@ -311,7 +311,7 @@ class TestMigrateLegacyEnv:
 
         new_path = tmp_path / "new_env" / ".env"
         monkeypatch.setattr(
-            "strategy_research.cli._auto_onboard._QUANTNODES_DOTENV_PATH",
+            "strategy_research.interfaces.cli._auto_onboard._QUANTNODES_DOTENV_PATH",
             new_path,
         )
 
@@ -332,7 +332,7 @@ class TestMigrateLegacyEnv:
 
         new_path = tmp_path / "new_env" / ".env"
         monkeypatch.setattr(
-            "strategy_research.cli._auto_onboard._QUANTNODES_DOTENV_PATH",
+            "strategy_research.interfaces.cli._auto_onboard._QUANTNODES_DOTENV_PATH",
             new_path,
         )
 
@@ -353,7 +353,7 @@ class TestMigrateLegacyEnv:
         new_path.write_text("LLM_API_KEY=sk-current")
 
         monkeypatch.setattr(
-            "strategy_research.cli._auto_onboard._QUANTNODES_DOTENV_PATH",
+            "strategy_research.interfaces.cli._auto_onboard._QUANTNODES_DOTENV_PATH",
             new_path,
         )
         monkeypatch.setattr("pathlib.Path.home", classmethod(lambda cls: tmp_path))
@@ -364,7 +364,7 @@ class TestMigrateLegacyEnv:
     def test_no_op_when_legacy_missing(self, tmp_path: Path, monkeypatch):
         new_path = tmp_path / "new" / ".env"
         monkeypatch.setattr(
-            "strategy_research.cli._auto_onboard._QUANTNODES_DOTENV_PATH",
+            "strategy_research.interfaces.cli._auto_onboard._QUANTNODES_DOTENV_PATH",
             new_path,
         )
         monkeypatch.setattr("pathlib.Path.home", classmethod(lambda cls: tmp_path))
@@ -377,11 +377,11 @@ class TestMaybeRunOnboarding:
         home_env = tmp_path / "home.env"
         home_env.write_text("LLM_API_KEY=sk-x")
         monkeypatch.setattr(
-            "strategy_research.cli._auto_onboard._QUANTNODES_DOTENV_PATH",
+            "strategy_research.interfaces.cli._auto_onboard._QUANTNODES_DOTENV_PATH",
             home_env,
         )
         monkeypatch.setattr(
-            "strategy_research.cli._auto_onboard.run_onboarding",
+            "strategy_research.interfaces.cli._auto_onboard.run_onboarding",
             lambda **kw: pytest.fail("wizard was invoked"),
         )
         assert _maybe_run_onboarding(console=None) is True
@@ -391,15 +391,15 @@ class TestMaybeRunOnboarding:
                      "_PROJECT_DOTENV_PATH",
                      "_CWD_DOTENV_PATH"):
             monkeypatch.setattr(
-                f"strategy_research.cli._auto_onboard.{attr}",
+                f"strategy_research.interfaces.cli._auto_onboard.{attr}",
                 tmp_path / f"nonexistent_{attr}.env",
             )
         monkeypatch.setattr(
-            "strategy_research.cli._auto_onboard.sys.stdin",
+            "strategy_research.interfaces.cli._auto_onboard.sys.stdin",
             type("Mock", (), {"isatty": staticmethod(lambda: False)})(),
         )
         monkeypatch.setattr(
-            "strategy_research.cli._auto_onboard.run_onboarding",
+            "strategy_research.interfaces.cli._auto_onboard.run_onboarding",
             lambda **kw: (_ for _ in ()).throw(
                 AssertionError("wizard reached in non-TTY"),
             ),
@@ -410,20 +410,20 @@ class TestMaybeRunOnboarding:
         self, tmp_path: Path, monkeypatch
     ):
         monkeypatch.setattr(
-            "strategy_research.cli._auto_onboard._first_existing_dotenv_path",
+            "strategy_research.interfaces.cli._auto_onboard._first_existing_dotenv_path",
             lambda: None,
         )
         monkeypatch.setattr(
-            "strategy_research.cli._auto_onboard.sys.stdin",
+            "strategy_research.interfaces.cli._auto_onboard.sys.stdin",
             type("Mock", (), {"isatty": staticmethod(lambda: True)})(),
         )
         monkeypatch.setattr(
-            "strategy_research.cli._auto_onboard.sys.stdout",
+            "strategy_research.interfaces.cli._auto_onboard.sys.stdout",
             type("Mock", (), {"isatty": staticmethod(lambda: True)})(),
         )
         monkeypatch.setattr(
-            "strategy_research.cli._auto_onboarding.run_onboarding" if False else
-            "strategy_research.cli._auto_onboard.run_onboarding",
+            "strategy_research.interfaces.cli._auto_onboarding.run_onboarding" if False else
+            "strategy_research.interfaces.cli._auto_onboard.run_onboarding",
             lambda **kw: None,
         )
         assert _maybe_run_onboarding(console=None) is False
@@ -436,7 +436,7 @@ class TestMaybeRunOnboarding:
 
 class TestCmdRunOnboarding:
     def test_help_describes_wizard(self, capsys):
-        from strategy_research.cli import main as cli_main
+        from strategy_research.interfaces.cli import main as cli_main
         with patch.object(sys, "argv", ["prog", "init", "--help"]):
             with pytest.raises(SystemExit) as exc:
                 cli_main()
@@ -451,12 +451,12 @@ class TestCmdRunOnboarding:
         _finalize_llm_json({"provider": "openai"}, llm_json_path=llm_path)
 
         with patch("rich.prompt.Confirm.ask", return_value=False), patch(
-            "strategy_research.cli.onboard._QUANTNODES_LLM_JSON_PATH", llm_path
+            "strategy_research.interfaces.cli.onboard._QUANTNODES_LLM_JSON_PATH", llm_path
         ), patch(
-            "strategy_research.cli.onboard._QUANTNODES_DOTENV_PATH",
+            "strategy_research.interfaces.cli.onboard._QUANTNODES_DOTENV_PATH",
             llm_path.parent / ".env",
         ):
-            from strategy_research.cli import cmd_run_onboarding
+            from strategy_research.interfaces.cli import cmd_run_onboarding
             args = argparse.Namespace(force=False)
             rc = cmd_run_onboarding(args)
         assert rc == 0
@@ -478,9 +478,9 @@ class TestCmdRunOnboarding:
             return llm_path
 
         monkeypatch.setattr(
-            "strategy_research.cli.onboard.run_onboarding", fake_run,
+            "strategy_research.interfaces.cli.onboard.run_onboarding", fake_run,
         )
-        from strategy_research.cli import cmd_run_onboarding
+        from strategy_research.interfaces.cli import cmd_run_onboarding
         args = argparse.Namespace(force=True)
         rc = cmd_run_onboarding(args)
         assert rc == 0
@@ -491,13 +491,13 @@ class TestCmdRunOnboarding:
         # is_onboarded() reads real ~/.quantnodes/llm.json; force False
         # so cmd_run_onboarding reaches run_onboarding without prompting.
         monkeypatch.setattr(
-            "strategy_research.cli.onboard.is_onboarded", lambda **kw: False,
+            "strategy_research.interfaces.cli.onboard.is_onboarded", lambda **kw: False,
         )
         monkeypatch.setattr(
-            "strategy_research.cli.onboard.run_onboarding",
+            "strategy_research.interfaces.cli.onboard.run_onboarding",
             lambda **kw: None,
         )
-        from strategy_research.cli import cmd_run_onboarding
+        from strategy_research.interfaces.cli import cmd_run_onboarding
         args = argparse.Namespace(force=False)
         rc = cmd_run_onboarding(args)
         assert rc == 1
@@ -530,10 +530,10 @@ class TestRunOnboardingTTY:
             return choices[0][0]
 
         monkeypatch.setattr(
-            "strategy_research.cli.onboard._select_with_back", mock_select,
+            "strategy_research.interfaces.cli.onboard._select_with_back", mock_select,
         )
         monkeypatch.setattr(
-            "strategy_research.cli.onboard._prompt_secret",
+            "strategy_research.interfaces.cli.onboard._prompt_secret",
             lambda prompt: "sk-test1234567890",
         )
         # Mock Step 0 auto-fix prompt (prompt_toolkit.prompt)
@@ -553,7 +553,7 @@ class TestRunOnboardingTTY:
         assert "LLM_API_KEY=sk-test1234567890" in env_text
 
     def test_tty_cancel_returns_none(self, fresh, monkeypatch):
-        from strategy_research.cli.onboard import CANCEL
+        from strategy_research.interfaces.cli.onboard import CANCEL
         llm_path, env_path = fresh
 
         monkeypatch.setattr("sys.stdin.isatty", lambda: True)
@@ -563,7 +563,7 @@ class TestRunOnboardingTTY:
             lambda *a, **kw: "y",
         )
         monkeypatch.setattr(
-            "strategy_research.cli.onboard._select_with_back",
+            "strategy_research.interfaces.cli.onboard._select_with_back",
             lambda *a, **kw: CANCEL,
         )
 
@@ -573,7 +573,7 @@ class TestRunOnboardingTTY:
         assert result is None
 
     def test_tty_back_at_step0_returns_none(self, fresh, monkeypatch):
-        from strategy_research.cli.onboard import BACK
+        from strategy_research.interfaces.cli.onboard import BACK
         llm_path, env_path = fresh
 
         monkeypatch.setattr("sys.stdin.isatty", lambda: True)
@@ -583,7 +583,7 @@ class TestRunOnboardingTTY:
             lambda *a, **kw: "y",
         )
         monkeypatch.setattr(
-            "strategy_research.cli.onboard._select_with_back",
+            "strategy_research.interfaces.cli.onboard._select_with_back",
             lambda *a, **kw: BACK,
         )
 
@@ -593,7 +593,7 @@ class TestRunOnboardingTTY:
         assert result is None
 
     def test_tty_back_goes_to_previous_step(self, fresh, monkeypatch):
-        from strategy_research.cli.onboard import BACK
+        from strategy_research.interfaces.cli.onboard import BACK
         llm_path, env_path = fresh
 
         monkeypatch.setattr("sys.stdin.isatty", lambda: True)
@@ -623,10 +623,10 @@ class TestRunOnboardingTTY:
             return choices[0][0]
 
         monkeypatch.setattr(
-            "strategy_research.cli.onboard._select_with_back", mock_select,
+            "strategy_research.interfaces.cli.onboard._select_with_back", mock_select,
         )
         monkeypatch.setattr(
-            "strategy_research.cli.onboard._prompt_secret",
+            "strategy_research.interfaces.cli.onboard._prompt_secret",
             lambda prompt: "sk-test1234567890",
         )
 
@@ -662,7 +662,7 @@ class TestRunOnboardingTTY:
             return choices[0][0]
 
         monkeypatch.setattr(
-            "strategy_research.cli.onboard._select_with_back", mock_select,
+            "strategy_research.interfaces.cli.onboard._select_with_back", mock_select,
         )
 
         result = run_onboarding(
@@ -692,21 +692,21 @@ class TestTTYHelpers:
     """Test the TTY helper functions."""
 
     def test_validate_key_valid(self):
-        from strategy_research.cli.onboard import _validate_key
+        from strategy_research.interfaces.cli.onboard import _validate_key
         assert _validate_key("sk-", "sk-test1234567890") is None
 
     def test_validate_key_empty(self):
-        from strategy_research.cli.onboard import _validate_key
+        from strategy_research.interfaces.cli.onboard import _validate_key
         err = _validate_key("sk-", "")
         assert "empty" in err.lower()
 
     def test_validate_key_wrong_prefix(self):
-        from strategy_research.cli.onboard import _validate_key
+        from strategy_research.interfaces.cli.onboard import _validate_key
         err = _validate_key("sk-", "wrong-prefix-123456")
         assert "sk-" in err
 
     def test_validate_key_too_short(self):
-        from strategy_research.cli.onboard import _validate_key
+        from strategy_research.interfaces.cli.onboard import _validate_key
         err = _validate_key("sk-", "sk-short")
         assert "short" in err.lower()
 
@@ -718,8 +718,8 @@ class TestStepProviderSwitch:
         """OpenAI 残留 → BACK → Ollama → llm.json 不带 api_key/base_url。"""
         import unittest.mock as _mock
 
-        import strategy_research.cli.onboard as onboard_mod
-        from strategy_research.cli.onboard import _step_provider
+        import strategy_research.interfaces.cli.onboard as onboard_mod
+        from strategy_research.interfaces.cli.onboard import _step_provider
 
         llm_path, env_path = fresh
         with _mock.patch.object(

@@ -71,8 +71,8 @@ webui-api = [
 ]
 
 [project.scripts]
-quantnodes-research = "strategy_research.cli.__main__:main"
-quantnodes-strategy-research = "strategy_research.cli.__main__:main"
+quantnodes-research = "strategy_research.interfaces.cli.__main__:main"
+quantnodes-strategy-research = "strategy_research.interfaces.cli.__main__:main"
 
 [tool.setuptools.packages.find]
 where = ["src"]

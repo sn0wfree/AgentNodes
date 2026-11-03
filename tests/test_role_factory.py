@@ -245,7 +245,7 @@ class TestSpawnAgentFallback:
         monkeypatch.delenv("LLM_API_KEY", raising=False)
         # conftest._isolate_llm_bridge disables the bridge, so no api_key
         # is available -> should_use_real_llm() returns False -> stub.
-        from strategy_research.cli import _spawn_agent
+        from strategy_research.interfaces.cli import _spawn_agent
 
         for role in ["researcher", "data_quality", "factor_analyst",
                      "strategist", "portfolio_construction", "risk_controller",
@@ -263,7 +263,7 @@ class TestSpawnAgentFallback:
     def test_env_var_force_stub(self, tmp_path, monkeypatch):
         """AUTORESEARCH_BEHAVIOR=improving → 强制 stub, round>=3 approve."""
         monkeypatch.setenv("AUTORESEARCH_BEHAVIOR", "improving")
-        from strategy_research.cli import _spawn_agent
+        from strategy_research.interfaces.cli import _spawn_agent
 
         raw = _spawn_agent(
             "critic", tmp_path, "test_strat",

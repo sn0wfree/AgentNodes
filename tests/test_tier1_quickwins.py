@@ -23,7 +23,7 @@ class TestPortfolioCliWiring:
         """`quantnodes-research portfolio --help` 应不报错。"""
         import sys
 
-        from strategy_research.cli import main
+        from strategy_research.interfaces.cli import main
         sys.argv = ["quantnodes-research", "portfolio", "--help"]
         with pytest.raises(SystemExit) as exc_info:
             main()
@@ -60,7 +60,7 @@ class TestCriticAgent:
     """`_spawn_agent('critic', ...)` 应返回 reviewer 风格 JSON。"""
 
     def _call(self, agent_name: str, round_num: int = 0):
-        from strategy_research.cli import _spawn_agent
+        from strategy_research.interfaces.cli import _spawn_agent
         return _spawn_agent(
             agent_name=agent_name,
             workspace_path=Path("/tmp"),

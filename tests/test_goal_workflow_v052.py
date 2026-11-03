@@ -23,7 +23,7 @@ import pytest
 # Ensure pytest-asyncio picks up all async test functions.
 pytestmark = pytest.mark.asyncio
 
-from strategy_research.cli.tui.workers.workflow_worker import (
+from strategy_research.interfaces.cli.tui.workers.workflow_worker import (
     WorkflowWorker,
     WorkflowWorkerState,
 )
@@ -196,7 +196,7 @@ class TestResearchAppStartWorkflow:
     """ResearchApp.start_workflow() creates worker + subscribes GoalPanelObserver."""
 
     async def test_start_workflow_creates_worker(self, fresh_db):
-        from strategy_research.cli.tui.app import ResearchApp
+        from strategy_research.interfaces.cli.tui.app import ResearchApp
 
         app = ResearchApp(skip_resume=True)
         async with app.run_test():
@@ -209,7 +209,7 @@ class TestResearchAppStartWorkflow:
             assert isinstance(app._workflow_worker, WorkflowWorker)
 
     async def test_start_workflow_subscribes_panel_observer(self, fresh_db):
-        from strategy_research.cli.tui.app import ResearchApp
+        from strategy_research.interfaces.cli.tui.app import ResearchApp
 
         app = ResearchApp(skip_resume=True)
         async with app.run_test():
@@ -222,7 +222,7 @@ class TestResearchAppStartWorkflow:
             assert hasattr(observer, "on_event")
 
     async def test_start_workflow_replaces_existing(self, fresh_db):
-        from strategy_research.cli.tui.app import ResearchApp
+        from strategy_research.interfaces.cli.tui.app import ResearchApp
 
         app = ResearchApp(skip_resume=True)
         async with app.run_test():
@@ -248,7 +248,7 @@ class TestCtrlGPausesWorkflow:
     """Ctrl+G pauses the active workflow before falling back to continuation."""
 
     async def test_ctrl_g_pauses_running_workflow(self, fresh_db):
-        from strategy_research.cli.tui.app import ResearchApp
+        from strategy_research.interfaces.cli.tui.app import ResearchApp
 
         app = ResearchApp(skip_resume=True)
         async with app.run_test():
@@ -264,7 +264,7 @@ class TestCtrlGPausesWorkflow:
             runner.pause.assert_called_once()
 
     async def test_ctrl_g_falls_back_to_continuation_when_no_workflow(self, fresh_db):
-        from strategy_research.cli.tui.app import ResearchApp
+        from strategy_research.interfaces.cli.tui.app import ResearchApp
 
         app = ResearchApp(skip_resume=True)
         async with app.run_test():
@@ -280,7 +280,7 @@ class TestGoalPanelReceivesEvents:
     """GoalPanel.on_workflow_event() is invoked by GoalPanelObserver."""
 
     async def test_panel_handles_agent_complete_event(self, fresh_db):
-        from strategy_research.cli.tui.app import ResearchApp
+        from strategy_research.interfaces.cli.tui.app import ResearchApp
 
         app = ResearchApp(skip_resume=True)
         async with app.run_test():
@@ -292,7 +292,7 @@ class TestGoalPanelReceivesEvents:
             panel.on_workflow_event("workflow_start", {"workflow": "x"})
 
     async def test_panel_handles_workflow_completed_event(self, fresh_db):
-        from strategy_research.cli.tui.app import ResearchApp
+        from strategy_research.interfaces.cli.tui.app import ResearchApp
 
         app = ResearchApp(skip_resume=True)
         async with app.run_test():

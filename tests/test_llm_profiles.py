@@ -25,7 +25,7 @@ _posix_only = pytest.mark.skipif(
     os.name == "nt", reason="POSIX permission semantics unavailable on Windows"
 )
 
-from strategy_research.cli.commands import llm as llm_cmd
+from strategy_research.interfaces.cli.commands import llm as llm_cmd
 from strategy_research.foundation.llm import LLMConfig
 from strategy_research.foundation.llm.config import (
     ENV_PROFILE_ACTIVE,
@@ -347,7 +347,7 @@ class TestCliProfileFlag:
     ):
         from types import SimpleNamespace
 
-        from strategy_research.cli.llm_config import build_llm_config
+        from strategy_research.interfaces.cli.llm_config import build_llm_config
         args = SimpleNamespace(llm_profile="nvidia")
         build_llm_config(args)
         assert os.environ.get(ENV_PROFILE_ACTIVE) == "nvidia"
@@ -360,7 +360,7 @@ class TestCliProfileFlag:
     def test_llm_profile_excluded_from_cli_overrides(self, monkeypatch):
         from types import SimpleNamespace
 
-        from strategy_research.cli.llm_config import _cli_overrides_from_args
+        from strategy_research.interfaces.cli.llm_config import _cli_overrides_from_args
         args = SimpleNamespace(llm_profile="nvidia", llm_model="x")
         out = _cli_overrides_from_args(args)
         assert out == {"llm_model": "x"}
@@ -613,11 +613,11 @@ class TestCliHelpers:
 class TestAttachProfile:
     @pytest.fixture
     def provider(self):
-        from strategy_research.cli.onboard import PROVIDERS
+        from strategy_research.interfaces.cli.onboard import PROVIDERS
         return {p.key: p for p in PROVIDERS}
 
     def test_attach_copies_fields(self, provider):
-        from strategy_research.cli.onboard import _attach_profile
+        from strategy_research.interfaces.cli.onboard import _attach_profile
         llm = {"provider": "openai", "model": "gpt-4o",
                "api_key": "env:LLM_API_KEY"}
         out = _attach_profile(dict(llm), provider["openai"])
@@ -630,13 +630,13 @@ class TestAttachProfile:
         }
 
     def test_attach_omits_missing_model(self, provider):
-        from strategy_research.cli.onboard import _attach_profile
+        from strategy_research.interfaces.cli.onboard import _attach_profile
         llm = {"provider": "openai"}
         out = _attach_profile(llm, provider["openai"])
         assert "model" not in out["profiles"]["openai"]
 
     def test_attach_omits_missing_api_key(self, provider):
-        from strategy_research.cli.onboard import _attach_profile
+        from strategy_research.interfaces.cli.onboard import _attach_profile
         llm = {"provider": "ollama", "model": "qwen2.5:32b"}
         out = _attach_profile(llm, provider["ollama"])
         profile = out["profiles"]["ollama"]
@@ -646,7 +646,7 @@ class TestAttachProfile:
         assert out["active_profile"] == "ollama"
 
     def test_attach_preserves_other_llm_keys(self, provider):
-        from strategy_research.cli.onboard import _attach_profile
+        from strategy_research.interfaces.cli.onboard import _attach_profile
         llm = {"provider": "openai", "timeout": 300, "max_retries": 2}
         out = _attach_profile(llm, provider["openai"])
         assert out["timeout"] == 300
@@ -662,7 +662,7 @@ class TestCliProfileFlagEdge:
     ):
         from types import SimpleNamespace
 
-        from strategy_research.cli.llm_config import _cli_overrides_from_args
+        from strategy_research.interfaces.cli.llm_config import _cli_overrides_from_args
         monkeypatch.setenv(ENV_PROFILE_ACTIVE, "existing")
         args = SimpleNamespace(llm_profile=None, llm_model="x")
         out = _cli_overrides_from_args(args)
@@ -670,7 +670,7 @@ class TestCliProfileFlagEdge:
         assert out == {"llm_model": "x"}
 
     def test_build_llm_config_none_args(self, clear_env, monkeypatch):
-        from strategy_research.cli.llm_config import build_llm_config
+        from strategy_research.interfaces.cli.llm_config import build_llm_config
         monkeypatch.setenv(ENV_PROFILE_ACTIVE, "existing")
         cfg = build_llm_config(None)
         assert cfg is not None

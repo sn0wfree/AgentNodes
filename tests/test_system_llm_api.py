@@ -275,7 +275,7 @@ class TestCheckLLMConfig:
     def test_profiles_only_config_resolves_effective(
         self, tmp_path: Path, monkeypatch
     ):
-        from strategy_research.cli import llm_config_check as lcc
+        from strategy_research.interfaces.cli import llm_config_check as lcc
 
         llm_json = tmp_path / "llm.json"
         dotenv = tmp_path / ".env"
@@ -302,7 +302,7 @@ class TestCheckLLMConfig:
         assert status["model"] == "minimax-M3"
 
     def test_unconfigured_stays_false(self, tmp_path: Path, monkeypatch):
-        from strategy_research.cli import llm_config_check as lcc
+        from strategy_research.interfaces.cli import llm_config_check as lcc
 
         llm_json = tmp_path / "llm.json"
         dotenv = tmp_path / ".env"

@@ -5,7 +5,7 @@ from __future__ import annotations
 import pytest
 from rich.console import Console
 
-from strategy_research.cli.components.working_indicator import ThinkingSpinner
+from strategy_research.interfaces.cli.components.working_indicator import ThinkingSpinner
 
 
 @pytest.fixture

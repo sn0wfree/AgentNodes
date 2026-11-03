@@ -6,8 +6,8 @@ import pytest
 from rich.console import Console
 from rich.text import Text
 
-from strategy_research.cli.components.hint_bar import render_hint_bar
-from strategy_research.cli.utils.ascii_compat import (
+from strategy_research.interfaces.cli.components.hint_bar import render_hint_bar
+from strategy_research.interfaces.cli.utils.ascii_compat import (
     ELLIPSIS_UNICODE,
     register_ascii_mode,
 )

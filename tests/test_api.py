@@ -260,7 +260,7 @@ class TestAPIServeCLI:
         import subprocess
         import sys
         result = subprocess.run(
-            [sys.executable, "-m", "strategy_research.cli", "api", "serve", "--help"],
+            [sys.executable, "-m", "strategy_research.interfaces.cli", "api", "serve", "--help"],
             capture_output=True, text=True, encoding="utf-8", errors="replace",
         )
         assert result.returncode == 0

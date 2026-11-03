@@ -9,7 +9,7 @@ from __future__ import annotations
 
 import pytest
 
-from strategy_research.cli.utils.ascii_compat import (
+from strategy_research.interfaces.cli.utils.ascii_compat import (
     ARROW_ASCII,
     ARROW_UNICODE,
     ELLIPSIS_ASCII,
@@ -180,14 +180,14 @@ class TestAsciiFallback:
 
 class TestToolEventModeReflection:
     def test_render_tool_event_uses_unicode_marker_by_default(self):
-        from strategy_research.cli.components.tool_event import render_tool_event
+        from strategy_research.interfaces.cli.components.tool_event import render_tool_event
         register_ascii_mode(False)
         text = render_tool_event("Get Market Data", {"symbol": "AAPL"}, status="ok")
         rendered = text.plain
         assert "●" in rendered
 
     def test_render_tool_event_uses_ascii_marker_in_ascii_mode(self):
-        from strategy_research.cli.components.tool_event import render_tool_event
+        from strategy_research.interfaces.cli.components.tool_event import render_tool_event
         register_ascii_mode(True)
         text = render_tool_event("Get Market Data", {"symbol": "AAPL"}, status="ok")
         rendered = text.plain
@@ -196,7 +196,7 @@ class TestToolEventModeReflection:
         assert "*" in rendered
 
     def test_render_tool_event_uses_ascii_ellipsis_in_ascii_mode(self):
-        from strategy_research.cli.components.tool_event import (
+        from strategy_research.interfaces.cli.components.tool_event import (
             summarize_args,
         )
         register_ascii_mode(True)
@@ -211,7 +211,7 @@ class TestToolEventModeReflection:
 
 class TestHintBarModeReflection:
     def test_hint_bar_uses_unicode_ellipsis_by_default(self):
-        from strategy_research.cli.components.hint_bar import render_hint_bar
+        from strategy_research.interfaces.cli.components.hint_bar import render_hint_bar
         register_ascii_mode(False)
         # Left side long enough to overflow 30 cols.
         text = render_hint_bar("x" * 100, right="ctrl+c", width=30)
@@ -219,7 +219,7 @@ class TestHintBarModeReflection:
         assert "…" in rendered
 
     def test_hint_bar_uses_ascii_ellipsis_in_ascii_mode(self):
-        from strategy_research.cli.components.hint_bar import render_hint_bar
+        from strategy_research.interfaces.cli.components.hint_bar import render_hint_bar
         register_ascii_mode(True)
         text = render_hint_bar("x" * 100, right="ctrl+c", width=30)
         rendered = text.plain

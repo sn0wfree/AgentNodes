@@ -11,7 +11,7 @@ import pytest
 
 sys.path.insert(0, "/home/ll/Public/strategy-research/src")
 
-from strategy_research.cli import _spawn_agent
+from strategy_research.interfaces.cli import _spawn_agent
 
 PROMPT_PATH = "/home/ll/Public/strategy-research/src/strategy_research/templates/.prompts/anti_overfit_analyst.md"
 

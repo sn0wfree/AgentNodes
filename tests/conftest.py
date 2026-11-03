@@ -18,7 +18,7 @@ _home_sandbox.apply()
 
 import pytest  # noqa: E402
 
-from strategy_research.cli.halt import clear_halt  # noqa: E402
+from strategy_research.interfaces.cli.halt import clear_halt  # noqa: E402
 
 
 @pytest.fixture(autouse=True)

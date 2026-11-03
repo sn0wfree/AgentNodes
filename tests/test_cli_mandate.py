@@ -4,8 +4,8 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 
-from strategy_research.cli.interactive.main import process_turn
-from strategy_research.cli.mandate import (
+from strategy_research.interfaces.cli.interactive.main import process_turn
+from strategy_research.interfaces.cli.mandate import (
     Proposal,
     capture_pick,
     has_pending_proposal,

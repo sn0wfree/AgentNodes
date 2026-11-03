@@ -11,8 +11,8 @@ from __future__ import annotations
 
 import pytest
 
-from strategy_research.cli.tui.app import ResearchApp
-from strategy_research.cli.tui.widgets import TranscriptView
+from strategy_research.interfaces.cli.tui.app import ResearchApp
+from strategy_research.interfaces.cli.tui.widgets import TranscriptView
 
 # ``skip_resume`` keeps on_mount from pushing the resume modal. These tests
 # exercise the streaming routes, not session resume -- and since B4 Step 3

@@ -90,7 +90,7 @@ class TestCmdEvaluate:
         self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
     ):
         """cmd_evaluate 应跑一次回测并写 run_XXXX。"""
-        from strategy_research.cli import cmd_evaluate
+        from strategy_research.interfaces.cli import cmd_evaluate
 
         workspace = tmp_path / "ws"
         strategy_name = "eval_strat"
@@ -113,7 +113,7 @@ class TestCmdEvaluate:
         self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys
     ):
         """cmd_evaluate 输出应包含 8 项 metrics。"""
-        from strategy_research.cli import cmd_evaluate
+        from strategy_research.interfaces.cli import cmd_evaluate
 
         workspace = tmp_path / "ws"
         strategy_name = "eval_strat"
@@ -133,7 +133,7 @@ class TestCmdEvaluate:
 
     def test_evaluate_fails_if_workspace_invalid(self, tmp_path: Path):
         """workspace 无效应返回 1。"""
-        from strategy_research.cli import cmd_evaluate
+        from strategy_research.interfaces.cli import cmd_evaluate
 
         workspace = tmp_path / "nonexistent"
         args = argparse.Namespace(

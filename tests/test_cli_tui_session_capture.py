@@ -18,9 +18,9 @@ from unittest import mock
 
 import pytest
 
-from strategy_research.cli.halt import is_halted, trip_halt
-from strategy_research.cli.interactive.main import InteractiveContext
-from strategy_research.cli.tui.session import QUIT_RC, ChatSession
+from strategy_research.interfaces.cli.halt import is_halted, trip_halt
+from strategy_research.interfaces.cli.interactive.main import InteractiveContext
+from strategy_research.interfaces.cli.tui.session import QUIT_RC, ChatSession
 
 
 class _StubApp:
@@ -55,11 +55,11 @@ async def test_dispatch_captures_handler_output_and_writes_to_transcript(monkeyp
     # cmd_model uses ``_resolve_console(None)`` so the singleton
     # override is honored inside ``captured_console``.
     def _model_dispatch(*args, **kwargs):
-        from strategy_research.cli.commands.slash_chat import cmd_model
+        from strategy_research.interfaces.cli.commands.slash_chat import cmd_model
         return cmd_model()
 
     with mock.patch.dict(
-        "strategy_research.cli.interactive.main._DISPATCH",
+        "strategy_research.interfaces.cli.interactive.main._DISPATCH",
         {"model": _model_dispatch},
         clear=False,
     ):
@@ -118,14 +118,14 @@ async def test_dispatch_app_capture_format_passes_markup_through():
     s = ChatSession(ctx, app=app)
 
     def _handler(*args, **kwargs):
-        from strategy_research.cli.theme import get_console
+        from strategy_research.interfaces.cli.theme import get_console
         # Use the singleton so the captured_console context manager
         # captures our print.
         get_console().print("[bold]bold-text[/bold] seen")
         return 0
 
     with mock.patch.dict(
-        "strategy_research.cli.interactive.main._DISPATCH",
+        "strategy_research.interfaces.cli.interactive.main._DISPATCH",
         {"show": _handler},
         clear=False,
     ):
@@ -177,7 +177,7 @@ async def test_dispatch_drains_pending_prompt_with_capture():
         return 0
 
     with mock.patch.dict(
-        "strategy_research.cli.interactive.main._DISPATCH",
+        "strategy_research.interfaces.cli.interactive.main._DISPATCH",
         {"journal": _journal, "echo_echo": _echo},
         clear=False,
     ):

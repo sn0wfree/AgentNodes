@@ -15,7 +15,7 @@ from __future__ import annotations
 
 from unittest import mock
 
-from strategy_research.cli.tui.app import ResearchApp
+from strategy_research.interfaces.cli.tui.app import ResearchApp
 
 
 class TestAppToolCounterInit:
@@ -95,8 +95,8 @@ class TestSessionReadsToolCountFromApp:
     """ChatSession._update_header_stats reads from app, not from rail."""
 
     def test_update_header_stats_uses_app_tool_total(self):
-        from strategy_research.cli.interactive.main import InteractiveContext
-        from strategy_research.cli.tui.session import ChatSession
+        from strategy_research.interfaces.cli.interactive.main import InteractiveContext
+        from strategy_research.interfaces.cli.tui.session import ChatSession
 
         ctx = InteractiveContext()
         app = mock.MagicMock()
@@ -119,7 +119,7 @@ class TestSessionReadsToolCountFromApp:
         """The source should NOT call app.query_one(ToolsRail) for tool count."""
         import inspect
 
-        from strategy_research.cli.tui.session import ChatSession
+        from strategy_research.interfaces.cli.tui.session import ChatSession
 
         src = inspect.getsource(ChatSession._update_header_stats)
         assert "query_one(ToolsRail)" not in src

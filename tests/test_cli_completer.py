@@ -7,7 +7,7 @@ from typing import Iterable
 from prompt_toolkit.completion import Completion
 from prompt_toolkit.document import Document
 
-from strategy_research.cli.interactive.completer import SlashCompleter
+from strategy_research.interfaces.cli.interactive.completer import SlashCompleter
 
 
 def _collect(completions: Iterable[Completion]) -> list[Completion]:
@@ -32,7 +32,7 @@ class TestSlashCompleter:
         assert "help" in names
         assert "quit" in names
         # All built-in commands listed
-        from strategy_research.cli.commands.slash_router import SLASH_COMMANDS
+        from strategy_research.interfaces.cli.commands.slash_router import SLASH_COMMANDS
         registry = {cmd.name for cmd in SLASH_COMMANDS}
         assert registry.issubset(set(names))
 

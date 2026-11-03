@@ -11,7 +11,7 @@ from __future__ import annotations
 
 import inspect
 
-from strategy_research.cli.tui.widgets.transcript import TranscriptView
+from strategy_research.interfaces.cli.tui.widgets.transcript import TranscriptView
 
 # ---------------------------------------------------------------- helpers
 

@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import pytest
 
-from strategy_research.cli.commands.slash_router import (
+from strategy_research.interfaces.cli.commands.slash_router import (
     _ALIASES,
     SLASH_COMMANDS,
     Command,

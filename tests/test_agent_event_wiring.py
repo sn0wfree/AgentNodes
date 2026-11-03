@@ -323,7 +323,7 @@ def test_cli_logging_only_when_switch_on(monkeypatch, capsys):
     """SR_LOG_JSON 未设：不得建 handler（TUI 输出零影响）。"""
     import logging
 
-    import strategy_research.cli.__main__ as cli_main
+    import strategy_research.interfaces.cli.__main__ as cli_main
 
     monkeypatch.delenv("SR_LOG_JSON", raising=False)
     root = logging.getLogger()

@@ -26,9 +26,9 @@ from unittest import mock
 
 import pytest
 
-from strategy_research.cli.halt import is_halted, trip_halt
-from strategy_research.cli.interactive.main import InteractiveContext
-from strategy_research.cli.tui.session import (
+from strategy_research.interfaces.cli.halt import is_halted, trip_halt
+from strategy_research.interfaces.cli.interactive.main import InteractiveContext
+from strategy_research.interfaces.cli.tui.session import (
     QUIT_RC,
     ChatSession,
 )
@@ -110,7 +110,7 @@ async def test_session_resume_keyword_clears_halt():
 @pytest.mark.asyncio
 async def test_session_pick_consumed_for_pending_proposal():
     """Bare digit on a pending proposal is consumed without going to history."""
-    from strategy_research.cli.mandate import make_proposal
+    from strategy_research.interfaces.cli.mandate import make_proposal
 
     ctx = InteractiveContext()
     ctx.pending_proposal = make_proposal(
@@ -141,7 +141,7 @@ async def test_session_drains_pending_prompt_after_slash():
 
     # Stub ``/journal`` inside ``_DISPATCH`` to queue a follow-up prompt.
     with mock.patch.dict(
-        "strategy_research.cli.interactive.main._DISPATCH",
+        "strategy_research.interfaces.cli.interactive.main._DISPATCH",
         {"journal": fake_journal},
         clear=False,
     ):
@@ -171,7 +171,7 @@ async def test_session_enqueues_text_for_next_dispatch():
 
 def test_resume_modal_callback_resume_branch(monkeypatch):
     """``_on_resume_choice((True, None))`` triggers session resume."""
-    from strategy_research.cli.tui.app import ResearchApp
+    from strategy_research.interfaces.cli.tui.app import ResearchApp
 
     # Build a fresh app context, skip_resume=True to avoid the real prompt.
     app = ResearchApp(model="m", version="0.4.2", skip_resume=True)
@@ -184,12 +184,12 @@ def test_resume_modal_callback_resume_branch(monkeypatch):
         captured["calls"] += 1
 
     monkeypatch.setattr(
-        "strategy_research.cli.tui.app.ResearchApp._resume_most_recent_session",
+        "strategy_research.interfaces.cli.tui.app.ResearchApp._resume_most_recent_session",
         fake_resume,
         raising=False,
     )
     monkeypatch.setattr(
-        "strategy_research.cli.tui.app.ResearchApp._write_transcript",
+        "strategy_research.interfaces.cli.tui.app.ResearchApp._write_transcript",
         lambda self, content: None,
         raising=False,
     )
@@ -200,7 +200,7 @@ def test_resume_modal_callback_resume_branch(monkeypatch):
 
 def test_resume_modal_callback_new_branch(monkeypatch):
     """``_on_resume_choice((False, None))`` writes a "fresh session" line."""
-    from strategy_research.cli.tui.app import ResearchApp
+    from strategy_research.interfaces.cli.tui.app import ResearchApp
 
     app = ResearchApp(model="m", version="0.4.2", skip_resume=True)
     app.session = ChatSession(app.ctx, app=app)
@@ -208,7 +208,7 @@ def test_resume_modal_callback_new_branch(monkeypatch):
     write_calls = []
 
     monkeypatch.setattr(
-        "strategy_research.cli.tui.app.ResearchApp._write_transcript",
+        "strategy_research.interfaces.cli.tui.app.ResearchApp._write_transcript",
         lambda self, c: write_calls.append(c),
         raising=False,
     )
@@ -218,13 +218,13 @@ def test_resume_modal_callback_new_branch(monkeypatch):
 
 def test_resume_modal_callback_pending_input_enqueues(monkeypatch):
     """``_on_resume_choice((False, 'hi'))`` enqueues 'hi' on the session."""
-    from strategy_research.cli.tui.app import ResearchApp
+    from strategy_research.interfaces.cli.tui.app import ResearchApp
 
     app = ResearchApp(model="m", version="0.4.2", skip_resume=True)
     app.session = ChatSession(app.ctx, app=app)
 
     monkeypatch.setattr(
-        "strategy_research.cli.tui.app.ResearchApp._write_transcript",
+        "strategy_research.interfaces.cli.tui.app.ResearchApp._write_transcript",
         lambda self, c: None,
         raising=False,
     )
@@ -238,8 +238,8 @@ def test_resume_modal_callback_pending_input_enqueues(monkeypatch):
 @pytest.mark.asyncio
 async def test_tui_input_submitted_routes_through_session(monkeypatch):
     """``ChatInput``-style SynthesizeInput message reaches ``process_turn``."""
-    from strategy_research.cli.tui.app import ResearchApp
-    from strategy_research.cli.tui.messages import SynthesizeInput
+    from strategy_research.interfaces.cli.tui.app import ResearchApp
+    from strategy_research.interfaces.cli.tui.messages import SynthesizeInput
 
     app = ResearchApp(model="m", version="0.4.2", skip_resume=True)
     async with app.run_test() as pilot:
@@ -259,7 +259,7 @@ async def test_tui_input_submitted_routes_through_session(monkeypatch):
 @pytest.mark.asyncio
 async def test_tui_ctrl_d_quits_app():
     """``Ctrl+D`` (``action_quit_app``) exits the TUI cleanly."""
-    from strategy_research.cli.tui.app import ResearchApp
+    from strategy_research.interfaces.cli.tui.app import ResearchApp
 
     app = ResearchApp(model="m", version="0.4.2", skip_resume=True)
     async with app.run_test() as pilot:
@@ -271,7 +271,7 @@ async def test_tui_ctrl_d_quits_app():
 @pytest.mark.asyncio
 async def test_tui_ctrl_c_trips_halt(monkeypatch):
     """``Ctrl+C`` (``action_halt``) trips the kill switch via the session."""
-    from strategy_research.cli.tui.app import ResearchApp
+    from strategy_research.interfaces.cli.tui.app import ResearchApp
 
     app = ResearchApp(model="m", version="0.4.2", skip_resume=True)
     async with app.run_test() as pilot:

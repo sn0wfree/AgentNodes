@@ -24,7 +24,7 @@ def test_all_entries_share_one_gateway_instance(tmp_path, monkeypatch):
     monkeypatch.setenv("LLM_API_KEY", "dummy")
 
     from strategy_research.interfaces.api.routers.chat import _get_gateway as router_gw
-    from strategy_research.cli.tui.session import _get_cli_gateway as cli_gw
+    from strategy_research.interfaces.cli.tui.session import _get_cli_gateway as cli_gw
     from strategy_research.apps.study.scheduler import _get_gateway_singleton
 
     a = router_gw()

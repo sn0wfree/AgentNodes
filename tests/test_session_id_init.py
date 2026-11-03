@@ -26,9 +26,9 @@ from unittest import mock
 
 import pytest
 
-from strategy_research.cli.interactive.main import InteractiveContext
-from strategy_research.cli.tui.app import ResearchApp
-from strategy_research.cli.tui.widgets import StatusHeader
+from strategy_research.interfaces.cli.interactive.main import InteractiveContext
+from strategy_research.interfaces.cli.tui.app import ResearchApp
+from strategy_research.interfaces.cli.tui.widgets import StatusHeader
 
 # Pattern for generated session ids: "cli-" + 1..8 hex chars.
 _SESSION_ID_RE = re.compile(r"^cli-[a-f0-9]{1,8}$")
@@ -258,7 +258,7 @@ async def test_mounted_app_banner_includes_real_model(monkeypatch):
 
     async with app.run_test() as pilot:
         await pilot.pause()
-        from strategy_research.cli.tui.widgets import TranscriptView
+        from strategy_research.interfaces.cli.tui.widgets import TranscriptView
         tv = app.query_one(TranscriptView)
         # Banner Text was written as the first line(s); check the joined
         # text mentions the resolved model.
@@ -275,7 +275,7 @@ class TestBuildLlmClientTupleReturn:
     """Verify that ``_build_llm_client`` now returns ``(client, model_name)``."""
 
     def test_returns_tuple(self, monkeypatch):
-        from strategy_research.cli.__main__ import _build_llm_client
+        from strategy_research.interfaces.cli.__main__ import _build_llm_client
 
         monkeypatch.setattr(
             "strategy_research.foundation.llm.config.LLMConfig.load",
@@ -293,7 +293,7 @@ class TestBuildLlmClientTupleReturn:
         assert model == "minimax-M3"
 
     def test_returns_unknown_when_load_fails(self, monkeypatch):
-        from strategy_research.cli.__main__ import _build_llm_client
+        from strategy_research.interfaces.cli.__main__ import _build_llm_client
 
         monkeypatch.setattr(
             "strategy_research.foundation.llm.config.LLMConfig.load",
@@ -303,7 +303,7 @@ class TestBuildLlmClientTupleReturn:
         assert result == (None, "unknown")
 
     def test_returns_model_even_when_no_api_key(self, monkeypatch):
-        from strategy_research.cli.__main__ import _build_llm_client
+        from strategy_research.interfaces.cli.__main__ import _build_llm_client
 
         monkeypatch.setattr(
             "strategy_research.foundation.llm.config.LLMConfig.load",

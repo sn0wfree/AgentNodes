@@ -17,7 +17,7 @@ from pathlib import Path
 import pytest
 from rich.console import Console
 
-from strategy_research.cli.commands.slash_goal import (
+from strategy_research.interfaces.cli.commands.slash_goal import (
     cmd_checkpoint,
     cmd_start,
     cmd_workflows,
@@ -44,7 +44,7 @@ def fresh_checkpoint_dir(tmp_path: Path, monkeypatch):
     cp_dir = tmp_path / "checkpoints"
     cp_dir.mkdir()
     monkeypatch.setattr(
-        "strategy_research.cli.commands.slash_goal._checkpoint_base_dir",
+        "strategy_research.interfaces.cli.commands.slash_goal._checkpoint_base_dir",
         lambda: cp_dir,
     )
     return cp_dir
@@ -110,7 +110,7 @@ class TestCmdWorkflows:
         empty = tmp_path / "empty_workflows"
         empty.mkdir()
         monkeypatch.setattr(
-            "strategy_research.cli.commands.slash_goal._user_workflows_dir",
+            "strategy_research.interfaces.cli.commands.slash_goal._user_workflows_dir",
             lambda: empty,
         )
         rc = cmd_workflows(console=console)
@@ -214,7 +214,7 @@ class TestRunDispatcherV051:
 
     def test_run_help_mentions_new_subcommands(self, console):
         """`/goal help` (called directly) lists new subcommands."""
-        from strategy_research.cli.commands.slash_goal import cmd_help
+        from strategy_research.interfaces.cli.commands.slash_goal import cmd_help
         rc = cmd_help(console=console)
         assert rc == 0
         out = console.export_text()

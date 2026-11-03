@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import pytest
 
-from strategy_research.cli.commands.slash_halt import (
+from strategy_research.interfaces.cli.commands.slash_halt import (
     cmd_halt,
     cmd_resume,
     is_halt_command,
@@ -12,7 +12,7 @@ from strategy_research.cli.commands.slash_halt import (
     run_halt,
     run_resume,
 )
-from strategy_research.cli.halt import is_halted
+from strategy_research.interfaces.cli.halt import is_halted
 
 # ─── is_halt_command / is_resume_command ──────────────────────────────
 
@@ -62,7 +62,7 @@ class TestCmdHaltResume:
         assert is_halted() is True
 
     def test_cmd_resume_clears(self):
-        from strategy_research.cli.halt import trip_halt
+        from strategy_research.interfaces.cli.halt import trip_halt
         trip_halt()
         rc = cmd_resume()
         assert rc == 0
@@ -84,7 +84,7 @@ class TestRouterEntrypoints:
         assert is_halted() is True
 
     def test_run_resume(self):
-        from strategy_research.cli.halt import trip_halt
+        from strategy_research.interfaces.cli.halt import trip_halt
         trip_halt()
         rc = run_resume()
         assert rc == 0
