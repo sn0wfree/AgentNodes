@@ -7,7 +7,7 @@ from unittest.mock import MagicMock
 
 import pytest
 
-from strategy_research.core.agent.strategy.loop_strategy import LoopConfig
+from strategy_research.kernel.agent.strategy.loop_strategy import LoopConfig
 from strategy_research.apps.study.loop_evolution import (
     BOUNDS,
     _crossover,
@@ -62,7 +62,7 @@ def _fake_study(status="complete", calmar=1.5, rounds=3):
 
 class TestLoopConfigWiring:
     def test_no_progress_window_from_strategy(self):
-        from strategy_research.core.agent.strategy.explorer import ExplorerStrategyFactory
+        from strategy_research.kernel.agent.strategy.explorer import ExplorerStrategyFactory
         strategy = ExplorerStrategyFactory.create()
         cfg = strategy.config
         assert cfg.max_iterations == 50

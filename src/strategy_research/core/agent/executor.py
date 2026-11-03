@@ -382,7 +382,7 @@ class AgentExecutor:
         }
         loop_spec = ctx.get("loop_strategy")
         if loop_spec is not None:
-            from .strategy.profile_resolver import resolve_loop_strategy
+            from strategy_research.kernel.agent.strategy.profile_resolver import resolve_loop_strategy
             loop_kwargs["strategy"] = resolve_loop_strategy(loop_spec)
         max_iterations = (
             (getattr(node, 'max_iterations', None) if node else None)

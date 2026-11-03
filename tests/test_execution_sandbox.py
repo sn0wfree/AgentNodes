@@ -13,7 +13,7 @@ import pytest
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
 
-from strategy_research.core.agent.sandbox import (
+from strategy_research.kernel.agent.sandbox import (
     ExecutionSandbox,
     PathValidationError,
     PathWhitelist,
@@ -108,8 +108,8 @@ class TestRuntimeStubs:
 class TestBackwardCompatReexports:
     def test_legacy_imports_still_resolve(self):
         # Existing call sites do
-        #   from strategy_research.core.agent.sandbox import PathWhitelist
-        from strategy_research.core.agent.sandbox import (
+        #   from strategy_research.kernel.agent.sandbox import PathWhitelist
+        from strategy_research.kernel.agent.sandbox import (
             DEFAULT_READ_ROOTS,
             DEFAULT_WRITE_ROOTS,
             ASTValidationError,
@@ -127,7 +127,7 @@ class TestBackwardCompatReexports:
 
     def test_legacy_module_path_resolves(self):
         """Legacy code that walks into ``sandbox.legacy`` keeps working."""
-        from strategy_research.core.agent.sandbox.legacy import (
+        from strategy_research.kernel.agent.sandbox.legacy import (
             validate_python_source as legacy_fn,
         )
         ok, _ = legacy_fn("import os")

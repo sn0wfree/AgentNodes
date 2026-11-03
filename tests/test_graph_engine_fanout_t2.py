@@ -10,7 +10,7 @@ import time
 
 import pytest
 
-from strategy_research.core.agent.strategy.budget import BudgetLimits
+from strategy_research.kernel.agent.strategy.budget import BudgetLimits
 from strategy_research.kernel.runtimes.executor_bridge import ExecutorBridge
 from strategy_research.kernel.runtimes.graph_engine import (
     END,

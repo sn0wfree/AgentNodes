@@ -19,7 +19,7 @@ from .tools import TRANSIENT_TOOL_ERRORS, ToolContext
 _TOOL_MAX_RETRIES = 2
 _TOOL_RETRY_DELAY = 2.0
 _TOOL_RESULT_HISTORY_MAX = 30000
-from .runtime.sync_bridge import _run_coro_in_sync
+from strategy_research.kernel.agent.runtime.sync_bridge import _run_coro_in_sync
 
 if TYPE_CHECKING:
     from strategy_research.foundation.llm.parser import ToolCall
@@ -98,7 +98,7 @@ class LoopToolsMixin:
         The sync entry runs this core via ``_run_coro_in_sync`` (from a
         pool thread there is no running loop, so no nested thread).
         """
-        from .runtime.tool_exec import (
+        from strategy_research.kernel.agent.runtime.tool_exec import (
             guard_denied_payload,
             missing_tool_payload,
         )
@@ -177,7 +177,7 @@ class LoopToolsMixin:
         elapsed_ms = int((time.perf_counter() - t0) * 1000)
 
         # Emit tool_result event + circuit breaker + A3 history view.
-        from .runtime.tool_exec import (
+        from strategy_research.kernel.agent.runtime.tool_exec import (
             classify_tool_output,
             render_history_output,
         )

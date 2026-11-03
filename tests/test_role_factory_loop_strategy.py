@@ -19,7 +19,7 @@ import pytest
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
 
 from strategy_research.core.agent.role_factory import build_agent_loop
-from strategy_research.core.agent.strategy import LoopStrategy
+from strategy_research.kernel.agent.strategy import LoopStrategy
 
 
 class TestBuildAgentLoopLoopStrategy:
@@ -68,7 +68,7 @@ class TestBuildAgentLoopLoopStrategy:
 
     def test_loop_strategy_instance(self, tmp_path):
         """Passing a LoopStrategy instance directly."""
-        from strategy_research.core.agent.strategy import create_strategy
+        from strategy_research.kernel.agent.strategy import create_strategy
 
         custom = create_strategy("minimal")
         loop = build_agent_loop(

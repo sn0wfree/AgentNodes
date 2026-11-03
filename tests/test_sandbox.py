@@ -6,7 +6,7 @@ from pathlib import Path
 
 import pytest
 
-from strategy_research.core.agent.sandbox import (
+from strategy_research.kernel.agent.sandbox import (
     DEFAULT_READ_ROOTS,
     DEFAULT_WRITE_ROOTS,
     ASTValidationError,

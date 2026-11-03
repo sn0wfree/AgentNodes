@@ -47,7 +47,7 @@ class TestSpawnAgentLoopStrategy:
 
     def test_accepts_loop_strategy_object(self):
         """LoopStrategy instance should not raise."""
-        from strategy_research.core.agent.strategy import ReActStrategyFactory
+        from strategy_research.kernel.agent.strategy import ReActStrategyFactory
 
         strategy = ReActStrategyFactory.create()
         result = self._call(loop_strategy=strategy)

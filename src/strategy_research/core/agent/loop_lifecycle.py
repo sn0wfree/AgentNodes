@@ -101,7 +101,7 @@ class LoopLifecycleMixin:
         """
         if not self._enable_claim_validation:
             return
-        from .validators import validate_claims
+        from strategy_research.kernel.agent.validators import validate_claims
 
         tool_texts = [
             m.get("content", "")

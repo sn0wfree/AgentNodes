@@ -23,7 +23,7 @@ from strategy_research.core.agent.loop import (
     _inject_agent_loop,
     _make_strategy_ctx,
 )
-from strategy_research.core.agent.strategy import (
+from strategy_research.kernel.agent.strategy import (
     DefaultLLMCallStep,
     DefaultPreRunStep,
     create_strategy,
@@ -117,10 +117,10 @@ class TestStrategyStepBinding:
         # We don't run the full constructor because it needs an LLM
         # config; instead we instantiate LoopStrategy + resolver
         # directly and verify they compose.
-        from strategy_research.core.agent.strategy import (
+        from strategy_research.kernel.agent.strategy import (
             StrategyFactory,
         )
-        from strategy_research.core.agent.strategy.profile_resolver import (
+        from strategy_research.kernel.agent.strategy.profile_resolver import (
             resolve_loop_strategy,
         )
 

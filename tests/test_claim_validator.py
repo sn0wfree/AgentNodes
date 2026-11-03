@@ -4,7 +4,7 @@ See docs/claim-validation-badge-design.md §7.1.
 """
 from __future__ import annotations
 
-from strategy_research.core.agent.validators import validate_claims
+from strategy_research.kernel.agent.validators import validate_claims
 
 
 class TestFlagsUnverified:

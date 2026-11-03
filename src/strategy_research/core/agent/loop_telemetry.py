@@ -10,7 +10,7 @@ from typing import TYPE_CHECKING, Any
 if TYPE_CHECKING:
     pass
 
-from .runtime.sync_bridge import _get_hook_loop
+from strategy_research.kernel.agent.runtime.sync_bridge import _get_hook_loop
 
 logger = logging.getLogger(__name__)
 

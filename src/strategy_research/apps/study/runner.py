@@ -138,14 +138,14 @@ class AutoresearchRunner(RunnerAegisMixin, RunnerKnowledgeMixin):
         # Agent resilience: resolve loop strategy from study's evolved config
         # or default to ExplorerStrategy (max_iter=50, no_progress_window=5).
         try:
-            from strategy_research.core.agent.strategy.profile_resolver import resolve_loop_strategy
+            from strategy_research.kernel.agent.strategy.profile_resolver import resolve_loop_strategy
             loop_cfg = getattr(study, "loop_config", None)
             if loop_cfg:
                 self._loop_strategy = resolve_loop_strategy(
                     {"name": "explorer", "config": loop_cfg}
                 )
             else:
-                from strategy_research.core.agent.strategy.explorer import ExplorerStrategyFactory
+                from strategy_research.kernel.agent.strategy.explorer import ExplorerStrategyFactory
                 self._loop_strategy = ExplorerStrategyFactory.create()
         except Exception as exc:  # noqa: BLE001
             logger.debug("strategy resolution failed, falling back to default: %s", exc)

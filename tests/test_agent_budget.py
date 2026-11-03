@@ -6,16 +6,16 @@ from types import SimpleNamespace
 
 import pytest
 
-from strategy_research.core.agent.strategy.budget import (
+from strategy_research.kernel.agent.strategy.budget import (
     BudgetLimits,
     BudgetUsage,
     evaluate_budget,
     record_usage,
     usage_from_response,
 )
-from strategy_research.core.agent.strategy.loop_context import LoopContext
-from strategy_research.core.agent.strategy.loop_strategy import LoopConfig
-from strategy_research.core.agent.strategy.steps.stop import BudgetStopStep
+from strategy_research.kernel.agent.strategy.loop_context import LoopContext
+from strategy_research.kernel.agent.strategy.loop_strategy import LoopConfig
+from strategy_research.kernel.agent.strategy.steps.stop import BudgetStopStep
 
 
 class TestUsageFromResponse:

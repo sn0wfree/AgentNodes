@@ -209,7 +209,7 @@ def _make_strategy_ctx(
     access (e.g. to read usage) gets the same instance the hook system
     uses — zero extra synchronisation.
     """
-    from .strategy.loop_context import LoopContext
+    from strategy_research.kernel.agent.strategy.loop_context import LoopContext
 
     return LoopContext(
         task="",
@@ -409,7 +409,7 @@ class AgentLoop(
         # P1-5: build / resolve the LoopStrategy from the spec.
         # v0.1 stores it on self; ``_run_loop_core`` does not yet
         # consult it (that's L7's job).
-        from .strategy.profile_resolver import resolve_loop_strategy
+        from strategy_research.kernel.agent.strategy.profile_resolver import resolve_loop_strategy
         self._strategy = resolve_loop_strategy(strategy)
         # L7 v0.2: when the caller passed an explicit strategy, its
         # config drives the loop (max_iterations etc.); otherwise we
@@ -524,7 +524,7 @@ class AgentLoop(
         override = getattr(self, "_sandbox_override", None)
         if override is not None:
             return override
-        from .sandbox import StaticSandbox
+        from strategy_research.kernel.agent.sandbox import StaticSandbox
         workspace = self.workspace or getattr(self, "_fallback_workspace", None)
         if workspace is None:
             # StaticSandbox needs a workspace; in tests where workspace
@@ -611,7 +611,7 @@ class AgentLoop(
 
     def _record_budget_usage(self, response: Any, t0: float) -> None:
         """Accumulate one LLM response's usage into the run budget."""
-        from .strategy.budget import usage_from_response
+        from strategy_research.kernel.agent.strategy.budget import usage_from_response
 
         usage = getattr(response, "usage", None) or {}
         total, prompt, completion = usage_from_response(usage)
@@ -631,7 +631,7 @@ class AgentLoop(
 
     def _check_budget(self, t0: float) -> tuple[bool, str | None]:
         """Return (exceeded, reason) against LoopConfig budget limits (A5)."""
-        from .runtime.policy import StopPolicy, limits_from_config
+        from strategy_research.kernel.agent.runtime.policy import StopPolicy, limits_from_config
 
         cfg = getattr(self._strategy, "config", None)
         if cfg is None:

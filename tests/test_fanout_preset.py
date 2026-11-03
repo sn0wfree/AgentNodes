@@ -7,7 +7,7 @@ from __future__ import annotations
 
 import pytest
 
-from strategy_research.core.agent.strategy.budget import BudgetLimits
+from strategy_research.kernel.agent.strategy.budget import BudgetLimits
 from strategy_research.kernel.runtimes.graph_engine import INTERRUPT_KEY
 from strategy_research.kernel.runtimes.presets.fanout import build_fanout_preset
 from strategy_research.kernel.runtimes.run_budget import RunBudget

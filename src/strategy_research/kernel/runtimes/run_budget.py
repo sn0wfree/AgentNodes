@@ -18,7 +18,7 @@ from __future__ import annotations
 import time
 from dataclasses import dataclass, field
 
-from strategy_research.core.agent.strategy.budget import (
+from strategy_research.kernel.agent.strategy.budget import (
     BudgetLimits,
     BudgetUsage,
     evaluate_budget,

@@ -22,12 +22,12 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
 
-from strategy_research.core.agent.strategy import (
+from strategy_research.kernel.agent.strategy import (
     LoopContext,
     create_strategy,
     resolve_loop_strategy,
 )
-from strategy_research.core.agent.strategy.steps import (
+from strategy_research.kernel.agent.strategy.steps import (
     DefaultProgressStep,
     DefaultResilienceStep,
 )
@@ -129,7 +129,7 @@ class TestCallStepIsolation:
         semantics it implements.)"""
         import inspect as _inspect
 
-        from strategy_research.core.agent.strategy import LoopContext
+        from strategy_research.kernel.agent.strategy import LoopContext
 
         class _LoopHost:
             """Stand-in exposing an async _call_step-like wrapper."""
@@ -186,7 +186,7 @@ class TestCallStepIsolation:
 
         import asyncio
 
-        from strategy_research.core.agent.strategy import LoopContext
+        from strategy_research.kernel.agent.strategy import LoopContext
 
         async def run():
             host = _LoopHost()
@@ -212,7 +212,7 @@ class TestMaxIterationsSource:
     def test_default_strategy_keeps_constructor_cap(self):
         """No explicit strategy → _run_loop_core uses self.max_iterations.
         (constructor default 10)."""
-        from strategy_research.core.agent.strategy.factory import ReActStrategyFactory
+        from strategy_research.kernel.agent.strategy.factory import ReActStrategyFactory
         s = ReActStrategyFactory.create()
         assert s.config.max_iterations == 10  # matches AgentLoop default
 

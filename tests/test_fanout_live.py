@@ -85,7 +85,7 @@ def test_live_three_subagents_parallel_answers(live_client, calc_registry):
 @requires_live
 def test_live_branch_budget_slice_enforced(live_client, calc_registry):
     """父预算切 3 片，每片够一次调用：三支都完成，父账收到真实消耗。"""
-    from strategy_research.core.agent.strategy.budget import BudgetLimits
+    from strategy_research.kernel.agent.strategy.budget import BudgetLimits
     from strategy_research.kernel.runtimes.presets.fanout import build_fanout_preset
     from strategy_research.kernel.runtimes.run_budget import RunBudget
 

@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import logging
 
-from ..sandbox import (
+from strategy_research.kernel.agent.sandbox import (
     PathValidationError,
     PathWhitelist,
     validate_python_source,

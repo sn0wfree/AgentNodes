@@ -13,7 +13,7 @@ import pytest
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
 
-from strategy_research.core.agent.strategy import (
+from strategy_research.kernel.agent.strategy import (
     CompactionStep,
     ContinuationStep,
     CustomStrategy,
@@ -30,7 +30,7 @@ from strategy_research.core.agent.strategy import (
     ToolExecutionStep,
     create_strategy,
 )
-from strategy_research.core.agent.strategy.steps import (
+from strategy_research.kernel.agent.strategy.steps import (
     DefaultCompactionStep,
     DefaultContinuationStep,
     DefaultFinalizationStep,
@@ -230,7 +230,7 @@ class TestCustomStrategy:
 
 class TestExports:
     def test_module_top_level_exports(self):
-        from strategy_research.core.agent import strategy
+        from strategy_research.kernel.agent import strategy
         names = {
             "LoopContext", "LoopStrategy", "LoopConfig",
             "StrategyFactory", "create_strategy", "register_strategy",

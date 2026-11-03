@@ -18,7 +18,7 @@ import json
 from dataclasses import dataclass, field
 from typing import Any, Callable
 
-from strategy_research.core.agent.strategy.budget import BudgetLimits
+from strategy_research.kernel.agent.strategy.budget import BudgetLimits
 from strategy_research.kernel.runtimes.run_budget import RunBudget
 
 EventSink = Callable[[str, dict], None]

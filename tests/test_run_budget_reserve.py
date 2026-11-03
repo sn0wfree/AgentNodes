@@ -6,7 +6,7 @@ from __future__ import annotations
 
 import pytest
 
-from strategy_research.core.agent.strategy.budget import BudgetLimits
+from strategy_research.kernel.agent.strategy.budget import BudgetLimits
 from strategy_research.kernel.runtimes.graph_engine import (
     GraphEngine,
     GraphInterrupt,

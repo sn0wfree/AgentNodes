@@ -71,7 +71,7 @@ def assemble_loop_parts(
 
     resolved_strategy: Any = None
     if loop_strategy is not None:
-        from .strategy.profile_resolver import resolve_loop_strategy
+        from strategy_research.kernel.agent.strategy.profile_resolver import resolve_loop_strategy
 
         resolved_strategy = resolve_loop_strategy(loop_strategy)
 

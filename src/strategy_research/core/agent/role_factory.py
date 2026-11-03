@@ -135,7 +135,7 @@ def build_agent_loop(
     from ...core.agent.builtin_tools import build_default_registry
     from ...core.agent.loop import AgentLoop
     from ...core.agent.loop_assembly import assemble_loop_parts
-    from ...core.agent.strategy.profile_resolver import resolve_loop_strategy
+    from strategy_research.kernel.agent.strategy.profile_resolver import resolve_loop_strategy
     from strategy_research.foundation.llm import LLMConfig
 
     # Single-source registry + prompt + strategy (phase 3, shared with
