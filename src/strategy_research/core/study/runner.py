@@ -19,6 +19,7 @@ from pathlib import Path
 from typing import TYPE_CHECKING, Any, Protocol
 
 from ..observability import new_trace_id
+from ..observability.logging_setup import dual_log
 from . import budget as _budget
 from . import state_utils as _state_utils
 from .method.metric_targets import metric_pass_set as _metric_pass_set  # noqa: F401  (re-export for tests)
@@ -58,10 +59,10 @@ _PARSE_FAILED_AGENT_KEYS = _parse_failed_agent_keys
 _parse_failed_agents = parse_failed_agents
 
 
-def _dlog(module: str, msg: str, *args) -> None:
-    msg_fmt = msg % args if args else msg
-    logger.info("[RUNNER:%s] %s", module, msg_fmt)
-    print(f"[RUNNER:{module}] {msg_fmt}", flush=True)  # noqa: T201
+# 统一双写日志（docs/logging-unified-entry-design-20261102.md §4.2）：
+# 原 [RUNNER:x] 双写收敛为 observability.dual_log —— 有 handler 走 logger
+# 单份，无 handler（CLI 默认模式）print 兜底。
+_dlog = dual_log
 
 
 # ── shutdown reasons ────────────────────────────────────────────────

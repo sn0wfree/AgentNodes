@@ -457,7 +457,7 @@ class AlphaLoader:
             try:
                 results[aid] = self.compute_as_series(aid, prices, **kwargs)
             except Exception as exc:
-                print(f"⚠️  因子 {aid} 计算失败: {exc}")
+                logger.warning(f"⚠️  因子 {aid} 计算失败: {exc}")
         return pd.DataFrame(results)
 
     def health(self) -> dict[str, Any]:

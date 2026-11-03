@@ -10,13 +10,13 @@ import time
 from pathlib import Path
 from typing import Any
 
+from ..observability.logging_setup import dual_log
+
 logger = logging.getLogger(__name__)
 
 
-def _dlog(module: str, msg: str, *args) -> None:
-    msg_fmt = msg % args if args else msg
-    logger.info("[RUNNER:%s] %s", module, msg_fmt)
-    print(f"[RUNNER:{module}] {msg_fmt}", flush=True)
+# 统一双写日志（docs/logging-unified-entry-design-20261102.md §4.2）。
+_dlog = dual_log
 
 
 async def monitor_phase(runner: Any) -> str:

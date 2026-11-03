@@ -16,6 +16,7 @@ import threading
 from pathlib import Path
 from typing import TYPE_CHECKING, Any
 
+from ..observability.logging_setup import dual_log
 from ..storage.sqlite import (
     connect,
     json_dumps,
@@ -48,11 +49,8 @@ logger = logging.getLogger(__name__)
 _UNSET: Any = object()
 
 
-def _dlog(module: str, msg: str, *args) -> None:
-    """Dual-output log: logger + stderr so both file and terminal see it."""
-    msg_fmt = msg % args if args else msg
-    logger.info("[STUDY:%s] %s", module, msg_fmt)
-    print(f"[STUDY:{module}] {msg_fmt}", flush=True)  # noqa: T201
+# 统一双写日志（docs/logging-unified-entry-design-20261102.md §4.2）。
+_dlog = dual_log
 
 # Reuse the goal ledger DB by default so studies live next to the goals
 # they are bound to; override via the same env var.

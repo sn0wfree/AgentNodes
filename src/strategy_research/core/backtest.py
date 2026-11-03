@@ -638,7 +638,7 @@ def run_backtest_from_yaml(
                 nav_df.to_csv(run_dir / "equity_curve.csv", index=False)
         except Exception as exc:  # noqa: BLE001
             export_warning = f"equity_curve.csv 导出失败: {exc}"
-            print(f"⚠️ {export_warning}")
+            logger.warning(f"⚠️ {export_warning}")
         if export_warning:
             metrics["warnings"] = list(metrics.get("warnings", [])) + [export_warning]
             save_run_metrics(run_dir, metrics)

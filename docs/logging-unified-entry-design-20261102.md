@@ -80,7 +80,7 @@ def configure_logging(
 - 幂等：重复调用先移除本模块此前挂的 handler 再重挂（输出不翻倍）；`TraceFilter` 仍全局只装一次（复用 `trace.py` 守卫）。
 - 级别统一解析：`level` 显式参数 > `SR_LOG_LEVEL` > INFO；同时设 `strategy_research` 命名空间级别。
 - JSON：`SR_LOG_JSON=1` → 全部 handler 换 `JsonFormatter`（复用现有类）。
-- 文件（P1）：`SR_LOG_FILE=path` 或显式 `log_file` → `RotatingFileHandler(path, maxBytes=10MB, backupCount=5, encoding="utf-8")`；相对路径基于 `~/.quantnodes/logs/` 解析；`SR_LOG_FILE` 未设时**不创建**任何文件（默认关闭）。
+- 文件（P1）：`SR_LOG_FILE=path` 或显式 `log_file` → `RotatingFileHandler(path, maxBytes=10MB, backupCount=5, encoding="utf-8")`；相对路径基于**项目数据根** `~/.quantnodes-research/logs/`（`storage.sqlite.DEFAULT_DATA_DIR`，与各 store 同根，测试经 conftest home 沙箱自动重定向）解析；`SR_LOG_FILE` 未设时**不创建**任何文件（默认关闭）。
 - 任何装配失败不得阻断主流程（与现状 try/except 语义一致）。
 
 ### 4.2 `dual_log()`（P2，收敛 `_dlog`）
@@ -140,3 +140,19 @@ def dual_log(module: str, msg: str, *args) -> None:
 | P2 | `dual_log` 收敛 + B 类替换 + print 门禁测试 | 门禁测试 + c1 基线不涨 |
 
 全量验收：cov 四段 ≥90（A 平台内核 / B 研究域 / C 能力层 / H core 剩余）、c1_gate 冻结基线 104、inventory `+N/0`、e2e `-m e2e` 全绿。
+
+## 7. 执行结果（2026-11-02）
+
+全部四批完成，实现与设计的偏差两处（均为改进）：
+
+1. **文件日志目录勘误**：`~/.quantnodes/logs/` → `~/.quantnodes-research/logs/`（项目数据根 `DEFAULT_DATA_DIR`，见 §4.1 已同步更正）。测试沙箱经 conftest home 重定向天然兼容。
+2. **实现中发现 defect #17（真实缺陷）**：`TraceFilter` 此前挂在 root **logger** 上，但 Python logging 的 logger 级 filter 只对「该 logger 自己产生的记录」生效——子 logger 传播上来的记录不经过 `root.filters`。即 trace 字段机制在**所有 surface（含 JSON 模式）对子 logger 日志从未生效**，JsonFormatter 容错静默省略掩盖了问题。修复：filter 改挂各 handler（`trace.ensure_trace_filter`，幂等、覆盖外来 handler），另加 `_TraceTextFormatter` 防御层（filter 缺席的记录补 `-` 默认值，杜绝文本格式 KeyError 丢日志）。回归测试：`test_trace_context.py::test_child_logger_record_carries_trace_fields`。
+
+交付物：
+- `core/observability/logging_setup.py`（configure_logging 策略表 / dual_log / DEFAULT_TEXT_FORMAT / resolve_level）
+- 4 处 basicConfig 替换（api/app、cli/__main__、mcp/server、backfill_event_log）；SR_LOG_LEVEL 重复解析 3→0
+- hanging_events：trace_id/round_num 列（幂等 ALTER 迁移）+ 6 写入点零改动自动补 ContextVar
+- `_dlog` 4 处定义收敛为 `dual_log`（`[RUNNER:x]`/`[STUDY:x]` 前缀统一为 `[<MODULE>]`）
+- B 类 print 转换 ~51 处：db.py 26、data_import.py 14（7 失败→warning、7 进度→dual_log）、config_runner.py 5、autoresearch.py 3、mcp 邻接 1（slash_commands）、backtest/loader 各 1
+- 豁免清单（print 是产品语义，冻结数量）：engine/base.py 2（run.log→log_stall 数据通道）、mcp/server.py 3（JSON-RPC 协议帧）、preflight.py 10（isatty CLI 报告）、alpha_zoo_convert.py 5（CLI 批处理）、docstring 示例 6（AST 扫描天然排除）
+- 新测试：test_logging_setup.py（24）、test_print_governance.py（5，AST 门禁）、test_trace_context 回归（defect #17）、test_config_runner_factors 断言迁移 capsys→caplog

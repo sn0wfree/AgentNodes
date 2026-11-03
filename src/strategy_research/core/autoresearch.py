@@ -5,6 +5,7 @@ Main Process = Orchestrator + Main Agent,串行 spawn 每个 Subagent via Task t
 from __future__ import annotations
 
 import json
+import logging
 import os
 import random
 import re
@@ -21,6 +22,8 @@ from .study.run_summary import (  # noqa: E402,F401
     save_run_summary,
 )
 from .study.stub_agents import _stub_agent_output  # noqa: E402,F401
+
+logger = logging.getLogger(__name__)
 
 # 默认配置: 保留最近 N 轮详细数据 (其他轮次优先读取 summary.json)
 DEFAULT_KEEP_RECENT = 10
@@ -294,7 +297,7 @@ def retry_agent_spawn(
                 return parsed
 
             # 解析失败 — 返回错误信息而非全量重启
-            print(f"[autoresearch] {agent_name} 解析失败 (attempt {attempt}/{policy.max_retries}): {parsed.get('error')}")
+            logger.warning(f"[autoresearch] {agent_name} 解析失败 (attempt {attempt}/{policy.max_retries}): {parsed.get('error')}")
             if attempt == policy.max_retries:
                 return {
                     "error": "parse_failed",
@@ -305,7 +308,7 @@ def retry_agent_spawn(
                 }
 
         except Exception as e:
-            print(f"[autoresearch] {agent_name} 执行异常 (attempt {attempt}/{policy.max_retries}): {e}")
+            logger.warning(f"[autoresearch] {agent_name} 执行异常 (attempt {attempt}/{policy.max_retries}): {e}")
             if attempt == policy.max_retries:
                 return {"error": "execution_failed", "agent": agent_name, "detail": str(e)}
 
@@ -635,7 +638,7 @@ def spawn_agent(
             )
         except Exception as exc:
             # 真 LLM 失败 → 退到 stub, 不让主循环崩
-            print(f"⚠️  AgentLoop.run() 失败 ({agent_name}): {exc}; 退到 stub")  # noqa: T201
+            logger.warning(f"⚠️  AgentLoop.run() 失败 ({agent_name}): {exc}; 退到 stub")  # noqa: T201
             # fall through to stub
 
     effective_behavior = behavior or os.environ.get("AUTORESEARCH_BEHAVIOR", "static")

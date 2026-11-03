@@ -10,6 +10,8 @@
 """
 from __future__ import annotations
 
+import logging
+
 from pathlib import Path
 
 import numpy as np
@@ -64,14 +66,15 @@ def test_expression_factor_produces_wide_frame():
     assert wide.notna().any().any()
 
 
-def test_expression_factor_skipped_without_panels(capsys):
+def test_expression_factor_skipped_without_panels(caplog):
     panel = _panel()
     s = _Strategy([{"name": "ret", "code": "ts_return(close, 5)"}])
     out = {}
-    s._compute_expression_factor(
-        "ret", "ts_return(close, 5)", panel.index[-1], panel, None, out)
+    with caplog.at_level(logging.WARNING, logger="strategy_research.core.config_runner"):
+        s._compute_expression_factor(
+            "ret", "ts_return(close, 5)", panel.index[-1], panel, None, out)
     assert out == {}  # 不写入任何值
-    assert "requires workspace_path" in capsys.readouterr().out
+    assert "requires workspace_path" in caplog.text
 
 
 def test_expression_factor_missing_asset_is_skipped():
@@ -86,15 +89,16 @@ def test_expression_factor_missing_asset_is_skipped():
     assert out["ret"]["B"].isna().all()
 
 
-def test_expression_factor_failure_is_recorded_per_asset(capsys):
+def test_expression_factor_failure_is_recorded_per_asset(caplog):
     panel = _panel(cols=("A",))
     s = _Strategy([{"name": "bad", "code": "nonexistent_func(close)"}])
     out = {}
-    s._compute_expression_factor(
-        "bad", "nonexistent_func(close)", panel.index[-1], panel,
-        {"A": _ohlcv(len(panel))}, out)
+    with caplog.at_level(logging.WARNING, logger="strategy_research.core.config_runner"):
+        s._compute_expression_factor(
+            "bad", "nonexistent_func(close)", panel.index[-1], panel,
+            {"A": _ohlcv(len(panel))}, out)
     assert s.factor_failures, "失败必须进 factor_failures"
-    assert "bad" in capsys.readouterr().out
+    assert "bad" in caplog.text
 
 
 # ── 单 alpha / alpha 组合（adapter 用替身） ───────────────
@@ -138,16 +142,17 @@ def test_single_alpha_factor_written(monkeypatch):
     assert fake.calls[0] == ("single", "gtja191_001")
 
 
-def test_single_alpha_failure_is_recorded(monkeypatch, capsys):
+def test_single_alpha_failure_is_recorded(monkeypatch, caplog):
     import strategy_research.core.alpha_zoo_adapter as adapter_mod
     monkeypatch.setattr(adapter_mod, "AlphaZooAdapter", lambda: _FakeAdapter("boom"))
 
     panel = _panel()
     s = _Strategy([{"name": "a1", "alpha_id": "gtja191_001"}])
-    out = s._compute_factor_values(panel.index[-1], panel)
+    with caplog.at_level(logging.WARNING, logger="strategy_research.core.config_runner"):
+        out = s._compute_factor_values(panel.index[-1], panel)
     assert "a1" not in out
     assert s.factor_failures
-    assert "计算失败" in capsys.readouterr().out
+    assert "计算失败" in caplog.text
 
 
 def test_alpha_combination_is_unstacked(monkeypatch):
@@ -173,16 +178,17 @@ def test_empty_batch_result_is_skipped(monkeypatch):
     assert s.factor_failures == []
 
 
-def test_batch_failure_is_recorded(monkeypatch, capsys):
+def test_batch_failure_is_recorded(monkeypatch, caplog):
     import strategy_research.core.alpha_zoo_adapter as adapter_mod
     monkeypatch.setattr(adapter_mod, "AlphaZooAdapter", lambda: _FakeAdapter("boom"))
 
     panel = _panel()
     s = _Strategy([{"name": "combo", "alpha_ids": ["x"]}])
-    out = s._compute_factor_values(panel.index[-1], panel)
+    with caplog.at_level(logging.WARNING, logger="strategy_research.core.config_runner"):
+        out = s._compute_factor_values(panel.index[-1], panel)
     assert "combo" not in out
     assert s.factor_failures
-    assert "组合" in capsys.readouterr().out
+    assert "组合" in caplog.text
 
 
 def test_adapter_is_lazily_created_once(monkeypatch):

@@ -858,33 +858,22 @@ class MCPServer:
     def serve_stdio(self) -> None:
         """Serve via stdin/stdout (blocking).
 
-        stdout 只走 MCP 协议帧；logging 默认 StreamHandler 落 **stderr**，
-        所以 SR_LOG_JSON=1 的 JSON 日志不会混进协议帧——与 Web/CLI 同一
-        开关语义（json_output=None 读环境变量）。
+        stdout 只走 MCP 协议帧；configure_logging("mcp") 的 console
+        handler 落 **stderr**，日志（含 SR_LOG_JSON=1 的 JSON）不会混进
+        协议帧——与 Web/CLI 同一开关语义（SR_LOG_LEVEL/SR_LOG_JSON/
+        SR_LOG_FILE 由统一入口解析）。
         """
-        import logging
-        import os
         import sys
 
         # 两级点号 = core/。三级（...observability）会解析到
         # strategy_research.observability——不存在。今天第四次修这个错误类
         # （此前：MCP validate_run、scheduled_research/cli、data_readiness）。
-        from ..observability import setup_trace_logging
-
         try:
-            # 此前 MCP 进程没有任何 handler——INFO 日志全部不可见
-            # （logging 无 handler 时只剩 lastResort 的 WARNING 兜底）。
-            log_level = getattr(
-                logging,
-                os.environ.get("SR_LOG_LEVEL", "INFO").upper(),
-                logging.INFO,
-            )
-            logging.basicConfig(
-                level=log_level,
-                format="%(asctime)s %(levelname)s %(name)s: %(message)s",
-                datefmt="%H:%M:%S",
-            )
-            setup_trace_logging(log_level=log_level)
+            # MCP 面日志必须走 stderr——stdout 是 JSON-RPC 协议帧通道。
+            # 统一入口（docs/logging-unified-entry-design-20261102.md §4.1）。
+            from ..observability import configure_logging
+
+            configure_logging("mcp")
         except Exception:  # noqa: BLE001 — 日志装配失败不能阻断 MCP
             pass
         logger.info("MCP server '%s' starting on stdio", self.name)

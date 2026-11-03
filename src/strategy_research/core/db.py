@@ -2,12 +2,15 @@
 from __future__ import annotations
 
 import hashlib
+import logging
 import threading
 from datetime import datetime
 from pathlib import Path
 from typing import Optional
 
 import pandas as pd
+
+logger = logging.getLogger(__name__)
 
 # Mutex for concurrent DuckDB writes (parallel agent fan-out safety)
 _DUCKDB_WRITE_LOCK = threading.Lock()
@@ -39,7 +42,7 @@ def get_connection(workspace_path: Path, read_only: bool = False):
     try:
         import duckdb
     except ImportError:
-        print("⚠️  duckdb 未安装。安装: pip install duckdb")
+        logger.warning("⚠️  duckdb 未安装。安装: pip install duckdb")
         return None
 
     db_path = get_db_path(workspace_path)
@@ -51,7 +54,7 @@ def get_connection(workspace_path: Path, read_only: bool = False):
         if read_only:
             # Any read-only failure means "no usable database here"; the
             # callers' contract is an empty result, not an exception.
-            print(f"⚠️  无法只读打开 {db_path.name}: {exc}")
+            logger.warning(f"⚠️  无法只读打开 {db_path.name}: {exc}")
             return None
         raise
 
@@ -226,7 +229,7 @@ def init_db(workspace_path: Path) -> bool:
             except Exception:
                 pass
             return True  # View already exists, that's fine
-        print(f"❌ DuckDB 初始化失败: {e}")
+        logger.warning(f"❌ DuckDB 初始化失败: {e}")
         try:
             conn.close()
         except Exception:
@@ -364,7 +367,7 @@ def load_price_data(
         return panel
 
     except Exception as e:
-        print(f"❌ 加载价格数据失败: {e}")
+        logger.warning(f"❌ 加载价格数据失败: {e}")
         conn.close()
         return pd.DataFrame()
 
@@ -427,7 +430,7 @@ def load_ohlcv_data(
         return result
 
     except Exception as e:
-        print(f"❌ 加载 OHLCV 数据失败: {e}")
+        logger.warning(f"❌ 加载 OHLCV 数据失败: {e}")
         conn.close()
         return {}
 
@@ -464,7 +467,7 @@ def get_price_data_info(workspace_path: Path, strategy_name: str) -> dict:
             }
         return {}
     except Exception as e:
-        print(f"❌ 获取价格数据信息失败: {e}")
+        logger.warning(f"❌ 获取价格数据信息失败: {e}")
         conn.close()
         return {}
 
@@ -511,7 +514,7 @@ def save_ohlcv_data(
 
         # 保证 close 存在 (loader 至少会返回 close)
         if "close" not in df.columns:
-            print(f"⚠️  {asset_code}: 缺少 close 列，跳过")
+            logger.warning(f"⚠️  {asset_code}: 缺少 close 列，跳过")
             conn.close()
             return False
 
@@ -525,7 +528,7 @@ def save_ohlcv_data(
         conn.close()
         return True
     except Exception as e:
-        print(f"❌ 保存 OHLCV 失败 ({asset_code}): {e}")
+        logger.warning(f"❌ 保存 OHLCV 失败 ({asset_code}): {e}")
         conn.close()
         return False
 
@@ -566,7 +569,7 @@ def save_factor_data(
         conn.close()
         return True
     except Exception as e:
-        print(f"❌ 保存因子数据失败: {e}")
+        logger.warning(f"❌ 保存因子数据失败: {e}")
         conn.close()
         return False
 
@@ -611,7 +614,7 @@ def load_factor_data(
         return panel
 
     except Exception as e:
-        print(f"❌ 加载因子数据失败: {e}")
+        logger.warning(f"❌ 加载因子数据失败: {e}")
         conn.close()
         return pd.DataFrame()
 
@@ -658,7 +661,7 @@ def save_weight_history(
         conn.close()
         return True
     except Exception as e:
-        print(f"❌ 保存权重历史失败: {e}")
+        logger.warning(f"❌ 保存权重历史失败: {e}")
         conn.close()
         return False
 
@@ -688,7 +691,7 @@ def load_weight_history(
         return result.pivot(index="date", columns="asset_code", values="weight")
 
     except Exception as e:
-        print(f"❌ 加载权重历史失败: {e}")
+        logger.warning(f"❌ 加载权重历史失败: {e}")
         conn.close()
         return pd.DataFrame()
 
@@ -726,7 +729,7 @@ def save_nav_history(
         conn.close()
         return True
     except Exception as e:
-        print(f"❌ 保存 NAV 历史失败: {e}")
+        logger.warning(f"❌ 保存 NAV 历史失败: {e}")
         conn.close()
         return False
 
@@ -756,7 +759,7 @@ def load_nav_history(
         return pd.Series(result["nav"].values, index=pd.to_datetime(result["date"]))
 
     except Exception as e:
-        print(f"❌ 加载 NAV 历史失败: {e}")
+        logger.warning(f"❌ 加载 NAV 历史失败: {e}")
         conn.close()
         return pd.Series(dtype=float)
 
@@ -824,7 +827,7 @@ def register_factor(
 
             complexity = analyze_complexity(factor_code)
         except Exception as e:
-            print(f"❌ 注册因子失败: 复杂度分析不通过 ({e})")
+            logger.warning(f"❌ 注册因子失败: 复杂度分析不通过 ({e})")
             try:
                 conn.close()
             except Exception:
@@ -852,7 +855,7 @@ def register_factor(
         conn.close()
         return True
     except Exception as e:
-        print(f"❌ 注册因子失败: {e}")
+        logger.warning(f"❌ 注册因子失败: {e}")
         conn.close()
         return False
 
@@ -889,7 +892,7 @@ def get_factors(workspace_path: Path, strategy_name: str) -> list[dict]:
             for row in result
         ]
     except Exception as e:
-        print(f"❌ 获取因子失败: {e}")
+        logger.warning(f"❌ 获取因子失败: {e}")
         conn.close()
         return []
 
@@ -908,7 +911,7 @@ def remove_factor(workspace_path: Path, strategy_name: str, factor_name: str) ->
         conn.close()
         return True
     except Exception as e:
-        print(f"❌ 移除因子失败: {e}")
+        logger.warning(f"❌ 移除因子失败: {e}")
         conn.close()
         return False
 
@@ -966,7 +969,7 @@ def cache_validation(
         conn.close()
         return True
     except Exception as e:
-        print(f"❌ 缓存验证结果失败: {e}")
+        logger.warning(f"❌ 缓存验证结果失败: {e}")
         conn.close()
         return False
 
@@ -1002,7 +1005,7 @@ def get_validation_cache(workspace_path: Path, strategy_name: str) -> list[dict]
             for row in result
         ]
     except Exception as e:
-        print(f"❌ 获取验证缓存失败: {e}")
+        logger.warning(f"❌ 获取验证缓存失败: {e}")
         conn.close()
         return []
 
@@ -1051,7 +1054,7 @@ def save_backtest_result(
         conn.close()
         return True
     except Exception as e:
-        print(f"❌ 保存回测结果失败: {e}")
+        logger.warning(f"❌ 保存回测结果失败: {e}")
         conn.close()
         return False
 
@@ -1096,7 +1099,7 @@ def get_backtest_results(
             for row in result
         ]
     except Exception as e:
-        print(f"❌ 获取回测结果失败: {e}")
+        logger.warning(f"❌ 获取回测结果失败: {e}")
         conn.close()
         return []
 
@@ -1146,7 +1149,7 @@ def update_data_fingerprint(
         conn.close()
         return True
     except Exception as e:
-        print(f"❌ 更新数据指纹失败: {e}")
+        logger.warning(f"❌ 更新数据指纹失败: {e}")
         conn.close()
         return False
 
@@ -1176,7 +1179,7 @@ def get_data_fingerprint(workspace_path: Path, strategy_name: str) -> Optional[d
             }
         return None
     except Exception as e:
-        print(f"❌ 获取数据指纹失败: {e}")
+        logger.warning(f"❌ 获取数据指纹失败: {e}")
         conn.close()
         return None
 
@@ -1232,7 +1235,7 @@ def update_import_meta(
         conn.close()
         return True
     except Exception as e:
-        print(f"❌ 更新导入元数据失败: {e}")
+        logger.warning(f"❌ 更新导入元数据失败: {e}")
         conn.close()
         return False
 
@@ -1265,6 +1268,6 @@ def get_import_meta(
             for row in result
         ]
     except Exception as e:
-        print(f"❌ 获取导入元数据失败: {e}")
+        logger.warning(f"❌ 获取导入元数据失败: {e}")
         conn.close()
         return []

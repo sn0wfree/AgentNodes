@@ -116,6 +116,29 @@ Admin token：`SR_ADMIN_TOKEN` 环境变量。未设置时 admin 端点返回 `5
 
 ## 4. 结构化日志 + trace_id（D）
 
+### 4.0 统一日志入口（2026-11-02，docs/logging-unified-entry-design-20261102.md）
+
+所有进程面经 `core/observability/logging_setup.py::configure_logging(surface)` 装配：
+
+| surface | console 流 | 行为 |
+|---|---|---|
+| `web` | stderr | 默认文本格式自带 trace 字段 |
+| `cli` | stderr | 严格开关：SR_LOG_JSON / SR_LOG_FILE 任一设置才装配（TUI 保护） |
+| `mcp` | stderr | stdout 是 JSON-RPC 协议帧，绝不混日志 |
+| `script` | stdout | 子进程输出被 run_bg 重定向进 run.log（喂 log_stall） |
+
+- `SR_LOG_LEVEL` / `SR_LOG_JSON` / `SR_LOG_FILE` 三开关统一解析；`SR_LOG_FILE`
+  开启 RotatingFileHandler（10MB×5，默认关闭不建文件，相对路径落
+  `~/.quantnodes-research/logs/`）。
+- 默认文本格式带 trace 字段：`%(asctime)s %(levelname)-8s %(name)s
+  [t=%(trace_id)s sid=%(session_id)s st=%(study_id)s r=%(round_num)s] %(message)s`。
+- 双写在 handler 层完成（console + file 同挂一个 logger，借鉴
+  CodersWheel LoggerHelper）；call-site 双写收敛为 `dual_log()`——仅当进程
+  无任何 handler（CLI 默认模式）时 print 兜底。
+- `TraceFilter` 挂 **handler**（defect #17：logger 级 filter 看不到子 logger
+  传播的记录——旧实现挂在 root logger 上，trace 字段对所有子 logger 日志
+  从未生效）。
+
 ### 4.1 启用 JSON 日志
 
 ```
@@ -175,12 +198,17 @@ journalctl -u strategy-research | jq 'select(.study_id=="st-9")'
 
 - `core/observability/trace.py` -- 全部实现（4 个 ContextVar + `bind_trace`
   context manager + `TraceFilter` + `JsonFormatter` + `setup_trace_logging`）
-- `TraceFilter` 挂在 root logger 上，每条 LogRecord 经过时注入
-  `record.trace_id/session_id/study_id/round_num`
-- `setup_trace_logging()` 幂等（filter 只挂一次），`SR_LOG_JSON=1` 时
-  把所有 root handler 的 formatter 换成 `JsonFormatter`
+- `TraceFilter` 挂在**各 handler** 上（`ensure_trace_filter`，幂等；defect #17
+  修复——logger 级 filter 对子 logger 传播的记录无效），每条被处理的
+  LogRecord 注入 `record.trace_id/session_id/study_id/round_num`
+- `setup_trace_logging()` 幂等，`SR_LOG_JSON=1` 时把所有 root handler 的
+  formatter 换成 `JsonFormatter`；生产入口统一走 `configure_logging(surface)`
 
 ### 4.5 已修 bug
+
+`_check_wallclock` 之前读 `getattr(self.config, "session_id", None)`，
+但 `LLMConfig` 无 `session_id` 字段 -> 恒 `None`。改为从 ContextVar
+`_session_id.get()` 读取，wallclock 超时事件现在能正确关联到 session。
 
 `_check_wallclock` 之前读 `getattr(self.config, "session_id", None)`，
 但 `LLMConfig` 无 `session_id` 字段 -> 恒 `None`。改为从 ContextVar
@@ -193,7 +221,8 @@ journalctl -u strategy-research | jq 'select(.study_id=="st-9")'
 - 所有事件写入 `best-effort`：写失败吞异常，**不影响主路径**（LLM 流、agent 循环、
   调度器）。
 - `hanging_events` 与 `studies` 同文件（goals.db），`CREATE TABLE IF NOT EXISTS`
-  幂等，无迁移。
+  幂等；trace_id/round_num 列经 `PRAGMA table_info` 检查 + `ALTER TABLE`
+  幂等迁移（旧库打开即升级）。
 - 事件表会无限增长（每事件一行）。建议定期 `DELETE FROM hanging_events
   WHERE created_at < strftime('%s','now')-30*24*3600`（30 天），或跑
   `strategy-research hangs` 后手工清。

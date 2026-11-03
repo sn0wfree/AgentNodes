@@ -32,7 +32,6 @@ Tests pass a deterministic stub rather than relying on monkeypatched
 """
 from __future__ import annotations
 
-import os
 import sys
 from typing import Callable, Sequence
 
@@ -153,29 +152,16 @@ def main(
     """
     raw_argv = list(sys.argv[1:] if argv is None else argv)
 
-    # Trace logging（2026-11-02）：CLI 此前完全不装配日志——trace_id 关联
-    # 与 SR_LOG_JSON 只在 Web 生效。但 CLI/TUI 的界面输出走 print/rich，
-    # 无条件挂 handler 会让 523 处 logger.info 刷穿 TUI，所以这里**严格
-    # 按开关办事**：SR_LOG_JSON=1 才建 stderr handler + JSON 格式 +
-    # trace 过滤；默认（未设）与从前逐字节一致。
-    if os.environ.get("SR_LOG_JSON", "").lower() in ("1", "true"):
-        try:
-            import logging
+    # 日志统一入口（docs/logging-unified-entry-design-20261102.md §4.1）：
+    # CLI 是严格开关语义——SR_LOG_JSON / SR_LOG_FILE 任一设置才装配
+    # stderr handler（trace 过滤 + 对应格式）；默认（未设）完全不装配，
+    # 与 TUI/界面输出（print/rich 走 stdout）互不干扰，逐字节同从前。
+    try:
+        from strategy_research.core.observability import configure_logging
 
-            from strategy_research.core.observability import setup_trace_logging
-
-            logging.basicConfig(
-                level=getattr(
-                    logging,
-                    os.environ.get("SR_LOG_LEVEL", "INFO").upper(),
-                    logging.INFO,
-                ),
-                format="%(asctime)s %(levelname)s %(name)s: %(message)s",
-                datefmt="%H:%M:%S",
-            )
-            setup_trace_logging()
-        except Exception:  # noqa: BLE001 — 日志装配失败不能阻断 CLI
-            pass
+        configure_logging("cli")
+    except Exception:  # noqa: BLE001 — 日志装配失败不能阻断 CLI
+        pass
 
     # First-launch onboarding (v0.5.0). Mirrors vibe-trading's
     # _maybe_run_onboarding: if no .env exists and we are routing to an

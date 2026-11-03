@@ -11,6 +11,7 @@ Validates that:
 from __future__ import annotations
 
 import asyncio
+import io
 import json
 import logging
 import sys
@@ -95,7 +96,8 @@ class TestTraceFilter:
         assert rec.trace_id == "-"
         assert rec.session_id == "-"
         assert rec.study_id == "-"
-        assert rec.round_num is None
+        # 未绑定轮次同样落 "-"（文本格式统一占位；JSON 端按 "-" 省略）
+        assert rec.round_num == "-"
 
     def test_filter_picks_up_context(self):
         f = TraceFilter()
@@ -209,13 +211,45 @@ class TestAsyncPropagation:
 class TestSetupTraceLogging:
     def test_filter_installed_once(self):
         root = logging.getLogger()
-        # Count existing TraceFilters (may be pre-installed by other tests)
-        before = sum(1 for f in root.filters if isinstance(f, TraceFilter))
+        # Count TraceFilters across handlers (defect #17: filters must
+        # live on handlers — logger-level filters never see records
+        # propagated from child loggers).
+        def _count() -> int:
+            return sum(
+                1
+                for h in root.handlers
+                for f in h.filters
+                if isinstance(f, TraceFilter)
+            )
+
+        before = _count()
         setup_trace_logging(json_output=False)
         setup_trace_logging(json_output=False)
-        after = sum(1 for f in root.filters if isinstance(f, TraceFilter))
-        # Idempotent: filter added only once regardless of prior state.
-        assert after == before + 1 or before >= 1 and after == before
+        after = _count()
+        # Idempotent: every handler ends up with exactly one filter.
+        assert after == len(root.handlers)
+        assert after >= before
+
+    def test_child_logger_record_carries_trace_fields(self):
+        """Regression (defect #17): records from child loggers — which
+        bypass root-logger filters by design — must still reach the
+        formatter with trace attrs attached."""
+        root = logging.getLogger()
+        stream = io.StringIO()
+        handler = logging.StreamHandler(stream)
+        handler.setFormatter(logging.Formatter(
+            "%(message)s t=%(trace_id)s", "%H:%M:%S",
+        ))
+        root.addHandler(handler)
+        try:
+            setup_trace_logging(json_output=False)
+            with bind_trace(trace_id="child-17"):
+                logging.getLogger("strategy_research.child.defect17").info(
+                    "propagated")
+            handler.flush()
+            assert "child-17" in stream.getvalue()
+        finally:
+            root.removeHandler(handler)
 
     def test_json_formatter_applied(self):
         root = logging.getLogger()

@@ -17,12 +17,15 @@
 
 from __future__ import annotations
 
+import logging
+
 from datetime import timedelta
 from pathlib import Path
 from typing import Optional
 
 import pandas as pd
 
+from .observability.logging_setup import dual_log
 from .db import (
     compute_data_fingerprint,
     get_last_import_date,
@@ -32,6 +35,8 @@ from .db import (
     update_data_fingerprint,
     update_import_meta,
 )
+
+logger = logging.getLogger(__name__)
 
 # ============================================================
 # API 数据源导入
@@ -84,7 +89,7 @@ def import_from_source(
                 if not success:
                     all_success = False
             except NoAvailableSourceError as e:
-                print(f"❌ 市场 '{market}' 没有可用数据源: {e}")
+                logger.warning(f"❌ 市场 '{market}' 没有可用数据源: {e}")
                 all_success = False
 
         return all_success
@@ -101,7 +106,7 @@ def import_from_source(
                 codes, start_date, end_date, incremental
             )
         except NoAvailableSourceError as e:
-            print(f"❌ 数据源 '{source}' 不可用: {e}")
+            logger.warning(f"❌ 数据源 '{source}' 不可用: {e}")
             return False
 
 
@@ -124,14 +129,14 @@ def _import_with_loader(
                 # 从最后日期的下一天开始
                 next_day = (last + timedelta(days=1)).strftime("%Y-%m-%d")
                 if next_day > end_date:
-                    print(f"  ⏭  {code} 已是最新 (最后更新: {last})")
+                    dual_log("import", f"  ⏭  {code} 已是最新 (最后更新: {last})")
                     continue
                 actual_codes.append((code, next_day))
             else:
                 actual_codes.append((code, start_date))
 
         if not actual_codes:
-            print("✓ 所有数据已是最新")
+            dual_log("import", "✓ 所有数据已是最新")
             return True
 
         codes_to_fetch = [c for c, _ in actual_codes]
@@ -140,13 +145,13 @@ def _import_with_loader(
         codes_to_fetch = codes
         fetch_start = start_date
 
-    print(f"📡 从 {loader.name} 获取 {len(codes_to_fetch)} 个资产...")
+    dual_log("import", f"📡 从 {loader.name} 获取 {len(codes_to_fetch)} 个资产...")
 
     # 获取数据
     data_map = loader.fetch(codes_to_fetch, fetch_start, end_date)
 
     if not data_map:
-        print(f"❌ {loader.name} 未返回数据")
+        logger.warning(f"❌ {loader.name} 未返回数据")
         return False
 
     # 保存到 DuckDB
@@ -162,12 +167,12 @@ def _import_with_loader(
             # 更新导入元数据
             update_import_meta(workspace_path, strategy_name, code, end_date)
 
-    print(f"✓ 导入完成: {success_count}/{len(codes_to_fetch)} 个资产")
+    dual_log("import", f"✓ 导入完成: {success_count}/{len(codes_to_fetch)} 个资产")
 
     # 显示信息
     info = get_price_data_info(workspace_path, strategy_name)
     if info:
-        print(f"   总计: {info.get('n_assets', 0)} 个资产, "
+        dual_log("import", f"   总计: {info.get('n_assets', 0)} 个资产, "
               f"{info.get('n_dates', 0)} 个日期")
 
     return success_count > 0
@@ -191,7 +196,7 @@ def import_tushare(
 
     loader = TushareLoader(token=token, workspace_path=workspace_path)
     if not loader.is_available():
-        print("❌ Tushare 不可用: 请设置 TUSHARE_TOKEN")
+        logger.warning("❌ Tushare 不可用: 请设置 TUSHARE_TOKEN")
         return False
 
     return _import_with_loader(
@@ -218,7 +223,7 @@ def import_ifind(
 
     loader = IFindLoader(token=token, workspace_path=workspace_path)
     if not loader.is_available():
-        print("❌ iFinD 不可用: 请设置 IFIND_MCP_TOKEN")
+        logger.warning("❌ iFinD 不可用: 请设置 IFIND_MCP_TOKEN")
         return False
 
     return _import_with_loader(
@@ -245,7 +250,7 @@ def import_fred(
 
     loader = FredLoader(api_key=api_key, workspace_path=workspace_path)
     if not loader.is_available():
-        print("❌ FRED 不可用: 请设置 FRED_API_KEY")
+        logger.warning("❌ FRED 不可用: 请设置 FRED_API_KEY")
         return False
 
     return _import_with_loader(
@@ -271,7 +276,7 @@ def import_akshare(
 
     loader = AKShareLoader()
     if not loader.is_available():
-        print("❌ AKShare 不可用: 请安装 akshare (pip install akshare)")
+        logger.warning("❌ AKShare 不可用: 请安装 akshare (pip install akshare)")
         return False
 
     return _import_with_loader(
@@ -372,9 +377,10 @@ def import_csv_ohlcv(
         fingerprint, len(df),
     )
     info = get_price_data_info(workspace_path, strategy_name)
-    print(
+    dual_log(
+        "import",
         f"✓ 导入 CSV (OHLCV): {info.get('n_assets', 0)} 个资产, "
-        f"{info.get('n_dates', 0)} 个日期, {n_rows} 行"
+        f"{info.get('n_dates', 0)} 个日期, {n_rows} 行",
     )
     return True
 
@@ -415,9 +421,10 @@ def import_parquet_ohlcv(
         fingerprint, len(df),
     )
     info = get_price_data_info(workspace_path, strategy_name)
-    print(
+    dual_log(
+        "import",
         f"✓ 导入 Parquet (OHLCV): {info.get('n_assets', 0)} 个资产, "
-        f"{info.get('n_dates', 0)} 个日期, {n_rows} 行"
+        f"{info.get('n_dates', 0)} 个日期, {n_rows} 行",
     )
     return True
 

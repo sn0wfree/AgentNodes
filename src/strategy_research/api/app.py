@@ -35,24 +35,13 @@ def create_app(
         static_dir: Static files directory (e.g. `webui/static/`). If exists, will be served at `/`.
         cors_origins: CORS allowed origins (default: `["*"]` for dev).
     """
-    # 配置应用日志级别 - 确保 info 级别日志可见。
-    # SR_LOG_LEVEL=DEBUG 可开启 [DIAG] 诊断日志（流式 chunk、cfg、agent
-    # result 等），用于排查 SSE/LLM 链路问题；默认 INFO 不显。
+    # 日志统一入口（docs/logging-unified-entry-design-20261102.md §4.4）：
+    # web 面 console → stderr；SR_LOG_LEVEL / SR_LOG_JSON / SR_LOG_FILE
+    # 全部由 configure_logging 统一解析。默认文本格式自带 trace 字段
+    # （trace_id/session_id/study_id/round_num），SR_LOG_JSON=1 切 JSON。
     # v2 §14.2: hypotheses 默认走 SQLite（旧 JSON 不迁移、不读取）。
-    log_level_name = os.environ.get("SR_LOG_LEVEL", "INFO").upper()
-    log_level = getattr(logging, log_level_name, logging.INFO)
-    logging.basicConfig(
-        level=log_level,
-        format="%(asctime)s %(levelname)s %(name)s: %(message)s",
-        datefmt="%H:%M:%S",
-    )
-    # 设置 strategy_research 命名空间日志级别
-    logging.getLogger("strategy_research").setLevel(log_level)
-    # Trace context (ContextVar) + optional JSON formatter.
-    # SR_LOG_JSON=1 enables single-line JSON logs with trace_id /
-    # session_id / study_id / round_num for structured log pipelines.
-    from ..core.observability import setup_trace_logging
-    setup_trace_logging(log_level=log_level)
+    from ..core.observability import configure_logging
+    configure_logging("web")
     logger.info("[STARTUP] create_app called")
 
     # Register the core loop's compaction persister (legacy fallback

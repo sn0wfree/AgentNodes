@@ -655,7 +655,7 @@ close **值**补、缺 volume 用 0）——首批测试的断言是错的（写
 
 新增测试约 350 条，分布在 11 个新文件。
 
-### 17.2 本轮新发现的真实缺陷（#9–#16）
+### 17.2 本轮新发现的真实缺陷（#9–#16，#17 见 §17.4）
 
 | # | 缺陷 | 后果 |
 |---|---|---|
@@ -674,3 +674,20 @@ close **值**补、缺 volume 用 0）——首批测试的断言是错的（写
 
 另修一处退出码纪律问题：`engine <unknown-subcommand>` 打印用法后返回
 `0`（成功）。已改为 `2`（用法错误）。
+
+### 17.4 日志统一入口轮新增缺陷（#17，2026-11-02）
+
+| # | 缺陷 | 后果 | 修复 |
+|---|---|---|---|
+| 17 | `TraceFilter` 挂在 root **logger** 上，而 logger 级 filter 只对「该 logger 自己产生的记录」生效——子 logger 传播上来的记录不经过 `root.filters` | trace_id/session_id/study_id/round_num 在**所有 surface（含 JSON 模式）对子 logger 日志从未生效**；JsonFormatter 容错静默省略掩盖了问题（文本格式会直接 KeyError 丢日志） | filter 改挂各 handler（`trace.ensure_trace_filter`，幂等、覆盖外来 handler）；另加 `_TraceTextFormatter` 防御层兜底默认值。回归：`test_child_logger_record_carries_trace_fields` |
+
+这也是「静默失效」类：唯一的观测机制本身没有观测效果。发现途径恰是
+本次统一入口改造——文本格式把 `%(trace_id)s` 写进默认格式后，缺属性
+的记录立刻以 Logging error 形式暴露。
+
+同轮交付：`configure_logging(surface)` 统一入口（web/cli/mcp/script 策略
+表，4 处 basicConfig 收敛、SR_LOG_* 三开关统一解析）、SR_LOG_FILE 旋转
+文件日志、hanging_events 加 trace_id/round_num 列（6 写入点自动补
+ContextVar）、`_dlog`×4 收敛为 `dual_log`、B 类库内 print 治理 ~51 处 +
+AST 门禁 `test_print_governance.py`。设计与执行记录：
+`docs/logging-unified-entry-design-20261102.md`。

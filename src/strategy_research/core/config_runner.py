@@ -427,7 +427,7 @@ class FactorStrategy:
                     wide = alpha_zoo.compute_as_wide(alpha_id, price_panel.loc[:date])
                     factor_values[name] = wide
                 except Exception as e:
-                    print(f"⚠️  Alpha Zoo {alpha_id} 计算失败: {e}")
+                    logger.warning(f"⚠️  Alpha Zoo {alpha_id} 计算失败: {e}")
                     self._record_factor_failure(name, alpha_id, e)
                 continue
 
@@ -448,7 +448,7 @@ class FactorStrategy:
                     combined_wide = combined.unstack()
                     factor_values[name] = combined_wide
                 except Exception as e:
-                    print(f"⚠️  Alpha Zoo 组合 {alpha_ids} 计算失败: {e}")
+                    logger.warning(f"⚠️  Alpha Zoo 组合 {alpha_ids} 计算失败: {e}")
                     self._record_factor_failure(name, ",".join(alpha_ids)[:80], e)
 
         return factor_values
@@ -466,7 +466,7 @@ class FactorStrategy:
         from .compute_factor import FactorComputeError, compute_factor
 
         if ohlcv_panels is None:
-            print(
+            logger.warning(
                 f"⚠️  因子 {name} 跳过: expression factor requires "
                 "workspace_path and strategy_name; provide them via "
                 "create_strategy(cfg, workspace_path=...)"
@@ -486,10 +486,10 @@ class FactorStrategy:
                 s = compute_factor(code, asset_df.loc[:date])
                 wide[asset] = s.reindex(price_panel.index)
             except FactorComputeError as e:
-                print(f"⚠️  因子 {name} 在 {asset} 失败: {e}")
+                logger.warning(f"⚠️  因子 {name} 在 {asset} 失败: {e}")
                 self._record_factor_failure(name, asset, e)
             except Exception as e:
-                print(f"⚠️  因子 {name} 在 {asset} 异常: {e}")
+                logger.warning(f"⚠️  因子 {name} 在 {asset} 异常: {e}")
                 self._record_factor_failure(name, asset, e)
         factor_values[name] = wide
 

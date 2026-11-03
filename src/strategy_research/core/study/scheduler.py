@@ -22,6 +22,7 @@ import os
 from datetime import datetime, timezone
 from typing import Any
 
+from ..observability.logging_setup import dual_log
 from .models import StudyRecord, StudyStatus
 from .runner import AutoresearchRunner, ControlToken, NullEmitter
 from .store import StudyStore
@@ -55,11 +56,8 @@ _TERMINAL_STATUSES = frozenset({
 })
 
 
-def _dlog(module: str, msg: str, *args) -> None:
-    """Dual-output log: logger + stderr so both file and terminal see it."""
-    msg_fmt = msg % args if args else msg
-    logger.info("[STUDY:%s] %s", module, msg_fmt)
-    print(f"[STUDY:{module}] {msg_fmt}", flush=True)  # noqa: T201
+# 统一双写日志（docs/logging-unified-entry-design-20261102.md §4.2）。
+_dlog = dual_log
 
 
 class StudyScheduler:

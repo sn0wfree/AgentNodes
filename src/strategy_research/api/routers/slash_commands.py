@@ -337,7 +337,7 @@ async def _handle_study_command(body: ChatMessage) -> SendMessageResponse:
     except Exception as exc:
         logger.exception("study command failed")
         response_text = f"Study command failed: {exc}"
-    print(f"[STUDY:chat] command response: {response_text[:100]}", flush=True)
+    logger.info("study chat command response: %s", response_text[:100])
 
     # Flush any pending workflow submits (created by ``/study start``)
     # on this loop before the response round-trips to the user.

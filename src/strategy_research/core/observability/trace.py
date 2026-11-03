@@ -100,16 +100,17 @@ def bind_trace(
 class TraceFilter(logging.Filter):
     """Inject current ContextVar values onto every ``LogRecord``.
 
-    Attach to the root logger (or the ``strategy_research`` logger).
-    The filter runs *before* the formatter, so ``JsonFormatter`` (and
-    even the text formatter via ``%(trace_id)s``) can read the attrs.
+    Attach to log **handlers** (not the root logger — logger filters do
+    not see records propagated from child loggers). The filter runs
+    *before* the handler formatter, so ``JsonFormatter`` (and the text
+    formatter via ``%(trace_id)s``) can read the attrs.
     """
 
     def filter(self, record: logging.LogRecord) -> bool:
         record.trace_id = _trace_id.get() or "-"
         record.session_id = _session_id.get() or "-"
         record.study_id = _study_id.get() or "-"
-        record.round_num = _round_num.get()
+        record.round_num = _round_num.get() if _round_num.get() is not None else "-"
         return True
 
 
@@ -144,7 +145,19 @@ class JsonFormatter(logging.Formatter):
 
 # ── setup ────────────────────────────────────────────────────────────
 
-_FILTER_INSTALLED = False
+
+def ensure_trace_filter(root: logging.Logger) -> None:
+    """Attach ``TraceFilter`` to every root handler (idempotent).
+
+    挂 **handler** 而不是 root logger：logger 级 filter 只对「该 logger
+    自己产生的记录」生效，子 logger 传播上来的记录不经过 root.filters
+    （defect #17——旧实现挂在 root 上，trace 字段对所有 surface 的子
+    logger 日志都没生效，JsonFormatter 静默省略掩盖了这一点）。Handler
+    级 filter 对每条被处理的记录都会运行。
+    """
+    for h in root.handlers:
+        if not any(isinstance(f, TraceFilter) for f in h.filters):
+            h.addFilter(TraceFilter())
 
 
 def setup_trace_logging(
@@ -152,11 +165,11 @@ def setup_trace_logging(
     json_output: bool | None = None,
     log_level: int = logging.INFO,
 ) -> None:
-    """Wire ``TraceFilter`` (+ optional ``JsonFormatter``) onto root logger.
+    """Wire ``TraceFilter`` (+ optional ``JsonFormatter``) onto root handlers.
 
     Idempotent: safe to call multiple times (e.g. ``create_app`` in
-    tests). The filter is added once; the formatter is re-applied
-    based on ``json_output``.
+    tests). The filter is added to each handler once; the formatter is
+    re-applied based on ``json_output``.
 
     Args:
         json_output: If ``None``, reads ``SR_LOG_JSON`` env var.
@@ -164,17 +177,12 @@ def setup_trace_logging(
         log_level: Root logger level (default INFO, usually from
             ``SR_LOG_LEVEL``).
     """
-    global _FILTER_INSTALLED
-
     if json_output is None:
         json_output = os.environ.get("SR_LOG_JSON", "").lower() in ("1", "true")
 
     root = logging.getLogger()
     root.setLevel(log_level)
-
-    if not _FILTER_INSTALLED:
-        root.addFilter(TraceFilter())
-        _FILTER_INSTALLED = True
+    ensure_trace_filter(root)
 
     fmt = JsonFormatter(datefmt="%H:%M:%S") if json_output else None
     for h in root.handlers:
