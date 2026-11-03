@@ -1,10 +1,12 @@
 """Layer-matrix gate — the four-layer skeleton's machine check.
 
 契约：docs/layered-skeleton-design-20261103.md §2/§4。
+层名（2026-11-03 拍板，llmwikify 式）：L1 interfaces / L2 apps / L3 kernel /
+L4 foundation —— 物理目录不动，只有逻辑层名。
 
 Rules:
 1. Layer membership table (§2) is the single source of truth.
-2. Imports may only flow downward (L1 interfaces → L2 domain → L3 runtime
+2. Imports may only flow downward (L1 interfaces → L2 apps → L3 kernel
    → L4 foundation); same-layer imports are free.
 3. Relative imports resolve per PEP 328: anchor = the importer's package,
    strip ``level - 1`` components (an off-by-one here fabricated both
@@ -34,7 +36,7 @@ LAYER_MEMBERSHIP: dict[str, str] = {
     "strategy_research.api": "L1",
     "strategy_research.cli": "L1",
     "strategy_research.core.mcp": "L1",
-    # L2 domain (research IP)
+    # L2 apps (research IP)
     "strategy_research.core.study": "L2",
     "strategy_research.core.goal": "L2",
     "strategy_research.core.hypothesis": "L2",
@@ -63,7 +65,7 @@ LAYER_MEMBERSHIP: dict[str, str] = {
     "strategy_research.core.workspace_setup": "L2",
     "strategy_research.core.preflight": "L2",
     "strategy_research.templates": "L2",
-    # L3 runtime (platform mechanisms)
+    # L3 kernel (platform mechanisms)
     "strategy_research.core.gateway": "L3",
     "strategy_research.core.orchestration": "L3",
     "strategy_research.core.runtimes": "L3",

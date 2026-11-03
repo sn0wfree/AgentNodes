@@ -1,6 +1,6 @@
 # 四层骨架设计 — llmwikify 借鉴 · 依赖方向机器可证
 
-日期：2026-11-03　分支：`refactor/v6-gateway`　状态：设计稿 v2（待拍板实施）
+日期：2026-11-03　分支：`refactor/v6-gateway`　状态：设计稿 v3（层名定稿 · Gateway 组件归类完成）
 
 用户方向：借鉴 llmwikify 评审（`D:/Github/llmwikify/docs/architecture/architecture-review-2026-11.html`）
 的分层骨架——**四层单向依赖 + 原生数据传递关系 + 机器校验**。本文给出本项目的落地方案。
@@ -39,17 +39,39 @@
 
 ## 2. 层定义与成员表
 
-四层全序（高层可依赖一切低层；同层自由；禁止上行）：
+四层全序（高层可依赖一切低层；同层自由；禁止上行）。**层命名 2026-11-03 用户拍板：采用 llmwikify 原名
+interfaces / apps / kernel / foundation**（物理目录不动——`core/study` 等包位置不变，只有逻辑层名）：
 
 | 层 | 名字 | 一句话 | 成员（物理位置 → 层） |
 |---|---|---|---|
 | **L1** | interfaces 入口 | 哑适配器：构造请求 + 呈现事件流 | `api/` · `cli/` · `core/mcp/` |
-| **L2** | domain 研究域 | 我们的 IP：方法论 + 账本 + 市场数据 | `core/study` `goal` `hypothesis` `alpha_zoo*` `backtest*` `validation` `portfolio` `data_source` `data_import` `data_readiness` `db` `compute_factor` `factor_validate` `config_runner` `strategy_acceptance` `autoresearch` `engine`(回测引擎) `export` `run_card` `workspace_setup` `preflight` · `templates/` |
-| **L3** | runtime 平台机制 | 业务无关的编排与防护 | `core/gateway` `orchestration` `runtimes` `workflow` `context` `agent` `swarm` `events` `session` `memory` `skills` `tools` `hooks` `permission` `registry` `seq_generator` `scheduled_research` |
+| **L2** | apps 研究域 | 我们的 IP：方法论 + 账本 + 市场数据 | `core/study` `goal` `hypothesis` `alpha_zoo*` `backtest*` `validation` `portfolio` `data_source` `data_import` `data_readiness` `db` `compute_factor` `factor_validate` `config_runner` `strategy_acceptance` `autoresearch` `engine`(回测引擎) `export` `run_card` `workspace_setup` `preflight` · `templates/` |
+| **L3** | kernel 平台机制 | 业务无关的编排与防护 | `core/gateway` `orchestration` `runtimes` `workflow` `context` `agent` `swarm` `events` `session` `memory` `skills` `tools` `hooks` `permission` `registry` `seq_generator` `scheduled_research` |
 | **L4** | foundation 基础设施 | 零业务知识的机制件 | `core/llm` `storage` `observability` `utils` `web`(搜索机制) `config_loader` `errors` `git` |
 
-命名对照 llmwikify：它的 `apps`↔我们的 `domain`（业务层=研究域）、`kernel`↔我们的 `runtime`（框架层=平台运行时）。
-不采用它的目录名——我们是研究工具，业务层叫 domain、机制层叫 runtime 更诚实。
+### 2.1 Gateway 组件归类（2026-11-03 用户要求 · 逐一裁定）
+
+控制面 = **kernel 为主 + 一个 apps 寄宿件**。归层依据是「知道什么」：知道 run/session/协议 = kernel；
+知道研究语义（停因/directive/方法论）= apps。
+
+| Gateway 组件 | 层 | 裁定理由 |
+|---|---|---|
+| 协议端点（薄·无状态） | **kernel** | kernel 的前门：契约校验 + 幂等去重 + 转发 mailbox；不知道任何研究语义 |
+| mailbox | **kernel** | 纯排队机制（session lane / cap20 / steer / 老化 / deadline） |
+| SessionController | **kernel** | turn 准入 + P-4 身份 + fence + 4 队列模式——全是 run 语义，无研究语义 |
+| 容量组闸 ⏳ | **kernel** | 并发闸机制（chat 宽/study 窄/cron 隔离） |
+| ModelHub | **kernel** | provider/model 解析唯一入口（底层协议在 foundation.llm） |
+| ContextHub | **kernel** | 装配机制 collect→arbitrate→render；业务 Provider 的数据由 apps 侧供给 |
+| EventStore | **kernel** | 事件语义（emit/subscribe/replay/PROTOCOL_VERSION）；其下的 SQLite/连接原语在 **foundation.storage** |
+| Scheduler（唯一）⏳ | **kernel** | automation/cron 调度机制 |
+| RunContext | **kernel** | per-run 约束包（budget 快照/sink/cancel/steer_inbox/trace 的 state 键） |
+| **Director** | **apps** ⚠ | 停因→动作、propose_next、study.directive——**研究语义策略件**。物理位置本就在 `core/study/director.py`（L2），由 **runner（apps）在轮末调用**，不违反 kernel→apps 禁令；它出现在 Gateway 叙事里是「编排位置」而非「依赖层」——控制面经事件流消费其产出 |
+
+**两条轴的澄清**（归类时最容易混的点）：
+- **编排位置 ≠ 依赖层**。Director 画在 Gateway 里（控制面叙事的「策略」格，决策 3），
+  但它的层归属是 apps——控制面是它的**展示位**，不是它的**依赖目标**。
+- **kernel 不得 import apps** 是硬禁令（门禁簇A 的 92 条就在修这个）；apps 寄宿在
+  kernel 组件中的唯一合法形态 = kernel 只见契约/事件，不见实现。
 
 **存疑成员的裁决**（审计时定位）：
 - `core/mcp` 物理在 core/ 但它是工具协议入口 → L1（成员表解决物理与逻辑错位）。
@@ -70,6 +92,8 @@
 | L3→L4 | ✅ | LLM client 协议（OpenAICompatClient/LLMSpec）· storage 原语（resolve_db_path/connect/PlatformStore）· trace/logging（configure_logging/dual_log） |
 | L3→L2 | **临时白名单（92 条）** | 工具/注入器 → 领域能力；G2b 收敛为 `CapabilityRegistry.resolve(kind, **criteria)` 端口（roadmap 切 0.6/0.7），收敛后白名单清零 |
 | L4→任何 / 任何→L1 | ❌（现违规 13 条，簇 B/C） | foundation 不得知道 run/session/event 的语义；入口层是末端 |
+
+（表中 L2=apps 研究域 · L3=kernel 平台机制，命名见 §2。）
 
 ## 4. 机器门禁（check_architecture.py 的等价物）
 
