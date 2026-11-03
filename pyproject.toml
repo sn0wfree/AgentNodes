@@ -86,6 +86,10 @@ asyncio_mode = "auto"
 # Honor @pytest.mark.xdist_group markers via loadgroup distribution so
 # same-group tests land on the same worker (avoids parallel pollution
 # e.g. test_workflow_segment_loop — see tech-debt ⑥).
+#
+# 本地全量加速（2026-11-03）：`pytest tests -n 4 --dist loadgroup`
+# 串行全量约 30–45 分钟，4 worker 约 8–12 分钟。不加到 addopts 里，
+# 因为 CI 分片已按 .shard-timings.json 均衡，重复并行反而抢 CPU。
 addopts = ["-ra"]
 xfail_strict = true
 # A1 (2026-10-28): global backstop so one pathological test can never
