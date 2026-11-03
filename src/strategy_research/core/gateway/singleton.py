@@ -121,7 +121,7 @@ def _build_context_hub() -> Any | None:
             TodoContextProvider,
             build_prerun_provider_for_session,
         )
-        from ..context.hub import ContextHub
+        from strategy_research.kernel.context.hub import ContextHub
 
         hub = ContextHub()
         hub.register(build_prerun_provider_for_session())
@@ -138,7 +138,7 @@ def _build_context_policy() -> Any | None:
     就改字节。见 core/context/policy.py 的 DEFAULT_KIND_RANK。
     """
     try:
-        from ..context.policy import ContextPolicy
+        from strategy_research.kernel.context.policy import ContextPolicy
 
         return ContextPolicy()
     except Exception:  # noqa: BLE001

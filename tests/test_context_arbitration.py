@@ -12,9 +12,9 @@ from __future__ import annotations
 
 from types import SimpleNamespace
 
-from strategy_research.core.context.hub import ContextHub
-from strategy_research.core.context.policy import ContextPolicy
-from strategy_research.core.context.protocol import ContextItem, ContextQuery
+from strategy_research.kernel.context.hub import ContextHub
+from strategy_research.kernel.context.policy import ContextPolicy
+from strategy_research.kernel.context.protocol import ContextItem, ContextQuery
 
 
 def _provider(name: str, items: list[ContextItem], scopes=None):

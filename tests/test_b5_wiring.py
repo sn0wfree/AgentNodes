@@ -19,8 +19,8 @@ from strategy_research.core.agent.builtin_tools.todo_tools import (
     TodoWriteTool,
 )
 from strategy_research.core.agent.context_providers import TodoContextProvider
-from strategy_research.core.context.hub import ContextHub
-from strategy_research.core.context.protocol import ContextQuery
+from strategy_research.kernel.context.hub import ContextHub
+from strategy_research.kernel.context.protocol import ContextQuery
 from strategy_research.core.gateway.gateway import Gateway
 from strategy_research.core.gateway.singleton import reset_gateway
 

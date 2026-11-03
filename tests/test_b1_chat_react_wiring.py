@@ -126,7 +126,7 @@ def test_no_hub_passthrough():
 
 def test_hub_items_prepended_as_single_block():
     """items 拼成单块前置，顺序 = bundle 顺序（与 full_task 形状一致）。"""
-    from strategy_research.core.context import ContextHub, ContextItem
+    from strategy_research.kernel.context import ContextHub, ContextItem
 
     hub = ContextHub()
     hub.register(SimpleNamespace(
@@ -155,7 +155,7 @@ def test_hub_items_prepended_as_single_block():
 
 
 def test_empty_bundle_leaves_message_untouched():
-    from strategy_research.core.context import ContextHub
+    from strategy_research.kernel.context import ContextHub
 
     ctrl = _controller(context_hub=ContextHub())
     messages = [{"role": "user", "content": "task"}]

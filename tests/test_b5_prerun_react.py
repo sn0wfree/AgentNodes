@@ -13,7 +13,7 @@ from unittest.mock import patch
 from strategy_research.core.agent.context_providers import (
     build_prerun_provider_for_session,
 )
-from strategy_research.core.context.protocol import ContextQuery
+from strategy_research.kernel.context.protocol import ContextQuery
 
 
 def _build(**kwargs):

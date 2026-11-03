@@ -15,7 +15,7 @@ from __future__ import annotations
 import logging
 from typing import Any
 
-from ..context.protocol import ContextItem, ContextQuery
+from strategy_research.kernel.context.protocol import ContextItem, ContextQuery
 
 logger = logging.getLogger(__name__)
 

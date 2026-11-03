@@ -430,7 +430,7 @@ class SessionController:
         if self._context_hub is None or not messages:
             return messages
         try:
-            from strategy_research.core.context.protocol import ContextQuery
+            from strategy_research.kernel.context.protocol import ContextQuery
 
             last = messages[-1]
             if last.get("role") != "user":

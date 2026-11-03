@@ -11,7 +11,7 @@ from types import SimpleNamespace
 from strategy_research.core.agent.context_providers import (
     build_prerun_context_provider,
 )
-from strategy_research.core.context import ContextHub, ContextQuery
+from strategy_research.kernel.context import ContextHub, ContextQuery
 
 TASK = "improve momentum_20_60"
 GOAL_BLOCK = "<current-research-goal>\n目标是提升 Calmar\n</current-research-goal>"

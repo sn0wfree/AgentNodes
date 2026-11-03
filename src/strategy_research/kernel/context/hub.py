@@ -14,7 +14,7 @@ import logging
 from dataclasses import dataclass, field
 from typing import Any
 
-from ..utils.token_utils import estimate_tokens as _estimate_message_tokens
+from strategy_research.core.utils.token_utils import estimate_tokens as _estimate_message_tokens
 from .policy import ContextPolicy
 from .protocol import ContextItem, ContextProvider, ContextQuery
 
