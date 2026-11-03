@@ -17,7 +17,7 @@ import pytest
 from fastapi.testclient import TestClient
 
 from strategy_research.api.app import create_app
-from strategy_research.core.observability.hanging_events import (
+from strategy_research.foundation.observability.hanging_events import (
     EVENT_CHAT_STALL,
     EVENT_CIRCUIT_OPEN,
     EVENT_LOG_STALL,

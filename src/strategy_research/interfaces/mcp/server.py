@@ -873,7 +873,7 @@ class MCPServer:
         try:
             # MCP 面日志必须走 stderr——stdout 是 JSON-RPC 协议帧通道。
             # 统一入口（docs/logging-unified-entry-design-20261102.md §4.1）。
-            from strategy_research.core.observability import configure_logging
+            from strategy_research.foundation.observability import configure_logging
 
             configure_logging("mcp")
         except Exception:  # noqa: BLE001 — 日志装配失败不能阻断 MCP

@@ -10,7 +10,7 @@ import pytest
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
 
-from strategy_research.core.observability.hanging_events import (
+from strategy_research.foundation.observability.hanging_events import (
     HangingEventsStore,
     EVENT_WALLCLOCK,
     EVENT_LOG_STALL,

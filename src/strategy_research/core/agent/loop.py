@@ -830,7 +830,7 @@ class AgentLoop(
         invoke/ThreadPoolExecutor/fire_hooks). Both paths share the same
         iteration/hook/compact/stop/no-progress semantics.
         """
-        from ..observability.trace import _session_id, _trace_id
+        from strategy_research.foundation.observability.trace import _session_id, _trace_id
 
         if not _trace_id.get():
             _trace_id.set(uuid.uuid4().hex[:12])

@@ -94,7 +94,7 @@ class TestStudyDumpEndpoint:
         assert body["session_id"] == "sess-1"
         assert body["studies"] == []
         # All event types present with zero counts once the store is wired.
-        from strategy_research.core.observability.hanging_events import _ALL_EVENT_TYPES
+        from strategy_research.foundation.observability.hanging_events import _ALL_EVENT_TYPES
         assert set(body["hanging_signals_in_window"]) == _ALL_EVENT_TYPES
         assert all(v == 0 for v in body["hanging_signals_in_window"].values())
         # Concurrency block is always present

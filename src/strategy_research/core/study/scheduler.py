@@ -22,7 +22,7 @@ import os
 from datetime import datetime, timezone
 from typing import Any
 
-from ..observability.logging_setup import dual_log
+from strategy_research.foundation.observability.logging_setup import dual_log
 from .models import StudyRecord, StudyStatus
 from .runner import AutoresearchRunner, ControlToken, NullEmitter
 from .store import StudyStore
@@ -965,7 +965,7 @@ class StudyScheduler:
                 continue
             _dlog("sched", "watchdog: heartbeat stale study=%s age=%.0fs",
                   sid, age)
-            from ..observability.hanging_events import record_event
+            from strategy_research.foundation.observability.hanging_events import record_event
             record_event(
                 "watchdog_interrupt",
                 study_id=sid,
@@ -1001,7 +1001,7 @@ class StudyScheduler:
                 continue
             _dlog("sched", "watchdog: bg task stalled task=%s log=%s",
                   handle.task_id, handle.log_path)
-            from ..observability.hanging_events import record_event
+            from strategy_research.foundation.observability.hanging_events import record_event
             record_event(
                 "log_stall",
                 study_id=handle.owner,

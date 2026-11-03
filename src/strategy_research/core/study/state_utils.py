@@ -48,7 +48,7 @@ def emit_with_trace(
 ) -> None:
     """Emit SSE event with trace context decoration."""
     try:
-        from ..observability import get_trace_context
+        from strategy_research.foundation.observability import get_trace_context
         ctx = get_trace_context()
         data = {
             "trace_id": ctx.get("trace_id"),

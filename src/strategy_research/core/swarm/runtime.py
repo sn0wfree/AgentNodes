@@ -508,7 +508,7 @@ class SwarmRuntime:
         if self._on_event is None:
             return None
 
-        from ..observability import (
+        from strategy_research.foundation.observability import (
             SUMMARY_EVENT_TYPES,
             strip_llm_request_fields,
         )

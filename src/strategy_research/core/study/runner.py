@@ -18,8 +18,8 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import TYPE_CHECKING, Any, Protocol
 
-from ..observability import new_trace_id
-from ..observability.logging_setup import dual_log
+from strategy_research.foundation.observability import new_trace_id
+from strategy_research.foundation.observability.logging_setup import dual_log
 from . import budget as _budget
 from . import state_utils as _state_utils
 from .method.metric_targets import metric_pass_set as _metric_pass_set  # noqa: F401  (re-export for tests)
@@ -205,7 +205,7 @@ class AutoresearchRunner(RunnerAegisMixin, RunnerKnowledgeMixin):
               sid, session, self._get_study().max_rounds)
         # v4: bind the study-scoped trace for the whole lifecycle so
         # every log line + emitted event carries trace_id.
-        from ..observability import bind_trace
+        from strategy_research.foundation.observability import bind_trace
         with bind_trace(trace_id=self._trace_id, study_id=sid):
             reason = await self._run_lifecycle(sid, session)
             self._emit_directive(sid, session, reason)
@@ -956,7 +956,7 @@ class AutoresearchRunner(RunnerAegisMixin, RunnerKnowledgeMixin):
 
         Overridable for tests to stub round execution.
         """
-        from ..observability import bind_trace, get_trace_context
+        from strategy_research.foundation.observability import bind_trace, get_trace_context
 
         # v4: ensure a trace_id exists for the round (study-scoped stable
         # id: generated once per study, reused across rounds so all rounds
@@ -1165,7 +1165,7 @@ class AutoresearchRunner(RunnerAegisMixin, RunnerKnowledgeMixin):
         emitter 为 NullEmitter（无 service 接线，如 CLI 直跑）时下游
         no-op，本回调退化为纯过滤开销。
         """
-        from ..observability import (
+        from strategy_research.foundation.observability import (
             SUMMARY_EVENT_TYPES,
             strip_llm_request_fields,
         )

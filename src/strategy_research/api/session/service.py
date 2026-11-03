@@ -591,7 +591,7 @@ class SessionService:
         trace context set here is task-scoped and auto-discarded on
         completion -- no manual reset needed.
         """
-        from ...core.observability.trace import _session_id, _trace_id
+        from strategy_research.foundation.observability.trace import _session_id, _trace_id
         _trace_id.set(attempt.attempt_id or uuid.uuid4().hex[:12])
         _session_id.set(session_id)
         logger.info("[EXEC] start attempt=%s session=%s", attempt.attempt_id, session_id)
@@ -689,7 +689,7 @@ class SessionService:
                     )
                     # C1.3: hanging events for observability
                     try:
-                        from ...core.observability.hanging_events import record_event
+                        from strategy_research.foundation.observability.hanging_events import record_event
                         record_event(
                             "chat_attempt_stall",
                             session_id=session_id,

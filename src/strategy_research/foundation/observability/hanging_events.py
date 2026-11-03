@@ -17,7 +17,7 @@ import time
 from pathlib import Path
 from typing import Any
 
-from ..storage.sqlite import resolve_db_path
+from strategy_research.core.storage.sqlite import resolve_db_path
 
 _DB_PATH_ENV = "QUANTNODES_RESEARCH_GOAL_DB_PATH"
 

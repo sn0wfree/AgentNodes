@@ -18,8 +18,8 @@ from pathlib import Path
 
 import pytest
 
-from strategy_research.core import observability as obs
-from strategy_research.core.observability import (
+from strategy_research.foundation import observability as obs
+from strategy_research.foundation.observability import (
     SUMMARY_EVENT_TYPES,
     strip_llm_request_fields,
 )
@@ -246,7 +246,7 @@ def test_runner_sink_strips_llm_request_large_fields(tmp_path):
 
 def test_runner_sink_attaches_trace_context(tmp_path):
     """sink 走 self._emit → emit_with_trace，事件应带 ContextVar 的 trace 字段。"""
-    from strategy_research.core.observability import bind_trace
+    from strategy_research.foundation.observability import bind_trace
 
     emitter = _RecordingEmitter()
     runner, store = _runner_with(emitter, tmp_path)

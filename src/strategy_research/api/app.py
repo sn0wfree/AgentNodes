@@ -40,7 +40,7 @@ def create_app(
     # 全部由 configure_logging 统一解析。默认文本格式自带 trace 字段
     # （trace_id/session_id/study_id/round_num），SR_LOG_JSON=1 切 JSON。
     # v2 §14.2: hypotheses 默认走 SQLite（旧 JSON 不迁移、不读取）。
-    from ..core.observability import configure_logging
+    from strategy_research.foundation.observability import configure_logging
     configure_logging("web")
     logger.info("[STARTUP] create_app called")
 

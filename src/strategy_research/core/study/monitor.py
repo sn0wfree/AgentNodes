@@ -10,7 +10,7 @@ import time
 from pathlib import Path
 from typing import Any
 
-from ..observability.logging_setup import dual_log
+from strategy_research.foundation.observability.logging_setup import dual_log
 
 logger = logging.getLogger(__name__)
 

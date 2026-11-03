@@ -334,7 +334,7 @@ class GoalWorkflowRunner:
         on_event（executor.py 已传给 AgentLoop），但 runtime 调用时没传
         （2026-11-02 接线，docs/study-goal-agent-events-design-20261102.md）。
         """
-        from ..observability import strip_llm_request_fields
+        from strategy_research.foundation.observability import strip_llm_request_fields
 
         def on_event(event_type: str, data: dict) -> None:
             self._event_bus.emit(

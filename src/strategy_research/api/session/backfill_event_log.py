@@ -325,7 +325,7 @@ def main() -> None:
 
     # 统一入口（docs/logging-unified-entry-design-20261102.md §4.4）：
     # script 面 console → stdout，日志随 run_bg 重定向进 run.log。
-    from ...core.observability import configure_logging
+    from strategy_research.foundation.observability import configure_logging
     configure_logging(
         "script",
         level=logging.DEBUG if args.verbose else logging.INFO,

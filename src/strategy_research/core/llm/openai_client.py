@@ -591,10 +591,10 @@ class OpenAICompatClient:
     def _check_wallclock(self, deadline: float | None) -> None:
         """Raise LLMTimeoutError once the deadline passed (retries included)."""
         if deadline is not None and time.monotonic() > deadline:
-            from ..observability.trace import _session_id
+            from strategy_research.foundation.observability.trace import _session_id
             # 接缝加固：hanging_events 是平台基础设施（observability），
             # 不是研究域件——平台不得 import core.study。
-            from ..observability.hanging_events import record_event
+            from strategy_research.foundation.observability.hanging_events import record_event
             record_event(
                 "wallclock_timeout",
                 session_id=_session_id.get(),

@@ -157,7 +157,7 @@ def main(
     # stderr handler（trace 过滤 + 对应格式）；默认（未设）完全不装配，
     # 与 TUI/界面输出（print/rich 走 stdout）互不干扰，逐字节同从前。
     try:
-        from strategy_research.core.observability import configure_logging
+        from strategy_research.foundation.observability import configure_logging
 
         configure_logging("cli")
     except Exception:  # noqa: BLE001 — 日志装配失败不能阻断 CLI

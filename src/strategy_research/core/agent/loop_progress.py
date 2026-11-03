@@ -170,7 +170,7 @@ class LoopProgressMixin:
             return False
 
         # 1. Log + side-effects (unchanged behaviour for tracing).
-        from ..observability.hanging_events import record_event
+        from strategy_research.foundation.observability.hanging_events import record_event
         record_event(
             "no_progress",
             session_id=getattr(self, "session_id", None),

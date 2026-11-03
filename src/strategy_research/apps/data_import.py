@@ -25,7 +25,7 @@ from typing import Optional
 
 import pandas as pd
 
-from strategy_research.core.observability.logging_setup import dual_log
+from strategy_research.foundation.observability.logging_setup import dual_log
 from strategy_research.core.db import (
     compute_data_fingerprint,
     get_last_import_date,

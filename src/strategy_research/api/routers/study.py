@@ -131,7 +131,7 @@ async def _study_dump(session_id: str, study_id: str | None) -> dict:
 
     hanging_signals: dict[str, int] = {}
     try:
-        from ...core.observability.hanging_events import HangingEventsStore
+        from strategy_research.foundation.observability.hanging_events import HangingEventsStore
         with HangingEventsStore() as hes:
             hanging_signals = hes.count_since(session_id=session_id, hours=24)
     except Exception:
@@ -1202,7 +1202,7 @@ async def study_hanging_events(
     normally.
     """
     _owned_study(request, study_id)
-    from ...core.observability import hanging_events as he
+    from strategy_research.foundation.observability import hanging_events as he
     with he.HangingEventsStore() as store:
         by_type = store.count_since(study_id=study_id, hours=hours)
         recent = store.list_recent(study_id=study_id, hours=hours, limit=limit)

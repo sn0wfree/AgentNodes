@@ -150,12 +150,12 @@ class EventStore:
         """
         merged = dict(data)
         try:
-            from ...core.observability.trace import (
+            from strategy_research.foundation.observability.trace import (
                 _round_num,
                 _study_id,
                 _trace_id,
             )
-            from ...core.observability.trace import (
+            from strategy_research.foundation.observability.trace import (
                 _session_id as _ctx_session,
             )
             if "trace_id" not in merged:
@@ -285,12 +285,12 @@ class EventStore:
             event.time_created = time.time()
         # C3: inject trace context
         try:
-            from ...core.observability.trace import (
+            from strategy_research.foundation.observability.trace import (
                 _round_num,
                 _study_id,
                 _trace_id,
             )
-            from ...core.observability.trace import (
+            from strategy_research.foundation.observability.trace import (
                 _session_id as _ctx_session,
             )
             if "trace_id" not in event.data:
