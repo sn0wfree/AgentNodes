@@ -43,7 +43,7 @@ def cmd_history(*, console: Any = None, limit: int = 10) -> int:
     """
     console = _resolve_console(console)
     try:
-        from strategy_research.core.session.unified import list_sessions
+        from strategy_research.kernel.session.unified import list_sessions
         sessions = list_sessions(limit=limit)
     except Exception as exc:  # noqa: BLE001
         console.print(f"[red]/history failed:[/red] {exc}")
@@ -74,7 +74,7 @@ def cmd_search(query: str, *, console: Any = None, limit: int = 10) -> int:
         console.print("[red]Usage:[/red] /search <query>")
         return 1
     try:
-        from strategy_research.core.session.unified import search_messages
+        from strategy_research.kernel.session.unified import search_messages
         matches = search_messages(query, limit=limit)
     except Exception as exc:  # noqa: BLE001
         console.print(f"[red]/search failed:[/red] {exc}")

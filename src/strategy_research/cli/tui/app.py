@@ -227,7 +227,7 @@ class ResearchApp(App):
         returned "(untitled)".
         """
         try:
-            from strategy_research.core.session.unified import list_sessions
+            from strategy_research.kernel.session.unified import list_sessions
             sessions = list_sessions(limit=1)
         except Exception:
             return None
@@ -258,7 +258,7 @@ class ResearchApp(App):
         early. The unified row has a real ``id``, so resume now functions.
         """
         try:
-            from strategy_research.core.session.unified import (
+            from strategy_research.kernel.session.unified import (
                 get_messages,
                 list_sessions,
             )

@@ -643,7 +643,7 @@ class MCPServer:
         def list_sessions(**kwargs: Any) -> str:
             # B4 Step 3: unified DB (the legacy SessionDB dataclass had no
             # `workspace` field, so this payload was mostly null).
-            from strategy_research.core.session.unified import list_sessions as _list
+            from strategy_research.kernel.session.unified import list_sessions as _list
             rows = _list()
             return json.dumps(
                 [{"id": r["id"], "title": r["title"]} for r in rows],
@@ -651,7 +651,7 @@ class MCPServer:
             )
 
         def search_messages(query: str = "", **kwargs: Any) -> str:
-            from strategy_research.core.session.unified import search_messages as _search
+            from strategy_research.kernel.session.unified import search_messages as _search
             return json.dumps(_search(query), ensure_ascii=False)
 
         self.register(MCPTool(

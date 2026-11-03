@@ -22,7 +22,7 @@ def cmd_session_list(args) -> int:
     原先走 ``core.session.db.SessionDB``（旧栈，schema 不同）。改用
     ``core.session.unified.list_sessions``——与 CLI/TUI/MCP 共用同一查询。
     """
-    from strategy_research.core.session.unified import list_sessions
+    from strategy_research.kernel.session.unified import list_sessions
 
     sessions = list_sessions(limit=args.limit)
 
@@ -48,7 +48,7 @@ def cmd_session_show(args) -> int:
     ``msg.timestamp``——旧 dataclass 根本没有这两个字段，所以它一直是坏的
     （AttributeError）。统一库的列名是 ``created_at`` / ``metadata_json``。
     """
-    from strategy_research.core.session.unified import get_messages, get_session
+    from strategy_research.kernel.session.unified import get_messages, get_session
 
     session = get_session(args.session_id)
     if not session:
@@ -84,7 +84,7 @@ def cmd_session_search(args) -> int:
     旧实现走 ``SessionDB`` 的 FTS5 索引；当前 Web 搜索端点已经改用 LIKE
     （trigram 分词器行为问题），这里跟随线上语义，不重新引入第二套索引。
     """
-    from strategy_research.core.session.unified import search_messages
+    from strategy_research.kernel.session.unified import search_messages
 
     results = search_messages(args.query, limit=args.limit)
 
@@ -104,7 +104,7 @@ def cmd_session_search(args) -> int:
 
 def cmd_session_delete(args) -> int:
     """删除会话（统一库，B4 Step 3）。"""
-    from strategy_research.core.session.unified import delete_session, get_session
+    from strategy_research.kernel.session.unified import delete_session, get_session
 
     if not get_session(args.session_id):
         print(f"会话 {args.session_id} 不存在")

@@ -12,7 +12,7 @@ from __future__ import annotations
 import sqlite3
 from pathlib import Path
 
-from strategy_research.core.session.unified import list_sessions
+from strategy_research.kernel.session.unified import list_sessions
 
 
 def _make_db(path: Path, rows: list[tuple]) -> None:
@@ -94,7 +94,7 @@ def _seed_with_messages(path: Path) -> None:
 
 def test_get_session_returns_real_columns(tmp_path: Path):
     """The legacy dataclass had no session_id/title/workspace; this does."""
-    from strategy_research.core.session.unified import get_session
+    from strategy_research.kernel.session.unified import get_session
 
     db = tmp_path / "s.db"
     _seed_with_messages(db)
@@ -105,7 +105,7 @@ def test_get_session_returns_real_columns(tmp_path: Path):
 
 
 def test_get_session_missing_returns_none(tmp_path: Path):
-    from strategy_research.core.session.unified import get_session
+    from strategy_research.kernel.session.unified import get_session
 
     db = tmp_path / "s.db"
     _seed_with_messages(db)
@@ -114,7 +114,7 @@ def test_get_session_missing_returns_none(tmp_path: Path):
 
 def test_get_messages_uses_created_at(tmp_path: Path):
     """The legacy field was `timestamp`; the unified column is created_at."""
-    from strategy_research.core.session.unified import get_messages
+    from strategy_research.kernel.session.unified import get_messages
 
     db = tmp_path / "s.db"
     _seed_with_messages(db)
@@ -126,7 +126,7 @@ def test_get_messages_uses_created_at(tmp_path: Path):
 
 
 def test_get_messages_ordered_by_seq(tmp_path: Path):
-    from strategy_research.core.session.unified import get_messages
+    from strategy_research.kernel.session.unified import get_messages
 
     db = tmp_path / "s.db"
     _seed_with_messages(db)
@@ -135,7 +135,7 @@ def test_get_messages_ordered_by_seq(tmp_path: Path):
 
 
 def test_search_messages_like(tmp_path: Path):
-    from strategy_research.core.session.unified import search_messages
+    from strategy_research.kernel.session.unified import search_messages
 
     db = tmp_path / "s.db"
     _seed_with_messages(db)
@@ -145,7 +145,7 @@ def test_search_messages_like(tmp_path: Path):
 
 
 def test_search_messages_blank_query_returns_empty(tmp_path: Path):
-    from strategy_research.core.session.unified import search_messages
+    from strategy_research.kernel.session.unified import search_messages
 
     db = tmp_path / "s.db"
     _seed_with_messages(db)
@@ -153,7 +153,7 @@ def test_search_messages_blank_query_returns_empty(tmp_path: Path):
 
 
 def test_delete_session_removes_row_and_messages(tmp_path: Path):
-    from strategy_research.core.session.unified import (
+    from strategy_research.kernel.session.unified import (
         delete_session,
         get_messages,
         get_session,
@@ -167,7 +167,7 @@ def test_delete_session_removes_row_and_messages(tmp_path: Path):
 
 
 def test_delete_missing_session_returns_false(tmp_path: Path):
-    from strategy_research.core.session.unified import delete_session
+    from strategy_research.kernel.session.unified import delete_session
 
     db = tmp_path / "s.db"
     _seed_with_messages(db)
