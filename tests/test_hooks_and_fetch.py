@@ -19,7 +19,7 @@ from strategy_research.core.hooks.composite import (
     NoOpHook,
 )
 from strategy_research.core.hooks.context import AgentHookContext
-from strategy_research.core.web import fetch as web_fetch
+from strategy_research.foundation.web import fetch as web_fetch
 
 
 # ── CompositeHook ───────────────────────────────────────────

@@ -11,7 +11,7 @@ import json
 
 from fastapi import APIRouter, HTTPException, Query
 
-from ...core.web.minimax_search import (
+from strategy_research.foundation.web.minimax_search import (
     has_minimax_credentials,
     minimax_search,
 )

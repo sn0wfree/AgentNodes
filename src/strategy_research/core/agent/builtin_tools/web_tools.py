@@ -66,7 +66,7 @@ class WebSearchTool(BaseTool):
         # the lookup; if neither is configured the dispatcher returns an
         # explicit error JSON to the agent.
         try:
-            from ...web import minimax_search  # noqa: F401
+            from strategy_research.foundation.web import minimax_search  # noqa: F401
             return True
         except ImportError:
             pass
@@ -82,7 +82,7 @@ class WebSearchTool(BaseTool):
         query: str,
         max_results: int = 10,
     ) -> str:
-        from ...web.search import web_search
+        from strategy_research.foundation.web.search import web_search
         if not query:
             return err_actionable(
                 "missing required parameter 'query'",
@@ -138,7 +138,7 @@ class ReadUrlTool(BaseTool):
         url: str,
         max_chars: int = 10_000,
     ) -> str:
-        from ...web.fetch import read_url
+        from strategy_research.foundation.web.fetch import read_url
         if not url:
             return err_actionable(
                 "missing required parameter 'url'",
@@ -201,7 +201,7 @@ class ReadDocumentTool(BaseTool):
         path: str,
         max_pages: int = 50,
     ) -> str:
-        from ...web.pdf import read_document
+        from strategy_research.foundation.web.pdf import read_document
         if not path:
             return err_actionable(
                 "missing required parameter 'path'",
