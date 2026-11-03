@@ -163,13 +163,13 @@ class DAGPlanner:
 
     def _llm_is_available(self) -> bool:
         try:
-            from .role_factory import should_use_real_llm
+            from strategy_research.core.agent.role_factory import should_use_real_llm
             return should_use_real_llm()
         except Exception:  # noqa: BLE001
             return False
 
     def _call_llm(self, system_prompt: str, user_prompt: str) -> str:
-        from .role_factory import run_agent_via_llm
+        from strategy_research.core.agent.role_factory import run_agent_via_llm
 
         # run_agent_via_llm needs workspace + strategy_name; pass empty
         # workspace (no tools needed for planner).

@@ -297,24 +297,6 @@ class TestMetricsObserver:
 class TestBranchWiring:
     """SwarmRuntime evaluates branches and applies skip/retry (P3.7)."""
 
-    def _make_controller(self, outputs: dict[str, str]):
-        """Build a controller whose agents return fixed JSON outputs."""
-        class _StubExecutor:
-            def __init__(self, agent_id, out):
-                self.agent_id = agent_id
-                self.out = out
-
-            def execute(self, agent_call, task, workspace):
-                return self.out
-
-        from strategy_research.core.workflow.controller import WorkflowController
-
-        class _StubController(WorkflowController):
-            def execute_agent(self, agent_call, task, workspace=None):
-                return outputs.get(agent_call.agent_name, "{}")
-
-        return _StubController(registry=mock.MagicMock(), adj={}, config=mock.MagicMock())
-
     def test_layer_results_parses_nested_answer(self):
         """_build_layer_results merges inner answer dict for output.field."""
         runtime = SwarmRuntime()
@@ -389,69 +371,6 @@ class TestProgressTracking:
 class TestResumeAndContinue:
     """GoalWorkflowRunner.resume_and_continue: real resume from
     a saved checkpoint, reusing the existing goal_id."""
-
-    def _setup_resume(self, tmp_path, monkeypatch):
-        """Build a runner with a saved checkpoint + stub controller.
-
-        Returns (runner, executed_agent_ids) where executed_agent_ids
-        records which agents SwarmRuntime actually executed (i.e.
-        excludes the pre-completed ones).
-        """
-        from strategy_research.core.goal.workflow import (
-            GoalAgentConfig,
-            GoalWorkflowConfig,
-            GoalWorkflowGoalConfig,
-        )
-        from strategy_research.core.workflow.controller import WorkflowController
-
-        executed: list[str] = []
-
-        class _StubController(WorkflowController):
-            def execute_agent(self, agent_call, task, workspace=None):
-                executed.append(agent_call.agent_name)
-                return '{"answer": "stub"}'
-
-        config = GoalWorkflowConfig(
-            name="wf",
-            description="",
-            agents=[
-                GoalAgentConfig(id="a", prompt_file=".prompts/a.md"),
-                GoalAgentConfig(id="b", prompt_file=".prompts/b.md"),
-                GoalAgentConfig(id="c", prompt_file=".prompts/c.md"),
-            ],
-            dag={"a": [], "b": ["a"], "c": ["a", "b"]},
-            goal=GoalWorkflowGoalConfig(default_criteria=["c1"]),
-        )
-
-        # Point checkpoint store at tmp_path so the test is hermetic
-        monkeypatch.setenv("STRATEGY_RESEARCH_CHECKPOINT_BASE_DIR", str(tmp_path))
-
-        runner = GoalWorkflowRunner(
-            config=config, session_id="s_resume",
-        )
-        runner._goal_id = "g_resume"
-
-        # Save a checkpoint: layer 0 ('a') completed, layer 1 about
-        # to execute next.
-        runner._state.current_layer = 1  # 1-based, hook convention
-        runner._state.evidence_count = 0
-        runner._state.agent_statuses = {"a": "success"}
-        from strategy_research.core.goal.workflow_hook import GoalWorkflowHook
-        hook = GoalWorkflowHook.__new__(GoalWorkflowHook)
-        hook._layer_results = {
-            "a": {"output": '{"answer": "pre-saved"}'},
-        }
-        hook._completed = False
-        hook._evidence_count = 0
-        runner._hook = hook
-        runner.checkpoint()
-
-        # Stub the SwarmRuntime.build_controller via runner._build_controller
-        runner._build_controller = lambda: _StubController(
-            registry=mock.MagicMock(), adj={}, config=mock.MagicMock(),
-        )
-
-        return runner, executed
 
     def test_resume_raises_when_no_checkpoint(self, tmp_path, monkeypatch):
         """Calling resume_and_continue without a checkpoint must raise."""

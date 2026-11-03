@@ -82,7 +82,7 @@ def _find_active_workflow_runner(session_id: str) -> tuple[str, Any] | None:
     matches we return ``(goal_id, runner)``.
     """
     try:
-        from .workflow import _active_runners, _prune_runners
+        from ..routers.workflow import _active_runners, _prune_runners
 
         _prune_runners()
         for goal_id, entry in list(_active_runners.items()):

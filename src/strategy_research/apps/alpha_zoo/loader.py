@@ -181,7 +181,7 @@ def compute_alpha(alpha_id: str, panel: dict[str, pd.DataFrame]) -> pd.DataFrame
     yaml_file = _find_yaml_file(zoo_name, alpha_name)
     if yaml_file:
         try:
-            from .alpha_zoo_yaml import compute_alpha_from_yaml, load_alpha_yaml
+            from strategy_research.apps.alpha_zoo_yaml import compute_alpha_from_yaml, load_alpha_yaml
             config = load_alpha_yaml(yaml_file)
             result = compute_alpha_from_yaml(config, panel)
             _validate_result(result, alpha_id, expected_shape, source="yaml")

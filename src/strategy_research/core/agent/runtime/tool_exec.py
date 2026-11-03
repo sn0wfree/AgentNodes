@@ -90,7 +90,7 @@ def render_history_output(
     if max_chars is None:
         max_chars = DEFAULT_HISTORY_MAX
     try:
-        from .tool_result import from_any, render_for_llm
+        from ..tool_result import from_any, render_for_llm
 
         return render_for_llm(from_any(output), max_chars=max_chars or 0)
     except Exception:  # noqa: BLE001
