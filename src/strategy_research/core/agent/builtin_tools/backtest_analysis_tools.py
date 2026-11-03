@@ -92,7 +92,7 @@ def _load_benchmark_ohlcv(
             "missing workspace context", fix="AgentLoop 注入 workspace; 直接调用时传 ctx", tool=tool
         )
     try:
-        from ...db import get_connection
+        from strategy_research.apps.db import get_connection
 
         conn = get_connection(ctx.workspace)
     except Exception as exc:

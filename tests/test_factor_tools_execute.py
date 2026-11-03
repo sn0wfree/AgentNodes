@@ -65,7 +65,7 @@ def patch_data(monkeypatch, prices):
     """所有工具内联调 get_connection → 换成返回内存 DataFrame 的假连接。"""
     conn = _FakeConn(prices)
     monkeypatch.setattr(
-        "strategy_research.core.db.get_connection",
+        "strategy_research.apps.db.get_connection",
         lambda _ws: conn,
     )
     return conn
@@ -248,6 +248,6 @@ def test_load_ohlcv_db_open_failure(ctx, monkeypatch):
     def boom(_ws):
         raise RuntimeError("db down")
 
-    monkeypatch.setattr("strategy_research.core.db.get_connection", boom)
+    monkeypatch.setattr("strategy_research.apps.db.get_connection", boom)
     ok, conn, df, err = ft._load_ohlcv(ctx, "t")
     assert not ok and err and "db open failed" in err

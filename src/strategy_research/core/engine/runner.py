@@ -299,7 +299,7 @@ def run_engine_backtest(
     Returns:
         metrics dict
     """
-    from ..db import load_ohlcv_data
+    from strategy_research.apps.db import load_ohlcv_data
 
     codes = config.get("codes", [])
     start_date = config.get("start_date")

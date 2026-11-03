@@ -15,7 +15,7 @@ from typing import Optional
 
 import pandas as pd
 
-from strategy_research.core.db import (
+from strategy_research.apps.db import (
     save_backtest_result,
     save_nav_history,
     save_weight_history,
@@ -725,7 +725,7 @@ def evaluate_experiment(
 
     update_results_tsv(strategy_dir, run_name, metrics)
 
-    from strategy_research.core.db import get_connection
+    from strategy_research.apps.db import get_connection
     conn = get_connection(workspace_path)
     if conn is not None:
         try:

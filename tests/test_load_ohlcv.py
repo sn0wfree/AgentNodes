@@ -7,7 +7,7 @@ from pathlib import Path
 import pandas as pd
 import pytest
 
-from strategy_research.core.db import (
+from strategy_research.apps.db import (
     init_db,
     load_ohlcv_data,
     load_price_data,
@@ -175,7 +175,7 @@ class TestOhlcvVsPriceData:
         import pytest as _pytest
 
         with _pytest.raises(ImportError):
-            from strategy_research.core.db import save_price_data  # noqa: F401
+            from strategy_research.apps.db import save_price_data  # noqa: F401
 
 
 # ============================================================

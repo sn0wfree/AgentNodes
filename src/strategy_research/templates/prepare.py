@@ -50,7 +50,7 @@ def load_data() -> dict:
     # 尝试从 DuckDB 加载
     try:
         sys.path.insert(0, str(Path(__file__).parent.parent.parent))
-        from strategy_research.core.db import load_price_data
+        from strategy_research.apps.db import load_price_data
         prices = load_price_data(workspace_dir, strategy_name)
         if not prices.empty:
             print(f"✓ 从 DuckDB 加载: {prices.shape[1]} 个资产, {prices.shape[0]} 个日期")

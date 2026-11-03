@@ -274,7 +274,7 @@ def _bootstrap_workspace(workspace: Path) -> None:
     db_path = workspace / "data.duckdb"
     if not db_path.exists():
         try:
-            from ...core.db import init_db
+            from strategy_research.apps.db import init_db
             init_db(workspace)
         except Exception as exc:
             logger.warning("Failed to init DuckDB: %s", exc)

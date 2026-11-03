@@ -14,7 +14,7 @@ import yaml
 
 logger = logging.getLogger(__name__)
 
-from strategy_research.core.db import load_price_data
+from strategy_research.apps.db import load_price_data
 from strategy_research.core.utils.backtest_config import (
     BacktestConfig,
     CostConfig,
@@ -115,7 +115,7 @@ def _is_data_fresh(workspace_path: Path, strategy_name: str, end_date: str) -> b
     """Check if DuckDB data is fresh enough (ends within 7 days of end_date)."""
     from datetime import datetime
     try:
-        from strategy_research.core.db import get_connection
+        from strategy_research.apps.db import get_connection
         conn = get_connection(workspace_path, read_only=True)
         if conn is None:
             return False
@@ -184,7 +184,7 @@ def load_data(cfg: dict, workspace_path: Path) -> pd.DataFrame:
             try:
                 from strategy_research.apps.data_source.registry import resolve_loader
                 from strategy_research.apps.data_source.utils import detect_market
-                from strategy_research.core.db import save_ohlcv_to_db
+                from strategy_research.apps.db import save_ohlcv_to_db
 
                 market = detect_market(codes[0]) if codes else "a_share"
                 loader = resolve_loader(market)  # auto-select best source
@@ -210,7 +210,7 @@ def load_data(cfg: dict, workspace_path: Path) -> pd.DataFrame:
         try:
             from strategy_research.apps.data_source.registry import resolve_loader
             from strategy_research.apps.data_source.utils import detect_market
-            from strategy_research.core.db import save_ohlcv_to_db
+            from strategy_research.apps.db import save_ohlcv_to_db
 
             market = detect_market(codes[0]) if codes else "a_share"
             loader = resolve_loader(market)
@@ -312,7 +312,7 @@ class FactorStrategy:
                 "FactorStrategy needs workspace_path and strategy_name to load OHLCV. "
                 "Pass them to create_strategy(cfg, workspace_path=...)."
             )
-        from strategy_research.core.db import get_connection
+        from strategy_research.apps.db import get_connection
 
         conn = get_connection(self.workspace_path, read_only=True)
         if conn is None:

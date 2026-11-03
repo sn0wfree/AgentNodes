@@ -1,4 +1,4 @@
-"""H 档补测 —— `core/db.py` 的 execute 异常降级分支（FakeConn 模式）。
+"""H 档补测 —— `apps/db.py` 的 execute 异常降级分支（FakeConn 模式）。
 
 这批分支的契约：**execute 抛异常 → print 警告 + 关连接 + 返回 False/空值，
 绝不向上抛**。每个写函数和读函数各有一份，此前全部零覆盖——它们是
@@ -13,7 +13,7 @@ from pathlib import Path
 import pandas as pd
 import pytest
 
-from strategy_research.core import db
+from strategy_research.apps import db
 
 
 class BoomConn:

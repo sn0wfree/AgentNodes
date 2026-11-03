@@ -29,7 +29,7 @@ def _load_nav_from_duckdb(run_dir: Path) -> "pd.Series | None":
     Strategy-research stores NAV in DuckDB via ``save_nav_history``.
     """
     try:
-        from ...core.db import load_nav_history
+        from strategy_research.apps.db import load_nav_history
         # Best effort: extract workspace path and strategy name from run_dir
         # run_dir: <workspace>/strategies/<strategy>/runs/<run>
         parts = run_dir.parts

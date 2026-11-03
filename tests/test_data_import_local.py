@@ -107,7 +107,7 @@ def test_long_to_map_casts_volume_to_float():
 
 @pytest.fixture
 def ws(tmp_path):
-    from strategy_research.core import db
+    from strategy_research.apps import db
     assert db.init_db(tmp_path) is True
     return tmp_path
 
@@ -118,7 +118,7 @@ def test_import_csv_roundtrip(ws):
     ok = di.import_csv_ohlcv(ws, "s1", csv)
     assert ok is True
 
-    from strategy_research.core import db
+    from strategy_research.apps import db
     panel = db.load_price_data(ws, "s1")
     assert panel is not None and not panel.empty
 
@@ -159,7 +159,7 @@ def test_import_parquet_roundtrip(ws):
     ok = di.import_parquet_ohlcv(ws, "s1", pq)
     assert ok is True
 
-    from strategy_research.core import db
+    from strategy_research.apps import db
     panel = db.load_price_data(ws, "s1")
     assert panel is not None and not panel.empty
 

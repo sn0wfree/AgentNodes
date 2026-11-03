@@ -438,7 +438,7 @@ rebalance:
         import numpy as np
         import pandas as pd
 
-        from strategy_research.core.db import save_ohlcv_to_db
+        from strategy_research.apps.db import save_ohlcv_to_db
 
         codes = ["000001.SZ", "600519.SH", "300015.SZ"]
         dates = pd.bdate_range("2023-01-02", periods=300)
@@ -489,7 +489,7 @@ class TestComputeFactorTool:
     def _populate_ohlcv(self, workspace: Path):
         """Insert sample OHLCV data into workspace DuckDB."""
         try:
-            from strategy_research.core.db import get_connection
+            from strategy_research.apps.db import get_connection
         except ImportError:
             pytest.skip("db module not available")
         conn = get_connection(workspace)
@@ -532,7 +532,7 @@ class TestComputeFactorTool:
 
     def test_empty_ohlcv(self, workspace: Path):
         try:
-            from strategy_research.core.db import get_connection
+            from strategy_research.apps.db import get_connection
             conn = get_connection(workspace)
             conn.execute("""
                 CREATE TABLE IF NOT EXISTS ohlcv (

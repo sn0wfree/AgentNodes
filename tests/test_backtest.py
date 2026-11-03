@@ -401,7 +401,7 @@ def test_run_backtest_script_successful_run(monkeypatch, tmp_path):
     )
 
     # 2. mock DuckDB save
-    from strategy_research.core import db as db_module
+    from strategy_research.apps import db as db_module
 
     def fake_save_backtest_result(**kwargs):
         return None
@@ -506,7 +506,7 @@ def test_evaluate_experiment_keep_status(monkeypatch, tmp_path):
     from strategy_research.apps import backtest as bt_module
     monkeypatch.setattr(bt_module, "git_commit", lambda *a, **kw: True)
 
-    from strategy_research.core import db as db_module
+    from strategy_research.apps import db as db_module
 
     class FakeConn:
         def execute(self, *args, **kwargs):

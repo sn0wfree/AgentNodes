@@ -486,7 +486,7 @@ class TestBenchmarkComparison:
         import numpy as np
         import pandas as pd
 
-        from strategy_research.core.db import save_ohlcv_to_db
+        from strategy_research.apps.db import save_ohlcv_to_db
 
         # Strategy equity curve (steady 0.1%/day)
         dates = pd.date_range("2023-01-02", periods=100, freq="B")
@@ -566,7 +566,7 @@ class TestListDataSourcesTool:
 
 class TestImportDataTool:
     def test_import_basic(self, workspace: Path):
-        from strategy_research.core.db import init_db
+        from strategy_research.apps.db import init_db
         init_db(workspace)
 
         tool = ImportDataTool()
@@ -585,7 +585,7 @@ class TestImportDataTool:
         assert result["imported"] == 2
 
     def test_import_empty_data(self, workspace: Path):
-        from strategy_research.core.db import init_db
+        from strategy_research.apps.db import init_db
         init_db(workspace)
         tool = ImportDataTool()
         result = parse_result(tool.execute(
@@ -707,7 +707,7 @@ class TestToolDescriptions:
 class TestFullWorkflow:
     def test_import_then_analyze(self, workspace: Path):
         """Test full workflow: import data -> factor analysis."""
-        from strategy_research.core.db import init_db
+        from strategy_research.apps.db import init_db
         init_db(workspace)
 
         # Step 1: Import data with variation

@@ -145,7 +145,7 @@ def create_app(
     # Initialize DuckDB on startup
     if workspace_path:
         try:
-            from ..core.db import init_db
+            from strategy_research.apps.db import init_db
             init_db(workspace_path)
             logger.info("DuckDB initialized at %s", workspace_path)
         except Exception as exc:

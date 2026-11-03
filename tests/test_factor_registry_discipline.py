@@ -14,7 +14,7 @@ from pathlib import Path
 import duckdb
 import pytest
 
-from strategy_research.core import db
+from strategy_research.apps import db
 from strategy_research.apps.compute_factor import (
     COMPLEXITY_WEIGHTS,
     analyze_complexity,

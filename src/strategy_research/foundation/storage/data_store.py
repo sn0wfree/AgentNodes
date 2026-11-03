@@ -32,7 +32,7 @@ import pandas as pd
 class DataStore(Protocol):
     """Duck-typed persistence facade.
 
-    Mirrors the surface area of ``core/db.py`` so a ``DuckDBDataStore``
+    Mirrors the surface area of ``apps/db.py`` so a ``DuckDBDataStore``
     can be a thin shim around it. New providers (SQLite, in-memory)
     implement the same Protocol — consumers stay unchanged.
     """

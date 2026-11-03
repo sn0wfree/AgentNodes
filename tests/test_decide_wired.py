@@ -33,7 +33,7 @@ def _build_workspace(tmp_path: Path) -> Path:
     asserts on).
     """
     from strategy_research.apps.data_import import generate_sample_ohlcv_data
-    from strategy_research.core.db import init_db, save_ohlcv_to_db
+    from strategy_research.apps.db import init_db, save_ohlcv_to_db
 
     workspace = tmp_path / "ws"
     workspace.mkdir(exist_ok=True)

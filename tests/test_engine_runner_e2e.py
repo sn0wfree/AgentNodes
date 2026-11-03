@@ -227,7 +227,7 @@ class TestRunBacktestE2E:
         code = "600000.SH"
         data_map = {code: self._make_ohlcv(code)}
 
-        with patch("strategy_research.core.db.load_ohlcv_data", return_value=data_map):
+        with patch("strategy_research.apps.db.load_ohlcv_data", return_value=data_map):
             metrics = run_engine_backtest(
                 workspace_path=tmp_path,
                 strategy_name="test",
@@ -256,7 +256,7 @@ class TestRunBacktestE2E:
                     return {code: pd.Series(1.0, index=df.index) for code, df in data_map.items()}
         """))
 
-        with patch("strategy_research.core.db.load_ohlcv_data", return_value=data_map):
+        with patch("strategy_research.apps.db.load_ohlcv_data", return_value=data_map):
             metrics = run_engine_backtest(
                 workspace_path=tmp_path,
                 strategy_name="test",
@@ -269,7 +269,7 @@ class TestRunBacktestE2E:
     def test_empty_data_raises(self, tmp_path):
         from strategy_research.core.engine.runner import run_engine_backtest
 
-        with patch("strategy_research.core.db.load_ohlcv_data", return_value={}):
+        with patch("strategy_research.apps.db.load_ohlcv_data", return_value={}):
             with pytest.raises(ValueError, match="No data found"):
                 run_engine_backtest(
                     workspace_path=tmp_path,
@@ -296,7 +296,7 @@ class TestRunBacktestE2E:
         code = "600000.SH"
         data_map = {code: self._make_ohlcv(code)}
 
-        with patch("strategy_research.core.db.load_ohlcv_data", return_value=data_map):
+        with patch("strategy_research.apps.db.load_ohlcv_data", return_value=data_map):
             metrics = run_engine_backtest(
                 workspace_path=tmp_path,
                 strategy_name="test",

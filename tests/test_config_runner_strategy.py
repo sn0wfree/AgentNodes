@@ -55,7 +55,7 @@ def test_load_long_ohlcv_requires_openable_db(tmp_path):
 
 
 def test_load_long_ohlcv_filters_to_configured_codes(tmp_path):
-    from strategy_research.core.db import init_db, save_ohlcv_to_db
+    from strategy_research.apps.db import init_db, save_ohlcv_to_db
 
     assert init_db(tmp_path) is True
     idx = pd.bdate_range("2024-01-01", periods=10)
@@ -73,7 +73,7 @@ def test_load_long_ohlcv_filters_to_configured_codes(tmp_path):
 
 
 def test_load_long_ohlcv_respects_date_cutoff(tmp_path):
-    from strategy_research.core.db import init_db, save_ohlcv_to_db
+    from strategy_research.apps.db import init_db, save_ohlcv_to_db
 
     assert init_db(tmp_path) is True
     idx = pd.bdate_range("2024-01-01", periods=20)

@@ -9,7 +9,7 @@ from pathlib import Path
 
 import pytest
 
-from strategy_research.core import db as _db
+from strategy_research.apps import db as _db
 from strategy_research.foundation.storage.duckdb_store import DuckDBDataStore
 
 

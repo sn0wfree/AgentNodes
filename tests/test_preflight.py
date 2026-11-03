@@ -179,7 +179,7 @@ class TestCheckOHLCVIntegrity:
 
     def test_skipped_when_no_price_data(self, tmp_path: Path):
         """无 price_data 时返回 skipped。"""
-        from strategy_research.core.db import init_db
+        from strategy_research.apps.db import init_db
         from strategy_research.apps.preflight import _check_ohlcv_integrity
 
         # 创建空的 DuckDB（无 price_data 行）
@@ -190,7 +190,7 @@ class TestCheckOHLCVIntegrity:
     def test_ready_for_ohlcv_data(self, tmp_path: Path):
         """OHLCV 完整时返回 ready。"""
         from strategy_research.apps.data_import import generate_sample_ohlcv_data
-        from strategy_research.core.db import init_db, save_ohlcv_data
+        from strategy_research.apps.db import init_db, save_ohlcv_data
         from strategy_research.apps.preflight import _check_ohlcv_integrity
 
         init_db(tmp_path)

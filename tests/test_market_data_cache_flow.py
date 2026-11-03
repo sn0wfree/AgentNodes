@@ -112,7 +112,7 @@ class TestPersistToDuckDB:
         assert result["persisted"] is True
         assert result["persisted_rows"] == 20
 
-        from strategy_research.core.db import get_connection, init_db
+        from strategy_research.apps.db import get_connection, init_db
         init_db(workspace)
         conn = get_connection(workspace)
         rows = conn.execute(
@@ -122,7 +122,7 @@ class TestPersistToDuckDB:
 
     def test_persist_strategy_partitioning(self, gmd, workspace):
         _run_get(gmd, ["600519.SH"], workspace=str(workspace), strategy_name="blue_chip")
-        from strategy_research.core.db import get_connection, init_db
+        from strategy_research.apps.db import get_connection, init_db
         init_db(workspace)
         conn = get_connection(workspace)
         rows = conn.execute(
@@ -146,7 +146,7 @@ class TestPersistToDuckDB:
         """INSERT OR REPLACE → same rows, no duplication."""
         _run_get(gmd, ["600519.SH"], workspace=str(workspace))
         _run_get(gmd, ["600519.SH"], workspace=str(workspace))
-        from strategy_research.core.db import get_connection, init_db
+        from strategy_research.apps.db import get_connection, init_db
         init_db(workspace)
         conn = get_connection(workspace)
         n = conn.execute(

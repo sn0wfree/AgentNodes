@@ -1,4 +1,4 @@
-"""Regression tests for core/db.py data-persistence helpers.
+"""Regression tests for apps/db.py data-persistence helpers.
 
 Covers the fixed `save_weight_history` / `save_nav_history` NameError
 (the DataFrame result was discarded before referencing ``FROM df``),
@@ -12,7 +12,7 @@ from pathlib import Path
 import pandas as pd
 import pytest
 
-from strategy_research.core import db
+from strategy_research.apps import db
 
 
 @pytest.fixture

@@ -1,4 +1,4 @@
-"""H 档补测第二批 —— `core/db.py` 的读取过滤分支与注册表契约。
+"""H 档补测第二批 —— `apps/db.py` 的读取过滤分支与注册表契约。
 
 第一批（test_db_crud_contract.py）覆盖了写→读往返；本文件补：
 - `load_ohlcv_data` 的 codes / start / end 过滤（bar-by-bar engine 的数据源）
@@ -15,7 +15,7 @@ from pathlib import Path
 import pandas as pd
 import pytest
 
-from strategy_research.core import db
+from strategy_research.apps import db
 
 
 @pytest.fixture

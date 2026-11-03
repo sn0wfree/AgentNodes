@@ -1,4 +1,4 @@
-"""H 档补测 —— `core/db.py` 的 CRUD 往返契约。
+"""H 档补测 —— `apps/db.py` 的 CRUD 往返契约。
 
 背景（2026-11-01 覆盖率复核）：conftest 的分档门禁只覆盖 A/B/C 三档
 （22,244 行），`core/` 顶层的研究工具模块（3,966 行）漏在门禁外，
@@ -15,7 +15,7 @@ from pathlib import Path
 import pandas as pd
 import pytest
 
-from strategy_research.core import db
+from strategy_research.apps import db
 
 
 @pytest.fixture

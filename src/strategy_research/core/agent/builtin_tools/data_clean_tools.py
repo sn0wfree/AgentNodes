@@ -94,7 +94,7 @@ class DataCleanTool(BaseTool):
 
         try:
             # 加载数据
-            from ...db import get_connection
+            from strategy_research.apps.db import get_connection
             from strategy_research.apps.tools.data_clean import clean_data
             if not (workspace / "data.duckdb").exists():
                 return err_actionable(
@@ -130,7 +130,7 @@ class DataCleanTool(BaseTool):
 
             # 如果不是 dry_run，保存结果
             if not dry_run:
-                from ...db import save_ohlcv_to_db
+                from strategy_research.apps.db import save_ohlcv_to_db
                 # 清空旧数据 (ohlcv 是视图不可 DELETE，直接清 price_data)
                 conn.execute(
                     "DELETE FROM price_data WHERE strategy_name = ?",

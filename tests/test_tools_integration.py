@@ -24,7 +24,7 @@ from strategy_research.core.agent.builtin_tools.data_tools import (
     ListDataSourcesTool,
 )
 from strategy_research.core.agent.tools import ToolContext
-from strategy_research.core.db import get_connection, init_db
+from strategy_research.apps.db import get_connection, init_db
 
 # ── Shared fixtures ───────────────────────────────────────────────────
 

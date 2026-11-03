@@ -23,7 +23,7 @@ from strategy_research.apps import data_readiness as dr
 
 def _seed(workspace: Path, strategy: str = "s1", codes=("A", "B"),
           periods: int = 120, clean: bool = True) -> None:
-    from strategy_research.core.db import save_ohlcv_to_db
+    from strategy_research.apps.db import save_ohlcv_to_db
 
     dates = pd.bdate_range("2023-01-02", periods=periods)
     rng = np.random.default_rng(11)
@@ -65,7 +65,7 @@ def test_c5_ok_for_clean_assets(tmp_path):
 
 def test_c5_fails_when_asset_is_all_nan(tmp_path):
     """某资产每条记录的 OHLC 都是 NaN → fail（残留脏数据）。"""
-    from strategy_research.core.db import save_ohlcv_to_db
+    from strategy_research.apps.db import save_ohlcv_to_db
 
     _seed(tmp_path, codes=("A",))
     ghost_dates = pd.bdate_range("2023-01-02", periods=5)
@@ -83,7 +83,7 @@ def test_c5_fails_when_asset_is_all_nan(tmp_path):
 
 def test_c5_partial_nan_is_not_a_failure(tmp_path):
     """只有少数行 NaN 是正常缺失，不能被判 fail。"""
-    from strategy_research.core.db import save_ohlcv_to_db
+    from strategy_research.apps.db import save_ohlcv_to_db
 
     _seed(tmp_path, codes=("A",))
     dates = pd.bdate_range("2023-06-01", periods=10)

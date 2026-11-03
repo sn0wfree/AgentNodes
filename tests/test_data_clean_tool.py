@@ -18,7 +18,7 @@ from strategy_research.core.agent.builtin_tools import (
     build_default_registry,
 )
 from strategy_research.core.agent.tools import ToolContext
-from strategy_research.core.db import get_connection, save_ohlcv_to_db
+from strategy_research.apps.db import get_connection, save_ohlcv_to_db
 
 
 @pytest.fixture

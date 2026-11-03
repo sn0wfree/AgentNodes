@@ -1,4 +1,4 @@
-"""H 档补测 —— `core/db.py` 的错误分支与迁移路径（第一批遗漏）。
+"""H 档补测 —— `apps/db.py` 的错误分支与迁移路径（第一批遗漏）。
 
 这些分支的共性：只在「坏了才走到」。测它们不是为了凑数，而是因为
 契约是「错误也返回 False/空值，不许抛」——调用方按这个契约写的
@@ -11,7 +11,7 @@ from pathlib import Path
 import pandas as pd
 import pytest
 
-from strategy_research.core import db
+from strategy_research.apps import db
 
 
 @pytest.fixture

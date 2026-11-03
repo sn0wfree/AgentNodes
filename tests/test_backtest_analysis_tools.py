@@ -273,7 +273,7 @@ class TestDrawdownAnalysis:
 
 
 def seed_benchmark(ws: Path, code: str, closes: list[float]) -> None:
-    from strategy_research.core.db import get_connection, init_db
+    from strategy_research.apps.db import get_connection, init_db
 
     init_db(ws)
     con = get_connection(ws)

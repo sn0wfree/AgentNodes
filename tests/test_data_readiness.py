@@ -16,7 +16,7 @@ def _seed_db(workspace: Path, strategy: str = "s1", codes=None, dates=None):
     """Seeds DuckDB with N-day OHLCV per code + one ghost (1-row) asset."""
     import numpy as np
 
-    from strategy_research.core.db import save_ohlcv_to_db
+    from strategy_research.apps.db import save_ohlcv_to_db
 
     codes = codes or ["000001.SZ", "600519.SH"]
     dates = dates or pd.bdate_range("2023-01-02", periods=270)

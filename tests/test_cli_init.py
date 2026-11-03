@@ -34,7 +34,7 @@ def _build_workspace(workspace_path: Path, strategy_name: str = "eval_strat") ->
     cmd_evaluate integration test suite has a deterministic fixture.
     """
     from strategy_research.apps.data_import import generate_sample_ohlcv_data
-    from strategy_research.core.db import init_db, save_ohlcv_to_db
+    from strategy_research.apps.db import init_db, save_ohlcv_to_db
 
     workspace_path.mkdir(exist_ok=True)
 

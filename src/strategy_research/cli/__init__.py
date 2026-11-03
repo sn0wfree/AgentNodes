@@ -521,7 +521,7 @@ def cmd_import(args: argparse.Namespace) -> int:
         print(f"❌ 不是有效的工作区: {path}")
         return 1
 
-    from strategy_research.core.db import init_db
+    from strategy_research.apps.db import init_db
 
     # 确保 DuckDB 初始化
     init_db(path)
@@ -551,7 +551,7 @@ def cmd_import(args: argparse.Namespace) -> int:
 
     if success:
         print("\n✅ 数据导入完成")
-        from strategy_research.core.db import get_price_data_info
+        from strategy_research.apps.db import get_price_data_info
         info = get_price_data_info(path, strategy_name)
         if info:
             print(f"   资产数: {info.get('n_assets', 0)}")

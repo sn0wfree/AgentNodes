@@ -55,7 +55,7 @@ LAYER_MEMBERSHIP: dict[str, str] = {
     "strategy_research.apps.data_source": "L2",
     "strategy_research.apps.data_import": "L2",
     "strategy_research.apps.data_readiness": "L2",
-    "strategy_research.core.db": "L2",
+    "strategy_research.apps.db": "L2",
     "strategy_research.apps.compute_factor": "L2",
     "strategy_research.apps.factor_validate": "L2",
     "strategy_research.apps.config_runner": "L2",

@@ -212,7 +212,7 @@ def test_evaluate_updates_metrics_status(tmp_path, monkeypatch):
         json.dumps({"calmar": 1.0, "status": "pending"}), encoding="utf-8")
     monkeypatch.setattr(bt, "update_results_tsv", lambda *a, **k: None)
 
-    from strategy_research.core import db as dbmod
+    from strategy_research.apps import db as dbmod
     monkeypatch.setattr(dbmod, "get_connection", lambda *a, **k: None)
 
     assert bt.evaluate_experiment(tmp_path, "s1", "run_0001", status="discard") is True

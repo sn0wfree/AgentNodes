@@ -18,7 +18,7 @@ import pandas as pd
 import pytest
 
 from strategy_research.apps import config_runner as cr
-from strategy_research.core import db
+from strategy_research.apps import db
 
 
 @pytest.fixture

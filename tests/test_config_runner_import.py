@@ -68,7 +68,7 @@ def _write_price_data_fixture(
     """
     import numpy as np
 
-    from strategy_research.core.db import save_ohlcv_to_db
+    from strategy_research.apps.db import save_ohlcv_to_db
 
     codes = codes or ["000001.SZ", "600519.SH", "300015.SZ"]
     dates = pd.bdate_range("2023-01-02", periods=300)
@@ -222,7 +222,7 @@ class TestAssetFilteringAndNaNDefenses:
     def _make_workspace(self, tmp_path, config_text: str, codes, strategy="e2e_strat"):
         import numpy as np
 
-        from strategy_research.core.db import save_ohlcv_to_db
+        from strategy_research.apps.db import save_ohlcv_to_db
 
         ws = tmp_path / "ws"
         ws.mkdir()

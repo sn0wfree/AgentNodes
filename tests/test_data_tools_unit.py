@@ -92,7 +92,7 @@ def test_check_data_db_open_failure(ctx, monkeypatch):
     def boom(_ws):
         raise RuntimeError("db down")
 
-    monkeypatch.setattr("strategy_research.core.db.get_connection", boom)
+    monkeypatch.setattr("strategy_research.apps.db.get_connection", boom)
     out = json.loads(CheckDataTool().execute(ctx=ctx, strategy_name="s1"))
     assert out["status"] == "error"
 

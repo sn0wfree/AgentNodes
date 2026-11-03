@@ -213,7 +213,7 @@ class GetMarketDataTool(BaseTool):
                             "data, set persist=False instead",
                         tool="get_market_data",
                     )
-                from ...db import save_ohlcv_to_db
+                from strategy_research.apps.db import save_ohlcv_to_db
 
                 persisted_rows = save_ohlcv_to_db(
                     Path(workspace), data, strategy_name=strategy_name
@@ -504,7 +504,7 @@ class ImportDataTool(BaseTool):
         try:
             from pathlib import Path
 
-            from ...db import get_connection, init_db
+            from strategy_research.apps.db import get_connection, init_db
 
             ws = Path(workspace)
             init_db(ws)

@@ -134,7 +134,7 @@ def test_explicit_codes_override_config(tmp_path):
     import numpy as np
     import pandas as pd
 
-    from strategy_research.core.db import save_ohlcv_to_db
+    from strategy_research.apps.db import save_ohlcv_to_db
 
     dates = pd.bdate_range("2023-01-02", periods=250)
     rng = np.random.default_rng(7)
