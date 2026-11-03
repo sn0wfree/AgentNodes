@@ -96,8 +96,9 @@
   <text x="534" y="850" class="bt">Preset 注册表（图 = 纯数据）</text>
   <text x="534" y="870" class="st">chat=退化图 ✅ · research=方法论图 ✅</text>
   <text x="534" y="890" class="sm">Tier0 冻结 ⏹ · D2 提案通道 ⏳</text>
-  <rect x="150" y="928" width="720" height="40" rx="9" class="box"/>
+  <rect x="150" y="928" width="720" height="58" rx="9" class="box"/>
   <text x="166" y="952" class="st">执行红线：图根 = turn 走 mailbox ✅ · 取消连坐 ✅ · fence 挂根 ✅ · 事件带 run_id ✅</text>
+  <text x="166" y="972" class="sm">能力面 kernel（24.6k）：AgentLoop（loop/tools）· context · hooks · permission · memory · skills —— react 节点的机制底座（分类审计 W1-1）</text>
   <rect x="40" y="982" width="26" height="22" rx="6" fill="#e0f2fe" stroke="#7dd3fc"/>
   <text x="53" y="998" class="num" fill="#0c4a6e">④</text>
   <text x="76" y="1000" class="lyr">平台数据（P-1…P-5）</text>
@@ -223,7 +224,7 @@
   <text x="946" y="1568" class="st mono">L2     2   6673     66    129</text>
   <text x="946" y="1588" class="st mono">L3     3  <tspan fill="#dc2626">92⚠</tspan>   1449    108</text>
   <text x="946" y="1608" class="st mono">L4     0    <tspan fill="#dc2626">4⚠</tspan>   <tspan fill="#dc2626">6⚠</tspan>    338</text>
-  <text x="946" y="1628" class="sm">红 = 上行违规（棘轮基线内 · 只降不升）</text>
+  <text x="946" y="1628" class="sm">红 = 棘轮内违规 ｜ 实跑 L3→L2=102（v7.2 归层后 · 口径 ADR-000 待定）</text>
   <rect x="930" y="1646" width="430" height="140" rx="9" class="boxa"/>
   <text x="946" y="1668" class="st" style="font-weight:600">上行违规 = 107 · 四簇棘轮 · 修复批次</text>
   <text x="946" y="1690" class="st">簇A L3→L2 = 92 → G2b 端口化（0.6/0.7）</text>
