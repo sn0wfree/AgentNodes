@@ -21,7 +21,7 @@ def _start_gateway_consumer() -> Any | None:
     不阻断服务启动。--reload 开发模式不启动（app 在 reloader 子进程重建）。
     """
     try:
-        from strategy_research.core.gateway import get_gateway
+        from strategy_research.kernel.gateway import get_gateway
         from strategy_research.kernel.orchestration import WorkKind
 
         gw = get_gateway()

@@ -3,7 +3,7 @@ from __future__ import annotations
 
 import pytest
 
-from strategy_research.core.gateway.entry_adapters import (
+from strategy_research.kernel.gateway.entry_adapters import (
     api_chat_request,
     cli_request,
     mcp_request,

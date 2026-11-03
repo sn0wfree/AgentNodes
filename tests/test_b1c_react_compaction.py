@@ -260,7 +260,7 @@ def test_make_compactor_rolls_back_when_persistence_fails(monkeypatch):
 
 
 def test_controller_builds_compactor_only_when_configured():
-    from strategy_research.core.gateway.session_controller import SessionController
+    from strategy_research.kernel.gateway.session_controller import SessionController
 
     class _EP:
         def iter_mailboxes(self):

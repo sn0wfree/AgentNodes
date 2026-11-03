@@ -21,8 +21,8 @@ from strategy_research.core.agent.builtin_tools.todo_tools import (
 from strategy_research.core.agent.context_providers import TodoContextProvider
 from strategy_research.kernel.context.hub import ContextHub
 from strategy_research.kernel.context.protocol import ContextQuery
-from strategy_research.core.gateway.gateway import Gateway
-from strategy_research.core.gateway.singleton import reset_gateway
+from strategy_research.kernel.gateway.gateway import Gateway
+from strategy_research.kernel.gateway.singleton import reset_gateway
 
 
 @pytest.fixture(autouse=True)
@@ -100,7 +100,7 @@ def test_gateway_without_hub_keeps_none():
 def test_singleton_assembles_hub_with_todos_provider():
     reset_gateway()
     try:
-        from strategy_research.core.gateway.singleton import get_gateway
+        from strategy_research.kernel.gateway.singleton import get_gateway
 
         gw = get_gateway(client=MagicMock(), registry=MagicMock())
         hub = gw.controller._context_hub
@@ -159,7 +159,7 @@ class _RealRegistry:
 
 
 def _controller(tmp_path: Path, hub):
-    from strategy_research.core.gateway.session_controller import SessionController
+    from strategy_research.kernel.gateway.session_controller import SessionController
 
     class _FakeEP:
         def iter_mailboxes(self):
@@ -213,7 +213,7 @@ def test_react_todowrite_without_hub_keeps_legacy_default_bucket(tmp_path):
     （B1-d），工具拿到 ctx.session_id（物理会话 id）——归属生效，
     但那就不是本测试要固化的「旧默认构造」了。
     """
-    from strategy_research.core.gateway.session_controller import SessionController
+    from strategy_research.kernel.gateway.session_controller import SessionController
 
     class _FakeEP:
         def iter_mailboxes(self):

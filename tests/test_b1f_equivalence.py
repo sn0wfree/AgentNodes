@@ -14,7 +14,7 @@ import json
 from types import SimpleNamespace
 
 from strategy_research.core.agent.tools import BaseTool, ToolRegistry
-from strategy_research.core.gateway.session_controller import SessionController
+from strategy_research.kernel.gateway.session_controller import SessionController
 from strategy_research.kernel.orchestration import (
     EntryPoint,
     SourceKind,

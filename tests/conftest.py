@@ -316,7 +316,7 @@ def _close_session_services():
     # (and AUTOMATION jobs picked up by scheduler consumers) into later
     # tests — a source of order-dependent failures.
     try:
-        from strategy_research.core.gateway import reset_gateway
+        from strategy_research.kernel.gateway import reset_gateway
 
         reset_gateway()
     except Exception:

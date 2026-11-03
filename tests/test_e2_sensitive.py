@@ -75,7 +75,7 @@ def test_c1_still_emitted_with_same_code_and_severity(tmp_path):
 
 
 def test_gateway_emits_config_fingerprint():
-    from strategy_research.core.gateway import Gateway
+    from strategy_research.kernel.gateway import Gateway
 
     events: list[tuple[str, dict]] = []
     gw = Gateway(client=object(), sink=lambda k, d: events.append((k, d)))
@@ -92,7 +92,7 @@ def test_gateway_emits_config_fingerprint():
 
 
 def test_gateway_fingerprint_emit_failure_degrades(monkeypatch):
-    from strategy_research.core.gateway import Gateway
+    from strategy_research.kernel.gateway import Gateway
 
     gw = Gateway(client=object())
     monkeypatch.setattr(

@@ -9,7 +9,7 @@ from pathlib import Path
 
 import pytest
 
-from strategy_research.core.gateway import (
+from strategy_research.kernel.gateway import (
     Gateway,
     api_chat_request,
     research_graph_enabled,
@@ -25,7 +25,7 @@ def _isolate(tmp_path: Path, monkeypatch):
     monkeypatch.setenv("QUANTNODES_RESEARCH_GOAL_DB_PATH", str(tmp_path / "goals.db"))
     monkeypatch.setenv("QUANTNODES_RESEARCH_HYPOTHESES_PATH", str(tmp_path / "hyp.json"))
     monkeypatch.setenv("SR_STUDY_MAX_CONCURRENT", "1")
-    from strategy_research.core.gateway import reset_gateway
+    from strategy_research.kernel.gateway import reset_gateway
 
     reset_gateway()
     yield
@@ -45,7 +45,7 @@ def _record(study_id: str, session_id: str = "sess-1") -> StudyRecord:
 
 def test_study_gate_removed():
     """study 门已删除：旧 asyncio.Queue 通道同时消失。"""
-    import strategy_research.core.gateway as gw
+    import strategy_research.kernel.gateway as gw
 
     assert not hasattr(gw, "study_entry_enabled")
 
@@ -119,7 +119,7 @@ def test_default_run_once_still_handles_all_kinds():
 
             return R()
 
-    from strategy_research.core.gateway import SessionController
+    from strategy_research.kernel.gateway import SessionController
 
     ctrl = SessionController(ep, client=FakeClient())
     assert len(ctrl.run_pending()) == 1
@@ -191,7 +191,7 @@ def test_submit_routes_to_mailbox_and_consumer_executes(monkeypatch, tmp_path):
 
     assert asyncio.run(run()) is True
 
-    from strategy_research.core.gateway import get_gateway
+    from strategy_research.kernel.gateway import get_gateway
 
     gw = get_gateway()
     assert gw.entry.mailbox_for(f"automation:{session_id}").peek_depth() == 0  # 被消费

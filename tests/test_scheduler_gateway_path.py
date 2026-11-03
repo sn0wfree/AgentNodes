@@ -22,7 +22,7 @@ def _isolate(tmp_path: Path, monkeypatch):
     monkeypatch.setenv("QUANTNODES_RESEARCH_GOAL_DB_PATH", str(tmp_path / "goals.db"))
     monkeypatch.setenv("QUANTNODES_RESEARCH_HYPOTHESES_PATH", str(tmp_path / "hyp.json"))
     monkeypatch.setenv("SR_STUDY_MAX_CONCURRENT", "1")
-    from strategy_research.core.gateway import reset_gateway
+    from strategy_research.kernel.gateway import reset_gateway
 
     reset_gateway()
     yield

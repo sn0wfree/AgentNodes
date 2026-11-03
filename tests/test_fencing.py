@@ -5,7 +5,7 @@ import threading
 
 import pytest
 
-from strategy_research.core.gateway.fencing import FenceToken, SessionFence
+from strategy_research.kernel.gateway.fencing import FenceToken, SessionFence
 
 SID = "sess-1"
 SID2 = "sess-2"

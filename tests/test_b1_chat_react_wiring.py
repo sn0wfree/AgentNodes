@@ -9,7 +9,7 @@ from __future__ import annotations
 
 from types import SimpleNamespace
 
-from strategy_research.core.gateway.session_controller import SessionController
+from strategy_research.kernel.gateway.session_controller import SessionController
 
 
 class _FakeEP:

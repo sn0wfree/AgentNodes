@@ -17,7 +17,7 @@ def test_cli_has_no_legacy_agent_loop_path(monkeypatch):
     （`ChatSession._run_agent_loop`）已随门一起删除，所以现在的契约是
     「不存在直连路径、不存在门函数」。
     """
-    import strategy_research.core.gateway as gw
+    import strategy_research.kernel.gateway as gw
     from strategy_research.cli.tui.session import ChatSession
 
     assert not hasattr(gw, "new_entry_enabled"), "门函数应已退役"
@@ -29,7 +29,7 @@ def test_cli_flag_on_dispatches_to_gateway(tmp_path, monkeypatch):
     monkeypatch.setenv("QUANTNODES_RESEARCH_GOAL_DB_PATH", str(tmp_path / "g.db"))
     monkeypatch.setenv("QUANTNODES_RESEARCH_HYPOTHESES_PATH", str(tmp_path / "h.json"))
 
-    from strategy_research.core.gateway import reset_gateway
+    from strategy_research.kernel.gateway import reset_gateway
 
     reset_gateway()
 
@@ -57,7 +57,7 @@ def test_cli_flag_on_dispatches_to_gateway(tmp_path, monkeypatch):
 
 
 def test_cli_gateway_singleton_reused(tmp_path, monkeypatch):
-    from strategy_research.core.gateway import reset_gateway
+    from strategy_research.kernel.gateway import reset_gateway
 
     reset_gateway()
     monkeypatch.setenv("STRATEGY_RESEARCH_LLM_CONFIG", str(tmp_path / "cfg.json"))

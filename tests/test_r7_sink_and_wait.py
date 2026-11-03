@@ -12,7 +12,7 @@ import threading
 import time
 from dataclasses import dataclass, field
 
-from strategy_research.core.gateway import Gateway
+from strategy_research.kernel.gateway import Gateway
 from strategy_research.kernel.orchestration import SourceKind, WorkKind, WorkRequest
 
 

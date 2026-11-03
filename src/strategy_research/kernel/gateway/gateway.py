@@ -13,8 +13,8 @@ import time
 from pathlib import Path
 from typing import Any, Callable
 
-from strategy_research.core.gateway.fencing import SessionFence
-from strategy_research.core.gateway.session_controller import RunResult, SessionController
+from strategy_research.kernel.gateway.fencing import SessionFence
+from strategy_research.kernel.gateway.session_controller import RunResult, SessionController
 from strategy_research.kernel.orchestration import EntryPoint
 
 logger = logging.getLogger(__name__)
@@ -428,7 +428,7 @@ class Gateway:
         return events
 
     def verify_invariants(self) -> None:
-        from strategy_research.core.gateway.invariants import verify_all
+        from strategy_research.kernel.gateway.invariants import verify_all
 
         verify_all()
 

@@ -45,7 +45,7 @@ def env(tmp_path: Path, monkeypatch):
     monkeypatch.setattr(ws, "_get_db_path", lambda: db_path)
     monkeypatch.setattr(wsdb, "_get_db_path", lambda: db_path)
 
-    from strategy_research.core.gateway import reset_gateway
+    from strategy_research.kernel.gateway import reset_gateway
 
     reset_gateway()
 
@@ -55,7 +55,7 @@ def env(tmp_path: Path, monkeypatch):
     app = create_app()
 
     # 让 Gateway 单例用 FakeClient（构造时注入）
-    from strategy_research.core.gateway.singleton import get_gateway
+    from strategy_research.kernel.gateway.singleton import get_gateway
 
     get_gateway(client=client)
 
@@ -175,7 +175,7 @@ def test_idempotent_no_duplicate_rows(env):
 
 def test_controller_ignores_malformed_history():
     """非法 history 被过滤，不影响对话。"""
-    from strategy_research.core.gateway.session_controller import SessionController
+    from strategy_research.kernel.gateway.session_controller import SessionController
     from strategy_research.kernel.orchestration import EntryPoint, WorkRequest
     from strategy_research.kernel.orchestration.contracts import SourceKind, WorkKind
 

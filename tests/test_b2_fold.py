@@ -15,7 +15,7 @@ from pathlib import Path
 
 import pytest
 
-from strategy_research.core.gateway import Gateway
+from strategy_research.kernel.gateway import Gateway
 from strategy_research.kernel.orchestration import SourceKind, WorkKind, WorkRequest
 
 

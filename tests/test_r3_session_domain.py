@@ -12,8 +12,8 @@ from __future__ import annotations
 import asyncio
 from dataclasses import dataclass, field
 
-from strategy_research.core.gateway import SessionController, SessionFence
-from strategy_research.core.gateway.session_controller import _fence_domain
+from strategy_research.kernel.gateway import SessionController, SessionFence
+from strategy_research.kernel.gateway.session_controller import _fence_domain
 from strategy_research.kernel.orchestration import (
     EntryPoint,
     QueueMode,

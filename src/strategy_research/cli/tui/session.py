@@ -60,7 +60,7 @@ QUIT_RC: int = 2
 
 def _get_cli_gateway():
     """进程内唯一 Gateway（共享 mailbox，保证 session 串行域）。"""
-    from strategy_research.core.gateway import get_gateway
+    from strategy_research.kernel.gateway import get_gateway
 
     return get_gateway()
 
@@ -247,7 +247,7 @@ class ChatSession:
 
         receipt = gw.entry.submit(
             __import__(
-                "strategy_research.core.gateway", fromlist=["cli_request"]
+                "strategy_research.kernel.gateway", fromlist=["cli_request"]
             ).cli_request(session_id, task)
         )
         if not receipt.accepted:

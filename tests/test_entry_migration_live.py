@@ -25,7 +25,7 @@ requires_live = pytest.mark.skipif(
 @requires_live
 def test_gateway_path_real_llm_via_flag(live_client, monkeypatch):
     """flag 打开 → api_chat_request → Gateway → 真实回答。"""
-    from strategy_research.core.gateway import Gateway, api_chat_request
+    from strategy_research.kernel.gateway import Gateway, api_chat_request
 
 
     events: list[str] = []
@@ -47,7 +47,7 @@ def test_gateway_path_real_llm_via_flag(live_client, monkeypatch):
 @requires_live
 def test_gateway_two_turns_same_session(live_client, monkeypatch):
     """同一 session 两轮：turn 编号递增，run 派生正确。"""
-    from strategy_research.core.gateway import Gateway, api_chat_request
+    from strategy_research.kernel.gateway import Gateway, api_chat_request
 
     gw = Gateway(client=live_client)
     gw.entry.submit(api_chat_request("s2", "回答：1+1=?"))

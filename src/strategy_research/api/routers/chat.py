@@ -364,7 +364,7 @@ async def queue_resume(body: QueueResumeRequest, request: Request):
 
 def _get_gateway():
     """进程内唯一 Gateway（见 core/gateway/singleton.py 的串行域说明）。"""
-    from strategy_research.core.gateway import get_gateway
+    from strategy_research.kernel.gateway import get_gateway
 
     return get_gateway()
 
@@ -393,7 +393,7 @@ async def _send_via_gateway(session_id: str, content: str, *, wait: bool = False
     import time as _time
     import uuid as _uuid
 
-    from strategy_research.core.gateway import api_chat_request
+    from strategy_research.kernel.gateway import api_chat_request
     from strategy_research.kernel.orchestration import WorkKind
 
     service = _get_session_service()

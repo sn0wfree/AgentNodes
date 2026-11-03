@@ -14,7 +14,7 @@ from dataclasses import dataclass, field
 
 import pytest
 
-from strategy_research.core.gateway.session_controller import SessionController, _payload_text
+from strategy_research.kernel.gateway.session_controller import SessionController, _payload_text
 from strategy_research.kernel.orchestration import (
     EntryPoint,
     SourceKind,

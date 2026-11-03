@@ -73,7 +73,7 @@ LAYER_MEMBERSHIP: dict[str, str] = {
     #   控制面 (~4.1k): gateway / orchestration / events / session / scheduled_research
     #   执行面 (~6.0k): runtimes / workflow / swarm
     #   能力面 (~24.6k): agent / context / hooks / permission / memory / skills
-    "strategy_research.core.gateway": "L3",
+    "strategy_research.kernel.gateway": "L3",
     "strategy_research.kernel.orchestration": "L3",
     "strategy_research.kernel.events": "L3",
     "strategy_research.kernel.session": "L3",

@@ -157,7 +157,7 @@ class StudyScheduler:
 
         # 阶段 4：旧 asyncio.Queue 路径已删除——准入通道唯一。
         # 工单进 automation:{session} mailbox，由 mailbox 消费者取走执行。
-        from strategy_research.core.gateway import scheduler_request, submit_via_entry
+        from strategy_research.kernel.gateway import scheduler_request, submit_via_entry
 
         gw = _get_gateway_singleton()
         receipt = submit_via_entry(
@@ -1137,6 +1137,6 @@ class _EventBusEmitter:
 
 def _get_gateway_singleton() -> Any:
     """进程内唯一 Gateway（与 API/CLI 共享 mailbox）。"""
-    from strategy_research.core.gateway import get_gateway
+    from strategy_research.kernel.gateway import get_gateway
 
     return get_gateway()

@@ -44,8 +44,8 @@ def channel(store: PlatformStore, tmp_path: Path) -> ArtifactChannel:
 def test_singleton_injects_platform_store(tmp_path, monkeypatch):
     monkeypatch.setenv("SR_WORKSPACE_PATH", str(tmp_path))
     monkeypatch.delenv("QNODES_PLATFORM_STORE", raising=False)
-    from strategy_research.core.gateway import reset_gateway
-    from strategy_research.core.gateway.singleton import get_gateway
+    from strategy_research.kernel.gateway import reset_gateway
+    from strategy_research.kernel.gateway.singleton import get_gateway
 
     reset_gateway()
     try:
@@ -65,8 +65,8 @@ def test_singleton_injects_platform_store(tmp_path, monkeypatch):
 def test_singleton_store_can_be_disabled(tmp_path, monkeypatch):
     monkeypatch.setenv("SR_WORKSPACE_PATH", str(tmp_path))
     monkeypatch.setenv("QNODES_PLATFORM_STORE", "0")
-    from strategy_research.core.gateway import reset_gateway
-    from strategy_research.core.gateway.singleton import get_gateway
+    from strategy_research.kernel.gateway import reset_gateway
+    from strategy_research.kernel.gateway.singleton import get_gateway
 
     reset_gateway()
     try:

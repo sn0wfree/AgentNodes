@@ -6,7 +6,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 
-from strategy_research.core.gateway import Gateway
+from strategy_research.kernel.gateway import Gateway
 from strategy_research.kernel.orchestration import SourceKind, WorkKind, WorkRequest
 
 
@@ -83,7 +83,7 @@ def test_cancelled_turn_shows_failure():
         sid = gw.entry.session_id_for("chat:s")
         gw.wait_turn(sid, timeout=5.0)
         # 伪造一条失败结果（模拟取消后的留存）
-        from strategy_research.core.gateway.session_controller import RunResult
+        from strategy_research.kernel.gateway.session_controller import RunResult
 
         gw._turn_results[sid] = RunResult(f"{sid}#1", f"{sid}#1:r0", False,
                                           error="cancelled: user")

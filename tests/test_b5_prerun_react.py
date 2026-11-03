@@ -139,7 +139,7 @@ def test_render_order_matches_agentloop():
 
 
 def test_singleton_hub_registers_prerun_and_todos():
-    from strategy_research.core.gateway.singleton import (
+    from strategy_research.kernel.gateway.singleton import (
         _build_context_hub,
         reset_gateway,
     )

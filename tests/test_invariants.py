@@ -3,7 +3,7 @@ from __future__ import annotations
 
 import pytest
 
-from strategy_research.core.gateway import (
+from strategy_research.kernel.gateway import (
     InvariantViolation,
     invariants,
     verify_all,

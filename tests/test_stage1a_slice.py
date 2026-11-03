@@ -11,7 +11,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Any
 
-from strategy_research.core.gateway import SessionController
+from strategy_research.kernel.gateway import SessionController
 from strategy_research.kernel.orchestration import (
     EntryPoint,
     SourceKind,

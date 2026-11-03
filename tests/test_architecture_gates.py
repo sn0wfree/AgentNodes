@@ -185,14 +185,14 @@ def test_platform_never_imports_fastapi():
 
 
 def test_invariants_verify_all_passes():
-    from strategy_research.core.gateway.invariants import verify_all
+    from strategy_research.kernel.gateway.invariants import verify_all
 
     verify_all()
 
 
 def test_invariant_registry_covers_documented_set():
     """INV-1/3/5/8/9 必须在登记表里（防悄悄删条目）。"""
-    from strategy_research.core.gateway.invariants import invariants
+    from strategy_research.kernel.gateway.invariants import invariants
 
     ids = {inv.id.split(":")[0].strip() for inv in invariants()}
     assert {"INV-1", "INV-3", "INV-5", "INV-8", "INV-9"} <= ids
@@ -281,7 +281,7 @@ def test_research_graph_gate_is_retired():
     """门已退役：恒 True，环境变量无效。"""
     import os
 
-    from strategy_research.core.gateway import research_graph_enabled
+    from strategy_research.kernel.gateway import research_graph_enabled
 
     assert research_graph_enabled() is True
     for value in ("0", "1", "false"):
@@ -353,7 +353,7 @@ def test_messages_table_written_only_by_projection_or_guarded_persist():
 
 
 def test_mailbox_kind_filter_never_drops_work():
-    from strategy_research.core.gateway import scheduler_request
+    from strategy_research.kernel.gateway import scheduler_request
     from strategy_research.kernel.orchestration import EntryPoint, WorkKind
 
     ep = EntryPoint(sink=lambda k, d: None)
@@ -368,7 +368,7 @@ def test_mailbox_kind_filter_never_drops_work():
 
 
 def test_chat_kind_filter_never_drops_chat_work():
-    from strategy_research.core.gateway import api_chat_request
+    from strategy_research.kernel.gateway import api_chat_request
     from strategy_research.kernel.orchestration import EntryPoint, WorkKind
 
     ep = EntryPoint(sink=lambda k, d: None)

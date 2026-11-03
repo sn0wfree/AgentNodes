@@ -56,7 +56,7 @@ def calc_registry():
 @requires_live
 def test_live_streaming_emits_deltas(live_client):
     """真流式：至少收到多个 text_delta，聚合答案非空。"""
-    from strategy_research.core.gateway import Gateway, api_chat_request
+    from strategy_research.kernel.gateway import Gateway, api_chat_request
 
     deltas: list[str] = []
     other: list[str] = []
@@ -84,7 +84,7 @@ def test_live_streaming_emits_deltas(live_client):
 @requires_live
 def test_live_tool_call_executes(live_client, calc_registry):
     """真工具循环：react 节点流式下能发起工具调用并得到正确答案。"""
-    from strategy_research.core.gateway import Gateway, api_chat_request
+    from strategy_research.kernel.gateway import Gateway, api_chat_request
 
     events: list[tuple[str, dict]] = []
     gw = Gateway(
@@ -110,7 +110,7 @@ def test_live_tool_call_executes(live_client, calc_registry):
 @requires_live
 def test_live_history_injected_second_turn(live_client):
     """真历史注入：第二轮能记住第一轮的信息。"""
-    from strategy_research.core.gateway import Gateway, api_chat_request
+    from strategy_research.kernel.gateway import Gateway, api_chat_request
 
     gw = Gateway(client=live_client, stream=False)
     gw.verify_invariants()

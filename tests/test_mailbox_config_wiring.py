@@ -15,8 +15,8 @@ from __future__ import annotations
 
 import pytest
 
-from strategy_research.core.gateway import reset_gateway
-from strategy_research.core.gateway.gateway import Gateway
+from strategy_research.kernel.gateway import reset_gateway
+from strategy_research.kernel.gateway.gateway import Gateway
 from strategy_research.kernel.orchestration.config_hub import ConfigError
 from strategy_research.kernel.orchestration.mailbox import (
     DEFAULT_AGING_S,
@@ -139,7 +139,7 @@ def test_singleton_gateway_honours_env(monkeypatch):
     monkeypatch.setenv("QNODES_PLATFORM_STORE", "0")
     reset_gateway()
     try:
-        from strategy_research.core.gateway import get_gateway
+        from strategy_research.kernel.gateway import get_gateway
 
         gw = get_gateway(client=object(), system="test")
         assert gw.entry._cap == 4

@@ -11,7 +11,7 @@ import pytest
 
 @pytest.fixture(autouse=True)
 def _clean():
-    from strategy_research.core.gateway import reset_gateway
+    from strategy_research.kernel.gateway import reset_gateway
 
     reset_gateway()
     yield
@@ -40,7 +40,7 @@ def test_same_session_key_shares_mailbox_across_entries(tmp_path, monkeypatch):
     (tmp_path / "c.json").write_text('{"llm": {"enabled": false}}', encoding="utf-8")
     monkeypatch.setenv("LLM_API_KEY", "dummy")
 
-    from strategy_research.core.gateway import api_chat_request, get_gateway, scheduler_request
+    from strategy_research.kernel.gateway import api_chat_request, get_gateway, scheduler_request
 
     gw = get_gateway()
     # 两个入口都用同一个逻辑 session_key
@@ -59,7 +59,7 @@ def test_same_entry_same_key_is_one_mailbox(tmp_path, monkeypatch):
     (tmp_path / "c.json").write_text('{"llm": {"enabled": false}}', encoding="utf-8")
     monkeypatch.setenv("LLM_API_KEY", "dummy")
 
-    from strategy_research.core.gateway import api_chat_request, get_gateway
+    from strategy_research.kernel.gateway import api_chat_request, get_gateway
 
     gw = get_gateway()
     gw.entry.submit(api_chat_request("s", "m1"))
@@ -74,7 +74,7 @@ def test_reset_gateway_creates_fresh_instance(tmp_path, monkeypatch):
     (tmp_path / "c.json").write_text('{"llm": {"enabled": false}}', encoding="utf-8")
     monkeypatch.setenv("LLM_API_KEY", "dummy")
 
-    from strategy_research.core.gateway import get_gateway, reset_gateway
+    from strategy_research.kernel.gateway import get_gateway, reset_gateway
 
     first = get_gateway()
     reset_gateway()

@@ -18,7 +18,7 @@ from datetime import datetime, timedelta, timezone
 
 import pytest
 
-from strategy_research.core.gateway import (
+from strategy_research.kernel.gateway import (
     Gateway,
     api_chat_request,
     reset_gateway,
@@ -339,10 +339,10 @@ def test_verify_invariants_passes():
 
 def test_invariant_violation_rejects_startup():
     """不变量被破坏时，启动自检必须拒启（结构验证）。"""
-    from strategy_research.core.gateway import InvariantViolation, invariants
+    from strategy_research.kernel.gateway import InvariantViolation, invariants
 
     # 直接验证检查器本身可失败：构造一个必失败的 Invariant 并跑
-    from strategy_research.core.gateway.invariants import Invariant, InvariantViolation
+    from strategy_research.kernel.gateway.invariants import Invariant, InvariantViolation
 
     bad = Invariant("INV-TEST", "永远失败", lambda: False, "test")
     assert not bad.verify()

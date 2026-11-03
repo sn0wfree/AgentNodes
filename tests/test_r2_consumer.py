@@ -14,7 +14,7 @@ import time
 from dataclasses import dataclass, field
 from pathlib import Path
 
-from strategy_research.core.gateway import (
+from strategy_research.kernel.gateway import (
     Gateway,
     SessionController,
     SessionFence,
@@ -110,7 +110,7 @@ def test_run_answer_absent_when_fenced():
 
 
 def test_consumer_drives_submitted_turn():
-    from strategy_research.core.gateway import Gateway
+    from strategy_research.kernel.gateway import Gateway
 
     gw = Gateway(client=FakeClient())
     assert not gw.consumer_running()
@@ -127,7 +127,7 @@ def test_consumer_drives_submitted_turn():
 
 
 def test_start_consumer_is_idempotent():
-    from strategy_research.core.gateway import Gateway
+    from strategy_research.kernel.gateway import Gateway
 
     gw = Gateway(client=FakeClient())
     gw.start_consumer()
@@ -140,7 +140,7 @@ def test_start_consumer_is_idempotent():
 
 
 def test_wait_turn_unknown_session_times_out():
-    from strategy_research.core.gateway import Gateway
+    from strategy_research.kernel.gateway import Gateway
 
     gw = Gateway(client=FakeClient())
     assert gw.wait_turn("chat:never", timeout=0.05) is None
@@ -267,11 +267,11 @@ def test_receipt_contract_and_async_persistence(tmp_path, monkeypatch):
     monkeypatch.setattr(ws, "_get_db_path", lambda: db_path)
     monkeypatch.setattr(wsdb, "_get_db_path", lambda: db_path)
 
-    from strategy_research.core.gateway import reset_gateway
+    from strategy_research.kernel.gateway import reset_gateway
 
     reset_gateway()
     from strategy_research.api.app import create_app
-    from strategy_research.core.gateway.singleton import get_gateway
+    from strategy_research.kernel.gateway.singleton import get_gateway
 
     get_gateway(client=ApiClient())
     app = create_app()
@@ -322,11 +322,11 @@ def test_sync_fallback_when_no_consumer(tmp_path, monkeypatch):
     monkeypatch.setattr(ws, "_get_db_path", lambda: db_path)
     monkeypatch.setattr(wsdb, "_get_db_path", lambda: db_path)
 
-    from strategy_research.core.gateway import reset_gateway
+    from strategy_research.kernel.gateway import reset_gateway
 
     reset_gateway()
     from strategy_research.api.app import create_app
-    from strategy_research.core.gateway.singleton import get_gateway
+    from strategy_research.kernel.gateway.singleton import get_gateway
 
     get_gateway(client=ApiClient())
     app = create_app()

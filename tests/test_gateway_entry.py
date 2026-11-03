@@ -6,7 +6,7 @@ from dataclasses import dataclass
 
 import pytest
 
-from strategy_research.core.gateway import (
+from strategy_research.kernel.gateway import (
     Gateway,
     api_chat_request,
     cli_request,

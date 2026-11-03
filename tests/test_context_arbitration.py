@@ -203,7 +203,7 @@ def test_session_provider_still_runs_for_study_query():
 
 def test_model_limits_read_from_client_config():
     """OpenAICompatClient has no such attrs; they live on .config."""
-    from strategy_research.core.gateway.session_controller import SessionController
+    from strategy_research.kernel.gateway.session_controller import SessionController
     from strategy_research.kernel.orchestration import EntryPoint
 
     client = SimpleNamespace(
@@ -217,7 +217,7 @@ def test_model_limits_read_from_client_config():
 
 
 def test_missing_config_yields_no_budget():
-    from strategy_research.core.gateway.session_controller import SessionController
+    from strategy_research.kernel.gateway.session_controller import SessionController
     from strategy_research.kernel.orchestration import EntryPoint
 
     ctrl = SessionController(EntryPoint(), client=SimpleNamespace())
@@ -229,7 +229,7 @@ def test_missing_config_yields_no_budget():
 
 
 def test_over_budget_emits_event():
-    from strategy_research.core.gateway.session_controller import SessionController
+    from strategy_research.kernel.gateway.session_controller import SessionController
     from strategy_research.kernel.orchestration import EntryPoint
 
     hub = ContextHub()
@@ -252,7 +252,7 @@ def test_over_budget_emits_event():
 
 
 def test_legacy_duck_typed_hub_still_works():
-    from strategy_research.core.gateway.session_controller import SessionController
+    from strategy_research.kernel.gateway.session_controller import SessionController
     from strategy_research.kernel.orchestration import EntryPoint
 
     class _LegacyHub:
