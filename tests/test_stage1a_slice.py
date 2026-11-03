@@ -12,13 +12,13 @@ from dataclasses import dataclass
 from typing import Any
 
 from strategy_research.core.gateway import SessionController
-from strategy_research.core.orchestration import (
+from strategy_research.kernel.orchestration import (
     EntryPoint,
     SourceKind,
     WorkKind,
     WorkRequest,
 )
-from strategy_research.core.orchestration.entry_point import EntryPoint
+from strategy_research.kernel.orchestration.entry_point import EntryPoint
 
 
 @dataclass

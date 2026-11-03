@@ -5,8 +5,8 @@ import time
 
 import pytest
 
-from strategy_research.core.orchestration import BudgetGate, BudgetSpec, effective_budget
-from strategy_research.core.orchestration.budget_gate import BudgetUsage
+from strategy_research.kernel.orchestration import BudgetGate, BudgetSpec, effective_budget
+from strategy_research.kernel.orchestration.budget_gate import BudgetUsage
 
 
 @pytest.fixture

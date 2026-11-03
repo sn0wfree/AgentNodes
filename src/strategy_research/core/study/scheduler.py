@@ -745,7 +745,7 @@ class StudyScheduler:
         在跑时不取单，工单留队；0.5s 退避等待，与 chat 消费者的跳过
         检查构成两侧互斥。
         """
-        from strategy_research.core.orchestration import WorkKind
+        from strategy_research.kernel.orchestration import WorkKind
 
         gw = _get_gateway_singleton()
         mailbox = gw.entry.mailbox_for(f"automation:{session_id}")

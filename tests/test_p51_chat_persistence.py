@@ -176,8 +176,8 @@ def test_idempotent_no_duplicate_rows(env):
 def test_controller_ignores_malformed_history():
     """非法 history 被过滤，不影响对话。"""
     from strategy_research.core.gateway.session_controller import SessionController
-    from strategy_research.core.orchestration import EntryPoint, WorkRequest
-    from strategy_research.core.orchestration.contracts import SourceKind, WorkKind
+    from strategy_research.kernel.orchestration import EntryPoint, WorkRequest
+    from strategy_research.kernel.orchestration.contracts import SourceKind, WorkKind
 
     ep = EntryPoint(sink=lambda k, d: None)
     ctrl = SessionController(ep, client=FakeClient("r"))

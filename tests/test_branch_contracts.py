@@ -5,7 +5,7 @@ from dataclasses import dataclass, field
 
 import pytest
 
-from strategy_research.core.orchestration.branch_contracts import (
+from strategy_research.kernel.orchestration.branch_contracts import (
     BranchContextLike,
     RoundOutcomeLike,
     assert_branch_context_shape,

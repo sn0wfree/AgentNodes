@@ -20,7 +20,7 @@ from strategy_research.core.gateway import (
     invariants,
     verify_all,
 )
-from strategy_research.core.orchestration import (
+from strategy_research.kernel.orchestration import (
     EntryPoint,
     SourceKind,
     WorkKind,

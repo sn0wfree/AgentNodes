@@ -15,7 +15,7 @@ from strategy_research.core.gateway import (
     research_graph_enabled,
     scheduler_request,
 )
-from strategy_research.core.orchestration import EntryPoint, WorkKind
+from strategy_research.kernel.orchestration import EntryPoint, WorkKind
 from strategy_research.core.study import StudyScheduler, StudyStatus, StudyStore
 from strategy_research.core.study.models import StudyRecord
 
@@ -127,7 +127,7 @@ def test_default_run_once_still_handles_all_kinds():
 
 def test_interrupt_priority_respects_kind_filter():
 
-    from strategy_research.core.orchestration import (
+    from strategy_research.kernel.orchestration import (
         QueueMode,
         SourceKind,
         WorkRequest,

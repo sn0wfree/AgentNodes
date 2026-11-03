@@ -39,7 +39,7 @@ class InvariantViolation(Exception):
 
 def _inv_workers_pinned() -> bool:
     """INV-1：ConfigHub 的 workers 字段不可配置且恒为 1。"""
-    from ..orchestration.config_hub import GatewayConfig
+    from strategy_research.kernel.orchestration.config_hub import GatewayConfig
 
     try:
         GatewayConfig(workers=4)
@@ -70,7 +70,7 @@ def _inv_settle_passes_fence() -> bool:
     断言 RunResult.ok 为 False 且事件流含 run.fenced。控制器是唯一
     落库发起方，检查它即覆盖全系统。
     """
-    from ..orchestration import EntryPoint, SourceKind, WorkKind, WorkRequest
+    from strategy_research.kernel.orchestration import EntryPoint, SourceKind, WorkKind, WorkRequest
     from .fencing import SessionFence
     from .session_controller import SessionController
 
@@ -109,7 +109,7 @@ def _inv_settle_passes_fence() -> bool:
 
 def _inv_config_fail_fast() -> bool:
     """INV-8：非法配置必须抛 ConfigError（不猜默认）。"""
-    from ..orchestration.config_hub import ConfigError, load_platform_config
+    from strategy_research.kernel.orchestration.config_hub import ConfigError, load_platform_config
 
     try:
         load_platform_config(env={"QNODES_MAILBOX__CAP": "not-a-number"})
@@ -120,8 +120,8 @@ def _inv_config_fail_fast() -> bool:
 
 def _inv_entry_reject_no_side_effects() -> bool:
     """INV-3 前置：入口拒绝无副作用、collect 留位拒绝。"""
-    from ..orchestration.contracts import QueueMode, SourceKind, WorkKind, WorkRequest
-    from ..orchestration.entry_point import EntryPoint
+    from strategy_research.kernel.orchestration.contracts import QueueMode, SourceKind, WorkKind, WorkRequest
+    from strategy_research.kernel.orchestration.entry_point import EntryPoint
 
     ep = EntryPoint(sink=lambda k, d: None)
     receipt = ep.submit(

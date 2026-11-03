@@ -15,7 +15,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Any, Callable
 
-from strategy_research.core.orchestration import EntryPoint, WorkRequest
+from strategy_research.kernel.orchestration import EntryPoint, WorkRequest
 from strategy_research.kernel.runtimes.cancel_scope import CancelScope
 from strategy_research.kernel.runtimes.graph_engine import GraphEngine
 

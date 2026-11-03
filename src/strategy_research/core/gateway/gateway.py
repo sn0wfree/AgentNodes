@@ -15,7 +15,7 @@ from typing import Any, Callable
 
 from strategy_research.core.gateway.fencing import SessionFence
 from strategy_research.core.gateway.session_controller import RunResult, SessionController
-from strategy_research.core.orchestration import EntryPoint
+from strategy_research.kernel.orchestration import EntryPoint
 
 logger = logging.getLogger(__name__)
 
@@ -34,7 +34,7 @@ def _mailbox_config() -> Any:
     装载失败一律回落到 dataclass 默认值——**但**只有显式配置了非法值时才
     会抛 ConfigError；那种情况按 fail-fast 直接冒泡（配错不能静默按默认跑）。
     """
-    from ..orchestration.config_hub import load_platform_config
+    from strategy_research.kernel.orchestration.config_hub import load_platform_config
 
     return load_platform_config().mailbox
 
@@ -217,7 +217,7 @@ class Gateway:
         失败降级返回 None，不阻断启动。
         """
         try:
-            from ..orchestration.config_hub import (
+            from strategy_research.kernel.orchestration.config_hub import (
                 config_fingerprint,
                 load_platform_config,
             )

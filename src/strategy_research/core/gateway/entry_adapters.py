@@ -10,7 +10,7 @@ mailbox）。旧路径（asyncio.Queue / 直接调 service）不再存在。
 """
 from __future__ import annotations
 
-from strategy_research.core.orchestration import (
+from strategy_research.kernel.orchestration import (
     EntryPoint,
     Receipt,
     SourceKind,

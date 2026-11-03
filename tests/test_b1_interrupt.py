@@ -15,7 +15,7 @@ from dataclasses import dataclass, field
 import pytest
 
 from strategy_research.core.gateway import Gateway, SessionController, SessionFence
-from strategy_research.core.orchestration import (
+from strategy_research.kernel.orchestration import (
     EntryPoint,
     QueueMode,
     SourceKind,

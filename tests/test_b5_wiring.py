@@ -175,7 +175,7 @@ def _controller(tmp_path: Path, hub):
 
 
 def _submit(controller, session_id: str):
-    from strategy_research.core.orchestration import (
+    from strategy_research.kernel.orchestration import (
         EntryPoint,
         SourceKind,
         WorkKind,

@@ -22,7 +22,7 @@ def _start_gateway_consumer() -> Any | None:
     """
     try:
         from strategy_research.core.gateway import get_gateway
-        from strategy_research.core.orchestration import WorkKind
+        from strategy_research.kernel.orchestration import WorkKind
 
         gw = get_gateway()
         # B2：先恢复状态（fold），再启动消费者——「恢复状态，不恢复执行」。

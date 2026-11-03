@@ -354,7 +354,7 @@ def test_messages_table_written_only_by_projection_or_guarded_persist():
 
 def test_mailbox_kind_filter_never_drops_work():
     from strategy_research.core.gateway import scheduler_request
-    from strategy_research.core.orchestration import EntryPoint, WorkKind
+    from strategy_research.kernel.orchestration import EntryPoint, WorkKind
 
     ep = EntryPoint(sink=lambda k, d: None)
     ep.submit(scheduler_request("s", {"study_id": "x"}))
@@ -369,7 +369,7 @@ def test_mailbox_kind_filter_never_drops_work():
 
 def test_chat_kind_filter_never_drops_chat_work():
     from strategy_research.core.gateway import api_chat_request
-    from strategy_research.core.orchestration import EntryPoint, WorkKind
+    from strategy_research.kernel.orchestration import EntryPoint, WorkKind
 
     ep = EntryPoint(sink=lambda k, d: None)
     ep.submit(api_chat_request("s", "hi"))

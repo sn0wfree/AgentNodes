@@ -121,7 +121,7 @@ def test_live_react_pure_chat_skips_tool(live_client, calc_registry):
 @requires_live
 def test_live_react_slice(live_client, calc_registry):
     from strategy_research.core.gateway import SessionController
-    from strategy_research.core.orchestration import (
+    from strategy_research.kernel.orchestration import (
         EntryPoint,
         SourceKind,
         WorkKind,

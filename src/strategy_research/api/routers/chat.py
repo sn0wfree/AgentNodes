@@ -394,7 +394,7 @@ async def _send_via_gateway(session_id: str, content: str, *, wait: bool = False
     import uuid as _uuid
 
     from strategy_research.core.gateway import api_chat_request
-    from strategy_research.core.orchestration import WorkKind
+    from strategy_research.kernel.orchestration import WorkKind
 
     service = _get_session_service()
 

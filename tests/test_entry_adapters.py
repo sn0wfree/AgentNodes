@@ -10,7 +10,7 @@ from strategy_research.core.gateway.entry_adapters import (
     scheduler_request,
     submit_via_entry,
 )
-from strategy_research.core.orchestration import (
+from strategy_research.kernel.orchestration import (
     DEFAULT_QUEUE_MODE,
     EntryPoint,
     QueueMode,
@@ -126,7 +126,7 @@ def test_submit_via_entry_returns_receipt():
 
 
 def test_submit_via_entry_rejects_collect():
-    from strategy_research.core.orchestration import WorkRequest
+    from strategy_research.kernel.orchestration import WorkRequest
 
     ep = EntryPoint(sink=lambda k, d: None)
     req = WorkRequest(

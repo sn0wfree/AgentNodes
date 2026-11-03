@@ -17,13 +17,13 @@ import pytest
 
 from strategy_research.core.gateway import reset_gateway
 from strategy_research.core.gateway.gateway import Gateway
-from strategy_research.core.orchestration.config_hub import ConfigError
-from strategy_research.core.orchestration.mailbox import (
+from strategy_research.kernel.orchestration.config_hub import ConfigError
+from strategy_research.kernel.orchestration.mailbox import (
     DEFAULT_AGING_S,
     DEFAULT_CAP,
     DEFAULT_STEER_CAP,
 )
-from strategy_research.core.orchestration.contracts import (
+from strategy_research.kernel.orchestration.contracts import (
     QueueMode,
     WorkKind,
     WorkRequest,

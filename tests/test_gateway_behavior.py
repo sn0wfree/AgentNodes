@@ -24,7 +24,7 @@ from strategy_research.core.gateway import (
     reset_gateway,
     scheduler_request,
 )
-from strategy_research.core.orchestration import (
+from strategy_research.kernel.orchestration import (
     EntryPoint,
     QueueMode,
     SourceKind,

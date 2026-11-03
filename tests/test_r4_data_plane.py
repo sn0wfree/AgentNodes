@@ -14,7 +14,7 @@ from pathlib import Path
 
 import pytest
 
-from strategy_research.core.orchestration.contracts import (
+from strategy_research.kernel.orchestration.contracts import (
     PROTOCOL_VERSION,
     ProtocolVersionError,
     check_event_version,

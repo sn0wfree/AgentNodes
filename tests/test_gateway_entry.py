@@ -13,7 +13,7 @@ from strategy_research.core.gateway import (
     mcp_request,
     scheduler_request,
 )
-from strategy_research.core.orchestration import QueueMode, SourceKind, WorkKind
+from strategy_research.kernel.orchestration import QueueMode, SourceKind, WorkKind
 
 
 # ── adapter 翻译 ─────────────────────────────────────────

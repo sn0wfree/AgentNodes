@@ -96,7 +96,7 @@ def test_gateway_fingerprint_emit_failure_degrades(monkeypatch):
 
     gw = Gateway(client=object())
     monkeypatch.setattr(
-        "strategy_research.core.orchestration.config_hub.load_platform_config",
+        "strategy_research.kernel.orchestration.config_hub.load_platform_config",
         lambda **k: (_ for _ in ()).throw(RuntimeError("config broken")),
     )
     assert gw.emit_config_fingerprint() is None  # 降级不抛
@@ -109,7 +109,7 @@ def test_sensitive_keys_exclusion_mechanism_works():
     """机制锁定：加入 SENSITIVE_KEYS 的字段不得影响指纹。"""
     from dataclasses import dataclass, replace
 
-    from strategy_research.core.orchestration import config_hub as ch
+    from strategy_research.kernel.orchestration import config_hub as ch
 
     @dataclass(frozen=True)
     class _Cfg:

@@ -165,7 +165,7 @@ def test_h_streaming_yields_incremental_chunks(live_client):
 @requires_live
 def test_i_full_slice_two_turns(live_client):
     from strategy_research.core.gateway import SessionController
-    from strategy_research.core.orchestration import (
+    from strategy_research.kernel.orchestration import (
         EntryPoint,
         SourceKind,
         WorkKind,
