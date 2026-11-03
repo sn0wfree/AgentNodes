@@ -18,7 +18,7 @@ import numpy as np
 import pandas as pd
 import pytest
 
-from strategy_research.core import data_readiness as dr
+from strategy_research.apps import data_readiness as dr
 
 
 def _seed(workspace: Path, strategy: str = "s1", codes=("A", "B"),

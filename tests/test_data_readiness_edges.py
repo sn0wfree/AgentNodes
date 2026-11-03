@@ -1,4 +1,4 @@
-"""H 档补测 —— `core/data_readiness.py` 的边界与序列化路径。
+"""H 档补测 —— `apps/data_readiness.py` 的边界与序列化路径。
 
 已有 test_data_readiness.py 覆盖了 C1–C7 的主判定分支；本文件补：
 - C0（数据库不可用）—— 唯一的 fail-early 路径
@@ -14,7 +14,7 @@ from pathlib import Path
 
 import pytest
 
-from strategy_research.core import data_readiness as dr
+from strategy_research.apps import data_readiness as dr
 
 
 # ── C0: 数据库不可用 ────────────────────────────────────────

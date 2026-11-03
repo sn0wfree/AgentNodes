@@ -9,7 +9,7 @@ from pathlib import Path
 import pandas as pd
 import pytest
 
-from strategy_research.core.data_readiness import check_data_readiness
+from strategy_research.apps.data_readiness import check_data_readiness
 
 
 def _seed_db(workspace: Path, strategy: str = "s1", codes=None, dates=None):

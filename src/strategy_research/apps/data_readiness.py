@@ -65,7 +65,7 @@ class ReadinessReport:
 
 
 def _db(workspace_path: Path):
-    from .db import get_connection
+    from strategy_research.core.db import get_connection
 
     return get_connection(workspace_path, read_only=True)
 
@@ -286,7 +286,7 @@ def _check_factor_syntax(cfg: dict | None) -> list[ReadinessCheck]:
             detail="config 未声明 factors",
             fix_hint="在 config.yaml 的 factors 声明因子表达式",
         )]
-    from .compute_factor import _tokenize
+    from strategy_research.core.compute_factor import _tokenize
 
     bad: list[str] = []
     for f in factors:
@@ -340,8 +340,8 @@ def _check_cleaning(
         # ``except Exception`` 吞成 "行级统计不可用" 的 warn——**C7 检查
         # 从未真正执行过**（2026-11-02 补测发现；与 MCP validate_run、
         # scheduled_research/cli 的同一个错误类）。
-        from .tools.data_clean import clean_data
-        from .db import get_connection
+        from strategy_research.core.tools.data_clean import clean_data
+        from strategy_research.core.db import get_connection
 
         conn = get_connection(workspace_path, read_only=True)
         if conn is None:

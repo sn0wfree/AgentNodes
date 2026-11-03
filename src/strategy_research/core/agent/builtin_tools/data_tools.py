@@ -716,7 +716,7 @@ class CheckDataTool(BaseTool):
                     tool="check_data",
                 )
 
-        from ...data_readiness import check_data_readiness
+        from strategy_research.apps.data_readiness import check_data_readiness
 
         try:
             report = check_data_readiness(
