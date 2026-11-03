@@ -50,7 +50,7 @@ def _require_owner(request: Request, session_id: str) -> None:
 
 def _load_job_owned(request: Request, job_id: str, session_id: str):
     """Load a job and verify ownership; returns the job or raises 404/403."""
-    from ...core.scheduled_research.store import ScheduledResearchStore
+    from strategy_research.kernel.scheduled_research.store import ScheduledResearchStore
 
     with ScheduledResearchStore() as store:
         job = store.get(job_id)
@@ -88,12 +88,12 @@ def _shape(job) -> dict:
 @router.post("/create")
 async def schedule_create(req: ScheduleCreateRequest, request: Request):
     """Create a scheduled job (dispatches to the study system at trigger)."""
-    from ...core.scheduled_research.cron_parser import (
+    from strategy_research.kernel.scheduled_research.cron_parser import (
         next_cron_trigger,
         validate_cron,
     )
-    from ...core.scheduled_research.models import ScheduledResearchJob
-    from ...core.scheduled_research.store import ScheduledResearchStore
+    from strategy_research.kernel.scheduled_research.models import ScheduledResearchJob
+    from strategy_research.kernel.scheduled_research.store import ScheduledResearchStore
 
     _require_owner(request, req.session_id)
 
@@ -147,7 +147,7 @@ async def schedule_create(req: ScheduleCreateRequest, request: Request):
 @router.get("/list")
 async def schedule_list(request: Request, session_id: str):
     """List the caller's scheduled jobs."""
-    from ...core.scheduled_research.store import ScheduledResearchStore
+    from strategy_research.kernel.scheduled_research.store import ScheduledResearchStore
 
     _require_owner(request, session_id)
     with ScheduledResearchStore() as store:
@@ -165,8 +165,8 @@ async def schedule_show(request: Request, job_id: str, session_id: str):
 @router.post("/cancel/{job_id}")
 async def schedule_cancel(request: Request, job_id: str, session_id: str):
     """Cancel a scheduled job (stops future triggers)."""
-    from ...core.scheduled_research.models import JobStatus
-    from ...core.scheduled_research.store import ScheduledResearchStore
+    from strategy_research.kernel.scheduled_research.models import JobStatus
+    from strategy_research.kernel.scheduled_research.store import ScheduledResearchStore
 
     job = _load_job_owned(request, job_id, session_id)
     job.status = JobStatus.CANCELLED
@@ -178,7 +178,7 @@ async def schedule_cancel(request: Request, job_id: str, session_id: str):
 @router.post("/delete/{job_id}")
 async def schedule_delete(request: Request, job_id: str, session_id: str):
     """Delete a scheduled job."""
-    from ...core.scheduled_research.store import ScheduledResearchStore
+    from strategy_research.kernel.scheduled_research.store import ScheduledResearchStore
 
     job = _load_job_owned(request, job_id, session_id)
     with ScheduledResearchStore() as store:
@@ -189,8 +189,8 @@ async def schedule_delete(request: Request, job_id: str, session_id: str):
 @router.post("/run/{job_id}")
 async def schedule_run(request: Request, job_id: str, session_id: str):
     """Immediately dispatch a job once (background; study runs async)."""
-    from ...core.scheduled_research.executor import ScheduledResearchExecutor
-    from ...core.scheduled_research.store import ScheduledResearchStore
+    from strategy_research.kernel.scheduled_research.executor import ScheduledResearchExecutor
+    from strategy_research.kernel.scheduled_research.store import ScheduledResearchStore
 
     job = _load_job_owned(request, job_id, session_id)
 

@@ -77,7 +77,7 @@ LAYER_MEMBERSHIP: dict[str, str] = {
     "strategy_research.kernel.orchestration": "L3",
     "strategy_research.kernel.events": "L3",
     "strategy_research.kernel.session": "L3",
-    "strategy_research.core.scheduled_research": "L3",
+    "strategy_research.kernel.scheduled_research": "L3",
     "strategy_research.kernel.runtimes": "L3",
     "strategy_research.kernel.workflow": "L3",
     "strategy_research.kernel.swarm": "L3",

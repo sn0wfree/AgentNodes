@@ -17,8 +17,8 @@ import asyncio
 
 import pytest
 
-from strategy_research.core.scheduled_research import cli
-from strategy_research.core.scheduled_research.models import (
+from strategy_research.kernel.scheduled_research import cli
+from strategy_research.kernel.scheduled_research.models import (
     JobStatus,
     ScheduledResearchJob,
 )

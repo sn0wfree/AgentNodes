@@ -73,8 +73,8 @@ def create_app(
 
         # Scheduled research daemon: migrate legacy JSON jobs once, then
         # tick on the main loop dispatching due jobs to the study system.
-        from ..core.scheduled_research.executor import ScheduledResearchExecutor
-        from ..core.scheduled_research.store import ScheduledResearchStore
+        from strategy_research.kernel.scheduled_research.executor import ScheduledResearchExecutor
+        from strategy_research.kernel.scheduled_research.store import ScheduledResearchStore
 
         schedule_store = ScheduledResearchStore()
         migrated = schedule_store.migrate_from_json()

@@ -13,8 +13,8 @@ from pathlib import Path
 import httpx
 import pytest
 
-from strategy_research.core.scheduled_research.models import JobStatus
-from strategy_research.core.scheduled_research.store import ScheduledResearchStore
+from strategy_research.kernel.scheduled_research.models import JobStatus
+from strategy_research.kernel.scheduled_research.store import ScheduledResearchStore
 
 
 def _build_asgi_app():

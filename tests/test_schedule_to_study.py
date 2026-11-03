@@ -16,9 +16,9 @@ from pathlib import Path
 import pytest
 
 from strategy_research.apps.goal import GoalStore
-from strategy_research.core.scheduled_research.executor import ScheduledResearchExecutor
-from strategy_research.core.scheduled_research.models import JobStatus, ScheduledResearchJob
-from strategy_research.core.scheduled_research.store import ScheduledResearchStore
+from strategy_research.kernel.scheduled_research.executor import ScheduledResearchExecutor
+from strategy_research.kernel.scheduled_research.models import JobStatus, ScheduledResearchJob
+from strategy_research.kernel.scheduled_research.store import ScheduledResearchStore
 from strategy_research.apps.study import StudyScheduler, StudyStatus, StudyStore
 from strategy_research.apps.study import runner as runner_mod
 
@@ -209,7 +209,7 @@ def test_app_lifespan_starts_daemon_and_migrates(tmp_path, monkeypatch, ws):
     }), encoding="utf-8")
 
     # 指向 legacy JSON：monkeypatch 模块级常量（模块已 import）
-    import strategy_research.core.scheduled_research.store as sched_store_mod
+    import strategy_research.kernel.scheduled_research.store as sched_store_mod
     monkeypatch.setattr(sched_store_mod, "LEGACY_JSON_PATH", legacy)
 
     from fastapi.testclient import TestClient

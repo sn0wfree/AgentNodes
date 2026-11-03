@@ -731,7 +731,7 @@ def _build_parser() -> tuple[argparse.ArgumentParser, dict[str, argparse.Argumen
     export_parser.add_argument("--output", "-o", help="输出目录 (默认: workspace/exports/)")
 
     # schedule (P5)
-    from strategy_research.core.scheduled_research.cli import add_schedule_subparsers
+    from strategy_research.kernel.scheduled_research.cli import add_schedule_subparsers
     add_schedule_subparsers(subparsers)
 
     # goal (P3-a)
@@ -973,7 +973,7 @@ def _dispatch_export(args, parsers) -> int:
 
 def _dispatch_schedule(args, parsers) -> int:
     """Dispatch the schedule subcommand."""
-    from strategy_research.core.scheduled_research.cli import (
+    from strategy_research.kernel.scheduled_research.cli import (
         cmd_schedule_cancel,
         cmd_schedule_create,
         cmd_schedule_delete,

@@ -10,7 +10,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
 
-from strategy_research.core.scheduled_research.cron_parser import (
+from strategy_research.kernel.scheduled_research.cron_parser import (
     next_cron_trigger,
     parse_cron,
     validate_cron,
