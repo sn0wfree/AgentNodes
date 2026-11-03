@@ -6,7 +6,12 @@ import time
 import pandas as pd
 import pytest
 
-from strategy_research.apps.data_source.file_cache import file_cache, get_cache_path
+from strategy_research.apps.data_source.file_cache import (
+    _safe_filename_component,
+    file_cache,
+    get_cache_path,
+    prepare_args,
+)
 
 
 @pytest.fixture
@@ -154,3 +159,37 @@ class TestGetCachePath:
         target = os.path.join(cache_dir, "nodir")
         path = get_cache_path(enable_cache=False, cache_dir=target)
         assert not os.path.exists(path)
+
+
+class TestFilenameSafety:
+    """Cache filenames must be valid on every OS (Windows forbids : * ? " < > |)."""
+
+    @pytest.mark.parametrize("granularity", ["Y", "m", "d", "H", "M", "S"])
+    def test_generated_name_is_filesystem_safe(self, cache_dir, granularity):
+        """Every granularity must yield a writable filename.
+
+        Regression for the long-standing `test_cache_expiry` failure:
+        'M'/'S' used strftime defaults containing ':' which raised
+        OSError [Errno 22] on Windows.
+        """
+        def sample(code: str) -> str:
+            return f"data_{code}"
+
+        _, name = prepare_args(
+            sample, ("x",), {}, granularity=granularity,
+            enable_cache=True, cache_dir=cache_dir,
+        )
+        illegal = set('<>:"/\\|?*')
+        assert not (set(name) & illegal), f"illegal chars in cache name: {name!r}"
+
+        # And it must actually be writable
+        path = os.path.join(cache_dir, name)
+        with open(path, "wb") as f:
+            f.write(b"probe")
+        assert os.path.exists(path)
+
+    def test_unsafe_format_gets_sanitised(self, cache_dir):
+        """A hypothetical colon-bearing format must be sanitised, not crash."""
+        assert _safe_filename_component("2026-11-03 17:29:21") == "2026-11-03 17_29_21"
+        assert "/" not in _safe_filename_component("a/b")
+        assert "\\" not in _safe_filename_component("a\\b")

@@ -25,10 +25,29 @@ format_dict = {
     'Y': '%Y',
     'm': '%Y-%m',
     'd': '%Y-%m-%d',
-    'H': '%Y-%m-%d %H',
-    'M': '%Y-%m-%d %H:%M',
-    'S': '%Y-%m-%d %H:%M:%S',
+    # 文件名安全（2026-11-03）：'H'/'M'/'S' 曾用 '%Y-%m-%d %H:%M:%S' 这类
+    # strftime 默认格式，冒号在 Windows 文件名里非法，写入直接 OSError
+    # [Errno 22]（test_cache_expiry 长期失败）。分隔符统一改 '_'，时间部分
+    # 紧凑拼接；'Y'/'m'/'d' 只含数字与连字符，保持原样。
+    'H': '%Y-%m-%d_%H',
+    'M': '%Y-%m-%d_%H%M',
+    'S': '%Y-%m-%d_%H%M%S',
 }
+
+# Windows 文件名保留字符（含控制符）。跨平台统一禁止，避免缓存文件在
+# 不同 OS 上行为不一致。
+_ILLEGAL_FILENAME_CHARS = set('<>:"/\\|?*') | {chr(i) for i in range(32)}
+
+
+def _safe_filename_component(text: str) -> str:
+    """Replace filesystem-illegal characters with '_'.
+
+    Defensive net: ``format_dict`` entries are safe today, but a future
+    granularity addition using a strftime default (e.g. ``%H:%M``) would
+    silently reintroduce the Windows OSError this guards against.
+    """
+    return ''.join('_' if c in _ILLEGAL_FILENAME_CHARS else c for c in text)
+
 
 
 def get_cache_path(enable_cache: bool = False, cache_dir: str | None = None):
@@ -69,7 +88,7 @@ def prepare_args(func, arg, kwargs: dict, granularity: str = 'H',
 
     key = pickle.dumps([func_name, arg_tuple, kwargs, dt_str])
     if exploit_func_name:
-        name = f"{func_name}_{hashlib.sha1(key).hexdigest()}_{dt_str}"
+        name = f"{func_name}_{hashlib.sha1(key).hexdigest()}_{_safe_filename_component(dt_str)}"
     else:
         name = hashlib.sha1(key).hexdigest()
     file_path = get_cache_path(enable_cache=enable_cache, cache_dir=cache_dir)
