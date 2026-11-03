@@ -20,8 +20,8 @@ from .db import (
     save_nav_history,
     save_weight_history,
 )
-from .git import git_commit as git_commit
-from .git import git_commit_rich, git_get_hash
+from strategy_research.foundation.git import git_commit as git_commit
+from strategy_research.foundation.git import git_commit_rich, git_get_hash
 from strategy_research.apps.run_card import write_run_card
 
 logger = logging.getLogger(__name__)

@@ -99,7 +99,7 @@ LAYER_MEMBERSHIP: dict[str, str] = {
     "strategy_research.foundation.config_loader": "L4",
     "strategy_research.foundation": "L4",  # W0 试点：层目录 __init__
     "strategy_research.foundation.errors": "L4",
-    "strategy_research.core.git": "L4",
+    "strategy_research.foundation.git": "L4",
 }
 
 # Facade __init__ modules excluded from direction assertions (re-exports only)
