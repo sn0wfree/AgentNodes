@@ -980,7 +980,7 @@ class SessionService:
         ``RuntimeError`` on AgentLoop failure (caller converts to a failed
         result dict).
         """
-        from strategy_research.core.workflow.orchestrate_guard import (
+        from strategy_research.kernel.workflow.orchestrate_guard import (
             continue_instruction,
             looks_like_question,
             max_continues,

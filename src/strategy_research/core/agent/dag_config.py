@@ -110,7 +110,7 @@ class AgentDAGConfig:
     # ── validation ──
     def validate(self, registry: AgentPluginRegistry | None = None) -> list[str]:
         """Return a list of error strings (empty == OK)."""
-        from ..workflow.dag import validate_dag
+        from strategy_research.kernel.workflow.dag import validate_dag
 
         reg = registry or get_default_registry()
         errors: list[str] = []

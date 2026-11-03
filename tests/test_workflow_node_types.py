@@ -8,8 +8,8 @@ from pathlib import Path
 import pytest
 
 from strategy_research.kernel.swarm.runtime import AgentStatus
-from strategy_research.core.workflow.definition import WorkflowNode
-from strategy_research.core.workflow.node_types import (
+from strategy_research.kernel.workflow.definition import WorkflowNode
+from strategy_research.kernel.workflow.node_types import (
     NODE_METADATA,
     NodeContext,
     NodeDispatchError,
@@ -228,7 +228,7 @@ class TestPythonTool:
             dispatch_node(node, make_ctx(tmp_path))
 
     def test_tool_wrapper_available(self):
-        from strategy_research.core.workflow.node_types import register_builtin_tool_executors
+        from strategy_research.kernel.workflow.node_types import register_builtin_tool_executors
         count = register_builtin_tool_executors()
         assert count >= 4
         assert NodeExecutors.get("run_backtest") is not None

@@ -13,9 +13,9 @@ from pathlib import Path
 import pytest
 
 from strategy_research.kernel.swarm.runtime import AgentStatus
-from strategy_research.core.workflow.builtin import load_definition
-from strategy_research.core.workflow.executor import WorkflowRunner
-from strategy_research.core.workflow.store import WorkflowStore
+from strategy_research.kernel.workflow.builtin import load_definition
+from strategy_research.kernel.workflow.executor import WorkflowRunner
+from strategy_research.kernel.workflow.store import WorkflowStore
 
 pytestmark = pytest.mark.xdist_group("workflow")
 

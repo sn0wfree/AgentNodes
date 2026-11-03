@@ -13,7 +13,7 @@ import json
 
 import pytest
 
-from strategy_research.core.workflow.orchestrate_tool import SubmitDagStepTool
+from strategy_research.kernel.workflow.orchestrate_tool import SubmitDagStepTool
 
 
 def _dag(nodes: list[dict], edges: list[dict]) -> dict:

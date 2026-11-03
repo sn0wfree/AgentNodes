@@ -17,17 +17,17 @@ from pathlib import Path
 import pytest
 
 from strategy_research.kernel.swarm.runtime import AgentResult, AgentStatus
-from strategy_research.core.workflow.definition import (
+from strategy_research.kernel.workflow.definition import (
     WorkflowDefinition,
     WorkflowEdge,
     WorkflowNode,
 )
-from strategy_research.core.workflow.executor import WorkflowRunner
-from strategy_research.core.workflow.graph_compiler import (
+from strategy_research.kernel.workflow.executor import WorkflowRunner
+from strategy_research.kernel.workflow.graph_compiler import (
     CompiledRunState,
     WorkflowGraphCompiler,
 )
-from strategy_research.core.workflow.store import WorkflowStore
+from strategy_research.kernel.workflow.store import WorkflowStore
 
 pytestmark = pytest.mark.xdist_group("workflow")
 
@@ -97,7 +97,7 @@ def test_empty_plan_returns_early(tmp_path):
     })
     engine = compiler.compile(pre_completed=compiler._run_state.results)
     state = {"run": compiler._run_state}
-    from strategy_research.core.workflow.graph_compiler import CompiledRunState as S
+    from strategy_research.kernel.workflow.graph_compiler import CompiledRunState as S
     # 直接调用 plan 节点 fn
     out = compiler._make_plan_fn(d.nodes[0])(state)
     assert out["run"].plan == []
@@ -106,7 +106,7 @@ def test_empty_plan_returns_early(tmp_path):
 
 def test_approval_node_inside_segment_is_rejected(tmp_path):
     """畸形定义：approval 落在段内 → 明确抛 Unsupported（fail loud）。"""
-    from strategy_research.core.workflow.definition import WorkflowSegment
+    from strategy_research.kernel.workflow.definition import WorkflowSegment
 
     d = _def([WorkflowNode(id="a", type="llm_agent", config={"role": "r"}),
               WorkflowNode(id="gate", type="approval")])

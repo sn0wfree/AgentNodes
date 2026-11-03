@@ -13,7 +13,7 @@ from pathlib import Path
 import pytest
 
 from strategy_research.kernel.swarm.preset_loader import list_presets
-from strategy_research.core.workflow.dag import topological_layers, validate_dag
+from strategy_research.kernel.workflow.dag import topological_layers, validate_dag
 
 PRESETS_DIR = Path(__file__).resolve().parent.parent / "src" / "strategy_research" / "kernel" / "swarm" / "presets"
 

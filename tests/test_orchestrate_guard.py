@@ -8,7 +8,7 @@ import os
 
 import pytest
 
-from strategy_research.core.workflow.orchestrate_guard import (
+from strategy_research.kernel.workflow.orchestrate_guard import (
     DEFAULT_MAX_CONTINUES,
     continue_instruction,
     looks_like_question,

@@ -94,7 +94,7 @@ class GoalWorkflowConfig:
     def to_swarm_preset(self) -> Any:
         """Convert to a SwarmPreset for use with SwarmRuntime (P3.3)."""
         from strategy_research.kernel.swarm.runtime import SwarmPreset
-        from ..workflow.types import AgentCall
+        from strategy_research.kernel.workflow.types import AgentCall
 
         agent_calls = []
         for agent in self.agents:
@@ -449,7 +449,7 @@ class GoalWorkflowRunner:
 
         total_layers = 0
         try:
-            from ..workflow.dag import topological_layers
+            from strategy_research.kernel.workflow.dag import topological_layers
             dag = {a.id: [d for d in self._config.dag.get(a.id, [])]
                    for a in self._config.agents}
             total_layers = len(topological_layers(dag))

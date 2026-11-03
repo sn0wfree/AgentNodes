@@ -21,7 +21,7 @@ from strategy_research.kernel.swarm.runtime import (
     SwarmResult,
     SwarmRuntime,
 )
-from strategy_research.core.workflow.types import AgentCall, AgentStatus
+from strategy_research.kernel.workflow.types import AgentCall, AgentStatus
 
 # ═══════════════════════════════════════════════════════════════════════
 # SwarmPreset / AgentResult / SwarmResult dataclasses
@@ -155,20 +155,20 @@ class TestSwarmRuntimeGatherUpstream:
 
 class TestSwarmRuntimeTopologicalLayers:
     def test_empty(self):
-        from strategy_research.core.workflow.dag import topological_layers
+        from strategy_research.kernel.workflow.dag import topological_layers
         assert topological_layers({}) == []
 
     def test_single(self):
-        from strategy_research.core.workflow.dag import topological_layers
+        from strategy_research.kernel.workflow.dag import topological_layers
         assert topological_layers({"a": []}) == [["a"]]
 
     def test_chain(self):
-        from strategy_research.core.workflow.dag import topological_layers
+        from strategy_research.kernel.workflow.dag import topological_layers
         layers = topological_layers({"a": [], "b": ["a"], "c": ["b"]})
         assert layers == [["a"], ["b"], ["c"]]
 
     def test_diamond(self):
-        from strategy_research.core.workflow.dag import topological_layers
+        from strategy_research.kernel.workflow.dag import topological_layers
         layers = topological_layers(
             {"a": [], "b": ["a"], "c": ["a"], "d": ["b", "c"]}
         )

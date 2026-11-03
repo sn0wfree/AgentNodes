@@ -20,7 +20,7 @@ from pathlib import Path
 from typing import Any
 
 from strategy_research.kernel.runtimes import END, INTERRUPT_KEY, GraphEngine, GraphInterrupt
-from strategy_research.core.workflow.dag import topological_layers
+from strategy_research.kernel.workflow.dag import topological_layers
 from .types import AgentCall, AgentStatus, SwarmHook
 
 logger = logging.getLogger(__name__)

@@ -17,7 +17,7 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any, Callable
 
-from ..agent.structured_output import get_parser
+from strategy_research.core.agent.structured_output import get_parser
 from strategy_research.kernel.swarm.runtime import AgentResult, AgentStatus
 
 logger = logging.getLogger(__name__)
@@ -100,7 +100,7 @@ def register_builtin_tool_executors() -> int:
     Each wrapper calls the underlying BaseTool with a ToolContext
     (workspace injected).  Returns the number registered.
     """
-    from ..agent.builtin_tools import build_default_registry
+    from strategy_research.core.agent.builtin_tools import build_default_registry
 
     registry = build_default_registry()
     count = 0
@@ -118,7 +118,7 @@ def _make_tool_wrapper(tool: Any, name: str) -> Callable[..., Any]:
     """Wrap a BaseTool so node dispatch can invoke it with a ctx."""
 
     def _wrapper(**kwargs: Any) -> dict[str, Any]:
-        from ..agent.tools import ToolContext
+        from strategy_research.core.agent.tools import ToolContext
 
         params = dict(kwargs.get("params") or {})
         workspace = kwargs.get("workspace_path")
@@ -159,7 +159,7 @@ class NodeContext:
 
 def default_loop_factory():
     """Lazy import of run_agent_via_llm (keeps import graph light)."""
-    from ..agent.role_factory import run_agent_via_llm
+    from strategy_research.core.agent.role_factory import run_agent_via_llm
     return run_agent_via_llm
 
 

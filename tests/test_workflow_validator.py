@@ -1,4 +1,4 @@
-from strategy_research.core.workflow.validator import AgentValidator, ValidationResult
+from strategy_research.kernel.workflow.validator import AgentValidator, ValidationResult
 
 
 class TestValidationResult:

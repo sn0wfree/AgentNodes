@@ -10,7 +10,7 @@ import sqlite3
 from pathlib import Path
 
 from strategy_research.kernel.swarm.runtime import AgentResult, AgentStatus
-from strategy_research.core.workflow.store import WorkflowStore
+from strategy_research.kernel.workflow.store import WorkflowStore
 
 
 def _store(tmp_path: Path) -> WorkflowStore:

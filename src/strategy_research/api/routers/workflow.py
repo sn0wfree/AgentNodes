@@ -350,7 +350,7 @@ def _definition_workspace() -> _Path:
 def _get_run_store() -> Any:
     global _run_store
     if _run_store is None:
-        from ...core.workflow.store import WorkflowStore
+        from strategy_research.kernel.workflow.store import WorkflowStore
         _run_store = WorkflowStore(db_path=_definition_workspace() / "workflows.db")
     return _run_store
 
@@ -358,7 +358,7 @@ def _get_run_store() -> Any:
 def _get_run_registry() -> Any:
     global _run_registry
     if _run_registry is None:
-        from ...core.workflow.executor import WorkflowRunRegistry
+        from strategy_research.kernel.workflow.executor import WorkflowRunRegistry
         _run_registry = WorkflowRunRegistry()
     return _run_registry
 
@@ -512,8 +512,8 @@ async def draft_delete(dag_id: str, request: Request):
 @router.post("/definitions")
 async def definitions_create(payload: WorkflowDefinitionPayload, request: Request):
     """Create or overwrite a user workflow definition."""
-    from ...core.workflow.builtin import save_user_definition
-    from ...core.workflow.definition import WorkflowDefinition
+    from strategy_research.kernel.workflow.builtin import save_user_definition
+    from strategy_research.kernel.workflow.definition import WorkflowDefinition
 
     definition = WorkflowDefinition.from_dict(payload.model_dump(), source="user")
     errors = definition.validate()
@@ -527,14 +527,14 @@ async def definitions_create(payload: WorkflowDefinitionPayload, request: Reques
 @router.get("/definitions")
 async def definitions_list(request: Request):
     """List all definitions (user shadows builtin, source marked)."""
-    from ...core.workflow.builtin import list_definitions
+    from strategy_research.kernel.workflow.builtin import list_definitions
     return {"status": "ok", "definitions": list_definitions(_definition_workspace())}
 
 
 @router.get("/definitions/{name}")
 async def definitions_get(name: str, request: Request):
     """Fetch a definition by name."""
-    from ...core.workflow.builtin import load_definition
+    from strategy_research.kernel.workflow.builtin import load_definition
     definition = load_definition(name, _definition_workspace())
     if definition is None:
         raise HTTPException(status_code=404, detail=f"Definition '{name}' not found")
@@ -549,7 +549,7 @@ async def definitions_delete(name: str, request: Request, x_admin_token: str | N
     but destructive writes need the admin token. Builtin definitions are
     read-only regardless.
     """
-    from ...core.workflow.builtin import delete_user_definition, load_definition
+    from strategy_research.kernel.workflow.builtin import delete_user_definition, load_definition
     from .admin import _verify_admin
     _verify_admin(x_admin_token)
     definition = load_definition(name, _definition_workspace())
@@ -567,8 +567,8 @@ async def definitions_copy(name: str, request: Request):
     """Copy a definition (typically a builtin) into the user directory."""
     import json as _json
 
-    from ...core.workflow.builtin import load_definition, save_user_definition
-    from ...core.workflow.definition import WorkflowDefinition
+    from strategy_research.kernel.workflow.builtin import load_definition, save_user_definition
+    from strategy_research.kernel.workflow.definition import WorkflowDefinition
 
     definition = load_definition(name, _definition_workspace())
     if definition is None:
@@ -583,7 +583,7 @@ async def definitions_copy(name: str, request: Request):
 @router.get("/definitions/{name}/graph")
 async def definitions_graph(name: str, request: Request):
     """Return nodes + edges for the WorkflowDAG frontend (typed nodes)."""
-    from ...core.workflow.builtin import load_definition
+    from strategy_research.kernel.workflow.builtin import load_definition
     definition = load_definition(name, _definition_workspace())
     if definition is None:
         raise HTTPException(status_code=404, detail=f"Definition '{name}' not found")
@@ -597,9 +597,9 @@ async def definitions_graph(name: str, request: Request):
 async def start_definition(req: WorkflowStartDefinitionRequest, request: Request):
     """Start a modular workflow definition run (session ownership required;
     the run is owner-stamped for status/detail/events/approve access)."""
-    from ...core.workflow.builtin import load_definition
-    from ...core.workflow.executor import WorkflowRunner
-    from ...core.workflow.node_types import register_builtin_tool_executors
+    from strategy_research.kernel.workflow.builtin import load_definition
+    from strategy_research.kernel.workflow.executor import WorkflowRunner
+    from strategy_research.kernel.workflow.node_types import register_builtin_tool_executors
     from .web_session import _fetch_session_owned, _get_db
 
     user_id = getattr(request.state, "user_id", None) or "anonymous"

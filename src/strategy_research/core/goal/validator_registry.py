@@ -75,7 +75,7 @@ def register_default_validators() -> None:
     internally by ``agent_name``.
     """
     try:
-        from ..workflow.validator import AgentValidator
+        from strategy_research.kernel.workflow.validator import AgentValidator
     except ImportError:
         logger.warning("Cannot import AgentValidator; skipping bootstrap")
         return

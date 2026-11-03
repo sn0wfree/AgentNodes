@@ -15,9 +15,9 @@ from unittest.mock import patch
 import pytest
 
 from strategy_research.kernel.swarm.runtime import AgentResult, AgentStatus
-from strategy_research.core.workflow import node_types
-from strategy_research.core.workflow.definition import WorkflowNode
-from strategy_research.core.workflow.node_types import NodeContext, _retryable_node_error
+from strategy_research.kernel.workflow import node_types
+from strategy_research.kernel.workflow.definition import WorkflowNode
+from strategy_research.kernel.workflow.node_types import NodeContext, _retryable_node_error
 
 # ── §3.1 node_timeout_seconds ────────────────────────────────
 
@@ -67,7 +67,7 @@ def _err(err: str = "LLMServerError: 503") -> AgentResult:
 
 def _wf_executor():
     """The module that owns node retry after the R-B migration."""
-    from strategy_research.core.workflow import graph_compiler as wf_executor
+    from strategy_research.kernel.workflow import graph_compiler as wf_executor
 
     return wf_executor
 
@@ -82,8 +82,8 @@ def _runner(tmp_path, params):
     The contract (exec.node_max_retries at the node boundary) is unchanged;
     only its host moved when the segment loop was deleted.
     """
-    from strategy_research.core.workflow.definition import WorkflowDefinition
-    from strategy_research.core.workflow.graph_compiler import WorkflowGraphCompiler
+    from strategy_research.kernel.workflow.definition import WorkflowDefinition
+    from strategy_research.kernel.workflow.graph_compiler import WorkflowGraphCompiler
     definition = WorkflowDefinition(name="t", params=params)
     return WorkflowGraphCompiler(
         definition,
@@ -198,6 +198,6 @@ def test_decorators_module_is_gone():
     import importlib.util
 
     spec = importlib.util.find_spec(
-        "strategy_research.core.workflow.decorators"
+        "strategy_research.kernel.workflow.decorators"
     )
     assert spec is None, "decorators.py has zero importers and must stay deleted"

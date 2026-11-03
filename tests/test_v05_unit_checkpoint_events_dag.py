@@ -22,7 +22,7 @@ from strategy_research.core.goal.event_bus import (
     MetricsObserver,
     WorkflowEventBus,
 )
-from strategy_research.core.workflow.dag import find_downstream, find_upstream, topological_layers, validate_dag
+from strategy_research.kernel.workflow.dag import find_downstream, find_upstream, topological_layers, validate_dag
 
 # ═══════════════════════════════════════════════════════════════════════
 # CheckpointStore

@@ -11,8 +11,8 @@ from strategy_research.kernel.swarm.runtime import (
     SwarmResult,
     SwarmRuntime,
 )
-from strategy_research.core.workflow.dag import topological_layers
-from strategy_research.core.workflow.types import AgentCall, AgentStatus
+from strategy_research.kernel.workflow.dag import topological_layers
+from strategy_research.kernel.workflow.types import AgentCall, AgentStatus
 
 # ── Preset Loader Tests ────────────────────────────────────
 

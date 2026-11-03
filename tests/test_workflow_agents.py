@@ -1,4 +1,4 @@
-from strategy_research.core.workflow.agents import AgentExecutor, AgentRegistry
+from strategy_research.kernel.workflow.agents import AgentExecutor, AgentRegistry
 
 
 class DummyExecutor:

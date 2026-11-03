@@ -98,7 +98,7 @@ def build_chat_agent_loop(
     # returned inside the tool result and the agent loop feeds them back
     # to the LLM for self-correction.
     if session_id.startswith("dag:"):
-        from ..workflow.orchestrate_tool import SubmitDagStepTool
+        from strategy_research.kernel.workflow.orchestrate_tool import SubmitDagStepTool
 
         if registry is not None:
             registry._tools.clear()

@@ -228,11 +228,11 @@ def test_draft_legacy_null_owner_stays_shared(env, tmp_path):
 
 def test_definitions_delete_requires_admin(env, tmp_path, monkeypatch):
     """User-token DELETE of a user definition → 401/403; admin token → 200."""
-    from strategy_research.core.workflow.builtin import (
+    from strategy_research.kernel.workflow.builtin import (
         load_definition,
         save_user_definition,
     )
-    from strategy_research.core.workflow.definition import WorkflowDefinition
+    from strategy_research.kernel.workflow.definition import WorkflowDefinition
 
     definition = WorkflowDefinition.from_dict(
         {"name": "mine",

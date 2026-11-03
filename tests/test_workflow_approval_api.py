@@ -14,7 +14,7 @@ from pathlib import Path
 import httpx
 import pytest
 
-from strategy_research.core.workflow.builtin import user_dir
+from strategy_research.kernel.workflow.builtin import user_dir
 
 
 def _build_asgi_app():
@@ -104,7 +104,7 @@ def _patch_loop_factory(tmp_path: Path, fake=None):
     start-definition builds WorkflowRunner without a loop_factory; we
     monkeypatch WorkflowRunner's start to swap it in via a hook.
     """
-    import strategy_research.core.workflow.executor as executor_mod
+    import strategy_research.kernel.workflow.executor as executor_mod
 
     fake = fake or FakeLoop()
     original = executor_mod.WorkflowRunner.start

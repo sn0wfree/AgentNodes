@@ -13,10 +13,10 @@ from types import SimpleNamespace
 import pytest
 
 from strategy_research.kernel.swarm.runtime import AgentStatus
-from strategy_research.core.workflow.builtin import load_definition
-from strategy_research.core.workflow.executor import WorkflowRunner
-from strategy_research.core.workflow.graph_compiler import WorkflowGraphCompiler
-from strategy_research.core.workflow.store import WorkflowStore
+from strategy_research.kernel.workflow.builtin import load_definition
+from strategy_research.kernel.workflow.executor import WorkflowRunner
+from strategy_research.kernel.workflow.graph_compiler import WorkflowGraphCompiler
+from strategy_research.kernel.workflow.store import WorkflowStore
 
 # Same xdist grouping rationale as test_workflow_segment_loop.py.
 pytestmark = pytest.mark.xdist_group("workflow")
@@ -65,8 +65,8 @@ def _run_old(name, tmp_path, *, loop_factory, events):
     regression statement about the *contract*, not a live second
     implementation.
     """
-    from strategy_research.core.workflow import node_types
-    from strategy_research.core.workflow.node_types import (
+    from strategy_research.kernel.workflow import node_types
+    from strategy_research.kernel.workflow.node_types import (
         NodeContext,
         register_builtin_tool_executors,
     )
@@ -102,7 +102,7 @@ def _run_old(name, tmp_path, *, loop_factory, events):
             if node.type == "planner" and (res.artifacts or {}).get("plan"):
                 plan[:] = list(res.artifacts["plan"])
                 events.append("plan_created")
-                from strategy_research.core.workflow.dag import topological_layers
+                from strategy_research.kernel.workflow.dag import topological_layers
                 steps = {}
                 for s in plan:
                     sid = s.get("id") or ""
@@ -112,7 +112,7 @@ def _run_old(name, tmp_path, *, loop_factory, events):
                         (d if str(d).startswith("plan_") else f"plan_{d}")
                         for d in (s.get("depends_on") or [])
                     ]
-                from strategy_research.core.workflow.definition import WorkflowNode
+                from strategy_research.kernel.workflow.definition import WorkflowNode
                 for layer in topological_layers(steps):
                     for sid in layer:
                         if sid in results:

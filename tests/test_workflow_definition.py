@@ -10,7 +10,7 @@ import pathlib
 
 import pytest
 
-from strategy_research.core.workflow.definition import (
+from strategy_research.kernel.workflow.definition import (
     DEFAULT_PARAMS,
     WorkflowDefinition,
     WorkflowDefinitionError,
@@ -278,6 +278,6 @@ class TestAgentResultEnvelope:
         assert r.status == AgentStatus.PENDING
 
     def test_awaiting_status_value(self):
-        from strategy_research.core.workflow.types import AgentStatus
+        from strategy_research.kernel.workflow.types import AgentStatus
         assert AgentStatus.AWAITING.value == "awaiting"
         assert AgentStatus("awaiting") == AgentStatus.AWAITING

@@ -60,7 +60,7 @@ class TestRunSwarm:
         # 用 mock 避免真正调用 LLM
         with patch("strategy_research.kernel.swarm.runtime.SwarmRuntime.execute") as mock_exec:
             from strategy_research.kernel.swarm.runtime import AgentResult, SwarmResult
-            from strategy_research.core.workflow.types import AgentStatus
+            from strategy_research.kernel.workflow.types import AgentStatus
 
             mock_exec.return_value = SwarmResult(
                 run_id="test_run_001",

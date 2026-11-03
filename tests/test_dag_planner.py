@@ -99,7 +99,7 @@ class TestPlanResult:
     def test_dag_is_acyclic(self, registry):
         planner = DAGPlanner(registry)
         plan = planner.plan("因子研究")
-        from strategy_research.core.workflow.dag import validate_dag
+        from strategy_research.kernel.workflow.dag import validate_dag
         adj: dict[str, list[str]] = {}
         for node in plan.config.nodes:
             adj[node.id] = plan.config.dag.get(node.id, [])
