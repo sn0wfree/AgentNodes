@@ -32,7 +32,7 @@ def _build_workspace(tmp_path: Path) -> Path:
     ``decide()`` receives ``{}`` (rather than the real-metrics this test
     asserts on).
     """
-    from strategy_research.core.data_import import generate_sample_ohlcv_data
+    from strategy_research.apps.data_import import generate_sample_ohlcv_data
     from strategy_research.core.db import init_db, save_ohlcv_to_db
 
     workspace = tmp_path / "ws"

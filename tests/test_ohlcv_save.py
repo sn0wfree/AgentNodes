@@ -19,14 +19,14 @@ class TestGenerateSampleOHLCVData:
     """generate_sample_ohlcv_data 生成器结构测试。"""
 
     def test_returns_dict_with_correct_count(self):
-        from strategy_research.core.data_import import generate_sample_ohlcv_data
+        from strategy_research.apps.data_import import generate_sample_ohlcv_data
         result = generate_sample_ohlcv_data(n_assets=3, n_days=50)
         assert isinstance(result, dict)
         assert len(result) == 3
         assert all(name.startswith("asset_") for name in result.keys())
 
     def test_each_dataframe_has_ohlcv_columns(self):
-        from strategy_research.core.data_import import generate_sample_ohlcv_data
+        from strategy_research.apps.data_import import generate_sample_ohlcv_data
         result = generate_sample_ohlcv_data(n_assets=2, n_days=30)
         for code, df in result.items():
             assert isinstance(df, pd.DataFrame)
@@ -34,25 +34,25 @@ class TestGenerateSampleOHLCVData:
                 assert col in df.columns, f"{code} missing {col}"
 
     def test_dataframe_has_correct_shape(self):
-        from strategy_research.core.data_import import generate_sample_ohlcv_data
+        from strategy_research.apps.data_import import generate_sample_ohlcv_data
         result = generate_sample_ohlcv_data(n_assets=5, n_days=100)
         for code, df in result.items():
             assert df.shape == (100, 5)  # (T, OHLCV)
 
     def test_index_is_datetime(self):
-        from strategy_research.core.data_import import generate_sample_ohlcv_data
+        from strategy_research.apps.data_import import generate_sample_ohlcv_data
         result = generate_sample_ohlcv_data(n_assets=2, n_days=30)
         for df in result.values():
             assert isinstance(df.index, pd.DatetimeIndex)
 
     def test_volume_is_positive_integer(self):
-        from strategy_research.core.data_import import generate_sample_ohlcv_data
+        from strategy_research.apps.data_import import generate_sample_ohlcv_data
         result = generate_sample_ohlcv_data(n_assets=3, n_days=30)
         for df in result.values():
             assert (df["volume"] > 0).all()
 
     def test_ohlc_values_are_positive(self):
-        from strategy_research.core.data_import import generate_sample_ohlcv_data
+        from strategy_research.apps.data_import import generate_sample_ohlcv_data
         result = generate_sample_ohlcv_data(n_assets=3, n_days=30)
         for df in result.values():
             assert (df["open"] > 0).all()
@@ -62,7 +62,7 @@ class TestGenerateSampleOHLCVData:
 
     def test_high_ge_low_ge_open_close(self):
         """high >= low, high >= open/close, low <= open/close。"""
-        from strategy_research.core.data_import import generate_sample_ohlcv_data
+        from strategy_research.apps.data_import import generate_sample_ohlcv_data
         result = generate_sample_ohlcv_data(n_assets=3, n_days=50)
         for df in result.values():
             assert (df["high"] >= df["low"]).all(), "high should be >= low"
@@ -71,7 +71,7 @@ class TestGenerateSampleOHLCVData:
 
     def test_deterministic_with_same_seed(self):
         """相同 seed 应产生相同数据。"""
-        from strategy_research.core.data_import import generate_sample_ohlcv_data
+        from strategy_research.apps.data_import import generate_sample_ohlcv_data
         result1 = generate_sample_ohlcv_data(n_assets=2, n_days=20)
         result2 = generate_sample_ohlcv_data(n_assets=2, n_days=20)
         for code in result1:
@@ -79,7 +79,7 @@ class TestGenerateSampleOHLCVData:
 
     def test_ohlc_not_degenerate(self):
         """OHLC 不应完全退化为 close-only（即 O/H/L 应有变化）。"""
-        from strategy_research.core.data_import import generate_sample_ohlcv_data
+        from strategy_research.apps.data_import import generate_sample_ohlcv_data
         result = generate_sample_ohlcv_data(n_assets=3, n_days=50)
         for df in result.values():
             # at least some variation
@@ -101,7 +101,7 @@ class TestSaveOHLCVData:
 
     def test_preserves_open_high_low(self, tmp_path: Path):
         """保存后 open/high/low 应保留。"""
-        from strategy_research.core.data_import import generate_sample_ohlcv_data
+        from strategy_research.apps.data_import import generate_sample_ohlcv_data
         from strategy_research.core.db import init_db, save_ohlcv_data
 
         init_db(tmp_path)
@@ -125,7 +125,7 @@ class TestSaveOHLCVData:
 
     def test_preserves_volume(self, tmp_path: Path):
         """保存后 volume 应保留非 0 值。"""
-        from strategy_research.core.data_import import generate_sample_ohlcv_data
+        from strategy_research.apps.data_import import generate_sample_ohlcv_data
         from strategy_research.core.db import init_db, save_ohlcv_data
 
         init_db(tmp_path)
@@ -148,7 +148,7 @@ class TestSaveOHLCVData:
 
     def test_ohlc_not_degenerate_to_close_only(self, tmp_path: Path):
         """保存后 OHLC 应有真实变化（非 OHL=close 全等）。"""
-        from strategy_research.core.data_import import generate_sample_ohlcv_data
+        from strategy_research.apps.data_import import generate_sample_ohlcv_data
         from strategy_research.core.db import init_db, save_ohlcv_data
 
         init_db(tmp_path)
@@ -169,7 +169,7 @@ class TestSaveOHLCVData:
 
     def test_assigns_correct_asset_code(self, tmp_path: Path):
         """保存的 asset_code 应正确。"""
-        from strategy_research.core.data_import import generate_sample_ohlcv_data
+        from strategy_research.apps.data_import import generate_sample_ohlcv_data
         from strategy_research.core.db import init_db, save_ohlcv_data
 
         init_db(tmp_path)
@@ -187,7 +187,7 @@ class TestSaveOHLCVData:
 
     def test_replaces_existing_data(self, tmp_path: Path):
         """重复保存应替换不追加。"""
-        from strategy_research.core.data_import import generate_sample_ohlcv_data
+        from strategy_research.apps.data_import import generate_sample_ohlcv_data
         from strategy_research.core.db import init_db, save_ohlcv_data
 
         init_db(tmp_path)
@@ -206,7 +206,7 @@ class TestSaveOHLCVData:
 
     def test_returns_true_on_success(self, tmp_path: Path):
         """保存成功应返回 True。"""
-        from strategy_research.core.data_import import generate_sample_ohlcv_data
+        from strategy_research.apps.data_import import generate_sample_ohlcv_data
         from strategy_research.core.db import init_db, save_ohlcv_data
 
         init_db(tmp_path)
@@ -227,7 +227,7 @@ class TestSaveOHLCVData:
 
         monkeypatch.setattr(builtins, "__import__", mock_import)
 
-        from strategy_research.core.data_import import generate_sample_ohlcv_data
+        from strategy_research.apps.data_import import generate_sample_ohlcv_data
         from strategy_research.core.db import save_ohlcv_data
 
         ohlcv = generate_sample_ohlcv_data(n_assets=1, n_days=5)
@@ -245,7 +245,7 @@ class TestImportWithLoaderUsesOHLCV:
 
     def test_loaders_return_ohlcv_data_preserved(self, tmp_path: Path):
         """loader 返回 OHLCV → save_ohlcv_data → DB 保留 OHLCV。"""
-        from strategy_research.core.data_import import generate_sample_ohlcv_data
+        from strategy_research.apps.data_import import generate_sample_ohlcv_data
         from strategy_research.core.db import init_db, save_ohlcv_data
 
         init_db(tmp_path)
@@ -284,7 +284,7 @@ class TestGenerateSampleDataLegacy:
     """
 
     def test_returns_wide_close_panel(self):
-        from strategy_research.core.data_import import generate_sample_data
+        from strategy_research.apps.data_import import generate_sample_data
         result = generate_sample_data(n_assets=5, n_days=30)
         assert isinstance(result, pd.DataFrame)
         # 宽面板：(T, N) 列名=asset
@@ -293,7 +293,7 @@ class TestGenerateSampleDataLegacy:
 
     def test_values_are_close_prices(self):
         """返回的应是 close prices（单资产）。"""
-        from strategy_research.core.data_import import generate_sample_data
+        from strategy_research.apps.data_import import generate_sample_data
         result = generate_sample_data(n_assets=2, n_days=10)
         # 单列不应含 open/high/low/volume
         for col in result.columns:

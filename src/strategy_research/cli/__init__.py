@@ -570,13 +570,13 @@ def _import_local_file(source: str, args, path: Path, strategy_name: str) -> boo
         return False
     try:
         if source == "csv":
-            from strategy_research.core.data_import import import_csv_ohlcv
+            from strategy_research.apps.data_import import import_csv_ohlcv
             return import_csv_ohlcv(
                 path, strategy_name, args.file,
                 date_column=args.date_column,
                 asset_column=args.asset_column,
             )
-        from strategy_research.core.data_import import import_parquet_ohlcv
+        from strategy_research.apps.data_import import import_parquet_ohlcv
         return import_parquet_ohlcv(
             path, strategy_name, args.file,
             date_column=args.date_column,
@@ -593,7 +593,7 @@ def _import_api_source(source: str, args, path: Path, strategy_name: str) -> boo
         print("❌ 请指定 --codes 参数 (如: 000001.SZ,600519.SH)")
         return False
     codes = [c.strip() for c in args.codes.split(",")]
-    from strategy_research.core.data_import import (
+    from strategy_research.apps.data_import import (
         import_akshare,
         import_from_source,
         import_ifind,
@@ -620,7 +620,7 @@ def _import_fred(args, path: Path, strategy_name: str) -> bool:
         print(f"📡 导入 FRED 核心系列 ({len(codes)} 个)...")
     else:
         codes = [c.strip() for c in args.codes.split(",")]
-    from strategy_research.core.data_import import import_fred
+    from strategy_research.apps.data_import import import_fred
     return import_fred(
         path, strategy_name, codes,
         args.start_date, args.end_date,

@@ -1,4 +1,4 @@
-"""H 档补测 —— `core/data_import.py` 的本地文件导入路径。
+"""H 档补测 —— `apps/data_import.py` 的本地文件导入路径。
 
 此前 21%：全靠 monkeypatch 掉网络 loader 才跑到一点。真实可测的是
 **本地文件导入**（CSV / Parquet）与两个纯转换函数——它们不碰网络，
@@ -14,7 +14,7 @@ from pathlib import Path
 import pandas as pd
 import pytest
 
-from strategy_research.core import data_import as di
+from strategy_research.apps import data_import as di
 
 
 # ── _validate_long_ohlcv（fail-loud 契约） ───────────────────

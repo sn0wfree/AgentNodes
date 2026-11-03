@@ -1,4 +1,4 @@
-"""H 档补测（P1-4）—— `core/data_import.py` 的导入编排。
+"""H 档补测（P1-4）—— `apps/data_import.py` 的导入编排。
 
 ``import_data``（auto / 指定源）与 ``_import_with_loader``（增量更新、
 空结果、部分成功）此前完全未覆盖：现有测试只打到了长格式校验与本地文件
@@ -20,7 +20,7 @@ from pathlib import Path
 import pandas as pd
 import pytest
 
-from strategy_research.core import data_import as di
+from strategy_research.apps import data_import as di
 
 
 class FakeLoader:

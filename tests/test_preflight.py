@@ -189,7 +189,7 @@ class TestCheckOHLCVIntegrity:
 
     def test_ready_for_ohlcv_data(self, tmp_path: Path):
         """OHLCV 完整时返回 ready。"""
-        from strategy_research.core.data_import import generate_sample_ohlcv_data
+        from strategy_research.apps.data_import import generate_sample_ohlcv_data
         from strategy_research.core.db import init_db, save_ohlcv_data
         from strategy_research.apps.preflight import _check_ohlcv_integrity
 

@@ -236,7 +236,7 @@ class TestImportCsvOhlcv:
         return ws
 
     def test_happy_path_with_volume(self, tmp_path):
-        from strategy_research.core.data_import import import_csv_ohlcv
+        from strategy_research.apps.data_import import import_csv_ohlcv
 
         ws = self._setup_ws(tmp_path)
         dates = pd.bdate_range("2024-01-02", periods=5)
@@ -263,7 +263,7 @@ class TestImportCsvOhlcv:
         assert ohlcv["A"]["volume"].iloc[0] == 1000.0
 
     def test_missing_close_column_raises(self, tmp_path):
-        from strategy_research.core.data_import import import_csv_ohlcv
+        from strategy_research.apps.data_import import import_csv_ohlcv
 
         ws = self._setup_ws(tmp_path)
         long = pd.DataFrame(
@@ -282,14 +282,14 @@ class TestImportCsvOhlcv:
             import_csv_ohlcv(ws, "s1", csv)
 
     def test_missing_file_raises(self, tmp_path):
-        from strategy_research.core.data_import import import_csv_ohlcv
+        from strategy_research.apps.data_import import import_csv_ohlcv
 
         ws = self._setup_ws(tmp_path)
         with pytest.raises(FileNotFoundError, match="不存在"):
             import_csv_ohlcv(ws, "s1", tmp_path / "nope.csv")
 
     def test_no_volume_column_works(self, tmp_path):
-        from strategy_research.core.data_import import import_csv_ohlcv
+        from strategy_research.apps.data_import import import_csv_ohlcv
 
         ws = self._setup_ws(tmp_path)
         dates = pd.bdate_range("2024-01-02", periods=3)

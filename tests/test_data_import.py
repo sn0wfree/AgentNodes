@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import pandas as pd
 
-from strategy_research.core.data_import import (
+from strategy_research.apps.data_import import (
     generate_sample_data,
     generate_sample_ohlcv_data,
 )
