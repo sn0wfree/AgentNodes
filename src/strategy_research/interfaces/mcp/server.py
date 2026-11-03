@@ -73,8 +73,8 @@ def _handle_get_market_data(
     force_refresh: bool,
 ) -> str:
     """Handle the get_market_data MCP tool call."""
-    from strategy_research.core.data_source.base import validate_date_range
-    from strategy_research.core.data_source.registry import NoAvailableSourceError
+    from strategy_research.apps.data_source.base import validate_date_range
+    from strategy_research.apps.data_source.registry import NoAvailableSourceError
 
     if not codes:
         return json.dumps({"status": "error", "error": "codes is required"}, ensure_ascii=False)
@@ -130,8 +130,8 @@ def _resolve_market_loader(
     Returns ``(loader, effective_source)``; ``(None, "")`` when an explicit
     source is registered but unavailable.
     """
-    from strategy_research.core.data_source.registry import LOADER_REGISTRY, resolve_loader
-    from strategy_research.core.data_source.utils import detect_market
+    from strategy_research.apps.data_source.registry import LOADER_REGISTRY, resolve_loader
+    from strategy_research.apps.data_source.utils import detect_market
 
     if source and source in LOADER_REGISTRY:
         loader = LOADER_REGISTRY[source]()

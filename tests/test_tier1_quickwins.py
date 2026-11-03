@@ -121,14 +121,14 @@ class TestFallbackChainsCleanup:
     """FALLBACK_CHAINS 不应包含未注册的 loader (mootdx/baostock/yahoo/futu/okx/ccxt/stooq/sina/tiingo/fmp/finnhub/alphavantage/edgar)。"""
 
     def test_chains_no_unregistered_loaders(self):
-        from strategy_research.core.data_source import FALLBACK_CHAINS
+        from strategy_research.apps.data_source import FALLBACK_CHAINS
 
         # 已注册的 loader
-        from strategy_research.core.data_source.registry import _ensure_registered
+        from strategy_research.apps.data_source.registry import _ensure_registered
         _ensure_registered()
 
         # 通过 import 触发 loader 注册
-        from strategy_research.core.data_source import registry as _reg_module
+        from strategy_research.apps.data_source import registry as _reg_module
         registered = set(_reg_module.LOADER_REGISTRY.keys())
 
         # 仅 local 在 chains 里, 但 local 是 no-network 标志
@@ -146,15 +146,15 @@ class TestFallbackChainsCleanup:
                 )
 
     def test_all_chain_loaders_are_registered_or_local(self):
-        from strategy_research.core.data_source import FALLBACK_CHAINS
-        from strategy_research.core.data_source.registry import (
+        from strategy_research.apps.data_source import FALLBACK_CHAINS
+        from strategy_research.apps.data_source.registry import (
             LOADER_REGISTRY,
             _ensure_registered,
         )
         _ensure_registered()
 
         # 触发所有 loader 模块的导入 (通过 data_source.__init__ 的 _discover_loaders)
-        from strategy_research.core import data_source as _ds  # noqa: F401
+        from strategy_research.apps import data_source as _ds  # noqa: F401
 
         registered = set(LOADER_REGISTRY.keys())
         for market, chain in FALLBACK_CHAINS.items():

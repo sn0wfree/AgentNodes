@@ -85,7 +85,7 @@ async def test_validate_run_accepts_contained_run_dir(tmp_path, monkeypatch):
 
 def test_local_loader_uses_parameterized_sql(tmp_path):
     """A4: local_loader.py:96 用 `?` 参数化而不再 f-string 拼 SQL。"""
-    from strategy_research.core.data_source import local_loader
+    from strategy_research.apps.data_source import local_loader
 
     src = Path(local_loader.__file__).read_text(encoding="utf-8")
     assert "f\"SELECT * FROM prices WHERE asset_code = '{code}'\"" not in src, (

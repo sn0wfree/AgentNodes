@@ -44,14 +44,14 @@ def list_loaders() -> list[str]:
 _registered = False
 
 _loader_modules = [
-    "strategy_research.core.data_source.tencent_loader",
-    "strategy_research.core.data_source.tushare_loader",
-    "strategy_research.core.data_source.akshare_loader",
-    "strategy_research.core.data_source.ifind_loader",
-    "strategy_research.core.data_source.fred_loader",
-    "strategy_research.core.data_source.yfinance_loader",
-    "strategy_research.core.data_source.eastmoney_loader",
-    "strategy_research.core.data_source.local_loader",
+    "strategy_research.apps.data_source.tencent_loader",
+    "strategy_research.apps.data_source.tushare_loader",
+    "strategy_research.apps.data_source.akshare_loader",
+    "strategy_research.apps.data_source.ifind_loader",
+    "strategy_research.apps.data_source.fred_loader",
+    "strategy_research.apps.data_source.yfinance_loader",
+    "strategy_research.apps.data_source.eastmoney_loader",
+    "strategy_research.apps.data_source.local_loader",
 ]
 
 

@@ -65,7 +65,7 @@ def import_from_source(
     Returns:
         bool: 是否成功
     """
-    from strategy_research.core.data_source import NoAvailableSourceError, detect_market, resolve_loader
+    from strategy_research.apps.data_source import NoAvailableSourceError, detect_market, resolve_loader
 
     # 自动检测市场
     if source == "auto":
@@ -98,7 +98,7 @@ def import_from_source(
         try:
             loader = resolve_loader(detect_market(codes[0]) if codes else "a_share")
             # 如果指定了 source，尝试使用指定的
-            from strategy_research.core.data_source import get_loader_or_fallback
+            from strategy_research.apps.data_source import get_loader_or_fallback
             loader_cls = get_loader_or_fallback(source)
             loader = loader_cls()
             return _import_with_loader(
@@ -192,7 +192,7 @@ def import_tushare(
     incremental: bool = True,
 ) -> bool:
     """从 Tushare 导入价格数据。"""
-    from strategy_research.core.data_source.tushare_loader import TushareLoader
+    from strategy_research.apps.data_source.tushare_loader import TushareLoader
 
     loader = TushareLoader(token=token, workspace_path=workspace_path)
     if not loader.is_available():
@@ -219,7 +219,7 @@ def import_ifind(
     incremental: bool = True,
 ) -> bool:
     """从 iFinD 导入数据。"""
-    from strategy_research.core.data_source.ifind_loader import IFindLoader
+    from strategy_research.apps.data_source.ifind_loader import IFindLoader
 
     loader = IFindLoader(token=token, workspace_path=workspace_path)
     if not loader.is_available():
@@ -246,7 +246,7 @@ def import_fred(
     incremental: bool = True,
 ) -> bool:
     """从 FRED 导入宏观数据。"""
-    from strategy_research.core.data_source.fred_loader import FredLoader
+    from strategy_research.apps.data_source.fred_loader import FredLoader
 
     loader = FredLoader(api_key=api_key, workspace_path=workspace_path)
     if not loader.is_available():
@@ -272,7 +272,7 @@ def import_akshare(
     incremental: bool = True,
 ) -> bool:
     """从 AKShare 导入数据 (免费)。"""
-    from strategy_research.core.data_source.akshare_loader import AKShareLoader
+    from strategy_research.apps.data_source.akshare_loader import AKShareLoader
 
     loader = AKShareLoader()
     if not loader.is_available():

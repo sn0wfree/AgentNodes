@@ -6,7 +6,7 @@ import time
 import pandas as pd
 import pytest
 
-from strategy_research.core.data_source.file_cache import file_cache, get_cache_path
+from strategy_research.apps.data_source.file_cache import file_cache, get_cache_path
 
 
 @pytest.fixture

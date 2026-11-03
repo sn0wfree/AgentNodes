@@ -13,7 +13,7 @@ from __future__ import annotations
 
 import pytest
 
-from strategy_research.core.data_source.utils import detect_market
+from strategy_research.apps.data_source.utils import detect_market
 
 
 class TestDataSourceDetectMarket:

@@ -182,8 +182,8 @@ def load_data(cfg: dict, workspace_path: Path) -> pd.DataFrame:
         # 2. Cache miss — fetch online
         if codes:
             try:
-                from strategy_research.core.data_source.registry import resolve_loader
-                from strategy_research.core.data_source.utils import detect_market
+                from strategy_research.apps.data_source.registry import resolve_loader
+                from strategy_research.apps.data_source.utils import detect_market
                 from strategy_research.core.db import save_ohlcv_to_db
 
                 market = detect_market(codes[0]) if codes else "a_share"
@@ -208,8 +208,8 @@ def load_data(cfg: dict, workspace_path: Path) -> pd.DataFrame:
     # --- Online fetch (auto/tencent/akshare/etc) ---
     if codes:
         try:
-            from strategy_research.core.data_source.registry import resolve_loader
-            from strategy_research.core.data_source.utils import detect_market
+            from strategy_research.apps.data_source.registry import resolve_loader
+            from strategy_research.apps.data_source.utils import detect_market
             from strategy_research.core.db import save_ohlcv_to_db
 
             market = detect_market(codes[0]) if codes else "a_share"

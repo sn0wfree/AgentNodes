@@ -107,7 +107,7 @@ def test_package_multiple_codes_sum_rows():
 
 
 def test_resolve_explicit_source_unavailable_returns_none(monkeypatch):
-    from strategy_research.core.data_source import registry as reg
+    from strategy_research.apps.data_source import registry as reg
 
     class Unavailable:
         def is_available(self):
@@ -120,7 +120,7 @@ def test_resolve_explicit_source_unavailable_returns_none(monkeypatch):
 
 
 def test_resolve_explicit_source_available(monkeypatch):
-    from strategy_research.core.data_source import registry as reg
+    from strategy_research.apps.data_source import registry as reg
 
     class Available:
         name = "ghost_src"
@@ -135,8 +135,8 @@ def test_resolve_explicit_source_available(monkeypatch):
 
 
 def test_resolve_auto_detection_falls_back_to_market(monkeypatch):
-    from strategy_research.core.data_source import registry as reg
-    from strategy_research.core.data_source import utils as dsu
+    from strategy_research.apps.data_source import registry as reg
+    from strategy_research.apps.data_source import utils as dsu
 
     class AutoLoader:
         name = "auto_loader"
@@ -187,10 +187,10 @@ def test_handle_unknown_source_falls_back_to_auto(monkeypatch):
 
             return {c: pd.DataFrame({"close": [1.0, 2.0]}) for c in codes}
 
-    import strategy_research.core.data_source.registry as reg
+    import strategy_research.apps.data_source.registry as reg
     monkeypatch.setattr(reg, "resolve_loader", lambda market: FakeLoader())
     monkeypatch.setattr(
-        "strategy_research.core.data_source.utils.detect_market",
+        "strategy_research.apps.data_source.utils.detect_market",
         lambda code: "a_share")
 
     import json as _json

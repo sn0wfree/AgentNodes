@@ -615,7 +615,7 @@ def _import_api_source(source: str, args, path: Path, strategy_name: str) -> boo
 def _import_fred(args, path: Path, strategy_name: str) -> bool:
     """Import FRED series (core series when --codes is omitted)."""
     if not args.codes:
-        from strategy_research.core.data_source.fred_loader import CORE_SERIES
+        from strategy_research.apps.data_source.fred_loader import CORE_SERIES
         codes = CORE_SERIES
         print(f"📡 导入 FRED 核心系列 ({len(codes)} 个)...")
     else:

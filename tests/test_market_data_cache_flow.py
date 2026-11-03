@@ -58,7 +58,7 @@ class _FakeLoader:
 def gmd():
     # Stub the loader registry + market detection so the tool finds the
     # fake loader without network.
-    import strategy_research.core.data_source.registry as dsr
+    import strategy_research.apps.data_source.registry as dsr
     from strategy_research.core.agent.builtin_tools.data_tools import (
         GetMarketDataTool,
     )
@@ -169,7 +169,7 @@ class TestGetMarketDataEdgeCases:
 
     def test_unavailable_source_errors(self, gmd, workspace):
         """Explicit source that exists but is unavailable → actionable error."""
-        import strategy_research.core.data_source.registry as dsr
+        import strategy_research.apps.data_source.registry as dsr
 
         class _Unavailable:
             name = "down"

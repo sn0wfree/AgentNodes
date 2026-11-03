@@ -57,7 +57,7 @@ def test_search_symbol_missing_query(ctx):
 def test_search_symbol_network_failure_is_actionable(ctx, monkeypatch):
     """akshare 未装/网络失败 → error + fix（不抛）。"""
     monkeypatch.setattr(
-        "strategy_research.core.data_source.registry.LOADER_REGISTRY", {},
+        "strategy_research.apps.data_source.registry.LOADER_REGISTRY", {},
     )
     out = json.loads(SearchSymbolTool().execute(ctx=ctx, query="茅台"))
     assert out["status"] == "error"
@@ -197,7 +197,7 @@ def test_get_market_data_list_codes_no_source(gm_ctx, monkeypatch):
     from strategy_research.core.agent.builtin_tools.data_tools import (
         GetMarketDataTool,
     )
-    import strategy_research.core.data_source.registry as dsr
+    import strategy_research.apps.data_source.registry as dsr
 
     monkeypatch.setattr(dsr, "resolve_loader",
                         lambda *a, **k: (_ for _ in ()).throw(
@@ -215,7 +215,7 @@ def test_get_market_data_fetch_exception(gm_ctx, monkeypatch):
     from strategy_research.core.agent.builtin_tools.data_tools import (
         GetMarketDataTool,
     )
-    import strategy_research.core.data_source.registry as dsr
+    import strategy_research.apps.data_source.registry as dsr
 
     class BoomLoader:
         def is_available(self):

@@ -158,7 +158,7 @@ def test_incremental_skips_only_stale_codes(ws, monkeypatch):
 
 def test_auto_mode_groups_by_market(ws, monkeypatch):
     """不同市场走不同 loader——混在一个 loader 里取会静默拿错数据。"""
-    from strategy_research.core import data_source as ds
+    from strategy_research.apps import data_source as ds
 
     monkeypatch.setattr(
         ds, "detect_market",
@@ -192,7 +192,7 @@ def test_auto_mode_groups_by_market(ws, monkeypatch):
 
 
 def test_auto_mode_one_market_failure_does_not_kill_others(ws, monkeypatch):
-    from strategy_research.core import data_source as ds
+    from strategy_research.apps import data_source as ds
 
     monkeypatch.setattr(
         ds, "detect_market", lambda code: "bad" if code == "X" else "good")
@@ -215,7 +215,7 @@ def test_auto_mode_one_market_failure_does_not_kill_others(ws, monkeypatch):
 
 
 def test_explicit_source_uses_requested_loader(ws, monkeypatch):
-    from strategy_research.core import data_source as ds
+    from strategy_research.apps import data_source as ds
 
     monkeypatch.setattr(ds, "detect_market", lambda code: "a_share")
     loader = FakeLoader({"A": _frame()})
@@ -230,7 +230,7 @@ def test_explicit_source_uses_requested_loader(ws, monkeypatch):
 
 
 def test_explicit_source_unavailable_returns_false(ws, monkeypatch, capsys):
-    from strategy_research.core import data_source as ds
+    from strategy_research.apps import data_source as ds
 
     monkeypatch.setattr(ds, "detect_market", lambda code: "a_share")
 
@@ -246,7 +246,7 @@ def test_explicit_source_unavailable_returns_false(ws, monkeypatch, capsys):
 
 def test_explicit_source_with_no_codes_defaults_to_a_share(ws, monkeypatch):
     """codes 为空时不能 IndexError——按 a_share 探测。"""
-    from strategy_research.core import data_source as ds
+    from strategy_research.apps import data_source as ds
 
     seen = {}
     monkeypatch.setattr(ds, "detect_market", lambda code: seen.setdefault("m", "a_share"))

@@ -203,9 +203,9 @@ def test_load_data_auto_source_uses_loader_and_caches(ws, monkeypatch):
         def fetch(self, codes, start, end):
             return {c: frame for c in codes}
 
-    import strategy_research.core.data_source.registry as reg
+    import strategy_research.apps.data_source.registry as reg
     monkeypatch.setattr(reg, "resolve_loader", lambda market: FakeLoader())
-    monkeypatch.setattr("strategy_research.core.data_source.utils.detect_market",
+    monkeypatch.setattr("strategy_research.apps.data_source.utils.detect_market",
                         lambda code: "a_share")
 
     cfg = {**CFG_DUCKDB, "data": {**CFG_DUCKDB["data"],
@@ -227,9 +227,9 @@ def test_load_data_auto_failure_returns_empty(ws, monkeypatch):
         def fetch(self, codes, start, end):
             raise RuntimeError("network down")
 
-    import strategy_research.core.data_source.registry as reg
+    import strategy_research.apps.data_source.registry as reg
     monkeypatch.setattr(reg, "resolve_loader", lambda market: BoomLoader())
-    monkeypatch.setattr("strategy_research.core.data_source.utils.detect_market",
+    monkeypatch.setattr("strategy_research.apps.data_source.utils.detect_market",
                         lambda code: "a_share")
 
     cfg = {**CFG_DUCKDB, "data": {**CFG_DUCKDB["data"],

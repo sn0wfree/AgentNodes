@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import pytest
 
-from strategy_research.core.data_source import registry
+from strategy_research.apps.data_source import registry
 
 
 @pytest.fixture(autouse=True)
@@ -149,7 +149,7 @@ class TestGetLoaderOrFallback:
             return sentinel
 
         monkeypatch.setattr(
-            "strategy_research.core.data_source.registry.LOADER_REGISTRY",
+            "strategy_research.apps.data_source.registry.LOADER_REGISTRY",
             {**registry.LOADER_REGISTRY, "tushare": _spy},
         )
         # Make sure the spy registers as available
@@ -178,7 +178,7 @@ class TestGetLoaderOrFallback:
         new_registry = dict(registry.LOADER_REGISTRY)
         new_registry["fake_down"] = fake_cls
         monkeypatch.setattr(
-            "strategy_research.core.data_source.registry.LOADER_REGISTRY",
+            "strategy_research.apps.data_source.registry.LOADER_REGISTRY",
             new_registry,
         )
         # resolve_loader_with_fallback raises because fake_down.is_available() == False
@@ -202,7 +202,7 @@ class TestGetLoaderOrFallback:
         new_registry = dict(registry.LOADER_REGISTRY)
         new_registry["tushare"] = _TushareDown
         monkeypatch.setattr(
-            "strategy_research.core.data_source.registry.LOADER_REGISTRY",
+            "strategy_research.apps.data_source.registry.LOADER_REGISTRY",
             new_registry,
         )
         with pytest.raises(registry.NoAvailableSourceError):
