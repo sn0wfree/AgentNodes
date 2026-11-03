@@ -41,7 +41,7 @@ def _registry() -> ToolRegistry:
 
 def _evaluator(action: str):
     """Stub evaluator returning one fixed verdict."""
-    from strategy_research.core.permission import (
+    from strategy_research.kernel.permission import (
         PermissionAction,
         PermissionDecision,
     )

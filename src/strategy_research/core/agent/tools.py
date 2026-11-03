@@ -659,7 +659,7 @@ class BaseTool(ABC):
         """Evaluate the ruleset; honor allow / ask / deny."""
         # Local imports avoid a circular dependency at module load
         # (permission -> tools -> permission).
-        from ..permission import (
+        from strategy_research.kernel.permission import (
             PermissionAction,
             PermissionDeniedError,
             PermissionGateway,
@@ -738,7 +738,7 @@ class BaseTool(ABC):
         Async callers (AgentLoop) keep using ``ainvoke`` and get the
         full ASK handshake.
         """
-        from ..permission import PermissionAction, PermissionDeniedError
+        from strategy_research.kernel.permission import PermissionAction, PermissionDeniedError
 
         evaluator = getattr(ctx, "permission_evaluator", None)
         if evaluator is None:
@@ -882,7 +882,7 @@ class ToolRegistry:
                 invoke_kwargs["ctx"] = ctx
             return tool.invoke(invoke_kwargs)
         except Exception as exc:
-            from ..permission import PermissionDeniedError
+            from strategy_research.kernel.permission import PermissionDeniedError
 
             if isinstance(exc, PermissionDeniedError):
                 # Denied tools return a structured refusal, not an

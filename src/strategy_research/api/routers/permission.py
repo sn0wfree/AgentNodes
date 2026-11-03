@@ -44,7 +44,7 @@ async def respond_permission(
     * deny (one-shot or always) -> tool errors out with the user's
       reason; agent loop surfaces the denial as a tool error
     """
-    from ...core.permission import PermissionAction, PermissionResponse
+    from strategy_research.kernel.permission import PermissionAction, PermissionResponse
     from .chat import _get_permission_gateway
 
     gateway = _get_permission_gateway(request)

@@ -14,7 +14,7 @@ from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
 
 if TYPE_CHECKING:
-    from ...core.permission import PermissionGateway
+    from strategy_research.kernel.permission import PermissionGateway
 
 from ..schemas.chat import (
     CancelRequest,
@@ -85,7 +85,7 @@ def _get_permission_gateway(request: Request | None = None) -> "PermissionGatewa
     The ``on_request`` hook is wired on first use so we can attach the
     SSE buffer without circular imports.
     """
-    from ...core.permission import PermissionGateway
+    from strategy_research.kernel.permission import PermissionGateway
 
     gateway = _permission_gateway_cache.get("default")
     if gateway is not None:
