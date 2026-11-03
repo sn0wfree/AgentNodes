@@ -7,7 +7,7 @@ import logging
 from typing import cast
 from pathlib import Path
 
-from ...backtest import run_backtest_from_yaml
+from strategy_research.apps.backtest import run_backtest_from_yaml
 from ..tools import (
     EFFECT_DB,
     EFFECT_FS,

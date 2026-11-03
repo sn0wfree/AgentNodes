@@ -1,4 +1,4 @@
-"""H 档补测（P1-3）—— `core/backtest.py` 的 ``run_backtest_from_yaml``。
+"""H 档补测（P1-3）—— `apps/backtest.py` 的 ``run_backtest_from_yaml``。
 
 这段（557–675）是 YAML 回测入口的完整编排：跑 YAML → 建 run 目录 →
 落 metrics → 写 factor_failures → 存 DuckDB → 导出 equity_curve →
@@ -21,7 +21,7 @@ from pathlib import Path
 import pandas as pd
 import pytest
 
-from strategy_research.core import backtest as bt
+from strategy_research.apps import backtest as bt
 
 
 class FakeResult:

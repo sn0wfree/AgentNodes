@@ -1219,7 +1219,7 @@ class AutoresearchRunner(RunnerAegisMixin, RunnerKnowledgeMixin):
         """
         from datetime import datetime, timezone
 
-        from strategy_research.core.backtest import run_backtest_script
+        from strategy_research.apps.backtest import run_backtest_script
         from strategy_research.core.study import state_store as ss
 
         study = self._get_study()

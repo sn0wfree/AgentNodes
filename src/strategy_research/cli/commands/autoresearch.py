@@ -405,7 +405,7 @@ def cmd_autoresearch(args: argparse.Namespace) -> int:
         retry_agent_spawn,
         save_agent_record,
     )
-    from strategy_research.core.backtest import run_backtest_script
+    from strategy_research.apps.backtest import run_backtest_script
 
     path = Path(args.path).resolve()
 

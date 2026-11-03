@@ -1,4 +1,4 @@
-"""H 档补测 —— `core/backtest.py` 的指标契约与 run 目录管理。
+"""H 档补测 —— `apps/backtest.py` 的指标契约与 run 目录管理。
 
 这个文件此前 47%，缺口集中在一组**纯函数**上。它们承载的是信任边界
 （见 backtest.py:105-115 的信任模型注释）：LLM 生成的 strategy.py 能
@@ -15,7 +15,7 @@ from pathlib import Path
 
 import pytest
 
-from strategy_research.core import backtest as bt
+from strategy_research.apps import backtest as bt
 
 
 # ── parse_run_log ───────────────────────────────────────────

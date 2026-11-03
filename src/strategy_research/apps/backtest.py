@@ -15,7 +15,7 @@ from typing import Optional
 
 import pandas as pd
 
-from .db import (
+from strategy_research.core.db import (
     save_backtest_result,
     save_nav_history,
     save_weight_history,
@@ -339,7 +339,7 @@ def run_strategy(
     if log_path is None:
         log_path = strategy_dir / "run.log"
 
-    from .utils.bg_proc import log_tail, run_bg, wait_bg
+    from strategy_research.core.utils.bg_proc import log_tail, run_bg, wait_bg
 
     try:
         import sys
@@ -725,7 +725,7 @@ def evaluate_experiment(
 
     update_results_tsv(strategy_dir, run_name, metrics)
 
-    from .db import get_connection
+    from strategy_research.core.db import get_connection
     conn = get_connection(workspace_path)
     if conn is not None:
         try:

@@ -1,4 +1,4 @@
-"""Tests for core/backtest.py — 12 函数 + 边界.
+"""Tests for apps/backtest.py — 12 函数 + 边界.
 
 借鉴自 vibe-trading 测试风格. 使用 tmp_path + monkeypatch 隔离.
 """
@@ -6,7 +6,7 @@ from __future__ import annotations
 
 import json
 
-from strategy_research.core.backtest import (
+from strategy_research.apps.backtest import (
     create_run_dir,
     evaluate_experiment,
     get_best_experiment,
@@ -178,7 +178,7 @@ def test_save_run_snapshot_copies_strategy_py(tmp_path):
     run_dir = tmp_path / "run_dir"
     run_dir.mkdir()
 
-    from strategy_research.core.backtest import save_run_snapshot
+    from strategy_research.apps.backtest import save_run_snapshot
     save_run_snapshot(strategy_dir, run_dir)
 
     assert (run_dir / "strategy.py").read_text(encoding="utf-8") == "# strategy code"
@@ -191,7 +191,7 @@ def test_save_run_snapshot_copies_config_yaml(tmp_path):
     run_dir = tmp_path / "run_dir"
     run_dir.mkdir()
 
-    from strategy_research.core.backtest import save_run_snapshot
+    from strategy_research.apps.backtest import save_run_snapshot
     save_run_snapshot(strategy_dir, run_dir)
 
     assert (run_dir / "config.yaml").read_text(encoding="utf-8") == "key: val"
@@ -204,7 +204,7 @@ def test_save_run_snapshot_handles_missing_files(tmp_path):
     run_dir = tmp_path / "run_dir"
     run_dir.mkdir()
 
-    from strategy_research.core.backtest import save_run_snapshot
+    from strategy_research.apps.backtest import save_run_snapshot
     save_run_snapshot(strategy_dir, run_dir)  # 不应抛异常
 
     assert not (run_dir / "strategy.py").exists()
@@ -220,7 +220,7 @@ def test_save_run_metrics_writes_valid_json(tmp_path):
     run_dir.mkdir()
     metrics = {"calmar": 1.5, "sharpe": 0.8}
 
-    from strategy_research.core.backtest import save_run_metrics
+    from strategy_research.apps.backtest import save_run_metrics
     save_run_metrics(run_dir, metrics)
 
     loaded = json.loads((run_dir / "metrics.json").read_text(encoding="utf-8"))
@@ -232,7 +232,7 @@ def test_save_run_metrics_preserves_unicode(tmp_path):
     run_dir.mkdir()
     metrics = {"description": "测试中文", "name": "策略α"}
 
-    from strategy_research.core.backtest import save_run_metrics
+    from strategy_research.apps.backtest import save_run_metrics
     save_run_metrics(run_dir, metrics)
 
     raw = (run_dir / "metrics.json").read_text(encoding="utf-8")
@@ -301,7 +301,7 @@ def test_update_results_tsv_uses_defaults(tmp_path):
 def test_run_strategy_missing_file(tmp_path):
     strategy_dir = tmp_path / "strategy"
     strategy_dir.mkdir()
-    from strategy_research.core.backtest import run_strategy
+    from strategy_research.apps.backtest import run_strategy
     success, output = run_strategy(strategy_dir)
     assert success is False
     assert "不存在" in output or "not found" in output.lower()
@@ -317,7 +317,7 @@ def test_run_strategy_successful_execution(tmp_path):
         "print('sharpe: 0.8')\n",
         encoding="utf-8",
     )
-    from strategy_research.core.backtest import run_strategy
+    from strategy_research.apps.backtest import run_strategy
     success, output = run_strategy(strategy_dir)
     assert success is True
     assert "calmar: 1.5" in output
@@ -332,7 +332,7 @@ def test_run_strategy_timeout(monkeypatch, tmp_path):
         "print('start', flush=True); import time; time.sleep(600)",
         encoding="utf-8",
     )
-    from strategy_research.core.backtest import run_strategy
+    from strategy_research.apps.backtest import run_strategy
     log_path = tmp_path / "run.log"
     success, output = run_strategy(strategy_dir, timeout=1, log_path=log_path)
     assert success is False
@@ -352,7 +352,7 @@ def test_run_strategy_log_progress_runs_long(monkeypatch, tmp_path):
         "print('done', flush=True)\n",
         encoding="utf-8",
     )
-    from strategy_research.core.backtest import run_strategy
+    from strategy_research.apps.backtest import run_strategy
     log_path = tmp_path / "run.log"
     # 总时长 1.8s > 停滞窗口 0.5s，但日志持续推进 → 完成
     success, output = run_strategy(strategy_dir, timeout=0.5, log_path=log_path)
@@ -371,7 +371,7 @@ def test_run_strategy_general_exception(monkeypatch, tmp_path):
 
     from strategy_research.core.utils import bg_proc
     monkeypatch.setattr(bg_proc, "run_bg", fake_run_bg)
-    from strategy_research.core.backtest import run_strategy
+    from strategy_research.apps.backtest import run_strategy
     success, output = run_strategy(strategy_dir)
     assert success is False
     assert "失败" in output or "OSError" in output
@@ -383,7 +383,7 @@ def test_run_strategy_general_exception(monkeypatch, tmp_path):
 
 def test_run_backtest_script_missing_strategy_dir(tmp_path):
     """strategy_dir 不存在 → 返回错误 dict, 不抛异常."""
-    from strategy_research.core.backtest import run_backtest_script
+    from strategy_research.apps.backtest import run_backtest_script
     result = run_backtest_script(tmp_path, "nonexistent_strategy")
     assert result["success"] is False
     assert result["run"] == ""
@@ -408,12 +408,12 @@ def test_run_backtest_script_successful_run(monkeypatch, tmp_path):
 
     monkeypatch.setattr(db_module, "save_backtest_result", fake_save_backtest_result)
     monkeypatch.setattr(
-        "strategy_research.core.backtest.save_backtest_result",
+        "strategy_research.apps.backtest.save_backtest_result",
         fake_save_backtest_result,
     )
 
     # 3. mock git_get_hash
-    from strategy_research.core import backtest as bt_module
+    from strategy_research.apps import backtest as bt_module
     monkeypatch.setattr(bt_module, "git_get_hash", lambda *a, **kw: "abc1234")
 
     # 4. 执行
@@ -449,7 +449,7 @@ def test_run_backtest_from_yaml_missing_yaml(tmp_path):
     strategy_dir = tmp_path / "strategies" / "demo"
     strategy_dir.mkdir(parents=True)
 
-    from strategy_research.core.backtest import run_backtest_from_yaml
+    from strategy_research.apps.backtest import run_backtest_from_yaml
     result = run_backtest_from_yaml(tmp_path, "demo", yaml_path=tmp_path / "missing.yaml")
     assert result["success"] is False
     assert "不存在" in result["error"]
@@ -461,7 +461,7 @@ def test_run_backtest_from_yaml_default_yaml_path(tmp_path):
     strategy_dir.mkdir(parents=True)
     # 不创建 config.yaml
 
-    from strategy_research.core.backtest import run_backtest_from_yaml
+    from strategy_research.apps.backtest import run_backtest_from_yaml
     result = run_backtest_from_yaml(tmp_path, "demo")
     assert result["success"] is False
     assert "不存在" in result["error"]
@@ -503,7 +503,7 @@ def test_evaluate_experiment_keep_status(monkeypatch, tmp_path):
     (strategy_dir / "runs").mkdir(exist_ok=True)
     update_results_tsv(strategy_dir, "run_0001", {"calmar": 1.0, "status": "pending"})
 
-    from strategy_research.core import backtest as bt_module
+    from strategy_research.apps import backtest as bt_module
     monkeypatch.setattr(bt_module, "git_commit", lambda *a, **kw: True)
 
     from strategy_research.core import db as db_module
@@ -647,7 +647,7 @@ def test_get_best_experiment_handles_invalid_metric_value(tmp_path):
 def test_save_run_metrics_cleans_nan_to_null(tmp_path):
     """NaN/Inf 必须序列化为合法 JSON (null)，而不是 NaN 字面量。"""
 
-    from strategy_research.core.backtest import save_run_metrics
+    from strategy_research.apps.backtest import save_run_metrics
 
     run_dir = tmp_path / "run"
     run_dir.mkdir()
@@ -670,7 +670,7 @@ def test_save_run_metrics_cleans_nan_to_null(tmp_path):
 
 
 def test_factor_failures_summary_aggregates(tmp_path):
-    from strategy_research.core.backtest import _factor_failures_summary
+    from strategy_research.apps.backtest import _factor_failures_summary
 
     failures = [
         {"factor": "low_volatility", "asset": "600519.SH", "error": "e1", "occurrences": 2},
@@ -686,7 +686,7 @@ def test_factor_failures_summary_aggregates(tmp_path):
 
 
 def test_factor_failures_summary_caps_at_5(tmp_path):
-    from strategy_research.core.backtest import _factor_failures_summary
+    from strategy_research.apps.backtest import _factor_failures_summary
 
     failures = [
         {"factor": f"f{i}", "asset": "A", "error": "x", "occurrences": 1}

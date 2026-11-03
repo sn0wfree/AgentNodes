@@ -297,7 +297,7 @@ def cmd_run(args: argparse.Namespace) -> int:
             print("❌ 未指定策略名称，请使用 --strategy <name>")
             return 1
 
-    from strategy_research.core.backtest import run_backtest_script as run_backtest
+    from strategy_research.apps.backtest import run_backtest_script as run_backtest
     result = run_backtest(
         workspace_path=path,
         strategy_name=strategy_name,
@@ -343,7 +343,7 @@ def cmd_evaluate(args: argparse.Namespace) -> int:
             print("❌ 未指定策略名称，请使用 --strategy <name>")
             return 1
 
-    from strategy_research.core.backtest import run_backtest_script
+    from strategy_research.apps.backtest import run_backtest_script
 
     print(f"🔄 复跑策略: {strategy_name}")
     result = run_backtest_script(
@@ -479,7 +479,7 @@ def cmd_list(args: argparse.Namespace) -> int:
             print("❌ 未指定策略名称，请使用 --strategy <name>")
             return 1
 
-    from strategy_research.core.backtest import get_best_experiment, get_experiment_history
+    from strategy_research.apps.backtest import get_best_experiment, get_experiment_history
 
     experiments = get_experiment_history(path, strategy_name, limit=args.limit)
 

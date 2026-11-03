@@ -867,7 +867,7 @@ def run_research_round(
     """
     # Local imports keep the module import graph light for callers that
     # only need the helpers above.
-    from strategy_research.core.backtest import run_backtest_script
+    from strategy_research.apps.backtest import run_backtest_script
     from strategy_research.apps.strategy_acceptance import (
         decide as make_decision,
     )
@@ -1290,7 +1290,7 @@ def run_execution_phase(
          portfolio_construction_output, backtest_result, metrics, backtest_error}
     """
     from strategy_research.apps.autoresearch import save_agent_record
-    from strategy_research.core.backtest import run_backtest_script
+    from strategy_research.apps.backtest import run_backtest_script
 
     path = Path(workspace_path).resolve()
     spawn = _make_spawn_fn(

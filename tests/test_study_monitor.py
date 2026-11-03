@@ -139,7 +139,7 @@ def test_monitor_check_targets_last_keep_run(env, monkeypatch):
     keep_dir.mkdir(parents=True)
     (keep_dir / "strategy.py").write_text("PARAMS = {}\n", encoding="utf-8")
     captured: dict = {}
-    import strategy_research.core.backtest as bt_mod
+    import strategy_research.apps.backtest as bt_mod
 
     def fake_backtest(**kw):
         captured.update(kw)

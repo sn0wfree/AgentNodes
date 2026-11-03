@@ -127,7 +127,7 @@ def test_execution_phase_order_and_backtest_success(tmp_path, monkeypatch):
     calls: list = []
     _install_spawn(monkeypatch, calls)
 
-    from strategy_research.core import backtest as bt
+    from strategy_research.apps import backtest as bt
     monkeypatch.setattr(
         bt, "run_backtest_script",
         lambda **kw: {"success": True, "metrics": {"calmar": 1.2}},
@@ -149,7 +149,7 @@ def test_execution_phase_backtest_failure_zeroes_metrics(tmp_path, monkeypatch):
     """回测失败时 metrics 必须清空——带上轮的会污染本轮决策。"""
     _install_spawn(monkeypatch, [])
 
-    from strategy_research.core import backtest as bt
+    from strategy_research.apps import backtest as bt
     monkeypatch.setattr(
         bt, "run_backtest_script",
         lambda **kw: {"success": False, "error": "data missing"},
@@ -166,7 +166,7 @@ def test_execution_phase_backtest_failure_zeroes_metrics(tmp_path, monkeypatch):
 
 def test_execution_phase_backtest_failure_without_error_field(tmp_path, monkeypatch):
     _install_spawn(monkeypatch, [])
-    from strategy_research.core import backtest as bt
+    from strategy_research.apps import backtest as bt
     monkeypatch.setattr(bt, "run_backtest_script", lambda **kw: {"success": False})
     run_dir = tmp_path / "run_0001"
     (run_dir / "agents").mkdir(parents=True)

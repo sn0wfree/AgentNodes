@@ -83,7 +83,7 @@ def patched_backtest(metrics_fixture):
 
     # run_research_round imports ``run_backtest_script`` lazily from
     # ``core.backtest`` so patch the source module, not the autoresearch module.
-    with patch("strategy_research.core.backtest.run_backtest_script", _fake):
+    with patch("strategy_research.apps.backtest.run_backtest_script", _fake):
         yield _fake
 
 

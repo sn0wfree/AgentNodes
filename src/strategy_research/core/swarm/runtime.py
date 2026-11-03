@@ -901,7 +901,7 @@ class SwarmRuntime:
 def _register_builtin_executors() -> None:
     """Register built-in python_executor functions for backtest and decide."""
     try:
-        from ..backtest import run_backtest_script
+        from strategy_research.apps.backtest import run_backtest_script
 
         def _backtest_executor(workspace_path, upstream=None, **kwargs):
             """Run backtest script and return metrics."""

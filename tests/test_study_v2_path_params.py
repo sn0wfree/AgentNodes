@@ -22,7 +22,7 @@ from strategy_research.apps.autoresearch import (
     _create_run_dir,
     read_current_state,
 )
-from strategy_research.core.backtest import (
+from strategy_research.apps.backtest import (
     run_backtest_from_yaml,
     run_backtest_script,
     update_results_tsv,

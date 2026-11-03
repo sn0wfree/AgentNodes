@@ -154,7 +154,7 @@ def test_run_monitor_check_backtest_failure_returns_none(tmp_path, monkeypatch):
     def fail_result(**kw):
         return {"success": False}
 
-    import strategy_research.core.backtest as bt
+    import strategy_research.apps.backtest as bt
     monkeypatch.setattr(bt, "run_backtest_script", fail_result)
     assert runner._run_monitor_check("backtest") is None
 
@@ -165,6 +165,6 @@ def test_run_monitor_check_success_returns_metrics(tmp_path, monkeypatch):
     def ok_result(**kw):
         return {"success": True, "metrics": {"sharpe": 1.5}}
 
-    import strategy_research.core.backtest as bt
+    import strategy_research.apps.backtest as bt
     monkeypatch.setattr(bt, "run_backtest_script", ok_result)
     assert runner._run_monitor_check("backtest") == {"sharpe": 1.5}

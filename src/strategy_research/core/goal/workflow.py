@@ -422,7 +422,7 @@ class GoalWorkflowRunner:
         # Simplified: try to import and run backtest if available
         try:
 
-            from ...core.backtest import run_backtest_script
+            from strategy_research.apps.backtest import run_backtest_script
             result = run_backtest_script(
                 workspace_path=self._workspace,
                 strategy_name=strategy_name or "default",

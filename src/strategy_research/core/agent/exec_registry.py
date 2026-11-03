@@ -66,7 +66,7 @@ def extract_metrics_from_upstream(
 
 def _register_builtin_executors() -> None:
     try:
-        from ..backtest import run_backtest_script
+        from strategy_research.apps.backtest import run_backtest_script
 
         def _backtest_executor(workspace_path, upstream=None, **kwargs):
             strategy_name = kwargs.get("strategy_name", "default")

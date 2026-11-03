@@ -33,13 +33,13 @@ class TestConfigRunnerImport:
         assert abs(sum(result.values()) - 1.0) < 1e-9
 
     def test_no_legacy_backtest_utils_module(self):
-        """Confirm there is no module at strategy_research.core.backtest_utils
+        """Confirm there is no module at strategy_research.apps.backtest_utils
         (so the original import would have failed).
         """
         import importlib
 
         with pytest.raises(ModuleNotFoundError):
-            importlib.import_module("strategy_research.core.backtest_utils")
+            importlib.import_module("strategy_research.apps.backtest_utils")
 
     def test_correct_module_path_exists(self):
         """The actual module path is strategy_research.core.utils.backtest_utils."""

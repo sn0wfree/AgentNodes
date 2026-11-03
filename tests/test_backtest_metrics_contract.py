@@ -73,11 +73,11 @@ class TestSaveMetrics:
 
 class TestReadMetricsContract:
     def test_missing_file_returns_none(self, tmp_path):
-        from strategy_research.core.backtest import read_metrics_contract
+        from strategy_research.apps.backtest import read_metrics_contract
         assert read_metrics_contract(tmp_path / "absent.json") is None
 
     def test_valid_contract_roundtrip(self, tmp_path):
-        from strategy_research.core.backtest import read_metrics_contract
+        from strategy_research.apps.backtest import read_metrics_contract
         p = tmp_path / "metrics_raw.json"
         p.write_text(json.dumps(
             {"protocol": 1, "metrics": {"calmar": 1.5, "trades": 42}}),
@@ -86,21 +86,21 @@ class TestReadMetricsContract:
         assert out == {"calmar": 1.5, "trades": 42.0}
 
     def test_rejects_nonfinite(self, tmp_path):
-        from strategy_research.core.backtest import read_metrics_contract
+        from strategy_research.apps.backtest import read_metrics_contract
         p = tmp_path / "metrics_raw.json"
         p.write_text(
             '{"protocol": 1, "metrics": {"calmar": Infinity}}', encoding="utf-8")
         assert read_metrics_contract(p) is None
 
     def test_rejects_unknown_protocol(self, tmp_path):
-        from strategy_research.core.backtest import read_metrics_contract
+        from strategy_research.apps.backtest import read_metrics_contract
         p = tmp_path / "metrics_raw.json"
         p.write_text(json.dumps(
             {"protocol": 2, "metrics": {"calmar": 1.0}}), encoding="utf-8")
         assert read_metrics_contract(p) is None
 
     def test_rejects_non_numeric_metrics(self, tmp_path):
-        from strategy_research.core.backtest import read_metrics_contract
+        from strategy_research.apps.backtest import read_metrics_contract
         p = tmp_path / "metrics_raw.json"
         p.write_text(json.dumps(
             {"protocol": 1, "metrics": {"calmar": "伪造的文本"}}), encoding="utf-8")
@@ -109,18 +109,18 @@ class TestReadMetricsContract:
 
 class TestCrossCheck:
     def test_same_source_passes(self):
-        from strategy_research.core.backtest import _cross_check_contract
+        from strategy_research.apps.backtest import _cross_check_contract
         assert _cross_check_contract(
             {"calmar": 1.234567}, {"calmar": 1.234567}) == []
 
     def test_print_rounding_within_tolerance(self):
-        from strategy_research.core.backtest import _cross_check_contract
+        from strategy_research.apps.backtest import _cross_check_contract
         # run.log 打印 %.6f:1.2345678 → "1.234568"
         assert _cross_check_contract(
             {"calmar": 1.2345678}, {"calmar": 1.234568}) == []
 
     def test_mismatch_detected(self):
-        from strategy_research.core.backtest import _cross_check_contract
+        from strategy_research.apps.backtest import _cross_check_contract
         problems = _cross_check_contract(
             {"calmar": 1.0}, {"calmar": 9.9})
         assert len(problems) == 1
@@ -133,7 +133,7 @@ class TestCrossCheck:
 @pytest.fixture
 def script_workspace(tmp_path, monkeypatch):
     """带模板 strategy.py/prepare.py 的工作区,DuckDB/git 已 mock。"""
-    from strategy_research.core import backtest as bt_module
+    from strategy_research.apps import backtest as bt_module
 
     monkeypatch.setattr(bt_module, "save_backtest_result", lambda **kw: None)
     monkeypatch.setattr(bt_module, "git_get_hash", lambda *a, **kw: "abc1234")

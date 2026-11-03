@@ -212,7 +212,7 @@ async def test_start_passes_through_result(monkeypatch, app_env):
         return {"success": True, "metrics": {"sharpe": 1.1}, "log": []}
 
     monkeypatch.setattr(
-        "strategy_research.core.backtest.run_backtest_script",
+        "strategy_research.apps.backtest.run_backtest_script",
         fake_backtest,
     )
 

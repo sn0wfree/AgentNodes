@@ -43,7 +43,7 @@ class RunStartRequest(BaseModel):
 async def run_start(req: RunStartRequest, request: Request):
     """启动回测 run。"""
     try:
-        from ...core.backtest import run_backtest_script
+        from strategy_research.apps.backtest import run_backtest_script
 
         workspace = Path(req.workspace_path)
         if not workspace.exists():
