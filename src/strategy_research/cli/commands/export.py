@@ -11,7 +11,7 @@ from pathlib import Path
 
 def cmd_export(args) -> int:
     """导出策略到多种平台格式。"""
-    from strategy_research.core.export import export_strategy
+    from strategy_research.apps.export import export_strategy
 
     workspace = Path(args.path).resolve()
     strategy_name = args.strategy

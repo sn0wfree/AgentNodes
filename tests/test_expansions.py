@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from strategy_research.core.export.exporter import _parse_strategy, export_strategy
+from strategy_research.apps.export.exporter import _parse_strategy, export_strategy
 from strategy_research.core.swarm.preset_loader import list_presets, load_preset
 
 # ── New Swarm Presets Tests ─────────────────────────────────
