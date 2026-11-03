@@ -8,7 +8,7 @@ settings, etc.) so ``ConfigError`` is the natural parent.
 
 from __future__ import annotations
 
-from ..errors import ConfigError
+from strategy_research.foundation.errors import ConfigError
 
 
 class LLMError(ConfigError):
