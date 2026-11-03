@@ -12,7 +12,7 @@ import numpy as np
 import pandas as pd
 import pytest
 
-from strategy_research.core.alpha_zoo_convert import (
+from strategy_research.apps.alpha_zoo_convert import (
     _normalize_yaml,
     analyze_compute_function,
     convert_all_zoos,
@@ -294,7 +294,7 @@ def compute(panel):
 
 def test_convert_then_compute(tmp_py_simple):
     """转换后的配置应能直接用于 compute_alpha_from_yaml."""
-    from strategy_research.core.alpha_zoo_yaml import compute_alpha_from_yaml
+    from strategy_research.apps.alpha_zoo_yaml import compute_alpha_from_yaml
     config = convert_py_to_yaml(tmp_py_simple)
     if config is None:
         pytest.skip("alpha too complex")
@@ -309,7 +309,7 @@ def test_convert_then_compute(tmp_py_simple):
 
 def test_convert_preserves_evaluation_equivalence(tmp_py_simple):
     """转换后 YAML 应与原始 .py 计算结果一致."""
-    from strategy_research.core.alpha_zoo_yaml import compute_alpha_from_yaml
+    from strategy_research.apps.alpha_zoo_yaml import compute_alpha_from_yaml
     config = convert_py_to_yaml(tmp_py_simple)
     if config is None:
         pytest.skip("alpha too complex")

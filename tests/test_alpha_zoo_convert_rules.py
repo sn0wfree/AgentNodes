@@ -1,4 +1,4 @@
-"""H 档补测 —— `core/alpha_zoo_convert.py` 的转换规则单元测试。
+"""H 档补测 —— `apps/alpha_zoo_convert.py` 的转换规则单元测试。
 
 这个模块（549 行 / 53%）是 Alpha Zoo 的 ``.py → .yaml`` 一次性迁移工具。
 已有两份测试覆盖了**端到端**（analyze → convert → convert_zoo）；缺的是
@@ -13,7 +13,7 @@ from __future__ import annotations
 
 import pytest
 
-from strategy_research.core import alpha_zoo_convert as az
+from strategy_research.apps import alpha_zoo_convert as az
 
 
 def ident(node):

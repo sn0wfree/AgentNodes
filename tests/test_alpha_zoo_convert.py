@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from strategy_research.core.alpha_zoo_convert import (
+from strategy_research.apps.alpha_zoo_convert import (
     analyze_compute_function,
     convert_py_to_yaml,
     yaml_to_string,

@@ -17,7 +17,7 @@ from pathlib import Path
 
 import pytest
 
-from strategy_research.core import alpha_zoo_convert as az
+from strategy_research.apps import alpha_zoo_convert as az
 
 
 # ── 辅助 ────────────────────────────────────────────────────
