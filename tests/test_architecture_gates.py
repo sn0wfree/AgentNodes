@@ -26,12 +26,13 @@ STUDY_PLATFORM_TOUCHPOINTS: dict[str, set[str]] = {
     "graph_preset.py": {"runtimes"},        # GraphEngine 公共 API（阶段图）
     "phase_engine.py": {"agent"},            # build_agent_loop 能力工厂
     "dag_planner.py": {"agent"},             # AgentPlugin/Registry/DAG 配置
+    "monitor.py": {"observability"},         # dual_log 统一双写（2026-11-03 日志轮·ADR-000）
     "runner.py": {"agent", "observability", "utils"},
     "runner_knowledge.py": {"agent"},
     "scheduler.py": {"gateway", "orchestration", "utils", "observability"},
     "scenario_router.py": {"llm"},           # 场景路由自建 provider 客户端
     "state_utils.py": {"observability"},     # trace 上下文
-    "store.py": {"storage"},                 # sqlite 工具（域自己的库）
+    "store.py": {"storage", "observability"},  # sqlite 工具 + dual_log（ADR-000）
 }
 
 

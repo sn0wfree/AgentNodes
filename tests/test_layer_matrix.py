@@ -12,9 +12,9 @@ Rules:
    strip ``level - 1`` components (an off-by-one here fabricated both
    false violations and false "unknowns" in the v1 audit).
 4. Ratchet: per-cluster upward-violation baselines may only go DOWN.
-   Current baseline 107 = 2026-11-03 audit; G2a (quick wins, 15) and
-   G2b (CapabilityRegistry porting, 92) each lower their cluster's
-   baseline as they land.
+   Baseline = ADR-000 物理口径（2026-11-03，每语句计 1）：55 = 1+2+46+2+4；
+   G2a（簇 B/C，9 语句）与 G2b（CapabilityRegistry 端口化，46 语句）落地时
+   各自下调所在簇基线。
 """
 
 from __future__ import annotations
@@ -101,21 +101,21 @@ LAYER_MEMBERSHIP: dict[str, str] = {
 # Facade __init__ modules excluded from direction assertions (re-exports only)
 SKIP_MODULES = {"strategy_research", "strategy_research.core"}
 
-# ── ratchet baselines (2026-11-03 audit; lower as G2a/G2b land) ─────
+# ── ratchet baselines (ADR-000 物理口径 2026-11-03；只降不升) ────────
 
-# G2a pending: event_store→api.projector(1), memory_manager→api.web_session_db(2),
-# study/scheduler→api.routers.web_session(2), platform_store→orchestration(2),
-# llm/config→agent.compact(2), llm/parser→agent.structured_output(2),
-# utils/{backtest,strategy}_engine→backtest_models(4)
-# v7.2 归位（tools→apps、registry→foundation）经 import grep 验证为违规中性：
-# core.tools 仅被 apps 侧引用；core.registry 仅被 agent 下行引用。基线不变。
+# 口径：每条 import 语句计 1（同节点多 alias 指向同层不重复）。
+# v7.2 归层后复算（core/tools→L2、core/registry→L4）：
+#   G2a pending（9 语句）：event_store→api.projector、memory_manager→api.web_session_db、
+#   study/scheduler→api.routers.web_session、platform_store→orchestration.contracts、
+#   llm/config→agent.compact、llm/parser→agent.structured_output、
+#   utils/{backtest,strategy}_engine→backtest_models
+#   G2b pending：L3→L2 = 46 条语句（builtin_tools 为主体 → CapabilityRegistry 端口化）
 BASELINE: dict[str, int] = {
-    "L2>L1": 2,   # G2a
-    "L3>L1": 3,   # G2a
-    "L3>L2": 92,  # G2b (builtin_tools 59 / context_injector 7 / scheduled 8 /
-                  #       swarm 6 / dag_config 4 / exec_registry 4 / loop 4)
-    "L4>L2": 4,   # G2a
-    "L4>L3": 6,   # G2a
+    "L2>L1": 1,   # G2a
+    "L3>L1": 2,   # G2a
+    "L3>L2": 46,  # G2b（工具层绑定领域能力）
+    "L4>L2": 2,   # G2a
+    "L4>L3": 4,   # G2a
 }
 
 
@@ -135,9 +135,14 @@ def _module_name(path: Path) -> str:
 
 
 def _resolve_targets(node: ast.AST, importer_mod: str, is_pkg: bool) -> list[str]:
-    """Absolute module names referenced by an Import/ImportFrom node."""
+    """Absolute module names referenced by an Import/ImportFrom node.
+
+    ADR-000（2026-11-03）：物理口径——每条 import **语句**计 1 次。同一节点的
+    多个 alias 指向同一模块时不重复计数（旧行为 module+alias 各计一次，把
+    `from ...tools.x import y` 数成 2，虚增簇基线）。
+    """
     if isinstance(node, ast.Import):
-        return [a.name for a in node.names]
+        return sorted({a.name for a in node.names})
     if not isinstance(node, ast.ImportFrom):
         return []
     base = importer_mod.split(".")
@@ -146,15 +151,15 @@ def _resolve_targets(node: ast.AST, importer_mod: str, is_pkg: bool) -> list[str
     if node.level > 1:
         pkg = pkg[: len(pkg) - (node.level - 1)]
     target = ".".join(pkg + ([node.module] if node.module else []))
-    out: list[str] = []
+    out: set[str] = set()
     if node.module or node.level:
-        out.append(target)
+        out.add(target)
     for a in node.names:
         if node.level == 0 and node.module:
-            out.append(f"{node.module}.{a.name}")
+            out.add(f"{node.module}.{a.name}")
         else:
-            out.append(target)
-    return out
+            out.add(target)
+    return sorted(out)
 
 
 def _collect() -> tuple[dict[str, int], dict[tuple[str, str], int]]:

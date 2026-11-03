@@ -243,26 +243,26 @@
   <rect x="180" y="1626" width="150" height="34" rx="6" class="box"/><text x="192" y="1648" class="st" font-weight="600">L3 kernel</text>
   <line x1="255" y1="1660" x2="255" y2="1678" class="arb"/>
   <rect x="180" y="1678" width="150" height="34" rx="6" class="box"/><text x="192" y="1700" class="st" font-weight="600">L4 foundation</text>
-  <text x="380" y="1544" class="st mono">L1→L2 315 · L1→L3 193 · L1→L4 77</text>
-  <text x="380" y="1596" class="st mono">L2→L3 66（9 触点白名单）· L2→L4 129</text>
-  <text x="380" y="1648" class="st mono">L3→L4 108</text>
-  <text x="380" y="1700" class="st mono" fill="#dc2626">L3→L2 92 ⚠ G2b 反转清零中</text>
+  <text x="380" y="1544" class="st mono">L1→L2 188 · L1→L3 120 · L1→L4 58</text>
+  <text x="380" y="1596" class="st mono">L2→L3 35（9 触点白名单）· L2→L4 45</text>
+  <text x="380" y="1648" class="st mono">L3→L4 42</text>
+  <text x="380" y="1700" class="st mono" fill="#dc2626">L3→L2 46 ⚠ G2b 反转清零中</text>
   <text x="166" y="1734" class="sm">编号 = DAG 拓扑排名（唯一与接缝规则自洽：kernel 不得 import apps）；</text>
   <text x="166" y="1750" class="sm">管线（上方脊-翼）= 运行时旅程，两轴正交——唯一向上的是端口回调。</text>
   <rect x="930" y="1484" width="430" height="150" rx="9" class="boxg"/>
-  <text x="946" y="1506" class="st" style="font-weight:600">跨层 import 矩阵（11-03 AST · 门禁复算一致）</text>
+  <text x="946" y="1506" class="st" style="font-weight:600">跨层 import 矩阵（11-03 AST · ADR-000 物理口径）</text>
   <text x="946" y="1528" class="st mono">      →L1    →L2    →L3    →L4</text>
-  <text x="946" y="1548" class="st mono">L1  1402    315    193     77</text>
-  <text x="946" y="1568" class="st mono">L2     2   6673     66    129</text>
-  <text x="946" y="1588" class="st mono">L3     3  <tspan fill="#dc2626">92⚠</tspan>   1449    108</text>
-  <text x="946" y="1608" class="st mono">L4     0    <tspan fill="#dc2626">4⚠</tspan>   <tspan fill="#dc2626">6⚠</tspan>    338</text>
-  <text x="946" y="1628" class="sm">红 = 棘轮内违规 ｜ 实跑 L3→L2=102（v7.2 归层后 · 口径 ADR-000 待定）</text>
+  <text x="946" y="1548" class="st mono">L1  1085    188    120     58</text>
+  <text x="946" y="1568" class="st mono">L2     1  1610     35     45</text>
+  <text x="946" y="1588" class="st mono">L3     2   <tspan fill="#dc2626">46⚠</tspan>    796     42</text>
+  <text x="946" y="1608" class="st mono">L4     0     <tspan fill="#dc2626">2⚠</tspan>    <tspan fill="#dc2626">4⚠</tspan>    206</text>
+  <text x="946" y="1628" class="sm">红 = 上行违规（ADR-000 物理口径 · 每语句计 1 · 只降不升）</text>
   <rect x="930" y="1646" width="430" height="140" rx="9" class="boxa"/>
-  <text x="946" y="1668" class="st" style="font-weight:600">上行违规 = 107 · 四簇棘轮 · 修复批次</text>
-  <text x="946" y="1690" class="st">簇A L3→L2 = 92 → G2b 端口化（0.6/0.7）</text>
-  <text x="946" y="1710" class="st">簇B L4→L2 = 4 · 簇C 11 → G2a</text>
+  <text x="946" y="1668" class="st" style="font-weight:600">上行违规 = 55（物理口径）· 五簇棘轮 · 修复批次</text>
+  <text x="946" y="1690" class="st">簇A L3→L2 = 46 → G2b 端口化（切 0.6/0.7）</text>
+  <text x="946" y="1710" class="st">G2a = 9 语句：L4→L2 2 · L4→L3 4 · L3→L1 2 · L2→L1 1</text>
   <text x="946" y="1730" class="st">契约：↓WorkRequest · ↓BranchContext · ↑事件流</text>
-  <text x="946" y="1756" class="sm">设计：docs/layered-skeleton-design-20261103.md</text>
+  <text x="946" y="1756" class="sm">设计：docs/layered-skeleton-design-20261103.md · 口径：ADR-000</text>
 </svg>
 
 

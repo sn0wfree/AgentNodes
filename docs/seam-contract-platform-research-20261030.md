@@ -33,7 +33,7 @@ import 研究域五成员（`study/goal/hypothesis/backtest/autoresearch`）即�
 `agent` 不在严格集：`builtin_tools/` 是能力适配器，合法包装域工具
 （如 `run_backtest` → `core.backtest`）——组合根职责，不是反向依赖。
 
-## 2. 研究域 → 平台的 9 个触点（白名单）
+## 2. 研究域 → 平台的触点白名单（11-03 复核后 11 处 · ADR-000 登记 2 处）
 
 新增触点 = **有意决策**：改 `STUDY_PLATFORM_TOUCHPOINTS` + 在此登记理由。
 门禁会拦住无声的耦合扩张。
@@ -48,9 +48,10 @@ import 研究域五成员（`study/goal/hypothesis/backtest/autoresearch`）即�
 | `scheduler.py` | gateway, orchestration, utils, observability | 统一入口适配器 / mailbox 契约 / bg_proc / 诊断事件 | ✅ 公共 |
 | `scenario_router.py` | llm | 场景路由自建 provider 客户端 | ✅ 公共 |
 | `state_utils.py` | observability | trace 上下文 | ✅ 公共 |
-| `store.py` | storage | sqlite 工具（域自己的库） | ✅ 公共 |
+| `store.py` | storage, observability | sqlite 工具（域自己的库）+ dual_log 统一双写（ADR-000） | ✅ 公共 |
+| `monitor.py` | observability | dual_log 统一双写（2026-11-02 日志轮 · ADR-000） | ✅ 公共 |
 
-**全部 9 个触点都只用公共面**——这是当前能说「拆分就绪」的核心事实。
+**全部触点都只用公共面**（含 2026-11-03 登记的 observability/dual_log 两处，ADR-000）——这是当前能说「拆分就绪」的核心事实。
 
 ## 3. 禁触清单（研究域不得依赖的平台内部）
 
