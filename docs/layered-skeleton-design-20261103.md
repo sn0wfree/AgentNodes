@@ -1,6 +1,6 @@
 # 四层骨架设计 — llmwikify 借鉴 · 依赖方向机器可证
 
-日期：2026-11-03　分支：`refactor/v6-gateway`　状态：设计稿 v3（层名定稿 · Gateway 组件归类完成）
+日期：2026-11-03　分支：`refactor/v6-gateway`　状态：设计稿 v3.1（层名定稿 · Gateway 归类 · kernel 三子带 · v7.2 归位）
 
 用户方向：借鉴 llmwikify 评审（`D:/Github/llmwikify/docs/architecture/architecture-review-2026-11.html`）
 的分层骨架——**四层单向依赖 + 原生数据传递关系 + 机器校验**。本文给出本项目的落地方案。
@@ -45,9 +45,9 @@ interfaces / apps / kernel / foundation**（物理目录不动——`core/study`
 | 层 | 名字 | 一句话 | 成员（物理位置 → 层） |
 |---|---|---|---|
 | **L1** | interfaces 入口 | 哑适配器：构造请求 + 呈现事件流 | `api/` · `cli/` · `core/mcp/` |
-| **L2** | apps 研究域 | 我们的 IP：方法论 + 账本 + 市场数据 | `core/study` `goal` `hypothesis` `alpha_zoo*` `backtest*` `validation` `portfolio` `data_source` `data_import` `data_readiness` `db` `compute_factor` `factor_validate` `config_runner` `strategy_acceptance` `autoresearch` `engine`(回测引擎) `export` `run_card` `workspace_setup` `preflight` · `templates/` |
-| **L3** | kernel 平台机制 | 业务无关的编排与防护 | `core/gateway` `orchestration` `runtimes` `workflow` `context` `agent` `swarm` `events` `session` `memory` `skills` `tools` `hooks` `permission` `registry` `seq_generator` `scheduled_research` |
-| **L4** | foundation 基础设施 | 零业务知识的机制件 | `core/llm` `storage` `observability` `utils` `web`(搜索机制) `config_loader` `errors` `git` |
+| **L2** | apps 研究域 | 我们的 IP：方法论 + 账本 + 市场数据 | `core/study` `goal` `hypothesis` `alpha_zoo*` `backtest*` `validation` `portfolio` `data_source` `data_import` `data_readiness` `db` `compute_factor` `factor_validate` `config_runner` `strategy_acceptance` `autoresearch` `engine`(回测引擎) `export` `run_card` `workspace_setup` `preflight` **`tools`**(研究数据工具实现 · v7.2 归位) · `templates/` |
+| **L3** | kernel 平台机制（三子带 · v7.2） | 业务无关的编排与防护 | **控制面**（②Gateway 对应 · ~4.1k）：`gateway` `orchestration` `events` `session` `scheduled_research` ｜ **执行面**（③对应 · ~6.0k）：`runtimes`(GraphEngine) `workflow`(编译器) `swarm`(编译器) ｜ **能力面**（AgentLoop 域 · ~24.6k，agent 22k 独大）：`agent` `context` `hooks` `permission` `memory` `skills` `seq_generator`(待退役) |
+| **L4** | foundation 基础设施 | 零业务知识的机制件 | `core/llm` `storage` `observability` `utils` `web`(搜索机制) **`registry`**(通用注册基类 · v7.2 归位) `config_loader` `errors` `git` |
 
 ### 2.1 Gateway 组件归类（2026-11-03 用户要求 · 逐一裁定）
 
@@ -73,15 +73,31 @@ interfaces / apps / kernel / foundation**（物理目录不动——`core/study`
 - **kernel 不得 import apps** 是硬禁令（门禁簇A 的 92 条就在修这个）；apps 寄宿在
   kernel 组件中的唯一合法形态 = kernel 只见契约/事件，不见实现。
 
-**存疑成员的裁决**（审计时定位）：
+**存疑成员的裁决**（审计时定位；v7.2 复核逐包内容后修正两处）：
 - `core/mcp` 物理在 core/ 但它是工具协议入口 → L1（成员表解决物理与逻辑错位）。
 - `core/web`（web 搜索后端机制，无 UI）→ **L4**（v1 文档误归 L1，已更正）。
 - `templates/`（策略模板，研究领域内容）→ **L2**（v1 文档误归 L1，已更正）。
+- `core/tools`（data_clean / data_transforms，研究数据工具实现）→ **L2 apps**（v7.2 修正：v1 误归 kernel——「agent 用它」≠「它是 agent 框架件」；grep 证实仅 config_runner/data_readiness/db 三个 apps 侧文件引用，归位违规中性）。注意与 `core/agent/tools`（BaseTool/ToolContext 框架，L3）是两个东西。
+- `core/registry.py`（Generic typed Registry 基类，DSH 式）→ **L4 foundation**（v7.2 修正：零语义原语；唯一引用方 agent/builtin_tools/subagent_tool 为 L3→L4 下行，合法）。
+- `core/hooks`/`permission`/`memory`/`events` 复核后**留在 kernel**：分别带 agent 生命周期 / 工具审批 / 跨会话 / 事件信封语义——下沉会让 foundation 假厚。
 - `core/engine`（engine/base.py 回测引擎，含 log_stall 数据通道）是研究执行件 → L2，不是 GraphEngine 所在层。
 - `core/scheduled_research` 是 automation 调度（平台机制，经 Gateway 提交）→ L3；包内 `cli.py` 是入口皮肤，簇 A 已计入。
 - `core/db`（market.duckdb 工具）= v6.5 ⑤ 层研究域数据面 D-3 → L2。
 - 顶层 `strategy_research/__init__.py` 与 `core/__init__.py`：re-export 门面，不参与方向断言。
 - `scripts/`（dev 工具）不在门禁范围。
+
+### 2.2 foundation 的晋升门槛与反向红线（v7.2）
+
+**为什么 foundation 薄是对的**：全库 133.6k 行中 foundation 仅 10.8k（8%）——llmwikify 为 8.5k/80k ≈ 11%，同量级。
+foundation 只收「零 run/session/研究语义」的纯原语；一个 agent 平台的大部分机制天然带 run 语义（这是产品形状，不是分类错误）。
+**厚了才是病**：llmwikify 的 95 处击穿正是「把带语义的件放进了低层」导致 Protocol 形同虚设。
+
+**晋升触发条件**（什么件够格下沉到 foundation）：
+1. 去掉 run/session/研究语义后可作为独立库使用；
+2. 现有候选（触发即动）：`ToolContext` 把 session/workspace 注入改为纯参数后 → foundation；
+   `hooks` 若泛化为通用回调合成器（llmwikify 先例：callback 13 钩子在 foundation）→ foundation。
+
+**反向红线**：禁止为了「层数平衡」把带 run/agent 语义的件推进 foundation——foundation 假厚比真薄更糟（语义漏下去 = 击穿的开端）。
 
 ## 3. 依赖矩阵与数据契约（箭头传什么）
 

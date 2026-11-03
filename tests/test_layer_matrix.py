@@ -64,31 +64,35 @@ LAYER_MEMBERSHIP: dict[str, str] = {
     "strategy_research.core.run_card": "L2",
     "strategy_research.core.workspace_setup": "L2",
     "strategy_research.core.preflight": "L2",
+    "strategy_research.core.tools": "L2",  # v7.2: 研究数据工具实现（data_clean/transforms），仅被 apps 侧引用
     "strategy_research.templates": "L2",
-    # L3 kernel (platform mechanisms)
+    # L3 kernel (platform mechanisms) — three sub-bands (v7.2, presentation only;
+    # import rules unchanged: same-layer free, downward only)
+    #   控制面 (~4.1k): gateway / orchestration / events / session / scheduled_research
+    #   执行面 (~6.0k): runtimes / workflow / swarm
+    #   能力面 (~24.6k): agent / context / hooks / permission / memory / skills
     "strategy_research.core.gateway": "L3",
     "strategy_research.core.orchestration": "L3",
-    "strategy_research.core.runtimes": "L3",
-    "strategy_research.core.workflow": "L3",
-    "strategy_research.core.context": "L3",
-    "strategy_research.core.agent": "L3",
-    "strategy_research.core.swarm": "L3",
     "strategy_research.core.events": "L3",
     "strategy_research.core.session": "L3",
-    "strategy_research.core.memory": "L3",
-    "strategy_research.core.skills": "L3",
-    "strategy_research.core.tools": "L3",
+    "strategy_research.core.scheduled_research": "L3",
+    "strategy_research.core.runtimes": "L3",
+    "strategy_research.core.workflow": "L3",
+    "strategy_research.core.swarm": "L3",
+    "strategy_research.core.agent": "L3",
+    "strategy_research.core.context": "L3",
     "strategy_research.core.hooks": "L3",
     "strategy_research.core.permission": "L3",
-    "strategy_research.core.registry": "L3",
-    "strategy_research.core.seq_generator": "L3",
-    "strategy_research.core.scheduled_research": "L3",
+    "strategy_research.core.memory": "L3",
+    "strategy_research.core.skills": "L3",
+    "strategy_research.core.seq_generator": "L3",  # 待退役（归 event_log 权威 seq）
     # L4 foundation
     "strategy_research.core.llm": "L4",
     "strategy_research.core.storage": "L4",
     "strategy_research.core.observability": "L4",
     "strategy_research.core.utils": "L4",
     "strategy_research.core.web": "L4",
+    "strategy_research.core.registry": "L4",  # v7.2: 通用 typed Registry 基类（零语义原语）
     "strategy_research.core.config_loader": "L4",
     "strategy_research.core.errors": "L4",
     "strategy_research.core.git": "L4",
@@ -103,6 +107,8 @@ SKIP_MODULES = {"strategy_research", "strategy_research.core"}
 # study/scheduler→api.routers.web_session(2), platform_store→orchestration(2),
 # llm/config→agent.compact(2), llm/parser→agent.structured_output(2),
 # utils/{backtest,strategy}_engine→backtest_models(4)
+# v7.2 归位（tools→apps、registry→foundation）经 import grep 验证为违规中性：
+# core.tools 仅被 apps 侧引用；core.registry 仅被 agent 下行引用。基线不变。
 BASELINE: dict[str, int] = {
     "L2>L1": 2,   # G2a
     "L3>L1": 3,   # G2a
