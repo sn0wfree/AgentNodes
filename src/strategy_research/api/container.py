@@ -139,6 +139,30 @@ def reset_container(app: Any) -> None:
         delattr(app.state, _STATE_KEY_CONTAINER)
 
 
+def close_container(container: AppContainer) -> None:
+    """Release the container's SQLite handles.
+
+    每个 service 各自持有一条连接（SessionStore / EventStore）。Windows 上
+    未关闭的句柄会让临时目录无法删除（WinError 32，且会跨测试污染后续用例），
+    生产里 app shutdown 也需要显式释放。顺序与构造相反；best-effort——
+    释放失败不影响其他服务。
+
+    W1-8（2026-11-03）：此前无任何释放契约，测试用 TemporaryDirectory 建库
+    后直接泄漏句柄，成为全量套件 55 项级联失败的污染源。
+    """
+    for attr in ("session_service", "event_store", "session_store"):
+        svc = getattr(container, attr, None)
+        if svc is None:
+            continue
+        close = getattr(svc, "close", None)
+        if close is None:
+            continue
+        try:
+            close()
+        except Exception as exc:  # noqa: BLE001 — 释放尽力而为
+            logger.debug("close_container: %s close failed: %s", attr, exc)
+
+
 # ── Adapter for app.state bulk-assignment ────────────────────────────
 
 
@@ -162,6 +186,7 @@ __all__ = [
     "AppContainer",
     "attach_container",
     "build_container",
+    "close_container",
     "get_container",
     "reset_container",
     "services_from_container",

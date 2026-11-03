@@ -628,6 +628,27 @@ class EventStore:
         }
         return event_type in boundary_types
 
+    def close(self) -> None:
+        """Release the SQLite backend handle (W1-8).
+
+        EvenStore 持有 ``SQLiteStore`` 的一条长连接；Windows 上未关闭的句柄
+        会让临时目录无法删除（WinError 32），也会在进程内跨用例污染。
+        best-effort：重复调用安全，degraded（InMemoryStore）后端同样支持。
+        """
+        backend = getattr(self, "_backend", None)
+        close = getattr(backend, "close", None)
+        if close is not None:
+            try:
+                close()
+            except Exception as exc:  # noqa: BLE001 — 释放尽力而为
+                logger.debug("EventStore.close failed: %s", exc)
+        sqlite_store = getattr(self, "_sqlite_store", None)
+        if sqlite_store is not None and sqlite_store is not backend:
+            try:
+                sqlite_store.close()
+            except Exception as exc:  # noqa: BLE001
+                logger.debug("EventStore.close (sqlite_store) failed: %s", exc)
+
     def health_report(self) -> dict[str, Any]:
         # P0-1 B4: surface the SessionCache hit rate so operators can
         # tell whether the LRU cap is sized for the working set.

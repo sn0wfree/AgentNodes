@@ -14,7 +14,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
 class TestBuildContainer(unittest.TestCase):
 
     def test_basic_build(self):
-        from strategy_research.api.container import build_container
+        from strategy_research.api.container import build_container, close_container
 
         with TemporaryDirectory() as tmpdir:
             db_path = Path(tmpdir) / "test.db"
@@ -22,34 +22,43 @@ class TestBuildContainer(unittest.TestCase):
                 workspace_path=Path(tmpdir),
                 db_path=db_path,
             )
-            self.assertEqual(container.workspace_path, Path(tmpdir))
-            self.assertEqual(container.db_path, db_path)
-            self.assertIsNotNone(container.event_store)
-            self.assertIsNotNone(container.session_store)
-            self.assertIsNotNone(container.session_service)
+            # W1-8: 必须在临时目录清理前释放 SQLite 句柄
+            # （Windows 拒绝删除仍被进程占用的文件，WinError 32）
+            try:
+                self.assertEqual(container.workspace_path, Path(tmpdir))
+                self.assertEqual(container.db_path, db_path)
+                self.assertIsNotNone(container.event_store)
+                self.assertIsNotNone(container.session_store)
+                self.assertIsNotNone(container.session_service)
+            finally:
+                close_container(container)
 
     def test_services_wired_correctly(self):
         """Services share the same EventStore instance."""
-        from strategy_research.api.container import build_container
+        from strategy_research.api.container import build_container, close_container
 
         with TemporaryDirectory() as tmpdir:
             container = build_container(
                 workspace_path=Path(tmpdir),
                 db_path=Path(tmpdir) / "test.db",
             )
-            # SessionService is wired with the EventStore
-            self.assertIs(container.session_service.event_bus, container.event_store)
-            # SessionStore should match db_path
-            self.assertEqual(container.session_store.db_path, Path(tmpdir) / "test.db")
+            try:
+                # SessionService is wired with the EventStore
+                self.assertIs(container.session_service.event_bus, container.event_store)
+                # SessionStore should match db_path
+                self.assertEqual(container.session_store.db_path, Path(tmpdir) / "test.db")
+            finally:
+                close_container(container)
 
     def test_default_db_path(self):
         """When db_path is not given, use the unified session DB resolver."""
-        from strategy_research.api.container import build_container
+        from strategy_research.api.container import build_container, close_container
 
         with TemporaryDirectory() as tmpdir:
             import os
 
             os.environ["SR_WORKSPACE_PATH"] = tmpdir
+            container = None
             try:
                 container = build_container()
                 self.assertEqual(
@@ -57,15 +66,20 @@ class TestBuildContainer(unittest.TestCase):
                     (Path(tmpdir) / ".quantnodes_strategy_research_session.db").resolve(),
                 )
             finally:
+                if container is not None:
+                    close_container(container)
                 del os.environ["SR_WORKSPACE_PATH"]
 
     def test_no_workspace(self):
         """build_container works without workspace_path."""
-        from strategy_research.api.container import build_container
+        from strategy_research.api.container import build_container, close_container
 
         container = build_container(db_path=Path("/tmp/x.db"))
-        self.assertIsNone(container.workspace_path)
-        self.assertEqual(container.db_path, Path("/tmp/x.db"))
+        try:
+            self.assertIsNone(container.workspace_path)
+            self.assertEqual(container.db_path, Path("/tmp/x.db"))
+        finally:
+            close_container(container)
 
 
 class TestBuildContainerWithFactories(unittest.TestCase):
