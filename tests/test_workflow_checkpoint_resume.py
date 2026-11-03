@@ -178,7 +178,7 @@ def test_resume_and_continue_error_on_runtime_failure(cp_env, tmp_path, monkeypa
         store=store, workspace=tmp_path,
     )
     # 放大器：让 to_thread 内的 execute 抛错——替换 SwarmRuntime 构造
-    import strategy_research.core.swarm.runtime as rt_mod
+    import strategy_research.kernel.swarm.runtime as rt_mod
 
     class Boom:
         def execute(self, *a, **k):

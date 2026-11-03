@@ -178,7 +178,7 @@ def _write_preset(tmp_path: Path, body: str) -> Path:
 
 
 def test_redirect_action_is_rejected(tmp_path):
-    from strategy_research.core.swarm.preset_loader import load_preset
+    from strategy_research.kernel.swarm.preset_loader import load_preset
 
     path = _write_preset(tmp_path, """
 name: t
@@ -197,7 +197,7 @@ branches:
 
 
 def test_skip_and_retry_are_allowed(tmp_path):
-    from strategy_research.core.swarm.preset_loader import load_preset
+    from strategy_research.kernel.swarm.preset_loader import load_preset
 
     path = _write_preset(tmp_path, """
 name: t
@@ -216,7 +216,7 @@ branches:
 
 
 def test_budget_token_warns(tmp_path, caplog):
-    from strategy_research.core.swarm.preset_loader import load_preset
+    from strategy_research.kernel.swarm.preset_loader import load_preset
 
     path = _write_preset(tmp_path, """
 name: t

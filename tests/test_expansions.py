@@ -5,14 +5,14 @@ from __future__ import annotations
 from pathlib import Path
 
 from strategy_research.apps.export.exporter import _parse_strategy, export_strategy
-from strategy_research.core.swarm.preset_loader import list_presets, load_preset
+from strategy_research.kernel.swarm.preset_loader import list_presets, load_preset
 
 # ── New Swarm Presets Tests ─────────────────────────────────
 
 
 class TestNewSwarmPresets:
     def test_investment_committee(self, tmp_path):
-        preset_file = Path(__file__).parent.parent / "src" / "strategy_research" / "core" / "swarm" / "presets" / "investment_committee.yaml"
+        preset_file = Path(__file__).parent.parent / "src" / "strategy_research" / "kernel" / "swarm" / "presets" / "investment_committee.yaml"
         preset = load_preset(preset_file)
         assert preset is not None
         assert preset.name == "investment_committee"
@@ -20,21 +20,21 @@ class TestNewSwarmPresets:
         assert "risk_controller" in preset.dag
 
     def test_crypto_lab(self, tmp_path):
-        preset_file = Path(__file__).parent.parent / "src" / "strategy_research" / "core" / "swarm" / "presets" / "crypto_lab.yaml"
+        preset_file = Path(__file__).parent.parent / "src" / "strategy_research" / "kernel" / "swarm" / "presets" / "crypto_lab.yaml"
         preset = load_preset(preset_file)
         assert preset is not None
         assert preset.name == "crypto_lab"
         assert len(preset.agents) == 5
 
     def test_sector_rotation(self, tmp_path):
-        preset_file = Path(__file__).parent.parent / "src" / "strategy_research" / "core" / "swarm" / "presets" / "sector_rotation.yaml"
+        preset_file = Path(__file__).parent.parent / "src" / "strategy_research" / "kernel" / "swarm" / "presets" / "sector_rotation.yaml"
         preset = load_preset(preset_file)
         assert preset is not None
         assert preset.name == "sector_rotation"
         assert len(preset.agents) == 6
 
     def test_all_presets_listed(self):
-        presets_dir = Path(__file__).parent.parent / "src" / "strategy_research" / "core" / "swarm" / "presets"
+        presets_dir = Path(__file__).parent.parent / "src" / "strategy_research" / "kernel" / "swarm" / "presets"
         presets = list_presets(presets_dir)
         names = {p.name for p in presets}
         assert "quant_research_team" in names

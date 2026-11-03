@@ -301,7 +301,7 @@ class WorkflowStore:
         restored — a failed node must re-run on resume (its stored
         envelope carries an error, not a usable downstream output).
         """
-        from ..swarm.runtime import AgentResult, AgentStatus
+        from strategy_research.kernel.swarm.runtime import AgentResult, AgentStatus
 
         rebuilt: dict[str, Any] = {}
         for row in self.list_node_outputs(run_id):

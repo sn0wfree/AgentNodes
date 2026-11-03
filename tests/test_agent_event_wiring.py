@@ -266,14 +266,14 @@ def test_runner_sink_attaches_trace_context(tmp_path):
 
 
 def test_swarm_wrap_returns_none_without_callback():
-    from strategy_research.core.swarm.runtime import SwarmRuntime
+    from strategy_research.kernel.swarm.runtime import SwarmRuntime
 
     rt = SwarmRuntime()  # 无 on_event
     assert rt._wrap_agent_on_event("a") is None
 
 
 def test_swarm_wrap_filters_and_injects_agent_name():
-    from strategy_research.core.swarm.runtime import SwarmRuntime
+    from strategy_research.kernel.swarm.runtime import SwarmRuntime
 
     seen: list[tuple[str, dict]] = []
     rt = SwarmRuntime(on_event=lambda et, d: seen.append((et, d)))

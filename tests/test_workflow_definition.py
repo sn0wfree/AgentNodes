@@ -270,7 +270,7 @@ class TestFileIO:
 
 class TestAgentResultEnvelope:
     def test_optional_fields_default(self):
-        from strategy_research.core.swarm.runtime import AgentResult, AgentStatus
+        from strategy_research.kernel.swarm.runtime import AgentResult, AgentStatus
         r = AgentResult(agent_id="a")
         assert r.summary == ""
         assert r.artifacts == {}

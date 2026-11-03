@@ -8,7 +8,7 @@ from __future__ import annotations
 
 import pytest
 
-from strategy_research.core.swarm.types import AgentCall, AgentStatus, SwarmHook
+from strategy_research.kernel.swarm.types import AgentCall, AgentStatus, SwarmHook
 
 
 # ── AgentStatus ─────────────────────────────────────────────────────

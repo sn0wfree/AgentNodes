@@ -7,7 +7,7 @@ from pathlib import Path
 
 import pytest
 
-from strategy_research.core.swarm.runtime import AgentStatus
+from strategy_research.kernel.swarm.runtime import AgentStatus
 from strategy_research.core.workflow.definition import WorkflowNode
 from strategy_research.core.workflow.node_types import (
     NODE_METADATA,
@@ -88,7 +88,7 @@ class TestLLMAgent:
         assert fake.calls[0].get("tools_override") == ["read", "websearch"]
 
     def test_upstream_context_injected(self, tmp_path: Path):
-        from strategy_research.core.swarm.runtime import AgentResult
+        from strategy_research.kernel.swarm.runtime import AgentResult
         fake = FakeLoop({})
         ctx = make_ctx(tmp_path, loop_factory=fake)
         ctx.upstream = {"prev": AgentResult(agent_id="prev", status=AgentStatus.SUCCESS,

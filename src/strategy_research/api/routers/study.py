@@ -1639,7 +1639,8 @@ async def study_presets():
     """List YAML preset names available as planner few-shot candidates."""
     from pathlib import Path
 
-    d = Path(__file__).parent.parent.parent / "core" / "swarm" / "presets"
+    import strategy_research.kernel.swarm as _swarm_mod
+    d = Path(_swarm_mod.__file__).parent / "presets"
     if not d.is_dir():
         return {"presets": []}
     presets = sorted(p.stem.replace("goal_", "") for p in d.glob("goal_*.yaml"))

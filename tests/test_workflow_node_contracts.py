@@ -14,7 +14,7 @@ from unittest.mock import patch
 
 import pytest
 
-from strategy_research.core.swarm.runtime import AgentResult, AgentStatus
+from strategy_research.kernel.swarm.runtime import AgentResult, AgentStatus
 from strategy_research.core.workflow import node_types
 from strategy_research.core.workflow.definition import WorkflowNode
 from strategy_research.core.workflow.node_types import NodeContext, _retryable_node_error

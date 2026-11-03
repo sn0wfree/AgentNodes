@@ -12,7 +12,7 @@ from types import SimpleNamespace
 
 import pytest
 
-from strategy_research.core.swarm.runtime import AgentStatus
+from strategy_research.kernel.swarm.runtime import AgentStatus
 from strategy_research.core.workflow.builtin import load_definition
 from strategy_research.core.workflow.executor import WorkflowRunner
 from strategy_research.core.workflow.graph_compiler import WorkflowGraphCompiler

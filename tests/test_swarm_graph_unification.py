@@ -16,13 +16,13 @@ import threading
 import time
 from pathlib import Path
 
-from strategy_research.core.swarm.runtime import (
+from strategy_research.kernel.swarm.runtime import (
     AgentResult,
     AgentStatus,
     SwarmPreset,
     SwarmRuntime,
 )
-from strategy_research.core.swarm.types import AgentCall
+from strategy_research.kernel.swarm.types import AgentCall
 
 
 def _call(name: str, **ctx) -> AgentCall:

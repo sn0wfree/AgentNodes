@@ -673,8 +673,8 @@ class MCPServer:
 
     def _register_swarm_tools(self) -> None:
         def list_swarm_presets(**kwargs: Any) -> str:
-            import strategy_research.core.swarm as swarm_module
-            from strategy_research.core.swarm import list_presets
+            import strategy_research.kernel.swarm as swarm_module
+            from strategy_research.kernel.swarm import list_presets
             presets_dir = Path(swarm_module.__file__).parent / "presets"  # 层无关：跟随 swarm 包实际位置
             presets = list_presets(presets_dir)
             return json.dumps([{"name": p.name, "description": p.description, "agents": len(p.agents)} for p in presets], ensure_ascii=False)
@@ -736,7 +736,7 @@ class MCPServer:
         self.register(_wrap_base_tool(SearchSymbolTool()))
 
     def _register_swarm_execution_tools(self) -> None:
-        from strategy_research.core.swarm.run_store import RunStore
+        from strategy_research.kernel.swarm.run_store import RunStore
         run_store = RunStore()
 
         def run_swarm(
@@ -756,8 +756,8 @@ class MCPServer:
 
             from pathlib import Path
 
-            import strategy_research.core.swarm as swarm_module
-            from strategy_research.core.swarm import SwarmRuntime, load_preset
+            import strategy_research.kernel.swarm as swarm_module
+            from strategy_research.kernel.swarm import SwarmRuntime, load_preset
 
             presets_dir = Path(swarm_module.__file__).parent / "presets"  # 层无关：跟随 swarm 包实际位置
             preset = None

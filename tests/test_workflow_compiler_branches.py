@@ -16,7 +16,7 @@ from pathlib import Path
 
 import pytest
 
-from strategy_research.core.swarm.runtime import AgentResult, AgentStatus
+from strategy_research.kernel.swarm.runtime import AgentResult, AgentStatus
 from strategy_research.core.workflow.definition import (
     WorkflowDefinition,
     WorkflowEdge,

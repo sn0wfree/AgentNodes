@@ -4,8 +4,8 @@ from __future__ import annotations
 
 import pytest
 
-from strategy_research.core.swarm.preset_loader import list_presets, load_preset
-from strategy_research.core.swarm.runtime import (
+from strategy_research.kernel.swarm.preset_loader import list_presets, load_preset
+from strategy_research.kernel.swarm.runtime import (
     AgentResult,
     SwarmPreset,
     SwarmResult,

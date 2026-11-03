@@ -20,7 +20,7 @@ from pathlib import Path
 from typing import Any
 
 from strategy_research.kernel.runtimes import END, INTERRUPT_KEY, GraphEngine, GraphInterrupt
-from ..workflow.dag import topological_layers
+from strategy_research.core.workflow.dag import topological_layers
 from .types import AgentCall, AgentStatus, SwarmHook
 
 logger = logging.getLogger(__name__)
@@ -536,10 +536,10 @@ class SwarmRuntime:
         - "python_executor": registered Python function
         - "evaluator": decide() function for keep/discard
         """
-        from ..agent.dag_config import AgentNodeConfig
-        from ..agent.executor import AgentExecutor
-        from ..agent.plugin import AgentPlugin
-        from ..agent.registry import get_default_registry
+        from strategy_research.core.agent.dag_config import AgentNodeConfig
+        from strategy_research.core.agent.executor import AgentExecutor
+        from strategy_research.core.agent.plugin import AgentPlugin
+        from strategy_research.core.agent.registry import get_default_registry
 
         t0 = time.perf_counter()
         ctx = agent_call.context if hasattr(agent_call, "context") else {}
@@ -840,7 +840,7 @@ class SwarmRuntime:
 
         Branch config shape: ``{condition, action, target, reason}``.
         """
-        from ..goal.expression_evaluator import evaluate_condition
+        from strategy_research.core.goal.expression_evaluator import evaluate_condition
 
         skipped: list[str] = []
         retried: list[str] = []

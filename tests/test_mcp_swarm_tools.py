@@ -58,8 +58,8 @@ class TestRunSwarm:
     def test_stores_result(self, server, tmp_path):
         """执行完成后 RunStore 应有结果。"""
         # 用 mock 避免真正调用 LLM
-        with patch("strategy_research.core.swarm.runtime.SwarmRuntime.execute") as mock_exec:
-            from strategy_research.core.swarm.runtime import AgentResult, SwarmResult
+        with patch("strategy_research.kernel.swarm.runtime.SwarmRuntime.execute") as mock_exec:
+            from strategy_research.kernel.swarm.runtime import AgentResult, SwarmResult
             from strategy_research.core.workflow.types import AgentStatus
 
             mock_exec.return_value = SwarmResult(
@@ -90,8 +90,8 @@ class TestRunSwarm:
 
     def test_get_status_after_run(self, server, tmp_path):
         """run_swarm 后 get_swarm_status 应能找到。"""
-        with patch("strategy_research.core.swarm.runtime.SwarmRuntime.execute") as mock_exec:
-            from strategy_research.core.swarm.runtime import SwarmResult
+        with patch("strategy_research.kernel.swarm.runtime.SwarmRuntime.execute") as mock_exec:
+            from strategy_research.kernel.swarm.runtime import SwarmResult
 
             mock_exec.return_value = SwarmResult(
                 run_id="status_test_001",

@@ -14,9 +14,10 @@ from pathlib import Path
 
 def cmd_swarm_list(args) -> int:
     """列出所有 swarm preset。"""
-    from strategy_research.core.swarm import list_presets
+    from strategy_research.kernel.swarm import list_presets
 
-    presets_dir = Path(__file__).parent.parent.parent / "core" / "swarm" / "presets"
+    import strategy_research.kernel.swarm as _swarm_mod
+    presets_dir = Path(_swarm_mod.__file__).parent / "presets"
     presets = list_presets(presets_dir)
 
     if not presets:
@@ -33,9 +34,10 @@ def cmd_swarm_list(args) -> int:
 
 def cmd_swarm_inspect(args) -> int:
     """显示 swarm preset 结构。"""
-    from strategy_research.core.swarm import load_preset
+    from strategy_research.kernel.swarm import load_preset
 
-    presets_dir = Path(__file__).parent.parent.parent / "core" / "swarm" / "presets"
+    import strategy_research.kernel.swarm as _swarm_mod
+    presets_dir = Path(_swarm_mod.__file__).parent / "presets"
     preset = None
     for ext in ("*.yaml", "*.yml"):
         for f in presets_dir.glob(ext):
@@ -71,9 +73,10 @@ def cmd_swarm_inspect(args) -> int:
 
 def cmd_swarm_run(args) -> int:
     """执行 swarm preset。"""
-    from strategy_research.core.swarm import SwarmRuntime, load_preset
+    from strategy_research.kernel.swarm import SwarmRuntime, load_preset
 
-    presets_dir = Path(__file__).parent.parent.parent / "core" / "swarm" / "presets"
+    import strategy_research.kernel.swarm as _swarm_mod
+    presets_dir = Path(_swarm_mod.__file__).parent / "presets"
     preset = None
     for ext in ("*.yaml", "*.yml"):
         for f in presets_dir.glob(ext):
@@ -110,7 +113,7 @@ def cmd_swarm_run(args) -> int:
 
 def cmd_swarm_cancel(args) -> int:
     """取消运行中的 swarm。"""
-    from strategy_research.core.swarm import SwarmRuntime
+    from strategy_research.kernel.swarm import SwarmRuntime
 
     runtime = SwarmRuntime()
     ok = runtime.cancel(args.run_id)

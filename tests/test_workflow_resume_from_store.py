@@ -12,7 +12,7 @@ from pathlib import Path
 
 import pytest
 
-from strategy_research.core.swarm.runtime import AgentStatus
+from strategy_research.kernel.swarm.runtime import AgentStatus
 from strategy_research.core.workflow.builtin import load_definition
 from strategy_research.core.workflow.executor import WorkflowRunner
 from strategy_research.core.workflow.store import WorkflowStore
@@ -99,7 +99,7 @@ def test_resume_from_store_rebuilds_pre_completed(tmp_path):
     definition = _definition("alpha_research", tmp_path)
     store.create_run("r-crash", definition.name, "s", "目标", {})
 
-    from strategy_research.core.swarm.runtime import AgentResult
+    from strategy_research.kernel.swarm.runtime import AgentResult
     store.save_node_output("r-crash", 0, AgentResult(
         agent_id="hypothesis", status=AgentStatus.SUCCESS,
         output="hypothesis body", summary="h",
@@ -124,7 +124,7 @@ def test_resume_from_store_continues_and_completes(tmp_path):
     definition = _definition("data_quality_audit", tmp_path)
     store.create_run("r1", definition.name, "s", "目标", {})
 
-    from strategy_research.core.swarm.runtime import AgentResult
+    from strategy_research.kernel.swarm.runtime import AgentResult
     store.save_node_output("r1", 0, AgentResult(
         agent_id="check", status=AgentStatus.SUCCESS,
         output="checked", summary="ok",

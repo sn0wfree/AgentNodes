@@ -7,6 +7,6 @@ working.
 """
 from __future__ import annotations
 
-from ..swarm.types import AgentCall, AgentStatus, SwarmHook
+from strategy_research.kernel.swarm.types import AgentCall, AgentStatus, SwarmHook
 
 __all__ = ["AgentCall", "AgentStatus", "SwarmHook"]

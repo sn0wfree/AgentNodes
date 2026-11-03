@@ -12,14 +12,14 @@ from types import SimpleNamespace
 
 import pytest
 
-from strategy_research.core.swarm.runtime import (
+from strategy_research.kernel.swarm.runtime import (
     AgentCall,
     AgentResult,
     AgentStatus,
     SwarmPreset,
     SwarmRuntime,
 )
-from strategy_research.core.swarm.types import AgentCall as AgentCallT
+from strategy_research.kernel.swarm.types import AgentCall as AgentCallT
 
 
 def _call(name: str, **ctx) -> AgentCallT:

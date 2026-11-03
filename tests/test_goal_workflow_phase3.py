@@ -55,7 +55,7 @@ from strategy_research.core.goal.workflow import (
     GoalWorkflowState,
 )
 from strategy_research.core.goal.workflow_hook import GoalWorkflowHook
-from strategy_research.core.swarm.runtime import AgentResult, SwarmPreset, SwarmRuntime
+from strategy_research.kernel.swarm.runtime import AgentResult, SwarmPreset, SwarmRuntime
 from strategy_research.core.workflow.types import AgentStatus, SwarmHook
 
 # ── SwarmPreset unification (P3.3) ───────────────────────────

@@ -69,10 +69,12 @@ class DAGPlanner:
     ):
         self._registry = registry or get_default_registry()
         self._llm_config = llm_config
+        # 跟随 swarm 包实际位置解析（2026-11-03 W4d）：原先按本文件深度拼
+        # 'core/swarm/presets'，swarm 迁入 kernel 后会指向不存在的目录。
+        import strategy_research.kernel.swarm as _swarm_mod
         self._preset_yaml_dir = (
             preset_yaml_dir
-            or Path(__file__).parent.parent.parent
-            / "core" / "swarm" / "presets"
+            or Path(_swarm_mod.__file__).parent / "presets"
         )
 
     def plan(
