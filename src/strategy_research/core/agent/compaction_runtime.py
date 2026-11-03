@@ -20,7 +20,7 @@ from __future__ import annotations
 import logging
 from typing import Any, Callable
 
-from ..utils.token_utils import estimate_tokens
+from strategy_research.foundation.utils.token_utils import estimate_tokens
 from . import compact as _compact_mod
 
 logger = logging.getLogger(__name__)

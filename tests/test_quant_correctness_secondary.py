@@ -34,7 +34,7 @@ def _mostly_up_nav(n: int = 504, daily: float = 0.001) -> pd.Series:
 
 class TestRiskFreeRate:
     def test_sharpe_excess_return(self):
-        from strategy_research.core.utils.metrics import extended_metrics
+        from strategy_research.foundation.utils.metrics import extended_metrics
 
         nav = _mostly_up_nav()
         m0 = extended_metrics(nav)
@@ -47,7 +47,7 @@ class TestRiskFreeRate:
         assert m3["risk_free_rate"] == 0.03
 
     def test_sortino_excess_return(self):
-        from strategy_research.core.utils.metrics import _sortino
+        from strategy_research.foundation.utils.metrics import _sortino
 
         nav = _mostly_up_nav()
         s0 = _sortino(nav)
@@ -56,7 +56,7 @@ class TestRiskFreeRate:
         assert s3 < s0
 
     def test_engine_threads_rf(self):
-        from strategy_research.core.utils.strategy_engine import StrategyEngine
+        from strategy_research.foundation.utils.strategy_engine import StrategyEngine
 
         assert StrategyEngine().risk_free_rate == 0.0
         assert StrategyEngine(risk_free_rate=0.05).risk_free_rate == 0.05

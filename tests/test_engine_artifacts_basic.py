@@ -13,7 +13,7 @@ from strategy_research.core.engine.artifacts import (
     write_ohlcv_snapshots,
     write_trades_csv,
 )
-from strategy_research.core.utils.backtest_models import (
+from strategy_research.foundation.utils.backtest_models import (
     EquitySnapshot,
     TradeRecord,
 )

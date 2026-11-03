@@ -4,11 +4,11 @@ from __future__ import annotations
 import pandas as pd
 import pytest
 
-from strategy_research.core.utils.backtest_metrics import (
+from strategy_research.foundation.utils.backtest_metrics import (
     _empty_metrics,
     calc_metrics,
 )
-from strategy_research.core.utils.backtest_models import TradeRecord
+from strategy_research.foundation.utils.backtest_models import TradeRecord
 
 
 def _equity(values, start="2024-01-01") -> pd.Series:

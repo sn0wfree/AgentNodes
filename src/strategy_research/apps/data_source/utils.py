@@ -123,7 +123,7 @@ def detect_market(code: str) -> str:
     这里映射回 data_source 层标签（etf/index 细分、us/hk 简写、
     macro），供 LOADER_REGISTRY 选择 loader。
     """
-    from strategy_research.core.utils.market_detection import detect_market as _detect
+    from strategy_research.foundation.utils.market_detection import detect_market as _detect
 
     market = _detect(code)
     if market == "unknown":

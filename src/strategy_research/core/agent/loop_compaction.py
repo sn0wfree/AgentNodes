@@ -9,7 +9,7 @@ from typing import TYPE_CHECKING, Any, Callable
 
 logger = logging.getLogger(__name__)
 
-from ..utils.token_utils import estimate_tokens
+from strategy_research.foundation.utils.token_utils import estimate_tokens
 from . import compact as _compact_mod
 from . import loop as _loop_mod
 

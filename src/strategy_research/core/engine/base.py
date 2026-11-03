@@ -381,7 +381,7 @@ class BaseEngine(ABC, MarketMixin):
         Returns:
             metrics dict (17 keys)
         """
-        from ..utils.backtest_metrics import calc_metrics
+        from strategy_research.foundation.utils.backtest_metrics import calc_metrics
 
         def _progress(msg: str) -> None:
             if progress_every is not None:

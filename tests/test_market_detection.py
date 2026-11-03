@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import pytest
 
-from strategy_research.core.utils.market_detection import (
+from strategy_research.foundation.utils.market_detection import (
     _MARKET_PATTERNS,
     _MARKET_TO_SOURCE,
     detect_market,

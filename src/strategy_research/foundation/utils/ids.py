@@ -5,7 +5,7 @@ Prevents accidentally passing an attempt_id where session_id is expected.
 
 Usage::
 
-    from strategy_research.core.utils.ids import SessionId, AttemptId
+    from strategy_research.foundation.utils.ids import SessionId, AttemptId
 
     def cancel(session_id: SessionId) -> None: ...
 """

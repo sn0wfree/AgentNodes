@@ -23,7 +23,7 @@ def _detect_market_simple(symbol: str) -> str:
     third duplicate regex implementation was retired. Default is
     a_share for unknown codes (matches previous behavior).
     """
-    from ..utils.market_detection import detect_market
+    from strategy_research.foundation.utils.market_detection import detect_market
 
     market = detect_market(symbol)
     return market if market != "unknown" else "a_share"

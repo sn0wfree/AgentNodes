@@ -32,17 +32,17 @@ from strategy_research.apps.backtest_engine.strategy_engine_adapter import (
     StrategyEngineAdapter,
 )
 from strategy_research.apps.backtest_models import BacktestResult
-from strategy_research.core.utils.backtest_config import BacktestConfig
-from strategy_research.core.utils.backtest_engine import (
+from strategy_research.foundation.utils.backtest_config import BacktestConfig
+from strategy_research.foundation.utils.backtest_engine import (
     BacktestCallbacks,
 )
-from strategy_research.core.utils.backtest_engine import (
+from strategy_research.foundation.utils.backtest_engine import (
     run_backtest as legacy_run_backtest,
 )
-from strategy_research.core.utils.strategy_engine import (
+from strategy_research.foundation.utils.strategy_engine import (
     BaseStrategy,
 )
-from strategy_research.core.utils.strategy_engine import (
+from strategy_research.foundation.utils.strategy_engine import (
     StrategyEngine as LegacyStrategyEngine,
 )
 

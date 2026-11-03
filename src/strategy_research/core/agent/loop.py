@@ -47,7 +47,7 @@ from strategy_research.kernel.hooks.context import AgentHookContext
 from ..llm import LLMConfig, LLMResponse, OpenAICompatClient, ToolCall
 from ..llm.errors import LLMError
 from ..memory.persistent import PersistentMemory
-from ..utils.ids import SessionId
+from strategy_research.foundation.utils.ids import SessionId
 from .circuit_breaker import RetryPolicy, ToolLoopCircuitBreaker
 from .compact import CompactConfig
 from .context import ContextBuilder, estimate_tokens

@@ -218,7 +218,7 @@ def _create_market_engine(
     codes: list[str],
 ) -> BaseEngine:
     """根据 codes 和 config 创建市场引擎。"""
-    from ..utils.market_detection import detect_market
+    from strategy_research.foundation.utils.market_detection import detect_market
 
     markets = {detect_market(c) for c in codes} if codes else set()
     engine_type = config.get("engine", "auto")
@@ -230,7 +230,7 @@ def _create_market_engine(
 
     # Futures
     if "futures" in markets or engine_type == "futures":
-        from ..utils.market_detection import detect_source  # noqa: F811
+        from strategy_research.foundation.utils.market_detection import detect_source  # noqa: F811
         source = detect_source(codes[0]) if codes else "tushare"
         if source in ("tushare", "akshare"):
             from .china_futures import ChinaFuturesEngine

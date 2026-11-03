@@ -5,7 +5,7 @@ from __future__ import annotations
 import pandas as pd
 import pytest
 
-from strategy_research.core.utils.backtest_metrics import (
+from strategy_research.foundation.utils.backtest_metrics import (
     _empty_metrics,
     by_exit_reason_stats,
     by_symbol_stats,
@@ -13,7 +13,7 @@ from strategy_research.core.utils.backtest_metrics import (
     calc_metrics,
     win_rate_and_stats,
 )
-from strategy_research.core.utils.backtest_models import TradeRecord
+from strategy_research.foundation.utils.backtest_models import TradeRecord
 
 
 def _ts(s: str) -> pd.Timestamp:

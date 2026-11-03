@@ -1,7 +1,7 @@
 """Tests for config_runner.py on_risk_check import path.
 
 Regression test for the bug where ``from .backtest_utils import`` failed
-because the module actually lives at ``strategy_research.core.utils.backtest_utils``.
+because the module actually lives at ``strategy_research.foundation.utils.backtest_utils``.
 """
 from __future__ import annotations
 
@@ -42,8 +42,8 @@ class TestConfigRunnerImport:
             importlib.import_module("strategy_research.apps.backtest_utils")
 
     def test_correct_module_path_exists(self):
-        """The actual module path is strategy_research.core.utils.backtest_utils."""
-        from strategy_research.core.utils import backtest_utils
+        """The actual module path is strategy_research.foundation.utils.backtest_utils."""
+        from strategy_research.foundation.utils import backtest_utils
 
         assert hasattr(backtest_utils, "apply_max_weight")
         assert hasattr(backtest_utils, "normalize_weights")

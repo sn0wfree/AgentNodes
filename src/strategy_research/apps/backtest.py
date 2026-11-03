@@ -339,7 +339,7 @@ def run_strategy(
     if log_path is None:
         log_path = strategy_dir / "run.log"
 
-    from strategy_research.core.utils.bg_proc import log_tail, run_bg, wait_bg
+    from strategy_research.foundation.utils.bg_proc import log_tail, run_bg, wait_bg
 
     try:
         import sys

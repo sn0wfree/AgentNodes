@@ -24,14 +24,14 @@ import numpy as np
 import pandas as pd
 
 from strategy_research.apps.backtest_models import BacktestResult
-from strategy_research.core.utils.backtest_config import BacktestConfig
-from strategy_research.core.utils.backtest_engine import BacktestCallbacks
-from strategy_research.core.utils.backtest_utils import (
+from strategy_research.foundation.utils.backtest_config import BacktestConfig
+from strategy_research.foundation.utils.backtest_engine import BacktestCallbacks
+from strategy_research.foundation.utils.backtest_utils import (
     annual_turnover_from_weights,
     calculate_turnover,
     generate_rebalance_dates,
 )
-from strategy_research.core.utils.metrics import extended_metrics
+from strategy_research.foundation.utils.metrics import extended_metrics
 from .protocol import Strategy
 
 

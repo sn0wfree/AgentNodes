@@ -41,32 +41,32 @@ class TestCanonicalBacktestResult:
 
 class TestLegacyAliases:
     def test_backtest_engine_path_resolves_to_canonical(self):
-        from strategy_research.core.utils.backtest_engine import (
+        from strategy_research.foundation.utils.backtest_engine import (
             BacktestResult as Legacy,
         )
         assert Legacy is BacktestResult
 
     def test_strategy_engine_path_resolves_to_canonical(self):
-        from strategy_research.core.utils.strategy_engine import (
+        from strategy_research.foundation.utils.strategy_engine import (
             BacktestResult as Legacy,
         )
         assert Legacy is BacktestResult
 
     def test_all_three_import_paths_are_the_same_class(self):
-        from strategy_research.core.utils.backtest_engine import (
+        from strategy_research.foundation.utils.backtest_engine import (
             BacktestResult as A,
         )
-        from strategy_research.core.utils.strategy_engine import (
+        from strategy_research.foundation.utils.strategy_engine import (
             BacktestResult as B,
         )
         assert A is B is BacktestResult
 
     def test_legacy_alias_preserves_factor_failures_field(self):
         """Both legacy import paths must expose ``factor_failures``."""
-        from strategy_research.core.utils.backtest_engine import (
+        from strategy_research.foundation.utils.backtest_engine import (
             BacktestResult as CallbackEngine,
         )
-        from strategy_research.core.utils.strategy_engine import (
+        from strategy_research.foundation.utils.strategy_engine import (
             BacktestResult as StrategyEngine,
         )
         # Building via either path produces a dataclass with the new

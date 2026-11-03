@@ -38,7 +38,7 @@ def estimate_tokens(messages: list[dict[str, Any]]) -> int:
     Returns:
         Estimated token count.
     """
-    from ..utils.token_utils import estimate_tokens as _shared
+    from strategy_research.foundation.utils.token_utils import estimate_tokens as _shared
     return _shared(messages)
 
 

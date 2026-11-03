@@ -46,7 +46,7 @@ class TestDataSourceDetectMarket:
         """Regression for Fix1: the broken relative import raised
         ModuleNotFoundError; now it must resolve cleanly."""
         # Exercise the import that used to fail
-        from strategy_research.core.utils.market_detection import detect_market as _core
+        from strategy_research.foundation.utils.market_detection import detect_market as _core
         assert callable(_core)
         # And the data_source wrapper must work end-to-end
         assert detect_market("600519.SH") == "a_share"

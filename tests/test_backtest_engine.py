@@ -5,8 +5,8 @@ import numpy as np
 import pandas as pd
 import pytest
 
-from strategy_research.core.utils.backtest_config import BacktestConfig, CostConfig
-from strategy_research.core.utils.backtest_engine import (
+from strategy_research.foundation.utils.backtest_config import BacktestConfig, CostConfig
+from strategy_research.foundation.utils.backtest_engine import (
     BacktestCallbacks,
     BacktestResult,
     run_backtest,

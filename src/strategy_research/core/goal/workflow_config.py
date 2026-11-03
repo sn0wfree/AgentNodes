@@ -449,7 +449,7 @@ def save_goal_workflow(
         bak_path = path.with_suffix(path.suffix + ".bak")
         bak_path.write_text(path.read_text(encoding="utf-8"), encoding="utf-8")
 
-    from ..utils.io_utils import atomic_write_text
+    from strategy_research.foundation.utils.io_utils import atomic_write_text
     try:
         # mkstemp-created files are 0600; preserve that (workflow YAMLs
         # can embed nothing secret today, but keep least privilege)

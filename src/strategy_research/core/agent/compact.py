@@ -229,13 +229,13 @@ class CompactConfig:
 
 def _estimate_tokens(messages: list[dict[str, Any]], chars_per_token: float = 3.0) -> int:
     """Rough token count for a list of messages (shared impl)."""
-    from ..utils.token_utils import estimate_tokens
+    from strategy_research.foundation.utils.token_utils import estimate_tokens
     return estimate_tokens(messages, chars_per_token=chars_per_token)
 
 
 def _estimate_single_tokens(text: str, chars_per_token: float = 3.0) -> int:
     """Rough token count for a plain string (shared impl)."""
-    from ..utils.token_utils import estimate_tokens_text
+    from strategy_research.foundation.utils.token_utils import estimate_tokens_text
     return estimate_tokens_text(text, chars_per_token=chars_per_token)
 
 

@@ -90,14 +90,14 @@ def _active_profile(llm_json_path: Path | None = None) -> str | None:
 
 def _read_dotenv(path: Path) -> dict[str, str]:
     """Parse a .env file (shared impl)."""
-    from strategy_research.core.utils.io_utils import read_dotenv
+    from strategy_research.foundation.utils.io_utils import read_dotenv
     return read_dotenv(path)
 
 
 def _write_dotenv(tokens: dict[str, str], *,
                   dotenv_path: Path | None = None) -> Path:
     """Merge KEY=value lines into .env (atomic, 0600, shared impl)."""
-    from strategy_research.core.utils.io_utils import (
+    from strategy_research.foundation.utils.io_utils import (
         atomic_write_text,
         read_dotenv,
     )
@@ -119,7 +119,7 @@ def _write_dotenv(tokens: dict[str, str], *,
 def _atomic_write_llm_json(data: dict, *,
                            llm_json_path: Path | None = None) -> Path:
     """Atomic pretty-JSON write with 0600 (shared impl)."""
-    from strategy_research.core.utils.io_utils import atomic_write_json
+    from strategy_research.foundation.utils.io_utils import atomic_write_json
 
     path = llm_json_path or LLM_JSON_PATH
     atomic_write_json(path, data)

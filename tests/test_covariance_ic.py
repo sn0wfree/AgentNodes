@@ -19,7 +19,7 @@ import numpy as np
 import pandas as pd
 import pytest
 
-from strategy_research.core.utils import covariance, ic_utils
+from strategy_research.foundation.utils import covariance, ic_utils
 
 warnings.filterwarnings("ignore")
 

@@ -279,7 +279,7 @@ class AutoresearchRunner(RunnerAegisMixin, RunnerKnowledgeMixin):
             # Safety net: drop any background tasks this study left behind
             # on early/abnormal exits (round-end harvest covers the norm).
             try:
-                from strategy_research.core.utils.bg_proc import harvest_by_owner
+                from strategy_research.foundation.utils.bg_proc import harvest_by_owner
                 harvest_by_owner(sid)
             except Exception:  # noqa: BLE001
                 pass
@@ -712,7 +712,7 @@ class AutoresearchRunner(RunnerAegisMixin, RunnerKnowledgeMixin):
         # A backgrounded agent tool (run_backtest background=True /
         # run_bg_command) abandoned mid-poll must not linger into the
         # next round (kill live ones, drop finished ones).
-        from strategy_research.core.utils.bg_proc import harvest_by_owner
+        from strategy_research.foundation.utils.bg_proc import harvest_by_owner
         killed = harvest_by_owner(sid)
         if killed:
             _dlog("loop", "round %d: harvested %d stale bg tasks", round_num, killed)

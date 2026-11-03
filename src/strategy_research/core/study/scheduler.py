@@ -989,7 +989,7 @@ class StudyScheduler:
 
         # 3. Background-task registry: any live task whose log stopped
         #    advancing is stuck → kill + deregister (log-progress liveness).
-        from ..utils.bg_proc import (
+        from strategy_research.foundation.utils.bg_proc import (
             active_tasks,
             is_stalled,
             kill_bg,

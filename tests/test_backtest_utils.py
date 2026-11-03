@@ -4,8 +4,8 @@ from __future__ import annotations
 import pandas as pd
 import pytest
 
-from strategy_research.core.utils.backtest_config import CostConfig
-from strategy_research.core.utils.backtest_utils import (
+from strategy_research.foundation.utils.backtest_config import CostConfig
+from strategy_research.foundation.utils.backtest_utils import (
     apply_max_weight,
     calculate_turnover,
     calculate_turnover_cost,

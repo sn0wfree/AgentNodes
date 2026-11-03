@@ -5,7 +5,7 @@ import dataclasses
 
 import pytest
 
-from strategy_research.core.utils.backtest_config import (
+from strategy_research.foundation.utils.backtest_config import (
     BacktestConfig,
     CostConfig,
     StopLossConfig,

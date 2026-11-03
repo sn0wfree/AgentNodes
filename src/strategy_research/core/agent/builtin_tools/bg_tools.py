@@ -23,7 +23,7 @@ import uuid
 from pathlib import Path
 from typing import Any
 
-from ...utils.bg_proc import (
+from strategy_research.foundation.utils.bg_proc import (
     BgTaskHandle,
     active_tasks,
     get_task,
@@ -223,7 +223,7 @@ class RunBgCommandTool(BaseTool):
                     "error": f"command blocked for safety: contains '{blocked}'",
                 }, ensure_ascii=False)
 
-        from ...utils.bg_proc import run_bg, shell_command
+        from strategy_research.foundation.utils.bg_proc import run_bg, shell_command
 
         ws = Path(str(ctx.workspace)).resolve()
         workdir = Path(cwd).resolve() if cwd else ws

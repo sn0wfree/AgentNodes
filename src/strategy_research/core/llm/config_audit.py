@@ -93,7 +93,7 @@ def _read_llm_json(path: Path) -> dict[str, Any]:
 
 def _read_env(path: Path) -> dict[str, str]:
     """Read .env into ``{KEY: value}`` dict (shared impl; empty kept)."""
-    from ..utils.io_utils import read_dotenv
+    from strategy_research.foundation.utils.io_utils import read_dotenv
     return read_dotenv(path)
 
 
@@ -251,7 +251,7 @@ def detect_issues(
 
 def _atomic_write_json(path: Path, data: dict[str, Any]) -> None:
     """Atomic write JSON file with chmod 0600 (shared impl)."""
-    from ..utils.io_utils import atomic_write_json
+    from strategy_research.foundation.utils.io_utils import atomic_write_json
     atomic_write_json(path, data)
 
 
@@ -262,7 +262,7 @@ def _atomic_write_env(path: Path, lines: dict[str, str]) -> None:
         lines: Ordered dict of key=value pairs. Empty-string values
                are written as ``KEY=`` (empty value, not omitted).
     """
-    from ..utils.io_utils import atomic_write_env
+    from strategy_research.foundation.utils.io_utils import atomic_write_env
     atomic_write_env(path, lines)
 
 

@@ -369,7 +369,7 @@ def test_run_strategy_general_exception(monkeypatch, tmp_path):
     def fake_run_bg(*args, **kwargs):
         raise OSError("simulated I/O error")
 
-    from strategy_research.core.utils import bg_proc
+    from strategy_research.foundation.utils import bg_proc
     monkeypatch.setattr(bg_proc, "run_bg", fake_run_bg)
     from strategy_research.apps.backtest import run_strategy
     success, output = run_strategy(strategy_dir)

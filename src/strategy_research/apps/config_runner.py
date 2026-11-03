@@ -15,14 +15,14 @@ import yaml
 logger = logging.getLogger(__name__)
 
 from strategy_research.apps.db import load_price_data
-from strategy_research.core.utils.backtest_config import (
+from strategy_research.foundation.utils.backtest_config import (
     BacktestConfig,
     CostConfig,
     StopLossConfig,
     TrendFilterConfig,
     VolTargetingConfig,
 )
-from strategy_research.core.utils.strategy_engine import BacktestResult, StrategyEngine
+from strategy_research.foundation.utils.strategy_engine import BacktestResult, StrategyEngine
 
 # ============================================================
 # 1. YAML 加载
@@ -549,7 +549,7 @@ class FactorStrategy:
         date: pd.Timestamp,
     ) -> dict[str, float]:
         """自定义风控."""
-        from strategy_research.core.utils.backtest_utils import apply_max_weight, normalize_weights
+        from strategy_research.foundation.utils.backtest_utils import apply_max_weight, normalize_weights
 
         max_weight = self.params.get("max_weight", 0.25)
         weights = apply_max_weight(weights, max_weight)

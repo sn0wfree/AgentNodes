@@ -488,7 +488,7 @@ def test_watchdog_fresh_heartbeat_untouched(store, goal_store, monkeypatch):
 
 def test_watchdog_kills_stalled_bg_task(store, goal_store, monkeypatch, tmp_path):
     """A live background task with a stalled log is killed + deregistered."""
-    from strategy_research.core.utils import bg_proc
+    from strategy_research.foundation.utils import bg_proc
 
     _patch_round(monkeypatch)
     goal, study = _setup(store, goal_store)
@@ -520,7 +520,7 @@ def test_runner_harvests_owner_tasks_at_round_end(
     store, goal_store, monkeypatch, tmp_path
 ):
     """Round end kills the study's own live bg tasks, keeps others'."""
-    from strategy_research.core.utils import bg_proc
+    from strategy_research.foundation.utils import bg_proc
 
     rounds = {"n": 0}
     _patch_round(monkeypatch, metrics={"calmar": 0.1, "sharpe": 0.0, "max_dd": -0.2},

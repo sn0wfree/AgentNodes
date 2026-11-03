@@ -11,7 +11,7 @@ import pandas as pd
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
 
-from strategy_research.core.utils.ic_utils import (
+from strategy_research.foundation.utils.ic_utils import (
     compute_cross_sectional_ic,
     compute_ic_summary,
     compute_time_series_ic,

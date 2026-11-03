@@ -9,7 +9,7 @@ from typing import TYPE_CHECKING, Any
 
 logger = logging.getLogger(__name__)
 
-from ..utils.token_utils import estimate_tokens
+from strategy_research.foundation.utils.token_utils import estimate_tokens
 
 if TYPE_CHECKING:
     from ..llm.parser import LLMResponse

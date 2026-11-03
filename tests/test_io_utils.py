@@ -5,7 +5,7 @@ import json
 import os
 from pathlib import Path
 
-from strategy_research.core.utils.io_utils import (
+from strategy_research.foundation.utils.io_utils import (
     atomic_write_env,
     atomic_write_json,
     atomic_write_text,
