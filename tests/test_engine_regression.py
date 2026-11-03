@@ -13,7 +13,7 @@ import numpy as np
 import pandas as pd
 import pytest
 
-from strategy_research.core.engine.china_a import ChinaAEngine
+from strategy_research.apps.engine.china_a import ChinaAEngine
 
 
 def _make_data(symbol, n_bars=50, start_price=10.0, freq="B"):
@@ -113,7 +113,7 @@ class TestCapitalGuard:
         dates = data_map[code].index
         signal_map = {code: pd.Series(1.0, index=dates)}
         # Run manually to avoid metrics crash
-        from strategy_research.core.engine.base import BaseEngine
+        from strategy_research.apps.engine.base import BaseEngine
         dates_aligned, close_df, target_pos, ret_df = BaseEngine._align(
             data_map, signal_map, [code]
         )

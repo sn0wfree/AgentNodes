@@ -10,7 +10,7 @@ from __future__ import annotations
 import pandas as pd
 import pytest
 
-from strategy_research.core.engine.models import EquitySnapshot, Position, TradeRecord
+from strategy_research.apps.engine.models import EquitySnapshot, Position, TradeRecord
 
 
 # ─────────────────────────────────────────────

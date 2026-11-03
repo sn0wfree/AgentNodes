@@ -6,7 +6,7 @@ import json
 
 import pandas as pd
 
-from strategy_research.core.engine.artifacts import (
+from strategy_research.apps.engine.artifacts import (
     write_all_artifacts,
     write_equity_curve,
     write_metrics_json,

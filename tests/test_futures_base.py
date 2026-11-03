@@ -8,8 +8,8 @@ from __future__ import annotations
 
 import pytest
 
-from strategy_research.core.engine.china_futures import ChinaFuturesEngine
-from strategy_research.core.engine.futures_base import FuturesBaseEngine
+from strategy_research.apps.engine.china_futures import ChinaFuturesEngine
+from strategy_research.apps.engine.futures_base import FuturesBaseEngine
 
 
 def _make_eng(config: dict) -> ChinaFuturesEngine:
@@ -241,7 +241,7 @@ class TestApplySlippage:
 
 class TestFuturesBaseInheritance:
     def test_is_base_engine(self):
-        from strategy_research.core.engine.base import BaseEngine
+        from strategy_research.apps.engine.base import BaseEngine
         eng = _make_eng({})
         assert isinstance(eng, BaseEngine)
         assert isinstance(eng, FuturesBaseEngine)

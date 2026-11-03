@@ -4,13 +4,13 @@ from __future__ import annotations
 
 import pytest
 
-from strategy_research.core.engine.config import BacktestConfigSchema
-from strategy_research.core.engine.runner import (
+from strategy_research.apps.engine.config import BacktestConfigSchema
+from strategy_research.apps.engine.runner import (
     _create_market_engine,
     _validate_signal_engine_class,
     _validate_signal_engine_source,
 )
-from strategy_research.core.engine.signals import SignalEngine
+from strategy_research.apps.engine.signals import SignalEngine
 
 # ============================================================
 # Config validation
@@ -97,7 +97,7 @@ class SignalEngine:
 '''
         f = tmp_path / "signal_engine.py"
         f.write_text(code)
-        from strategy_research.core.engine.runner import _validate_signal_engine_source
+        from strategy_research.apps.engine.runner import _validate_signal_engine_source
         _validate_signal_engine_source(f)  # Should not raise
 
     def test_rejects_decorator(self, tmp_path):

@@ -14,14 +14,14 @@ import json
 import pandas as pd
 import pytest
 
-from strategy_research.core.engine.artifacts import (
+from strategy_research.apps.engine.artifacts import (
     write_all_artifacts,
     write_equity_curve,
     write_metrics_json,
     write_ohlcv_snapshots,
     write_trades_csv,
 )
-from strategy_research.core.engine.models import EquitySnapshot, TradeRecord
+from strategy_research.apps.engine.models import EquitySnapshot, TradeRecord
 
 
 # ─────────────────────────────────────────────

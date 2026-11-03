@@ -5,11 +5,11 @@ from __future__ import annotations
 import pandas as pd
 import pytest
 
-from strategy_research.core.engine.composite import (
+from strategy_research.apps.engine.composite import (
     CompositeEngine,
     _detect_market_simple,
 )
-from strategy_research.core.engine.models import Position
+from strategy_research.apps.engine.models import Position
 
 # ============================================================
 # Fixtures

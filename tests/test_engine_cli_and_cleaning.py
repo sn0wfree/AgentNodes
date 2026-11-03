@@ -17,7 +17,7 @@ import numpy as np
 import pandas as pd
 import pytest
 
-from strategy_research.core.engine import cli as ecli
+from strategy_research.apps.engine import cli as ecli
 
 
 def _args(**kw) -> argparse.Namespace:
@@ -43,7 +43,7 @@ def test_run_backtest_rejects_non_workspace(tmp_path, capsys):
 def test_run_backtest_rejects_invalid_config(tmp_path, capsys, monkeypatch):
     (tmp_path / "config.yaml").write_text("name: s1\n", encoding="utf-8")
 
-    from strategy_research.core.engine import cli as m
+    from strategy_research.apps.engine import cli as m
     monkeypatch.setattr(
         m.BacktestConfigSchema, "validate_config",
         staticmethod(lambda cfg: ["bad market_type"]))
@@ -57,7 +57,7 @@ def test_run_backtest_reports_runner_exception(tmp_path, capsys, monkeypatch):
     (tmp_path / "config.yaml").write_text("name: s1\n", encoding="utf-8")
     (tmp_path / "sig.py").write_text("x = 1\n", encoding="utf-8")
 
-    import strategy_research.core.engine.runner as runner_mod
+    import strategy_research.apps.engine.runner as runner_mod
     monkeypatch.setattr(
         runner_mod, "run_engine_backtest",
         lambda **kw: (_ for _ in ()).throw(RuntimeError("engine blew up")))
@@ -70,7 +70,7 @@ def test_run_backtest_prints_human_summary(tmp_path, capsys, monkeypatch):
     (tmp_path / "config.yaml").write_text("name: s1\n", encoding="utf-8")
     (tmp_path / "sig.py").write_text("x = 1\n", encoding="utf-8")
 
-    import strategy_research.core.engine.runner as runner_mod
+    import strategy_research.apps.engine.runner as runner_mod
     monkeypatch.setattr(runner_mod, "run_engine_backtest", lambda **kw: {
         "sharpe": 1.2, "max_drawdown": -0.1, "calmar": 2.0,
         "total_return": 0.3, "trade_count": 42,
@@ -86,7 +86,7 @@ def test_run_backtest_json_output(tmp_path, capsys, monkeypatch):
     (tmp_path / "config.yaml").write_text("name: s1\n", encoding="utf-8")
     (tmp_path / "sig.py").write_text("x = 1\n", encoding="utf-8")
 
-    import strategy_research.core.engine.runner as runner_mod
+    import strategy_research.apps.engine.runner as runner_mod
     monkeypatch.setattr(runner_mod, "run_engine_backtest",
                         lambda **kw: {"sharpe": 1.2})
     code = ecli.cmd_engine_run_backtest(_args(workspace=str(tmp_path), json_output=True))
@@ -100,7 +100,7 @@ def test_run_backtest_passes_optimizer_none_as_none(tmp_path, monkeypatch):
     (tmp_path / "sig.py").write_text("x = 1\n", encoding="utf-8")
     seen = {}
 
-    import strategy_research.core.engine.runner as runner_mod
+    import strategy_research.apps.engine.runner as runner_mod
     def fake(**kw):
         seen.update(kw)
         return {}
@@ -114,7 +114,7 @@ def test_run_backtest_keeps_named_optimizer(tmp_path, monkeypatch):
     (tmp_path / "sig.py").write_text("x = 1\n", encoding="utf-8")
     seen = {}
 
-    import strategy_research.core.engine.runner as runner_mod
+    import strategy_research.apps.engine.runner as runner_mod
     def fake(**kw):
         seen.update(kw)
         return {}
@@ -147,7 +147,7 @@ def test_validate_signal_happy_path(tmp_path, capsys, monkeypatch):
     p = tmp_path / "sig.py"
     p.write_text("x = 1\n", encoding="utf-8")
 
-    import strategy_research.core.engine.runner as runner_mod
+    import strategy_research.apps.engine.runner as runner_mod
     monkeypatch.setattr(runner_mod, "_validate_signal_engine_source", lambda path: None)
     code = ecli.cmd_engine_validate_signal(_args(file=str(p)))
     assert code == 0
@@ -158,7 +158,7 @@ def test_validate_signal_rejects_unsafe_source(tmp_path, capsys, monkeypatch):
     p = tmp_path / "sig.py"
     p.write_text("import os\n", encoding="utf-8")
 
-    import strategy_research.core.engine.runner as runner_mod
+    import strategy_research.apps.engine.runner as runner_mod
     def boom(path):
         raise ValueError("forbidden import: os")
     monkeypatch.setattr(runner_mod, "_validate_signal_engine_source", boom)

@@ -5,8 +5,8 @@ from __future__ import annotations
 import pandas as pd
 import pytest
 
-from strategy_research.core.engine.base import BaseEngine
-from strategy_research.core.engine.signals import ConstantWeightEngine
+from strategy_research.apps.engine.base import BaseEngine
+from strategy_research.apps.engine.signals import ConstantWeightEngine
 
 # ============================================================
 # Test Engine — 最简单的具体子类

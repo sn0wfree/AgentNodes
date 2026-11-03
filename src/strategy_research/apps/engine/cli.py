@@ -7,7 +7,7 @@ import json
 from pathlib import Path
 from typing import Any
 
-from ...core.engine.config import BacktestConfigSchema
+from strategy_research.apps.engine.config import BacktestConfigSchema
 
 
 def add_engine_subparsers(subparsers: Any) -> None:
@@ -77,7 +77,7 @@ def cmd_engine_run_backtest(args: argparse.Namespace) -> int:
 
     # 运行
     try:
-        from ...core.engine.runner import run_engine_backtest
+        from strategy_research.apps.engine.runner import run_engine_backtest
 
         result = run_engine_backtest(
             workspace_path=workspace_path,
@@ -110,7 +110,7 @@ def cmd_engine_run_backtest(args: argparse.Namespace) -> int:
 
 def cmd_engine_list_engines(args: argparse.Namespace) -> int:
     """执行 engine list-engines 命令。"""
-    from ...core.engine import (
+    from strategy_research.apps.engine import (
         ChinaAEngine,
         ChinaFuturesEngine,
         CompositeEngine,
@@ -145,7 +145,7 @@ def cmd_engine_list_engines(args: argparse.Namespace) -> int:
 
 def cmd_engine_validate_signal(args: argparse.Namespace) -> int:
     """执行 engine validate-signal 命令。"""
-    from ...core.engine.runner import _validate_signal_engine_source
+    from strategy_research.apps.engine.runner import _validate_signal_engine_source
 
     file_path = Path(args.file).resolve()
     if not file_path.exists():

@@ -18,12 +18,12 @@ import numpy as np
 import pandas as pd
 import pytest
 
-from strategy_research.core.engine.china_a import (
+from strategy_research.apps.engine.china_a import (
     ChinaAEngine,
     _calc_pct_change,
     _price_limit,
 )
-from strategy_research.core.engine.models import Position
+from strategy_research.apps.engine.models import Position
 
 
 # ─── 辅助: 构造 bar Series with named timestamp ──────────

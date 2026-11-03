@@ -20,7 +20,7 @@ SRC = Path(__file__).resolve().parents[1] / "src" / "strategy_research"
 
 # 数据通道 / CLI 报告渲染器：print 是产品语义不是日志（冻结数量，增长需改此表）
 EXEMPT_FILES: dict[str, int] = {
-    "core/engine/base.py": 2,        # print(flush=True) → run_bg 重定向 run.log → log_stall 检测
+    "apps/engine/base.py": 2,        # print(flush=True) → run_bg 重定向 run.log → log_stall 检测
     "interfaces/mcp/server.py": 3,   # stdout JSON-RPC 协议帧    "apps/preflight.py": 10,         # isatty 彩色 CLI 报告
     "apps/alpha_zoo_convert.py": 5,  # CLI 批处理驱动进度
 }

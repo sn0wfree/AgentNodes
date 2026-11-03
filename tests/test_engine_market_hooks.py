@@ -5,7 +5,7 @@ from __future__ import annotations
 import pandas as pd
 import pytest
 
-from strategy_research.core.engine.market_hooks import (
+from strategy_research.apps.engine.market_hooks import (
     _TIER_TABLE,
     FUNDING_HOURS,
     _maintenance_rate,

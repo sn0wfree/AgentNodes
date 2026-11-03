@@ -6,7 +6,7 @@ import numpy as np
 import pandas as pd
 import pytest
 
-from strategy_research.core.engine.optimizers import optimize_weights
+from strategy_research.apps.engine.optimizers import optimize_weights
 
 # ============================================================
 # fixtures

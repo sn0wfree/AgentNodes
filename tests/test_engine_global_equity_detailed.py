@@ -2,7 +2,7 @@ import numpy as np
 import pandas as pd
 import pytest
 
-from strategy_research.core.engine.global_equity import GlobalEquityEngine
+from strategy_research.apps.engine.global_equity import GlobalEquityEngine
 
 
 def _bar(date, close, name=True):

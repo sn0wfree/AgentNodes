@@ -15,13 +15,13 @@ import numpy as np
 import pandas as pd
 import pytest
 
-from strategy_research.core.engine.runner import (
+from strategy_research.apps.engine.runner import (
     _create_market_engine,
     _load_signal_engine,
     _validate_signal_engine_class,
     _validate_signal_engine_source,
 )
-from strategy_research.core.engine.signals import SignalEngine
+from strategy_research.apps.engine.signals import SignalEngine
 
 
 # ─────────────────────────────────────────────
@@ -142,7 +142,7 @@ class TestLoadSignalEngine:
         f = tmp_path / "signal_engine.py"
         f.write_text(textwrap.dedent("""\
             import pandas as pd
-            from strategy_research.core.engine.signals import SignalEngine
+            from strategy_research.apps.engine.signals import SignalEngine
 
             class SignalEngine(SignalEngine):
                 def generate(self, data_map):
@@ -222,7 +222,7 @@ class TestRunBacktestE2E:
         }, index=dates)
 
     def test_full_pipeline_with_cls(self, tmp_path):
-        from strategy_research.core.engine.runner import run_engine_backtest
+        from strategy_research.apps.engine.runner import run_engine_backtest
 
         code = "600000.SH"
         data_map = {code: self._make_ohlcv(code)}
@@ -242,14 +242,14 @@ class TestRunBacktestE2E:
         assert "max_drawdown" in metrics
 
     def test_full_pipeline_with_path(self, tmp_path):
-        from strategy_research.core.engine.runner import run_engine_backtest
+        from strategy_research.apps.engine.runner import run_engine_backtest
 
         code = "600000.SH"
         data_map = {code: self._make_ohlcv(code)}
         sig_file = tmp_path / "signal_engine.py"
         sig_file.write_text(textwrap.dedent("""\
             import pandas as pd
-            from strategy_research.core.engine.signals import SignalEngine
+            from strategy_research.apps.engine.signals import SignalEngine
 
             class SignalEngine(SignalEngine):
                 def generate(self, data_map):
@@ -267,7 +267,7 @@ class TestRunBacktestE2E:
         assert "total_return" in metrics
 
     def test_empty_data_raises(self, tmp_path):
-        from strategy_research.core.engine.runner import run_engine_backtest
+        from strategy_research.apps.engine.runner import run_engine_backtest
 
         with patch("strategy_research.apps.db.load_ohlcv_data", return_value={}):
             with pytest.raises(ValueError, match="No data found"):
@@ -281,7 +281,7 @@ class TestRunBacktestE2E:
                 )
 
     def test_no_signal_engine_raises(self, tmp_path):
-        from strategy_research.core.engine.runner import run_engine_backtest
+        from strategy_research.apps.engine.runner import run_engine_backtest
 
         with pytest.raises(ValueError, match="Either signal_engine_path or signal_engine_cls"):
             run_engine_backtest(
@@ -291,7 +291,7 @@ class TestRunBacktestE2E:
             )
 
     def test_optimizer_in_pipeline(self, tmp_path):
-        from strategy_research.core.engine.runner import run_engine_backtest
+        from strategy_research.apps.engine.runner import run_engine_backtest
 
         code = "600000.SH"
         data_map = {code: self._make_ohlcv(code)}

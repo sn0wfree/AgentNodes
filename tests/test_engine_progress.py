@@ -13,11 +13,11 @@ from unittest.mock import MagicMock
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
 
-from strategy_research.core.engine.base import BaseEngine
+from strategy_research.apps.engine.base import BaseEngine
 
 
 def _make_engine() -> BaseEngine:
-    from strategy_research.core.engine.base import BaseEngine as _BE
+    from strategy_research.apps.engine.base import BaseEngine as _BE
 
     class _Simple(_BE):
         def can_execute(self, symbol, direction, bar):

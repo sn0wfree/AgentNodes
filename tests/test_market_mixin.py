@@ -5,7 +5,7 @@ from __future__ import annotations
 import pandas as pd
 import pytest
 
-from strategy_research.core.engine.market_mixin import MarketMixin
+from strategy_research.apps.engine.market_mixin import MarketMixin
 
 
 class TestMarketMixinApplySlippage:

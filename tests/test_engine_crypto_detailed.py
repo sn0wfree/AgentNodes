@@ -6,8 +6,8 @@ import numpy as np
 import pandas as pd
 import pytest
 
-from strategy_research.core.engine.crypto import CryptoEngine
-from strategy_research.core.engine.models import Position
+from strategy_research.apps.engine.crypto import CryptoEngine
+from strategy_research.apps.engine.models import Position
 
 
 def _make_bar(close_price, name=True, dt=None):

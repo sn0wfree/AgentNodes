@@ -2,7 +2,7 @@ import numpy as np
 import pandas as pd
 import pytest
 
-from strategy_research.core.engine.india_equity import IndiaEquityEngine
+from strategy_research.apps.engine.india_equity import IndiaEquityEngine
 
 
 def _bar(date, close, name=True):

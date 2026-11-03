@@ -8,7 +8,7 @@ import numpy as np
 import pandas as pd
 import pytest
 
-from strategy_research.core.engine.optimizers import optimize_weights
+from strategy_research.apps.engine.optimizers import optimize_weights
 
 # ============================================================
 # Fixtures
@@ -34,32 +34,32 @@ def good_data():
 class TestSuccessfulOptimization:
     def test_equal_volatility_no_warning(self, good_data, caplog):
         ret_df, pos_df, dates = good_data
-        with caplog.at_level(logging.WARNING, logger="strategy_research.core.engine.optimizers.base"):
+        with caplog.at_level(logging.WARNING, logger="strategy_research.apps.engine.optimizers.base"):
             optimize_weights(ret_df, pos_df, dates, method="equal_volatility")
         # Should not log a warning
         assert len(caplog.records) == 0
 
     def test_risk_parity_no_warning(self, good_data, caplog):
         ret_df, pos_df, dates = good_data
-        with caplog.at_level(logging.WARNING, logger="strategy_research.core.engine.optimizers.base"):
+        with caplog.at_level(logging.WARNING, logger="strategy_research.apps.engine.optimizers.base"):
             optimize_weights(ret_df, pos_df, dates, method="risk_parity")
         assert len(caplog.records) == 0
 
     def test_mean_variance_no_warning(self, good_data, caplog):
         ret_df, pos_df, dates = good_data
-        with caplog.at_level(logging.WARNING, logger="strategy_research.core.engine.optimizers.base"):
+        with caplog.at_level(logging.WARNING, logger="strategy_research.apps.engine.optimizers.base"):
             optimize_weights(ret_df, pos_df, dates, method="mean_variance")
         assert len(caplog.records) == 0
 
     def test_max_diversification_no_warning(self, good_data, caplog):
         ret_df, pos_df, dates = good_data
-        with caplog.at_level(logging.WARNING, logger="strategy_research.core.engine.optimizers.base"):
+        with caplog.at_level(logging.WARNING, logger="strategy_research.apps.engine.optimizers.base"):
             optimize_weights(ret_df, pos_df, dates, method="max_diversification")
         assert len(caplog.records) == 0
 
     def test_turnover_aware_no_warning(self, good_data, caplog):
         ret_df, pos_df, dates = good_data
-        with caplog.at_level(logging.WARNING, logger="strategy_research.core.engine.optimizers.base"):
+        with caplog.at_level(logging.WARNING, logger="strategy_research.apps.engine.optimizers.base"):
             optimize_weights(ret_df, pos_df, dates, method="turnover_aware")
         assert len(caplog.records) == 0
 
@@ -76,7 +76,7 @@ class TestFallbackLogging:
         ret_df = pd.DataFrame(np.nan, index=dates, columns=["A", "B"])
         pos_df = pd.DataFrame(0.0, index=dates, columns=["A", "B"])
 
-        with caplog.at_level(logging.WARNING, logger="strategy_research.core.engine.optimizers.base"):
+        with caplog.at_level(logging.WARNING, logger="strategy_research.apps.engine.optimizers.base"):
             # Use bad risk_aversion to trigger an exception
             result = optimize_weights(
                 ret_df, pos_df, dates, method="mean_variance",
@@ -98,7 +98,7 @@ class TestFallbackLogging:
         ret_df = pd.DataFrame(0.0, index=dates, columns=["A", "B", "C"])
         pos_df = pd.DataFrame(0.0, index=dates, columns=["A", "B", "C"])
 
-        with caplog.at_level(logging.WARNING, logger="strategy_research.core.engine.optimizers.base"):
+        with caplog.at_level(logging.WARNING, logger="strategy_research.apps.engine.optimizers.base"):
             result = optimize_weights(ret_df, pos_df, dates, method="mean_variance")
 
         # Should still produce a valid (equal-weight) result
@@ -117,7 +117,7 @@ class TestFallbackLogging:
         )
         pos_df = pd.DataFrame(0.0, index=dates, columns=["A", "B", "C"])
 
-        with caplog.at_level(logging.WARNING, logger="strategy_research.core.engine.optimizers.base"):
+        with caplog.at_level(logging.WARNING, logger="strategy_research.apps.engine.optimizers.base"):
             result = optimize_weights(ret_df, pos_df, dates, method="risk_parity")
 
         # Should not crash; result should have valid weights
@@ -135,7 +135,7 @@ class TestFallbackLogging:
         )
         pos_df = pd.DataFrame(0.0, index=dates, columns=["A", "B", "C"])
 
-        with caplog.at_level(logging.WARNING, logger="strategy_research.core.engine.optimizers.base"):
+        with caplog.at_level(logging.WARNING, logger="strategy_research.apps.engine.optimizers.base"):
             result = optimize_weights(
                 ret_df, pos_df, dates, method="mean_variance",
                 risk_aversion="invalid_type",
@@ -223,7 +223,7 @@ class TestLogMessageFormat:
         ret_df = pd.DataFrame({"A": [1.0]*5, "B": [2.0]*5}, index=dates)
         pos_df = pd.DataFrame(0.0, index=dates, columns=["A", "B"])
 
-        with caplog.at_level(logging.WARNING, logger="strategy_research.core.engine.optimizers.base"):
+        with caplog.at_level(logging.WARNING, logger="strategy_research.apps.engine.optimizers.base"):
             # Force exception via bad kwargs
             optimize_weights(
                 ret_df, pos_df, dates, method="risk_parity",

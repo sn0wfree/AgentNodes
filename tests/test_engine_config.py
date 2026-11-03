@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from strategy_research.core.engine.config import BacktestConfigSchema
+from strategy_research.apps.engine.config import BacktestConfigSchema
 
 
 class TestBacktestConfigSchema:

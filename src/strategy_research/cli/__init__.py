@@ -746,7 +746,7 @@ def _build_parser() -> tuple[argparse.ArgumentParser, dict[str, argparse.Argumen
     from strategy_research.apps.validation.cli import add_validate_subparsers
     add_validate_subparsers(subparsers)
 
-    from strategy_research.core.engine.cli import add_engine_subparsers
+    from strategy_research.apps.engine.cli import add_engine_subparsers
     add_engine_subparsers(subparsers)
 
     # strategy acceptance (P6 Step 0) — 离线验收调试工具
@@ -1050,7 +1050,7 @@ def _dispatch_validate_run(args, parsers) -> int:
 
 def _dispatch_engine(args, parsers) -> int:
     """Dispatch the engine subcommand."""
-    from strategy_research.core.engine.cli import dispatch_engine
+    from strategy_research.apps.engine.cli import dispatch_engine
     return dispatch_engine(args)
 
 

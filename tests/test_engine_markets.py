@@ -4,14 +4,14 @@ from __future__ import annotations
 
 import pandas as pd
 
-from strategy_research.core.engine.china_a import ChinaAEngine
-from strategy_research.core.engine.china_futures import ChinaFuturesEngine
-from strategy_research.core.engine.composite import CompositeEngine
-from strategy_research.core.engine.crypto import CryptoEngine
-from strategy_research.core.engine.forex import ForexEngine
-from strategy_research.core.engine.global_equity import GlobalEquityEngine
-from strategy_research.core.engine.india_equity import IndiaEquityEngine
-from strategy_research.core.engine.signals import ConstantWeightEngine
+from strategy_research.apps.engine.china_a import ChinaAEngine
+from strategy_research.apps.engine.china_futures import ChinaFuturesEngine
+from strategy_research.apps.engine.composite import CompositeEngine
+from strategy_research.apps.engine.crypto import CryptoEngine
+from strategy_research.apps.engine.forex import ForexEngine
+from strategy_research.apps.engine.global_equity import GlobalEquityEngine
+from strategy_research.apps.engine.india_equity import IndiaEquityEngine
+from strategy_research.apps.engine.signals import ConstantWeightEngine
 
 # ============================================================
 # helpers
@@ -67,7 +67,7 @@ class TestChinaAEngine:
         engine = ChinaAEngine({})
         ts = pd.Timestamp("2024-01-02")
         bar = pd.Series({"open": 100, "close": 100}, name=ts)
-        from strategy_research.core.engine.models import Position
+        from strategy_research.apps.engine.models import Position
         engine.positions["000001.SZ"] = Position(
             symbol="000001.SZ", direction=1, entry_price=100.0,
             entry_time=ts, size=100,

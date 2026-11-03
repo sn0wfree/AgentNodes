@@ -20,7 +20,7 @@ import numpy as np
 import pandas as pd
 import pytest
 
-from strategy_research.core.engine.optimizers import base as ob
+from strategy_research.apps.engine.optimizers import base as ob
 
 
 # ── _equal_volatility_optimize ───────────────────────────

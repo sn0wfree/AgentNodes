@@ -5,15 +5,15 @@ from __future__ import annotations
 import pandas as pd
 import pytest
 
-from strategy_research.core.engine.crypto import CryptoEngine
-from strategy_research.core.engine.forex import ForexEngine
-from strategy_research.core.engine.global_equity import GlobalEquityEngine
-from strategy_research.core.engine.global_futures import (
+from strategy_research.apps.engine.crypto import CryptoEngine
+from strategy_research.apps.engine.forex import ForexEngine
+from strategy_research.apps.engine.global_equity import GlobalEquityEngine
+from strategy_research.apps.engine.global_futures import (
     _GLOBAL_FUTURES_MULTIPLIERS,
     GlobalFuturesEngine,
     _get_global_product_code,
 )
-from strategy_research.core.engine.india_equity import IndiaEquityEngine
+from strategy_research.apps.engine.india_equity import IndiaEquityEngine
 
 
 class TestGlobalFuturesEngine:

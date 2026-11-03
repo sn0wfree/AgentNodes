@@ -2,7 +2,7 @@ import numpy as np
 import pandas as pd
 import pytest
 
-from strategy_research.core.engine.global_futures import (
+from strategy_research.apps.engine.global_futures import (
     _GLOBAL_FUTURES_MULTIPLIERS,
     GlobalFuturesEngine,
     _get_global_product_code,

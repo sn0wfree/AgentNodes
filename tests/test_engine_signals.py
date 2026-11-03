@@ -5,7 +5,7 @@ from __future__ import annotations
 import pandas as pd
 import pytest
 
-from strategy_research.core.engine.signals import (
+from strategy_research.apps.engine.signals import (
     ConstantWeightEngine,
     SignalEngine,
 )

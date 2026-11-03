@@ -10,7 +10,7 @@ from __future__ import annotations
 import argparse
 import textwrap
 
-from strategy_research.core.engine.cli import (
+from strategy_research.apps.engine.cli import (
     add_engine_subparsers,
     cmd_engine_list_engines,
     cmd_engine_validate_signal,
@@ -57,7 +57,7 @@ class TestValidateSignal:
         f = tmp_path / "signal_engine.py"
         f.write_text(textwrap.dedent("""\
             import pandas as pd
-            from strategy_research.core.engine.signals import SignalEngine
+            from strategy_research.apps.engine.signals import SignalEngine
 
             class SignalEngine(SignalEngine):
                 def generate(self, data_map):

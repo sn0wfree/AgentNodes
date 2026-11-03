@@ -61,7 +61,7 @@ LAYER_MEMBERSHIP: dict[str, str] = {
     "strategy_research.apps.config_runner": "L2",
     "strategy_research.apps.strategy_acceptance": "L2",
     "strategy_research.apps.autoresearch": "L2",
-    "strategy_research.core.engine": "L2",
+    "strategy_research.apps.engine": "L2",
     "strategy_research.apps.export": "L2",
     "strategy_research.apps.run_card": "L2",
     "strategy_research.core.workspace_setup": "L2",
