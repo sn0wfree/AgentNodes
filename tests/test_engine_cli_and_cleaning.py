@@ -200,7 +200,7 @@ def _dirty(n=40) -> pd.DataFrame:
 
 
 def test_clean_dedup_removes_duplicates():
-    from strategy_research.core.tools.data_clean import clean_data
+    from strategy_research.apps.tools.data_clean import clean_data
 
     df = pd.concat([_dirty(), _dirty().iloc[:5]])
     out, report = clean_data(df, "standard", None, None, dry_run=False)
@@ -210,7 +210,7 @@ def test_clean_dedup_removes_duplicates():
 
 def test_clean_imputes_missing_values():
     """ffill 只填**中间**缺失；前导 NaN 填不上（没有前值可带）。"""
-    from strategy_research.core.tools.data_clean import clean_data
+    from strategy_research.apps.tools.data_clean import clean_data
 
     df = _dirty()
     df.loc[df.index[5:8], "close"] = np.nan
@@ -221,7 +221,7 @@ def test_clean_imputes_missing_values():
 
 def test_clean_dry_run_does_not_change_row_count():
     """dry_run 只统计不落地——C7 依赖这个语义。"""
-    from strategy_research.core.tools.data_clean import clean_data
+    from strategy_research.apps.tools.data_clean import clean_data
 
     df = pd.concat([_dirty(), _dirty().iloc[:4]])
     out, report = clean_data(df, "standard", None, None, dry_run=True)
@@ -230,7 +230,7 @@ def test_clean_dry_run_does_not_change_row_count():
 
 
 def test_clean_reports_outliers():
-    from strategy_research.core.tools.data_clean import clean_data
+    from strategy_research.apps.tools.data_clean import clean_data
 
     df = _dirty()
     df.loc[df.index[10], "close"] = 1e6  # 极端值
@@ -239,7 +239,7 @@ def test_clean_reports_outliers():
 
 
 def test_clean_clean_frame_reports_nothing():
-    from strategy_research.core.tools.data_clean import clean_data
+    from strategy_research.apps.tools.data_clean import clean_data
 
     out, report = clean_data(_dirty(), "standard", None, None, dry_run=False)
     assert report.duplicates_removed == 0
@@ -247,7 +247,7 @@ def test_clean_clean_frame_reports_nothing():
 
 
 def test_clean_report_lists_applied_steps():
-    from strategy_research.core.tools.data_clean import clean_data
+    from strategy_research.apps.tools.data_clean import clean_data
 
     df = pd.concat([_dirty(), _dirty().iloc[:2]])
     _out, report = clean_data(df, "standard", None, None, dry_run=True)

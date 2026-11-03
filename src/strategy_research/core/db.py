@@ -356,7 +356,7 @@ def load_price_data(
         if df.empty:
             return pd.DataFrame()
 
-        from .tools.data_transforms import long_to_wide_close
+        from strategy_research.apps.tools.data_transforms import long_to_wide_close
 
         # pivot to panel.  DuckDB schema uses ``asset_code`` as the asset
         # column name (vs. our helper's default ``asset``), so we pass it

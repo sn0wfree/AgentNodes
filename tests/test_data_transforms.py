@@ -12,7 +12,7 @@ import numpy as np
 import pandas as pd
 import pytest
 
-from strategy_research.core.tools.data_transforms import (
+from strategy_research.apps.tools.data_transforms import (
     is_wide_close_format,
     long_to_single_asset_wide,
     long_to_wide_close,

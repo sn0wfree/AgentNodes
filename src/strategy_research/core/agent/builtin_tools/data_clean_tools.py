@@ -82,7 +82,7 @@ class DataCleanTool(BaseTool):
         workspace = ctx.workspace
 
         # 验证 preset
-        from ...tools.data_clean import PRESETS
+        from strategy_research.apps.tools.data_clean import PRESETS
         if preset not in PRESETS:
             return err_actionable(
                 f"invalid preset: {preset}",
@@ -95,7 +95,7 @@ class DataCleanTool(BaseTool):
         try:
             # 加载数据
             from ...db import get_connection
-            from ...tools.data_clean import clean_data
+            from strategy_research.apps.tools.data_clean import clean_data
             if not (workspace / "data.duckdb").exists():
                 return err_actionable(
                     "no DuckDB database in workspace",

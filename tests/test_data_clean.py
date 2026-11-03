@@ -3,7 +3,7 @@
 import pandas as pd
 import pytest
 
-from strategy_research.core.tools.data_clean import PRESETS, CleaningReport, clean_data
+from strategy_research.apps.tools.data_clean import PRESETS, CleaningReport, clean_data
 
 
 @pytest.fixture
@@ -225,7 +225,7 @@ class TestDeduplication:
 
 def _dedup_test(df, strategy):
     """去重测试辅助函数"""
-    from strategy_research.core.tools.data_clean import _dedup
+    from strategy_research.apps.tools.data_clean import _dedup
     params = {
         "dedup_strategy": strategy,
         "dedup_subset": ["asset", "date"],
@@ -238,7 +238,7 @@ class TestImputation:
 
     def test_impute_ffill(self, data_with_missing):
         """测试前向填充"""
-        from strategy_research.core.tools.data_clean import _impute
+        from strategy_research.apps.tools.data_clean import _impute
         params = {
             "impute_method": "ffill",
             "impute_columns": ["open", "high", "low", "close"],
@@ -248,7 +248,7 @@ class TestImputation:
 
     def test_impute_bfill(self, data_with_missing):
         """测试后向填充"""
-        from strategy_research.core.tools.data_clean import _impute
+        from strategy_research.apps.tools.data_clean import _impute
         params = {
             "impute_method": "bfill",
             "impute_columns": ["open", "high", "low", "close"],
@@ -258,7 +258,7 @@ class TestImputation:
 
     def test_impute_zero(self, data_with_missing):
         """测试零值填充"""
-        from strategy_research.core.tools.data_clean import _impute
+        from strategy_research.apps.tools.data_clean import _impute
         params = {
             "impute_method": "zero",
             "impute_columns": ["open", "high", "low", "close"],
@@ -272,7 +272,7 @@ class TestOutlierDetection:
 
     def test_outlier_iqr(self, sample_data):
         """测试 IQR 方法"""
-        from strategy_research.core.tools.data_clean import _detect_outliers
+        from strategy_research.apps.tools.data_clean import _detect_outliers
         params = {
             "outlier_method": "iqr",
             "outlier_threshold": 1.5,
@@ -283,7 +283,7 @@ class TestOutlierDetection:
 
     def test_outlier_flag(self, sample_data):
         """测试标记异常值"""
-        from strategy_research.core.tools.data_clean import _detect_outliers
+        from strategy_research.apps.tools.data_clean import _detect_outliers
         params = {
             "outlier_method": "iqr",
             "outlier_threshold": 1.5,

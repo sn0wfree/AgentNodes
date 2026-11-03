@@ -151,7 +151,7 @@ def test_c7_warns_on_missing_values(tmp_path):
 
 def test_c7_degrades_to_warn_on_exception(tmp_path, monkeypatch):
     """clean_data 抛错时给 warn + 「可忽略」，绝不阻断。"""
-    import strategy_research.core.tools.data_clean as dc
+    import strategy_research.apps.tools.data_clean as dc
 
     _seed(tmp_path, codes=("A",))
 

@@ -340,7 +340,7 @@ def _check_cleaning(
         # ``except Exception`` 吞成 "行级统计不可用" 的 warn——**C7 检查
         # 从未真正执行过**（2026-11-02 补测发现；与 MCP validate_run、
         # scheduled_research/cli 的同一个错误类）。
-        from strategy_research.core.tools.data_clean import clean_data
+        from strategy_research.apps.tools.data_clean import clean_data
         from strategy_research.core.db import get_connection
 
         conn = get_connection(workspace_path, read_only=True)
