@@ -4,8 +4,8 @@ from __future__ import annotations
 
 from datetime import datetime, timedelta
 
-from strategy_research.core.validation.monte_carlo import monte_carlo_test
-from strategy_research.core.validation.trade_input import TradeInput
+from strategy_research.apps.validation.monte_carlo import monte_carlo_test
+from strategy_research.apps.validation.trade_input import TradeInput
 
 
 def _make_trade(pnl: float, symbol: str = "T", day: int = 0) -> TradeInput:

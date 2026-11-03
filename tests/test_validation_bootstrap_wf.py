@@ -7,9 +7,9 @@ from datetime import datetime, timedelta
 import numpy as np
 import pandas as pd
 
-from strategy_research.core.validation.bootstrap import bootstrap_sharpe_ci
-from strategy_research.core.validation.trade_input import TradeInput
-from strategy_research.core.validation.walk_forward import walk_forward_analysis
+from strategy_research.apps.validation.bootstrap import bootstrap_sharpe_ci
+from strategy_research.apps.validation.trade_input import TradeInput
+from strategy_research.apps.validation.walk_forward import walk_forward_analysis
 
 
 def _make_equity_curve(n: int = 100, start: float = 100_000.0, drift: float = 0.001, vol: float = 0.01, seed: int = 42) -> pd.Series:

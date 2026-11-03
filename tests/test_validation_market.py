@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from strategy_research.core.validation.market import (
+from strategy_research.apps.validation.market import (
     SUPPORTED_MARKETS,
     MarketType,
     bars_per_year,

@@ -6,8 +6,8 @@ from datetime import datetime, timedelta
 import numpy as np
 import pandas as pd
 
-from strategy_research.core.validation.trade_input import TradeInput
-from strategy_research.core.validation.walk_forward import walk_forward_analysis
+from strategy_research.apps.validation.trade_input import TradeInput
+from strategy_research.apps.validation.walk_forward import walk_forward_analysis
 
 
 def _equity(n: int = 100, start: float = 100.0, drift: float = 0.001) -> pd.Series:

@@ -11,8 +11,8 @@ import pytest
 from strategy_research.core.agent.loop import AgentLoop
 from strategy_research.core.agent.tools import ToolRegistry
 from strategy_research.core.llm.openai_client import LLMConfig
-from strategy_research.core.validation import run_validation
-from strategy_research.core.validation.trade_input import TradeInput
+from strategy_research.apps.validation import run_validation
+from strategy_research.apps.validation.trade_input import TradeInput
 
 
 @pytest.fixture

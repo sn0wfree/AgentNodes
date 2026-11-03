@@ -521,8 +521,8 @@ class MCPServer:
                 # 注意：必须是 ``..validation``（core/validation）。写成
                 # ``.validation`` 会解析到 core/mcp/validation——不存在，
                 # MCP 客户端调用 validate_run 永远得到 "No module named"。
-                from strategy_research.core.validation import MarketType, run_validation
-                from strategy_research.core.validation.cli import _build_synthetic_trades, _load_nav_synthetic
+                from strategy_research.apps.validation import MarketType, run_validation
+                from strategy_research.apps.validation.cli import _build_synthetic_trades, _load_nav_synthetic
 
                 run_path = Path(run_dir).resolve()
                 market_enum = MarketType(market)

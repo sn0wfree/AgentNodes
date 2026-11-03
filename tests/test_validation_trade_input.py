@@ -8,8 +8,8 @@ from datetime import datetime
 import numpy as np
 import pytest
 
-from strategy_research.core.validation.trade_input import TradeInput
-from strategy_research.core.validation.utils import _json_safe, _sharpe
+from strategy_research.apps.validation.trade_input import TradeInput
+from strategy_research.apps.validation.utils import _json_safe, _sharpe
 
 # ─── TradeInput ──────────────────────────────────────────────────────────
 

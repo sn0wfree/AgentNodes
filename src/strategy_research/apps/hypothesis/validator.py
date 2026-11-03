@@ -28,9 +28,9 @@ from typing import Any
 
 import pandas as pd
 
-from strategy_research.core.validation.bootstrap import bootstrap_sharpe_ci
-from strategy_research.core.validation.monte_carlo import monte_carlo_test
-from strategy_research.core.validation.walk_forward import walk_forward_analysis
+from strategy_research.apps.validation.bootstrap import bootstrap_sharpe_ci
+from strategy_research.apps.validation.monte_carlo import monte_carlo_test
+from strategy_research.apps.validation.walk_forward import walk_forward_analysis
 
 logger = logging.getLogger(__name__)
 

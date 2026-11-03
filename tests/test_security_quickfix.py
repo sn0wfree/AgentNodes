@@ -60,7 +60,7 @@ async def test_validate_run_accepts_contained_run_dir(tmp_path, monkeypatch):
 
     fake_result = {"monte_carlo": {}, "walk_forward": {}}
     with patch(
-        "strategy_research.core.validation.runner.run_validation",
+        "strategy_research.apps.validation.runner.run_validation",
         return_value=fake_result,
     ) as mock_rv:
         app = _build_app()

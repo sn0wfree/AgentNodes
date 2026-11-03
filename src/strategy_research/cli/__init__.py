@@ -743,7 +743,7 @@ def _build_parser() -> tuple[argparse.ArgumentParser, dict[str, argparse.Argumen
     add_hypothesis_subparsers(subparsers)
 
     # validation (P3-c)
-    from strategy_research.core.validation.cli import add_validate_subparsers
+    from strategy_research.apps.validation.cli import add_validate_subparsers
     add_validate_subparsers(subparsers)
 
     from strategy_research.core.engine.cli import add_engine_subparsers
@@ -1044,7 +1044,7 @@ def _dispatch_hypothesis(args, parsers) -> int:
 
 def _dispatch_validate_run(args, parsers) -> int:
     """Dispatch the validate-run subcommand."""
-    from strategy_research.core.validation.cli import cmd_validate_run
+    from strategy_research.apps.validation.cli import cmd_validate_run
     return cmd_validate_run(args)
 
 

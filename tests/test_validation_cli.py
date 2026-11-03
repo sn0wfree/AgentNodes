@@ -6,7 +6,7 @@ import argparse
 import json
 from pathlib import Path
 
-from strategy_research.core.validation.cli import (
+from strategy_research.apps.validation.cli import (
     add_validate_subparsers,
     cmd_validate_run,
 )

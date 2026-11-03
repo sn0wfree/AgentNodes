@@ -28,14 +28,14 @@ class ValidateRunRequest(BaseModel):
 async def validate_run(req: ValidateRunRequest, request: Request):
     """执行 validation。"""
     try:
-        from ...core.validation.cli import (
+        from strategy_research.apps.validation.cli import (
             _build_synthetic_trades,
             _load_nav_from_duckdb,
             _load_nav_synthetic,
             _load_trades_from_artifacts,
         )
-        from ...core.validation.market import MarketType
-        from ...core.validation.runner import run_validation
+        from strategy_research.apps.validation.market import MarketType
+        from strategy_research.apps.validation.runner import run_validation
 
         # Security: resolve run_dir and require it to live under the
         # configured workspace (env: STRATEGY_RESEARCH_VALIDATE_ROOT,

@@ -8,9 +8,9 @@ from datetime import datetime, timedelta
 import numpy as np
 import pandas as pd
 
-from strategy_research.core.validation import MarketType
-from strategy_research.core.validation.runner import run_validation
-from strategy_research.core.validation.trade_input import TradeInput
+from strategy_research.apps.validation import MarketType
+from strategy_research.apps.validation.runner import run_validation
+from strategy_research.apps.validation.trade_input import TradeInput
 
 
 def _make_equity_curve(n: int = 100, seed: int = 42) -> pd.Series:
