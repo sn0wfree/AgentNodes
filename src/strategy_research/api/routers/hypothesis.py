@@ -24,7 +24,7 @@ def _user_goal_ids(request: Request) -> set[str] | None:
     if _os.environ.get("SR_ENFORCE_STUDY_IDOR", "1") == "0":
         return None
     user_id = getattr(request.state, "user_id", None) or "anonymous"
-    from ...core.goal import GoalStore
+    from strategy_research.apps.goal import GoalStore
     from .web_session import _get_db
 
     with _get_db() as conn:

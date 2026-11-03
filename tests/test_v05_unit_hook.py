@@ -13,7 +13,7 @@ from __future__ import annotations
 
 from unittest.mock import MagicMock
 
-from strategy_research.core.goal.workflow_hook import GoalWorkflowHook
+from strategy_research.apps.goal.workflow_hook import GoalWorkflowHook
 
 # ═══════════════════════════════════════════════════════════════════════
 # Properties

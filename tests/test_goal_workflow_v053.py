@@ -19,8 +19,8 @@ from unittest.mock import MagicMock
 
 import pytest
 
-from strategy_research.core.goal.workflow import GoalWorkflowRunner
-from strategy_research.core.goal.workflow_config import load_goal_workflow
+from strategy_research.apps.goal.workflow import GoalWorkflowRunner
+from strategy_research.apps.goal.workflow_config import load_goal_workflow
 
 # ─── Fixtures ──────────────────────────────────────────────────────────
 
@@ -51,7 +51,7 @@ class TestP1ShouldStop:
     def test_should_stop_when_completed(self, fresh_db):
         hook = MagicMock()
         hook._completed = True
-        from strategy_research.core.goal.workflow_hook import GoalWorkflowHook
+        from strategy_research.apps.goal.workflow_hook import GoalWorkflowHook
         hook_class = GoalWorkflowHook
 
         # Directly test the hook's should_stop logic
@@ -63,7 +63,7 @@ class TestP1ShouldStop:
         assert h.should_stop() is True
 
     def test_should_stop_when_cancelled(self, fresh_db):
-        from strategy_research.core.goal.workflow_hook import GoalWorkflowHook
+        from strategy_research.apps.goal.workflow_hook import GoalWorkflowHook
         h = GoalWorkflowHook.__new__(GoalWorkflowHook)
         h._completed = False
         h._runner = MagicMock()
@@ -72,7 +72,7 @@ class TestP1ShouldStop:
         assert h.should_stop() is True
 
     def test_should_not_stop_when_neither(self, fresh_db):
-        from strategy_research.core.goal.workflow_hook import GoalWorkflowHook
+        from strategy_research.apps.goal.workflow_hook import GoalWorkflowHook
         h = GoalWorkflowHook.__new__(GoalWorkflowHook)
         h._completed = False
         h._runner = MagicMock()
@@ -95,7 +95,7 @@ class TestP1Checkpoint:
         # Fake some state
         runner._goal_id = "g_test"
         # Use a real GoalWorkflowHook with layer_results
-        from strategy_research.core.goal.workflow_hook import GoalWorkflowHook
+        from strategy_research.apps.goal.workflow_hook import GoalWorkflowHook
         hook = GoalWorkflowHook.__new__(GoalWorkflowHook)
         hook._layer_results = {"researcher": {"answer": "test output"}}
         hook._completed = False
@@ -108,7 +108,7 @@ class TestP1Checkpoint:
         assert cp_dir is not None
 
         # Load back
-        from strategy_research.core.goal.checkpoint_store import CheckpointStore
+        from strategy_research.apps.goal.checkpoint_store import CheckpointStore
         cp = CheckpointStore(base_dir=cp_dir.parent.parent)
         data = cp.load("test", "g_test")
         assert data is not None
@@ -120,7 +120,7 @@ class TestP1Checkpoint:
             session_id="test",
         )
         runner._goal_id = "g_resume"
-        from strategy_research.core.goal.workflow_hook import GoalWorkflowHook
+        from strategy_research.apps.goal.workflow_hook import GoalWorkflowHook
         hook = GoalWorkflowHook.__new__(GoalWorkflowHook)
         hook._layer_results = {"factor_analyst": {"ic": 0.15}}
         hook._completed = False
@@ -150,7 +150,7 @@ class TestP1ExpressionDSL:
     """DSL evaluator should support and/or/not boolean logic."""
 
     def test_and_operator(self):
-        from strategy_research.core.goal.expression_evaluator import ExpressionEvaluator
+        from strategy_research.apps.goal.expression_evaluator import ExpressionEvaluator
         evaluator = ExpressionEvaluator({
             "factor": {"ic": 0.15, "sharpe": 1.2},
         })
@@ -158,7 +158,7 @@ class TestP1ExpressionDSL:
         assert evaluator.evaluate('factor.ic > 0.2 and factor.sharpe > 1.0') is False
 
     def test_or_operator(self):
-        from strategy_research.core.goal.expression_evaluator import ExpressionEvaluator
+        from strategy_research.apps.goal.expression_evaluator import ExpressionEvaluator
         evaluator = ExpressionEvaluator({
             "factor": {"ic": 0.05, "sharpe": 1.2},
         })
@@ -166,7 +166,7 @@ class TestP1ExpressionDSL:
         assert evaluator.evaluate('factor.ic > 0.1 or factor.sharpe > 2.0') is False
 
     def test_not_operator(self):
-        from strategy_research.core.goal.expression_evaluator import ExpressionEvaluator
+        from strategy_research.apps.goal.expression_evaluator import ExpressionEvaluator
         evaluator = ExpressionEvaluator({
             "factor": {"ic": 0.15},
         })
@@ -174,7 +174,7 @@ class TestP1ExpressionDSL:
         assert evaluator.evaluate('not factor.ic > 0.1') is False
 
     def test_complex_expression(self):
-        from strategy_research.core.goal.expression_evaluator import ExpressionEvaluator
+        from strategy_research.apps.goal.expression_evaluator import ExpressionEvaluator
         evaluator = ExpressionEvaluator({
             "risk": {"max_drawdown": -0.15, "verdict": "pass"},
         })
@@ -183,7 +183,7 @@ class TestP1ExpressionDSL:
         ) is True
 
     def test_evaluate_condition_function(self):
-        from strategy_research.core.goal.expression_evaluator import evaluate_condition
+        from strategy_research.apps.goal.expression_evaluator import evaluate_condition
         result = evaluate_condition(
             "data.quality > 0.8",
             {"data": {"quality": 0.9}},
@@ -262,4 +262,4 @@ class TestP1WorkflowId:
 
 
 # Import GoalStore at test level
-from strategy_research.core.goal.store import GoalStore
+from strategy_research.apps.goal.store import GoalStore

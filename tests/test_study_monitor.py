@@ -13,8 +13,8 @@ from pathlib import Path
 
 import pytest
 
-from strategy_research.core.goal import GoalStore
-from strategy_research.core.goal.context import default_goal_criteria
+from strategy_research.apps.goal import GoalStore
+from strategy_research.apps.goal.context import default_goal_criteria
 from strategy_research.apps.study import StudyStatus, StudyStore
 from strategy_research.apps.study import state_store as ss
 from strategy_research.apps.study.runner import (

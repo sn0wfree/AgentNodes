@@ -115,7 +115,7 @@ class GoalContextInjector:
         if not loop.session_id:
             return task
         try:
-            from ..goal import get_current_goal_context
+            from strategy_research.apps.goal import get_current_goal_context
             ctx, _ = get_current_goal_context(loop.session_id)
             if ctx:
                 return ctx + "\n\n" + task
@@ -221,7 +221,7 @@ class GoalContinuationInjector:
         if not loop.session_id:
             return False
         try:
-            from ..goal.context import (
+            from strategy_research.apps.goal.context import (
                 format_goal_continuation_prompt,
                 goal_needs_continuation,
             )

@@ -4,10 +4,10 @@ from __future__ import annotations
 
 import pytest
 
-from strategy_research.core.goal.context import (
+from strategy_research.apps.goal.context import (
     default_goal_criteria,
 )
-from strategy_research.core.goal.models import (
+from strategy_research.apps.goal.models import (
     AuditRow,
     EvidenceInput,
     EvidenceRecord,
@@ -17,7 +17,7 @@ from strategy_research.core.goal.models import (
     GoalStatus,
     RiskTier,
 )
-from strategy_research.core.goal.policy import (
+from strategy_research.apps.goal.policy import (
     normalize_required_text,
     reject_live_execution_objective,
 )

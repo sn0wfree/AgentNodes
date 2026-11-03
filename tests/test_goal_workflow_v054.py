@@ -17,7 +17,7 @@ from pathlib import Path
 
 import pytest
 
-from strategy_research.core.goal.workflow_config import (
+from strategy_research.apps.goal.workflow_config import (
     list_goal_workflows,
     load_goal_workflow,
 )

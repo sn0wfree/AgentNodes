@@ -17,8 +17,8 @@ from pathlib import Path
 
 import pytest
 
-from strategy_research.core.goal import GoalStore
-from strategy_research.core.goal.context import default_goal_criteria
+from strategy_research.apps.goal import GoalStore
+from strategy_research.apps.goal.context import default_goal_criteria
 from strategy_research.apps.study import (
     StudyScheduler,
     StudyStatus,
@@ -114,7 +114,7 @@ def test_update_goal_id_links_goal(store, goal_store):
 def test_goal_binds_study_id_domain(store, goal_store):
     """A study goal is created under the study_id domain (supersede=False):
     a second study under the same owner does NOT supersede the first."""
-    from strategy_research.core.goal.context import default_goal_criteria
+    from strategy_research.apps.goal.context import default_goal_criteria
 
     g1, s1 = _setup(store, goal_store, session="chat_abc", goal_id=None)
     goal1 = goal_store.replace_goal(
@@ -138,7 +138,7 @@ def test_goal_binds_study_id_domain(store, goal_store):
 def test_chat_goal_supersede_semantics_kept(store, goal_store):
     """chat semantics untouched: same-session replace_goal (default
     supersede=True) still invalidates the previous active goal."""
-    from strategy_research.core.goal.context import default_goal_criteria
+    from strategy_research.apps.goal.context import default_goal_criteria
 
     g1 = goal_store.replace_goal(
         session_id="chat_abc", objective="旧目标",
@@ -221,8 +221,8 @@ def test_study_id_goal_accounting_passes(store, goal_store):
     """Decision D: a study writing to its goal ledger with its own
     session_id (== study_id) succeeds; evidence persists under the goal's
     own session (the study's domain)."""
-    from strategy_research.core.goal import EvidenceInput
-    from strategy_research.core.goal.context import default_goal_criteria
+    from strategy_research.apps.goal import EvidenceInput
+    from strategy_research.apps.goal.context import default_goal_criteria
 
     goal, study = _setup(store, goal_store, session="chat_abc")
     study_id = study.study_id

@@ -31,7 +31,7 @@ class _StubRunner:
     """Minimal runner with the surface workflow_event_stream touches."""
 
     def __init__(self) -> None:
-        from strategy_research.core.goal.event_bus import WorkflowEventBus
+        from strategy_research.apps.goal.event_bus import WorkflowEventBus
         self._event_bus = WorkflowEventBus()
         self._state = type(
             "S", (), {

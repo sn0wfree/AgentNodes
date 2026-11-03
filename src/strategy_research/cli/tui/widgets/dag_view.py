@@ -29,7 +29,7 @@ from textual.binding import Binding
 from textual.containers import Vertical
 from textual.widgets import Static
 
-from strategy_research.core.goal.dag_renderer import NodeStatus, render_dag
+from strategy_research.apps.goal.dag_renderer import NodeStatus, render_dag
 
 
 class DAGView(Vertical):

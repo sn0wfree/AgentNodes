@@ -28,7 +28,7 @@ def isolated_paths(tmp_path, monkeypatch):
 
 @pytest.fixture
 def goal_store():
-    from strategy_research.core.goal import GoalStore
+    from strategy_research.apps.goal import GoalStore
     store = GoalStore()
     yield store
 
@@ -156,7 +156,7 @@ class TestOnGoalCompleteHook:
 
     def test_fires_on_complete_status_update(self, goal_store, registry, tmp_path):
         """Updating status to COMPLETE should auto-fire the hook."""
-        from strategy_research.core.goal import AuditRow, EvidenceInput, GoalStatus
+        from strategy_research.apps.goal import AuditRow, EvidenceInput, GoalStatus
 
         goal = goal_store.replace_goal(
             session_id="sess_hook7",

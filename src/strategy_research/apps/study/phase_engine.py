@@ -168,7 +168,7 @@ def run_round_phases(
     )
 
     # AEGIS: Scoreboard
-    from strategy_research.core.goal.scoreboard import LeverScoreboard
+    from strategy_research.apps.goal.scoreboard import LeverScoreboard
     if not hasattr(runner, "_scoreboard"):
         runner._scoreboard = LeverScoreboard()
     runner._scoreboard.update([lever], attribution, gating_outcome, round_num, round_num)

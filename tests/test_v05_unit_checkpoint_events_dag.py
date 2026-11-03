@@ -14,8 +14,8 @@ from unittest.mock import MagicMock
 
 import pytest
 
-from strategy_research.core.goal.checkpoint_store import CheckpointStore
-from strategy_research.core.goal.event_bus import (
+from strategy_research.apps.goal.checkpoint_store import CheckpointStore
+from strategy_research.apps.goal.event_bus import (
     CollectingObserver,
     GoalPanelObserver,
     LoggerObserver,

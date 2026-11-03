@@ -104,7 +104,7 @@ class TestGoalContextInjector:
         loop.session_id = "abc"
         # Force ImportError by mocking the import
         import unittest.mock as mock
-        with mock.patch.dict("sys.modules", {"strategy_research.core.goal": None}):
+        with mock.patch.dict("sys.modules", {"strategy_research.apps.goal": None}):
             result = inj.inject_pre_run(loop, "task text", [])
             assert result == "task text"
 
@@ -196,5 +196,5 @@ class TestGoalContinuationInjector:
         result.messages = []
         # _get_goal_snapshot returns None (import error)
         import unittest.mock as mock
-        with mock.patch.dict("sys.modules", {"strategy_research.core.goal": None}):
+        with mock.patch.dict("sys.modules", {"strategy_research.apps.goal": None}):
             assert inj.inject_post_response(loop, response, messages, result, 1) is False

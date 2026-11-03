@@ -163,7 +163,7 @@ def test_goal_user_id_backfill(setup) -> None:
     conn.close()
 
     # Opening GoalStore runs _migrate_user_id: adds column + backfills ownership.
-    from strategy_research.core.goal import GoalStore
+    from strategy_research.apps.goal import GoalStore
 
     with GoalStore(db_path=str(setup["goal_db"])) as store:
         goal = store.get_goal("goal-legacy")

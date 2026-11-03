@@ -14,7 +14,7 @@ from __future__ import annotations
 
 from unittest.mock import MagicMock
 
-from strategy_research.core.goal import context as goal_ctx
+from strategy_research.apps.goal import context as goal_ctx
 from strategy_research.kernel.swarm.runtime import (
     AgentResult,
     SwarmPreset,

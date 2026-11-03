@@ -377,9 +377,9 @@ async def test_directives_list_unknown_study_returns_404(_app_env, tmp_path, mon
 @pytest.mark.asyncio
 async def test_summary_goal_snapshot_and_scoreboard(_app_env, tmp_path, monkeypatch):
     """summary 应带 goal_snapshot（进度/标准/证据数）与 journal 派生的 scoreboard。"""
-    from strategy_research.core.goal import GoalStore
-    from strategy_research.core.goal.models import EvidenceInput
-    from strategy_research.core.goal.store import RiskTier
+    from strategy_research.apps.goal import GoalStore
+    from strategy_research.apps.goal.models import EvidenceInput
+    from strategy_research.apps.goal.store import RiskTier
 
     db_path = tmp_path / "goals.db"
     with GoalStore(db_path=db_path) as gs:
@@ -650,7 +650,7 @@ async def test_start_internal_error_returns_500(_app_env, monkeypatch):
         "executor_type": "autoresearch", "max_rounds": 3,
     }
     with patch(
-        "strategy_research.core.goal.GoalStore.replace_goal",
+        "strategy_research.apps.goal.GoalStore.replace_goal",
         side_effect=RuntimeError("simulated"),
     ):
         async with _api_client() as client:
@@ -735,8 +735,8 @@ async def test_status_returns_study_by_id(_app_env, tmp_path, monkeypatch):
 @pytest.mark.asyncio
 async def test_status_includes_goal_snapshot_when_goal_linked(_app_env, tmp_path, monkeypatch):
     """study.goal_id 存在时，summary 应包含 goal_snapshot。"""
-    from strategy_research.core.goal import GoalStore
-    from strategy_research.core.goal.store import RiskTier
+    from strategy_research.apps.goal import GoalStore
+    from strategy_research.apps.goal.store import RiskTier
     from strategy_research.apps.study import StudyStore
 
     db_path = tmp_path / "goals.db"

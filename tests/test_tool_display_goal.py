@@ -61,7 +61,7 @@ def test_list_goals_without_store_returns_ok_or_error(ctx):
 
 def test_list_goals_with_real_store(ctx, tmp_path, monkeypatch):
     """真实 GoalStore（临时目录）→ 列出目标。"""
-    from strategy_research.core.goal.store import GoalStore
+    from strategy_research.apps.goal.store import GoalStore
 
     db = tmp_path / "goals.db"
     store = GoalStore(db_path=db)
@@ -85,7 +85,7 @@ def test_list_goals_with_real_store(ctx, tmp_path, monkeypatch):
 
 def test_get_goal_status_no_active_goal_is_ok(ctx, tmp_path, monkeypatch):
     """无 active goal → has_goal=false（正常返回，非错误）。"""
-    from strategy_research.core.goal.store import GoalStore
+    from strategy_research.apps.goal.store import GoalStore
 
     db = tmp_path / "goals2.db"
     store = GoalStore(db_path=db)

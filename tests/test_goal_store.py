@@ -17,7 +17,7 @@ from pathlib import Path
 
 import pytest
 
-from strategy_research.core.goal import (
+from strategy_research.apps.goal import (
     AuditRow,
     EvidenceInput,
     GoalStatus,

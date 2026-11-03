@@ -17,7 +17,7 @@ from strategy_research.core.agent.builtin_tools.workspace_tools import (
     LoadSkillTool,
 )
 from strategy_research.core.agent.tools import ToolContext
-from strategy_research.core.goal.workflow import (
+from strategy_research.apps.goal.workflow import (
     CompletionConfig,
     GoalAgentConfig,
     GoalWorkflowConfig,

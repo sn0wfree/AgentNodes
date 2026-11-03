@@ -15,11 +15,11 @@ from unittest.mock import MagicMock
 
 import pytest
 
-from strategy_research.core.goal.dag_renderer import NodeStatus, render_dag
-from strategy_research.core.goal.workflow import (
+from strategy_research.apps.goal.dag_renderer import NodeStatus, render_dag
+from strategy_research.apps.goal.workflow import (
     GoalWorkflowRunner,
 )
-from strategy_research.core.goal.workflow_config import load_goal_workflow
+from strategy_research.apps.goal.workflow_config import load_goal_workflow
 
 
 @pytest.fixture
@@ -195,7 +195,7 @@ class TestRunnerCheckpoint:
 
 class TestRunnerStartSubWorkflow:
     def test_start_sub_workflow_creates_child_goal(self, workflow_config, fresh_db):
-        from strategy_research.core.goal.store import GoalStore
+        from strategy_research.apps.goal.store import GoalStore
         store = GoalStore()
         runner = GoalWorkflowRunner(
             config=workflow_config,

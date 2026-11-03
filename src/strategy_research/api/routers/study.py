@@ -440,7 +440,7 @@ async def study_status(
     from .web_session import _fetch_session_owned, _get_db
     user_id = getattr(request.state, "user_id", None) or "anonymous"
     _fetch_session_owned(_get_db(), session_id, user_id)
-    from ...core.goal import GoalStore
+    from strategy_research.apps.goal import GoalStore
     from strategy_research.apps.study import StudyStore
     with StudyStore() as store:
         if study_id:
@@ -519,7 +519,7 @@ async def study_summary(request: Request, response: Response, study_id: str):
         return cached_data
 
     # ── Cache miss: full DB read ────────────────────────────────
-    from ...core.goal import GoalStore
+    from strategy_research.apps.goal import GoalStore
     from strategy_research.apps.study import StudyStore
     with StudyStore() as store:
         recent_rounds = store.list_rounds(study_id, limit=5)

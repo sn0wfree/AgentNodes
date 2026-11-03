@@ -24,7 +24,7 @@ def _build_goal_snapshot(request: Request, session_id: str) -> dict | None:
     contract.
     """
     try:
-        from ...core.goal import GoalStore
+        from strategy_research.apps.goal import GoalStore
 
         db_path = getattr(request.app.state, "goal_db_path", None)
         with GoalStore(db_path=db_path) as store:

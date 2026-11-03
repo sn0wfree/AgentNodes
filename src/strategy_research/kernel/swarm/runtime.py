@@ -840,7 +840,7 @@ class SwarmRuntime:
 
         Branch config shape: ``{condition, action, target, reason}``.
         """
-        from strategy_research.core.goal.expression_evaluator import evaluate_condition
+        from strategy_research.apps.goal.expression_evaluator import evaluate_condition
 
         skipped: list[str] = []
         retried: list[str] = []

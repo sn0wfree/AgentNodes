@@ -49,7 +49,7 @@ def store(tmp_path: Path):
 
 @pytest.fixture
 def goal_store():
-    from strategy_research.core.goal import GoalStore
+    from strategy_research.apps.goal import GoalStore
     return GoalStore()
 
 
@@ -181,7 +181,7 @@ def test_update_round_review_overlay(store, goal_store):
 
 
 def _setup_store(store, goal_store):
-    from strategy_research.core.goal.context import default_goal_criteria
+    from strategy_research.apps.goal.context import default_goal_criteria
     goal = goal_store.replace_goal(
         session_id="sess-m3", objective="目标", criteria=default_goal_criteria(),
     )
@@ -238,7 +238,7 @@ def test_runner_round_artifacts_end_to_end(store, goal_store, monkeypatch, tmp_p
         "PARAMS = {}\nFACTOR_EXPRS = []\n", encoding="utf-8",
     )
 
-    from strategy_research.core.goal.context import default_goal_criteria
+    from strategy_research.apps.goal.context import default_goal_criteria
     goal = goal_store.replace_goal(
         session_id="study_e2e", objective="研究动量",
         criteria=default_goal_criteria(), supersede=False,

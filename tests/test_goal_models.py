@@ -6,7 +6,7 @@ from dataclasses import FrozenInstanceError, fields, is_dataclass
 
 import pytest
 
-from strategy_research.core.goal.models import (
+from strategy_research.apps.goal.models import (
     AuditRow,
     EvidenceInput,
     EvidenceRecord,

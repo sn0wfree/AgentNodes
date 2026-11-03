@@ -31,8 +31,8 @@ from unittest import mock
 
 import pytest
 
-from strategy_research.core.goal.checkpoint_store import CheckpointStore
-from strategy_research.core.goal.workflow import (
+from strategy_research.apps.goal.checkpoint_store import CheckpointStore
+from strategy_research.apps.goal.workflow import (
     CompletionConfig,
     GoalAgentConfig,
     GoalWorkflowConfig,
@@ -193,7 +193,7 @@ class TestCheckpointStore:
             real_cp = CheckpointStore(Path(tmpdir))
             # Patch the lazy import inside checkpoint()
             with mock.patch(
-                "strategy_research.core.goal.checkpoint_store.CheckpointStore",
+                "strategy_research.apps.goal.checkpoint_store.CheckpointStore",
                 return_value=real_cp,
             ):
                 result = runner.checkpoint()

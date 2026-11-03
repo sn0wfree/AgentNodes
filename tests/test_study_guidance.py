@@ -204,8 +204,8 @@ def test_runner_gate_hard_check_forces_discard(tmp_path, monkeypatch):
 
     import strategy_research.apps.autoresearch as ar_mod
     from strategy_research.apps.study.bootstrap import init_study_dir as _init_study_dir
-    from strategy_research.core.goal import GoalStore
-    from strategy_research.core.goal.context import default_goal_criteria
+    from strategy_research.apps.goal import GoalStore
+    from strategy_research.apps.goal.context import default_goal_criteria
     from strategy_research.apps.study import round_manifest as rm
     from strategy_research.apps.study import runner as runner_mod
     from strategy_research.apps.study import state_store as ss
@@ -299,8 +299,8 @@ def test_runner_gate_no_violation_keeps_verdict(tmp_path, monkeypatch):
 
     import strategy_research.apps.autoresearch as ar_mod
     from strategy_research.apps.study.bootstrap import init_study_dir as _init_study_dir
-    from strategy_research.core.goal import GoalStore
-    from strategy_research.core.goal.context import default_goal_criteria
+    from strategy_research.apps.goal import GoalStore
+    from strategy_research.apps.goal.context import default_goal_criteria
     from strategy_research.apps.study import round_manifest as rm
     from strategy_research.apps.study import runner as runner_mod
     from strategy_research.apps.study import state_store as ss

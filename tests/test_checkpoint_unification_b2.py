@@ -16,14 +16,14 @@ from types import SimpleNamespace
 import pytest
 from rich.console import Console
 
-from strategy_research.core.goal.checkpoint_store import CheckpointStore
-from strategy_research.core.goal.workflow import (
+from strategy_research.apps.goal.checkpoint_store import CheckpointStore
+from strategy_research.apps.goal.workflow import (
     CompletionConfig,
     GoalAgentConfig,
     GoalWorkflowConfig,
     GoalWorkflowRunner,
 )
-from strategy_research.core.goal.workflow_hook import GoalWorkflowHook
+from strategy_research.apps.goal.workflow_hook import GoalWorkflowHook
 
 
 # ── _auto_checkpoint 单元语义 ────────────────────────────────────
@@ -141,8 +141,8 @@ def test_cli_resume_continues_from_checkpoint(tmp_path, monkeypatch):
     yaml_path = tmp_path / "wf_b2.yaml"
     _write_workflow_yaml(yaml_path)
 
-    from strategy_research.core.goal.models import RiskTier
-    from strategy_research.core.goal.store import GoalStore
+    from strategy_research.apps.goal.models import RiskTier
+    from strategy_research.apps.goal.store import GoalStore
 
     sid, gid = "cli-b2", "g-b2"
     store = GoalStore()

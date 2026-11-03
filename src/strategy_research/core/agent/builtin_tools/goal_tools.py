@@ -25,7 +25,7 @@ logger = logging.getLogger(__name__)
 
 def _get_store():
     """Get a GoalStore instance with default DB path."""
-    from ...goal import GoalStore
+    from strategy_research.apps.goal import GoalStore
     return GoalStore()
 
 
@@ -124,7 +124,7 @@ class CreateGoalTool(BaseTool):
                 criteria = unwrapped
 
         try:
-            from ...goal.context import default_goal_criteria
+            from strategy_research.apps.goal.context import default_goal_criteria
             store = _get_store()
             goal = store.replace_goal(
                 session_id=session_id,
@@ -215,7 +215,7 @@ class AddEvidenceTool(BaseTool):
 
 
         try:
-            from ...goal import EvidenceInput
+            from strategy_research.apps.goal import EvidenceInput
             store = _get_store()
             current = store.get_current_goal(session_id)
             if current is None:
@@ -512,7 +512,7 @@ class ListGoalsTool(BaseTool):
         status_str = status
 
         try:
-            from ...goal import GoalStatus
+            from strategy_research.apps.goal import GoalStatus
             store = _get_store()
             status_filter = GoalStatus(status_str) if status_str else None
             goals = store.list_goals(

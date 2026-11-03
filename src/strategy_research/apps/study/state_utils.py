@@ -66,7 +66,7 @@ def emit_with_trace(
 
 def open_goal_store() -> Any:
     """Create a new GoalStore instance."""
-    from strategy_research.core.goal import GoalStore
+    from strategy_research.apps.goal import GoalStore
     return GoalStore()
 
 

@@ -9,9 +9,9 @@ from __future__ import annotations
 
 import pytest
 
-from strategy_research.core.goal import GoalStore
-from strategy_research.core.goal.context import default_goal_criteria
-from strategy_research.core.goal.models import EvidenceInput, StaleGoalError
+from strategy_research.apps.goal import GoalStore
+from strategy_research.apps.goal.context import default_goal_criteria
+from strategy_research.apps.goal.models import EvidenceInput, StaleGoalError
 
 
 @pytest.fixture

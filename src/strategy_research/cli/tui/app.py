@@ -773,7 +773,7 @@ class ResearchApp(App):
             panel.clear_goal()
             return
         try:
-            from strategy_research.core.goal import GoalStore
+            from strategy_research.apps.goal import GoalStore
             store = GoalStore()
             snapshot = store.get_current_snapshot(self.session.ctx.session_id)
             if snapshot is None:

@@ -122,8 +122,8 @@ class TestRunResearchRound:
     def test_round_appends_goal_evidence_when_session_id_given(
         self, workspace, patched_backtest, goals_db
     ):
-        from strategy_research.core.goal import GoalStore
-        from strategy_research.core.goal.context import default_goal_criteria
+        from strategy_research.apps.goal import GoalStore
+        from strategy_research.apps.goal.context import default_goal_criteria
 
         # Create a goal for the study session + criteria so evidence can
         # attach to criterion_id[0].
@@ -148,6 +148,6 @@ class TestRunResearchRound:
         # No goal created, no session_id → round still runs, no evidence.
         r = run_research_round(workspace, "demo", round_num=1, behavior="improving")
         assert r["metrics"]["calmar"] == 0.62  # sanity
-        from strategy_research.core.goal import GoalStore
+        from strategy_research.apps.goal import GoalStore
         with GoalStore() as gs:
             assert gs.get_current_goal("any-session") is None

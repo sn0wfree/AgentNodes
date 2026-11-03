@@ -101,7 +101,7 @@ class TestFullRunIntegration:
     def test_goal_context_injected_into_initial_message(self, cfg, registry, monkeypatch):
         """Verify the initial user message contains the goal context block."""
         # Set up a goal first
-        from strategy_research.core.goal import GoalStore
+        from strategy_research.apps.goal import GoalStore
         store = GoalStore()
         store.replace_goal(
             session_id="sess_full",

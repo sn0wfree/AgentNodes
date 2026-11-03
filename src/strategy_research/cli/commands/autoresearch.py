@@ -27,7 +27,7 @@ def _append_backtest_evidence(
     append failures.
     """
     try:
-        from strategy_research.core.goal import (
+        from strategy_research.apps.goal import (
             EvidenceInput,
             GoalStore,
         )
@@ -75,7 +75,7 @@ def _register_researcher_hypothesis(
     Failures are swallowed — the autoresearch loop must not break on registry errors.
     """
     try:
-        from strategy_research.core.goal import GoalStore
+        from strategy_research.apps.goal import GoalStore
         from strategy_research.apps.hypothesis import HypothesisRegistry
 
         thesis = researcher_output.get("hypothesis", "")

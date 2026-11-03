@@ -12,7 +12,7 @@ Algorithm:
 
 Usage::
 
-    from strategy_research.core.goal.dag_renderer import render_dag, NodeStatus
+    from strategy_research.apps.goal.dag_renderer import render_dag, NodeStatus
 
     dag = {"A": [], "B": ["A"], "C": ["A"], "D": ["B", "C"]}
     status = {"A": NodeStatus.COMPLETED, "B": NodeStatus.RUNNING}

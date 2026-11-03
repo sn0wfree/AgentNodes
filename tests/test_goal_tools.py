@@ -17,7 +17,7 @@ from strategy_research.core.agent.builtin_tools.goal_tools import (
     register_goal_tools,
 )
 from strategy_research.core.agent.tools import ToolContext, ToolRegistry
-from strategy_research.core.goal import EvidenceInput, GoalStore
+from strategy_research.apps.goal import EvidenceInput, GoalStore
 
 # ── Goal Tool Unit Tests ────────────────────────────────────────────
 

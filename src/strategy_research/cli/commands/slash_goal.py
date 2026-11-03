@@ -41,7 +41,7 @@ def _resolve_console(console: Any = None) -> Console:
 
 
 def _store():
-    from strategy_research.core.goal import GoalStore
+    from strategy_research.apps.goal import GoalStore
     return GoalStore(db_path=_resolve_db_path())
 
 
@@ -140,9 +140,9 @@ def cmd_start(objective: str, *, console: Any = None,
             )
 
         # ── Legacy / template path ──
-        from strategy_research.core.goal.context import default_goal_criteria
-        from strategy_research.core.goal.models import RiskTier
-        from strategy_research.core.goal.templates import get_template
+        from strategy_research.apps.goal.context import default_goal_criteria
+        from strategy_research.apps.goal.models import RiskTier
+        from strategy_research.apps.goal.templates import get_template
 
         criteria = default_goal_criteria()
         risk_tier = RiskTier.RESEARCH_GENERAL
@@ -151,7 +151,7 @@ def cmd_start(objective: str, *, console: Any = None,
             if tmpl is None:
                 console.print(f"[red]Unknown template:[/red] {template_key}")
                 console.print("[dim]Available: " + ", ".join(
-                    sorted(getattr(__import__('strategy_research.core.goal.templates',
+                    sorted(getattr(__import__('strategy_research.apps.goal.templates',
                                               fromlist=['TEMPLATES']), 'TEMPLATES').keys())
                 ) + "[/dim]")
                 return 1
@@ -193,8 +193,8 @@ def _start_workflow(
     and reports evidence / completion status. Returns 0 on success, 1 on
     workflow-load or execution failure.
     """
-    from strategy_research.core.goal.workflow import GoalWorkflowRunner
-    from strategy_research.core.goal.workflow_config import load_goal_workflow
+    from strategy_research.apps.goal.workflow import GoalWorkflowRunner
+    from strategy_research.apps.goal.workflow_config import load_goal_workflow
 
     try:
         config = load_goal_workflow(workflow_name)
@@ -242,7 +242,7 @@ def cmd_evidence(criterion_ref: str, note: str, *,
         console.print("[red]Usage:[/red] /goal evidence <idx-or-id> <note>")
         return 1
     try:
-        from strategy_research.core.goal.models import EvidenceInput
+        from strategy_research.apps.goal.models import EvidenceInput
 
         store = _store()
         snapshot = store.get_current_snapshot(session_id)
@@ -297,7 +297,7 @@ def cmd_complete(recap: str = "", *, console: Any = None,
     """
     console = _resolve_console(console)
     try:
-        from strategy_research.core.goal.models import AuditRow, GoalStatus
+        from strategy_research.apps.goal.models import AuditRow, GoalStatus
 
         store = _store()
         snapshot = store.get_current_snapshot(session_id)
@@ -351,7 +351,7 @@ def cmd_cancel(recap: str = "", *, console: Any = None,
     """``/goal cancel [recap]``."""
     console = _resolve_console(console)
     try:
-        from strategy_research.core.goal.models import GoalStatus
+        from strategy_research.apps.goal.models import GoalStatus
 
         store = _store()
         snapshot = store.get_current_snapshot(session_id)
@@ -392,7 +392,7 @@ def cmd_help(*, console: Any = None) -> int:
 
 def cmd_templates(*, console: Any = None) -> int:
     """``/goal templates`` — list available goal templates."""
-    from strategy_research.core.goal.templates import list_templates
+    from strategy_research.apps.goal.templates import list_templates
     console = _resolve_console(console)
     templates = list_templates()
     if not templates:
@@ -430,7 +430,7 @@ def _list_workflows_for_display() -> list[dict[str, str]]:
     Used by ``/goal templates`` and ``/goal workflows list``.
     """
     try:
-        from strategy_research.core.goal.workflow_config import list_goal_workflows
+        from strategy_research.apps.goal.workflow_config import list_goal_workflows
         return list_goal_workflows()
     except Exception:  # noqa: BLE001
         return []
@@ -442,7 +442,7 @@ def _resolve_workflow_path(name_or_path: str) -> Path | None:
     Mirrors the search logic in :mod:`workflow_config` but returns the path
     directly for CLI display purposes (no parsing needed).
     """
-    from strategy_research.core.goal import workflow_config
+    from strategy_research.apps.goal import workflow_config
 
     path = Path(name_or_path)
     if path.exists() and path.suffix in (".yaml", ".yml"):
@@ -625,7 +625,7 @@ def _cmd_checkpoint_save(console: Console) -> int:
         return 1
 
     try:
-        from strategy_research.core.goal.checkpoint_store import CheckpointStore
+        from strategy_research.apps.goal.checkpoint_store import CheckpointStore
     except ImportError as exc:
         console.print(f"[red]CheckpointStore unavailable:[/red] {exc}")
         return 1
@@ -657,7 +657,7 @@ def _cmd_checkpoint_save(console: Console) -> int:
 
 def _cmd_checkpoint_list(console: Console, session_id: Optional[str]) -> int:
     try:
-        from strategy_research.core.goal.checkpoint_store import CheckpointStore
+        from strategy_research.apps.goal.checkpoint_store import CheckpointStore
     except ImportError as exc:
         console.print(f"[red]CheckpointStore unavailable:[/red] {exc}")
         return 1
@@ -696,7 +696,7 @@ def _cmd_checkpoint_resume(console: Console, session_id: str,
     回退为检视模式（v0.5.1 行为：还原元数据供检查）。
     """
     try:
-        from strategy_research.core.goal.checkpoint_store import CheckpointStore
+        from strategy_research.apps.goal.checkpoint_store import CheckpointStore
     except ImportError as exc:
         console.print(f"[red]CheckpointStore unavailable:[/red] {exc}")
         return 1
@@ -749,8 +749,8 @@ def _cmd_checkpoint_resume(console: Console, session_id: str,
             "请用 /goal start --workflow 重跑。"
         )
 
-    from strategy_research.core.goal.workflow import GoalWorkflowRunner
-    from strategy_research.core.goal.workflow_config import load_goal_workflow
+    from strategy_research.apps.goal.workflow import GoalWorkflowRunner
+    from strategy_research.apps.goal.workflow_config import load_goal_workflow
 
     try:
         config = load_goal_workflow(workflow_name)
@@ -792,7 +792,7 @@ def _cmd_checkpoint_resume(console: Console, session_id: str,
 def _cmd_checkpoint_delete(console: Console, session_id: str,
                            goal_id: str) -> int:
     try:
-        from strategy_research.core.goal.checkpoint_store import CheckpointStore
+        from strategy_research.apps.goal.checkpoint_store import CheckpointStore
     except ImportError as exc:
         console.print(f"[red]CheckpointStore unavailable:[/red] {exc}")
         return 1

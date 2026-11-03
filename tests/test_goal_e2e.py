@@ -16,18 +16,18 @@ from strategy_research.core.agent.builtin_tools.data_tools import ImportDataTool
 from strategy_research.core.agent.tools import ToolContext
 from strategy_research.apps.config_runner import load_data
 from strategy_research.apps.db import init_db, save_ohlcv_to_db
-from strategy_research.core.goal.context import (
+from strategy_research.apps.goal.context import (
     format_goal_context,
     format_goal_continuation_prompt,
     goal_needs_continuation,
     goal_progress_tuple,
 )
-from strategy_research.core.goal.models import (
+from strategy_research.apps.goal.models import (
     EvidenceInput,
     GoalStatus,
 )
-from strategy_research.core.goal.policy import reject_live_execution_objective
-from strategy_research.core.goal.store import GoalStore
+from strategy_research.apps.goal.policy import reject_live_execution_objective
+from strategy_research.apps.goal.store import GoalStore
 
 # ── Fixtures ─────────────────────────────────────────────────────────
 

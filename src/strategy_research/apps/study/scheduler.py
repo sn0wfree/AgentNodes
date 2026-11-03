@@ -513,7 +513,7 @@ class StudyScheduler:
 
         # Reject live-trading / execution wording (reuse goal policy).
         try:
-            from strategy_research.core.goal.policy import reject_live_execution_objective
+            from strategy_research.apps.goal.policy import reject_live_execution_objective
             reject_live_execution_objective(new_objective)
         except ValueError:
             raise
@@ -530,7 +530,7 @@ class StudyScheduler:
         # 2. best-effort: sync goal ledger so they don't drift.
         if study.goal_id:
             try:
-                from strategy_research.core.goal import GoalStore, StaleGoalError
+                from strategy_research.apps.goal import GoalStore, StaleGoalError
                 with GoalStore() as gs:
                     try:
                         gs.update_goal(

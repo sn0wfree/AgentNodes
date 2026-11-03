@@ -56,7 +56,7 @@ def complete_goal(
     if not study.goal_id:
         return
     try:
-        from strategy_research.core.goal import EvidenceInput
+        from strategy_research.apps.goal import EvidenceInput
         metrics = exec_result.get("metrics", {})
         run_name = exec_result.get("run_name", "")
         existing = goal_store.list_evidence(study.goal_id)

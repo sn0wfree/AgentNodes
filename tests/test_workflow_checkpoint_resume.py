@@ -12,13 +12,13 @@ from types import SimpleNamespace
 
 import pytest
 
-from strategy_research.core.goal.workflow import (
+from strategy_research.apps.goal.workflow import (
     CompletionConfig,
     GoalAgentConfig,
     GoalWorkflowConfig,
     GoalWorkflowRunner,
 )
-from strategy_research.core.goal.workflow_hook import GoalWorkflowHook
+from strategy_research.apps.goal.workflow_hook import GoalWorkflowHook
 
 
 CFG = GoalWorkflowConfig(

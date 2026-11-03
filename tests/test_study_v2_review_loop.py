@@ -174,8 +174,8 @@ def test_runner_high_deviation_stops_after_3(tmp_path, monkeypatch):
 
     import strategy_research.apps.autoresearch as ar_mod
     from strategy_research.apps.study.bootstrap import init_study_dir as _init_study_dir
-    from strategy_research.core.goal import GoalStore
-    from strategy_research.core.goal.context import default_goal_criteria
+    from strategy_research.apps.goal import GoalStore
+    from strategy_research.apps.goal.context import default_goal_criteria
     from strategy_research.apps.study import runner as runner_mod
     from strategy_research.apps.study.runner import AutoresearchRunner, ControlToken
     from strategy_research.apps.study.scheduler import NullEmitter

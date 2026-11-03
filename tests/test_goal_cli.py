@@ -8,12 +8,12 @@ from pathlib import Path
 
 import pytest
 
-from strategy_research.core.goal import (
+from strategy_research.apps.goal import (
     GoalStore,
     RiskTier,
     default_goal_criteria,
 )
-from strategy_research.core.goal.cli import (
+from strategy_research.apps.goal.cli import (
     add_goal_subparsers,
     cmd_goal_audit,
     cmd_goal_cancel,

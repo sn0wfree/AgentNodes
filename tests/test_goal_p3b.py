@@ -6,7 +6,7 @@ from pathlib import Path
 
 import pytest
 
-from strategy_research.core.goal import (
+from strategy_research.apps.goal import (
     AuditRow,
     EvidenceInput,
     GoalStatus,
@@ -262,7 +262,7 @@ class TestSubGoals:
 class TestContextProgress:
     def test_context_includes_progress(self, store: GoalStore):
         """format_goal_context includes progress line."""
-        from strategy_research.core.goal.context import format_goal_context
+        from strategy_research.apps.goal.context import format_goal_context
 
         goal = store.replace_goal(
             session_id="s1",

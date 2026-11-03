@@ -178,7 +178,7 @@ class WorkflowWorker:
             panel = None
         if panel is None:
             return
-        from strategy_research.core.goal.event_bus import GoalPanelObserver
+        from strategy_research.apps.goal.event_bus import GoalPanelObserver
         self._observer = GoalPanelObserver(panel)
         try:
             self._runner.event_bus.subscribe(self._observer)

@@ -296,11 +296,11 @@ def test_swarm_wrap_filters_and_injects_agent_name():
 
 def test_goal_bridge_forwards_to_event_bus():
     """_agent_event_bridge 把 agent 事件送上 WorkflowEventBus。"""
-    from strategy_research.core.goal.event_bus import CollectingObserver
-    from strategy_research.core.goal.workflow import GoalWorkflowRunner
+    from strategy_research.apps.goal.event_bus import CollectingObserver
+    from strategy_research.apps.goal.workflow import GoalWorkflowRunner
 
     runner = GoalWorkflowRunner.__new__(GoalWorkflowRunner)
-    from strategy_research.core.goal.event_bus import WorkflowEventBus
+    from strategy_research.apps.goal.event_bus import WorkflowEventBus
     runner._event_bus = WorkflowEventBus()
     obs = CollectingObserver()
     runner._event_bus.subscribe(obs)

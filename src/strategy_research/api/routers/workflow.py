@@ -88,8 +88,8 @@ async def workflow_start(req: WorkflowStartRequest, request: Request):
     run via the shared in-process registry).
     """
     try:
-        from ...core.goal.workflow import GoalWorkflowRunner
-        from ...core.goal.workflow_config import load_goal_workflow
+        from strategy_research.apps.goal.workflow import GoalWorkflowRunner
+        from strategy_research.apps.goal.workflow_config import load_goal_workflow
         from .chat import _get_session_service
         from .web_session import _fetch_session_owned, _get_db
 
@@ -194,14 +194,14 @@ async def workflow_directive(goal_id: str, req: WorkflowDirectiveRequest, reques
 @router.get("/list")
 async def workflow_list():
     """List available workflow presets."""
-    from ...core.goal.workflow_config import list_goal_workflows
+    from strategy_research.apps.goal.workflow_config import list_goal_workflows
     return {"status": "ok", "workflows": list_goal_workflows()}
 
 
 @router.get("/{name}/graph")
 async def workflow_graph(name: str):
     """Return the DAG structure (nodes + edges) for a workflow preset."""
-    from ...core.goal.workflow_config import load_goal_workflow
+    from strategy_research.apps.goal.workflow_config import load_goal_workflow
     try:
         config = load_goal_workflow(name)
     except FileNotFoundError:

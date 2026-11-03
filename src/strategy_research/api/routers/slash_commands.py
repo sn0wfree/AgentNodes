@@ -39,7 +39,7 @@ async def _handle_goal_command(body: ChatMessage) -> SendMessageResponse:
     B5: All persistence via EventStore → projector.flush(). No direct
     persist_message / SSE push calls.
     """
-    from ...core.goal import GoalStore
+    from strategy_research.apps.goal import GoalStore
 
     session_id = body.session_id
     content = body.content.strip()
@@ -113,7 +113,7 @@ def _goal_start(args: str, session_id: str, store: Any) -> str:
     /goal start = /study start without automatic execution.
     The study record is created for tracking but not submitted to the scheduler.
     """
-    from ...core.goal.context import default_goal_criteria
+    from strategy_research.apps.goal.context import default_goal_criteria
     from strategy_research.apps.study import StudyStore
 
     objective = args or "Research goal"
@@ -166,7 +166,7 @@ def _goal_status(args: str, session_id: str, store: Any) -> str:
 
 
 def _goal_evidence(args: str, session_id: str, store: Any) -> str:
-    from ...core.goal import EvidenceInput
+    from strategy_research.apps.goal import EvidenceInput
     current = store.get_current_goal(session_id)
     if current is None:
         return "No active goal. Create one first with /goal start <objective>."
@@ -199,7 +199,7 @@ def _goal_complete(args: str, session_id: str, store: Any) -> str:
 
 
 def _goal_cancel(args: str, session_id: str, store: Any) -> str:
-    from ...core.goal import GoalStatus
+    from strategy_research.apps.goal import GoalStatus
     current = store.get_current_goal(session_id)
     if current is None:
         return "No active goal to cancel."
@@ -234,8 +234,8 @@ def _emit_goal_sse_event(event_bus: Any, session_id: str, subcmd: str) -> None:
     chat-tool path — core/goal/events.py) so the frontend panel and
     the message-stream projector stay in sync.
     """
-    from ...core.goal import GoalStore
-    from ...core.goal.events import (
+    from strategy_research.apps.goal import GoalStore
+    from strategy_research.apps.goal.events import (
         CHANGE_TYPE_COMPLETE,
         CHANGE_TYPE_CREATE,
         CHANGE_TYPE_EVIDENCE,
@@ -540,8 +540,8 @@ def _study_start_cmd(rest: list[str], session_id: str) -> str:
     targets = flags["metric_targets"] or default_metric_targets()
 
     try:
-        from ...core.goal import GoalStore
-        from ...core.goal.context import default_goal_criteria
+        from strategy_research.apps.goal import GoalStore
+        from strategy_research.apps.goal.context import default_goal_criteria
         goal_store = GoalStore()
         goal = goal_store.replace_goal(
             session_id=session_id, objective=objective,
@@ -575,7 +575,7 @@ def _study_start_cmd(rest: list[str], session_id: str) -> str:
 
         # Phase 3: Build GoalWorkflowConfig for the 9-agent preset
         # (single factory — see core.goal.workflow_config).
-        from ...core.goal.workflow_config import build_autoresearch_workflow_config
+        from strategy_research.apps.goal.workflow_config import build_autoresearch_workflow_config
 
         config = build_autoresearch_workflow_config(
             strategy_name=strategy,
@@ -618,7 +618,7 @@ async def _start_workflow_runner(
     """Start a GoalWorkflowRunner for a /study start command."""
     from pathlib import Path
 
-    from ...core.goal.workflow import GoalWorkflowRunner
+    from strategy_research.apps.goal.workflow import GoalWorkflowRunner
 
     runner = GoalWorkflowRunner(
         config=config,

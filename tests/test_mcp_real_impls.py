@@ -311,7 +311,7 @@ class TestGoalEvidenceTools:
             pytest.skip("start_research_goal 失败")
 
         # 直接用 GoalStore 获取 criterion_id (避免 JSON 序列化格式问题)
-        from strategy_research.core.goal import GoalStore
+        from strategy_research.apps.goal import GoalStore
         store = GoalStore()
         criteria = store.list_criteria(goal_id)
         if not criteria:

@@ -198,7 +198,7 @@ class TestSyncInteractiveMode:
     def test_no_goal_store_defaults_to_chat(self):
         session, ctx, _ = self._make_session("goal")
         with mock.patch(
-            "strategy_research.core.goal.GoalStore",
+            "strategy_research.apps.goal.GoalStore",
             side_effect=ImportError("no module"),
         ):
             session._sync_interactive_mode()
@@ -209,7 +209,7 @@ class TestSyncInteractiveMode:
         mock_store = mock.MagicMock()
         mock_store.get_current_goal.return_value = {"title": "test goal"}
         with mock.patch(
-            "strategy_research.core.goal.GoalStore",
+            "strategy_research.apps.goal.GoalStore",
             return_value=mock_store,
         ):
             session._sync_interactive_mode()
@@ -220,7 +220,7 @@ class TestSyncInteractiveMode:
         mock_store = mock.MagicMock()
         mock_store.get_current_goal.return_value = None
         with mock.patch(
-            "strategy_research.core.goal.GoalStore",
+            "strategy_research.apps.goal.GoalStore",
             return_value=mock_store,
         ):
             session._sync_interactive_mode()
@@ -231,7 +231,7 @@ class TestSyncInteractiveMode:
         mock_store = mock.MagicMock()
         mock_store.get_current_goal.side_effect = RuntimeError("db locked")
         with mock.patch(
-            "strategy_research.core.goal.GoalStore",
+            "strategy_research.apps.goal.GoalStore",
             return_value=mock_store,
         ):
             session._sync_interactive_mode()
@@ -244,7 +244,7 @@ class TestSyncInteractiveMode:
         mock_bar = mock.MagicMock()
         app.query_one.return_value = mock_bar
         with mock.patch(
-            "strategy_research.core.goal.GoalStore",
+            "strategy_research.apps.goal.GoalStore",
             return_value=mock_store,
         ):
             session._sync_interactive_mode()
@@ -257,7 +257,7 @@ class TestSyncInteractiveMode:
         mock_store.get_current_goal.return_value = {"title": "x"}
         app.query_one.side_effect = Exception("widget not found")
         with mock.patch(
-            "strategy_research.core.goal.GoalStore",
+            "strategy_research.apps.goal.GoalStore",
             return_value=mock_store,
         ):
             session._sync_interactive_mode()  # should not raise
@@ -269,7 +269,7 @@ class TestSyncInteractiveMode:
         mock_store = mock.MagicMock()
         mock_store.get_current_goal.return_value = {"title": "x"}
         with mock.patch(
-            "strategy_research.core.goal.GoalStore",
+            "strategy_research.apps.goal.GoalStore",
             return_value=mock_store,
         ):
             session._sync_interactive_mode()

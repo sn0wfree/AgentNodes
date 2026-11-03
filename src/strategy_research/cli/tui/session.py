@@ -296,7 +296,7 @@ class ChatSession:
         unreachable).
         """
         try:
-            from strategy_research.core.goal import GoalStore
+            from strategy_research.apps.goal import GoalStore
             store = GoalStore()
             goal = store.get_current_goal(self.ctx.session_id)
             self.ctx.interactive_mode = "goal" if goal is not None else "chat"

@@ -15,13 +15,13 @@ from pathlib import Path
 
 import pytest
 
-from strategy_research.core.goal.workflow import (
+from strategy_research.apps.goal.workflow import (
     BranchConfig,
     GoalAgentConfig,
     GoalWorkflowConfig,
     GoalWorkflowGoalConfig,
 )
-from strategy_research.core.goal.workflow_config import (
+from strategy_research.apps.goal.workflow_config import (
     _resolve_yaml_path,
     _validate_config,
     list_goal_workflows,

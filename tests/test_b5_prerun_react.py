@@ -26,7 +26,7 @@ def _build(**kwargs):
 def test_goal_block_injected():
     provider = _build()
     with patch(
-        "strategy_research.core.goal.get_current_goal_context",
+        "strategy_research.apps.goal.get_current_goal_context",
         return_value=("<current-research-goal>G</current-research-goal>", None),
     ):
         items = provider.provide(ContextQuery(task_text="do work", session_id="s1"))
@@ -38,7 +38,7 @@ def test_goal_block_injected():
 def test_goal_disabled_skips_injection():
     provider = _build(enable_goal_injection=False)
     with patch(
-        "strategy_research.core.goal.get_current_goal_context",
+        "strategy_research.apps.goal.get_current_goal_context",
         return_value=("<current-research-goal>G</current-research-goal>", None),
     ):
         items = provider.provide(ContextQuery(task_text="do work", session_id="s1"))
@@ -48,7 +48,7 @@ def test_goal_disabled_skips_injection():
 def test_no_session_skips_injection():
     provider = _build()
     with patch(
-        "strategy_research.core.goal.get_current_goal_context",
+        "strategy_research.apps.goal.get_current_goal_context",
         return_value=("<current-research-goal>G</current-research-goal>", None),
     ):
         items = provider.provide(ContextQuery(task_text="do work"))
@@ -69,7 +69,7 @@ def test_memory_block_injected():
         "strategy_research.kernel.memory.persistent.PersistentMemory",
         return_value=_FakeMemory(),
     ), patch(
-        "strategy_research.core.goal.get_current_goal_context",
+        "strategy_research.apps.goal.get_current_goal_context",
         return_value=(None, None),
     ):
         items = provider.provide(ContextQuery(task_text="alpha?", session_id="s1"))
@@ -84,7 +84,7 @@ def test_memory_disabled_skips_injection():
         "strategy_research.kernel.memory.persistent.PersistentMemory",
         return_value=_FakeMemory(),
     ), patch(
-        "strategy_research.core.goal.get_current_goal_context",
+        "strategy_research.apps.goal.get_current_goal_context",
         return_value=(None, None),
     ):
         items = provider.provide(ContextQuery(task_text="alpha?", session_id="s1"))
@@ -105,7 +105,7 @@ def test_session_switches_per_query():
         return (None, None)
 
     with patch(
-        "strategy_research.core.goal.get_current_goal_context",
+        "strategy_research.apps.goal.get_current_goal_context",
         side_effect=fake_goal,
     ):
         provider.provide(ContextQuery(task_text="a", session_id="s1"))
@@ -125,7 +125,7 @@ def test_render_order_matches_agentloop():
     """
     provider = _build()
     with patch(
-        "strategy_research.core.goal.get_current_goal_context",
+        "strategy_research.apps.goal.get_current_goal_context",
         return_value=("<current-research-goal>G</current-research-goal>", None),
     ), patch(
         "strategy_research.kernel.memory.persistent.PersistentMemory",

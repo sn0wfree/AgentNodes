@@ -15,7 +15,7 @@ from pathlib import Path
 
 import pytest
 
-from strategy_research.core.goal import GoalStore
+from strategy_research.apps.goal import GoalStore
 from strategy_research.core.scheduled_research.executor import ScheduledResearchExecutor
 from strategy_research.core.scheduled_research.models import JobStatus, ScheduledResearchJob
 from strategy_research.core.scheduled_research.store import ScheduledResearchStore

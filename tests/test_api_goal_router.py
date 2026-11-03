@@ -330,7 +330,7 @@ class TestAuthRequired:
 class TestListWorkflowId:
     def test_list_returns_workflow_id_for_workflow_goals(self, app, client):
         """goal list 应透出 workflow_id（工作流启动的 goal 需用于恢复）。"""
-        from strategy_research.core.goal import GoalStore
+        from strategy_research.apps.goal import GoalStore
 
         with GoalStore(db_path=app.state.goal_db_path) as store:
             store.replace_goal(
@@ -353,7 +353,7 @@ class TestListWorkflowId:
 
     def test_list_workflow_id_survives_status_filter(self, app, client):
         """状态过滤后 workflow_id 仍保留。"""
-        from strategy_research.core.goal import GoalStore
+        from strategy_research.apps.goal import GoalStore
 
         with GoalStore(db_path=app.state.goal_db_path) as store:
             store.replace_goal(
@@ -377,7 +377,7 @@ class TestErrorBranches:
 
     def test_status_internal_error_returns_500(self, app, client, monkeypatch):
         """status 端点底层抛错时，端点兜底为 500 而非裸异常。"""
-        import strategy_research.core.goal as goal_module
+        import strategy_research.apps.goal as goal_module
 
         class _BoomStore:
             def __init__(self, *a, **k):
@@ -394,7 +394,7 @@ class TestErrorBranches:
         assert "status boom" in res.json()["detail"]
 
     def test_list_internal_error_returns_500(self, app, client, monkeypatch):
-        import strategy_research.core.goal as goal_module
+        import strategy_research.apps.goal as goal_module
 
         class _BoomStore:
             def __init__(self, *a, **k):
@@ -411,7 +411,7 @@ class TestErrorBranches:
         assert "list boom" in res.json()["detail"]
 
     def test_evidence_internal_error_returns_500(self, app, client, monkeypatch):
-        import strategy_research.core.goal as goal_module
+        import strategy_research.apps.goal as goal_module
 
         class _BoomStore:
             def __init__(self, *a, **k):
@@ -432,7 +432,7 @@ class TestErrorBranches:
         assert "evidence boom" in res.json()["detail"]
 
     def test_complete_internal_error_returns_500(self, app, client, monkeypatch):
-        import strategy_research.core.goal as goal_module
+        import strategy_research.apps.goal as goal_module
 
         class _BoomStore:
             def __init__(self, *a, **k):
@@ -454,8 +454,8 @@ class TestErrorBranches:
 
     def test_complete_stale_goal_returns_409(self, app, client, monkeypatch):
         """StaleGoalError（expected_goal_id 不匹配）→ 409。"""
-        import strategy_research.core.goal as goal_module
-        from strategy_research.core.goal.models import StaleGoalError
+        import strategy_research.apps.goal as goal_module
+        from strategy_research.apps.goal.models import StaleGoalError
 
         class FakeStore:
             def __init__(self, *a, **k):
@@ -465,7 +465,7 @@ class TestErrorBranches:
             def __exit__(self, *a):
                 return False
             def get_current_goal(self, session_id):
-                from strategy_research.core.goal.models import GoalRecord, GoalStatus, RiskTier
+                from strategy_research.apps.goal.models import GoalRecord, GoalStatus, RiskTier
                 return GoalRecord(
                     goal_id="current-goal",
                     session_id=session_id,

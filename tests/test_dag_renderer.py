@@ -20,7 +20,7 @@ from __future__ import annotations
 
 import pytest
 
-from strategy_research.core.goal.dag_renderer import (
+from strategy_research.apps.goal.dag_renderer import (
     NodeStatus,
     render_dag,
 )
@@ -221,7 +221,7 @@ class TestSaveGoalWorkflow:
     """save_goal_workflow should write atomically with backup."""
 
     def test_save_creates_file(self, tmp_path):
-        from strategy_research.core.goal.workflow_config import (
+        from strategy_research.apps.goal.workflow_config import (
             load_goal_workflow,
             save_goal_workflow,
         )
@@ -233,7 +233,7 @@ class TestSaveGoalWorkflow:
         assert "goal_factor_research" in content
 
     def test_save_creates_backup(self, tmp_path):
-        from strategy_research.core.goal.workflow_config import (
+        from strategy_research.apps.goal.workflow_config import (
             load_goal_workflow,
             save_goal_workflow,
         )
@@ -246,7 +246,7 @@ class TestSaveGoalWorkflow:
         assert bak.read_text(encoding="utf-8") == "original"
 
     def test_save_no_backup(self, tmp_path):
-        from strategy_research.core.goal.workflow_config import (
+        from strategy_research.apps.goal.workflow_config import (
             load_goal_workflow,
             save_goal_workflow,
         )
@@ -258,12 +258,12 @@ class TestSaveGoalWorkflow:
         assert not bak.exists()
 
     def test_save_validates_dag(self, tmp_path):
-        from strategy_research.core.goal.workflow import (
+        from strategy_research.apps.goal.workflow import (
             CompletionConfig,
             GoalWorkflowConfig,
             GoalWorkflowGoalConfig,
         )
-        from strategy_research.core.goal.workflow_config import save_goal_workflow
+        from strategy_research.apps.goal.workflow_config import save_goal_workflow
         # Create config with cyclic DAG
         config = GoalWorkflowConfig(
             name="cyclic_test",

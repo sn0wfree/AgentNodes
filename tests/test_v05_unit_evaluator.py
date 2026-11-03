@@ -16,7 +16,7 @@ from __future__ import annotations
 
 import pytest
 
-from strategy_research.core.goal.expression_evaluator import (
+from strategy_research.apps.goal.expression_evaluator import (
     ExpressionEvaluator,
     _parse_literal,
     _resolve_path,

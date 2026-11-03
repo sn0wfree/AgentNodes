@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import logging
 
-from strategy_research.core.goal.event_bus import (
+from strategy_research.apps.goal.event_bus import (
     CollectingObserver,
     GoalPanelObserver,
     LoggerObserver,
@@ -70,7 +70,7 @@ def test_emit_isolates_observer_failures(caplog):
     good = _RecordingObserver()
     bus.subscribe(_RaisingObserver())
     bus.subscribe(good)
-    with caplog.at_level(logging.WARNING, logger="strategy_research.core.goal.event_bus"):
+    with caplog.at_level(logging.WARNING, logger="strategy_research.apps.goal.event_bus"):
         bus.emit("agent_complete", agent_id="x")
     # The good observer still got the event.
     assert good.events == [("agent_complete", {"agent_id": "x"})]
@@ -107,7 +107,7 @@ def test_collecting_observer_appends_and_clears():
 
 
 def test_logger_observer_emits_info_log(caplog):
-    caplog.set_level(logging.INFO, logger="strategy_research.core.goal.event_bus")
+    caplog.set_level(logging.INFO, logger="strategy_research.apps.goal.event_bus")
     LoggerObserver().on_event("layer_start", {"layer": 2})
     assert any("workflow event" in r.message for r in caplog.records)
     assert any("layer_start" in r.message for r in caplog.records)
@@ -132,7 +132,7 @@ def test_goal_panel_observer_logs_when_panel_missing_method(caplog):
     class _Panel:
         pass
 
-    caplog.set_level(logging.WARNING, logger="strategy_research.core.goal.event_bus")
+    caplog.set_level(logging.WARNING, logger="strategy_research.apps.goal.event_bus")
     GoalPanelObserver(_Panel()).on_event("agent_complete", {})
     assert any("no on_workflow_event method" in r.message for r in caplog.records)
 
@@ -142,7 +142,7 @@ def test_goal_panel_observer_logs_unexpected_errors(caplog):
         def on_workflow_event(self, event, data):
             raise RuntimeError("panel boom")
 
-    caplog.set_level(logging.WARNING, logger="strategy_research.core.goal.event_bus")
+    caplog.set_level(logging.WARNING, logger="strategy_research.apps.goal.event_bus")
     GoalPanelObserver(_Panel()).on_event("agent_complete", {})
     assert any("GoalPanel update failed" in r.message for r in caplog.records)
 

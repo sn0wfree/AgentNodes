@@ -55,7 +55,7 @@ class TestSyncMode:
         mock_store = mock.MagicMock()
         mock_store.get_current_goal.return_value = None
         monkeypatch.setattr(
-            "strategy_research.core.goal.GoalStore",
+            "strategy_research.apps.goal.GoalStore",
             mock.MagicMock(return_value=mock_store),
         )
         session._sync_interactive_mode()
@@ -67,7 +67,7 @@ class TestSyncMode:
         mock_store = mock.MagicMock()
         mock_store.get_current_goal.return_value = fake_goal
         monkeypatch.setattr(
-            "strategy_research.core.goal.GoalStore",
+            "strategy_research.apps.goal.GoalStore",
             mock.MagicMock(return_value=mock_store),
         )
         session._sync_interactive_mode()
@@ -76,7 +76,7 @@ class TestSyncMode:
     def test_store_failure_falls_back_to_chat(self, monkeypatch):
         session = self._make_session()
         monkeypatch.setattr(
-            "strategy_research.core.goal.GoalStore",
+            "strategy_research.apps.goal.GoalStore",
             mock.MagicMock(side_effect=RuntimeError("db fail")),
         )
         session._sync_interactive_mode()
@@ -88,7 +88,7 @@ class TestSyncMode:
         mock_store = mock.MagicMock()
         mock_store.get_current_goal.return_value = None
         monkeypatch.setattr(
-            "strategy_research.core.goal.GoalStore",
+            "strategy_research.apps.goal.GoalStore",
             mock.MagicMock(return_value=mock_store),
         )
         session._sync_interactive_mode()

@@ -306,7 +306,7 @@ class MCPServer:
         def start_research_goal(objective: str = "", session_id: str = "default", **kwargs: Any) -> str:
             # Phase B: 真接 GoalStore (替代旧 stub 返回假数据)
             try:
-                from strategy_research.core.goal import GoalStore, RiskTier
+                from strategy_research.apps.goal import GoalStore, RiskTier
                 store = GoalStore()
                 goal = store.replace_goal(
                     session_id=session_id,
@@ -326,7 +326,7 @@ class MCPServer:
 
         def get_research_goal(session_id: str = "default", **kwargs: Any) -> str:
             try:
-                from strategy_research.core.goal import GoalStore
+                from strategy_research.apps.goal import GoalStore
                 store = GoalStore()
                 goal = store.get_current_goal(session_id)
                 if goal is None:
@@ -380,7 +380,7 @@ class MCPServer:
             **kwargs: Any,
         ) -> str:
             try:
-                from strategy_research.core.goal import EvidenceInput, GoalStore
+                from strategy_research.apps.goal import EvidenceInput, GoalStore
                 store = GoalStore()
                 if not goal_id:
                     return json.dumps({"status": "error", "error": "goal_id is required"}, ensure_ascii=False)
@@ -419,7 +419,7 @@ class MCPServer:
             **kwargs: Any,
         ) -> str:
             try:
-                from strategy_research.core.goal import GoalStatus, GoalStore
+                from strategy_research.apps.goal import GoalStatus, GoalStore
                 store = GoalStore()
                 if not goal_id:
                     return json.dumps({"status": "error", "error": "goal_id is required"}, ensure_ascii=False)

@@ -148,28 +148,28 @@ class TestCriterionIcon:
 
 class TestGoalTemplate:
     def test_five_predefined_templates(self):
-        from strategy_research.core.goal.templates import TEMPLATES
+        from strategy_research.apps.goal.templates import TEMPLATES
         assert len(TEMPLATES) == 5
 
     def test_get_template(self):
-        from strategy_research.core.goal.templates import get_template
+        from strategy_research.apps.goal.templates import get_template
         tmpl = get_template("factor_research")
         assert tmpl is not None
         assert tmpl.name == "因子研究"
         assert len(tmpl.criteria) == 4
 
     def test_get_unknown_template(self):
-        from strategy_research.core.goal.templates import get_template
+        from strategy_research.apps.goal.templates import get_template
         assert get_template("nonexistent") is None
 
     def test_list_templates(self):
-        from strategy_research.core.goal.templates import list_templates
+        from strategy_research.apps.goal.templates import list_templates
         templates = list_templates()
         assert "factor_research" in templates
         assert "market_analysis" in templates
 
     def test_template_names(self):
-        from strategy_research.core.goal.templates import template_names
+        from strategy_research.apps.goal.templates import template_names
         names = template_names()
         assert isinstance(names, list)
         assert len(names) == 5

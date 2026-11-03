@@ -10,7 +10,7 @@ from types import SimpleNamespace
 
 import pytest
 
-from strategy_research.core.goal.workflow import (
+from strategy_research.apps.goal.workflow import (
     GoalEvidenceCollector,
     GoalWorkflowState,
 )

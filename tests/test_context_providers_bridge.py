@@ -193,7 +193,7 @@ def _real_injectors(memory: _StubMemory, monkeypatch) -> list:
     )
 
     monkeypatch.setattr(
-        "strategy_research.core.goal.get_current_goal_context",
+        "strategy_research.apps.goal.get_current_goal_context",
         lambda session_id: (GOAL_BLOCK, None),
     )
     return [

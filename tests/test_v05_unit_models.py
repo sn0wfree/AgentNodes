@@ -13,14 +13,14 @@ from unittest.mock import MagicMock
 
 import pytest
 
-from strategy_research.core.goal.workflow import (
+from strategy_research.apps.goal.workflow import (
     BranchConfig,
     GoalAgentConfig,
     GoalEvidenceCollector,
     GoalWorkflowConfig,
     GoalWorkflowState,
 )
-from strategy_research.core.goal.workflow_config import load_goal_workflow
+from strategy_research.apps.goal.workflow_config import load_goal_workflow
 
 # _AgentConfigExecutor removed in P8 cleanup
 _AgentConfigExecutor = None  # type: ignore[assignment,misc]

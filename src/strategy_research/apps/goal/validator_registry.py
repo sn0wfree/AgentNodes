@@ -5,7 +5,7 @@ Wraps the existing ``AgentValidator`` from ``core/workflow/validator.py``
 registry so workflow YAML can reference validators by agent name.
 
 Usage:
-    from strategy_research.core.goal.validator_registry import (
+    from strategy_research.apps.goal.validator_registry import (
         ValidatorRegistry, register_default_validators,
     )
     register_default_validators()  # one-time bootstrap

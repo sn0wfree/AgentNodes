@@ -52,9 +52,9 @@ class GoalCompleteRequest(BaseModel):
 async def goal_start(req: GoalStartRequest, request: Request):
     """创建新 research goal。"""
     try:
-        from ...core.goal import GoalStore, RiskTier
-        from ...core.goal.context import default_goal_criteria
-        from ...core.goal.events import (
+        from strategy_research.apps.goal import GoalStore, RiskTier
+        from strategy_research.apps.goal.context import default_goal_criteria
+        from strategy_research.apps.goal.events import (
             CHANGE_TYPE_CREATE,
         )
 
@@ -87,7 +87,7 @@ async def goal_start(req: GoalStartRequest, request: Request):
 async def goal_status(session_id: str, request: Request):
     """获取当前 goal 状态（含 criteria / evidence_count / progress 完整快照）。"""
     try:
-        from ...core.goal import GoalStore
+        from strategy_research.apps.goal import GoalStore
 
         _session_owned(request, session_id)
         db_path = getattr(request.app.state, "goal_db_path", None)
@@ -133,7 +133,7 @@ async def goal_list(
 ):
     """列出 goals。"""
     try:
-        from ...core.goal import GoalStatus, GoalStore
+        from strategy_research.apps.goal import GoalStatus, GoalStore
 
         db_path = getattr(request.app.state, "goal_db_path", None)
         status_filter = GoalStatus(status) if status else None
@@ -166,8 +166,8 @@ async def goal_list(
 async def goal_evidence(req: GoalEvidenceRequest, request: Request):
     """添加 evidence。"""
     try:
-        from ...core.goal import EvidenceInput, GoalStore
-        from ...core.goal.events import (
+        from strategy_research.apps.goal import EvidenceInput, GoalStore
+        from strategy_research.apps.goal.events import (
             CHANGE_TYPE_EVIDENCE,
         )
 
@@ -207,8 +207,8 @@ async def goal_evidence(req: GoalEvidenceRequest, request: Request):
 @router.post("/complete")
 async def goal_complete(req: GoalCompleteRequest, request: Request):
     """完成 goal。"""
-    from ...core.goal import GoalStatus, GoalStore, StaleGoalError
-    from ...core.goal.events import CHANGE_TYPE_COMPLETE
+    from strategy_research.apps.goal import GoalStatus, GoalStore, StaleGoalError
+    from strategy_research.apps.goal.events import CHANGE_TYPE_COMPLETE
 
     try:
         db_path = getattr(request.app.state, "goal_db_path", None)
@@ -265,7 +265,7 @@ def _emit_goal_updated(
     will still surface the new state).
     """
     try:
-        from ...core.goal.events import build_goal_updated_payload
+        from strategy_research.apps.goal.events import build_goal_updated_payload
         from .chat import _get_session_service
 
         service = _get_session_service()

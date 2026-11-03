@@ -99,7 +99,7 @@ class TestGoalContextInjectorEdgeCases:
         # Mock get_current_goal_context to return a known value
         import unittest.mock as mock
         with mock.patch(
-            "strategy_research.core.goal.get_current_goal_context",
+            "strategy_research.apps.goal.get_current_goal_context",
             return_value=("GOAL CONTEXT", {}),
         ):
             result = inj.inject_pre_run(loop, "original task", [])
@@ -114,7 +114,7 @@ class TestGoalContextInjectorEdgeCases:
         loop.session_id = "abc"
         import unittest.mock as mock
         with mock.patch(
-            "strategy_research.core.goal.get_current_goal_context",
+            "strategy_research.apps.goal.get_current_goal_context",
             return_value=("", {}),
         ):
             result = inj.inject_pre_run(loop, "original task", [])
@@ -185,10 +185,10 @@ class TestGoalContinuationInjectorEdgeCases:
             "strategy_research.core.agent.context_injector._get_goal_snapshot",
             return_value={"goal": {"goal_id": "g1"}},
         ), mock.patch(
-            "strategy_research.core.goal.context.goal_needs_continuation",
+            "strategy_research.apps.goal.context.goal_needs_continuation",
             return_value=True,
         ), mock.patch(
-            "strategy_research.core.goal.context.format_goal_continuation_prompt",
+            "strategy_research.apps.goal.context.format_goal_continuation_prompt",
             return_value="Continue the research.",
         ):
             cont = inj.inject_post_response(loop, response, messages, result, 1)

@@ -135,7 +135,7 @@ _goal_store_cache: dict[Path, Any] = {}
 
 def _get_goal_store() -> Any:
     """Return the cached GoalStore for the default goal DB path."""
-    from ..goal.store import GoalStore
+    from strategy_research.apps.goal.store import GoalStore
     store = GoalStore()
     key = store.db_path
     cached = _goal_store_cache.get(key)

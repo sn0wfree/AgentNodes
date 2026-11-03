@@ -17,7 +17,7 @@ from types import SimpleNamespace
 
 import pytest
 
-from strategy_research.core.goal.workflow_hook import GoalWorkflowHook
+from strategy_research.apps.goal.workflow_hook import GoalWorkflowHook
 from strategy_research.kernel.swarm.runtime import AgentResult, AgentStatus
 
 

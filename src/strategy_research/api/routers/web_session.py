@@ -512,7 +512,7 @@ async def get_session_state(session_id: str, request: Request):
         wf_name = goal_rec.get("workflow_id") or ""
         if wf_name:
             try:
-                from ...core.goal.workflow_config import load_goal_workflow
+                from strategy_research.apps.goal.workflow_config import load_goal_workflow
 
                 cfg = load_goal_workflow(wf_name)
                 workflow = _shape_workflow_for_frontend_from_config(cfg, wf_name)

@@ -13,7 +13,7 @@ from pathlib import Path
 
 import pytest
 
-from strategy_research.core.goal import GoalStore
+from strategy_research.apps.goal import GoalStore
 from strategy_research.apps.hypothesis import HypothesisRegistry, HypothesisStore
 
 # ─── Fixtures ─────────────────────────────────────────────────────────

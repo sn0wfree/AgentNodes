@@ -235,7 +235,7 @@ class TestGoalNeedsContinuationEdgeCases:
         }
 
     def _get_function(self):
-        from strategy_research.core.goal.context import goal_needs_continuation
+        from strategy_research.apps.goal.context import goal_needs_continuation
         return goal_needs_continuation
 
     def test_empty_criteria_returns_false(self):

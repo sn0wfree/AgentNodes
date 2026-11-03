@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import pytest
 
-from strategy_research.core.goal.workflow_config import (
+from strategy_research.apps.goal.workflow_config import (
     list_goal_workflows,
     load_goal_workflow,
     save_goal_workflow,
@@ -29,7 +29,7 @@ def test_list_returns_builtin_presets():
 def test_list_ignores_unparseable_yaml(tmp_path, monkeypatch):
     """A broken YAML in the user dir must not break the whole list."""
     monkeypatch.setattr(
-        "strategy_research.core.goal.workflow_config._USER_WORKFLOWS_DIR",
+        "strategy_research.apps.goal.workflow_config._USER_WORKFLOWS_DIR",
         tmp_path,
     )
     (tmp_path / "broken.yaml").write_text("not: a, valid: yaml: :", encoding="utf-8")
@@ -109,7 +109,7 @@ def test_load_applies_default_values():
 
 
 def test_save_round_trip(tmp_path):
-    from strategy_research.core.goal.workflow import (
+    from strategy_research.apps.goal.workflow import (
         CompletionConfig,
         GoalAgentConfig,
         GoalWorkflowConfig,
@@ -143,7 +143,7 @@ def test_save_round_trip(tmp_path):
 
 
 def test_save_creates_backup_when_overwriting(tmp_path):
-    from strategy_research.core.goal.workflow import (
+    from strategy_research.apps.goal.workflow import (
         CompletionConfig,
         GoalAgentConfig,
         GoalWorkflowConfig,
@@ -172,7 +172,7 @@ def test_save_creates_backup_when_overwriting(tmp_path):
 
 
 def test_save_rejects_cycle_in_dag(tmp_path):
-    from strategy_research.core.goal.workflow import (
+    from strategy_research.apps.goal.workflow import (
         CompletionConfig,
         GoalAgentConfig,
         GoalWorkflowConfig,
@@ -198,7 +198,7 @@ def test_save_rejects_cycle_in_dag(tmp_path):
 
 
 def test_save_no_backup_when_disabled(tmp_path):
-    from strategy_research.core.goal.workflow import (
+    from strategy_research.apps.goal.workflow import (
         CompletionConfig,
         GoalAgentConfig,
         GoalWorkflowConfig,

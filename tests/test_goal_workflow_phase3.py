@@ -39,22 +39,22 @@ from unittest import mock
 
 import pytest
 
-from strategy_research.core.goal.event_bus import (
+from strategy_research.apps.goal.event_bus import (
     CollectingObserver,
     MetricsObserver,
     WorkflowEventBus,
 )
-from strategy_research.core.goal.expression_evaluator import (
+from strategy_research.apps.goal.expression_evaluator import (
     evaluate_condition,
 )
-from strategy_research.core.goal.workflow import (
+from strategy_research.apps.goal.workflow import (
     GoalAgentConfig,
     GoalWorkflowConfig,
     GoalWorkflowGoalConfig,
     GoalWorkflowRunner,
     GoalWorkflowState,
 )
-from strategy_research.core.goal.workflow_hook import GoalWorkflowHook
+from strategy_research.apps.goal.workflow_hook import GoalWorkflowHook
 from strategy_research.kernel.swarm.runtime import AgentResult, SwarmPreset, SwarmRuntime
 from strategy_research.kernel.workflow.types import AgentStatus, SwarmHook
 
@@ -323,7 +323,7 @@ class TestBranchWiring:
 class TestProgressTracking:
     def test_hook_updates_runner_state(self):
         """Hook on_layer_start / on_agent_complete update runner state."""
-        from strategy_research.core.goal.workflow import GoalWorkflowState
+        from strategy_research.apps.goal.workflow import GoalWorkflowState
         state = GoalWorkflowState()
         runner = mock.MagicMock()
         runner._state = state
@@ -343,7 +343,7 @@ class TestProgressTracking:
         assert state.agent_statuses["a"] == "success"
 
     def test_progress_total_layers_uses_topological(self):
-        from strategy_research.core.goal.workflow import (
+        from strategy_research.apps.goal.workflow import (
             GoalAgentConfig,
             GoalWorkflowConfig,
             GoalWorkflowGoalConfig,
@@ -374,7 +374,7 @@ class TestResumeAndContinue:
 
     def test_resume_raises_when_no_checkpoint(self, tmp_path, monkeypatch):
         """Calling resume_and_continue without a checkpoint must raise."""
-        from strategy_research.core.goal.workflow import (
+        from strategy_research.apps.goal.workflow import (
             GoalAgentConfig,
             GoalWorkflowConfig,
             GoalWorkflowGoalConfig,

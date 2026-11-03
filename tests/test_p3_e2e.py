@@ -38,7 +38,7 @@ def isolated_subsystems(tmp_path, monkeypatch):
 class TestGoalHypothesisValidationLifecycle:
     def test_full_e2e(self, cfg, registry, tmp_path, monkeypatch):
         """Start a goal, run AgentLoop (auto-creates hypothesis), validate."""
-        from strategy_research.core.goal import GoalStore
+        from strategy_research.apps.goal import GoalStore
         store = GoalStore()
         store.replace_goal(session_id='sess_e2e', objective='Validate momentum hypothesis via Monte Carlo', criteria=['Define universe', 'Run backtest', 'Validate'])
 
@@ -113,7 +113,7 @@ class TestGoalHypothesisValidationLifecycle:
         """Full goal lifecycle: start → evidence → audit → complete."""
         import hashlib
 
-        from strategy_research.core.goal import AuditRow, EvidenceInput, GoalStatus, GoalStore
+        from strategy_research.apps.goal import AuditRow, EvidenceInput, GoalStatus, GoalStore
 
         store = GoalStore()
         goal = store.replace_goal(
@@ -199,7 +199,7 @@ class TestValidationIntegration:
 class TestGoalContextFlowsToAgent:
     def test_goal_objective_in_user_message(self, cfg, registry, monkeypatch):
         """The goal objective should appear in the user message after AgentLoop injects it."""
-        from strategy_research.core.goal import GoalStore
+        from strategy_research.apps.goal import GoalStore
         GoalStore().replace_goal(
             session_id="sess_ctx_flow",
             objective="FIND_THIS_IN_USER_MSG",

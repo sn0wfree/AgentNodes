@@ -735,7 +735,7 @@ def _build_parser() -> tuple[argparse.ArgumentParser, dict[str, argparse.Argumen
     add_schedule_subparsers(subparsers)
 
     # goal (P3-a)
-    from strategy_research.core.goal.cli import add_goal_subparsers
+    from strategy_research.apps.goal.cli import add_goal_subparsers
     add_goal_subparsers(subparsers)
 
     # hypothesis (P3-b)
@@ -1002,7 +1002,7 @@ def _dispatch_schedule(args, parsers) -> int:
 
 def _dispatch_goal(args, parsers) -> int:
     """Dispatch the goal subcommand."""
-    from strategy_research.core.goal.cli import (
+    from strategy_research.apps.goal.cli import (
         cmd_goal_audit,
         cmd_goal_cancel,
         cmd_goal_complete,

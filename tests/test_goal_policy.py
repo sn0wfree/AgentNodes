@@ -8,7 +8,7 @@ from __future__ import annotations
 
 import pytest
 
-from strategy_research.core.goal.policy import (
+from strategy_research.apps.goal.policy import (
     normalize_required_text,
     reject_live_execution_objective,
 )

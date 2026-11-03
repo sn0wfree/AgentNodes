@@ -8,7 +8,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
 
-from strategy_research.core.goal.expression_evaluator import (
+from strategy_research.apps.goal.expression_evaluator import (
     ExpressionEvaluator,
     _parse_literal,
     _resolve_path,

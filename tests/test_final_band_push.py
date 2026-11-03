@@ -14,7 +14,7 @@ import pytest
 from strategy_research.core.agent.context_injector import (
     MemoryRetrieverInjector,
 )
-from strategy_research.core.goal.workflow_hook import GoalWorkflowHook
+from strategy_research.apps.goal.workflow_hook import GoalWorkflowHook
 from strategy_research.apps.study.scheduler import StudyScheduler
 
 
@@ -56,7 +56,7 @@ def test_hook_parse_output_dict_form():
 
 def test_hook_layer_result_capture_failure_tolerated():
     """_parse_output 抛错 → 记警告跳过（不影响其他 agent）。"""
-    from strategy_research.core.goal.workflow_hook import GoalWorkflowHook
+    from strategy_research.apps.goal.workflow_hook import GoalWorkflowHook
 
     h = GoalWorkflowHook.__new__(GoalWorkflowHook)
     h._session_id = "s"
@@ -87,7 +87,7 @@ def test_hook_layer_result_capture_failure_tolerated():
 
 def test_hook_criteria_auto_complete_via_coverage():
     """全部 required 准则被证据覆盖 → on_layer_complete 触发自动完成。"""
-    from strategy_research.core.goal.workflow_hook import GoalWorkflowHook
+    from strategy_research.apps.goal.workflow_hook import GoalWorkflowHook
 
     snapshot = {
         "criteria": [{"criterion_id": "c1", "required": True}],
@@ -394,7 +394,7 @@ def test_list_goals_invalid_status_is_actionable(tmp_path, monkeypatch):
     from strategy_research.core.agent.builtin_tools.goal_tools import (
         ListGoalsTool,
     )
-    from strategy_research.core.goal.store import GoalStore
+    from strategy_research.apps.goal.store import GoalStore
     from strategy_research.core.agent.tools import ToolContext
 
     db = tmp_path / "goals3.db"

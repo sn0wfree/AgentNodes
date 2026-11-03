@@ -9,7 +9,7 @@ from __future__ import annotations
 
 from typing import Any
 
-from strategy_research.core.goal.context import (
+from strategy_research.apps.goal.context import (
     CONTINUABLE_GOAL_STATUSES,
     OPEN_CRITERION_STATUSES,
     criterion_is_covered,
@@ -20,7 +20,7 @@ from strategy_research.core.goal.context import (
     goal_needs_continuation,
     goal_progress_tuple,
 )
-from strategy_research.core.goal.models import GoalStatus
+from strategy_research.apps.goal.models import GoalStatus
 
 # ─── Constants ────────────────────────────────────────────────────────────
 
@@ -339,7 +339,7 @@ class TestGetCurrentGoalContext:
 
     def test_no_goal_returns_empty(self, tmp_path):
         """No current goal in DB → empty tuple."""
-        from strategy_research.core.goal import GoalStore
+        from strategy_research.apps.goal import GoalStore
         GoalStore(db_path=tmp_path / "g.db")
         # Empty session has no goal
         # get_current_goal_context uses default DB path, so we can't fully test in isolation.
@@ -353,7 +353,7 @@ class TestGetCurrentGoalContext:
 class TestIntegrationWithStore:
     def test_full_flow_renders(self, tmp_path):
         """End-to-end: create goal via store, format via context."""
-        from strategy_research.core.goal import (
+        from strategy_research.apps.goal import (
             EvidenceInput,
             GoalStore,
         )

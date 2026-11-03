@@ -14,7 +14,7 @@ Reference: docs/phase-4-plan.md §7.3.
 """
 from __future__ import annotations
 
-from strategy_research.core.goal.dag_renderer import NodeStatus
+from strategy_research.apps.goal.dag_renderer import NodeStatus
 
 # ─── Basic rendering ──────────────────────────────────────────────────
 

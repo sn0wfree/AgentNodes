@@ -7,7 +7,7 @@ import os
 
 import pytest
 
-from strategy_research.core.goal.store import GoalStore
+from strategy_research.apps.goal.store import GoalStore
 from strategy_research.apps.study.runner import (
     AutoresearchRunner,
     ControlToken,

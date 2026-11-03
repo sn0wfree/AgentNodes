@@ -78,7 +78,7 @@ def store(tmp_path: Path):
 
 @pytest.fixture
 def goal_store():
-    from strategy_research.core.goal import GoalStore
+    from strategy_research.apps.goal import GoalStore
     return GoalStore()
 
 
@@ -858,7 +858,7 @@ class TestAEGISHelpers:
         assert ctx == ""
 
     def test_build_scoreboard_context_with_scoreboard(self, store, goal_store):
-        from strategy_research.core.goal.scoreboard import LeverScoreboard
+        from strategy_research.apps.goal.scoreboard import LeverScoreboard
         _, study = _make_study(store, goal_store)
         runner = AutoresearchRunner(study, store)
         runner._scoreboard = LeverScoreboard()
@@ -1222,13 +1222,13 @@ class TestAttributionEdgeCases:
 
 class TestScoreboard:
     def test_empty_board_context(self):
-        from strategy_research.core.goal.scoreboard import LeverScoreboard
+        from strategy_research.apps.goal.scoreboard import LeverScoreboard
         board = LeverScoreboard()
         ctx = board.build_scoreboard_context()
         assert isinstance(ctx, str)
 
     def test_update_single_lever(self):
-        from strategy_research.core.goal.scoreboard import LeverScoreboard
+        from strategy_research.apps.goal.scoreboard import LeverScoreboard
         board = LeverScoreboard()
         board.update(["action"], {"calmar": "flipped"}, "accepted", 1, 1)
         stats = [s for s in board.get_scoreboard() if s.lever == "action"][0]
@@ -1236,7 +1236,7 @@ class TestScoreboard:
         assert stats.accepted == 1
 
     def test_update_multiple_levers(self):
-        from strategy_research.core.goal.scoreboard import LeverScoreboard
+        from strategy_research.apps.goal.scoreboard import LeverScoreboard
         board = LeverScoreboard()
         board.update(["action", "configuration"], {"calmar": "flipped"}, "accepted", 1, 1)
         action_stats = [s for s in board.get_scoreboard() if s.lever == "action"][0]
@@ -1245,14 +1245,14 @@ class TestScoreboard:
         assert config_stats.attempts == 1
 
     def test_reverted_outcome(self):
-        from strategy_research.core.goal.scoreboard import LeverScoreboard
+        from strategy_research.apps.goal.scoreboard import LeverScoreboard
         board = LeverScoreboard()
         board.update(["action"], {"calmar": "still_F"}, "reverted", 1, 1)
         stats = [s for s in board.get_scoreboard() if s.lever == "action"][0]
         assert stats.reverted == 1
 
     def test_scoreboard_context_after_updates(self):
-        from strategy_research.core.goal.scoreboard import LeverScoreboard
+        from strategy_research.apps.goal.scoreboard import LeverScoreboard
         board = LeverScoreboard()
         board.update(["action"], {"calmar": "flipped"}, "accepted", 1, 1)
         board.update(["action"], {"calmar": "still_T"}, "accepted", 2, 2)
@@ -1260,14 +1260,14 @@ class TestScoreboard:
         assert "action" in ctx
 
     def test_get_best_lever(self):
-        from strategy_research.core.goal.scoreboard import LeverScoreboard
+        from strategy_research.apps.goal.scoreboard import LeverScoreboard
         board = LeverScoreboard()
         board.update(["action"], {"calmar": "flipped"}, "accepted", 1, 1)
         best = board.get_best_lever()
         assert best == "action"
 
     def test_lever_fatigue_detection(self):
-        from strategy_research.core.goal.scoreboard import LeverScoreboard
+        from strategy_research.apps.goal.scoreboard import LeverScoreboard
         board = LeverScoreboard()
         # 3 rounds with same low precision → fatigued
         for i in range(3):

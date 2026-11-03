@@ -62,8 +62,8 @@ def _emit_goal_event(
     if not isinstance(result, dict) or result.get("status") != "ok":
         return
 
-    from ...core.goal import GoalStore
-    from ...core.goal.events import build_goal_updated_payload
+    from strategy_research.apps.goal import GoalStore
+    from strategy_research.apps.goal.events import build_goal_updated_payload
 
     truncate = 100
     if cfg is not None and cfg.compact_config is not None:

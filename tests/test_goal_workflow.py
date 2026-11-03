@@ -53,7 +53,7 @@ from unittest import mock
 
 import pytest
 
-from strategy_research.core.goal.workflow import (
+from strategy_research.apps.goal.workflow import (
     BranchConfig,
     CompletionConfig,
     GoalAgentConfig,
@@ -262,19 +262,19 @@ class TestGoalWorkflowRunner:
 
 class TestYAMLLoading:
     def test_load_existing_preset(self):
-        from strategy_research.core.goal.workflow_config import load_goal_workflow
+        from strategy_research.apps.goal.workflow_config import load_goal_workflow
         config = load_goal_workflow("goal_factor_research")
         assert config.name == "goal_factor_research"
         assert len(config.agents) == 4
         assert len(config.dag) == 4
 
     def test_load_nonexistent_raises(self):
-        from strategy_research.core.goal.workflow_config import load_goal_workflow
+        from strategy_research.apps.goal.workflow_config import load_goal_workflow
         with pytest.raises(FileNotFoundError):
             load_goal_workflow("nonexistent_workflow_xyz")
 
     def test_list_workflows(self):
-        from strategy_research.core.goal import list_goal_workflows
+        from strategy_research.apps.goal import list_goal_workflows
         workflows = list_goal_workflows()
         assert len(workflows) >= 1
         names = [w["name"] for w in workflows]

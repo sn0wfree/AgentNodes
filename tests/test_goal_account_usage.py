@@ -6,7 +6,7 @@ from pathlib import Path
 
 import pytest
 
-from strategy_research.core.goal import GoalStatus, GoalStore
+from strategy_research.apps.goal import GoalStatus, GoalStore
 
 
 @pytest.fixture
@@ -189,7 +189,7 @@ class TestNegativeDelta:
 
 class TestStaleGoal:
     def test_wrong_expected_goal_id_raises(self, store, goal_with_budgets):
-        from strategy_research.core.goal.models import StaleGoalError
+        from strategy_research.apps.goal.models import StaleGoalError
 
         with pytest.raises(StaleGoalError):
             store.account_usage(

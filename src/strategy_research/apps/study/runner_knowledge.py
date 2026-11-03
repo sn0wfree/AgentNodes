@@ -75,7 +75,7 @@ class RunnerKnowledgeMixin:
         sid = self._get_study().study_id
         session = self._get_study().session_id
         try:
-            from strategy_research.core.goal import EvidenceInput
+            from strategy_research.apps.goal import EvidenceInput
             ev = self._goal_store.append_evidence(
                 session_id=session,
                 goal_id=self._get_study().goal_id,
