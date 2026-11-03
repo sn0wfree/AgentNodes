@@ -463,7 +463,7 @@ class FactorStrategy:
         factor_values: dict[str, Any],
     ) -> None:
         """Evaluate an expression factor per-asset into a wide DataFrame."""
-        from strategy_research.core.compute_factor import FactorComputeError, compute_factor
+        from strategy_research.apps.compute_factor import FactorComputeError, compute_factor
 
         if ohlcv_panels is None:
             logger.warning(

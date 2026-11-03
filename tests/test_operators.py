@@ -16,7 +16,7 @@ import numpy as np
 import pandas as pd
 import pytest
 
-from strategy_research.core.compute_factor import OPERATORS
+from strategy_research.apps.compute_factor import OPERATORS
 
 warnings.filterwarnings("ignore")
 

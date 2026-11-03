@@ -696,7 +696,7 @@ class AutoresearchRunner(RunnerAegisMixin, RunnerKnowledgeMixin):
         # ── research discipline: B2 health scan (observation-first,
         # docs/phase1-research-discipline.md §3) ──
         try:
-            from strategy_research.core.strategy_acceptance.health import health_check
+            from .health import health_check
 
             findings = health_check(metrics)
             if findings:

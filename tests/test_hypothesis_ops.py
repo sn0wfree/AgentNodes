@@ -22,7 +22,7 @@ import pytest
 from hypothesis import HealthCheck, example, given, settings
 from hypothesis import strategies as st
 
-from strategy_research.core.compute_factor import OPERATORS
+from strategy_research.apps.compute_factor import OPERATORS
 
 warnings.filterwarnings("ignore")
 

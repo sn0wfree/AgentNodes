@@ -102,7 +102,7 @@ def compute_factors(prices: pd.DataFrame, factor_exprs: list[dict]) -> dict[str,
     # 导入因子计算模块
     try:
         sys.path.insert(0, str(Path(__file__).parent.parent.parent))
-        from strategy_research.core.compute_factor import FactorComputeError, compute_factor
+        from strategy_research.apps.compute_factor import FactorComputeError, compute_factor
     except ImportError:
         print("⚠️  无法导入 compute_factor，使用简单因子")
         return _compute_simple_factors(prices, factor_exprs)

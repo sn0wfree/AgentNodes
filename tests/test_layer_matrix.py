@@ -56,7 +56,7 @@ LAYER_MEMBERSHIP: dict[str, str] = {
     "strategy_research.apps.data_import": "L2",
     "strategy_research.apps.data_readiness": "L2",
     "strategy_research.core.db": "L2",
-    "strategy_research.core.compute_factor": "L2",
+    "strategy_research.apps.compute_factor": "L2",
     "strategy_research.apps.factor_validate": "L2",
     "strategy_research.apps.config_runner": "L2",
     "strategy_research.core.strategy_acceptance": "L2",
@@ -109,18 +109,20 @@ SKIP_MODULES = {"strategy_research", "strategy_research.core"}
 # ── ratchet baselines (ADR-000 物理口径 2026-11-03；只降不升) ────────
 
 # 口径：每条 import 语句计 1（同节点多 alias 指向同层不重复）。
-# v7.2 归层后复算（core/tools→L2、core/registry→L4）：
-#   G2a pending（9 语句）：event_store→api.projector、memory_manager→api.web_session_db、
+# 2026-11-03 W3a 复算：_resolve_targets 修正后（绝对导入不再按 alias 展开
+# 重复计数），实测远低于 2026-11-03 首版基线（那版被 alias 展开虚增）：
+#   L3>L1 2→1 · L3>L2 46→35 · L4>L2 2→0 · L4>L3 4→2
+# 按“只降不升”同步下调，避免基线长期虚高掩盖真实回退。
+# G2a pending：event_store→api.projector、memory_manager→api.web_session_db、
 #   study/scheduler→api.routers.web_session、platform_store→orchestration.contracts、
-#   llm/config→agent.compact、llm/parser→agent.structured_output、
-#   utils/{backtest,strategy}_engine→backtest_models
-#   G2b pending：L3→L2 = 46 条语句（builtin_tools 为主体 → CapabilityRegistry 端口化）
+#   llm/config→agent.compact、llm/parser→agent.structured_output 等
+# G2b pending：L3→L2 = 35 条语句（builtin_tools 为主体 → CapabilityRegistry 端口化）
 BASELINE: dict[str, int] = {
     "L2>L1": 1,   # G2a
-    "L3>L1": 2,   # G2a
-    "L3>L2": 46,  # G2b（工具层绑定领域能力）
-    "L4>L2": 2,   # G2a
-    "L4>L3": 4,   # G2a
+    "L3>L1": 1,   # G2a
+    "L3>L2": 35,  # G2b（工具层绑定领域能力）
+    "L4>L2": 0,   # G2a（已清零）
+    "L4>L3": 2,   # G2a
 }
 
 
@@ -142,9 +144,13 @@ def _module_name(path: Path) -> str:
 def _resolve_targets(node: ast.AST, importer_mod: str, is_pkg: bool) -> list[str]:
     """Absolute module names referenced by an Import/ImportFrom node.
 
-    ADR-000（2026-11-03）：物理口径——每条 import **语句**计 1 次。同一节点的
-    多个 alias 指向同一模块时不重复计数（旧行为 module+alias 各计一次，把
-    `from ...tools.x import y` 数成 2，虚增簇基线）。
+    ADR-000（2026-11-03）：物理口径——每条 import **语句**计 1 次。
+
+    对 ``from X import a, b`` 只产出模块 ``X``（一个元素），不做
+    ``X.a`` / ``X.b`` 展开：展开会让**绝对导入**被重复计数，而相对导入
+    因为 target 相同被 set 去重只计 1 —— 两种形态计法不一致，会把
+    L3>L2 从 46 虚增到 47（2026-11-03 W3a 发现）。符号级信息由
+    graphify 图负责，本门禁只做层方向判定。
     """
     if isinstance(node, ast.Import):
         return sorted({a.name for a in node.names})
@@ -155,16 +161,13 @@ def _resolve_targets(node: ast.AST, importer_mod: str, is_pkg: bool) -> list[str
     # PEP 328: strip level-1 components (NOT level)
     if node.level > 1:
         pkg = pkg[: len(pkg) - (node.level - 1)]
+    if not node.module and not node.level:
+        return []
     target = ".".join(pkg + ([node.module] if node.module else []))
-    out: set[str] = set()
-    if node.module or node.level:
-        out.add(target)
-    for a in node.names:
-        if node.level == 0 and node.module:
-            out.add(f"{node.module}.{a.name}")
-        else:
-            out.add(target)
-    return sorted(out)
+    # `from . import a, b` (module is None): each name is its own module.
+    if not node.module:
+        return sorted({f"{target}.{a.name}" for a in node.names})
+    return [target]
 
 
 def _collect() -> tuple[dict[str, int], dict[tuple[str, str], int]]:

@@ -15,7 +15,7 @@ import duckdb
 import pytest
 
 from strategy_research.core import db
-from strategy_research.core.compute_factor import (
+from strategy_research.apps.compute_factor import (
     COMPLEXITY_WEIGHTS,
     analyze_complexity,
 )

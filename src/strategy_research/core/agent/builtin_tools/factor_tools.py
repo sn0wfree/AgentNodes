@@ -5,7 +5,7 @@ from __future__ import annotations
 import logging
 from typing import cast
 
-from ...compute_factor import FactorComputeError, compute_factor
+from strategy_research.apps.compute_factor import FactorComputeError, compute_factor
 from ..tools import (
     BaseTool,
     ToolContext,

@@ -286,7 +286,7 @@ def _check_factor_syntax(cfg: dict | None) -> list[ReadinessCheck]:
             detail="config 未声明 factors",
             fix_hint="在 config.yaml 的 factors 声明因子表达式",
         )]
-    from strategy_research.core.compute_factor import _tokenize
+    from strategy_research.apps.compute_factor import _tokenize
 
     bad: list[str] = []
     for f in factors:

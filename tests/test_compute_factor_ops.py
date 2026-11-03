@@ -1,4 +1,4 @@
-"""H 档补测 —— `core/compute_factor.py` 的算子库冒烟 + 关键语义。
+"""H 档补测 —— `apps/compute_factor.py` 的算子库冒烟 + 关键语义。
 
 604 行 / 80+ 算子，此前 42.6%：大量单行算子（ts_* / expanding_* / ewm_* /
 截面与二元运算）零覆盖。它们是纯 pandas 变换，用参数化冒烟一次覆盖；
@@ -15,7 +15,7 @@ import numpy as np
 import pandas as pd
 import pytest
 
-from strategy_research.core import compute_factor as cf
+from strategy_research.apps import compute_factor as cf
 
 
 @pytest.fixture

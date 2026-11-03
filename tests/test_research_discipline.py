@@ -10,7 +10,7 @@ from __future__ import annotations
 import re
 from pathlib import Path
 
-from strategy_research.core.strategy_acceptance.health import health_check
+from strategy_research.core.study.health import health_check
 from strategy_research.core.study.round_manifest import (
     CONCLUSION_LABELS,
     build_manifest,

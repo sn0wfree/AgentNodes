@@ -10,7 +10,7 @@ import numpy as np
 import pandas as pd
 import pytest
 
-from strategy_research.core.compute_factor import (
+from strategy_research.apps.compute_factor import (
     FactorComputeError,
     compute_factor,
     evaluate_expression,

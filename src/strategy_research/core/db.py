@@ -823,7 +823,7 @@ def register_factor(
 
     if complexity is None:
         try:
-            from .compute_factor import analyze_complexity
+            from strategy_research.apps.compute_factor import analyze_complexity
 
             complexity = analyze_complexity(factor_code)
         except Exception as e:
