@@ -192,7 +192,19 @@ python -c "import strategy_research"
 | `backtest_engine/` | W1 | apps | ✅ | 4a25ec41 |
 | `data_readiness.py` | W1 | apps | ✅ | 243e0656 |
 | `git.py` | W1 | foundation | ✅ | da08d25c |
-| 其余 40 包 | W2–W6 | — | 待执行 | — |
+| `registry.py` | W2 | foundation | ✅ | 21687c4e |
+| `alpha_zoo/` | W2 | apps | ✅ | 364078a3 |
+| `mcp/` | W2 | interfaces | ✅ | daba96cc |
+| `config_runner.py` | W2 | apps | ✅ | 0261c454 |
+| `data_import.py` | W2 | apps | ✅ | 7a4f2c35 |
+| `permission/` | W2 | kernel | ✅ | 70e05edc |
+| `skills/` | W2 | kernel | ✅ | e2f7f8c1 |
+| `backtest_models.py` | W2 | apps | ✅ | d2a6dfdc |
+| `web/` | W2 | foundation | ✅ | ffaa8dcd |
+| `hooks/` | W2 | kernel | ✅ | 674b8504 |
+| `portfolio/` | W2 | apps | ✅ | c07c4be3 |
+| `tools/` | W2 | apps | ✅ | 682ee0a6 |
+| 其余 28 包 | W3–W6 | — | 待执行 | — |
 
 ### 7.1 W1 波执行记录（协议修订沉淀）
 
@@ -210,6 +222,27 @@ python -c "import strategy_research"
   （workspace_setup）深度不变但父级含义变化，必须转绝对。
 - **每步验证**：受影响测试 + 门禁组 + `compileall -x attic` 全绿后 commit；
   W1 波内累计 2444+ 套件全绿（W1-10）。
+
+### 7.2 W2 波执行记录（三个新陷阱）
+
+- **陷阱一：同名包前缀混淆（计划已预警，实际命中）**。
+  `core/agent/builtin_tools/data_clean_tools.py:85,98` 的 `from ...tools.data_clean`
+  解析为 `strategy_research.core.tools`（研究的 tools 包），与
+  `core/agent/tools.py`（另一个包）同形。文本前缀改写只匹配
+  `strategy_research.core.tools` 字面量，**相对导入形态绕过**。修正后必须
+  用 `find_imports_of.py <tail>` 按解析结果复核，不能只依赖文本替换计数。
+- **陷阱二：`__file__` 相对定位随层级语义漂移**。
+  `core/mcp/server.py:677,760` 的 `Path(__file__).parent.parent/'swarm'/'presets'`
+  在 `core/mcp/` 父级是 `core/`（正确），搬入 `interfaces/mcp/` 后父级变
+  `interfaces/`（不存在）。已改为 `Path(swarm_module.__file__).parent/'presets'`
+  ——**跟随目标包实际位置，后续再搬自愈**。同类候选项在 W3+ 搬 swarm/goal 等
+  含资源目录的包时继续排查。
+- **陷阱三：陈旧 `__pycache__` 掩盖残留引用**。搬迁后 Python 可能加载旧字节码，
+  使「已修好的 ModuleNotFoundError」以幻影形式复现（本次 data_clean_tools 一度
+  误判）。协议增加一步：**搬迁后清 `__pycache__` 再验证**
+  （`tmp/clear_pyc.py`）。
+- **差分验证制度化**：W2-12 起对「疑似回归」一律做 stash 前后同命令同文件集
+  对照，结果须逐字一致。W2-12 实测 1F/34P 两边相同，确认零回归。
 
 ## 8. 回滚
 
