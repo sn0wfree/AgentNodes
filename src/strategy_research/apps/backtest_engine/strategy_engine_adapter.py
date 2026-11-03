@@ -19,8 +19,8 @@ from typing import Any
 
 import pandas as pd
 
-from ..backtest_models import BacktestResult
-from ..utils.strategy_engine import StrategyEngine
+from strategy_research.core.backtest_models import BacktestResult
+from strategy_research.core.utils.strategy_engine import StrategyEngine
 
 
 class StrategyEngineAdapter:

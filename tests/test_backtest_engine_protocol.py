@@ -19,16 +19,16 @@ import pytest
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
 
-from strategy_research.core.backtest_engine import (
+from strategy_research.apps.backtest_engine import (
     BacktestEngine,
     BacktestEngineRegistry,
     Strategy,
     get_engine,
 )
-from strategy_research.core.backtest_engine.callback_engine_adapter import (
+from strategy_research.apps.backtest_engine.callback_engine_adapter import (
     CallbackEngineAdapter,
 )
-from strategy_research.core.backtest_engine.strategy_engine_adapter import (
+from strategy_research.apps.backtest_engine.strategy_engine_adapter import (
     StrategyEngineAdapter,
 )
 from strategy_research.core.backtest_models import BacktestResult

@@ -30,7 +30,7 @@ from typing import Any, Protocol, runtime_checkable
 
 import pandas as pd
 
-from ..backtest_models import BacktestResult
+from strategy_research.core.backtest_models import BacktestResult
 
 
 @runtime_checkable

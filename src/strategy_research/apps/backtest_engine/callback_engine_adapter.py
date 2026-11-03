@@ -23,15 +23,15 @@ from typing import Any
 import numpy as np
 import pandas as pd
 
-from ..backtest_models import BacktestResult
-from ..utils.backtest_config import BacktestConfig
-from ..utils.backtest_engine import BacktestCallbacks
-from ..utils.backtest_utils import (
+from strategy_research.core.backtest_models import BacktestResult
+from strategy_research.core.utils.backtest_config import BacktestConfig
+from strategy_research.core.utils.backtest_engine import BacktestCallbacks
+from strategy_research.core.utils.backtest_utils import (
     annual_turnover_from_weights,
     calculate_turnover,
     generate_rebalance_dates,
 )
-from ..utils.metrics import extended_metrics
+from strategy_research.core.utils.metrics import extended_metrics
 from .protocol import Strategy
 
 
