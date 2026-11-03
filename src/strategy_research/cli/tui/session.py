@@ -232,7 +232,7 @@ class ChatSession:
         mm = None
         history: list[dict] | None = None
         try:
-            from strategy_research.core.agent.memory_manager import (
+            from strategy_research.kernel.agent.memory_manager import (
                 get_default_memory_manager,
             )
 

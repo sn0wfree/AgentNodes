@@ -9,7 +9,7 @@ from unittest.mock import MagicMock
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
 
-from strategy_research.core.agent.context_injector import (
+from strategy_research.kernel.agent.context_injector import (
     ContextInjector,
     GoalContextInjector,
     GoalContinuationInjector,

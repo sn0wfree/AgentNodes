@@ -17,7 +17,7 @@ import sys
 
 import pytest
 
-from strategy_research.core.agent.tools import ToolContext
+from strategy_research.kernel.agent.tools import ToolContext
 
 # A1 (2026-10-28): these suites drive POSIX commands (pwd/ls/sh/sleep/
 # python3) through the shell tool. On Windows there is no POSIX shell, so
@@ -187,7 +187,7 @@ class TestShellToolRegistration:
         from strategy_research.kernel.agent.builtin_tools.shell_tools import (
             register_shell_tools,
         )
-        from strategy_research.core.agent.tools import ToolRegistry
+        from strategy_research.kernel.agent.tools import ToolRegistry
         r = ToolRegistry()
         register_shell_tools(r)
         assert "shell" in r

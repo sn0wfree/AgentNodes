@@ -118,7 +118,7 @@ def _make_tool_wrapper(tool: Any, name: str) -> Callable[..., Any]:
     """Wrap a BaseTool so node dispatch can invoke it with a ctx."""
 
     def _wrapper(**kwargs: Any) -> dict[str, Any]:
-        from strategy_research.core.agent.tools import ToolContext
+        from strategy_research.kernel.agent.tools import ToolContext
 
         params = dict(kwargs.get("params") or {})
         workspace = kwargs.get("workspace_path")
@@ -159,7 +159,7 @@ class NodeContext:
 
 def default_loop_factory():
     """Lazy import of run_agent_via_llm (keeps import graph light)."""
-    from strategy_research.core.agent.role_factory import run_agent_via_llm
+    from strategy_research.kernel.agent.role_factory import run_agent_via_llm
     return run_agent_via_llm
 
 

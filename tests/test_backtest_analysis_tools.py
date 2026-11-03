@@ -17,7 +17,7 @@ from strategy_research.kernel.agent.builtin_tools import (
     DrawdownAnalysis,
     StrategyCompare,
 )
-from strategy_research.core.agent.tools import ToolContext
+from strategy_research.kernel.agent.tools import ToolContext
 
 # 已知权益曲线 (12 点): 一次完整回撤 + 一次浅回撤
 EQUITY = [1.0, 1.1, 1.2, 1.05, 0.9, 1.0, 1.2, 1.3, 1.25, 1.35, 1.4, 1.5]

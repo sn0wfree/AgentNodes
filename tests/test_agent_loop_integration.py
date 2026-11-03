@@ -13,7 +13,7 @@ from pathlib import Path
 
 import pytest
 
-from strategy_research.core.agent.loop import AgentLoop
+from strategy_research.kernel.agent.loop import AgentLoop
 from strategy_research.kernel.agent.builtin_tools import build_default_registry
 from strategy_research.foundation.llm import LLMConfig, LLMResponse, ToolCall
 
@@ -137,7 +137,7 @@ def test_injector_context_reaches_llm(ws):
 
 def test_combo_requires_registry_and_category():
     """CompositeTool 必须带 registry/category 构造（契约锁定）。"""
-    from strategy_research.core.agent.combo import CompositeTool
+    from strategy_research.kernel.agent.combo import CompositeTool
 
     with pytest.raises(TypeError):
         CompositeTool(name="c", description="", steps=[])
@@ -146,8 +146,8 @@ def test_combo_requires_registry_and_category():
 def test_combo_simple_sequence(ws):
     """read_file 两步串联（纯文件 op，离线）。"""
     from strategy_research.kernel.agent.builtin_tools import build_default_registry
-    from strategy_research.core.agent.combo import CompositeTool
-    from strategy_research.core.agent.tools import ToolContext
+    from strategy_research.kernel.agent.combo import CompositeTool
+    from strategy_research.kernel.agent.tools import ToolContext
 
     target = ws / "notes.txt"
     target.write_text("第一行\n第二行", encoding="utf-8")

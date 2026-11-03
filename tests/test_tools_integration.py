@@ -23,7 +23,7 @@ from strategy_research.kernel.agent.builtin_tools.data_tools import (
     ImportDataTool,
     ListDataSourcesTool,
 )
-from strategy_research.core.agent.tools import ToolContext
+from strategy_research.kernel.agent.tools import ToolContext
 from strategy_research.apps.db import get_connection, init_db
 
 # ── Shared fixtures ───────────────────────────────────────────────────

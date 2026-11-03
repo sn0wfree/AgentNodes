@@ -828,7 +828,7 @@ def _run_review_cycle(
     hypothesis: str,
 ) -> str | None:
     """Inter-round review: deviation tracking, info collection, todos."""
-    from strategy_research.core.agent.role_factory import (
+    from strategy_research.kernel.agent.role_factory import (
         run_agent_via_llm,
         should_use_real_llm,
     )

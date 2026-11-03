@@ -11,9 +11,9 @@ from pathlib import Path
 
 import pytest
 
-from strategy_research.core.agent import loop as loop_mod
-from strategy_research.core.agent.loop import AgentLoop, LoopResult
-from strategy_research.core.agent.tools import BaseTool, ToolRegistry
+from strategy_research.kernel.agent import loop as loop_mod
+from strategy_research.kernel.agent.loop import AgentLoop, LoopResult
+from strategy_research.kernel.agent.tools import BaseTool, ToolRegistry
 from strategy_research.foundation.llm import LLMConfig, ToolCall
 
 

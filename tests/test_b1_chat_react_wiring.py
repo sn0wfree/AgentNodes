@@ -33,7 +33,7 @@ class _FakeRegistry:
     """Duck-typed registry: assemble_loop_parts reads ``_tools``."""
 
     def __init__(self) -> None:
-        from strategy_research.core.agent.tools import BaseTool
+        from strategy_research.kernel.agent.tools import BaseTool
 
         class _T(BaseTool):
             name = "demo_tool"
@@ -63,7 +63,7 @@ class _FakeRegistry:
 
 def test_system_prompt_matches_assemble_loop_parts(tmp_path):
     """SessionController 的 system prompt == assemble_loop_parts 的输出。"""
-    from strategy_research.core.agent.loop_assembly import assemble_loop_parts
+    from strategy_research.kernel.agent.loop_assembly import assemble_loop_parts
 
     registry = _FakeRegistry()
     ctrl = _controller(
@@ -87,7 +87,7 @@ def test_explicit_system_overrides_assembly(tmp_path):
 
 def test_assembly_failure_degrades_to_none(tmp_path, monkeypatch):
     """渲染失败不阻断 chat：降级为 None 并发出事件。"""
-    import strategy_research.core.agent.loop_assembly as la
+    import strategy_research.kernel.agent.loop_assembly as la
 
     def boom(**kwargs):
         raise RuntimeError("prompt exploded")

@@ -13,8 +13,8 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
-from strategy_research.core.agent.loop import AgentLoop
-from strategy_research.core.agent.tools import ToolRegistry
+from strategy_research.kernel.agent.loop import AgentLoop
+from strategy_research.kernel.agent.tools import ToolRegistry
 from strategy_research.kernel.hooks.composite import AgentHook, CompositeHook
 from strategy_research.kernel.hooks.context import AgentHookContext
 from strategy_research.foundation.llm.config import LLMConfig

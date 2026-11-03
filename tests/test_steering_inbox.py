@@ -10,8 +10,8 @@ import pytest
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
 
-from strategy_research.core.agent.loop import AgentLoop
-from strategy_research.core.agent.tools import ToolRegistry
+from strategy_research.kernel.agent.loop import AgentLoop
+from strategy_research.kernel.agent.tools import ToolRegistry
 
 
 class _FakeConfig:

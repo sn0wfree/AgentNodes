@@ -11,7 +11,7 @@ from pathlib import Path
 
 import pytest
 
-from strategy_research.core.agent.event_store import EventStore
+from strategy_research.kernel.agent.event_store import EventStore
 from strategy_research.foundation.storage.event_schema import (
     ENVELOPE_COLUMNS,
 )
@@ -154,6 +154,6 @@ def test_facade_no_direct_event_log_sql():
     from pathlib import Path as _P
 
     src = (_P(__file__).resolve().parents[1] / "src" / "strategy_research"
-           / "core" / "agent" / "event_store.py").read_text(encoding="utf-8")
+           / "kernel" / "agent" / "event_store.py").read_text(encoding="utf-8")
     assert "INSERT INTO event_log" not in src
     assert "FROM event_log" not in src

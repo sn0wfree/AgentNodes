@@ -17,7 +17,7 @@ from pathlib import Path
 import pytest
 
 from strategy_research.kernel.agent.builtin_tools import build_default_registry
-from strategy_research.core.agent.loop import AgentLoop
+from strategy_research.kernel.agent.loop import AgentLoop
 from strategy_research.foundation.llm import LLMConfig, LLMResponse, ToolCall
 
 REPO = Path(__file__).resolve().parents[1]

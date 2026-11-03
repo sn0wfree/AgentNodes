@@ -14,7 +14,7 @@ from __future__ import annotations
 
 from unittest.mock import MagicMock
 
-from strategy_research.core.agent.compact import (
+from strategy_research.kernel.agent.compact import (
     CompactConfig,
     _estimate_tokens,
     _fix_tool_pairs,
@@ -761,7 +761,7 @@ class TestQualityDecay:
 
     def test_score_turn_recency(self):
         """Most recent turn gets higher score than older turns."""
-        from strategy_research.core.agent.compact import _score_turn
+        from strategy_research.kernel.agent.compact import _score_turn
         turn = [{"role": "user", "content": "test"}]
         # Index 0 = most recent, total=5
         score_recent = _score_turn(turn, turn_index=0, total_turns=5)
@@ -771,7 +771,7 @@ class TestQualityDecay:
 
     def test_score_turn_tool_error_boost(self):
         """Turn with tool error gets higher content weight."""
-        from strategy_research.core.agent.compact import _score_turn
+        from strategy_research.kernel.agent.compact import _score_turn
         turn_with_error = [
             {"role": "user", "content": "test"},
             {"role": "tool", "content": '{"status": "error", "message": "failed"}'},
@@ -786,7 +786,7 @@ class TestQualityDecay:
 
     def test_score_turn_tool_result_boost(self):
         """Turn with tool result gets moderate content weight."""
-        from strategy_research.core.agent.compact import _score_turn
+        from strategy_research.kernel.agent.compact import _score_turn
         [{'role': 'assistant', 'content': 'result data'}]
         turn_without = [
             {"role": "assistant", "content": "just text"},

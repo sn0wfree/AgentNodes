@@ -73,7 +73,7 @@ class TestNewAgentTools:
 
     def test_options_pricing_call(self):
         from strategy_research.kernel.agent.builtin_tools import OptionsPricingTool
-        from strategy_research.core.agent.tools import ToolContext
+        from strategy_research.kernel.agent.tools import ToolContext
         tool = OptionsPricingTool()
         result = tool.execute(
             ctx=ToolContext(),
@@ -86,7 +86,7 @@ class TestNewAgentTools:
 
     def test_options_pricing_put(self):
         from strategy_research.kernel.agent.builtin_tools import OptionsPricingTool
-        from strategy_research.core.agent.tools import ToolContext
+        from strategy_research.kernel.agent.tools import ToolContext
         tool = OptionsPricingTool()
         result = tool.execute(
             ctx=ToolContext(),
@@ -97,7 +97,7 @@ class TestNewAgentTools:
 
     def test_options_pricing_invalid_type(self):
         from strategy_research.kernel.agent.builtin_tools import OptionsPricingTool
-        from strategy_research.core.agent.tools import ToolContext
+        from strategy_research.kernel.agent.tools import ToolContext
         tool = OptionsPricingTool()
         result = tool.execute(
             ctx=ToolContext(),

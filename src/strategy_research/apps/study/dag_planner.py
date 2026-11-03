@@ -22,9 +22,9 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
 
-from strategy_research.core.agent.dag_config import AgentDAGConfig
-from strategy_research.core.agent.plugin import AgentPlugin
-from strategy_research.core.agent.registry import AgentPluginRegistry, get_default_registry
+from strategy_research.kernel.agent.dag_config import AgentDAGConfig
+from strategy_research.kernel.agent.plugin import AgentPlugin
+from strategy_research.kernel.agent.registry import AgentPluginRegistry, get_default_registry
 
 logger = logging.getLogger(__name__)
 
@@ -127,8 +127,8 @@ class DAGPlanner:
         # P0 修复（2026-10-31）：层级错误的一级相对导入（`.agent` 解析为
         # study.agent，不存在）让 LLM 规划路径永远 ImportError，静默回退
         # 关键字匹配——「LLM 驱动 DAG 生成」实际从未生效。与模块头部
-        # `from strategy_research.core.agent.dag_config import ...` 同级。
-        from strategy_research.core.agent.prompt_builder import PromptBuilderFactory
+        # `from strategy_research.kernel.agent.dag_config import ...` 同级。
+        from strategy_research.kernel.agent.prompt_builder import PromptBuilderFactory
 
         system_prompt = PromptBuilderFactory.get("planner").build_system_prompt(
             "planner", {},
@@ -165,13 +165,13 @@ class DAGPlanner:
 
     def _llm_is_available(self) -> bool:
         try:
-            from strategy_research.core.agent.role_factory import should_use_real_llm
+            from strategy_research.kernel.agent.role_factory import should_use_real_llm
             return should_use_real_llm()
         except Exception:  # noqa: BLE001
             return False
 
     def _call_llm(self, system_prompt: str, user_prompt: str) -> str:
-        from strategy_research.core.agent.role_factory import run_agent_via_llm
+        from strategy_research.kernel.agent.role_factory import run_agent_via_llm
 
         # run_agent_via_llm needs workspace + strategy_name; pass empty
         # workspace (no tools needed for planner).
@@ -267,11 +267,11 @@ class DAGPlanner:
         dag: dict[str, list[str]] = {}
         # Use the standard pipeline adjacency when all core nodes are
         # present; fall back to per-plugin requires for custom picks.
-        from strategy_research.core.agent.builtin_plugins import standard_pipeline_adjacency
+        from strategy_research.kernel.agent.builtin_plugins import standard_pipeline_adjacency
 
         adjacency = standard_pipeline_adjacency()
         for pid in selected:
-            from strategy_research.core.agent.dag_config import AgentNodeConfig
+            from strategy_research.kernel.agent.dag_config import AgentNodeConfig
 
             nodes.append(AgentNodeConfig(id=pid))
             if pid in adjacency:

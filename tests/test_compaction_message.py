@@ -10,7 +10,7 @@ from __future__ import annotations
 
 import json
 
-from strategy_research.core.agent.compaction_message import (
+from strategy_research.kernel.agent.compaction_message import (
     MESSAGE_TYPE_ASSISTANT,
     MESSAGE_TYPE_COMPACTION,
     CompactionMessage,

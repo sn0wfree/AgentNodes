@@ -19,7 +19,7 @@ from pathlib import Path
 from typing import Any, Callable
 
 from strategy_research.kernel.agent.builtin_tools.utils import tool_err
-from strategy_research.core.agent.tools import BaseTool, ToolContext, _schema_from_signature
+from strategy_research.kernel.agent.tools import BaseTool, ToolContext, _schema_from_signature
 
 logger = logging.getLogger(__name__)
 

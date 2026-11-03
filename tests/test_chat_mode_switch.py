@@ -124,7 +124,7 @@ class TestPromptSelection:
             raise SystemExit(0)  # abort construction
 
         monkeypatch.setattr(
-            "strategy_research.core.agent.loop.AgentLoop.__init__",
+            "strategy_research.kernel.agent.loop.AgentLoop.__init__",
             capture_agent_loop_init,
         )
         monkeypatch.setattr(
@@ -163,7 +163,7 @@ class TestPromptSelection:
             raise SystemExit(0)
 
         monkeypatch.setattr(
-            "strategy_research.core.agent.loop.AgentLoop.__init__",
+            "strategy_research.kernel.agent.loop.AgentLoop.__init__",
             capture_agent_loop_init,
         )
         monkeypatch.setattr(

@@ -17,7 +17,7 @@ from pathlib import Path
 import pytest
 
 from strategy_research.kernel.agent.builtin_tools import build_default_registry
-from strategy_research.core.agent.tools import ToolContext
+from strategy_research.kernel.agent.tools import ToolContext
 from strategy_research.apps.autoresearch import (
     _create_run_dir,
     read_current_state,

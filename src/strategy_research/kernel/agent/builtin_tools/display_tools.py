@@ -26,7 +26,7 @@ import uuid
 from pathlib import Path
 from typing import Any, Optional
 
-from strategy_research.core.agent.tools import BaseTool, ToolContext, ToolError
+from strategy_research.kernel.agent.tools import BaseTool, ToolContext, ToolError
 from .utils import err_actionable, tool_ok
 
 logger = logging.getLogger(__name__)

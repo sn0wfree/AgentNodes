@@ -3,7 +3,7 @@ from __future__ import annotations
 
 import json
 
-from strategy_research.core.agent.tool_result import (
+from strategy_research.kernel.agent.tool_result import (
     ToolResult,
     error,
     from_any,

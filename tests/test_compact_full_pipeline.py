@@ -5,7 +5,7 @@ from unittest.mock import MagicMock
 
 import pytest
 
-from strategy_research.core.agent.compact import (
+from strategy_research.kernel.agent.compact import (
     CompactConfig,
     compact_messages,
 )

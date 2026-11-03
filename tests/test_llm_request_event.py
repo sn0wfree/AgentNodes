@@ -11,7 +11,7 @@ from __future__ import annotations
 from typing import Any
 from unittest import mock
 
-from strategy_research.core.agent.loop import AgentLoop
+from strategy_research.kernel.agent.loop import AgentLoop
 
 
 class EventSink:

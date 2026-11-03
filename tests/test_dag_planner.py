@@ -7,8 +7,8 @@ from unittest.mock import MagicMock
 
 import pytest
 
-from strategy_research.core.agent.plugin import AgentPlugin
-from strategy_research.core.agent.registry import AgentPluginRegistry
+from strategy_research.kernel.agent.plugin import AgentPlugin
+from strategy_research.kernel.agent.registry import AgentPluginRegistry
 from strategy_research.apps.study.dag_planner import (
     DAGPlanner,
     PlannerConstraints,
@@ -111,7 +111,7 @@ class TestPlanResult:
     def test_llm_unavailable_falls_back(self, registry, monkeypatch):
         """When LLM is not available, the keyword path is used."""
         # Force should_use_real_llm() to return False
-        from strategy_research.core.agent import role_factory
+        from strategy_research.kernel.agent import role_factory
 
         monkeypatch.setattr(role_factory, "should_use_real_llm", lambda: False)
         planner = DAGPlanner(registry)
@@ -124,7 +124,7 @@ class TestPlanResult:
 
 class TestLLMPath:
     def test_llm_parses_json_response(self, registry, monkeypatch):
-        from strategy_research.core.agent import role_factory
+        from strategy_research.kernel.agent import role_factory
 
         monkeypatch.setattr(role_factory, "should_use_real_llm", lambda: True)
         monkeypatch.setattr(
@@ -140,7 +140,7 @@ class TestLLMPath:
         assert "factor_analyst" in plan.selected_agents
 
     def test_llm_code_fence_json_parsed(self, registry, monkeypatch):
-        from strategy_research.core.agent import role_factory
+        from strategy_research.kernel.agent import role_factory
 
         monkeypatch.setattr(role_factory, "should_use_real_llm", lambda: True)
         monkeypatch.setattr(
@@ -153,7 +153,7 @@ class TestLLMPath:
         assert "researcher" in plan.selected_agents
 
     def test_llm_garbage_falls_back_to_keywords(self, registry, monkeypatch):
-        from strategy_research.core.agent import role_factory
+        from strategy_research.kernel.agent import role_factory
 
         monkeypatch.setattr(role_factory, "should_use_real_llm", lambda: True)
         monkeypatch.setattr(
@@ -181,7 +181,7 @@ class TestBootstrapAutoCompose:
             encoding="utf-8",
         )
 
-        from strategy_research.core.agent import role_factory
+        from strategy_research.kernel.agent import role_factory
 
         monkeypatch.setattr(role_factory, "should_use_real_llm", lambda: False)
 

@@ -12,7 +12,7 @@ import pytest
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
 
 from strategy_research.kernel.agent.builtin_tools import _discover_tool_plugins
-from strategy_research.core.agent.tools import ToolRegistry
+from strategy_research.kernel.agent.tools import ToolRegistry
 
 
 class TestToolPluginDiscovery:
@@ -39,7 +39,7 @@ class TestToolPluginDiscovery:
         r = ToolRegistry()
 
         def _register_plugin(reg):
-            from strategy_research.core.agent.tools import BaseTool
+            from strategy_research.kernel.agent.tools import BaseTool
 
             class _PluginTool(BaseTool):
                 name = "plugin_tool"
@@ -84,7 +84,7 @@ class TestToolPluginDiscovery:
         r = ToolRegistry()
 
         def _register_plugin(reg):
-            from strategy_research.core.agent.tools import BaseTool
+            from strategy_research.kernel.agent.tools import BaseTool
 
             class _DictTool(BaseTool):
                 name = "dict_tool"

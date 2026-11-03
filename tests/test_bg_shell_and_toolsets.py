@@ -3,7 +3,7 @@ from __future__ import annotations
 
 import sys
 
-from strategy_research.core.agent.toolsets import TOOLSETS
+from strategy_research.kernel.agent.toolsets import TOOLSETS
 from strategy_research.foundation.utils.bg_proc import shell_command
 
 

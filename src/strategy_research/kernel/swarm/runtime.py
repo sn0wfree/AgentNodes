@@ -536,10 +536,10 @@ class SwarmRuntime:
         - "python_executor": registered Python function
         - "evaluator": decide() function for keep/discard
         """
-        from strategy_research.core.agent.dag_config import AgentNodeConfig
-        from strategy_research.core.agent.executor import AgentExecutor
-        from strategy_research.core.agent.plugin import AgentPlugin
-        from strategy_research.core.agent.registry import get_default_registry
+        from strategy_research.kernel.agent.dag_config import AgentNodeConfig
+        from strategy_research.kernel.agent.executor import AgentExecutor
+        from strategy_research.kernel.agent.plugin import AgentPlugin
+        from strategy_research.kernel.agent.registry import get_default_registry
 
         t0 = time.perf_counter()
         ctx = agent_call.context if hasattr(agent_call, "context") else {}

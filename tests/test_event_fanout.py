@@ -19,7 +19,7 @@ import pytest
 def store(tmp_path, monkeypatch):
     monkeypatch.setenv("QUANTNODES_RESEARCH_GOAL_DB_PATH", str(tmp_path / "g.db"))
     monkeypatch.setenv("QUANTNODES_RESEARCH_HYPOTHESES_PATH", str(tmp_path / "h.json"))
-    from strategy_research.core.agent.event_store import EventStore
+    from strategy_research.kernel.agent.event_store import EventStore
 
     pushes: list[tuple[str, object]] = []
 
@@ -31,7 +31,7 @@ def store(tmp_path, monkeypatch):
 
 
 def test_parent_study_channel_parsing():
-    from strategy_research.core.agent.event_store import parent_study_channel
+    from strategy_research.kernel.agent.event_store import parent_study_channel
 
     assert parent_study_channel("study:abc:round:3") == "study:abc"
     assert parent_study_channel("study:abc") is None

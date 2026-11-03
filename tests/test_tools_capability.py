@@ -17,8 +17,8 @@ from strategy_research.kernel.agent.sandbox import (
     ExecutionSandbox,
     StaticSandbox,
 )
-from strategy_research.core.agent.tools import ToolContext
-from strategy_research.core.agent.tools_capability import (
+from strategy_research.kernel.agent.tools import ToolContext
+from strategy_research.kernel.agent.tools_capability import (
     ToolCapabilityError,
     get_data_store,
     get_sandbox,

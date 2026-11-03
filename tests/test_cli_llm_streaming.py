@@ -652,13 +652,13 @@ async def test_chat_session_dispatches_plain_text_to_llm():
     # Patch the AgentLoop symbol bound in chat_loop (module-level
     # ``from .loop import AgentLoop``) — patching loop.AgentLoop is a no-op
     # once chat_loop has already been imported by earlier tests.
-    with mock.patch("strategy_research.core.agent.chat_loop.AgentLoop") as MockLoop, \
+    with mock.patch("strategy_research.kernel.agent.chat_loop.AgentLoop") as MockLoop, \
          mock.patch("strategy_research.kernel.agent.builtin_tools.build_default_registry", return_value=None), \
          mock.patch(
              # Force the degraded in-memory path: with the shared session
              # DB unavailable, the assistant reply lands in ctx.history
              # (the legacy behavior this test pins).
-             "strategy_research.core.agent.memory_manager.get_default_memory_manager",
+             "strategy_research.kernel.agent.memory_manager.get_default_memory_manager",
              side_effect=RuntimeError("no mm in test"),
          ):
             instance = mock.MagicMock()

@@ -63,7 +63,7 @@ class EventBus:
     """Session-scoped event bus with subscribers and buffered events.
 
     .. deprecated::
-        Use ``EventStore`` (``strategy_research.core.agent.event_store``)
+        Use ``EventStore`` (``strategy_research.kernel.agent.event_store``)
         instead. EventBus is kept for backward compatibility with the
         SSE endpoint but will be removed in a future release.
 

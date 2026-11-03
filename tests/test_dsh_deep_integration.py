@@ -11,8 +11,8 @@ from unittest.mock import MagicMock
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
 
-from strategy_research.core.agent.loop import AgentLoop, LoopResult
-from strategy_research.core.agent.tools import BaseTool, ToolRegistry
+from strategy_research.kernel.agent.loop import AgentLoop, LoopResult
+from strategy_research.kernel.agent.tools import BaseTool, ToolRegistry
 
 
 class _FakeConfig:

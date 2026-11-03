@@ -8,7 +8,7 @@ import unittest
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
-from strategy_research.core.agent.trace import TraceWriter, _env_int
+from strategy_research.kernel.agent.trace import TraceWriter, _env_int
 
 
 class TestEnvInt(unittest.TestCase):

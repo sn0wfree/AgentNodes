@@ -32,7 +32,7 @@ class TestPhase5RemovedLegacyPaths:
     def test_no_load_role_system_prompt_function(self):
         """``from role_factory import _load_role_system_prompt`` must raise."""
         with __import__("pytest").raises(ImportError):
-            from strategy_research.core.agent.role_factory import (  # noqa: F401
+            from strategy_research.kernel.agent.role_factory import (  # noqa: F401
                 _load_role_system_prompt,
             )
 
@@ -86,7 +86,7 @@ class TestPhase5CallSitesUseFactory:
         assert "_load_role_system_prompt" not in src
 
     def test_role_factory_routes_through_factory(self):
-        from strategy_research.core.agent import role_factory
+        from strategy_research.kernel.agent import role_factory
 
         src = open(role_factory.__file__, encoding="utf-8").read()
         # role_factory routes prompt rendering through the shared
@@ -104,7 +104,7 @@ class TestPhase5BehaviorUnchanged:
 
     def test_chat_prompt_matches_legacy_chat_md(self):
         """PromptBuilderFactory.get('chat') returns chat.md content (with empty context)."""
-        from strategy_research.core.agent.prompt_builder import (
+        from strategy_research.kernel.agent.prompt_builder import (
             PromptBuilderFactory,
         )
 
@@ -120,7 +120,7 @@ class TestPhase5BehaviorUnchanged:
 
     def test_role_prompts_load_from_prompts_dir(self):
         """All 9 roles load their .md from templates/.prompts/."""
-        from strategy_research.core.agent.prompt_builder import (
+        from strategy_research.kernel.agent.prompt_builder import (
             PromptBuilderFactory,
         )
 
@@ -143,7 +143,7 @@ class TestPhase5FactoryConsistency:
 
     def test_factory_singleton_per_role(self):
         """Same role returns the same builder instance (no churn)."""
-        from strategy_research.core.agent.prompt_builder import (
+        from strategy_research.kernel.agent.prompt_builder import (
             PromptBuilderFactory,
         )
 
@@ -153,7 +153,7 @@ class TestPhase5FactoryConsistency:
 
     def test_register_persists_across_get(self):
         """Custom registered builder survives subsequent ``get`` calls."""
-        from strategy_research.core.agent.prompt_builder import (
+        from strategy_research.kernel.agent.prompt_builder import (
             PromptBuilderFactory,
             _NullBuilder,
         )

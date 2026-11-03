@@ -20,7 +20,7 @@ pytestmark = pytest.mark.llm
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
 
-from strategy_research.core.agent.tools import BaseTool, ToolRegistry  # noqa: E402
+from strategy_research.kernel.agent.tools import BaseTool, ToolRegistry  # noqa: E402
 
 requires_live = pytest.mark.skipif(
     os.environ.get("QNODES_LIVE_LLM") != "1",

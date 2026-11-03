@@ -110,7 +110,7 @@ class TestE2EFlow:
         """
         from pathlib import Path
 
-        from strategy_research.core.agent.event_store import EventStore
+        from strategy_research.kernel.agent.event_store import EventStore
 
         store = EventStore(db_path=tmp_path / "replay.db")
         eid1 = store.emit("replay-test", "text_delta", {"text": "a"}).id

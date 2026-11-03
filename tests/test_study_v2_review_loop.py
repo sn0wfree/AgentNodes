@@ -244,7 +244,7 @@ def test_runner_high_deviation_stops_after_3(tmp_path, monkeypatch):
     runner_mod.AutoresearchRunner._round_cooldown = lambda self: 0.0
     runner_mod.AutoresearchRunner._maybe_load_previous_summary = lambda self, s: None
     # force "real" reviewer path but stub the LLM call itself
-    import strategy_research.core.agent.role_factory as rf_mod
+    import strategy_research.kernel.agent.role_factory as rf_mod
     monkeypatch.setattr(rf_mod, "should_use_real_llm", lambda: True)
     monkeypatch.setattr(rf_mod, "run_agent_via_llm", fake_reviewer)
 

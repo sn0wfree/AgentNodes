@@ -26,7 +26,7 @@ import httpx
 import pytest
 
 from strategy_research.kernel.agent.builtin_tools import build_default_registry
-from strategy_research.core.agent.loop import AgentLoop, _run_coro_in_sync
+from strategy_research.kernel.agent.loop import AgentLoop, _run_coro_in_sync
 from strategy_research.foundation.llm import LLMConfig, LLMResponse, ToolCall
 from strategy_research.foundation.llm.errors import LLMAuthError, LLMRateLimitError
 from strategy_research.foundation.llm.openai_client import _raise_for_status

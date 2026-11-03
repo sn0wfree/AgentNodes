@@ -7,11 +7,11 @@ from pathlib import Path
 import pytest
 
 from strategy_research.kernel.agent.builtin_tools import build_default_registry
-from strategy_research.core.agent.context import (
+from strategy_research.kernel.agent.context import (
     ContextBuilder,
     estimate_tokens,
 )
-from strategy_research.core.agent.tools import ToolRegistry
+from strategy_research.kernel.agent.tools import ToolRegistry
 from strategy_research.foundation.llm import LLMConfig
 from strategy_research.kernel.memory.persistent import PersistentMemory
 

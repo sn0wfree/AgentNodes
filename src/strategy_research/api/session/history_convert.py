@@ -36,7 +36,7 @@ def _decide_kept_compactions(
     compaction_indices: list[int], keep_all_compactions: bool
 ) -> set[int]:
     """Decide which compactions to keep in LLM context."""
-    from strategy_research.core.agent.compact import _compaction_metrics
+    from strategy_research.kernel.agent.compact import _compaction_metrics
 
     if keep_all_compactions or not compaction_indices:
         return set(compaction_indices)
@@ -59,7 +59,7 @@ def _hidden_until_seq(messages: list, keep_compaction_indices: set[int]) -> int:
     Everything with seq <= the boundary was replaced by the summary:
     it stays in the DB (chat record) but must NOT enter the LLM context.
     """
-    from strategy_research.core.agent.compact import _compaction_metrics
+    from strategy_research.kernel.agent.compact import _compaction_metrics
 
     hidden_until_seq: int = -1
     for i in keep_compaction_indices:
@@ -151,7 +151,7 @@ def _convert_one_history_message(
     ``emitted_assistant_idxs`` / ``emitted_tool_msg_idxs`` are mutated
     to track which messages were already emitted.
     """
-    from strategy_research.core.agent.compaction_message import CompactionMessage
+    from strategy_research.kernel.agent.compaction_message import CompactionMessage
 
     role = msg.role if hasattr(msg, "role") else msg.get("role", "user")
     content = msg.content if hasattr(msg, "content") else msg.get("content", "")

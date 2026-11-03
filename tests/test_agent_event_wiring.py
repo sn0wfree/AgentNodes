@@ -75,7 +75,7 @@ def test_strip_does_not_mutate_input():
 
 def test_build_agent_loop_forwards_on_event(monkeypatch):
     """factory 必须把 on_event 递到 AgentLoop 构造参数。"""
-    import strategy_research.core.agent.role_factory as rf
+    import strategy_research.kernel.agent.role_factory as rf
 
     seen = {}
 
@@ -85,14 +85,14 @@ def test_build_agent_loop_forwards_on_event(monkeypatch):
 
     monkeypatch.setattr(rf, "AgentLoop", FakeLoop, raising=False)
     # 走真实模块路径（factory 内部是 from ...core.agent.loop import AgentLoop）
-    import strategy_research.core.agent.loop as loop_mod
+    import strategy_research.kernel.agent.loop as loop_mod
     real = loop_mod.AgentLoop
     monkeypatch.setattr(loop_mod, "AgentLoop", FakeLoop)
 
     import strategy_research.kernel.agent.builtin_tools as bt
     monkeypatch.setattr(bt, "build_default_registry", lambda: object())
 
-    import strategy_research.core.agent.loop_assembly as la
+    import strategy_research.kernel.agent.loop_assembly as la
     class Assembly:
         system_prompt = "sp"
         loop_strategy = None
@@ -115,10 +115,10 @@ def test_spawn_agent_forwards_on_event(monkeypatch):
 
     calls = {}
     monkeypatch.setattr(
-        "strategy_research.core.agent.role_factory.should_use_real_llm",
+        "strategy_research.kernel.agent.role_factory.should_use_real_llm",
         lambda: True)
     monkeypatch.setattr(
-        "strategy_research.core.agent.role_factory.run_agent_via_llm",
+        "strategy_research.kernel.agent.role_factory.run_agent_via_llm",
         lambda **kw: calls.update(kw) or "{}")
 
     marker = lambda et, d: None
@@ -154,10 +154,10 @@ def test_spawn_real_llm_receives_agent_named_callback(monkeypatch):
 
     captured: dict = {}
     monkeypatch.setattr(
-        "strategy_research.core.agent.role_factory.should_use_real_llm",
+        "strategy_research.kernel.agent.role_factory.should_use_real_llm",
         lambda: True)
     monkeypatch.setattr(
-        "strategy_research.core.agent.role_factory.run_agent_via_llm",
+        "strategy_research.kernel.agent.role_factory.run_agent_via_llm",
         lambda **kw: captured.update(kw) or '{"ok": true}')
 
     upstream_marker = {"iteration": 1}

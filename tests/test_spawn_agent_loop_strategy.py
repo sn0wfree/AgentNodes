@@ -57,9 +57,9 @@ class TestSpawnAgentLoopStrategy:
         """When use_real=True, loop_strategy must be forwarded to run_agent_via_llm."""
         mock_llm = MagicMock(return_value='{"answer": "ok"}')
         with patch(
-            "strategy_research.core.agent.role_factory.run_agent_via_llm", mock_llm
+            "strategy_research.kernel.agent.role_factory.run_agent_via_llm", mock_llm
         ), patch(
-            "strategy_research.core.agent.role_factory.should_use_real_llm",
+            "strategy_research.kernel.agent.role_factory.should_use_real_llm",
             return_value=True,
         ):
             spawn_agent(
@@ -78,9 +78,9 @@ class TestSpawnAgentLoopStrategy:
         """When loop_strategy is not passed, None should be forwarded."""
         mock_llm = MagicMock(return_value='{"answer": "ok"}')
         with patch(
-            "strategy_research.core.agent.role_factory.run_agent_via_llm", mock_llm
+            "strategy_research.kernel.agent.role_factory.run_agent_via_llm", mock_llm
         ), patch(
-            "strategy_research.core.agent.role_factory.should_use_real_llm",
+            "strategy_research.kernel.agent.role_factory.should_use_real_llm",
             return_value=True,
         ):
             spawn_agent(

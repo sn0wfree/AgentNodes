@@ -14,7 +14,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
 
 from strategy_research.kernel.agent.builtin_tools import backtest_tools as bt
 from strategy_research.kernel.agent.builtin_tools.bg_tools import RunBgCommandTool
-from strategy_research.core.agent.tools import ToolContext
+from strategy_research.kernel.agent.tools import ToolContext
 
 
 def _make_step(**returns):
@@ -168,7 +168,7 @@ def test_long_task_rule_indexed():
 
 
 def test_whitelist_has_bg_tool_for_long_task_roles():
-    from strategy_research.core.agent.role_factory import _ROLE_TOOL_WHITELIST
+    from strategy_research.kernel.agent.role_factory import _ROLE_TOOL_WHITELIST
     for role in ("strategist", "backtest_diagnostics",
                  "factor_analyst", "data_quality"):
         assert "run_bg_command" in _ROLE_TOOL_WHITELIST[role], role

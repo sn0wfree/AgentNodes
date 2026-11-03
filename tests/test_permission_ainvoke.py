@@ -15,7 +15,7 @@ from typing import Any
 
 import pytest
 
-from strategy_research.core.agent.tools import BaseTool
+from strategy_research.kernel.agent.tools import BaseTool
 from strategy_research.kernel.permission import (
     PermissionAction,
     PermissionGateway,

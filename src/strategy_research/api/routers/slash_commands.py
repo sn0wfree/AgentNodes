@@ -831,7 +831,7 @@ async def _handle_clear_command(body: ChatMessage) -> SendMessageResponse:
     import uuid
 
     try:
-        from strategy_research.core.agent.memory_manager import (
+        from strategy_research.kernel.agent.memory_manager import (
             get_default_memory_manager,
         )
         mm = get_default_memory_manager()

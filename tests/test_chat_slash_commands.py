@@ -81,7 +81,7 @@ class TestSlashCommandIntercepts:
         send_mock = AsyncMock()
 
         with patch(
-            "strategy_research.core.agent.memory_manager.get_default_memory_manager",
+            "strategy_research.kernel.agent.memory_manager.get_default_memory_manager",
             return_value=type(
                 "MM",
                 (),
@@ -172,7 +172,7 @@ class TestSlashCommandIntercepts:
 
         clear_mock = AsyncMock(return_value=None)
         with patch(
-            "strategy_research.core.agent.memory_manager.get_default_memory_manager",
+            "strategy_research.kernel.agent.memory_manager.get_default_memory_manager",
             return_value=type(
                 "MM",
                 (),

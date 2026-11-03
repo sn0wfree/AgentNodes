@@ -13,8 +13,8 @@ from unittest import mock
 
 import pytest
 
-from strategy_research.core.agent.loop import AgentLoop
-from strategy_research.core.agent.tools import BaseTool, ToolRegistry
+from strategy_research.kernel.agent.loop import AgentLoop
+from strategy_research.kernel.agent.tools import BaseTool, ToolRegistry
 from strategy_research.foundation.llm import LLMConfig, LLMResponse, ToolCall
 
 

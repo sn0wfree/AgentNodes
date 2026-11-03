@@ -36,7 +36,7 @@ from strategy_research.foundation.utils.bg_proc import (
     set_task_result,
     unregister_task,
 )
-from strategy_research.core.agent.tools import EFFECT_FS, EFFECT_NET, BaseTool, ToolContext, ToolRegistry
+from strategy_research.kernel.agent.tools import EFFECT_FS, EFFECT_NET, BaseTool, ToolContext, ToolRegistry
 from .shell_tools import _BLOCKED_COMMANDS
 
 logger = logging.getLogger(__name__)

@@ -6,7 +6,7 @@ import pytest
 from fastapi.testclient import TestClient
 
 from strategy_research.api.app import create_app
-from strategy_research.core.agent.compact import (
+from strategy_research.kernel.agent.compact import (
     reset_compaction_metrics,
 )
 
@@ -37,7 +37,7 @@ def _reset_state():
     """
     # Re-import to get current module reference (handles reload from
     # other test files like test_compact_safety.py)
-    from strategy_research.core.agent import compact as compact_mod
+    from strategy_research.kernel.agent import compact as compact_mod
     compact_mod.reset_compaction_metrics()
     # Clear audit log
     from strategy_research.api.routers import admin as admin_mod
@@ -93,7 +93,7 @@ class TestKeepAllToggle:
         body = r.json()
         assert body["status"] == "ok"
         assert body["keep_all_compactions"] is True
-        from strategy_research.core.agent import compact
+        from strategy_research.kernel.agent import compact
         assert compact._KEEP_ALL_COMPACTIONS_OVERRIDE is True
 
     def test_toggle_to_false(self, client_with_admin_token):
@@ -144,7 +144,7 @@ class TestCompactionMetrics:
 
     def test_metrics_reflect_changes(self, client_with_admin_token):
         # Directly bump metrics (use fresh module reference)
-        from strategy_research.core.agent import compact as compact_mod
+        from strategy_research.kernel.agent import compact as compact_mod
         compact_mod._compaction_metrics["total_hidden"] = 5
         compact_mod._compaction_metrics["total_kept"] = 1
         compact_mod._compaction_metrics["l4_aborts"] = 2
@@ -158,7 +158,7 @@ class TestCompactionMetrics:
         assert body["metrics"]["l4_aborts"] == 2
 
     def test_reset_metrics(self, client_with_admin_token):
-        from strategy_research.core.agent import compact as compact_mod
+        from strategy_research.kernel.agent import compact as compact_mod
         compact_mod._compaction_metrics["total_hidden"] = 99
         r = client_with_admin_token.post(
             "/api/admin/compaction/metrics/reset?confirm=yes",
@@ -222,7 +222,7 @@ class TestAuditLog:
 
 class TestModuleFunctions:
     def test_get_compaction_metrics_returns_copy(self):
-        from strategy_research.core.agent import compact as compact_mod
+        from strategy_research.kernel.agent import compact as compact_mod
         m = compact_mod.get_compaction_metrics()
         assert isinstance(m, dict)
         m["total_hidden"] = 999
@@ -230,14 +230,14 @@ class TestModuleFunctions:
         assert compact_mod._compaction_metrics["total_hidden"] != 999
 
     def test_set_keep_all_override(self):
-        from strategy_research.core.agent import compact as compact_mod
+        from strategy_research.kernel.agent import compact as compact_mod
         compact_mod.set_keep_all_override(True)
         assert compact_mod._KEEP_ALL_COMPACTIONS_OVERRIDE is True
         compact_mod.set_keep_all_override(False)
         assert compact_mod._KEEP_ALL_COMPACTIONS_OVERRIDE is False
 
     def test_reset_compaction_metrics(self):
-        from strategy_research.core.agent import compact as compact_mod
+        from strategy_research.kernel.agent import compact as compact_mod
         compact_mod._compaction_metrics["total_hidden"] = 100
         compact_mod._compaction_metrics["total_kept"] = 10
         compact_mod._compaction_metrics["l4_aborts"] = 5
@@ -257,7 +257,7 @@ class TestMetricsIntegration:
         """_convert_messages_to_history should increment filter_calls."""
         from strategy_research.api.session.models import Message
         from strategy_research.api.session.service import SessionService
-        from strategy_research.core.agent import compact as compact_mod
+        from strategy_research.kernel.agent import compact as compact_mod
 
         compact_mod.reset_compaction_metrics()
         messages = [

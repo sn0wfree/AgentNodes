@@ -14,8 +14,8 @@ from strategy_research.kernel.agent.builtin_tools import (
     ToolHelpTool,
     build_default_registry,
 )
-from strategy_research.core.agent.context import ContextBuilder
-from strategy_research.core.agent.tools import (
+from strategy_research.kernel.agent.context import ContextBuilder
+from strategy_research.kernel.agent.tools import (
     EFFECT_DB,
     EFFECT_NET,
     BaseTool,

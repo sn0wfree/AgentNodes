@@ -15,7 +15,7 @@ from pathlib import Path
 import pytest
 
 from strategy_research.kernel.agent.builtin_tools.data_tools import ImportDataTool
-from strategy_research.core.agent.tools import ToolContext
+from strategy_research.kernel.agent.tools import ToolContext
 from strategy_research.apps.db import init_db
 
 # ── Shared fixture ──────────────────────────────────────────────

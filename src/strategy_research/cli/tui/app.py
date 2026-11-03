@@ -657,7 +657,7 @@ class ResearchApp(App):
             try:
                 import asyncio
 
-                from strategy_research.core.agent.memory_manager import (
+                from strategy_research.kernel.agent.memory_manager import (
                     get_default_memory_manager,
                 )
                 mm = get_default_memory_manager()

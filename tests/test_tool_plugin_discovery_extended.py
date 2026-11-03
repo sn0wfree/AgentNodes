@@ -11,7 +11,7 @@ import pytest
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
 
 from strategy_research.kernel.agent.builtin_tools import _discover_tool_plugins
-from strategy_research.core.agent.tools import ToolRegistry, BaseTool
+from strategy_research.kernel.agent.tools import ToolRegistry, BaseTool
 
 
 class _TestTool(BaseTool):

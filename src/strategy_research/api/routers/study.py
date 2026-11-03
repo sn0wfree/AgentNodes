@@ -1586,7 +1586,7 @@ async def study_round_redo(
 @router.get("/agents")
 async def study_agents():
     """Return the unified agent catalog available for study DAGs."""
-    from ...core.agent.registry import get_default_registry
+    from strategy_research.kernel.agent.registry import get_default_registry
 
     registry = get_default_registry()
     return {

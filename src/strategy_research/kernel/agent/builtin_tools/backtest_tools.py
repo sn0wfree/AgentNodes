@@ -8,7 +8,7 @@ from typing import cast
 from pathlib import Path
 
 from strategy_research.apps.backtest import run_backtest_from_yaml
-from strategy_research.core.agent.tools import (
+from strategy_research.kernel.agent.tools import (
     EFFECT_DB,
     EFFECT_FS,
     BaseTool,

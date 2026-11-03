@@ -277,7 +277,7 @@ def retry_agent_spawn(
     Returns:
         解析后的字典
     """
-    from strategy_research.core.agent.circuit_breaker import RetryPolicy
+    from strategy_research.kernel.agent.circuit_breaker import RetryPolicy
 
     policy = RetryPolicy(
         max_retries=max_retries,
@@ -607,7 +607,7 @@ def spawn_agent(
 
     ``on_event`` 透传给 AgentLoop（agent 事件出口）。None = 事件丢弃。
     """
-    from strategy_research.core.agent.role_factory import (
+    from strategy_research.kernel.agent.role_factory import (
         run_agent_via_llm,
         should_use_real_llm,
     )

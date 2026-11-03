@@ -16,7 +16,7 @@ from rich.panel import Panel
 from rich.table import Table
 
 from strategy_research.cli.theme import get_console
-from strategy_research.core.agent.compact import (
+from strategy_research.kernel.agent.compact import (
     CompactConfig,
     _resolve_threshold_tokens,
 )

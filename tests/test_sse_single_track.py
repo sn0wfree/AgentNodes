@@ -50,7 +50,7 @@ def test_format_event_v2_handles_non_json_payload():
 @pytest.mark.asyncio
 async def test_subscribe_replays_persisted_events(tmp_path):
     """Reconnect: events persisted before subscribe are replayed."""
-    from strategy_research.core.agent.event_store import EventStore
+    from strategy_research.kernel.agent.event_store import EventStore
 
     store = EventStore(db_path=tmp_path / "events.db", flush_to_messages=False)
     store.emit("s1", "text.started", {"message_id": "m1"})
@@ -71,7 +71,7 @@ async def test_subscribe_delivers_live_events(tmp_path):
     """Live push after subscribe reaches the subscriber."""
     import asyncio
 
-    from strategy_research.core.agent.event_store import EventStore
+    from strategy_research.kernel.agent.event_store import EventStore
 
     store = EventStore(db_path=tmp_path / "events.db", flush_to_messages=False)
 

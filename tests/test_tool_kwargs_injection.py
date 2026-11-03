@@ -4,8 +4,8 @@ from __future__ import annotations
 from pathlib import Path
 from unittest.mock import MagicMock
 
-from strategy_research.core.agent.loop import AgentLoop
-from strategy_research.core.agent.tools import BaseTool, ToolRegistry
+from strategy_research.kernel.agent.loop import AgentLoop
+from strategy_research.kernel.agent.tools import BaseTool, ToolRegistry
 
 
 class SpyTool(BaseTool):

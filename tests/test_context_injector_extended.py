@@ -11,7 +11,7 @@ import pytest
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
 
-from strategy_research.core.agent.context_injector import (
+from strategy_research.kernel.agent.context_injector import (
     ContextInjector,
     GoalContinuationInjector,
     GoalContextInjector,
@@ -182,7 +182,7 @@ class TestGoalContinuationInjectorEdgeCases:
         import unittest.mock as mock
 
         with mock.patch(
-            "strategy_research.core.agent.context_injector._get_goal_snapshot",
+            "strategy_research.kernel.agent.context_injector._get_goal_snapshot",
             return_value={"goal": {"goal_id": "g1"}},
         ), mock.patch(
             "strategy_research.apps.goal.context.goal_needs_continuation",

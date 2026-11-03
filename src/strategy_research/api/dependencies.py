@@ -18,7 +18,7 @@ from typing import TYPE_CHECKING, Any
 from fastapi import Request
 
 if TYPE_CHECKING:
-    from ..core.agent.event_store import EventStore
+    from strategy_research.kernel.agent.event_store import EventStore
     from .session.service import SessionService
     from .session.store import SessionStore
 
@@ -31,7 +31,7 @@ _STATE_KEY_SESSION_SERVICE = "_session_service"
 
 def _resolve_db_path() -> Path:
     """Return the SQLite DB path for the active workspace (fallback)."""
-    from ..core.agent.memory_manager import resolve_session_db_path
+    from strategy_research.kernel.agent.memory_manager import resolve_session_db_path
 
     return resolve_session_db_path()
 
@@ -66,7 +66,7 @@ def get_event_store(request: Request) -> "EventStore":
     container = getattr(request.app.state, "_container", None)
     if container is not None:
         return container.event_store
-    from ..core.agent.event_store import EventStore
+    from strategy_research.kernel.agent.event_store import EventStore
 
     store = getattr(request.app.state, _STATE_KEY_EVENT_STORE, None)
     if store is None:

@@ -1,7 +1,7 @@
 """Tests for _fix_tool_pairs — orphaned tool_call/tool_result repair."""
 from __future__ import annotations
 
-from strategy_research.core.agent.compact import _fix_tool_pairs
+from strategy_research.kernel.agent.compact import _fix_tool_pairs
 
 
 class TestFixToolPairsNoOrphans:

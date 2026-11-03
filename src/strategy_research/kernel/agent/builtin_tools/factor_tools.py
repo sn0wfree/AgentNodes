@@ -6,7 +6,7 @@ import logging
 from typing import cast
 
 from strategy_research.apps.compute_factor import FactorComputeError, compute_factor
-from strategy_research.core.agent.tools import (
+from strategy_research.kernel.agent.tools import (
     BaseTool,
     ToolContext,
 )

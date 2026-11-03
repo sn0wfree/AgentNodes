@@ -304,7 +304,7 @@ def _close_session_services():
 
     # Close the process-singleton MemoryManager (its SQLiteStore keeps a
     # connection that may hold an uncommitted transaction).
-    from strategy_research.core.agent.memory_manager import MemoryManagerFactory
+    from strategy_research.kernel.agent.memory_manager import MemoryManagerFactory
 
     try:
         MemoryManagerFactory.reset()

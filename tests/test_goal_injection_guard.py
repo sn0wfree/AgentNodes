@@ -23,7 +23,7 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
-from strategy_research.core.agent.context_injector import (
+from strategy_research.kernel.agent.context_injector import (
     GoalContinuationInjector,
 )
 from strategy_research.foundation.llm import LLMResponse
@@ -70,7 +70,7 @@ def _snapshot_active_with_pending():
 @pytest.fixture
 def active_goal():
     with patch(
-        "strategy_research.core.agent.context_injector."
+        "strategy_research.kernel.agent.context_injector."
         "_get_goal_snapshot",
         return_value=_snapshot_active_with_pending(),
     ):
@@ -124,7 +124,7 @@ class TestZeroRegression:
         loop = _loop()
         resp = LLMResponse(content="plain text", finish_reason="stop")
         with patch(
-            "strategy_research.core.agent.context_injector."
+            "strategy_research.kernel.agent.context_injector."
             "_get_goal_snapshot",
             return_value=None,
         ):

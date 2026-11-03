@@ -11,12 +11,12 @@ from __future__ import annotations
 
 from unittest.mock import MagicMock
 
-from strategy_research.core.agent.compact import (
+from strategy_research.kernel.agent.compact import (
     CompactConfig,
     _resolve_threshold_tokens,
     compact_messages,
 )
-from strategy_research.core.agent.loop import (
+from strategy_research.kernel.agent.loop import (
     AgentLoop,
     compaction_persister_registered,
 )

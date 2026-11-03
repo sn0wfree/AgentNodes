@@ -18,7 +18,7 @@ from strategy_research.kernel.agent.builtin_tools.todo_tools import (
     TodoStore,
     TodoWriteTool,
 )
-from strategy_research.core.agent.context_providers import TodoContextProvider
+from strategy_research.kernel.agent.context_providers import TodoContextProvider
 from strategy_research.kernel.context.hub import ContextHub
 from strategy_research.kernel.context.protocol import ContextQuery
 from strategy_research.kernel.gateway.gateway import Gateway
@@ -146,7 +146,7 @@ class _RealRegistry:
     real execute(name, params, ctx=ctx) path, duck-typed fakes can't."""
 
     def __init__(self) -> None:
-        from strategy_research.core.agent.tools import ToolRegistry
+        from strategy_research.kernel.agent.tools import ToolRegistry
 
         self._reg = ToolRegistry()
         self._reg.register(TodoWriteTool())

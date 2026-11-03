@@ -14,7 +14,7 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from strategy_research.core.agent.prompt_builder import (
+from strategy_research.kernel.agent.prompt_builder import (
     PromptBuilderFactory,
     StaticFilePromptBuilder,
 )

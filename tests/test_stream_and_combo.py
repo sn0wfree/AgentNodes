@@ -12,12 +12,12 @@ from pathlib import Path
 import pytest
 
 from strategy_research.kernel.agent.builtin_tools import build_default_registry
-from strategy_research.core.agent.combo import (
+from strategy_research.kernel.agent.combo import (
     ComboConfigError,
     CompositeTool,
 )
-from strategy_research.core.agent.loop import AgentLoop
-from strategy_research.core.agent.tools import ToolContext, ToolRegistry
+from strategy_research.kernel.agent.loop import AgentLoop
+from strategy_research.kernel.agent.tools import ToolContext, ToolRegistry
 from strategy_research.foundation.llm import LLMConfig, LLMResponse, ToolCall
 
 
@@ -155,7 +155,7 @@ def test_combo_non_json_output_error(registry, tmp_path):
 
 def test_combo_config_error_paths(tmp_path):
     """_validate_config 各失败分支（直接构造非法配置字典驱动）。"""
-    from strategy_research.core.agent.combo import _validate_config
+    from strategy_research.kernel.agent.combo import _validate_config
 
     with pytest.raises(ComboConfigError):
         _validate_config({"steps": []}, Path("x.yaml"))  # 缺 name

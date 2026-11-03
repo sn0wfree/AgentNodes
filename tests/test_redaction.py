@@ -6,7 +6,7 @@ import unittest
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
-from strategy_research.core.agent.redaction import (
+from strategy_research.kernel.agent.redaction import (
     is_sensitive_arg,
     redact_internal_paths,
     redact_payload,

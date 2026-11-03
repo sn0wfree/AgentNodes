@@ -17,7 +17,7 @@ from strategy_research.kernel.agent.builtin_tools.goal_tools import (
     GetGoalStatusTool,
     ListGoalsTool,
 )
-from strategy_research.core.agent.tools import ToolContext
+from strategy_research.kernel.agent.tools import ToolContext
 
 
 @pytest.fixture()

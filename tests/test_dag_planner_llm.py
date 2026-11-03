@@ -10,8 +10,8 @@ import json
 
 import pytest
 
-from strategy_research.core.agent.plugin import AgentPlugin
-from strategy_research.core.agent.registry import AgentPluginRegistry
+from strategy_research.kernel.agent.plugin import AgentPlugin
+from strategy_research.kernel.agent.registry import AgentPluginRegistry
 from strategy_research.apps.study.dag_planner import DAGPlanner, PlannerConstraints
 
 
@@ -51,7 +51,7 @@ def llm_planner(reg, monkeypatch):
     """
     p = DAGPlanner(registry=reg)
     p._llm_is_available = lambda: True  # type: ignore[method-assign]
-    import strategy_research.core.agent.prompt_builder as pb
+    import strategy_research.kernel.agent.prompt_builder as pb
 
     monkeypatch.setattr(
         pb, "PromptBuilderFactory",
@@ -72,7 +72,7 @@ def test_llm_selection_used_when_valid(llm_planner):
 
 def test_llm_none_prompt_falls_back(llm_planner, monkeypatch):
     """build_system_prompt 返回空 → 回退关键字。"""
-    import strategy_research.core.agent.prompt_builder as pb
+    import strategy_research.kernel.agent.prompt_builder as pb
 
     monkeypatch.setattr(
         pb, "PromptBuilderFactory",

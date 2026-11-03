@@ -46,7 +46,7 @@ def create_app(
 
     # Register the core loop's compaction persister (legacy fallback
     # path) so core/agent/loop.py never imports the api layer.
-    from ..core.agent.loop import register_compaction_persister
+    from strategy_research.kernel.agent.loop import register_compaction_persister
     from .routers.web_session import persist_message
     register_compaction_persister(persist_message)
 

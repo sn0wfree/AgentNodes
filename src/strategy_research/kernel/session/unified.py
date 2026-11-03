@@ -191,7 +191,7 @@ def delete_session(session_id: str, db_path: Path | None = None) -> bool:
 
 
 def _resolve(db_path: Path | None) -> Path:
-    from strategy_research.core.agent.memory_manager import resolve_session_db_path
+    from strategy_research.kernel.agent.memory_manager import resolve_session_db_path
 
     return Path(db_path) if db_path is not None else resolve_session_db_path()
 

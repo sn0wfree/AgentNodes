@@ -20,7 +20,7 @@ from pathlib import Path
 
 import pytest
 
-from strategy_research.core.agent.event_store import EventStore
+from strategy_research.kernel.agent.event_store import EventStore
 from strategy_research.kernel.events.event_v2 import EventV2
 from strategy_research.kernel.orchestration.contracts import (
     PROTOCOL_VERSION,

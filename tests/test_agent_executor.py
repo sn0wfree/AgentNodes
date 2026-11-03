@@ -5,15 +5,15 @@ from pathlib import Path
 
 import pytest
 
-from strategy_research.core.agent import exec_registry
-from strategy_research.core.agent.builtin_plugins import BUILTIN_PLUGINS
-from strategy_research.core.agent.dag_config import AgentNodeConfig
-from strategy_research.core.agent.executor import (
+from strategy_research.kernel.agent import exec_registry
+from strategy_research.kernel.agent.builtin_plugins import BUILTIN_PLUGINS
+from strategy_research.kernel.agent.dag_config import AgentNodeConfig
+from strategy_research.kernel.agent.executor import (
     AgentExecutor,
     first_two_sentences,
 )
-from strategy_research.core.agent.registry import AgentPluginRegistry
-from strategy_research.core.agent.loop import AgentLoop
+from strategy_research.kernel.agent.registry import AgentPluginRegistry
+from strategy_research.kernel.agent.loop import AgentLoop
 from strategy_research.foundation.llm import LLMConfig, LLMResponse
 
 PLUGINS = {p.id: p for p in BUILTIN_PLUGINS}
@@ -71,7 +71,7 @@ class TestPythonExec:
                 "hello": "world", "up": bool(upstream),
             },
         )
-        from strategy_research.core.agent.plugin import AgentPlugin
+        from strategy_research.kernel.agent.plugin import AgentPlugin
         plugin = AgentPlugin(
             id="py_hello", name="PyHello", category="tool", description="",
             executor_type="python", python_function="_py_hello",
@@ -83,7 +83,7 @@ class TestPythonExec:
         assert '"up": true' in r.output
 
     def test_python_plugin_unknown_fn_is_error(self, workspace, executor):
-        from strategy_research.core.agent.plugin import AgentPlugin
+        from strategy_research.kernel.agent.plugin import AgentPlugin
         plugin = AgentPlugin(
             id="py_missing", name="M", category="tool", description="",
             executor_type="python", python_function="_nope_",
@@ -105,7 +105,7 @@ class TestEvaluator:
             return {"verdict": "keep"}
 
         exec_registry.register_evaluator("_ev_decide", fake_decide)
-        from strategy_research.core.agent.plugin import AgentPlugin
+        from strategy_research.kernel.agent.plugin import AgentPlugin
         plugin = AgentPlugin(
             id="ev_decide", name="E", category="tool", description="",
             executor_type="evaluator", python_function="_ev_decide",
@@ -124,7 +124,7 @@ class TestEvaluator:
             return {}
 
         exec_registry.register_evaluator("_ev_ctx", fake_decide)
-        from strategy_research.core.agent.plugin import AgentPlugin
+        from strategy_research.kernel.agent.plugin import AgentPlugin
         plugin = AgentPlugin(
             id="ev_ctx", name="E", category="tool", description="",
             executor_type="evaluator", python_function="_ev_ctx",
@@ -145,7 +145,7 @@ class TestEvaluator:
 class TestLLMExec:
     def _patch_loop(self, chat_fn=None):
         """Patch AgentLoop.__init__ to use a mock chat and skip streaming."""
-        import strategy_research.core.agent.loop as loop_mod
+        import strategy_research.kernel.agent.loop as loop_mod
         orig = loop_mod.AgentLoop.__init__
         _patch_captured: dict = {}
         def patched(self, *a, **kw):
@@ -159,7 +159,7 @@ class TestLLMExec:
         return orig, _patch_captured
 
     def _unpatch_loop(self, orig):
-        import strategy_research.core.agent.loop as loop_mod
+        import strategy_research.kernel.agent.loop as loop_mod
         loop_mod.AgentLoop.__init__ = orig
 
     def test_llm_success_and_summary(self, workspace, executor):
@@ -200,7 +200,7 @@ class TestLLMExec:
         assert "研究动量因子" in user_msg
 
     def test_llm_no_prompt_file_is_error(self, workspace, executor):
-        from strategy_research.core.agent.plugin import AgentPlugin
+        from strategy_research.kernel.agent.plugin import AgentPlugin
         plugin = AgentPlugin(
             id="nope_prompt", name="N", category="research",
             description="", prompt_file="",

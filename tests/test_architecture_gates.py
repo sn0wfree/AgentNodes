@@ -154,7 +154,7 @@ def test_context_hub_never_imports_producers():
 
     ContextHub 三条硬约束之一（docs/context-hub-discussion.md §3）：
     「生产方注册进中枢，中枢从不 import 生产方」——否则它就是下一个
-    上帝对象。生产方适配器住在 core/agent/context_providers.py，
+    上帝对象。生产方适配器住在 kernel/agent/context_providers.py，
     方向是 域→平台。（相对导入由 _imports 解析为绝对名后匹配。）
 
     已知豁免（平台→生产方，有意接线，非本门禁管辖）：
@@ -212,9 +212,9 @@ def test_domain_layers_use_the_agent_factory_not_raw_agentloop():
     那样会跳过角色提示装配、工具白名单、预算与权限接线。
 
     允许的构造点：
-      - core/agent/role_factory.py  → build_agent_loop（唯一构造点）
-      - core/agent/chat_loop.py     → chat 专用，P5-1c 待删
-      - core/agent/executor.py      → swarm 专用
+      - kernel/agent/role_factory.py  → build_agent_loop（唯一构造点）
+      - kernel/agent/chat_loop.py     → chat 专用，P5-1c 待删
+      - kernel/agent/executor.py      → swarm 专用
     """
     violations: list[str] = []
     for domain in ("study", "workflow", "swarm"):
@@ -267,7 +267,7 @@ def test_agentloop_capability_premise_holds():
 
     见 docs/stage-c1-wp-agent-node-design-20261028.md §1.1。
     """
-    loop_tools = (SRC / "core" / "agent" / "loop_tools.py").read_text(encoding="utf-8")
+    loop_tools = (SRC / "kernel" / "agent" / "loop_tools.py").read_text(encoding="utf-8")
     assert "_TOOL_MAX_RETRIES" in loop_tools, "瞬时工具重试"
     assert "_TOOL_RESULT_HISTORY_MAX" in loop_tools, "30k 工具结果截断"
     assert "check_guards" in loop_tools, "单调 deny guard"

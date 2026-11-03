@@ -834,7 +834,7 @@ async def get_session_trace(
     full LLM trajectory (system_prompt, tool schemas); previously ANY
     caller could read ANY session's trace. 404/403 per _fetch_session_owned.
     """
-    from ...core.agent.trace import TraceWriter
+    from strategy_research.kernel.agent.trace import TraceWriter
     from ..session.trace_projection import TraceProjection
     from .web_session import _fetch_session_owned, _get_db
     user_id = getattr(request.state, "user_id", "anonymous")
@@ -891,7 +891,7 @@ async def list_personas(request: Request = None):
     curated set of role prompts the composer may switch to. ``chat`` is the
     default (general) persona.
     """
-    from strategy_research.core.agent.prompt_builder import PromptBuilderFactory
+    from strategy_research.kernel.agent.prompt_builder import PromptBuilderFactory
 
     labels = {
         "chat": ("通用助手", "默认聊天助手，适合日常问答与策略讨论"),

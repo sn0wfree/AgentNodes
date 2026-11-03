@@ -17,7 +17,7 @@ from pathlib import Path
 import pytest
 
 from strategy_research.kernel.agent.builtin_tools import build_default_registry
-from strategy_research.core.agent.loop import (
+from strategy_research.kernel.agent.loop import (
     WRAP_UP_NUDGE_TEXT,
     WRAP_UP_RATIO,
     AgentLoop,

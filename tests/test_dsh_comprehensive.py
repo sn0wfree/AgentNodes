@@ -15,15 +15,15 @@ import pytest
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
 
-from strategy_research.core.agent.context_injector import (
+from strategy_research.kernel.agent.context_injector import (
     ContextInjector,
     GoalContinuationInjector,
     GoalContextInjector,
     TodosInjector,
     build_default_injectors,
 )
-from strategy_research.core.agent.loop import AgentLoop, LoopResult
-from strategy_research.core.agent.tools import ToolGuard, ToolRegistry, BaseTool
+from strategy_research.kernel.agent.loop import AgentLoop, LoopResult
+from strategy_research.kernel.agent.tools import ToolGuard, ToolRegistry, BaseTool
 from strategy_research.foundation.registry import Registry
 
 
@@ -158,7 +158,7 @@ class TestContextInjectorAdvanced:
 
 class TestRequestEnvelopeHashAdvanced:
     def _make_loop(self):
-        from strategy_research.core.agent.loop import AgentLoop
+        from strategy_research.kernel.agent.loop import AgentLoop
         loop = object.__new__(AgentLoop)
         loop.session_id = "test"
         loop._emit = MagicMock()
@@ -624,14 +624,14 @@ class TestPluginDiscoveryAdvanced:
 class TestPromptDiscoveryAdvanced:
     def test_discover_prompts_handles_nonexistent_dir(self):
         """_discover_prompts handles missing templates directory."""
-        from strategy_research.core.agent.prompt_builder import PromptBuilderFactory
+        from strategy_research.kernel.agent.prompt_builder import PromptBuilderFactory
         with patch.object(Path, "__truediv__", return_value=Path("/nonexistent/path")):
             result = PromptBuilderFactory._discover_prompts()
             assert isinstance(result, dict)
 
     def test_list_roles_deduplication(self):
         """list_roles doesn't have duplicates."""
-        from strategy_research.core.agent.prompt_builder import PromptBuilderFactory
+        from strategy_research.kernel.agent.prompt_builder import PromptBuilderFactory
         PromptBuilderFactory._discovered = None
         roles = PromptBuilderFactory.list_roles()
         assert len(roles) == len(set(roles))

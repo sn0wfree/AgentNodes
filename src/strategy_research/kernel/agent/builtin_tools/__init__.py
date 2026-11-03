@@ -15,7 +15,7 @@ from __future__ import annotations
 import logging
 from pathlib import Path
 
-from strategy_research.core.agent.tools import ToolRegistry
+from strategy_research.kernel.agent.tools import ToolRegistry
 from .backtest_analysis_tools import BenchmarkComparison, DrawdownAnalysis, StrategyCompare
 from .backtest_tools import (
     ConfigLoadStep,
@@ -125,7 +125,7 @@ def build_default_registry(workspace: Path | None = None) -> ToolRegistry:
 
     # Paradigm v2 分层注册: 组合库加载器 (workspace tools/combo/*.yml)
     if workspace is not None:
-        from strategy_research.core.agent.combo import load_combo_tools
+        from strategy_research.kernel.agent.combo import load_combo_tools
         load_combo_tools(workspace, r)
 
     # DSH-inspired: plugin discovery via entry_points

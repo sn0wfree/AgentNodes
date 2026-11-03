@@ -12,7 +12,7 @@ import logging
 import subprocess
 import time
 
-from strategy_research.core.agent.tools import EFFECT_FS, EFFECT_NET, BaseTool, ToolContext, ToolRegistry
+from strategy_research.kernel.agent.tools import EFFECT_FS, EFFECT_NET, BaseTool, ToolContext, ToolRegistry
 from .utils import err_actionable
 
 logger = logging.getLogger(__name__)

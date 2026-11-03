@@ -13,13 +13,13 @@ from pathlib import Path
 import pytest
 
 from strategy_research.kernel.agent.builtin_tools import build_default_registry
-from strategy_research.core.agent.combo import (
+from strategy_research.kernel.agent.combo import (
     ComboConfigError,
     CompositeTool,
     _resolve_param,
     load_combo_tools,
 )
-from strategy_research.core.agent.tools import ToolContext, ToolRegistry
+from strategy_research.kernel.agent.tools import ToolContext, ToolRegistry
 
 
 def _write_combo(workspace: Path, name: str, content: str) -> Path:
@@ -241,5 +241,5 @@ class TestComboConfigValidation:
         ws.mkdir()
         f = _write_combo(ws, "c", "steps:\n  - tool: read_file\n    params: {}\n")
         with pytest.raises(ComboConfigError):
-            from strategy_research.core.agent.combo import _validate_config
+            from strategy_research.kernel.agent.combo import _validate_config
             _validate_config({"steps": []}, f)

@@ -17,7 +17,7 @@ import pandas as pd
 import pytest
 
 from strategy_research.kernel.agent.builtin_tools import factor_tools as ft
-from strategy_research.core.agent.tools import ToolContext
+from strategy_research.kernel.agent.tools import ToolContext
 
 
 @pytest.fixture()

@@ -156,7 +156,7 @@ class TestSwarmRuntime:
         """
         from types import SimpleNamespace
 
-        import strategy_research.core.agent.executor as executor_mod
+        import strategy_research.kernel.agent.executor as executor_mod
 
         captured = {}
 

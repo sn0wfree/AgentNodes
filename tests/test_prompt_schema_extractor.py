@@ -19,7 +19,7 @@ import pytest
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
 
-from strategy_research.core.agent.prompt_schema_extractor import (
+from strategy_research.kernel.agent.prompt_schema_extractor import (
     AgentSchema,
     FieldHints,
     extract_agent_schema,
@@ -156,7 +156,7 @@ class TestStripHintComments:
             '  "key": true\n'
             '}'
         )
-        from strategy_research.core.agent.prompt_schema_extractor import _strip_hint_comments
+        from strategy_research.kernel.agent.prompt_schema_extractor import _strip_hint_comments
         cleaned = _strip_hint_comments(text)
         assert "#" not in cleaned
         assert json.loads(cleaned) == {"key": True}
@@ -168,7 +168,7 @@ class TestStripHintComments:
             '  "note": "this # is fine"\n'
             '}'
         )
-        from strategy_research.core.agent.prompt_schema_extractor import _strip_hint_comments
+        from strategy_research.kernel.agent.prompt_schema_extractor import _strip_hint_comments
         cleaned = _strip_hint_comments(text)
         assert '"this # is fine"' in cleaned
         assert json.loads(cleaned) == {"note": "this # is fine"}
@@ -177,7 +177,7 @@ class TestStripHintComments:
         """End-to-end: prompt with # @label: comments parses into a schema
         with the hint label populated."""
         import tempfile
-        from strategy_research.core.agent.prompt_schema_extractor import extract_agent_schema
+        from strategy_research.kernel.agent.prompt_schema_extractor import extract_agent_schema
         with tempfile.TemporaryDirectory() as td:
             (Path(td) / "test_role.md").write_text(
                 "## 输出\n\n"
@@ -197,23 +197,23 @@ class TestStripHintComments:
 
 class TestStripTrailingCommas:
     def test_object_trailing_comma(self):
-        from strategy_research.core.agent.prompt_schema_extractor import _strip_trailing_commas
+        from strategy_research.kernel.agent.prompt_schema_extractor import _strip_trailing_commas
         cleaned = _strip_trailing_commas('{\n  "a": 1,\n}')
         assert json.loads(cleaned) == {"a": 1}
 
     def test_array_trailing_comma(self):
-        from strategy_research.core.agent.prompt_schema_extractor import _strip_trailing_commas
+        from strategy_research.kernel.agent.prompt_schema_extractor import _strip_trailing_commas
         cleaned = _strip_trailing_commas('[\n  1,\n  2,\n]')
         assert json.loads(cleaned) == [1, 2]
 
     def test_preserves_comma_in_string(self):
-        from strategy_research.core.agent.prompt_schema_extractor import _strip_trailing_commas
+        from strategy_research.kernel.agent.prompt_schema_extractor import _strip_trailing_commas
         cleaned = _strip_trailing_commas('{"a": "x, y", }')
         assert json.loads(cleaned) == {"a": "x, y"}
 
     def test_extracts_schema_with_trailing_commas(self):
         import tempfile
-        from strategy_research.core.agent.prompt_schema_extractor import extract_agent_schema
+        from strategy_research.kernel.agent.prompt_schema_extractor import extract_agent_schema
         with tempfile.TemporaryDirectory() as td:
             (Path(td) / "demo.md").write_text(
                 "## 输出\n\n"

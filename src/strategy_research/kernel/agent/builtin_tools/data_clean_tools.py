@@ -5,7 +5,7 @@ from __future__ import annotations
 import logging
 from typing import Any
 
-from strategy_research.core.agent.tools import (
+from strategy_research.kernel.agent.tools import (
     EFFECT_DB,
     BaseTool,
     ToolContext,

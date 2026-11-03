@@ -21,7 +21,7 @@ class RunnerKnowledgeMixin:
 
         Returns the number of appended entries (0 on stub/failure).
         """
-        from strategy_research.core.agent.role_factory import (
+        from strategy_research.kernel.agent.role_factory import (
             run_agent_via_llm,
             should_use_real_llm,
         )

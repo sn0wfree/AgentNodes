@@ -16,14 +16,14 @@ from unittest.mock import patch
 
 import pytest
 
-from strategy_research.core.agent.dag_config import AgentNodeConfig
-from strategy_research.core.agent.executor import (
+from strategy_research.kernel.agent.dag_config import AgentNodeConfig
+from strategy_research.kernel.agent.executor import (
     _NON_PROMPT_KEYS,
     AgentExecutionResult,
     AgentExecutor,
     _is_retryable_execution_error,
 )
-from strategy_research.core.agent.plugin import AgentPlugin
+from strategy_research.kernel.agent.plugin import AgentPlugin
 
 # ── §3.4: max_retries must not leak into the prompt ───────────
 

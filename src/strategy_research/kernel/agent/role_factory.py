@@ -133,8 +133,8 @@ def build_agent_loop(
         AgentLoop 实例. 如果系统提示词为空, 返回 None (调用方走 stub fallback).
     """
     from strategy_research.kernel.agent.builtin_tools import build_default_registry
-    from ...core.agent.loop import AgentLoop
-    from ...core.agent.loop_assembly import assemble_loop_parts
+    from strategy_research.kernel.agent.loop import AgentLoop
+    from strategy_research.kernel.agent.loop_assembly import assemble_loop_parts
     from strategy_research.kernel.agent.strategy.profile_resolver import resolve_loop_strategy
     from strategy_research.foundation.llm import LLMConfig
 

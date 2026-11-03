@@ -26,7 +26,7 @@ from strategy_research.api.session.models import Attempt, AttemptStatus
 
 @pytest.fixture
 def temp_db(monkeypatch, tmp_path):
-    from strategy_research.core.agent.memory_manager import resolve_session_db_path
+    from strategy_research.kernel.agent.memory_manager import resolve_session_db_path
 
     workspace = tmp_path
     workspace.mkdir(parents=True, exist_ok=True)

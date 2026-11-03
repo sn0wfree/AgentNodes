@@ -16,7 +16,7 @@ from strategy_research.kernel.agent.builtin_tools.bg_tools import (
     active_tasks,
     unregister_task,
 )
-from strategy_research.core.agent.tools import ToolContext
+from strategy_research.kernel.agent.tools import ToolContext
 
 
 def _ctx(workspace: Path) -> ToolContext:

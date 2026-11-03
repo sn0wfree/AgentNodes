@@ -96,7 +96,7 @@ async def toggle_keep_all_compactions(
             detail="Confirmation required: pass ?confirm=yes",
         )
 
-    from strategy_research.core.agent.compact import set_keep_all_override
+    from strategy_research.kernel.agent.compact import set_keep_all_override
 
     set_keep_all_override(enabled)
     _record_audit(
@@ -117,7 +117,7 @@ async def get_compaction_metrics(
 ) -> dict[str, Any]:
     """Get in-memory compaction metrics for monitoring."""
     _verify_admin(x_admin_token)
-    from strategy_research.core.agent.compact import get_compaction_metrics
+    from strategy_research.kernel.agent.compact import get_compaction_metrics
 
     metrics = get_compaction_metrics()
     return {
@@ -139,7 +139,7 @@ async def reset_compaction_metrics(
             detail="Confirmation required: pass ?confirm=yes",
         )
 
-    from strategy_research.core.agent.compact import reset_compaction_metrics
+    from strategy_research.kernel.agent.compact import reset_compaction_metrics
 
     reset_compaction_metrics()
     _record_audit("compaction.metrics.reset", {})
@@ -180,8 +180,8 @@ async def get_session_metrics(
     real answer instead of a 404.
     """
     _verify_admin(x_admin_token)
-    from strategy_research.core.agent.event_store import EventStore
-    from strategy_research.core.agent.memory_manager import resolve_session_db_path
+    from strategy_research.kernel.agent.event_store import EventStore
+    from strategy_research.kernel.agent.memory_manager import resolve_session_db_path
 
     # health_report() only reads in-process cache/subscriber state, so the
     # store is discarded immediately -- no connection is left open.

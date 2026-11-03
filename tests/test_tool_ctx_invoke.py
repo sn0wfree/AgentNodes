@@ -12,8 +12,8 @@ from pathlib import Path
 
 import pytest
 
-from strategy_research.core.agent.loop import AgentLoop, LoopResult
-from strategy_research.core.agent.tools import (
+from strategy_research.kernel.agent.loop import AgentLoop, LoopResult
+from strategy_research.kernel.agent.tools import (
     EFFECT_DB,
     EFFECT_NET,
     BaseTool,

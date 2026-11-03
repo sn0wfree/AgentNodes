@@ -1,6 +1,6 @@
 """EventBusV2 — **test harness only** (moved from api/session, W3b).
 
-Production uses ``EventStore`` (``strategy_research.core.agent.event_store``).
+Production uses ``EventStore`` (``strategy_research.kernel.agent.event_store``).
 This module remains so projector / dual-write regression tests can drive
 the historical publish path without keeping a deprecated API surface.
 """
@@ -26,7 +26,7 @@ class EventBusV2:
     """Dual-write event publisher (event_log + EventBus).
 
     .. deprecated::
-        Use ``EventStore`` (``strategy_research.core.agent.event_store``)
+        Use ``EventStore`` (``strategy_research.kernel.agent.event_store``)
         instead. This class is kept for backward compatibility.
 
     Attributes:

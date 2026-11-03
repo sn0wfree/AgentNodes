@@ -10,8 +10,8 @@ import pytest
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
 
-from strategy_research.core.agent.cache import CacheConfig
-from strategy_research.core.agent.memory_manager import (
+from strategy_research.kernel.agent.cache import CacheConfig
+from strategy_research.kernel.agent.memory_manager import (
     InMemoryStore,
     MemoryManagerFactory,
     SQLiteStore,

@@ -17,7 +17,7 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import List, Optional
 
-from strategy_research.core.agent.frontmatter import parse_frontmatter as _parse_frontmatter
+from strategy_research.kernel.agent.frontmatter import parse_frontmatter as _parse_frontmatter
 
 logger = logging.getLogger(__name__)
 

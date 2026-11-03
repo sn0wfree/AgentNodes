@@ -16,7 +16,7 @@ from pathlib import Path
 import pandas as pd
 import pytest
 
-from strategy_research.core.agent.tools import ToolContext
+from strategy_research.kernel.agent.tools import ToolContext
 
 os.environ.setdefault("STRATEGY_RESEARCH_CACHE_DIR", "/tmp/sr_test_cache")
 

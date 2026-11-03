@@ -81,7 +81,7 @@ LAYER_MEMBERSHIP: dict[str, str] = {
     "strategy_research.kernel.runtimes": "L3",
     "strategy_research.kernel.workflow": "L3",
     "strategy_research.kernel.swarm": "L3",
-    "strategy_research.core.agent": "L3",
+    "strategy_research.kernel.agent": "L3",
     "strategy_research.kernel.context": "L3",
     "strategy_research.kernel.hooks": "L3",
     "strategy_research.kernel.permission": "L3",

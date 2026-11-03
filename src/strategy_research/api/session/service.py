@@ -20,8 +20,8 @@ from datetime import datetime
 from pathlib import Path
 from typing import Any, Optional
 
-from strategy_research.core.agent.compact import CompactConfig, compact_messages
-from strategy_research.core.agent.event_store import EventStore
+from strategy_research.kernel.agent.compact import CompactConfig, compact_messages
+from strategy_research.kernel.agent.event_store import EventStore
 from strategy_research.foundation.llm import LLMConfig
 
 from .models import Attempt, AttemptId, AttemptStatus, Message, MessageId, SessionId
@@ -892,7 +892,7 @@ class SessionService:
                 accumulated_parts=accumulated_parts,
             )
 
-        from strategy_research.core.agent.chat_loop import build_chat_agent_loop
+        from strategy_research.kernel.agent.chat_loop import build_chat_agent_loop
 
         # cfg is passed in by caller; just apply model override
         if cfg and model:
@@ -1211,7 +1211,7 @@ class SessionService:
         Acquires per-session compact lock to prevent concurrent compaction
         (auto from agent loop + manual /compact) on the same session.
         """
-        from ...core.agent.compact import _compact_locks
+        from strategy_research.kernel.agent.compact import _compact_locks
         from ..routers.chat import _build_llm_config
 
         async with await _compact_locks.get(session_id):
@@ -1355,7 +1355,7 @@ class SessionService:
                 are hidden from LLM but kept in DB for audit/UI display.
                 See docs/compaction-history-filter.md.
         """
-        from strategy_research.core.agent.compact import _compaction_metrics
+        from strategy_research.kernel.agent.compact import _compaction_metrics
 
         logger.debug("[HIST] converting %d messages", len(messages))
         _compaction_metrics["filter_calls"] += 1

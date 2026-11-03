@@ -14,7 +14,7 @@ import inspect
 import pytest
 
 from strategy_research.kernel.agent.builtin_tools import build_default_registry
-from strategy_research.core.agent.tools import (
+from strategy_research.kernel.agent.tools import (
     _INJECTED_PARAMS,
     EFFECT_DB,
     EFFECT_FS,

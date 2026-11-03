@@ -26,7 +26,7 @@ from typing import TYPE_CHECKING, Any, Callable
 from fastapi import Request
 
 if TYPE_CHECKING:
-    from ..core.agent.event_store import EventStore
+    from strategy_research.kernel.agent.event_store import EventStore
     from .session.service import SessionService
     from .session.store import SessionStore
 
@@ -80,8 +80,8 @@ def build_container(
     Returns:
         Fully constructed AppContainer with all services wired.
     """
-    from ..core.agent.event_store import EventStore
-    from ..core.agent.memory_manager import resolve_session_db_path
+    from strategy_research.kernel.agent.event_store import EventStore
+    from strategy_research.kernel.agent.memory_manager import resolve_session_db_path
     from .session.service import SessionService
     from .session.store import SessionStore
 

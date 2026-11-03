@@ -11,7 +11,7 @@ from types import SimpleNamespace
 
 import pytest
 
-from strategy_research.core.agent.context_injector import (
+from strategy_research.kernel.agent.context_injector import (
     MemoryRetrieverInjector,
 )
 from strategy_research.apps.goal.workflow_hook import GoalWorkflowHook
@@ -219,7 +219,7 @@ def test_scheduler_shutdown_idempotent():
 
 def test_memory_retriever_builds_block(monkeypatch):
     from strategy_research.kernel.memory.persistent import MemoryEntry
-    from strategy_research.core.agent.context_injector import (
+    from strategy_research.kernel.agent.context_injector import (
         MemoryRetrieverInjector,
     )
 
@@ -237,7 +237,7 @@ def test_memory_retriever_builds_block(monkeypatch):
 
 
 def test_memory_retriever_empty_memory_returns_empty_block(monkeypatch):
-    from strategy_research.core.agent.context_injector import (
+    from strategy_research.kernel.agent.context_injector import (
         MemoryRetrieverInjector,
     )
 
@@ -248,7 +248,7 @@ def test_memory_retriever_empty_memory_returns_empty_block(monkeypatch):
 
 
 def test_memory_retriever_load_memory_default_none():
-    from strategy_research.core.agent.context_injector import (
+    from strategy_research.kernel.agent.context_injector import (
         MemoryRetrieverInjector,
     )
     from strategy_research.kernel.memory.persistent import PersistentMemory
@@ -259,7 +259,7 @@ def test_memory_retriever_load_memory_default_none():
 
 
 def test_memory_retriever_inject_pre_run_no_memory(monkeypatch):
-    from strategy_research.core.agent.context_injector import (
+    from strategy_research.kernel.agent.context_injector import (
         MemoryRetrieverInjector,
     )
 
@@ -272,7 +272,7 @@ def test_memory_retriever_inject_pre_run_no_memory(monkeypatch):
 
 def test_memory_retriever_build_block_with_entries(monkeypatch):
     """_build_block + _format_entry：有命中 → <relevant-memory> 块。"""
-    from strategy_research.core.agent.context_injector import (
+    from strategy_research.kernel.agent.context_injector import (
         MemoryRetrieverInjector,
     )
 
@@ -299,7 +299,7 @@ def test_memory_retriever_build_block_with_entries(monkeypatch):
 
 def test_memory_retrieve_with_memory_and_hypotheses(monkeypatch):
     """_retrieve：memory 命中 + include_hypotheses 分支。"""
-    from strategy_research.core.agent.context_injector import (
+    from strategy_research.kernel.agent.context_injector import (
         MemoryRetrieverInjector,
     )
 
@@ -316,7 +316,7 @@ def test_memory_retrieve_with_memory_and_hypotheses(monkeypatch):
 
 
 def test_retrieve_hypotheses_registry_error_returns_empty(monkeypatch):
-    from strategy_research.core.agent.context_injector import (
+    from strategy_research.kernel.agent.context_injector import (
         MemoryRetrieverInjector,
     )
 
@@ -333,7 +333,7 @@ def test_retrieve_hypotheses_registry_error_returns_empty(monkeypatch):
 
 
 def test_retrieve_hypotheses_scores_and_sorts(monkeypatch):
-    from strategy_research.core.agent.context_injector import (
+    from strategy_research.kernel.agent.context_injector import (
         MemoryRetrieverInjector,
     )
     import strategy_research.apps.hypothesis.registry as hr
@@ -359,7 +359,7 @@ def test_retrieve_hypotheses_scores_and_sorts(monkeypatch):
 
 def test_memory_retriever_inject_pre_run_prepends_block(monkeypatch):
     """inject_pre_run：命中 → 块前置于任务文本。"""
-    from strategy_research.core.agent.context_injector import (
+    from strategy_research.kernel.agent.context_injector import (
         MemoryRetrieverInjector,
     )
 
@@ -372,7 +372,7 @@ def test_memory_retriever_inject_pre_run_prepends_block(monkeypatch):
 
 
 def test_memory_retriever_inject_pre_run_disabled(monkeypatch):
-    from strategy_research.core.agent.context_injector import (
+    from strategy_research.kernel.agent.context_injector import (
         MemoryRetrieverInjector,
     )
 
@@ -395,7 +395,7 @@ def test_list_goals_invalid_status_is_actionable(tmp_path, monkeypatch):
         ListGoalsTool,
     )
     from strategy_research.apps.goal.store import GoalStore
-    from strategy_research.core.agent.tools import ToolContext
+    from strategy_research.kernel.agent.tools import ToolContext
 
     db = tmp_path / "goals3.db"
     store = GoalStore(db_path=db)

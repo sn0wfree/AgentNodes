@@ -22,8 +22,8 @@ from strategy_research.kernel.agent.builtin_tools.todo_tools import (
     _format_todos_snapshot,
     _normalize_todos,
 )
-from strategy_research.core.agent.loop import AgentLoop
-from strategy_research.core.agent.tools import ToolContext
+from strategy_research.kernel.agent.loop import AgentLoop
+from strategy_research.kernel.agent.tools import ToolContext
 from strategy_research.foundation.llm import LLMConfig, LLMResponse, ToolCall
 
 

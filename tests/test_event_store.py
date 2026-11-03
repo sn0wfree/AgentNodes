@@ -5,8 +5,8 @@ from pathlib import Path
 
 import pytest
 
-from strategy_research.core.agent.cache import CacheConfig
-from strategy_research.core.agent.event_store import (
+from strategy_research.kernel.agent.cache import CacheConfig
+from strategy_research.kernel.agent.event_store import (
     EventStore,
     EventV2,
 )
@@ -181,7 +181,7 @@ class TestHealth:
             # Repair succeeded
             assert type(store._backend).__name__ == "SQLiteStore"
         else:
-            from strategy_research.core.agent.memory_manager import InMemoryStore
+            from strategy_research.kernel.agent.memory_manager import InMemoryStore
             assert isinstance(store._backend, InMemoryStore)
 
 
@@ -261,7 +261,7 @@ class TestParentAndBranchRoundTrip:
         """Simulate a pre-A3 row by INSERTing directly without the new
         columns — replay() must still work and use default values.
         """
-        from strategy_research.core.agent.memory_manager import resolve_db_path
+        from strategy_research.kernel.agent.memory_manager import resolve_db_path
         import sqlite3
         # `es` fixture may have its own DB; reach the EventStore's path
         # by going through the backend connection.

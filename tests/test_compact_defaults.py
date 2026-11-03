@@ -12,7 +12,7 @@ import dataclasses
 
 import pytest
 
-from strategy_research.core.agent.compact import CompactConfig
+from strategy_research.kernel.agent.compact import CompactConfig
 
 # ── Defaults (user-specified + opencode-aligned) ─────────────
 

@@ -78,7 +78,7 @@ class TestMinimaxConfigError:
 
     def test_llm_config_error_in_stream_required_list(self):
         """LLMConfigError is a stream-required error (no stream→achat fallback)."""
-        from strategy_research.core.agent.loop import AgentLoop
+        from strategy_research.kernel.agent.loop import AgentLoop
         from strategy_research.foundation.llm.errors import LLMConfigError
 
         # _is_stream_required_error is a static method, test it directly

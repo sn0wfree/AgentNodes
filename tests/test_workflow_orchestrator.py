@@ -194,7 +194,7 @@ def test_deeply_malformed_payload_never_raises():
 
 
 def test_prompt_builder_registered():
-    from strategy_research.core.agent.prompt_builder import PromptBuilderFactory
+    from strategy_research.kernel.agent.prompt_builder import PromptBuilderFactory
 
     assert "workflow_orchestrator" in PromptBuilderFactory.list_roles()
     prompt = PromptBuilderFactory.get("workflow_orchestrator").build_system_prompt(
@@ -209,7 +209,7 @@ def test_prompt_builder_registered():
 
 def test_dag_session_registry_only_submit_tool(monkeypatch):
     """A dag:-prefixed session must expose exactly submit_dag_step."""
-    from strategy_research.core.agent import chat_loop
+    from strategy_research.kernel.agent import chat_loop
 
     captured: dict = {}
 
@@ -236,7 +236,7 @@ def test_dag_session_registry_only_submit_tool(monkeypatch):
 
 
 def test_normal_session_registry_untouched(monkeypatch):
-    from strategy_research.core.agent import chat_loop
+    from strategy_research.kernel.agent import chat_loop
 
     captured: dict = {}
 

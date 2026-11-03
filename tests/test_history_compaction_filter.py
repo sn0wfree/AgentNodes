@@ -13,7 +13,7 @@ import pytest
 
 from strategy_research.api.session.models import Message
 from strategy_research.api.session.service import SessionService
-from strategy_research.core.agent.compact import CompactConfig
+from strategy_research.kernel.agent.compact import CompactConfig
 
 # ── Helpers ──────────────────────────────────────────────────────────
 

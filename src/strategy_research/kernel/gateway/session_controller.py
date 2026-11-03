@@ -278,7 +278,7 @@ class SessionController:
         system = self._resolve_system_prompt()
         engine = GraphEngine(sink=self._sink)
         if self._registry is not None:
-            from strategy_research.core.agent.tool_context import make_ctx_factory
+            from strategy_research.kernel.agent.tool_context import make_ctx_factory
             from strategy_research.kernel.runtimes.nodes.react import (
                 ReactConfig,
                 make_react_node,
@@ -353,7 +353,7 @@ class SessionController:
         if self._compact_config is None:
             return None
         try:
-            from strategy_research.core.agent.compaction_runtime import (
+            from strategy_research.kernel.agent.compaction_runtime import (
                 make_compactor,
             )
 
@@ -387,7 +387,7 @@ class SessionController:
         if self._registry is None:
             return None
         try:
-            from strategy_research.core.agent.loop_assembly import (
+            from strategy_research.kernel.agent.loop_assembly import (
                 assemble_loop_parts,
             )
 
