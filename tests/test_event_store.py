@@ -268,7 +268,7 @@ class TestParentAndBranchRoundTrip:
         conn = es._backend._ensure_conn()  # type: ignore[attr-defined]
         # Create a parent-less pre-A3 row directly via raw SQL using only
         # the original 6 columns.
-        from strategy_research.core.events.event_v2 import EventV2
+        from strategy_research.kernel.events.event_v2 import EventV2
         ev = EventV2.create("legacy", 1, "text.started", {"legacy": True})
         row = ev.to_row()
         conn.execute(

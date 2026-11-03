@@ -22,7 +22,7 @@ from pathlib import Path
 import pytest
 
 from strategy_research.api.routers.web_session import _ensure_schema
-from strategy_research.core.events.event_v2 import EventType, EventV2
+from strategy_research.kernel.events.event_v2 import EventType, EventV2
 from strategy_research.api.session.projector import Projector
 
 

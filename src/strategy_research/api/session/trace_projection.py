@@ -18,7 +18,7 @@ from pathlib import Path
 from typing import Any, Optional
 
 from ...core.agent.event_store import EventStore
-from ...core.events.event_v2 import EventType
+from strategy_research.kernel.events.event_v2 import EventType
 
 logger = logging.getLogger(__name__)
 

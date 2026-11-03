@@ -22,7 +22,7 @@ from strategy_research.api.session.projector import (
     ProjectedMessage,
     ProjectedSession,
 )
-from strategy_research.core.events.event_v2 import EventType, EventV2
+from strategy_research.kernel.events.event_v2 import EventType, EventV2
 
 
 def _setup_db(db_path: Path) -> None:

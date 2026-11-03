@@ -3,7 +3,7 @@
 Sinking the EventV2 envelope into core lets ``core/agent/event_store``
 depend on it without inverting the core/api layering. The single
 definition lives in ``event_v2.py``; this package re-exports the public
-surface so call sites can write ``from strategy_research.core.events
+surface so call sites can write ``from strategy_research.kernel.events
 import EventV2`` if they prefer.
 """
 

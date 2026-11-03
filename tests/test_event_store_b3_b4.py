@@ -15,7 +15,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
 from strategy_research.core.agent.cache import CacheConfig
 from strategy_research.core.agent.event_store import EventStore
 from strategy_research.core.agent.memory_manager import InMemoryStore
-from strategy_research.core.events.event_v2 import EventType
+from strategy_research.kernel.events.event_v2 import EventType
 
 
 def _emit(es, sid, etype, *, branch="main", seq=None):

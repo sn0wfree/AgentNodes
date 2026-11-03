@@ -93,7 +93,7 @@ def _get_permission_gateway(request: Request | None = None) -> "PermissionGatewa
 
     def _push_sse(tool_call_id, decision, args):
         try:
-            from ...core.events.event_v2 import EventType
+            from strategy_research.kernel.events.event_v2 import EventType
 
             session_id = args.get("__session_id__") or ""
             if not session_id:

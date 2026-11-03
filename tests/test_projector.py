@@ -25,7 +25,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
 
 from tests._fixtures.legacy_event_bus_v2 import EventBusV2
-from strategy_research.core.events.event_v2 import EventType, EventV2
+from strategy_research.kernel.events.event_v2 import EventType, EventV2
 from tests._fixtures.legacy_events import EventBus
 from strategy_research.api.session.projector import (
     ProjectedMessage,

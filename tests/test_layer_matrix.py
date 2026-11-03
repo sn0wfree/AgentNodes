@@ -75,7 +75,7 @@ LAYER_MEMBERSHIP: dict[str, str] = {
     #   能力面 (~24.6k): agent / context / hooks / permission / memory / skills
     "strategy_research.core.gateway": "L3",
     "strategy_research.core.orchestration": "L3",
-    "strategy_research.core.events": "L3",
+    "strategy_research.kernel.events": "L3",
     "strategy_research.kernel.session": "L3",
     "strategy_research.core.scheduled_research": "L3",
     "strategy_research.core.runtimes": "L3",

@@ -1,7 +1,7 @@
 """EventV2 — typed event envelope for the event_log table (Level 3, B1 commit 2).
 
 P0-1 A2 (2026-08-15): moved from ``strategy_research.api.session.event_v2``
-to ``strategy_research.core.events.event_v2`` so ``core/agent/event_store``
+to ``strategy_research.kernel.events.event_v2`` so ``core/agent/event_store``
 can depend on it without inverting the core/api layering. The public surface
 (EventV2, EventType, is_known_event_type) is unchanged; only the import
 path differs. No shim is kept — update ``from .event_v2 import ...`` →
@@ -42,19 +42,15 @@ from typing import Any, Dict, Optional, Set
 
 
 def _protocol_version() -> str:
-    """当前协议版本（延迟导入：contracts 依赖本模块的事件形状）。
+    """当前协议版本。
 
-    导入失败时回落到 "1"——事件写入不应因为版本常量不可用而失败；
-    读取侧（EventStore._replay / PlatformStore.replay）仍有强制校验。
+    2026-11-03（W4b）：协议版本契约已下沉 ``foundation.protocol``，与事件形状
+    不再有导入循环，因此原先的「延迟导入 + 失败回落 "1"」降级路径已无必要——
+    直接导入即可，导入失败应当暴露而不是静默伪造版本号。
     """
-    try:
-        from strategy_research.core.orchestration.contracts import (
-            PROTOCOL_VERSION,
-        )
+    from strategy_research.foundation.protocol import PROTOCOL_VERSION
 
-        return PROTOCOL_VERSION
-    except Exception:  # noqa: BLE001 —— 降级不阻断写入
-        return "1"
+    return PROTOCOL_VERSION
 
 # ── Event type registry ─────────────────────────────────────────────
 #

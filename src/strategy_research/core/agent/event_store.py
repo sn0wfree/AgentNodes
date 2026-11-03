@@ -22,8 +22,8 @@ import uuid
 from pathlib import Path
 from typing import Any, AsyncIterator, Callable
 
-from ..events.event_v2 import EventV2
-from ..orchestration.contracts import ProtocolVersionError
+from strategy_research.kernel.events.event_v2 import EventV2
+from strategy_research.foundation.protocol import ProtocolVersionError
 from .cache import CacheConfig, SessionCache, SessionLockMap
 from .memory_manager import InMemoryStore, SQLiteStore, resolve_db_path
 
@@ -521,7 +521,7 @@ class EventStore:
                 # check_event_version，于是「PROTOCOL_VERSION 是唯一来源、
                 # 回放遇不匹配即拒」只对 PlatformStore.replay() 成立，
                 # 而 EventStore（真正的回放入口）可以静默读入不兼容版本。
-                from strategy_research.core.orchestration.contracts import (
+                from strategy_research.foundation.protocol import (
                     check_event_version,
                 )
 

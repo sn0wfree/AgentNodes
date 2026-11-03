@@ -15,7 +15,7 @@ import warnings
 from pathlib import Path
 from typing import List, Optional
 
-from strategy_research.core.events.event_v2 import EventV2, is_known_event_type
+from strategy_research.kernel.events.event_v2 import EventV2, is_known_event_type
 
 from .legacy_events import EventBus, SSEEvent
 

@@ -22,22 +22,15 @@ from datetime import datetime
 from enum import Enum
 from typing import Any, Mapping
 
-# R4：协议版本（事件信封 schema_v 的唯一来源）。单版本 + 拒绝，不做协商：
-# 回放/订阅遇到不认识的版本必须明确报错，不能猜语义（fail-fast）。
-PROTOCOL_VERSION = "1"
-
-
-class ProtocolVersionError(Exception):
-    """事件版本与本进程 PROTOCOL_VERSION 不匹配 → 拒绝回放/订阅。"""
-
-
-def check_event_version(schema_v: str | None) -> None:
-    """校验事件信封版本；None 视为历史默认（"1"）。不匹配即抛。"""
-    if (schema_v or "1") != PROTOCOL_VERSION:
-        raise ProtocolVersionError(
-            f"事件 schema_v={schema_v!r} 与本进程协议版本 "
-            f"{PROTOCOL_VERSION!r} 不匹配——拒绝回放（不做跨版本猜测）"
-        )
+# 事件协议版本契约已下沉 foundation（2026-11-03 W4b）：
+# 它是纯协议、零业务，却被 L4 的 storage 与 L3 的 events/agent 使用；
+# 留在 L3 会造成 L4→L3 上行违规。此处 re-export 保持本模块对外 API 不变
+# （既有 `from .contracts import PROTOCOL_VERSION` 调用方无需改动）。
+from strategy_research.foundation.protocol import (  # noqa: F401
+    PROTOCOL_VERSION,
+    ProtocolVersionError,
+    check_event_version,
+)
 
 
 class WorkKind(str, Enum):

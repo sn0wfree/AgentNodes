@@ -11,7 +11,7 @@ import logging
 import uuid
 from typing import Any, Callable, Dict, Optional
 
-from ...core.events.event_v2 import EventType, EventV2, is_known_event_type
+from strategy_research.kernel.events.event_v2 import EventType, EventV2, is_known_event_type
 from .projection_models import ProjectedMessage, ProjectedPart, ProjectedSession
 
 logger = logging.getLogger(__name__)

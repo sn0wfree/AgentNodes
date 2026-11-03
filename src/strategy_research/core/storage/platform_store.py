@@ -212,7 +212,7 @@ class PlatformStore:
         schema_v 默认取 PROTOCOL_VERSION（R4：单一来源）。
         """
         if schema_v is None:
-            from strategy_research.core.orchestration.contracts import (
+            from strategy_research.foundation.protocol import (
                 PROTOCOL_VERSION,
             )
 
@@ -382,7 +382,7 @@ class PlatformStore:
         ProtocolVersionError（不猜跨版本语义）。需要读取历史旧版本做
         迁移时显式传 False。
         """
-        from strategy_research.core.orchestration.contracts import (
+        from strategy_research.foundation.protocol import (
             check_event_version,
         )
 

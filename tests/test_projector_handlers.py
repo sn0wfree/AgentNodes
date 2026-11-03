@@ -21,7 +21,7 @@ from strategy_research.api.session.projector import (
     ProjectedSession,
     Projector,
 )
-from strategy_research.core.events.event_v2 import EventType, EventV2
+from strategy_research.kernel.events.event_v2 import EventType, EventV2
 
 
 def _make_event(

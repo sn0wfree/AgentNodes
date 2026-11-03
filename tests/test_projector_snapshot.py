@@ -20,7 +20,7 @@ from strategy_research.api.session.projector import (
     ProjectedSession,
     Projector,
 )
-from strategy_research.core.events.event_v2 import EventType
+from strategy_research.kernel.events.event_v2 import EventType
 
 
 def _make_event(sid: str, seq: int, etype: str, data: dict | None = None):
@@ -30,7 +30,7 @@ def _make_event(sid: str, seq: int, etype: str, data: dict | None = None):
     we mimic that without going through EventV2.create so tests stay
     terse.
     """
-    from strategy_research.core.events.event_v2 import EventV2
+    from strategy_research.kernel.events.event_v2 import EventV2
 
     return EventV2.create(
         aggregate_id=sid,

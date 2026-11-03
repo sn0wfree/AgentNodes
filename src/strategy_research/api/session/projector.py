@@ -16,7 +16,7 @@ import sqlite3
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Set, Tuple
 
-from ...core.events.event_v2 import EventType, EventV2
+from strategy_research.kernel.events.event_v2 import EventType, EventV2
 from .projection_models import (  # noqa: F401  (re-exports)
     ProjectedMessage,
     ProjectedPart,

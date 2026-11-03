@@ -353,7 +353,7 @@ def _make_event(
     time_created: float,
 ) -> object:
     """Build a minimal EventV2-like object for projector._apply."""
-    from strategy_research.core.events.event_v2 import EventV2
+    from strategy_research.kernel.events.event_v2 import EventV2
 
     return EventV2(
         id=event_id,

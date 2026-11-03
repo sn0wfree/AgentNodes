@@ -15,7 +15,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
 
-from strategy_research.core.events.event_v2 import EventType, EventV2
+from strategy_research.kernel.events.event_v2 import EventType, EventV2
 from strategy_research.api.session.projector import ProjectedSession, Projector
 from strategy_research.core.goal.events import (
     CHANGE_TYPE_COMPLETE,
