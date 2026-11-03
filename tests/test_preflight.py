@@ -1,4 +1,4 @@
-"""Tests for core/preflight.py — 启动前环境检查。
+"""Tests for apps/preflight.py — 启动前环境检查。
 
 覆盖 P0：
 - CheckResult 数据类
@@ -23,7 +23,7 @@ class TestCheckResult:
     """CheckResult 不可变数据类。"""
 
     def test_creation_basic(self):
-        from strategy_research.core.preflight import CheckResult
+        from strategy_research.apps.preflight import CheckResult
         cr = CheckResult(
             name="X",
             status="ready",
@@ -39,13 +39,13 @@ class TestCheckResult:
         """frozen dataclass 不允许修改字段。"""
         from dataclasses import FrozenInstanceError
 
-        from strategy_research.core.preflight import CheckResult
+        from strategy_research.apps.preflight import CheckResult
         cr = CheckResult(name="X", status="ready", message="ok")
         with pytest.raises(FrozenInstanceError):
             cr.name = "Y"  # type: ignore[misc]
 
     def test_default_critical_is_false(self):
-        from strategy_research.core.preflight import CheckResult
+        from strategy_research.apps.preflight import CheckResult
         cr = CheckResult(name="X", status="ready", message="ok")
         assert cr.critical is False
 
@@ -60,7 +60,7 @@ class TestCheckLLMProvider:
 
     def test_critical_fail_when_no_keys(self, monkeypatch: pytest.MonkeyPatch):
         """无 LLM key 时 critical fail。"""
-        from strategy_research.core.preflight import _check_llm_provider
+        from strategy_research.apps.preflight import _check_llm_provider
         # 清空所有候选 env vars
         for k in ["OPENAI_API_KEY", "DEEPSEEK_API_KEY",
                   "KIMI_API_KEY", "QWEN_API_KEY", "ANTHROPIC_API_KEY"]:
@@ -78,7 +78,7 @@ class TestCheckLLMProvider:
         monkeypatch.delenv("ANTHROPIC_API_KEY", raising=False)
         monkeypatch.setenv("OPENAI_API_KEY", "sk-test")
 
-        from strategy_research.core.preflight import _check_llm_provider
+        from strategy_research.apps.preflight import _check_llm_provider
         cr = _check_llm_provider()
         assert cr.status == "ready"
         assert "OpenAI" in cr.message
@@ -88,7 +88,7 @@ class TestCheckLLMProvider:
             monkeypatch.delenv(k, raising=False)
         monkeypatch.setenv("DEEPSEEK_API_KEY", "sk-ds-test")
 
-        from strategy_research.core.preflight import _check_llm_provider
+        from strategy_research.apps.preflight import _check_llm_provider
         cr = _check_llm_provider()
         assert cr.status == "ready"
         assert "DeepSeek" in cr.message
@@ -98,7 +98,7 @@ class TestCheckLLMProvider:
         monkeypatch.setenv("OPENAI_API_KEY", "sk-a")
         monkeypatch.setenv("DEEPSEEK_API_KEY", "sk-d")
 
-        from strategy_research.core.preflight import _check_llm_provider
+        from strategy_research.apps.preflight import _check_llm_provider
         cr = _check_llm_provider()
         assert cr.status == "ready"
         assert "OpenAI" in cr.message
@@ -113,7 +113,7 @@ class TestCheckDuckDBWritable:
     """DuckDB 可写检查。"""
 
     def test_ready_for_writable_workspace(self, tmp_path: Path):
-        from strategy_research.core.preflight import _check_duckdb_writable
+        from strategy_research.apps.preflight import _check_duckdb_writable
 
         # tmp_path 自动可写
         cr = _check_duckdb_writable(tmp_path)
@@ -134,7 +134,7 @@ class TestCheckDuckDBWritable:
 
         monkeypatch.setattr(builtins, "__import__", mock_import)
 
-        from strategy_research.core.preflight import _check_duckdb_writable
+        from strategy_research.apps.preflight import _check_duckdb_writable
         cr = _check_duckdb_writable(Path("/tmp"))
         assert cr.status == "not_configured"
 
@@ -149,7 +149,7 @@ class TestCheckDataSources:
 
     def test_finds_at_least_one_loader(self):
         """应至少有一个 loader available。"""
-        from strategy_research.core.preflight import _check_data_sources
+        from strategy_research.apps.preflight import _check_data_sources
 
         cr = _check_data_sources(Path("/tmp"))
         assert cr.status in ("ready", "not_configured")
@@ -158,7 +158,7 @@ class TestCheckDataSources:
 
     def test_lists_known_loaders(self):
         """应识别 tencent/akshare/yfinance/local 等。"""
-        from strategy_research.core.preflight import _check_data_sources
+        from strategy_research.apps.preflight import _check_data_sources
 
         cr = _check_data_sources(Path("/tmp"))
         if cr.status == "ready":
@@ -180,7 +180,7 @@ class TestCheckOHLCVIntegrity:
     def test_skipped_when_no_price_data(self, tmp_path: Path):
         """无 price_data 时返回 skipped。"""
         from strategy_research.core.db import init_db
-        from strategy_research.core.preflight import _check_ohlcv_integrity
+        from strategy_research.apps.preflight import _check_ohlcv_integrity
 
         # 创建空的 DuckDB（无 price_data 行）
         init_db(tmp_path)
@@ -191,7 +191,7 @@ class TestCheckOHLCVIntegrity:
         """OHLCV 完整时返回 ready。"""
         from strategy_research.core.data_import import generate_sample_ohlcv_data
         from strategy_research.core.db import init_db, save_ohlcv_data
-        from strategy_research.core.preflight import _check_ohlcv_integrity
+        from strategy_research.apps.preflight import _check_ohlcv_integrity
 
         init_db(tmp_path)
         ohlcv = generate_sample_ohlcv_data(n_assets=2, n_days=50)
@@ -215,7 +215,7 @@ class TestRunPreflight:
         self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
     ):
         """应返回 4 项结果。"""
-        from strategy_research.core.preflight import run_preflight
+        from strategy_research.apps.preflight import run_preflight
 
         # 清空 LLM key 以确保 critical fail
         for k in ["OPENAI_API_KEY", "DEEPSEEK_API_KEY",
@@ -228,7 +228,7 @@ class TestRunPreflight:
     def test_includes_all_4_check_names(
         self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
     ):
-        from strategy_research.core.preflight import run_preflight
+        from strategy_research.apps.preflight import run_preflight
 
         for k in ["OPENAI_API_KEY", "DEEPSEEK_API_KEY",
                   "KIMI_API_KEY", "QWEN_API_KEY", "ANTHROPIC_API_KEY"]:
@@ -244,7 +244,7 @@ class TestRunPreflight:
     def test_verbose_true_prints_output(
         self, tmp_path: Path, capsys, monkeypatch: pytest.MonkeyPatch
     ):
-        from strategy_research.core.preflight import run_preflight
+        from strategy_research.apps.preflight import run_preflight
 
         for k in ["OPENAI_API_KEY", "DEEPSEEK_API_KEY",
                   "KIMI_API_KEY", "QWEN_API_KEY", "ANTHROPIC_API_KEY"]:
@@ -258,7 +258,7 @@ class TestRunPreflight:
     def test_critical_fail_marks_results(
         self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
     ):
-        from strategy_research.core.preflight import run_preflight
+        from strategy_research.apps.preflight import run_preflight
 
         for k in ["OPENAI_API_KEY", "DEEPSEEK_API_KEY",
                   "KIMI_API_KEY", "QWEN_API_KEY", "ANTHROPIC_API_KEY"]:
@@ -283,7 +283,7 @@ class TestPrintResults:
     def test_prints_status_marks(
         self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys
     ):
-        from strategy_research.core.preflight import run_preflight
+        from strategy_research.apps.preflight import run_preflight
 
         for k in ["OPENAI_API_KEY", "DEEPSEEK_API_KEY",
                   "KIMI_API_KEY", "QWEN_API_KEY", "ANTHROPIC_API_KEY"]:
@@ -297,7 +297,7 @@ class TestPrintResults:
     def test_prints_critical_marker_when_failed(
         self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys
     ):
-        from strategy_research.core.preflight import run_preflight
+        from strategy_research.apps.preflight import run_preflight
 
         for k in ["OPENAI_API_KEY", "DEEPSEEK_API_KEY",
                   "KIMI_API_KEY", "QWEN_API_KEY", "ANTHROPIC_API_KEY"]:

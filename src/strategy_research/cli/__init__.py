@@ -382,7 +382,7 @@ def cmd_preflight(args: argparse.Namespace) -> int:
 
     Critical 失败时返回 1，否则 0。
     """
-    from strategy_research.core.preflight import run_preflight
+    from strategy_research.apps.preflight import run_preflight
 
     workspace = Path(args.path).resolve() if args.path else Path.cwd()
     results = run_preflight(workspace, verbose=True)

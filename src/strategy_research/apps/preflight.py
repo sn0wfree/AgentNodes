@@ -109,7 +109,7 @@ def _check_duckdb_writable(workspace_path: Path) -> CheckResult:
 def _check_data_sources(workspace_path: Path) -> CheckResult:
     """检查至少一个数据源 is_available()=True。"""
     try:
-        from .data_source import LOADER_REGISTRY, list_loaders
+        from strategy_research.core.data_source import LOADER_REGISTRY, list_loaders
         # 触发懒加载
         list_loaders()
     except Exception as e:
@@ -152,7 +152,7 @@ def _check_data_sources(workspace_path: Path) -> CheckResult:
 def _check_ohlcv_integrity(workspace_path: Path) -> CheckResult:
     """检查已导入的价格数据 OHLCV 完整性。"""
     try:
-        from .data_source import list_loaders
+        from strategy_research.core.data_source import list_loaders
         list_loaders()  # trigger
     except Exception:
         pass
