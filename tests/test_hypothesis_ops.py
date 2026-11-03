@@ -112,13 +112,13 @@ def test_cs_univariate_shape_invariant(op_name, df):
     """截面算子 (DataFrame) 输出形状应等于输入形状."""
     # 注意: compute_factor.OPERATORS 中的 rank/zscore/scale 接受 Series
     # ALPHA_ZOO_OPS 中的对应函数接受 DataFrame
-    from strategy_research.core.alpha_zoo_ops import (
+    from strategy_research.apps.alpha_zoo_ops import (
         rank as rank_df,
     )
-    from strategy_research.core.alpha_zoo_ops import (
+    from strategy_research.apps.alpha_zoo_ops import (
         scale as scale_df,
     )
-    from strategy_research.core.alpha_zoo_ops import (
+    from strategy_research.apps.alpha_zoo_ops import (
         zscore as zscore_df,
     )
     fns = {"rank": rank_df, "zscore": zscore_df, "scale": scale_df}
@@ -255,7 +255,7 @@ def test_ts_sum_equals_partial_sum(s):
 @given(df=finite_df(max_size=30, n_cols=3))
 def test_rank_scale_invariant(df):
     """rank 应在常数缩放下不变. 用 ALPHA_ZOO_OPS 版."""
-    from strategy_research.core.alpha_zoo_ops import rank as rank_df
+    from strategy_research.apps.alpha_zoo_ops import rank as rank_df
     r1 = rank_df(df)
     r2 = rank_df(df * 1000.0)
     np.testing.assert_array_almost_equal(r1.values, r2.values, decimal=9)
@@ -264,7 +264,7 @@ def test_rank_scale_invariant(df):
 @given(df=finite_df(max_size=30, n_cols=3))
 def test_rank_invariant_to_scaling(df):
     """rank 应在比例缩放下完全不变 (offset 不变性不成立, 因为浮点精度)."""
-    from strategy_research.core.alpha_zoo_ops import rank as rank_df
+    from strategy_research.apps.alpha_zoo_ops import rank as rank_df
     r1 = rank_df(df)
     r2 = rank_df(df * 1000.0)
     np.testing.assert_array_almost_equal(r1.values, r2.values, decimal=9)
@@ -277,7 +277,7 @@ def test_rank_invariant_to_scaling(df):
 @given(df=finite_df(max_size=30, n_cols=3))
 def test_safe_div_no_inf(df):
     """safe_div 不应产 inf. 使用 ALPHA_ZOO_OPS 版的 DataFrame 入口."""
-    from strategy_research.core.alpha_zoo_ops import safe_div as safe_div_df
+    from strategy_research.apps.alpha_zoo_ops import safe_div as safe_div_df
     r = safe_div_df(df, df)
     n_inf = np.isinf(r.values).sum()
     assert n_inf == 0, f"safe_div produced {n_inf} inf"
@@ -286,7 +286,7 @@ def test_safe_div_no_inf(df):
 @given(df=finite_df(max_size=30, n_cols=3))
 def test_safe_div_no_inf_with_zeros(df):
     """safe_div 用 0 当分母时不产 inf. ALPHA_ZOO_OPS 版."""
-    from strategy_research.core.alpha_zoo_ops import safe_div as safe_div_df
+    from strategy_research.apps.alpha_zoo_ops import safe_div as safe_div_df
     zero = pd.DataFrame(0.0, index=df.index, columns=df.columns)
     r = safe_div_df(df, zero)
     n_inf = np.isinf(r.values).sum()
@@ -336,7 +336,7 @@ def test_ts_argmax_index_range(s):
                           index=pd.bdate_range("2024-01-01", periods=3)))
 def test_zscore_mean_zero(df):
     """zscore 应使每行均值 ≈ 0 (ALPHA_ZOO_OPS zscore 用 DataFrame)."""
-    from strategy_research.core.alpha_zoo_ops import zscore as zscore_df
+    from strategy_research.apps.alpha_zoo_ops import zscore as zscore_df
     r = zscore_df(df)
     # 检查 std > 0 的行 (避免退化)
     for i in range(len(df)):

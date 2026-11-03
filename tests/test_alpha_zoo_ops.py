@@ -16,7 +16,7 @@ import numpy as np
 import pandas as pd
 import pytest
 
-from strategy_research.core.alpha_zoo_ops import ALPHA_ZOO_OPS
+from strategy_research.apps.alpha_zoo_ops import ALPHA_ZOO_OPS
 
 warnings.filterwarnings("ignore")
 
