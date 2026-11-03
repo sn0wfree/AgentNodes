@@ -1,6 +1,6 @@
 # 四层骨架设计 — llmwikify 借鉴 · 依赖方向机器可证
 
-日期：2026-11-03　分支：`refactor/v6-gateway`　状态：设计稿 v3.1（层名定稿 · Gateway 归类 · kernel 三子带 · v7.2 归位）
+日期：2026-11-03　分支：`refactor/v6-gateway`　状态：设计稿 v3.2（v7.3：foundation 独立底座带）
 
 用户方向：借鉴 llmwikify 评审（`D:/Github/llmwikify/docs/architecture/architecture-review-2026-11.html`）
 的分层骨架——**四层单向依赖 + 原生数据传递关系 + 机器校验**。本文给出本项目的落地方案。
@@ -98,6 +98,16 @@ foundation 只收「零 run/session/研究语义」的纯原语；一个 agent �
    `hooks` 若泛化为通用回调合成器（llmwikify 先例：callback 13 钩子在 foundation）→ foundation。
 
 **反向红线**：禁止为了「层数平衡」把带 run/agent 语义的件推进 foundation——foundation 假厚比真薄更糟（语义漏下去 = 击穿的开端）。
+
+### 2.3 v7.3：foundation 在管线图上的呈现（2026-11-03 用户拍板）
+
+architecture-diagram v7.3 起，foundation **从 ④ 平台数据带中剥离，独立为 ⑥ 底座带**：
+管线变为「①渠道 → ②Gateway → ③执行面 → ④平台数据 → ⑤研究域 → ⑥foundation」，
+原 ⑥ 四层依赖总表顺延为 ⑦。成员零变化（纯图面重构）：
+
+- ④ 平台数据收纯为 **L3 kernel·事件语义**：P-1 事件流 / P-2 projector / P-3 登记 / P-4 身份 / P-5 指针——这些是 run/session 语义，属 kernel；
+- 其下的 **SQLite 写入实现**（PlatformStore / event_schema / connect 原语）在 ⑥ foundation；
+- ⑥ 是 L2/L3 的**共同底座**（L4→任何 = 0），箭头标注「落库/落盘（经 storage 原语）」。
 
 ## 3. 依赖矩阵与数据契约（箭头传什么）
 

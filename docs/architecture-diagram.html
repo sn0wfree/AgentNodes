@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>目标架构 v7（Gateway 化 × 四层骨架 · GraphEngine 全路径收敛 · 研究域归位 · 依赖总表门禁）</title>
+<title>目标架构 v7.3（Gateway 化 × 四层骨架 · foundation 独立底座带 · 依赖总表门禁）</title>
 <style>
   body{margin:0;background:#f8fafc;color:#0f172a;
     font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Microsoft YaHei",system-ui,sans-serif;
@@ -26,8 +26,8 @@
 </head>
 <body>
 <div class="wrap">
-  <h1>目标架构 v7 · Gateway 化 × 四层骨架 —— 管线（渠道→平台→研究域）× 依赖序（L1→L2→L3→L4）</h1>
-  <p class="sub">保持五段管线：<b>渠道 → 平台（虚线框：Gateway · 执行面 · 平台数据）→ 研究域（IP · 单独一层）</b>。v7 叠加四层骨架标注（借鉴 llmwikify 评审 · <code>docs/layered-skeleton-design-20261103.md</code>）：①渠道＝<b>L1 interfaces</b> · ②Gateway＋③执行面＝<b>L3 kernel</b> · ④平台数据＝L3 事件语义＋L4 存储机制 · ⑤研究域＝<b>L2 apps</b> · 底部新增 <b>L4 foundation 横带</b>与<b>⑥ 四层依赖总表</b>（与 <code>test_layer_matrix</code> 门禁同源）。<b>两轴正交</b>：蓝箭头＝运行时数据流（管线方向）；依赖方向＝静态 import（只许向下，见总表）。画框架定方向，不改代码。</p>
+  <h1>目标架构 v7.3 · Gateway 化 × 四层骨架 —— 管线（渠道→平台→研究域→foundation）× 依赖序（L1→L2→L3→L4）</h1>
+  <p class="sub">保持五段管线：<b>渠道 → 平台（虚线框：Gateway · 执行面 · 平台数据）→ 研究域（IP · 单独一层）</b>。v7 叠加四层骨架标注（借鉴 llmwikify 评审 · <code>docs/layered-skeleton-design-20261103.md</code>）：①渠道＝<b>L1 interfaces</b> · ②Gateway＋③执行面＝<b>L3 kernel</b> · ④平台数据＝<b>L3 事件语义</b> · ⑤研究域＝<b>L2 apps</b> · ⑥ <b>foundation 独立底座带（L4）</b>与<b>⑦ 四层依赖总表</b>（与 <code>test_layer_matrix</code> 门禁同源）。<b>两轴正交</b>：蓝箭头＝运行时数据流（管线方向）；依赖方向＝静态 import（只许向下，见总表）。画框架定方向，不改代码。</p>
 
 <div class="scroll">
 <svg viewBox="0 0 1600 2050" width="1600" height="2050" xmlns="http://www.w3.org/2000/svg" font-family="-apple-system, 'PingFang SC', 'Microsoft YaHei', sans-serif">
@@ -74,7 +74,7 @@
 
   <!-- ═══ 平台虚线框（Gateway + 执行面 + 平台数据） ═══ -->
   <rect x="138" y="132" width="1062" height="1188" rx="12" class="boxd" style="fill:none"/>
-  <text x="146" y="146" class="sm" style="font-weight:600">平台（业务无关）：控制面 + 执行面 + 平台数据面 —— 研究域挂在外面 · 全部 ＝ L3 kernel（storage 原语在 L4）</text>
+  <text x="146" y="146" class="sm" style="font-weight:600">平台（业务无关）：控制面 + 执行面 + 平台数据面 —— 研究域挂在外面 · 全部 ＝ L3 kernel（存储原语在 ⑥ foundation）</text>
 
   <!-- ═══ ② Gateway ═══ -->
   <text x="40" y="180" class="lyr">② Gateway <tspan fill="#7c3aed" font-size="12">L3 kernel · 控制面</tspan></text>
@@ -179,7 +179,7 @@
   <!-- ═══ ④ 平台数据面（框内） ═══ -->
   <line x1="430" y1="1046" x2="430" y2="1096" class="arb"/>
   <text x="440" y="1074" class="flow-lbl">运行事件 · 产物指针（大件走登记 P-3）</text>
-  <text x="40" y="1120" class="lyr">④ 平台数据 <tspan fill="#7c3aed" font-size="12">L3 事件语义 + L4 存储机制</tspan></text>
+  <text x="40" y="1120" class="lyr">④ 平台数据 <tspan fill="#7c3aed" font-size="12">L3 kernel · 事件语义（存储原语在 ⑥ foundation）</tspan></text>
   <text x="40" y="1138" class="sm">业务无关 · 机制</text>
 
   <text x="150" y="1152" class="st" style="font-weight:600">平台数据面（P-1 … P-5）—— 现状 ✅ 统一单库（event+blobs+message+goal/todo · B4 单一写者）；⏳ 每 session 一库自包含 + platform.sqlite（10-26 定案未实施）</text>
@@ -195,7 +195,7 @@
   <text x="429" y="1208" class="st">✅ 统一库：event+message+goal/todo</text>
   <text x="429" y="1228" class="st">✅ projector 边界折叠 · WAL 并发</text>
   <text x="429" y="1248" class="st">⏳ 每 session 一库（D2 延后） · platform.sqlite ✅</text>
-  <text x="429" y="1268" class="sm">owner=PlatformStore ✅ 生产接线（gateway/event_store 注入）</text>
+  <text x="429" y="1268" class="sm">owner=PlatformStore ✅ 生产接线（gateway/event_store 注入 · sqlite 实现在 L4 foundation）</text>
   <rect x="676" y="1162" width="250" height="100" rx="9" class="box"/>
   <text x="692" y="1186" class="bt">工件登记（P-3）✅</text>
   <text x="692" y="1208" class="st">✅ ArtifactChannel 接线（R4）：round metrics</text>
@@ -241,54 +241,57 @@
   <text x="955" y="1466" class="sm">P-5 指针四件套 · 根=workspace</text>
 
   <!-- ═══ 底带 ═══ -->
-  <rect x="150" y="1500" width="520" height="130" rx="10" class="boxg"/>
-  <text x="166" y="1526" class="bt">接缝规范</text>
-  <text x="166" y="1550" class="st">L1 窄协议 ✅ · L2 统一注册 ⏳（实测 11 套 Registry 类并存）· L3 一致性套件 ⏳</text>
-  <text x="166" y="1570" class="st">hook 红线 ✅：只读不改控制流（与 OpenClaw 一致）</text>
-  <text x="166" y="1590" class="st">PROTOCOL_VERSION ✅ R4（单版本+拒绝 · replay 校验）</text>
-  <text x="166" y="1610" class="st">接缝契约 ✅（10-30）：平台↔研究域单向 · 9 触点白名单 · 门禁强制（seam-contract 文档）</text>
-  <rect x="690" y="1500" width="499" height="130" rx="10" class="boxa"/>
-  <text x="706" y="1526" class="bt">基因组（RSI）· 只改行为工件</text>
-  <text x="706" y="1550" class="st">Tier 0 冻结（预算/停止/状态机/scope）· Tier 1 提案制 · Tier 2 可自改</text>
-  <text x="706" y="1570" class="st">先决条件：holdout 集（现缺）+ 不变量层 ✅ 已上线</text>
+  <line x1="430" y1="1482" x2="430" y2="1506" class="arb"/>
+  <text x="440" y="1500" class="flow-lbl">落库/落盘（经 storage 原语）—— L2/L3 共同底座</text>
+
+  <!-- ═══ ⑥ foundation（L4 独立底座带 · v7.3 从平台数据中剥离） ═══ -->
+  <rect x="150" y="1510" width="1039" height="76" rx="9" class="box"/>
+  <text x="166" y="1532" class="bt">⑥ foundation <tspan fill="#7c3aed" font-size="12">L4</tspan> —— llm · storage · registry(通用注册基类) · observability · utils · web · config_loader · errors · git</text>
+  <text x="166" y="1552" class="st">零业务知识 · 被所有层依赖（L4→任何 = 0 ✅）；平台数据的存储原语在此层，事件/run 语义在 ④（L3）</text>
+  <text x="166" y="1572" class="sm">晋升门槛=去 run/session/研究语义可独立成库（候选：ToolContext 去 session 化 · hooks 泛化）｜反向红线：禁止为「平衡」把带语义的件推下去（假厚 &gt; 真薄）</text>
+
+  <rect x="150" y="1600" width="520" height="130" rx="10" class="boxg"/>
+  <text x="166" y="1626" class="bt">接缝规范</text>
+  <text x="166" y="1650" class="st">L1 窄协议 ✅ · L2 统一注册 ⏳（实测 11 套 Registry 类并存）· L3 一致性套件 ⏳</text>
+  <text x="166" y="1670" class="st">hook 红线 ✅：只读不改控制流（与 OpenClaw 一致）</text>
+  <text x="166" y="1690" class="st">PROTOCOL_VERSION ✅ R4（单版本+拒绝 · replay 校验）</text>
+  <text x="166" y="1710" class="st">接缝契约 ✅（10-30）：平台↔研究域单向 · 9 触点白名单 · 门禁强制（seam-contract 文档）</text>
+  <rect x="690" y="1600" width="499" height="130" rx="10" class="boxa"/>
+  <text x="706" y="1626" class="bt">基因组（RSI）· 只改行为工件</text>
+  <text x="706" y="1650" class="st">Tier 0 冻结（预算/停止/状态机/scope）· Tier 1 提案制 · Tier 2 可自改</text>
+  <text x="706" y="1670" class="st">先决条件：holdout 集（现缺）+ 不变量层 ✅ 已上线</text>
 
   <!-- ═══ 右脊 ═══ -->
-  <!-- ═══ ⑥ 四层依赖总表（v7 骨架叠加 · 与 test_layer_matrix 门禁同源） ═══ -->
-  <text x="40" y="1700" class="lyr">⑥ 四层依赖总表 <tspan fill="#7c3aed" font-size="12">静态 import 方向 · L1→L2→L3→L4 只许向下 · 同层自由</tspan></text>
-
-  <!-- L4 foundation 横带（被所有层依赖 · 管线图上无专属段，故横贯） -->
-  <rect x="150" y="1714" width="1039" height="64" rx="9" class="box"/>
-  <text x="166" y="1736" class="bt">L4 foundation —— llm · storage · observability · utils · web · registry(通用注册基类 · v7.2) · config_loader · errors · git</text>
-  <text x="166" y="1754" class="st">零业务知识 · 被所有层依赖（L4→任何 = 0 ✅）；存储原语在此层，事件/run 语义在 L3 · 晋升门槛=去 run/session/研究语义可独立成库</text>
-  <text x="166" y="1772" class="sm">候选晋升：ToolContext 去 session 化 · hooks 泛化为通用回调（llmwikify 先例：callback 在 foundation）｜反向红线：禁止为「平衡」把带语义的件推下去（假厚 &gt; 真薄）</text>
+  <!-- ═══ ⑦ 四层依赖总表（与 test_layer_matrix 门禁同源） ═══ -->
+  <text x="40" y="1756" class="lyr">⑦ 四层依赖总表 <tspan fill="#7c3aed" font-size="12">静态 import 方向 · L1→L2→L3→L4 只许向下 · 同层自由</tspan></text>
 
   <!-- L3 kernel 三子带（v7.2 · 只改体现，不改 import 规则：层内自由互调） -->
-  <rect x="150" y="1790" width="1039" height="64" rx="9" class="box"/>
-  <text x="166" y="1810" class="bt">L3 kernel 三子带 —— <tspan fill="#7c3aed">控制面</tspan> ~4.1k（②Gateway 对应）· <tspan fill="#7c3aed">执行面</tspan> ~6.0k（③对应）· <tspan fill="#7c3aed">能力面</tspan> ~24.6k（AgentLoop 域）</text>
-  <text x="166" y="1828" class="st">控制面：gateway · orchestration · events · session · scheduled_research ｜ 执行面：runtimes(GraphEngine) · workflow 编译器 · swarm 编译器</text>
-  <text x="166" y="1846" class="st">能力面：agent(loop+builtin_tools, 22k 独大) · context · hooks · permission · memory · skills · seq_generator(待退役)</text>
+  <rect x="150" y="1768" width="1039" height="64" rx="9" class="box"/>
+  <text x="166" y="1788" class="bt">L3 kernel 三子带 —— <tspan fill="#7c3aed">控制面</tspan> ~4.1k（②Gateway 对应）· <tspan fill="#7c3aed">执行面</tspan> ~6.0k（③对应）· <tspan fill="#7c3aed">能力面</tspan> ~24.6k（AgentLoop 域）</text>
+  <text x="166" y="1806" class="st">控制面：gateway · orchestration · events · session · scheduled_research ｜ 执行面：runtimes(GraphEngine) · workflow 编译器 · swarm 编译器</text>
+  <text x="166" y="1824" class="st">能力面：agent(loop+builtin_tools, 22k 独大) · context · hooks · permission · memory · skills · seq_generator(待退役)</text>
 
   <!-- 依赖矩阵 -->
-  <rect x="150" y="1874" width="520" height="162" rx="9" class="boxg"/>
-  <text x="166" y="1896" class="st" style="font-weight:600">跨层 import 矩阵（2026-11-03 AST 审计 · 门禁独立复算一致）</text>
+  <rect x="150" y="1852" width="520" height="162" rx="9" class="boxg"/>
+  <text x="166" y="1874" class="st" style="font-weight:600">跨层 import 矩阵（2026-11-03 AST 审计 · 门禁独立复算一致）</text>
   <g font-family="Consolas, monospace" font-size="12.5" fill="#475569">
-    <text x="300" y="1918">→L1</text><text x="360" y="1918">→L2</text><text x="420" y="1918">→L3</text><text x="480" y="1918">→L4</text>
-    <text x="166" y="1938" font-weight="600">L1</text><text x="300" y="1938">1402</text><text x="360" y="1938">315</text><text x="420" y="1938">193</text><text x="480" y="1938">77</text>
-    <text x="166" y="1958" font-weight="600">L2</text><text x="300" y="1958" fill="#dc2626">2⚠</text><text x="360" y="1958">6673</text><text x="420" y="1958">66</text><text x="480" y="1958">129</text>
-    <text x="166" y="1978" font-weight="600">L3</text><text x="300" y="1978" fill="#dc2626">3⚠</text><text x="360" y="1978" fill="#dc2626">92⚠</text><text x="420" y="1978">1449</text><text x="480" y="1978">108</text>
-    <text x="166" y="1998" font-weight="600">L4</text><text x="300" y="1998">0</text><text x="360" y="1998" fill="#dc2626">4⚠</text><text x="420" y="1998" fill="#dc2626">6⚠</text><text x="480" y="1998">338</text>
+    <text x="300" y="1896">→L1</text><text x="360" y="1896">→L2</text><text x="420" y="1896">→L3</text><text x="480" y="1896">→L4</text>
+    <text x="166" y="1916" font-weight="600">L1</text><text x="300" y="1916">1402</text><text x="360" y="1916">315</text><text x="420" y="1916">193</text><text x="480" y="1916">77</text>
+    <text x="166" y="1936" font-weight="600">L2</text><text x="300" y="1936" fill="#dc2626">2⚠</text><text x="360" y="1936">6673</text><text x="420" y="1936">66</text><text x="480" y="1936">129</text>
+    <text x="166" y="1956" font-weight="600">L3</text><text x="300" y="1956" fill="#dc2626">3⚠</text><text x="360" y="1956" fill="#dc2626">92⚠</text><text x="420" y="1956">1449</text><text x="480" y="1956">108</text>
+    <text x="166" y="1976" font-weight="600">L4</text><text x="300" y="1976">0</text><text x="360" y="1976" fill="#dc2626">4⚠</text><text x="420" y="1976" fill="#dc2626">6⚠</text><text x="480" y="1976">338</text>
   </g>
-  <text x="166" y="2024" class="sm">红=上行违规（棘轮基线内 · 只降不升）；灰=同层/合法下行</text>
+  <text x="166" y="2002" class="sm">红=上行违规（棘轮基线内 · 只降不升）；灰=同层/合法下行</text>
 
   <!-- 簇与批次 -->
-  <rect x="690" y="1874" width="499" height="162" rx="9" class="boxa"/>
-  <text x="706" y="1896" class="st" style="font-weight:600">上行违规 = 107 · 四簇棘轮（test_layer_matrix）· 修复批次</text>
-  <text x="706" y="1918" class="st">簇A L3→L2 = 92：工具层绑定领域能力（builtin_tools 59 …）→ G2b CapabilityRegistry 端口化（切 0.6/0.7）</text>
-  <text x="706" y="1938" class="st">簇B L4→L2 = 4：utils 回测件归位 → G2a</text>
-  <text x="706" y="1958" class="st">簇C L4→L3=6 · L3→L1=3 · L2→L1=2 ＝ 11：注册反转/下沉 → G2a</text>
-  <text x="706" y="1978" class="st">数据契约（箭头传什么）：↓WorkRequest · ↓BranchContext/RunContext · ↑事件流/回执/P-5 指针</text>
-  <text x="706" y="1998" class="st">两轴正交：本表=静态依赖；蓝箭头=运行时数据流。研究域居管线下游、依赖序上游（L2→L3 合法 · L3→L2 禁止）</text>
-  <text x="706" y="2018" class="sm">设计：docs/layered-skeleton-design-20261103.md · 形式借鉴 llmwikify 架构评审（四层机器可证）</text>
+  <rect x="690" y="1852" width="499" height="162" rx="9" class="boxa"/>
+  <text x="706" y="1874" class="st" style="font-weight:600">上行违规 = 107 · 四簇棘轮（test_layer_matrix）· 修复批次</text>
+  <text x="706" y="1896" class="st">簇A L3→L2 = 92：工具层绑定领域能力（builtin_tools 59 …）→ G2b CapabilityRegistry 端口化（切 0.6/0.7）</text>
+  <text x="706" y="1916" class="st">簇B L4→L2 = 4：utils 回测件归位 → G2a</text>
+  <text x="706" y="1936" class="st">簇C L4→L3=6 · L3→L1=3 · L2→L1=2 ＝ 11：注册反转/下沉 → G2a</text>
+  <text x="706" y="1956" class="st">数据契约（箭头传什么）：↓WorkRequest · ↓BranchContext/RunContext · ↑事件流/回执/P-5 指针</text>
+  <text x="706" y="1976" class="st">两轴正交：本表=静态依赖；蓝箭头=运行时数据流。研究域居管线下游、依赖序上游（L2→L3 合法 · L3→L2 禁止）</text>
+  <text x="706" y="1996" class="sm">设计：docs/layered-skeleton-design-20261103.md · 形式借鉴 llmwikify 架构评审（四层机器可证）</text>
 
   <text x="1260" y="168" class="lyr">中枢与护栏</text>
   <rect x="1260" y="180" width="300" height="110" rx="10" class="box"/>
@@ -357,8 +360,8 @@
   <span><i class="dot" style="background:#f1f5f9;border:1.5px dashed #334155"></i>待建（有触发条件：容量组闸 · 独立宿主进程 · 每 session 分库 · Scheduler 唯一）</span>
   <span><b>✅</b>＝已实现 · <b>⏳</b>＝未建（有触发条件）· <b>⏹</b>＝判定不做（有依据，见交付总结 §四）· <b>⏸</b>＝挂起（2026-10-30 逐格核实）</span>
   <span>蓝箭头 ＝ 管线（WorkRequest → mailbox → admission → runtime → 产物 → 持久化）</span>
-  <span><b>L1-L4</b>（紫色标注）＝四层骨架（v7 叠加）：L1 interfaces=渠道 · L2 apps=研究域 · L3 kernel=控制面+执行面+能力面（三子带见⑥） · L4 foundation=基础设施横带（⑥ 区）</span>
-  <span><b>⑥ 四层依赖总表</b>＝静态 import 方向矩阵 + 上行违规棘轮（与 test_layer_matrix 门禁同源）· 依赖轴与数据流轴正交</span>
+  <span><b>L1-L4</b>（紫色标注）＝四层骨架（v7 叠加）：L1 interfaces=渠道 · L2 apps=研究域 · L3 kernel=控制面+执行面+能力面（三子带见⑥） · L4 foundation=独立底座带（⑥）</span>
+  <span><b>⑦ 四层依赖总表</b>＝静态 import 方向矩阵 + 上行违规棘轮（与 test_layer_matrix 门禁同源）· 依赖轴与数据流轴正交</span>
   <span>接缝契约：docs/seam-contract-platform-research-20261030.md · 四层骨架：docs/layered-skeleton-design-20261103.md · 交付总结：docs/delivery-summary-r1-r6-20261030.md</span>
 </div>
 
@@ -418,7 +421,7 @@
 </tbody>
 </table>
 
-<p style="color:#64748b;font-size:12.5px;margin-top:10px">v5.1 → v6：入口层塌进 Gateway，管线 8 段收 4 段，回执两态。v6 → v6.1：mailbox 落细则（先序后闸 / cap 20 / 老化）、新增容量组闸横带、home_session 落图、执行面标 T1/T2/T3。v6.1 → v6.2：执行面三 runtime 收敛为 <b>GraphEngine 唯一 runtime</b> + 四种节点类型 + preset 治理分级；DagRuntime 除名。数据层拆分：平台数据面并入平台虚线框，研究域独立成第 ⑤ 层。<b>v6.2 → v6.3（2026-10-30）：对照代码逐格核实，虚实线与 ✅/⏳/⏸ 标注对齐实现现状。</b>已上线：E1 契约/两态回执、mailbox（cap20+溢出摘要+4 队列模式）、SessionController 1a 最小版（P-4 身份）、GraphEngine（llm/react · react 内部=AgentLoop 平移）、fanout-t2→ExecutorBridge、ContextHub（接线+仲裁+压缩同源）、不变量 ×5+verify_all、统一库事件化（B4 单一写者）、文档治理。建而未接线 ⚠：SessionFence、PlatformStore。仍未建 ⏳：RuntimeHub、容量组闸、优先级老化、steer 真注入（现为降级桩）、独立 cpu/graph 节点、Director、RunContext、方法论归位 core/study/method/、P-3/P-5、每 session 分库、Scheduler 唯一、PROTOCOL_VERSION、宿主进程（qs gateway）。挂起 ⏸：P5-1c 删旧 chat 分支（唯一待办，docs/todo-remove-legacy-chat-branch-20261027.md）。<b>R1（2026-10-30）：fence 挂根 ✅</b>——SessionFence 接进 SessionController（claim→validate→release），INV-4「产物落库必过 fence」进注册表，⚠ 孤儿清一个；剩余孤儿仅 PlatformStore。详细勘查见 docs/stage-r1-fence-wiring-design-20261030.md。<b>R2（2026-10-30，E1=C 用户拍板）✅</b>：常驻消费者（server.py 宿主启停 · grace）、run.answer 事件、/chat/send receipt 型 + ?wait=true（无消费者回落同步）、steer 真注入（fence 路由 + react 安全点合批 + 滞留晋升，降级桩删除）、优先级老化（aged&gt;interrupt&gt;FIFO · work.aged · ConfigHub aging_s）。设计见 docs/stage-r2-consumer-steer-aging-design-20261030.md。<b>R3（2026-10-30，勘查后重定界）✅</b>：CLI/TUI 入口核实早已接（更正此前误判）；study 早已走 automation mailbox（阶段 3c/4）；真实缺口=同 session 跨 kind 裸并发——fence 域统一为物理 session id，chat 消费者跳过被占 session、study 执行占栏/等待/释放，session=串行域对全部 kind 成立。设计见 docs/stage-r3-session-domain-design-20261030.md。<b>R4（2026-10-30，D2=延后分库）✅</b>：P-5 指针四件套与 ArtifactChannel 本就完整（13 测试）但零调用方——现接进生产：singleton 注入 data_dir、Gateway 暴露 artifacts、study round metrics 超 64KB 转指针落 D-4 目录并登记、回测结果是第一个真实用户；PROTOCOL_VERSION 成为事件信封唯一来源，replay 遇不匹配版本明确拒绝（不猜语义）。设计见 docs/stage-r4-data-plane-design-20261030.md。<b>R5（2026-10-30，勘查后判定大部分不做）</b>：cpu 节点不做（等价物已有：回测后台子进程 + fanout-t2 进程池）；graph 子图不做（零用户）；subagent lane 不做（subagent 当前同步串行，无并发问题）；只建 <b>ModelHub</b>——provider/model 解析唯一入口，未知 provider 拒绝不降级。三项「不做」的重开条件见 docs/stage-r5-execution-plane-assessment-20261030.md。<b>R6（2026-10-30，分档）</b>：✅ Director 确定性版（停因→建议，只发 study.directive 事件，不读预算不自动开 run）；⏸ 方法论归位延后（前置=先解 phase_engine↔runner 循环导入）；⏹ RunContext 包对象不做（机制已以散装 state 键存在）；⏹ preset Tier 0 治理不做（无可被外部修改的 preset 文件）。见 docs/stage-r6-research-domain-assessment-20261030.md。<b>R7/B1（2026-10-30）</b>：修复 R2 引入的三处技术债（sink 累积导致重复 SSE、wait_turn 返旧结果、结果无界）；interrupt 语义落地——CancelScope + 引擎节点边界取消，被取消的 run 不发 run.answer、栅栏照常释放、下一 turn 立即接上。见 stage-r7-r2-techdebt-design / stage-b1-interrupt-design。<b>B2（2026-10-30）✅</b>：fold 重建落地——recover() 从事件流恢复 turn 计数（续号不撞号）、session_key→uuid 映射（同 key 落回同一 aggregate）、started 无 terminal 的 run 标 run.interrupted（幂等）；auto_resume=false 兑现（mailbox 待办不重建，重试靠重提）；宿主 server.py 先 recover 再启消费者。见 stage-b2-fold-recovery-design。<b>B3（2026-10-30）</b>：勘查判定「7 阶段」与现有事件生命周期一一同构（单线程串行下无并发可管理）、「6 正交真值」从未被定义（所属 RunHandle 形态已被 v6 取代）——两者 ⏹ 不做；真缺口是 receipt 契约的非阻塞 poll 端，落地 session_status 快照。见 stage-b3-controller-assessment。<b>接缝加固（2026-10-30）✅</b>：用户提出拆分评估 → 结论「分而不拆」——平台→研究域实测零反向依赖、研究域→平台仅 9 触点，用门禁锁死（平台 7 子层 × 研究域 5 成员全禁反向 + 9 触点白名单）；顺带发现并修正 hanging_events 错放 study/（它是平台防护件，迁 observability）。见 docs/seam-hardening-design / seam-contract-platform-research-20261030.md。<b>解循环导入（2026-10-30）✅</b>：phase_engine↔runner 互为 import 的实质是 8 常量+1 枚举+1 纯函数住在 runner——下沉 study/contracts.py，依赖变 DAG（runner→phase_engine→contracts），AST 门禁防回潮。见 break-circular-import-design。<b>覆盖率工程（2026-10-30）✅</b>：.coveragerc + scripts/cov_gate.py 分档门禁 + 156 个新单测；A 平台内核 91.2% ✅、B 87.5%、C 88.5%（活跃核心 88.8%，起点 86.6%）。剩余缺口为异步执行路径，归集成测试。见 docs/coverage-90-plan。<b>D1 方法论归位（2026-10-30）✅</b>：勘查修正搬家集——phase_engine 仍依赖执行侧（graph_preset/scenario_router）留作「引擎的方法适配器」，6 个纯方法件（aegis/attribution/claims/guidance/metric_targets/review_loop）归位 core/study/method/，门禁禁 method→engine。见 docs/d1-method-relocation-design。<b>深度统一 B1（2026-10-31）✅</b>：SwarmRuntime 自研层循环退役，<code>execute()</code> 变为 SwarmPreset→GraphEngine 编译器（每层 split→fanout→join 链，层屏障语义保真）；契约零改动，三个消费面（goal workflow / CLI swarm / MCP swarm）一行未动。引擎侧仅加 opt-in <code>include_result</code>。见 docs/deep-unification-graph-engine-design。<b>B2 ✅</b>：checkpoint 收口——层间自动存档 + <code>/goal checkpoint resume</code> 真续跑（此前只展示）。<b>R-A（2026-10-31）✅</b>：<code>branches[].action=retry</code> 此前是空转（加回层又被「已有结果即跳过」过滤掉），改为显式 retry_queue 穿过图状态，新字段 <code>branch_max_retries</code> 封顶。<b>workflow 迁引擎 R-B0…R-B4（2026-10-31）✅</b>：<code>node_outputs</code> 补 <code>output</code> 列（老库自动 ALTER）→ <code>WorkflowGraphCompiler</code>（影子验证 7/7）→ 主路径切换 + <code>resume_from_store</code>（修掉「重启即卡死」：此前 /approve 依赖内存实例，进程重启就 404）→ 编译器内 replan 环 + 删旧段循环（executor.py 708→391 行）。<b>产品缺陷三修（2026-11-01）✅</b>：审批决策竞态（提前到达的决策被 clear+drain 丢弃，最长阻塞 approval_timeout=1800s）；JWT 密钥被 Windows 文本模式写坏（<code>os.open</code> 缺 <code>O_BINARY</code>，0x0A→0x0D0x0A，重启后所有 token 失效；另有 <code>read_bytes().strip()</code> 剥掉随机密钥首尾空白）；goal 证据在 retry 后重复计数。<b>验证矩阵（2026-11-01）✅</b>：<code>scripts/run_test_matrix.py</code> 按 lane 分进程 + 文件分片并行，PR 门 393s→179s，完整三层 7.5 分钟；<code>scripts/pytest_shard.py --exclude</code> 修掉「标记 slow 的大文件独占分片后被全反选→空转」。见 docs/test-marker-lanes-design.md §9。<b>v6.5 → v7（2026-11-03）：四层骨架叠加（画框架定方向 · 不改代码）</b>——①渠道=L1 interfaces · ②Gateway+③执行面=L3 runtime · ④平台数据=L3 事件语义+L4 存储机制 · ⑤研究域=L2 domain；新增 L4 foundation 横带与 ⑥ 四层依赖总表（与 test_layer_matrix 门禁同源：跨层 import 矩阵 + 上行违规 107 分簇棘轮；簇A 92=工具层绑定领域能力→G2b CapabilityRegistry 端口化，簇B/C 15→G2a 注册反转/归位）。依赖轴（静态 import）与数据流轴（管线蓝箭头）正交——研究域居管线下游、依赖序上游。见 docs/layered-skeleton-design-20261103.md。<b>v7 → v7.1（2026-11-03）：层命名定稿 llmwikify 式四层（用户拍板）</b>——L2 domain→<b>apps</b> · L3 runtime→<b>kernel</b>（物理目录不动，仅逻辑层名）；Gateway 组件归类上墙：kernel×9（协议端点·mailbox·SessionController·容量组闸⏳·ModelHub·ContextHub·EventStore·Scheduler⏳·RunContext）+ apps×1（<b>Director</b>——研究语义策略件，物理 core/study/，由 runner 轮末调用，控制面经事件流消费其产出；编排位置 ≠ 依赖层）。<b>v7.1 → v7.2（2026-11-03）：kernel 三子带 + 两处归位（用户确认）</b>——逐包核查后修正：core/tools（data_clean/transforms 研究数据工具实现，仅被 config_runner/data_readiness/db 引用）→ <b>L2 apps</b>；core/registry.py（Generic typed Registry 基类，零语义）→ <b>L4 foundation</b>；两处经 import grep 验证为违规中性（基线 107 不变）。kernel 显式拆三子带（只改体现不改 import 规则）：控制面 ~4.1k（gateway/orchestration/events/session/scheduled_research）· 执行面 ~6.0k（runtimes/workflow/swarm）· 能力面 ~24.6k（agent 独大 + context/hooks/permission/memory/skills）。foundation 写明晋升门槛（去 run/session/研究语义可独立成库；候选：ToolContext 去 session 化、hooks 泛化）与反向红线（禁止为平衡假厚）。</p>
+<p style="color:#64748b;font-size:12.5px;margin-top:10px">v5.1 → v6：入口层塌进 Gateway，管线 8 段收 4 段，回执两态。v6 → v6.1：mailbox 落细则（先序后闸 / cap 20 / 老化）、新增容量组闸横带、home_session 落图、执行面标 T1/T2/T3。v6.1 → v6.2：执行面三 runtime 收敛为 <b>GraphEngine 唯一 runtime</b> + 四种节点类型 + preset 治理分级；DagRuntime 除名。数据层拆分：平台数据面并入平台虚线框，研究域独立成第 ⑤ 层。<b>v6.2 → v6.3（2026-10-30）：对照代码逐格核实，虚实线与 ✅/⏳/⏸ 标注对齐实现现状。</b>已上线：E1 契约/两态回执、mailbox（cap20+溢出摘要+4 队列模式）、SessionController 1a 最小版（P-4 身份）、GraphEngine（llm/react · react 内部=AgentLoop 平移）、fanout-t2→ExecutorBridge、ContextHub（接线+仲裁+压缩同源）、不变量 ×5+verify_all、统一库事件化（B4 单一写者）、文档治理。建而未接线 ⚠：SessionFence、PlatformStore。仍未建 ⏳：RuntimeHub、容量组闸、优先级老化、steer 真注入（现为降级桩）、独立 cpu/graph 节点、Director、RunContext、方法论归位 core/study/method/、P-3/P-5、每 session 分库、Scheduler 唯一、PROTOCOL_VERSION、宿主进程（qs gateway）。挂起 ⏸：P5-1c 删旧 chat 分支（唯一待办，docs/todo-remove-legacy-chat-branch-20261027.md）。<b>R1（2026-10-30）：fence 挂根 ✅</b>——SessionFence 接进 SessionController（claim→validate→release），INV-4「产物落库必过 fence」进注册表，⚠ 孤儿清一个；剩余孤儿仅 PlatformStore。详细勘查见 docs/stage-r1-fence-wiring-design-20261030.md。<b>R2（2026-10-30，E1=C 用户拍板）✅</b>：常驻消费者（server.py 宿主启停 · grace）、run.answer 事件、/chat/send receipt 型 + ?wait=true（无消费者回落同步）、steer 真注入（fence 路由 + react 安全点合批 + 滞留晋升，降级桩删除）、优先级老化（aged&gt;interrupt&gt;FIFO · work.aged · ConfigHub aging_s）。设计见 docs/stage-r2-consumer-steer-aging-design-20261030.md。<b>R3（2026-10-30，勘查后重定界）✅</b>：CLI/TUI 入口核实早已接（更正此前误判）；study 早已走 automation mailbox（阶段 3c/4）；真实缺口=同 session 跨 kind 裸并发——fence 域统一为物理 session id，chat 消费者跳过被占 session、study 执行占栏/等待/释放，session=串行域对全部 kind 成立。设计见 docs/stage-r3-session-domain-design-20261030.md。<b>R4（2026-10-30，D2=延后分库）✅</b>：P-5 指针四件套与 ArtifactChannel 本就完整（13 测试）但零调用方——现接进生产：singleton 注入 data_dir、Gateway 暴露 artifacts、study round metrics 超 64KB 转指针落 D-4 目录并登记、回测结果是第一个真实用户；PROTOCOL_VERSION 成为事件信封唯一来源，replay 遇不匹配版本明确拒绝（不猜语义）。设计见 docs/stage-r4-data-plane-design-20261030.md。<b>R5（2026-10-30，勘查后判定大部分不做）</b>：cpu 节点不做（等价物已有：回测后台子进程 + fanout-t2 进程池）；graph 子图不做（零用户）；subagent lane 不做（subagent 当前同步串行，无并发问题）；只建 <b>ModelHub</b>——provider/model 解析唯一入口，未知 provider 拒绝不降级。三项「不做」的重开条件见 docs/stage-r5-execution-plane-assessment-20261030.md。<b>R6（2026-10-30，分档）</b>：✅ Director 确定性版（停因→建议，只发 study.directive 事件，不读预算不自动开 run）；⏸ 方法论归位延后（前置=先解 phase_engine↔runner 循环导入）；⏹ RunContext 包对象不做（机制已以散装 state 键存在）；⏹ preset Tier 0 治理不做（无可被外部修改的 preset 文件）。见 docs/stage-r6-research-domain-assessment-20261030.md。<b>R7/B1（2026-10-30）</b>：修复 R2 引入的三处技术债（sink 累积导致重复 SSE、wait_turn 返旧结果、结果无界）；interrupt 语义落地——CancelScope + 引擎节点边界取消，被取消的 run 不发 run.answer、栅栏照常释放、下一 turn 立即接上。见 stage-r7-r2-techdebt-design / stage-b1-interrupt-design。<b>B2（2026-10-30）✅</b>：fold 重建落地——recover() 从事件流恢复 turn 计数（续号不撞号）、session_key→uuid 映射（同 key 落回同一 aggregate）、started 无 terminal 的 run 标 run.interrupted（幂等）；auto_resume=false 兑现（mailbox 待办不重建，重试靠重提）；宿主 server.py 先 recover 再启消费者。见 stage-b2-fold-recovery-design。<b>B3（2026-10-30）</b>：勘查判定「7 阶段」与现有事件生命周期一一同构（单线程串行下无并发可管理）、「6 正交真值」从未被定义（所属 RunHandle 形态已被 v6 取代）——两者 ⏹ 不做；真缺口是 receipt 契约的非阻塞 poll 端，落地 session_status 快照。见 stage-b3-controller-assessment。<b>接缝加固（2026-10-30）✅</b>：用户提出拆分评估 → 结论「分而不拆」——平台→研究域实测零反向依赖、研究域→平台仅 9 触点，用门禁锁死（平台 7 子层 × 研究域 5 成员全禁反向 + 9 触点白名单）；顺带发现并修正 hanging_events 错放 study/（它是平台防护件，迁 observability）。见 docs/seam-hardening-design / seam-contract-platform-research-20261030.md。<b>解循环导入（2026-10-30）✅</b>：phase_engine↔runner 互为 import 的实质是 8 常量+1 枚举+1 纯函数住在 runner——下沉 study/contracts.py，依赖变 DAG（runner→phase_engine→contracts），AST 门禁防回潮。见 break-circular-import-design。<b>覆盖率工程（2026-10-30）✅</b>：.coveragerc + scripts/cov_gate.py 分档门禁 + 156 个新单测；A 平台内核 91.2% ✅、B 87.5%、C 88.5%（活跃核心 88.8%，起点 86.6%）。剩余缺口为异步执行路径，归集成测试。见 docs/coverage-90-plan。<b>D1 方法论归位（2026-10-30）✅</b>：勘查修正搬家集——phase_engine 仍依赖执行侧（graph_preset/scenario_router）留作「引擎的方法适配器」，6 个纯方法件（aegis/attribution/claims/guidance/metric_targets/review_loop）归位 core/study/method/，门禁禁 method→engine。见 docs/d1-method-relocation-design。<b>深度统一 B1（2026-10-31）✅</b>：SwarmRuntime 自研层循环退役，<code>execute()</code> 变为 SwarmPreset→GraphEngine 编译器（每层 split→fanout→join 链，层屏障语义保真）；契约零改动，三个消费面（goal workflow / CLI swarm / MCP swarm）一行未动。引擎侧仅加 opt-in <code>include_result</code>。见 docs/deep-unification-graph-engine-design。<b>B2 ✅</b>：checkpoint 收口——层间自动存档 + <code>/goal checkpoint resume</code> 真续跑（此前只展示）。<b>R-A（2026-10-31）✅</b>：<code>branches[].action=retry</code> 此前是空转（加回层又被「已有结果即跳过」过滤掉），改为显式 retry_queue 穿过图状态，新字段 <code>branch_max_retries</code> 封顶。<b>workflow 迁引擎 R-B0…R-B4（2026-10-31）✅</b>：<code>node_outputs</code> 补 <code>output</code> 列（老库自动 ALTER）→ <code>WorkflowGraphCompiler</code>（影子验证 7/7）→ 主路径切换 + <code>resume_from_store</code>（修掉「重启即卡死」：此前 /approve 依赖内存实例，进程重启就 404）→ 编译器内 replan 环 + 删旧段循环（executor.py 708→391 行）。<b>产品缺陷三修（2026-11-01）✅</b>：审批决策竞态（提前到达的决策被 clear+drain 丢弃，最长阻塞 approval_timeout=1800s）；JWT 密钥被 Windows 文本模式写坏（<code>os.open</code> 缺 <code>O_BINARY</code>，0x0A→0x0D0x0A，重启后所有 token 失效；另有 <code>read_bytes().strip()</code> 剥掉随机密钥首尾空白）；goal 证据在 retry 后重复计数。<b>验证矩阵（2026-11-01）✅</b>：<code>scripts/run_test_matrix.py</code> 按 lane 分进程 + 文件分片并行，PR 门 393s→179s，完整三层 7.5 分钟；<code>scripts/pytest_shard.py --exclude</code> 修掉「标记 slow 的大文件独占分片后被全反选→空转」。见 docs/test-marker-lanes-design.md §9。<b>v6.5 → v7（2026-11-03）：四层骨架叠加（画框架定方向 · 不改代码）</b>——①渠道=L1 interfaces · ②Gateway+③执行面=L3 runtime · ④平台数据=L3 事件语义+L4 存储机制 · ⑤研究域=L2 domain；新增 L4 foundation 横带与 ⑥ 四层依赖总表（与 test_layer_matrix 门禁同源：跨层 import 矩阵 + 上行违规 107 分簇棘轮；簇A 92=工具层绑定领域能力→G2b CapabilityRegistry 端口化，簇B/C 15→G2a 注册反转/归位）。依赖轴（静态 import）与数据流轴（管线蓝箭头）正交——研究域居管线下游、依赖序上游。见 docs/layered-skeleton-design-20261103.md。<b>v7 → v7.1（2026-11-03）：层命名定稿 llmwikify 式四层（用户拍板）</b>——L2 domain→<b>apps</b> · L3 runtime→<b>kernel</b>（物理目录不动，仅逻辑层名）；Gateway 组件归类上墙：kernel×9（协议端点·mailbox·SessionController·容量组闸⏳·ModelHub·ContextHub·EventStore·Scheduler⏳·RunContext）+ apps×1（<b>Director</b>——研究语义策略件，物理 core/study/，由 runner 轮末调用，控制面经事件流消费其产出；编排位置 ≠ 依赖层）。<b>v7.1 → v7.2（2026-11-03）：kernel 三子带 + 两处归位（用户确认）</b>——逐包核查后修正：core/tools（data_clean/transforms 研究数据工具实现，仅被 config_runner/data_readiness/db 引用）→ <b>L2 apps</b>；core/registry.py（Generic typed Registry 基类，零语义）→ <b>L4 foundation</b>；两处经 import grep 验证为违规中性（基线 107 不变）。kernel 显式拆三子带（只改体现不改 import 规则）：控制面 ~4.1k（gateway/orchestration/events/session/scheduled_research）· 执行面 ~6.0k（runtimes/workflow/swarm）· 能力面 ~24.6k（agent 独大 + context/hooks/permission/memory/skills）。foundation 写明晋升门槛（去 run/session/研究语义可独立成库；候选：ToolContext 去 session 化、hooks 泛化）与反向红线（禁止为平衡假厚）。<b>v7.2 → v7.3（2026-11-03）：foundation 独立成带（用户拍板）</b>——从 ④ 平台数据中剥离「L4 存储机制」，④ 收纯为 L3 事件语义；⑥ foundation 独立底座带（llm/storage/registry/observability/utils/web/config_loader/errors/git · 晋升门槛与反向红线上墙），管线=渠道→平台→研究域→foundation；原 ⑥ 总表改编号 ⑦。成员零变化（纯图面重构）：④ 的 P-1/P-2 语义在 L3（EventStore/projector），其 sqlite 写入实现（PlatformStore/event_schema）在 L4。</p>
 
 <footer>
   骨架参考：<b>docs/openclaw-architecture.html</b> · 总纲：<b>docs/architecture-v3-openclaw-inspired.md</b> ·
