@@ -177,8 +177,39 @@ python -c "import strategy_research"
 
 | 包 | 波 | 目标层 | 状态 | commit |
 |---|---|---|---|---|
-| `errors.py` | W0 | foundation | 待执行 | — |
-| 其余 54 包 | W1–W6 | — | 待执行 | — |
+| `errors.py` | W0 | foundation | ✅ | befb1a29 |
+| `alpha_zoo_yaml.py` | W1 | apps | ✅ | e420d25b |
+| `seq_generator.py` | W1 | kernel | ✅ | 3f856e3b |
+| `preflight.py` | W1 | apps | ✅ | 4e248665 |
+| `alpha_zoo_convert.py` | W1 | apps | ✅ | 6551100b |
+| `alpha_zoo_adapter.py` | W1 | apps | ✅ | f0f5814d |
+| `config_loader.py` | W1 | foundation | ✅ | 2816bc65 |
+| `export/` | W1 | apps | ✅ | b30cb791 |
+| `factor_validate.py` | W1 | apps | ✅ | b500419a |
+| `run_card.py` | W1 | apps | ✅ | ffdfe425 |
+| `alpha_zoo_ops.py` | W1 | apps | ✅ | a9545565 |
+| `workspace_setup.py` | W1 | apps | ✅ | 4ce322a9 |
+| `backtest_engine/` | W1 | apps | ✅ | 4a25ec41 |
+| `data_readiness.py` | W1 | apps | ✅ | 243e0656 |
+| `git.py` | W1 | foundation | ✅ | da08d25c |
+| 其余 40 包 | W2–W6 | — | 待执行 | — |
+
+### 7.1 W1 波执行记录（协议修订沉淀）
+
+- **改写形态扩展到 5 种**：module 绝对 / lazy 函数体内绝对 / pkg-import
+  （`from core import X as y`）/ 字符串字面量（路径键）/ **相对导入**
+  （level-1/2/3 均出现）。`tmp/rewrite_prefix.py` 管前 4 种；相对导入按
+  importer 深度解析（`tmp/find_imports_of.py`）逐处裁决。
+- **AST 扫描器两次 PEP 328 bug**：`relpath` 带 `.py` 后缀使包路径错位——
+  包 = `rel.split(".")[:-2]`（模块名与 `py` 一并剥）。修复后对 11 个已搬包
+  回测零残留方继续推进。
+- **新增悬空路径登记（W2-6 追加）**：`core/alpha_zoo/loader.py:184`
+  `from .alpha_zoo_yaml import` 解析为 `core.alpha_zoo.alpha_zoo_yaml`
+  （不存在），迁移前即断，原样保留。
+- **level≥2 根相对导入新类别**：`from .. import _TEMPLATES_DIR`
+  （workspace_setup）深度不变但父级含义变化，必须转绝对。
+- **每步验证**：受影响测试 + 门禁组 + `compileall -x attic` 全绿后 commit；
+  W1 波内累计 2444+ 套件全绿（W1-10）。
 
 ## 8. 回滚
 
