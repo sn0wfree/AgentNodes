@@ -268,7 +268,7 @@ class MCPServer:
 
     def _register_skill_tools(self) -> None:
         def list_skills(**kwargs: Any) -> str:
-            from strategy_research.core.skills import SkillRegistry
+            from strategy_research.kernel.skills import SkillRegistry
             skills_dir = Path(__file__).parent.parent.parent / "templates" / ".skills"
             registry = SkillRegistry()
             registry.load_directory(skills_dir)
@@ -276,7 +276,7 @@ class MCPServer:
             return json.dumps([{"name": s.name, "category": s.category, "description": s.description} for s in skills], ensure_ascii=False)
 
         def load_skill(name: str = "", **kwargs: Any) -> str:
-            from strategy_research.core.skills import SkillRegistry
+            from strategy_research.kernel.skills import SkillRegistry
             skills_dir = Path(__file__).parent.parent.parent / "templates" / ".skills"
             registry = SkillRegistry()
             registry.load_directory(skills_dir)

@@ -297,7 +297,7 @@ class ListSkillsTool(BaseTool):
         workspace = ctx.workspace
 
         try:
-            from ...skills import SkillRegistry
+            from strategy_research.kernel.skills import SkillRegistry
             registry = SkillRegistry()
 
             # Load from workspace .skills/ first, then bundled templates
@@ -384,7 +384,7 @@ class LoadSkillTool(BaseTool):
             return err_actionable("missing or invalid 'name'", tool="skill")
 
         try:
-            from ...skills import SkillRegistry
+            from strategy_research.kernel.skills import SkillRegistry
             registry = SkillRegistry()
 
             # Load from workspace .skills/ first (user overrides), then bundled

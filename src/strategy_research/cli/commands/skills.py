@@ -13,7 +13,7 @@ from pathlib import Path
 
 def cmd_skills_list(args) -> int:
     """列出所有技能。"""
-    from strategy_research.core.skills import SkillRegistry
+    from strategy_research.kernel.skills import SkillRegistry
 
     skills_dir = Path(__file__).parent.parent.parent / "templates" / ".skills"
     registry = SkillRegistry()
@@ -40,7 +40,7 @@ def cmd_skills_list(args) -> int:
 
 def cmd_skills_show(args) -> int:
     """显示技能内容。"""
-    from strategy_research.core.skills import SkillRegistry
+    from strategy_research.kernel.skills import SkillRegistry
 
     skills_dir = Path(__file__).parent.parent.parent / "templates" / ".skills"
     registry = SkillRegistry()
@@ -66,7 +66,7 @@ def cmd_skills_show(args) -> int:
 
 def cmd_skills_search(args) -> int:
     """搜索技能。"""
-    from strategy_research.core.skills import SkillRegistry
+    from strategy_research.kernel.skills import SkillRegistry
 
     skills_dir = Path(__file__).parent.parent.parent / "templates" / ".skills"
     registry = SkillRegistry()

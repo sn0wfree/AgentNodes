@@ -102,7 +102,7 @@ def cmd_skill(*, console: Any = None) -> int:
     """``/skill`` — list bundled + user skills via ``SkillsLoader``."""
     console = _resolve_console(console)
     try:
-        from strategy_research.core.skills import SkillsLoader
+        from strategy_research.kernel.skills import SkillsLoader
         loader = SkillsLoader()
         skills = loader.list() if hasattr(loader, "list") else []
     except Exception as exc:  # noqa: BLE001
