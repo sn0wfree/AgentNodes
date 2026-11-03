@@ -14,7 +14,7 @@ from __future__ import annotations
 from pathlib import Path
 
 from strategy_research import _TEMPLATES_DIR
-from strategy_research.core.workspace_setup import (
+from strategy_research.apps.workspace_setup import (
     _EXCLUDED_TOP_DIRS,
     smart_init_workspace_templates,
 )
@@ -141,7 +141,7 @@ class TestSmartScaffoldRecursive:
         (fake_pkg / "extra_dir" / "deeper").mkdir()
         (fake_pkg / "extra_dir" / "deeper" / "deep.md").write_text("# deep")
         monkeypatch.setattr(
-            "strategy_research.core.workspace_setup._TEMPLATES_DIR",
+            "strategy_research.apps.workspace_setup._TEMPLATES_DIR",
             tmp_path / "fake_pkg" / "templates",
         )
         workspace = tmp_path / "ws"
@@ -159,7 +159,7 @@ class TestSmartScaffoldErrors:
     def test_handles_missing_package_dir(self, tmp_path: Path, monkeypatch):
         """If package templates dir missing, returns error but doesn't crash."""
         monkeypatch.setattr(
-            "strategy_research.core.workspace_setup._TEMPLATES_DIR",
+            "strategy_research.apps.workspace_setup._TEMPLATES_DIR",
             Path("/nonexistent/path/that/does/not/exist"),
         )
         report = smart_init_workspace_templates(tmp_path)

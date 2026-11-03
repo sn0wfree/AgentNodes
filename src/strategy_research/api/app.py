@@ -153,9 +153,9 @@ def create_app(
 
         # Smart scaffold: recursively ensure workspace templates/ mirrors
         # package templates/. Idempotent — user customizations preserved.
-        # See core/workspace_setup.py and docs/scaffold-fix.md.
+        # See apps/workspace_setup.py and docs/scaffold-fix.md.
         try:
-            from ..core.workspace_setup import smart_init_workspace_templates
+            from strategy_research.apps.workspace_setup import smart_init_workspace_templates
             smart_init_workspace_templates(workspace_path)
         except Exception as exc:
             logger.warning("Smart scaffold failed: %s", exc)

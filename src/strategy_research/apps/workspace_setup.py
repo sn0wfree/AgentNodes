@@ -25,7 +25,7 @@ import logging
 import shutil
 from pathlib import Path
 
-from .. import _TEMPLATES_DIR
+from strategy_research import _TEMPLATES_DIR
 
 logger = logging.getLogger(__name__)
 
