@@ -122,6 +122,9 @@ import 压成单行（20 处语法损坏），暴露出「一次性改写 1,200 
 | **W1** | 1–3 | 13 | 协议在小入边包上固化 |
 | **W2** | 4–9 | 12 | mcp/interfaces 进入；apps 单文件群 |
 | **W3** | 11–20 | 9 | 中等体量；`autoresearch.py`/`hypothesis` |
+| ↳ **W3a** | 11–19 | 3 | **已完成**：`compute_factor`(11) `context`(16) `session`(19) |
+| ↳ W3b | 33–35 | 2 | `autoresearch`(33) `strategy_acceptance`(35) 互引，须同批 |
+| ↳ W3c | 41–61 | 3 | `backtest`(41) `hypothesis`(41) `data_source`(61) |
 | **W4** | 25–37 | 9 | 重包：`db`(26) `gateway`(31) `events`(32) `observability`(32) `runtimes`(33) `storage`(34) `swarm`(37) |
 | **W5** | 51–64 | 6 | `api`(51) `engine`(55) `orchestration`(57) `workflow`(58) `utils`(62) `agent`(64) |
 | **W6 巨型收尾** | 100+ | 4 | `cli`(104) `study`(127) `llm`(127) `goal`(139) |
@@ -204,7 +207,10 @@ python -c "import strategy_research"
 | `hooks/` | W2 | kernel | ✅ | 674b8504 |
 | `portfolio/` | W2 | apps | ✅ | c07c4be3 |
 | `tools/` | W2 | apps | ✅ | 682ee0a6 |
-| 其余 28 包 | W3–W6 | — | 待执行 | — |
+| `compute_factor.py` | W3a | apps | ✅ | 5b22aab7 |
+| `context/` | W3a | kernel | ✅ | fd750ae8 |
+| `session/` | W3a | kernel | ✅ | 950bd579 |
+| 其余 25 包 | W3b–W6 | — | 待执行 | — |
 
 ### 7.1 W1 波执行记录（协议修订沉淀）
 
@@ -243,6 +249,22 @@ python -c "import strategy_research"
   （`tmp/clear_pyc.py`）。
 - **差分验证制度化**：W2-12 起对「疑似回归」一律做 stash 前后同命令同文件集
   对照，结果须逐字一致。W2-12 实测 1F/34P 两边相同，确认零回归。
+
+### 7.3 W3a 子波执行记录（两个门禁级发现）
+
+- **发现一：层门禁一直在虚报违规数**。`_resolve_targets` 对绝对导入
+  `from X import a, b` 展开成 `X` / `X.a` / `X.b` 三条，而相对导入因 target
+  相同被 set 去重只计 1 —— 两形态计法不一致。按 ADR-000「每语句计 1」修正后
+  真实值大幅下降：L3>L1 2→1 · L3>L2 46→35 · L4>L2 2→0 · L4>L3 4→2。
+  基线已按「只降不升」同步下调；**旧基线的相当一部分是工具造出来的**。
+  教训：门禁自身的计量口径也要有测试——只看「不超基线」会永久掩盖虚高。
+- **发现二：`health.py` 归属错误**（W3a-1 顺带修复）。
+  `strategy_acceptance/health.py` 是零依赖纯度量扫描器，唯一消费者是
+  `study/runner.py`，包内自身零引用 → 移至 `core/study/health.py`。
+  处置原则：**能改归属就不登记白名单**，白名单只留给真正必要的跨域。
+  该依赖此前一直悬空（import 名字写错），修好后才第一次被 seam gate 看到。
+- **工具补强**：`tmp/fix_rel_residue.py` —— 按 PEP 328 **解析结果**驱动改写
+  相对导入，不再依赖文本匹配。W3a-2/3 实战零遗漏，替代了此前逐处手工裁决。
 
 ## 8. 回滚
 
