@@ -7,7 +7,7 @@ from __future__ import annotations
 
 import pytest
 
-from strategy_research.core.runtimes.graph_engine import (
+from strategy_research.kernel.runtimes.graph_engine import (
     END,
     GraphEngine,
     GraphInterrupt,
@@ -344,7 +344,7 @@ def test_engine_reusable_across_runs_with_loops():
 
 
 def test_end_sentinel_is_string_and_usable_in_mapping():
-    from strategy_research.core.runtimes import END as PKG_END
+    from strategy_research.kernel.runtimes import END as PKG_END
 
     assert PKG_END == END == "__end__"
 

@@ -18,7 +18,7 @@ from __future__ import annotations
 import queue
 from typing import Any, Callable
 
-from strategy_research.core.runtimes.graph_engine import (
+from strategy_research.kernel.runtimes.graph_engine import (
     END,
     GraphEngine,
     GraphInterrupt,
@@ -60,7 +60,7 @@ def build_fanout_preset(
         branch_events.put((kind, dict(data)))
 
     def branch_worker(payload: Any, branch_state: dict) -> dict:
-        from strategy_research.core.runtimes.nodes.react import (
+        from strategy_research.kernel.runtimes.nodes.react import (
             ReactConfig,
             make_react_node,
         )

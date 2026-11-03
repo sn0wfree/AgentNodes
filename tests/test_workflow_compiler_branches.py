@@ -125,7 +125,7 @@ def _router(compiler, state):
 
 
 def test_replan_router_stops_on_interrupt(tmp_path):
-    from strategy_research.core.runtimes import INTERRUPT_KEY
+    from strategy_research.kernel.runtimes import INTERRUPT_KEY
 
     d = _def([WorkflowNode(id="p", type="planner", config={})])
     c = WorkflowGraphCompiler(d, workspace=tmp_path, objective="o")

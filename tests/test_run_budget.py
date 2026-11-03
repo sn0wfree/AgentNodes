@@ -14,7 +14,7 @@ import time
 import pytest
 
 from strategy_research.core.agent.strategy.budget import BudgetLimits
-from strategy_research.core.runtimes.run_budget import RunBudget
+from strategy_research.kernel.runtimes.run_budget import RunBudget
 
 
 def usage(tokens: int = 0, *, prompt: int = 0, completion: int = 0) -> dict:

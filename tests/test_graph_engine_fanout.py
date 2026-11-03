@@ -9,7 +9,7 @@ import time
 
 import pytest
 
-from strategy_research.core.runtimes.graph_engine import (
+from strategy_research.kernel.runtimes.graph_engine import (
     END,
     GraphEngine,
     GraphInterrupt,

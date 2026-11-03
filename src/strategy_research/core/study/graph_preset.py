@@ -18,7 +18,7 @@ from __future__ import annotations
 import json
 from typing import Callable
 
-from strategy_research.core.runtimes import (
+from strategy_research.kernel.runtimes import (
     END,
     INTERRUPT_KEY,
     GraphEngine,

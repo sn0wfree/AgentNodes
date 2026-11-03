@@ -8,9 +8,9 @@ from __future__ import annotations
 import pytest
 
 from strategy_research.core.agent.strategy.budget import BudgetLimits
-from strategy_research.core.runtimes.graph_engine import INTERRUPT_KEY
-from strategy_research.core.runtimes.presets.fanout import build_fanout_preset
-from strategy_research.core.runtimes.run_budget import RunBudget
+from strategy_research.kernel.runtimes.graph_engine import INTERRUPT_KEY
+from strategy_research.kernel.runtimes.presets.fanout import build_fanout_preset
+from strategy_research.kernel.runtimes.run_budget import RunBudget
 
 
 class FakeResp:
@@ -328,7 +328,7 @@ def test_preset_engine_topology_is_two_nodes():
 
 def test_max_parallel_default_is_eight():
     """D5：默认并发与 subagent lane 同源（8）。"""
-    from strategy_research.core.runtimes.graph_engine import _FanoutSpec
+    from strategy_research.kernel.runtimes.graph_engine import _FanoutSpec
 
     engine = make_preset()
     spec = engine._fanouts["split"]  # 白盒：确认默认值

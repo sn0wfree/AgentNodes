@@ -57,7 +57,7 @@ def _registry() -> ToolRegistry:
 
 def test_compactor_runs_before_llm_call():
     """压缩必须发生在 LLM 调用之前——本次调用才放得下。"""
-    from strategy_research.core.runtimes.nodes.react import (
+    from strategy_research.kernel.runtimes.nodes.react import (
         ReactConfig,
         make_react_node,
     )
@@ -89,7 +89,7 @@ def test_compactor_runs_before_llm_call():
 
 def test_compacted_messages_reach_the_llm():
     """压缩后的消息列表（不是原始列表）传给 LLM。"""
-    from strategy_research.core.runtimes.nodes.react import (
+    from strategy_research.kernel.runtimes.nodes.react import (
         ReactConfig,
         make_react_node,
     )
@@ -111,7 +111,7 @@ def test_compacted_messages_reach_the_llm():
 
 def test_no_layers_applied_keeps_messages_and_emits_nothing():
     """未超阈值（applied 为空）：消息不变、不发 compacted 事件。"""
-    from strategy_research.core.runtimes.nodes.react import (
+    from strategy_research.kernel.runtimes.nodes.react import (
         ReactConfig,
         make_react_node,
     )
@@ -135,7 +135,7 @@ def test_no_layers_applied_keeps_messages_and_emits_nothing():
 
 def test_compactor_failure_does_not_break_the_turn():
     """压缩抛异常：原样继续 + compact_failed 事件，本轮照常完成。"""
-    from strategy_research.core.runtimes.nodes.react import (
+    from strategy_research.kernel.runtimes.nodes.react import (
         ReactConfig,
         make_react_node,
     )
@@ -159,7 +159,7 @@ def test_compactor_failure_does_not_break_the_turn():
 
 def test_no_compactor_keeps_legacy_behaviour():
     """无 compactor：行为与迁移前一致（回归保护）。"""
-    from strategy_research.core.runtimes.nodes.react import (
+    from strategy_research.kernel.runtimes.nodes.react import (
         ReactConfig,
         make_react_node,
     )

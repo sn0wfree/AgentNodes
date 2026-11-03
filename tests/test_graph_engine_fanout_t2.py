@@ -11,13 +11,13 @@ import time
 import pytest
 
 from strategy_research.core.agent.strategy.budget import BudgetLimits
-from strategy_research.core.runtimes.executor_bridge import ExecutorBridge
-from strategy_research.core.runtimes.graph_engine import (
+from strategy_research.kernel.runtimes.executor_bridge import ExecutorBridge
+from strategy_research.kernel.runtimes.graph_engine import (
     END,
     GraphEngine,
     INTERRUPT_KEY,
 )
-from strategy_research.core.runtimes.run_budget import RunBudget
+from strategy_research.kernel.runtimes.run_budget import RunBudget
 
 
 # ── 模块级 worker（可 pickle）────────────────────────────
@@ -48,7 +48,7 @@ def slow_worker(payload, branch_state):
 
 def interrupt_worker(payload, branch_state):
     if payload == "boom":
-        from strategy_research.core.runtimes.graph_engine import GraphInterrupt
+        from strategy_research.kernel.runtimes.graph_engine import GraphInterrupt
 
         raise GraphInterrupt("t2_stop", {"where": "child"})
     time.sleep(0.05)
@@ -169,7 +169,7 @@ def test_t2_interrupt_cascades_and_skips_join(bridge):
 
 def test_t2_hard_kill_upgrades_when_cooperative_fails():
     """长跑 job：协作取消超时后 terminate，池自愈重建、后续 job 正常。"""
-    from strategy_research.core.runtimes.executor_bridge import JobSpec
+    from strategy_research.kernel.runtimes.executor_bridge import JobSpec
 
     b = ExecutorBridge(size=1)
     b.start()

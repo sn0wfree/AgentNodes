@@ -12,7 +12,7 @@ from __future__ import annotations
 import json
 from types import SimpleNamespace
 
-from strategy_research.core.runtimes import INTERRUPT_KEY
+from strategy_research.kernel.runtimes import INTERRUPT_KEY
 from strategy_research.core.study.graph_preset import (
     build_research_engine,
     run_phases_via_graph,

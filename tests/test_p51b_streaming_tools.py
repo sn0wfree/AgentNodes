@@ -6,8 +6,8 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 
-from strategy_research.core.runtimes.nodes.llm import make_llm_node
-from strategy_research.core.runtimes.nodes.react import ReactConfig, make_react_node
+from strategy_research.kernel.runtimes.nodes.llm import make_llm_node
+from strategy_research.kernel.runtimes.nodes.react import ReactConfig, make_react_node
 
 # ── Fakes ────────────────────────────────────────────────
 

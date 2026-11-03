@@ -144,8 +144,8 @@ def _inv_llm_calls_budgeted() -> bool:
     """
     import inspect
 
-    from ..runtimes.nodes import llm as llm_mod
-    from ..runtimes.nodes import react as react_mod
+    from strategy_research.kernel.runtimes.nodes import llm as llm_mod
+    from strategy_research.kernel.runtimes.nodes import react as react_mod
 
     for module in (llm_mod, react_mod):
         source = inspect.getsource(module)

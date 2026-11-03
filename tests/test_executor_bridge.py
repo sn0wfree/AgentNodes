@@ -9,7 +9,7 @@ import time
 
 import pytest
 
-from strategy_research.core.runtimes.executor_bridge import (
+from strategy_research.kernel.runtimes.executor_bridge import (
     ExecutorBridge,
     JobResult,
     JobSpec,

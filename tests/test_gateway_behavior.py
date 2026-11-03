@@ -356,8 +356,8 @@ def test_invariant_violation_rejects_startup():
 def test_budget_exhaustion_surfaces_as_failed_run():
     """llm 节点预算耗尽 → answer 是标记文本（不静默），run 仍算成功收敛。"""
     from strategy_research.core.agent.strategy.budget import BudgetLimits
-    from strategy_research.core.runtimes import GraphEngine, make_llm_node
-    from strategy_research.core.runtimes.run_budget import RunBudget
+    from strategy_research.kernel.runtimes import GraphEngine, make_llm_node
+    from strategy_research.kernel.runtimes.run_budget import RunBudget
 
     client = FakeClient()
 

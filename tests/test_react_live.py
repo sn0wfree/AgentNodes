@@ -59,7 +59,7 @@ def calc_registry():
 
 
 def _make_react(client, registry, sink):
-    from strategy_research.core.runtimes.nodes.react import ReactConfig, make_react_node
+    from strategy_research.kernel.runtimes.nodes.react import ReactConfig, make_react_node
 
     return make_react_node(
         client, registry, sink=sink,
@@ -127,7 +127,7 @@ def test_live_react_slice(live_client, calc_registry):
         WorkKind,
         WorkRequest,
     )
-    from strategy_research.core.runtimes import GraphEngine
+    from strategy_research.kernel.runtimes import GraphEngine
 
     events: list[str] = []
     sink = lambda kind, data: events.append(kind)  # noqa: E731

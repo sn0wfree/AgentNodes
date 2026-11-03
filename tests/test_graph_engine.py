@@ -3,7 +3,7 @@ from __future__ import annotations
 
 import pytest
 
-from strategy_research.core.runtimes.graph_engine import GraphEngine
+from strategy_research.kernel.runtimes.graph_engine import GraphEngine
 
 
 class Probe:

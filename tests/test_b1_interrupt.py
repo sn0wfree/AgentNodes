@@ -22,8 +22,8 @@ from strategy_research.core.orchestration import (
     WorkKind,
     WorkRequest,
 )
-from strategy_research.core.runtimes.cancel_scope import CancelScope, RunCancelled
-from strategy_research.core.runtimes.graph_engine import INTERRUPT_KEY, GraphEngine
+from strategy_research.kernel.runtimes.cancel_scope import CancelScope, RunCancelled
+from strategy_research.kernel.runtimes.graph_engine import INTERRUPT_KEY, GraphEngine
 
 
 # ── A. CancelScope ───────────────────────────────────────

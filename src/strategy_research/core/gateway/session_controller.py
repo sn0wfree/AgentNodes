@@ -16,8 +16,8 @@ from dataclasses import dataclass
 from typing import Any, Callable
 
 from strategy_research.core.orchestration import EntryPoint, WorkRequest
-from strategy_research.core.runtimes.cancel_scope import CancelScope
-from strategy_research.core.runtimes.graph_engine import GraphEngine
+from strategy_research.kernel.runtimes.cancel_scope import CancelScope
+from strategy_research.kernel.runtimes.graph_engine import GraphEngine
 
 EventSink = Callable[[str, dict], None]
 
@@ -279,7 +279,7 @@ class SessionController:
         engine = GraphEngine(sink=self._sink)
         if self._registry is not None:
             from strategy_research.core.agent.tool_context import make_ctx_factory
-            from strategy_research.core.runtimes.nodes.react import (
+            from strategy_research.kernel.runtimes.nodes.react import (
                 ReactConfig,
                 make_react_node,
             )
@@ -317,7 +317,7 @@ class SessionController:
                 ),
             )
         else:
-            from strategy_research.core.runtimes.nodes.llm import make_llm_node
+            from strategy_research.kernel.runtimes.nodes.llm import make_llm_node
 
             engine.add_node(
                 "llm",

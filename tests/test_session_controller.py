@@ -262,7 +262,7 @@ def test_no_system_prompt_added_when_none():
 
 def test_engine_factory_override():
     """A1 前注入点：自定义引擎替换默认单节点图。"""
-    from strategy_research.core.runtimes import GraphEngine
+    from strategy_research.kernel.runtimes import GraphEngine
 
     probe = Probe()
     ep = EntryPoint(sink=probe)

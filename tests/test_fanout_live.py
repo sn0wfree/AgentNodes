@@ -56,7 +56,7 @@ def calc_registry():
 @requires_live
 def test_live_three_subagents_parallel_answers(live_client, calc_registry):
     """三个子代理并行回答不同问题，结果按序合并。"""
-    from strategy_research.core.runtimes.presets.fanout import build_fanout_preset
+    from strategy_research.kernel.runtimes.presets.fanout import build_fanout_preset
 
     events: list[tuple[str, dict]] = []
     engine = build_fanout_preset(
@@ -86,8 +86,8 @@ def test_live_three_subagents_parallel_answers(live_client, calc_registry):
 def test_live_branch_budget_slice_enforced(live_client, calc_registry):
     """父预算切 3 片，每片够一次调用：三支都完成，父账收到真实消耗。"""
     from strategy_research.core.agent.strategy.budget import BudgetLimits
-    from strategy_research.core.runtimes.presets.fanout import build_fanout_preset
-    from strategy_research.core.runtimes.run_budget import RunBudget
+    from strategy_research.kernel.runtimes.presets.fanout import build_fanout_preset
+    from strategy_research.kernel.runtimes.run_budget import RunBudget
 
     parent = RunBudget(limits=BudgetLimits(max_tokens=6000))
     engine = build_fanout_preset(

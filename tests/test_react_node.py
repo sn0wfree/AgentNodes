@@ -8,7 +8,7 @@ from typing import Any
 import pytest
 
 from strategy_research.core.agent.strategy.budget import BudgetLimits
-from strategy_research.core.runtimes.nodes.react import ReactConfig, make_react_node
+from strategy_research.kernel.runtimes.nodes.react import ReactConfig, make_react_node
 
 
 # ── 假件 ─────────────────────────────────────────────────

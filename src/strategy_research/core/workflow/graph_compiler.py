@@ -33,7 +33,7 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any, Callable
 
-from ..runtimes import END, INTERRUPT_KEY, GraphEngine, GraphInterrupt
+from strategy_research.kernel.runtimes import END, INTERRUPT_KEY, GraphEngine, GraphInterrupt
 from ..swarm.runtime import AgentResult, AgentStatus
 from .definition import WorkflowDefinition, WorkflowNode, WorkflowSegment
 from .node_types import NodeContext, NodeDispatchError, _retryable_node_error, dispatch_node

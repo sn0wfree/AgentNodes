@@ -19,7 +19,7 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
 
-from ..runtimes import END, INTERRUPT_KEY, GraphEngine, GraphInterrupt
+from strategy_research.kernel.runtimes import END, INTERRUPT_KEY, GraphEngine, GraphInterrupt
 from ..workflow.dag import topological_layers
 from .types import AgentCall, AgentStatus, SwarmHook
 
