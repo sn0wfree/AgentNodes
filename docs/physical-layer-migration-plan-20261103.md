@@ -210,7 +210,11 @@ python -c "import strategy_research"
 | `compute_factor.py` | W3a | apps | ✅ | 5b22aab7 |
 | `context/` | W3a | kernel | ✅ | fd750ae8 |
 | `session/` | W3a | kernel | ✅ | 950bd579 |
-| 其余 25 包 | W3b–W6 | — | 待执行 | — |
+| `autoresearch.py` + `strategy_acceptance/` | W3b | apps | ✅ | 69b3b6db |
+| `backtest.py` | W3c | apps | ✅ | 89dcd07c |
+| `hypothesis/` | W3c | apps | ✅ | 8ce7a2ee |
+| `data_source/` | W3c | apps | ✅ | 62aaf49f |
+| 其余 18 包 | W4–W6 | — | 待执行 | — |
 
 ### 7.1 W1 波执行记录（协议修订沉淀）
 
