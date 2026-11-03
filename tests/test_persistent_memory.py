@@ -10,7 +10,7 @@ from pathlib import Path
 
 import pytest
 
-from strategy_research.core.memory.persistent import (
+from strategy_research.kernel.memory.persistent import (
     PersistentMemory,
     _coerce_str,
     _sanitize_body,

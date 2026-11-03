@@ -66,7 +66,7 @@ class _FakeMemory:
 def test_memory_block_injected():
     provider = _build()
     with patch(
-        "strategy_research.core.memory.persistent.PersistentMemory",
+        "strategy_research.kernel.memory.persistent.PersistentMemory",
         return_value=_FakeMemory(),
     ), patch(
         "strategy_research.core.goal.get_current_goal_context",
@@ -81,7 +81,7 @@ def test_memory_block_injected():
 def test_memory_disabled_skips_injection():
     provider = _build(enable_memory_injection=False)
     with patch(
-        "strategy_research.core.memory.persistent.PersistentMemory",
+        "strategy_research.kernel.memory.persistent.PersistentMemory",
         return_value=_FakeMemory(),
     ), patch(
         "strategy_research.core.goal.get_current_goal_context",
@@ -128,7 +128,7 @@ def test_render_order_matches_agentloop():
         "strategy_research.core.goal.get_current_goal_context",
         return_value=("<current-research-goal>G</current-research-goal>", None),
     ), patch(
-        "strategy_research.core.memory.persistent.PersistentMemory",
+        "strategy_research.kernel.memory.persistent.PersistentMemory",
         return_value=_FakeMemory(),
     ):
         items = provider.provide(ContextQuery(task_text="alpha?", session_id="s1"))

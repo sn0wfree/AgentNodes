@@ -578,7 +578,7 @@ class MCPServer:
         def search_memory(query: str = "", limit: int = 5, **kwargs: Any) -> str:
             # Phase B: 真接 PersistentMemory.find_relevant (替代旧 stub 空列表)
             try:
-                from strategy_research.core.memory import PersistentMemory
+                from strategy_research.kernel.memory import PersistentMemory
                 mem = PersistentMemory()
                 entries = mem.find_relevant(query, max_results=limit)
                 return json.dumps({
@@ -599,7 +599,7 @@ class MCPServer:
 
         def add_memory(title: str = "", content: str = "", memory_type: str = "project", **kwargs: Any) -> str:
             try:
-                from strategy_research.core.memory import PersistentMemory
+                from strategy_research.kernel.memory import PersistentMemory
                 mem = PersistentMemory()
                 path = mem.add(title, content, memory_type=memory_type)
                 return json.dumps({

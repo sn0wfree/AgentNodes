@@ -218,7 +218,7 @@ def test_scheduler_shutdown_idempotent():
 
 
 def test_memory_retriever_builds_block(monkeypatch):
-    from strategy_research.core.memory.persistent import MemoryEntry
+    from strategy_research.kernel.memory.persistent import MemoryEntry
     from strategy_research.core.agent.context_injector import (
         MemoryRetrieverInjector,
     )
@@ -251,7 +251,7 @@ def test_memory_retriever_load_memory_default_none():
     from strategy_research.core.agent.context_injector import (
         MemoryRetrieverInjector,
     )
-    from strategy_research.core.memory.persistent import PersistentMemory
+    from strategy_research.kernel.memory.persistent import PersistentMemory
 
     inj = MemoryRetrieverInjector(memory=PersistentMemory())
     loaded = inj._load_memory()

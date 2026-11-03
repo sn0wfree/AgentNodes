@@ -21,7 +21,7 @@ from typing import Any
 
 from ..agent.tools import ToolRegistry
 from ..llm.config import LLMConfig
-from ..memory.persistent import PersistentMemory
+from strategy_research.kernel.memory.persistent import PersistentMemory
 
 logger = logging.getLogger(__name__)
 

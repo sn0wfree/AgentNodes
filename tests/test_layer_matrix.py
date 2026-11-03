@@ -85,7 +85,7 @@ LAYER_MEMBERSHIP: dict[str, str] = {
     "strategy_research.kernel.context": "L3",
     "strategy_research.kernel.hooks": "L3",
     "strategy_research.kernel.permission": "L3",
-    "strategy_research.core.memory": "L3",
+    "strategy_research.kernel.memory": "L3",
     "strategy_research.kernel.skills": "L3",
     "strategy_research.core.seq_generator": "L3",  # 待退役（归 event_log 权威 seq）
     "strategy_research.kernel": "L3",  # 物理层目录（逐模块迁移中）

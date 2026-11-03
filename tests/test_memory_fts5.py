@@ -1,4 +1,4 @@
-from strategy_research.core.memory.fts5 import MemoryFTS5
+from strategy_research.kernel.memory.fts5 import MemoryFTS5
 
 
 class TestMemoryFTS5Init:

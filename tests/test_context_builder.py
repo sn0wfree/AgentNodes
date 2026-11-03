@@ -13,7 +13,7 @@ from strategy_research.core.agent.context import (
 )
 from strategy_research.core.agent.tools import ToolRegistry
 from strategy_research.core.llm import LLMConfig
-from strategy_research.core.memory.persistent import PersistentMemory
+from strategy_research.kernel.memory.persistent import PersistentMemory
 
 # ── Token estimation ─────────────────────────────────────────────────
 

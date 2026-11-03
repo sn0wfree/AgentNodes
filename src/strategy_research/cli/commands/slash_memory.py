@@ -33,7 +33,7 @@ def _memory_dir() -> Optional[str]:
 
 
 def _store():
-    from strategy_research.core.memory.persistent import PersistentMemory
+    from strategy_research.kernel.memory.persistent import PersistentMemory
 
     md = _memory_dir()
     if md:

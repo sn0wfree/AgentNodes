@@ -339,7 +339,7 @@ class MemoryRetrieverInjector:
 
     def _load_memory(self) -> Any | None:
         try:
-            from ..memory.persistent import PersistentMemory
+            from strategy_research.kernel.memory.persistent import PersistentMemory
 
             return PersistentMemory()
         except Exception:  # noqa: BLE001
