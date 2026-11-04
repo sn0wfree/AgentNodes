@@ -1,0 +1,190 @@
+# 归档测试索引（阶段 2a）
+
+> 这些测试原本在 `tests/`，因只依赖将被移除的业务侧（`apps/`）而归档。
+> **不被 pytest 收集**（`testpath = tests`）。保留原因：可作端到端样本与契约参考。
+
+| 文件 | 行数 |
+|---|---:|
+| `test_acceptance_cli.py` | 213 |
+| `test_alpha_zoo.py` | 318 |
+| `test_alpha_zoo_adapter.py` | 472 |
+| `test_alpha_zoo_convert.py` | 86 |
+| `test_alpha_zoo_convert_ast.py` | 356 |
+| `test_alpha_zoo_convert_calls.py` | 199 |
+| `test_alpha_zoo_convert_rules.py` | 330 |
+| `test_alpha_zoo_convert_span_chain.py` | 236 |
+| `test_alpha_zoo_convert_where.py` | 233 |
+| `test_alpha_zoo_ops.py` | 378 |
+| `test_approve_agent_loop.py` | 83 |
+| `test_archive_race.py` | 192 |
+| `test_attribution.py` | 86 |
+| `test_attribution_comprehensive.py` | 203 |
+| `test_autoresearch.py` | 432 |
+| `test_autoresearch_helpers.py` | 188 |
+| `test_autoresearch_phases.py` | 294 |
+| `test_autoresearch_state.py` | 308 |
+| `test_backtest.py` | 697 |
+| `test_backtest_contract_and_runs.py` | 246 |
+| `test_backtest_metrics_contract.py` | 197 |
+| `test_backtest_run_script.py` | 220 |
+| `test_checkpoint_store.py` | 103 |
+| `test_claims_tracking.py` | 333 |
+| `test_cli_init.py` | 146 |
+| `test_combiner.py` | 110 |
+| `test_compute_factor_ops.py` | 311 |
+| `test_compute_factor_parser.py` | 126 |
+| `test_config_runner_factors.py` | 220 |
+| `test_config_runner_import.py` | 363 |
+| `test_config_runner_orchestration.py` | 238 |
+| `test_config_runner_strategy.py` | 282 |
+| `test_converter.py` | 420 |
+| `test_dag_renderer.py` | 297 |
+| `test_data_clean.py` | 320 |
+| `test_data_import.py` | 83 |
+| `test_data_import_local.py` | 209 |
+| `test_data_import_orchestration.py` | 260 |
+| `test_data_readiness_checks.py` | 186 |
+| `test_data_readiness_edges.py` | 161 |
+| `test_data_source_detect_market.py` | 52 |
+| `test_data_source_registry.py` | 242 |
+| `test_data_transforms.py` | 324 |
+| `test_db_crud_contract.py` | 268 |
+| `test_db_error_branches.py` | 216 |
+| `test_db_execute_errors.py` | 207 |
+| `test_db_persistence.py` | 92 |
+| `test_db_read_filters.py` | 206 |
+| `test_decide_wired.py` | 305 |
+| `test_duckdb_store_adapter.py` | 124 |
+| `test_duckdb_store_factors.py` | 106 |
+| `test_eastmoney_loader.py` | 187 |
+| `test_engine_base.py` | 308 |
+| `test_engine_china_futures_detailed.py` | 256 |
+| `test_engine_cli_and_cleaning.py` | 255 |
+| `test_engine_cli_e2e.py` | 135 |
+| `test_engine_common.py` | 273 |
+| `test_engine_common_helpers.py` | 283 |
+| `test_engine_config.py` | 83 |
+| `test_engine_global_equity_detailed.py` | 110 |
+| `test_engine_global_futures_detailed.py` | 125 |
+| `test_engine_india_equity_detailed.py` | 140 |
+| `test_engine_optimizers.py` | 156 |
+| `test_engine_progress.py` | 105 |
+| `test_engine_regression.py` | 301 |
+| `test_engine_runner.py` | 252 |
+| `test_engine_runner_e2e.py` | 310 |
+| `test_engine_signals.py` | 63 |
+| `test_engine_subengines.py` | 214 |
+| `test_expression_evaluator.py` | 139 |
+| `test_factor_registry_discipline.py` | 214 |
+| `test_factor_validate.py` | 563 |
+| `test_factor_validate_scores.py` | 231 |
+| `test_file_cache.py` | 195 |
+| `test_fundamental_mock.py` | 150 |
+| `test_futures_base.py` | 253 |
+| `test_goal.py` | 321 |
+| `test_goal_account_usage.py` | 227 |
+| `test_goal_cli.py` | 360 |
+| `test_goal_context.py` | 378 |
+| `test_goal_event_bus.py` | 194 |
+| `test_goal_models.py` | 325 |
+| `test_goal_p3b.py` | 283 |
+| `test_goal_policy.py` | 140 |
+| `test_goal_store.py` | 575 |
+| `test_goal_v2_session_decouple.py` | 162 |
+| `test_goal_workflow_state.py` | 152 |
+| `test_goal_workflow_v053.py` | 265 |
+| `test_goal_workflow_v054.py` | 191 |
+| `test_hard_threshold_rule.py` | 141 |
+| `test_hitl_resume_rebuild.py` | 84 |
+| `test_hypothesis.py` | 369 |
+| `test_hypothesis_cli.py` | 297 |
+| `test_hypothesis_goal_linking.py` | 253 |
+| `test_hypothesis_p3c.py` | 343 |
+| `test_hypothesis_store.py` | 382 |
+| `test_hypothesis_store_concurrent.py` | 178 |
+| `test_hypothesis_validator.py` | 346 |
+| `test_journal.py` | 179 |
+| `test_llm_eval.py` | 188 |
+| `test_load_ohlcv.py` | 314 |
+| `test_market_mixin.py` | 122 |
+| `test_metric_targets.py` | 152 |
+| `test_monitor_phase.py` | 123 |
+| `test_ohlcv_save.py` | 301 |
+| `test_operators.py` | 1014 |
+| `test_optimizer_degradation.py` | 221 |
+| `test_optimizer_logging.py` | 238 |
+| `test_phase_engine_round_outcome.py` | 97 |
+| `test_portfolio.py` | 341 |
+| `test_portfolio_correlation.py` | 97 |
+| `test_portfolio_metrics.py` | 100 |
+| `test_pr3_fixes.py` | 222 |
+| `test_preflight.py` | 308 |
+| `test_r6_director.py` | 133 |
+| `test_research_discipline.py` | 136 |
+| `test_research_preset.py` | 306 |
+| `test_run_card.py` | 277 |
+| `test_runner_aegis.py` | 225 |
+| `test_runner_dag_helpers.py` | 104 |
+| `test_runner_lifecycle.py` | 308 |
+| `test_runner_load_graph.py` | 103 |
+| `test_runner_monitor_check.py` | 150 |
+| `test_scenario_router.py` | 196 |
+| `test_scheduler_recover_on_startup.py` | 167 |
+| `test_scheduler_state_machine.py` | 258 |
+| `test_scoreboard.py` | 89 |
+| `test_state_utils.py` | 101 |
+| `test_strategy_acceptance.py` | 261 |
+| `test_strategy_backfill.py` | 128 |
+| `test_study_budget.py` | 179 |
+| `test_study_comprehensive.py` | 1458 |
+| `test_study_concurrency.py` | 206 |
+| `test_study_e2e_integration.py` | 292 |
+| `test_study_error_recovery.py` | 165 |
+| `test_study_executor.py` | 407 |
+| `test_study_graph.py` | 335 |
+| `test_study_monitor.py` | 315 |
+| `test_study_no_cycles.py` | 164 |
+| `test_study_p1_gaps.py` | 132 |
+| `test_study_real_world.py` | 356 |
+| `test_study_rounds.py` | 87 |
+| `test_study_run_round.py` | 153 |
+| `test_study_runner_comprehensive.py` | 191 |
+| `test_study_runner_integration.py` | 264 |
+| `test_study_scheduler.py` | 640 |
+| `test_study_store.py` | 492 |
+| `test_study_store_finalization_ops.py` | 157 |
+| `test_study_store_round_lifecycle.py` | 175 |
+| `test_study_v2_micro_session.py` | 358 |
+| `test_study_v2_review_loop.py` | 268 |
+| `test_study_v2_round_artifacts.py` | 331 |
+| `test_v05_unit_config.py` | 231 |
+| `test_v05_unit_evaluator.py` | 284 |
+| `test_v05_unit_hook.py` | 245 |
+| `test_v05_unit_models.py` | 205 |
+| `test_v05_unit_runner.py` | 238 |
+| `test_validation_bootstrap_wf.py` | 121 |
+| `test_validation_cli.py` | 207 |
+| `test_validation_market.py` | 51 |
+| `test_validation_monte_carlo.py` | 79 |
+| `test_validation_runner.py` | 117 |
+| `test_validation_trade_input.py` | 93 |
+| `test_walk_forward.py` | 100 |
+| `test_webui_e2e_playwright.py` | 377 |
+| `test_workflow_checkpoint_resume.py` | 196 |
+| `test_workflow_config.py` | 222 |
+| `test_workflow_hook.py` | 274 |
+| `test_workspace_setup.py` | 196 |
+| `test_yaml_evaluator.py` | 503 |
+
+合计：**170 文件 / 41367 行**
+
+## 复用建议
+
+优先挑这几类做端到端样本（详见 `testcase/samples/`）：
+
+- `test_config_runner_{import,strategy,factors,orchestration}.py` —— 配置驱动回测的完整链路
+- `test_backtest{,_contract_and_runs,_run_script}.py` —— 回测执行与产物契约
+- `test_compute_factor_{ops,parser}.py` / `test_operators.py` —— 因子算子语义（可当金标准）
+- `test_data_source_{detect_market,registry}.py` + `test_eastmoney_loader.py` —— 8 loader 契约
+- `test_study_*.py` —— HITL / 轮次 / 预算等 agent 编排的边界用例
+- `test_goal_*.py` —— 目标驱动循环的边界用例

@@ -357,11 +357,10 @@ class PromptBuilderFactory:
     @classmethod
     def _discover_prompts(cls) -> dict[str, PromptBuilder]:
         """Scan templates/.prompts/*.md for role prompt files."""
-        import logging
-        import pathlib
-
-        logger = logging.getLogger(__name__)
-        prompts_dir = pathlib.Path(__file__).parent.parent / "templates" / ".prompts"
+        # Reuse the module-level constant: this file sits in kernel/agent/, so
+        # a bare ``parent.parent`` would resolve to kernel/templates/ and the
+        # scan would silently find nothing.
+        prompts_dir = _PROMPTS_DIR
         if not prompts_dir.exists():
             return {}
 

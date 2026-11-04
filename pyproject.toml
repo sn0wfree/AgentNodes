@@ -39,6 +39,8 @@ dependencies = [
 [project.optional-dependencies]
 dev = [
     "pytest>=7.0",
+    "pytest-asyncio>=0.23",        # asyncio_mode=auto 需要此插件，否则 async 测试从不执行
+    "pytest-timeout>=2.1",         # [tool.pytest.ini_options].timeout 需要此插件
     "pytest-cov>=4.0",
     "pytest-rerunfailures>=12.0",  # CI: retry flaky tests so偶发不阻塞门禁
     "pytest-split>=0.9",           # CI: 时间感知分片（读取 .shard-timings.json）
@@ -108,6 +110,10 @@ markers = [
 [tool.ruff]
 target-version = "py310"
 line-length = 120
+# testcase/ holds frozen golden snapshots of code that was removed from the
+# package during the AgentNodes split. They are reference material, not
+# maintained source — never lint or format them.
+extend-exclude = ["testcase"]
 
 [tool.ruff.lint]
 select = ["F", "E", "W", "I", "C90"]
@@ -124,6 +130,12 @@ max-complexity = 15
 # One-shot history migration script (zero external references) — not
 # worth decomposing (docs/p2-c901-final-design.md §1).
 "src/strategy_research/scripts/migrate_study_history.py" = ["C901"]
+# Golden snapshots of code removed during the AgentNodes split — reference
+# material only. Never lint them (they carry stale imports of the business
+# package and were never formatted to this repo's rules).
+"testcase/**" = [
+    "ALL",
+]
 
 [tool.ruff.lint.isort]
 known-first-party = ["strategy_research"]
