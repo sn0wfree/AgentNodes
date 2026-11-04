@@ -237,6 +237,44 @@ def _ticket_sink(registry: "CapabilityRegistry") -> Any:
     return TicketSink
 
 
+# ── evolution（阶段三） ──────────────────────────────────────────────
+
+
+def _evolution_resolve_harness(registry: "CapabilityRegistry") -> Any:
+    """``(task_signature) -> EffectiveHarnessConfig``。
+
+    返回的是**函数**而非配置：装配期调用点各自带自己的 task_signature，
+    提前解析一份全局配置毫无意义。
+    """
+    from strategy_research.apps.evolution.skill_memory import resolve
+
+    return resolve
+
+
+def _evolution_holdout_sample(registry: "CapabilityRegistry") -> Any:
+    from strategy_research.apps.evolution.holdout import sample
+
+    return sample
+
+
+def _evolution_proposal_cls(registry: "CapabilityRegistry") -> Any:
+    from strategy_research.apps.evolution.genome_proposals import GenomeProposal
+
+    return GenomeProposal
+
+
+def _evolution_validation_gate_cls(registry: "CapabilityRegistry") -> Any:
+    from strategy_research.apps.evolution.validation_gate import ValidationGate
+
+    return ValidationGate
+
+
+def _evolution_agent_cls(registry: "CapabilityRegistry") -> Any:
+    from strategy_research.apps.evolution.evolution_agent import EvolutionAgent
+
+    return EvolutionAgent
+
+
 # ── 注册表 ───────────────────────────────────────────────────────────
 
 #: kind → factory。kind 命名 = ``<域>.<能力>``，与调用点的语义一一对应。
@@ -278,6 +316,12 @@ CAPABILITIES: dict[str, Callable[["CapabilityRegistry"], Any]] = {
     "study.status": _study_status,
     "study.bootstrap": _study_bootstrap,
     "study.ticket_sink": _ticket_sink,
+    # evolution（阶段三）
+    "evolution.resolve_harness": _evolution_resolve_harness,
+    "evolution.holdout_sample": _evolution_holdout_sample,
+    "evolution.proposal": _evolution_proposal_cls,
+    "evolution.validation_gate": _evolution_validation_gate_cls,
+    "evolution.agent": _evolution_agent_cls,
 }
 
 

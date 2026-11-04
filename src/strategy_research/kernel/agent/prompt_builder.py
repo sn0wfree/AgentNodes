@@ -344,6 +344,24 @@ class PromptBuilderFactory:
         return cls._discovered.get(role, _NullBuilder())
 
     @classmethod
+    def resolve_harness_for(cls, role: str, task_signature: str) -> dict[str, Any]:
+        """装配期问一次：该 task_signature 下这个 role 的 prompt 覆盖项。
+
+        施工方案 §4.7：**只加调用，不改内部逻辑**。返回的 dict 由调用方
+        决定怎么用（当前实现是覆盖角色 prompt 文件的版本标记）；未启用
+        RSI 时返回空 dict，``get()`` 的行为完全不变。
+        """
+        try:
+            from strategy_research.kernel.agent.harness_resolver import (
+                resolve_harness,
+            )
+
+            cfg = resolve_harness(task_signature)
+            return dict(getattr(cfg, "prompt_version", {}) or {}).get(role, {}) or {}
+        except Exception:  # noqa: BLE001 —— 装配期不得因 RSI 崩溃
+            return {}
+
+    @classmethod
     def list_roles(cls) -> list[str]:
         # Include discovered roles
         discovered = cls._discovered or cls._discover_prompts()

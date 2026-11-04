@@ -853,6 +853,27 @@ class ToolRegistry:
         """All registered tools (stable order)."""
         return list(self._tools.values())
 
+    def resolve_harness_for(self, task_signature: str) -> List[str]:
+        """装配期问一次：该 task_signature 下允许的工具名（施工方案 §4.7）。
+
+        **只做减法**：返回已注册工具与生效 tool_set 的交集。RSI 不能凭空
+        启用未注册的工具，否则等于绕过权限闸。未启用 RSI 时返回全部工具，
+        行为与改动前完全一致。
+        """
+        names = list(self._tools)
+        try:
+            from strategy_research.kernel.agent.harness_resolver import (
+                resolve_harness,
+            )
+
+            cfg = resolve_harness(task_signature)
+            if cfg.tool_set is None:
+                return names
+            allowed = set(cfg.tool_set)
+            return [n for n in names if n in allowed]
+        except Exception:  # noqa: BLE001 —— 装配期不得因 RSI 崩溃
+            return names
+
     def get_definitions(self) -> List[Dict[str, Any]]:
         """Return all tools in OpenAI function calling format."""
         return [t.to_openai_schema() for t in self._tools.values()]

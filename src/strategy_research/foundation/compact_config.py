@@ -82,3 +82,11 @@ class CompactConfig:
     # many characters to bound context cost; the full text always
     # lives in the message metadata (UI / audit).
     goal_evidence_truncate_chars: int = 100
+
+    # ── RSI tier-1 placement hook (施工方案 §4.7) ──────────────────
+    # 装配期由 **kernel 侧**（harness_resolver.apply_compaction_overrides）
+    # 计算覆盖项后用 dataclasses.replace() 写入，本模块不 import kernel。
+    #
+    # 为什么不做成实例方法：foundation 是 L4，kernel 是 L3；L4→L3 是上行
+    # import，会打破层门禁（H2）。配置类的正确姿态是「提供字段，不拉依赖」。
+    harness_task_signature: str = ""
