@@ -1,9 +1,13 @@
 # 物理分层迁移计划 v2 — 逐模块搬迁（tests-green 每 step）
 
-日期：2026-11-03　分支：`refactor/v6-gateway`　状态：**已批准 · 逐模块执行**
+日期：2026-11-03　分支：`refactor/v6-gateway`　状态：**✅ 已完成（2026-11-04 收官）**
 v1（大爆炸批次）已于同日废弃——首次试运行批 1 即失败：AST 改写工具把多行
 import 压成单行（20 处语法损坏），暴露出「一次性改写 1,200 处」的工具风险。
 已回滚至 `07e1e6d5`，工作树干净。教训与本 v2 方案见 §1。
+
+**执行结果（2026-11-04）**：55 包 + api/cli 两个顶层包全部落位，57 个迁移
+commit 逐包独立可回滚；`core/` 目录从仓库消失；上行违规全部清零
+（L3>L2 46→35→0 等，见 §9）。协议修订与陷阱沉淀见 §7.1–§7.4。
 
 前置：`layered-skeleton-design-20261103.md`（层定义）·
 `ADR-000`（物理口径基线 55）· `ADR-002/003`（处置决策）·
@@ -270,7 +274,45 @@ python -c "import strategy_research"
 - **工具补强**：`tmp/fix_rel_residue.py` —— 按 PEP 328 **解析结果**驱动改写
   相对导入，不再依赖文本匹配。W3a-2/3 实战零遗漏，替代了此前逐处手工裁决。
 
+### 7.4 W4–W6 执行记录（收尾三波）
+
+- **W4（6 包）**：observability→foundation（28 处相对导入，单包改写量最大）；
+  events→kernel 同时把 `contracts.py` **按语义拆分**——纯协议三符号下沉
+  `foundation/protocol.py`，工单业务模型留 L3，`L4>L3` 违规就地清零；
+  runtimes/storage 落位；db（1273 行）、swarm（1207 行）收官。
+  **gateway 按拍板延后**，W5-6 在 orchestration/runtimes/context 落位后搬迁，
+  26 条出边中 21 条已自动指向正确层——验证了拓扑序的价值。
+- **W5（13 步）**：utils(49)→validation(12)→engine(31)→orchestration(42)→
+  memory(12)→gateway(39)→workflow(38)→llm(88)→study(83)→goal(93)→
+  scheduled_research(10)→**agent(211) 最后**（12a 子包 31 文件 / 12b
+  builtin_tools 18 文件 / 12c 根层 40 文件）→api(51)。
+  agent/llm/goal/study 互相成环，agent 最后使全库 211 处引用一次收口。
+  llm 搬迁时顺带把 `structured_output.py` 与 `CompactConfig` dataclass
+  下沉 foundation，就地消除最后两条 L4>L3。
+- **W6（cli）**：顶层包入 interfaces，深度 +1 三处（pyproject entry points、
+  _auto_onboard .env、skills templates）全部改「跟随包根」。
+- **W7**：core/ 空壳删除；cov_gate 四档重定义为层目录口径；
+  ruff/.coveragerc 路径收口；**五簇上行基线全部归 0**（§9）。
+- **坑位总账**（四类陷阱，均有工具化对策）：
+  ① 同名包前缀混淆（core/tools vs core/agent/tools）→ 按解析结果裁决；
+  ② `__file__` 相对定位随层级漂移（mcp/goal_workflow/swarm/dag_planner/
+     study/cli_skills 共 6 处）→ 统一改「跟随目标包 `__file__`」；
+  ③ 陈旧 `__pycache__` 掩盖残留 → 每步清缓存；
+  ④ xdist worker 继承污染的 USERPROFILE → canary 排除沙箱路径。
+
 ## 8. 回滚
 
 每 step 一 commit：`git revert <sha>` 即回到上一步；波次结束跑全量做整波验证。
 `core/` 空壳在 W7 前始终保留，任何一步回滚都不会产生悬空路径。
+
+## 9. 收官状态（2026-11-04）
+
+| 维度 | 迁移前（11-03 基线） | 收官 |
+|---|---|---|
+| 物理结构 | `core/` 一坨 55 包 | interfaces/{api,cli,mcp} · apps(24) · kernel(19) · foundation(12) |
+| 上行违规 | L2>L1 1 · L3>L1 2 · L3>L2 46 · L4>L2 2 · L4>L3 4 | **全 0**（口径修正后实测） |
+| 层门禁 | 60 行手写成员表 + 46 条豁免 | 目录即层 + 成员表仅存顶层目录行 |
+| 既有缺陷顺带修复 | — | 7 处悬空 import（3 个静默功能失效）、
+  file_cache Windows 文件名、CompactConfig/structured_output 归层 |
+| 遗留待办 | — | Alpha Zoo YAML where 语义（业务域，独立台账）、
+  ruff I001/F401 宽限项 127 条 |
