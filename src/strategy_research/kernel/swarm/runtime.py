@@ -15,84 +15,34 @@ from __future__ import annotations
 import logging
 import time
 import uuid
-from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
 
 from strategy_research.kernel.runtimes import END, INTERRUPT_KEY, GraphEngine, GraphInterrupt
 from strategy_research.kernel.workflow.dag import topological_layers
-from .types import AgentCall, AgentStatus, SwarmHook
+
+# W10-2 (2026-11-04): SwarmPreset / AgentResult / SwarmResult are defined in
+# ``.types`` — they are contracts consumed far more widely than produced
+# (AgentResult: 1 definition site vs 5 importers, 3 of them kernel/workflow/*
+# at module top level). Keeping them in this 945-line engine made workflow
+# depend on the engine instead of the contract. Re-exported here so every
+# existing ``from ...swarm.runtime import AgentResult`` keeps working.
+from .types import (
+    AgentCall,
+    AgentResult,
+    AgentStatus,
+    SwarmHook,
+    SwarmPreset,
+    SwarmResult,
+)
 
 logger = logging.getLogger(__name__)
 
 
 # ── Data classes ───────────────────────────────────────────────
-
-
-@dataclass
-class SwarmPreset:
-    """A swarm preset loaded from YAML.
-
-    Unified preset type (P3.3): covers both generic swarm presets
-    and goal-specific workflow presets.  The goal/completion/branches
-    fields are optional — generic swarm presets leave them as None.
-
-    This replaces the separate ``GoalWorkflowConfig`` type for the
-    execution layer.  The goal workflow loader still produces the
-    richer ``GoalWorkflowConfig`` for YAML parsing, but converts
-    it to ``SwarmPreset`` before passing to SwarmRuntime.
-    """
-
-    name: str
-    description: str = ""
-    agents: list[AgentCall] = field(default_factory=list)
-    dag: dict[str, list[str]] = field(default_factory=dict)
-    # Goal-specific fields (None for generic swarm presets)
-    goal: dict[str, Any] | None = None
-    completion: dict[str, Any] | None = None
-    branches: list[dict[str, Any]] = field(default_factory=list)
-    version: str = "1.0"
-    # Budget fields (Phase 1.2: migrated from Study)
-    # B3 (2026-10-28): budget_token is carried through from the study/goal
-    # config but SwarmRuntime does not enforce it -- _budget_exceeded checks
-    # turn/time only. Kept as a field because goal/workflow.py:136 forwards
-    # it from a real study budget; deleting it would break that path.
-    # preset_loader warns when a preset YAML sets it, so the gap is loud.
-    budget_token: int | None = None
-    budget_turn: int | None = None
-    budget_time_seconds: float | None = None
-    # R-A: 同一 agent 因 branches[].action=retry 被重跑的次数上限。
-    # 1 = 每个 agent 最多重跑一次，防「条件恒真 → 无限重跑」。
-    branch_max_retries: int = 1
-
-
-@dataclass
-class AgentResult:
-    """Result of a single agent execution."""
-
-    agent_id: str
-    status: AgentStatus = AgentStatus.PENDING
-    output: str = ""
-    error: str | None = None
-    elapsed_s: float = 0.0
-    # Unified output envelope (workflow-module design, Commit 1):
-    # all optional — legacy consumers reading only output/status are
-    # unaffected.  Populated by workflow node dispatchers.
-    summary: str = ""
-    artifacts: dict[str, Any] = field(default_factory=dict)
-    metrics: dict[str, Any] = field(default_factory=dict)
-
-
-@dataclass
-class SwarmResult:
-    """Result of a swarm execution."""
-
-    run_id: str = ""
-    preset_name: str = ""
-    agent_results: dict[str, AgentResult] = field(default_factory=dict)
-    final_output: str = ""
-    elapsed_s: float = 0.0
-    success: bool = False
+#
+# SwarmPreset / AgentResult / SwarmResult are imported from ``.types`` at
+# the top of this module (see the W10-2 note there) — no definitions here.
 
 
 # ── SwarmRuntime ──────────────────────────────────────────────

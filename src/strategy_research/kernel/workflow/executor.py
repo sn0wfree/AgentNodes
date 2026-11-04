@@ -25,7 +25,7 @@ import uuid
 from pathlib import Path
 from typing import Any, Callable
 
-from strategy_research.kernel.swarm.runtime import AgentResult, AgentStatus
+from strategy_research.kernel.swarm.types import AgentResult, AgentStatus
 from .definition import WorkflowDefinition, WorkflowNode, WorkflowSegment
 from .node_types import (
     NodeContext,

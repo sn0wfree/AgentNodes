@@ -18,7 +18,7 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
 
-from strategy_research.kernel.swarm.runtime import AgentStatus  # P1.8: for resume_and_continue
+from strategy_research.kernel.swarm.types import AgentStatus  # P1.8: for resume_and_continue
 
 logger = logging.getLogger(__name__)
 
@@ -93,7 +93,7 @@ class GoalWorkflowConfig:
 
     def to_swarm_preset(self) -> Any:
         """Convert to a SwarmPreset for use with SwarmRuntime (P3.3)."""
-        from strategy_research.kernel.swarm.runtime import SwarmPreset
+        from strategy_research.kernel.swarm.types import SwarmPreset
         from strategy_research.kernel.workflow.types import AgentCall
 
         agent_calls = []
@@ -610,7 +610,8 @@ class GoalWorkflowRunner:
         Raises:
             FileNotFoundError: No checkpoint exists for this goal.
         """
-        from strategy_research.kernel.swarm.runtime import AgentResult, SwarmRuntime
+        from strategy_research.kernel.swarm.runtime import SwarmRuntime
+        from strategy_research.kernel.swarm.types import AgentResult
         from .checkpoint_store import CheckpointStore
 
         cps = CheckpointStore()

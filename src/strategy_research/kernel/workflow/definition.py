@@ -407,7 +407,7 @@ class WorkflowDefinition:
         executor_type=python_executor; LLM nodes keep the default
         (dispatch in workflow/node_types.py handles execution).
         """
-        from strategy_research.kernel.swarm.runtime import SwarmPreset
+        from strategy_research.kernel.swarm.types import SwarmPreset
         from ..workflow.types import AgentCall
 
         agents: list[AgentCall] = []

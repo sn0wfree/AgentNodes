@@ -485,7 +485,16 @@ class AgentLoop(
         override = getattr(self, "_data_store_override", None)
         if override is not None:
             return override
-        from strategy_research.foundation.storage import get_store
+        # W7 (2026-11-04): the registry lives in ``apps.data_store_registry``,
+        # not ``foundation.storage`` — it moved down to L2 because it adapts
+        # ``apps.db``, and only the ``DataStore`` Protocol stayed in L4. This
+        # lazy import was never updated, so every call raised ImportError and
+        # the tool-execution step logged "step tool_execution failed" while
+        # silently continuing. The layer gate cannot see it (it is inside a
+        # function body) and check_dangling_imports only validated module
+        # existence, not the imported name.
+        from strategy_research.apps.data_store_registry import get_store
+
         return get_store()
 
     def _build_sandbox(self):

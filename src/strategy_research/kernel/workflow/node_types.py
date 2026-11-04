@@ -18,7 +18,7 @@ from pathlib import Path
 from typing import Any, Callable
 
 from strategy_research.foundation.structured_output import get_parser
-from strategy_research.kernel.swarm.runtime import AgentResult, AgentStatus
+from strategy_research.kernel.swarm.types import AgentResult, AgentStatus
 
 logger = logging.getLogger(__name__)
 
