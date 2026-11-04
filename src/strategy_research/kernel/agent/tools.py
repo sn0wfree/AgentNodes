@@ -878,6 +878,21 @@ class ToolRegistry:
         """Return all tools in OpenAI function calling format."""
         return [t.to_openai_schema() for t in self._tools.values()]
 
+    def get_definitions_for(self, task_signature: str) -> List[Dict[str, Any]]:
+        """`get_definitions()` + 装配期 tier-1 tool_set 过滤（§4.7 消费点）。
+
+        ``task_signature`` 为空时与 ``get_definitions()`` 完全等价。
+        tool_set 只做减法，不会引入未注册的工具。
+        """
+        if not task_signature:
+            return self.get_definitions()
+        allowed = set(self.resolve_harness_for(task_signature))
+        return [
+            t.to_openai_schema()
+            for name, t in self._tools.items()
+            if name in allowed
+        ]
+
     def execute(
         self, name: str, params: Dict[str, Any], *, ctx: Any = None,
     ) -> str:

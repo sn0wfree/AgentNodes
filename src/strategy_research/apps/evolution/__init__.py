@@ -34,6 +34,7 @@ from .holdout import (
     compute_task_signature,
     sample,
 )
+from .isolated_replay import IsolatedSlotReplay, SlotUnavailable
 from .skill_memory import EffectiveHarnessConfig, resolve as resolve_harness
 from .validation_gate import (
     DEGRADATION_THRESHOLD,
@@ -51,8 +52,10 @@ __all__ = [
     "GenomeProposal",
     "HOLDOUT_STATUSES",
     "HoldoutSet",
+    "IsolatedSlotReplay",
     "ProposalStatus",
     "ROLLBACK_AFTER_FAILURES",
+    "SlotUnavailable",
     "TIER0_COMPONENTS",
     "TIER1_COMPONENTS",
     "TierViolation",

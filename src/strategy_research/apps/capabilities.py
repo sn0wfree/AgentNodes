@@ -275,6 +275,38 @@ def _evolution_agent_cls(registry: "CapabilityRegistry") -> Any:
     return EvolutionAgent
 
 
+# EvolutionAgent 的 5 个工具（施工方案 §4.3）。kind 名与工具名一一对应，
+# 这样 ``EvolutionAgent.with_capabilities()`` 能按名字解析。
+def _evolution_read_journal(registry: "CapabilityRegistry") -> Any:
+    from strategy_research.apps.evolution.tools import read_journal
+
+    return read_journal
+
+
+def _evolution_read_scoreboard(registry: "CapabilityRegistry") -> Any:
+    from strategy_research.apps.evolution.tools import read_scoreboard
+
+    return read_scoreboard
+
+
+def _evolution_read_validation(registry: "CapabilityRegistry") -> Any:
+    from strategy_research.apps.evolution.tools import read_validation
+
+    return read_validation
+
+
+def _evolution_read_holdout(registry: "CapabilityRegistry") -> Any:
+    from strategy_research.apps.evolution.tools import read_holdout
+
+    return read_holdout
+
+
+def _evolution_propose_genome_update(registry: "CapabilityRegistry") -> Any:
+    from strategy_research.apps.evolution.tools import propose_genome_update
+
+    return propose_genome_update
+
+
 # ── 注册表 ───────────────────────────────────────────────────────────
 
 #: kind → factory。kind 命名 = ``<域>.<能力>``，与调用点的语义一一对应。
@@ -322,6 +354,12 @@ CAPABILITIES: dict[str, Callable[["CapabilityRegistry"], Any]] = {
     "evolution.proposal": _evolution_proposal_cls,
     "evolution.validation_gate": _evolution_validation_gate_cls,
     "evolution.agent": _evolution_agent_cls,
+    # EvolutionAgent 工具集（§4.3，kind 名 == 工具名）
+    "evolution.read_journal": _evolution_read_journal,
+    "evolution.read_scoreboard": _evolution_read_scoreboard,
+    "evolution.read_validation": _evolution_read_validation,
+    "evolution.read_holdout": _evolution_read_holdout,
+    "evolution.propose_genome_update": _evolution_propose_genome_update,
 }
 
 

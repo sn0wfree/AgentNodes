@@ -235,11 +235,23 @@ class StaticFilePromptBuilder:
         self._role = role
         self._token_limit = token_limit
         self._path = _PROMPTS_DIR / f"{role}.md"
+        # RSI tier-1 覆盖（施工方案 §4.7）：装配期问一次并存下，
+        # build 时使用。None = 未启用/无覆盖，行为与改动前一致。
+        self._harness_override: dict[str, Any] | None = None
+
+    def apply_harness_override(self, override: dict[str, Any] | None) -> None:
+        """装入装配期解析出的 prompt 覆盖项（``None``/空 = 不覆盖）。"""
+        self._harness_override = dict(override) if override else None
 
     def build_system_prompt(self, role: str, context: dict[str, Any]) -> str:
         if not self._path.exists():
             return ""
         text = self._path.read_text(encoding="utf-8")
+        # tier-1 覆盖：仅替换 role prompt 正文，common 层（principles）不动——
+        # 那是 Tier 0 方法论，H3 禁止 RSI 触碰。
+        override = self._harness_override or {}
+        if isinstance(override.get("text"), str):
+            text = override["text"]
         top, middle, future = _load_common(role)
         return _compose(top, middle, text, future)
 
@@ -336,12 +348,51 @@ class PromptBuilderFactory:
 
     @classmethod
     def get(cls, role: str) -> PromptBuilder:
+        builder = cls.get_for_signature(role, "")
+        return builder
+
+    @classmethod
+    def get_for_signature(cls, role: str, task_signature: str) -> PromptBuilder:
+        """`get()` + 装配期 tier-1 覆盖（施工方案 §4.7 的实际消费点）。
+
+        ``task_signature`` 为空时与 ``get()`` 完全等价——这是默认路径，
+        保证未启用 RSI 时行为零变化。
+
+        有覆盖时，在返回的 builder 上装入 override（若它是
+        ``StaticFilePromptBuilder``；其它 builder 类型没有正文可替换，
+        记录一条 debug 后原样返回）。
+        """
         if role in cls._BUILDERS:
-            return cls._BUILDERS[role]
-        # DSH-inspired: auto-discover from templates/.prompts/*.md
-        if cls._discovered is None:
-            cls._discovered = cls._discover_prompts()
-        return cls._discovered.get(role, _NullBuilder())
+            builder = cls._BUILDERS[role]
+        else:
+            # DSH-inspired: auto-discover from templates/.prompts/*.md
+            if cls._discovered is None:
+                cls._discovered = cls._discover_prompts()
+            builder = cls._discovered.get(role, _NullBuilder())
+
+        if not task_signature:
+            # 无 signature = 不走 RSI：清掉可能残留的覆盖，保证 get() 与
+            # 改动前逐字节一致（builder 是进程级缓存实例，会跨调用复用）。
+            if isinstance(builder, StaticFilePromptBuilder):
+                builder.apply_harness_override(None)
+            return builder
+
+        override = cls.resolve_harness_for(role, task_signature)
+        if not override:
+            # 同一个 builder 例会被多次 get 到（_BUILDERS / _discovered 是
+            # 进程级缓存）。前一次装入的覆盖必须清掉，否则「这次没覆盖」
+            # 会沿用「上次的覆盖」——那是跨 task_signature 的状态泄漏。
+            if isinstance(builder, StaticFilePromptBuilder):
+                builder.apply_harness_override(None)
+            return builder
+        if isinstance(builder, StaticFilePromptBuilder):
+            builder.apply_harness_override(override)
+        else:
+            logger.debug(
+                "harness override for %r ignored: builder is %s",
+                role, type(builder).__name__,
+            )
+        return builder
 
     @classmethod
     def resolve_harness_for(cls, role: str, task_signature: str) -> dict[str, Any]:

@@ -111,9 +111,77 @@ def apply_compaction_overrides(compact_config: Any, task_signature: str) -> Any:
     return replace(compact_config, **applicable)
 
 
+# ── 装配期统一入口 ───────────────────────────────────────────────────
+#
+# 三个装配点各自需要一个"装配期问一次"的入口。集中在这里，让调用方
+# 只需一次调用即可完成 prompt / tool_set / compaction 三件事，
+# 而不是各自去拆 resolve_harness 的返回值。
+
+
+class AssembledHarness:
+    """一次装配期解析的完整结果（三件产物）。"""
+
+    __slots__ = ("task_signature", "prompt_override", "tool_set", "compact_config")
+
+    def __init__(
+        self,
+        task_signature: str,
+        prompt_override: dict[str, Any],
+        tool_set: frozenset[str] | None,
+        compact_config: Any,
+    ) -> None:
+        self.task_signature = task_signature
+        self.prompt_override = prompt_override
+        self.tool_set = tool_set
+        self.compact_config = compact_config
+
+    def __repr__(self) -> str:
+        return (
+            f"AssembledHarness(sig={self.task_signature!r}, "
+            f"prompt={'yes' if self.prompt_override else 'no'}, "
+            f"tool_set={len(self.tool_set) if self.tool_set is not None else 'all'}, "
+            f"compact={'overridden' if self.compact_config is not None else 'none'})"
+        )
+
+
+def assemble(
+    *,
+    role: str = "",
+    compact_config: Any = None,
+    task_signature: str = "",
+) -> AssembledHarness:
+    """装配期一次解析：prompt 覆盖 / tool_set / compaction 覆盖。
+
+    这是三个装配点的**唯一**入口。``task_signature`` 为空（默认）时
+    三项均为空/原样，调用方行为与改动前一致。
+
+    :param role: 若给出，提取该 role 的 prompt 覆盖项
+    :param compact_config: 若给出，按覆盖项做 ``replace``
+    """
+    if not task_signature:
+        return AssembledHarness("", {}, None, compact_config)
+
+    try:
+        cfg = resolve_harness(task_signature)
+        prompt_all = dict(getattr(cfg, "prompt_version", {}) or {})
+        prompt_override = dict(prompt_all.get(role, {}) or {}) if role else {}
+        tool_set = getattr(cfg, "tool_set", None)
+        compact = (
+            apply_compaction_overrides(compact_config, task_signature)
+            if compact_config is not None
+            else None
+        )
+        return AssembledHarness(task_signature, prompt_override, tool_set, compact)
+    except Exception as exc:  # noqa: BLE001 —— 装配期不得因 RSI 崩溃
+        logger.warning("harness assemble failed for %r: %s", task_signature, exc)
+        return AssembledHarness(task_signature, {}, None, compact_config)
+
+
 __all__ = [
+    "AssembledHarness",
     "HarnessConfig",
     "apply_compaction_overrides",
     "apply_tool_set",
+    "assemble",
     "resolve_harness",
 ]

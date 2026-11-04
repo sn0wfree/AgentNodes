@@ -98,14 +98,20 @@ class EvolutionAgent:
         """读一轮证据，产出一份提案（或 None = 无有价值提案）。
 
         ``seed`` 显式传入（附录 C：不允许隐式不确定性）。
+
+        **证据经解析出的工具获取**：当 ``resolved_tools`` 非空时，走
+        ``read_journal`` / ``read_scoreboard`` / ``read_validation`` /
+        ``read_holdout`` 四个经 ``CapabilityRegistry`` 解析的工具；否则回退
+        到直接调用数据源（保留无 registry 的简单路径）。两条路径产出同一
+        ``EvolutionContext``，因此 policy 无需感知差异。
         """
         signature = compute_task_signature(objective, role, tool_set)
         ctx = EvolutionContext(
             task_signature=signature,
-            journal=list(self.journal.read_journal(limit=limit)),
-            scoreboard=dict(self.scoreboard.read_scoreboard()),
-            validation=list(self.validation.read_validation(limit=limit)),
-            holdout=self.holdout.read_holdout(signature, seed),
+            journal=self._journal(),
+            scoreboard=self._scoreboard(),
+            validation=self._validation(limit),
+            holdout=self._holdout(signature, seed),
             seed=seed,
         )
 
@@ -128,6 +134,32 @@ class EvolutionAgent:
             )
         return proposal
 
+    # ── 证据获取（经解析出的工具，或直接走数据源） ─────────────────
+
+    def _journal(self) -> list[dict[str, Any]]:
+        fn = self.resolved_tools.get("read_journal")
+        if fn is not None:
+            return list(fn(self.journal, limit=50))
+        return list(self.journal.read_journal(limit=50))
+
+    def _scoreboard(self) -> dict[str, Any]:
+        fn = self.resolved_tools.get("read_scoreboard")
+        if fn is not None:
+            return dict(fn(self.scoreboard))
+        return dict(self.scoreboard.read_scoreboard())
+
+    def _validation(self, limit: int) -> list[dict[str, Any]]:
+        fn = self.resolved_tools.get("read_validation")
+        if fn is not None:
+            return list(fn(self.validation, limit=limit))
+        return list(self.validation.read_validation(limit=limit))
+
+    def _holdout(self, signature: str, seed: int) -> HoldoutSet:
+        fn = self.resolved_tools.get("read_holdout")
+        if fn is not None:
+            return fn(self.holdout, signature, seed)
+        return self.holdout.read_holdout(signature, seed)
+
     # ── 工具解析（阶段二的 CapabilityRegistry） ─────────────────────
 
     @classmethod
@@ -136,8 +168,28 @@ class EvolutionAgent:
 
         工具的解析在**装配期**发生（一次），不在每次 propose 时——
         与阶段二"register 一次、resolve 一次"的口径一致。
+
+        调用前确保 ``apps`` 包的注册副作用已执行：``import
+        strategy_research.apps`` 是幂等的，但如果调用方先前
+        ``reset_default_registry()`` 过（测试常见），注册表会是空的，
+        此时 resolve 会抛 CapabilityNotFound。这里显式触发一次注册，
+        把"注册时机"从调用方的隐式前提变成显式保证。
         """
-        from strategy_research.kernel.agent.capability import resolve
+        import strategy_research.apps  # noqa: F401 —— 触发注册副作用
+        from strategy_research.apps.capabilities import register_capabilities
+        from strategy_research.kernel.agent.capability import (
+            get_default_registry,
+            resolve,
+        )
+
+        registry = get_default_registry()
+        if not any(k.startswith("evolution.") for k in registry.list_kinds()):
+            # reset 之后重建注册（幂等：逐 kind 跳过已注册项）
+            for kind, factory in __import__(
+                "strategy_research.apps.capabilities", fromlist=["CAPABILITIES"]
+            ).CAPABILITIES.items():
+                if kind not in registry:
+                    registry.register(kind, factory)
 
         tools = {name: resolve(f"evolution.{name}") for name in sorted(EVOLUTION_TOOLS)}
         return cls(resolved_tools=tools, **sources)

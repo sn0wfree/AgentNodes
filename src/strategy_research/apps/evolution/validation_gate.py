@@ -127,9 +127,15 @@ class ValidationGate:
             )
             return approved
 
+        # 基础设施级失败（如 slot 拿不到）只 escalate，不计入回滚计数——
+        # 回滚语义是"模型退化"，而资源不足是运维问题。混在一起会让一次
+        # 池容量不足被误判成三次模型退化，直接回滚一个没问题的基因组。
+        if result.escalated:
+            return self._reject(working, result.reason, escalated=True)
+
         # 规则 3：连续失败累计
         self._consecutive_failures += 1
-        rejected = self._reject(working, result.reason, escalated=result.escalated)
+        rejected = self._reject(working, result.reason, escalated=False)
 
         if self._consecutive_failures >= ROLLBACK_AFTER_FAILURES:
             return self._rollback(rejected, result.reason)
@@ -144,6 +150,20 @@ class ValidationGate:
         try:
             candidate = float(self.replay(proposal, holdout))
         except Exception as exc:  # noqa: BLE001 —— 回放崩溃算验证失败
+            # slot 拿不到属于"无法验证"，必须 escalate 而不是静默算作
+            # 普通失败：普通失败会累积到回滚计数，那会让资源不足误触发
+            # 回滚（把系统状态与基础设施状态混为一谈）。
+            from .isolated_replay import SlotUnavailable
+
+            if isinstance(exc, SlotUnavailable):
+                logger.warning(
+                    "replay slot unavailable for %s: %s", proposal.proposal_id, exc
+                )
+                return ValidationResult(
+                    ok=False,
+                    reason=f"replay slot unavailable: {exc} — escalated",
+                    escalated=True,
+                )
             logger.warning("replay failed for %s: %s", proposal.proposal_id, exc)
             return ValidationResult(ok=False, reason=f"replay failed: {exc}")
 
