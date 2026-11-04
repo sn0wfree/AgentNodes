@@ -164,6 +164,26 @@ mixed 里最需要小心的：
 
 ---
 
+## 5.1 【实测修正】8 个业务 utils 与 9 个业务接口**不能独立删除**
+
+原本计划把它们作为阶段 2b 单独删掉。实测（import 语句级）证明**行不通**：
+
+| 试图删的对象 | 反向依赖 | 后果 |
+|---|---|---|
+| `foundation/utils/backtest_{models,config,utils,engine,metrics}.py`、`strategy_engine.py`、`metrics.py`、`market_detection.py` | **被 `apps/` 导入**（`apps/config_runner.py`、`apps/backtest_engine/callback_engine_adapter.py`、`apps/engine/{base,models,composite,runner}.py`、`apps/data_source/utils.py`） | 删了 apps 就 import 失败 |
+| `interfaces/api/routers/{study,goal,hypothesis,validation,study_helpers,slash_commands}.py` | **被 agent 侧装配**：`api/app.py:92,187-215`（`include_router` + `_get_study_scheduler`）、`api/routers/chat.py:32`（`slash_commands`）、`api/routers/schedule.py:197` | 删了 API 起不来 |
+
+**结论：这 17 个文件必须与 `apps/` 在同一次原子提交里移除**，
+否则中间态既不能 import 也不能起服务。阶段 2b 因此**只做真正独立的部分**：
+
+- ✅ 3 个死文件（`covariance.py` / `ic_utils.py` / `risk_parity.py`）——只被自己的测试引用，可立即删
+- ⏸ 其余 17 个 → 并入阶段 2e（与 `apps/` 同时）
+
+这条修正也说明：**「按目录粒度切」这个假设在 interfaces 层不成立**——
+接口层是按「路由」组织的，而路由与业务域是一对一绑定的，没有可复用的中间抽象。
+
+---
+
 ## 6. 阶段 2 的执行顺序（按风险递增）
 
 | 步 | 动作 | 规模 | 风险 | 验证 |
@@ -216,7 +236,6 @@ prompts_dir = pathlib.Path(__file__).parent.parent / "templates" / ".prompts"
 > **同名独立函数**，与 `foundation/utils/risk_parity.py` 无关。
 
 ### 7.3 【重要】CI 从未真正运行过 async 测试
-
 `pyproject.toml` 配了 `asyncio_mode = "auto"`，但：
 
 - `[project.optional-dependencies].dev` 里**没有 `pytest-asyncio`**
@@ -241,6 +260,32 @@ async def functions are not natively supported.
 否则本地/CI 装出来的环境仍缺。
 
 > 这条直接影响本次减法的安全网：不修的话，"跑了全量测试"这个结论是假的。
+
+### 7.4 `clean_data` 用只读连接读刚写入的数据 → 偶发读到空（★ 抖动源已定位）
+
+`data_clean_tools.py:106`：`conn = get_connection(workspace, read_only=dry_run)`，
+而 `dry_run` 默认 `True`。测试 fixture 刚用 `save_ohlcv_to_db` 写过同一个
+DuckDB 文件，紧接着以 **read_only** 打开并 `fetch_df()`。
+
+**实测复现**（`prove_ro.py`，跑 12 次同样的输入）：
+
+```
+outcomes: [1, 1, 1, 0, 1, 1, 1, 0, 1, 0, 1, 0]
+non-1 occurrences: 4/12
+```
+
+`missing_filled` 在 1 与 0 之间随机跳变 → `test_data_clean_tool` 的两个用例
+约 1/3 概率失败。独立验证过：
+- `_impute()` 本身 20/20 次确定（输入相同 → 输出相同）
+- DuckDB 写后读回 `close IS NULL` 6/6 次稳定 = 1
+- 所以抖动点在**只读连接的可见性**，不在清洗算法，也不在数据写入
+
+**判定**：既有缺陷（基线跑时同样抖动，干净 HEAD 上 5 次跑也出现 1 次失败）。
+与本次减法无关，但它是 §1.4 里那批「顺序敏感/抖动」失败的最大单一来源。
+
+**修法（未做，属业务侧代码）**：`dry_run=True` 时也用可写连接打开（或先
+`conn.close()` 再只读打开），或者在写完数据后显式 checkpoint。
+
 
 ---
 
