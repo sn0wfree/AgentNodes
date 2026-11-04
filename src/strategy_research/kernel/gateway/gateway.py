@@ -56,8 +56,14 @@ class Gateway:
         context_policy: Any | None = None,
         artifact_channel: Any | None = None,
         workspace: str | Path | None = None,
+        max_worker_slots: int | None = None,
     ) -> None:
         self._events: list[tuple[str, dict]] = []
+        # 阶段一 §2.8：Worker Slot 管理器——订阅 assignment.report 管理
+        # Worker 占用。只订阅事件、不读 Ticket 表（kernel 不得 import apps）。
+        from strategy_research.kernel.gateway.worker_slots import WorkerSlotManager
+
+        self._worker_slots = WorkerSlotManager(max_slots=max_worker_slots)
         # R7：外部 sink 集合（替代原链式 _external_sink）+ 代际表。
         self._sinks: set[Callable[[str, dict], None]] = set()
         self._sink_lock = threading.Lock()
@@ -142,8 +148,24 @@ class Gateway:
         """P-3 artifact 通道（可能为 None——store 未配置时）。"""
         return self._artifacts
 
+    @property
+    def worker_slots(self):
+        """阶段一 §2.8：Worker Slot 管理器（订阅 assignment.report）。"""
+        return self._worker_slots
+
     def _combined_sink(self, kind: str, data: dict) -> None:
         self._default_sink(kind, data)
+        # 阶段一 §2.8：Worker Slot 订阅——只订阅事件，不读 Ticket 表。
+        # 放在默认 sink 之后、外部 sink 之前：slot 状态先更新，外部
+        # 观察者看到的 slot 表已是本事件的后果。
+        if self._worker_slots is not None and kind == "assignment.report":
+            try:
+                self._worker_slots.handle_report(data)
+            except Exception:  # noqa: BLE001 —— slot 记账失败不得吞事件
+                logger.warning(
+                    "worker slot update failed for %s",
+                    data.get("assignment_id"), exc_info=True,
+                )
         # R7：广播给所有外部 sink（集合快照遍历，防并发修改）。
         with self._sink_lock:
             sinks = tuple(self._sinks)

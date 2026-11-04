@@ -195,6 +195,65 @@ class StaticGenomeVersion:
         return self._activated_at
 
 
+# ── 持久化（施工方案 §4.2，走 ⑥ 存储原语） ──────────────────────────
+#
+# ``foundation.storage.holdout.HoldoutStore`` 只做纯 dict 的读写——它是 L4，
+# 不能 import L2 的 ``HoldoutSet``。类型还原（dict → HoldoutSet）由本模块
+# 提供 decoder，方向正确：apps 拉 foundation，而非反过来。
+
+
+def decode_holdout(raw: dict[str, Any]) -> HoldoutSet:
+    """把 ``HoldoutStore.load_raw()`` 的 dict 还原成 ``HoldoutSet``。"""
+    trajs = tuple(
+        Trajectory(
+            event_id=str(d.get("event_id", "")),
+            assignment_id=str(d.get("assignment_id", "")),
+            ticket_id=str(d.get("ticket_id", "")),
+            run_id=str(d.get("run_id", "")),
+            status=str(d.get("status", "")),
+            ts=str(d.get("ts", "")),
+            task_signature=str(d.get("task_signature", "")),
+            payload=dict(d.get("payload") or {}),
+        )
+        for d in raw.get("trajectories", [])
+    )
+    return HoldoutSet(
+        trajectories=trajs,
+        seed=int(raw.get("seed", 0)),
+        task_signature=str(raw.get("task_signature", "")),
+    )
+
+
+def persist_holdout(
+    holdout: HoldoutSet,
+    workspace: str | Any,
+    *,
+    channel: Any | None = None,
+    overwrite: bool = False,
+    session_id: str = "",
+) -> Any:
+    """把 holdout 集落盘（施工方案 §4.2「走 ⑥ 存储原语」）。
+
+    返回 ``HoldoutPointer``；同一 ``(task_signature, seed)`` 已存在时抛
+    ``HoldoutAlreadyPersisted``（write-once，H5 的持久化侧保证）。
+    """
+    from strategy_research.foundation.storage.holdout import HoldoutStore
+
+    return HoldoutStore(workspace, channel=channel).persist(
+        holdout, overwrite=overwrite, session_id=session_id
+    )
+
+
+def load_persisted_holdout(
+    workspace: str | Any, task_signature: str, seed: int
+) -> HoldoutSet:
+    """从磁盘读回 holdout 集（带类型还原）。"""
+    from strategy_research.foundation.storage.holdout import HoldoutStore
+
+    raw = HoldoutStore(workspace).load_raw(task_signature, seed)
+    return decode_holdout(raw)
+
+
 __all__ = [
     "EventStoreReportSource",
     "HOLDOUT_STATUSES",
@@ -204,5 +263,8 @@ __all__ = [
     "StaticGenomeVersion",
     "Trajectory",
     "compute_task_signature",
+    "decode_holdout",
+    "load_persisted_holdout",
+    "persist_holdout",
     "sample",
 ]
