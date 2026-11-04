@@ -82,7 +82,9 @@ class DataCleanTool(BaseTool):
         workspace = ctx.workspace
 
         # 验证 preset
-        from strategy_research.apps.tools.data_clean import PRESETS
+        from strategy_research.kernel.agent.capability import resolve
+
+        PRESETS = resolve("data.clean").PRESETS
         if preset not in PRESETS:
             return err_actionable(
                 f"invalid preset: {preset}",
@@ -94,8 +96,10 @@ class DataCleanTool(BaseTool):
 
         try:
             # 加载数据
-            from strategy_research.apps.db import get_connection
-            from strategy_research.apps.tools.data_clean import clean_data
+            from strategy_research.kernel.agent.capability import resolve
+
+            get_connection = resolve("db.get_connection")
+            clean_data = resolve("data.clean").clean_data
             if not (workspace / "data.duckdb").exists():
                 return err_actionable(
                     "no DuckDB database in workspace",
@@ -130,7 +134,9 @@ class DataCleanTool(BaseTool):
 
             # 如果不是 dry_run，保存结果
             if not dry_run:
-                from strategy_research.apps.db import save_ohlcv_to_db
+                from strategy_research.kernel.agent.capability import resolve
+
+                save_ohlcv_to_db = resolve("db.save_ohlcv_to_db")
                 # 清空旧数据 (ohlcv 是视图不可 DELETE，直接清 price_data)
                 conn.execute(
                     "DELETE FROM price_data WHERE strategy_name = ?",

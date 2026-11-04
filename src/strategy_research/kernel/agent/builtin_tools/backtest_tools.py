@@ -7,7 +7,9 @@ import logging
 from typing import cast
 from pathlib import Path
 
-from strategy_research.apps.backtest import run_backtest_from_yaml
+from strategy_research.kernel.agent.capability import (
+    resolve as _resolve_capability,
+)
 from strategy_research.kernel.agent.tools import (
     EFFECT_DB,
     EFFECT_FS,
@@ -321,7 +323,7 @@ class ConfigLoadStep(BaseTool):
         strategy_name: str,
         yaml_path: str | None = None,
     ) -> dict:
-        from strategy_research.apps.config_runner import load_yaml_config
+        load_yaml_config = _resolve_capability("config.runner").load_yaml_config
 
         if yaml_path is not None:
             yaml_path = str(workspace / yaml_path)
@@ -369,7 +371,7 @@ class DataPrepareStep(BaseTool):
         workspace,
         cfg: dict,
     ) -> dict:
-        from strategy_research.apps.config_runner import load_data
+        load_data = _resolve_capability("config.runner").load_data
 
         try:
             df = load_data(cfg, workspace)
@@ -402,7 +404,7 @@ class DataReadinessStep(BaseTool):
         strategy_name: str,
         cfg: dict,
     ) -> dict:
-        from strategy_research.apps.data_readiness import check_data_readiness
+        check_data_readiness = _resolve_capability("data.readiness")
 
         try:
             report = check_data_readiness(workspace, strategy_name, cfg=cfg)
@@ -451,6 +453,7 @@ class EngineRunStep(BaseTool):
         description: str,
     ) -> dict:
 
+        run_backtest_from_yaml = _resolve_capability("backtest.from_yaml")
         try:
             result = run_backtest_from_yaml(
                 workspace_path=workspace,
