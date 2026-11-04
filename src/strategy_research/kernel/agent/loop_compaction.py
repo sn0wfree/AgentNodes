@@ -11,7 +11,6 @@ logger = logging.getLogger(__name__)
 
 from strategy_research.foundation.utils.token_utils import estimate_tokens
 from . import compact as _compact_mod
-from . import loop as _loop_mod
 
 if TYPE_CHECKING:
     pass
@@ -228,7 +227,11 @@ class LoopCompactionMixin:
                 # a from-import binds the value at module load time, so a
                 # later register_compaction_persister() call would never be
                 # visible here — the compaction path would always raise.
-                persister = _loop_mod._compaction_persister
+                #
+                # W10-1 (2026-11-04): read from ``compact`` instead of
+                # ``loop``. The registration lives there now, which is what
+                # breaks the loop ↔ loop_compaction import cycle.
+                persister = _compact_mod.get_compaction_persister()
                 if persister is None:
                     raise RuntimeError(
                         f"compaction_persister not registered; cannot "

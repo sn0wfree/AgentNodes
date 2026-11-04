@@ -22,10 +22,74 @@ import asyncio
 import logging
 import os
 import re
+from contextlib import contextmanager
 from dataclasses import dataclass, field
 from typing import Any
 
 logger = logging.getLogger(__name__)
+
+
+# ── Compaction persistence registration ──────────────────────────────
+#
+# The web/API layer owns the sqlite schema, so the core loop must not
+# import api.routers.web_session (layer inversion). Instead, process
+# entry points (api app, TUI) register their persist_message wrapper
+# here once at startup; ``LoopCompactionMixin`` uses it on the legacy
+# fallback path.
+#
+# W10-1 (2026-11-04): this registration lives in ``compact.py``, not
+# ``loop.py``. It used to sit in ``loop.py`` while the only *reader*
+# was ``loop_compaction.py`` — and ``loop.py`` imports that mixin at
+# module top level, so the two produced a genuine eager import cycle
+# (``import ...loop_compaction`` first raised "partially initialized
+# module"). ``compact.py`` is already imported by both sides, which
+# makes it the neutral home. Callers that used to import these names
+# from ``loop`` keep working — ``loop`` re-exports them.
+
+_compaction_persister: Any | None = None
+
+
+def register_compaction_persister(fn: Any) -> None:
+    """Register a ``persist_message``-compatible callback (see web_session)."""
+    global _compaction_persister
+    _compaction_persister = fn
+
+
+def get_compaction_persister() -> Any | None:
+    """Return the currently registered persister (``None`` if unregistered).
+
+    Read-through accessor for callers that must observe a registration
+    performed *after* they were imported — a ``from ... import`` of the
+    module-level variable would bind the value at import time.
+    """
+    return _compaction_persister
+
+
+@contextmanager
+def compaction_persister_registered(fn: Any):
+    """Context manager for safe persister registration in tests.
+
+    Registers ``fn`` as the compaction persister for the duration of
+    the ``with`` block, then restores the previous value (typically
+    ``None``) on exit — even if the block raises.
+
+    Production code should call ``register_compaction_persister`` once
+    at process start; this context manager is for tests that need to
+    inject a mock without leaking state across tests.
+
+    Example::
+
+        with compaction_persister_registered(mock_persist):
+            loop._persist_compaction_event("summary", "recent")
+    """
+    global _compaction_persister
+    previous = _compaction_persister
+    _compaction_persister = fn
+    try:
+        yield
+    finally:
+        _compaction_persister = previous
+
 
 
 # ── Emergency kill switch ────────────────────────────────────────────

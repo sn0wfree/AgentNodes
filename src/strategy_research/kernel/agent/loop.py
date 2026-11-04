@@ -148,44 +148,18 @@ def _get_goal_store() -> Any:
 
 # ── Compaction persistence registration ─────────────────────────────
 #
-# The web/API layer owns the sqlite schema, so the core loop must not
-# import api.routers.web_session (layer inversion). Instead, process
-# entry points (api app, TUI) register their persist_message wrapper
-# here once at startup; the legacy fallback path below uses it.
-
-_compaction_persister: Any | None = None
-
-
-def register_compaction_persister(fn: Any) -> None:
-    """Register a ``persist_message``-compatible callback (see web_session)."""
-    global _compaction_persister
-    _compaction_persister = fn
-
-
-@contextmanager
-def compaction_persister_registered(fn: Any):
-    """Context manager for safe persister registration in tests.
-
-    Registers ``fn`` as the compaction persister for the duration of
-    the ``with`` block, then restores the previous value (typically
-    ``None``) on exit — even if the block raises.
-
-    Production code should call ``register_compaction_persister`` once
-    at process start; this context manager is for tests that need to
-    inject a mock without leaking state across tests.
-
-    Example::
-
-        with compaction_persister_registered(mock_persist):
-            loop._persist_compaction_event("summary", "recent")
-    """
-    global _compaction_persister
-    previous = _compaction_persister
-    _compaction_persister = fn
-    try:
-        yield
-    finally:
-        _compaction_persister = previous
+# Moved to ``compact.py`` in W10-1 (2026-11-04): the only reader was
+# ``loop_compaction.py``, while this module imports that mixin at top
+# level — a genuine eager cycle. ``compact.py`` is imported by both
+# sides, so the registration (and its global) now lives there, and the
+# names are re-exported here so existing
+# ``from ...loop import register_compaction_persister`` callers
+# (``interfaces/api/app.py``, tests) keep working.
+from .compact import (  # noqa: E402  (kept here to preserve import order)
+    compaction_persister_registered,
+    get_compaction_persister,
+    register_compaction_persister,
+)
 
 
 # ── L7: LoopStrategy context helper ────────────────────────────────────
