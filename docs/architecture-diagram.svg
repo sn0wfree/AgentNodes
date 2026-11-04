@@ -55,7 +55,7 @@
   <rect x="166" y="362" width="344" height="96" rx="8" class="box"/>
   <text x="182" y="384" class="bt">Director ✅ · apps ⚠</text>
   <text x="182" y="404" class="st">停因→动作 · study.directive</text>
-  <text x="182" y="424" class="sm">物理 core/study/ · runner 轮末调用 · 不读预算</text>
+  <text x="182" y="424" class="sm">apps/study/ · runner 轮末调用 · 不读预算</text>
   <rect x="526" y="362" width="344" height="96" rx="8" class="box"/>
   <text x="542" y="384" class="bt">ModelHub ✅ · kernel</text>
   <text x="542" y="404" class="st">provider/model 解析唯一入口</text>
@@ -140,7 +140,7 @@
   <text x="942" y="712" class="sm">studies/{id}/rounds（D-4）· P-5 指针</text>
   <rect x="926" y="780" width="418" height="70" rx="9" class="box"/>
   <text x="942" y="802" class="bt">数据工具 ✅</text>
-  <text x="942" y="822" class="sm">core/tools · data_clean / transforms</text>
+  <text x="942" y="822" class="sm">apps/tools · data_clean / transforms</text>
   <text x="926" y="890" class="sm">编号阶梯 → ⑦ · 体量速览 → 右栏（本翼只放业务组件）</text>
   <rect x="1400" y="150" width="26" height="22" rx="6" fill="#ede9fe" stroke="#c4b5fd"/>
   <text x="1413" y="166" class="num" fill="#5b21b6">◆</text>
@@ -164,22 +164,22 @@
   <text x="1420" y="570" class="st">✅ 执行面单一引擎 · 恢复原语统一</text>
   <text x="1420" y="590" class="st">✅ 入口唯一 · ContextHub 独占</text>
   <text x="1420" y="610" class="st">✅ 数据面 · ModelHub · Director</text>
-  <text x="1420" y="630" class="st">✅ 四层骨架门禁（基线 107）</text>
+  <text x="1420" y="630" class="st">✅ 四层骨架门禁（上行 49 条登记 · L4 簇 0）</text>
   <text x="1420" y="654" class="sm">⏳ 容量组闸 · 独立宿主 · 分库 · Sched 唯一</text>
   <rect x="1400" y="690" width="440" height="360" rx="10" class="boxg"/>
-  <text x="1420" y="716" class="bt">成员与体量速览（11-03 审计）</text>
-  <text x="1420" y="740" class="st">apps：22 包 · 57.6k 行（全库 43%）</text>
-  <text x="1420" y="762" class="sm">study 10.9k · alpha_zoo 25.7k · goal 6.1k</text>
+  <text x="1420" y="716" class="bt">成员与体量速览（11-04 实测 · graphify 45982 节点）</text>
+  <text x="1420" y="740" class="st">apps：31 包 · 62.3k 行（全库 45%）</text>
+  <text x="1420" y="762" class="sm">alpha_zoo 25.7k · study 11.0k · goal 6.1k</text>
   <text x="1420" y="782" class="sm">engine 2.4k · data_source 2.1k</text>
-  <text x="1420" y="802" class="sm">hypothesis 1.5k · compute_factor 1.4k</text>
-  <text x="1420" y="822" class="sm">autoresearch 1.4k · db 1.3k</text>
-  <text x="1420" y="842" class="sm">strategy_acceptance 1.0k · 其余 ~4k</text>
-  <text x="1420" y="868" class="st">kernel：35.7k —— 三子带</text>
-  <text x="1420" y="890" class="sm">控制面 4.1k（②）· 执行面 6.0k（③）</text>
-  <text x="1420" y="910" class="sm">能力面 24.6k：agent 22k 独大</text>
+  <text x="1420" y="802" class="sm">hypothesis 1.5k · autoresearch 1.4k</text>
+  <text x="1420" y="822" class="sm">compute_factor 1.4k · db 1.3k</text>
+  <text x="1420" y="842" class="sm">alpha_zoo_convert 1.0k · 其余 ~6k</text>
+  <text x="1420" y="868" class="st">kernel：34.6k —— 三子带</text>
+  <text x="1420" y="890" class="sm">控制面 4.5k（②）· 执行面 6.1k（③）</text>
+  <text x="1420" y="910" class="sm">能力面 24.0k：agent 21.7k 独大</text>
   <text x="1420" y="930" class="sm">context/hooks/permission/memory/skills</text>
-  <text x="1420" y="956" class="st">interfaces：29.5k（api 15.2k · cli 13.3k）</text>
-  <text x="1420" y="978" class="st">foundation：10.8k（8% · llmwikify 11% 同级）</text>
+  <text x="1420" y="956" class="st">interfaces：29.5k（api 15.3k · cli 13.3k）</text>
+  <text x="1420" y="978" class="st">foundation：10.7k（7.8% · llmwikify 11% 同级）</text>
   <text x="1420" y="1004" class="sm">口径：AST import 扫描；行数含空行注释；</text>
   <text x="1420" y="1024" class="sm">scripts/templates 不计入门禁。</text>
   <line x1="510" y1="1216" x2="510" y2="1230" class="arb"/>

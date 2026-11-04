@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>目标架构 v8（脊-翼双平面 · 图归结构 · 台账外移）</title>
+<title>目标架构 v8.4（脊-翼双平面 · 图归结构 · 台账外移）</title>
 <style>
   body{margin:0;background:#f8fafc;color:#0f172a;
     font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Microsoft YaHei",system-ui,sans-serif;
@@ -26,7 +26,7 @@
 </head>
 <body>
 <div class="wrap">
-  <h1>目标架构 v8 · 脊-翼双平面 —— 图归结构：每盒 = 名字 + 一行本质 + 盒级状态</h1>
+  <h1>目标架构 v8.4 · 脊-翼双平面 —— 图归结构：每盒 = 名字 + 一行本质 + 盒级状态</h1>
   <p class="sub"><b>脊-翼双平面</b>：①渠道汇入 WorkRequest → <b>左脊 = 平台 kernel（②Gateway → 走廊[ConfigHub/CapabilityRegistry] → ③执行面 → ④平台数据）</b>；<b>右翼 = 研究域 apps（IP · 并列工作面）</b>——工单在 ③ 经<b>端口回调</b>进翼干活，翼经<b>9 触点白名单</b>用平台；⑥ foundation 全宽垫底被脊翼共同依赖。<b>⑦ = 编号所在处</b>（DAG 拓扑排名 + 棘轮门禁）。每盒 = 名字 + 一行本质 + 盒级状态；特性级细节查各 stage-r*/stage-b* 文档，台账在右栏与 changelog。设计：<code>docs/layered-skeleton-design-20261103.md</code></p>
 
 <div class="scroll">
@@ -87,7 +87,7 @@
   <rect x="166" y="362" width="344" height="96" rx="8" class="box"/>
   <text x="182" y="384" class="bt">Director ✅ · apps ⚠</text>
   <text x="182" y="404" class="st">停因→动作 · study.directive</text>
-  <text x="182" y="424" class="sm">物理 core/study/ · runner 轮末调用 · 不读预算</text>
+  <text x="182" y="424" class="sm">apps/study/ · runner 轮末调用 · 不读预算</text>
   <rect x="526" y="362" width="344" height="96" rx="8" class="box"/>
   <text x="542" y="384" class="bt">ModelHub ✅ · kernel</text>
   <text x="542" y="404" class="st">provider/model 解析唯一入口</text>
@@ -172,7 +172,7 @@
   <text x="942" y="712" class="sm">studies/{id}/rounds（D-4）· P-5 指针</text>
   <rect x="926" y="780" width="418" height="70" rx="9" class="box"/>
   <text x="942" y="802" class="bt">数据工具 ✅</text>
-  <text x="942" y="822" class="sm">core/tools · data_clean / transforms</text>
+  <text x="942" y="822" class="sm">apps/tools · data_clean / transforms</text>
   <text x="926" y="890" class="sm">编号阶梯 → ⑦ · 体量速览 → 右栏（本翼只放业务组件）</text>
   <rect x="1400" y="150" width="26" height="22" rx="6" fill="#ede9fe" stroke="#c4b5fd"/>
   <text x="1413" y="166" class="num" fill="#5b21b6">◆</text>
@@ -196,22 +196,22 @@
   <text x="1420" y="570" class="st">✅ 执行面单一引擎 · 恢复原语统一</text>
   <text x="1420" y="590" class="st">✅ 入口唯一 · ContextHub 独占</text>
   <text x="1420" y="610" class="st">✅ 数据面 · ModelHub · Director</text>
-  <text x="1420" y="630" class="st">✅ 四层骨架门禁（基线 107）</text>
+  <text x="1420" y="630" class="st">✅ 四层骨架门禁（上行 49 条登记 · L4 簇 0）</text>
   <text x="1420" y="654" class="sm">⏳ 容量组闸 · 独立宿主 · 分库 · Sched 唯一</text>
   <rect x="1400" y="690" width="440" height="360" rx="10" class="boxg"/>
-  <text x="1420" y="716" class="bt">成员与体量速览（11-03 审计）</text>
-  <text x="1420" y="740" class="st">apps：22 包 · 57.6k 行（全库 43%）</text>
-  <text x="1420" y="762" class="sm">study 10.9k · alpha_zoo 25.7k · goal 6.1k</text>
+  <text x="1420" y="716" class="bt">成员与体量速览（11-04 实测 · graphify 45982 节点）</text>
+  <text x="1420" y="740" class="st">apps：31 包 · 62.3k 行（全库 45%）</text>
+  <text x="1420" y="762" class="sm">alpha_zoo 25.7k · study 11.0k · goal 6.1k</text>
   <text x="1420" y="782" class="sm">engine 2.4k · data_source 2.1k</text>
-  <text x="1420" y="802" class="sm">hypothesis 1.5k · compute_factor 1.4k</text>
-  <text x="1420" y="822" class="sm">autoresearch 1.4k · db 1.3k</text>
-  <text x="1420" y="842" class="sm">strategy_acceptance 1.0k · 其余 ~4k</text>
-  <text x="1420" y="868" class="st">kernel：35.7k —— 三子带</text>
-  <text x="1420" y="890" class="sm">控制面 4.1k（②）· 执行面 6.0k（③）</text>
-  <text x="1420" y="910" class="sm">能力面 24.6k：agent 22k 独大</text>
+  <text x="1420" y="802" class="sm">hypothesis 1.5k · autoresearch 1.4k</text>
+  <text x="1420" y="822" class="sm">compute_factor 1.4k · db 1.3k</text>
+  <text x="1420" y="842" class="sm">alpha_zoo_convert 1.0k · 其余 ~6k</text>
+  <text x="1420" y="868" class="st">kernel：34.6k —— 三子带</text>
+  <text x="1420" y="890" class="sm">控制面 4.5k（②）· 执行面 6.1k（③）</text>
+  <text x="1420" y="910" class="sm">能力面 24.0k：agent 21.7k 独大</text>
   <text x="1420" y="930" class="sm">context/hooks/permission/memory/skills</text>
-  <text x="1420" y="956" class="st">interfaces：29.5k（api 15.2k · cli 13.3k）</text>
-  <text x="1420" y="978" class="st">foundation：10.8k（8% · llmwikify 11% 同级）</text>
+  <text x="1420" y="956" class="st">interfaces：29.5k（api 15.3k · cli 13.3k）</text>
+  <text x="1420" y="978" class="st">foundation：10.7k（7.8% · llmwikify 11% 同级）</text>
   <text x="1420" y="1004" class="sm">口径：AST import 扫描；行数含空行注释；</text>
   <text x="1420" y="1024" class="sm">scripts/templates 不计入门禁。</text>
   <line x1="510" y1="1216" x2="510" y2="1230" class="arb"/>
@@ -320,7 +320,7 @@
 
 
 
-<p style="color:#64748b;font-size:12.5px;margin-top:10px">版本史（v5.1 → v8）已外移至 <code>docs/architecture-diagram-changelog.md</code>。近期：<b>v8（2026-11-03）：图归结构</b>——每盒=名字+一行本质+盒级状态（D1-a）；依赖阶梯并入 ⑦ DAG（D2）；决策记录盒删除（D3，内容在 discussion-record §3）；版本史外移（D4）；「与现状的差别」表删除（D5）；SVG 文本 ~240→~130，画布 2170→1830。<b>v8.1（同日）：加宽美化</b>——画布 1600→1880 · 页面 max-width 1660→1940 · 各段彩色编号徽标 · 三列间距与翼内盒距优化。。<b>v8.2（同日，评审后）</b>：③ 补能力面条带 · ⑦ 加口径待定标记 · 两处简化备案。特性级 ✅ 细节查各 stage-r*/stage-b* 设计文档。</p>
+<p style="color:#64748b;font-size:12.5px;margin-top:10px">版本史（v5.1 → v8.4）已外移至 <code>docs/architecture-diagram-changelog.md</code>。近期：<b>v8.4（2026-11-04）：物理分层收官后刷新</b>——数据与路径刷新，结构不变（apps 31 包 62.3k · kernel 34.6k 三子带 · interfaces 29.5k · foundation 10.7k；门禁「上行 49 条登记 · L4 簇 0」；core/* 旧路径 → apps/*）。<b>v8（2026-11-03）：图归结构</b>——每盒=名字+一行本质+盒级状态（D1-a）；依赖阶梯并入 ⑦ DAG（D2）；决策记录盒删除（D3，内容在 discussion-record §3）；版本史外移（D4）；「与现状的差别」表删除（D5）；SVG 文本 ~240→~130，画布 2170→1830。<b>v8.1（同日）：加宽美化</b>——画布 1600→1880 · 页面 max-width 1660→1940 · 各段彩色编号徽标 · 三列间距与翼内盒距优化。<b>v8.2（同日，评审后）</b>：③ 补能力面条带 · ⑦ 加口径待定标记 · 两处简化备案。特性级 ✅ 细节查各 stage-r*/stage-b* 设计文档。</p>
 
 <footer>
   骨架参考：<b>docs/openclaw-architecture.html</b> · 总纲：<b>docs/architecture-v3-openclaw-inspired.md</b> ·
