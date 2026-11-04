@@ -20,7 +20,8 @@ from .models import StudyStatus
 from .state_store import init as init_state
 
 if TYPE_CHECKING:
-    from .models import StudyGraph, StudyRecord
+    from .graph import StudyGraph
+    from .models import StudyRecord
 
 logger = logging.getLogger(__name__)
 

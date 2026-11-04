@@ -26,7 +26,7 @@ from .method.metric_targets import metric_pass_set as _metric_pass_set  # noqa: 
 from .models import StudyRecord, StudyStatus
 
 if TYPE_CHECKING:
-    from .models import StudyGraph
+    from .graph import StudyGraph
 
 
 from .store import StudyStore
