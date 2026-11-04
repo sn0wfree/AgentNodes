@@ -96,11 +96,18 @@ class TestGoalContextInjectorEdgeCases:
         loop = MagicMock()
         loop.enable_goal_injection = True
         loop.session_id = "abc"
-        # Mock get_current_goal_context to return a known value
+        # ADR-003 端口化后，kernel 不再 import apps.goal；改为 resolve
+        # 一个 capability。patch 目标随之改到 capability 层。
         import unittest.mock as mock
+
+        class _GoalCtx:
+            @staticmethod
+            def get_current_goal_context(session_id):
+                return ("GOAL CONTEXT", {})
+
         with mock.patch(
-            "strategy_research.apps.goal.get_current_goal_context",
-            return_value=("GOAL CONTEXT", {}),
+            "strategy_research.kernel.agent.capability.resolve",
+            return_value=_GoalCtx(),
         ):
             result = inj.inject_pre_run(loop, "original task", [])
             assert result.startswith("GOAL CONTEXT\n\n")
@@ -113,9 +120,15 @@ class TestGoalContextInjectorEdgeCases:
         loop.enable_goal_injection = True
         loop.session_id = "abc"
         import unittest.mock as mock
+
+        class _GoalCtx:
+            @staticmethod
+            def get_current_goal_context(session_id):
+                return ("", {})
+
         with mock.patch(
-            "strategy_research.apps.goal.get_current_goal_context",
-            return_value=("", {}),
+            "strategy_research.kernel.agent.capability.resolve",
+            return_value=_GoalCtx(),
         ):
             result = inj.inject_pre_run(loop, "original task", [])
             assert result == "original task"

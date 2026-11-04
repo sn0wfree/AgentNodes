@@ -115,7 +115,9 @@ class GoalContextInjector:
         if not loop.session_id:
             return task
         try:
-            from strategy_research.apps.goal import get_current_goal_context
+            from strategy_research.kernel.agent.capability import resolve
+
+            get_current_goal_context = resolve("goal.context").get_current_goal_context
             ctx, _ = get_current_goal_context(loop.session_id)
             if ctx:
                 return ctx + "\n\n" + task
@@ -221,10 +223,11 @@ class GoalContinuationInjector:
         if not loop.session_id:
             return False
         try:
-            from strategy_research.apps.goal.context import (
-                format_goal_continuation_prompt,
-                goal_needs_continuation,
-            )
+            from strategy_research.kernel.agent.capability import resolve
+
+            _goal_ctx = resolve("goal.context")
+            format_goal_continuation_prompt = _goal_ctx.format_goal_continuation_prompt
+            goal_needs_continuation = _goal_ctx.goal_needs_continuation
             goal_snapshot = _get_goal_snapshot(loop)
             if goal_snapshot is None:
                 return False
@@ -347,7 +350,9 @@ class MemoryRetrieverInjector:
 
     def _retrieve_hypotheses(self, loop: AgentLoop, task: str) -> list[Any]:
         try:
-            from strategy_research.apps.hypothesis.registry import HypothesisRegistry
+            from strategy_research.kernel.agent.capability import resolve
+
+            HypothesisRegistry = resolve("hypothesis.registry")
 
             reg = HypothesisRegistry()
             items = getattr(reg, "list_hypotheses", None) or getattr(reg, "list", None)
