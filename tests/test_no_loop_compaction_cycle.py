@@ -98,9 +98,32 @@ print("ok")
 
 
 def test_loop_reexports_legacy_names() -> None:
-    """``interfaces/api/app.py`` 与既有测试仍从 ``loop`` 导入这些名字。"""
+    """``interfaces/api/app.py`` 与既有测试仍从 ``loop`` 导入这些名字。
+
+    Asserts *behaviour*, not object identity: other tests legitimately reload
+    or monkeypatch these modules, and an ``is`` check would then depend on
+    execution order (it failed that way in the full suite while passing in
+    isolation). What matters is that both import paths reach one shared
+    registration slot.
+    """
     from strategy_research.kernel.agent import compact, loop
 
-    assert loop.register_compaction_persister is compact.register_compaction_persister
-    assert loop.compaction_persister_registered is compact.compaction_persister_registered
-    assert loop.get_compaction_persister is compact.get_compaction_persister
+    # Names are importable from ``loop`` (back-compat surface).
+    for name in (
+        "register_compaction_persister",
+        "compaction_persister_registered",
+        "get_compaction_persister",
+    ):
+        assert hasattr(loop, name), name
+
+    # Registering through ``loop`` is visible through ``compact`` — the
+    # property that actually breaks cycles and keeps the reader consistent.
+    sentinel = lambda **kwargs: "persisted"  # noqa: E731
+    try:
+        loop.register_compaction_persister(sentinel)
+        assert compact.get_compaction_persister() is sentinel
+        with loop.compaction_persister_registered(None):
+            assert compact.get_compaction_persister() is None
+        assert compact.get_compaction_persister() is sentinel
+    finally:
+        loop.register_compaction_persister(None)

@@ -10,9 +10,11 @@ the SQLite stores (GoalStore, StudyStore, HypothesisStore, ...).
 """
 
 from . import sqlite
-from .data_store import DataStore
+from .data_store import DataStore, get_default_data_store, register_default_data_store
 
 __all__ = [
     "sqlite",
     "DataStore",
+    "get_default_data_store",
+    "register_default_data_store",
 ]

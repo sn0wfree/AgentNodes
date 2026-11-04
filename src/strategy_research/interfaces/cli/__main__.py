@@ -163,6 +163,19 @@ def main(
     except Exception:  # noqa: BLE001 — 日志装配失败不能阻断 CLI
         pass
 
+    # W10-3 (2026-11-04): fill the L4 DataStore slot before any agent loop
+    # runs. AgentLoop reads the slot rather than importing
+    # ``apps.data_store_registry`` (a L3 → L2 upward import). Best-effort:
+    # a DB that cannot open must not prevent every other subcommand from
+    # running — the loop warns once and passes ``data_store=None``.
+    try:
+        from strategy_research.apps.data_store_registry import get_store
+        from strategy_research.foundation.storage import register_default_data_store
+
+        register_default_data_store(get_store())
+    except Exception:  # noqa: BLE001
+        pass
+
     # First-launch onboarding (v0.5.0). Mirrors vibe-trading's
     # _maybe_run_onboarding: if no .env exists and we are routing to an
     # interactive surface, run the 5-step wizard before the TUI/REPL.

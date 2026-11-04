@@ -476,26 +476,39 @@ class AgentLoop(
     # ── P0-2 D: capability seam builders ────────────────────────
 
     def _build_data_store(self):
-        """Return the default DataStore for this AgentLoop instance.
+        """Return the default DataStore for this AgentLoop instance, or None.
 
-        v0.1 always returns ``get_store("duckdb")`` — the registry's
-        default provider. Tests / callers can override by setting
-        ``self._data_store_override`` before ainvoke runs.
+        Resolution order:
+        1. ``self._data_store_override`` (tests / callers that inject one).
+        2. The L4 injection slot filled by a process entry point via
+           ``register_default_data_store``.
+        3. ``None`` — ``ToolContext.data_store`` is Optional, so tools that
+           need it fail with their own clear message instead of the whole
+           loop refusing to run. A one-time warning makes the gap visible.
+
+        W10-3 (2026-11-04): this used to read the L2 registry directly
+        (``from ...foundation.storage import get_store``), which broke when
+        the registry moved to ``apps.data_store_registry`` during W7 — the
+        import raised ImportError on every tool batch and was logged as
+        "step tool_execution failed" while the loop carried on. Importing L2
+        from here would fix the crash but add an upward dependency the layer
+        gate rejects (L3>L2 went 46 → 47), so the slot lives in L4 and is
+        filled by the entry point.
         """
         override = getattr(self, "_data_store_override", None)
         if override is not None:
             return override
-        # W7 (2026-11-04): the registry lives in ``apps.data_store_registry``,
-        # not ``foundation.storage`` — it moved down to L2 because it adapts
-        # ``apps.db``, and only the ``DataStore`` Protocol stayed in L4. This
-        # lazy import was never updated, so every call raised ImportError and
-        # the tool-execution step logged "step tool_execution failed" while
-        # silently continuing. The layer gate cannot see it (it is inside a
-        # function body) and check_dangling_imports only validated module
-        # existence, not the imported name.
-        from strategy_research.apps.data_store_registry import get_store
+        from strategy_research.foundation.storage import get_default_data_store
 
-        return get_store()
+        store = get_default_data_store()
+        if store is None and not getattr(self, "_warned_no_data_store", False):
+            self._warned_no_data_store = True
+            logger.warning(
+                "no default DataStore registered; ToolContext.data_store will "
+                "be None. Call register_default_data_store(get_store()) in the "
+                "process entry point, or set _data_store_override."
+            )
+        return store
 
     def _build_sandbox(self):
         """Return the default ExecutionSandbox for this AgentLoop instance.

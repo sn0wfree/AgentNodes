@@ -7,6 +7,7 @@ import time.
 
 from .factory import (
     BacktestEngineRegistry,
+    create_engine,
     get_engine,
     register_engine,
 )
@@ -16,6 +17,7 @@ __all__ = [
     "BacktestEngine",
     "BacktestEngineRegistry",
     "Strategy",
+    "create_engine",
     "get_engine",
     "register_engine",
 ]

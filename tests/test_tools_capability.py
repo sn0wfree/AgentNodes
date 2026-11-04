@@ -23,7 +23,12 @@ from strategy_research.kernel.agent.tools_capability import (
     get_data_store,
     get_sandbox,
 )
-from strategy_research.foundation.storage import get_store
+# W7/W10 (2026-11-04): the concrete registry moved to apps — it adapts
+# ``apps.db``, so it lives at L2; only the ``DataStore`` Protocol stayed in
+# L4. Importing ``get_store`` from ``foundation.storage`` has failed since
+# then (it is not re-exported there on purpose: an L4 → L2 re-export would
+# itself be an upward import).
+from strategy_research.apps.data_store_registry import get_store
 from strategy_research.foundation.storage.data_store import DataStore
 
 

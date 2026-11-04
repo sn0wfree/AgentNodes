@@ -12,7 +12,7 @@ across both legacy paths.
 
 from __future__ import annotations
 
-from typing import Optional
+from typing import Any, Optional
 
 from .protocol import BacktestEngine
 
@@ -52,19 +52,40 @@ def get_engine(name: Optional[str] = None) -> BacktestEngine:
       default; matches the production wiring via ``config_runner``).
     - ``name="strategy"`` / ``"callback"`` look up the registry.
     - Unknown names raise ``KeyError`` with the available list.
+
+    Instances are cached per name. For a non-default configuration use
+    :func:`create_engine`, which bypasses the cache.
     """
     if name is None:
         name = "strategy"
     if name in _INSTANCES:
         return _INSTANCES[name]
+    instance = create_engine(name)
+    _INSTANCES[name] = instance
+    return instance
+
+
+def create_engine(name: Optional[str] = None, **init_kwargs: Any) -> BacktestEngine:
+    """Build a fresh provider instance, forwarding ``init_kwargs`` to it.
+
+    ``get_engine()`` is the singleton accessor; this is the factory for
+    callers that need per-run configuration (e.g. ``config_runner``
+    passing ``vol_targeting`` / ``trend_filter`` / ``stop_loss`` /
+    ``risk_free_rate``). Nothing is cached.
+
+    Raises ``KeyError`` for unknown provider names and ``TypeError`` if
+    the provider does not accept the given kwargs — both are loud on
+    purpose: a silently-dropped risk parameter would change backtest
+    results without any test noticing.
+    """
+    if name is None:
+        name = "strategy"
     if name not in _REGISTRY:
         raise KeyError(
             f"unknown BacktestEngine provider {name!r}; "
             f"available: {sorted(_REGISTRY.keys())}"
         )
-    instance = _REGISTRY[name]()
-    _INSTANCES[name] = instance
-    return instance
+    return _REGISTRY[name](**init_kwargs)
 
 
 # ── Default registration at import time ──────────────────────────

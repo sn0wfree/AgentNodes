@@ -14,6 +14,7 @@ import yaml
 
 logger = logging.getLogger(__name__)
 
+from strategy_research.apps.backtest_engine import create_engine as create_backtest_engine
 from strategy_research.apps.db import load_price_data
 from strategy_research.foundation.utils.backtest_config import (
     BacktestConfig,
@@ -22,7 +23,7 @@ from strategy_research.foundation.utils.backtest_config import (
     TrendFilterConfig,
     VolTargetingConfig,
 )
-from strategy_research.foundation.utils.strategy_engine import BacktestResult, StrategyEngine
+from strategy_research.foundation.utils.strategy_engine import BacktestResult
 
 # ============================================================
 # 1. YAML 加载
@@ -53,8 +54,8 @@ def create_cost_config(cfg: dict) -> CostConfig:
     )
 
 
-def create_engine(cfg: dict) -> StrategyEngine:
-    """从 YAML 配置创建 StrategyEngine."""
+def create_engine(cfg: dict):
+    """从 YAML 配置创建回测引擎（``BacktestEngine`` Protocol 实例）."""
     risk_cfg = cfg.get("risk", {})
     vt_cfg = risk_cfg.get("vol_targeting", {})
     tf_cfg = risk_cfg.get("trend_filter", {})
@@ -88,8 +89,17 @@ def create_engine(cfg: dict) -> StrategyEngine:
 
     # backtest.risk_free_rate: 年化无风险利率,进 sharpe/sortino 超额分子
     bt_cfg = cfg.get("backtest", {})
-    return StrategyEngine(
-        vol_targeting=vt, trend_filter=tf, stop_loss=sl,
+    # W10-3 (2026-11-04): build through the P0-3 factory instead of calling
+    # StrategyEngine() directly. The BacktestEngine Protocol shipped but the
+    # production path never adopted it, leaving ``apps/backtest_engine`` an
+    # unreferenced island. ``create_engine`` (not ``get_engine``) is used
+    # because risk config is per-run: the singleton would cache the first
+    # call's parameters and silently apply them to every later backtest.
+    return create_backtest_engine(
+        "strategy",
+        vol_targeting=vt,
+        trend_filter=tf,
+        stop_loss=sl,
         risk_free_rate=float(bt_cfg.get("risk_free_rate", 0.0) or 0.0),
     )
 
@@ -589,6 +599,10 @@ def run_from_yaml(yaml_path: str | Path, workspace_path: Path) -> BacktestResult
     min_history = rebal_cfg.get("min_history", 252)
     cost = create_cost_config(cfg)
 
+    # Keyword form on purpose: the raw ``StrategyEngine.run`` accepts
+    # ``price_panel``/``strategy``/``rebal_freq``/``min_history``/``cost``
+    # by name, and the Protocol adapter normalises the same keywords. Tests
+    # that stub the engine with ``run(**kwargs)`` keep working either way.
     result = engine.run(
         price_panel=data_norm,
         strategy=strategy,

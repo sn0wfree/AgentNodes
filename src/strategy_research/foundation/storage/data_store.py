@@ -252,4 +252,40 @@ class DataStore(Protocol):
         ...
 
 
-__all__ = ["DataStore"]
+# ── Default-store injection slot (W10-3, 2026-11-04) ─────────────────
+#
+# ``AgentLoop._build_data_store`` needs a default ``DataStore``. The
+# concrete registry (``DataStoreRegistry`` / ``get_store``) lives in
+# ``apps.data_store_registry`` because it adapts ``apps.db`` — i.e. it is
+# L2. A kernel module importing it directly is an upward import (L3 → L2),
+# which the layer gate rejects — and did, when this was first written:
+# L3>L2 went 46 → 47.
+#
+# So the dependency is inverted, exactly like the compaction persister:
+# this module owns the *slot*; a process entry point (api app / CLI / TUI)
+# or a test fills it once at startup via ``register_default_data_store``.
+# Kernel code reads it through ``get_default_data_store``.
+#
+# Nothing registers it by default: callers that get ``None`` must use their
+# own override or raise. A silent no-op default would hide a misconfigured
+# deployment, which is the failure mode this slot exists to surface.
+
+_DEFAULT_DATA_STORE: Optional["DataStore"] = None
+
+
+def register_default_data_store(store: Optional["DataStore"]) -> None:
+    """Install the process-wide default ``DataStore`` (``None`` to clear)."""
+    global _DEFAULT_DATA_STORE
+    _DEFAULT_DATA_STORE = store
+
+
+def get_default_data_store() -> Optional["DataStore"]:
+    """Return the registered default store, or ``None`` if unregistered."""
+    return _DEFAULT_DATA_STORE
+
+
+__all__ = [
+    "DataStore",
+    "get_default_data_store",
+    "register_default_data_store",
+]

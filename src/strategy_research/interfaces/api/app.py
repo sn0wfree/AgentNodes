@@ -51,6 +51,14 @@ def create_app(
     from .routers.web_session import persist_message
     register_compaction_persister(persist_message)
 
+    # W10-3 (2026-11-04): fill the L4 DataStore slot. AgentLoop reads the
+    # slot instead of importing apps.data_store_registry (that would be a
+    # L3 → L2 upward import). Money path: without this, ToolContext.data_store
+    # is None and DB-backed tools fail at call time.
+    from strategy_research.apps.data_store_registry import get_store
+    from strategy_research.foundation.storage import register_default_data_store
+    register_default_data_store(get_store())
+
     workspace_path, goal_db_path, hypotheses_path, static_dir, cors_origins = (
         _resolve_app_env(
             workspace_path, goal_db_path, hypotheses_path, static_dir, cors_origins
