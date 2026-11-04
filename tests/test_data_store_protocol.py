@@ -15,12 +15,12 @@ import pytest
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
 
-from strategy_research.foundation.storage import (
+from strategy_research.apps.data_store_registry import (
     DataStoreRegistry,
     get_store,
 )
 from strategy_research.foundation.storage.data_store import DataStore
-from strategy_research.foundation.storage.duckdb_store import DuckDBDataStore
+from strategy_research.apps.duckdb_store import DuckDBDataStore
 
 
 class TestDataStoreProtocol:

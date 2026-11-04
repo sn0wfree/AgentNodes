@@ -121,15 +121,22 @@ SKIP_MODULES = {"strategy_research"}
 # 2026-11-03 W3a 复算：_resolve_targets 修正后（绝对导入不再按 alias 展开
 # 重复计数），实测远低于 2026-11-03 首版基线（那版被 alias 展开虚增）：
 #   L3>L1 2→1 · L3>L2 46→35 · L4>L2 2→0 · L4>L3 4→2
-# 2026-11-04 W6 收官：物理分层完成（core/ 目录删除，55 包全部落位
-# interfaces/apps/kernel/foundation），所有上行违规清零。G2a/G2b
-# 工作项随之关闭——它们描述的跨层绑定已在搬迁中一次性解开。
+# 2026-11-04（W7 交叉验证二修）：graphify 重扫对照发现 _resolve_targets 对
+# level=0 绝对导入也拼 importer 前缀（W3a 引入），**全部绝对形态上行被
+# 漏报**——此前的「全 0」是假象。修复后真实基线 49 条，按其性质如实登记：
+#   L3>L2 = 46：ADR-003 处置保留（kernel 工具/编排绑定研究域能力，lazy
+#     import 为主体；reopen 条件：第三消费者出现）。迁移未加重。
+#   L3>L1 = 2 + L2>L1 = 1：seam 契约登记的降级回调触点（G2a 台账原三件：
+#     event_store→projector、memory_manager→web_session_db、
+#     scheduler→web_session）。迁移前即存在。
+#   L4>L2 = 0：graphify 暴露的 3 条已就地修复（backtest_models×2 同层化、
+#     duckdb_store/registry 适配件搬 apps——适配器依赖被适配者属 L2 语义）。
 BASELINE: dict[str, int] = {
-    "L2>L1": 0,   # W6 后清零
-    "L3>L1": 0,   # W6 后清零
-    "L3>L2": 0,   # W6 后清零（迁移前 46 → 口径修正 35 → 物理分层后 0）
-    "L4>L2": 0,
-    "L4>L3": 0,   # W6 后清零
+    "L2>L1": 1,   # seam 触点：study/scheduler → api.routers.web_session
+    "L3>L1": 2,   # seam 触点：event_store→projector · memory_manager→web_session_db
+    "L3>L2": 46,  # ADR-003 保留（CapabilityRegistry 端口化不做，见 ADR）
+    "L4>L2": 0,   # W7 清零（data store 适配件归位 apps）
+    "L4>L3": 0,
 }
 
 
@@ -153,23 +160,28 @@ def _resolve_targets(node: ast.AST, importer_mod: str, is_pkg: bool) -> list[str
 
     ADR-000（2026-11-03）：物理口径——每条 import **语句**计 1 次。
 
+    2026-11-04（W7 交叉验证修复）：level=0 的绝对导入必须**直接使用
+    node.module**，不得拼接 importer 包前缀——此前版本对绝对导入也执行
+    ``pkg + module`` 拼接，产生 ``foundation.utils.strategy_research.apps.*``
+    这类假路径，被 _layer_of 判为 importer 同层，**漏报全部绝对形态的
+    上行违规**（graphify 重扫对照发现）。相对导入（level>0）才拼 pkg。
+
     对 ``from X import a, b`` 只产出模块 ``X``（一个元素），不做
     ``X.a`` / ``X.b`` 展开：展开会让**绝对导入**被重复计数，而相对导入
-    因为 target 相同被 set 去重只计 1 —— 两种形态计法不一致，会把
-    L3>L2 从 46 虚增到 47（2026-11-03 W3a 发现）。符号级信息由
-    graphify 图负责，本门禁只做层方向判定。
+    因为 target 相同被 set 去重只计 1 —— 两种形态计法不一致。
     """
     if isinstance(node, ast.Import):
         return sorted({a.name for a in node.names})
     if not isinstance(node, ast.ImportFrom):
         return []
+    if node.level == 0:
+        # 绝对导入：模块路径就是 node.module，不做任何拼接。
+        return [node.module] if node.module else []
     base = importer_mod.split(".")
     pkg = base if is_pkg else base[:-1]
     # PEP 328: strip level-1 components (NOT level)
     if node.level > 1:
         pkg = pkg[: len(pkg) - (node.level - 1)]
-    if not node.module and not node.level:
-        return []
     target = ".".join(pkg + ([node.module] if node.module else []))
     # `from . import a, b` (module is None): each name is its own module.
     if not node.module:

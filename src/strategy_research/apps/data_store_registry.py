@@ -13,8 +13,8 @@ from __future__ import annotations
 
 from typing import Optional
 
-from .data_store import DataStore
-from .duckdb_store import DuckDBDataStore
+from strategy_research.foundation.storage.data_store import DataStore
+from strategy_research.apps.duckdb_store import DuckDBDataStore
 
 __all__ = ["DataStoreRegistry", "register_store", "get_store"]
 

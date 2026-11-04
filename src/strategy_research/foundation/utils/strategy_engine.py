@@ -54,7 +54,7 @@ class BaseStrategy:
 # apps/backtest_models.py. Re-export here so legacy imports keep
 # working. The unified dataclass includes ``factor_failures`` (default
 # empty list).
-from strategy_research.apps.backtest_models import BacktestResult
+from strategy_research.foundation.utils.backtest_models import BacktestResult
 
 
 # ============================================================

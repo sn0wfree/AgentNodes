@@ -7,14 +7,14 @@ from unittest.mock import patch
 
 import pandas as pd
 
-from strategy_research.foundation.storage.duckdb_store import DuckDBDataStore
+from strategy_research.apps.duckdb_store import DuckDBDataStore
 
 
 def test_save_factor_data_positional_args(tmp_path: Path) -> None:
     store = DuckDBDataStore()
     values = pd.DataFrame({"A": [1.0]}, index=pd.to_datetime(["2024-01-01"]))
     with patch(
-        "strategy_research.foundation.storage.duckdb_store._db.save_factor_data",
+        "strategy_research.apps.duckdb_store._db.save_factor_data",
         return_value=True,
     ) as mock_save:
         assert store.save_factor_data(
@@ -32,7 +32,7 @@ def test_save_backtest_result_unpacks_dict(tmp_path: Path) -> None:
     store = DuckDBDataStore()
     result = {"calmar": 1.5, "sharpe": 2.0, "status": "ok"}
     with patch(
-        "strategy_research.foundation.storage.duckdb_store._db.save_backtest_result",
+        "strategy_research.apps.duckdb_store._db.save_backtest_result",
         return_value=True,
     ) as mock_save:
         store.save_backtest_result(
@@ -52,7 +52,7 @@ def test_cache_validation_unpacks_metrics(tmp_path: Path) -> None:
     store = DuckDBDataStore()
     metrics = {"ic_mean": 0.05, "ir": 1.2, "is_valid": True}
     with patch(
-        "strategy_research.foundation.storage.duckdb_store._db.cache_validation",
+        "strategy_research.apps.duckdb_store._db.cache_validation",
         return_value=True,
     ) as mock_cache:
         store.cache_validation(
@@ -75,7 +75,7 @@ def test_save_weight_history_dataframe_to_legacy_list(tmp_path: Path) -> None:
         index=pd.to_datetime(["2024-01-01", "2024-01-02"]),
     )
     with patch(
-        "strategy_research.foundation.storage.duckdb_store._db.save_weight_history",
+        "strategy_research.apps.duckdb_store._db.save_weight_history",
         return_value=True,
     ) as mock_save:
         store.save_weight_history(
@@ -92,7 +92,7 @@ def test_save_weight_history_dataframe_to_legacy_list(tmp_path: Path) -> None:
 def test_update_import_meta_loops_codes(tmp_path: Path) -> None:
     store = DuckDBDataStore()
     with patch(
-        "strategy_research.foundation.storage.duckdb_store._db.update_import_meta",
+        "strategy_research.apps.duckdb_store._db.update_import_meta",
         return_value=True,
     ) as mock_up:
         store.update_import_meta(
@@ -111,7 +111,7 @@ def test_update_import_meta_loops_codes(tmp_path: Path) -> None:
 def test_update_data_fingerprint_serializes_dict(tmp_path: Path) -> None:
     store = DuckDBDataStore()
     with patch(
-        "strategy_research.foundation.storage.duckdb_store._db.update_data_fingerprint",
+        "strategy_research.apps.duckdb_store._db.update_data_fingerprint",
         return_value=True,
     ) as mock_fp:
         store.update_data_fingerprint(
