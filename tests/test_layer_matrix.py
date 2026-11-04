@@ -64,7 +64,7 @@ LAYER_MEMBERSHIP: dict[str, str] = {
     "strategy_research.apps.engine": "L2",
     "strategy_research.apps.export": "L2",
     "strategy_research.apps.run_card": "L2",
-    "strategy_research.core.workspace_setup": "L2",
+
     "strategy_research.apps.preflight": "L2",
     "strategy_research.apps.tools": "L2",  # v7.2: 研究数据工具实现（data_clean/transforms），仅被 apps 侧引用
     "strategy_research.templates": "L2",
@@ -87,7 +87,7 @@ LAYER_MEMBERSHIP: dict[str, str] = {
     "strategy_research.kernel.permission": "L3",
     "strategy_research.kernel.memory": "L3",
     "strategy_research.kernel.skills": "L3",
-    "strategy_research.core.seq_generator": "L3",  # 待退役（归 event_log 权威 seq）
+  # 待退役（归 event_log 权威 seq）
     "strategy_research.kernel": "L3",  # 物理层目录（逐模块迁移中）
     "strategy_research.kernel.seq_generator": "L3",
     # L4 foundation
@@ -101,10 +101,19 @@ LAYER_MEMBERSHIP: dict[str, str] = {
     "strategy_research.foundation": "L4",  # W0 试点：层目录 __init__
     "strategy_research.foundation.errors": "L4",
     "strategy_research.foundation.git": "L4",
+    "strategy_research.foundation.utils": "L4",
+    "strategy_research.foundation.registry": "L4",
+    "strategy_research.foundation.web": "L4",
+    "strategy_research.foundation.storage": "L4",
+    "strategy_research.foundation.observability": "L4",
+    "strategy_research.foundation.llm": "L4",
+    "strategy_research.foundation.protocol": "L4",
+    "strategy_research.foundation.compact_config": "L4",
+    "strategy_research.foundation.structured_output": "L4",
 }
 
 # Facade __init__ modules excluded from direction assertions (re-exports only)
-SKIP_MODULES = {"strategy_research", "strategy_research.core"}
+SKIP_MODULES = {"strategy_research"}
 
 # ── ratchet baselines (ADR-000 物理口径 2026-11-03；只降不升) ────────
 
@@ -112,17 +121,15 @@ SKIP_MODULES = {"strategy_research", "strategy_research.core"}
 # 2026-11-03 W3a 复算：_resolve_targets 修正后（绝对导入不再按 alias 展开
 # 重复计数），实测远低于 2026-11-03 首版基线（那版被 alias 展开虚增）：
 #   L3>L1 2→1 · L3>L2 46→35 · L4>L2 2→0 · L4>L3 4→2
-# 按“只降不升”同步下调，避免基线长期虚高掩盖真实回退。
-# G2a pending：event_store→api.projector、memory_manager→api.web_session_db、
-#   study/scheduler→api.routers.web_session、platform_store→orchestration.contracts、
-#   llm/config→agent.compact、llm/parser→agent.structured_output 等
-# G2b pending：L3→L2 = 35 条语句（builtin_tools 为主体 → CapabilityRegistry 端口化）
+# 2026-11-04 W6 收官：物理分层完成（core/ 目录删除，55 包全部落位
+# interfaces/apps/kernel/foundation），所有上行违规清零。G2a/G2b
+# 工作项随之关闭——它们描述的跨层绑定已在搬迁中一次性解开。
 BASELINE: dict[str, int] = {
-    "L2>L1": 1,   # G2a
-    "L3>L1": 1,   # G2a
-    "L3>L2": 35,  # G2b（工具层绑定领域能力）
-    "L4>L2": 0,   # G2a（已清零）
-    "L4>L3": 2,   # G2a
+    "L2>L1": 0,   # W6 后清零
+    "L3>L1": 0,   # W6 后清零
+    "L3>L2": 0,   # W6 后清零（迁移前 46 → 口径修正 35 → 物理分层后 0）
+    "L4>L2": 0,
+    "L4>L3": 0,   # W6 后清零
 }
 
 
