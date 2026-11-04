@@ -58,6 +58,7 @@ class Gateway:
         workspace: str | Path | None = None,
         max_worker_slots: int | None = None,
         ticket_sink: Any | None = None,
+        task_signature: str = "",
     ) -> None:
         self._events: list[tuple[str, dict]] = []
         # 阶段一 §2.8：Worker Slot 管理器——订阅 assignment.report 管理
@@ -115,6 +116,8 @@ class Gateway:
             # 阶段一：Ticket/Assignment 持久化——准入路径追加 upsert，
             # 退出点 settle。None = 不启用（测试/无业务包路径）。
             ticket_sink=self._ticket_sink,
+            # 阶段三：装配期 RSI 入口。空 = 未启用（默认路径零变化）。
+            task_signature=task_signature,
         )
         # 阶段 3b：PlatformStore（事件持久化 + blob + artifact 登记）
         self._store = None

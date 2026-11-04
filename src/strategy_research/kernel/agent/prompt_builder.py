@@ -238,20 +238,37 @@ class StaticFilePromptBuilder:
         # RSI tier-1 覆盖（施工方案 §4.7）：装配期问一次并存下，
         # build 时使用。None = 未启用/无覆盖，行为与改动前一致。
         self._harness_override: dict[str, Any] | None = None
+        # RSI tier-1 skill 块：装配期解析出的方法论正文，追加在 prompt 末尾。
+        # None/空 = 未启用，行为与改动前逐字节一致。
+        self._harness_skill_block: str | None = None
 
     def apply_harness_override(self, override: dict[str, Any] | None) -> None:
         """装入装配期解析出的 prompt 覆盖项（``None``/空 = 不覆盖）。"""
         self._harness_override = dict(override) if override else None
 
+    def apply_skill_block(self, block: str | None) -> None:
+        """装入 skill 方法论块（``None``/空 = 不注入）。
+
+        与 `apply_harness_override` 分开：覆盖是**替换**正文，skill 是
+        **追加**在正文之后。两者的 RSI 语义不同，混在一个方法里会让
+        "只换正文"和"只加方法论"互相干扰。
+        """
+        self._harness_skill_block = block or None
+
     def build_system_prompt(self, role: str, context: dict[str, Any]) -> str:
-        if not self._path.exists():
+        if not self._path.exists() and not self._harness_skill_block:
             return ""
-        text = self._path.read_text(encoding="utf-8")
+        text = self._path.read_text(encoding="utf-8") if self._path.exists() else ""
         # tier-1 覆盖：仅替换 role prompt 正文，common 层（principles）不动——
         # 那是 Tier 0 方法论，H3 禁止 RSI 触碰。
         override = self._harness_override or {}
         if isinstance(override.get("text"), str):
             text = override["text"]
+        # tier-1 skill：追加在正文之后（排在 common 层之前，这样
+        # 通用原则仍是最外层、最稳的约束）。
+        block = self._harness_skill_block
+        if block:
+            text = f"{text}\n\n{block}" if text else block
         top, middle, future = _load_common(role)
         return _compose(top, middle, text, future)
 
@@ -375,7 +392,15 @@ class PromptBuilderFactory:
             # 改动前逐字节一致（builder 是进程级缓存实例，会跨调用复用）。
             if isinstance(builder, StaticFilePromptBuilder):
                 builder.apply_harness_override(None)
+                builder.apply_skill_block(None)
             return builder
+
+        # skill 块与 prompt 覆盖**独立**：前者是追加方法论，后者是替换正文。
+        # 任一为空都要清掉残留（同一 builder 实例跨调用复用）。
+        if isinstance(builder, StaticFilePromptBuilder):
+            builder.apply_skill_block(
+                cls._resolve_skill_block(task_signature)
+            )
 
         override = cls.resolve_harness_for(role, task_signature)
         if not override:
@@ -411,6 +436,34 @@ class PromptBuilderFactory:
             return dict(getattr(cfg, "prompt_version", {}) or {}).get(role, {}) or {}
         except Exception:  # noqa: BLE001 —— 装配期不得因 RSI 崩溃
             return {}
+
+    @classmethod
+    def _resolve_skill_block(cls, task_signature: str) -> str | None:
+        """装配期问一次：该 task_signature 下的 skill 方法论块。
+
+        返回 ``None`` = 不注入（未启用 RSI、skill_set 为 None、或全部
+        技能名都失效）。技能正文由 ``harness_resolver.apply_skill_set``
+        从 kernel 的 SkillRegistry 读取——不在 prompt_builder 里直接读
+        文件，避免两处各自实现一套查找逻辑。
+        """
+        try:
+            from strategy_research.kernel.agent.harness_resolver import (
+                _load_skills,
+                resolve_harness,
+            )
+
+            cfg = resolve_harness(task_signature)
+            names = getattr(cfg, "skill_set", None)
+            if not names:
+                return None
+            contents = _load_skills(sorted(names))
+            if not contents:
+                return None
+            return "\n\n".join(
+                f"## 方法论：{n}\n\n{body}" for n, body in contents
+            )
+        except Exception:  # noqa: BLE001 —— 装配期不得因 skill 崩溃
+            return None
 
     @classmethod
     def list_roles(cls) -> list[str]:

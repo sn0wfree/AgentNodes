@@ -56,6 +56,9 @@ class ReactConfig:
     # 每次迭代前执行（与 AgentLoop 的 strategy/steps/compaction.py 同位置）。
     # 同样注入而非 import：压缩实现在 core/agent（域），节点在平台层。
     compactor: Callable[[list], tuple] | None = None
+    # 施工方案 §4.7：装配期 RSI 入口。非空时工具定义按 tier-1 tool_set
+    # 裁剪（``registry.get_definitions_for``）。空 = 全量（默认，零变化）。
+    task_signature: str = ""
 
 
 def make_react_node(
@@ -197,6 +200,21 @@ class _ToolCallStub:
     arguments: dict
 
 
+def _tool_definitions(registry: Any, cfg: "ReactConfig") -> Any:
+    """取工具定义，按装配期 tool_set 裁剪（施工方案 §4.7 的真实消费点）。
+
+    ``task_signature`` 为空时与 ``registry.get_definitions()`` 逐字节一致
+    （``get_definitions_for("")`` 内部直接委托）。registry 若是鸭子类型
+    替身（测试常见）没有 ``get_definitions_for``，退化为原方法。
+    """
+    sig = getattr(cfg, "task_signature", "") or ""
+    if sig:
+        for_method = getattr(registry, "get_definitions_for", None)
+        if callable(for_method):
+            return for_method(sig)
+    return registry.get_definitions()
+
+
 def _call_llm(
     client: Any,
     messages: list[dict],
@@ -212,14 +230,14 @@ def _call_llm(
     静默截断参数（P5-1b 设计 §3.2.1，已用真实 OpenAI 分片验证）。
     """
     if not (cfg.stream and hasattr(client, "stream")):
-        return client.chat(messages, tools=registry.get_definitions())
+        return client.chat(messages, tools=_tool_definitions(registry, cfg))
 
     parts: list[str] = []
     thinking_chars = 0
     usage: dict = {}
     acc: dict[int, dict] = {}
     try:
-        for chunk in client.stream(messages, tools=registry.get_definitions()):
+        for chunk in client.stream(messages, tools=_tool_definitions(registry, cfg)):
             delta = getattr(chunk, "delta_content", "") or ""
             if delta:
                 parts.append(delta)

@@ -67,6 +67,7 @@ class SessionController:
         cancel_registry: Any | None = None,
         ticket_sink: Any | None = None,
         capacity: Any | None = None,
+        task_signature: str = "",
     ) -> None:
         self._ep = entry_point
         self._client = client
@@ -107,6 +108,10 @@ class SessionController:
         # 与 fence / permission_gateway 同型先例）。**注入而非 import**：
         # kernel 不得 import apps；装配根（L1）解析后注入同一个实例。
         self._capacity = capacity
+        # 阶段三：装配期 RSI 解析用的任务签名。空 = 未启用（默认路径，
+        # 所有 harness 解析点零行为变化）。生产由装配根按 role/toolset
+        # 计算后注入；测试路径留空。
+        self._task_signature = task_signature
         self._current_session_id: str = ""  # per-turn, set by _execute
         self._turn_counters: dict[str, int] = {}  # session_id -> 已发 turn 数
 
@@ -426,6 +431,8 @@ class SessionController:
                         max_iterations=self._max_iterations,
                         ctx_factory=ctx_factory,
                         compactor=self._build_compactor(),
+                        # 阶段三：非空时工具定义按 tier-1 tool_set 裁剪。
+                        task_signature=getattr(self, "_task_signature", "") or "",
                     ),
                 ),
             )
@@ -459,9 +466,14 @@ class SessionController:
     def _build_compactor(self):
         """B1-c: mid-loop compactor, or None when compaction is disabled.
 
-        Reuses ``core/agent/compaction_runtime.make_compactor`` — the same
+        Reuses ``kernel/agent/compaction_runtime.make_compactor`` — the same
         implementation the AgentLoop mixin uses, so compression semantics
         cannot drift between the two executors.
+
+        **阶段三 compaction 覆盖的真实消费点**：装配期按 task_signature
+        解析 Tier 1 覆盖并 ``replace`` 到配置上。此前
+        ``CompactConfig.harness_task_signature`` 字段只定义、零写入，
+        compaction 这一路 RSI 提案改了也不生效。
         """
         if self._compact_config is None:
             return None
@@ -469,10 +481,19 @@ class SessionController:
             from strategy_research.kernel.agent.compaction_runtime import (
                 make_compactor,
             )
+            from strategy_research.kernel.agent.harness_resolver import (
+                apply_compaction_overrides,
+            )
+
+            # 装配期问一次（施工方案 §4.7）：有覆盖就换配置，没有就原样。
+            # ``_task_signature`` 为空时 apply_ 直接返回原对象（零开销）。
+            compact_config = apply_compaction_overrides(
+                self._compact_config, getattr(self, "_task_signature", "") or "",
+            )
 
             ctx_tokens, max_out = self._model_limits()
             return make_compactor(
-                compact_config=self._compact_config,
+                compact_config=compact_config,
                 model_context_tokens=ctx_tokens,
                 model_max_output_tokens=max_out,
                 llm_client=self._client,
@@ -504,11 +525,16 @@ class SessionController:
                 assemble_loop_parts,
             )
 
+            # 阶段三：把 task_signature 传下去，装配核才能：
+            # - 用 ``get_for_signature`` 拿到 tier-1 prompt 覆盖 + skill 块
+            # - 用 ``get_definitions_for`` 裁剪 tool_set
+            # 空 signature 时两者都与改动前逐字节一致。
             assembly = assemble_loop_parts(
                 role=self._role,
                 registry=self._registry,
                 extra_context=self._extra_context,
                 workspace=self._workspace,
+                task_signature=getattr(self, "_task_signature", "") or "",
             )
             return assembly.system_prompt
         except Exception as exc:  # noqa: BLE001 — 渲染失败不阻断 chat

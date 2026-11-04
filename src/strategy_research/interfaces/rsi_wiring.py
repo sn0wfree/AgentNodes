@@ -183,9 +183,7 @@ def build_rsi_loop(gw: Any, *, seed: int = 0) -> Any | None:
         from strategy_research.apps.evolution.evolution_agent import EvolutionAgent
         from strategy_research.apps.evolution.holdout import (
             EventStoreReportSource,
-            StaticGenomeVersion,
         )
-        from strategy_research.apps.evolution.holdout_replay import make_replay
         from strategy_research.apps.evolution.isolated_replay import (
             IsolatedSlotReplay,
         )
@@ -198,8 +196,17 @@ def build_rsi_loop(gw: Any, *, seed: int = 0) -> Any | None:
             return None
         source = EventStoreReportSource(store)
 
-        # 回放：真实实现 + 隔离 slot（教学用 replay_fn，§4.5）。
-        replay = IsolatedSlotReplay(gate=capacity, replay_fn=make_replay())
+        # ── 真实验证信号（用户裁决：固定抽样 10 条 golden eval） ──
+        #
+        # 早先实现用 ``holdout_replay`` 的确定性代理分（状态权重 + 提案
+        # 哈希偏移）——那个偏移让"好坏"取决于哈希值而非实际效果，能测
+        # 链路但**不能证明提案真的更好**。换成真实 golden eval：
+        #
+        #   用当前基因组装配 agent → 跑 10 条 golden task → scorecard 打分
+        #
+        # 每轮约 10 次 LLM 调用。抽到的 10 条由 seed 固定 → 两次验证可比。
+        replay_fn, golden_tasks = _build_replay(gw, seed=seed, emit=emit)
+        replay = IsolatedSlotReplay(gate=capacity, replay_fn=replay_fn)
 
         agent = EvolutionAgent.with_capabilities(
             journal=source, scoreboard=source, validation=source, holdout=source,
@@ -209,7 +216,7 @@ def build_rsi_loop(gw: Any, *, seed: int = 0) -> Any | None:
             genome=genome,
             emit=emit,
             replay=replay,
-            baseline_metric=_baseline_from_source(source, genome),
+            baseline_metric=_baseline_metric(gw, golden_tasks, seed),
         )
         return RsiLoop(
             agent=agent,
@@ -224,6 +231,138 @@ def build_rsi_loop(gw: Any, *, seed: int = 0) -> Any | None:
         logger.warning("rsi loop assembly failed: %s", exc)
         emit("rsi.wiring_skipped", {"error": str(exc)})
         return None
+
+
+def _build_replay(
+    gw: Any, *, seed: int, emit: Callable[[str, dict], None]
+) -> tuple[Any, list[Any]]:
+    """构造 replay 与它用的 golden task 集。
+
+    优先真实 golden eval；``evals`` 不可用或 golden 文件缺失时退回代理分
+    并 emit ``rsi.replay_degraded``——**静默退回不可接受**：那会让"验证
+    无效"看起来像"验证通过"。
+    """
+    try:
+        import sys
+        from pathlib import Path
+
+        from evals.scorecard import load_golden_tasks
+
+        from strategy_research.apps.evolution.golden_eval import (
+            DEFAULT_SAMPLE_SIZE,
+            make_golden_replay,
+        )
+
+        # evals 是仓库根下的独立包；从 gateway 的 workspace 找不到它时，
+        # 按本文件位置回溯两级（interfaces → strategy_research → src → 根）。
+        golden_path = Path(__file__).resolve().parents[4] / "evals" / "golden_tasks.jsonl"
+        if not golden_path.exists():
+            golden_path = Path.cwd() / "evals" / "golden_tasks.jsonl"
+        root = str(golden_path.parent.parent)
+        if root not in sys.path:
+            sys.path.insert(0, root)
+
+        tasks = load_golden_tasks(golden_path)
+        if not tasks:
+            raise RuntimeError(f"no golden tasks at {golden_path}")
+
+        emit("rsi.replay_selected", {
+            "kind": "golden_eval",
+            "tasks_available": len(tasks),
+            "sample_size": DEFAULT_SAMPLE_SIZE,
+            "seed": seed,
+        })
+        return (
+            make_golden_replay(
+                tasks, seed=seed, size=DEFAULT_SAMPLE_SIZE,
+                apply_proposal=_make_applier(gw),
+            ),
+            tasks,
+        )
+    except Exception as exc:  # noqa: BLE001 —— 降级但必须可见
+        logger.warning("golden eval unavailable, falling back to proxy: %s", exc)
+        emit("rsi.replay_degraded", {
+            "reason": str(exc),
+            "fallback": "holdout_proxy",
+            "note": "代理分不能证明提案更好，只用于保持链路可跑",
+        })
+        from strategy_research.apps.evolution.holdout_replay import make_replay
+
+        return make_replay(), []
+
+
+def _make_applier(gw: Any) -> Callable[[Any], Any]:
+    """把提案临时应用到基因组，返回复原函数。
+
+    **这是"验证"与"自证"的分界线**：不应用提案，候选评测跑的是当前配置，
+    分数必然与基线相同，验证闸会算出 0% 退化并判为通过——激活一个从未
+    被真正验证过的提案。
+
+    实现：``genome.activate(proposal_id, {component: change})`` 临时升版
+    （这会持久化，但紧接着的 undo 会回滚到原版本），评测结束后
+    ``rollback_to(原版本)`` 精确复原。若验证通过，``ValidationGate`` 自己
+    会再调一次 ``activate``——那时才是真正的生效。
+    """
+    genome = getattr(gw, "genome", None)
+
+    def _apply(proposal: Any) -> Any:
+        if genome is None:
+            return None
+        try:
+            before = genome.current_version_id()
+            genome.activate(
+                f"replay:{getattr(proposal, 'proposal_id', '')}",
+                {getattr(proposal, "target_component", ""): getattr(proposal, "change", {})},
+            )
+
+            def _undo() -> None:
+                try:
+                    genome.rollback_to(before)
+                except Exception:  # noqa: BLE001
+                    logger.warning("replay undo failed", exc_info=True)
+
+            return _undo
+        except Exception as exc:  # noqa: BLE001 —— 应用失败按"无法验证"处理
+            logger.warning("proposal apply failed: %s", exc)
+            return None
+
+    return _apply
+
+
+def _baseline_metric(
+    gw: Any, tasks: list[Any], seed: int
+) -> Callable[[], float | None]:
+    """基线：当前（未应用提案的）配置在 golden 抽样上的均分。
+
+    **必须与候选用同一批任务**（同 seed、同 size），否则基线分与候选分
+    不可比——那是"拿苹果比橘子"，退化阈值会算出无意义的百分比。
+
+    无 golden task（降级路径）时返回 None，``ValidationGate`` 对 None 的
+    处理是 escalate（"无法判断"），不是静默放行。
+    """
+    cached: dict[str, float] = {}
+
+    def _baseline() -> float | None:
+        if not tasks:
+            return None
+        if "value" in cached:
+            return cached["value"]
+        try:
+            from strategy_research.apps.evolution.golden_eval import (
+                DEFAULT_SAMPLE_SIZE,
+                run_golden_eval,
+            )
+
+            result = run_golden_eval(tasks, seed=seed, size=DEFAULT_SAMPLE_SIZE)
+            if result.skipped:
+                return None
+            cached["value"] = result.metric
+            return result.metric
+        except Exception as exc:  # noqa: BLE001
+            logger.warning("baseline golden eval failed: %s", exc)
+            return None
+
+    return _baseline
 
 
 def _baseline_from_source(source: Any, genome: Any) -> Callable[[], float | None]:

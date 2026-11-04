@@ -31,6 +31,7 @@ def assemble_loop_parts(
     system_prompt_override: str | None = None,
     workspace: Path | None = None,
     loop_strategy: Any | None = None,
+    task_signature: str = "",
 ) -> LoopAssembly:
     """Single source for registry defaulting + prompt rendering + strategy resolve.
 
@@ -38,11 +39,14 @@ def assemble_loop_parts(
       (safe to None if that import fails — chat callers pass explicit
       registries for the DAG-orchestrator mode).
     - ``system_prompt``: ``system_prompt_override`` wins; otherwise
-      ``PromptBuilderFactory.get(role)`` renders with the merged context
-      (``workspace``/``tool_list`` placeholders are filled when the
-      caller passes them via ``extra_context`` or a live registry).
+      ``PromptBuilderFactory.get_for_signature(role, task_signature)``
+      renders with the merged context (``workspace``/``tool_list``
+      placeholders are filled when the caller passes them via
+      ``extra_context`` or a live registry).
     - ``loop_strategy``: ``resolve_loop_strategy`` turns a spec
       (str / dict / LoopStrategy / None) into a resolved strategy.
+    - ``task_signature``: 施工方案 §4.7 的装配期 RSI 入口。为空时与改动前
+      逐字节一致（``get_for_signature(role, "")`` 等价于 ``get(role)``）。
     """
     from strategy_research.kernel.agent.builtin_tools import build_default_registry
     from .prompt_builder import PromptBuilderFactory
@@ -67,7 +71,10 @@ def assemble_loop_parts(
                 ctx["tool_list"] = "\n".join(f"- {n}" for n in tool_names)
             except Exception:  # noqa: BLE001
                 ctx["tool_list"] = ""
-        system_prompt = PromptBuilderFactory.get(role).build_system_prompt(role, ctx)
+        # 空 signature 时 get_for_signature 与 get 完全等价（见其文档）。
+        system_prompt = PromptBuilderFactory.get_for_signature(
+            role, task_signature or ""
+        ).build_system_prompt(role, ctx)
 
     resolved_strategy: Any = None
     if loop_strategy is not None:

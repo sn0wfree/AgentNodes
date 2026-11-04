@@ -78,13 +78,17 @@ def default_policy(ctx: Any) -> GenomeProposal | None:
         )
 
     # ③ 有回滚历史 → 缩小压缩窗口（减少上下文干扰）
+    #
+    # 字段名必须是 CompactConfig 的真实字段（``collapse_keep_recent``）——
+    # ``apply_compaction_overrides`` 只应用 ``__dataclass_fields__`` 里存在的
+    # 键，写错的键会被静默丢弃，提案看似通过、实际零效果。
     rollbacks = sum(
         1 for v in ctx.validation if str(v.get("reason") or "").startswith("genome.rollback")
     )
     if rollbacks:
         return GenomeProposal.new(
             "compaction",
-            {"keep_recent": max(4, 20 - 4 * rollbacks)},
+            {"collapse_keep_recent": max(4, 20 - 4 * rollbacks)},
             evidence_refs=evidence + [f"rollbacks:{rollbacks}"],
         )
 

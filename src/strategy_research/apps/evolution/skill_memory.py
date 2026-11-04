@@ -33,10 +33,16 @@ class EffectiveHarnessConfig:
     prompt_version: dict[str, Any] = field(default_factory=dict)
     tool_set: frozenset[str] | None = None
     compaction_config: dict[str, Any] = field(default_factory=dict)
+    skill_set: frozenset[str] | None = None
     task_signature: str = ""
 
     def is_empty(self) -> bool:
-        return not (self.prompt_version or self.tool_set or self.compaction_config)
+        return not (
+            self.prompt_version
+            or self.tool_set
+            or self.compaction_config
+            or self.skill_set
+        )
 
 
 class Tier1Source(Protocol):
@@ -101,10 +107,16 @@ def resolve(
     raw_tools = tier1.get("tool_set")
     tool_set = frozenset(raw_tools) if raw_tools is not None else None
 
+    # skill 组件：Tier 1 提案可以指定一组方法论技能包（.skills/*.md 的名字）。
+    # 与 tool_set 同构——None = 不限制，列表 = 只注入这几个。
+    raw_skills = tier1.get("skill")
+    skill_set = frozenset(raw_skills) if raw_skills is not None else None
+
     return EffectiveHarnessConfig(
         prompt_version=dict(tier1.get("prompt") or {}),
         tool_set=tool_set,
         compaction_config=dict(tier1.get("compaction") or {}),
+        skill_set=skill_set,
         task_signature=task_signature,
     )
 
