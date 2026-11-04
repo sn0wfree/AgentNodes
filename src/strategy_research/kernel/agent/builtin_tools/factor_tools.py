@@ -130,7 +130,8 @@ def _load_ohlcv(ctx: ToolContext, tool: str, start_date: str | None = None, end_
             "missing workspace context", fix="AgentLoop 注入 workspace; 直接调用时传 ctx", tool=tool
         )
     try:
-        from strategy_research.apps.db import get_connection
+        from strategy_research.kernel.agent.capability import resolve
+        get_connection = resolve("db.get_connection")
 
         conn = get_connection(ctx.workspace)
     except Exception as exc:
@@ -266,7 +267,8 @@ class ComputeFactorTool(BaseTool):
 
         # Load price data from workspace DuckDB
         try:
-            from strategy_research.apps.db import get_connection
+            from strategy_research.kernel.agent.capability import resolve
+            get_connection = resolve("db.get_connection")
             conn = get_connection(workspace)
         except Exception as exc:                    # noqa: BLE001
             return err_actionable(
@@ -431,7 +433,8 @@ class FactorAnalysisTool(BaseTool):
         forward_days = int(forward_days)
 
         try:
-            from strategy_research.apps.db import get_connection
+            from strategy_research.kernel.agent.capability import resolve
+            get_connection = resolve("db.get_connection")
             conn = get_connection(workspace)
         except Exception as exc:  # noqa: BLE001
             return err_actionable(f"db open failed: {exc}", tool="factor_analysis")
@@ -546,7 +549,8 @@ class PatternRecognitionTool(BaseTool):
         lookback = int(lookback)
 
         try:
-            from strategy_research.apps.db import get_connection
+            from strategy_research.kernel.agent.capability import resolve
+            get_connection = resolve("db.get_connection")
             conn = get_connection(workspace)
         except Exception as exc:  # noqa: BLE001
             return err_actionable(f"db open failed: {exc}", tool="pattern_recognition")
@@ -681,7 +685,8 @@ class FactorCrossSectionalAnalysis(BaseTool):
         forward_days = int(forward_days)
 
         try:
-            from strategy_research.apps.db import get_connection
+            from strategy_research.kernel.agent.capability import resolve
+            get_connection = resolve("db.get_connection")
             conn = get_connection(workspace)
         except Exception as exc:
             return err_actionable(f"db open failed: {exc}", tool="factor_cross_sectional_analysis")
@@ -832,7 +837,8 @@ class FactorQuintileReturns(BaseTool):
         holding_period = int(holding_period)
 
         try:
-            from strategy_research.apps.db import get_connection
+            from strategy_research.kernel.agent.capability import resolve
+            get_connection = resolve("db.get_connection")
             conn = get_connection(workspace)
         except Exception as exc:
             return err_actionable(f"db open failed: {exc}", tool="factor_quintile_returns")
@@ -977,7 +983,8 @@ class FactorICDecay(BaseTool):
         horizons_list = [int(h.strip()) for h in horizons_str.split(",")]
 
         try:
-            from strategy_research.apps.db import get_connection
+            from strategy_research.kernel.agent.capability import resolve
+            get_connection = resolve("db.get_connection")
             conn = get_connection(workspace)
         except Exception as exc:
             return err_actionable(f"db open failed: {exc}", tool="factor_ic_decay")
