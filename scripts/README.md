@@ -35,6 +35,26 @@ python -m graphify extract . --code-only --no-cluster --out tmp/graphify2   # �
 python scripts/arch/graph_layer_audit.py tmp/graphify2/graphify-out/graph.json
 ```
 
+### ⚠ 工具选型规则：graphify 与门禁不可互换
+
+2026-11-04 结构评审（docs/structure-review-graphify-20261104.md §0）实测：
+
+| 度量 | 模块顶层 import | 函数体内 import | 结论 |
+|---|---:|---:|---|
+| graphify AST 抽取 | 1,166 / 1,171 = **99.6%** | 627 / 865 = **72.5%** | 对 lazy 有 ~27% 系统性盲区 |
+| `test_layer_matrix` 门禁 | 全量（AST + PEP 328 解析） | 全量 | 语句级权威口径 |
+
+**规则：**
+1. **上行违规 / 循环依赖的判据只认 `test_layer_matrix`**，不用 graphify 计数替代基线。
+2. graphify 的正确用途：**拓扑、热点（god nodes）、扇入扇出、体量统计**。
+3. 两者只能比**方向与簇分布**，绝不比绝对值。曾出现"门禁 46 vs graphify 46"的
+   **数值巧合**——逐条集合比对后交集仅 37/46 = 80.4%，graphify 漏了 9 条
+   lazy import 上行（如 `apps/study/scheduler.py:779`，是门禁 L2→L1=1 的唯一来源）。
+4. 判环必须**分两张图**：仅 eager（顶层 import，环 = 真 ImportError 风险）
+   vs 含 lazy（环 = 概念耦合）。包级 SCC 会把 `from pkg import Name`（穿透 `__init__`）
+   与 `import pkg.sub`（直达）混同，**必然产生假环**——实测 14 包巨环在 10 种导入顺序下
+   全部可导入。真判据是模块级 eager SCC：当前 4 个，全部在单包内，跨包 = 0。
+
 ## migration/ — 包搬迁工具
 
 下次「core/ → 层目录」级别的搬迁直接复用。每步迁移协议

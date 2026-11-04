@@ -49,6 +49,33 @@ interfaces / apps / kernel / foundation**（物理目录不动——`core/study`
 | **L3** | kernel 平台机制（三子带 · v7.2） | 业务无关的编排与防护 | **控制面**（②Gateway 对应 · ~4.1k）：`gateway` `orchestration` `events` `session` `scheduled_research` ｜ **执行面**（③对应 · ~6.0k）：`runtimes`(GraphEngine) `workflow`(编译器) `swarm`(编译器) ｜ **能力面**（AgentLoop 域 · ~24.6k，agent 22k 独大）：`agent` `context` `hooks` `permission` `memory` `skills` `seq_generator`(待退役) |
 | **L4** | foundation 基础设施 | 零业务知识的机制件 | `core/llm` `storage` `observability` `utils` `web`(搜索机制) **`registry`**(通用注册基类 · v7.2 归位) `config_loader` `errors` `git` |
 
+### 2.0 L1 判据修正（2026-11-04 · 结构评审 W9）
+
+**L1 的判据不是「目录在 `interfaces/` 下」，而是「无状态 · 无编排 · 只做协议转换」。**
+
+物理迁移把 `api/` `cli/` `mcp/` 整体搬进 `interfaces/`，但搬迁只解决位置，不解决归属。
+graphify 复扫（docs/structure-review-graphify-20261104.md §3.1）实测 `interfaces/api/session/`
+**5,924 行（= interfaces 的 20.1%）**，其依赖画像是 `kernel` 15 处 · `foundation` 10 处 ·
+`apps` 4 处，且 `projector.py` 与 `web_session_db.py` 各被 `kernel/` 反向引用一次
+（`event_store.py:610`、`memory_manager.py:160`），构成模块级 eager 环 SCC[3]。
+
+按新判据复核：
+
+| `interfaces/api/` 子目录 | 行数 | 判据 | 归属 |
+|---|---:|---|---|
+| `routers/` | 7,509 | 无状态，只做协议转换 | ✅ **L1** |
+| `session/`（`service.py` 1,450 · `projection_*` 1,351 · `web_session_db` 706 …） | **5,924** | 持 DB 连接 · 维护投影 · 起后台任务 = **含状态与编排** | ⚠ **L3 候选**（待办） |
+| `schemas/` `middleware/` `dependencies/` `auth_tokens/` | 1,016 | 无状态 | ✅ L1 |
+| `app` `user_db` `container` | 820 | `user_db` 持状态 | ⚠ 待裁 |
+
+另有 35 处 `routers/ ↔ session/` 双向互引（session→routers 6 · routers→session 29），
+其中 `session/service.py` 取的是 `routers/chat.py::_build_llm_config`、
+`routers/web_session.py::_get_db` 等**私有** helper——L1 内部靠私有函数缠绕，
+是 SCC[3] 的直接成因。
+
+> **结论**：`api/session/` 下沉到 `kernel/session/`（现有 4 文件 / 407 行的正确位置），
+> 只留 `routers/` 在 L1。这是一次**边界重划**，不是搬家，需单独立项。
+
 ### 2.1 Gateway 组件归类（2026-11-03 用户要求 · 逐一裁定）
 
 控制面 = **kernel 为主 + 一个 apps 寄宿件**。归层依据是「知道什么」：知道 run/session/协议 = kernel；
