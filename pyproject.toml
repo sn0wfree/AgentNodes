@@ -117,10 +117,10 @@ ignore = ["E501", "E741", "E402"]
 max-complexity = 15
 
 [tool.ruff.lint.per-file-ignores]
-"src/strategy_research/core/alpha_zoo/**" = ["F401"]
-"src/strategy_research/core/data_source/**" = ["F401"]
+"src/strategy_research/apps/alpha_zoo/**" = ["F401"]
+"src/strategy_research/apps/data_source/**" = ["F401"]
 # Archived study code kept for reference only — never fix its lint.
-"src/strategy_research/core/study/_archived/**" = ["C901", "F401", "E9"]
+"src/strategy_research/apps/study/_archived/**" = ["C901", "F401", "E9"]
 # One-shot history migration script (zero external references) — not
 # worth decomposing (docs/p2-c901-final-design.md §1).
 "src/strategy_research/scripts/migrate_study_history.py" = ["C901"]

@@ -8,9 +8,9 @@ omit =
     # 交互式向导（需要真人输入，单元测试价值低）
     */cli/onboard.py
     # 外部数据源加载器（网络协议客户端，用集成测试而非单元测试验证）
-    */core/data_source/akshare_loader.py
-    */core/data_source/ifind_loader.py
-    */core/data_source/tushare_loader.py
+    */apps/data_source/akshare_loader.py
+    */apps/data_source/ifind_loader.py
+    */apps/data_source/tushare_loader.py
 
 [report]
 # 不追求 100%：防御性 except 与类型检查分支无法有意义地覆盖
@@ -27,7 +27,8 @@ exclude_lines =
 
 # 分档说明：全库口径含归档与外部集成，不作为门槛。
 # 门槛由 scripts/cov_gate.py 按四档分别断言（见 docs/coverage-90-plan-20261030.md）：
-#   A 平台内核 / B 研究域 / C 能力层 / H 研究工具核心（core 下未被前三档认领的剩余）
+#   A 平台内核（kernel 机制 + foundation 基础）/ B 研究域（apps 三主包）/
+#   C 能力层（kernel 能力面）/ H 兜底（其余全部，含 interfaces）
 show_missing = True
 skip_covered = False
 precision = 1

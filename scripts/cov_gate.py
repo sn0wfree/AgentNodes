@@ -4,14 +4,11 @@
 与外部数据加载器，一刀切要么永远达不到，要么逼着给死代码写测试。
 本脚本按四档分别断言，口径见 docs/coverage-90-plan-20261030.md。
 
-四档：A 平台内核 / B 研究域 / C 能力层 / H 研究工具核心（core 剩余兜底）。
-
-H 档的定位（2026-11-02 复核）：它兜住 core/ 下**未被 A/B/C 认领的一切**，
-实测 98 个文件 / 8,538 条语句，除顶层单文件外还含 engine/、utils/、
-permission/、skills/、mcp/、tools/、hooks/、web/、scheduled_research/、
-strategy_acceptance/ 等完整子包。曾评估「把子包按架构归位到 A/B/C」，
-结果是 A 91.8 / B 89.7 / C 89.8 / H 81.2——红从一档变三档，只是把
-问题挪位置，故维持现状并如实命名。
+四档：A 平台内核 / B 研究域 / C 能力层 / H 兜底。
+2026-11-04 物理分层完成后路径改为层目录（W7-2）：
+A=kernel 机制 + foundation 基础设施；B=apps 研究域三主包；
+C=kernel 能力面四包；H=其余一切（apps 研究工具 + kernel 其余 +
+foundation 其余 + interfaces），聚合时只消费窄档未认领的行。
 
 用法：
     pytest tests -q --cov=strategy_research --cov-report=term > cov.log 2>&1
@@ -29,23 +26,20 @@ import sys
 # 档位定义：(名称, 路径前缀元组)
 BANDS: dict[str, tuple[str, ...]] = {
     "A 平台内核": (
-        "core/gateway/", "core/orchestration/", "core/runtimes/",
-        "core/context/", "core/llm/", "core/storage/", "core/observability/",
+        "kernel/gateway/", "kernel/orchestration/", "kernel/runtimes/",
+        "kernel/context/", "foundation/llm/", "foundation/storage/",
+        "foundation/observability/",
     ),
-    "B 研究域": ("core/study/", "core/goal/", "core/hypothesis"),
+    "B 研究域": ("apps/study/", "apps/goal/", "apps/hypothesis"),
     "C 能力层": (
-        "core/agent/", "core/memory/", "core/swarm/", "core/workflow/",
+        "kernel/agent/", "kernel/memory/", "kernel/swarm/", "kernel/workflow/",
     ),
-    # H：core/ 下**未被 A/B/C 认领的全部剩余**——不只是顶层单文件。
-    # 2026-11-01 复核发现 3,966 行研究工具（db / backtest / compute_factor /
-    # factor_validate / data_readiness / data_import / config_runner）落在
-    # 分档缝隙里只 66%，而 db.py 有 18 处生产调用；因此新增本档兜底。
-    # 2026-11-02 复核更正：本档实际覆盖 98 个文件 / 8,544 行，除顶层单文件
-    # 外还包含 engine/、utils/、permission/、skills/、mcp/、tools/、hooks/、
-    # web/、scheduled_research/、strategy_acceptance/ 等**完整子包**——名字
-    # 叫「剩余」比叫「顶层单文件」诚实。前缀 "core/" 会命中所有子包，故
-    # 本档在聚合时只消费「已被前面档位认领」之外的行（见 aggregate 逻辑）。
-    "H 研究工具核心（core 剩余）": ("core/",),
+    # H：未被 A/B/C 认领的全部剩余——apps 研究工具（db/backtest/compute_factor/
+    # factor_validate/data_*/config_runner/engine）、kernel 其余（session/
+    # scheduled_research/events/permission/skills/hooks）、foundation 其余
+    # （utils/web/errors/git/…）、interfaces。前缀 "" 匹配一切，
+    # 本档在聚合时只消费「已被窄档认领」之外的行（见 aggregate 逻辑）。
+    "H 兜底（其余全部）": ("",),
 }
 
 # 永不进入分母的目录（与 .coveragerc 的 omit 对齐）
@@ -54,8 +48,8 @@ EXCLUDED = ("/_archived/",)
 # 数据加载 / 回测引擎：外部数据源与重型数值计算，投产比低，
 # 显式排除在门禁外（不假装它们被覆盖）。
 EXTERNAL_HEAVY = (
-    "core/data_source/", "core/backtest_engine/", "core/alpha_zoo/",
-    "core/portfolio/", "core/export/", "core/validation/",
+    "apps/data_source/", "apps/backtest_engine/", "apps/alpha_zoo/",
+    "apps/portfolio/", "apps/export/", "apps/validation/",
 )
 
 
@@ -92,9 +86,9 @@ def main() -> int:
         print("2: 未解析到任何模块行", file=sys.stderr)
         return 2
 
-    # 先归入窄档位（A/B/C），H 是「core/ 兜底」必须最后消费剩余行；
+    # 先归入窄档位（A/B/C），H 是「其余兜底」必须最后消费剩余行；
     # 数据加载/回测引擎显式排除，不计入任何档位。
-    H = "H 研究工具核心（core 剩余）"
+    H = "H 兜底（其余全部）"
     narrow = [n for n in BANDS if n != H]
     agg = {name: [0, 0] for name in BANDS}
     for p, st, miss, _pct in rows:
