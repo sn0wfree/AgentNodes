@@ -21,7 +21,7 @@ import pytest
 
 STUDY_PY = (
     Path(__file__).parent.parent
-    / "src" / "strategy_research" / "api" / "routers" / "study.py"
+    / "src" / "strategy_research" / "interfaces" / "api" / "routers" / "study.py"
 )
 
 
