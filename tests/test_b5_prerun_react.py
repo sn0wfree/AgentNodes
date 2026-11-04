@@ -20,14 +20,58 @@ def _build(**kwargs):
     return build_prerun_provider_for_session(**kwargs)
 
 
+class _GoalCtx:
+    """Stand-in for the ``goal.context`` capability (ADR-003 端口化后).
+
+    kernel 不再 import apps.goal，而是 ``resolve("goal.context")``。
+    patch 包属性无效（``resolve`` 是函数内 import 的局部名），所以
+    改为**直接替换 default registry 里的 factory**，跑完再还原——
+    这是唯一能可靠影响 resolve 结果的注入点。
+    """
+
+    def __init__(self, text, _extra=None, side_effect=None):
+        self._text = text
+        self._side_effect = side_effect
+
+    def get_current_goal_context(self, session_id):
+        if self._side_effect is not None:
+            return self._side_effect(session_id)
+        return (self._text, None)
+
+
+_GOAL_PATCH = "strategy_research.kernel.agent.capability.resolve"
+
+
+def _patch_goal_ctx(goal_ctx):
+    """Return a context manager installing ``goal_ctx`` as the goal.context kind."""
+    from contextlib import contextmanager
+
+    from strategy_research.kernel.agent.capability import get_default_registry
+
+    @contextmanager
+    def _cm():
+        registry = get_default_registry()
+        had = "goal.context" in registry
+        prev = registry._factories.get("goal.context")
+        registry._factories["goal.context"] = lambda r: goal_ctx
+        try:
+            yield
+        finally:
+            if had and prev is not None:
+                registry._factories["goal.context"] = prev
+            else:
+                registry._factories.pop("goal.context", None)
+
+    return _cm()
+
+
 # ── T1: goal block appears for a session with an active goal ──
 
 
 def test_goal_block_injected():
     provider = _build()
-    with patch(
-        "strategy_research.apps.goal.get_current_goal_context",
-        return_value=("<current-research-goal>G</current-research-goal>", None),
+    with _patch_goal_ctx(
+        _GoalCtx("<current-research-goal>G</current-research-goal>")
     ):
         items = provider.provide(ContextQuery(task_text="do work", session_id="s1"))
     assert len(items) == 1
@@ -37,9 +81,8 @@ def test_goal_block_injected():
 
 def test_goal_disabled_skips_injection():
     provider = _build(enable_goal_injection=False)
-    with patch(
-        "strategy_research.apps.goal.get_current_goal_context",
-        return_value=("<current-research-goal>G</current-research-goal>", None),
+    with _patch_goal_ctx(
+        _GoalCtx("<current-research-goal>G</current-research-goal>")
     ):
         items = provider.provide(ContextQuery(task_text="do work", session_id="s1"))
     assert items == []
@@ -47,9 +90,8 @@ def test_goal_disabled_skips_injection():
 
 def test_no_session_skips_injection():
     provider = _build()
-    with patch(
-        "strategy_research.apps.goal.get_current_goal_context",
-        return_value=("<current-research-goal>G</current-research-goal>", None),
+    with _patch_goal_ctx(
+        _GoalCtx("<current-research-goal>G</current-research-goal>")
     ):
         items = provider.provide(ContextQuery(task_text="do work"))
     assert items == []
@@ -68,10 +110,7 @@ def test_memory_block_injected():
     with patch(
         "strategy_research.kernel.memory.persistent.PersistentMemory",
         return_value=_FakeMemory(),
-    ), patch(
-        "strategy_research.apps.goal.get_current_goal_context",
-        return_value=(None, None),
-    ):
+    ), _patch_goal_ctx(_GoalCtx(None)):
         items = provider.provide(ContextQuery(task_text="alpha?", session_id="s1"))
     assert len(items) == 1
     assert items[0].kind == "memory"
@@ -83,10 +122,7 @@ def test_memory_disabled_skips_injection():
     with patch(
         "strategy_research.kernel.memory.persistent.PersistentMemory",
         return_value=_FakeMemory(),
-    ), patch(
-        "strategy_research.apps.goal.get_current_goal_context",
-        return_value=(None, None),
-    ):
+    ), _patch_goal_ctx(_GoalCtx(None)):
         items = provider.provide(ContextQuery(task_text="alpha?", session_id="s1"))
     assert items == []
 
@@ -104,10 +140,7 @@ def test_session_switches_per_query():
         seen.append(session_id)
         return (None, None)
 
-    with patch(
-        "strategy_research.apps.goal.get_current_goal_context",
-        side_effect=fake_goal,
-    ):
+    with _patch_goal_ctx(_GoalCtx(None, side_effect=fake_goal)):
         provider.provide(ContextQuery(task_text="a", session_id="s1"))
         provider.provide(ContextQuery(task_text="b", session_id="s2"))
 
@@ -124,9 +157,8 @@ def test_render_order_matches_agentloop():
     Changing it would move bytes, so the reversal is deliberate W0 behaviour.
     """
     provider = _build()
-    with patch(
-        "strategy_research.apps.goal.get_current_goal_context",
-        return_value=("<current-research-goal>G</current-research-goal>", None),
+    with _patch_goal_ctx(
+        _GoalCtx("<current-research-goal>G</current-research-goal>")
     ), patch(
         "strategy_research.kernel.memory.persistent.PersistentMemory",
         return_value=_FakeMemory(),

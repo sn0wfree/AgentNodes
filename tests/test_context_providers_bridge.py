@@ -186,15 +186,25 @@ class _StubMemory:
 
 
 def _real_injectors(memory: _StubMemory, monkeypatch) -> list:
-    """真 GoalContextInjector（goal 上下文打桩）+ 真 MemoryRetrieverInjector。"""
+    """真 GoalContextInjector（goal 上下文打桩）+ 真 MemoryRetrieverInjector。
+
+    ADR-003 端口化后 kernel 走 ``resolve("goal.context")``，patch apps 侧
+    符号无效；这里替换 default registry 里的 goal.context factory。
+    """
+    from strategy_research.kernel.agent.capability import get_default_registry
     from strategy_research.kernel.agent.context_injector import (
         GoalContextInjector,
         MemoryRetrieverInjector,
     )
 
-    monkeypatch.setattr(
-        "strategy_research.apps.goal.get_current_goal_context",
-        lambda session_id: (GOAL_BLOCK, None),
+    class _GoalCtx:
+        @staticmethod
+        def get_current_goal_context(session_id):
+            return (GOAL_BLOCK, None)
+
+    registry = get_default_registry()
+    monkeypatch.setitem(
+        registry._factories, "goal.context", lambda r: _GoalCtx(),
     )
     return [
         GoalContextInjector(),

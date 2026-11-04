@@ -790,7 +790,9 @@ class SwarmRuntime:
 
         Branch config shape: ``{condition, action, target, reason}``.
         """
-        from strategy_research.apps.goal.expression_evaluator import evaluate_condition
+        from strategy_research.kernel.agent.capability import resolve
+
+        evaluate_condition = resolve("goal.expression")
 
         skipped: list[str] = []
         retried: list[str] = []
@@ -851,7 +853,9 @@ class SwarmRuntime:
 def _register_builtin_executors() -> None:
     """Register built-in python_executor functions for backtest and decide."""
     try:
-        from strategy_research.apps.backtest import run_backtest_script
+        from strategy_research.kernel.agent.capability import resolve
+
+        run_backtest_script = resolve("backtest.script")
 
         def _backtest_executor(workspace_path, upstream=None, **kwargs):
             """Run backtest script and return metrics."""
@@ -871,7 +875,9 @@ def _register_builtin_executors() -> None:
         logger.debug("backtest module not available, python_executor not registered")
 
     try:
-        from strategy_research.apps.strategy_acceptance import decide as _decide_fn
+        from strategy_research.kernel.agent.capability import resolve
+
+        _decide_fn = resolve("backtest.decide")
 
         def _decide_executor(metrics=None, **kwargs):
             """Run decide() for keep/discard decision."""

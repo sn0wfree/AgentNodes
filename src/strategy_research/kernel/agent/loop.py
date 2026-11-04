@@ -95,7 +95,9 @@ _goal_store_cache: dict[Path, Any] = {}
 
 def _get_goal_store() -> Any:
     """Return the cached GoalStore for the default goal DB path."""
-    from strategy_research.apps.goal.store import GoalStore
+    from strategy_research.kernel.agent.capability import resolve
+
+    GoalStore = resolve("goal.store")
     store = GoalStore()
     key = store.db_path
     cached = _goal_store_cache.get(key)
@@ -1220,7 +1222,9 @@ class AgentLoop(
         if not self.session_id or not self.strategy_name:
             return
         try:
-            from strategy_research.apps.hypothesis import HypothesisAutoCreator
+            from strategy_research.kernel.agent.capability import resolve
+
+            HypothesisAutoCreator = resolve("hypothesis.auto_creator")
             creator = HypothesisAutoCreator()
             hyp = creator.maybe_auto_create(
                 session_id=self.session_id,

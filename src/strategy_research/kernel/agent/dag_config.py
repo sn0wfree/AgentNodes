@@ -174,7 +174,12 @@ class AgentDAGConfig:
 
     def to_study_graph(self, registry: AgentPluginRegistry | None = None):
         """Convert to ``core.study.graph.StudyGraph`` for graph.json."""
-        from strategy_research.apps.study.graph import GraphEdge, GraphNode, StudyGraph
+        from strategy_research.kernel.agent.capability import resolve
+
+        _g = resolve("study.graph")
+        GraphEdge = _g.GraphEdge
+        GraphNode = _g.GraphNode
+        StudyGraph = _g.StudyGraph
 
         reg = registry or get_default_registry()
         nodes = []

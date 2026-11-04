@@ -225,14 +225,20 @@ def _build_study_scheduler():
     # 此前是 ``...study``，导致 ``schedule run`` / ``schedule start`` 在
     # 第一行就 ModuleNotFoundError——这两个命令从未真正跑起来过
     # （2026-11-02 补测发现；与 MCP validate_run 的同一个错误类）。
-    from strategy_research.apps.study import StudyScheduler, StudyStore
+    from strategy_research.kernel.agent.capability import resolve
+
+    StudyScheduler = resolve("study.scheduler")
+    StudyStore = resolve("study.store")
 
     return StudyScheduler(StudyStore(), session_service=None)
 
 
 async def _run_job_and_wait(job_id: str) -> int:
     """Dispatch a job once and wait for its study to reach a terminal state."""
-    from strategy_research.apps.study import StudyStatus, StudyStore
+    from strategy_research.kernel.agent.capability import resolve
+
+    StudyStatus = resolve("study.status")
+    StudyStore = resolve("study.store")
 
     store = ScheduledResearchStore()
     job = store.get(job_id)

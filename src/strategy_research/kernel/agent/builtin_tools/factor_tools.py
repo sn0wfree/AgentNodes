@@ -5,7 +5,9 @@ from __future__ import annotations
 import logging
 from typing import cast
 
-from strategy_research.apps.compute_factor import FactorComputeError, compute_factor
+from strategy_research.kernel.agent.capability import (
+    resolve as _resolve_capability,
+)
 from strategy_research.kernel.agent.tools import (
     BaseTool,
     ToolContext,
@@ -25,7 +27,8 @@ def _build_factor_panel(
     Assets with insufficient bars or failed factor computation are
     skipped. Duplicated index rows are deduplicated (keep first).
     """
-    from strategy_research.apps.tools.data_transforms import long_to_single_asset_wide
+    long_to_single_asset_wide = _resolve_capability("factor.long_to_wide")
+    compute_factor = _resolve_capability("factor.compute")
 
     factor_panel = {}
     for asset_code in assets:
@@ -44,7 +47,7 @@ def _build_factor_panel(
 
 def _build_ret_panel(df, assets, forward_days: int) -> dict:
     """Build the forward-return panel (close pct_change shifted -forward_days)."""
-    from strategy_research.apps.tools.data_transforms import long_to_single_asset_wide
+    long_to_single_asset_wide = _resolve_capability("factor.long_to_wide")
 
     ret_panel = {}
     for asset_code in assets:
@@ -327,7 +330,9 @@ class ComputeFactorTool(BaseTool):
             )
 
         # Build single-asset wide DataFrame (date index, ohlcv columns)
-        from strategy_research.apps.tools.data_transforms import long_to_single_asset_wide
+        long_to_single_asset_wide = _resolve_capability("factor.long_to_wide")
+        compute_factor = _resolve_capability("factor.compute")
+        FactorComputeError = _resolve_capability("factor.compute_error")
 
         asset_df = long_to_single_asset_wide(prices_df, asset=asset, value_cols="ohlcv")
 
@@ -463,6 +468,8 @@ class FactorAnalysisTool(BaseTool):
         asset_df = asset_df.set_index("date")[["close"]]
         asset_df = asset_df.sort_index()
 
+        compute_factor = _resolve_capability("factor.compute")
+        FactorComputeError = _resolve_capability("factor.compute_error")
         try:
             factor_series = compute_factor(factor_code, asset_df)
         except FactorComputeError as exc:

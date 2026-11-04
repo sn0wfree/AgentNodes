@@ -134,7 +134,11 @@ SKIP_MODULES = {"strategy_research"}
 BASELINE: dict[str, int] = {
     "L2>L1": 1,   # seam 触点：study/scheduler → api.routers.web_session
     "L3>L1": 2,   # seam 触点：event_store→projector · memory_manager→web_session_db
-    "L3>L2": 46,  # ADR-003 保留（CapabilityRegistry 端口化不做，见 ADR）
+    # 2026-11-04 W15（阶段二）：ADR-003 CapabilityRegistry 端口化落地。
+    # 46 条 L3→L2 全部改为 capability resolve（apps 侧主动注册，import
+    # 方向仍是 apps → kernel）。基线由 46 下调至 0 —— 这是 goal H2
+    # 「只降不升」要求的下调动作，不是放宽。
+    "L3>L2": 0,
     "L4>L2": 0,   # W7 清零（data store 适配件归位 apps）
     "L4>L3": 0,
 }

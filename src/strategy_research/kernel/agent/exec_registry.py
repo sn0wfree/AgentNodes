@@ -65,49 +65,47 @@ def extract_metrics_from_upstream(
 
 
 def _register_builtin_executors() -> None:
-    try:
-        from strategy_research.apps.backtest import run_backtest_script
+    """Register the built-in python executors.
 
-        def _backtest_executor(workspace_path, upstream=None, **kwargs):
-            strategy_name = kwargs.get("strategy_name", "default")
-            action = kwargs.get("action", "unknown")
-            description = kwargs.get("description", "")
-            result = run_backtest_script(
-                workspace_path=workspace_path,
-                strategy_name=strategy_name,
-                action=action,
-                description=description,
-            )
-            return result
+    **resolve 在闭包内部、调用时才执行**：本函数由模块级 import 触发，
+    此刻业务包可能尚未 import，registry 还是空的（ADR-003 端口化后
+    kernel 不再直接 import apps）。把 resolve 搬到闭包里，让"谁需要
+    谁解析"，与注册时机解耦。
+    """
+    def _backtest_executor(workspace_path, upstream=None, **kwargs):
+        from strategy_research.kernel.agent.capability import resolve
 
-        register_python_executor("run_backtest_script", _backtest_executor)
-    except ImportError:
-        logger.debug(
-            "backtest module not available, python_executor not registered",
+        run_backtest_script = resolve("backtest.script")
+        strategy_name = kwargs.get("strategy_name", "default")
+        action = kwargs.get("action", "unknown")
+        description = kwargs.get("description", "")
+        return run_backtest_script(
+            workspace_path=workspace_path,
+            strategy_name=strategy_name,
+            action=action,
+            description=description,
         )
 
-    try:
-        from strategy_research.apps.strategy_acceptance import decide as _decide_fn
+    register_python_executor("run_backtest_script", _backtest_executor)
 
-        def _decide_executor(metrics=None, **kwargs):
-            llm_verdict = kwargs.get("llm_verdict")
-            cfg = kwargs.get("cfg")
-            stagnation_count = kwargs.get("stagnation_count", 0)
-            return _decide_fn(
-                metrics=metrics or {},
-                llm_verdict=llm_verdict,
-                cfg=cfg,
-                stagnation_count=stagnation_count,
-            )
+    def _decide_executor(metrics=None, **kwargs):
+        from strategy_research.kernel.agent.capability import resolve
 
-        register_evaluator("decide", _decide_executor)
-        # Parity with the old SwarmRuntime registry: "decide" was also
-        # reachable via the python-executor table.
-        register_python_executor("decide", _decide_executor)
-    except ImportError:
-        logger.debug(
-            "strategy_acceptance module not available, evaluator not registered",
+        _decide_fn = resolve("backtest.decide")
+        llm_verdict = kwargs.get("llm_verdict")
+        cfg = kwargs.get("cfg")
+        stagnation_count = kwargs.get("stagnation_count", 0)
+        return _decide_fn(
+            metrics=metrics or {},
+            llm_verdict=llm_verdict,
+            cfg=cfg,
+            stagnation_count=stagnation_count,
         )
+
+    register_evaluator("decide", _decide_executor)
+    # Parity with the old SwarmRuntime registry: "decide" was also
+    # reachable via the python-executor table.
+    register_python_executor("decide", _decide_executor)
 
 
 _register_builtin_executors()

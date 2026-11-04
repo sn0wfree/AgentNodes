@@ -266,7 +266,9 @@ class ScheduledResearchExecutor:
         job.prompt) and submits it to the scheduler. Returns the study_id
         so it lands in ``job.last_run_id``.
         """
-        from strategy_research.apps.study.bootstrap import create_study_record
+        from strategy_research.kernel.agent.capability import resolve
+
+        create_study_record = resolve("study.bootstrap")
 
         logger.info("Dispatching job %s → study (%s/%s)",
                     job.id, job.workspace, job.strategy_name)
