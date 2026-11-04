@@ -99,6 +99,72 @@ def test_dangling_real_repo_clean():
     assert mod.scan(["src", "tests"]) == []
 
 
+# ── check_dangling_imports --layers ──────────────────────────────────
+
+
+def test_layer_matrix_module_is_importable():
+    """共享层定义模块可独立加载（两个门禁的唯一事实源）。"""
+    spec = importlib.util.spec_from_file_location(
+        "layer_matrix", SCRIPTS / "arch" / "layer_matrix.py")
+    mod = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(mod)
+    assert mod.ORDER == ["L1", "L2", "L3", "L4"]
+    assert mod.layer_of("strategy_research.kernel.agent") == "L3"
+    assert mod.layer_of("strategy_research.apps.study") == "L2"
+
+
+def test_layers_output_matches_gate(tmp_path, monkeypatch, capsys):
+    """``--layers`` 报的 L3→L2 必须与 test_layer_matrix 的 _collect 一致。
+
+    这是本开关存在的全部意义：同一张表、同一套算法 → 两个门禁不可能
+    给出不同的数字。若这条测试失败，说明有人复制了第二份层归属表。
+    """
+    import layer_matrix as lm  # 已由 tests 的 sys.path 注入
+    sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "tests"))
+    import test_layer_matrix as tlm
+
+    gate_viol, _ = tlm._collect()
+    script_viol, _ = lm.collect(tlm.SRC)
+
+    for cluster in ("L3>L2", "L4>L2", "L4>L3", "L3>L1", "L2>L1"):
+        assert script_viol.get(cluster, 0) == gate_viol.get(cluster, 0), (
+            f"{cluster} 两个门禁不一致：script={script_viol.get(cluster, 0)} "
+            f"gate={gate_viol.get(cluster, 0)}"
+        )
+
+
+def test_layers_mode_reports_l3l2(tmp_path, monkeypatch, capsys):
+    """合成仓库：L3 模块 import L2 → --layers 应报 L3→L2 = 1。"""
+    _mk_repo(tmp_path, {
+        "src/strategy_research/__init__.py": "",
+        "src/strategy_research/kernel/__init__.py": "",
+        "src/strategy_research/kernel/agent/__init__.py": "",
+        "src/strategy_research/kernel/agent/tool.py": (
+            "from strategy_research.apps.db import get_conn\n"
+        ),
+        "src/strategy_research/apps/__init__.py": "",
+        "src/strategy_research/apps/db.py": "def get_conn(): pass\n",
+    })
+    mod = _load("check_dangling_imports")
+    mod.PKG_DIR = str(tmp_path / "src" / "strategy_research")
+
+    # 直接驱动共享实现，避免依赖 ROOT 的全局状态
+    import layer_matrix as lm
+    viol, _ = lm.collect(Path(mod.PKG_DIR))
+    assert viol.get("L3>L2", 0) == 1, f"实测 {dict(viol)}"
+
+
+def test_layers_mode_exit_code_on_real_repo():
+    """真实仓库 --layers 出口：L3→L2=0 但有 3 条别的上行（seam 触点）。"""
+    mod = _load("check_dangling_imports")
+    rc = mod.report_layers()
+    # 上行总数 > 0（L2>L1=1 + L3>L1=2），故 exit 1；但 L3→L2 必须是 0。
+    import layer_matrix as lm
+    viol, _ = lm.collect(Path(mod.PKG_DIR))
+    assert viol.get("L3>L2", 0) == 0
+    assert rc == (1 if sum(viol.values()) else 0)
+
+
 # ── check_path_literals ──────────────────────────────────────────────
 
 

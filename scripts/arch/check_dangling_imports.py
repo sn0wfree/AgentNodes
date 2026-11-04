@@ -14,6 +14,11 @@ LLM DAG 规划从未启用等）。
 用法（发现问题时退出码 1，可直接接 CI / pre-commit）：
     python scripts/arch/check_dangling_imports.py            # 扫 src + tests
     python scripts/arch/check_dangling_imports.py --quiet    # 只在失败时输出
+    python scripts/arch/check_dangling_imports.py --layers   # 附带层方向计数
+
+``--layers`` 复用 ``scripts/arch/layer_matrix.py``（与 test_layer_matrix
+同一张层归属表、同一套判定算法），因此它报出的 L3→L2 与棘轮门禁**必然
+一致**。默认不带该开关，保持本脚本原有的单一职责（悬空检查）。
 
 命名规范见 scripts/README.md（arch/ = check_*，发现即失败）。
 
@@ -25,6 +30,7 @@ import argparse
 import ast
 import io
 import os
+import pathlib
 import sys
 
 ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
@@ -75,10 +81,53 @@ def scan(roots: list[str]) -> list[str]:
     return bad
 
 
+def report_layers() -> int:
+    """报告层方向违规计数（``--layers``）。
+
+    层归属与判定原语来自 ``scripts/arch/layer_matrix.py`` —— 与
+    ``tests/test_layer_matrix.py`` **同一张表、同一套算法**。两者若各存
+    一份，迟早漂移出不同结论，"哪个数字是真的"就无从判断。
+
+    退出码：0 = 无上行违规；1 = 有（与悬空检查同型，可直接接 CI）。
+    注意本函数只报**计数**，是否超棘轮基线由 test_layer_matrix 裁决。
+    """
+    sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+    import layer_matrix as lm  # noqa: E402
+
+    src_root = pathlib.Path(PKG_DIR)
+    viol, edges = lm.collect(src_root)
+
+    print("== cross-layer import matrix ==")
+    print(lm.fmt_edges(edges))
+    print("== upward violations ==")
+    total = 0
+    for l3 in lm.ORDER:
+        for l2 in lm.ORDER:
+            if lm.ORDER.index(l2) < lm.ORDER.index(l3):
+                key = f"{l3}>{l2}"
+                n = viol.get(key, 0)
+                total += n
+                print(f"  {key}: {n}")
+    print(f"\ncheck_dangling_imports --layers: L3→L2 = {viol.get('L3>L2', 0)}")
+    print(f"  （L3→L2 是 goal 关心的那个数；上行违规总数 = {total}）")
+    return 1 if total else 0
+
+
 def main() -> int:
     ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     ap.add_argument("--quiet", action="store_true", help="通过时不输出")
+    ap.add_argument(
+        "--layers",
+        action="store_true",
+        help="额外报告层方向违规计数（L3→L2 等），复用 layer_matrix 算法",
+    )
     args = ap.parse_args()
+
+    rc = 0
+    if args.layers:
+        rc = report_layers()
+        print()
+
     bad = scan(["src", "tests"])
     if bad:
         print(f"悬空 import：{len(bad)} 处（目标模块不存在）", file=sys.stderr)
@@ -87,7 +136,7 @@ def main() -> int:
         return 1
     if not args.quiet:
         print("check_dangling_imports: 0 悬空")
-    return 0
+    return rc
 
 
 if __name__ == "__main__":

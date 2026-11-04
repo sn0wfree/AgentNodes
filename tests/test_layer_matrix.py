@@ -19,101 +19,28 @@ Rules:
 
 from __future__ import annotations
 
-import ast
 import os
+import sys
 from collections import defaultdict
 from pathlib import Path
 
 SRC = Path(__file__).resolve().parents[1] / "src" / "strategy_research"
 PKG = "strategy_research"
 
-ORDER = ["L1", "L2", "L3", "L4"]  # index 0 = highest
+# 层归属与判定原语来自唯一事实源（scripts/arch/layer_matrix.py）——
+# 与 scripts/arch/check_dangling_imports.py --layers 共用同一张表，
+# 避免两个门禁漂移出不同的判定结果。
+sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "scripts" / "arch"))
+import layer_matrix as _lm  # noqa: E402
 
-# ── layer membership (design doc §2, longest-prefix match) ──────────
+ORDER = _lm.ORDER
+LAYER_MEMBERSHIP = _lm.LAYER_MEMBERSHIP
+SKIP_MODULES = _lm.SKIP_MODULES
 
-LAYER_MEMBERSHIP: dict[str, str] = {
-    # L1 interfaces
-    "strategy_research.interfaces": "L1",  # 物理层目录（逐模块迁移中）
-    "strategy_research.interfaces.api": "L1",
-    "strategy_research.interfaces.cli": "L1",
-    "strategy_research.interfaces.mcp": "L1",
-    # L2 apps (research IP)
-    "strategy_research.apps": "L2",  # 物理层目录（逐模块迁移中，见 docs/physical-layer-migration-plan-20261103.md）
-    "strategy_research.apps.alpha_zoo_yaml": "L2",
-    "strategy_research.apps.study": "L2",
-    "strategy_research.apps.goal": "L2",
-    "strategy_research.apps.hypothesis": "L2",
-    "strategy_research.apps.alpha_zoo": "L2",
-    "strategy_research.apps.alpha_zoo_adapter": "L2",
-    "strategy_research.apps.alpha_zoo_convert": "L2",
-    "strategy_research.apps.alpha_zoo_ops": "L2",
-    "strategy_research.apps.backtest": "L2",
-    "strategy_research.apps.backtest_engine": "L2",
-    "strategy_research.apps.backtest_models": "L2",
-    "strategy_research.apps.validation": "L2",
-    "strategy_research.apps.portfolio": "L2",
-    "strategy_research.apps.data_source": "L2",
-    "strategy_research.apps.data_import": "L2",
-    "strategy_research.apps.data_readiness": "L2",
-    "strategy_research.apps.db": "L2",
-    "strategy_research.apps.compute_factor": "L2",
-    "strategy_research.apps.factor_validate": "L2",
-    "strategy_research.apps.config_runner": "L2",
-    "strategy_research.apps.strategy_acceptance": "L2",
-    "strategy_research.apps.autoresearch": "L2",
-    "strategy_research.apps.engine": "L2",
-    "strategy_research.apps.export": "L2",
-    "strategy_research.apps.run_card": "L2",
-
-    "strategy_research.apps.preflight": "L2",
-    "strategy_research.apps.tools": "L2",  # v7.2: 研究数据工具实现（data_clean/transforms），仅被 apps 侧引用
-    "strategy_research.templates": "L2",
-    # L3 kernel (platform mechanisms) — three sub-bands (v7.2, presentation only;
-    # import rules unchanged: same-layer free, downward only)
-    #   控制面 (~4.1k): gateway / orchestration / events / session / scheduled_research
-    #   执行面 (~6.0k): runtimes / workflow / swarm
-    #   能力面 (~24.6k): agent / context / hooks / permission / memory / skills
-    "strategy_research.kernel.gateway": "L3",
-    "strategy_research.kernel.orchestration": "L3",
-    "strategy_research.kernel.events": "L3",
-    "strategy_research.kernel.session": "L3",
-    "strategy_research.kernel.scheduled_research": "L3",
-    "strategy_research.kernel.runtimes": "L3",
-    "strategy_research.kernel.workflow": "L3",
-    "strategy_research.kernel.swarm": "L3",
-    "strategy_research.kernel.agent": "L3",
-    "strategy_research.kernel.context": "L3",
-    "strategy_research.kernel.hooks": "L3",
-    "strategy_research.kernel.permission": "L3",
-    "strategy_research.kernel.memory": "L3",
-    "strategy_research.kernel.skills": "L3",
-  # 待退役（归 event_log 权威 seq）
-    "strategy_research.kernel": "L3",  # 物理层目录（逐模块迁移中）
-    "strategy_research.kernel.seq_generator": "L3",
-    # L4 foundation
-    "strategy_research.foundation.llm": "L4",
-    "strategy_research.foundation.storage": "L4",
-    "strategy_research.foundation.observability": "L4",
-    "strategy_research.foundation.utils": "L4",
-    "strategy_research.foundation.web": "L4",
-    "strategy_research.foundation.registry": "L4",  # v7.2: 通用 typed Registry 基类（零语义原语）
-    "strategy_research.foundation.config_loader": "L4",
-    "strategy_research.foundation": "L4",  # W0 试点：层目录 __init__
-    "strategy_research.foundation.errors": "L4",
-    "strategy_research.foundation.git": "L4",
-    "strategy_research.foundation.utils": "L4",
-    "strategy_research.foundation.registry": "L4",
-    "strategy_research.foundation.web": "L4",
-    "strategy_research.foundation.storage": "L4",
-    "strategy_research.foundation.observability": "L4",
-    "strategy_research.foundation.llm": "L4",
-    "strategy_research.foundation.protocol": "L4",
-    "strategy_research.foundation.compact_config": "L4",
-    "strategy_research.foundation.structured_output": "L4",
-}
-
-# Facade __init__ modules excluded from direction assertions (re-exports only)
-SKIP_MODULES = {"strategy_research"}
+_layer_of = _lm.layer_of
+_module_name = lambda path: _lm.module_name(path, SRC)  # noqa: E731
+_resolve_targets = _lm.resolve_targets
+_fmt_edges = _lm.fmt_edges
 
 # ── ratchet baselines (ADR-000 物理口径 2026-11-03；只降不升) ────────
 
@@ -144,102 +71,9 @@ BASELINE: dict[str, int] = {
 }
 
 
-def _layer_of(module: str) -> str | None:
-    best, best_len = None, -1
-    for prefix, layer in LAYER_MEMBERSHIP.items():
-        if module == prefix or module.startswith(prefix + "."):
-            if len(prefix) > best_len:
-                best, best_len = layer, len(prefix)
-    return best
-
-
-def _module_name(path: Path) -> str:
-    rel = path.relative_to(SRC).as_posix()[:-3]
-    parts = [PKG] + [p for p in rel.split("/") if p != "__init__"]
-    return ".".join(parts)
-
-
-def _resolve_targets(node: ast.AST, importer_mod: str, is_pkg: bool) -> list[str]:
-    """Absolute module names referenced by an Import/ImportFrom node.
-
-    ADR-000（2026-11-03）：物理口径——每条 import **语句**计 1 次。
-
-    2026-11-04（W7 交叉验证修复）：level=0 的绝对导入必须**直接使用
-    node.module**，不得拼接 importer 包前缀——此前版本对绝对导入也执行
-    ``pkg + module`` 拼接，产生 ``foundation.utils.strategy_research.apps.*``
-    这类假路径，被 _layer_of 判为 importer 同层，**漏报全部绝对形态的
-    上行违规**（graphify 重扫对照发现）。相对导入（level>0）才拼 pkg。
-
-    对 ``from X import a, b`` 只产出模块 ``X``（一个元素），不做
-    ``X.a`` / ``X.b`` 展开：展开会让**绝对导入**被重复计数，而相对导入
-    因为 target 相同被 set 去重只计 1 —— 两种形态计法不一致。
-    """
-    if isinstance(node, ast.Import):
-        return sorted({a.name for a in node.names})
-    if not isinstance(node, ast.ImportFrom):
-        return []
-    if node.level == 0:
-        # 绝对导入：模块路径就是 node.module，不做任何拼接。
-        return [node.module] if node.module else []
-    base = importer_mod.split(".")
-    pkg = base if is_pkg else base[:-1]
-    # PEP 328: strip level-1 components (NOT level)
-    if node.level > 1:
-        pkg = pkg[: len(pkg) - (node.level - 1)]
-    target = ".".join(pkg + ([node.module] if node.module else []))
-    # `from . import a, b` (module is None): each name is its own module.
-    if not node.module:
-        return sorted({f"{target}.{a.name}" for a in node.names})
-    return [target]
-
-
 def _collect() -> tuple[dict[str, int], dict[tuple[str, str], int]]:
-    """Walk the tree once: returns (violations per cluster, cross-layer edges)."""
-    viol: dict[str, int] = defaultdict(int)
-    edges: dict[tuple[str, str], int] = defaultdict(int)
-    for dirpath, dirnames, filenames in os.walk(SRC):
-        dirnames[:] = [d for d in dirnames if d not in ("__pycache__", "scripts", "graphify-out")]
-        for fn in filenames:
-            if not fn.endswith(".py"):
-                continue
-            path = Path(dirpath) / fn
-            mod = _module_name(path)
-            if mod in SKIP_MODULES:
-                continue
-            src_layer = _layer_of(mod)
-            is_pkg = fn == "__init__.py"
-            try:
-                tree = ast.parse(path.read_text(encoding="utf-8"))
-            except SyntaxError:
-                continue
-            for node in ast.walk(tree):
-                if not isinstance(node, (ast.Import, ast.ImportFrom)):
-                    continue
-                for target in _resolve_targets(node, mod, is_pkg):
-                    tgt_layer = _layer_of(target)
-                    if tgt_layer is None:
-                        parts = target.split(".")
-                        while parts:
-                            parts.pop()
-                            tgt_layer = _layer_of(".".join(parts))
-                            if tgt_layer is not None:
-                                break
-                    if tgt_layer is None or src_layer is None:
-                        continue
-                    edges[(src_layer, tgt_layer)] += 1
-                    if ORDER.index(tgt_layer) < ORDER.index(src_layer):
-                        viol[f"{src_layer}>{tgt_layer}"] += 1
-    return viol, edges
-
-
-def _fmt_edges(edges: dict[tuple[str, str], int]) -> str:
-    lines = ["      L1    L2    L3    L4"]
-    for src in ORDER:
-        row = [f"  {src} "]
-        for dst in ORDER:
-            row.append(f"{edges.get((src, dst), 0):>5} ")
-        lines.append(" ".join(row))
-    return "\n".join(lines)
+    """委托给共享实现（scripts/arch/layer_matrix.py）——单一事实源。"""
+    return _lm.collect(SRC)
 
 
 class TestLayerMatrix:
