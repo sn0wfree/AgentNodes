@@ -101,40 +101,58 @@ kernel/scheduled_research ↔ kernel/session ↔ kernel/swarm ↔ kernel/workflo
 "`from pkg import Name`（穿透 `__init__`）"和"`import pkg.sub`（直达子模块）"混为一谈，
 前者会触发 `__init__` 执行，后者不会。**包不是可靠的模块边界。**
 
-### 2.2 模块级 SCC（含 lazy 边）—— 6 个真环，最大 53 模块
+### 2.2 模块级 SCC（含 lazy 边）—— 5 个环，最大 55 模块
 
-这才是真实的概念耦合图：
+这才是真实的概念耦合图（修正后口径，见 §2.5）：
 
 ```
-SCC[53]  apps.autoresearch, apps.goal.*, apps.study.*,
+SCC[55]  apps.autoresearch, apps.goal.*, apps.study.*,
          interfaces.api.*, kernel.agent.*(loop 系 + builtin_tools),
          kernel.gateway.*, kernel.swarm.*, kernel.workflow.*
 SCC[3]   interfaces.api.session.web_session_db ↔ kernel.agent.event_store ↔ kernel.agent.memory_manager
 SCC[2]   apps.hypothesis.registry ↔ apps.hypothesis.store
 SCC[2]   apps.goal.context ↔ apps.goal.store
-SCC[2]   kernel.agent.sandbox ↔ kernel.agent.sandbox.static_sandbox
 SCC[2]   interfaces.cli ↔ interfaces.cli.commands.merged
 ```
 
-**53 个模块互相缠绕**——这解释了为什么改动 `apps/study` 或 `kernel/agent` 总是提心吊胆。
+**55 个模块互相缠绕**——这解释了为什么改动 `apps/study` 或 `kernel/agent` 总是提心吊胆。
+注意：这个巨环由 **lazy 边**（函数体内 import）撑起，不影响可导入性，但意味着
+「改一个地方的语义可能悄悄影响另一处」。它与 §2.3 的 1 个 eager 环是两回事。
 
-### 2.3 模块级 SCC（仅 eager 顶层 import）—— 4 个环，全部在**单包内**
+### 2.3 模块级 SCC（仅 eager）—— **1 个真环**（本节已被 2026-11-04 修正，见 §2.5）
 
-这是唯一会导致 `ImportError` 的图：
+仅统计**运行时必然执行**的 import（模块顶层且不在 `TYPE_CHECKING` 块内）时，
+真环只有 1 个：
 
-| 环 | 成员 | 成因 |
+| 环 | 成员 | 成因 | 运行时证实 |
+|---|---|---|---|
+| SCC[2] | `kernel.agent.loop` ↔ `kernel.agent.loop_compaction` | `loop.py:296` 导入 Mixin；`loop_compaction.py:14` 反向 `from . import loop as _loop_mod`（取 `_compaction_persister`） | **`import ...loop_compaction` 先执行直接 ImportError**（partially initialized module） |
+
+**关键结论：跨包 eager 环 = 0，且单包内只剩 1 个。** 任意两个包之间不存在 import 期死锁。
+
+### 2.5 修正记录（2026-11-04 · 实现前复核）
+
+本节初版把 eager 环报为 4 个、并称「13 处 `from . import X` 改写能消掉 2 个真环」。
+实现前用三版分析器逐层收紧口径后，**这两个结论都被推翻**，记录备查：
+
+| 初版说法 | 实证结果 | 根因 |
 |---|---|---|
-| SCC[4] | `kernel.agent.{loop, loop_lifecycle, loop_progress, loop_tools}` | Mixin 拆分后各 Mixin 反向 `from .loop import LoopResult` |
-| SCC[3] | `apps.study{.__init__} → {runner, scheduler} → back to study` | `runner.py:23-24` `from . import budget, state_utils` 穿透 `__init__` |
-| SCC[2] | `interfaces.api.session.{loop_events, service}` | 互取对方私有 helper |
-| SCC[2] | `kernel.agent.sandbox{.__init__, static_sandbox}` | `static_sandbox.py:19 from . import legacy` 穿透 `__init__` |
+| eager 环 4 个 | **实为 1 个** | 初版解析器对 `from . import budget` 只产出包名、**没展开 names**，凭空造出「`runner` → 包 `__init__`」的假环。`apps.study` 与 `sandbox` 两个环全是这个 bug 的产物 |
+| `from . import X` → `from .X import ...` 可打断环 | **对环完全无效** | CPython 两种写法**都先执行父包 `__init__.py`**（`_handle_fromlist` 先 `import package`）。实测 `import ...apps.study.budget` 会完整加载 `apps.study`（含 `runner`） |
+| `loop_events ↔ service` 是 eager 环 | 该边在 `if TYPE_CHECKING:` 块内（`loop_events.py:13`），运行时不执行 | 分类器未区分 TYPE_CHECKING |
 
-**关键结论：跨包 eager 环 = 0。** 任意两个包之间不存在 import 期死锁。这是分层迁移的实打实成果——
-迁移前 `core/` 一坨时不可能达到这个状态。
+**教训（值得写进门禁规则）：** 静态 import 图的环判定必须先固定三件事——
+① `from . import X` 里的 X 是子模块还是 `__init__` 名字；
+② `TYPE_CHECKING` 块内不算运行时依赖；
+③ 包级 SCC 会因「穿透 `__init__` vs 直达子模块」产生假环。
+三者任一搞错，报出的环数量都是错的。**判环的终审标准是「该导入顺序是否真的抛 ImportError」**，
+不是图算法输出。
 
 ### 2.4 环的种子：13 处 `from . import <name>`
 
-这 4 个 eager 环里有 2 个直接由这个反模式造成，全仓共 13 处：
+虽然改写**对断环无效**（见 §2.5），这 13 处仍是可读性与性能上的噪声：
+`from . import X` 会强制完整执行父包 `__init__`（可能拉起几十个无关模块），
+而 `from .X import Y` 在父包已加载后更直接。全仓清单：
 
 ```
 apps/study/runner.py:23              from . import budget
@@ -151,9 +169,8 @@ kernel/agent/executor.py:237,275     from . import exec_registry
 apps/strategy_acceptance/cli.py:21   from . import decide, load_config
 ```
 
-`from . import X` 语义是「从包对象取属性 X」→ 必然先完整执行 `__init__.py` → 而 `__init__.py`
-又 import 了本模块 → 环。**改成 `from .budget import ...`（直达子模块）即可打断，
-零行为变化。** 这是本次评审里性价比最高的改动：13 行、零风险、消掉 2 个真环。
+其中 `apps/strategy_acceptance/cli.py:21` 的 `decide` / `load_config` 是 `__init__` 里的**名字**
+（不是子模块），这 2 处不能机械改写。
 
 ---
 
@@ -277,14 +294,30 @@ kernel 三子带的实测数据值得记一笔：
 
 按这个判据，`api/session/` 应该整体下沉。这是一次边界重划，不是搬家。
 
-### 4.3 一条被忽略的事实：`apps/backtest_engine` 是死代码
+### 4.3 `apps/backtest_engine` 是未接线的孤岛（**决定：保留并接线**）
 
 5 个文件 / 395 行，**外部引用 0 个**（全仓唯一"命中"是 `kernel/agent/tools.py:116` 的一句
 注释，说 `backtest_engine` 要等 P0-3）。它有自己的 3 个测试文件（`test_backtest_engine.py`
 等），所以不会在覆盖率里暴露为空洞。
 
-同类：`apps/backtest_models.py` 只被 `backtest_engine/` 自己用（3 条边）。
-**二者构成一个自闭合的孤岛。** 要么接线，要么删；挂着就是持续的认知成本。
+**求职取证（2026-11-04）后判定：它不是死代码，是半成品接线。** 它的定位很清楚：
+
+```
+apps/backtest_engine/protocol.py   BacktestEngine + Strategy 两个 Protocol（P0-3 正题）
+apps/backtest_engine/factory.py    get_engine() 注册表（strategy / callback 两个 provider）
+apps/backtest_engine/strategy_engine_adapter.py  包装 utils.strategy_engine.StrategyEngine
+apps/backtest_engine/callback_engine_adapter.py  包装 utils.backtest_engine.run_backtest
+```
+
+而生产路径 `apps/config_runner.py:91` **直接 `return StrategyEngine(...)`**——
+绕过了 `get_engine()`。也就是说 P0-3 的 Protocol 收口**做完了却没切主路径**。
+
+> **用户决定（2026-11-04）：保留，暂时接线，后续再深入。** 接线点 =
+> `config_runner.py:91` 改走 `get_engine()`；这样 `backtest_engine` 从孤岛变回
+> 生产路径的一环，两条回测入口（YAML / Callback）真正收敛到同一 Protocol。
+
+同类：`apps/backtest_models.py` 只被 `backtest_engine/` 自己用（3 条边）——
+接线后它会顺带被 `config_runner` 间接用到，属正常。
 
 ---
 
@@ -301,20 +334,19 @@ kernel 三子带的实测数据值得记一笔：
 
 ---
 
-## 6. 建议的处理顺序
-
-按「收益 / 风险」排序，前两项可以直接做，后两项需要设计：
+## 6. 建议的处理顺序（已按 §2.5 修正 + 用户 2026-11-04 决定更新）
 
 | # | 事项 | 规模 | 风险 | 收益 |
 |---|---|---:|---|---|
-| **1** | 13 处 `from . import X` → `from .X import ...` | 13 行 | 极低（纯语法，零行为变化） | 消掉 **2 个 eager 真环** |
-| **2** | `AgentResult`/`SwarmPreset` 下沉到 `kernel/workflow/types.py` 或 `kernel/contracts/` | ~30 行 + 6 处 import | 低（与 W4b protocol.py 同构，已验证） | 消掉 **28 条 workflow→swarm 边**，SCC[53] 缩小 |
-| **3** | `interfaces/api/session/` 5.9k 行下沉到 `kernel/session/`，只留 `routers/` 在 L1 | 14 文件 | 中（需重划 L1/L3 判据，35 处互引要先解） | L1 判据恢复成立；消掉 SCC[3] |
-| **4** | CapabilityRegistry 端口化（ADR-003 正题） | 大 | 高 | 46 条 L3→L2 清零 |
-| **5** | `apps/backtest_engine` 孤岛：接线 或 删除 | 395 行 | 低 | 减认知负担 |
+| **1** | 断 `loop ↔ loop_compaction` 真环（运行时已证实 ImportError） | 2 处 | 低 | **唯一 eager 环归零** |
+| **2** | `AgentResult`/`SwarmPreset` 下沉到 `kernel/swarm/types.py`（现有 79 行契约位） | ~35 行 + 5 处 import | 低（与 W4b `protocol.py` 同构） | 消掉 **28 条 workflow→swarm 边**，SCC[55] 收缩 |
+| **3** | `apps/backtest_engine` 接线 —— `config_runner.py:91` 改走 `get_engine()` | 1 处 + 断言 | 低 | 孤岛变生产路径；两条回测入口收敛到同一 Protocol |
+| 4 | 13 处 `from . import X` 机械改写 | 13 处（其中 2 处不可机械改） | 极低 | 可读性；**对环无效**（见 §2.5），故降级 |
+| 5 | `interfaces/api/session/` 5.9k 行下沉到 `kernel/session/` | 14 文件 | 中（需重划 L1 判据，35 处互引先解） | L1 判据恢复成立；消 SCC[3] |
+| 6 | CapabilityRegistry 端口化（ADR-003 正题） | 大 | 高 | 46 条 L3→L2 清零 |
 
-**建议先做 1 + 2 + 5**（一次提交完成，风险极低），把「eager 环归零 + 高权重耦合边消失 +
-死代码清理」拿下。3 和 4 属于设计变更，各自单独立项。
+**当前执行范围（用户拍板）：1 + 2 + 3。** 三项互相独立，各自一个 commit。
+第 4 项因实证无效而降级为可选的清洁项；5 和 6 属设计变更，单独立项。
 
 ---
 
@@ -322,12 +354,14 @@ kernel 三子带的实测数据值得记一笔：
 
 本次评审产出两条需要回写既有文档的结论：
 
-1. **`scripts/README.md`** — 加一条工具选型规则：graphify 用于拓扑/热点，
-   `test_layer_matrix` 用于上行违规判据，**禁止用 graphify 计数替代门禁基线**。
-   附 72.5% lazy 覆盖率的实测依据。
-2. **`docs/layered-skeleton-design-20261103.md` §2** — L1 判据补一句修正：
-   L1 的判据不是"目录在 `interfaces/` 下"，而是"**无状态、无编排、只做协议转换**"；
-   按此判据 `api/session/` 归属存疑，记入待办。
+1. **`scripts/README.md`** — 已加：graphify 用于拓扑/热点，`test_layer_matrix` 用于上行违规判据，
+   **禁止用 graphify 计数替代门禁基线**。附 72.5% lazy 覆盖率的实测依据。
+2. **`docs/layered-skeleton-design-20261103.md` §2.0** — 已加：L1 判据修正为
+   "**无状态、无编排、只做协议转换**"；按此判据 `api/session/` 归属存疑，记入待办。
+
+另需固化为门禁规则（见 §2.5 教训）：**判环的终审标准是「该导入顺序是否真的抛 ImportError」，
+不是图算法输出。** 静态图必须先固定三个前提：`from . import X` 的 X 归属、
+`TYPE_CHECKING` 不算运行时依赖、包级 SCC 会因穿透 `__init__` 产生假环。
 
 ---
 
