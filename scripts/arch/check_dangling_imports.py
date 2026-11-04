@@ -57,7 +57,8 @@ def scan(roots: list[str]) -> list[str]:
                     tree = ast.parse(src)
                 except SyntaxError:
                     continue  # 语法错误由编译门禁负责
-                pkg = os.path.relpath(path, root).replace(os.sep, ".").split(".")[:-2]
+                # 相对基准必须用绝对 base（CWD 不在仓库根时 relpath 会跨盘报错）
+                pkg = os.path.relpath(path, base).replace(os.sep, ".").split(".")[:-2]
                 for node in ast.walk(tree):
                     if not isinstance(node, ast.ImportFrom):
                         continue

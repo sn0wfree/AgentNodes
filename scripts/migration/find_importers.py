@@ -38,7 +38,7 @@ def iter_py(root: str):
         dn[:] = [d for d in dn if d not in SKIP_DIRS]
         for f in fn:
             if f.endswith(".py"):
-                yield os.path.join(dp, f), root
+                yield os.path.join(dp, f), base
 
 
 def main() -> int:
@@ -51,12 +51,12 @@ def main() -> int:
 
     stmts: dict[str, list] = defaultdict(list)
     for root in roots:
-        for path, root_name in iter_py(root):
+        for path, base in iter_py(root):
             try:
                 tree = ast.parse(io.open(path, encoding="utf-8", errors="replace").read())
             except SyntaxError:
                 continue
-            pkg = os.path.relpath(path, root_name).replace(os.sep, ".").split(".")[:-2]
+            pkg = os.path.relpath(path, base).replace(os.sep, ".").split(".")[:-2]
             for node in ast.walk(tree):
                 if not isinstance(node, ast.ImportFrom):
                     continue
@@ -78,7 +78,13 @@ def main() -> int:
         items = stmts.get(tail, [])
         print(f"== {PREFIX}{tail}: {len(items)} statements ==")
         if args.by_file:
-            by_file: Counter = Counter(l.split(":")[0] for l in items)
+            # Windows 盘符含冒号（C:\...），不能按第一个冒号切——
+            # 行格式固定为 "<path>:<lineno> lvl=..."，从行尾剥掉
+            # ": lvl..." 与 ":<lineno>" 两段才是路径。
+            by_file: Counter = Counter(
+                l.rsplit(":", 2)[0] if " lvl=" in l else l.split(":")[0]
+                for l in items
+            )
             for f, c in by_file.most_common():
                 print(f"  {c:>3}  {f}")
         else:

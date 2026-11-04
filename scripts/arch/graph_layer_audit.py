@@ -53,16 +53,16 @@ def layer_of(path: str) -> str | None:
     return None
 
 
-def main() -> int:
-    graph_path = sys.argv[1] if len(sys.argv) > 1 else GRAPH_DEFAULT
-    g = json.load(open(graph_path, encoding="utf-8"))
-    nodes = {n["id"]: n for n in g["nodes"]}
-    file_of = {nid: n.get("source_file") or "" for nid, n in nodes.items()}
-    print(f"graph: {graph_path}  nodes={len(g['nodes'])} edges={len(g['edges'])}")
+def audit(graph: dict) -> tuple[Counter, Counter, Counter, dict]:
+    """对已加载的图做全部统计。返回 (matrix, residual, indeg, nodes)。
 
+    抽成纯函数以便单元测试（tests/test_scripts_arch.py 用合成图验证）。
+    """
+    nodes = {n["id"]: n for n in graph["nodes"]}
+    file_of = {nid: n.get("source_file") or "" for nid, n in nodes.items()}
     matrix: Counter = Counter()
     residual: Counter = Counter()
-    for e in g["edges"]:
+    for e in graph["edges"]:
         if e["relation"] not in IMPORT_RELS:
             continue
         sf = file_of.get(e["source"], "")
@@ -72,7 +72,19 @@ def main() -> int:
             residual[sf or tf or "?"] += 1
         if sl and tl and sl != tl:
             matrix[(sl, tl)] += 1
+    indeg: Counter = Counter()
+    for e in graph["edges"]:
+        if e["relation"] in ("calls", "imports", "imports_from", "uses", "method"):
+            indeg[e["target"]] += 1
+    return matrix, residual, indeg, nodes
 
+
+def main() -> int:
+    graph_path = sys.argv[1] if len(sys.argv) > 1 else GRAPH_DEFAULT
+    g = json.load(open(graph_path, encoding="utf-8"))
+    print(f"graph: {graph_path}  nodes={len(g['nodes'])} edges={len(g['edges'])}")
+
+    matrix, residual, indeg, nodes = audit(g)
     print("\n== 符号级跨层矩阵（语句级门禁对照见 tests/test_layer_matrix.py -s）==")
     print("      ->   L1    L2    L3    L4")
     for sl in ORDER:
@@ -85,10 +97,6 @@ def main() -> int:
     for f, c in residual.most_common(5):
         print(f"  {c:>3}  {f}")
 
-    indeg: Counter = Counter()
-    for e in g["edges"]:
-        if e["relation"] in ("calls", "imports", "imports_from", "uses", "method"):
-            indeg[e["target"]] += 1
     print("\n== god-nodes in-degree top 12 ==")
     for nid, d in indeg.most_common(12):
         n = nodes.get(nid, {})

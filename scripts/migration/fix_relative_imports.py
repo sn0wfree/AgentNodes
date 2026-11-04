@@ -40,30 +40,32 @@ SKIP_DIRS = {"__pycache__", "attic", "graphify-out"}
 
 def iter_py():
     for root in ("src", "tests"):
-        for dp, dn, fn in os.walk(os.path.join(ROOT, root)):
+        base = os.path.join(ROOT, root)
+        for dp, dn, fn in os.walk(base):
             dn[:] = [d for d in dn if d not in SKIP_DIRS]
             for f in fn:
                 if f.endswith(".py"):
-                    yield os.path.join(dp, f), root
+                    # yield 绝对 base——relpath 的基准，CWD 无关
+                    yield os.path.join(dp, f), base
 
 
 def run(tail: str, new_mod: str | None) -> tuple[int, int]:
     old_prefix = "strategy_research.core." + tail
     statements = 0
     files_changed = 0
-    for path, root in iter_py():
+    for path, base in iter_py():
         src = io.open(path, encoding="utf-8", errors="replace").read()
         try:
             tree = ast.parse(src)
         except SyntaxError:
             continue
-        pkg = os.path.relpath(path, root).replace(os.sep, ".").split(".")[:-2]
+        pkg = os.path.relpath(path, base).replace(os.sep, ".").split(".")[:-2]
         edits: list[tuple[int, str, str]] = []  # (lineno, old_stmt, new_stmt)
         for node in ast.walk(tree):
             if not isinstance(node, ast.ImportFrom) or node.level == 0:
                 continue
-            base = pkg[: len(pkg) - (node.level - 1)]
-            resolved = ".".join(base + ([node.module] if node.module else []))
+            anchor = pkg[: len(pkg) - (node.level - 1)]  # 不覆盖外层 base（绝对路径）
+            resolved = ".".join(anchor + ([node.module] if node.module else []))
             if not (resolved == old_prefix or resolved.startswith(old_prefix + ".")):
                 continue
             suffix = resolved[len(old_prefix):]
