@@ -531,3 +531,204 @@ class TestTicketSinkSettleContract:
         assert len(emitted) == 1
         assert emitted[0][0] == "assignment.report"
         assert emitted[0][1]["status"] == "dropped"
+
+
+# ── 崩溃恢复：进程重启后待办 Assignment 仍可见 ───────────────────────
+
+
+class TestCrashRecovery:
+    """goal §1 末条：「崩溃恢复出待办 Assignment」。
+
+    模拟方式：用**同一个 DB 文件**建两个独立的 sink/store 实例——
+    第一个实例写入后"崩溃"（丢弃对象，模拟进程退出），第二个实例是
+    "重启后的新进程"，它必须能看见第一个实例留下的待办项。
+    """
+
+    def test_pending_assignment_survives_restart(self, tmp_path: Path):
+        """进程重启后 list_assignments 仍可见待办项。"""
+        from strategy_research.apps.study.ticket_sink import TicketSink
+
+        db = tmp_path / "goals.db"
+        # ── 进程 1：准入一个 run，然后"崩溃"（不 settle）
+        sink1 = TicketSink(store_factory=lambda: StudyStore(db))
+        a1 = sink1.admit(
+            session_key="chat:crash-1",
+            session_id="sid-1",
+            run_id="sid-1#1:r0",
+            turn_id="sid-1#1",
+            objective="会被崩溃打断的研究",
+            fence_token="fence-1",
+        )
+        del sink1  # 模拟进程退出（未 settle，Assignment 停在 pending）
+
+        # ── 进程 2：重启，从同一个 DB 读
+        with StudyStore(db) as store:
+            rows = store.list_assignments()
+            assert len(rows) == 1, "重启后应仍能看到那条 Assignment"
+            got = rows[0]
+            assert got.assignment_id == a1.assignment_id
+            assert got.status is AssignmentStatus.PENDING
+            assert got.fence_token == "fence-1"
+            assert got.run_id == "sid-1#1:r0"
+
+    def test_recover_returns_non_terminal_only(self, tmp_path: Path):
+        """recover() 只返回非终态；failed/dropped/ended 不返回。"""
+        from strategy_research.apps.study.ticket_sink import TicketSink
+
+        db = tmp_path / "goals.db"
+        sink = TicketSink(store_factory=lambda: StudyStore(db))
+        with StudyStore(db) as store:
+            store.upsert_ticket(Ticket.new("目标"))
+
+        # 造 5 条：pending / running / failed / dropped / ended
+        specs = [
+            (AssignmentStatus.PENDING, "s#1:r0"),
+            (AssignmentStatus.RUNNING, "s#2:r0"),
+            (AssignmentStatus.FAILED, "s#3:r0"),
+            (AssignmentStatus.DROPPED, "s#4:r0"),
+            (AssignmentStatus.ENDED, "s#5:r0"),
+        ]
+        with StudyStore(db) as store:
+            for status, run_id in specs:
+                a = Assignment.new("tkt-x", run_id)
+                if status is AssignmentStatus.RUNNING:
+                    a = a.transition_to(AssignmentStatus.RUNNING)
+                elif status in (AssignmentStatus.FAILED, AssignmentStatus.DROPPED):
+                    a = a.transition_to(status)
+                elif status is AssignmentStatus.ENDED:
+                    a = a.transition_to(AssignmentStatus.RUNNING).transition_to(
+                        AssignmentStatus.ENDED
+                    )
+                store.create_assignment(a)
+
+        recovered = sink.recover()
+        assert len(recovered) == 2, f"应只恢复 2 条非终态，实际 {len(recovered)}"
+        assert {a.status for a in recovered} == {
+            AssignmentStatus.PENDING, AssignmentStatus.RUNNING
+        }
+
+    def test_recover_and_mark_emits_blocked_report(self, tmp_path: Path):
+        """恢复时把待办标 blocked 并 emit report，且持久化生效。"""
+        from strategy_research.apps.study.ticket_sink import TicketSink
+
+        db = tmp_path / "goals.db"
+        emitted: list[tuple[str, dict]] = []
+        sink = TicketSink(
+            store_factory=lambda: StudyStore(db),
+            emit=lambda k, d: emitted.append((k, d)),
+        )
+        with StudyStore(db) as store:
+            store.upsert_ticket(Ticket.new("目标"))
+        with StudyStore(db) as store:
+            store.create_assignment(Assignment.new("tkt-x", "s#1:r0"))
+
+        marked = sink.recover_and_mark(reason="restart")
+        assert len(marked) == 1
+        assert marked[0].status is AssignmentStatus.BLOCKED
+
+        # emit 了一条 blocked report
+        reports = [d for k, d in emitted if k == "assignment.report"]
+        assert len(reports) == 1
+        assert reports[0]["status"] == "blocked"
+        assert reports[0]["payload"]["reason"] == "restart"
+
+        # 持久化也生效（再读一次）
+        with StudyStore(db) as store:
+            assert store.list_assignments()[0].status is AssignmentStatus.BLOCKED
+
+    def test_recover_is_readonly(self, tmp_path: Path):
+        """recover() 是纯读：不改行、不发事件。"""
+        from strategy_research.apps.study.ticket_sink import TicketSink
+
+        db = tmp_path / "goals.db"
+        emitted: list[tuple[str, dict]] = []
+        sink = TicketSink(
+            store_factory=lambda: StudyStore(db),
+            emit=lambda k, d: emitted.append((k, d)),
+        )
+        with StudyStore(db) as store:
+            store.upsert_ticket(Ticket.new("目标"))
+        with StudyStore(db) as store:
+            store.create_assignment(Assignment.new("tkt-x", "s#1:r0"))
+
+        sink.recover()
+        assert emitted == [], "recover() 不得 emit"
+        with StudyStore(db) as store:
+            assert store.list_assignments()[0].status is AssignmentStatus.PENDING
+
+
+class TestGatewayRecoverPendingAssignments:
+    """Gateway.recover() 必须把待办 Assignment 重新纳入记账（goal §1）。"""
+
+    def test_gateway_recover_reports_assignment_count(self, tmp_path: Path):
+        from strategy_research.apps.study.ticket_sink import TicketSink
+        from strategy_research.kernel.gateway.gateway import Gateway
+
+        db = tmp_path / "goals.db"
+        emitted: list[tuple[str, dict]] = []
+        sink = TicketSink(
+            store_factory=lambda: StudyStore(db),
+            emit=lambda k, d: emitted.append((k, d)),
+        )
+        # 造一条待办
+        sink.admit(
+            session_key="chat:gw-1", session_id="sid-1",
+            run_id="sid-1#1:r0", turn_id="sid-1#1",
+            objective="待恢复的研究",
+        )
+
+        class _Client:
+            def chat(self, messages, **k):
+                raise AssertionError("llm should not be called")
+
+        gw = Gateway(
+            client=_Client(), ticket_sink=sink, max_worker_slots=4,
+        )
+        try:
+            stats = gw.recover()
+            assert stats.get("assignments") == 1, f"stats={stats}"
+            # 恢复出来的项被纳入 slot 记账（blocked 态不占位但可见）
+            assert gw.worker_slots.usage()["active"] >= 1
+        finally:
+            gw.close()
+
+    def test_gateway_without_sink_is_noop(self, tmp_path: Path):
+        """sink 为 None 时 recover 不报错，且返回的 dict 与旧契约逐字一致。
+
+        未启用 Ticket 模型的调用方看到的 ``stats`` 不该多键——那会破坏
+        既有契约。``assignments`` 只在启用 sink 时出现。
+        """
+        from strategy_research.kernel.gateway.gateway import Gateway
+
+        class _Client:
+            def chat(self, messages, **k):
+                raise AssertionError("no llm")
+
+        gw = Gateway(client=_Client())
+        try:
+            stats = gw.recover()
+            assert stats == {"sessions": 0, "turns": 0, "interrupted": 0}
+            assert "assignments" not in stats
+        finally:
+            gw.close()
+
+    def test_gateway_forwards_ticket_sink_to_controller(self, tmp_path: Path):
+        """Gateway 必须把 ticket_sink 传给 controller，否则生产路径不落库。"""
+        from strategy_research.apps.study.ticket_sink import TicketSink
+        from strategy_research.kernel.gateway.gateway import Gateway
+
+        db = tmp_path / "goals.db"
+        sink = TicketSink(store_factory=lambda: StudyStore(db))
+
+        class _Client:
+            def chat(self, messages, **k):
+                raise AssertionError("no llm")
+
+        gw = Gateway(client=_Client(), ticket_sink=sink)
+        try:
+            assert gw.controller._ticket_sink is sink, (
+                "ticket_sink 未转发给 SessionController —— "
+                "生产路径上 tickets/assignments 将永远为空"
+            )
+        finally:
+            gw.close()

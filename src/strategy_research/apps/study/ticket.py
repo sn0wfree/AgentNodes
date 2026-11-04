@@ -162,15 +162,19 @@ REPORT_STATUSES: frozenset[AssignmentStatus] = frozenset(
 #: ``running`` 可落到任意 report 态，也可直接 ``ended``（施工方案 §2.3
 #: 的「Assignment.* → ended」）；所有 report 态只能走向 ``ended``。
 #:
-#: ``pending`` 也能直接落到 ``failed`` / ``dropped``：turn 可能在引擎
-#: 真正开始前就失败（客户端构造错误、fence 被超越）。这不是
-#: "跳过了 running"，而是"从未开始"——必须允许，否则这类失败无法
-#: 被持久化记录，Assignment 会永远停在 pending（可观测性黑洞）。
+#: ``pending`` 也能直接落到 ``failed`` / ``dropped`` / ``blocked``：
+#: 前两者是 turn 在引擎真正开始前就失败（客户端构造错误、fence 被超越）；
+#: ``blocked`` 是**崩溃恢复**路径——进程重启时 pending 项既没开始也没
+#: 失败，标 blocked 才符合事实（标 failed 会污染失败率统计）。
+#: 这不是"跳过了 running"，而是"从未开始"——不补的话这类状态永远
+#: 无法被持久化记录，成为可观测性黑洞。
 _ASSIGNMENT_TRANSITIONS: dict[AssignmentStatus, frozenset[AssignmentStatus]] = {
     AssignmentStatus.PENDING: frozenset(
         {
             AssignmentStatus.RUNNING,
+            AssignmentStatus.WAITING,
             AssignmentStatus.READY,
+            AssignmentStatus.BLOCKED,
             AssignmentStatus.FAILED,
             AssignmentStatus.DROPPED,
         }

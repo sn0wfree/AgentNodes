@@ -66,6 +66,10 @@ class WorkerSlotManager:
     _released: int = field(default=0, init=False)
     _ignored: int = field(default=0, init=False)
     _next_unlimited: int = field(default=0, init=False)
+    #: 崩溃恢复时登记的待办项（blocked/waiting/ready 不占 slot，但要知道
+    #: "这些 assignment 还在路上"）。与 _slots 分开存，因为它们的语义是
+    #: 「已知存在，未占用资源」而不是「正在占用 1 个 Worker」。
+    _pending: dict[str, SlotAssignment] = field(default_factory=dict, init=False)
 
     def __post_init__(self) -> None:
         if self.max_slots is not None:
@@ -144,23 +148,59 @@ class WorkerSlotManager:
             if held.slot >= 0:
                 self._free.append(held.slot)
                 self._free.sort()
+            # blocked / waiting / ready 仍然"在路上的"，只是不占 Worker；
+            # failed / dropped 是终态，彻底移出记账。
+            if status in {"blocked", "waiting", "ready"}:
+                self._pending[assignment_id] = SlotAssignment(
+                    assignment_id=held.assignment_id,
+                    run_id=held.run_id,
+                    ticket_id=held.ticket_id,
+                    slot=-1,
+                )
+            else:
+                self._pending.pop(assignment_id, None)
             self._released += 1
             logger.debug(
                 "slot %s released from %s (status=%s)",
                 held.slot, assignment_id, status,
             )
 
+    # ── 崩溃恢复 ────────────────────────────────────────────────────
+
+    def track_pending(self, assignment_id: str, *, run_id: str = "",
+                      ticket_id: str = "") -> None:
+        """登记一条"已知存在但未占 Worker"的 assignment（崩溃恢复用）。"""
+        if not assignment_id:
+            return
+        with self._lock:
+            self._pending[assignment_id] = SlotAssignment(
+                assignment_id=assignment_id,
+                run_id=run_id,
+                ticket_id=ticket_id,
+                slot=-1,
+            )
+
+    def pending(self) -> dict[str, SlotAssignment]:
+        """恢复出来的待办项（不含正在运行的）。"""
+        with self._lock:
+            return dict(self._pending)
+
     # ── 观测 ────────────────────────────────────────────────────────
 
     def active(self) -> dict[str, SlotAssignment]:
+        """所有在路上的 assignment：占 slot 的 + 恢复出来的待办。"""
         with self._lock:
-            return dict(self._slots)
+            merged = dict(self._pending)
+            merged.update(self._slots)
+            return merged
 
     def usage(self) -> dict[str, Any]:
         with self._lock:
             used = len([s for s in self._slots.values() if s.slot >= 0])
             return {
-                "active": len(self._slots),
+                "active": len(self._slots) + len(self._pending),
+                "running": len(self._slots),
+                "pending": len(self._pending),
                 "used_slots": used,
                 "free_slots": len(self._free),
                 "max_slots": self.max_slots,

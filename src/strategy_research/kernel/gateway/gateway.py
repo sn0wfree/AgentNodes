@@ -57,6 +57,7 @@ class Gateway:
         artifact_channel: Any | None = None,
         workspace: str | Path | None = None,
         max_worker_slots: int | None = None,
+        ticket_sink: Any | None = None,
     ) -> None:
         self._events: list[tuple[str, dict]] = []
         # 阶段一 §2.8：Worker Slot 管理器——订阅 assignment.report 管理
@@ -64,6 +65,10 @@ class Gateway:
         from strategy_research.kernel.gateway.worker_slots import WorkerSlotManager
 
         self._worker_slots = WorkerSlotManager(max_slots=max_worker_slots)
+        # 阶段一：Ticket/Assignment 持久化钩子。None = 不启用（测试路径）。
+        # 生产由装配根注入 apps.study.ticket_sink.TicketSink —— kernel 只认
+        # duck-typed 接口（admit/settle/recover），不 import apps（H1）。
+        self._ticket_sink = ticket_sink
         # R7：外部 sink 集合（替代原链式 _external_sink）+ 代际表。
         self._sinks: set[Callable[[str, dict], None]] = set()
         self._sink_lock = threading.Lock()
@@ -107,6 +112,9 @@ class Gateway:
             # 文注入——直构 controller 的测试路径行为不变。
             context_hub=context_hub,
             context_policy=context_policy,
+            # 阶段一：Ticket/Assignment 持久化——准入路径追加 upsert，
+            # 退出点 settle。None = 不启用（测试/无业务包路径）。
+            ticket_sink=self._ticket_sink,
         )
         # 阶段 3b：PlatformStore（事件持久化 + blob + artifact 登记）
         self._store = None
@@ -282,20 +290,40 @@ class Gateway:
     _TERMINAL_RUN_EVENTS = ("run.settled", "run.failed", "run.interrupted")
 
     def recover(self) -> dict[str, int]:
-        """从事件流重建内存状态（fold）。幂等，可重复调用。
+        """从事件流重建内存状态（fold），并恢复待办 Assignment。幂等。
 
         恢复（「恢复状态，不恢复执行」）：
         - turn 计数器：下一 turn 续号，不与历史撞号（P-4）；
         - session_key → uuid 映射：同 key 提交落回同一 aggregate；
         - in-flight run：`run.started` 无 terminal 配对 → 发
-          `run.interrupted`（重试靠重提，不自动续跑——auto_resume=false）。
+          `run.interrupted`（重试靠重提，不自动续跑——auto_resume=false）；
+        - **待办 Assignment**：从 tickets/assignments 表取非终态项
+          （pending/running/waiting/ready/blocked），重新纳入 Worker Slot
+          记账并 emit `assignment.report`（status=blocked，reason=restart）。
 
         不恢复（定稿明说）：mailbox 待办（payload 不在事件流，重试靠
         重提）、幂等表、steer 队。无 store 时 no-op。
+
+        **为什么待办 Assignment 要单独恢复**：事件流能 fold 出 turn 计数，
+        但 Tickets/Assignments 是**独立持久化实体**（施工方案 §2 的核心
+        设计）。进程崩溃时 `run.started` 已被 fold 成 `run.interrupted`，
+        可 Assignment 行仍是 pending/running——不恢复的话它就永远卡在
+        那个状态，既没有 Worker 占用、也不再被任何路径推进，成为孤儿。
+
+        ``stats`` 里的 ``assignments`` 键**只在启用 ticket_sink 时出现**：
+        未启用 Ticket 模型的调用方（纯事件流 fold）看到的字典与此前
+        逐字一致，不破坏既有契约。
         """
+        stats: dict[str, int] = {
+            "sessions": 0, "turns": 0, "interrupted": 0,
+        }
         if self._store is None:
-            return {"sessions": 0, "turns": 0, "interrupted": 0}
-        stats = {"sessions": 0, "turns": 0, "interrupted": 0}
+            # 无事件库时仍尝试恢复 Assignment：它们是独立持久化实体，
+            # 存在自己的表里，不依赖事件流。
+            if self._ticket_sink is not None:
+                stats["assignments"] = self._recover_pending_assignments()
+            return stats
+
         for sid in self._store.iter_session_ids():
             if not sid:
                 continue
@@ -338,7 +366,52 @@ class Gateway:
                         "run_id": rid, "reason": "restart",
                     })
                     stats["interrupted"] += 1
+
+        if self._ticket_sink is not None:
+            stats["assignments"] = self._recover_pending_assignments()
         return stats
+
+    def _recover_pending_assignments(self) -> int:
+        """把非终态 Assignment 重新纳入记账（崩溃恢复）。
+
+        返回恢复条数。sink 为 None 时返回 0（未启用 Ticket 模型）。
+
+        **非终态定义**：pending / running / waiting / ready / blocked。
+        failed / dropped / ended 是终态，不需要恢复。
+
+        恢复动作（**只恢复状态，不恢复执行**）：
+        - 把待办项标 ``blocked``（reason=restart）并 emit
+          ``assignment.report`` —— 它们没失败，只是被重启打断了；
+          标 failed 会污染失败率统计。
+        - 重新纳入 Worker Slot 记账（blocked 不占 slot 位，但在
+          ``active()`` 里可见，审计视图能看到"这些还在路上"）。
+
+        优先调用 sink 的 ``recover_and_mark``（一次性完成标注 + emit）；
+        只有 ``recover`` 的旧实现退化为纯读取 + 本地记账。
+        """
+        if self._ticket_sink is None:
+            return 0
+
+        pending: list[Any] = []
+        try:
+            if hasattr(self._ticket_sink, "recover_and_mark"):
+                pending = list(self._ticket_sink.recover_and_mark(reason="restart"))
+            else:
+                pending = list(self._ticket_sink.recover())
+        except Exception as exc:  # noqa: BLE001 —— 恢复失败不阻断启动
+            logger.warning("pending assignment recovery failed: %s", exc)
+            return 0
+
+        for item in pending:
+            try:
+                self._worker_slots.track_pending(
+                    getattr(item, "assignment_id", ""),
+                    run_id=getattr(item, "run_id", ""),
+                    ticket_id=getattr(item, "ticket_id", ""),
+                )
+            except Exception:  # noqa: BLE001
+                logger.debug("slot bookkeeping failed for %r", item, exc_info=True)
+        return len(pending)
 
     def _default_sink(self, kind: str, data: dict) -> None:
         self._events.append((kind, data))
