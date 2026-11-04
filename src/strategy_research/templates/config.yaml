@@ -66,13 +66,11 @@ strategy_params:
   vol_lookback: 60             # 波动率计算窗口 (逆波动率加权)
 
 # 因子配置
-# 支持三种因子类型:
-# 1. 表达式因子 (code): 使用算子表达式
-# 2. Alpha Zoo 因子 (alpha_id): 使用预置因子库
-# 3. 混合因子 (alpha_ids): 多个 Alpha Zoo 因子组合
+# 支持一种因子类型（Alpha Zoo 预置因子库已于 2026-11-04 移除）:
+#   - 表达式因子 (code): 使用算子表达式
 
 factors:
-  # 方式 1: 表达式因子
+  # 表达式因子
   - name: momentum_20d
     code: ts_return(close, 20)
     weight: 0.5
@@ -82,29 +80,8 @@ factors:
     weight: 0.5
     category: volatility
 
-  # 方式 2: Alpha Zoo 因子 (单个)
-  # - name: gtja191_001
-  #   alpha_id: gtja191_001
-  #   weight: 0.3
-  #   category: volume_price
-
-  # 方式 3: Alpha Zoo 因子 (批量组合)
-  # - name: momentum_composite
-  #   alpha_ids:
-  #     - alpha101_001
-  #     - gtja191_010
-  #     - qlib158_ma10
-  #   combination: ic_weighted  # equal / ic_weighted / risk_parity
-  #   weight: 0.4
-
-# Alpha Zoo 可用因子库:
-# - alpha101: Kakushadze 101 个公式化因子 (主题: momentum/reversal/volatility/volume)
-# - gtja191: 国泰君安 191 个 A 股截面因子 (主题: volume/reversal/momentum/volatility)
-# - qlib158: 微软 Qlib 158 个 ML 因子 (主题: momentum/volatility/volume)
-# - academic: 11 个学术因子 (Fama-French, Carhart 等)
-# - fundamental: 4 个基本面因子 (ROE, 盈利收益率等)
+# 已移除：Alpha Zoo 预置因子库（alpha101 / gtja191 / qlib158 / academic /
+# fundamental，共 465+ 因子）以及配套的 alpha_id / alpha_ids 配置方式。
+# 配置里若仍写这两类键，运行时会在 factor_failures 里显式记录失败。
 #
-# 列出可用因子:
-#   from strategy_research.core.alpha_zoo_adapter import AlphaZooAdapter
-#   adapter = AlphaZooAdapter()
-#   alphas = adapter.list_alphas(zoo="gtja191", theme="momentum")
+# 归档保留：testcase/golden/apps/alpha_zoo/（loader + 算子 + 408 个 YAML 定义）

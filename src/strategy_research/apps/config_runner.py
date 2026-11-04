@@ -264,10 +264,14 @@ def create_strategy(cfg: dict, workspace_path=None):
 class FactorStrategy:
     """因子策略: 基于因子表达式计算权重.
 
-    支持 3 种因子类型（按 YAML 配置自动识别）：
-    1. **code**: 表达式因子（如 `ts_return(close, 20)`）
-    2. **alpha_id**: 单个 Alpha Zoo 因子（如 `gtja191_001`）
-    3. **alpha_ids**: 多个 Alpha Zoo 因子组合 + combination 方法
+    因子类型（按 YAML 配置自动识别）：
+
+    1. **code**: 表达式因子（如 ``ts_return(close, 20)``）
+
+    原先还支持 ``alpha_id``（单个 Alpha Zoo 因子）与 ``alpha_ids``
+    （多因子组合），**已于 2026-11-04 随 alpha_zoo 一起移除**。配置里
+    若仍写这两类键，``_compute_factor_values`` 会显式记一条 factor_failure
+    ——不静默跳过，因为「因子没算出来」与「策略选中空仓」含义不同。
 
     Expression factors need per-asset wide (T, 5) OHLCV panels to satisfy
     the factor DSL.  When ``workspace_path`` and ``strategy_name`` are
@@ -382,15 +386,17 @@ class FactorStrategy:
     def _compute_factor_values(
         self, date: pd.Timestamp, price_panel: pd.DataFrame
     ) -> dict[str, Any]:
-        """Compute per-factor values (expression / single alpha / combined)."""
-        from strategy_research.apps.alpha_zoo_adapter import AlphaZooAdapter
+        """Compute per-factor values (expression factors only).
+
+        Alpha Zoo 预置因子（``alpha_id`` / ``alpha_ids``）已于 2026-11-04
+        随 alpha_zoo 一起移除；配置里若仍写这两类键会在下方显式记失败。
+        """
         from strategy_research.apps.tools.data_transforms import (
             is_wide_close_format,
             long_to_wide_ohlcv_per_asset,
         )
 
         factor_values: dict[str, Any] = {}
-        alpha_zoo = None  # lazy init
 
         # Expression factors need real per-asset OHLCV.  Load once from
         # DuckDB, split per asset, then run the DSL on each panel.
@@ -428,38 +434,22 @@ class FactorStrategy:
                 )
                 continue
 
-            # 方式 2: 单个 Alpha Zoo 因子
-            alpha_id = factor.get("alpha_id", "")
-            if alpha_id:
-                if alpha_zoo is None:
-                    alpha_zoo = AlphaZooAdapter()
-                try:
-                    wide = alpha_zoo.compute_as_wide(alpha_id, price_panel.loc[:date])
-                    factor_values[name] = wide
-                except Exception as e:
-                    logger.warning(f"⚠️  Alpha Zoo {alpha_id} 计算失败: {e}")
-                    self._record_factor_failure(name, alpha_id, e)
-                continue
-
-            # 方式 3: 多个 Alpha Zoo 因子组合
-            alpha_ids = factor.get("alpha_ids", [])
-            if alpha_ids:
-                if alpha_zoo is None:
-                    alpha_zoo = AlphaZooAdapter()
-                combination = factor.get("combination", "equal")
-                try:
-                    df_batch = alpha_zoo.compute_batch(alpha_ids, price_panel.loc[:date])
-                    if df_batch.empty:
-                        continue
-                    if combination in ("equal", "ic_weighted"):
-                        combined = df_batch.mean(axis=1)
-                    else:
-                        combined = df_batch.mean(axis=1)
-                    combined_wide = combined.unstack()
-                    factor_values[name] = combined_wide
-                except Exception as e:
-                    logger.warning(f"⚠️  Alpha Zoo 组合 {alpha_ids} 计算失败: {e}")
-                    self._record_factor_failure(name, ",".join(alpha_ids)[:80], e)
+            # 方式 2 / 3（alpha_id / alpha_ids，即 Alpha Zoo 预置因子）已随
+            # alpha_zoo 一起移除（2026-11-04，做减法批次 1）。配置里若仍写了
+            # 这两类键，这里明确记账到 factor_failures —— 静默跳过会让
+            # 「因子没算出来」表现为「策略选中了空仓」，两者含义完全不同。
+            for legacy_key, kind in (("alpha_id", "单个"), ("alpha_ids", "组合")):
+                legacy = factor.get(legacy_key)
+                if not legacy:
+                    continue
+                msg = (
+                    f"Alpha Zoo 已移除：配置中的 {legacy_key}={legacy!r} "
+                    f"（{kind} alpha）不再支持。请改用 'code' 表达式因子。"
+                )
+                logger.warning("⚠️  %s", msg)
+                self._record_factor_failure(
+                    name, str(legacy)[:80], RuntimeError(msg)
+                )
 
         return factor_values
 

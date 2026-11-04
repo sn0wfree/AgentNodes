@@ -41,7 +41,8 @@ EXPECTED_NEW = {
     "strategy-generate": "strategy",
     "thesis-tracker": "tool",
     "volatility": "analysis",
-    "alpha-zoo": "strategy",
+    # "alpha-zoo": 已随 alpha_zoo 移除（2026-11-04 做减法批次 1）；
+    # 归档见 testcase/golden/apps/alpha_zoo/alpha-zoo-skill.md
     "seasonal": "strategy",
     "asset-allocation": "strategy",
     "macro-analysis": "analysis",
@@ -209,9 +210,12 @@ class TestSkillIntegrity:
             assert s.path.exists(), f"Skill '{s.name}' path doesn't exist: {s.path}"
 
     def test_total_skill_count(self, registry: SkillRegistry):
-        """Total should be 27 (10 existing + 17 new)."""
+        """Total should be 26 (10 existing + 16 new).
+
+        原为 27；``alpha-zoo`` 已随 alpha_zoo 移除（2026-11-04 做减法批次 1）。
+        """
         total = len(registry)
-        assert total == 27, f"Expected 27 total, got {total}"
+        assert total == 26, f"Expected 26 total, got {total}"
 
     def test_all_skills_have_nontrivial_content(self, registry: SkillRegistry):
         # No empty/placeholder skills

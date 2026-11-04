@@ -35,14 +35,11 @@ LAYER_MEMBERSHIP: dict[str, str] = {
     "strategy_research.interfaces.mcp": "L1",
     # L2 apps (research IP)
     "strategy_research.apps": "L2",  # 物理层目录（逐模块迁移中）
-    "strategy_research.apps.alpha_zoo_yaml": "L2",
     "strategy_research.apps.study": "L2",
     "strategy_research.apps.goal": "L2",
     "strategy_research.apps.hypothesis": "L2",
-    "strategy_research.apps.alpha_zoo": "L2",
-    "strategy_research.apps.alpha_zoo_adapter": "L2",
-    "strategy_research.apps.alpha_zoo_convert": "L2",
-    "strategy_research.apps.alpha_zoo_ops": "L2",
+    # alpha_zoo 及 4 个衍生模块已移除（2026-11-04 做减法批次 1）；
+    # 归档见 testcase/golden/apps/alpha_zoo/
     "strategy_research.apps.backtest": "L2",
     "strategy_research.apps.backtest_engine": "L2",
     "strategy_research.apps.backtest_models": "L2",

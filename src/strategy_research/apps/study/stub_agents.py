@@ -95,7 +95,9 @@ def _stub_factor_analyst(round_num: int, previous_outputs: list, behavior: str) 
         ]
         candidates = factors_pool[round_num % len(factors_pool)]
         return json.dumps({
-            "path_used": "local" if round_num % 2 == 0 else "alpha_zoo",
+            # 原为 "local" / "alpha_zoo" 两路；alpha_zoo 已移除（2026-11-04），
+            # 桩数据也统一成 local，避免产出已不存在的枚举值。
+            "path_used": "local",
             "candidates": candidates,
             "rejected": [{"factor_name": f"bad_factor_{round_num}", "reason": "IC < 0.03"}],
             "combination_method": "ic_weighted",

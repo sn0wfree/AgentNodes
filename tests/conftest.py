@@ -469,7 +469,7 @@ _LANE_SLOW_FILES = frozenset({
     "test_study_actions.py",          # 5.3s
     "test_hypothesis_ops.py",         # 5.2s
     # added after the first incremental timings fill (2026-10-08):
-    "test_alpha_zoo.py",              # 418.3s - repo slowest by far
+    # test_alpha_zoo.py 已随 alpha_zoo 移除（2026-11-04 做减法批次 1）
     "test_swarm_presets_30.py",       # 22.9s
     "test_tools_integration.py",      # 16.5s
     "test_tool_retry.py",             # 8.1s

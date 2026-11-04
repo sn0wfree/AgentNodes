@@ -28,8 +28,9 @@
   <h1>架构 v9.0 · 四层堆叠 · 功能模块化</h1>
   <p class="sub">
     依赖只向下流：<b>L1 interfaces → L2 apps → L3 kernel → L4 foundation</b>。
-    每层内部按<b>功能域</b>分模块，模块边界取自真实包结构（984 文件 / 144k 行，AST 实测）。
+    每层内部按<b>功能域</b>分模块，模块边界取自真实包结构（513 文件 / 116.9k 行，AST 实测）。
     违规仅剩 3 条（<code>L3→L1</code> 2 · <code>L2→L1</code> 1），<code>L3→L2</code> 已清零。
+    <b>2026-11-04 做减法批次 1</b>：移除 alpha_zoo（27,263 行），apps 层 66.1k → 38.9k。
   </p>
 
 <div class="scroll">
@@ -111,8 +112,8 @@
   <text x="86" y="364" class="bignum" text-anchor="middle" fill="#b45309">L2</text>
   <text x="86" y="388" class="lyr" text-anchor="middle">apps</text>
   <text x="86" y="410" class="lyrsub" text-anchor="middle">业务域</text>
-  <text x="86" y="436" class="loc" text-anchor="middle">625 文件</text>
-  <text x="86" y="454" class="loc" text-anchor="middle">66.1k 行</text>
+  <text x="86" y="436" class="loc" text-anchor="middle">154 文件</text>
+  <text x="86" y="454" class="loc" text-anchor="middle">38.9k 行</text>
 
   <rect x="160" y="316" width="1416" height="546" rx="12" class="band"/>
   <text x="180" y="344" class="dom">研究 IP · 按业务能力分四个功能域（域内高内聚，域间不互相调用）</text>
@@ -140,20 +141,20 @@
   <!-- L2 domain 2: 因子与数据 -->
   <rect x="526" y="360" width="330" height="470" rx="9" class="dombox"/>
   <text x="542" y="386" class="dom">因子与数据</text>
-  <text x="542" y="406" class="loc">33.0k 行</text>
+  <text x="542" y="406" class="loc">8.2k 行（原 33.0k，-75%）</text>
   <rect x="540" y="418" width="302" height="46" rx="6" class="mod"/>
-  <text x="552" y="437" class="st">alpha_zoo · 因子库</text><text x="552" y="454" class="loc">25.7k（最大单体）</text>
+  <text x="552" y="437" class="st">compute_factor · 因子计算</text><text x="552" y="454" class="loc">1.4k</text>
   <rect x="540" y="470" width="302" height="46" rx="6" class="mod"/>
-  <text x="552" y="489" class="st">compute_factor · 因子计算</text><text x="552" y="506" class="loc">1.4k</text>
+  <text x="552" y="489" class="st">data_source · 行情接入</text><text x="552" y="506" class="loc">2.1k</text>
   <rect x="540" y="522" width="302" height="46" rx="6" class="mod"/>
-  <text x="552" y="541" class="st">data_source · 行情接入</text><text x="552" y="558" class="loc">2.1k</text>
+  <text x="552" y="541" class="st">db · duckdb_store</text><text x="552" y="558" class="loc">1.3k + 0.4k</text>
   <rect x="540" y="574" width="302" height="46" rx="6" class="mod"/>
-  <text x="552" y="593" class="st">db · duckdb_store</text><text x="552" y="610" class="loc">1.3k + 0.4k</text>
-  <rect x="540" y="626" width="302" height="46" rx="6" class="mod"/>
-  <text x="552" y="645" class="st">data_import · readiness</text><text x="552" y="662" class="loc">0.5k + 0.4k</text>
-  <text x="542" y="694" class="sm">alpha_zoo_convert 1.0k · yaml 0.3k · ops 0.2k</text>
-  <text x="542" y="714" class="sm">market.duckdb 接入专写（D-3）</text>
-  <text x="542" y="734" class="sm">数据面：唯一读入口 + 只追加写</text>
+  <text x="552" y="593" class="st">data_import · readiness</text><text x="552" y="610" class="loc">0.5k + 0.4k</text>
+  <rect x="540" y="626" width="302" height="46" rx="6" class="modhi"/>
+  <text x="552" y="645" class="st">tools · data_transforms + ops</text><text x="552" y="662" class="loc">0.8k（含新迁入算子）</text>
+  <text x="542" y="694" class="sm">alpha_zoo 25.7k 已移除（批次 1）→ 归档</text>
+  <text x="542" y="714" class="sm">testcase/golden/apps/alpha_zoo/</text>
+  <text x="542" y="734" class="sm">market.duckdb 接入专写（D-3）</text>
 
   <!-- L2 domain 3: 回测与验证 -->
   <rect x="872" y="360" width="330" height="470" rx="9" class="dombox"/>
@@ -367,6 +368,7 @@
   <span><b>蓝箭头</b>＝合法下行 import</span>
   <span><b>红虚线</b>＝上行违规（仅 3 条，棘轮锁定）</span>
   <span><b>白框</b>＝功能模块 · <b>浅蓝框</b>＝本轮新增/重点模块</span>
+  <span><b>做减法</b>：移除的模块归档到 <code>testcase/golden/</code>，图内保留"已移除"标记</span>
 </div>
 
 <h2>层职责与模块化原则</h2>
@@ -374,7 +376,7 @@
 <thead><tr><th style="width:110px">层</th><th style="width:80px">体量</th><th>职责边界</th><th style="width:300px">模块化原则</th></tr></thead>
 <tbody>
 <tr><td class="k">L1 interfaces</td><td>120 文件<br>30.3k 行</td><td>唯一出口：把外部请求包成 WorkRequest，订阅事件流回给调用方。不含业务判断。</td><td>按<b>渠道</b>分（api / cli / mcp）+ 一个<b>组装根</b>。组装根是唯一允许知道 apps 具体实现的 L1 模块。</td></tr>
-<tr><td class="k">L2 apps</td><td>625 文件<br>66.1k 行</td><td>研究 IP 的全部所在。方法论、因子、回测、进化都在这层。</td><td>按<b>业务能力</b>分四个功能域；域间不互相 import，协作走 L3 的端口或事件流。</td></tr>
+<tr><td class="k">L2 apps</td><td>154 文件<br>38.9k 行</td><td>研究 IP 的全部所在。方法论、因子、回测、进化都在这层。</td><td>按<b>业务能力</b>分四个功能域；域间不互相 import，协作走 L3 的端口或事件流。</td></tr>
 <tr><td class="k">L3 kernel</td><td>175 文件<br>36.7k 行</td><td>业务无关的平台机制：控制、执行、能力供给。不认识研究语义。</td><td>按<b>机制职责</b>分三个子带（控制面 / 执行面 / 能力面）；同层自由互调，只向下依赖。</td></tr>
 <tr><td class="k">L4 foundation</td><td>64 文件<br>10.9k 行</td><td>零业务知识的基础设施。被上面三层共同依赖。</td><td>按<b>技术能力</b>分（llm / storage / utils / observability / web）。晋升门槛＝去掉 run/session 语义可独立成库。</td></tr>
 </tbody>
@@ -391,7 +393,7 @@
 </table>
 
 <footer>
-  数据：AST 实测 2026-11-04（984 文件 / 144,086 行）· 门禁：<code>check_dangling_imports.py --layers</code> ·
+  数据：AST 实测 2026-11-04（513 文件 / 116,905 行 · 批次 1 后）· 门禁：<code>check_dangling_imports.py --layers</code> ·
   版本史：<code>docs/architecture-diagram-changelog.md</code> · 设计：<code>docs/layered-skeleton-design-20261103.md</code>
 </footer>
 </div>

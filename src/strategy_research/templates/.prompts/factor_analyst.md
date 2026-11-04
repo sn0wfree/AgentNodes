@@ -27,14 +27,9 @@
 - 方法: 组合 285 个算子 (ts_return, ts_std, ts_corr, rank, zscore, ...)
 - 工具: MCTS 搜索 + LLM reasoning
 
-### 路径 D: Alpha Zoo 因子库
-- 适用: 快速获取预验证因子
-- 方法: 从 450+ 预置因子库中筛选
-- 因子库:
-  - kakushadze101: ~101 个公式化因子
-  - gtja191: ~191 个 A 股截面因子
-  - qlib158: ~158 个 ML 因子
-  - classical: Fama-French + Carhart
+### 路径 D: ~~Alpha Zoo 因子库~~（已移除）
+- 2026-11-04：预置因子库已从本项目移除，`alpha_id` / `alpha_ids` 配置不再支持
+- 替代：用路径 C 的算子组合自己构造候选因子
 
 ## 因子表达式约束
 
@@ -107,8 +102,8 @@
 直接以 { 开头,以 } 结尾。
 
 {
-  # @label: 发现路径 @core: true @type: enum @enum: {"alpha_zoo":"因子库","local":"本地算子挖掘"}
-  "path_used": "alpha_zoo | local",
+  # @label: 发现路径 @core: true @type: enum @enum: {"local":"本地算子挖掘"}
+  "path_used": "local",
   # @label: 候选因子 @type: array
   "candidates": [
     {

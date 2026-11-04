@@ -1,0 +1,68 @@
+id: alpha101_001
+zoo: alpha101
+nickname: 'Kakushadze Alpha #1'
+theme:
+- reversal
+- volatility
+formula_latex: rank(ts_argmax(SignedPower((returns<0)?stddev(returns,20):close, 2.), 5)) - 0.5
+columns_required:
+- close
+universe:
+- equity_us
+- equity_in
+frequency:
+- 1D
+decay_horizon: 5
+min_warmup_bars: 25
+steps:
+- name: close
+  expr:
+    column: close
+- name: returns
+  expr:
+    op: pct_change
+    args:
+    - ref: close
+- name: cond
+  expr:
+    op: astype
+    args:
+    - op: lt
+      args:
+      - ref: returns
+      - value: 0
+    - value: float
+- name: x
+  expr:
+    op: add
+    args:
+    - op: mul
+      args:
+      - op: ts_std
+        args:
+        - ref: returns
+        - value: 20
+      - ref: cond
+    - op: mul
+      args:
+      - ref: close
+      - op: sub
+        args:
+        - value: 1.0
+        - ref: cond
+- name: out
+  expr:
+    op: sub
+    args:
+    - op: rank
+      args:
+      - op: ts_argmax
+        args:
+        - op: signed_power
+          args:
+          - ref: x
+          - value: 2.0
+        - value: 5
+    - value: 0.5
+final:
+  ref: out

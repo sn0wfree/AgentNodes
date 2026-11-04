@@ -62,12 +62,15 @@ orthogonalized, _ = qr(factor_returns.values)
 3. **IC decay 错配**: 高换手因子用月频权重, 低换手用日频权重
 4. **共线性放大**: 5 个高相关因子等权 = 单因子 × 5 倍波动
 
-## 与 Alpha Zoo 集成
+## 因子候选来源
 
-```python
-from strategy_research.core.alpha_zoo_yaml import list_alphas
-candidates = list_alphas(category='momentum') + list_alphas(category='value')
-# 预筛 → 相关性矩阵 → 组合 → 验证
+> 2026-11-04：`alpha_zoo` 预置因子库已移除，不再有 `list_alphas()`。
+
+候选因子改为**自己用表达式写**（`config.yaml` 的 `code` 字段），
+或从研究账本里已沉淀的因子中挑选。组合流程不变：
+
+```
+预筛 → 相关性矩阵 → 组合 → 验证
 ```
 
 ## 输出格式
