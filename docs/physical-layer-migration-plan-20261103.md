@@ -305,14 +305,34 @@ python -c "import strategy_research"
 每 step 一 commit：`git revert <sha>` 即回到上一步；波次结束跑全量做整波验证。
 `core/` 空壳在 W7 前始终保留，任何一步回滚都不会产生悬空路径。
 
-## 9. 收官状态（2026-11-04）
+## 9. 收官状态（2026-11-04，W7-3 交叉验证后修订）
 
 | 维度 | 迁移前（11-03 基线） | 收官 |
 |---|---|---|
-| 物理结构 | `core/` 一坨 55 包 | interfaces/{api,cli,mcp} · apps(24) · kernel(19) · foundation(12) |
-| 上行违规 | L2>L1 1 · L3>L1 2 · L3>L2 46 · L4>L2 2 · L4>L3 4 | **全 0**（口径修正后实测） |
+| 物理结构 | `core/` 一坨 55 包 | interfaces/{api,cli,mcp} · apps(26) · kernel(19) · foundation(12) |
+| 上行违规 | L2>L1 1 · L3>L1 2 · L3>L2 46 · L4>L2 2 · L4>L3 4 | **49 条如实登记**：
+  L3>L2 46（ADR-003 保留）+ L3>L1 2 + L2>L1 1（seam 触点）+ L4 簇全 0。
+  中途一度报「全 0」系门禁解析 bug（见下），已修正 |
 | 层门禁 | 60 行手写成员表 + 46 条豁免 | 目录即层 + 成员表仅存顶层目录行 |
+| 门禁自身质量 | 两处计数 bug 先后潜伏 | W3a 修 alias 展开（46→47 虚增）；
+  W7 graphify 交叉验证暴露 level=0 拼接 bug（绝对形态全部漏报）。
+  **教训：静态门禁必须有第二种量纲做交叉验证** |
 | 既有缺陷顺带修复 | — | 7 处悬空 import（3 个静默功能失效）、
-  file_cache Windows 文件名、CompactConfig/structured_output 归层 |
+  file_cache Windows 文件名、CompactConfig/structured_output 归层、
+  data store 适配件归位 apps |
 | 遗留待办 | — | Alpha Zoo YAML where 语义（业务域，独立台账）、
   ruff I001/F401 宽限项 127 条 |
+
+### 9.1 全量测试最终对照（vs 11-03 基线 98F）
+
+最终并行全量 185F / 13880P（6 分 35 秒，xdist -n 4）：
+
+| 类别 | 数量 | 说明 |
+|---|---:|---|
+| Alpha Zoo YAML 业务缺陷 | 116 | where 语义（独立台账，业务域） |
+| 既有测试自身缺陷 | ~12 | tool_retry(5)/e2e_full_flow(2)/data_clean_tool(2)/
+  quant_correctness(2)/bg_tools(1)——W4 差分逐一确认过 HEAD 上同样失败 |
+| 顺序敏感摇摆集 | ±10 | route_agent_event/stage6_e2e/tui_event 等在历史 full run
+  间来回摇摆，非稳定新增 |
+| **迁移净引入** | **0** | study_event_emit 2 处路径字面量已修（W7-3b） |
+| 顺带修复 | -43 | 43 条基线失败转通过 |
