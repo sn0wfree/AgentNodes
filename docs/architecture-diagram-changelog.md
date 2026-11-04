@@ -3,6 +3,27 @@
 > 从 `docs/architecture-diagram.html` 外移（2026-11-03 v8 瘦身）。
 > 图身只保留结构与盒级状态；本文件承载 v5.1 → v8.4 的全部演进记录。
 
+- **v8.5（2026-11-04，RSI 三阶段落地后刷新）**：**数据与状态刷新，结构不变**。
+  ① ⑦ 矩阵与棘轮重测（AST 实测，非推算）：**上行违规 55 → 3**——
+  簇A `L3→L2` 46 → **0**（G2b 端口化完成，CapabilityRegistry 38 kind 已注册）；
+  L4 簇（`L4→L2` 2 · `L4→L3` 4）→ **0**；剩余仅 `L3→L1` 2 + `L2→L1` 1。
+  下行边数同步刷新：L1→L2 171 · L1→L3 120 · L1→L4 53 · L2→L3 39 ·
+  L2→L4 48 · L3→L4 48。② ②Gateway 盒：容量组闸 ⏳→✅（chat 32 / study CPU-1 /
+  cron 2，满→留队不留失）、CapabilityRegistry ⏳→✅、**新增** Ticket/Assignment
+  行（3 态 + 七态 · 崩溃恢复 · Worker Slot 订阅）。③ 右翼新增「RSI 进化域」
+  盒（apps/evolution 1.09k 行：holdout 只读 · EvolutionAgent 5 工具 ·
+  validation_gate ±20%/3 次回滚 · golden_eval 信号）。④ ⑥ 区「基因组（RSI）」
+  盒由黄色待建改蓝色已建：Tier 0 冻结快照 · Tier 1 四类已通 · Tier 2 研究产物 ·
+  版本链持久化 · 提案应用后才评测。⑤ 右栏体量速览重测为**按层统计**
+  （L1 120 文件 30.3k · L2 625 文件 66.1k · L3 175 文件 36.7k ·
+  L4 64 文件 10.9k，含 `scripts/templates` 不计入口径不变）；落地状态加
+  「RSI 三阶段」一行，⏳ 列表去掉容量组闸、加 graph_shape。⑥ 接缝规范
+  「L2 统一注册 ⏳」→✅、「L3 一致性套件 ⏳」删除（未列入本阶段），新增
+  「组装根在 L1」。
+  依据：`scripts/arch/check_dangling_imports.py --layers` 实测 +
+  逐层文件/行数 AST 统计；提交 `7aaec632`（接线+持久化）、`c2d2af33`
+  （Tier 1 四类 + golden eval）。脊-翼双平面与四层骨架经复核仍成立，不重画。
+
 - **v8.4（2026-11-04，物理分层收官后刷新）**：**数据与路径刷新，结构不变**。
   ① 「成员与体量速览」重测：apps 22 包 57.6k → **31 包 62.3k（45%）**、
   kernel 35.7k → 34.6k（控制面 4.1k→4.5k、执行面 6.0k→6.1k、能力面

@@ -51,11 +51,14 @@ def build_capacity_gate() -> Any | None:
 
 
 def build_genome_store(workspace: Any | None = None) -> Any | None:
-    """构造 Tier 1 基因组版本链（**带持久化**）。
+    """构造 Tier 1 基因组版本链（**带持久化 + Tier 0 快照**）。
 
     有 workspace 时落盘到 ``<workspace>/.quantnodes/genome/``——这样进程
     重启后版本链还在，自我进化的成果不会随进程消失。无 workspace 时
     退化为纯内存（测试路径）。
+
+    Tier 0 快照由 ``tier0_snapshot.collect_tier0()`` 采集（L1 才能同时
+    看到 kernel 的预算/停止策略与 apps 的状态机）。
 
     :param workspace: 持久化根；None = 纯内存
     """
@@ -63,6 +66,15 @@ def build_genome_store(workspace: Any | None = None) -> Any | None:
         from strategy_research.kernel.orchestration.genome_version import (
             GenomeVersionStore,
         )
+
+        # Tier 0 快照：采集失败返回空 dict，不影响基因组可用性
+        tier0: dict[str, Any] = {}
+        try:
+            from strategy_research.interfaces.tier0_snapshot import collect_tier0
+
+            tier0 = collect_tier0()
+        except Exception as exc:  # noqa: BLE001
+            logger.warning("tier0 snapshot collection failed: %s", exc)
 
         store = None
         if workspace is not None:
@@ -79,7 +91,7 @@ def build_genome_store(workspace: Any | None = None) -> Any | None:
             except Exception as exc:  # noqa: BLE001 —— 落盘不可用则纯内存
                 logger.warning("genome persistence unavailable: %s", exc)
                 store = None
-        return GenomeVersionStore(store=store)
+        return GenomeVersionStore(store=store, tier0=tier0)
     except Exception as exc:  # noqa: BLE001
         logger.debug("genome store unavailable: %s", exc)
         return None
