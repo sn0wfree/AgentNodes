@@ -3,19 +3,18 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>目标架构 v8.5（脊-翼双平面 · 图归结构 · 台账外移）</title>
+<title>架构 v9.0（四层堆叠 · 功能模块化）</title>
 <style>
   body{margin:0;background:#f8fafc;color:#0f172a;
     font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Microsoft YaHei",system-ui,sans-serif;
     font-size:14px;line-height:1.65;-webkit-font-smoothing:antialiased}
-  .wrap{max-width:1940px;margin:0 auto;padding:28px 24px 64px}
+  .wrap{max-width:1660px;margin:0 auto;padding:28px 24px 64px}
   h1{font-size:22px;font-weight:600;margin:0 0 4px}
   .sub{color:#64748b;font-size:13px;margin:0 0 16px}
   h2{font-size:15px;font-weight:600;margin:30px 0 10px;padding-bottom:8px;border-bottom:1px solid #e2e8f0}
   .scroll{overflow-x:auto;background:#fff;border:1px solid #e2e8f0;border-radius:12px;padding:8px}
   .legend{display:flex;flex-wrap:wrap;gap:16px;font-size:12.5px;color:#64748b;margin:14px 2px 0}
   .legend span{display:inline-flex;align-items:center;gap:6px}
-  .dot{width:11px;height:11px;border-radius:50%;display:inline-block}
   table{width:100%;border-collapse:collapse;background:#fff;border:1px solid #e2e8f0;border-radius:10px;overflow:hidden;font-size:12.5px}
   th,td{text-align:left;padding:8px 11px;border-bottom:1px solid #e2e8f0;vertical-align:top}
   th{background:#f1f5f9;font-weight:600;color:#334155}
@@ -26,316 +25,374 @@
 </head>
 <body>
 <div class="wrap">
-  <h1>目标架构 v8.5 · 脊-翼双平面 —— 图归结构：每盒 = 名字 + 一行本质 + 盒级状态</h1>
-  <p class="sub"><b>脊-翼双平面</b>：①渠道汇入 WorkRequest → <b>左脊 = 平台 kernel（②Gateway → 走廊[ConfigHub/CapabilityRegistry] → ③执行面 → ④平台数据）</b>；<b>右翼 = 研究域 apps（IP · 并列工作面）</b>——工单在 ③ 经<b>端口回调</b>进翼干活，翼经<b>9 触点白名单</b>用平台；⑥ foundation 全宽垫底被脊翼共同依赖。<b>⑦ = 编号所在处</b>（DAG 拓扑排名 + 棘轮门禁）。每盒 = 名字 + 一行本质 + 盒级状态；特性级细节查各 stage-r*/stage-b* 文档，台账在右栏与 changelog。设计：<code>docs/layered-skeleton-design-20261103.md</code></p>
+  <h1>架构 v9.0 · 四层堆叠 · 功能模块化</h1>
+  <p class="sub">
+    依赖只向下流：<b>L1 interfaces → L2 apps → L3 kernel → L4 foundation</b>。
+    每层内部按<b>功能域</b>分模块，模块边界取自真实包结构（984 文件 / 144k 行，AST 实测）。
+    违规仅剩 3 条（<code>L3→L1</code> 2 · <code>L2→L1</code> 1），<code>L3→L2</code> 已清零。
+  </p>
 
 <div class="scroll">
-<svg viewBox="0 0 1880 1830" width="1880" height="1830" xmlns="http://www.w3.org/2000/svg" font-family="-apple-system, 'PingFang SC', 'Microsoft YaHei', sans-serif">
+<svg viewBox="0 0 1600 1790" width="1600" height="1790" xmlns="http://www.w3.org/2000/svg" font-family="-apple-system, 'PingFang SC', 'Microsoft YaHei', sans-serif">
   <style>
-    .lyr{font-size:14px;font-weight:600;fill:#334155}
-    .bt{font-size:15px;font-weight:600;fill:#0f172a}
-    .st{font-size:12.5px;fill:#475569}
-    .sm{font-size:11.5px;fill:#94a3b8}
-    .hub{font-size:14.5px;font-weight:600;fill:#0c4a6e}
-    .hq{font-size:12.5px;fill:#0369a1}
-    .flow-lbl{font-size:12px;font-weight:500;fill:#0c4a6e}
-    .mono{font-family:Consolas, monospace}
-    .num{font-size:13px;font-weight:700;text-anchor:middle}
-    .box{fill:#fff;stroke:#cbd5e1;stroke-width:1}
-    .boxb{fill:#e0f2fe;stroke:#7dd3fc;stroke-width:1.2}
-    .boxa{fill:#fef3c7;stroke:#fcd34d;stroke-width:1.2}
-    .boxd{fill:#f1f5f9;stroke:#334155;stroke-width:1.6;stroke-dasharray:7 4}
-    .boxg{fill:#f1f5f9;stroke:#cbd5e1;stroke-width:1}
-    .boxw{fill:#fffbeb;stroke:#fcd34d;stroke-width:1.2}
-    .arb{stroke:#0ea5e9;stroke-width:1.4;fill:none;marker-end:url(#a2)}
-    .arpu{stroke:#7c3aed;stroke-width:1.4;fill:none;stroke-dasharray:6 3;marker-end:url(#a3)}
+    .lyr{font-size:15px;font-weight:600;fill:#0f172a}
+    .lyrsub{font-size:11.5px;fill:#64748b}
+    .bt{font-size:14px;font-weight:600;fill:#0f172a}
+    .dom{font-size:13.5px;font-weight:600;fill:#334155}
+    .st{font-size:12px;fill:#475569}
+    .sm{font-size:11px;fill:#94a3b8}
+    .loc{font-size:11.5px;fill:#94a3b8;font-family:Consolas,monospace}
+    .bignum{font-size:26px;font-weight:600;fill:#0f172a}
+    .tag{font-size:10.5px;font-weight:600}
+    .mono{font-family:Consolas,monospace}
+    .band{fill:#fff;stroke:#e2e8f0;stroke-width:1.2}
+    .dombox{fill:#f8fafc;stroke:#e2e8f0;stroke-width:1}
+    .mod{fill:#fff;stroke:#cbd5e1;stroke-width:1}
+    .modhi{fill:#eff6ff;stroke:#93c5fd;stroke-width:1.2}
+    .arrow{stroke:#0ea5e9;stroke-width:2;fill:none;marker-end:url(#a1)}
+    .arrowup{stroke:#dc2626;stroke-width:1.6;fill:none;stroke-dasharray:6 4;marker-end:url(#a2)}
   </style>
   <defs>
-    <marker id="a2" markerWidth="9" markerHeight="9" refX="7" refY="4" orient="auto"><path d="M0,0 L7,4 L0,8" fill="none" stroke="#0ea5e9" stroke-width="1.4"/></marker>
-    <marker id="a3" markerWidth="9" markerHeight="9" refX="7" refY="4" orient="auto"><path d="M0,0 L7,4 L0,8" fill="none" stroke="#7c3aed" stroke-width="1.4"/></marker>
+    <marker id="a1" markerWidth="10" markerHeight="10" refX="8" refY="5" orient="auto">
+      <path d="M0,0 L8,5 L0,10" fill="none" stroke="#0ea5e9" stroke-width="2"/>
+    </marker>
+    <marker id="a2" markerWidth="9" markerHeight="9" refX="7" refY="4" orient="auto">
+      <path d="M0,0 L7,4 L0,8" fill="none" stroke="#dc2626" stroke-width="1.6"/>
+    </marker>
   </defs>
-  <rect x="40" y="32" width="26" height="22" rx="6" fill="#e0f2fe" stroke="#7dd3fc"/>
-  <text x="53" y="48" class="num" fill="#0c4a6e">①</text>
-  <text x="76" y="50" class="lyr">渠道（interfaces · L1）</text>
-  <rect x="150" y="20" width="320" height="66" rx="9" class="box"/><text x="166" y="44" class="bt">CLI / TUI</text><text x="166" y="64" class="st">命令 · 终端 · 交互</text>
-  <rect x="523" y="20" width="320" height="66" rx="9" class="box"/><text x="539" y="44" class="bt">FastAPI（20 routers）</text><text x="539" y="64" class="st">chat · study · session</text>
-  <rect x="896" y="20" width="320" height="66" rx="9" class="box"/><text x="912" y="44" class="bt">WebUI</text><text x="912" y="64" class="st">SSE 时间线</text>
-  <rect x="1269" y="20" width="320" height="66" rx="9" class="box"/><text x="1285" y="44" class="bt">MCP</text><text x="1285" y="64" class="st">对外工具协议</text>
-  <text x="150" y="106" class="sm">哑适配器：只构造 WorkRequest + 订阅事件流 ✅ chat/schedule/CLI 已接 · MCP 无 chat 出口（N/A）</text>
-  <line x1="310" y1="112" x2="310" y2="124" class="arb"/><line x1="683" y1="112" x2="683" y2="124" class="arb"/><line x1="1056" y1="112" x2="1056" y2="124" class="arb"/><line x1="1429" y1="112" x2="1429" y2="124" class="arb"/>
-  <line x1="310" y1="124" x2="1429" y2="124" stroke="#0ea5e9"/>
-  <line x1="510" y1="124" x2="510" y2="146" class="arb"/>
-  <text x="580" y="140" class="flow-lbl">WorkRequest（一份契约）—— 全部汇入 Gateway，不直达研究域</text>
-  <rect x="138" y="132" width="748" height="1084" rx="12" class="boxd" style="fill:none"/>
-  <text x="146" y="146" class="sm" style="font-weight:600">平台脊（业务无关 · kernel）—— 研究域是右翼并列，不是底座</text>
-  <rect x="40" y="162" width="26" height="22" rx="6" fill="#e0f2fe" stroke="#7dd3fc"/>
-  <text x="53" y="178" class="num" fill="#0c4a6e">②</text>
-  <text x="76" y="180" class="lyr">Gateway（控制面 · kernel）</text>
-  <rect x="150" y="150" width="720" height="510" rx="10" class="boxb"/>
-  <text x="166" y="176" class="hub">Gateway ✅（单进程 · 唯一控制面）—— submit/receipt · cancel · recover(fold)</text>
-  <text x="166" y="196" class="hq">收下即进 mailbox · 事实经事件流 · 回执两态 · 内部同层自由互调</text>
-  <rect x="166" y="214" width="688" height="36" rx="6" class="boxg"/>
-  <text x="182" y="236" class="st">协议端点 ✅（薄 · 无状态 · kernel）：契约校验 · 幂等去重 · 转发 mailbox ｜ 独立宿主 ⏳</text>
-  <rect x="166" y="258" width="344" height="96" rx="8" class="box"/>
-  <text x="182" y="280" class="bt">mailbox ✅ · kernel</text>
-  <text x="182" y="300" class="st">lane 串行 · cap 20 溢出摘要</text>
-  <text x="182" y="320" class="st">steer · 老化 · interrupt ✅</text>
-  <rect x="526" y="258" width="344" height="96" rx="8" class="box"/>
-  <text x="542" y="280" class="bt">SessionController ✅ · kernel</text>
-  <text x="542" y="300" class="st">turn 准入 · P-4 身份 · fence</text>
-  <text x="542" y="320" class="st">4 队列模式 · 消费者常驻</text>
-  <rect x="166" y="362" width="344" height="96" rx="8" class="box"/>
-  <text x="182" y="384" class="bt">Director ✅ · apps ⚠</text>
-  <text x="182" y="404" class="st">停因→动作 · study.directive</text>
-  <text x="182" y="424" class="sm">apps/study/ · runner 轮末调用 · 不读预算</text>
-  <rect x="526" y="362" width="344" height="96" rx="8" class="box"/>
-  <text x="542" y="384" class="bt">ModelHub ✅ · kernel</text>
-  <text x="542" y="404" class="st">provider/model 解析唯一入口</text>
-  <text x="542" y="424" class="sm">未知 provider 拒绝 · 限流 ⏳</text>
-  <rect x="166" y="470" width="344" height="96" rx="8" class="box"/>
-  <text x="182" y="492" class="bt">ContextHub ✅ · kernel</text>
-  <text x="182" y="512" class="st">collect→arbitrate→render 独占</text>
-  <text x="182" y="532" class="sm">预算仲裁 · 压缩同源 · Provider 3/4</text>
-  <rect x="526" y="470" width="344" height="96" rx="8" class="box"/>
-  <text x="542" y="492" class="bt">EventStore ✅ · Scheduler ⏳</text>
-  <text x="542" y="512" class="st">emit/subscribe/replay 唯一事实源</text>
-  <text x="542" y="532" class="sm">永久保留 · PROTOCOL_VERSION ✅</text>
-  <rect x="166" y="574" width="688" height="36" rx="6" class="boxb"/>
-  <text x="182" y="596" class="st">容量组闸 ✅（闸不是队 · 满→留队不留失 · chat 32/study CPU-1/cron 2）· kernel</text>
-  <rect x="166" y="618" width="688" height="36" rx="6" class="boxb"/>
-  <text x="182" y="640" class="st">Ticket / Assignment ✅（3 态 + 七态 · 崩溃恢复 · Worker Slot 订阅）· 🆕 阶段一</text>
-  <rect x="150" y="672" width="352" height="48" rx="8" class="boxb"/>
-  <text x="166" y="692" class="bt">ConfigHub ✅ · kernel</text>
-  <text x="166" y="710" class="st">分层装载 · fail-fast · 敏感隔离</text>
-  <rect x="518" y="672" width="352" height="48" rx="8" class="boxb"/>
-  <text x="534" y="692" class="bt">CapabilityRegistry ✅ · kernel 🆕</text>
-  <text x="534" y="710" class="st">38 kind 已注册 · L3→L2 清零</text>
-  <line x1="874" y1="690" x2="906" y2="690" class="arpu"/>
-  <text x="890" y="680" font-size="10.5" fill="#7c3aed" text-anchor="middle" font-family="monospace">端口回调</text>
-  <line x1="906" y1="712" x2="874" y2="712" class="arb"/>
-  <text x="890" y="730" font-size="10.5" fill="#0369a1" text-anchor="middle" font-family="monospace">服务白名单</text>
-  <rect x="40" y="738" width="26" height="22" rx="6" fill="#fef3c7" stroke="#fcd34d"/>
-  <text x="53" y="754" class="num" fill="#b45309">③</text>
-  <text x="76" y="756" class="lyr">执行面（GraphEngine · 唯一 runtime）</text>
-  <rect x="150" y="760" width="720" height="56" rx="9" class="boxa"/>
-  <text x="166" y="782" class="bt">GraphEngine ✅（包裹 langgraph · prepare/run/settle）</text>
-  <text x="166" y="804" class="st">chat/study/fanout 原生 · swarm/workflow 编译器 ✅ ｜ T1 协程 ✅ · T2 池 ✅ · T3 ⏳</text>
-  <rect x="150" y="828" width="352" height="88" rx="9" class="box"/>
-  <text x="166" y="850" class="bt">节点类型（每阶段开关 ReAct）</text>
-  <text x="166" y="870" class="st">llm ✅ · react ✅（=AgentLoop 平移）</text>
-  <text x="166" y="890" class="sm">cpu ⏹ · graph ⏹（R5）</text>
-  <rect x="518" y="828" width="352" height="88" rx="9" class="box"/>
-  <text x="534" y="850" class="bt">Preset 注册表（图 = 纯数据）</text>
-  <text x="534" y="870" class="st">chat=退化图 ✅ · research=方法论图 ✅</text>
-  <text x="534" y="890" class="sm">Tier0 冻结 ⏹ · D2 提案通道 ⏳</text>
-  <rect x="150" y="928" width="720" height="58" rx="9" class="box"/>
-  <text x="166" y="952" class="st">执行红线：图根 = turn 走 mailbox ✅ · 取消连坐 ✅ · fence 挂根 ✅ · 事件带 run_id ✅</text>
-  <text x="166" y="972" class="sm">能力面 kernel（24.6k）：AgentLoop（loop/tools）· context · hooks · permission · memory · skills —— react 节点的机制底座（分类审计 W1-1）</text>
-  <rect x="40" y="982" width="26" height="22" rx="6" fill="#e0f2fe" stroke="#7dd3fc"/>
-  <text x="53" y="998" class="num" fill="#0c4a6e">④</text>
-  <text x="76" y="1000" class="lyr">平台数据（P-1…P-5）</text>
-  <text x="150" y="992" class="st" style="font-weight:600">kernel 事件语义（存储原语在 ⑥ foundation）</text>
-  <rect x="150" y="1004" width="352" height="72" rx="9" class="box"/>
-  <text x="166" y="1026" class="bt">事实流（P-1）✅</text>
-  <text x="166" y="1046" class="st">event_log · emit/replay · 永久保留</text>
-  <rect x="518" y="1004" width="352" height="72" rx="9" class="box"/>
-  <text x="534" y="1026" class="bt">状态库（P-2）✅</text>
-  <text x="534" y="1046" class="st">统一库 · projector 折叠 · sqlite 在 ⑥</text>
-  <rect x="150" y="1088" width="352" height="72" rx="9" class="box"/>
-  <text x="166" y="1110" class="bt">工件登记（P-3）✅</text>
-  <text x="166" y="1130" class="st">&gt;64KB 落盘+登记 · 事件只带指针</text>
-  <rect x="518" y="1088" width="352" height="72" rx="9" class="box"/>
-  <text x="534" y="1110" class="bt">身份 + 指针（P-4/5）✅</text>
-  <text x="534" y="1130" class="st">派生 id · 四件套 · sha256 校验</text>
-  <rect x="150" y="1172" width="720" height="36" rx="8" class="boxa"/>
-  <text x="166" y="1194" class="st">接缝规则：研究域不许私开存储通道 —— 大产物走登记 · 事实走事件流 · id 挂血统</text>
-  <rect x="910" y="124" width="26" height="22" rx="6" fill="#fef3c7" stroke="#fcd34d"/>
-  <text x="923" y="140" class="num" fill="#b45309">⑤</text>
-  <text x="946" y="142" class="lyr">研究域（工作翼 · apps）</text>
-  <rect x="910" y="150" width="450" height="1066" rx="10" class="boxw"/>
-  <text x="926" y="176" class="bt">我们的 IP · 不动</text>
-  <text x="926" y="196" class="st">工单在 ③ 经端口进入研究域代码</text>
-  <rect x="926" y="230" width="418" height="70" rx="9" class="boxa"/>
-  <text x="942" y="252" class="bt">研究方法论 ✅</text>
-  <text x="942" y="272" class="sm">假设→证伪→AEGIS→journal · method/ 归位（D1）</text>
-  <rect x="926" y="340" width="418" height="70" rx="9" class="box"/>
-  <text x="942" y="362" class="bt">执行组件</text>
-  <text x="942" y="382" class="sm">runner · scheduler · director（apps ⚠）</text>
-  <rect x="926" y="450" width="418" height="70" rx="9" class="box"/>
-  <text x="942" y="472" class="bt">研究账本</text>
-  <text x="942" y="492" class="sm">hypothesis · claims · journal · study</text>
-  <rect x="926" y="560" width="418" height="70" rx="9" class="box"/>
-  <text x="942" y="582" class="bt">市场数据 ✅</text>
-  <text x="942" y="602" class="sm">market.duckdb · 接入专写（D-3）</text>
-  <rect x="926" y="670" width="418" height="70" rx="9" class="box"/>
-  <text x="942" y="692" class="bt">回测 + rounds ✅</text>
-  <text x="942" y="712" class="sm">studies/{id}/rounds（D-4）· P-5 指针</text>
-  <rect x="926" y="780" width="418" height="70" rx="9" class="box"/>
-  <text x="942" y="802" class="bt">数据工具 ✅</text>
-  <text x="942" y="822" class="sm">apps/tools · data_clean / transforms</text>
-  <rect x="926" y="886" width="418" height="88" rx="9" class="boxb"/>
-  <text x="942" y="908" class="bt">RSI 进化域（apps/evolution）🆕</text>
-  <text x="942" y="928" class="sm">holdout（只读）· EvolutionAgent（5 工具）· 提案</text>
-  <text x="942" y="946" class="sm">validation_gate（±20%/3 次回滚）· golden_eval 信号</text>
-  <text x="942" y="964" class="sm">1,090 行 · 只读 holdout · Tier 0 三层拒绝</text>
-  <text x="926" y="998" class="sm">编号阶梯 → ⑦ · 体量速览 → 右栏（本翼只放业务组件）</text>
-  <rect x="1400" y="150" width="26" height="22" rx="6" fill="#ede9fe" stroke="#c4b5fd"/>
-  <text x="1413" y="166" class="num" fill="#5b21b6">◆</text>
-  <text x="1436" y="168" class="lyr">台账（右栏）</text>
-  <rect x="1400" y="180" width="440" height="110" rx="10" class="box"/>
-  <text x="1420" y="206" class="bt">InvariantLayer · 底线 ✅</text>
-  <text x="1420" y="230" class="st">预算 · 停止 · 状态机 · scope</text>
-  <text x="1420" y="250" class="st">✅ 6 条不变量 + verify_all()</text>
-  <text x="1420" y="270" class="sm">独立于插件 · 不可被覆盖</text>
-  <rect x="1400" y="310" width="440" height="150" rx="10" class="box"/>
-  <text x="1420" y="336" class="bt">质量门禁 ✅</text>
-  <text x="1420" y="360" class="st">✅ 架构门禁 ×16 + 依赖总表棘轮</text>
-  <text x="1420" y="380" class="st">✅ 接缝门禁（9 触点白名单）</text>
-  <text x="1420" y="400" class="st">✅ method/ 门禁 · ✅ AST 无环</text>
-  <text x="1420" y="420" class="st">✅ cov_gate A/B/C ≥90 + 双基线门</text>
-  <text x="1420" y="440" class="sm">全绿基线见 delivery-summary §17</text>
-  <rect x="1400" y="480" width="440" height="190" rx="10" class="boxg"/>
-  <text x="1420" y="506" class="bt">落地状态（11-04）</text>
-  <text x="1420" y="530" class="st">✅ E1 契约/mailbox · 控制器 · 不变量</text>
-  <text x="1420" y="550" class="st">✅ R1-R7+B1-B3：fence/steer/老化/域</text>
-  <text x="1420" y="570" class="st">✅ 执行面单一引擎 · 恢复原语统一</text>
-  <text x="1420" y="590" class="st">✅ 入口唯一 · ContextHub 独占</text>
-  <text x="1420" y="610" class="st">✅ 数据面 · ModelHub · Director</text>
-  <text x="1420" y="630" class="st" fill="#16a34a">✅ RSI 三阶段：Ticket/端口化/Tier1 闭环 🆕</text>
-  <text x="1420" y="654" class="sm">⏳ 独立宿主 · 分库 · Sched 唯一 · graph_shape</text>
-  <rect x="1400" y="690" width="440" height="360" rx="10" class="boxg"/>
-  <text x="1420" y="716" class="bt">成员与体量速览（11-04 AST 实测）</text>
-  <text x="1420" y="740" class="st">L2 apps：625 文件 · 66.1k 行（46%）</text>
-  <text x="1420" y="762" class="sm">alpha_zoo 25.7k · study 11.0k · goal 6.1k</text>
-  <text x="1420" y="782" class="sm">engine 2.4k · data_source 2.1k · evolution 1.1k 🆕</text>
-  <text x="1420" y="802" class="sm">hypothesis 1.5k · autoresearch 1.4k · db 1.3k</text>
-  <text x="1420" y="822" class="sm">compute_factor 1.4k · 其余 ~6k</text>
-  <text x="1420" y="848" class="st">L3 kernel：175 文件 · 36.7k 行（25%）</text>
-  <text x="1420" y="870" class="sm">控制面 4.9k（② · 含 capacity/ticket）</text>
-  <text x="1420" y="890" class="sm">执行面 6.1k（③）· 能力面 24.0k（agent 21.7k）</text>
-  <text x="1420" y="916" class="st">L1 interfaces：120 文件 · 30.3k 行（21%）</text>
-  <text x="1420" y="938" class="sm">api 15.3k · cli 13.3k · 组装根 0.6k 🆕</text>
-  <text x="1420" y="964" class="st">L4 foundation：64 文件 · 10.9k 行（7.6%）</text>
-  <text x="1420" y="986" class="sm">llm · storage（含 genome/holdout 持久化 🆕）</text>
-  <text x="1420" y="1010" class="sm">口径：AST import 扫描；行数含空行注释；</text>
-  <text x="1420" y="1030" class="sm">scripts/templates 不计入门禁。</text>
-  <line x1="510" y1="1216" x2="510" y2="1230" class="arb"/>
-  <line x1="1135" y1="1216" x2="1135" y2="1230" class="arb"/>
-  <rect x="40" y="1244" width="26" height="22" rx="6" fill="#dcfce7" stroke="#86efac"/>
-  <text x="53" y="1260" class="num" fill="#166534">⑥</text>
-  <text x="76" y="1262" class="lyr">foundation（L4 · 共同底座）</text>
-  <rect x="150" y="1230" width="1210" height="68" rx="9" class="box"/>
-  <text x="166" y="1252" class="bt">llm · storage · registry · observability · utils · web · config_loader · errors · git</text>
-  <text x="166" y="1274" class="st">零业务知识 · 被脊翼共同依赖（L4→任何 = 0 ✅）· 晋升门槛 = 去 run/session 语义可独立成库</text>
-  <rect x="150" y="1314" width="700" height="110" rx="10" class="boxg"/>
-  <text x="166" y="1336" class="bt">接缝规范（唯一接缝叙事）</text>
-  <text x="166" y="1358" class="st">L1 窄协议 ✅ · L2 统一注册 ✅（CapabilityRegistry · 38 kind）</text>
-  <text x="166" y="1378" class="st">hook 红线 ✅ 只读不改控制流 · PROTOCOL_VERSION ✅ R4</text>
-  <text x="166" y="1398" class="st">脊→翼单向 · 9 触点白名单 · 门禁强制 ✅ · 组装根在 L1 🆕</text>
-  <rect x="870" y="1314" width="490" height="110" rx="10" class="boxb"/>
-  <text x="886" y="1336" class="bt">基因组（RSI Tier 1 闭环）✅</text>
-  <text x="886" y="1358" class="st">Tier 0 冻结快照 🆕 · Tier 1 五类提案·四类已通 · Tier 2 研究产物 🆕</text>
-  <text x="886" y="1378" class="st">验证信号 = 真实 golden eval（10 条分层抽样）· 版本链持久化 🆕</text>
-  <text x="886" y="1398" class="st">Tier 0 无 setter · 连续 3 次退化回滚 · 提案应用后才评测</text>
-  <rect x="40" y="1456" width="26" height="22" rx="6" fill="#ede9fe" stroke="#c4b5fd"/>
-  <text x="53" y="1472" class="num" fill="#5b21b6">⑦</text>
-  <text x="76" y="1474" class="lyr">依赖总表与门禁（编号所在处 · test_layer_matrix 同源）</text>
-  <rect x="150" y="1484" width="760" height="270" rx="9" class="boxg"/>
-  <text x="166" y="1506" class="st" style="font-weight:600">依赖 DAG（G2b 清零后 · 括号=当前边数）</text>
-  <rect x="180" y="1522" width="150" height="34" rx="6" class="boxb"/><text x="192" y="1544" class="st" font-weight="600">L1 interfaces</text>
-  <line x1="255" y1="1556" x2="255" y2="1574" class="arb"/>
-  <rect x="180" y="1574" width="150" height="34" rx="6" class="boxw"/><text x="192" y="1596" class="st" font-weight="600">L2 apps</text>
-  <line x1="255" y1="1608" x2="255" y2="1626" class="arb"/>
-  <rect x="180" y="1626" width="150" height="34" rx="6" class="box"/><text x="192" y="1648" class="st" font-weight="600">L3 kernel</text>
-  <line x1="255" y1="1660" x2="255" y2="1678" class="arb"/>
-  <rect x="180" y="1678" width="150" height="34" rx="6" class="box"/><text x="192" y="1700" class="st" font-weight="600">L4 foundation</text>
-  <text x="380" y="1544" class="st mono">L1→L2 171 · L1→L3 120 · L1→L4 53</text>
-  <text x="380" y="1596" class="st mono">L2→L3 39（9 触点白名单）· L2→L4 48</text>
-  <text x="380" y="1648" class="st mono">L3→L4 48</text>
-  <text x="380" y="1700" class="st mono" fill="#16a34a">L3→L2 0 ✅ G2b 端口化完成</text>
-  <text x="166" y="1734" class="sm">编号 = DAG 拓扑排名（唯一与接缝规则自洽：kernel 不得 import apps）；</text>
-  <text x="166" y="1750" class="sm">管线（上方脊-翼）= 运行时旅程，两轴正交——唯一向上的是端口回调。</text>
-  <rect x="930" y="1484" width="430" height="150" rx="9" class="boxg"/>
-  <text x="946" y="1506" class="st" style="font-weight:600">跨层 import 矩阵（11-04 AST · ADR-000 物理口径）</text>
-  <text x="946" y="1528" class="st mono">      →L1    →L2    →L3    →L4</text>
-  <text x="946" y="1548" class="st mono">L1     —     171    120     53</text>
-  <text x="946" y="1568" class="st mono">L2    <tspan fill="#dc2626">1⚠</tspan>      —      39     48</text>
-  <text x="946" y="1588" class="st mono">L3    <tspan fill="#dc2626">2⚠</tspan>      <tspan fill="#16a34a">0✅</tspan>      —      48</text>
-  <text x="946" y="1608" class="st mono">L4     0      0      0       —</text>
-  <text x="946" y="1628" class="sm">红 = 上行违规（ADR-000 物理口径 · 每语句计 1 · 只降不升）</text>
-  <rect x="930" y="1646" width="430" height="140" rx="9" class="boxg"/>
-  <text x="946" y="1668" class="st" style="font-weight:600">上行违规 = 3（v8.4 的 55 → 3）· 剩余两簇</text>
-  <text x="946" y="1690" class="st" fill="#16a34a">簇A L3→L2 = 46 → ✅ 0（G2b 端口化完成）</text>
-  <text x="946" y="1710" class="st">剩余：L3→L1 2 · L2→L1 1（可接受的展示层引用）</text>
-  <text x="946" y="1730" class="st">L4 簇（L4→L2 2 · L4→L3 4）→ ✅ 0</text>
-  <text x="946" y="1756" class="sm">设计：docs/layered-skeleton-design-20261103.md · 口径：ADR-000</text>
+
+  <!-- ══════════════ L1 interfaces ══════════════ -->
+  <rect x="24" y="44" width="124" height="132" rx="10" fill="#e0f2fe" stroke="#7dd3fc" stroke-width="1.4"/>
+  <text x="86" y="76" class="bignum" text-anchor="middle" fill="#0369a1">L1</text>
+  <text x="86" y="100" class="lyr" text-anchor="middle">interfaces</text>
+  <text x="86" y="122" class="lyrsub" text-anchor="middle">渠道层</text>
+  <text x="86" y="148" class="loc" text-anchor="middle">120 文件</text>
+  <text x="86" y="166" class="loc" text-anchor="middle">30.3k 行</text>
+
+  <rect x="160" y="28" width="1416" height="248" rx="12" class="band"/>
+  <text x="180" y="56" class="dom">出口适配 · 哑薄层：只构造 WorkRequest + 订阅事件流，不含业务判断</text>
+
+  <rect x="180" y="72" width="330" height="112" rx="8" class="mod"/>
+  <text x="196" y="98" class="bt">api · FastAPI</text>
+  <text x="196" y="120" class="st">44 文件 · 20 routers</text>
+  <text x="196" y="140" class="sm">chat · study · goal · session · workflow</text>
+  <text x="196" y="160" class="loc">15.3k 行</text>
+
+  <rect x="526" y="72" width="330" height="112" rx="8" class="mod"/>
+  <text x="542" y="98" class="bt">cli · TUI</text>
+  <text x="542" y="120" class="st">70 文件 · 命令 + 终端交互</text>
+  <text x="542" y="140" class="sm">slash 命令 · 工作流面板 · 流式渲染</text>
+  <text x="542" y="160" class="loc">13.3k 行</text>
+
+  <rect x="872" y="72" width="290" height="112" rx="8" class="mod"/>
+  <text x="888" y="98" class="bt">mcp</text>
+  <text x="888" y="120" class="st">2 文件 · 对外工具协议</text>
+  <text x="888" y="140" class="sm">stdio + server</text>
+  <text x="888" y="160" class="loc">0.9k 行</text>
+
+  <rect x="1178" y="72" width="378" height="112" rx="8" class="modhi"/>
+  <text x="1194" y="98" class="bt">组装根 · Composition Root</text>
+  <text x="1194" y="120" class="st">3 文件 · 唯一"同时看到两侧"的位置</text>
+  <text x="1194" y="140" class="sm">gateway_wiring（子系统接线）· rsi_wiring（RSI 闭环）</text>
+  <text x="1194" y="158" class="sm">tier0_snapshot（Tier 0 采集）</text>
+  <text x="1450" y="160" class="loc">0.8k 行</text>
+
+  <text x="180" y="206" class="sm">L1 是唯一允许"知道 apps 具体实现"的层——kernel 不允许 import apps（H1），所以把 apps 的实现接到 kernel 机制上的活儿落在这里。</text>
+  <text x="180" y="226" class="sm">接线走注册钩子：组装根在被 import 时向 kernel 登记，kernel 侧不 import L1（否则是 L3→L1 上行）。</text>
+
+  <!-- L1 → L2 -->
+  <line x1="420" y1="276" x2="420" y2="308" class="arrow"/>
+  <line x1="800" y1="276" x2="800" y2="308" class="arrow"/>
+  <line x1="1180" y1="276" x2="1180" y2="308" class="arrow"/>
+  <text x="1230" y="296" class="st mono" fill="#0284c7">L1→L2 171 · L1→L3 120 · L1→L4 53</text>
+
+  <!-- ══════════════ L2 apps ══════════════ -->
+  <rect x="24" y="332" width="124" height="132" rx="10" fill="#fef3c7" stroke="#fcd34d" stroke-width="1.4"/>
+  <text x="86" y="364" class="bignum" text-anchor="middle" fill="#b45309">L2</text>
+  <text x="86" y="388" class="lyr" text-anchor="middle">apps</text>
+  <text x="86" y="410" class="lyrsub" text-anchor="middle">业务域</text>
+  <text x="86" y="436" class="loc" text-anchor="middle">625 文件</text>
+  <text x="86" y="454" class="loc" text-anchor="middle">66.1k 行</text>
+
+  <rect x="160" y="316" width="1416" height="546" rx="12" class="band"/>
+  <text x="180" y="344" class="dom">研究 IP · 按业务能力分四个功能域（域内高内聚，域间不互相调用）</text>
+
+  <!-- L2 domain 1: 研究域 -->
+  <rect x="180" y="360" width="330" height="470" rx="9" class="dombox"/>
+  <text x="196" y="386" class="dom">研究域</text>
+  <text x="196" y="406" class="loc">20.8k 行</text>
+  <rect x="194" y="418" width="302" height="46" rx="6" class="mod"/>
+  <text x="206" y="437" class="st">study · 研究流水线</text><text x="206" y="454" class="loc">11.8k</text>
+  <rect x="194" y="470" width="302" height="46" rx="6" class="mod"/>
+  <text x="206" y="489" class="st">goal · 目标台账</text><text x="206" y="506" class="loc">6.1k</text>
+  <rect x="194" y="522" width="302" height="46" rx="6" class="mod"/>
+  <text x="206" y="541" class="st">hypothesis · 假设登记</text><text x="206" y="558" class="loc">1.5k</text>
+  <rect x="194" y="574" width="302" height="46" rx="6" class="mod"/>
+  <text x="206" y="593" class="st">autoresearch · 自动研究</text><text x="206" y="610" class="loc">1.4k</text>
+  <text x="196" y="644" class="sm">方法论归位（method/）：假设→证伪→AEGIS</text>
+  <text x="196" y="664" class="sm">runner · scheduler · director 编排在本域</text>
+  <text x="196" y="694" class="sm">study 36 文件：runner / phase_engine /</text>
+  <text x="196" y="714" class="sm">scheduler / graph / dag_planner / method</text>
+  <text x="196" y="734" class="sm">goal 19 文件：台账 · 证据 · workflow</text>
+  <text x="196" y="754" class="sm">轮末 director 发 study.directive 事件</text>
+  <text x="196" y="774" class="sm">研究产物属 Tier 2，由本域自决（不过闸）</text>
+
+  <!-- L2 domain 2: 因子与数据 -->
+  <rect x="526" y="360" width="330" height="470" rx="9" class="dombox"/>
+  <text x="542" y="386" class="dom">因子与数据</text>
+  <text x="542" y="406" class="loc">33.0k 行</text>
+  <rect x="540" y="418" width="302" height="46" rx="6" class="mod"/>
+  <text x="552" y="437" class="st">alpha_zoo · 因子库</text><text x="552" y="454" class="loc">25.7k（最大单体）</text>
+  <rect x="540" y="470" width="302" height="46" rx="6" class="mod"/>
+  <text x="552" y="489" class="st">compute_factor · 因子计算</text><text x="552" y="506" class="loc">1.4k</text>
+  <rect x="540" y="522" width="302" height="46" rx="6" class="mod"/>
+  <text x="552" y="541" class="st">data_source · 行情接入</text><text x="552" y="558" class="loc">2.1k</text>
+  <rect x="540" y="574" width="302" height="46" rx="6" class="mod"/>
+  <text x="552" y="593" class="st">db · duckdb_store</text><text x="552" y="610" class="loc">1.3k + 0.4k</text>
+  <rect x="540" y="626" width="302" height="46" rx="6" class="mod"/>
+  <text x="552" y="645" class="st">data_import · readiness</text><text x="552" y="662" class="loc">0.5k + 0.4k</text>
+  <text x="542" y="694" class="sm">alpha_zoo_convert 1.0k · yaml 0.3k · ops 0.2k</text>
+  <text x="542" y="714" class="sm">market.duckdb 接入专写（D-3）</text>
+  <text x="542" y="734" class="sm">数据面：唯一读入口 + 只追加写</text>
+
+  <!-- L2 domain 3: 回测与验证 -->
+  <rect x="872" y="360" width="330" height="470" rx="9" class="dombox"/>
+  <text x="888" y="386" class="dom">回测与验证</text>
+  <text x="888" y="406" class="loc">7.3k 行</text>
+  <rect x="886" y="418" width="302" height="46" rx="6" class="mod"/>
+  <text x="898" y="437" class="st">engine · 回测引擎</text><text x="898" y="454" class="loc">2.4k</text>
+  <rect x="886" y="470" width="302" height="46" rx="6" class="mod"/>
+  <text x="898" y="489" class="st">strategy_acceptance</text><text x="898" y="506" class="loc">0.9k</text>
+  <rect x="886" y="522" width="302" height="46" rx="6" class="mod"/>
+  <text x="898" y="541" class="st">validation · 参数验证</text><text x="898" y="558" class="loc">0.8k</text>
+  <rect x="886" y="574" width="302" height="46" rx="6" class="mod"/>
+  <text x="898" y="593" class="st">backtest + engine + models</text><text x="898" y="610" class="loc">1.3k</text>
+  <rect x="886" y="626" width="302" height="46" rx="6" class="mod"/>
+  <text x="898" y="645" class="st">portfolio · 组合构建</text><text x="898" y="662" class="loc">0.6k</text>
+  <text x="888" y="694" class="sm">factor_validate 0.6k · config_runner 0.6k</text>
+  <text x="888" y="714" class="sm">rounds 产物落 studies/{id}/rounds（D-4）</text>
+  <text x="888" y="734" class="sm">大结果走 P-5 指针，不进事件正文</text>
+
+  <!-- L2 domain 4: 进化与能力 -->
+  <rect x="1218" y="360" width="338" height="470" rx="9" class="dombox"/>
+  <text x="1234" y="386" class="dom">进化与能力供给</text>
+  <text x="1234" y="406" class="loc">2.3k 行</text>
+  <rect x="1232" y="418" width="310" height="120" rx="6" class="modhi"/>
+  <text x="1244" y="438" class="st" font-weight="600">evolution · RSI 闭环</text>
+  <text x="1244" y="458" class="sm">holdout（只读）· proposals</text>
+  <text x="1244" y="476" class="sm">validation_gate · skill_memory</text>
+  <text x="1244" y="494" class="sm">evolution_agent（5 工具）</text>
+  <text x="1244" y="512" class="sm">golden_eval · default_policy</text>
+  <text x="1244" y="530" class="loc">1.9k</text>
+  <rect x="1232" y="546" width="310" height="66" rx="6" class="modhi"/>
+  <text x="1244" y="566" class="st" font-weight="600">capabilities · 能力注册</text>
+  <text x="1244" y="586" class="sm">38 kind → kernel CapabilityRegistry</text>
+  <text x="1244" y="604" class="loc">0.4k</text>
+  <text x="1234" y="644" class="sm">进化域只改行为工件：prompt / skill /</text>
+  <text x="1234" y="664" class="sm">tool_set / compaction（graph_shape 待建）</text>
+  <text x="1234" y="684" class="sm">Tier 0 冻结，永不可提；Tier 2 研究产物</text>
+  <text x="1234" y="704" class="sm">能力注册方向：apps 注册、kernel 解析</text>
+  <text x="1234" y="724" class="sm">—— 这是 L3→L2 清零的结构性原因</text>
+
+  <text x="180" y="850" class="sm">L2 是唯一含研究 IP 的层。四个功能域之间不互相 import（域间协作一律走 L3 的端口 / 事件流）。</text>
+
+  <!-- L2 → L3 -->
+  <line x1="420" y1="862" x2="420" y2="894" class="arrow"/>
+  <line x1="800" y1="862" x2="800" y2="894" class="arrow"/>
+  <line x1="1180" y1="862" x2="1180" y2="894" class="arrow"/>
+  <text x="1230" y="882" class="st mono" fill="#0284c7">L2→L3 39（9 触点白名单）· L2→L4 48</text>
+
+  <!-- ══════════════ L3 kernel ══════════════ -->
+  <rect x="24" y="918" width="124" height="132" rx="10" fill="#e0f2fe" stroke="#7dd3fc" stroke-width="1.4"/>
+  <text x="86" y="950" class="bignum" text-anchor="middle" fill="#0369a1">L3</text>
+  <text x="86" y="974" class="lyr" text-anchor="middle">kernel</text>
+  <text x="86" y="996" class="lyrsub" text-anchor="middle">平台机制</text>
+  <text x="86" y="1022" class="loc" text-anchor="middle">175 文件</text>
+  <text x="86" y="1040" class="loc" text-anchor="middle">36.7k 行</text>
+
+  <rect x="160" y="902" width="1416" height="448" rx="12" class="band"/>
+  <text x="180" y="930" class="dom">业务无关的平台机制 · 三个子带（同层自由互调，只向下依赖）</text>
+
+  <!-- L3 strip 1: 控制面 -->
+  <rect x="180" y="946" width="420" height="372" rx="9" class="dombox"/>
+  <text x="196" y="972" class="dom">控制面</text>
+  <text x="196" y="992" class="loc">5.6k 行</text>
+  <rect x="194" y="1004" width="392" height="60" rx="6" class="mod"/>
+  <text x="206" y="1024" class="st" font-weight="600">gateway · 唯一控制面</text>
+  <text x="206" y="1042" class="sm">submit/receipt · cancel · recover(fold)</text>
+  <text x="206" y="1058" class="loc">2.2k</text>
+  <rect x="194" y="1070" width="392" height="76" rx="6" class="mod"/>
+  <text x="206" y="1090" class="st" font-weight="600">orchestration · 编排原语</text>
+  <text x="206" y="1108" class="sm">EntryPoint · Mailbox（cap20/老化/steer）</text>
+  <text x="206" y="1126" class="sm">config_hub · genome_version</text>
+  <text x="206" y="1142" class="loc">1.6k</text>
+  <rect x="194" y="1152" width="392" height="58" rx="6" class="mod"/>
+  <text x="206" y="1172" class="st" font-weight="600">events · 事件原语</text>
+  <text x="206" y="1190" class="sm">emit / subscribe / replay（唯一事实源）</text>
+  <text x="206" y="1206" class="loc">0.4k</text>
+  <rect x="194" y="1216" width="392" height="58" rx="6" class="mod"/>
+  <text x="206" y="1236" class="st" font-weight="600">scheduled_research</text>
+  <text x="206" y="1254" class="sm">定时研究执行器 · cron 池</text>
+  <text x="206" y="1270" class="loc">1.2k</text>
+
+  <!-- L3 strip 2: 执行面 -->
+  <rect x="616" y="946" width="420" height="372" rx="9" class="dombox"/>
+  <text x="632" y="972" class="dom">执行面</text>
+  <text x="632" y="992" class="loc">6.1k 行</text>
+  <rect x="630" y="1004" width="392" height="76" rx="6" class="mod"/>
+  <text x="642" y="1024" class="st" font-weight="600">runtimes · GraphEngine（唯一 runtime）</text>
+  <text x="642" y="1042" class="sm">prepare/run/settle · llm + react 节点</text>
+  <text x="642" y="1060" class="sm">executor_bridge（T2 进程池=CPU-1）</text>
+  <text x="642" y="1076" class="loc">1.6k</text>
+  <rect x="630" y="1086" width="392" height="76" rx="6" class="mod"/>
+  <text x="642" y="1106" class="st" font-weight="600">workflow · 工作流编译器</text>
+  <text x="642" y="1124" class="sm">WorkflowGraphCompiler · resume_from_store</text>
+  <text x="642" y="1142" class="sm">replan 环 · 节点契约</text>
+  <text x="642" y="1158" class="loc">3.2k</text>
+  <rect x="630" y="1168" width="392" height="58" rx="6" class="mod"/>
+  <text x="642" y="1188" class="st" font-weight="600">swarm · 多智能体预设</text>
+  <text x="642" y="1206" class="sm">层循环退役 → 编译到 GraphEngine</text>
+  <text x="642" y="1222" class="loc">1.3k</text>
+  <text x="632" y="1258" class="sm">T1 协程 ✅ · T2 进程池 ✅ · T3 沙箱 ⏳</text>
+  <text x="632" y="1278" class="sm">取消连坐 · fence 挂根 · 事件带 run_id</text>
+  <text x="632" y="1298" class="sm">图 = 纯数据（Preset 注册表）</text>
+
+  <!-- L3 strip 3: 能力面 -->
+  <rect x="1052" y="946" width="504" height="372" rx="9" class="dombox"/>
+  <text x="1068" y="972" class="dom">能力面</text>
+  <text x="1068" y="992" class="loc">24.8k 行</text>
+  <rect x="1066" y="1004" width="476" height="76" rx="6" class="mod"/>
+  <text x="1078" y="1024" class="st" font-weight="600">agent · AgentLoop（22.5k，最大子模块）</text>
+  <text x="1078" y="1042" class="sm">loop 六 Mixin · tools · prompt_builder</text>
+  <text x="1078" y="1060" class="sm">harness_resolver · capability/registry</text>
+  <text x="1078" y="1076" class="loc">22.5k</text>
+  <rect x="1066" y="1086" width="232" height="76" rx="6" class="mod"/>
+  <text x="1078" y="1106" class="st" font-weight="600">permission</text>
+  <text x="1078" y="1124" class="sm">evaluator + gateway</text>
+  <text x="1078" y="1142" class="sm">ASK 审批闸</text>
+  <text x="1078" y="1158" class="loc">0.8k</text>
+  <rect x="1310" y="1086" width="232" height="76" rx="6" class="mod"/>
+  <text x="1322" y="1106" class="st" font-weight="600">memory</text>
+  <text x="1322" y="1124" class="sm">SQLite 单一源</text>
+  <text x="1322" y="1142" class="sm">cache · auto-repair</text>
+  <text x="1322" y="1158" class="loc">0.6k</text>
+  <rect x="1066" y="1168" width="232" height="58" rx="6" class="mod"/>
+  <text x="1078" y="1188" class="st" font-weight="600">context</text>
+  <text x="1078" y="1206" class="sm">ContextHub · 仲裁策略</text>
+  <text x="1078" y="1222" class="loc">0.4k</text>
+  <rect x="1310" y="1168" width="232" height="58" rx="6" class="mod"/>
+  <text x="1322" y="1188" class="st" font-weight="600">hooks · skills</text>
+  <text x="1322" y="1206" class="sm">只读钩子 · 技能包加载</text>
+  <text x="1322" y="1222" class="loc">0.3k + 0.2k</text>
+  <text x="1068" y="1258" class="sm">能力面是 react 节点的机制底座；</text>
+  <text x="1068" y="1278" class="sm">AgentLoop 内部 Mixin 结构冻结（不改）。</text>
+
+  <text x="180" y="1340" class="sm">L3 不含任何业务判断。业务能力一律经 CapabilityRegistry 解析（apps 注册、kernel 读），这是 L3→L2 从 46 降到 0 的唯一原因。</text>
+
+  <!-- L3 → L4 -->
+  <line x1="420" y1="1360" x2="420" y2="1392" class="arrow"/>
+  <line x1="800" y1="1360" x2="800" y2="1392" class="arrow"/>
+  <line x1="1180" y1="1360" x2="1180" y2="1392" class="arrow"/>
+  <text x="1230" y="1380" class="st mono" fill="#0284c7">L3→L4 48</text>
+
+  <!-- ══════════════ L4 foundation ══════════════ -->
+  <rect x="24" y="1416" width="124" height="132" rx="10" fill="#dcfce7" stroke="#86efac" stroke-width="1.4"/>
+  <text x="86" y="1448" class="bignum" text-anchor="middle" fill="#166534">L4</text>
+  <text x="86" y="1472" class="lyr" text-anchor="middle">foundation</text>
+  <text x="86" y="1494" class="lyrsub" text-anchor="middle">基础设施</text>
+  <text x="86" y="1520" class="loc" text-anchor="middle">64 文件</text>
+  <text x="86" y="1538" class="loc" text-anchor="middle">10.9k 行</text>
+
+  <rect x="160" y="1400" width="1416" height="176" rx="12" class="band"/>
+  <text x="180" y="1428" class="dom">零业务知识 · 被上面三层共同依赖 · L4 上行违规 = 0</text>
+
+  <rect x="180" y="1444" width="212" height="98" rx="8" class="mod"/>
+  <text x="194" y="1466" class="bt">llm</text>
+  <text x="194" y="1486" class="sm">provider 适配 · 重试</text>
+  <text x="194" y="1504" class="sm">parser · model_hub</text>
+  <text x="194" y="1528" class="loc">4.7k</text>
+
+  <rect x="404" y="1444" width="212" height="98" rx="8" class="mod"/>
+  <text x="418" y="1466" class="bt">storage</text>
+  <text x="418" y="1486" class="sm">PlatformStore · 事件库</text>
+  <text x="418" y="1504" class="sm">genome · holdout 持久化</text>
+  <text x="418" y="1528" class="loc">2.0k</text>
+
+  <rect x="628" y="1444" width="212" height="98" rx="8" class="mod"/>
+  <text x="642" y="1466" class="bt">utils</text>
+  <text x="642" y="1486" class="sm">日期 · 数值 · 路径</text>
+  <text x="642" y="1504" class="sm">文本 · 序列化</text>
+  <text x="642" y="1528" class="loc">1.9k</text>
+
+  <rect x="852" y="1444" width="212" height="98" rx="8" class="mod"/>
+  <text x="866" y="1466" class="bt">observability</text>
+  <text x="866" y="1486" class="sm">统一日志 · trace</text>
+  <text x="866" y="1504" class="sm">健康检查</text>
+  <text x="866" y="1528" class="loc">0.9k</text>
+
+  <rect x="1076" y="1444" width="212" height="98" rx="8" class="mod"/>
+  <text x="1090" y="1466" class="bt">web · git</text>
+  <text x="1090" y="1486" class="sm">HTTP 客户端 · 页面渲染</text>
+  <text x="1090" y="1504" class="sm">版本控制封装</text>
+  <text x="1090" y="1528" class="loc">0.7k</text>
+
+  <rect x="1300" y="1444" width="256" height="98" rx="8" class="mod"/>
+  <text x="1314" y="1466" class="bt">其余</text>
+  <text x="1314" y="1486" class="sm">errors · protocol · registry</text>
+  <text x="1314" y="1504" class="sm">config_loader · compact_config</text>
+  <text x="1314" y="1528" class="loc">0.6k</text>
+
+  <!-- ══════════════ 门禁 ══════════════ -->
+  <rect x="160" y="1602" width="700" height="164" rx="10" class="dombox"/>
+  <text x="180" y="1628" class="dom">跨层 import 矩阵（ADR-000 物理口径 · 每语句计 1）</text>
+  <text x="180" y="1656" class="st mono">        →L1     →L2     →L3     →L4</text>
+  <text x="180" y="1678" class="st mono">L1       —      171     120      53</text>
+  <text x="180" y="1700" class="st mono">L2     <tspan fill="#dc2626">1 ⚠</tspan>       —       39      48</text>
+  <text x="180" y="1722" class="st mono">L3     <tspan fill="#dc2626">2 ⚠</tspan>       <tspan fill="#16a34a">0 ✅</tspan>       —       48</text>
+  <text x="180" y="1744" class="st mono">L4       0       0       0        —</text>
+
+  <rect x="880" y="1602" width="696" height="164" rx="10" class="dombox"/>
+  <text x="900" y="1628" class="dom">棘轮基线（只降不升）</text>
+  <text x="900" y="1656" class="st">上行违规总数 <tspan font-weight="600" fill="#16a34a">55 → 3</tspan>　　<code>L3→L2</code> 46 → <tspan font-weight="600" fill="#16a34a">0</tspan>（端口化完成）</text>
+  <text x="900" y="1680" class="st">L4 簇（L4→L2 2 · L4→L3 4）→ <tspan font-weight="600" fill="#16a34a">0</tspan></text>
+  <text x="900" y="1704" class="st">剩余：<code>L3→L1</code> 2 · <code>L2→L1</code> 1（均为展示层引用）</text>
+  <text x="900" y="1732" class="sm">门禁：<code>scripts/arch/check_dangling_imports.py --layers</code> 与</text>
+  <text x="900" y="1750" class="sm"><code>tests/test_layer_matrix.py</code> 共用同一份层归属表，不会漂移。</text>
+
 </svg>
-
-
-
 </div>
 
 <div class="legend">
-  <span><b>脊-翼</b>＝左脊平台 kernel（②③④+走廊）× 右翼研究域 apps；两条缝：紫虚线=端口回调 · 蓝线=服务白名单</span>
-  <span><b>盒级状态</b>：<b>✅</b>已实现 · <b>⏳</b>未建（有触发条件）· <b>⏹</b>判定不做 · <b>⚠</b>依赖层≠编排位置（Director）</span>
-  <span><b>⑥ foundation</b>＝L4 全宽底座 · <b>⑦</b>＝编号（L1→L4）所在处：DAG+矩阵+棘轮（与 test_layer_matrix 同源）</span>
-  <span>台账：版本史 <code>architecture-diagram-changelog.md</code> · 决策 <code>architecture-discussion-record</code> §3 · 交付 <code>delivery-summary</code></span>
+  <span><b>四层</b>＝L1 interfaces → L2 apps → L3 kernel → L4 foundation，依赖只向下</span>
+  <span><b>蓝箭头</b>＝合法下行 import</span>
+  <span><b>红虚线</b>＝上行违规（仅 3 条，棘轮锁定）</span>
+  <span><b>白框</b>＝功能模块 · <b>浅蓝框</b>＝本轮新增/重点模块</span>
 </div>
 
-<h2>一张工单的旅程（导读 · 状态以 10-30 核实为准）</h2>
+<h2>层职责与模块化原则</h2>
 <table>
-<thead><tr><th style="width:130px">站</th><th>发生什么</th><th style="width:340px">对应设计</th></tr></thead>
+<thead><tr><th style="width:110px">层</th><th style="width:80px">体量</th><th>职责边界</th><th style="width:300px">模块化原则</th></tr></thead>
 <tbody>
-<tr><td class="k">① 变工单</td><td>渠道把一句话包成 WorkRequest（哑适配器，只干这个）✅ chat/schedule/CLI(TUI) 已接（R3 更正）；MCP 无 chat 出口（N/A）</td><td>queue_mode 五行表</td></tr>
-<tr><td class="k">② 收单</td><td>协议端点验格式查重，回执两态；此后一切走事件流 ✅</td><td>两态回执 · 不静默</td></tr>
-<tr><td class="k">③ 排队</td><td>进会话 mailbox，一会话一事 ✅ cap 20+溢出摘要+老化；✅ steer 真注入（R2：无活跃 run 直接成 turn，有活跃 run 安全点合批注入）</td><td>cap 20 · 优先级老化 · home_session</td></tr>
-<tr><td class="k">④ 发令</td><td>✅ 签 run_id（P-4 身份）+ fence 认领 → turn 开跑（常驻消费者驱动 ✅ R2）+ fence 校验 ✅；<b>✅ 容量闸（阶段二，满→留队不留失）</b>；<b>✅ Ticket upsert + Assignment(pending)（阶段一，只追加不改控制流）</b>；⏹ 7 阶段/6 真值（B3 判定）</td><td>准入语义 · fence · Ticket/Assignment</td></tr>
-<tr><td class="k">⑤ 选图</td><td>✅ chat=单 react 节点退化图 · research 方法论阶段图 ✅；⏹ 治理分级（无可编辑 preset 文件）</td><td>Preset 注册表 · 治理分级</td></tr>
-<tr><td class="k">⑥ 跑图</td><td>✅ GraphEngine 逐节点执行（llm/react · react 内部=AgentLoop 平移）；⏹ cpu/graph 判定不做（R5，等价物已有/无用户）</td><td>节点类型 · 两级准入 · 取消连坐 ✅（fanout）</td></tr>
-<tr><td class="k">⑦ 重活下放</td><td>⏹ 独立 cpu 节点不做（R5）；✅ fanout-t2 已可派发 ExecutorBridge 进程池（F4）</td><td>ExecutorBridge · 容量组联动</td></tr>
-<tr><td class="k">⑧ 收尾</td><td>✅ fence 校验后 settle · turn 结束 · 队头续跑（run_pending）· 事件落统一库</td><td>fence 挂根 · 账本解耦</td></tr>
+<tr><td class="k">L1 interfaces</td><td>120 文件<br>30.3k 行</td><td>唯一出口：把外部请求包成 WorkRequest，订阅事件流回给调用方。不含业务判断。</td><td>按<b>渠道</b>分（api / cli / mcp）+ 一个<b>组装根</b>。组装根是唯一允许知道 apps 具体实现的 L1 模块。</td></tr>
+<tr><td class="k">L2 apps</td><td>625 文件<br>66.1k 行</td><td>研究 IP 的全部所在。方法论、因子、回测、进化都在这层。</td><td>按<b>业务能力</b>分四个功能域；域间不互相 import，协作走 L3 的端口或事件流。</td></tr>
+<tr><td class="k">L3 kernel</td><td>175 文件<br>36.7k 行</td><td>业务无关的平台机制：控制、执行、能力供给。不认识研究语义。</td><td>按<b>机制职责</b>分三个子带（控制面 / 执行面 / 能力面）；同层自由互调，只向下依赖。</td></tr>
+<tr><td class="k">L4 foundation</td><td>64 文件<br>10.9k 行</td><td>零业务知识的基础设施。被上面三层共同依赖。</td><td>按<b>技术能力</b>分（llm / storage / utils / observability / web）。晋升门槛＝去掉 run/session 语义可独立成库。</td></tr>
 </tbody>
 </table>
 
-<h2>图上标注速查</h2>
+<h2>模块间协作：三条通道</h2>
 <table>
-<thead><tr><th style="width:170px">术语</th><th>一句话说明</th></tr></thead>
+<thead><tr><th style="width:150px">通道</th><th>路径</th><th style="width:280px">为什么必须这样</th></tr></thead>
 <tbody>
-<tr><td class="k">T1 / T2 / T3 执行三层</td><td><b>T1 协程</b>＝进程内 asyncio，跑等 LLM 的轻活（llm/react 节点）✅；<b>T2 进程</b>＝常驻子进程池，跑烧 CPU 的重活（真并行·崩溃隔离·可硬杀——GIL 排除线程/协程）—— fanout-t2 已接 ExecutorBridge ✅，独立 cpu 节点 ⏳；<b>T3 沙箱</b>＝OS 级隔离跑不可信代码（Windows 暂无业界方案，占位）⏳</td></tr>
-<tr><td class="k">turn / run</td><td>turn＝会话中被准入的一次执行权（<b>串行单位</b>，并行全在 turn 内）；run＝一次执行实例，子 run 挂在根 run 成树。派生 id 已在 SessionController 签发 ✅（{sid}#n → :r0）</td></tr>
-<tr><td class="k">mailbox</td><td>会话内的等待队列——<b>所有排队都发生在这</b>，闸不排队 ✅</td></tr>
-<tr><td class="k">steer / followup / interrupt</td><td>插话注入当前 run（安全点、只追加）✅ R2（fence 路由·合批·滞留晋升）/ 排队等下一 turn ✅ / <b>打断当前 turn ✅ B1（CancelScope 节点边界取消·无产物·栅栏释放）</b>；级联取消整棵子 run 树 ⏹ 无子图节点（fanout 分支级联 ✅）</td></tr>
-<tr><td class="k">lane（通道）</td><td>同 key 请求的专用串行道：session lane 保 turn 顺序 ✅；<b>subagent:{session}</b> 子代理通道（默认并发 8，不碰 mailbox 防自锁）⏳</td></tr>
-<tr><td class="k">cap 20 · 溢出 summarize</td><td>mailbox 深度上限；满了把最旧的等待消息摘要化——<b>全系统唯一拒绝点</b> ✅</td></tr>
-<tr><td class="k">优先级老化</td><td>高优先级只能领先有限时间（aging_s 默认 15s），之后普通项排到所有 interrupt 之前——防 automation 饿死用户消息 ✅ R2（work.aged 事件·ConfigHub 可配）</td></tr>
-<tr><td class="k">容量组闸</td><td>每类活的最大并发槽位（chat 32 / study ≤ ExecutorBridge 池=CPU-1 / cron 2）；<b>满→排队不拒绝</b>，running 不抢占 <b>✅ 阶段二已接线</b>（未接线时零开销直通）</td></tr>
-<tr><td class="k">Ticket / Assignment</td><td><b>Ticket</b>＝任务身份（3 态 pending→active→ended，同 session_key 复用，upsert 幂等）；<b>Assignment</b>＝执行绑定（pending + 六态 running/waiting/ready/blocked/failed/dropped + ended），继承 fence_token，被超越→dropped <b>✅ 阶段一</b>；崩溃后非终态项标 blocked(reason=restart) 重新纳入记账，<b>只恢复状态不恢复执行</b></td></tr>
-<tr><td class="k">基因组 Tier 0/1/2</td><td><b>Tier 0 冻结</b>＝预算/停止策略/状态机/方法论，构造期写一次后每版原样继承，<b>无 setter</b>；<b>Tier 1 可提案</b>＝prompt/skill/tool_set/compaction/graph_shape，须过验证闸；<b>Tier 2 研究产物</b>＝strategy.py 等，研究域自决不过闸 <b>✅ 三层都已接线</b></td></tr>
-<tr><td class="k">RSI 验证信号</td><td>跑 <b>10 条 golden task</b>（按 toolset 分层抽样、seed 固定）→ scorecard 打分。<b>提案必须先应用再评测</b>（否则候选=基线，闸会误判通过）；全部任务异常→skipped 不计回滚；连续 3 次退化→rollback <b>✅ 阶段三</b></td></tr>
-<tr><td class="k">fence（栅栏）</td><td>写权限认领（activeRunId）+ 提交校验：被取代/被取消的 run <b>陈旧产物不落库</b> ✅ R1 已挂根（claim→run→validate→release；被超越 emit run.fenced + settled{fenced:True}；INV-4 进注册表）</td></tr>
-<tr><td class="k">fold 重建</td><td>重启后从事件流重放算出状态（<b>恢复状态，不恢复执行</b>——被打断的 run 标 interrupted，重试靠重提）✅ B2（turn 计数续号 · session 映射恢复 · run.interrupted 标记 · 幂等；mailbox 待办/幂等表不恢复=定稿明说）</td></tr>
-<tr><td class="k">grace</td><td>关闭时给运行中 turn 的收尾宽限（默认 ~5 分钟，可配置），超时标 interrupted ✅ R2（stop_consumer(grace)）；fold 后标 interrupted ✅ B2</td></tr>
-<tr><td class="k">Preset / 节点类型</td><td>图＝执行的形状数据（chat=单节点退化图 ✅ / research=方法论图，Tier 0 冻结机制 ⏳ / fanout·dag=Tier 1 可提案 ⏳）；节点＝图上一步（llm ✅ / react ✅＝AgentLoop 平移 / cpu ⏹ 判定不做 / graph ⏹ 判定不做，每阶段可开关 ReAct）</td></tr>
-<tr><td class="k">Tier 0 / 1 / 2（基因组）</td><td>冻结不可改（预算/停止/状态机/方法论）/ 提案可进化（prompt/skill/图形状）/ 研究产物可自改（strategy.py）</td></tr>
-<tr><td class="k">home_session_key</td><td>研究实体的固定会话——所有 round 都回这排队：<b>同一研究永不并行</b>，人工与 scheduler 可接力——运行时语义已由 R3 跨 kind 串行域承担 ✅（键本身未建）</td></tr>
-<tr><td class="k">EventStore</td><td>唯一事实源 ✅：一切进展写成事件（含流式 delta，<b>永不清理</b>＝完整回放素材）；现状统一单库（event+message+goal/todo，B4 单一写者）；每 session 一个自包含 SQLite ⏳（10-26 定案未实施）；回执只说收下/拒了，其余看事件流</td></tr>
-<tr><td class="k">ExecutorBridge</td><td>把 fanout-t2 分支派发给子进程池的桥：dispatch/events/cancel/heartbeat 四通道 ✅（graph_engine._run_fanout_t2 已接）</td></tr>
-<tr><td class="k">ConfigHub</td><td>配置中心：平台所有组件参数唯一来源——分层装载（代码默认&lt;文件&lt;环境变量）✅ 骨架、治理分级（运维可调/Tier1 提案/敏感隔离）⏳、启动校验 fail-fast ✅（不变量）、脱敏指纹进事件流 ⏳</td></tr>
-<tr><td class="k">RuntimeHub</td><td>解析每个 turn 的执行体配置（preset 图 + provider/模型绑定）；provider client 层自带 RPM/TPM 限流（超限排队不拒绝）——<b>模型侧 ✅ R5（ModelHub：解析序集中 + 未知 provider 拒绝）</b>；图绑定 ⏳ 无用户；RPM/TPM ⏳ 无并发压力</td></tr>
-<tr><td class="k">ContextHub</td><td>每次模型调用前装配上下文的唯一所有者（=OpenClaw Prompt Assembly）：collect→arbitrate→render ✅ 已建成并接线（B5）；「独占」✅ P5-1c 完成（旧分支与回退开关已删）</td></tr>
-<tr><td class="k">RunContext</td><td>单次 run 的约束包（预算快照/事件出口/取消/追踪/注入通道）——回答「在什么约束下跑」<b>机制已存在</b>：散装 state 键（run_budget / sink / cancel Event / steer_inbox / run_id / fence_domain / trace）；包成对象 ⏹ 不做（纯改名，零行为收益）</td></tr>
+<tr><td class="k">下行调用</td><td>上层直接 import 下层的公开接口（L1→L2→L3→L4）</td><td>依赖方向单一，静态可验证（AST 门禁）</td></tr>
+<tr><td class="k">端口回调</td><td>kernel 不 import apps，改为 <code>CapabilityRegistry.resolve(kind)</code> 拿到实现；apps 在 import 时主动注册</td><td>这是 <code>L3→L2</code> 从 46 降到 0 的唯一手段——把依赖方向倒过来，而不是把 import 藏进函数</td></tr>
+<tr><td class="k">事件流</td><td>一切状态变更写 <code>event_log</code>；跨域观察靠订阅，不靠直接调用</td><td>事件流是唯一事实源，保证崩溃可恢复、状态可 replay</td></tr>
 </tbody>
 </table>
-
-
-
-<p style="color:#64748b;font-size:12.5px;margin-top:10px">版本史（v5.1 → v8.5）已外移至 <code>docs/architecture-diagram-changelog.md</code>。近期：<b>v8.5（2026-11-04）：RSI 三阶段落地后刷新</b>——结构不变，数据与盒级状态刷新（上行违规 55→<b>3</b>：L3→L2 46→<b>0</b>、L4 簇→0；容量组闸 ⏳→✅、CapabilityRegistry ⏳→✅；新增 Ticket/Assignment 行与「RSI 进化域」盒；基因组由待建改已建；体量改按层统计 L1 30.3k / L2 66.1k / L3 36.7k / L4 10.9k）。<b>v8.4（2026-11-04）：物理分层收官后刷新</b>——数据与路径刷新，结构不变（core/* 旧路径 → apps/*）。<b>v8（2026-11-03）：图归结构</b>——每盒=名字+一行本质+盒级状态（D1-a）；依赖阶梯并入 ⑦ DAG（D2）；决策记录盒删除（D3，内容在 discussion-record §3）；版本史外移（D4）；「与现状的差别」表删除（D5）；SVG 文本 ~240→~130，画布 2170→1830。<b>v8.1（同日）：加宽美化</b>——画布 1600→1880 · 页面 max-width 1660→1940 · 各段彩色编号徽标 · 三列间距与翼内盒距优化。特性级 ✅ 细节查各 stage-r*/stage-b* 设计文档。</p>
 
 <footer>
-  骨架参考：<b>docs/openclaw-architecture.html</b> · 总纲：<b>docs/architecture-v3-openclaw-inspired.md</b> ·
-  queue_mode：<b>docs/queue-mode-research-20261024.md</b> · session 粒度：<b>docs/session-granularity-research-20261024.md</b> ·
-  执行面：<b>docs/execution-plane-research-20261024.md</b> · 宿主：<b>docs/gateway-hosting-research-20261024.md</b> ·
-  主线：<b>docs/refactor-master-plan-20261008.md</b>
+  数据：AST 实测 2026-11-04（984 文件 / 144,086 行）· 门禁：<code>check_dangling_imports.py --layers</code> ·
+  版本史：<code>docs/architecture-diagram-changelog.md</code> · 设计：<code>docs/layered-skeleton-design-20261103.md</code>
 </footer>
 </div>
 </body>
