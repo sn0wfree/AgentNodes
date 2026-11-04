@@ -36,7 +36,6 @@ import os
 import threading
 import time
 import uuid
-from contextlib import contextmanager
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any, Callable
@@ -51,60 +50,21 @@ from strategy_research.foundation.utils.ids import SessionId
 from .circuit_breaker import RetryPolicy, ToolLoopCircuitBreaker
 from .compact import CompactConfig
 from .context import ContextBuilder, estimate_tokens
+from .runtime.sync_bridge import _get_hook_loop as _get_hook_loop  # noqa: F401
+from .runtime.sync_bridge import _run_coro_in_sync
 from .tools import ToolRegistry
 from .trace import TraceWriter
 
 logger = logging.getLogger(__name__)
 
 
-# ── Shared persistent hook loop ────────────────────────────────────
-# One process-wide daemon loop for sync→async hook adapters. Creating
-# and tearing down an event loop per _fire_hooks call dominated the
-# adapter cost when hooks fired per iteration/event.
-_HOOK_LOOP: asyncio.AbstractEventLoop | None = None
-_HOOK_LOOP_LOCK = threading.Lock()
-
-
-def _get_hook_loop() -> asyncio.AbstractEventLoop:
-    global _HOOK_LOOP
-    with _HOOK_LOOP_LOCK:
-        if _HOOK_LOOP is None or _HOOK_LOOP.is_closed():
-            _HOOK_LOOP = asyncio.new_event_loop()
-            threading.Thread(
-                target=_HOOK_LOOP.run_forever,
-                daemon=True,
-                name="agent-hooks-loop",
-            ).start()
-        return _HOOK_LOOP
-
-
-def _run_coro_in_sync(coro: Any) -> Any:
-    """Run a coroutine to completion from synchronous code.
-
-    Works both outside AND inside a running event loop (``AgentLoop.run``
-    is invoked from async contexts by ``role_factory``): when a loop is
-    already running, the coroutine executes on a background thread with
-    its own loop and the caller blocks until it finishes.
-    """
-    try:
-        asyncio.get_running_loop()
-    except RuntimeError:
-        return asyncio.run(coro)
-
-    result: dict[str, Any] = {}
-
-    def _runner() -> None:
-        try:
-            result["value"] = asyncio.run(coro)
-        except BaseException as exc:  # noqa: BLE001 — re-raised below
-            result["error"] = exc
-
-    thread = threading.Thread(target=_runner, daemon=True)
-    thread.start()
-    thread.join()
-    if "error" in result:
-        raise result["error"]
-    return result["value"]
+# ── Shared persistent hook loop / sync↔async bridge ───────────────
+# W11 (2026-11-04): ``_get_hook_loop`` / ``_run_coro_in_sync`` used to be
+# defined here as well as in ``runtime/sync_bridge.py`` — two copies, each
+# with its own ``_HOOK_LOOP`` global and lock. ``loop_telemetry.py`` imported
+# the sync_bridge copy while this module used its own, so a process could end
+# up with two daemon hook event loops. ``sync_bridge`` is now the single
+# authority; the names are imported above so existing importers keep working.
 
 
 # ── Tool-level auto-retry (transient errors only) ───────────────────
