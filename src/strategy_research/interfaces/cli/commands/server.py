@@ -24,6 +24,12 @@ def _start_gateway_consumer() -> Any | None:
         from strategy_research.kernel.gateway import get_gateway
         from strategy_research.kernel.orchestration import WorkKind
 
+        # 阶段一/二/三：先 import 组装根——它注册「Gateway 构造后接线」
+        # 钩子（Ticket/Assignment、容量闸、基因组版本链）。必须在
+        # get_gateway() **之前**，否则首个 Gateway 构造时钩子还没挂上，
+        # 那个实例将永远没有 Ticket 持久化（本轮发现的成因之一）。
+        import strategy_research.interfaces.gateway_wiring  # noqa: F401
+
         gw = get_gateway()
         # B2：先恢复状态（fold），再启动消费者——「恢复状态，不恢复执行」。
         try:

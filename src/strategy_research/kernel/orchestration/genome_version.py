@@ -56,8 +56,42 @@ class GenomeVersionStore:
     ``proposal_id``，从而保证「每次生效都可追溯到一份提案」。
     """
 
-    def __init__(self, initial: GenomeVersion | None = None) -> None:
+    def __init__(
+        self,
+        initial: GenomeVersion | None = None,
+        *,
+        store: Any | None = None,
+    ) -> None:
+        """构造版本链。
+
+        :param initial: 初始版本；None = 从 ``store`` 恢复，或建 ``gv-0``
+        :param store: ``foundation.storage.genome_store.GenomeStore``；
+            None = 纯内存（测试/无持久化路径）。
+
+        **恢复语义**：``store`` 有内容时，链与游标都从磁盘读回——
+        进程重启后继续基于上次生效的版本运行，而不是退回 ``gv-0``。
+        这正是"基因组必须活过进程"的实现。
+        """
         self._lock = threading.RLock()
+        self._store = store
+        self._chain: list[GenomeVersion] = []
+        self._cursor = 0
+
+        if store is not None:
+            try:
+                restored = store.load_chain()
+            except Exception:  # noqa: BLE001 —— 读不出就当空
+                logger.warning("genome chain load failed; starting fresh")
+                restored = []
+            if restored:
+                self._chain = [_from_dict(d) for d in restored]
+                self._cursor = min(store.load_cursor(), len(self._chain) - 1)
+                logger.info(
+                    "genome restored: %d versions, cursor=%d",
+                    len(self._chain), self._cursor,
+                )
+                return
+
         base = initial or GenomeVersion(
             version_id="gv-0",
             tier0_frozen={},
@@ -66,8 +100,10 @@ class GenomeVersionStore:
             activated_at=_now_iso(),
             activated_by_proposal=None,
         )
-        self._chain: list[GenomeVersion] = [base]
+        self._chain = [base]
         self._cursor = 0
+        self._persist_append(base)
+        self._persist_cursor()
 
     # ── 读 ──────────────────────────────────────────────────────────
 
@@ -115,6 +151,8 @@ class GenomeVersionStore:
             # 游标之后的历史（已回退过的分支）丢弃 —— 线性化版本链
             self._chain = self._chain[: self._cursor + 1] + [nxt]
             self._cursor = len(self._chain) - 1
+            self._persist_append(nxt)
+            self._persist_cursor()
             logger.info(
                 "genome activated: %s by proposal %s", nxt.version_id, proposal_id
             )
@@ -128,6 +166,7 @@ class GenomeVersionStore:
         with self._lock:
             if self._cursor > 0:
                 self._cursor -= 1
+                self._persist_cursor()
                 logger.warning(
                     "genome rolled back to %s", self.current().version_id
                 )
@@ -139,8 +178,57 @@ class GenomeVersionStore:
             for idx in range(self._cursor, -1, -1):
                 if self._chain[idx].version_id == version_id:
                     self._cursor = idx
+                    self._persist_cursor()
                     return version_id
         raise KeyError(f"unknown genome version: {version_id!r}")
+
+    # ── 持久化（内部） ──────────────────────────────────────────────
+
+    def _persist_append(self, version: "GenomeVersion") -> None:
+        """追加一个版本到磁盘。无 store 时 no-op。"""
+        if self._store is None:
+            return
+        try:
+            self._store.append(_to_dict(version))
+        except Exception:  # noqa: BLE001 —— 落盘失败不得中断升版
+            logger.warning("genome persist append failed", exc_info=True)
+
+    def _persist_cursor(self) -> None:
+        """记录当前游标。无 store 时 no-op。"""
+        if self._store is None:
+            return
+        try:
+            self._store.set_cursor(self._cursor)
+        except Exception:  # noqa: BLE001
+            logger.warning("genome persist cursor failed", exc_info=True)
+
+
+# ── 序列化（dict ↔ GenomeVersion） ──────────────────────────────────
+#
+# 放在 kernel 侧而不是 foundation：存储层只做纯 dict 读写，类型还原
+# 属于知道 ``GenomeVersion`` 的一侧（与 holdout 的 decode 分工一致）。
+
+
+def _to_dict(v: "GenomeVersion") -> dict[str, Any]:
+    return {
+        "version_id": v.version_id,
+        "tier0_frozen": dict(v.tier0_frozen),
+        "tier1_active": dict(v.tier1_active),
+        "tier2_self_modifiable": dict(v.tier2_self_modifiable),
+        "activated_at": v.activated_at,
+        "activated_by_proposal": v.activated_by_proposal,
+    }
+
+
+def _from_dict(d: dict[str, Any]) -> "GenomeVersion":
+    return GenomeVersion(
+        version_id=str(d.get("version_id") or ""),
+        tier0_frozen=dict(d.get("tier0_frozen") or {}),
+        tier1_active=dict(d.get("tier1_active") or {}),
+        tier2_self_modifiable=dict(d.get("tier2_self_modifiable") or {}),
+        activated_at=str(d.get("activated_at") or ""),
+        activated_by_proposal=d.get("activated_by_proposal"),
+    )
 
 
 __all__ = ["GenomeVersion", "GenomeVersionStore"]

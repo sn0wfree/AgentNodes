@@ -50,8 +50,15 @@ def resolve(kind: str):
         raise
 
 
-#: 只尝试补注册一次，避免未注册 kind 反复触发
-_register_attempted = False
+#: 已经尝试过补注册的 registry 实例（按 id 记录）。
+#:
+#: **为什么按实例记而不是一个布尔**：``reset_default_registry()`` 会丢掉
+#: 整个注册表，下一个 ``get_default_registry()`` 建的是一个全新空表。
+#: 用单个布尔时，"已尝试过"的状态会跨代沿用——新表永远补不上注册，
+#: ``resolve("evolution.read_journal")`` 从此永久抛 CapabilityNotFound。
+#: （这是本轮实测到的真实缺陷：test_capability_registry 重置后，
+#: 同进程的 test_evolution_tools 全部失败。）
+_register_attempted: set[int] = set()
 
 
 def _ensure_registered(registry: CapabilityRegistry, kind: str) -> bool:
@@ -60,14 +67,31 @@ def _ensure_registered(registry: CapabilityRegistry, kind: str) -> bool:
     Returns False when the business package has not been imported yet —
     in that case the caller must import it first (that's the apps → kernel
     direction, which is legal).
+
+    每个 registry 实例只尝试一次：未注册的 kind 不该反复触发重扫。
     """
-    global _register_attempted
-    if _register_attempted:
+    key = id(registry)
+    if key in _register_attempted:
         return False
-    _register_attempted = True
+    _register_attempted.add(key)
 
     import sys
 
+    # 路径 A：业务包提供了注册入口——它能感知 registry 代数变化并重扫。
+    # 这是 apps 模块里的函数调用（不是新的源码 import），方向仍合法。
+    apps_pkg = sys.modules.get("strategy_research.apps")
+    if apps_pkg is not None:
+        registrar = getattr(apps_pkg, "_register_capabilities", None)
+        if callable(registrar):
+            try:
+                registrar(force=True)
+            except Exception:  # noqa: BLE001 —— 走路径 B 兜底
+                pass
+            if registry.has(kind):
+                return True
+
+    # 路径 B：直接读 CAPABILITIES 表。覆盖"apps.capabilities 已 import
+    # 但 apps/__init__ 的注册入口不可用"的情形（例如部分初始化的包）。
     mod = sys.modules.get("strategy_research.apps.capabilities")
     if mod is None:
         return False  # 业务包未被 import —— 由调用方决定是否加载
@@ -77,13 +101,12 @@ def _ensure_registered(registry: CapabilityRegistry, kind: str) -> bool:
                 registry.register(k, f)
     except Exception:  # noqa: BLE001
         return False
-    return kind in registry
+    return registry.has(kind)
 
 
 def reset_registration_attempt() -> None:
     """Allow ``_ensure_registered`` to retry (test isolation)."""
-    global _register_attempted
-    _register_attempted = False
+    _register_attempted.clear()
 
 
 def list_kinds() -> list[str]:

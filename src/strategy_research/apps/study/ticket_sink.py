@@ -57,6 +57,18 @@ class TicketSink:
         self._store_factory = store_factory or (lambda: StudyStore())
         self._emit = emit
 
+    def bind_emit(
+        self, emit: Callable[[str, dict[str, Any]], None] | None
+    ) -> None:
+        """装配根在 Gateway 构造完成后回填事件发射器。
+
+        为什么不能构造时传：sink 必须落到 ``Gateway._combined_sink``，
+        而后者只有实例存在后才可调用（Worker Slot 订阅也在那里）。
+        装配根先建 sink、再建 Gateway、最后回填——避免用一个
+        捕获循环引用的 lambda 掩盖依赖顺序。
+        """
+        self._emit = emit
+
     # ── 准入 ────────────────────────────────────────────────────────
 
     def admit(
@@ -161,10 +173,14 @@ class TicketSink:
         纯读：不改任何行、不发事件。调用方（Gateway.recover）决定如何
         纳入记账。emit 也留给定调用方——恢复事件的 reason 取决于
         "为什么重启"，那属于运维上下文，不是本模块能知道的。
+
+        上限 5000 而非更小：崩溃后积压量没有先验上界，取一个远大于
+        正常待办量的值，避免把真正的待办项截掉一半（截断的恢复比
+        不恢复更危险——它让审计视图看起来"干净"）。
         """
         out: list[Assignment] = []
         with self._store_factory() as store:
-            for a in store.list_assignments(limit=1000):
+            for a in store.list_assignments(limit=5000):
                 if a.status.value in self.NON_TERMINAL:
                     out.append(a)
         return out

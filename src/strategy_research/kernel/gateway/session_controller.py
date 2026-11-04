@@ -66,6 +66,7 @@ class SessionController:
         fence: Any | None = None,
         cancel_registry: Any | None = None,
         ticket_sink: Any | None = None,
+        capacity: Any | None = None,
     ) -> None:
         self._ep = entry_point
         self._client = client
@@ -102,6 +103,10 @@ class SessionController:
         # （apps/study）实现并注册一个 ``ticket_sink``，控制器只在准入路径
         # **追加** upsert，不改原有 turn 流程。
         self._ticket_sink = ticket_sink
+        # 阶段二（施工方案 §3.4）：容量组闸。None = 不限流（测试/脚本路径，
+        # 与 fence / permission_gateway 同型先例）。**注入而非 import**：
+        # kernel 不得 import apps；装配根（L1）解析后注入同一个实例。
+        self._capacity = capacity
         self._current_session_id: str = ""  # per-turn, set by _execute
         self._turn_counters: dict[str, int] = {}  # session_id -> 已发 turn 数
 
@@ -113,6 +118,12 @@ class SessionController:
         kinds：可选的 WorkKind 集合（只领自己负责的工单）。默认 None = 全部，
         保留既有测试/脚本行为。不匹配的工单留在队列（例如 chat 消费者
         不碰 AUTOMATION 工单）。
+
+        **容量准入（阶段二 §3.4）**：拿到工单后先问容量闸。闸满不是拒绝
+        ——工单**原样留在 mailbox**，本轮不领（``capacity.full`` 事件），
+        下一轮 poll 再来。这与 v8.4「全系统唯一拒绝点 = mailbox cap」
+        一致：容量闸只回答"现在能不能起"，等待发生在 mailbox。
+        未接线（``_capacity is None``）时零开销，行为与改动前逐字一致。
         """
         results: list[RunResult] = []
         for session_key, mailbox in list(self._ep.iter_mailboxes()):
@@ -128,8 +139,55 @@ class SessionController:
                 request = mailbox.poll_due(kinds)
                 if request is None:
                     break
-                results.append(self._execute(request))
+                token, skipped = self._acquire_capacity(request)
+                if skipped:
+                    # 池满：把工单放回队首，留给下轮。不 break——同 session
+                    # 的后续工单同样起不来，让循环继续会在同一轮内反复
+                    # 摘/放，所以 break 更省。
+                    mailbox.requeue_front(request)
+                    break
+                try:
+                    results.append(self._execute(request))
+                finally:
+                    self._release_capacity(token)
         return results
+
+    def _acquire_capacity(self, request: Any) -> tuple[Any, bool]:
+        """问容量闸要一个池位。返回 ``(token, skipped)``。
+
+        ``skipped=True`` 表示池满（工单必须回队，本轮不执行）。
+        容量闸未接线时恒返回 ``(None, False)``——零开销直通。
+        """
+        gate = getattr(self, "_capacity", None)
+        if gate is None:
+            return None, False
+        try:
+            from strategy_research.kernel.gateway.capacity import pool_for_kind
+
+            pool = pool_for_kind(getattr(request, "kind", "chat"))
+            token = gate.acquire(pool)
+        except Exception as exc:  # noqa: BLE001 —— 闸故障不得挡住 turn
+            self._sink("capacity.error", {"error": str(exc)})
+            return None, False
+        if token is None:
+            self._sink("capacity.full", {
+                "pool": pool,
+                "kind": str(getattr(getattr(request, "kind", ""), "value", request.kind)),
+                "session_key": getattr(request, "session_key", ""),
+            })
+            return None, True
+        return token, False
+
+    def _release_capacity(self, token: Any) -> None:
+        """归还池位（幂等；token 为 None 时无操作）。"""
+        gate = getattr(self, "_capacity", None)
+        if gate is None or token is None:
+            return
+        try:
+            gate.release(token)
+        except Exception:  # noqa: BLE001
+            logger.debug("capacity release failed", exc_info=True)
+
 
     # ── 单个 turn ────────────────────────────────────────
 

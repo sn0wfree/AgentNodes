@@ -167,22 +167,98 @@ def compute_task_signature(
 
 
 class EventStoreReportSource:
-    """把 ``EventStore`` 适配成 ``ReportSource``（只读）。
+    """把 ``EventStore`` / ``PlatformStore`` 适配成 ``ReportSource``（只读）。
 
-    ``replay`` 需要 session_id；这里用通配 session 的读法——若 EventStore
-    未提供跨 session 扫描，则退化为按已知 session 列表逐个 replay。
+    ``replay`` 需要 session_id。若调用方没给 ``session_ids``，构造时
+    自动从 store 枚举（``iter_session_ids``）——**不能**依赖某个已知
+    session：RSI 要的是全量历史轨迹，不是当前会话那一条。
     """
 
     def __init__(self, event_store: Any, session_ids: Iterable[str] = ()) -> None:
         self._store = event_store
-        self._sessions = list(session_ids)
+        ids = list(session_ids)
+        if not ids:
+            # 自动枚举：PlatformStore 提供 iter_session_ids；没有该方法的
+            # 替身（测试）就保持空集，调用方显式传。
+            iter_ids = getattr(event_store, "iter_session_ids", None)
+            if callable(iter_ids):
+                try:
+                    ids = [sid for sid in iter_ids() if sid]
+                except Exception:  # noqa: BLE001 —— 枚举失败退化为空
+                    ids = []
+        self._sessions = ids
 
     def iter_assignment_reports(self) -> Iterable[dict[str, Any]]:
         for sid in self._sessions:
-            for ev in self._store.replay(sid, types=["assignment.report"]):
+            # PlatformStore 用 ``kinds=``；EventStore 用 ``types=``。
+            # 统一走 kinds 并回退，避免适配器绑定单一实现。
+            try:
+                rows = self._store.replay(sid, kinds=["assignment.report"])
+            except TypeError:
+                rows = self._store.replay(sid, types=["assignment.report"])
+            for ev in rows:
                 data = dict(ev.data or {})
-                data.setdefault("id", getattr(ev, "id", ""))
+                data.setdefault("id", getattr(ev, "event_id", None) or getattr(ev, "seq", ""))
+                # HoldoutSet 的防污染比较用 ts（ISO8601）；事件自带 time_created。
+                if "ts" not in data:
+                    ts = (
+                        getattr(ev, "ts", None)
+                        or getattr(ev, "time_created", None)
+                        or getattr(ev, "created_at", None)
+                    )
+                    if ts is not None:
+                        data["ts"] = str(ts)
                 yield data
+
+    # ── EvolutionAgent 的另外三个只读源 ──────────────────────────
+    #
+    # EvolutionAgent 需要 journal / scoreboard / validation 三个源，形态
+    # 与 ReportSource 不同。它们都可以从同一份事件流派生——不引入第二个
+    # 数据通道，因为"一切事实经事件流"（H6）。缺哪个事件就返回空，
+    # 调用方（policy）自己决定空证据意味着什么。
+
+    def read_journal(self, *, limit: int = 50) -> list[dict[str, Any]]:
+        """最近的研究账本条目（来自 ``run.*`` / ``study.*`` 事件）。"""
+        kinds = ("run.answer", "run.settled", "run.failed", "study.round_done")
+        out: list[dict[str, Any]] = []
+        for sid in self._sessions:
+            for ev in self._iter_any(sid, kinds):
+                out.append({
+                    "kind": getattr(ev, "kind", ""),
+                    "run_id": getattr(ev, "run_id", ""),
+                    "data": dict(getattr(ev, "data", None) or {}),
+                })
+        return out[-limit:] if limit else out
+
+    def read_scoreboard(self) -> dict[str, Any]:
+        """按 status 统计 ``assignment.report``——Lever 统计的事件流版本。"""
+        counts: dict[str, int] = {}
+        for r in self.iter_assignment_reports():
+            status = str(r.get("status") or "")
+            if status:
+                counts[status] = counts.get(status, 0) + 1
+        total = sum(counts.values())
+        return {
+            "counts": counts,
+            "total": total,
+            "ready_rate": (counts.get("ready", 0) / total) if total else 0.0,
+        }
+
+    def read_validation(self, *, limit: int = 50) -> list[dict[str, Any]]:
+        """历史验证结果（``genome.*`` 事件）。"""
+        kinds = ("genome.rollback", "genome.activated", "rsi.validated")
+        out: list[dict[str, Any]] = []
+        for sid in self._sessions:
+            for ev in self._iter_any(sid, kinds):
+                out.append(dict(getattr(ev, "data", None) or {}))
+        return out[-limit:] if limit else out
+
+    def _iter_any(self, session_id: str, kinds: tuple[str, ...]) -> Iterable[Any]:
+        """按多种事件类型重放（两种 store API 都兼容）。"""
+        try:
+            return self._store.replay(session_id, kinds=list(kinds))
+        except TypeError:
+            return self._store.replay(session_id, types=list(kinds))
 
 
 class StaticGenomeVersion:

@@ -126,8 +126,12 @@ class Gateway:
         # 指针。显式注入优先；否则 store 可用时自建（workspace 为 URI 根）。
         # None = 现行为（测试/无 store 路径，事件内容逐字节不变）。
         self._artifacts = artifact_channel
+        # 装配根需要的 workspace（基因组持久化等子系统据此定位落盘目录）。
+        # 单独保存而非临时计算：接入方（L1 组装根）在 Gateway 构造后
+        # 才执行，那时局部变量已不可见。
+        self._workspace = workspace or _resolve_workspace()
         if self._artifacts is None and self._store is not None:
-            ws = workspace or _resolve_workspace()
+            ws = self._workspace
             try:
                 from strategy_research.foundation.storage.artifact_channel import (
                     ArtifactChannel,
@@ -160,6 +164,51 @@ class Gateway:
     def worker_slots(self):
         """阶段一 §2.8：Worker Slot 管理器（订阅 assignment.report）。"""
         return self._worker_slots
+
+    # ── 装配根注入口（构造后接线） ───────────────────────
+    #
+    # 三个子系统（Ticket/Assignment、容量闸、基因组版本链）都需要在
+    # Gateway 实例存在**之后**才能接上：TicketSink 的 emit 要落到
+    # ``_combined_sink``，容量闸要挂在派发路径。构造期参数做不到这一点
+    # （emit 会捕获未初始化的 Gateway）。
+    #
+    # 这些 setter 只接受 duck-typed 对象，不 import 任何 apps 模块——
+    # 具体实现由 L1 组装根（``interfaces/gateway_wiring.py``）解析后注入。
+
+    @property
+    def ticket_sink(self):
+        """阶段一：Ticket/Assignment 持久化钩子（未接线时为 None）。"""
+        return self._ticket_sink
+
+    def attach_ticket_sink(self, sink: Any) -> None:
+        """接上 Ticket/Assignment 持久化（构造后）。
+
+        同时转发给已构造的 SessionController——否则准入路径仍不落库，
+        这正是本轮"接上了但没生效"的成因。
+        """
+        self._ticket_sink = sink
+        if getattr(self, "controller", None) is not None:
+            self.controller._ticket_sink = sink
+
+    @property
+    def capacity(self):
+        """阶段二：容量组闸（未接线时为 None）。"""
+        return getattr(self, "_capacity", None)
+
+    def attach_capacity_gate(self, gate: Any) -> None:
+        """接上容量闸（构造后），同时转发给控制器——准入发生在 run_pending。"""
+        self._capacity = gate
+        if getattr(self, "controller", None) is not None:
+            self.controller._capacity = gate
+
+    @property
+    def genome(self):
+        """阶段三：Tier 1 基因组版本链（未接线时为 None）。"""
+        return getattr(self, "_genome", None)
+
+    def attach_genome_store(self, store: Any) -> None:
+        """接上基因组版本链（构造后）。装配根负责保活。"""
+        self._genome = store
 
     def _combined_sink(self, kind: str, data: dict) -> None:
         self._default_sink(kind, data)

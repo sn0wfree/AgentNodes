@@ -47,14 +47,41 @@ class Tier1Source(Protocol):
         ...
 
 
+def _default_source() -> Tier1Source | None:
+    """进程级默认源：装配根登记的基因组版本链。
+
+    ``GenomeVersionStore`` 自带 ``tier1_active()``，直接满足 Protocol。
+    kernel 模块缺失或未登记时返回 None（= 未启用 RSI）。
+    """
+    try:
+        from strategy_research.kernel.orchestration.genome_runtime import (
+            get_active_genome,
+        )
+
+        return get_active_genome()
+    except Exception:  # noqa: BLE001 —— 拿不到源就退回空配置
+        logger.debug("no active genome runtime", exc_info=True)
+        return None
+
+
 def resolve(
     task_signature: str, *, source: Tier1Source | None = None
 ) -> EffectiveHarnessConfig:
     """返回 ``task_signature`` 对应的生效配置。
 
     :param task_signature: 任务签名（``holdout.compute_task_signature``）
-    :param source: tier1 提供者；None = 返回空配置（未启用 RSI 的默认路径）
+    :param source: tier1 提供者；None = **自动取当前进程登记的基因组版本链**
+        （``kernel.orchestration.genome_runtime``）。显式传 None 而进程里
+        也没登记 → 返回空配置（未启用 RSI 的默认路径）。
+
+    **为什么默认源不是"永远空"**：早先实现里 ``source=None`` 直接返回空
+    配置，装配根把 ``GenomeVersionStore`` 建出来之后也没人递给 resolver，
+    于是 ``validation_gate`` 升的版在装配期永远读不到——链路看着接上了、
+    实际空转。现在默认源指向 kernel 的运行期登记位，Semantics 仍是
+    "没启用就空"，但"启用了"终于能被看见。
     """
+    if source is None:
+        source = _default_source()
     if source is None:
         return EffectiveHarnessConfig(task_signature=task_signature)
 

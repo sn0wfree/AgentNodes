@@ -14,6 +14,33 @@ from typing import Any, Callable
 
 _singleton: dict[str, Any] = {}
 
+#: 构造后置钩子。L1 组装根（``interfaces/gateway_wiring.py``）在自身 import
+#: 时注册一个 ``gw -> None`` 可调用，把 Ticket/容量闸/基因组接上去。
+#:
+#: **为什么用钩子而不是直接 import**：kernel 是 L3、interfaces 是 L1，
+#: L3→L1 是上行 import（会破层门禁 H2）。方向必须是 L1 主动注册到 L3，
+#: 与 ``CapabilityRegistry`` 同一思路（apps 主动注册，kernel 只解析）。
+_hooks: list[Callable[[Any], None]] = []
+
+
+def register_wiring_hook(hook: Callable[[Any], None]) -> None:
+    """L1 组装根注册后置接线钩子（幂等：同一函数只登记一次）。"""
+    if hook not in _hooks:
+        _hooks.append(hook)
+
+
+def _run_wiring_hooks(gw: Any) -> None:
+    """构造后依次执行钩子。任一失败只记日志，不阻断启动。"""
+    for hook in tuple(_hooks):
+        try:
+            hook(gw)
+        except Exception:  # noqa: BLE001 —— 接线失败不得拒启
+            import logging
+
+            logging.getLogger(__name__).warning(
+                "gateway wiring hook failed", exc_info=True,
+            )
+
 
 def get_gateway(
     *,
@@ -72,6 +99,10 @@ def get_gateway(
             data_dir=_platform_data_dir(ws),
             workspace=ws,
         )
+        # 阶段一/二/三：L1 组装根的后置接线（Ticket/Assignment、容量闸、
+        # 基因组版本链）。**在 verify_invariants 之前**——自检要看到已接线
+        # 的真实形态，否则自检的是个没接线的空壳。
+        _run_wiring_hooks(gw)
         gw.verify_invariants()  # A5：不变量违反即拒启
         _singleton["gw"] = gw
     return gw

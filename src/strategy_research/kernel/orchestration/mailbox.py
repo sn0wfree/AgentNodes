@@ -283,6 +283,22 @@ class Mailbox:
         allowed = {k if isinstance(k, WorkKind) else WorkKind(k) for k in kinds}
         return sum(1 for it in self._queue if it.request.kind in allowed)
 
+    def requeue_front(self, request: WorkRequest) -> None:
+        """把刚摘出的工单放回队首（容量闸满时的"现在起不了"路径）。
+
+        **不重发 ``work.enqueued``**：这不是新的入队，而是同一工单的
+        一次未成行尝试。重发会让 ``_turn_gen`` 多计一代，``wait_turn``
+        看到假的新轮次。
+
+        重建 ``QueueItem`` 时沿用新的 enqueued_at：排队时长从"这次被
+        退回"重新起算，与 ``_apply_aging`` 的"等待过久升优先级"语义
+        一致——否则一个反复被容量闸挡回的工单会因为累积等待时间被
+        永久提升为 interrupt 级。
+        """
+        self._queue.appendleft(
+            QueueItem(request=request, enqueued_at=self._clock())
+        )
+
     def snapshot(self) -> Iterable[QueueItem]:
         """只读快照（status/fold 用）；返回前先出清过期。"""
         self.expire_due()
