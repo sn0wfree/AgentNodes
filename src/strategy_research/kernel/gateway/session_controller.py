@@ -12,12 +12,15 @@ A2 换成后台消费者常驻）。
 """
 from __future__ import annotations
 
+import logging
 from dataclasses import dataclass
 from typing import Any, Callable
 
 from strategy_research.kernel.orchestration import EntryPoint, WorkRequest
 from strategy_research.kernel.runtimes.cancel_scope import CancelScope
 from strategy_research.kernel.runtimes.graph_engine import GraphEngine
+
+logger = logging.getLogger(__name__)
 
 EventSink = Callable[[str, dict], None]
 
@@ -62,6 +65,7 @@ class SessionController:
         compact_config: Any | None = None,
         fence: Any | None = None,
         cancel_registry: Any | None = None,
+        ticket_sink: Any | None = None,
     ) -> None:
         self._ep = entry_point
         self._client = client
@@ -92,6 +96,12 @@ class SessionController:
         # B1：活跃 run 的 CancelScope 注册表（session_id -> CancelScope）。
         # None = 不注册（不可取消，测试/脚本路径）。生产由 Gateway 注入。
         self._cancel_registry = cancel_registry
+        # 阶段一（施工方案 §2.6）：Ticket/Assignment 持久化钩子。None = 不启用
+        # （测试/脚本路径，与 fence / permission_gateway 同型先例）。
+        # **注入而非 import**：kernel 不得 import apps（H1/ADR-000）。业务侧
+        # （apps/study）实现并注册一个 ``ticket_sink``，控制器只在准入路径
+        # **追加** upsert，不改原有 turn 流程。
+        self._ticket_sink = ticket_sink
         self._current_session_id: str = ""  # per-turn, set by _execute
         self._turn_counters: dict[str, int] = {}  # session_id -> 已发 turn 数
 
@@ -146,6 +156,25 @@ class SessionController:
             else None
         )
 
+        # 阶段一：Ticket upsert（幂等）+ Assignment create（pending）。
+        # **只追加，不改控制流**：任何失败都降级为一条事件，不阻断 turn
+        # （R1 fence 已 claim，turn 必须正常走到 settled/release）。
+        assignment = None
+        if self._ticket_sink is not None:
+            try:
+                assignment = self._ticket_sink.admit(
+                    session_key=request.session_key,
+                    session_id=session_id,
+                    run_id=run_id,
+                    turn_id=turn_id,
+                    objective=_payload_text(request),
+                    fence_token=getattr(token, "token", "") or "",
+                )
+            except Exception as exc:  # noqa: BLE001 —— 持久化失败不拖垮 turn
+                logger.warning("ticket_sink.admit failed for %s: %s", run_id, exc)
+                self._sink("ticket.admit_failed", {
+                    "run_id": run_id, "error": str(exc),
+                })
         # _build_engine keeps its zero-arg contract (tests replace it with
         # a lambda); the current session reaches it via this attribute.
         self._current_session_id = session_id
@@ -192,6 +221,7 @@ class SessionController:
                 self._fence.release(token)
             self._sink("run.failed", {"run_id": run_id, "error": str(exc)})
             self._sink("run.settled", {"run_id": run_id, "ok": False})
+            self._settle_assignment(assignment, run_id, "failed", reason=str(exc))
             return RunResult(turn_id, run_id, ok=False, error=str(exc))
         finally:
             if self._cancel_registry is not None:
@@ -214,6 +244,10 @@ class SessionController:
             self._sink("run.settled", {
                 "run_id": run_id, "ok": False, "cancelled": True,
             })
+            self._settle_assignment(
+                assignment, run_id, "waiting",
+                reason=f"cancelled: {scope.reason or 'interrupt'}",
+            )
             return RunResult(
                 turn_id, run_id, ok=False,
                 error=f"cancelled: {scope.reason or 'interrupt'}",
@@ -233,6 +267,10 @@ class SessionController:
                 self._sink("run.settled", {
                     "run_id": run_id, "ok": False, "fenced": True,
                 })
+                self._settle_assignment(
+                    assignment, run_id, "dropped",
+                    reason=f"fenced: {verdict.reason}",
+                )
                 return RunResult(
                     turn_id, run_id, ok=False, error=f"fenced: {verdict.reason}",
                 )
@@ -253,7 +291,24 @@ class SessionController:
             "run.settled",
             {"run_id": run_id, "ok": True, "answer_chars": len(answer)},
         )
+        self._settle_assignment(assignment, run_id, "ready")
         return RunResult(turn_id, run_id, ok=True, answer=answer)
+
+    def _settle_assignment(self, assignment: Any, run_id: str, status: str,
+                           *, reason: str | None = None) -> None:
+        """阶段一：把 Assignment 推到终态并 emit ``assignment.report``。
+
+        收敛所有退出点（fenced / cancelled / failed / ok）的收尾逻辑。
+        失败绝不抛出——turn 的返回路径不能被持久化副作用打断。
+        """
+        if assignment is None or self._ticket_sink is None:
+            return
+        try:
+            self._ticket_sink.settle(
+                assignment=assignment, status=status, reason=reason,
+            )
+        except Exception as exc:  # noqa: BLE001
+            logger.warning("ticket_sink.settle failed for %s: %s", run_id, exc)
 
     def _build_engine(self) -> GraphEngine:
         """正式构造路径（不再 monkey-patch）。engine_factory 优先。

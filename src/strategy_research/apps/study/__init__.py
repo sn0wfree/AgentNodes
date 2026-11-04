@@ -35,25 +35,39 @@ from .runner import (
 )
 from .scheduler import StudyScheduler, make_event_bus_emitter
 from .store import StudyStore
+from .ticket import (
+    REPORT_STATUSES,
+    Assignment,
+    AssignmentStatus,
+    StaleTicketError,
+    Ticket,
+    TicketStatus,
+)
 
 # Backward-compat: AutoresearchExecutor points to the runner
 AutoresearchExecutor = AutoresearchRunner
 
 __all__ = [
     "ACTIVE_EXECUTION_STATUSES",
+    "Assignment",
+    "AssignmentStatus",
     "AutoresearchExecutor",
     "AutoresearchRunner",
     "ControlToken",
     "EventEmitter",
     "MetricTarget",
     "NullEmitter",
+    "REPORT_STATUSES",
     "ShutdownReason",
+    "StaleTicketError",
     "StudyDirective",
     "StudyRecord",
     "StudyRoundRecord",
     "StudyScheduler",
     "StudyStatus",
     "StudyStore",
+    "Ticket",
+    "TicketStatus",
     "acceptance_config_from_targets",
     "default_metric_targets",
     "make_event_bus_emitter",
