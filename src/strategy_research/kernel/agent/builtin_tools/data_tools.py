@@ -120,13 +120,15 @@ class GetMarketDataTool(BaseTool):
         strategy_name: str = "default",
         force_refresh: bool = False,
     ) -> str:
-        from strategy_research.apps.data_source.base import validate_date_range
-        from strategy_research.apps.data_source.registry import (
-            LOADER_REGISTRY,
-            NoAvailableSourceError,
-            resolve_loader,
-        )
-        from strategy_research.apps.data_source.utils import detect_market
+        from strategy_research.kernel.agent.capability import resolve
+
+        _ds_base = resolve("datasource.base")
+        _ds_registry = resolve("datasource.registry")
+        validate_date_range = _ds_base.validate_date_range
+        LOADER_REGISTRY = _ds_registry.LOADER_REGISTRY
+        NoAvailableSourceError = _ds_registry.NoAvailableSourceError
+        resolve_loader = _ds_registry.resolve_loader
+        detect_market = resolve("datasource.detect_market")
 
         # Defensive reads: framework coercion handles JSON-string lists and
         # single-key wrapping; "A,B,C" comma strings are split here.
@@ -213,7 +215,9 @@ class GetMarketDataTool(BaseTool):
                             "data, set persist=False instead",
                         tool="get_market_data",
                     )
-                from strategy_research.apps.db import save_ohlcv_to_db
+                from strategy_research.kernel.agent.capability import resolve
+
+                save_ohlcv_to_db = resolve("db.save_ohlcv_to_db")
 
                 persisted_rows = save_ohlcv_to_db(
                     Path(workspace), data, strategy_name=strategy_name
@@ -294,7 +298,11 @@ class ListDataSourcesTool(BaseTool):
         self,
         ctx: ToolContext,
     ) -> str:
-        from strategy_research.apps.data_source.registry import LOADER_REGISTRY, _ensure_registered
+        from strategy_research.kernel.agent.capability import resolve
+
+        _ds_registry = resolve("datasource.registry")
+        LOADER_REGISTRY = _ds_registry.LOADER_REGISTRY
+        _ensure_registered = _ds_registry._ensure_registered
 
         _ensure_registered()
         sources = []
@@ -504,7 +512,10 @@ class ImportDataTool(BaseTool):
         try:
             from pathlib import Path
 
-            from strategy_research.apps.db import get_connection, init_db
+            from strategy_research.kernel.agent.capability import resolve
+
+            get_connection = resolve("db.get_connection")
+            init_db = resolve("db.init_db")
 
             ws = Path(workspace)
             init_db(ws)
@@ -701,7 +712,9 @@ class CheckDataTool(BaseTool):
             base = ctx.strategy_dir if ctx.strategy_dir is not None else workspace / "strategies" / strategy_name
             cfg_path = base / "config.yaml"
             if cfg_path.exists():
-                from strategy_research.apps.config_runner import load_yaml_config
+                from strategy_research.kernel.agent.capability import resolve
+
+                load_yaml_config = resolve("config.runner").load_yaml_config
 
                 try:
                     cfg = load_yaml_config(cfg_path)
@@ -716,7 +729,9 @@ class CheckDataTool(BaseTool):
                     tool="check_data",
                 )
 
-        from strategy_research.apps.data_readiness import check_data_readiness
+        from strategy_research.kernel.agent.capability import resolve
+
+        check_data_readiness = resolve("data.readiness")
 
         try:
             report = check_data_readiness(
