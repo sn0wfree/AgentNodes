@@ -11,11 +11,14 @@ from pathlib import Path
 SRC = Path(__file__).resolve().parents[1] / "src" / "strategy_research"
 # 接缝加固（docs/seam-hardening-design-20261030.md）：llm/memory 入严格集。
 # agent 不进——builtin_tools 是能力适配器，合法包装域工具（组合根职责）。
+# 2026-11-04 物理分层：平台包分散在 kernel/ 与 foundation/，按实际落位登记。
 PLATFORM_PKGS = (
-    "gateway", "orchestration", "runtimes", "storage", "context",
-    "llm", "memory",
+    "kernel/gateway", "kernel/orchestration", "kernel/runtimes",
+    "foundation/storage", "kernel/context",
+    "foundation/llm", "kernel/memory",
 )
 # 研究域全家（v6.3 图 ⑤ 层）：backtest/autoresearch 是产品 IP 的一部分。
+# 2026-11-04 物理分层：全部落位 apps/。
 RESEARCH_DOMAIN_PKGS = (
     "study", "goal", "hypothesis", "backtest", "autoresearch",
 )
@@ -102,11 +105,11 @@ def test_platform_never_imports_study_domain():
     只锁不修）。（相对导入由 _imports 解析为绝对名后匹配，无绕过空间。）
     """
     banned = tuple(
-        f"strategy_research.core.{p}" for p in RESEARCH_DOMAIN_PKGS
-    ) + tuple(f"core.{p}" for p in RESEARCH_DOMAIN_PKGS)
+        f"strategy_research.apps.{p}" for p in RESEARCH_DOMAIN_PKGS
+    )
     all_v: list[str] = []
     for pkg in PLATFORM_PKGS:
-        all_v.extend(_violations(SRC / "core" / pkg, banned))
+        all_v.extend(_violations(SRC / pkg, banned))
     assert not all_v, "平台层反向依赖研究域:\n" + "\n".join(all_v)
 
 
@@ -161,9 +164,8 @@ def test_context_hub_never_imports_producers():
     gateway/singleton.py import core.agent.builtin_tools（组合根装配）。
     """
     violations = _violations(
-        SRC / "core" / "context",
-        tuple(f"strategy_research.core.{p}" for p in ("agent", "goal", "study"))
-        + tuple(f"core.{p}" for p in ("agent", "goal", "study")),
+        SRC / "kernel" / "context",
+        tuple(f"strategy_research.apps.{p}" for p in ("agent", "goal", "study")),
     )
     assert not violations, "ContextHub 反向依赖生产方:\n" + "\n".join(violations)
 
@@ -174,7 +176,7 @@ def test_platform_never_imports_fastapi():
     见 gateway/__init__.py 落位规则与 v6 宿主决策。
     """
     violations: list[str] = []
-    for path in _iter_py(SRC / "core" / "gateway"):
+    for path in _iter_py(SRC / "kernel" / "gateway"):
         for module, lineno in _imports(path):
             if module.startswith(("fastapi", "starlette")):
                 violations.append(f"{path.relative_to(SRC)}:{lineno} -> {module}")
@@ -217,8 +219,8 @@ def test_domain_layers_use_the_agent_factory_not_raw_agentloop():
       - kernel/agent/executor.py      → swarm 专用
     """
     violations: list[str] = []
-    for domain in ("study", "workflow", "swarm"):
-        for path in _iter_py(SRC / "core" / domain):
+    for domain in ("apps/study", "kernel/workflow", "kernel/swarm"):
+        for path in _iter_py(SRC / domain):
             try:
                 tree = ast.parse(path.read_text(encoding="utf-8"))
             except SyntaxError:  # pragma: no cover
@@ -411,3 +413,39 @@ def test_sandbox_home_is_outside_real_home():
     sandbox = _home_sandbox.SANDBOX_HOME.resolve()
     real = _home_sandbox.REAL_HOME.resolve()
     assert real not in sandbox.parents
+
+
+# ── scripts/arch/ 守卫工具接入（2026-11-04 物理分层迁移沉淀）──────────
+# 两个 check_* 是解析级/字面量级守卫（文本前缀替换的双盲区），直接以
+# 子进程跑自身门禁——脚本的退出码契约（0 通过 / 1 发现问题）即断言。
+
+
+def _run_arch_check(script: str) -> str:
+    import subprocess
+    import sys
+    from pathlib import Path
+
+    root = Path(__file__).resolve().parents[1]
+    r = subprocess.run(
+        [sys.executable, str(root / "scripts" / "arch" / script)],
+        capture_output=True, text=True, encoding="utf-8", errors="replace",
+        cwd=str(root),
+    )
+    assert r.returncode == 0, f"{script} 发现问题 (exit {r.returncode}):\n{r.stdout}\n{r.stderr}"
+    return r.stdout
+
+
+def test_no_dangling_imports():
+    """全库 import 解析目标必须真实存在（解析级，防相对导入盲区）。
+
+    scripts/arch/check_dangling_imports.py — 2026-11-03 迁移期间抓出 8 处
+    悬空（7 处为迁移前既有的静默功能失效）。"""
+    _run_arch_check("check_dangling_imports.py")
+
+
+def test_no_stale_path_literals():
+    """非 import 语句不得拼接已消失的旧路径段（"core" / 非法层段）。  # path-literal: ok
+
+    scripts/arch/check_path_literals.py — 迁移期间 11 处资源目录定位漂移
+    的防回归；运行时资源定位一律「跟随目标包 __file__」。"""
+    _run_arch_check("check_path_literals.py")
