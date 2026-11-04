@@ -119,7 +119,9 @@ def test_layers_output_matches_gate(tmp_path, monkeypatch, capsys):
     这是本开关存在的全部意义：同一张表、同一套算法 → 两个门禁不可能
     给出不同的数字。若这条测试失败，说明有人复制了第二份层归属表。
     """
-    import layer_matrix as lm  # 已由 tests 的 sys.path 注入
+    # 不能假设 sys.path 已含 scripts/arch——单独跑本文件时并没有。
+    sys.path.insert(0, str(SCRIPTS / "arch"))
+    import layer_matrix as lm
     sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "tests"))
     import test_layer_matrix as tlm
 
@@ -149,6 +151,7 @@ def test_layers_mode_reports_l3l2(tmp_path, monkeypatch, capsys):
     mod.PKG_DIR = str(tmp_path / "src" / "strategy_research")
 
     # 直接驱动共享实现，避免依赖 ROOT 的全局状态
+    sys.path.insert(0, str(SCRIPTS / "arch"))
     import layer_matrix as lm
     viol, _ = lm.collect(Path(mod.PKG_DIR))
     assert viol.get("L3>L2", 0) == 1, f"实测 {dict(viol)}"
@@ -163,6 +166,38 @@ def test_layers_mode_exit_code_on_real_repo():
     viol, _ = lm.collect(Path(mod.PKG_DIR))
     assert viol.get("L3>L2", 0) == 0
     assert rc == (1 if sum(viol.values()) else 0)
+
+
+# ── sync_architecture_diagram ────────────────────────────────────────
+#
+# 用户要求「每次大的修改后自动更新架构图」。手工记得更新不可靠——本仓库
+# 出现过「图上写 46 条违规、实际 0」这种过时 6 个版本的情况。这条测试把
+# 「图与代码一致」变成 CI 断言：任何增删包、搬模块的改动若没同步图，
+# 这里就会红。
+
+
+def test_architecture_diagram_matches_code():
+    """架构图上的层体量与跨层边数必须与 AST 实测一致。"""
+    mod = _load("sync_architecture_diagram")
+    ok, report = mod.check()
+    assert ok, (
+        "架构图已过时，请更新 docs/architecture-diagram.html：\n"
+        + "\n".join(report)
+    )
+
+
+def test_architecture_diagram_structurally_valid():
+    """图本身的结构问题（标签错配 / 未转义 & / rect 越界）单独断言。
+
+    与上一测试分开：那条测「数据是否过时」（更新图就能修），这条测
+    「图是否坏掉」（手误改坏 HTML 才会红），失败含义不同。
+    """
+    mod = _load("sync_architecture_diagram")
+    _ok, report = mod.check()
+    text = "\n".join(report)
+    assert "[X] HTML 结构" not in text, text
+    assert "[X] 未转义 &" not in text, text
+    assert "[X] rect 越界" not in text, text
 
 
 # ── check_path_literals ──────────────────────────────────────────────

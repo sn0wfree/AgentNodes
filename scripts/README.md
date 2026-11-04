@@ -26,14 +26,38 @@
 | `check_dangling_imports.py` | import 解析目标在 strategy_research/ 下不存在 | 文本前缀替换对相对导入天然盲区；曾抓出 7 处静默功能失效 |
 | `check_path_literals.py` | 非 import 语句里的旧路径拼接（`"core"` 段 / 非法层段） | import 改写工具的双盲区；曾抓出 11 处 presets/skills 目录定位漂移 |
 | `graph_layer_audit.py` | graphify 符号图的层向矩阵 + core 残留 + god-nodes | 与语句级门禁互为**第二种量纲**；曾暴露门禁 level=0 拼接 bug |
+| `layer_matrix.py` | 层归属表 + 判定原语（**唯一事实源**） | `test_layer_matrix` 与 `--layers` 共用，防止两份表漂移 |
+| `sync_architecture_diagram.py` | 架构图数字与 AST 实测是否一致 | 图上的层体量/边数是实测来的；**曾出现图写 46 违规、实际 0 且过时 6 版** |
 
 运行：
 ```bash
 python scripts/arch/check_dangling_imports.py
+python scripts/arch/check_dangling_imports.py --layers   # 附层方向矩阵
 python scripts/arch/check_path_literals.py
+python scripts/arch/sync_architecture_diagram.py         # 架构图是否过时
 python -m graphify extract . --code-only --no-cluster --out tmp/graphify2   # 先抽图
 python scripts/arch/graph_layer_audit.py tmp/graphify2/graphify-out/graph.json
 ```
+
+### ⚠ 架构图更新规则（用户要求，2026-11-04）
+
+**每次大的修改后必须更新 `docs/architecture-diagram.html`。** "大的修改"指：
+
+- 增删 apps 包（做减法 / 新增业务域）
+- 搬模块跨层（比如把 Ticket 从 apps 挪到 kernel）
+- 改 import 结构（端口化、注册反转）
+- 任何让层体量变化 > 5% 或让跨层边数变化的改动
+
+流程固定三步：
+
+1. **量实测**（不得手写猜测）——`sync_architecture_diagram.py` 会打印每层的
+   文件数与行数、6 项跨层边数、6 项上行违规
+2. **改图**——`docs/architecture-diagram.html` 里的 L 徽标、功能域模块清单、
+   ⑦ 矩阵、页脚总计
+3. **验证**——重跑 `sync_architecture_diagram.py`，全 `[OK]` 才算完成
+
+这条已接入 pytest（`tests/test_scripts_arch.py::test_architecture_diagram_matches_code`），
+**图过时会直接让 CI 红**，不依赖人记得。
 
 ### ⚠ 工具选型规则：graphify 与门禁不可互换
 
