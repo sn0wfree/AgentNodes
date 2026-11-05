@@ -21,13 +21,27 @@ from agentnodes.kernel.agent.memory_manager import (
 
 @pytest.fixture
 def mgr(tmp_path):
-    """Create a fresh UnifiedMemoryManager."""
+    """Create a fresh UnifiedMemoryManager.
+
+    2026-11-05：append 走事件流（event_log → projector → messages），
+    所以必须注入 Projector，否则事件落库但 messages 表永远为空
+    （这正是 B4 陷阱的形态）。组合根在生产路径上做同一件事。
+    """
+    from agentnodes.interfaces.api.session.projector import Projector
+
     MemoryManagerFactory.reset()
+    db = tmp_path / "test_mem.db"
+    sink = Projector(db)
     m = UnifiedMemoryManager(
-        db_path=tmp_path / "test_mem.db",
+        db_path=db,
         cache_config=CacheConfig(min_entries=10, max_entries=100, re_resolve_interval_seconds=999),
+        projection_sink=sink,
     )
     yield m
+    try:
+        sink.close()
+    except Exception:  # noqa: BLE001
+        pass
 
 
 # ── append + get ──────────────────────────────────────────────────
@@ -193,19 +207,28 @@ class TestSQLiteStoreDirect:
         """Opening the store yields the full unified schema.
 
         Pins the dual-master hotfix (c161b0aa): ``_init_schema`` delegates to
-        ``web_session_db._ensure_schema``, so ``message_parts`` exists even
-        when SQLiteStore is what created the file.
-        """
-        from agentnodes.interfaces.api.session.web_session_db import _ensure_schema
+        the registered initializer, so ``message_parts`` exists even when
+        SQLiteStore is what created the file.
 
-        db = tmp_path / "schema.db"
-        store = SQLiteStore(db)
-        conn = store._ensure_conn()  # schema is applied on first connection
-        _ensure_schema(conn)
-        tables = {
-            r[0] for r in conn.execute(
-                "SELECT name FROM sqlite_master WHERE type='table'"
-            ).fetchall()
-        }
-        store.close()
+        2026-11-05：委托方式改为端口注册（``foundation/storage/schema_port``）
+        ——生产路径上 L1 的 ``web_session_db`` 在 import 时注册实现。本测试
+        显式模拟该装配顺序：**先注册、后建 store**（原来先建 store 再
+        手动调 _ensure_schema，等于绕过了要验证的委托机制）。
+        """
+        from agentnodes.foundation.storage import schema_port
+        from agentnodes.interfaces.api.session import web_session_db
+
+        schema_port.register_schema_initializer(web_session_db._ensure_schema)
+        try:
+            db = tmp_path / "schema.db"
+            store = SQLiteStore(db)
+            conn = store._ensure_conn()  # schema applied on first connection
+            tables = {
+                r[0] for r in conn.execute(
+                    "SELECT name FROM sqlite_master WHERE type='table'"
+                ).fetchall()
+            }
+            store.close()
+        finally:
+            schema_port.reset_for_tests()
         assert {"sessions", "messages", "message_parts"} <= tables

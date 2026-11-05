@@ -43,15 +43,13 @@ router = APIRouter()
 def _shell_tools_enabled(mode: str | None = None) -> bool:
     """Whether the ``run_command`` shell tool should be offered to the agent.
 
-    Shell tools are opt-in: set ``AN_ALLOW_SHELL_TOOLS=1`` (accepts
-    1/true/yes, case-insensitive) in the server environment to enable
-    ``run_command``. Plan mode never exposes shell tools (analysis-only,
-    single iteration), regardless of the env var.
+    2026-11-05：策略本体已下沉到 L2 ``apps/chat/policy.py``——L1 是哑
+    适配器，不该读环境变量做安全决策。这里保留薄壳以兼容既有调用点
+    （``_send_via_gateway`` 与 gateway wiring 都调它）。
     """
-    enabled = os.environ.get("AN_ALLOW_SHELL_TOOLS", "").lower() in (
-        "1", "true", "yes",
-    )
-    return False if mode == "plan" else enabled
+    from agentnodes.apps.chat.policy import shell_tools_enabled
+
+    return shell_tools_enabled(mode)
 
 # ── Shared EventStore + SessionService (singleton) ──────────────────────────
 # The EventStore is created per-DB-path inside _get_session_service()
@@ -767,48 +765,18 @@ async def chat_export(
     """
     from fastapi.responses import PlainTextResponse
 
+    from agentnodes.apps.chat.export import render
     from .web_session import _fetch_session_owned, _get_db
+
     user_id = getattr(request.state, "user_id", "anonymous")
     _fetch_session_owned(_get_db(), session_id, user_id)
     service = _get_session_service()
     messages = service.store.get_messages(session_id, limit=10000)
 
-    if format == "json":
-        import json
-        data = [
-            {
-                "role": m.role,
-                "content": m.content,
-                "message_type": m.message_type,
-                "created_at": m.created_at,
-                "message_id": m.message_id,
-            }
-            for m in messages
-        ]
-        return PlainTextResponse(
-            json.dumps(data, ensure_ascii=False, indent=2),
-            media_type="application/json",
-        )
-
-    # Markdown format
-    lines: list[str] = []
-    for m in messages:
-        if m.message_type == "compaction":
-            lines.append(f"\n---\n*{m.content[:200]}*\n---\n")
-            continue
-        if m.message_type == "error":
-            lines.append(f"**Error:** {m.content}\n")
-            continue
-        if m.role == "user":
-            lines.append(f"**User:** {m.content}\n")
-        elif m.role == "assistant":
-            lines.append(f"**Assistant:** {m.content}\n")
-        else:
-            lines.append(f"**{m.role.title()}:** {m.content}\n")
-    return PlainTextResponse(
-        "\n".join(lines),
-        media_type="text/plain; charset=utf-8",
-    )
+    # 2026-11-05：格式渲染下沉到 apps/chat/export.py（L2 产品策略）。
+    # L1 只负责把它包成 HTTP 响应。
+    body, media_type = render(messages, format)
+    return PlainTextResponse(body, media_type=media_type)
 
 
 @router.get("/session/{session_id}/trace")
@@ -886,32 +854,15 @@ async def list_personas(request: Request = None):
     Returns ``{"personas": [{"id", "name", "description"}, ...]}`` — the
     curated set of role prompts the composer may switch to. ``chat`` is the
     default (general) persona.
+
+    2026-11-05：展示元数据（中文名 / 一句话说明）已下沉到
+    ``apps/chat/personas.py``；角色清单本身仍来自 L3 的
+    ``PromptBuilderFactory``——L1 只做拼接。
     """
+    from agentnodes.apps.chat.personas import list_for
     from agentnodes.kernel.agent.prompt_builder import PromptBuilderFactory
 
-    labels = {
-        "chat": ("通用助手", "默认聊天助手，适合日常问答与策略讨论"),
-        "researcher": ("研究员", "深度资料调研与信息检索"),
-        "strategist": ("策略师", "策略设计与回测分析"),
-        "factor_analyst": ("因子分析师", "因子计算与有效性分析"),
-        "data_quality": ("数据质量", "数据质量与来源核查"),
-        "portfolio_construction": ("组合构建", "组合权重与配置优化"),
-        "risk_controller": ("风控", "风险度量与回撤控制"),
-        "attribution_analyst": ("归因分析", "收益与风险归因"),
-        "anti_overfit_analyst": ("反过拟合", "过拟合诊断与稳健性检验"),
-        "backtest_diagnostics": ("回测诊断", "回测结果核查与诊断"),
-        "critic": ("评审", "对结论与策略进行批判性审查"),
-        "workflow_orchestrator": (
-            "编排助手",
-            "DAG 编排专用：把任务拆解为节点并通过 submit_dag_step 提交；固定用于 dag:{name} 会话",
-        ),
-    }
-    persona = PromptBuilderFactory.list_roles()
-    personas = []
-    for pid in persona:
-        name, desc = labels.get(pid, (pid, ""))
-        personas.append({"id": pid, "name": name, "description": desc})
-    return {"personas": personas}
+    return {"personas": list_for(PromptBuilderFactory.list_roles())}
 
 
 async def _event_generator_v2(

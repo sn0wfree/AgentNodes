@@ -82,6 +82,7 @@ def build_container(
     """
     from agentnodes.kernel.agent.event_store import EventStore
     from agentnodes.kernel.agent.memory_manager import resolve_session_db_path
+    from .session.projector import Projector
     from .session.service import SessionService
     from .session.store import SessionStore
 
@@ -91,7 +92,16 @@ def build_container(
 
     # Construct services in dependency order
     session_store = (session_store_factory or SessionStore)(db_path)
-    event_store = (event_store_factory or (lambda p: EventStore(p, flush_to_messages=True)))(db_path)
+    # 「要不要投影」这个决策只属于组合根（2026-11-05）：
+    # 原先 EventStore 自己在 _get_projector() 里 lazy import 并 new 一个
+    # Projector —— 既是 L3→L1 上行违规，也让同一进程出现两个互不相通的
+    # Projector 实例（增量缓存各算各的）。现在在这里构造一次、注入进去。
+    projection_sink = Projector(db_path)
+    event_store = (event_store_factory or (
+        lambda p: EventStore(
+            p, flush_to_messages=True, projection_sink=projection_sink,
+        )
+    ))(db_path)
     # A2: no SSE bridge — /api/chat/events subscribes to the event store
     # directly (single track).
     session_service = (session_service_factory or SessionService)(session_store, event_store)

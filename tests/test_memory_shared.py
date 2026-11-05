@@ -20,6 +20,18 @@ from agentnodes.kernel.agent.memory_manager import (
 pytestmark = pytest.mark.asyncio
 
 
+
+def _make_projection_sink(db_path):
+    """Projector 必须注入：append 走事件流，没有 sink 则 messages 表永远为空。
+
+    2026-11-05：`UnifiedMemoryManager._emit_event` 不再自建 EventStore 时
+    偷偷 new 一个 Projector（那是组合根绕过）。生产路径由 container.py
+    注入，测试这里等价提供。
+    """
+    from agentnodes.interfaces.api.session.projector import Projector
+
+    return Projector(db_path)
+
 @pytest.fixture
 def shared_db(tmp_path: Path) -> Path:
     return tmp_path / "shared.db"
@@ -31,12 +43,12 @@ class TestCrossProcessSqlite:
         cfg = CacheConfig(min_entries=10, max_entries=100)
 
         # Simulate "process A" (TUI)
-        mm_a = UnifiedMemoryManager(db_path=shared_db, cache_config=cfg)
+        mm_a = UnifiedMemoryManager(db_path=shared_db, projection_sink=_make_projection_sink(shared_db), cache_config=cfg)
         await mm_a.append("s1", "user", "from A")
 
         # Simulate "process B" (web) — fresh instance, no cache
         MemoryManagerFactory.reset()
-        mm_b = UnifiedMemoryManager(db_path=shared_db, cache_config=cfg)
+        mm_b = UnifiedMemoryManager(db_path=shared_db, projection_sink=_make_projection_sink(shared_db), cache_config=cfg)
         msgs_b = await mm_b.get("s1")
         assert len(msgs_b) == 1
         assert msgs_b[0]["content"] == "from A"
@@ -53,8 +65,8 @@ class TestCrossProcessSqlite:
         """
         cfg = CacheConfig(min_entries=10)
 
-        mm_a = UnifiedMemoryManager(db_path=shared_db, cache_config=cfg)
-        mm_b = UnifiedMemoryManager(db_path=shared_db, cache_config=cfg)
+        mm_a = UnifiedMemoryManager(db_path=shared_db, projection_sink=_make_projection_sink(shared_db), cache_config=cfg)
+        mm_b = UnifiedMemoryManager(db_path=shared_db, projection_sink=_make_projection_sink(shared_db), cache_config=cfg)
 
         # Both write concurrently
         await asyncio.gather(
@@ -74,14 +86,14 @@ class TestCrossProcessSqlite:
 
     async def test_session_consistency_across_instances(self, shared_db):
         cfg = CacheConfig(min_entries=10)
-        mm_a = UnifiedMemoryManager(db_path=shared_db, cache_config=cfg)
+        mm_a = UnifiedMemoryManager(db_path=shared_db, projection_sink=_make_projection_sink(shared_db), cache_config=cfg)
         await mm_a.append("s1", "user", "hi")
         await mm_a.append("s1", "assistant", "hello")
         await mm_a.append("s1", "user", "how are you?")
         mm_a.close()
 
         # Fresh instance — should see all 3 messages
-        mm_b = UnifiedMemoryManager(db_path=shared_db, cache_config=cfg)
+        mm_b = UnifiedMemoryManager(db_path=shared_db, projection_sink=_make_projection_sink(shared_db), cache_config=cfg)
         msgs = await mm_b.get("s1")
         assert len(msgs) == 3
         assert msgs[0]["content"] == "hi"
@@ -98,16 +110,16 @@ class TestCrossProcessSqlite:
         artifact is now a compaction marker instead of an empty list.
         """
         cfg = CacheConfig(min_entries=10)
-        mm_a = UnifiedMemoryManager(db_path=shared_db, cache_config=cfg)
+        mm_a = UnifiedMemoryManager(db_path=shared_db, projection_sink=_make_projection_sink(shared_db), cache_config=cfg)
         await mm_a.append("s1", "user", "data")
         mm_a.close()
 
-        mm_b = UnifiedMemoryManager(db_path=shared_db, cache_config=cfg)
+        mm_b = UnifiedMemoryManager(db_path=shared_db, projection_sink=_make_projection_sink(shared_db), cache_config=cfg)
         await mm_b.clear("s1")
         mm_b.close()
 
         # Fresh instance sees the boundary the other process wrote
-        mm_c = UnifiedMemoryManager(db_path=shared_db, cache_config=cfg)
+        mm_c = UnifiedMemoryManager(db_path=shared_db, projection_sink=_make_projection_sink(shared_db), cache_config=cfg)
         msgs = await mm_c.get("s1")
         # B4 Step 1: append writes through the projector, so the original
         # message plus the marker are both visible cross-process.
@@ -125,7 +137,7 @@ class TestServicePySharedBackend:
         from agentnodes.kernel.agent.memory_manager import SQLiteStore
 
         cfg = CacheConfig(min_entries=10)
-        mm = UnifiedMemoryManager(db_path=shared_db, cache_config=cfg)
+        mm = UnifiedMemoryManager(db_path=shared_db, projection_sink=_make_projection_sink(shared_db), cache_config=cfg)
         await mm.append("s1", "user", "via mm")
 
         # Direct SQLiteStore read (bypass MemoryManager)

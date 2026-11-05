@@ -26,6 +26,18 @@ from agentnodes.kernel.agent.memory_manager import (
 )
 
 
+
+def _make_projection_sink(db_path):
+    """Projector 必须注入：append 走事件流，没有 sink 则 messages 表永远为空。
+
+    2026-11-05：`UnifiedMemoryManager._emit_event` 不再自建 EventStore 时
+    偷偷 new 一个 Projector（那是组合根绕过）。生产路径由 container.py
+    注入，测试这里等价提供。
+    """
+    from agentnodes.interfaces.api.session.projector import Projector
+
+    return Projector(db_path)
+
 @pytest.fixture
 def unified_db(tmp_path: Path) -> Path:
     return tmp_path / "unified.db"
@@ -75,7 +87,7 @@ def _seed_message(store, session_id: str, role: str, content: str) -> str:
 
 @pytest.fixture
 def mm(unified_db: Path):
-    manager = UnifiedMemoryManager(db_path=unified_db)
+    manager = UnifiedMemoryManager(db_path=unified_db, projection_sink=_make_projection_sink(unified_db))
     yield manager
     manager.close()
 

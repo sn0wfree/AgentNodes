@@ -28,8 +28,8 @@
   <h1>架构 v10.2 · 四层堆叠 · 功能模块化</h1>
   <p class="sub">
     依赖只向下流：<b>L1 interfaces → L2 apps → L3 kernel → L4 foundation</b>。
-    每层内部按<b>功能域</b>分模块，模块边界取自真实包结构（371 文件 / 74,763 行，AST 实测）。
-    违规仅剩 2 条（<code>L3→L1</code> 2 · <code>L2→L1</code> 0），<code>L3→L2</code> 已清零。
+    每层内部按<b>功能域</b>分模块，模块边界取自真实包结构（379 文件 / 75,275 行，AST 实测）。
+    违规仅剩 0 条（<code>L3→L1</code> 0 · <code>L2→L1</code> 0），<code>L3→L2</code> 已清零。
     <b>2026-11-05 做减法批次 5</b>：移除数据域（data_source · compute_factor · db ·
     tools · data_import · data_readiness · preflight，22 文件 6,822 行），
     L2 层 10.3k → <b>3.0k（-71%）</b>。
@@ -109,15 +109,15 @@
   <line x1="420" y1="276" x2="420" y2="308" class="arrow"/>
   <line x1="800" y1="276" x2="800" y2="308" class="arrow"/>
   <line x1="1180" y1="276" x2="1180" y2="308" class="arrow"/>
-  <text x="1230" y="296" class="st mono" fill="#0284c7">L1→L2 5 · L1→L3 115 · L1→L4 51</text>
+  <text x="1230" y="296" class="st mono" fill="#0284c7">L1→L2 8 · L1→L3 115 · L1→L4 52</text>
 
   <!-- ══════════════ L2 apps ══════════════ -->
   <rect x="24" y="332" width="124" height="132" rx="10" fill="#fef3c7" stroke="#fcd34d" stroke-width="1.4"/>
   <text x="86" y="364" class="bignum" text-anchor="middle" fill="#b45309">L2</text>
   <text x="86" y="388" class="lyr" text-anchor="middle">apps</text>
   <text x="86" y="410" class="lyrsub" text-anchor="middle">业务域</text>
-  <text x="86" y="436" class="loc" text-anchor="middle">11 文件</text>
-  <text x="86" y="454" class="loc" text-anchor="middle">4.3k 行</text>
+  <text x="86" y="436" class="loc" text-anchor="middle">15 文件</text>
+  <text x="86" y="454" class="loc" text-anchor="middle">4.5k 行</text>
 
   <rect x="160" y="316" width="1416" height="546" rx="12" class="band"/>
   <text x="180" y="344" class="dom">研究 IP · 按业务能力分四个功能域（域内高内聚，域间不互相调用）</text>
@@ -219,8 +219,8 @@
   <text x="86" y="950" class="bignum" text-anchor="middle" fill="#0369a1">L3</text>
   <text x="86" y="974" class="lyr" text-anchor="middle">kernel</text>
   <text x="86" y="996" class="lyrsub" text-anchor="middle">平台机制</text>
-  <text x="86" y="1022" class="loc" text-anchor="middle">188 文件</text>
-  <text x="86" y="1040" class="loc" text-anchor="middle">36.5k 行</text>
+  <text x="86" y="1022" class="loc" text-anchor="middle">189 文件</text>
+  <text x="86" y="1040" class="loc" text-anchor="middle">36.4k 行</text>
 
   <rect x="160" y="902" width="1416" height="448" rx="12" class="band"/>
   <text x="180" y="930" class="dom">业务无关的平台机制 · 三个子带（同层自由互调，只向下依赖）</text>
@@ -306,15 +306,15 @@
   <line x1="420" y1="1360" x2="420" y2="1392" class="arrow"/>
   <line x1="800" y1="1360" x2="800" y2="1392" class="arrow"/>
   <line x1="1180" y1="1360" x2="1180" y2="1392" class="arrow"/>
-  <text x="1230" y="1380" class="st mono" fill="#0284c7">L3→L4 52</text>
+  <text x="1230" y="1380" class="st mono" fill="#0284c7">L3→L4 54</text>
 
   <!-- ══════════════ L4 foundation ══════════════ -->
   <rect x="24" y="1416" width="124" height="132" rx="10" fill="#dcfce7" stroke="#86efac" stroke-width="1.4"/>
   <text x="86" y="1448" class="bignum" text-anchor="middle" fill="#166534">L4</text>
   <text x="86" y="1472" class="lyr" text-anchor="middle">foundation</text>
   <text x="86" y="1494" class="lyrsub" text-anchor="middle">基础设施</text>
-  <text x="86" y="1520" class="loc" text-anchor="middle">64 文件</text>
-  <text x="86" y="1538" class="loc" text-anchor="middle">11.0k 行</text>
+  <text x="86" y="1520" class="loc" text-anchor="middle">67 文件</text>
+  <text x="86" y="1538" class="loc" text-anchor="middle">11.4k 行</text>
 
   <rect x="160" y="1400" width="1416" height="176" rx="12" class="band"/>
   <text x="180" y="1428" class="dom">零业务知识 · 被上面三层共同依赖 · L4 上行违规 = 0</text>
@@ -359,16 +359,16 @@
   <rect x="160" y="1602" width="700" height="164" rx="10" class="dombox"/>
   <text x="180" y="1628" class="dom">跨层 import 矩阵（ADR-000 物理口径 · 每语句计 1）</text>
   <text x="180" y="1656" class="st mono">        →L1     →L2     →L3     →L4</text>
-  <text x="180" y="1678" class="st mono">L1       —       5     115      51</text>
+  <text x="180" y="1678" class="st mono">L1       —       8     115      52</text>
   <text x="180" y="1700" class="st mono">L2     <tspan fill="#dc2626">0 ⚠</tspan>       —       39      1</text>
-  <text x="180" y="1722" class="st mono">L3     <tspan fill="#dc2626">2 ⚠</tspan>       <tspan fill="#16a34a">0 ✅</tspan>       —       52</text>
+  <text x="180" y="1722" class="st mono">L3     <tspan fill="#dc2626">0 ⚠</tspan>       <tspan fill="#16a34a">0 ✅</tspan>       —       54</text>
   <text x="180" y="1744" class="st mono">L4       0       0       0        —</text>
 
   <rect x="880" y="1602" width="696" height="164" rx="10" class="dombox"/>
   <text x="900" y="1628" class="dom">棘轮基线（只降不升）</text>
-  <text x="900" y="1656" class="st">上行违规总数 <tspan font-weight="600" fill="#16a34a">55 → 2</tspan>　　<code>L3→L2</code> 46 → <tspan font-weight="600" fill="#16a34a">0</tspan>（端口化完成）</text>
+  <text x="900" y="1656" class="st">上行违规总数 <tspan font-weight="600" fill="#16a34a">55 → 0</tspan>　　<code>L3→L2</code> 46 → <tspan font-weight="600" fill="#16a34a">0</tspan>（端口化完成）</text>
   <text x="900" y="1680" class="st">L4 簇（L4→L2 2 · L4→L3 4）→ <tspan font-weight="600" fill="#16a34a">0</tspan></text>
-  <text x="900" y="1704" class="st">剩余：<code>L3→L1</code> 2 · <code>L2→L1</code> 0（均为展示层引用）</text>
+  <text x="900" y="1704" class="st">剩余：<code>L3→L1</code> 0 · <code>L2→L1</code> 0（均为展示层引用）</text>
   <text x="900" y="1732" class="sm">门禁：<code>scripts/arch/check_dangling_imports.py --layers</code> 与</text>
   <text x="900" y="1750" class="sm"><code>tests/test_layer_matrix.py</code> 共用同一份层归属表，不会漂移。</text>
 
@@ -378,7 +378,7 @@
 <div class="legend">
   <span><b>四层</b>＝L1 interfaces → L2 apps → L3 kernel → L4 foundation，依赖只向下</span>
   <span><b>蓝箭头</b>＝合法下行 import</span>
-  <span><b>红虚线</b>＝上行违规（仅 2 条，棘轮锁定）</span>
+  <span><b>红虚线</b>＝上行违规（仅 0 条，棘轮锁定）</span>
   <span><b>白框</b>＝功能模块 · <b>浅蓝框</b>＝本轮新增/重点模块</span>
   <span><b>做减法</b>：移除的模块归档到 <code>testcase/golden/</code>，图内<b>橙字</b>为"已移除"标记</span>
 </div>
@@ -388,9 +388,9 @@
 <thead><tr><th style="width:110px">层</th><th style="width:80px">体量</th><th>职责边界</th><th style="width:300px">模块化原则</th></tr></thead>
 <tbody>
 <tr><td class="k">L1 interfaces</td><td>108 文件<br>23.0k 行</td><td>唯一出口：把外部请求包成 WorkRequest，订阅事件流回给调用方。不含业务判断。</td><td>按<b>渠道</b>分（api / cli / mcp）+ 一个<b>组装根</b>。组装根是唯一允许知道 apps 具体实现的 L1 模块。</td></tr>
-<tr><td class="k">L2 apps</td><td>11 文件<br>4.3k 行</td><td>研究 IP 的全部所在。方法论、因子、回测、进化都在这层。</td><td>按<b>业务能力</b>分四个功能域；域间不互相 import，协作走 L3 的端口或事件流。</td></tr>
-<tr><td class="k">L3 kernel</td><td>188 文件<br>36.5k 行</td><td>业务无关的平台机制：控制、执行、能力供给。不认识研究语义。</td><td>按<b>机制职责</b>分三个子带（控制面 / 执行面 / 能力面）；同层自由互调，只向下依赖。</td></tr>
-<tr><td class="k">L4 foundation</td><td>64 文件<br>11.0k 行</td><td>零业务知识的基础设施。被上面三层共同依赖。</td><td>按<b>技术能力</b>分（llm / storage / utils / observability / web）。晋升门槛＝去掉 run/session 语义可独立成库。</td></tr>
+<tr><td class="k">L2 apps</td><td>15 文件<br>4.5k 行</td><td>研究 IP 的全部所在。方法论、因子、回测、进化都在这层。</td><td>按<b>业务能力</b>分四个功能域；域间不互相 import，协作走 L3 的端口或事件流。</td></tr>
+<tr><td class="k">L3 kernel</td><td>189 文件<br>36.4k 行</td><td>业务无关的平台机制：控制、执行、能力供给。不认识研究语义。</td><td>按<b>机制职责</b>分三个子带（控制面 / 执行面 / 能力面）；同层自由互调，只向下依赖。</td></tr>
+<tr><td class="k">L4 foundation</td><td>67 文件<br>11.4k 行</td><td>零业务知识的基础设施。被上面三层共同依赖。</td><td>按<b>技术能力</b>分（llm / storage / utils / observability / web）。晋升门槛＝去掉 run/session 语义可独立成库。</td></tr>
 </tbody>
 </table>
 
@@ -418,7 +418,7 @@
 </table>
 
 <footer>
-  数据：AST 实测 2026-11-05（371 文件 / 74,763 行 · 批次 2 后）· 门禁：<code>check_dangling_imports.py --layers</code> ·
+  数据：AST 实测 2026-11-05（379 文件 / 75,275 行 · 批次 2 后）· 门禁：<code>check_dangling_imports.py --layers</code> ·
   版本史：<code>docs/architecture-diagram-changelog.md</code> · 设计：<code>docs/layered-skeleton-design-20261103.md</code>
 </footer>
 </div>

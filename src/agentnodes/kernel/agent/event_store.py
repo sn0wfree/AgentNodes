@@ -26,6 +26,7 @@ from agentnodes.kernel.events.event_v2 import EventV2
 from agentnodes.foundation.protocol import ProtocolVersionError
 from .cache import CacheConfig, SessionCache, SessionLockMap
 from .memory_manager import InMemoryStore, SQLiteStore, resolve_db_path
+from .projection_port import ProjectionInterest, ProjectionSink
 
 logger = logging.getLogger(__name__)
 
@@ -53,11 +54,15 @@ class EventStore:
         cache_config: CacheConfig | None = None,
         sse_pusher: Callable[[str, EventV2], None] | None = None,
         flush_to_messages: bool = False,
+        projection_sink: "ProjectionSink | None" = None,
     ):
         self._db_path = resolve_db_path(db_path)
         self._flush_to_messages = flush_to_messages
-        # Lazy projector (avoids circular import at startup)
-        self._projector = None
+        # 2026-11-05：投影器由**组合根注入**（依赖倒置），不再在这里
+        # lazy import 接口层的 Projector —— 那是 L3→L1 上行违规，也是
+        # composition root bypass（container.py 早已做过这个决策）。
+        # 端口定义见 kernel/agent/projection_port.py。
+        self._projector: "ProjectionSink | None" = projection_sink
         cache_config = cache_config or CacheConfig.from_env()
 
         # 1. SQLite backend with auto-repair fallback
@@ -210,19 +215,24 @@ class EventStore:
         return event
 
     def _flush_projector(self, session_id: str, event_type: str) -> None:
-        """Best-effort Projector.flush() when flush_to_messages is on."""
-        if not (self._flush_to_messages and self._should_flush(event_type)):
+        """Best-effort 投影刷新（sink 由组合根注入）。
+
+        2026-11-05：原先这里 ``_get_projector()`` 内部 lazy import 接口层
+        的 ``Projector`` 并 ``new`` 一个——既是 L3→L1 上行违规，也是
+        composition root bypass。现在只看注入的 sink，并让**读侧自己
+        决定关心哪些事件**（``ProjectionInterest``）；sink 未实现该
+        协议时退化为「每个事件都通知」，由 sink 内部短路。
+        """
+        sink = self._projector
+        if sink is None or not self._flush_to_messages:
+            return
+        if isinstance(sink, ProjectionInterest) and not sink.interested_in(event_type):
             return
         try:
-            proj = self._get_projector()
-            if proj is not None:
-                state, touched = proj.project_incremental(
-                    session_id, collect_touched=True,
-                )
-                proj.flush(state, touched=touched)
-        except Exception as exc:
+            sink.apply_projection(session_id)
+        except Exception as exc:  # noqa: BLE001
             logger.warning(
-                "Projector flush failed for session %s: %s",
+                "Projection flush failed for session %s: %s",
                 session_id, exc,
             )
 
@@ -602,31 +612,6 @@ class EventStore:
             except Exception as exc:  # noqa: BLE001
                 logger.warning("SSE parent fan-out failed (%s): %s", parent, exc)
         self._broadcast_live(parent, event)
-
-    def _get_projector(self):
-        """Lazy-import Projector to avoid circular imports at startup."""
-        if self._projector is None and self._flush_to_messages:
-            try:
-                from agentnodes.interfaces.api.session.projector import Projector
-                self._projector = Projector(self._db_path)
-            except Exception as exc:
-                logger.warning("Failed to create Projector: %s", exc)
-                return None
-        return self._projector
-
-    def _should_flush(self, event_type: str) -> bool:
-        """Determine if an event should trigger a projector flush."""
-        boundary_types = {
-            "message_received",
-            "assistant_message",
-            "compact",
-            "compact.ended",
-            # Each LLM iteration boundary persists in-flight responses
-            # so a refresh during a long agent run still shows the
-            # completed iterations (not just finalized messages).
-            "iter_start",
-        }
-        return event_type in boundary_types
 
     def close(self) -> None:
         """Release the SQLite backend handle (W1-8).

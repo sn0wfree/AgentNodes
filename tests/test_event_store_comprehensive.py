@@ -369,16 +369,21 @@ class TestEventStoreConcurrency:
 
 
 # ── boundary flush ────────────────────────────────────────────────
+#
+# 2026-11-05：白名单搬到读侧（Projector.FLUSH_ON）。写侧不再有
+# _should_flush——它只问 sink「你关心这个事件吗」。
 
 
-class TestEventStoreBoundaryFlush:
+class TestProjectionBoundaryFlush:
     def test_should_flush_boundary_types(self, store):
-        assert store._should_flush("message_received") is True
-        assert store._should_flush("assistant_message") is True
-        assert store._should_flush("compact") is True
-        assert store._should_flush("compact.ended") is True
-        assert store._should_flush("iter_start") is True
+        from agentnodes.interfaces.api.session.projector import Projector
+
+        for ev in ("message_received", "assistant_message", "compact",
+                   "compact.ended", "iter_start"):
+            assert ev in Projector.FLUSH_ON, ev
 
     def test_should_not_flush_non_boundary(self, store):
-        assert store._should_flush("test.event") is False
-        assert store._should_flush("tool_call") is False
+        from agentnodes.interfaces.api.session.projector import Projector
+
+        for ev in ("test.event", "tool_call"):
+            assert ev not in Projector.FLUSH_ON, ev

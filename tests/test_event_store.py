@@ -204,10 +204,25 @@ class TestDirectConstruction:
 
 
 # ── Projector flush boundary (P0) ──────────────────────────────────
+#
+# 2026-11-05：白名单从 EventStore 搬到 Projector（读侧自决）。
+# 「哪些事件触发投影」是读模型策略，写侧不该知道——Marten 把
+# ProjectionLifecycle 注册在组合根，Spring Modulith 的监听器住消费方
+# 模块，都是同一条原则。测试因此改为对 Projector 断言。
 
 
-class TestShouldFlushBoundary:
-    async def test_should_flush_boundary_types(self, es) -> None:
+class TestProjectionInterest:
+    """``Projector.FLUSH_ON`` 现在是**读侧自决**的事件白名单。
+
+    2026-11-05：白名单从 ``EventStore._should_flush`` 搬到读侧
+    （Marten 把 ProjectionLifecycle 注册在组合根，Spring Modulith 的
+    监听器住消费方模块）。这里直接对类常量断言——它是纯数据，
+    不需要构造 Projector（构造会开 DB 连接）。
+    """
+
+    def test_interested_in_boundary_types(self) -> None:
+        from agentnodes.interfaces.api.session.projector import Projector
+
         for event_type in (
             "message_received",
             "assistant_message",
@@ -215,9 +230,11 @@ class TestShouldFlushBoundary:
             "compact.ended",
             "iter_start",
         ):
-            assert es._should_flush(event_type), event_type
+            assert event_type in Projector.FLUSH_ON, event_type
 
-    async def test_should_not_flush_streaming_deltas(self, es) -> None:
+    def test_not_interested_in_streaming_deltas(self) -> None:
+        from agentnodes.interfaces.api.session.projector import Projector
+
         for event_type in (
             "text_delta",
             "thinking_delta",
@@ -225,7 +242,7 @@ class TestShouldFlushBoundary:
             "text.started",
             "thinking_start",
         ):
-            assert not es._should_flush(event_type), event_type
+            assert event_type not in Projector.FLUSH_ON, event_type
 
 
 # ── P0-1 A3 — parent_event_id / branch_id round-trip ─────────────────

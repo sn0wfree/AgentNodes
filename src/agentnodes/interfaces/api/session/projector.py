@@ -56,6 +56,41 @@ class Projector:
         """Close the underlying sqlite connection (idempotent)."""
         self._store.close()
 
+    # ── ProjectionSink 端口实现（2026-11-05 依赖倒置）──────────────
+    #
+    # kernel 侧 ``EventStore`` 现在只依赖 ``ProjectionSink`` Protocol，
+    # 由组合根注入本实例。两端契约见 kernel/agent/projection_port.py。
+
+    #: 触发投影刷新的事件边界。**读侧自决**——原先这份白名单写在
+    #: ``EventStore._should_flush()`` 里，等于写侧替读侧决定读模型关心
+    #: 什么（Marten 把 ProjectionLifecycle 注册在组合根，Spring Modulith
+    #: 的监听器住消费方模块，都是同一条原则）。
+    FLUSH_ON = frozenset({
+        "message_received",
+        "assistant_message",
+        "compact",
+        "compact.ended",
+        # 每次 LLM 迭代边界都落盘在途响应，保证长跑期间刷新页面
+        # 能看到已完成的迭代（而不只是最终消息）。
+        "iter_start",
+    })
+
+    def interested_in(self, event_type: str) -> bool:
+        """ProjectionInterest 实现：本投影关心哪些事件。"""
+        return event_type in self.FLUSH_ON
+
+    def apply_projection(self, session_id: str) -> None:
+        """ProjectionSink 实现：增量推进 + 落库，一步到位。
+
+        合并了原先写侧要分两步调的 ``project_incremental`` + ``flush``
+        —— 写侧不该知道投影内部「先算增量、再落盘」的分解。
+
+        **命名注意**：不能叫 ``apply``——本类已有 ``apply(event, state)``
+        作为单事件投影的核心逻辑（reducer），同名会互相覆盖。
+        """
+        state, touched = self.project_incremental(session_id, collect_touched=True)
+        self.flush(state, touched=touched)
+
     def flush(
         self,
         state: ProjectedSession,

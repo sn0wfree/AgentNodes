@@ -37,6 +37,12 @@ from .cache import (
     SessionCache,
     SessionLockMap,
 )
+from agentnodes.foundation.storage.db_backend import (
+    AUTO_REPAIR_TIMEOUT_S,
+    WAL_BUSY_TIMEOUT_MS,
+    SQLiteBackend,
+    threading_lock,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -50,170 +56,33 @@ Message = dict[str, Any]
 # ── Constants ────────────────────────────────────────────────────────
 
 
-# Unified session DB filename (dot-prefixed → hidden in file managers).
-# Lives in the workspace dir so EventStore, web_session, and SessionStore
-# all read/write the SAME file. Resolution order (see
-# ``resolve_session_db_path``):
-#   1. AN_SESSIONS_DB env (explicit override)
-#   2. <AN_WORKSPACE_PATH>/.quantnodes_agentnodes_session.db
-#   3. <cwd>/.quantnodes_agentnodes_session.db
-#   4. ~/.quantnodes/.quantnodes_agentnodes_session.db (fallback)
-SESSION_DB_FILENAME = ".quantnodes_agentnodes_session.db"
-WAL_BUSY_TIMEOUT_MS = 5_000
-AUTO_REPAIR_TIMEOUT_S = 30
+# 统一会话库文件名 / 路径解析已下沉到 foundation/storage/session_paths.py
+# （2026-11-05 拆分）。这里 re-export，旧调用点
+# `from memory_manager import resolve_session_db_path` 继续可用。
+from agentnodes.foundation.storage.session_paths import (  # noqa: F401
+    DEFAULT_DB_PATH,
+    SESSION_DB_FILENAME,
+    resolve_db_path,
+    resolve_session_db_path,
+)
 
-# Backward-compat alias (legacy code may still reference DEFAULT_DB_PATH).
-# Kept so existing imports don't break, but resolve_db_path now routes
-# through resolve_session_db_path which uses the new filename.
-DEFAULT_DB_PATH = Path.home() / ".agentnodes" / SESSION_DB_FILENAME
-
-
-def resolve_session_db_path() -> Path:
-    """Resolve the unified session DB path.
-
-    Priority:
-      1. ``AN_SESSIONS_DB`` env var (explicit absolute path override)
-      2. ``AN_WORKSPACE_PATH`` env var / ``<filename>``
-      3. current working dir / ``<filename>``
-      4. ``~/.quantnodes`` / ``<filename>`` (last-resort fallback)
-
-    The parent directory is created if missing. Returns an absolute Path.
-
-    This is the SINGLE source of truth for the session DB location —
-    both ``EventStore.resolve_db_path`` and
-    ``web_session._get_db_path`` route through here so they can never
-    diverge (the historical ``sessions.db`` vs
-    ``quantnodes_agentnodes_user.db`` split is gone).
-    """
-    # 1. Explicit override
-    env_explicit = os.environ.get("AN_SESSIONS_DB")
-    if env_explicit:
-        p = Path(env_explicit)
-        p.parent.mkdir(parents=True, exist_ok=True)
-        return p
-
-    # 2/3. Workspace-relative (AN_WORKSPACE_PATH or cwd)
-    workspace_env = os.environ.get("AN_WORKSPACE_PATH")
-    workspace = Path(workspace_env) if workspace_env else Path.cwd()
-    p = (workspace / SESSION_DB_FILENAME).resolve()
-    p.parent.mkdir(parents=True, exist_ok=True)
-    return p
-
-
-def resolve_db_path(override: Path | None = None) -> Path:
-    """Resolve the session DB path (used by EventStore / MemoryManager).
-
-    Priority: explicit ``override`` arg > ``resolve_session_db_path()``
-    (which itself honors ``AN_SESSIONS_DB`` / ``AN_WORKSPACE_PATH`` /
-    cwd / ``~/.quantnodes`` fallback).
-    """
-    if override is not None:
-        return Path(override)
-    return resolve_session_db_path()
 
 
 # ── SQLiteStore (source of truth) ───────────────────────────────────
 
 
-class SQLiteStore:
-    """SQLite backend with WAL mode, integrity check, and auto-repair."""
+class SQLiteStore(SQLiteBackend):
+    """会话存储：SQLite 后端 + 会话 CRUD。
 
-    def __init__(self, db_path: Path):
-        self._db_path = db_path
-        self._conn: sqlite3.Connection | None = None
-        self._lock = threading_lock()
-        self._healthy = False
+    **2026-11-05 拆分**：连接管理 / 健康检查 / 自愈等零会话语义的基建
+    已下沉到 ``foundation/storage/db_backend.SQLiteBackend``（L4）。本类
+    只剩会话域真正需要的 CRUD（``ensure_session_row`` / ``list_messages`` /
+    ``delete_session`` / ``list_recent_sessions``）。
 
-    def _ensure_conn(self) -> sqlite3.Connection:
-        if self._conn is None:
-            self._db_path.parent.mkdir(parents=True, exist_ok=True)
-            self._conn = sqlite3.connect(
-                str(self._db_path),
-                timeout=WAL_BUSY_TIMEOUT_MS / 1000,
-                check_same_thread=False,
-            )
-            self._conn.execute("PRAGMA journal_mode=WAL")
-            self._conn.execute("PRAGMA busy_timeout=5000")
-            # Note: foreign_keys intentionally NOT enabled here — the
-            # EventStore writes event_log rows for sessions that may not
-            # have a `sessions` row yet; FK enforcement is owned by the
-            # web_session connection where the unified schema is managed.
-            self._init_schema(self._conn)
-        return self._conn
-
-    @staticmethod
-    def _init_schema(conn: sqlite3.Connection) -> None:
-        """Delegate to the single DDL owner (schema-dual-master hotfix).
-
-        This class used to carry its own ``sessions``/``messages`` DDL, so
-        whichever of SQLiteStore / ``web_session_db._ensure_schema`` created
-        the database first silently decided the schema. A store created here
-        lacked ``message_parts``/``attempts``/FTS, and a later projector
-        flush then died with ``no such table: message_parts``.
-
-        ``web_session_db._ensure_schema`` is the one authoritative DDL (full
-        table set + versioned migrations). Lazy import: ``event_store`` is
-        imported at module level here, and it lazily imports the projector
-        from ``api.session`` (event_store.py) -- same precedent, so this
-        adds no new import direction.
-        """
-        from agentnodes.interfaces.api.session.web_session_db import _ensure_schema
-
-        _ensure_schema(conn)
-
-    def health_check(self) -> bool:
-        """Verify DB is not corrupted. Cheap PRAGMA check."""
-        try:
-            if not self._db_path.exists():
-                self._db_path.parent.mkdir(parents=True, exist_ok=True)
-                self._db_path.touch()
-            conn = sqlite3.connect(str(self._db_path), timeout=5.0)
-            result = conn.execute("PRAGMA integrity_check").fetchone()
-            conn.close()
-            self._healthy = bool(result and result[0] == "ok")
-            return self._healthy
-        except Exception as exc:
-            logger.error("SQLite health_check failed: %s", exc)
-            self._healthy = False
-            return False
-
-    def auto_repair(self) -> bool:
-        """Recover corrupted DB via sqlite3 .dump + re-import."""
-        try:
-            backup = self._db_path.with_suffix(
-                f".corrupt.{int(time.time())}.db"
-            )
-            shutil.copy2(self._db_path, backup)
-
-            dump = subprocess.run(
-                ["sqlite3", str(self._db_path), ".dump"],
-                capture_output=True,
-                text=True,
-                timeout=AUTO_REPAIR_TIMEOUT_S,
-            )
-            if dump.returncode != 0:
-                logger.error("sqlite3 dump failed: %s", dump.stderr)
-                return False
-
-            fresh = self._db_path.with_suffix(".repaired.db")
-            import_proc = subprocess.run(
-                ["sqlite3", str(fresh)],
-                input=dump.stdout,
-                capture_output=True,
-                text=True,
-                timeout=AUTO_REPAIR_TIMEOUT_S,
-            )
-            if import_proc.returncode != 0:
-                return False
-
-            shutil.move(str(fresh), str(self._db_path))
-            logger.warning("SQLite auto-repair succeeded; backup at %s", backup)
-            self._healthy = True
-            self._conn = None  # force reconnect
-            return True
-        except Exception as exc:
-            logger.exception("SQLite auto-repair failed: %s", exc)
-            return False
+    判据：库里建的是 ``sessions`` / ``messages`` **会话表**，所以「这一层
+    认识 session」是合理的；但「怎么拿一条 WAL 连接」与 session 无关，
+    不该混在这里。
+    """
 
     # ── CRUD operations (caller holds self._lock) ─────────────────
 
@@ -297,19 +166,7 @@ class SQLiteStore:
     # list_messages. It wrote INSERT INTO messages, making this a second
     # writer; compaction now flows through the projector.
 
-    def close(self) -> None:
-        if self._conn:
-            try:
-                self._conn.close()
-            except Exception:
-                pass
-            self._conn = None
-
-
-def threading_lock():
-    """Stand-in for asyncio.Lock (sync context for SQLiteStore)."""
-    import threading
-    return threading.RLock()
+    # close() 继承自 SQLiteBackend（foundation/storage/db_backend.py）
 
 
 # ── InMemoryStore (degraded backend) ───────────────────────────────
@@ -494,8 +351,14 @@ class UnifiedMemoryManager:
         db_path: Path | None = None,
         cache_config: CacheConfig | None = None,
         compact_config: Any = None,
+        projection_sink: Any = None,
     ):
         self._db_path = resolve_db_path(db_path)
+        # 2026-11-05：投影器由组合根注入（与 EventStore 同一契约）。
+        # 不注入时 ``append`` 只写 event_log、``get`` 读到空——这正是
+        # 「组合根被绕过」的典型症状：每个自建 EventStore 的组件都
+        # 重新决定一次「要不要投影」，且各自 new 一个带状态的 Projector。
+        self._projection_sink = projection_sink
         cache_config = cache_config or CacheConfig.from_env()
         cache_config = ConfigValidator.validate(cache_config)
         cache_config.compact_config = compact_config
@@ -612,6 +475,11 @@ class UnifiedMemoryManager:
         event_log but the projector never materialises the messages row, so
         ``append`` would appear to succeed while ``get`` returned nothing.
 
+        **2026-11-05**：投影器随构造注入 —— 否则这里自建的 EventStore
+        没有 sink，``flush_to_messages=True`` 是空转（B4 陷阱重现）。
+        注入为空时仍构造 EventStore 但明确日志告知「不投影」，不再
+        假装成功。
+
         Lazy import: ``event_store`` imports this module at module level.
         The instance is kept because it owns a SQLite connection.
         """
@@ -619,7 +487,19 @@ class UnifiedMemoryManager:
 
         store = getattr(self, "_event_store", None)
         if store is None:
-            store = EventStore(self._db_path, flush_to_messages=True)
+            sink = getattr(self, "_projection_sink", None)
+            if sink is None:
+                logger.warning(
+                    "UnifiedMemoryManager has no projection_sink: events will "
+                    "land in event_log but messages table stays empty "
+                    "(append-then-get will return nothing). "
+                    "Pass projection_sink=<Projector> from the composition root."
+                )
+            store = EventStore(
+                self._db_path,
+                flush_to_messages=True,
+                projection_sink=sink,
+            )
             self._event_store = store
         store.emit(session_id, event_type, payload)
 

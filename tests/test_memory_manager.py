@@ -21,6 +21,18 @@ pytestmark = pytest.mark.asyncio
 # ── Fixtures ───────────────────────────────────────────────────────
 
 
+
+def _make_projection_sink(db_path):
+    """Projector 必须注入：append 走事件流，没有 sink 则 messages 表永远为空。
+
+    2026-11-05：`UnifiedMemoryManager._emit_event` 不再自建 EventStore 时
+    偷偷 new 一个 Projector（那是组合根绕过）。生产路径由 container.py
+    注入，测试这里等价提供。
+    """
+    from agentnodes.interfaces.api.session.projector import Projector
+
+    return Projector(db_path)
+
 @pytest.fixture
 def tmp_db(tmp_path: Path) -> Path:
     return tmp_path / "test_sessions.db"
@@ -38,7 +50,7 @@ def cache_cfg() -> CacheConfig:
 @pytest.fixture
 def mm(tmp_db: Path, cache_cfg: CacheConfig):
     MemoryManagerFactory.reset()
-    mgr = UnifiedMemoryManager(db_path=tmp_db, cache_config=cache_cfg)
+    mgr = UnifiedMemoryManager(db_path=tmp_db, projection_sink=_make_projection_sink(tmp_db), cache_config=cache_cfg)
     yield mgr
     mgr.close()
 
@@ -151,7 +163,7 @@ class TestAutoRepair:
     def test_in_memory_fallback_when_sqlite_corrupted_and_no_repair(self, tmp_db: Path):
         tmp_db.write_bytes(b"corrupted")
         cfg = CacheConfig(min_entries=10)
-        mgr = UnifiedMemoryManager(db_path=tmp_db, cache_config=cfg)
+        mgr = UnifiedMemoryManager(db_path=tmp_db, projection_sink=_make_projection_sink(tmp_db), cache_config=cfg)
         # If repair fails, backend should be InMemoryStore (degraded)
         if not mgr.is_degraded:
             # sqlite3 CLI was available and repaired successfully

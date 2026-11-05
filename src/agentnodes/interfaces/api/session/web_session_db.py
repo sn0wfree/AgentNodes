@@ -748,3 +748,23 @@ def ensure_session_row(db_path: Path, session_id: str, title: str) -> None:
                 conn.close()
             except Exception:
                 pass
+
+
+# ── Schema 端口注册（2026-11-05 依赖倒置）────────────────────────────
+#
+# kernel 的 ``SQLiteStore._init_schema`` / ``SQLiteBackend._init_schema``
+# 需要「建表」，但内核不能 import 接口层（L3→L1 上行违规）。
+# 因此 schema 归 L4 的端口声明（foundation/storage/schema_port），
+# **真实 DDL 由本模块在 import 时注册**——这是外层向内层登记，
+# 依赖方向 L1→L4，合法。
+#
+# 生产路径必然 import 本模块（app.py 装配 router 时），所以注册总会发生；
+# 纯内核场景（单元测试、嵌入式）走 schema_port 的最小退化 DDL。
+try:
+    from agentnodes.foundation.storage.schema_port import (
+        register_schema_initializer,
+    )
+
+    register_schema_initializer(_ensure_schema)
+except Exception:  # noqa: BLE001 —— 注册失败不应阻断模块可用性
+    logger.debug("schema initializer registration skipped", exc_info=True)
