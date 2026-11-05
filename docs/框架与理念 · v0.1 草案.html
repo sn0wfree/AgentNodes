@@ -317,7 +317,7 @@
   <div class="header">
     <h1 class="page-title">框架与理念</h1>
     <p class="page-subtitle">AgentNodes · 自我进化研究 Agent 平台 · 双轴架构</p>
-    <span class="version-badge">v0.1 草案 · D1/D2/D4 已拍板 · 尚未开任何代码</span>
+    <span class="version-badge">v0.1 草案 · D1/D2/D4/D5/D6 已拍板 · 仅剩 D3 · 尚未开任何代码</span>
   </div>
 
   <!-- ==================== 00 一句话 ==================== -->
@@ -610,7 +610,7 @@ src/agentnodes/
         <tr><td><span class="pill pill-r">R1</span></td><td>恢复 apps/goal + 注册 goal.* kind + 42 个测试搬回（按依赖链自证注册）</td><td>goal 重建方案 bd743d99 · D1</td><td><b>W1</b></td></tr>
         <tr><td><span class="pill pill-r">R2</span></td><td>chat 接线（slash / GoalPanel / SSE / API 路由）</td><td>goal 重建方案 bd743d99</td><td>R1</td></tr>
         <tr><td><span class="pill pill-r">R3</span></td><td>journal / scoreboard 端口接入 + autoresearch preset 化</td><td>goal 重建方案 bd743d99</td><td>R1</td></tr>
-        <tr><td><span class="pill pill-p">W2</span></td><td>P 层成本 / 延迟维度（TaskScore 加列进总分）</td><td>理念 05 · GEP-RSI 校准 01</td><td>D3</td></tr>
+        <tr><td><span class="pill pill-p">W2</span></td><td>P 层成本 / 延迟维度（并列维度 + 双闸，方案见 md §3.2）</td><td>理念 05 · GEP-RSI 校准 01</td><td>D3（待拍）</td></tr>
         <tr><td><span class="pill pill-p">W3</span></td><td>held-in / held-out 双集双门</td><td>GEP-RSI 第 5 步</td><td>W2</td></tr>
         <tr><td><span class="pill pill-e">W4</span></td><td>评估完整性指纹 + 循环驱动链（阶段 1：CLI + cron + 证据增量门 + 预算闸）</td><td>理念 04 / 06</td><td>✅ D4 已拍板</td></tr>
         <tr><td><span class="pill pill-g">W5</span></td><td>假基因清理（周期 deactivate 从未激活组件）</td><td>GEP-RSI 第 7 步</td><td>R1</td></tr>
@@ -643,10 +643,12 @@ src/agentnodes/
       W1 落地时现存 5 个坏工具组（factor / data / backtest / backtest_analysis / data_clean）全部过不了自检，其模块文件去留另议</div>
     </div>
     <div class="dec">
-      <div class="dec-id">D3 · P 层表型向量</div>
-      <div class="dec-q">成本 / 延迟进不进总分？</div>
-      <div class="dec-opts">进总分加权 / 只做 0/1 门槛（现状）</div>
-      <div class="dec-rec"><b>推荐进总分</b>：校准 01 硬要求——成本与完成率并列；权重另议（建议起步 0.15）</div>
+      <div class="dec-id">D3 · ⏳ 待拍 · P 层表型向量</div>
+      <div class="dec-q">成本 / 延迟怎么进表型？</div>
+      <div class="dec-opts">A 进总分加权 / B 并列维度 + 双闸 / A0 门槛收紧</div>
+      <div class="dec-rec"><b>修正推荐：B</b>——权重=汇率是自我评分交换面；B 不改 total 语义、历史基线全保；<br>
+      能力闸 ±20% 不动 + 成本闸硬拒（建议 30% 起步）；归一化用 budget_max 比率；先补 latency 采集。<br>
+      完整优劣分析：framework-and-principles-20261105.md §3.2</div>
     </div>
     <div class="dec" style="border-color:rgba(16,185,129,0.45);background:linear-gradient(160deg,rgba(16,185,129,0.07),rgba(16,185,129,0.015))">
       <div class="dec-id" style="color:#6ee7b7">D4 · ✅ 已拍板（2026-11-05）· 循环第 0 步</div>
@@ -657,17 +659,18 @@ src/agentnodes/
       阶段 2（R1 后）：+ goal.settled 高信号触发 + run.settled 去重入队；<br>
       护栏：每 session ≤1 cycle · cron 隔离池 · halt 生效 · 成本基准 = 一轮 ≈ 20 次 golden 评测</div>
     </div>
-    <div class="dec">
-      <div class="dec-id">D5 · 屏障强度</div>
+    <div class="dec" style="border-color:rgba(16,185,129,0.45);background:linear-gradient(160deg,rgba(16,185,129,0.07),rgba(16,185,129,0.015))">
+      <div class="dec-id" style="color:#6ee7b7">D5 · ✅ 已拍板（2026-11-05）· 屏障强度</div>
       <div class="dec-q">hash chain 现在做吗？</div>
       <div class="dec-opts">现在做 / 推到 P2</div>
-      <div class="dec-rec"><b>推荐 P2</b>：先上评估指纹（W4，收益大成本低）；hash chain 收益/成本比低</div>
+      <div class="dec-rec"><b>拍板：P2</b> —— hash chain 是「必要非充分」；先落评估指纹（W4，收益/成本比高一个量级），W6 排入 P2</div>
     </div>
-    <div class="dec">
-      <div class="dec-id">D6 · Tier 2 接线</div>
+    <div class="dec" style="border-color:rgba(16,185,129,0.45);background:linear-gradient(160deg,rgba(16,185,129,0.07),rgba(16,185,129,0.015))">
+      <div class="dec-id" style="color:#6ee7b7">D6 · ✅ 已拍板（2026-11-05）· Tier 2 接线</div>
       <div class="dec-q">研究产物现在进版本链吗？</div>
       <div class="dec-opts">R1 时接（goal 产物写 set_tier2）/ 以后</div>
-      <div class="dec-rec"><b>推荐 R1 时接</b>：set_tier2 已实现但零调用——接上才算「留痕」闭环</div>
+      <div class="dec-rec"><b>拍板：R1 时接</b> —— set_tier2 已实现但全仓零调用；R1 验收 +1：至少一条 Tier 2 写入路径连通。<br>
+      R1 范围累计：+ goal.settled kind（D4）+ Tier 2 接线（D6）</div>
     </div>
   </div>
 
