@@ -267,6 +267,6 @@ webui/frontend/src/
 - `webui/frontend/src/stores/study.ts` — Study Zustand store
 - `webui/frontend/src/api/client.ts` — API 客户端
 - `webui/frontend/src/hooks/sse/studyHandlers.ts` — SSE 事件处理
-- `src/strategy_research/api/routers/study.py` — 后端 Study API
-- `src/strategy_research/core/study/store.py` — Study 数据库操作
-- `src/strategy_research/core/goal/store.py` — Journal 数据库操作
+- `src/agentnodes/api/routers/study.py` — 后端 Study API
+- `src/agentnodes/core/study/store.py` — Study 数据库操作
+- `src/agentnodes/core/goal/store.py` — Journal 数据库操作

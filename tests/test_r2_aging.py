@@ -11,19 +11,19 @@ from __future__ import annotations
 
 import pytest
 
-from strategy_research.kernel.orchestration import (
+from agentnodes.kernel.orchestration import (
     MailboxConfig,
     QueueMode,
     SourceKind,
     WorkKind,
     WorkRequest,
 )
-from strategy_research.kernel.orchestration.config_hub import (
+from agentnodes.kernel.orchestration.config_hub import (
     ConfigError,
     PlatformConfig,
     load_platform_config,
 )
-from strategy_research.kernel.orchestration.mailbox import Mailbox, QueueItem
+from agentnodes.kernel.orchestration.mailbox import Mailbox, QueueItem
 
 
 class FakeClock:

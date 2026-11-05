@@ -14,15 +14,15 @@ from unittest.mock import MagicMock
 
 import pytest
 
-from strategy_research.kernel.agent.builtin_tools.todo_tools import (
+from agentnodes.kernel.agent.builtin_tools.todo_tools import (
     TodoStore,
     TodoWriteTool,
 )
-from strategy_research.kernel.agent.context_providers import TodoContextProvider
-from strategy_research.kernel.context.hub import ContextHub
-from strategy_research.kernel.context.protocol import ContextQuery
-from strategy_research.kernel.gateway.gateway import Gateway
-from strategy_research.kernel.gateway.singleton import reset_gateway
+from agentnodes.kernel.agent.context_providers import TodoContextProvider
+from agentnodes.kernel.context.hub import ContextHub
+from agentnodes.kernel.context.protocol import ContextQuery
+from agentnodes.kernel.gateway.gateway import Gateway
+from agentnodes.kernel.gateway.singleton import reset_gateway
 
 
 @pytest.fixture(autouse=True)
@@ -100,7 +100,7 @@ def test_gateway_without_hub_keeps_none():
 def test_singleton_assembles_hub_with_todos_provider():
     reset_gateway()
     try:
-        from strategy_research.kernel.gateway.singleton import get_gateway
+        from agentnodes.kernel.gateway.singleton import get_gateway
 
         gw = get_gateway(client=MagicMock(), registry=MagicMock())
         hub = gw.controller._context_hub
@@ -146,7 +146,7 @@ class _RealRegistry:
     real execute(name, params, ctx=ctx) path, duck-typed fakes can't."""
 
     def __init__(self) -> None:
-        from strategy_research.kernel.agent.tools import ToolRegistry
+        from agentnodes.kernel.agent.tools import ToolRegistry
 
         self._reg = ToolRegistry()
         self._reg.register(TodoWriteTool())
@@ -159,7 +159,7 @@ class _RealRegistry:
 
 
 def _controller(tmp_path: Path, hub):
-    from strategy_research.kernel.gateway.session_controller import SessionController
+    from agentnodes.kernel.gateway.session_controller import SessionController
 
     class _FakeEP:
         def iter_mailboxes(self):
@@ -175,7 +175,7 @@ def _controller(tmp_path: Path, hub):
 
 
 def _submit(controller, session_id: str):
-    from strategy_research.kernel.orchestration import (
+    from agentnodes.kernel.orchestration import (
         EntryPoint,
         SourceKind,
         WorkKind,
@@ -193,7 +193,7 @@ def _submit(controller, session_id: str):
 
 
 def _all_todo_buckets():
-    from strategy_research.kernel.agent.builtin_tools.todo_tools import TodoStore
+    from agentnodes.kernel.agent.builtin_tools.todo_tools import TodoStore
 
     return {k: v for k, v in TodoStore._todos.items() if v}
 
@@ -213,7 +213,7 @@ def test_react_todowrite_without_hub_keeps_legacy_default_bucket(tmp_path):
     （B1-d），工具拿到 ctx.session_id（物理会话 id）——归属生效，
     但那就不是本测试要固化的「旧默认构造」了。
     """
-    from strategy_research.kernel.gateway.session_controller import SessionController
+    from agentnodes.kernel.gateway.session_controller import SessionController
 
     class _FakeEP:
         def iter_mailboxes(self):

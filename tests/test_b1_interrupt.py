@@ -14,16 +14,16 @@ from dataclasses import dataclass, field
 
 import pytest
 
-from strategy_research.kernel.gateway import Gateway, SessionController, SessionFence
-from strategy_research.kernel.orchestration import (
+from agentnodes.kernel.gateway import Gateway, SessionController, SessionFence
+from agentnodes.kernel.orchestration import (
     EntryPoint,
     QueueMode,
     SourceKind,
     WorkKind,
     WorkRequest,
 )
-from strategy_research.kernel.runtimes.cancel_scope import CancelScope, RunCancelled
-from strategy_research.kernel.runtimes.graph_engine import INTERRUPT_KEY, GraphEngine
+from agentnodes.kernel.runtimes.cancel_scope import CancelScope, RunCancelled
+from agentnodes.kernel.runtimes.graph_engine import INTERRUPT_KEY, GraphEngine
 
 
 # ── A. CancelScope ───────────────────────────────────────

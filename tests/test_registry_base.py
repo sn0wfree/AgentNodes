@@ -7,7 +7,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
 
-from strategy_research.foundation.registry import Registry
+from agentnodes.foundation.registry import Registry
 
 
 class TestRegistryBase:

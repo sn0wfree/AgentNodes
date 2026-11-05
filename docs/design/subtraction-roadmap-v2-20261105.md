@@ -243,9 +243,9 @@ L3 里还有 **6,776 行业务工具** 住在 `kernel/agent/builtin_tools/`：
 
 ### 批次 9 · 包名重命名（最后一步）
 
-`strategy_research` → `agentnodes`：
+`agentnodes` → `agentnodes`：
 
-- `src/strategy_research/` → `src/agentnodes/`
+- `src/agentnodes/` → `src/agentnodes/`
 - `pyproject.toml` 的 `[project] name` + entry points
 - 全部 import 改写（`scripts/migration/rewrite_import_prefix.py` 已有）
 - 环境变量 `QUANTNODES_RESEARCH_*` / `SR_*` → 统一命名

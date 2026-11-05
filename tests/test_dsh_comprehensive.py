@@ -15,16 +15,16 @@ import pytest
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
 
-from strategy_research.kernel.agent.context_injector import (
+from agentnodes.kernel.agent.context_injector import (
     ContextInjector,
     GoalContinuationInjector,
     GoalContextInjector,
     TodosInjector,
     build_default_injectors,
 )
-from strategy_research.kernel.agent.loop import AgentLoop, LoopResult
-from strategy_research.kernel.agent.tools import ToolGuard, ToolRegistry, BaseTool
-from strategy_research.foundation.registry import Registry
+from agentnodes.kernel.agent.loop import AgentLoop, LoopResult
+from agentnodes.kernel.agent.tools import ToolGuard, ToolRegistry, BaseTool
+from agentnodes.foundation.registry import Registry
 
 
 # ══════════════════════════════════════════════════════════════════
@@ -158,7 +158,7 @@ class TestContextInjectorAdvanced:
 
 class TestRequestEnvelopeHashAdvanced:
     def _make_loop(self):
-        from strategy_research.kernel.agent.loop import AgentLoop
+        from agentnodes.kernel.agent.loop import AgentLoop
         loop = object.__new__(AgentLoop)
         loop.session_id = "test"
         loop._emit = MagicMock()
@@ -595,7 +595,7 @@ class TestRegistryAdvanced:
 class TestPluginDiscoveryAdvanced:
     def test_discover_with_no_entry_points_module(self):
         """Handles missing importlib.metadata gracefully."""
-        from strategy_research.kernel.agent.builtin_tools import _discover_tool_plugins
+        from agentnodes.kernel.agent.builtin_tools import _discover_tool_plugins
         r = ToolRegistry()
         # Mock the import inside _discover_tool_plugins to fail
         with patch("importlib.metadata.entry_points", side_effect=ImportError("no module")):
@@ -609,7 +609,7 @@ class TestPluginDiscoveryAdvanced:
 
     def test_discover_with_broken_entry_point(self):
         """Broken entry point is logged and skipped."""
-        from strategy_research.kernel.agent.builtin_tools import _discover_tool_plugins
+        from agentnodes.kernel.agent.builtin_tools import _discover_tool_plugins
         r = ToolRegistry()
         ep = MagicMock()
         ep.name = "broken"
@@ -624,14 +624,14 @@ class TestPluginDiscoveryAdvanced:
 class TestPromptDiscoveryAdvanced:
     def test_discover_prompts_handles_nonexistent_dir(self):
         """_discover_prompts handles missing templates directory."""
-        from strategy_research.kernel.agent.prompt_builder import PromptBuilderFactory
+        from agentnodes.kernel.agent.prompt_builder import PromptBuilderFactory
         with patch.object(Path, "__truediv__", return_value=Path("/nonexistent/path")):
             result = PromptBuilderFactory._discover_prompts()
             assert isinstance(result, dict)
 
     def test_list_roles_deduplication(self):
         """list_roles doesn't have duplicates."""
-        from strategy_research.kernel.agent.prompt_builder import PromptBuilderFactory
+        from agentnodes.kernel.agent.prompt_builder import PromptBuilderFactory
         PromptBuilderFactory._discovered = None
         roles = PromptBuilderFactory.list_roles()
         assert len(roles) == len(set(roles))

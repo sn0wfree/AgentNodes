@@ -8,7 +8,7 @@ from __future__ import annotations
 
 from types import SimpleNamespace
 
-from strategy_research.kernel.context import (
+from agentnodes.kernel.context import (
     ContextHub,
     ContextItem,
     ContextQuery,

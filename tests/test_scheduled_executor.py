@@ -12,9 +12,9 @@ from unittest.mock import AsyncMock, MagicMock, patch
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
 
-from strategy_research.kernel.scheduled_research.executor import ScheduledResearchExecutor
-from strategy_research.kernel.scheduled_research.models import JobStatus, ScheduledResearchJob
-from strategy_research.kernel.scheduled_research.store import ScheduledResearchStore
+from agentnodes.kernel.scheduled_research.executor import ScheduledResearchExecutor
+from agentnodes.kernel.scheduled_research.models import JobStatus, ScheduledResearchJob
+from agentnodes.kernel.scheduled_research.store import ScheduledResearchStore
 
 
 class ExecutorTestCase(unittest.IsolatedAsyncioTestCase):

@@ -13,7 +13,7 @@ import json
 
 import pytest
 
-from strategy_research.kernel.workflow.orchestrate_tool import SubmitDagStepTool
+from agentnodes.kernel.workflow.orchestrate_tool import SubmitDagStepTool
 
 
 def _dag(nodes: list[dict], edges: list[dict]) -> dict:
@@ -194,7 +194,7 @@ def test_deeply_malformed_payload_never_raises():
 
 
 def test_prompt_builder_registered():
-    from strategy_research.kernel.agent.prompt_builder import PromptBuilderFactory
+    from agentnodes.kernel.agent.prompt_builder import PromptBuilderFactory
 
     assert "workflow_orchestrator" in PromptBuilderFactory.list_roles()
     prompt = PromptBuilderFactory.get("workflow_orchestrator").build_system_prompt(
@@ -209,7 +209,7 @@ def test_prompt_builder_registered():
 
 def test_dag_session_registry_only_submit_tool(monkeypatch):
     """A dag:-prefixed session must expose exactly submit_dag_step."""
-    from strategy_research.kernel.agent import chat_loop
+    from agentnodes.kernel.agent import chat_loop
 
     captured: dict = {}
 
@@ -236,7 +236,7 @@ def test_dag_session_registry_only_submit_tool(monkeypatch):
 
 
 def test_normal_session_registry_untouched(monkeypatch):
-    from strategy_research.kernel.agent import chat_loop
+    from agentnodes.kernel.agent import chat_loop
 
     captured: dict = {}
 
@@ -265,7 +265,7 @@ def draft_client(tmp_path, monkeypatch):
     monkeypatch.setenv("SR_WORKSPACE_PATH", str(tmp_path))
     from fastapi.testclient import TestClient
 
-    from strategy_research.interfaces.api.app import create_app
+    from agentnodes.interfaces.api.app import create_app
 
     app = create_app()
     app.state.user_id = "tester"
@@ -273,7 +273,7 @@ def draft_client(tmp_path, monkeypatch):
 
 
 def _draft_auth_headers():
-    from strategy_research.interfaces.api.auth_tokens import create_token
+    from agentnodes.interfaces.api.auth_tokens import create_token
     return {"Authorization": f"Bearer {create_token('draft-tester')}"}
 
 

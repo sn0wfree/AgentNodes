@@ -2,7 +2,7 @@
 from pathlib import Path
 import re
 
-root = Path("src/strategy_research")
+root = Path("src/agentnodes")
 
 print("==== A. add a new LLM provider")
 p = root / "core/llm/provider/__init__.py"

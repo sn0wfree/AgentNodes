@@ -11,7 +11,7 @@ from pathlib import Path
 
 import pytest
 
-from strategy_research.kernel.permission import (
+from agentnodes.kernel.permission import (
     PermissionAction,
     PermissionGateway,
     PermissionResponse,

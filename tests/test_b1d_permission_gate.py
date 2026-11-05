@@ -12,7 +12,7 @@ from types import SimpleNamespace
 
 import pytest
 
-from strategy_research.kernel.agent.tools import BaseTool, ToolContext, ToolRegistry
+from agentnodes.kernel.agent.tools import BaseTool, ToolContext, ToolRegistry
 
 
 class _RecordingTool(BaseTool):
@@ -41,7 +41,7 @@ def _registry() -> ToolRegistry:
 
 def _evaluator(action: str):
     """Stub evaluator returning one fixed verdict."""
-    from strategy_research.kernel.permission import (
+    from agentnodes.kernel.permission import (
         PermissionAction,
         PermissionDecision,
     )
@@ -154,7 +154,7 @@ class _FakeClient:
 
 def test_react_node_passes_ctx_to_tools():
     """react 节点经 ctx_factory 为每次 tool_call 构造 ctx 并交给 registry。"""
-    from strategy_research.kernel.runtimes.nodes.react import (
+    from agentnodes.kernel.runtimes.nodes.react import (
         ReactConfig,
         make_react_node,
     )
@@ -183,7 +183,7 @@ def test_react_node_passes_ctx_to_tools():
 
 def test_react_node_denied_tool_does_not_execute():
     """react + DENY：工具不执行，模型看到拒绝原因后继续。"""
-    from strategy_research.kernel.runtimes.nodes.react import (
+    from agentnodes.kernel.runtimes.nodes.react import (
         ReactConfig,
         make_react_node,
     )
@@ -203,7 +203,7 @@ def test_react_node_denied_tool_does_not_execute():
 
 def test_react_node_without_factory_keeps_legacy_behaviour():
     """无 ctx_factory：旧行为（无权限检查）——回归保护。"""
-    from strategy_research.kernel.runtimes.nodes.react import (
+    from agentnodes.kernel.runtimes.nodes.react import (
         ReactConfig,
         make_react_node,
     )

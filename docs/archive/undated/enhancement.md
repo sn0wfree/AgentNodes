@@ -126,7 +126,7 @@ $ pytest tests/ -v
 ### 2.5 P0 PR 内容
 
 ```diff
-src/strategy_research/
+src/agentnodes/
 ├── cli.py                       M  +85 -65
 ├── core/
 │   ├── db.py                    M  +20 -10
@@ -252,7 +252,7 @@ test_persistent_memory PASSED
 ### 3.5 P1 PR 内容
 
 ```diff
-src/strategy_research/
+src/agentnodes/
 ├── cli.py                              M  +10 -55
 ├── core/
 │   ├── agent/                          +  ~1 700
@@ -293,7 +293,7 @@ README.md                               M  +30
 ### 4.2 架构设计
 
 ```
-src/strategy_research/
+src/agentnodes/
 ├── core/
 │   ├── hooks/                          # 新建
 │   │   ├── __init__.py
@@ -1027,7 +1027,7 @@ $ quantnodes-research autoresearch /tmp/ws --strategy momentum_20_60
 ### 3.6.5 文件结构
 
 ```diff
-src/strategy_research/
+src/agentnodes/
 ├── core/
 │   ├── workflow/                    # 新增
 │   │   ├── __init__.py

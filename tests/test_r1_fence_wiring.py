@@ -13,14 +13,14 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 
-from strategy_research.kernel.gateway import (
+from agentnodes.kernel.gateway import (
     Gateway,
     SessionController,
     SessionFence,
     invariants,
     verify_all,
 )
-from strategy_research.kernel.orchestration import (
+from agentnodes.kernel.orchestration import (
     EntryPoint,
     SourceKind,
     WorkKind,

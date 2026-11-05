@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from strategy_research.interfaces.cli.utils.thinking_verbs import (
+from agentnodes.interfaces.cli.utils.thinking_verbs import (
     THINKING_VERBS,
     pick_thinking_verb,
 )

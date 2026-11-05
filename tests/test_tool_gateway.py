@@ -3,9 +3,9 @@ from __future__ import annotations
 
 import json
 
-from strategy_research.kernel.agent.gateway import ToolGateway, toolset_for_role
-from strategy_research.kernel.agent.tools import ToolRegistry
-from strategy_research.kernel.agent.toolsets import (
+from agentnodes.kernel.agent.gateway import ToolGateway, toolset_for_role
+from agentnodes.kernel.agent.tools import ToolRegistry
+from agentnodes.kernel.agent.toolsets import (
     MINIMAL,
     TOOLSETS,
     apply_toolset,

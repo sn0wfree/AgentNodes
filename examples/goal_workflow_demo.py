@@ -27,13 +27,13 @@ def main() -> None:
         demo_db.unlink()
     os.environ["STRATEGY_RESEARCH_GOAL_DB"] = str(demo_db)
 
-    from strategy_research.core.goal.workflow_config import (
+    from agentnodes.core.goal.workflow_config import (
         load_goal_workflow,
         list_goal_workflows,
     )
-    from strategy_research.core.goal.workflow import GoalWorkflowRunner
-    from strategy_research.core.goal.store import GoalStore
-    from strategy_research.core.goal.event_bus import CollectingObserver
+    from agentnodes.core.goal.workflow import GoalWorkflowRunner
+    from agentnodes.core.goal.store import GoalStore
+    from agentnodes.core.goal.event_bus import CollectingObserver
 
     # List available workflows
     workflows = list_goal_workflows()

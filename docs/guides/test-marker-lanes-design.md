@@ -201,7 +201,7 @@ python scripts/run_test_matrix.py --lane pr --cov --shards 1   # 覆盖率需单
 2026-10-08 就选了这条路。xdist 已卸载，不进依赖。
 
 它暴露的那个 bug 独立成立：`test_cli_server_cmd.py` 的 6 个用例 patch
-`strategy_research.webui.routes.router`，而该模块在 W3 结构债清理中已删除
+`agentnodes.webui.routes.router`，而该模块在 W3 结构债清理中已删除
 （api/app.py:240）。串行能过纯属别的测试先导入过的副作用，patch 的
 `router` 变量从未被断言。已删除该残留 patch。
 

@@ -107,7 +107,7 @@ def test_no_circular_import_between_engine_modules():
 |---|---|---|
 | 1 | AST：phase_engine 无 runner import | 通过 |
 | 2 | AST：engine_common 无 runner import | 通过 |
-| 3 | 旧路径仍可用 | `from strategy_research.core.study.runner import ShutdownReason` / `SR_AGENT_MAX_ITER` |
+| 3 | 旧路径仍可用 | `from agentnodes.core.study.runner import ShutdownReason` / `SR_AGENT_MAX_ITER` |
 | 4 | 值不变 | 4 个符号的值与搬前逐字相同 |
 | 5 | 域内无环（通用检查） | core/study 内 import 图无环 |
 

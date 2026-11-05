@@ -10,7 +10,7 @@ import pytest
 
 @pytest.fixture
 def server():
-    from strategy_research.interfaces.mcp.server import MCPServer
+    from agentnodes.interfaces.mcp.server import MCPServer
     s = MCPServer()
     s.register_default_tools()
     return s
@@ -58,9 +58,9 @@ class TestRunSwarm:
     def test_stores_result(self, server, tmp_path):
         """执行完成后 RunStore 应有结果。"""
         # 用 mock 避免真正调用 LLM
-        with patch("strategy_research.kernel.swarm.runtime.SwarmRuntime.execute") as mock_exec:
-            from strategy_research.kernel.swarm.runtime import AgentResult, SwarmResult
-            from strategy_research.kernel.workflow.types import AgentStatus
+        with patch("agentnodes.kernel.swarm.runtime.SwarmRuntime.execute") as mock_exec:
+            from agentnodes.kernel.swarm.runtime import AgentResult, SwarmResult
+            from agentnodes.kernel.workflow.types import AgentStatus
 
             mock_exec.return_value = SwarmResult(
                 run_id="test_run_001",
@@ -90,8 +90,8 @@ class TestRunSwarm:
 
     def test_get_status_after_run(self, server, tmp_path):
         """run_swarm 后 get_swarm_status 应能找到。"""
-        with patch("strategy_research.kernel.swarm.runtime.SwarmRuntime.execute") as mock_exec:
-            from strategy_research.kernel.swarm.runtime import SwarmResult
+        with patch("agentnodes.kernel.swarm.runtime.SwarmRuntime.execute") as mock_exec:
+            from agentnodes.kernel.swarm.runtime import SwarmResult
 
             mock_exec.return_value = SwarmResult(
                 run_id="status_test_001",

@@ -10,18 +10,18 @@ import json
 
 import pytest
 
-from strategy_research.kernel.agent.builtin_tools import (
+from agentnodes.kernel.agent.builtin_tools import (
     ToolHelpTool,
     build_default_registry,
 )
-from strategy_research.kernel.agent.context import ContextBuilder
-from strategy_research.kernel.agent.tools import (
+from agentnodes.kernel.agent.context import ContextBuilder
+from agentnodes.kernel.agent.tools import (
     EFFECT_DB,
     EFFECT_NET,
     BaseTool,
     ToolRegistry,
 )
-from strategy_research.foundation.llm import LLMConfig
+from agentnodes.foundation.llm import LLMConfig
 
 
 class SampleEffectTool(BaseTool):

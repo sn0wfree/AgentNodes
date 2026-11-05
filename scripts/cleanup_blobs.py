@@ -29,7 +29,7 @@ logger = logging.getLogger("cleanup_blobs")
 def _resolve_db_path(override: str | None) -> Path:
     if override:
         return Path(override).expanduser()
-    from strategy_research.core.agent.memory_manager import resolve_db_path
+    from agentnodes.core.agent.memory_manager import resolve_db_path
     return resolve_db_path()
 
 
@@ -79,7 +79,7 @@ def main() -> int:
 
     conn = sqlite3.connect(str(db_path))
     try:
-        from strategy_research.core.storage.blob_schema import (
+        from agentnodes.core.storage.blob_schema import (
             ensure_blob_refs_schema,
             list_stale_blobs,
         )

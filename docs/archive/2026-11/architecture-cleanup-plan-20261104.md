@@ -227,7 +227,7 @@ _run_loop_core
 包着。这是「特性开关」，不是注册机制。
 
 **已经存在但没被用上的东西**：`_discover_tool_plugins()`（`__init__.py:137`）
-已经实现了 `importlib.metadata.entry_points(group="strategy_research.tools")`。
+已经实现了 `importlib.metadata.entry_points(group="agentnodes.tools")`。
 
 **目标形态**：
 

@@ -26,7 +26,7 @@ safety check. No pre-truncation, no post-drop.
 
 ### A1: `chore(compaction): mark legacy layer config fields deprecated`
 
-**File**: `src/strategy_research/core/agent/compact.py`
+**File**: `src/agentnodes/core/agent/compact.py`
 
 - Marked L1/L3 fields as DEPRECATED in `CompactConfig` (kept for
   backward compat with existing `llm.json` files; ignored at runtime).
@@ -42,7 +42,7 @@ safety check. No pre-truncation, no post-drop.
 
 ### A2: `refactor(compaction): remove L1 smart microcompact layer`
 
-**File**: `src/strategy_research/core/agent/compact.py`
+**File**: `src/agentnodes/core/agent/compact.py`
 
 - Removed `_smart_microcompact` function (50 lines).
 - Removed `_get_tool_name` helper (15 lines).
@@ -54,14 +54,14 @@ safety check. No pre-truncation, no post-drop.
 
 ### A3: `refactor(compaction): remove L3 hard truncate layer`
 
-**File**: `src/strategy_research/core/agent/compact.py`
+**File**: `src/agentnodes/core/agent/compact.py`
 
 - Removed `_hard_truncate` function (8 lines).
 - L3-related tests marked `@pytest.mark.skip`.
 
 ### A4: `refactor(compaction): simplify compact_messages to L4-only` (THE FIX)
 
-**File**: `src/strategy_research/core/agent/compact.py`
+**File**: `src/agentnodes/core/agent/compact.py`
 
 - Removed L1 dispatch (`_smart_microcompact` call).
 - Removed L3 dispatch (`_hard_truncate` call).

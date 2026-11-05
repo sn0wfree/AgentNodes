@@ -1,6 +1,6 @@
 """EventBusV2 — **test harness only** (moved from api/session, W3b).
 
-Production uses ``EventStore`` (``strategy_research.kernel.agent.event_store``).
+Production uses ``EventStore`` (``agentnodes.kernel.agent.event_store``).
 This module remains so projector / dual-write regression tests can drive
 the historical publish path without keeping a deprecated API surface.
 """
@@ -15,7 +15,7 @@ import warnings
 from pathlib import Path
 from typing import List, Optional
 
-from strategy_research.kernel.events.event_v2 import EventV2, is_known_event_type
+from agentnodes.kernel.events.event_v2 import EventV2, is_known_event_type
 
 from .legacy_events import EventBus, SSEEvent
 
@@ -26,7 +26,7 @@ class EventBusV2:
     """Dual-write event publisher (event_log + EventBus).
 
     .. deprecated::
-        Use ``EventStore`` (``strategy_research.kernel.agent.event_store``)
+        Use ``EventStore`` (``agentnodes.kernel.agent.event_store``)
         instead. This class is kept for backward compatibility.
 
     Attributes:
@@ -63,7 +63,7 @@ class EventBusV2:
     def _get_projector(self):
         """Lazy-get the projector instance."""
         if self._projector is None:
-            from strategy_research.interfaces.api.session.projector import Projector
+            from agentnodes.interfaces.api.session.projector import Projector
             self._projector = Projector(self.db_path)
         return self._projector
 

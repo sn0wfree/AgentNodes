@@ -1,6 +1,6 @@
 import pytest
 
-from strategy_research.kernel.workflow.dag import topological_layers, validate_dag
+from agentnodes.kernel.workflow.dag import topological_layers, validate_dag
 
 
 class TestValidateDag:

@@ -46,9 +46,9 @@ ORDER = ["L1", "L2", "L3", "L4"]
 def layer_of(path: str) -> str | None:
     p = path.replace("\\", "/")
     for name, code in LAYER_CODE.items():
-        if f"src/strategy_research/{name}/" in p:
+        if f"src/agentnodes/{name}/" in p:
             return code
-    if "src/strategy_research/core/" in p:
+    if "src/agentnodes/core/" in p:
         return "CORE!"
     return None
 

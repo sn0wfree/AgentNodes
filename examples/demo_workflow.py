@@ -6,7 +6,7 @@
     python examples/demo_workflow.py
 
 清理：
-    rm -rf /tmp/demo_strategy_research
+    rm -rf /tmp/demo_agentnodes
 """
 from __future__ import annotations
 
@@ -15,11 +15,11 @@ import subprocess
 import sys
 from pathlib import Path
 
-# 让 strategy_research 包可导入
+# 让 agentnodes 包可导入
 REPO_ROOT = Path(__file__).parent.parent
 sys.path.insert(0, str(REPO_ROOT / "src"))
 
-WORKSPACE = Path("/tmp/demo_strategy_research")
+WORKSPACE = Path("/tmp/demo_agentnodes")
 
 
 def run(cmd: list[str], input_text: str | None = None,
@@ -45,7 +45,7 @@ def main() -> int:
     print("Step 0: 启动前环境检查 (preflight)")
     print("=" * 70)
     rc = run([
-        sys.executable, "-m", "strategy_research.cli", "preflight", str(WORKSPACE),
+        sys.executable, "-m", "agentnodes.cli", "preflight", str(WORKSPACE),
     ], check=False).returncode
     print(f"  → preflight rc = {rc} (非 0 时为 LLM key 缺失，不影响后续步骤)")
 
@@ -56,7 +56,7 @@ def main() -> int:
     print("Step 1: 初始化 workspace (init)")
     print("=" * 70)
     proc = run([
-        sys.executable, "-m", "strategy_research.cli", "init", str(WORKSPACE),
+        sys.executable, "-m", "agentnodes.cli", "init", str(WORKSPACE),
     ], input_text="test_strat\nrotation\ncalmar\n",
        check=False, cwd=str(REPO_ROOT))
     print(proc.stdout)
@@ -71,7 +71,7 @@ def main() -> int:
     print("Step 2: 查看 workspace 状态 (status)")
     print("=" * 70)
     proc = run([
-        sys.executable, "-m", "strategy_research.cli", "status", str(WORKSPACE),
+        sys.executable, "-m", "agentnodes.cli", "status", str(WORKSPACE),
     ], cwd=str(REPO_ROOT))
     print(proc.stdout)
 
@@ -111,7 +111,7 @@ def main() -> int:
     print("Step 4: 复跑当前 strategy.py (evaluate)")
     print("=" * 70)
     proc = run([
-        sys.executable, "-m", "strategy_research.cli",
+        sys.executable, "-m", "agentnodes.cli",
         "evaluate", str(WORKSPACE),
         "--strategy", "test_strat",
         "--description", "momentum + vol 复合",
@@ -125,7 +125,7 @@ def main() -> int:
     print("Step 5: 列出所有 run (list)")
     print("=" * 70)
     proc = run([
-        sys.executable, "-m", "strategy_research.cli", "list", str(WORKSPACE),
+        sys.executable, "-m", "agentnodes.cli", "list", str(WORKSPACE),
         "--strategy", "test_strat",
     ], cwd=str(REPO_ROOT))
     print(proc.stdout)
@@ -137,7 +137,7 @@ def main() -> int:
     print("Step 6: 复现 run_0001 (reproduce)")
     print("=" * 70)
     proc = run([
-        sys.executable, "-m", "strategy_research.cli", "reproduce",
+        sys.executable, "-m", "agentnodes.cli", "reproduce",
         str(WORKSPACE), "run_0001",
         "--strategy", "test_strat",
     ], cwd=str(REPO_ROOT))

@@ -1,6 +1,6 @@
 """Entry-dispatch tests: TTY-aware routing + REPL/TUI/argparse paths.
 
-The dispatcher lives in :mod:`strategy_research.interfaces.cli.__main__` and is the
+The dispatcher lives in :mod:`agentnodes.interfaces.cli.__main__` and is the
 binary entry point (``quantnodes-research`` after ``pip install -e .``).
 
 Routing matrix tested here:
@@ -25,8 +25,8 @@ from __future__ import annotations
 
 from unittest import mock
 
-import strategy_research.interfaces.cli.__main__ as entry
-from strategy_research.interfaces.cli.__main__ import (
+import agentnodes.interfaces.cli.__main__ as entry
+from agentnodes.interfaces.cli.__main__ import (
     _is_interactive_invocation,
     _wants_legacy_repl,
     main,
@@ -209,17 +209,17 @@ class TestMainRouting:
 
 class TestRealImports:
     def test_repl_main_importable(self):
-        from strategy_research.interfaces.cli.interactive.main import main as repl
+        from agentnodes.interfaces.cli.interactive.main import main as repl
         assert callable(repl)
 
     def test_cli_main_importable(self):
-        from strategy_research.interfaces.cli import main as cli
+        from agentnodes.interfaces.cli import main as cli
         assert callable(cli)
 
     def test_research_app_importable(self):
-        from strategy_research.interfaces.cli.tui.app import ResearchApp
+        from agentnodes.interfaces.cli.tui.app import ResearchApp
         assert callable(ResearchApp)
 
     def test_dispatcher_module_entries(self):
-        from strategy_research.interfaces.cli.__main__ import main as m
+        from agentnodes.interfaces.cli.__main__ import main as m
         assert callable(m)

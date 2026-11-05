@@ -43,7 +43,7 @@ import sqlite3
 import sys
 from pathlib import Path
 
-DEFAULT_DB_PATH = Path.home() / ".quantnodes" / "quantnodes_strategy_research_user.db"
+DEFAULT_DB_PATH = Path.home() / ".quantnodes" / "quantnodes_agentnodes_user.db"
 
 
 def parse_args() -> argparse.Namespace:

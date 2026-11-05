@@ -71,5 +71,5 @@
    `_archived` 与文档。
 2. 回归：HITL 套件 + research_preset + dispatch + architecture gates +
    e2e + engine_common 全绿。
-3. lint 干净；`import strategy_research.core.study.runner` 无 langgraph 残留。
+3. lint 干净；`import agentnodes.core.study.runner` 无 langgraph 残留。
 4. 全量分道与阶段 4 基线同集合。

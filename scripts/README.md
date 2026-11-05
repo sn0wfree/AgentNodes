@@ -23,7 +23,7 @@
 
 | 脚本 | 检查什么 | 为什么是解析级/第二种量纲 |
 |---|---|---|
-| `check_dangling_imports.py` | import 解析目标在 strategy_research/ 下不存在 | 文本前缀替换对相对导入天然盲区；曾抓出 7 处静默功能失效 |
+| `check_dangling_imports.py` | import 解析目标在 agentnodes/ 下不存在 | 文本前缀替换对相对导入天然盲区；曾抓出 7 处静默功能失效 |
 | `check_path_literals.py` | 非 import 语句里的旧路径拼接（`"core"` 段 / 非法层段） | import 改写工具的双盲区；曾抓出 11 处 presets/skills 目录定位漂移 |
 | `graph_layer_audit.py` | graphify 符号图的层向矩阵 + core 残留 + god-nodes | 与语句级门禁互为**第二种量纲**；曾暴露门禁 level=0 拼接 bug |
 | `layer_matrix.py` | 层归属表 + 判定原语（**唯一事实源**） | `test_layer_matrix` 与 `--layers` 共用，防止两份表漂移 |
@@ -35,8 +35,8 @@
 
 | 形态 | AST 节点 | 典型写法 |
 |---|---|---|
-| from-import | `ast.ImportFrom` | `from strategy_research.apps.db import get_conn` |
-| plain import | `ast.Import` | `import strategy_research.interfaces.api.routers.workflow as wf` |
+| from-import | `ast.ImportFrom` | `from agentnodes.apps.db import get_conn` |
+| plain import | `ast.Import` | `import agentnodes.interfaces.api.routers.workflow as wf` |
 
 **为什么不能只看 `ImportFrom`**：批次 2 删掉 `interfaces/api/routers/workflow.py` 后，
 两个测试文件用 `import ...routers.workflow as wf` 继续引用它。旧版 `scan()` 只遍历

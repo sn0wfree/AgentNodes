@@ -8,7 +8,7 @@
 > 的批次计划逐步移除。
 > 当前的 `apps/` 目录是**业务插件示例**，不是框架本体；批次 4–9 完成后它只剩
 > `evolution`（RSI 闭环）与 `capabilities`（注册门面）。
-> 包名 `strategy_research` → `agentnodes` 的重命名是**批次 9**，尚未执行。
+> 包名 `agentnodes` → `agentnodes` 的重命名是**批次 9**，尚未执行。
 
 ---
 
@@ -92,8 +92,8 @@ quantnodes-research --help       # 查看全部子命令
 ### 程序化使用
 
 ```python
-from strategy_research.kernel.orchestration import WorkRequest, EntryPoint
-from strategy_research.kernel.agent.capability import register, resolve
+from agentnodes.kernel.orchestration import WorkRequest, EntryPoint
+from agentnodes.kernel.agent.capability import register, resolve
 
 # 注册一个能力（业务侧职责）
 register("my.service", lambda registry: MyService())
@@ -102,7 +102,7 @@ register("my.service", lambda registry: MyService())
 service = resolve("my.service")
 ```
 
-> 包名重命名（`strategy_research` → `agentnodes`）是批次 9，完成后以上 import 会同步更新。
+> 包名重命名（`agentnodes` → `agentnodes`）是批次 9，完成后以上 import 会同步更新。
 
 ---
 

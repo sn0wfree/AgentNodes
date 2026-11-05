@@ -7,7 +7,7 @@ from __future__ import annotations
 
 import pytest
 
-from strategy_research.kernel.orchestration import (
+from agentnodes.kernel.orchestration import (
     EntryPoint,
     QueueMode,
     RejectReason,

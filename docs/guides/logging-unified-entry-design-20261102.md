@@ -78,7 +78,7 @@ def configure_logging(
 
 行为细节：
 - 幂等：重复调用先移除本模块此前挂的 handler 再重挂（输出不翻倍）；`TraceFilter` 仍全局只装一次（复用 `trace.py` 守卫）。
-- 级别统一解析：`level` 显式参数 > `SR_LOG_LEVEL` > INFO；同时设 `strategy_research` 命名空间级别。
+- 级别统一解析：`level` 显式参数 > `SR_LOG_LEVEL` > INFO；同时设 `agentnodes` 命名空间级别。
 - JSON：`SR_LOG_JSON=1` → 全部 handler 换 `JsonFormatter`（复用现有类）。
 - 文件（P1）：`SR_LOG_FILE=path` 或显式 `log_file` → `RotatingFileHandler(path, maxBytes=10MB, backupCount=5, encoding="utf-8")`；相对路径基于**项目数据根** `~/.quantnodes-research/logs/`（`storage.sqlite.DEFAULT_DATA_DIR`，与各 store 同根，测试经 conftest home 沙箱自动重定向）解析；`SR_LOG_FILE` 未设时**不创建**任何文件（默认关闭）。
 - 任何装配失败不得阻断主流程（与现状 try/except 语义一致）。
@@ -116,7 +116,7 @@ def dual_log(module: str, msg: str, *args) -> None:
 
 ## 5. print 治理分类（P2，全量 556 处）
 
-扫描口径：`(?<![\w.])(print|pprint)\(`，全 `src/strategy_research`。
+扫描口径：`(?<![\w.])(print|pprint)\(`，全 `src/agentnodes`。
 
 | 类 | 判定 | 数量 | 处置 |
 |---|---|---|---|

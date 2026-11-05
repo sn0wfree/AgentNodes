@@ -15,8 +15,8 @@ from pathlib import Path
 
 import pytest
 
-from strategy_research.kernel.gateway import Gateway
-from strategy_research.kernel.orchestration import SourceKind, WorkKind, WorkRequest
+from agentnodes.kernel.gateway import Gateway
+from agentnodes.kernel.orchestration import SourceKind, WorkKind, WorkRequest
 
 
 @dataclass

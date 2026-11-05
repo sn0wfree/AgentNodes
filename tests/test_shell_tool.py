@@ -17,7 +17,7 @@ import sys
 
 import pytest
 
-from strategy_research.kernel.agent.tools import ToolContext
+from agentnodes.kernel.agent.tools import ToolContext
 
 # A1 (2026-10-28): these suites drive POSIX commands (pwd/ls/sh/sleep/
 # python3) through the shell tool. On Windows there is no POSIX shell, so
@@ -34,7 +34,7 @@ _posix_shell_only = pytest.mark.skipif(
 
 @pytest.fixture
 def tool():
-    from strategy_research.kernel.agent.builtin_tools.shell_tools import ShellExecTool
+    from agentnodes.kernel.agent.builtin_tools.shell_tools import ShellExecTool
     return ShellExecTool()
 
 
@@ -184,22 +184,22 @@ class TestShellExecTruncation:
 
 class TestShellToolRegistration:
     def test_register_shell_tools(self):
-        from strategy_research.kernel.agent.builtin_tools.shell_tools import (
+        from agentnodes.kernel.agent.builtin_tools.shell_tools import (
             register_shell_tools,
         )
-        from strategy_research.kernel.agent.tools import ToolRegistry
+        from agentnodes.kernel.agent.tools import ToolRegistry
         r = ToolRegistry()
         register_shell_tools(r)
         assert "shell" in r
         assert r.get("shell").name == "shell"
 
     def test_default_registry_includes_shell_tool(self):
-        from strategy_research.kernel.agent.builtin_tools import build_default_registry
+        from agentnodes.kernel.agent.builtin_tools import build_default_registry
         r = build_default_registry()
         assert "shell" in r
 
     def test_chat_loop_removes_shell_tool_when_disabled(self):
-        from strategy_research.kernel.agent.builtin_tools import build_default_registry
+        from agentnodes.kernel.agent.builtin_tools import build_default_registry
 
         # Simulate the gating logic from build_chat_agent_loop
         r = build_default_registry()
@@ -212,7 +212,7 @@ class TestShellToolRegistration:
         assert "shell" not in r
 
     def test_chat_loop_keeps_shell_tool_when_enabled(self):
-        from strategy_research.kernel.agent.builtin_tools import build_default_registry
+        from agentnodes.kernel.agent.builtin_tools import build_default_registry
 
         r = build_default_registry()
         allow_shell_tools = True
@@ -226,7 +226,7 @@ class TestShellToolRegistration:
 
 class TestShellToolSchema:
     def test_openai_schema_format(self):
-        from strategy_research.kernel.agent.builtin_tools.shell_tools import ShellExecTool
+        from agentnodes.kernel.agent.builtin_tools.shell_tools import ShellExecTool
         schema = ShellExecTool().to_openai_schema()
         assert schema["type"] == "function"
         assert schema["function"]["name"] == "shell"
@@ -237,5 +237,5 @@ class TestShellToolSchema:
         assert "timeout" in params["properties"]
 
     def test_is_not_readonly(self):
-        from strategy_research.kernel.agent.builtin_tools.shell_tools import ShellExecTool
+        from agentnodes.kernel.agent.builtin_tools.shell_tools import ShellExecTool
         assert ShellExecTool().is_readonly is False

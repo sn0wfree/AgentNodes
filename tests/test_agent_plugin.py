@@ -11,23 +11,23 @@ from pathlib import Path
 
 import pytest
 
-from strategy_research.kernel.agent.builtin_plugins import (
+from agentnodes.kernel.agent.builtin_plugins import (
     BUILTIN_PLUGINS,
     standard_pipeline_adjacency,
     standard_pipeline_plugin_ids,
 )
-from strategy_research.kernel.agent.dag_config import (
+from agentnodes.kernel.agent.dag_config import (
     AgentDAGConfig,
     AgentNodeConfig,
 )
-from strategy_research.kernel.agent.plugin import AgentPlugin
-from strategy_research.kernel.agent.registry import (
+from agentnodes.kernel.agent.plugin import AgentPlugin
+from agentnodes.kernel.agent.registry import (
     AgentPluginRegistry,
     get_default_registry,
 )
 
 TEMPLATES_DIR = (
-    Path(__file__).parent.parent / "src" / "strategy_research" / "templates"
+    Path(__file__).parent.parent / "src" / "agentnodes" / "templates"
 )
 
 

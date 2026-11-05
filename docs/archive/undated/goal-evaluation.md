@@ -146,14 +146,14 @@
 
 ## 相关文件
 
-- `src/strategy_research/core/goal/`：models/store/policy/context/completion_strategy/
+- `src/agentnodes/core/goal/`：models/store/policy/context/completion_strategy/
   validator_registry/expression_evaluator/workflow/workflow_config/workflow_hook/
   checkpoint_store/event_bus/cli/templates/dag_renderer
-- `src/strategy_research/core/swarm/runtime.py`：DAG 执行器（branches 未消费）
-- `src/strategy_research/api/routers/goal.py`、`api/routers/workflow.py`（SSE）
-- `src/strategy_research/api/routers/web_session.py`：`_build_goal_snapshot`/`_shape_goal_for_frontend`
-- `src/strategy_research/core/agent/builtin_tools/goal_tools.py`（5 工具）
-- `src/strategy_research/core/agent/loop.py`：目标上下文/续跑注入（L474-496, L559-583, L1503-1540）
+- `src/agentnodes/core/swarm/runtime.py`：DAG 执行器（branches 未消费）
+- `src/agentnodes/api/routers/goal.py`、`api/routers/workflow.py`（SSE）
+- `src/agentnodes/api/routers/web_session.py`：`_build_goal_snapshot`/`_shape_goal_for_frontend`
+- `src/agentnodes/core/agent/builtin_tools/goal_tools.py`（5 工具）
+- `src/agentnodes/core/agent/loop.py`：目标上下文/续跑注入（L474-496, L559-583, L1503-1540）
 - `webui/frontend/src/`：stores/goal.ts、components/goal/*、hooks/sse/metaHandlers.ts
-- `src/strategy_research/cli/tui/widgets/goal_panel.py`、`cli/commands/slash_goal.py`
+- `src/agentnodes/cli/tui/widgets/goal_panel.py`、`cli/commands/slash_goal.py`
 - `docs/archive/undated/goal-design.md`、`docs/archive/undated/goal-workflow-design.md`、`docs/archive/undated/goal-workflow-cookbook.md`

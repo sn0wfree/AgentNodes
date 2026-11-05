@@ -3,7 +3,7 @@ from pathlib import Path
 import re
 from collections import Counter
 
-root = Path("src/strategy_research")
+root = Path("src/agentnodes")
 files = [p for p in root.rglob("*.py") if "__pycache__" not in str(p) and "_archived" not in str(p)]
 tests = [p for p in Path("tests").rglob("test_*.py")]
 

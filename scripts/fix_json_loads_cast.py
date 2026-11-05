@@ -3,7 +3,7 @@ from __future__ import annotations
 
 from pathlib import Path
 
-PATH = Path("src/strategy_research/core/agent/builtin_tools/backtest_tools.py")
+PATH = Path("src/agentnodes/core/agent/builtin_tools/backtest_tools.py")
 OLD = "json.loads("
 NEW = "json.loads(cast(str, "
 

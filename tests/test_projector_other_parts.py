@@ -16,9 +16,9 @@ from pathlib import Path
 
 import pytest
 
-from strategy_research.interfaces.api.routers.web_session import _ensure_schema
-from strategy_research.kernel.events.event_v2 import EventType, EventV2
-from strategy_research.interfaces.api.session.projector import Projector
+from agentnodes.interfaces.api.routers.web_session import _ensure_schema
+from agentnodes.kernel.events.event_v2 import EventType, EventV2
+from agentnodes.interfaces.api.session.projector import Projector
 
 
 @pytest.fixture()

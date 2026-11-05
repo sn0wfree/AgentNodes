@@ -22,7 +22,7 @@ from pathlib import Path
 import pytest
 
 SRC = Path(__file__).resolve().parents[1] / "src"
-AGENT = "strategy_research.kernel.agent"
+AGENT = "agentnodes.kernel.agent"
 
 
 def _run(code: str) -> subprocess.CompletedProcess[str]:
@@ -106,7 +106,7 @@ def test_loop_reexports_legacy_names() -> None:
     isolation). What matters is that both import paths reach one shared
     registration slot.
     """
-    from strategy_research.kernel.agent import compact, loop
+    from agentnodes.kernel.agent import compact, loop
 
     # Names are importable from ``loop`` (back-compat surface).
     for name in (

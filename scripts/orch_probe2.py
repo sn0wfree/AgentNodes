@@ -1,7 +1,7 @@
 from pathlib import Path
 import re
 
-root = Path("src/strategy_research")
+root = Path("src/agentnodes")
 
 print("════ AutoresearchRunner 到底被谁用")
 for p in root.rglob("*.py"):

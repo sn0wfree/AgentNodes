@@ -15,8 +15,8 @@ from typing import Any
 
 import pytest
 
-from strategy_research.kernel.agent.tools import BaseTool
-from strategy_research.kernel.permission import (
+from agentnodes.kernel.agent.tools import BaseTool
+from agentnodes.kernel.permission import (
     PermissionAction,
     PermissionGateway,
     PermissionResponse,
@@ -80,7 +80,7 @@ def test_allow_short_circuits(gateway: PermissionGateway):
 def test_deny_raises(gateway: PermissionGateway):
     tool = _EchoTool()
     # Add a deny rule.
-    from strategy_research.kernel.permission.schema import PermissionRule
+    from agentnodes.kernel.permission.schema import PermissionRule
     gateway.evaluator.add_rule(PermissionRule(
         permission="echo_tool", pattern="*",
         action=PermissionAction.DENY,

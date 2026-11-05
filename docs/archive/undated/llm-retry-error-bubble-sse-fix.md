@@ -48,8 +48,8 @@
 **目标**：`stream()`/`astream()` 增加重试；所有路径正确错误映射 + `Retry-After` + jitter + 总尝试次数
 
 **改动文件**：
-- `src/strategy_research/core/llm/openai_client.py`
-- `src/strategy_research/core/llm/config.py`
+- `src/agentnodes/core/llm/openai_client.py`
+- `src/agentnodes/core/llm/config.py`
 
 **改动要点**：
 
@@ -81,7 +81,7 @@
 
 #### 后端
 
-**`src/strategy_research/api/session/service.py`**
+**`src/agentnodes/api/session/service.py`**
 - `_run_with_agent` return dict 加 `"error": loop_result.error`
 - `_run_attempt`：`loop_result.finished_reason == "error"` 时：
   - 友好文案：`⚠️ 模型请求失败（429 限流），请稍后再试`
@@ -90,10 +90,10 @@
   - `attempt.mark_failed(error=error_msg)`
   - 发 `assistant_message` SSE 事件
 
-**`src/strategy_research/api/session/models.py`**
+**`src/agentnodes/api/session/models.py`**
 - `Message.message_type` doc 加 `'error'`
 
-**`src/strategy_research/api/routers/web_session.py`**
+**`src/agentnodes/api/routers/web_session.py`**
 - `persist_message` doc 加 `'error'`
 - `_row_to_message`：`message_type == "error"` 且无 parts 时，从 content 建 text part
 
@@ -123,11 +123,11 @@
 
 #### 后端
 
-**`src/strategy_research/api/routers/chat.py`**
+**`src/agentnodes/api/routers/chat.py`**
 - `last_event_id` 增加 `Header(None, alias="Last-Event-ID")` 读取（与现有 Query 合并，Header 优先）
 - generator 开头 yield `retry: 3000\n\n`（控制原生重连间隔 3s）
 
-**`src/strategy_research/api/sse_buffer.py`**
+**`src/agentnodes/api/sse_buffer.py`**
 - `get_events_since("")` 首连重放**上限 last 200 条**（防御性）
 
 ---

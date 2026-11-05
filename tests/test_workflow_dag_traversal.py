@@ -3,7 +3,7 @@ from __future__ import annotations
 
 import pytest
 
-from strategy_research.kernel.workflow.dag import (
+from agentnodes.kernel.workflow.dag import (
     find_downstream,
     find_upstream,
     topological_layers,

@@ -13,12 +13,12 @@ import pytest
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
 
-from strategy_research.kernel.agent.sandbox import (
+from agentnodes.kernel.agent.sandbox import (
     ExecutionSandbox,
     StaticSandbox,
 )
-from strategy_research.kernel.agent.tools import ToolContext
-from strategy_research.kernel.agent.tools_capability import (
+from agentnodes.kernel.agent.tools import ToolContext
+from agentnodes.kernel.agent.tools_capability import (
     ToolCapabilityError,
     get_data_store,
     get_sandbox,
@@ -32,8 +32,8 @@ from strategy_research.kernel.agent.tools_capability import (
 # 2026-11-05 批次 5：DuckDBDataStore 随数据域删除，注册表初始为空。
 # 测试改为注入一个内存替身（_FakeStore）而不是向全局注册表要实例 ——
 # 这样测的是「ToolContext 能装任意 DataStore 实现」，比依赖具体 provider 更准。
-from strategy_research.apps.data_store_registry import get_store, register_store
-from strategy_research.foundation.storage.data_store import DataStore
+from agentnodes.apps.data_store_registry import get_store, register_store
+from agentnodes.foundation.storage.data_store import DataStore
 
 
 class _FakeStore:
@@ -134,5 +134,5 @@ class TestCapabilityHelpers:
         try:
             assert isinstance(get_store("fake"), DataStore)
         finally:
-            from strategy_research.apps.data_store_registry import DataStoreRegistry
+            from agentnodes.apps.data_store_registry import DataStoreRegistry
             DataStoreRegistry.unregister("fake")

@@ -13,7 +13,7 @@
 | 1 | `api/routers/chat.py:96-107` `_get_system_prompt()` | 12 行 fallback 链（chat.md → `_CHAT_PROMPT_PATH` → 内联字符串） | 12 | 删除 |
 | 2 | `api/routers/chat.py:294` | `system_prompt = _get_system_prompt()` | 1 | `PromptBuilderFactory.get("chat").build_system_prompt("chat", ctx)` |
 | 3 | `api/session/service.py:657-659` | `from ..routers.chat import _get_system_prompt` + `_get_system_prompt()` | 3 | `from ...core.agent.prompt_builder import PromptBuilderFactory` + factory |
-| 4 | `cli/tui/session.py:250-251` | `from strategy_research.cli.tui import _CHAT_PROMPT_PATH` + `read_text()` | 2 | factory |
+| 4 | `cli/tui/session.py:250-251` | `from agentnodes.cli.tui import _CHAT_PROMPT_PATH` + `read_text()` | 2 | factory |
 | 5 | `cli/tui/session.py:243-247` | `from role_factory import _load_role_system_prompt` + 调用 | 5 | factory |
 | 6 | `core/agent/role_factory.py:53-61` `_load_role_system_prompt()` | 9 行读 `.prompts/<role>.md` | 9 | 删除（用 PromptBuilder 替代） |
 | 7 | `core/agent/role_factory.py:120` | `system_prompt = _load_role_system_prompt(role)` | 1 | factory |
@@ -28,12 +28,12 @@
 **用户反馈**："能否也保持 python 风格" — 指现有 `chat.md` 用 Python `.format()` 占位符（`{workspace}` / `{tool_list}`）。
 
 - **现有资产**（git 跟踪，**事实源**）：
-  - `src/strategy_research/templates/.prompts/chat.md` — 2 变量 (`{workspace}`, `{tool_list}`)
-  - `src/strategy_research/templates/.prompts/researcher.md` 等 10 个角色 — 9 个纯静态，1 个 (`anti_overfit_analyst.md`) 有 `{strategy_name}` / `{workspace}`
+  - `src/agentnodes/templates/.prompts/chat.md` — 2 变量 (`{workspace}`, `{tool_list}`)
+  - `src/agentnodes/templates/.prompts/researcher.md` 等 10 个角色 — 9 个纯静态，1 个 (`anti_overfit_analyst.md`) 有 `{strategy_name}` / `{workspace}`
 - **Phase 4 误判**：我创建了 `core/agent/templates/*.md.j2`（jinja2 风格），与现有 `.prompts/*.md` 重复且风格不一致
 - **Phase 5 修正**：
   - **删除** `core/agent/templates/chat.md.j2` + `researcher.md.j2`
-  - **`_TEMPLATES_DIR` 指向 `src/strategy_research/templates/.prompts/`**（与 `role_factory._prompts_dir()` 一致）
+  - **`_TEMPLATES_DIR` 指向 `src/agentnodes/templates/.prompts/`**（与 `role_factory._prompts_dir()` 一致）
   - **`ChatPromptBuilder` 用 `str.format()` 渲染**（兼容现有占位符）
   - **`StaticFilePromptBuilder` 直接 `read_text()`**（无渲染，给 9 角色用）
   - **删除 jinja2 依赖**
@@ -100,7 +100,7 @@ from pathlib import Path
 from typing import Any, Protocol
 
 _PROMPTS_DIR = Path(__file__).parent.parent.parent / "templates" / ".prompts"
-# resolves to: src/strategy_research/templates/.prompts/
+# resolves to: src/agentnodes/templates/.prompts/
 
 class PromptBuilder(Protocol):
     def build_system_prompt(self, role: str, context: dict[str, Any]) -> str: ...
@@ -196,7 +196,7 @@ class _NullBuilder:
 | 项 | Phase 4 | Phase 5 |
 |---|---|---|
 | 模板引擎 | jinja2 | str.format() |
-| `_TEMPLATES_DIR` | `core/agent/templates/` (新) | `src/strategy_research/templates/.prompts/` (事实源) |
+| `_TEMPLATES_DIR` | `core/agent/templates/` (新) | `src/agentnodes/templates/.prompts/` (事实源) |
 | 模板文件 | `*.md.j2` (新建) | `*.md` (复用现有) |
 | 9 角色支持 | 仅 `chat` + `researcher` | 10 个全部 |
 | 未知 role | `ValueError` | `""` (兼容 role_factory) |
@@ -213,7 +213,7 @@ class _NullBuilder:
 # line 294 替换:
 # 旧: system_prompt = _get_system_prompt()
 # 新:
-from strategy_research.core.agent.prompt_builder import PromptBuilderFactory
+from agentnodes.core.agent.prompt_builder import PromptBuilderFactory
 system_prompt = PromptBuilderFactory.get("chat").build_system_prompt(
     "chat", {"workspace": "", "tool_list": ""}
 )
@@ -244,19 +244,19 @@ if system_prompt is None:
 # 旧 (line 240-253):
 if mode == "goal":
     try:
-        from strategy_research.core.agent.role_factory import _load_role_system_prompt
+        from agentnodes.core.agent.role_factory import _load_role_system_prompt
         system_prompt = _load_role_system_prompt("researcher")
     except Exception:
         system_prompt = ""
 else:
     try:
-        from strategy_research.cli.tui import _CHAT_PROMPT_PATH
+        from agentnodes.cli.tui import _CHAT_PROMPT_PATH
         system_prompt = _CHAT_PROMPT_PATH.read_text(encoding="utf-8")
     except Exception:
         system_prompt = ""
 
 # 新:
-from strategy_research.core.agent.prompt_builder import PromptBuilderFactory
+from agentnodes.core.agent.prompt_builder import PromptBuilderFactory
 system_prompt = PromptBuilderFactory.get("researcher" if mode == "goal" else "chat").build_system_prompt(
     "researcher" if mode == "goal" else "chat",
     {"workspace": "", "tool_list": ""},

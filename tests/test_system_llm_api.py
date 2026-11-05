@@ -20,7 +20,7 @@ from unittest.mock import patch
 import pytest
 from fastapi.testclient import TestClient
 
-from strategy_research.foundation.llm.config import ENV_PROFILE_ACTIVE
+from agentnodes.foundation.llm.config import ENV_PROFILE_ACTIVE
 
 PROFILE_JSON = {
     "llm": {
@@ -56,7 +56,7 @@ LEGACY_JSON = {
 
 @pytest.fixture
 def client():
-    from strategy_research.interfaces.api.app import create_app
+    from agentnodes.interfaces.api.app import create_app
 
     app = create_app(workspace_path=None)
     return TestClient(app)
@@ -84,17 +84,17 @@ def isolated(tmp_path: Path, monkeypatch):
     llm_json = tmp_path / "llm.json"
     dotenv = tmp_path / ".env"
     monkeypatch.setattr(
-        "strategy_research.interfaces.api.routers.system._LLM_JSON_PATH", llm_json
+        "agentnodes.interfaces.api.routers.system._LLM_JSON_PATH", llm_json
     )
     monkeypatch.setattr(
-        "strategy_research.interfaces.api.routers.system._DOTENV_PATH", dotenv
+        "agentnodes.interfaces.api.routers.system._DOTENV_PATH", dotenv
     )
     monkeypatch.setattr(
-        "strategy_research.foundation.llm.config._resolve_bridge_path",
+        "agentnodes.foundation.llm.config._resolve_bridge_path",
         lambda env: llm_json,
     )
     monkeypatch.setattr(
-        "strategy_research.foundation.llm.config._try_load_dotenv", lambda: None
+        "agentnodes.foundation.llm.config._try_load_dotenv", lambda: None
     )
     for k in ("OPENAI_API_KEY", "LLM_API_KEY", "MINIMAX_API_KEY",
               "NVIDIA_API_KEY", "OPENAI_MODEL", "OPENAI_BASE_URL",
@@ -275,7 +275,7 @@ class TestCheckLLMConfig:
     def test_profiles_only_config_resolves_effective(
         self, tmp_path: Path, monkeypatch
     ):
-        from strategy_research.interfaces.cli import llm_config_check as lcc
+        from agentnodes.interfaces.cli import llm_config_check as lcc
 
         llm_json = tmp_path / "llm.json"
         dotenv = tmp_path / ".env"
@@ -283,11 +283,11 @@ class TestCheckLLMConfig:
         monkeypatch.setattr(lcc, "LLM_JSON_PATH", llm_json)
         monkeypatch.setattr(lcc, "DOTENV_PATH", dotenv)
         monkeypatch.setattr(
-            "strategy_research.foundation.llm.config._resolve_bridge_path",
+            "agentnodes.foundation.llm.config._resolve_bridge_path",
             lambda env: llm_json,
         )
         monkeypatch.setattr(
-            "strategy_research.foundation.llm.config._try_load_dotenv", lambda: None
+            "agentnodes.foundation.llm.config._try_load_dotenv", lambda: None
         )
         monkeypatch.setenv("MINIMAX_API_KEY", "sk-minimax-real")
         for k in ("OPENAI_API_KEY", "LLM_API_KEY"):
@@ -302,7 +302,7 @@ class TestCheckLLMConfig:
         assert status["model"] == "minimax-M3"
 
     def test_unconfigured_stays_false(self, tmp_path: Path, monkeypatch):
-        from strategy_research.interfaces.cli import llm_config_check as lcc
+        from agentnodes.interfaces.cli import llm_config_check as lcc
 
         llm_json = tmp_path / "llm.json"
         dotenv = tmp_path / ".env"
@@ -310,11 +310,11 @@ class TestCheckLLMConfig:
         monkeypatch.setattr(lcc, "LLM_JSON_PATH", llm_json)
         monkeypatch.setattr(lcc, "DOTENV_PATH", dotenv)
         monkeypatch.setattr(
-            "strategy_research.foundation.llm.config._resolve_bridge_path",
+            "agentnodes.foundation.llm.config._resolve_bridge_path",
             lambda env: llm_json,
         )
         monkeypatch.setattr(
-            "strategy_research.foundation.llm.config._try_load_dotenv", lambda: None
+            "agentnodes.foundation.llm.config._try_load_dotenv", lambda: None
         )
         for k in ("OPENAI_API_KEY", "LLM_API_KEY", "MINIMAX_API_KEY"):
             monkeypatch.delenv(k, raising=False)

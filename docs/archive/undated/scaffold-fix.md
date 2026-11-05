@@ -7,7 +7,7 @@ Session `700dc7f7-95de-45e0-b568-d713fe05065f` (119 messages) accumulated
 accounted for most failures:
 
 1. **Missing `templates/` in workspace** — The chat system prompt
-   (`src/strategy_research/templates/.prompts/chat.md`) advertises a
+   (`src/agentnodes/templates/.prompts/chat.md`) advertises a
    `templates/` directory in the workspace tree (lines 22-39, 79, 105,
    118, 134), but **no code path ever creates it**. The LLM obediently
    tries `list_files templates`, `read_file templates/strategy.py`, etc.
@@ -27,7 +27,7 @@ accounted for most failures:
 
 ### Fix 3b — Smart recursive scaffold (new module + startup hook)
 
-**New file**: `src/strategy_research/core/workspace_setup.py`
+**New file**: `src/agentnodes/core/workspace_setup.py`
 
 Exposes `smart_init_workspace_templates(workspace, *, verbose=False)`.
 
@@ -44,7 +44,7 @@ Exposes `smart_init_workspace_templates(workspace, *, verbose=False)`.
 5. Return `{"copied": [rel_path...], "skipped": [...], "errors": [...]}`.
 6. Log summary: "X new files, Y skipped (existing)" or "up-to-date".
 
-**Wired in**: `src/strategy_research/api/app.py:create_app()`, immediately
+**Wired in**: `src/agentnodes/api/app.py:create_app()`, immediately
 after the existing `init_db(workspace_path)` call. Runs on every server
 start (including `--reload`). Failures are caught and logged at WARNING
 level so a broken scaffold never blocks the server from starting.
@@ -76,7 +76,7 @@ _EXCLUDED_TOP_DIRS`).
 
 ### Fix 1 — import_data defensive unwrap
 
-**File**: `src/strategy_research/core/agent/builtin_tools/data_tools.py`
+**File**: `src/agentnodes/core/agent/builtin_tools/data_tools.py`
 
 **Change 1 — defensive unwrap** (in `ImportDataTool.execute()`):
 
@@ -160,9 +160,9 @@ shape and pairs with the defensive unwrap for safety.
 
 | File | Type | Description |
 |------|------|-------------|
-| `src/strategy_research/core/workspace_setup.py` | NEW | Smart scaffold module |
-| `src/strategy_research/api/app.py` | MOD | Add `smart_init_workspace_templates` call in `create_app()` |
-| `src/strategy_research/core/agent/builtin_tools/data_tools.py` | MOD | `ImportDataTool` defensive unwrap + schema |
+| `src/agentnodes/core/workspace_setup.py` | NEW | Smart scaffold module |
+| `src/agentnodes/api/app.py` | MOD | Add `smart_init_workspace_templates` call in `create_app()` |
+| `src/agentnodes/core/agent/builtin_tools/data_tools.py` | MOD | `ImportDataTool` defensive unwrap + schema |
 | `tests/test_workspace_setup.py` | NEW | 7 scaffold tests |
 | `tests/test_import_data_robustness.py` | NEW | 7 import_data tests |
 | `docs/archive/undated/scaffold-fix.md` | NEW | This document |

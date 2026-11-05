@@ -10,10 +10,10 @@ from __future__ import annotations
 
 from unittest.mock import patch
 
-from strategy_research.kernel.agent.context_providers import (
+from agentnodes.kernel.agent.context_providers import (
     build_prerun_provider_for_session,
 )
-from strategy_research.kernel.context.protocol import ContextQuery
+from agentnodes.kernel.context.protocol import ContextQuery
 
 
 def _build(**kwargs):
@@ -39,14 +39,14 @@ class _GoalCtx:
         return (self._text, None)
 
 
-_GOAL_PATCH = "strategy_research.kernel.agent.capability.resolve"
+_GOAL_PATCH = "agentnodes.kernel.agent.capability.resolve"
 
 
 def _patch_goal_ctx(goal_ctx):
     """Return a context manager installing ``goal_ctx`` as the goal.context kind."""
     from contextlib import contextmanager
 
-    from strategy_research.kernel.agent.capability import get_default_registry
+    from agentnodes.kernel.agent.capability import get_default_registry
 
     @contextmanager
     def _cm():
@@ -108,7 +108,7 @@ class _FakeMemory:
 def test_memory_block_injected():
     provider = _build()
     with patch(
-        "strategy_research.kernel.memory.persistent.PersistentMemory",
+        "agentnodes.kernel.memory.persistent.PersistentMemory",
         return_value=_FakeMemory(),
     ), _patch_goal_ctx(_GoalCtx(None)):
         items = provider.provide(ContextQuery(task_text="alpha?", session_id="s1"))
@@ -120,7 +120,7 @@ def test_memory_block_injected():
 def test_memory_disabled_skips_injection():
     provider = _build(enable_memory_injection=False)
     with patch(
-        "strategy_research.kernel.memory.persistent.PersistentMemory",
+        "agentnodes.kernel.memory.persistent.PersistentMemory",
         return_value=_FakeMemory(),
     ), _patch_goal_ctx(_GoalCtx(None)):
         items = provider.provide(ContextQuery(task_text="alpha?", session_id="s1"))
@@ -160,7 +160,7 @@ def test_render_order_matches_agentloop():
     with _patch_goal_ctx(
         _GoalCtx("<current-research-goal>G</current-research-goal>")
     ), patch(
-        "strategy_research.kernel.memory.persistent.PersistentMemory",
+        "agentnodes.kernel.memory.persistent.PersistentMemory",
         return_value=_FakeMemory(),
     ):
         items = provider.provide(ContextQuery(task_text="alpha?", session_id="s1"))
@@ -171,7 +171,7 @@ def test_render_order_matches_agentloop():
 
 
 def test_singleton_hub_registers_prerun_and_todos():
-    from strategy_research.kernel.gateway.singleton import (
+    from agentnodes.kernel.gateway.singleton import (
         _build_context_hub,
         reset_gateway,
     )

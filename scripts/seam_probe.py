@@ -2,7 +2,7 @@
 from pathlib import Path
 import re
 
-root = Path("src/strategy_research")
+root = Path("src/agentnodes")
 files = [p for p in root.rglob("*.py") if "__pycache__" not in str(p) and "_archived" not in str(p)]
 
 print("==== existing Protocols (seams already pluggable)")
@@ -10,7 +10,7 @@ protos = []
 for p in files:
     t = p.read_text(encoding="utf-8", errors="ignore")
     for m in re.finditer(r"^class (\w+)\((?:[^)]*Protocol[^)]*)\):", t, re.M):
-        protos.append((m.group(1), str(p).replace("\\", "/").split("strategy_research/")[-1]))
+        protos.append((m.group(1), str(p).replace("\\", "/").split("agentnodes/")[-1]))
 for name, f in sorted(protos):
     print(f"  {name:28s} {f}")
 
@@ -20,7 +20,7 @@ for p in files:
     for m in re.finditer(r"^class (\w*(?:Provider|Adapter|Loader|Store|Registry|Source|Backend)\w*)\(([^)]*)\):", t, re.M):
         name, bases = m.group(1), m.group(2)
         kind = "PROTOCOL" if "Protocol" in bases else ("ABC" if "ABC" in bases else "concrete")
-        print(f"  {name:32s} {kind:9s} {str(p).replace(chr(92),'/').split('strategy_research/')[-1]}")
+        print(f"  {name:32s} {kind:9s} {str(p).replace(chr(92),'/').split('agentnodes/')[-1]}")
 
 print("\n==== registration / discovery mechanism today")
 for rel in ["core/agent/registry.py", "core/agent/toolsets.py", "core/llm/__init__.py",

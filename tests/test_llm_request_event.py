@@ -11,7 +11,7 @@ from __future__ import annotations
 from typing import Any
 from unittest import mock
 
-from strategy_research.kernel.agent.loop import AgentLoop
+from agentnodes.kernel.agent.loop import AgentLoop
 
 
 class EventSink:
@@ -28,7 +28,7 @@ class EventSink:
 
 
 def _make_loop(sink: EventSink, *, max_iterations: int = 1) -> AgentLoop:
-    from strategy_research.foundation.llm import LLMConfig
+    from agentnodes.foundation.llm import LLMConfig
 
     cfg = LLMConfig(api_key="sk-test", model="fake-model", temperature=0.7)
     registry = mock.MagicMock()
@@ -144,11 +144,11 @@ class _FakeAttempt:
 
 
 def _make_forwarder(bus, cfg=None):
-    from strategy_research.interfaces.api.session.service import _LoopEventForwarder
+    from agentnodes.interfaces.api.session.service import _LoopEventForwarder
 
     attempt = _FakeAttempt()
     if cfg is None:
-        from strategy_research.foundation.llm import LLMConfig
+        from agentnodes.foundation.llm import LLMConfig
         cfg = LLMConfig(api_key="sk-test", model="fake-model")
     return _LoopEventForwarder(
         service=None,

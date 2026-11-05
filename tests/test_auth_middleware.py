@@ -16,7 +16,7 @@ import httpx
 import pytest
 from fastapi import Depends, FastAPI, Request
 
-from strategy_research.interfaces.api.middleware import AuthMiddleware
+from agentnodes.interfaces.api.middleware import AuthMiddleware
 
 
 def _build_asgi_app():
@@ -66,7 +66,7 @@ def _client(app):
 
 
 def _bearer(user_id: str = "alice") -> dict:
-    from strategy_research.interfaces.api.auth_tokens import create_token
+    from agentnodes.interfaces.api.auth_tokens import create_token
 
     return {"Authorization": f"Bearer {create_token(user_id)}"}
 
@@ -168,7 +168,7 @@ async def test_protected_endpoint_with_token_succeeds():
 @pytest.mark.asyncio
 async def test_token_from_query_param_is_accepted():
     """SSE-style token in ?token=... is honored for protected endpoints."""
-    from strategy_research.interfaces.api.auth_tokens import create_token
+    from agentnodes.interfaces.api.auth_tokens import create_token
 
     app = _build_asgi_app()
     async with _client(app) as c:
@@ -180,7 +180,7 @@ async def test_token_from_query_param_is_accepted():
 async def test_auth_header_with_non_bearer_scheme_is_ignored():
     """Bearer-less Authorization header falls through to query token lookup."""
     app = _build_asgi_app()
-    from strategy_research.interfaces.api.auth_tokens import create_token
+    from agentnodes.interfaces.api.auth_tokens import create_token
 
     async with _client(app) as c:
         r = await c.get(
@@ -194,7 +194,7 @@ async def test_auth_header_with_non_bearer_scheme_is_ignored():
 async def test_query_param_takes_effect_when_no_header():
     """Without any Authorization header, the ?token= query is the only way."""
     app = _build_asgi_app()
-    from strategy_research.interfaces.api.auth_tokens import create_token
+    from agentnodes.interfaces.api.auth_tokens import create_token
 
     async with _client(app) as c:
         # Valid query token, no header

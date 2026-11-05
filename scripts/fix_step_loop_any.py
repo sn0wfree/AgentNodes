@@ -3,7 +3,7 @@ from __future__ import annotations
 
 from pathlib import Path
 
-ROOT = Path("src/strategy_research/core/agent/strategy/steps")
+ROOT = Path("src/agentnodes/core/agent/strategy/steps")
 REPLACES = [
     ("self._loop: object | None = None", "self._loop: Any = None"),
     ("def bind_agent_loop(self, agent_loop: object) -> None:", "def bind_agent_loop(self, agent_loop: Any) -> None:"),

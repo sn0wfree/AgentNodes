@@ -12,7 +12,7 @@ from __future__ import annotations
 import unittest
 from unittest.mock import MagicMock, patch
 
-from strategy_research.foundation.llm.config import LLMConfig
+from agentnodes.foundation.llm.config import LLMConfig
 
 
 class TestSendMessageDefault(unittest.TestCase):
@@ -21,7 +21,7 @@ class TestSendMessageDefault(unittest.TestCase):
     def test_default_is_bounded_not_unbounded(self):
         import inspect
 
-        from strategy_research.interfaces.api.session.service import SessionService
+        from agentnodes.interfaces.api.session.service import SessionService
 
         sig = inspect.signature(SessionService.send_message)
         default = sig.parameters["max_iterations"].default
@@ -43,7 +43,7 @@ class TestSendAsyncPassesConfigBudget(unittest.TestCase):
     """send_async must pass LLMConfig.max_iterations (not the default)."""
 
     async def _run_send_async(self, cfg_max_iterations):
-        from strategy_research.interfaces.api.routers import chat as chat_router
+        from agentnodes.interfaces.api.routers import chat as chat_router
 
         captured = {}
 
@@ -73,11 +73,11 @@ class TestSendAsyncPassesConfigBudget(unittest.TestCase):
                 "load",
                 return_value=LLMConfig(max_iterations=cfg_max_iterations),
             ),
-            patch("strategy_research.interfaces.api.routers.web_session._fetch_session_owned", return_value=None),
-            patch("strategy_research.interfaces.api.routers.web_session._get_db", return_value=MagicMock()),
-            patch("strategy_research.interfaces.api.routers.chat._get_session_service", return_value=MagicMock(send_message=fake_send_message)),
+            patch("agentnodes.interfaces.api.routers.web_session._fetch_session_owned", return_value=None),
+            patch("agentnodes.interfaces.api.routers.web_session._get_db", return_value=MagicMock()),
+            patch("agentnodes.interfaces.api.routers.chat._get_session_service", return_value=MagicMock(send_message=fake_send_message)),
             # _handle_goal_command 已随 apps/goal 移除（批次 2），不再需要 patch
-            patch("strategy_research.interfaces.api.routers.chat._handle_compact_command"),
+            patch("agentnodes.interfaces.api.routers.chat._handle_compact_command"),
         ):
             body = _Body()
             await chat_router.send_async(body, _Request())
@@ -102,7 +102,7 @@ class TestRunWithAgentForwardsBudget(unittest.TestCase):
     """max_iterations must reach AgentLoop unchanged."""
 
     def test_run_with_agent_passes_max_iterations(self):
-        from strategy_research.interfaces.api.session.service import SessionService
+        from agentnodes.interfaces.api.session.service import SessionService
 
         svc = object.__new__(SessionService)
         svc.event_bus = MagicMock()
@@ -124,12 +124,12 @@ class TestRunWithAgentForwardsBudget(unittest.TestCase):
         with (
             patch.object(SessionService, "_run_test_script"),
             patch(
-                "strategy_research.kernel.agent.chat_loop.AgentLoop",
+                "agentnodes.kernel.agent.chat_loop.AgentLoop",
                 lambda **kw: type(
                     "AL", (), {"arun": fake_agent_arun, "max_iterations": kw.get("max_iterations")}
                 )(),
             ),
-            patch("strategy_research.kernel.agent.builtin_tools.build_default_registry", return_value=None),
+            patch("agentnodes.kernel.agent.builtin_tools.build_default_registry", return_value=None),
         ):
             # exercise _run_with_agent directly with a bounded budget
             async def run():

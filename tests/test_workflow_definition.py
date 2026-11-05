@@ -10,7 +10,7 @@ import pathlib
 
 import pytest
 
-from strategy_research.kernel.workflow.definition import (
+from agentnodes.kernel.workflow.definition import (
     DEFAULT_PARAMS,
     WorkflowDefinition,
     WorkflowDefinitionError,
@@ -270,7 +270,7 @@ class TestFileIO:
 
 class TestAgentResultEnvelope:
     def test_optional_fields_default(self):
-        from strategy_research.kernel.swarm.runtime import AgentResult, AgentStatus
+        from agentnodes.kernel.swarm.runtime import AgentResult, AgentStatus
         r = AgentResult(agent_id="a")
         assert r.summary == ""
         assert r.artifacts == {}
@@ -278,6 +278,6 @@ class TestAgentResultEnvelope:
         assert r.status == AgentStatus.PENDING
 
     def test_awaiting_status_value(self):
-        from strategy_research.kernel.workflow.types import AgentStatus
+        from agentnodes.kernel.workflow.types import AgentStatus
         assert AgentStatus.AWAITING.value == "awaiting"
         assert AgentStatus("awaiting") == AgentStatus.AWAITING

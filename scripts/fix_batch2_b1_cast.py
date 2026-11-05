@@ -10,13 +10,13 @@ import sys
 from pathlib import Path
 
 TARGETS = {
-    "src/strategy_research/core/compute_factor.py",
-    "src/strategy_research/core/alpha_zoo_ops.py",
-    "src/strategy_research/core/data_source/akshare_loader.py",
-    "src/strategy_research/core/tools/data_transforms.py",
-    "src/strategy_research/core/config_runner.py",
-    "src/strategy_research/core/data_source/fred_loader.py",
-    "src/strategy_research/core/portfolio/cli.py",
+    "src/agentnodes/core/compute_factor.py",
+    "src/agentnodes/core/alpha_zoo_ops.py",
+    "src/agentnodes/core/data_source/akshare_loader.py",
+    "src/agentnodes/core/tools/data_transforms.py",
+    "src/agentnodes/core/config_runner.py",
+    "src/agentnodes/core/data_source/fred_loader.py",
+    "src/agentnodes/core/portfolio/cli.py",
 }
 
 SERIES_NAMES = {"Series", "pd.Series"}

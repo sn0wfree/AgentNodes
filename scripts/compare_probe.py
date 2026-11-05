@@ -2,7 +2,7 @@
 from pathlib import Path
 import re
 
-root = Path("src/strategy_research")
+root = Path("src/agentnodes")
 
 print("════ 1. 'harness 可换' —— 我们有没有 runtime 选择层？")
 for rel in ["core/agent/role_factory.py", "core/agent/chat_loop.py", "core/agent/loop_assembly.py"]:

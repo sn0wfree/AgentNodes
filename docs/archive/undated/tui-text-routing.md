@@ -91,8 +91,8 @@ AgentLoop  ── text.started ──▶  ChatApp.route_agent_event
 
 ## Files changed
 
-- `src/strategy_research/cli/tui/app.py` — `route_agent_event` adds 3 branches
-- `src/strategy_research/cli/tui/widgets/transcript.py` — no change to public API
+- `src/agentnodes/cli/tui/app.py` — `route_agent_event` adds 3 branches
+- `src/agentnodes/cli/tui/widgets/transcript.py` — no change to public API
   (existing `begin_streaming` / `update_streaming` / `end_streaming` already sufficient)
 - `tests/test_tui_text_routing.py` — new test file
 
@@ -109,4 +109,4 @@ AgentLoop  ── text.started ──▶  ChatApp.route_agent_event
 - opencode `text.ended` reference: `packages/core/src/session/message-updater.ts:243`
 - opencode `text.started` reference: `packages/core/src/session/message-updater.ts:230`
 - TUI existing `begin_streaming` / `end_streaming`:
-  `src/strategy_research/cli/tui/widgets/transcript.py:371-422`
+  `src/agentnodes/cli/tui/widgets/transcript.py:371-422`

@@ -19,7 +19,7 @@ class TestRolePromptLoading:
     """9 个 role 的 prompt 都能从 templates/.prompts/ 加载 (via PromptBuilderFactory)."""
 
     def test_all_10_roles_have_prompt_files(self):
-        from strategy_research.kernel.agent.prompt_builder import PromptBuilderFactory
+        from agentnodes.kernel.agent.prompt_builder import PromptBuilderFactory
         roles = ["researcher", "data_quality", "factor_analyst", "strategist",
                  "portfolio_construction", "risk_controller", "attribution_analyst",
                  "anti_overfit_analyst", "backtest_diagnostics", "critic"]
@@ -31,15 +31,15 @@ class TestRolePromptLoading:
             assert "# Role:" in prompt, f"{role} prompt missing # Role: header"
 
     def test_unknown_role_returns_empty(self):
-        from strategy_research.kernel.agent.prompt_builder import PromptBuilderFactory
+        from agentnodes.kernel.agent.prompt_builder import PromptBuilderFactory
         assert PromptBuilderFactory.get("nonexistent_role_xyz").build_system_prompt(
             "nonexistent_role_xyz", {}
         ) == ""
 
     def test_prompt_files_match_templates(self):
         """9 个 prompt 文件名与 templates/.prompts/ 对应."""
-        from strategy_research import _TEMPLATES_DIR
-        from strategy_research.kernel.agent.role_factory import _ROLE_PROMPT_FILES
+        from agentnodes import _TEMPLATES_DIR
+        from agentnodes.kernel.agent.role_factory import _ROLE_PROMPT_FILES
         prompts_dir = _TEMPLATES_DIR / ".prompts"
         for role, filename in _ROLE_PROMPT_FILES.items():
             assert (prompts_dir / filename).exists(), f"{filename} missing in {prompts_dir}"
@@ -50,7 +50,7 @@ class TestToolWhitelist:
 
     def test_strategist_has_write_tools(self):
         """strategist 必须能 write_file + run_backtest."""
-        from strategy_research.kernel.agent.role_factory import _get_tool_whitelist
+        from agentnodes.kernel.agent.role_factory import _get_tool_whitelist
         wl = _get_tool_whitelist("strategist")
         assert "write" in wl
         assert "run_backtest" in wl
@@ -58,7 +58,7 @@ class TestToolWhitelist:
 
     def test_data_quality_minimal(self):
         """data_quality 是只读 agent, 包含 read_file + web tools."""
-        from strategy_research.kernel.agent.role_factory import _get_tool_whitelist
+        from agentnodes.kernel.agent.role_factory import _get_tool_whitelist
         wl = _get_tool_whitelist("data_quality")
         assert "read" in wl
         assert "websearch" in wl
@@ -66,15 +66,15 @@ class TestToolWhitelist:
 
     def test_critic_is_readonly(self):
         """critic 不能 write_file."""
-        from strategy_research.kernel.agent.role_factory import _get_tool_whitelist
+        from agentnodes.kernel.agent.role_factory import _get_tool_whitelist
         wl = _get_tool_whitelist("critic")
         assert "write" not in wl
         assert "read" in wl
 
     def test_unknown_role_minimal_default(self):
         """未知 role 退到 minimal 最小集 (fail-safe)."""
-        from strategy_research.kernel.agent.role_factory import _get_tool_whitelist
-        from strategy_research.kernel.agent.toolsets import TOOLSETS
+        from agentnodes.kernel.agent.role_factory import _get_tool_whitelist
+        from agentnodes.kernel.agent.toolsets import TOOLSETS
         assert _get_tool_whitelist("foo_bar_baz") == TOOLSETS["minimal"]
 
 
@@ -89,14 +89,14 @@ class TestShouldUseRealLlm:
         monkeypatch.delenv("STRATEGY_RESEARCH_LLM_PROFILE", raising=False)
         # conftest._isolate_llm_bridge already points the bridge at a
         # disabled fixture, so LLMConfig.load() returns no api_key.
-        from strategy_research.kernel.agent.role_factory import should_use_real_llm
+        from agentnodes.kernel.agent.role_factory import should_use_real_llm
         assert should_use_real_llm() is False
 
     def test_env_var_set_returns_false(self, monkeypatch):
         """AUTORESEARCH_BEHAVIOR=stub → 强制走 stub, 即便有 api key."""
         monkeypatch.setenv("AUTORESEARCH_BEHAVIOR", "static")
         monkeypatch.setenv("OPENAI_API_KEY", "sk-test")
-        from strategy_research.kernel.agent.role_factory import should_use_real_llm
+        from agentnodes.kernel.agent.role_factory import should_use_real_llm
         assert should_use_real_llm() is False
 
     def test_placeholder_api_key_returns_false(self, monkeypatch):
@@ -105,7 +105,7 @@ class TestShouldUseRealLlm:
         monkeypatch.setenv("OPENAI_API_KEY", "your-api-key-here")
         # conftest._isolate_llm_bridge disables the bridge, so the
         # placeholder OPENAI_API_KEY is the only credential source.
-        from strategy_research.kernel.agent.role_factory import should_use_real_llm
+        from agentnodes.kernel.agent.role_factory import should_use_real_llm
         assert should_use_real_llm() is False
 
 
@@ -113,8 +113,8 @@ class TestBuildAgentLoop:
     """build_agent_loop() 构造 AgentLoop 实例."""
 
     def test_returns_agent_loop_with_prompt(self, tmp_path):
-        from strategy_research.kernel.agent.loop import AgentLoop
-        from strategy_research.kernel.agent.role_factory import build_agent_loop
+        from agentnodes.kernel.agent.loop import AgentLoop
+        from agentnodes.kernel.agent.role_factory import build_agent_loop
 
         loop = build_agent_loop(
             role="researcher",
@@ -132,7 +132,7 @@ class TestBuildAgentLoop:
         assert "read" in tool_names
 
     def test_strategist_has_write_tools(self, tmp_path):
-        from strategy_research.kernel.agent.role_factory import build_agent_loop
+        from agentnodes.kernel.agent.role_factory import build_agent_loop
 
         loop = build_agent_loop(
             role="strategist",
@@ -146,7 +146,7 @@ class TestBuildAgentLoop:
         assert "run_backtest" not in tool_names
 
     def test_unknown_role_returns_none(self, tmp_path):
-        from strategy_research.kernel.agent.role_factory import build_agent_loop
+        from agentnodes.kernel.agent.role_factory import build_agent_loop
 
         loop = build_agent_loop(
             role="nonexistent_role_xyz",
@@ -162,7 +162,7 @@ class TestRunAgentViaLlm:
 
     def test_unknown_role_raises(self, tmp_path):
         """未知 role 应抛 RuntimeError."""
-        from strategy_research.kernel.agent.role_factory import run_agent_via_llm
+        from agentnodes.kernel.agent.role_factory import run_agent_via_llm
         with pytest.raises(RuntimeError, match="无法构造 AgentLoop"):
             run_agent_via_llm(
                 role="nonexistent_role_xyz",
@@ -178,8 +178,8 @@ class TestRunAgentViaLlm:
         AgentLoop 执行。所以接缝回到 build_agent_loop —— 这是设计意图，
         不是回退事故。
         """
-        from strategy_research.kernel.agent import role_factory as factory
-        from strategy_research.kernel.agent.loop import LoopResult
+        from agentnodes.kernel.agent import role_factory as factory
+        from agentnodes.kernel.agent.loop import LoopResult
 
         mock_loop = MagicMock()
         mock_loop.run.return_value = LoopResult(
@@ -208,8 +208,8 @@ class TestRunAgentViaLlm:
 
     def test_known_role_with_loop_error_returns_error_json(self, tmp_path):
         """AgentLoop.run() 返回 error → 应序列化成 JSON error."""
-        from strategy_research.kernel.agent import role_factory as factory
-        from strategy_research.kernel.agent.loop import LoopResult
+        from agentnodes.kernel.agent import role_factory as factory
+        from agentnodes.kernel.agent.loop import LoopResult
 
         mock_loop = MagicMock()
         mock_loop.run.return_value = LoopResult(

@@ -18,7 +18,7 @@ import pytest
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
 
-from strategy_research.apps.evolution import (
+from agentnodes.apps.evolution import (
     EVOLUTION_TOOLS,
     EvolutionAgent,
     GenomeProposal,
@@ -26,8 +26,8 @@ from strategy_research.apps.evolution import (
     TierViolation,
     Trajectory,
 )
-from strategy_research.apps.evolution.tools import TOOL_IMPLS
-from strategy_research.kernel.agent.capability import (
+from agentnodes.apps.evolution.tools import TOOL_IMPLS
+from agentnodes.kernel.agent.capability import (
     CapabilityNotFound,
     get_default_registry,
     reset_default_registry,
@@ -81,7 +81,7 @@ def _sources():
 class TestToolKindRegistration:
     def test_all_five_kinds_registered(self):
         """每个工具名都有对应的 evolution.<name> kind。"""
-        import strategy_research.apps  # noqa: F401 —— 触发注册副作用
+        import agentnodes.apps  # noqa: F401 —— 触发注册副作用
 
         reg = get_default_registry()
         missing = [
@@ -91,7 +91,7 @@ class TestToolKindRegistration:
 
     def test_each_kind_resolves_to_the_impl(self):
         """resolve 出来的对象就是 tools 模块里的实现（不是空壳）。"""
-        import strategy_research.apps  # noqa: F401
+        import agentnodes.apps  # noqa: F401
 
         reg = get_default_registry()
         for name in EVOLUTION_TOOLS:

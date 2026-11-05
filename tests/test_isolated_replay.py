@@ -17,7 +17,7 @@ import pytest
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
 
-from strategy_research.apps.evolution import (
+from agentnodes.apps.evolution import (
     GenomeProposal,
     HoldoutSet,
     IsolatedSlotReplay,
@@ -25,8 +25,8 @@ from strategy_research.apps.evolution import (
     Trajectory,
     ValidationGate,
 )
-from strategy_research.kernel.gateway.capacity import CapacityConfig, CapacityGate
-from strategy_research.kernel.orchestration.genome_version import GenomeVersionStore
+from agentnodes.kernel.gateway.capacity import CapacityConfig, CapacityGate
+from agentnodes.kernel.orchestration.genome_version import GenomeVersionStore
 
 
 def _holdout(n: int = 2) -> HoldoutSet:

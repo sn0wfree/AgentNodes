@@ -12,7 +12,7 @@ import pytest
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
 
-from strategy_research.foundation.storage.blob_schema import (
+from agentnodes.foundation.storage.blob_schema import (
     ensure_blob_refs_schema,
     list_stale_blobs,
     record_blob_offload,

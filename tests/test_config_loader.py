@@ -9,7 +9,7 @@ from tempfile import TemporaryDirectory
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
 
-from strategy_research.foundation.config_loader import (
+from agentnodes.foundation.config_loader import (
     ConfigBuilder,
     known_keys_filter,
     load_layered_config,

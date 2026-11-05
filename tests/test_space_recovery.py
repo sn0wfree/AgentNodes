@@ -14,17 +14,17 @@ from __future__ import annotations
 
 import pytest
 
-from strategy_research.foundation.llm.parser import (
+from agentnodes.foundation.llm.parser import (
     _chunk_from_dict,
     parse_stream_chunk,
 )
-from strategy_research.foundation.llm.provider import (
+from agentnodes.foundation.llm.provider import (
     DeepSeekAdapter,
     MiniMaxAdapter,
     OpenAIAdapter,
     SiliconFlowAdapter,
 )
-from strategy_research.foundation.llm.provider._dsml_patterns import strip_dsml_text
+from agentnodes.foundation.llm.provider._dsml_patterns import strip_dsml_text
 
 # ── BPE chunk boundary: the core regression ─────────────────────────
 

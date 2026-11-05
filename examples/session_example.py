@@ -3,9 +3,9 @@
 
 import tempfile
 from pathlib import Path
-from strategy_research.core.hooks import AgentHook, CompositeHook, AgentHookContext
-from strategy_research.core.memory import PersistentMemory
-from strategy_research.core.session import SessionDB, SessionManager, RateLimiter, MetricsLogger
+from agentnodes.core.hooks import AgentHook, CompositeHook, AgentHookContext
+from agentnodes.core.memory import PersistentMemory
+from agentnodes.core.session import SessionDB, SessionManager, RateLimiter, MetricsLogger
 
 
 # ============================================================

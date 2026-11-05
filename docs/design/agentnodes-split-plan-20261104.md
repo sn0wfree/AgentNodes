@@ -150,11 +150,11 @@ git push origin "+refs/heads/*:refs/heads/*" "+refs/tags/*:refs/tags/*"
 ### 阶段 2 · AgentNodes 侧减法（删业务）
 
 在 AgentNodes 仓库上：
-1. `git rm -r src/strategy_research/apps`（609 文件 / 62,311 行）
-2. `git rm -r src/strategy_research/templates`（业务模板）
+1. `git rm -r src/agentnodes/apps`（609 文件 / 62,311 行）
+2. `git rm -r src/agentnodes/templates`（业务模板）
 3. 删业务专属的 interfaces 文件（路由/命令）
 4. 删 `tests/` 里业务专属的测试
-5. **包名重命名**：`strategy_research` → `agentnodes`
+5. **包名重命名**：`agentnodes` → `agentnodes`
    （`src/agentnodes/` + `pyproject.toml` 的 `[project] name` + entry points）
 6. 改 `docs/` 里指向业务的部分（保留架构文档，删业务设计文档）
 
@@ -174,10 +174,10 @@ git push origin "+refs/heads/*:refs/heads/*" "+refs/tags/*:refs/tags/*"
 ### 阶段 4 · quantnodes 侧减法（删 agent）
 
 在 quantnodes 仓库上：
-1. `git rm -r src/strategy_research/{kernel,foundation}`
+1. `git rm -r src/agentnodes/{kernel,foundation}`
 2. `git rm` agent 专属的 interfaces 文件
 3. `pyproject.toml` 改为依赖 `agentnodes`（PyPI 或 git URL）
-4. 改所有 `strategy_research.kernel.*` / `strategy_research.foundation.*` import
+4. 改所有 `agentnodes.kernel.*` / `agentnodes.foundation.*` import
    → `agentnodes.kernel.*` / `agentnodes.foundation.*`
 
 ### 阶段 5 · 验证与门禁迁移
@@ -266,7 +266,7 @@ MCP server 同时注册 agent 通用工具和业务工具。拆分时需要：
 阶段 3  断 40 条上行依赖（能力注入 / 移出 builtin_tools）
         验证：AgentNodes 侧零 apps 引用
    ↓
-阶段 4  AgentNodes 包名重命名 strategy_research → agentnodes
+阶段 4  AgentNodes 包名重命名 agentnodes → agentnodes
         验证：pip install -e . 后 import 正常
    ↓
 阶段 5  quantnodes 侧减法 + 改为依赖 agentnodes

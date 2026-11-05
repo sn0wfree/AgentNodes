@@ -7,7 +7,7 @@ from pathlib import Path
 import pytest
 from rich.console import Console
 
-from strategy_research.interfaces.cli.commands.slash_memory import (
+from agentnodes.interfaces.cli.commands.slash_memory import (
     cmd_forget,
     cmd_list,
     cmd_search,
@@ -27,7 +27,7 @@ def populated_memory(tmp_path: Path, monkeypatch):
     monkeypatch.setenv("STRATEGY_RESEARCH_MEMORY_DIR", str(tmp_path))
     store = None
     try:
-        from strategy_research.kernel.memory.persistent import PersistentMemory
+        from agentnodes.kernel.memory.persistent import PersistentMemory
         store = PersistentMemory(memory_dir=tmp_path)
         store.add(name="alpha_rule", content="Use t-stat for factor selection", memory_type="project")
         store.add(name="beta_rule", content="Risk cap 2% per trade", memory_type="feedback")

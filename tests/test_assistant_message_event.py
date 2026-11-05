@@ -15,9 +15,9 @@ import tempfile
 from pathlib import Path
 from typing import Any
 
-from strategy_research.kernel.agent.builtin_tools import build_default_registry
-from strategy_research.kernel.agent.loop import AgentLoop
-from strategy_research.foundation.llm import LLMConfig, LLMResponse, ToolCall
+from agentnodes.kernel.agent.builtin_tools import build_default_registry
+from agentnodes.kernel.agent.loop import AgentLoop
+from agentnodes.foundation.llm import LLMConfig, LLMResponse, ToolCall
 
 # ---------------------------------------------------------------- helpers
 
@@ -179,7 +179,7 @@ class TestNoRedundantDone:
         """Verify the canonical Done. marker source: route_agent_event iter_end."""
         import inspect
 
-        from strategy_research.interfaces.cli.tui.app import ResearchApp
+        from agentnodes.interfaces.cli.tui.app import ResearchApp
 
         src = inspect.getsource(ResearchApp.route_agent_event)
         # iter_end branch should call tv.append_done()

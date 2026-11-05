@@ -10,7 +10,7 @@ from fastapi.testclient import TestClient
 
 @pytest.fixture
 def client():
-    from strategy_research.interfaces.api.app import create_app
+    from agentnodes.interfaces.api.app import create_app
 
     app = create_app(workspace_path=None)
     return TestClient(app)
@@ -29,7 +29,7 @@ def auth_headers(client):
 
 def _make_llm_config(provider="minimax", model="minimax-M3", **overrides):
     """Build a mock LLMConfig for patching."""
-    from strategy_research.foundation.llm.config import LLMConfig
+    from agentnodes.foundation.llm.config import LLMConfig
 
     # Build directly to avoid the bridge layer
     defaults = dict(
@@ -52,10 +52,10 @@ def test_info_includes_model_info_when_llm_configured(client):
     }
     cfg = _make_llm_config(provider="minimax", model="minimax-M3")
     with patch(
-        "strategy_research.interfaces.cli.llm_config_check.check_llm_config",
+        "agentnodes.interfaces.cli.llm_config_check.check_llm_config",
         return_value=fake_llm,
     ), patch(
-        "strategy_research.foundation.llm.config.LLMConfig.load",
+        "agentnodes.foundation.llm.config.LLMConfig.load",
         return_value=cfg,
     ):
         resp = client.get("/api/system/info")
@@ -79,10 +79,10 @@ def test_info_model_info_none_when_unconfigured(client):
     }
     cfg = _make_llm_config(provider="auto", model="unknown")
     with patch(
-        "strategy_research.interfaces.cli.llm_config_check.check_llm_config",
+        "agentnodes.interfaces.cli.llm_config_check.check_llm_config",
         return_value=fake_llm,
     ), patch(
-        "strategy_research.foundation.llm.config.LLMConfig.load",
+        "agentnodes.foundation.llm.config.LLMConfig.load",
         return_value=cfg,
     ):
         resp = client.get("/api/system/info")
@@ -92,7 +92,7 @@ def test_info_model_info_none_when_unconfigured(client):
 
 def test_info_respects_user_config_override(client):
     """User-configured model_context_tokens appears in model_info."""
-    from strategy_research.foundation.llm.config import LLMConfig
+    from agentnodes.foundation.llm.config import LLMConfig
 
     fake_llm = {
         "configured": True,
@@ -106,10 +106,10 @@ def test_info_respects_user_config_override(client):
         model_context_tokens=2_500_000,
     )
     with patch(
-        "strategy_research.interfaces.cli.llm_config_check.check_llm_config",
+        "agentnodes.interfaces.cli.llm_config_check.check_llm_config",
         return_value=fake_llm,
     ), patch(
-        "strategy_research.foundation.llm.config.LLMConfig.load",
+        "agentnodes.foundation.llm.config.LLMConfig.load",
         return_value=cfg,
     ):
         resp = client.get("/api/system/info")
@@ -130,10 +130,10 @@ def test_refresh_endpoint_returns_model_info(client, auth_headers):
     }
     cfg = _make_llm_config(provider="openai", model="gpt-4o-mini")
     with patch(
-        "strategy_research.interfaces.cli.llm_config_check.check_llm_config",
+        "agentnodes.interfaces.cli.llm_config_check.check_llm_config",
         return_value=fake_llm,
     ), patch(
-        "strategy_research.foundation.llm.config.LLMConfig.load",
+        "agentnodes.foundation.llm.config.LLMConfig.load",
         return_value=cfg,
     ):
         resp = client.post(
@@ -158,10 +158,10 @@ def test_refresh_endpoint_uses_current_config_when_no_body(client, auth_headers)
     }
     cfg = _make_llm_config(provider="minimax", model="minimax-M3")
     with patch(
-        "strategy_research.interfaces.cli.llm_config_check.check_llm_config",
+        "agentnodes.interfaces.cli.llm_config_check.check_llm_config",
         return_value=fake_llm,
     ), patch(
-        "strategy_research.foundation.llm.config.LLMConfig.load",
+        "agentnodes.foundation.llm.config.LLMConfig.load",
         return_value=cfg,
     ):
         resp = client.post("/api/system/model-info/refresh", headers=auth_headers, json={})
@@ -180,10 +180,10 @@ def test_refresh_endpoint_400_when_no_llm(client, auth_headers):
     }
     cfg = _make_llm_config(provider="auto", model="unknown")
     with patch(
-        "strategy_research.interfaces.cli.llm_config_check.check_llm_config",
+        "agentnodes.interfaces.cli.llm_config_check.check_llm_config",
         return_value=fake_llm,
     ), patch(
-        "strategy_research.foundation.llm.config.LLMConfig.load",
+        "agentnodes.foundation.llm.config.LLMConfig.load",
         return_value=cfg,
     ):
         resp = client.post("/api/system/model-info/refresh", headers=auth_headers, json={})

@@ -7,9 +7,9 @@ from pathlib import Path
 
 import pytest
 
-from strategy_research.kernel.workflow.builtin import load_definition
-from strategy_research.kernel.workflow.executor import WorkflowRunner
-from strategy_research.kernel.workflow.store import WorkflowStore
+from agentnodes.kernel.workflow.builtin import load_definition
+from agentnodes.kernel.workflow.executor import WorkflowRunner
+from agentnodes.kernel.workflow.store import WorkflowStore
 
 # Pin all tests in this file to the same xdist worker.
 # The workflow module's import path + JSON template reads cause
@@ -257,7 +257,7 @@ class TestApprovalFlow:
 
 class TestStaticFlow:
     def test_alpha_research_runs_through(self, tmp_path: Path):
-        from strategy_research.kernel.workflow.node_types import NodeExecutors
+        from agentnodes.kernel.workflow.node_types import NodeExecutors
         NodeExecutors.reset()
         NodeExecutors.register("run_backtest", lambda **kw: {"summary": "回测完成", "sharpe": 0.9})
         NodeExecutors.register("check_data", lambda **kw: {"summary": "数据 OK"})
@@ -271,7 +271,7 @@ class TestStaticFlow:
         assert "evaluator" in runner.pre_completed
 
     def test_data_quality_audit(self, tmp_path: Path):
-        from strategy_research.kernel.workflow.node_types import NodeExecutors
+        from agentnodes.kernel.workflow.node_types import NodeExecutors
         NodeExecutors.reset()
         NodeExecutors.register("check_data", lambda **kw: {"summary": "数据 OK"})
         runner = make_runner("data_quality_audit", tmp_path,

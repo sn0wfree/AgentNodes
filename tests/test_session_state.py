@@ -15,8 +15,8 @@ from __future__ import annotations
 import pytest
 from fastapi.testclient import TestClient
 
-from strategy_research.interfaces.api.app import create_app
-from strategy_research.interfaces.api.auth_tokens import create_token
+from agentnodes.interfaces.api.app import create_app
+from agentnodes.interfaces.api.auth_tokens import create_token
 
 
 @pytest.fixture
@@ -89,7 +89,7 @@ class _FakeRunner:
 
 def test_shape_agents_empty_without_workflow():
     """No workflow → no agents."""
-    from strategy_research.interfaces.api.routers.web_session import (
+    from agentnodes.interfaces.api.routers.web_session import (
         _shape_agents_for_frontend,
     )
 

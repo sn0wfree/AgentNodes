@@ -14,8 +14,8 @@ from pathlib import Path
 
 import pytest
 
-from strategy_research.kernel.scheduled_research import cli
-from strategy_research.kernel.scheduled_research.cli import (
+from agentnodes.kernel.scheduled_research import cli
+from agentnodes.kernel.scheduled_research.cli import (
     _parse_metric_targets,
     cmd_schedule_cancel,
     cmd_schedule_create,
@@ -23,7 +23,7 @@ from strategy_research.kernel.scheduled_research.cli import (
     cmd_schedule_list,
     cmd_schedule_show,
 )
-from strategy_research.kernel.scheduled_research.store import ScheduledResearchStore
+from agentnodes.kernel.scheduled_research.store import ScheduledResearchStore
 
 
 @pytest.fixture

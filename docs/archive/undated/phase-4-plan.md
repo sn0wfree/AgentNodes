@@ -398,7 +398,7 @@ async def start(self, objective: str) -> str:
 ### 6.1 新增 YAML
 
 ```
-src/strategy_research/core/swarm/presets/
+src/agentnodes/core/swarm/presets/
   goal_market_analysis.yaml        # 3 agents
   goal_risk_assessment.yaml        # 4 agents
   goal_strategy_review.yaml        # 5 agents
@@ -458,10 +458,10 @@ dag:
 ```python
 """演示：自定义 goal workflow 端到端跑通。"""
 import asyncio
-from strategy_research.core.goal.workflow_config import load_goal_workflow
-from strategy_research.core.goal.workflow import GoalWorkflowRunner
-from strategy_research.core.goal.store import GoalStore
-from strategy_research.core.goal.event_bus import CollectingObserver
+from agentnodes.core.goal.workflow_config import load_goal_workflow
+from agentnodes.core.goal.workflow import GoalWorkflowRunner
+from agentnodes.core.goal.store import GoalStore
+from agentnodes.core.goal.event_bus import CollectingObserver
 
 async def main():
     config = load_goal_workflow("goal_market_analysis")

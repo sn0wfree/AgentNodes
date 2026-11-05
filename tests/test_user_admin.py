@@ -12,15 +12,15 @@ import os
 import pytest
 from fastapi.testclient import TestClient
 
-from strategy_research.interfaces.api.app import create_app
-from strategy_research.interfaces.api.auth_tokens import create_token
+from agentnodes.interfaces.api.app import create_app
+from agentnodes.interfaces.api.auth_tokens import create_token
 
 
 @pytest.fixture
 def client(tmp_path, monkeypatch):
     """Isolated user DB under tmp_path; low-cost password hashing."""
-    import strategy_research.interfaces.api.user_db as user_db
-    from strategy_research.interfaces.api.routers import auth as auth_router
+    import agentnodes.interfaces.api.user_db as user_db
+    from agentnodes.interfaces.api.routers import auth as auth_router
 
     # Fast tests: shrink PBKDF2 iterations.
     monkeypatch.setattr(auth_router, "_DEFAULT_ITERATIONS", 1000)

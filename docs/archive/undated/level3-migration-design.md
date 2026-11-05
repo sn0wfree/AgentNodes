@@ -112,20 +112,20 @@ Sessions with tools: 3 / 68
 ### 2.2 受影响文件
 
 **Backend 生产代码**（14 个文件，~6611 LOC）：
-- `src/strategy_research/api/session/service.py` (1217)
-- `src/strategy_research/api/session/store.py` (257)
-- `src/strategy_research/api/session/models.py` (211)
-- `src/strategy_research/api/session/events.py` (239)
-- `src/strategy_research/api/routers/chat.py` (985)
-- `src/strategy_research/api/routers/web_session.py` (763)
-- `src/strategy_research/api/sse_buffer.py` (145)
-- `src/strategy_research/core/agent/loop.py` (1475)
-- `src/strategy_research/core/agent/compact.py` (674)
-- `src/strategy_research/core/agent/to_llm_message.py` (179)
-- `src/strategy_research/core/agent/compaction_message.py` (219)
-- `src/strategy_research/core/agent/context.py` (247)
-- `src/strategy_research/core/workflow/worker.py` (~150)
-- `src/strategy_research/cli/components/chat_log.py` (~80)
+- `src/agentnodes/api/session/service.py` (1217)
+- `src/agentnodes/api/session/store.py` (257)
+- `src/agentnodes/api/session/models.py` (211)
+- `src/agentnodes/api/session/events.py` (239)
+- `src/agentnodes/api/routers/chat.py` (985)
+- `src/agentnodes/api/routers/web_session.py` (763)
+- `src/agentnodes/api/sse_buffer.py` (145)
+- `src/agentnodes/core/agent/loop.py` (1475)
+- `src/agentnodes/core/agent/compact.py` (674)
+- `src/agentnodes/core/agent/to_llm_message.py` (179)
+- `src/agentnodes/core/agent/compaction_message.py` (219)
+- `src/agentnodes/core/agent/context.py` (247)
+- `src/agentnodes/core/workflow/worker.py` (~150)
+- `src/agentnodes/cli/components/chat_log.py` (~80)
 
 **Backend 测试**（33 个文件）：
 - test_agent_loop, test_compact_*, test_tool_message_storage, test_history_compaction_filter, test_to_llm_message, test_compaction_message, test_compact_tool_pairs, test_agent_loop_extensions, test_compact_serialization, test_compact_full_pipeline, test_db_migration 等
@@ -144,7 +144,7 @@ Sessions with tools: 3 / 68
 ### 2.3 现有 git 集成（revert 的基础）
 
 ```python
-# src/strategy_research/core/git.py (85 lines)
+# src/agentnodes/core/git.py (85 lines)
 def git_commit(workspace_path, message) -> bool: ...  # 用于 backtest 提交
 def git_commit_rich(workspace_path, strategy_name, run_name, status, metrics, ...): ...
 def git_reset(workspace_path) -> bool: ...  # 硬重置到 HEAD~1
@@ -174,7 +174,7 @@ def git_get_hash(workspace_path) -> str: ...
 
 ### 4.2 实现
 
-**文件**：`src/strategy_research/api/session/service.py` `_convert_messages_to_history`
+**文件**：`src/agentnodes/api/session/service.py` `_convert_messages_to_history`
 
 ```python
 # 第一遍：建 tool_call_id → assistant 索引
@@ -263,7 +263,7 @@ conn.execute(
 )
 ```
 
-**Seq 生成器**（`src/strategy_research/core/seq_generator.py`，新建 ~40 行）：
+**Seq 生成器**（`src/agentnodes/core/seq_generator.py`，新建 ~40 行）：
 ```python
 class SeqGenerator:
     """Process-local monotonic seq counter per session_id."""
@@ -577,7 +577,7 @@ CREATE INDEX idx_event_log_type ON event_log(type, time_created);
 ### 7.3 事件类型
 
 ```python
-# src/strategy_research/api/session/event_v2.py
+# src/agentnodes/api/session/event_v2.py
 class EventV2:
     """所有事件类型（discriminated union）"""
     MessageReceived = "message_received"          # 用户消息已持久化
@@ -825,10 +825,10 @@ git reset --hard <previous-commit-sha>  # 慎用
 
 ```bash
 # Level 2 之前：备份 DB
-cp /home/ll/Public/qn-research/quantnodes_strategy_research_user.db /tmp/backup.db
+cp /home/ll/Public/qn-research/quantnodes_agentnodes_user.db /tmp/backup.db
 
 # 灾难回滚
-cp /tmp/backup.db /home/ll/Public/qn-research/quantnodes_strategy_research_user.db
+cp /tmp/backup.db /home/ll/Public/qn-research/quantnodes_agentnodes_user.db
 git revert --no-commit HEAD~N..HEAD
 ```
 
@@ -927,7 +927,7 @@ git revert --no-commit HEAD~N..HEAD
 
 ### 14.2 受影响 schema
 
-**当前 messages 表**（src/strategy_research/api/routers/web_session.py:83-110）：
+**当前 messages 表**（src/agentnodes/api/routers/web_session.py:83-110）：
 ```sql
 CREATE TABLE messages (
   id TEXT PRIMARY KEY,

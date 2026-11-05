@@ -14,10 +14,10 @@ docs/design/layered-skeleton-design-20261103.md 与迁移计划。
 ------
 1. ``git mv`` 按 MOVES 表搬目录/文件
 2. AST 改写 ``src/`` + ``tests/`` 下每个 .py 的 import：
-   - 绝对导入 ``strategy_research.core.<moved>`` → ``strategy_research.<layer>.<moved>``
+   - 绝对导入 ``agentnodes.core.<moved>`` → ``agentnodes.<layer>.<moved>``
    - 相对导入：解析为绝对；跨层则改写为绝对新路径，包内则保留原样
      （同一层内移动时目录深度不变，相对导入仍然有效）
-   - 字符串字面量 ``"strategy_research.core.X"`` 同规则替换
+   - 字符串字面量 ``"agentnodes.core.X"`` 同规则替换
      （覆盖 monkeypatch / uvicorn target / importlib / __import__）
 3. 报告每个文件的改写条数；``--verify`` 输出残留旧前缀并以非零码退出
 
@@ -40,8 +40,8 @@ import sys
 from pathlib import Path
 
 REPO = Path(__file__).resolve().parents[1]
-SRC = REPO / "src" / "strategy_research"
-PKG = "strategy_research"
+SRC = REPO / "src" / "agentnodes"
+PKG = "agentnodes"
 
 # ── 层成员表：完整前缀 → 层（唯一事实源，与 test_layer_matrix 对齐）──
 LAYER_OF: dict[str, str] = {}
@@ -99,7 +99,7 @@ def build_prefix_map(batch: str) -> dict[str, str]:
     """旧点号前缀 → 新点号前缀，按长度降序（保证最长匹配优先）。
 
     同时生成两套 key：裸前缀（``core.agent``）与完整包前缀
-    （``strategy_research.core.agent``）——AST 的 ``node.module`` 与代码里的
+    （``agentnodes.core.agent``）——AST 的 ``node.module`` 与代码里的
     字符串字面量用的都是后者，而搬迁目录表用的是前者。
 
     注意：裸 key 只在**整段匹配**时生效（``full == old`` 或
@@ -121,7 +121,7 @@ def build_prefix_map(batch: str) -> dict[str, str]:
 
 
 def build_dir_map(batch: str) -> dict[str, str]:
-    """旧目录（相对 strategy_research）→ 新目录。"""
+    """旧目录（相对 agentnodes）→ 新目录。"""
     out: dict[str, str] = {}
     for entry in BATCH_MAP[batch]:
         tail = entry[len("core/"):]
@@ -177,7 +177,7 @@ IMPORT_RE = re.compile(
 def _rewrite_dotted(text: str, prefix_map: dict[str, str]) -> tuple[str, int]:
     """替换点号模块前缀（用于字符串字面量）。
 
-    只匹配 ``strategy_research.`` 开头的整词，因此 prefix_map 里的裸 key
+    只匹配 ``agentnodes.`` 开头的整词，因此 prefix_map 里的裸 key
     （``api`` / ``core.agent``）不会误伤普通英文词。
     """
     count = 0
@@ -214,7 +214,7 @@ def rewrite_file(path: Path, prefix_map: dict[str, str], dry_run: bool) -> tuple
     n_import = 0
 
     rel_parts = path.relative_to(REPO).as_posix()
-    in_src = rel_parts.startswith("src/strategy_research/")
+    in_src = rel_parts.startswith("src/agentnodes/")
     in_tests = rel_parts.startswith("tests/")
 
     for node in ast.walk(tree):
@@ -259,7 +259,7 @@ def rewrite_file(path: Path, prefix_map: dict[str, str], dry_run: bool) -> tuple
                     break
 
     if not edits and not any(
-        True for _ in re.finditer(r"strategy_research\.", original)
+        True for _ in re.finditer(r"agentnodes\.", original)
     ):
         return 0, 0
 
@@ -324,8 +324,8 @@ def do_rewrite(batch: str, dry_run: bool) -> None:
 
 # ── 阶段 3：残留检查 ────────────────────────────────────────────────
 def do_verify() -> int:
-    """全库扫描，任何 strategy_research.core.* 残留即失败。"""
-    pat = re.compile(r"strategy_research\.core\.")
+    """全库扫描，任何 agentnodes.core.* 残留即失败。"""
+    pat = re.compile(r"agentnodes\.core\.")
     hits: list[str] = []
     for root in (SRC, REPO / "tests", REPO / "scripts", REPO / "evals", REPO / "examples"):
         if not root.exists():
@@ -352,7 +352,7 @@ def do_verify() -> int:
             continue
         text = cfg.read_text(encoding="utf-8")
         for lineno, line in enumerate(text.splitlines(), 1):
-            if "strategy_research.core" in line or "core/" in line:
+            if "agentnodes.core" in line or "core/" in line:
                 hits.append(f"{cfg.name}:{lineno}: {line.strip()[:100]}")
 
     if hits:
@@ -360,7 +360,7 @@ def do_verify() -> int:
         for h in hits:
             print("  " + h)
         return 1
-    print("VERIFY OK — no residual strategy_research.core references")
+    print("VERIFY OK — no residual agentnodes.core references")
     return 0
 
 

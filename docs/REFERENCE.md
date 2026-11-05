@@ -89,7 +89,7 @@ echo "" | quantnodes-research      → argparse help（无 TTY 不进 TUI）
 ## 3. Swarm preset（37 个）
 
 `quantnodes-research swarm run <name> --workspace <path> --task "<描述>"`
-定义在 `src/strategy_research/kernel/swarm/presets/*.yaml`（YAML DAG：节点 + 依赖 + 工具白名单）。
+定义在 `src/agentnodes/kernel/swarm/presets/*.yaml`（YAML DAG：节点 + 依赖 + 工具白名单）。
 
 | 类别 | preset |
 |---|---|
@@ -110,7 +110,7 @@ echo "" | quantnodes-research      → argparse help（无 TTY 不进 TUI）
 
 ## 4. 能力注册（22 kind，2026-11-05 实测）
 
-`src/strategy_research/apps/capabilities.py` 的 `CAPABILITIES` 表。kernel 通过
+`src/agentnodes/apps/capabilities.py` 的 `CAPABILITIES` 表。kernel 通过
 `resolve(kind)` 取实现，不 import apps。
 
 | 域 | kind | 移除批次 |
@@ -200,7 +200,7 @@ echo "" | quantnodes-research      → argparse help（无 TTY 不进 TUI）
 
 ## 7. 包内模板
 
-`src/strategy_research/templates/`（随包分发，`smart_init_workspace_templates` 复制到工作区）：
+`src/agentnodes/templates/`（随包分发，`smart_init_workspace_templates` 复制到工作区）：
 
 | 路径 | 内容 |
 |---|---|

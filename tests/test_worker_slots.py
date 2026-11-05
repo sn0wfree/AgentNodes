@@ -17,7 +17,7 @@ import pytest
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
 
-from strategy_research.kernel.gateway.worker_slots import (
+from agentnodes.kernel.gateway.worker_slots import (
     HOLD_STATUSES,
     RELEASE_STATUSES,
     WorkerSlotManager,
@@ -131,7 +131,7 @@ class TestSinkContract:
 
 class TestGatewayIntegration:
     def _gateway(self, **kw):
-        from strategy_research.kernel.gateway.gateway import Gateway
+        from agentnodes.kernel.gateway.gateway import Gateway
 
         class _Client:
             def chat(self, messages, **k):
@@ -185,11 +185,11 @@ class TestGatewayIntegration:
 
     def test_gateway_does_not_import_ticket_store(self):
         """§2.8：Gateway 只订阅事件，不读 Ticket 表（H1）。"""
-        import strategy_research.kernel.gateway.gateway as m
+        import agentnodes.kernel.gateway.gateway as m
 
         src = Path(m.__file__).read_text(encoding="utf-8")
         bad = [
             ln for ln in src.splitlines()
-            if ln.strip().startswith(("from strategy_research.apps", "import strategy_research.apps"))
+            if ln.strip().startswith(("from agentnodes.apps", "import agentnodes.apps"))
         ]
         assert bad == [], f"gateway.py 出现了 apps import: {bad}"

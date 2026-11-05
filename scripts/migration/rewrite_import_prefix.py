@@ -2,8 +2,8 @@
 """rewrite_import_prefix — 包搬迁的全库前缀改写（文本级，三种形态）。
 
 把对旧模块路径的引用改写为新路径，一次命中三种形态：
-  1. module-form    `from strategy_research.core.X import y` / lazy import / 字符串字面量
-  2. pkg-import-form `from strategy_research.core import X as y`
+  1. module-form    `from agentnodes.core.X import y` / lazy import / 字符串字面量
+  2. pkg-import-form `from agentnodes.core import X as y`
   3. path-form      docstring/注释/豁免表里的 `core/X.py` 路径键
 
 边界（历史教训，2026-11-03 v1 大爆炸失败即源于越界）：
@@ -15,11 +15,11 @@
 
 用法（每步迁移协议 §1.2 第 4 步）：
     python scripts/migration/rewrite_import_prefix.py \
-        strategy_research.core.tools strategy_research.apps.tools [file...]
+        agentnodes.core.tools agentnodes.apps.tools [file...]
 
 配套（同一协议内，顺序执行）：
     fix_relative_imports.py <tail> <new_full_module>   # 解析级相对导入
-    python -m compileall -q src/strategy_research tests -x attic
+    python -m compileall -q src/agentnodes tests -x attic
     python scripts/arch/check_dangling_imports.py       # 零悬空才准 commit
 
 命名规范见 scripts/README.md（migration/ = 动词开头，搬迁 step 协议用）。

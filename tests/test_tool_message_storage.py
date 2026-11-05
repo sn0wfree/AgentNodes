@@ -8,8 +8,8 @@ Verifies:
 """
 from __future__ import annotations
 
-from strategy_research.interfaces.api.session.models import Message
-from strategy_research.interfaces.api.session.service import SessionService
+from agentnodes.interfaces.api.session.models import Message
+from agentnodes.interfaces.api.session.service import SessionService
 
 
 def _make_msg(role, content, **kwargs):

@@ -18,8 +18,8 @@ import pytest
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
 
-from strategy_research.kernel.agent.role_factory import build_agent_loop
-from strategy_research.kernel.agent.strategy import LoopStrategy
+from agentnodes.kernel.agent.role_factory import build_agent_loop
+from agentnodes.kernel.agent.strategy import LoopStrategy
 
 
 class TestBuildAgentLoopLoopStrategy:
@@ -68,7 +68,7 @@ class TestBuildAgentLoopLoopStrategy:
 
     def test_loop_strategy_instance(self, tmp_path):
         """Passing a LoopStrategy instance directly."""
-        from strategy_research.kernel.agent.strategy import create_strategy
+        from agentnodes.kernel.agent.strategy import create_strategy
 
         custom = create_strategy("minimal")
         loop = build_agent_loop(
@@ -86,11 +86,11 @@ class TestRunAgentViaLlmLoopStrategy:
         """run_agent_via_llm passes loop_strategy to build_agent_loop."""
         # We can't actually run the LLM, but we can verify the strategy
         # is correctly resolved by mocking LLMConfig.load and the prompt.
-        from strategy_research.kernel.agent.role_factory import build_agent_loop
+        from agentnodes.kernel.agent.role_factory import build_agent_loop
 
         # Mock PromptBuilderFactory to always return a prompt
-        import strategy_research.kernel.agent.role_factory as rf
-        from strategy_research.kernel.agent.prompt_builder import PromptBuilderFactory
+        import agentnodes.kernel.agent.role_factory as rf
+        from agentnodes.kernel.agent.prompt_builder import PromptBuilderFactory
 
         class _FakePromptBuilder:
             def build_system_prompt(self, role, data):

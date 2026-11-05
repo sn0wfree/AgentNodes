@@ -15,23 +15,23 @@ import pytest
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
 
-import strategy_research.apps  # noqa: F401,E402 —— 触发能力注册
-from strategy_research.foundation.compact_config import CompactConfig
-from strategy_research.kernel.agent.harness_resolver import (  # noqa: E402
+import agentnodes.apps  # noqa: F401,E402 —— 触发能力注册
+from agentnodes.foundation.compact_config import CompactConfig
+from agentnodes.kernel.agent.harness_resolver import (  # noqa: E402
     apply_compaction_overrides,
     apply_skill_set,
     apply_tool_set,
     assemble,
     resolve_harness,
 )
-from strategy_research.kernel.agent.prompt_builder import (  # noqa: E402
+from agentnodes.kernel.agent.prompt_builder import (  # noqa: E402
     PromptBuilderFactory,
 )
-from strategy_research.kernel.orchestration.genome_runtime import (  # noqa: E402
+from agentnodes.kernel.orchestration.genome_runtime import (  # noqa: E402
     reset_active_genome,
     set_active_genome,
 )
-from strategy_research.kernel.orchestration.genome_version import (  # noqa: E402
+from agentnodes.kernel.orchestration.genome_version import (  # noqa: E402
     GenomeVersionStore,
 )
 

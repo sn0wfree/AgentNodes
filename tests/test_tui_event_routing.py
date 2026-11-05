@@ -11,7 +11,7 @@ from unittest import mock
 
 import pytest
 
-from strategy_research.interfaces.cli.tui.app import ResearchApp
+from agentnodes.interfaces.cli.tui.app import ResearchApp
 
 
 @pytest.fixture(autouse=True)
@@ -180,7 +180,7 @@ class TestRouteAgentEvent:
 class TestUpdateStreamingDelta:
     def test_starts_streaming_if_idle(self):
         """First delta after no active session begins a new streaming line."""
-        from strategy_research.interfaces.cli.tui.widgets.transcript import TranscriptView
+        from agentnodes.interfaces.cli.tui.widgets.transcript import TranscriptView
 
         app = ResearchApp(skip_resume=True)
         tv = mock.MagicMock(spec=TranscriptView)
@@ -199,7 +199,7 @@ class TestUpdateStreamingDelta:
 
     def test_appends_to_existing_streamer(self):
         """Subsequent deltas append to the active streamer."""
-        from strategy_research.interfaces.cli.tui.widgets.streaming_text import StreamingText
+        from agentnodes.interfaces.cli.tui.widgets.streaming_text import StreamingText
 
         app = ResearchApp(skip_resume=True)
         tv = mock.MagicMock()

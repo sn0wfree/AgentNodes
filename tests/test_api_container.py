@@ -14,7 +14,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
 class TestBuildContainer(unittest.TestCase):
 
     def test_basic_build(self):
-        from strategy_research.interfaces.api.container import build_container, close_container
+        from agentnodes.interfaces.api.container import build_container, close_container
 
         with TemporaryDirectory() as tmpdir:
             db_path = Path(tmpdir) / "test.db"
@@ -35,7 +35,7 @@ class TestBuildContainer(unittest.TestCase):
 
     def test_services_wired_correctly(self):
         """Services share the same EventStore instance."""
-        from strategy_research.interfaces.api.container import build_container, close_container
+        from agentnodes.interfaces.api.container import build_container, close_container
 
         with TemporaryDirectory() as tmpdir:
             container = build_container(
@@ -52,7 +52,7 @@ class TestBuildContainer(unittest.TestCase):
 
     def test_default_db_path(self):
         """When db_path is not given, use the unified session DB resolver."""
-        from strategy_research.interfaces.api.container import build_container, close_container
+        from agentnodes.interfaces.api.container import build_container, close_container
 
         with TemporaryDirectory() as tmpdir:
             import os
@@ -63,7 +63,7 @@ class TestBuildContainer(unittest.TestCase):
                 container = build_container()
                 self.assertEqual(
                     container.db_path,
-                    (Path(tmpdir) / ".quantnodes_strategy_research_session.db").resolve(),
+                    (Path(tmpdir) / ".quantnodes_agentnodes_session.db").resolve(),
                 )
             finally:
                 if container is not None:
@@ -72,7 +72,7 @@ class TestBuildContainer(unittest.TestCase):
 
     def test_no_workspace(self):
         """build_container works without workspace_path."""
-        from strategy_research.interfaces.api.container import build_container, close_container
+        from agentnodes.interfaces.api.container import build_container, close_container
 
         container = build_container(db_path=Path("/tmp/x.db"))
         try:
@@ -85,7 +85,7 @@ class TestBuildContainer(unittest.TestCase):
 class TestBuildContainerWithFactories(unittest.TestCase):
 
     def test_event_store_factory_override(self):
-        from strategy_research.interfaces.api.container import build_container
+        from agentnodes.interfaces.api.container import build_container
 
         fake_store = MagicMock(name="fake_event_store")
         fake_store._sse_bridge_attached = True  # Skip SSE attach
@@ -96,7 +96,7 @@ class TestBuildContainerWithFactories(unittest.TestCase):
         self.assertIs(container.event_store, fake_store)
 
     def test_session_service_factory_override(self):
-        from strategy_research.interfaces.api.container import build_container
+        from agentnodes.interfaces.api.container import build_container
 
         fake_svc = MagicMock(name="fake_session_service")
         container = build_container(
@@ -109,7 +109,7 @@ class TestBuildContainerWithFactories(unittest.TestCase):
 class TestAttachContainer(unittest.TestCase):
 
     def test_attach_and_get(self):
-        from strategy_research.interfaces.api.container import (
+        from agentnodes.interfaces.api.container import (
             attach_container,
             build_container,
             get_container,
@@ -132,7 +132,7 @@ class TestAttachContainer(unittest.TestCase):
         self.assertIs(result, container)
 
     def test_get_container_without_attach_raises(self):
-        from strategy_research.interfaces.api.container import get_container
+        from agentnodes.interfaces.api.container import get_container
 
         class FakeApp:
             pass
@@ -150,7 +150,7 @@ class TestAttachContainer(unittest.TestCase):
 class TestResetContainer(unittest.TestCase):
 
     def test_reset_detaches(self):
-        from strategy_research.interfaces.api.container import (
+        from agentnodes.interfaces.api.container import (
             attach_container,
             build_container,
             reset_container,
@@ -172,7 +172,7 @@ class TestResetContainer(unittest.TestCase):
 class TestServicesFromContainer(unittest.TestCase):
 
     def test_extracts_all_services(self):
-        from strategy_research.interfaces.api.container import (
+        from agentnodes.interfaces.api.container import (
             build_container,
             services_from_container,
         )
@@ -192,7 +192,7 @@ class TestContainerIsFrozen(unittest.TestCase):
 
     def test_immutable(self):
         """AppContainer is a frozen dataclass — mutation raises."""
-        from strategy_research.interfaces.api.container import build_container
+        from agentnodes.interfaces.api.container import build_container
 
         container = build_container(db_path=Path("/tmp/x.db"))
         with self.assertRaises(Exception):

@@ -11,9 +11,9 @@ import logging
 
 import pytest
 
-from strategy_research.interfaces.api.session.models import Message
-from strategy_research.interfaces.api.session.service import SessionService
-from strategy_research.kernel.agent.compact import CompactConfig
+from agentnodes.interfaces.api.session.models import Message
+from agentnodes.interfaces.api.session.service import SessionService
+from agentnodes.kernel.agent.compact import CompactConfig
 
 # ── Helpers ──────────────────────────────────────────────────────────
 
@@ -138,7 +138,7 @@ class TestHistoryCompactionFilter:
             _make_message("user", "current"),
         ]
         with caplog.at_level(
-            logging.DEBUG, logger="strategy_research.interfaces.api.session.history_convert"
+            logging.DEBUG, logger="agentnodes.interfaces.api.session.history_convert"
         ):
             SessionService._convert_messages_to_history(messages)
         # Check that the hidden count log was emitted

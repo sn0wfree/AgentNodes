@@ -483,13 +483,13 @@ GET  /api/study/list?session_id=&status=&limit=
 
 ### 新增
 ```
-src/strategy_research/core/study/
+src/agentnodes/core/study/
   __init__.py         — 导出
   models.py           — StudyRecord / StudyStatus
   store.py            — StudyStore SQLite
   executor.py         — AutoresearchExecutor（核心执行循环）
   scheduler.py        — StudyScheduler（队列 + 事件 + 恢复）
-src/strategy_research/api/routers/study.py   — /api/study/*
+src/agentnodes/api/routers/study.py   — /api/study/*
 tests/
   test_study_models.py
   test_study_store.py
@@ -502,12 +502,12 @@ docs/archive/undated/study-longhorizon-plan.md               — 本文档
 
 ### 修改（最小化）
 ```
-src/strategy_research/core/autoresearch.py        — + run_research_round()
-src/strategy_research/cli/commands/autoresearch.py — cmd 改调单轮函数（行为不变）
+src/agentnodes/core/autoresearch.py        — + run_research_round()
+src/agentnodes/cli/commands/autoresearch.py — cmd 改调单轮函数（行为不变）
                                                    — _append_backtest_evidence 加 session_id 参数
                                                    — _register_researcher_hypothesis 同上
-src/strategy_research/api/routers/chat.py          — + /study 命令拦截
-src/strategy_research/api/__init__.py или main app   — 注册 study 路由
+src/agentnodes/api/routers/chat.py          — + /study 命令拦截
+src/agentnodes/api/__init__.py или main app   — 注册 study 路由
 ```
 
 ### 不动

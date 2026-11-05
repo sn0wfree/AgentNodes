@@ -159,7 +159,7 @@ yield* session.updatePart({...text, synthetic: true})
 
 ### 环境变量
 ```bash
-SR_KEEP_ALL_COMPACTIONS=1 python3 -m quantnodes_strategy_research.serve
+SR_KEEP_ALL_COMPACTIONS=1 python3 -m quantnodes_agentnodes.serve
 ```
 
 ### Runtime API

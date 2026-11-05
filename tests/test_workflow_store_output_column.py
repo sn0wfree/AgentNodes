@@ -9,8 +9,8 @@ from __future__ import annotations
 import sqlite3
 from pathlib import Path
 
-from strategy_research.kernel.swarm.runtime import AgentResult, AgentStatus
-from strategy_research.kernel.workflow.store import WorkflowStore
+from agentnodes.kernel.swarm.runtime import AgentResult, AgentStatus
+from agentnodes.kernel.workflow.store import WorkflowStore
 
 
 def _store(tmp_path: Path) -> WorkflowStore:

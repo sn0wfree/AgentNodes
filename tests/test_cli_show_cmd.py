@@ -7,7 +7,7 @@ import json
 import pytest
 from rich.console import Console
 
-from strategy_research.interfaces.cli.commands.show import (
+from agentnodes.interfaces.cli.commands.show import (
     _locate_run,
     cmd_pine,
     cmd_show,

@@ -17,7 +17,7 @@ import pytest
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
 
-from strategy_research.kernel.gateway.capacity import (
+from agentnodes.kernel.gateway.capacity import (
     DEFAULT_CHAT_LIMIT,
     DEFAULT_CRON_LIMIT,
     CapacityConfig,

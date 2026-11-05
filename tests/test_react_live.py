@@ -20,7 +20,7 @@ pytestmark = pytest.mark.llm
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
 
-from strategy_research.kernel.agent.tools import BaseTool, ToolRegistry  # noqa: E402
+from agentnodes.kernel.agent.tools import BaseTool, ToolRegistry  # noqa: E402
 
 requires_live = pytest.mark.skipif(
     os.environ.get("QNODES_LIVE_LLM") != "1",
@@ -59,7 +59,7 @@ def calc_registry():
 
 
 def _make_react(client, registry, sink):
-    from strategy_research.kernel.runtimes.nodes.react import ReactConfig, make_react_node
+    from agentnodes.kernel.runtimes.nodes.react import ReactConfig, make_react_node
 
     return make_react_node(
         client, registry, sink=sink,
@@ -120,14 +120,14 @@ def test_live_react_pure_chat_skips_tool(live_client, calc_registry):
 
 @requires_live
 def test_live_react_slice(live_client, calc_registry):
-    from strategy_research.kernel.gateway import SessionController
-    from strategy_research.kernel.orchestration import (
+    from agentnodes.kernel.gateway import SessionController
+    from agentnodes.kernel.orchestration import (
         EntryPoint,
         SourceKind,
         WorkKind,
         WorkRequest,
     )
-    from strategy_research.kernel.runtimes import GraphEngine
+    from agentnodes.kernel.runtimes import GraphEngine
 
     events: list[str] = []
     sink = lambda kind, data: events.append(kind)  # noqa: E731

@@ -12,15 +12,15 @@ import pytest
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
 
-from strategy_research.kernel.agent.context_injector import (
+from agentnodes.kernel.agent.context_injector import (
     ContextInjector,
     GoalContextInjector,
     TodosInjector,
     GoalContinuationInjector,
     build_default_injectors,
 )
-from strategy_research.kernel.agent.loop import AgentLoop
-from strategy_research.kernel.agent.tools import ToolRegistry, BaseTool
+from agentnodes.kernel.agent.loop import AgentLoop
+from agentnodes.kernel.agent.tools import ToolRegistry, BaseTool
 
 
 class _FakeConfig:

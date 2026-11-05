@@ -3,7 +3,7 @@
 > 前一版（`p5-1-chat-gateway-parity-design-20261027.md`）已作废：它假设要复用
 > PlatformStore 的多库形态，而分库方案已回退。本版基于**单库现状**重写。
 >
-> 前置结论：单库（`.quantnodes_strategy_research_session.db`）保持不变；搜索已改 LIKE。
+> 前置结论：单库（`.quantnodes_agentnodes_session.db`）保持不变；搜索已改 LIKE。
 
 ---
 

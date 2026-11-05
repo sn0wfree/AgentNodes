@@ -2,7 +2,7 @@
 from pathlib import Path
 import re
 
-root = Path("src/strategy_research")
+root = Path("src/agentnodes")
 
 print("==== 1. human gates (HITL / pause / approve / directive / objective)")
 for rel in ["core/study/runner.py", "core/study/engine_common.py", "core/goal/store.py",

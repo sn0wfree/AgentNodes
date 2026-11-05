@@ -12,7 +12,7 @@ from pathlib import Path
 
 import pytest
 
-from strategy_research.interfaces.api.user_db import (
+from agentnodes.interfaces.api.user_db import (
     UserDB,
     get_user_db,
     hash_password,
@@ -173,7 +173,7 @@ def test_get_user_db_singleton_per_workspace(tmp_path: Path) -> None:
     db1 = get_user_db(ws)
     db2 = get_user_db(ws)
     assert db1 is db2
-    assert (ws / "quantnodes_strategy_research_user.db").exists()
+    assert (ws / "quantnodes_agentnodes_user.db").exists()
 
 
 def test_get_user_db_different_workspaces_isolated(tmp_path: Path) -> None:

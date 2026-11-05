@@ -1,6 +1,6 @@
 """Run golden tasks against a real LLM via AgentLoop (A7).
 
-**2026-11-04 迁移**：原实现 import 的是 ``strategy_research.core.*``，
+**2026-11-04 迁移**：原实现 import 的是 ``agentnodes.core.*``，
 那个包在四层骨架重构中已不存在（功能迁到 ``kernel`` / ``foundation``）。
 本文件随之改到新位置——此前这个运行器是坏的，任何人跑都会
 ``ModuleNotFoundError``。
@@ -30,11 +30,11 @@ from evals.scorecard import (  # noqa: E402
 
 
 def _run_one(task: GoldenTask, *, workspace: Path, max_iterations: int = 6) -> RunRecord:
-    from strategy_research.foundation.llm.config import LLMConfig
-    from strategy_research.kernel.agent.builtin_tools import build_default_registry
-    from strategy_research.kernel.agent.loop import AgentLoop
-    from strategy_research.kernel.agent.strategy.loop_strategy import LoopConfig
-    from strategy_research.kernel.agent.toolsets import apply_toolset, resolve_toolset
+    from agentnodes.foundation.llm.config import LLMConfig
+    from agentnodes.kernel.agent.builtin_tools import build_default_registry
+    from agentnodes.kernel.agent.loop import AgentLoop
+    from agentnodes.kernel.agent.strategy.loop_strategy import LoopConfig
+    from agentnodes.kernel.agent.toolsets import apply_toolset, resolve_toolset
 
     cfg = LLMConfig.load()
     registry = build_default_registry(workspace)

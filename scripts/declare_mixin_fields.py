@@ -17,14 +17,14 @@ import sys
 from pathlib import Path
 
 MIXINS = {
-    "src/strategy_research/core/agent/loop_tools.py": "LoopToolsMixin",
-    "src/strategy_research/core/agent/loop_progress.py": "LoopProgressMixin",
-    "src/strategy_research/core/agent/loop_stream.py": "LoopStreamMixin",
-    "src/strategy_research/core/agent/loop_compaction.py": "LoopCompactionMixin",
-    "src/strategy_research/core/agent/loop_lifecycle.py": "LoopLifecycleMixin",
-    "src/strategy_research/core/agent/loop_telemetry.py": "LoopTelemetryMixin",
-    "src/strategy_research/core/study/runner_knowledge.py": "RunnerKnowledgeMixin",
-    "src/strategy_research/core/study/runner_aegis.py": "RunnerAegisMixin",
+    "src/agentnodes/core/agent/loop_tools.py": "LoopToolsMixin",
+    "src/agentnodes/core/agent/loop_progress.py": "LoopProgressMixin",
+    "src/agentnodes/core/agent/loop_stream.py": "LoopStreamMixin",
+    "src/agentnodes/core/agent/loop_compaction.py": "LoopCompactionMixin",
+    "src/agentnodes/core/agent/loop_lifecycle.py": "LoopLifecycleMixin",
+    "src/agentnodes/core/agent/loop_telemetry.py": "LoopTelemetryMixin",
+    "src/agentnodes/core/study/runner_knowledge.py": "RunnerKnowledgeMixin",
+    "src/agentnodes/core/study/runner_aegis.py": "RunnerAegisMixin",
 }
 
 MARK = "# ── Host surface (provided by AgentLoop / AutoresearchRunner) ──"

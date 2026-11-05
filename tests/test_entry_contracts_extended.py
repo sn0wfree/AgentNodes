@@ -17,7 +17,7 @@ from datetime import datetime, timedelta, timezone
 
 import pytest
 
-from strategy_research.kernel.orchestration import (
+from agentnodes.kernel.orchestration import (
     DEFAULT_QUEUE_MODE,
     QueueMode,
     RejectReason,
@@ -26,7 +26,7 @@ from strategy_research.kernel.orchestration import (
     WorkRequest,
     validate_work_request,
 )
-from strategy_research.kernel.orchestration.entry_point import EntryPoint
+from agentnodes.kernel.orchestration.entry_point import EntryPoint
 from tests.test_entry_contracts import EventProbe, FakeClock, make_req
 
 
@@ -235,8 +235,8 @@ def test_no_asyncio_or_threading_in_boundary_modules():
     """契约/mailbox/entry_point 不得引入并发原语（快同步的结构证据）。"""
     import inspect
 
-    from strategy_research.kernel.orchestration import contracts, mailbox
-    from strategy_research.kernel.orchestration import entry_point
+    from agentnodes.kernel.orchestration import contracts, mailbox
+    from agentnodes.kernel.orchestration import entry_point
 
     for module in (contracts, mailbox, entry_point):
         source = inspect.getsource(module)

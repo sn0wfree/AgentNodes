@@ -1,7 +1,7 @@
 # Step 1 设计：RoundOutcome 类型契约
 
 > 计划来源：`docs/archive/2026-10/phase-engine-refactor-plan-20261008.md` §3 Step 1
-> 范围约束：**仅改 `src/strategy_research/core/study/phase_engine.py`**；`run_round_phases(...)` 对外签名不变；不动 aegis / runner / langgraph_engine / autoresearch
+> 范围约束：**仅改 `src/agentnodes/core/study/phase_engine.py`**；`run_round_phases(...)` 对外签名不变；不动 aegis / runner / langgraph_engine / autoresearch
 > 状态：设计定稿，待实施
 
 ## 1. 问题回顾

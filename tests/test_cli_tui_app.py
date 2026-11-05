@@ -15,17 +15,17 @@ from __future__ import annotations
 
 import pytest
 
-from strategy_research.interfaces.cli.tui.app import ResearchApp
-from strategy_research.interfaces.cli.tui.keybindings import TUI_BINDINGS
-from strategy_research.interfaces.cli.tui.messages import (
+from agentnodes.interfaces.cli.tui.app import ResearchApp
+from agentnodes.interfaces.cli.tui.keybindings import TUI_BINDINGS
+from agentnodes.interfaces.cli.tui.messages import (
     SynthesizeInput,
 )
-from strategy_research.interfaces.cli.tui.theme import (
+from agentnodes.interfaces.cli.tui.theme import (
     _strip_rich_modifier,
     active_primary,
     brand_tokens,
 )
-from strategy_research.interfaces.cli.tui.widgets import (
+from agentnodes.interfaces.cli.tui.widgets import (
     CommandSidebar,
     ModeBar,
     TranscriptView,
@@ -107,7 +107,7 @@ async def test_synthesize_input_echoes_to_transcript():
         # Manually wire the session — Commit 2 wires it in on_mount, but
         # since the test app skips banner rendering we initialize it.
         if app.session is None:
-            from strategy_research.interfaces.cli.tui.session import ChatSession
+            from agentnodes.interfaces.cli.tui.session import ChatSession
 
             app.session = ChatSession(app.ctx, app=app)
         await pilot.pause()

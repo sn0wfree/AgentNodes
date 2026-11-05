@@ -92,12 +92,12 @@ once, then log-and-skip as today.
 
 ## Files
 
-- `src/strategy_research/api/session/projector.py` — cache +
+- `src/agentnodes/api/session/projector.py` — cache +
   `project_incremental` + delta flush.
-- `src/strategy_research/api/session/event_bus_v2.py` — use incremental
+- `src/agentnodes/api/session/event_bus_v2.py` — use incremental
   flush; shared connection in `_persist_locked`; `invalidate` on
   session delete.
-- `src/strategy_research/api/routers/web_session.py` — call
+- `src/agentnodes/api/routers/web_session.py` — call
   `projector.invalidate` on `delete_session`.
 - `tests/test_phase2_data_integrity.py`, event-bus tests — new cases:
   delta flush after incremental publish, cache invalidation on delete,

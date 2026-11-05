@@ -22,8 +22,8 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
 
-from strategy_research.interfaces.api.session.models import Attempt, AttemptStatus
-from strategy_research.interfaces.api.session.store import SessionStore, _row_to_attempt
+from agentnodes.interfaces.api.session.models import Attempt, AttemptStatus
+from agentnodes.interfaces.api.session.store import SessionStore, _row_to_attempt
 
 
 def _setup_full_db(db_path: Path) -> None:

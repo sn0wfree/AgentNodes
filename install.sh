@@ -65,7 +65,7 @@ check_llm_config() {
     _result=$($PYTHON_BIN -c "
 import sys
 sys.path.insert(0, '$PROJECT_ROOT/src')
-from strategy_research.cli.llm_config_check import check_llm_config
+from agentnodes.cli.llm_config_check import check_llm_config
 import json
 status = check_llm_config()
 print(json.dumps(status, ensure_ascii=False))

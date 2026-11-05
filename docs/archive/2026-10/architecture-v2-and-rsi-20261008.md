@@ -166,7 +166,7 @@ flowchart TD
 
 | 工件 | 位置 | agent 现在能写吗 | 风险 | 归层 |
 |---|---|---|---|---|
-| 角色提示 `.prompts/*.md` | **包内** `src/strategy_research/templates/` | ❌ **写不到**（且 `workspace_setup` 明确把 `.prompts/` 排除在工作区外） | 高（直接决定 agent 行为） | **Tier 1 · 提案制** |
+| 角色提示 `.prompts/*.md` | **包内** `src/agentnodes/templates/` | ❌ **写不到**（且 `workspace_setup` 明确把 `.prompts/` 排除在工作区外） | 高（直接决定 agent 行为） | **Tier 1 · 提案制** |
 | 技能 `.skills/*.md` | 包内 | ❌ | 中 | Tier 1 · 提案制 |
 | `strategy.py` / `config.yaml` / notes | **工作区** | ✅ 能写 | 低 | **Tier 2 · 自改**（这就是「研究产出」，非「自我进化」） |
 | 因子代码 / 假设 | 工作区 + hypothesis store | ✅ | 低 | Tier 2（研究域） |

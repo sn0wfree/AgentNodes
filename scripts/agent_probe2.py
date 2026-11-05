@@ -2,7 +2,7 @@
 from pathlib import Path
 import re
 
-root = Path("src/strategy_research")
+root = Path("src/agentnodes")
 
 # 1. how many builtin tools exist, and how is a toolset selected for a run?
 reg = root / "core/agent/registry.py"

@@ -389,7 +389,7 @@ Anti-overfit Analyst → Backtest Diagnostics
 ## 12. 文件结构
 
 ```
-src/strategy_research/
+src/agentnodes/
 ├── core/
 │   ├── workflow/                    # 新增
 │   │   ├── __init__.py

@@ -12,8 +12,8 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 
-from strategy_research.kernel.gateway import SessionController, SessionFence
-from strategy_research.kernel.orchestration import (
+from agentnodes.kernel.gateway import SessionController, SessionFence
+from agentnodes.kernel.orchestration import (
     EntryPoint,
     Mailbox,
     QueueMode,

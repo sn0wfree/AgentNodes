@@ -17,14 +17,14 @@ from unittest.mock import MagicMock
 
 import pytest
 
-from strategy_research.kernel.agent.builtin_tools import build_default_registry
-from strategy_research.kernel.agent.builtin_tools.subagent_tool import (
+from agentnodes.kernel.agent.builtin_tools import build_default_registry
+from agentnodes.kernel.agent.builtin_tools.subagent_tool import (
     MAX_SUBAGENTS,
     SubAgentTool,
 )
-from strategy_research.kernel.agent.loop import AgentLoop
-from strategy_research.kernel.agent.tools import BaseTool, ToolRegistry
-from strategy_research.foundation.llm import LLMConfig, LLMResponse, ToolCall
+from agentnodes.kernel.agent.loop import AgentLoop
+from agentnodes.kernel.agent.tools import BaseTool, ToolRegistry
+from agentnodes.foundation.llm import LLMConfig, LLMResponse, ToolCall
 
 # ── Helpers ──────────────────────────────────────────────────────────
 
@@ -90,8 +90,8 @@ def patch_child_client(monkeypatch):
         created: list[dict[str, Any]] = []
         queue = list(child_responses)
 
-        from strategy_research.kernel.agent import executor as executor_mod
-        from strategy_research.kernel.agent.executor import AgentExecutionResult
+        from agentnodes.kernel.agent import executor as executor_mod
+        from agentnodes.kernel.agent.executor import AgentExecutionResult
 
         def fake_execute(self, plugin, task, workspace, **kwargs):
             created.append({"plugin_id": plugin.id, "task": task, "kwargs": kwargs})
@@ -239,8 +239,8 @@ class TestSubAgentCountLimit:
         # Patch the child client so the first MAX_SUBAGENTS calls succeed
         # deterministically (no real LLM config / network).
         # Patch AgentExecutor.execute so the child agent returns a deterministic result.
-        from strategy_research.kernel.agent import executor as executor_mod
-        from strategy_research.kernel.agent.executor import AgentExecutionResult
+        from agentnodes.kernel.agent import executor as executor_mod
+        from agentnodes.kernel.agent.executor import AgentExecutionResult
 
         def _fake_exec(self, plugin, task, workspace, **kwargs):
             return AgentExecutionResult(
@@ -272,8 +272,8 @@ class TestSubAgentCountLimit:
     def test_count_ref_increments_even_without_client(self, monkeypatch):
         """Counter increments before child client construction."""
         # Patch AgentExecutor.execute so the child agent returns a deterministic result.
-        from strategy_research.kernel.agent import executor as executor_mod
-        from strategy_research.kernel.agent.executor import AgentExecutionResult
+        from agentnodes.kernel.agent import executor as executor_mod
+        from agentnodes.kernel.agent.executor import AgentExecutionResult
 
         def _fake_exec(self, plugin, task, workspace, **kwargs):
             return AgentExecutionResult(
@@ -400,7 +400,7 @@ class TestChildToolCallsForwarded:
         """If the child agent raises, subagent_failed is emitted and the
         parent tool result is an error."""
 
-        from strategy_research.kernel.agent import executor as executor_mod
+        from agentnodes.kernel.agent import executor as executor_mod
 
         def _explode(self, plugin, task, workspace, **kwargs):
             raise RuntimeError("child boom")
@@ -533,8 +533,8 @@ class TestExecuteParamHandling:
 
         monkeypatch.setattr(SyncMockLLM, "chat", _spy_chat)
         # Patch AgentExecutor.execute so the child agent returns a deterministic result.
-        from strategy_research.kernel.agent import executor as executor_mod
-        from strategy_research.kernel.agent.executor import AgentExecutionResult
+        from agentnodes.kernel.agent import executor as executor_mod
+        from agentnodes.kernel.agent.executor import AgentExecutionResult
 
         def _fake_exec(self, plugin, task, workspace, **kwargs):
             return AgentExecutionResult(
@@ -559,8 +559,8 @@ class TestExecuteParamHandling:
             seen.append((et, data))
 
         # Patch AgentExecutor.execute so the child agent returns a deterministic result.
-        from strategy_research.kernel.agent import executor as executor_mod
-        from strategy_research.kernel.agent.executor import AgentExecutionResult
+        from agentnodes.kernel.agent import executor as executor_mod
+        from agentnodes.kernel.agent.executor import AgentExecutionResult
 
         def _fake_exec(self, plugin, task, workspace, **kwargs):
             return AgentExecutionResult(
@@ -583,8 +583,8 @@ class TestExecuteParamHandling:
         assert completed[0][1]["message_id"] == "msg-1"
 
     def test_tool_result_contains_answer_and_metrics(self, monkeypatch):
-        from strategy_research.kernel.agent import executor as executor_mod
-        from strategy_research.kernel.agent.executor import AgentExecutionResult
+        from agentnodes.kernel.agent import executor as executor_mod
+        from agentnodes.kernel.agent.executor import AgentExecutionResult
 
         def _fake(self, plugin, task, workspace, **kwargs):
             return AgentExecutionResult(
@@ -612,8 +612,8 @@ class TestWhitelistAtExecute:
     def test_tools_whitelist_limits_child_registry(self, monkeypatch):
         """Passing tools=[] gives the child an empty registry; the child
         then has no tools to call (text-only worker)."""
-        from strategy_research.kernel.agent import executor as executor_mod
-        from strategy_research.kernel.agent.executor import AgentExecutionResult
+        from agentnodes.kernel.agent import executor as executor_mod
+        from agentnodes.kernel.agent.executor import AgentExecutionResult
 
         def _fake(self, plugin, task, workspace, **kwargs):
             return AgentExecutionResult(
@@ -640,8 +640,8 @@ class TestMultiIterationChild:
     def test_child_with_tool_then_answer(self, monkeypatch):
         """A child that calls a tool then returns text completes with
         tool_calls_made=1 and iterations=2 in the returned metrics."""
-        from strategy_research.kernel.agent import executor as executor_mod
-        from strategy_research.kernel.agent.executor import AgentExecutionResult
+        from agentnodes.kernel.agent import executor as executor_mod
+        from agentnodes.kernel.agent.executor import AgentExecutionResult
 
         def _fake(self, plugin, task, workspace, **kwargs):
             return AgentExecutionResult(
@@ -713,7 +713,7 @@ class TestBatchOfDelegates:
 
 class TestForwardEvent:
     def test_lifecycle_events_pass_through(self):
-        from strategy_research.kernel.agent.builtin_tools.subagent_tool import _forward_event
+        from agentnodes.kernel.agent.builtin_tools.subagent_tool import _forward_event
 
         seen: list[tuple[str, dict]] = []
         _forward_event(lambda et, d: seen.append((et, d)), "sub-1", "msg-1", "subagent_started", {"a": 1})
@@ -723,7 +723,7 @@ class TestForwardEvent:
         assert seen[1][1]["b"] == 2
 
     def test_child_events_namespaced(self):
-        from strategy_research.kernel.agent.builtin_tools.subagent_tool import _forward_event
+        from agentnodes.kernel.agent.builtin_tools.subagent_tool import _forward_event
 
         seen: list[tuple[str, dict]] = []
         _forward_event(lambda et, d: seen.append((et, d)), "sub-1", "msg-1", "tool_call", {"name": "read"})
@@ -737,12 +737,12 @@ class TestForwardEvent:
         assert seen[0][1]["name"] == "read"
 
     def test_none_callback_is_noop(self):
-        from strategy_research.kernel.agent.builtin_tools.subagent_tool import _forward_event
+        from agentnodes.kernel.agent.builtin_tools.subagent_tool import _forward_event
 
         _forward_event(None, "sub-1", "msg-1", "tool_call", {"x": 1})  # must not raise
 
     def test_unknown_event_type_passes_through_unchanged(self):
-        from strategy_research.kernel.agent.builtin_tools.subagent_tool import _forward_event
+        from agentnodes.kernel.agent.builtin_tools.subagent_tool import _forward_event
 
         seen: list[tuple[str, dict]] = []
         _forward_event(lambda et, d: seen.append((et, d)), "sub-1", "msg-1", "thinking_delta", {"t": "..."})

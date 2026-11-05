@@ -13,13 +13,13 @@ from pathlib import Path
 
 import pytest
 
-SRC = Path(__file__).resolve().parents[1] / "src" / "strategy_research"
+SRC = Path(__file__).resolve().parents[1] / "src" / "agentnodes"
 
 
 def test_format_event_v2_wire_shape():
     """EventV2 -> SSE frame: id from .id, event from .type, data as JSON."""
-    from strategy_research.interfaces.api.routers.chat import _format_event_v2
-    from strategy_research.kernel.events.event_v2 import EventV2
+    from agentnodes.interfaces.api.routers.chat import _format_event_v2
+    from agentnodes.kernel.events.event_v2 import EventV2
 
     ev = EventV2.create(
         aggregate_id="s1", seq=7, type="text.delta",
@@ -35,8 +35,8 @@ def test_format_event_v2_wire_shape():
 
 def test_format_event_v2_handles_non_json_payload():
     """Defensive: unserialisable payload degrades to {} instead of raising."""
-    from strategy_research.interfaces.api.routers.chat import _format_event_v2
-    from strategy_research.kernel.events.event_v2 import EventV2
+    from agentnodes.interfaces.api.routers.chat import _format_event_v2
+    from agentnodes.kernel.events.event_v2 import EventV2
 
     ev = EventV2.create(
         aggregate_id="s1", seq=1, type="x",
@@ -50,7 +50,7 @@ def test_format_event_v2_handles_non_json_payload():
 @pytest.mark.asyncio
 async def test_subscribe_replays_persisted_events(tmp_path):
     """Reconnect: events persisted before subscribe are replayed."""
-    from strategy_research.kernel.agent.event_store import EventStore
+    from agentnodes.kernel.agent.event_store import EventStore
 
     store = EventStore(db_path=tmp_path / "events.db", flush_to_messages=False)
     store.emit("s1", "text.started", {"message_id": "m1"})
@@ -71,7 +71,7 @@ async def test_subscribe_delivers_live_events(tmp_path):
     """Live push after subscribe reaches the subscriber."""
     import asyncio
 
-    from strategy_research.kernel.agent.event_store import EventStore
+    from agentnodes.kernel.agent.event_store import EventStore
 
     store = EventStore(db_path=tmp_path / "events.db", flush_to_messages=False)
 

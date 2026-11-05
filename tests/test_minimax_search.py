@@ -8,7 +8,7 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
-from strategy_research.foundation.web.minimax_search import (
+from agentnodes.foundation.web.minimax_search import (
     ENV_KEYS,
     _resolve_api_key,
     _resolve_base_url,
@@ -209,7 +209,7 @@ class TestWebSearchFallback:
         # Should not raise — falls through to DDG (which itself may
         # fail if ddg isn't installed, but we just want to verify the
         # fallback path is entered).
-        from strategy_research.foundation.web.search import web_search
+        from agentnodes.foundation.web.search import web_search
         result = json.loads(web_search("quantum computing"))
         # result is either "ok" (DDG works) or "error" (DDG not installed)
         assert result["status"] in ("ok", "error")
@@ -225,7 +225,7 @@ class TestWebSearchFallback:
         mock_resp.__exit__ = MagicMock(return_value=False)
 
         with patch("urllib.request.urlopen", return_value=mock_resp):
-            from strategy_research.foundation.web.search import web_search
+            from agentnodes.foundation.web.search import web_search
             result = json.loads(web_search("momentum"))
             assert result["status"] == "ok"
             assert result["provider"] == "minimax"

@@ -11,7 +11,7 @@ import pytest
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
 
-from strategy_research.kernel.agent.context_injector import (
+from agentnodes.kernel.agent.context_injector import (
     ContextInjector,
     GoalContinuationInjector,
     GoalContextInjector,
@@ -106,7 +106,7 @@ class TestGoalContextInjectorEdgeCases:
                 return ("GOAL CONTEXT", {})
 
         with mock.patch(
-            "strategy_research.kernel.agent.capability.resolve",
+            "agentnodes.kernel.agent.capability.resolve",
             return_value=_GoalCtx(),
         ):
             result = inj.inject_pre_run(loop, "original task", [])
@@ -127,7 +127,7 @@ class TestGoalContextInjectorEdgeCases:
                 return ("", {})
 
         with mock.patch(
-            "strategy_research.kernel.agent.capability.resolve",
+            "agentnodes.kernel.agent.capability.resolve",
             return_value=_GoalCtx(),
         ):
             result = inj.inject_pre_run(loop, "original task", [])
@@ -146,7 +146,7 @@ class TestTodosInjectorEdgeCases:
         messages: list[dict[str, Any]] = []
         import unittest.mock as mock
         with mock.patch(
-            "strategy_research.kernel.agent.builtin_tools.todo_tools.TodoStore"
+            "agentnodes.kernel.agent.builtin_tools.todo_tools.TodoStore"
         ) as MockStore:
             MockStore.get.return_value = []
             inj.inject_per_iteration(loop, messages)
@@ -161,9 +161,9 @@ class TestTodosInjectorEdgeCases:
         import unittest.mock as mock
 
         with mock.patch(
-            "strategy_research.kernel.agent.builtin_tools.todo_tools.TodoStore"
+            "agentnodes.kernel.agent.builtin_tools.todo_tools.TodoStore"
         ) as MockStore, mock.patch(
-            "strategy_research.kernel.agent.builtin_tools.todo_tools._format_todos_snapshot"
+            "agentnodes.kernel.agent.builtin_tools.todo_tools._format_todos_snapshot"
         ) as mock_fmt:
             MockStore.get.return_value = [{"task": "a"}]
             mock_fmt.return_value = "## Todos\n- a"

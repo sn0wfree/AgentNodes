@@ -12,9 +12,9 @@ import pytest
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
 
-from strategy_research.kernel.agent.cache import CacheConfig
-from strategy_research.kernel.agent.event_store import EventStore
-from strategy_research.kernel.events.event_v2 import EventType, EventV2
+from agentnodes.kernel.agent.cache import CacheConfig
+from agentnodes.kernel.agent.event_store import EventStore
+from agentnodes.kernel.events.event_v2 import EventType, EventV2
 
 pytestmark = pytest.mark.asyncio
 
@@ -109,7 +109,7 @@ class TestTraceProjectionConsumesFilteredReplay:
     async def test_projection_only_deserializes_trace_types(
         self, es: EventStore,
     ) -> None:
-        from strategy_research.interfaces.api.session.trace_projection import TraceProjection
+        from agentnodes.interfaces.api.session.trace_projection import TraceProjection
         # 95 deltas + 5 trace events.
         for i in range(95):
             _emit(es, "s1", EventType.TEXT_DELTA)

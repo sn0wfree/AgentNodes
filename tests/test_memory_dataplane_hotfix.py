@@ -19,7 +19,7 @@ from pathlib import Path
 
 import pytest
 
-from strategy_research.kernel.agent.memory_manager import (
+from agentnodes.kernel.agent.memory_manager import (
     MemoryManagerFactory,
     SQLiteStore,
     UnifiedMemoryManager,
@@ -172,7 +172,7 @@ def test_sqlite_store_first_accepts_projector_shape(unified_db: Path):
 
 
 def test_in_memory_delete_session_keeps_session_key():
-    from strategy_research.kernel.agent.memory_manager import InMemoryStore
+    from agentnodes.kernel.agent.memory_manager import InMemoryStore
 
     store = InMemoryStore()
     _seed_message(store, "s1", "user", "hi")

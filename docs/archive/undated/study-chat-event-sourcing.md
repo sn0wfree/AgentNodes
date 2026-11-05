@@ -119,7 +119,7 @@ message_id = "study:{study_id}:r{round_num}:{agent_id}"
 ### DB 路径解析
 
 `resolve_session_db_path()` 按 cwd 解析 DB 路径。后端从 workspace 启动时用的是
-`<workspace>/.quantnodes_strategy_research_session.db`，而脚本从仓库目录运行时
+`<workspace>/.quantnodes_agentnodes_session.db`，而脚本从仓库目录运行时
 会解析到仓库本地的另一个 DB。**任何写入 session DB 的代码都必须显式传入
 workspace 的 DB 路径**（见 `engine_common.get_study_session_db_path`）。
 

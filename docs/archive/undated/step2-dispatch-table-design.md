@@ -2,7 +2,7 @@
 
 > 计划来源：`docs/archive/2026-10/phase-engine-refactor-plan-20261008.md` §3 Step 2
 > 前置：Step 1 已交付 `RoundOutcome` 产出契约（`68c891f`）
-> 范围约束：**仅改 `src/strategy_research/core/study/phase_engine.py`**；`run_round_phases` 对外签名不变；不碰 API/schema/models（`'dag'` 的类型注释收口另立任务）
+> 范围约束：**仅改 `src/agentnodes/core/study/phase_engine.py`**；`run_round_phases` 对外签名不变；不碰 API/schema/models（`'dag'` 的类型注释收口另立任务）
 > 状态：设计定稿，待实施
 
 ## 1. 现状（Step 1 后）

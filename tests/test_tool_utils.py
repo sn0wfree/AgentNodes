@@ -13,7 +13,7 @@ from __future__ import annotations
 
 import json
 
-from strategy_research.kernel.agent.builtin_tools.utils import (
+from agentnodes.kernel.agent.builtin_tools.utils import (
     err_actionable,
     truncate,
     try_unwrap_dict,

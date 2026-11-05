@@ -6,7 +6,7 @@ from typing import Any
 
 import pytest
 
-from strategy_research.kernel.runtimes.nodes.llm import make_llm_node
+from agentnodes.kernel.runtimes.nodes.llm import make_llm_node
 
 
 @dataclass

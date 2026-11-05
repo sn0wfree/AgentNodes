@@ -470,11 +470,11 @@ Goal Workflow 子系统**复用**了 vibe-trading 的 workflow 架构：
 ### 新增
 
 ```
-src/strategy_research/core/goal/
+src/agentnodes/core/goal/
   workflow.py            (~400 行) — Runner + State + Config
   workflow_config.py     (~150 行) — YAML 加载 + 验证
 
-src/strategy_research/core/swarm/presets/
+src/agentnodes/core/swarm/presets/
   goal_factor_research.yaml  (~60 行) — 第一个 preset
 
 tests/
@@ -484,7 +484,7 @@ tests/
 ### 修改
 
 ```
-src/strategy_research/core/goal/
+src/agentnodes/core/goal/
   __init__.py    — 导出 workflow 模块
   models.py      — GoalRecord.workflow_id
   store.py       — workflow_id 列 + migration + replace_goal 参数
@@ -496,17 +496,17 @@ tests/
 ### Phase 2 待做
 
 ```
-src/strategy_research/cli/commands/slash_goal.py
+src/agentnodes/cli/commands/slash_goal.py
   - cmd_start 增加 --workflow 参数
   - cmd_workflows 列出可用 workflow
 
-src/strategy_research/cli/tui/widgets/goal_panel.py
+src/agentnodes/cli/tui/widgets/goal_panel.py
   - 显示 workflow 进度（layer 信息、agent 状态图标）
 
-src/strategy_research/cli/tui/session.py
+src/agentnodes/cli/tui/session.py
   - Ctrl+G 暂停 workflow 执行
 
-src/strategy_research/core/goal/templates.py
+src/agentnodes/core/goal/templates.py
   - 合并 GoalTemplate 与 GoalWorkflowConfig
 ```
 

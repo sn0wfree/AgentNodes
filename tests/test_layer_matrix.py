@@ -24,8 +24,8 @@ import sys
 from collections import defaultdict
 from pathlib import Path
 
-SRC = Path(__file__).resolve().parents[1] / "src" / "strategy_research"
-PKG = "strategy_research"
+SRC = Path(__file__).resolve().parents[1] / "src" / "agentnodes"
+PKG = "agentnodes"
 
 # 层归属与判定原语来自唯一事实源（scripts/arch/layer_matrix.py）——
 # 与 scripts/arch/check_dangling_imports.py --layers 共用同一张表，

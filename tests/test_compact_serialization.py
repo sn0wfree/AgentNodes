@@ -1,7 +1,7 @@
 """Tests for _serialize_message — edge cases and all message types."""
 from __future__ import annotations
 
-from strategy_research.kernel.agent.compact import (
+from agentnodes.kernel.agent.compact import (
     TOOL_OUTPUT_MAX_CHARS,
     _serialize_message,
 )

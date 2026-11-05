@@ -48,7 +48,7 @@
 | 项目 | 位置 | 规模 | 状态 |
 |------|------|------|------|
 | **vibe-trading** | `~/vibe_env/lib/python3.11/site-packages/backtest/` | 2289 行 + 13 engines（3131 行） | 成熟产品级 |
-| **quantnodes backtest** | `src/strategy_research/core/backtest.py` + `utils/backtest_engine.py` | 430 + 191 = 621 行 | 简化原型 |
+| **quantnodes backtest** | `src/agentnodes/core/backtest.py` + `utils/backtest_engine.py` | 430 + 191 = 621 行 | 简化原型 |
 
 两个项目**功能重叠 70%**，架构重叠 30%。quantnodes 没有充分借鉴 vibe-trading 的成熟设计，导致以下问题：
 

@@ -4,7 +4,7 @@ from __future__ import annotations
 import re
 from pathlib import Path
 
-PATH = Path("src/strategy_research/core/agent/builtin_tools/backtest_tools.py")
+PATH = Path("src/agentnodes/core/agent/builtin_tools/backtest_tools.py")
 # out = json.loads(EXPR)  where EXPR is *_step.execute(...)
 PATTERN = re.compile(
     r"out = json\.loads\((\w+_step\.execute\()",

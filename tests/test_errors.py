@@ -12,37 +12,37 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
 class TestStrategyResearchError(unittest.TestCase):
 
     def test_basic_message(self):
-        from strategy_research.foundation.errors import StrategyResearchError
+        from agentnodes.foundation.errors import StrategyResearchError
         err = StrategyResearchError("something went wrong")
         self.assertEqual(str(err), "something went wrong")
         self.assertEqual(err.details, {})
 
     def test_with_details(self):
-        from strategy_research.foundation.errors import StrategyResearchError
+        from agentnodes.foundation.errors import StrategyResearchError
         err = StrategyResearchError("oops", details={"hint": "retry"})
         self.assertEqual(err.details, {"hint": "retry"})
 
     def test_code_default_is_class_name(self):
-        from strategy_research.foundation.errors import StrategyResearchError
+        from agentnodes.foundation.errors import StrategyResearchError
         err = StrategyResearchError("x")
         self.assertEqual(err.code, "StrategyResearchError")
 
     def test_to_dict(self):
-        from strategy_research.foundation.errors import StrategyResearchError
+        from agentnodes.foundation.errors import StrategyResearchError
         err = StrategyResearchError("x", details={"k": "v"})
         self.assertEqual(err.to_dict()["code"], "StrategyResearchError")
         self.assertEqual(err.to_dict()["message"], "x")
         self.assertEqual(err.to_dict()["details"], {"k": "v"})
 
     def test_is_exception_subclass(self):
-        from strategy_research.foundation.errors import StrategyResearchError
+        from agentnodes.foundation.errors import StrategyResearchError
         self.assertTrue(issubclass(StrategyResearchError, Exception))
 
 
 class TestMidLevelCategories(unittest.TestCase):
 
     def test_all_inherit_from_root(self):
-        from strategy_research.foundation.errors import (
+        from agentnodes.foundation.errors import (
             BacktestError,
             ConfigError,
             GoalError,
@@ -58,7 +58,7 @@ class TestMidLevelCategories(unittest.TestCase):
                             f"{cls.__name__} should derive from StrategyResearchError")
 
     def test_each_can_be_raised(self):
-        from strategy_research.foundation.errors import (
+        from agentnodes.foundation.errors import (
             BacktestError,
             ConfigError,
             GoalError,
@@ -72,7 +72,7 @@ class TestMidLevelCategories(unittest.TestCase):
                 raise cls("test")
 
     def test_caught_by_root(self):
-        from strategy_research.foundation.errors import (
+        from agentnodes.foundation.errors import (
             ConfigError,
             StrategyResearchError,
         )
@@ -85,13 +85,13 @@ class TestMidLevelCategories(unittest.TestCase):
 class TestNotFoundError(unittest.TestCase):
 
     def test_what_attribute(self):
-        from strategy_research.foundation.errors import NotFoundError
+        from agentnodes.foundation.errors import NotFoundError
         err = NotFoundError("session")
         self.assertEqual(err.what, "session")
         self.assertIn("session", str(err))
 
     def test_default_message(self):
-        from strategy_research.foundation.errors import NotFoundError
+        from agentnodes.foundation.errors import NotFoundError
         err = NotFoundError()
         self.assertIn("resource", str(err))
 
@@ -99,7 +99,7 @@ class TestNotFoundError(unittest.TestCase):
 class TestWrapException(unittest.TestCase):
 
     def test_basic_wrap(self):
-        from strategy_research.foundation.errors import (
+        from agentnodes.foundation.errors import (
             ProviderError,
             wrap_exception,
         )
@@ -116,7 +116,7 @@ class TestWrapException(unittest.TestCase):
             self.assertEqual(wrapped.details.get("cause"), "RuntimeError")
 
     def test_custom_message(self):
-        from strategy_research.foundation.errors import (
+        from agentnodes.foundation.errors import (
             ConfigError,
             wrap_exception,
         )
@@ -130,7 +130,7 @@ class TestWrapException(unittest.TestCase):
 
     def test_preserves_cause_chain(self):
         """The cause chain is intact — no swallowing."""
-        from strategy_research.foundation.errors import (
+        from agentnodes.foundation.errors import (
             BacktestError,
             wrap_exception,
         )
@@ -151,11 +151,11 @@ class TestLLMErrorIntegration(unittest.TestCase):
 
     def test_llm_error_caught_by_root(self):
         """LLMError is part of the unified hierarchy via ConfigError."""
-        from strategy_research.foundation.errors import (
+        from agentnodes.foundation.errors import (
             ConfigError,
             StrategyResearchError,
         )
-        from strategy_research.foundation.llm.errors import LLMAuthError, LLMError
+        from agentnodes.foundation.llm.errors import LLMAuthError, LLMError
 
         # LLMAuthError inherits from LLMError → ConfigError → StrategyResearchError
         self.assertTrue(issubclass(LLMAuthError, StrategyResearchError))
@@ -175,7 +175,7 @@ class TestErrorInheritanceContract(unittest.TestCase):
 
     def test_can_be_raised_and_caught(self):
         """End-to-end: raise, catch via root."""
-        from strategy_research.foundation.errors import (
+        from agentnodes.foundation.errors import (
             StrategyResearchError,
             SwarmError,
         )

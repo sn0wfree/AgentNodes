@@ -11,7 +11,7 @@ from __future__ import annotations
 
 import logging
 
-from strategy_research.foundation.llm.provider import (
+from agentnodes.foundation.llm.provider import (
     DeepSeekAdapter,
     FallbackAdapter,
     KimiAdapter,
@@ -73,7 +73,7 @@ class TestProviderRegistry:
             assert isinstance(adapter, CustomAdapter)
             assert adapter.name == "custom_test"
         finally:
-            from strategy_research.foundation.llm.provider import _REGISTRY
+            from agentnodes.foundation.llm.provider import _REGISTRY
             _REGISTRY.pop("custom_test", None)
 
 
@@ -115,7 +115,7 @@ class TestProviderDefaults:
     def test_siliconflow_extracts_reasoning_content(self):
         """V4-Flash is a reasoning model — thinking must come from
         reasoning_content (inherited extraction)."""
-        from strategy_research.foundation.llm.provider import get_provider
+        from agentnodes.foundation.llm.provider import get_provider
 
         adapter = get_provider("siliconflow")
         assert adapter.extract_thinking_from_message(
@@ -139,7 +139,7 @@ class TestDefaultContextTokens:
 
     def test_base_default_context_tokens_inherits_8192(self):
         """Base class default is 8192 (conservative)."""
-        from strategy_research.foundation.llm.provider.base import ProviderAdapter
+        from agentnodes.foundation.llm.provider.base import ProviderAdapter
 
         # Direct check via a stand-in adapter (avoids needing abc subclass)
         class Stub(ProviderAdapter):
@@ -168,11 +168,11 @@ class TestDefaultContextTokens:
         effectively hiding the default fallback. The catalog's 3-layer
         fallback chain handles this correctly without an override.
         """
-        from strategy_research.foundation.llm.provider.deepseek import DeepSeekAdapter
-        from strategy_research.foundation.llm.provider.kimi import KimiAdapter
-        from strategy_research.foundation.llm.provider.minimax import MiniMaxAdapter
-        from strategy_research.foundation.llm.provider.openai import OpenAIAdapter
-        from strategy_research.foundation.llm.provider.qwen import QwenAdapter
+        from agentnodes.foundation.llm.provider.deepseek import DeepSeekAdapter
+        from agentnodes.foundation.llm.provider.kimi import KimiAdapter
+        from agentnodes.foundation.llm.provider.minimax import MiniMaxAdapter
+        from agentnodes.foundation.llm.provider.openai import OpenAIAdapter
+        from agentnodes.foundation.llm.provider.qwen import QwenAdapter
 
         for adapter_cls in (
             MiniMaxAdapter,
@@ -259,7 +259,7 @@ class TestThinkingExtraction:
 
 class TestErrorHandling:
     def test_minimax_403_with_quota_error(self):
-        from strategy_research.foundation.llm.errors import LLMQuotaError
+        from agentnodes.foundation.llm.errors import LLMQuotaError
 
         adapter = MiniMaxAdapter()
         body = {"error": {"code": "quota_exceeded"}}
@@ -268,7 +268,7 @@ class TestErrorHandling:
         assert "quota" in str(exc).lower()
 
     def test_minimax_403_with_billing_error(self):
-        from strategy_research.foundation.llm.errors import LLMQuotaError
+        from agentnodes.foundation.llm.errors import LLMQuotaError
 
         adapter = MiniMaxAdapter()
         body = {"error": {"code": "billing_limit"}}
@@ -281,7 +281,7 @@ class TestErrorHandling:
         assert adapter.handle_error(403, body) is None
 
     def test_minimax_429_quota_vs_rate_limit(self):
-        from strategy_research.foundation.llm.errors import LLMQuotaError
+        from agentnodes.foundation.llm.errors import LLMQuotaError
 
         adapter = MiniMaxAdapter()
         quota_body = {"error": {"code": "quota_exceeded"}}
@@ -431,7 +431,7 @@ class TestStreamChunkWithProvider:
     """Test that parser integrates with provider adapter."""
 
     def test_chunk_with_minimax_think_tags(self):
-        from strategy_research.foundation.llm.parser import _chunk_from_dict
+        from agentnodes.foundation.llm.parser import _chunk_from_dict
 
         payload = {
             "choices": [{
@@ -444,7 +444,7 @@ class TestStreamChunkWithProvider:
         assert chunk.delta_thinking == "my plan"
 
     def test_chunk_with_deepseek_reasoning_content(self):
-        from strategy_research.foundation.llm.parser import _chunk_from_dict
+        from agentnodes.foundation.llm.parser import _chunk_from_dict
 
         payload = {
             "choices": [{
@@ -460,7 +460,7 @@ class TestStreamChunkWithProvider:
         assert chunk.delta_thinking == "thinking"
 
     def test_chunk_without_provider(self):
-        from strategy_research.foundation.llm.parser import _chunk_from_dict
+        from agentnodes.foundation.llm.parser import _chunk_from_dict
 
         payload = {
             "choices": [{
@@ -482,7 +482,7 @@ class TestChatResponseWithProvider:
     """Test that parse_chat_response integrates with provider adapter."""
 
     def test_response_with_minimax_thinking(self):
-        from strategy_research.foundation.llm.parser import parse_chat_response
+        from agentnodes.foundation.llm.parser import parse_chat_response
 
         raw = {
             "choices": [{
@@ -499,7 +499,7 @@ class TestChatResponseWithProvider:
         assert response.reasoning_content == "my plan"
 
     def test_response_with_deepseek_reasoning(self):
-        from strategy_research.foundation.llm.parser import parse_chat_response
+        from agentnodes.foundation.llm.parser import parse_chat_response
 
         raw = {
             "choices": [{
@@ -533,14 +533,14 @@ class TestFallbackWarning:
 
     def test_no_thinking_no_warning(self, caplog):
         adapter = FallbackAdapter()
-        with caplog.at_level(logging.WARNING, logger="strategy_research.foundation.llm.provider.fallback"):
+        with caplog.at_level(logging.WARNING, logger="agentnodes.foundation.llm.provider.fallback"):
             result = adapter.extract_thinking_from_delta({"content": "normal response"})
         assert result is None
         assert len(caplog.records) == 0
 
     def test_think_tag_triggers_warning(self, caplog):
         adapter = FallbackAdapter()
-        with caplog.at_level(logging.WARNING, logger="strategy_research.foundation.llm.provider.fallback"):
+        with caplog.at_level(logging.WARNING, logger="agentnodes.foundation.llm.provider.fallback"):
             result = adapter.extract_thinking_from_delta({"content": "<think>plan</think>response"})
         assert result is None  # graceful, no error
         assert len(caplog.records) >= 1
@@ -549,7 +549,7 @@ class TestFallbackWarning:
 
     def test_reasoning_content_triggers_warning(self, caplog):
         adapter = FallbackAdapter()
-        with caplog.at_level(logging.WARNING, logger="strategy_research.foundation.llm.provider.fallback"):
+        with caplog.at_level(logging.WARNING, logger="agentnodes.foundation.llm.provider.fallback"):
             result = adapter.extract_thinking_from_delta({"reasoning_content": "thinking"})
         assert result is None
         assert len(caplog.records) >= 1
@@ -557,7 +557,7 @@ class TestFallbackWarning:
 
     def test_reasoning_field_triggers_warning(self, caplog):
         adapter = FallbackAdapter()
-        with caplog.at_level(logging.WARNING, logger="strategy_research.foundation.llm.provider.fallback"):
+        with caplog.at_level(logging.WARNING, logger="agentnodes.foundation.llm.provider.fallback"):
             result = adapter.extract_thinking_from_delta({"reasoning": "thinking"})
         assert result is None
         assert len(caplog.records) >= 1
@@ -565,7 +565,7 @@ class TestFallbackWarning:
 
     def test_message_with_think_triggers_warning(self, caplog):
         adapter = FallbackAdapter()
-        with caplog.at_level(logging.WARNING, logger="strategy_research.foundation.llm.provider.fallback"):
+        with caplog.at_level(logging.WARNING, logger="agentnodes.foundation.llm.provider.fallback"):
             result = adapter.extract_thinking_from_message({"content": "<think>plan</think>response"})
         assert result is None
         assert len(caplog.records) >= 1
@@ -590,7 +590,7 @@ class TestFallbackWarning:
             "content": "<think>plan",
             "reasoning_content": "more",
         }
-        with caplog.at_level(logging.WARNING, logger="strategy_research.foundation.llm.provider.fallback"):
+        with caplog.at_level(logging.WARNING, logger="agentnodes.foundation.llm.provider.fallback"):
             adapter.extract_thinking_from_delta(delta)
         warning_msg = caplog.records[0].message
         assert "tag:<think>" in warning_msg
@@ -598,7 +598,7 @@ class TestFallbackWarning:
 
     def test_registered_provider_no_warning(self, caplog):
         """Registered providers should not trigger FallbackAdapter warning."""
-        with caplog.at_level(logging.WARNING, logger="strategy_research.foundation.llm.provider.fallback"):
+        with caplog.at_level(logging.WARNING, logger="agentnodes.foundation.llm.provider.fallback"):
             adapter = MiniMaxAdapter()
             result = adapter.extract_thinking_from_delta({"content": "<think>plan</think>response"})
         # MiniMax adapter handles thinking properly, no fallback warning
@@ -614,7 +614,7 @@ class TestProviderNamePassThrough:
     """Test that provider_name flows from openai_client → parser → adapter."""
 
     def test_parse_stream_chunk_with_minimax(self):
-        from strategy_research.foundation.llm.parser import parse_stream_chunk
+        from agentnodes.foundation.llm.parser import parse_stream_chunk
 
         # MiniMax sends <think> tags in content
         line = 'data: {"choices": [{"delta": {"content": "<think>plan</think>response"}}]}'
@@ -624,7 +624,7 @@ class TestProviderNamePassThrough:
         assert chunk.delta_content == "response"
 
     def test_parse_stream_chunk_without_provider(self):
-        from strategy_research.foundation.llm.parser import parse_stream_chunk
+        from agentnodes.foundation.llm.parser import parse_stream_chunk
 
         # Without provider → fallback → no thinking extraction
         line = 'data: {"choices": [{"delta": {"content": "<think>plan</think>response"}}]}'
@@ -635,7 +635,7 @@ class TestProviderNamePassThrough:
         assert "<think>" in chunk.delta_content
 
     def test_parse_stream_chunk_with_deepseek(self):
-        from strategy_research.foundation.llm.parser import parse_stream_chunk
+        from agentnodes.foundation.llm.parser import parse_stream_chunk
 
         # DeepSeek uses reasoning_content field
         line = 'data: {"choices": [{"delta": {"reasoning_content": "thinking", "content": "response"}}]}'
@@ -652,13 +652,13 @@ class TestOpenAIReasoningFieldAdapter:
     """Verify the shared base class for reasoning_content-based providers."""
 
     def test_is_provider_adapter(self):
-        from strategy_research.foundation.llm.provider._reasoning_field import (
+        from agentnodes.foundation.llm.provider._reasoning_field import (
             OpenAIReasoningFieldAdapter,
         )
         assert issubclass(OpenAIReasoningFieldAdapter, ProviderAdapter)
 
     def test_delta_with_reasoning_content(self):
-        from strategy_research.foundation.llm.provider._reasoning_field import (
+        from agentnodes.foundation.llm.provider._reasoning_field import (
             OpenAIReasoningFieldAdapter,
         )
 
@@ -676,7 +676,7 @@ class TestOpenAIReasoningFieldAdapter:
         ) == "I'm thinking"
 
     def test_message_with_reasoning_content(self):
-        from strategy_research.foundation.llm.provider._reasoning_field import (
+        from agentnodes.foundation.llm.provider._reasoning_field import (
             OpenAIReasoningFieldAdapter,
         )
 
@@ -694,7 +694,7 @@ class TestOpenAIReasoningFieldAdapter:
         ) == "deep thought"
 
     def test_delta_without_reasoning_content(self):
-        from strategy_research.foundation.llm.provider._reasoning_field import (
+        from agentnodes.foundation.llm.provider._reasoning_field import (
             OpenAIReasoningFieldAdapter,
         )
 
@@ -712,7 +712,7 @@ class TestOpenAIReasoningFieldAdapter:
         assert adapter.extract_thinking_from_delta({"content": "no reasoning"}) is None
 
     def test_normalization_applied(self):
-        from strategy_research.foundation.llm.provider._reasoning_field import (
+        from agentnodes.foundation.llm.provider._reasoning_field import (
             OpenAIReasoningFieldAdapter,
         )
 
@@ -732,14 +732,14 @@ class TestOpenAIReasoningFieldAdapter:
 
     def test_deepseek_inherits(self):
         """DeepSeekAdapter should be a subclass of OpenAIReasoningFieldAdapter."""
-        from strategy_research.foundation.llm.provider._reasoning_field import (
+        from agentnodes.foundation.llm.provider._reasoning_field import (
             OpenAIReasoningFieldAdapter,
         )
         assert issubclass(DeepSeekAdapter, OpenAIReasoningFieldAdapter)
 
     def test_qwen_inherits(self):
         """QwenAdapter should be a subclass of OpenAIReasoningFieldAdapter."""
-        from strategy_research.foundation.llm.provider._reasoning_field import (
+        from agentnodes.foundation.llm.provider._reasoning_field import (
             OpenAIReasoningFieldAdapter,
         )
         assert issubclass(QwenAdapter, OpenAIReasoningFieldAdapter)

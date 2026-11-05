@@ -2,7 +2,7 @@
 from pathlib import Path
 import re
 
-root = Path("src/strategy_research")
+root = Path("src/agentnodes")
 
 t = (root / "core/agent/context_injector.py").read_text(encoding="utf-8", errors="ignore")
 lines = t.splitlines()

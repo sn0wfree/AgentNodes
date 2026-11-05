@@ -64,8 +64,8 @@ P0-2 separates the "data layer" into:
 # slot instead of importing apps.data_store_registry (that would be a
 # L3 → L2 upward import). Money path: without this, ToolContext.data_store
 # is None and DB-backed tools fail at call time.
-from strategy_research.apps.data_store_registry import get_store
-from strategy_research.foundation.storage import register_default_data_store
+from agentnodes.apps.data_store_registry import get_store
+from agentnodes.foundation.storage import register_default_data_store
 register_default_data_store(get_store())
 ```
 
@@ -89,7 +89,7 @@ register_default_data_store(get_store())
 幂等：每次 server 启动都可以调用。
 ```
 
-零业务语义 —— `_TEMPLATES_DIR` 指向 `strategy_research/templates/`，
+零业务语义 —— `_TEMPLATES_DIR` 指向 `agentnodes/templates/`，
 而 templates 的去研究化是批次 7。届时 `workspace_setup` 跟着一起调整
 （只镜像通用模板）。
 

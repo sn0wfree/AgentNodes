@@ -3,17 +3,16 @@ requires = ["setuptools>=61.0"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "quantnodes-strategy-research"
-version = "0.6.0"
-# 项目定位（2026-11-05 重定位）：可自我进化的 Agent 框架。
-# 包名仍是 strategy_research —— 重命名为 agentnodes 是减法批次 9，
-# 尚未执行。在此之前 import 路径与之前一致。
+name = "agentnodes"
+version = "0.7.0"
+# 项目定位（2026-11-05）：可自我进化的 Agent 框架。
+# 批次 9 已完成包名重命名：strategy_research -> agentnodes。
 description = "可自我进化的 Agent 框架 — 四层单向依赖 + 能力端口化 + RSI 闭环"
 readme = "README.md"
 requires-python = ">=3.10"
 license = {text = "MIT"}
-authors = [{name = "QuantNodes Team"}]
-keywords = ["quantitative", "research", "strategy", "factor", "backtest"]
+authors = [{name = "AgentNodes Team"}]
+keywords = ["agent", "harness", "llm", "orchestration", "capability"]
 classifiers = [
     "Development Status :: 3 - Alpha",
     "Intended Audience :: Developers",
@@ -76,14 +75,14 @@ webui-api = [
 ]
 
 [project.scripts]
-quantnodes-research = "strategy_research.interfaces.cli.__main__:main"
-quantnodes-strategy-research = "strategy_research.interfaces.cli.__main__:main"
+quantnodes-research = "agentnodes.interfaces.cli.__main__:main"
+quantnodes-strategy-research = "agentnodes.interfaces.cli.__main__:main"
 
 [tool.setuptools.packages.find]
 where = ["src"]
 
 [tool.setuptools.package-data]
-strategy_research = ["templates/**/*", "templates/.prompts/**/*"]
+agentnodes = ["templates/**/*", "templates/.prompts/**/*"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
@@ -126,13 +125,12 @@ ignore = ["E501", "E741", "E402"]
 max-complexity = 15
 
 [tool.ruff.lint.per-file-ignores]
-"src/strategy_research/apps/alpha_zoo/**" = ["F401"]
-"src/strategy_research/apps/data_source/**" = ["F401"]
-# Archived study code kept for reference only — never fix its lint.
-"src/strategy_research/apps/study/_archived/**" = ["C901", "F401", "E9"]
+# 2026-11-05 批次 9：以下三条曾指向已删目录（alpha_zoo / data_source /
+# study/_archived），随减法批次 1/3/5 一起失效，已清理。
+# 保留的是仍需豁免的真实路径：
 # One-shot history migration script (zero external references) — not
-# worth decomposing (docs/p2-c901-final-design.md §1).
-"src/strategy_research/scripts/migrate_study_history.py" = ["C901"]
+# worth decomposing.
+"src/agentnodes/scripts/migrate_study_history.py" = ["C901"]
 # Golden snapshots of code removed during the AgentNodes split — reference
 # material only. Never lint them (they carry stale imports of the business
 # package and were never formatted to this repo's rules).
@@ -141,4 +139,4 @@ max-complexity = 15
 ]
 
 [tool.ruff.lint.isort]
-known-first-party = ["strategy_research"]
+known-first-party = ["agentnodes"]

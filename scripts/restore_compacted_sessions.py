@@ -9,7 +9,7 @@ re-projecting from event_log (the source of truth).
 
 Usage:
     python scripts/restore_compacted_sessions.py [--session SESSION_ID]
-        [--db-path /path/to/.quantnodes_strategy_research_session.db]
+        [--db-path /path/to/.quantnodes_agentnodes_session.db]
 
 Without --session, restores all sessions that have compaction markers.
 Idempotent: re-projecting is a pure function of event_log.
@@ -30,7 +30,7 @@ def _resolve_db_path(db_path: str | None) -> Path:
         p = Path(db_path)
         p.parent.mkdir(parents=True, exist_ok=True)
         return p
-    from strategy_research.core.agent.memory_manager import resolve_session_db_path
+    from agentnodes.core.agent.memory_manager import resolve_session_db_path
     return resolve_session_db_path()
 
 
@@ -52,7 +52,7 @@ def restore_session(db_path: Path, session_id: str) -> int:
 
     Returns the number of messages written.
     """
-    from strategy_research.api.session.projector import Projector
+    from agentnodes.api.session.projector import Projector
 
     proj = Projector(str(db_path))
     state = proj.project(session_id)

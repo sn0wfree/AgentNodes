@@ -8,7 +8,7 @@ Covers:
 
 from __future__ import annotations
 
-from strategy_research.interfaces.api.session.service import SessionService, _friendly_error_text
+from agentnodes.interfaces.api.session.service import SessionService, _friendly_error_text
 
 
 class TestFriendlyErrorText:
@@ -51,7 +51,7 @@ class TestFriendlyErrorText:
 class TestErrorMessagePersistence:
     def test_row_to_message_error_builds_text_part(self):
         """_row_to_message builds text part from content for error messages."""
-        from strategy_research.interfaces.api.routers.web_session import _row_to_message
+        from agentnodes.interfaces.api.routers.web_session import _row_to_message
 
         row = {
             "id": "msg-1",
@@ -77,7 +77,7 @@ class TestErrorMessagePersistence:
 
     def test_row_to_message_user_still_builds_text_part(self):
         """Regression: user messages still get text parts from content."""
-        from strategy_research.interfaces.api.routers.web_session import _row_to_message
+        from agentnodes.interfaces.api.routers.web_session import _row_to_message
 
         row = {
             "id": "msg-2",
@@ -98,7 +98,7 @@ class TestErrorMessagePersistence:
 
     def test_row_to_message_assistant_no_parts(self):
         """Assistant messages without parts stay empty (streaming fills them)."""
-        from strategy_research.interfaces.api.routers.web_session import _row_to_message
+        from agentnodes.interfaces.api.routers.web_session import _row_to_message
 
         row = {
             "id": "msg-3",
@@ -130,9 +130,9 @@ class TestAssistantMessageSSEEvent:
         import time
 
         from tests._fixtures.legacy_events import EventBus
-        from strategy_research.interfaces.api.session.models import Attempt
-        from strategy_research.interfaces.api.session.service import SessionService
-        from strategy_research.interfaces.api.session.store import SessionStore
+        from agentnodes.interfaces.api.session.models import Attempt
+        from agentnodes.interfaces.api.session.service import SessionService
+        from agentnodes.interfaces.api.session.store import SessionStore
 
         # Track emitted events
         emitted = []
@@ -144,7 +144,7 @@ class TestAssistantMessageSSEEvent:
         bus.emit = track_emit  # type: ignore
 
         # Set up minimal DB
-        from strategy_research.interfaces.api.routers.web_session import _ensure_schema
+        from agentnodes.interfaces.api.routers.web_session import _ensure_schema
         db_path = tmp_path / "test.db"
         conn = sqlite3.connect(db_path)
         _ensure_schema(conn)
@@ -257,10 +257,10 @@ class TestRunWithAgentCfgParam:
         import tempfile
         import time
 
-        from strategy_research.interfaces.api.routers.web_session import _ensure_schema
+        from agentnodes.interfaces.api.routers.web_session import _ensure_schema
         from tests._fixtures.legacy_events import EventBus
-        from strategy_research.interfaces.api.session.models import Attempt
-        from strategy_research.interfaces.api.session.store import SessionStore
+        from agentnodes.interfaces.api.session.models import Attempt
+        from agentnodes.interfaces.api.session.store import SessionStore
         with tempfile.TemporaryDirectory(ignore_cleanup_errors=True) as tmpdir:
             db_path = f"{tmpdir}/test.db"
             conn = sqlite3.connect(db_path)
@@ -300,7 +300,7 @@ class TestRunWithAgentCfgParam:
             service._run_with_agent = mock_run_with_agent
 
             # Build cfg same way _run_attempt does
-            from strategy_research.interfaces.api.routers.chat import _build_llm_config
+            from agentnodes.interfaces.api.routers.chat import _build_llm_config
             cfg = _build_llm_config()
 
             # Call _run_attempt and verify cfg is passed

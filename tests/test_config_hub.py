@@ -3,7 +3,7 @@ from __future__ import annotations
 
 import pytest
 
-from strategy_research.kernel.orchestration.config_hub import (
+from agentnodes.kernel.orchestration.config_hub import (
     ConfigError,
     GatewayConfig,
     PlatformConfig,

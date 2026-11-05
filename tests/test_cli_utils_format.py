@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from strategy_research.interfaces.cli.utils.format import (
+from agentnodes.interfaces.cli.utils.format import (
     abbreviate_num,
     format_duration,
     format_tokens,

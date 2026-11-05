@@ -12,8 +12,8 @@ from pathlib import Path
 
 import pytest
 
-from strategy_research.kernel.agent.loop import AgentLoop, LoopResult
-from strategy_research.kernel.agent.tools import (
+from agentnodes.kernel.agent.loop import AgentLoop, LoopResult
+from agentnodes.kernel.agent.tools import (
     EFFECT_DB,
     EFFECT_NET,
     BaseTool,
@@ -21,7 +21,7 @@ from strategy_research.kernel.agent.tools import (
     ToolError,
     ToolRegistry,
 )
-from strategy_research.foundation.llm import LLMConfig, ToolCall
+from agentnodes.foundation.llm import LLMConfig, ToolCall
 
 
 class V2Tool(BaseTool):

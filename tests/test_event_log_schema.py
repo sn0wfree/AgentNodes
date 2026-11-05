@@ -22,7 +22,7 @@ import tempfile
 import time
 import unittest
 from pathlib import Path
-import strategy_research.interfaces.api.session.web_session_db as _wsdb
+import agentnodes.interfaces.api.session.web_session_db as _wsdb
 
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
@@ -231,7 +231,7 @@ class TestEventLogIntegrationWithEnsureSchema(unittest.TestCase):
         os.environ["SR_WORKSPACE_PATH"] = str(Path(self.db_path).parent)
         # Patch the path lookup (facade binding too — value-bound re-exports
         # don't follow the impl-module patch).
-        import strategy_research.interfaces.api.routers.web_session as ws
+        import agentnodes.interfaces.api.routers.web_session as ws
         self._orig_get_db_path = _wsdb._get_db_path
         _wsdb._get_db_path = lambda: Path(self.db_path)
         ws._get_db_path = lambda: Path(self.db_path)
@@ -239,7 +239,7 @@ class TestEventLogIntegrationWithEnsureSchema(unittest.TestCase):
     def tearDown(self) -> None:
         import os
 
-        import strategy_research.interfaces.api.routers.web_session as ws
+        import agentnodes.interfaces.api.routers.web_session as ws
         # Release the per-thread cached connection before unlink
         # (WinError-32 family).
         try:
@@ -259,7 +259,7 @@ class TestEventLogIntegrationWithEnsureSchema(unittest.TestCase):
         Path(self.db_path).unlink(missing_ok=True)
 
     def test_ensure_schema_creates_event_log(self) -> None:
-        import strategy_research.interfaces.api.routers.web_session as ws
+        import agentnodes.interfaces.api.routers.web_session as ws
         with ws._get_db() as conn:
             tables = {
                 r[0] for r in conn.execute(
@@ -269,7 +269,7 @@ class TestEventLogIntegrationWithEnsureSchema(unittest.TestCase):
             self.assertIn("event_log", tables)
 
     def test_ensure_schema_creates_event_log_indexes(self) -> None:
-        import strategy_research.interfaces.api.routers.web_session as ws
+        import agentnodes.interfaces.api.routers.web_session as ws
         with ws._get_db() as conn:
             idx_names = {
                 r[0] for r in conn.execute(
@@ -281,7 +281,7 @@ class TestEventLogIntegrationWithEnsureSchema(unittest.TestCase):
             self.assertIn("idx_event_log_type_time", idx_names)
 
     def test_ensure_schema_idempotent(self) -> None:
-        import strategy_research.interfaces.api.routers.web_session as ws
+        import agentnodes.interfaces.api.routers.web_session as ws
         with ws._get_db():
             pass
         with ws._get_db():

@@ -2,7 +2,7 @@
 
 系统化梳理 AgentLoop 注册的全部 32 个内置工具：用法、输入参数、预期输出、前置条件、注意事项、以及输出后对 agent 的后续引导建议。
 
-> 维护约定：工具源位于 `src/strategy_research/core/agent/builtin_tools/`。
+> 维护约定：工具源位于 `src/agentnodes/core/agent/builtin_tools/`。
 > 本文档应与 `build_default_registry()` 的输出保持一致；新增/修改工具时请同步更新。
 
 ---
@@ -1019,7 +1019,7 @@ read_document(path='/abs/path/paper.pdf')
 
 ## 每角色工具白名单
 
-见 `src/strategy_research/core/agent/role_factory.py::_ROLE_TOOL_WHITELIST`：
+见 `src/agentnodes/core/agent/role_factory.py::_ROLE_TOOL_WHITELIST`：
 
 | 角色 | 白名单工具 |
 |------|-----------|

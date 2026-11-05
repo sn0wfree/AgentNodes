@@ -28,7 +28,7 @@
 ### 1.1 全部 37 个 preset 都没有 branches
 
 ```
-src/strategy_research/core/swarm/presets/*.yaml  → 37 个文件
+src/agentnodes/core/swarm/presets/*.yaml  → 37 个文件
 branches=False                                     → 37/37
 ```
 

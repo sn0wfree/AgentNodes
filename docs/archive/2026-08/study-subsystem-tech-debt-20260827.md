@@ -27,7 +27,7 @@
 5. ①（30 行"考古"清理，对功能零影响，最末做）
 6. ⑥（5 行加 xdist_group，消除 CI 偶挂）
 
-**历史归档详情**：参见 `src/strategy_research/core/study/_archived/README.md`（2026-09）。
+**历史归档详情**：参见 `src/agentnodes/core/study/_archived/README.md`（2026-09）。
 
 ---
 
@@ -44,9 +44,9 @@ v2 设计文档显式改为 `studies.session_id == study_id`（单身份 §4.2�
 - 随后 `mark_session_processing(study_id, True)` 是**自己标自己处理中**，finally 清掉 —— 整个路径是 **dead-but-harmless no-op**
 
 ### 在哪里
-- `src/strategy_research/core/study/scheduler.py:795-810`（"Cooperative mutex with chat"等待段 + mark）
-- `src/strategy_research/core/study/store.py:358-364`（`create_study` 注释：v2 single-identity）
-- `src/strategy_research/api/session/service.py:651-690`（`is_session_processing` / `mark_session_processing` 注释：*Phase 1 study scheduler uses this*——"Phase 1" 是 v1 措辞）
+- `src/agentnodes/core/study/scheduler.py:795-810`（"Cooperative mutex with chat"等待段 + mark）
+- `src/agentnodes/core/study/store.py:358-364`（`create_study` 注释：v2 single-identity）
+- `src/agentnodes/api/session/service.py:651-690`（`is_session_processing` / `mark_session_processing` 注释：*Phase 1 study scheduler uses this*——"Phase 1" 是 v1 措辞）
 - v2 设计权威来源：`docs/archive/undated/study-longhorizon-v2-design.md:212-221`（§5.3 与 chat 的协作）和 §4.2「与 chat 互斥天然解耦」
 - v2 §5.3 原话：`mark_session_processing(study_id)` **保留调用（兼容代码路径）**，实际不影响任何 chat 会话
 
@@ -75,22 +75,22 @@ v2 设计文档显式改为 `studies.session_id == study_id`（单身份 §4.2�
 两条独立的 EventStore 实例化路径，可能指向不同的 SQLite 文件；`EventStoreFactory.create()` 还"粘住"第一次调用时的 db_path。
 
 ### 在哪里
-- `src/strategy_research/core/agent/event_store.py:653-672` `EventStoreFactory.create()`：首次调用时构造并缓存到模块级 `_default_instance`，后续所有调用**静默忽略参数**返回同一个实例
-- `src/strategy_research/core/agent/event_store.py:680-682` `get_default_event_store()` 返回工厂
-- `src/strategy_research/core/study/langgraph_engine.py:327-340` langgraph 路径用 `EventStoreFactory.create(db_path=get_study_session_db_path(workspace), ...)` + `attach_eventstore_to_sse`
-- `src/strategy_research/core/study/engine_common.py:186-189` `get_study_session_db_path(workspace) = workspace / SESSION_DB_FILENAME`
-- `src/strategy_research/core/study/langgraph_engine.py:342-346` + `engine_common.py:192-225` `ensure_study_session(...)`：往 **workspace 库**写 sessions 行
-- `src/strategy_research/api/container.py:95` `EventStore(p, flush_to_messages=True)` —— 直接构造（**不走工厂**），`p` = `resolve_session_db_path()`
-- `src/strategy_research/api/dependencies.py:75` 同上
-- `src/strategy_research/core/agent/memory_manager.py:71-100` `resolve_session_db_path()`：优先级 `SR_SESSIONS_DB > SR_WORKSPACE_PATH > cwd > ~/.quantnodes`
-- `src/strategy_research/api/routers/chat.py:755-771` chat 自动在 server DB 里补建 `study_*` session 行（兜底 404）
+- `src/agentnodes/core/agent/event_store.py:653-672` `EventStoreFactory.create()`：首次调用时构造并缓存到模块级 `_default_instance`，后续所有调用**静默忽略参数**返回同一个实例
+- `src/agentnodes/core/agent/event_store.py:680-682` `get_default_event_store()` 返回工厂
+- `src/agentnodes/core/study/langgraph_engine.py:327-340` langgraph 路径用 `EventStoreFactory.create(db_path=get_study_session_db_path(workspace), ...)` + `attach_eventstore_to_sse`
+- `src/agentnodes/core/study/engine_common.py:186-189` `get_study_session_db_path(workspace) = workspace / SESSION_DB_FILENAME`
+- `src/agentnodes/core/study/langgraph_engine.py:342-346` + `engine_common.py:192-225` `ensure_study_session(...)`：往 **workspace 库**写 sessions 行
+- `src/agentnodes/api/container.py:95` `EventStore(p, flush_to_messages=True)` —— 直接构造（**不走工厂**），`p` = `resolve_session_db_path()`
+- `src/agentnodes/api/dependencies.py:75` 同上
+- `src/agentnodes/core/agent/memory_manager.py:71-100` `resolve_session_db_path()`：优先级 `SR_SESSIONS_DB > SR_WORKSPACE_PATH > cwd > ~/.quantnodes`
+- `src/agentnodes/api/routers/chat.py:755-771` chat 自动在 server DB 里补建 `study_*` session 行（兜底 404）
 
 ### 双库分叉逻辑
 
 | 路径 | 写入哪 | 由谁驱动 |
 |---|---|---|
-| Server 容器 / chat | `SR_WORKSPACE_PATH/.quantnodes_strategy_research_session.db`（=`resolve_session_db_path()`） | container.py:95、dependencies.py:75 |
-| langgraph engine | `study.workspace_path/.quantnodes_strategy_research_session.db`（=`get_study_session_db_path(workspace)`） | langgraph_engine.py:327-346 |
+| Server 容器 / chat | `SR_WORKSPACE_PATH/.quantnodes_agentnodes_session.db`（=`resolve_session_db_path()`） | container.py:95、dependencies.py:75 |
+| langgraph engine | `study.workspace_path/.quantnodes_agentnodes_session.db`（=`get_study_session_db_path(workspace)`） | langgraph_engine.py:327-346 |
 | bootstrap | 同 langgraph engine | bootstrap.py:295-302 |
 
 **何时分叉**：`study.workspace_path != SR_WORKSPACE_PATH` 时。
@@ -181,9 +181,9 @@ v2 设计文档显式改为 `studies.session_id == study_id`（单身份 §4.2�
 作者在 `study.py:645-655` 的注释中**自己承认**这是个未完工的 bug（FastAPI `response_model` 模式下不知道怎么挂 header）。
 
 ### 在哪里
-- `src/strategy_research/api/routers/study.py:555-657`（endpoint + cache + 304 逻辑）
-- `src/strategy_research/api/routers/study.py:67-92`（`_SUMMARY_CACHE` / `_compute_summary_etag` / `_set_cached_summary`）
-- `src/strategy_research/api/routers/study.py:728,758,783,797,843,1423,1428,1471`（7 处 mutation handler 调用 `_invalidate_summary_cache`）
+- `src/agentnodes/api/routers/study.py:555-657`（endpoint + cache + 304 逻辑）
+- `src/agentnodes/api/routers/study.py:67-92`（`_SUMMARY_CACHE` / `_compute_summary_etag` / `_set_cached_summary`）
+- `src/agentnodes/api/routers/study.py:728,758,783,797,843,1423,1428,1471`（7 处 mutation handler 调用 `_invalidate_summary_cache`）
 - `webui/frontend/src/api/client.ts:231-261` `summaryWithEtag`：发 `if-none-match`、读 `res.headers.get('etag')`
 - `webui/frontend/src/components/study/StudyDetailPage.tsx:79` + `StudyTaskSummary.tsx:42` 消费者
 - **测试盲点**：`tests/test_study_actions.py`、`test_study_api.py`、`test_study_e2e_api.py` 都**没有**任何 `ETag` / `304` / `if-none-match` 相关断言
@@ -265,11 +265,11 @@ async def study_summary(
 `/api/study/plan-dag` 是 `async def` endpoint，但内部调用**完全同步**的 `DAGPlanner.plan()`，后者在 LLM 路径下会同步阻塞整个 asyncio 事件循环。
 
 ### 在哪里
-- `src/strategy_research/api/routers/study.py:1674-1708` `study_plan_dag` endpoint（`async def`，未 `await` 任何东西）
-- `src/strategy_research/core/study/dag_planner.py:77-156` `DAGPlanner.plan` → `_plan_via_llm` → `_call_llm`
-- `src/strategy_research/core/study/dag_planner.py:165-176` `_call_llm` 直接调 `run_agent_via_llm(role="planner", ...)`
-- `src/strategy_research/core/agent/role_factory.py:164-244` `run_agent_via_llm`：**纯同步 `def`**（不是 `async def`），内部 `result = loop.run(full_task)` 是同步阻塞调用
-- `src/strategy_research/core/agent/loop.py` `AgentLoop.run`：包含 1 次到 8 次 LLM HTTP 调用（基于 `max_iterations=1`），单次 deepseek/openai chat completion 通常 3-30s
+- `src/agentnodes/api/routers/study.py:1674-1708` `study_plan_dag` endpoint（`async def`，未 `await` 任何东西）
+- `src/agentnodes/core/study/dag_planner.py:77-156` `DAGPlanner.plan` → `_plan_via_llm` → `_call_llm`
+- `src/agentnodes/core/study/dag_planner.py:165-176` `_call_llm` 直接调 `run_agent_via_llm(role="planner", ...)`
+- `src/agentnodes/core/agent/role_factory.py:164-244` `run_agent_via_llm`：**纯同步 `def`**（不是 `async def`），内部 `result = loop.run(full_task)` 是同步阻塞调用
+- `src/agentnodes/core/agent/loop.py` `AgentLoop.run`：包含 1 次到 8 次 LLM HTTP 调用（基于 `max_iterations=1`），单次 deepseek/openai chat completion 通常 3-30s
 - 对照：grep `asyncio.to_thread` 在 `api/routers/` 下**零使用** —— 整个 API 层没有处理 sync 阻塞的标准范式
 
 ### 调用链精确计时
@@ -313,11 +313,11 @@ plan = await asyncio.to_thread(planner.plan, objective, constraints)
 两个未被生产代码使用的模块，加上 `runner.py` 上的对应协调方法。
 
 ### 在哪里
-- `src/strategy_research/core/study/dag_engine.py`（89 行，`run_round_dag` 单函数）
-- `src/strategy_research/core/study/runner_context.py`（38 行，`RunnerContext` dataclass）
-- `src/strategy_research/core/study/runner.py:801-820` `_run_round_via_dag` 方法
-- `src/strategy_research/core/study/runner.py:201-220` `_to_context` 方法
-- `src/strategy_research/core/study/runner.py:25` `from .runner_context import RunnerContext`
+- `src/agentnodes/core/study/dag_engine.py`（89 行，`run_round_dag` 单函数）
+- `src/agentnodes/core/study/runner_context.py`（38 行，`RunnerContext` dataclass）
+- `src/agentnodes/core/study/runner.py:801-820` `_run_round_via_dag` 方法
+- `src/agentnodes/core/study/runner.py:201-220` `_to_context` 方法
+- `src/agentnodes/core/study/runner.py:25` `from .runner_context import RunnerContext`
 - 测试：`tests/test_study_dag_engine.py`（356 行，3 个 `TestRebuildPhaseOutputs` 测试断言已移除方法）
 
 ### 根因

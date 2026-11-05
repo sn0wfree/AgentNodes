@@ -31,7 +31,7 @@ requires_live = pytest.mark.skipif(
 
 @requires_live
 def test_a_basic_chat_node(live_client):
-    from strategy_research.kernel.runtimes.nodes.llm import make_llm_node
+    from agentnodes.kernel.runtimes.nodes.llm import make_llm_node
 
     node = make_llm_node(live_client, system="回答不超过 20 个字。")
     out = node({"messages": [{"role": "user", "content": "用一个词回答：1+1=?"}]})
@@ -44,7 +44,7 @@ def test_a_basic_chat_node(live_client):
 
 @requires_live
 def test_b_multi_turn_context_retained(live_client):
-    from strategy_research.kernel.runtimes.nodes.llm import make_llm_node
+    from agentnodes.kernel.runtimes.nodes.llm import make_llm_node
 
     node = make_llm_node(live_client, system="回答不超过 15 个字。")
     state = node({"messages": [{"role": "user", "content": "记住这个数字：42"}]})
@@ -62,7 +62,7 @@ def test_b_multi_turn_context_retained(live_client):
 
 @requires_live
 def test_c_system_prompt_is_followed(live_client):
-    from strategy_research.kernel.runtimes.nodes.llm import make_llm_node
+    from agentnodes.kernel.runtimes.nodes.llm import make_llm_node
 
     node = make_llm_node(live_client, system='你只输出 JSON，格式 {"answer": ...}，不要任何其他文字。')
     out = node({"messages": [{"role": "user", "content": "天空是什么颜色？"}]})
@@ -75,7 +75,7 @@ def test_c_system_prompt_is_followed(live_client):
 
 @requires_live
 def test_d_exact_arithmetic_answer(live_client):
-    from strategy_research.kernel.runtimes.nodes.llm import make_llm_node
+    from agentnodes.kernel.runtimes.nodes.llm import make_llm_node
 
     node = make_llm_node(live_client, system="只输出最终结果，不要解释。")
     out = node({"messages": [{"role": "user", "content": "17 * 23 = ?"}]})
@@ -87,7 +87,7 @@ def test_d_exact_arithmetic_answer(live_client):
 
 @requires_live
 def test_e_usage_fields_present(live_client):
-    from strategy_research.kernel.runtimes.nodes.llm import make_llm_node
+    from agentnodes.kernel.runtimes.nodes.llm import make_llm_node
 
     node = make_llm_node(live_client)
     out = node({"messages": [{"role": "user", "content": "说：你好"}]})
@@ -103,7 +103,7 @@ def test_e_usage_fields_present(live_client):
 
 @requires_live
 def test_f_chinese_output(live_client):
-    from strategy_research.kernel.runtimes.nodes.llm import make_llm_node
+    from agentnodes.kernel.runtimes.nodes.llm import make_llm_node
 
     node = make_llm_node(live_client, system="用中文回答，不超过 30 字。")
     out = node({"messages": [{"role": "user", "content": "什么是夏普比率？"}]})
@@ -164,8 +164,8 @@ def test_h_streaming_yields_incremental_chunks(live_client):
 
 @requires_live
 def test_i_full_slice_two_turns(live_client):
-    from strategy_research.kernel.gateway import SessionController
-    from strategy_research.kernel.orchestration import (
+    from agentnodes.kernel.gateway import SessionController
+    from agentnodes.kernel.orchestration import (
         EntryPoint,
         SourceKind,
         WorkKind,
@@ -208,7 +208,7 @@ def test_i_full_slice_two_turns(live_client):
 
 @requires_live
 def test_j_long_history_preserved(live_client):
-    from strategy_research.kernel.runtimes.nodes.llm import make_llm_node
+    from agentnodes.kernel.runtimes.nodes.llm import make_llm_node
 
     node = make_llm_node(live_client, system="回答不超过 10 个字。")
     state = node({"messages": [{"role": "user", "content": "我的幸运数字是 7391，请记住。"}]})

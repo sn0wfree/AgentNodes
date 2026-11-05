@@ -16,7 +16,7 @@ import ast
 import sys
 from pathlib import Path
 
-SRC = Path(__file__).resolve().parents[1] / "src" / "strategy_research"
+SRC = Path(__file__).resolve().parents[1] / "src" / "agentnodes"
 
 # 数据通道 / CLI 报告渲染器：print 是产品语义不是日志（冻结数量，增长需改此表）
 EXEMPT_FILES: dict[str, int] = {

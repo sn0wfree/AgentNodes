@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import pytest
 
-from strategy_research.kernel.workflow.executors import (
+from agentnodes.kernel.workflow.executors import (
     AgentLoopExecutor,
     CLIExecutor,
     PythonExecutor,

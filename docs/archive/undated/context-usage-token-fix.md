@@ -44,7 +44,7 @@ compact 后自动回落。
 
 ## 修复设计
 
-### 后端 — `src/strategy_research/api/session/service.py`
+### 后端 — `src/agentnodes/api/session/service.py`
 
 `event_callback` 内 `llm_usage` 分支（~695-725）：
 

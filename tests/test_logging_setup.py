@@ -19,19 +19,19 @@ from pathlib import Path
 
 import pytest
 
-from strategy_research.foundation.observability import (
+from agentnodes.foundation.observability import (
     DEFAULT_TEXT_FORMAT,
     TraceFilter,
     bind_trace,
     configure_logging,
     dual_log,
 )
-from strategy_research.foundation.observability.logging_setup import (
+from agentnodes.foundation.observability.logging_setup import (
     LOG_DIR,
     _HANDLER_MARK,
     resolve_level,
 )
-from strategy_research.foundation.observability.trace import JsonFormatter
+from agentnodes.foundation.observability.trace import JsonFormatter
 
 _LOG_ENVS = ("SR_LOG_LEVEL", "SR_LOG_JSON", "SR_LOG_FILE")
 
@@ -58,7 +58,7 @@ def clean_root():
                 pass
     saved_handlers = list(root.handlers)
     saved_level = root.level
-    saved_sr_level = logging.getLogger("strategy_research").level
+    saved_sr_level = logging.getLogger("agentnodes").level
     yield root
     for h in list(root.handlers):
         root.removeHandler(h)
@@ -70,7 +70,7 @@ def clean_root():
     for h in saved_handlers:
         root.addHandler(h)
     root.setLevel(saved_level)
-    logging.getLogger("strategy_research").setLevel(saved_sr_level)
+    logging.getLogger("agentnodes").setLevel(saved_sr_level)
 
 
 @pytest.fixture(autouse=True)
@@ -127,7 +127,7 @@ class TestCliStrict:
 
     def test_sr_log_file_enables(self, clean_root, monkeypatch, tmp_path):
         monkeypatch.setattr(
-            "strategy_research.foundation.observability.logging_setup.LOG_DIR",
+            "agentnodes.foundation.observability.logging_setup.LOG_DIR",
             tmp_path / "logs",
         )
         monkeypatch.setenv("SR_LOG_FILE", "cli.log")
@@ -242,7 +242,7 @@ class TestFileLogging:
     def test_off_by_default_no_dir_created(self, clean_root, tmp_path, monkeypatch):
         log_dir = tmp_path / "logs"
         monkeypatch.setattr(
-            "strategy_research.foundation.observability.logging_setup.LOG_DIR", log_dir,
+            "agentnodes.foundation.observability.logging_setup.LOG_DIR", log_dir,
         )
         configure_logging("web")
         assert len(_sr_handlers(clean_root)) == 1  # console only
@@ -251,7 +251,7 @@ class TestFileLogging:
     def test_relative_path_lands_in_log_dir(self, clean_root, tmp_path, monkeypatch):
         log_dir = tmp_path / "logs"
         monkeypatch.setattr(
-            "strategy_research.foundation.observability.logging_setup.LOG_DIR", log_dir,
+            "agentnodes.foundation.observability.logging_setup.LOG_DIR", log_dir,
         )
         monkeypatch.setenv("SR_LOG_FILE", "sr_run.log")
         configure_logging("web")
@@ -339,7 +339,7 @@ class TestHangingEventsTraceColumns:
         conn.close()
 
     def test_fresh_schema_has_columns(self, tmp_path):
-        from strategy_research.foundation.observability.hanging_events import (
+        from agentnodes.foundation.observability.hanging_events import (
             HangingEventsStore,
         )
 
@@ -352,7 +352,7 @@ class TestHangingEventsTraceColumns:
             assert {"trace_id", "round_num"} <= cols
 
     def test_legacy_db_migrated_and_readable(self, tmp_path):
-        from strategy_research.foundation.observability.hanging_events import (
+        from agentnodes.foundation.observability.hanging_events import (
             HangingEventsStore,
         )
 
@@ -370,7 +370,7 @@ class TestHangingEventsTraceColumns:
             assert recent[0]["study_id"] == "new-study"
 
     def test_migration_idempotent(self, tmp_path):
-        from strategy_research.foundation.observability.hanging_events import (
+        from agentnodes.foundation.observability.hanging_events import (
             HangingEventsStore,
         )
 
@@ -388,7 +388,7 @@ class TestHangingEventsTraceColumns:
             assert cols.count("round_num") == 1
 
     def test_record_explicit_trace_fields(self, tmp_path):
-        from strategy_research.foundation.observability.hanging_events import (
+        from agentnodes.foundation.observability.hanging_events import (
             EVENT_WATCHDOG,
             HangingEventsStore,
         )
@@ -406,7 +406,7 @@ class TestHangingEventsTraceColumns:
             assert rep["recent"][0]["round_num"] == 7
 
     def test_record_autofills_from_trace_context(self, tmp_path):
-        from strategy_research.foundation.observability.hanging_events import (
+        from agentnodes.foundation.observability.hanging_events import (
             EVENT_NO_PROGRESS,
             HangingEventsStore,
         )
@@ -419,7 +419,7 @@ class TestHangingEventsTraceColumns:
             assert row["round_num"] == 2
 
     def test_record_event_passes_trace_fields(self, tmp_path, monkeypatch):
-        import strategy_research.foundation.observability.hanging_events as he
+        import agentnodes.foundation.observability.hanging_events as he
 
         captured: dict = {}
 

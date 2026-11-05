@@ -13,8 +13,8 @@ import time
 
 import pytest
 
-from strategy_research.kernel.agent.strategy.budget import BudgetLimits
-from strategy_research.kernel.runtimes.run_budget import RunBudget
+from agentnodes.kernel.agent.strategy.budget import BudgetLimits
+from agentnodes.kernel.runtimes.run_budget import RunBudget
 
 
 def usage(tokens: int = 0, *, prompt: int = 0, completion: int = 0) -> dict:
@@ -170,7 +170,7 @@ def test_limits_are_the_shared_dataclass():
 
 
 def test_usage_is_the_shared_dataclass():
-    from strategy_research.kernel.agent.strategy.budget import BudgetUsage
+    from agentnodes.kernel.agent.strategy.budget import BudgetUsage
 
     rb = RunBudget()
     assert isinstance(rb.usage, BudgetUsage)

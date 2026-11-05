@@ -2,7 +2,7 @@
 from pathlib import Path
 import re
 
-root = Path("src/strategy_research")
+root = Path("src/agentnodes")
 
 print("==== event_v2: request envelope / header")
 p = root / "core/events/event_v2.py"

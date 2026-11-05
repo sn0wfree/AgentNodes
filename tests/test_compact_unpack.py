@@ -15,8 +15,8 @@ import asyncio
 import pytest
 from fastapi.testclient import TestClient
 
-from strategy_research.interfaces.api.app import create_app
-from strategy_research.interfaces.api.auth_tokens import create_token
+from agentnodes.interfaces.api.app import create_app
+from agentnodes.interfaces.api.auth_tokens import create_token
 
 
 @pytest.fixture
@@ -31,8 +31,8 @@ def client(tmp_path, monkeypatch):
     Mirrors the fixture in test_chat_send_sync_run_traversal.py so the
     tests in this file share the canonical harness.
     """
-    import strategy_research.interfaces.api.routers.web_session as ws
-    import strategy_research.interfaces.api.session.web_session_db as _wsdb
+    import agentnodes.interfaces.api.routers.web_session as ws
+    import agentnodes.interfaces.api.session.web_session_db as _wsdb
     monkeypatch.setattr(_wsdb, "_get_db_path", lambda: str(tmp_path / "sr.db"))
     monkeypatch.setattr(ws, "_get_db_path", lambda: str(tmp_path / "sr.db"))
     return TestClient(create_app())
@@ -64,10 +64,10 @@ class TestCompactUnpackFix:
         """
         # Reset the cached session service so the test sees a fresh
         # singleton bound to the TestClient's tmp_path DB.
-        import strategy_research.interfaces.api.routers.chat as chat_router
+        import agentnodes.interfaces.api.routers.chat as chat_router
         chat_router._session_service_cache.clear()
 
-        from strategy_research.interfaces.api.routers.chat import _get_session_service
+        from agentnodes.interfaces.api.routers.chat import _get_session_service
 
         service = _get_session_service()
         # Empty session — should return cleanly, never raise unpack.

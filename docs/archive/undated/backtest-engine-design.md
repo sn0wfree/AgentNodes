@@ -191,7 +191,7 @@ for symbol in engine.positions:
 ### 6.1 接口
 
 ```python
-from strategy_research.core.engine.optimizers import optimize_weights
+from agentnodes.core.engine.optimizers import optimize_weights
 
 result = optimize_weights(ret_df, pos_df, dates, method="risk_parity")
 # ret_df: 收益率矩阵 (T, N)

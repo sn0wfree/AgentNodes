@@ -3,14 +3,14 @@ from __future__ import annotations
 
 import pytest
 
-from strategy_research.kernel.gateway.entry_adapters import (
+from agentnodes.kernel.gateway.entry_adapters import (
     api_chat_request,
     cli_request,
     mcp_request,
     scheduler_request,
     submit_via_entry,
 )
-from strategy_research.kernel.orchestration import (
+from agentnodes.kernel.orchestration import (
     DEFAULT_QUEUE_MODE,
     EntryPoint,
     QueueMode,
@@ -126,7 +126,7 @@ def test_submit_via_entry_returns_receipt():
 
 
 def test_submit_via_entry_rejects_collect():
-    from strategy_research.kernel.orchestration import WorkRequest
+    from agentnodes.kernel.orchestration import WorkRequest
 
     ep = EntryPoint(sink=lambda k, d: None)
     req = WorkRequest(

@@ -32,7 +32,7 @@ def cp(tmp_path, monkeypatch):
 
 
 def test_clear_pyc_removes_and_prunes(cp, tmp_path, capsys):
-    _d = tmp_path / "src" / "strategy_research" / "apps"
+    _d = tmp_path / "src" / "agentnodes" / "apps"
     (_d / "__pycache__").mkdir(parents=True)
     (_d / "__pycache__" / "db.cpython-312.pyc").write_bytes(b"x")
     (_d / "db.py").write_text("x = 1\n", encoding="utf-8")

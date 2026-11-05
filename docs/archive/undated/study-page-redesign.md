@@ -269,4 +269,4 @@ export function AgentChatLog({studyId, selectedRound}) {
 - `docs/archive/undated/study-archive-objective-flow-redesign.md` —— Archive / Replace objective
 - `docs/guides/agent-tools-reference.md` —— Agent 工具白名单
 - `docs/archive/undated/study-ui-improvement.md` —— Study UI 早期设计
-- `src/strategy_research/core/workflow/definition.py` —— WorkflowDefinition 模式参考
+- `src/agentnodes/core/workflow/definition.py` —— WorkflowDefinition 模式参考

@@ -12,13 +12,13 @@ from unittest.mock import patch
 
 import pytest
 
-from strategy_research.interfaces.cli import (
+from agentnodes.interfaces.cli import (
     _cli_overrides_from_args,
     _cmd_llm_list_profiles,
     build_llm_config,
     main,
 )
-from strategy_research.interfaces.cli.llm_config import _LLM_PARENT
+from agentnodes.interfaces.cli.llm_config import _LLM_PARENT
 
 # ── Parent parser has all expected flags ─────────────────────────────
 
@@ -120,7 +120,7 @@ class TestBuildLLMConfig:
                   "LLM_API_KEY", "QUANTNODES__LLM__PROVIDER"):
             monkeypatch.delenv(k, raising=False)
         monkeypatch.setattr(
-            "strategy_research.foundation.llm.config._resolve_bridge_path",
+            "agentnodes.foundation.llm.config._resolve_bridge_path",
             lambda env: Path("/tmp/__definitely_missing__.json"),
         )
         cfg = build_llm_config()
@@ -139,7 +139,7 @@ class TestBuildLLMConfig:
             "base_url": "https://api.anthropic.com/v1",
         }}))
         monkeypatch.setattr(
-            "strategy_research.foundation.llm.config._resolve_bridge_path",
+            "agentnodes.foundation.llm.config._resolve_bridge_path",
             lambda env: llm,
         )
         cfg = build_llm_config()
@@ -151,7 +151,7 @@ class TestBuildLLMConfig:
         llm = tmp_path / "llm.json"
         llm.write_text(json.dumps({"llm": {"model": "bridge-model"}}))
         monkeypatch.setattr(
-            "strategy_research.foundation.llm.config._resolve_bridge_path",
+            "agentnodes.foundation.llm.config._resolve_bridge_path",
             lambda env: llm,
         )
         cfg = build_llm_config(cli_overrides={"llm_model": "cli-model"})
@@ -163,7 +163,7 @@ class TestListProfiles:
         self, tmp_path, monkeypatch, capsys
     ):
         monkeypatch.setattr(
-            "strategy_research.foundation.llm.config.find_llm_config_path",
+            "agentnodes.foundation.llm.config.find_llm_config_path",
             lambda: tmp_path / "missing.json",
         )
         result = _cmd_llm_list_profiles()
@@ -180,7 +180,7 @@ class TestMainCLI:
         self, tmp_path, monkeypatch, capsys
     ):
         monkeypatch.setattr(
-            "strategy_research.foundation.llm.config.find_llm_config_path",
+            "agentnodes.foundation.llm.config.find_llm_config_path",
             lambda: tmp_path / "missing.json",
         )
         with patch("sys.argv", ["prog", "--llm-list-profiles"]):
@@ -215,10 +215,10 @@ class TestConfigPropagation:
         llm = tmp_path / "llm.json"
         llm.write_text(json.dumps({"llm": {"model": "bridge-model"}}))
         monkeypatch.setattr(
-            "strategy_research.foundation.llm.config._resolve_bridge_path",
+            "agentnodes.foundation.llm.config._resolve_bridge_path",
             lambda env: llm,
         )
-        from strategy_research.foundation.llm import LLMConfig
+        from agentnodes.foundation.llm import LLMConfig
         cfg = LLMConfig.load(cli_overrides={
             "llm_temperature": 0.05,
             "llm_max_tokens": 1024,
@@ -231,10 +231,10 @@ class TestConfigPropagation:
         llm = tmp_path / "llm.json"
         llm.write_text(json.dumps({"llm": {"model": "bridge-model"}}))
         monkeypatch.setattr(
-            "strategy_research.foundation.llm.config._resolve_bridge_path",
+            "agentnodes.foundation.llm.config._resolve_bridge_path",
             lambda env: llm,
         )
-        from strategy_research.foundation.llm import LLMConfig
+        from agentnodes.foundation.llm import LLMConfig
         cfg = LLMConfig.load(
             cli_overrides={"llm_model": "cli-model"},
             env={"OPENAI_MODEL": "env-model"},
@@ -246,10 +246,10 @@ class TestConfigPropagation:
         llm = tmp_path / "llm.json"
         llm.write_text(json.dumps({"llm": {"model": "bridge-model"}}))
         monkeypatch.setattr(
-            "strategy_research.foundation.llm.config._resolve_bridge_path",
+            "agentnodes.foundation.llm.config._resolve_bridge_path",
             lambda env: llm,
         )
-        from strategy_research.foundation.llm import LLMConfig
+        from agentnodes.foundation.llm import LLMConfig
 
         # env override
         cfg_env = LLMConfig.load(env={"OPENAI_MODEL": "env-model"})

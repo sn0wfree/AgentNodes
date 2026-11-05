@@ -20,7 +20,7 @@ All provider-specific logic centralized in `provider/` directory. Adding a new p
 ## Directory Structure
 
 ```
-src/strategy_research/core/llm/
+src/agentnodes/core/llm/
 ├── config.py              # Add enable_thinking, use provider defaults
 ├── parser.py              # Use provider adapter for thinking extraction
 ├── openai_client.py       # Use provider adapter for headers/errors

@@ -18,13 +18,13 @@ from datetime import datetime, timedelta, timezone
 
 import pytest
 
-from strategy_research.kernel.gateway import (
+from agentnodes.kernel.gateway import (
     Gateway,
     api_chat_request,
     reset_gateway,
     scheduler_request,
 )
-from strategy_research.kernel.orchestration import (
+from agentnodes.kernel.orchestration import (
     EntryPoint,
     QueueMode,
     SourceKind,
@@ -339,10 +339,10 @@ def test_verify_invariants_passes():
 
 def test_invariant_violation_rejects_startup():
     """不变量被破坏时，启动自检必须拒启（结构验证）。"""
-    from strategy_research.kernel.gateway import InvariantViolation, invariants
+    from agentnodes.kernel.gateway import InvariantViolation, invariants
 
     # 直接验证检查器本身可失败：构造一个必失败的 Invariant 并跑
-    from strategy_research.kernel.gateway.invariants import Invariant, InvariantViolation
+    from agentnodes.kernel.gateway.invariants import Invariant, InvariantViolation
 
     bad = Invariant("INV-TEST", "永远失败", lambda: False, "test")
     assert not bad.verify()
@@ -355,9 +355,9 @@ def test_invariant_violation_rejects_startup():
 
 def test_budget_exhaustion_surfaces_as_failed_run():
     """llm 节点预算耗尽 → answer 是标记文本（不静默），run 仍算成功收敛。"""
-    from strategy_research.kernel.agent.strategy.budget import BudgetLimits
-    from strategy_research.kernel.runtimes import GraphEngine, make_llm_node
-    from strategy_research.kernel.runtimes.run_budget import RunBudget
+    from agentnodes.kernel.agent.strategy.budget import BudgetLimits
+    from agentnodes.kernel.runtimes import GraphEngine, make_llm_node
+    from agentnodes.kernel.runtimes.run_budget import RunBudget
 
     client = FakeClient()
 

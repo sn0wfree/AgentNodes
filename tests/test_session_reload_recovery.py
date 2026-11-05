@@ -19,14 +19,14 @@ import uuid
 import pytest
 from fastapi.testclient import TestClient
 
-from strategy_research.interfaces.api.app import create_app
-from strategy_research.interfaces.api.auth_tokens import create_token
-from strategy_research.interfaces.api.session.models import Attempt, AttemptStatus
+from agentnodes.interfaces.api.app import create_app
+from agentnodes.interfaces.api.auth_tokens import create_token
+from agentnodes.interfaces.api.session.models import Attempt, AttemptStatus
 
 
 @pytest.fixture
 def temp_db(monkeypatch, tmp_path):
-    from strategy_research.kernel.agent.memory_manager import resolve_session_db_path
+    from agentnodes.kernel.agent.memory_manager import resolve_session_db_path
 
     workspace = tmp_path
     workspace.mkdir(parents=True, exist_ok=True)
@@ -36,10 +36,10 @@ def temp_db(monkeypatch, tmp_path):
 
 @pytest.fixture
 def session_service(temp_db):
-    from strategy_research.interfaces.api.routers.web_session import _get_db
+    from agentnodes.interfaces.api.routers.web_session import _get_db
     from tests._fixtures.legacy_events import EventBus
-    from strategy_research.interfaces.api.session.service import SessionService
-    from strategy_research.interfaces.api.session.store import SessionStore
+    from agentnodes.interfaces.api.session.service import SessionService
+    from agentnodes.interfaces.api.session.store import SessionStore
     _get_db().close()  # ensure schema exists on temp_db
 
     bus = EventBus()
@@ -131,7 +131,7 @@ def test_terminal_attempts_excluded(session_service):
 
 @pytest.fixture
 def client(monkeypatch, session_service):
-    from strategy_research.interfaces.api.routers import chat as chat_router
+    from agentnodes.interfaces.api.routers import chat as chat_router
 
     monkeypatch.setattr(chat_router, "_get_session_service", lambda: session_service)
     app = create_app()

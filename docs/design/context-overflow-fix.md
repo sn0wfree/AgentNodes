@@ -20,26 +20,26 @@ LLMError: unexpected status 400: {'code': 20015,
 
 ### 1. `get_market_data` 必失败（import 路径错误）
 
-`src/strategy_research/core/data_source/utils.py:126`：
+`src/agentnodes/core/data_source/utils.py:126`：
 
 ```python
 from ...utils.market_detection import detect_market
 ```
 
-相对 `strategy_research.core.data_source` 上三级 → `strategy_research.utils`（不存在）。
-实际模块在 `strategy_research.core.utils.market_detection`（需四级 `....`）。
+相对 `agentnodes.core.data_source` 上三级 → `agentnodes.utils`（不存在）。
+实际模块在 `agentnodes.core.utils.market_detection`（需四级 `....`）。
 
 运行日志反复出现：
 
 ```
-get_market_data failed ... ModuleNotFoundError: No module named 'strategy_research.utils'
+get_market_data failed ... ModuleNotFoundError: No module named 'agentnodes.utils'
 ```
 
 → agent 每次获取行情都收到错误，被迫反复重试。
 
 ### 2. 聊天模式无限迭代（默认值错误）
 
-`src/strategy_research/api/session/service.py:122`：
+`src/agentnodes/api/session/service.py:122`：
 
 ```python
 max_iterations: int = 9999999999,
@@ -120,8 +120,8 @@ run_backtest(strategy_name=...) → 从 DuckDB 读
 ### 第二批
 
 - **Fix1**：`data_source/utils.py` 用绝对导入
-  `strategy_research.core.utils.market_detection`（原相对导入指向
-  不存在的 `strategy_research.utils`）。
+  `agentnodes.core.utils.market_detection`（原相对导入指向
+  不存在的 `agentnodes.utils`）。
 - **Fix3'**：
   - `get_market_data`：fetch 后每码 `cache_put` 写 loader parquet，返回
     `{cached: {code: cache_key}, summary: {code: {rows, first_close,
@@ -170,11 +170,11 @@ Fix3' 的"两步 + parquet cache_key 中转"经评审后合并为一步：
 
 ## 相关文件
 
-- `src/strategy_research/core/llm/config.py`
-- `src/strategy_research/api/session/service.py`
-- `src/strategy_research/api/routers/chat.py`
-- `src/strategy_research/core/data_source/utils.py`
-- `src/strategy_research/core/agent/builtin_tools/data_tools.py`
-- `src/strategy_research/core/agent/builtin_tools/__init__.py`
-- `src/strategy_research/cli/__init__.py`
-- `src/strategy_research/cli/commands/core_commands.py`
+- `src/agentnodes/core/llm/config.py`
+- `src/agentnodes/api/session/service.py`
+- `src/agentnodes/api/routers/chat.py`
+- `src/agentnodes/core/data_source/utils.py`
+- `src/agentnodes/core/agent/builtin_tools/data_tools.py`
+- `src/agentnodes/core/agent/builtin_tools/__init__.py`
+- `src/agentnodes/cli/__init__.py`
+- `src/agentnodes/cli/commands/core_commands.py`

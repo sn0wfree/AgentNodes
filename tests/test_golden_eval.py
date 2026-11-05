@@ -18,17 +18,17 @@ sys.path.insert(0, str(ROOT / "src"))
 sys.path.insert(0, str(ROOT))
 
 from evals.scorecard import GoldenTask, RunRecord  # noqa: E402
-from strategy_research.apps.evolution.genome_proposals import (  # noqa: E402
+from agentnodes.apps.evolution.genome_proposals import (  # noqa: E402
     GenomeProposal,
 )
-from strategy_research.apps.evolution.golden_eval import (  # noqa: E402
+from agentnodes.apps.evolution.golden_eval import (  # noqa: E402
     DEFAULT_SAMPLE_SIZE,
     make_golden_replay,
     run_golden_eval,
     select_tasks,
 )
-from strategy_research.apps.evolution.holdout import HoldoutSet  # noqa: E402
-from strategy_research.kernel.orchestration.genome_version import (  # noqa: E402
+from agentnodes.apps.evolution.holdout import HoldoutSet  # noqa: E402
+from agentnodes.kernel.orchestration.genome_version import (  # noqa: E402
     GenomeVersionStore,
 )
 
@@ -172,7 +172,7 @@ class TestMakeGoldenReplay:
 
     def test_skipped_raises_slot_unavailable(self):
         """无法验证必须走 escalate（抛 SlotUnavailable），不能静默返回 0。"""
-        from strategy_research.apps.evolution.isolated_replay import (
+        from agentnodes.apps.evolution.isolated_replay import (
             SlotUnavailable,
         )
 

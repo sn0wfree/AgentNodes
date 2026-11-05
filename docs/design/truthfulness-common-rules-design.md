@@ -143,7 +143,7 @@
 ### 4.1 新建文件
 
 ```
-src/strategy_research/templates/.prompts/_common/
+src/agentnodes/templates/.prompts/_common/
 ├── principles.md               # 常驻（5 原则 + 红线 + 思考模式 + 示例）
 └── rules/
     ├── INDEX.md                # 元文件：何时读哪个 rule
@@ -160,16 +160,16 @@ tests/
 ### 4.2 修改文件
 
 ```
-src/strategy_research/templates/.prompts/chat.md
+src/agentnodes/templates/.prompts/chat.md
 # 顶部加指针 + 关键执行规则段（高频内联）+ rules 引用
 
-src/strategy_research/templates/.prompts/{researcher,strategist,backtest_diagnostics,orchestrator,critic}.md
+src/agentnodes/templates/.prompts/{researcher,strategist,backtest_diagnostics,orchestrator,critic}.md
 # 5 个 JSON role 顶部加指针 + JSON 约定内联 + rules 引用
 
-src/strategy_research/templates/.prompts/{其余 14 个 role}.md
+src/agentnodes/templates/.prompts/{其余 14 个 role}.md
 # 顶部加指针 + rules 引用
 
-src/strategy_research/core/agent/prompt_builder.py
+src/agentnodes/core/agent/prompt_builder.py
 # _load_common 只注入 principles，rule 不注入
 ```
 

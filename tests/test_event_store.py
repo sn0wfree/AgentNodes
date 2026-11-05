@@ -5,8 +5,8 @@ from pathlib import Path
 
 import pytest
 
-from strategy_research.kernel.agent.cache import CacheConfig
-from strategy_research.kernel.agent.event_store import (
+from agentnodes.kernel.agent.cache import CacheConfig
+from agentnodes.kernel.agent.event_store import (
     EventStore,
     EventV2,
 )
@@ -181,7 +181,7 @@ class TestHealth:
             # Repair succeeded
             assert type(store._backend).__name__ == "SQLiteStore"
         else:
-            from strategy_research.kernel.agent.memory_manager import InMemoryStore
+            from agentnodes.kernel.agent.memory_manager import InMemoryStore
             assert isinstance(store._backend, InMemoryStore)
 
 
@@ -261,14 +261,14 @@ class TestParentAndBranchRoundTrip:
         """Simulate a pre-A3 row by INSERTing directly without the new
         columns — replay() must still work and use default values.
         """
-        from strategy_research.kernel.agent.memory_manager import resolve_db_path
+        from agentnodes.kernel.agent.memory_manager import resolve_db_path
         import sqlite3
         # `es` fixture may have its own DB; reach the EventStore's path
         # by going through the backend connection.
         conn = es._backend._ensure_conn()  # type: ignore[attr-defined]
         # Create a parent-less pre-A3 row directly via raw SQL using only
         # the original 6 columns.
-        from strategy_research.kernel.events.event_v2 import EventV2
+        from agentnodes.kernel.events.event_v2 import EventV2
         ev = EventV2.create("legacy", 1, "text.started", {"legacy": True})
         row = ev.to_row()
         conn.execute(

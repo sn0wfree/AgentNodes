@@ -5,7 +5,7 @@
 
 ## W1 — 删除根 `templates/` 副本
 
-- **证据**：全部路径解析到 `src/strategy_research/templates`（`__init__._TEMPLATES_DIR`、`parents[2]/templates`）
+- **证据**：全部路径解析到 `src/agentnodes/templates`（`__init__._TEMPLATES_DIR`、`parents[2]/templates`）
 - **风险**：无运行时引用；根目录 37 文件为漂移副本
 - **动作**：`git rm -r templates/`
 
@@ -15,7 +15,7 @@
 
 ## W3 — 删 HTMX + deprecated 事件桥
 
-- `src/strategy_research/webui/routes.py` + jinja templates
+- `src/agentnodes/webui/routes.py` + jinja templates
 - `api/session/events.py` / `event_bus_v2.py` → `_archived` 或删除
 
 ## W4 — backtest models 三合一

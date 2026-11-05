@@ -17,18 +17,18 @@ from fastapi.testclient import TestClient
 def app_client(tmp_path: Path, monkeypatch):
     db_path = tmp_path / "test.db"
     monkeypatch.setenv("SR_WORKSPACE_PATH", str(tmp_path))
-    import strategy_research.interfaces.api.routers.web_session as ws
-    import strategy_research.interfaces.api.session.web_session_db as wsdb
+    import agentnodes.interfaces.api.routers.web_session as ws
+    import agentnodes.interfaces.api.session.web_session_db as wsdb
 
     monkeypatch.setattr(ws, "_get_db_path", lambda: db_path)
     monkeypatch.setattr(wsdb, "_get_db_path", lambda: db_path)
 
-    from strategy_research.interfaces.api.app import create_app
+    from agentnodes.interfaces.api.app import create_app
 
     app = create_app()
     with TestClient(app) as client:
         # P5-5①: chat 端点要求认证
-        from strategy_research.interfaces.api.auth_tokens import create_token
+        from agentnodes.interfaces.api.auth_tokens import create_token
 
         client.headers.update(
             {"Authorization": f"Bearer {create_token('tester')}"},

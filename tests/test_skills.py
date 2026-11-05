@@ -2,9 +2,9 @@
 
 from __future__ import annotations
 
-from strategy_research.kernel.skills.loader import parse_skill_file
-from strategy_research.kernel.skills.models import Skill
-from strategy_research.kernel.skills.registry import SkillRegistry
+from agentnodes.kernel.skills.loader import parse_skill_file
+from agentnodes.kernel.skills.models import Skill
+from agentnodes.kernel.skills.registry import SkillRegistry
 
 # ── Skill Model Tests ──────────────────────────────────────
 

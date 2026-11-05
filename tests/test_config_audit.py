@@ -4,7 +4,7 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
-from strategy_research.foundation.llm.config_audit import (
+from agentnodes.foundation.llm.config_audit import (
     AuditIssue,
     _is_placeholder,
     _read_env,
@@ -183,7 +183,7 @@ class TestDetectIssues:
 
     def test_c6_not_fired_when_meets_recommendation(self, tmp_path):
         """C6 should not fire when user sets a sufficient max_tokens."""
-        from strategy_research.foundation.llm.config import PROVIDER_DEFAULTS
+        from agentnodes.foundation.llm.config import PROVIDER_DEFAULTS
         recommended = PROVIDER_DEFAULTS["minimax"]["max_tokens"]
         llm = _write_llm(tmp_path, {
             "provider": "minimax",
@@ -279,7 +279,7 @@ class TestFixIssues:
 
     def test_c6_fix(self, tmp_path):
         """C6 fix bumps max_tokens to the provider recommendation."""
-        from strategy_research.foundation.llm.config import PROVIDER_DEFAULTS
+        from agentnodes.foundation.llm.config import PROVIDER_DEFAULTS
         recommended = PROVIDER_DEFAULTS["minimax"]["max_tokens"]
         llm_data = {
             "provider": "minimax",

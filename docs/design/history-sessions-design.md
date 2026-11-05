@@ -65,7 +65,7 @@ Web UI 当前只能看到"当前打开"的会话，没有历史列表或恢复�
 │    POST   /api/chat/send_async   ← UPDATE: persist hooks      │
 │    GET    /api/chat/events      ← unchanged                   │
 │                                                                │
-│  DB (SQLite, ~/.quantnodes/quantnodes_strategy_research_user.db):
+│  DB (SQLite, ~/.quantnodes/quantnodes_agentnodes_user.db):
 │    sessions:                                                   │
 │      id, user_id, title, created_at, updated_at,              │
 │      starred, tags_json, message_count, archived              │
@@ -437,8 +437,8 @@ function hitClick(hit: SearchHit) {
 
 | # | 文件 | 类型 | 说明 |
 |---|---|---|---|
-| 1 | `src/strategy_research/api/routers/web_session.py` | 扩展 | schema migration + 2 个新 endpoint + PATCH 扩展 + DELETE 级联 |
-| 2 | `src/strategy_research/api/routers/chat.py` | 扩展 | `_run_agent_loop_background` 增加持久化 + auto-title |
+| 1 | `src/agentnodes/api/routers/web_session.py` | 扩展 | schema migration + 2 个新 endpoint + PATCH 扩展 + DELETE 级联 |
+| 2 | `src/agentnodes/api/routers/chat.py` | 扩展 | `_run_agent_loop_background` 增加持久化 + auto-title |
 
 ### 前端（新增 5 / 修改 7）
 

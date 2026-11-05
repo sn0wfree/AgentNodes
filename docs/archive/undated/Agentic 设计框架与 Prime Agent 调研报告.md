@@ -534,7 +534,7 @@ Prime Agent 代表了 Agent 框架演进的一个**重要新方向**——从"�
 ### 4\.2 新增文件清单
 
 ```
-src/strategy_research/core/
+src/agentnodes/core/
 ├── plan_and_execute/
 │   ├── __init__.py
 │   ├── models.py          # PlanStep / Plan / ResearchState 数据结构

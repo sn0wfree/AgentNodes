@@ -106,7 +106,7 @@ class CapabilityRegistry:
 **统一入口**（所有现有注册表最终指向这里，但**不强制立刻迁移**）：
 
 ```python
-from strategy_research.core.capability import registry
+from agentnodes.core.capability import registry
 
 @registry.provider("llm", caps={"chat", "tool_call"}, version="1")
 class MyProvider:

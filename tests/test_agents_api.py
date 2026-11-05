@@ -18,7 +18,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
 
 @pytest.fixture
 def client():
-    from strategy_research.interfaces.api.app import create_app
+    from agentnodes.interfaces.api.app import create_app
 
     app = create_app(workspace_path=None)
     return TestClient(app)
@@ -66,12 +66,12 @@ class TestAgentSchemasAPI:
 
     def test_startup_warmup_populates_cache(self, client):
         """The lifespan startup hook pre-parses schemas (no lazy first hit)."""
-        from strategy_research.interfaces.api.routers.agents import _schema_cache
+        from agentnodes.interfaces.api.routers.agents import _schema_cache
         assert len(_schema_cache) > 0, "startup warm-up should have filled the cache"
 
     def test_mtime_change_refreshes_cache(self, client, tmp_path):
         """Editing a prompt file (mtime change) invalidates the cache."""
-        from strategy_research.interfaces.api.routers import agents as agents_router
+        from agentnodes.interfaces.api.routers import agents as agents_router
 
         # Snapshot current cache state
         before = dict(agents_router._schema_cache)

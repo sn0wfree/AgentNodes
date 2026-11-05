@@ -6,7 +6,7 @@ import pytest
 from rich.console import Console
 from rich.text import Text
 
-from strategy_research.interfaces.cli.components.tool_event import (
+from agentnodes.interfaces.cli.components.tool_event import (
     beautify_tool_name,
     render_tool_event,
     render_tool_events,
@@ -82,7 +82,7 @@ class TestSummarizeArgs:
         assert "bar" in s
 
     def test_truncation(self):
-        from strategy_research.interfaces.cli.utils.ascii_compat import (
+        from agentnodes.interfaces.cli.utils.ascii_compat import (
             ELLIPSIS_UNICODE,
             register_ascii_mode,
         )
@@ -109,7 +109,7 @@ class TestRenderToolEvent:
         assert isinstance(text, Text)
 
     def test_renders_status_marker(self):
-        from strategy_research.interfaces.cli.utils.ascii_compat import (
+        from agentnodes.interfaces.cli.utils.ascii_compat import (
             register_ascii_mode,
             status_marker,
         )
@@ -121,7 +121,7 @@ class TestRenderToolEvent:
         assert "Financials" in out
 
     def test_error_status_uses_x_marker(self):
-        from strategy_research.interfaces.cli.utils.ascii_compat import (
+        from agentnodes.interfaces.cli.utils.ascii_compat import (
             register_ascii_mode,
             status_marker,
         )

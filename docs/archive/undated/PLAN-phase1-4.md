@@ -91,7 +91,7 @@
 
 ### 3.2 修改文件
 
-- `src/strategy_research/core/mcp/server.py` — 在 `_register_goal_tools()` 末尾新增 2 个 handler
+- `src/agentnodes/core/mcp/server.py` — 在 `_register_goal_tools()` 末尾新增 2 个 handler
 
 ### 3.3 关键实现
 
@@ -118,12 +118,12 @@
 
 | 文件 | 用途 |
 |---|---|
-| `src/strategy_research/core/web/__init__.py` | 包初始化 |
-| `src/strategy_research/core/web/search.py` | DuckDuckGo 搜索 + 指数冷却 |
-| `src/strategy_research/core/web/fetch.py` | URL 抓取 + HTML→Markdown |
-| `src/strategy_research/core/web/pdf.py` | PDF 文本抽取 |
-| `src/strategy_research/core/web/_rate_limit.py` | 指数冷却限速器 |
-| `src/strategy_research/core/agent/builtin_tools/web_tools.py` | Agent 工具 |
+| `src/agentnodes/core/web/__init__.py` | 包初始化 |
+| `src/agentnodes/core/web/search.py` | DuckDuckGo 搜索 + 指数冷却 |
+| `src/agentnodes/core/web/fetch.py` | URL 抓取 + HTML→Markdown |
+| `src/agentnodes/core/web/pdf.py` | PDF 文本抽取 |
+| `src/agentnodes/core/web/_rate_limit.py` | 指数冷却限速器 |
+| `src/agentnodes/core/agent/builtin_tools/web_tools.py` | Agent 工具 |
 | `tests/test_web_search.py` | ~8 个测试 |
 | `tests/test_web_fetch.py` | ~10 个测试 |
 | `tests/test_web_pdf.py` | ~6 个测试 |
@@ -174,7 +174,7 @@ class ExponentialBackoff:
 
 | 文件 | 用途 |
 |---|---|
-| `src/strategy_research/core/agent/builtin_tools/data_tools.py` | Agent 工具 |
+| `src/agentnodes/core/agent/builtin_tools/data_tools.py` | Agent 工具 |
 | `tests/test_mcp_data_tools.py` | ~12 个测试 |
 
 ### 5.2 新增 MCP 工具
@@ -204,7 +204,7 @@ class ExponentialBackoff:
 
 | 文件 | 用途 |
 |---|---|
-| `src/strategy_research/core/swarm/run_store.py` | 内存运行结果存储（LRU 20）|
+| `src/agentnodes/core/swarm/run_store.py` | 内存运行结果存储（LRU 20）|
 | `tests/test_mcp_swarm_tools.py` | ~8 个测试 |
 
 ### 6.2 新增 MCP 工具
@@ -271,14 +271,14 @@ web = ["PyMuPDF>=1.24"]
 ### 实际完成的新文件
 
 ```
-src/strategy_research/core/web/__init__.py
-src/strategy_research/core/web/_rate_limit.py
-src/strategy_research/core/web/search.py
-src/strategy_research/core/web/fetch.py
-src/strategy_research/core/web/pdf.py
-src/strategy_research/core/agent/builtin_tools/web_tools.py
-src/strategy_research/core/agent/builtin_tools/data_tools.py
-src/strategy_research/core/swarm/run_store.py
+src/agentnodes/core/web/__init__.py
+src/agentnodes/core/web/_rate_limit.py
+src/agentnodes/core/web/search.py
+src/agentnodes/core/web/fetch.py
+src/agentnodes/core/web/pdf.py
+src/agentnodes/core/agent/builtin_tools/web_tools.py
+src/agentnodes/core/agent/builtin_tools/data_tools.py
+src/agentnodes/core/swarm/run_store.py
 tests/test_web_search.py
 tests/test_web_pdf.py
 tests/test_mcp_data_tools.py
@@ -298,8 +298,8 @@ docs/archive/undated/PLAN-phase1-4.md
 
 | 路径 | 入口 | UI | 写 |
 |---|---|---|---|
-| A（显式 CLI） | `quantnodes-research init` | Rich prompt_toolkit | `~/.quantnodes/strategy_research/.env` |
-| B（首启自动） | `quantnodes-research`（TTY + 无 `.env`） | prompt_toolkit | `~/.quantnodes/strategy_research/.env` |
+| A（显式 CLI） | `quantnodes-research init` | Rich prompt_toolkit | `~/.quantnodes/agentnodes/.env` |
+| B（首启自动） | `quantnodes-research`（TTY + 无 `.env`） | prompt_toolkit | `~/.quantnodes/agentnodes/.env` |
 
 ### 5.3 文件影响
 
@@ -315,6 +315,6 @@ docs/archive/undated/PLAN-phase1-4.md
 
 ### 5.4 向后兼容
 
-- `~/.strategy-research/.env` 在首次 wizard 时 silent 迁移到 `~/.quantnodes/strategy_research/.env`（旧文件不删）
-- `--help` 输出 "Run the credentials wizard that writes ~/.quantnodes/strategy_research/.env"
+- `~/.strategy-research/.env` 在首次 wizard 时 silent 迁移到 `~/.quantnodes/agentnodes/.env`（旧文件不删）
+- `--help` 输出 "Run the credentials wizard that writes ~/.quantnodes/agentnodes/.env"
 - workspace scaffold（config.yaml / .prompts/ / .skills/ / strategies/）**不再由 init 创建**——留待 `autoresearch` 按需 lazy init

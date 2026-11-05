@@ -2,7 +2,7 @@
 
 > ⚠ **历史文档**：架构差距图。所列差距**已全部填平**（ContextHub 已存在、GraphEngine 为唯一编排 runtime）。
 
-> 方法：`graphify update src/strategy_research`（纯 AST，22554 节点 / 36402 边）
+> 方法：`graphify update src/agentnodes`（纯 AST，22554 节点 / 36402 边）
 > + 人工核实。**重要方法论警示**：graphify 的 `calls`/`references` 边会
 > 按同名符号误连（实测 `core/study/langgraph_engine.py` 被标出 67 条指向
 > `core/runtimes/graph_engine.py`，但该文件根本没有相关 import）。因此本报告

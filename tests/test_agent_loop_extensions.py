@@ -7,12 +7,12 @@ import tempfile
 from pathlib import Path
 from unittest.mock import patch
 
-from strategy_research.kernel.agent.builtin_tools import build_default_registry
-from strategy_research.kernel.agent.loop import (
+from agentnodes.kernel.agent.builtin_tools import build_default_registry
+from agentnodes.kernel.agent.loop import (
     AgentLoop,
     LoopResult,
 )
-from strategy_research.foundation.llm import LLMConfig, LLMResponse, ToolCall
+from agentnodes.foundation.llm import LLMConfig, LLMResponse, ToolCall
 
 # ── Helpers ──────────────────────────────────────────────────────────
 
@@ -79,7 +79,7 @@ class TestMicrocompact:
 class TestLLMSummarize:
     def test_structured_summary_prompt(self):
         """L4 should use structured template for summarization."""
-        from strategy_research.kernel.agent.compact import DEFAULT_SUMMARY_TEMPLATE, _build_summary_prompt
+        from agentnodes.kernel.agent.compact import DEFAULT_SUMMARY_TEMPLATE, _build_summary_prompt
         prompt = _build_summary_prompt("test conversation", None, DEFAULT_SUMMARY_TEMPLATE)
         assert "## Objective" in prompt
         assert "## Work State" in prompt
@@ -87,7 +87,7 @@ class TestLLMSummarize:
 
     def test_incremental_summary(self):
         """L4 should support incremental summary updates."""
-        from strategy_research.kernel.agent.compact import DEFAULT_SUMMARY_TEMPLATE, _build_summary_prompt
+        from agentnodes.kernel.agent.compact import DEFAULT_SUMMARY_TEMPLATE, _build_summary_prompt
         prompt = _build_summary_prompt("new conversation", "old summary text", DEFAULT_SUMMARY_TEMPLATE)
         assert "Update the anchored summary" in prompt
         assert "<previous-summary>" in prompt
@@ -221,7 +221,7 @@ class TestGitCommit:
                 auto_git_commit=True,
             )
             loop.client.chat = mock.chat
-            with patch("strategy_research.kernel.agent.loop.git_commit", return_value=True) as mock_commit:
+            with patch("agentnodes.kernel.agent.loop.git_commit", return_value=True) as mock_commit:
                 loop.run("task")
                 mock_commit.assert_called_once()
                 args = mock_commit.call_args
@@ -243,7 +243,7 @@ class TestGitCommit:
                 auto_git_commit=False,
             )
             loop.client.chat = mock.chat
-            with patch("strategy_research.kernel.agent.loop.git_commit") as mock_commit:
+            with patch("agentnodes.kernel.agent.loop.git_commit") as mock_commit:
                 loop.run("task")
                 mock_commit.assert_not_called()
 
@@ -284,7 +284,7 @@ class TestThresholdEdgeCases:
 
     def test_microcompact_only_when_needed(self):
         """Microcompact should only trim large tool results."""
-        from strategy_research.kernel.agent.context import estimate_tokens
+        from agentnodes.kernel.agent.context import estimate_tokens
 
         # Check that a message with 100-char tool result has low token count
         msgs = [

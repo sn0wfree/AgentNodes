@@ -3,8 +3,8 @@ from __future__ import annotations
 
 import sys
 
-from strategy_research.kernel.agent.toolsets import TOOLSETS
-from strategy_research.foundation.utils.bg_proc import shell_command
+from agentnodes.kernel.agent.toolsets import TOOLSETS
+from agentnodes.foundation.utils.bg_proc import shell_command
 
 
 class TestShellCommand:

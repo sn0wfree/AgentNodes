@@ -2,7 +2,7 @@
 from pathlib import Path
 import re
 
-root = Path("src/strategy_research")
+root = Path("src/agentnodes")
 
 # 1. toolset -> tool filtering mechanism
 p = root / "core/agent/toolsets.py"

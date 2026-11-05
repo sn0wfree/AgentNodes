@@ -46,7 +46,7 @@
 
 ### 3.1 新接口
 
-新建 `src/strategy_research/core/agent/chat_loop.py`：
+新建 `src/agentnodes/core/agent/chat_loop.py`：
 
 ```python
 """Phase 6 P1 — chat-mode AgentLoop 构造工厂.
@@ -158,9 +158,9 @@ __all__ = ["build_chat_agent_loop"]
 ```python
 # 旧 (12 行)
 try:
-    from strategy_research.core.agent.builtin_tools import build_default_registry
-    from strategy_research.core.agent.loop import AgentLoop
-    from strategy_research.core.agent.prompt_builder import PromptBuilderFactory
+    from agentnodes.core.agent.builtin_tools import build_default_registry
+    from agentnodes.core.agent.loop import AgentLoop
+    from agentnodes.core.agent.prompt_builder import PromptBuilderFactory
 
     try:
         registry = build_default_registry()
@@ -181,8 +181,8 @@ try:
     )
 
 # 新 (5 行)
-from strategy_research.core.agent.chat_loop import build_chat_agent_loop
-from strategy_research.core.agent.prompt_builder import PromptBuilderFactory
+from agentnodes.core.agent.chat_loop import build_chat_agent_loop
+from agentnodes.core.agent.prompt_builder import PromptBuilderFactory
 
 history = _get_or_create_history(session_id)
 loop = build_chat_agent_loop(
@@ -212,7 +212,7 @@ loop = AgentLoop(
 )
 
 # 新 (5 行)
-from strategy_research.core.agent.chat_loop import build_chat_agent_loop
+from agentnodes.core.agent.chat_loop import build_chat_agent_loop
 
 role = "researcher" if mode == "goal" else "chat"
 loop = build_chat_agent_loop(
@@ -240,7 +240,7 @@ agent = AgentLoop(
 )
 
 # 新 (7 行)
-from strategy_research.core.agent.chat_loop import build_chat_agent_loop
+from agentnodes.core.agent.chat_loop import build_chat_agent_loop
 
 agent = build_chat_agent_loop(
     config=cfg,
@@ -411,7 +411,7 @@ service.py 当前 caller 显式提供 `system_prompt`（line 489-490）。P3 后
 - [ ] `tests/test_role_factory.py` (除 TestSpawnAgentFallback)
 - [ ] `tests/test_session.py` + `test_session_state.py` 通过
 - [ ] `python3 -m ruff check` clean
-- [ ] `grep -r "AgentLoop(" src/strategy_research/{api,cli}/` → 仅 chat_loop.py 中（factory 自身）
+- [ ] `grep -r "AgentLoop(" src/agentnodes/{api,cli}/` → 仅 chat_loop.py 中（factory 自身）
 - [ ] git status clean（除 templates/ 工作区外）
 
 ## 12. 后续阶段（Phase 7+）

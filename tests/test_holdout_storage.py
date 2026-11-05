@@ -16,13 +16,13 @@ import pytest
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
 
-from strategy_research.apps.evolution import HoldoutSet, Trajectory
-from strategy_research.apps.evolution.holdout import (
+from agentnodes.apps.evolution import HoldoutSet, Trajectory
+from agentnodes.apps.evolution.holdout import (
     decode_holdout,
     load_persisted_holdout,
     persist_holdout,
 )
-from strategy_research.foundation.storage.holdout import (
+from agentnodes.foundation.storage.holdout import (
     DEFAULT_SUBDIR,
     HoldoutAlreadyPersisted,
     HoldoutStore,
@@ -171,13 +171,13 @@ class TestMetadata:
 class TestLayerDirection:
     def test_store_module_does_not_import_apps(self):
         """L4 不得 import L2（H1/H2）。用文本断言，防回归。"""
-        import strategy_research.foundation.storage.holdout.store as m
+        import agentnodes.foundation.storage.holdout.store as m
 
         src = Path(m.__file__).read_text(encoding="utf-8")
         # 允许出现于注释/docstring 的提及，但不得有真正的 import 语句
         import_lines = [
             ln for ln in src.splitlines()
-            if ln.strip().startswith(("from strategy_research.apps", "import strategy_research.apps"))
+            if ln.strip().startswith(("from agentnodes.apps", "import agentnodes.apps"))
         ]
         assert import_lines == [], f"foundation 侧出现了 apps import: {import_lines}"
 

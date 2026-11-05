@@ -18,15 +18,15 @@ from unittest.mock import MagicMock
 
 import pytest
 
-from strategy_research.kernel.agent import exec_registry
-from strategy_research.kernel.agent.dag_config import AgentNodeConfig
-from strategy_research.kernel.agent.executor import (
+from agentnodes.kernel.agent import exec_registry
+from agentnodes.kernel.agent.dag_config import AgentNodeConfig
+from agentnodes.kernel.agent.executor import (
     AgentExecutionResult,
     AgentExecutor,
     first_two_sentences,
 )
-from strategy_research.kernel.agent.plugin import AgentPlugin
-from strategy_research.kernel.agent.registry import AgentPluginRegistry
+from agentnodes.kernel.agent.plugin import AgentPlugin
+from agentnodes.kernel.agent.registry import AgentPluginRegistry
 
 
 # ── AgentExecutionResult ────────────────────────────────────────────
@@ -489,7 +489,7 @@ class TestNodeOverrides:
         )
         captured = {}
 
-        from strategy_research.kernel.agent import loop as loop_mod
+        from agentnodes.kernel.agent import loop as loop_mod
         orig_init = loop_mod.AgentLoop.__init__
 
         def patched_init(self, *a, **kw):

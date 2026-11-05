@@ -1,7 +1,7 @@
 """Unit tests for core.utils.token_utils — chars→token estimation."""
 from __future__ import annotations
 
-from strategy_research.foundation.utils.token_utils import (
+from agentnodes.foundation.utils.token_utils import (
     CHARS_PER_TOKEN,
     estimate_tokens,
     estimate_tokens_text,

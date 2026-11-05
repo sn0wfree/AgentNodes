@@ -228,9 +228,9 @@ graph_templates.py / 前端全部。MINIMAL_GRAPH 与 EXPLORE_GRAPH 作为显式
 
 | 类别 | 文件 | 动作 | 规模 |
 |---|---|---|---|
-| 新建 | `src/strategy_research/core/study/scenario_router.py` | dataclass + PROMPT 常量 + route() + 校验管线 + 关键词 fallback + detect_max_iter_placeholders | ~240 行 |
-| 修改 | `src/strategy_research/core/study/bootstrap.py` | init_study_dir 接入 route()（单点） | ~15 行 |
-| 修改 | `src/strategy_research/core/study/runner.py` | _run_loop 中 max_iter 短路钩子（§4b） | ~35 行 |
+| 新建 | `src/agentnodes/core/study/scenario_router.py` | dataclass + PROMPT 常量 + route() + 校验管线 + 关键词 fallback + detect_max_iter_placeholders | ~240 行 |
+| 修改 | `src/agentnodes/core/study/bootstrap.py` | init_study_dir 接入 route()（单点） | ~15 行 |
+| 修改 | `src/agentnodes/core/study/runner.py` | _run_loop 中 max_iter 短路钩子（§4b） | ~35 行 |
 | 新建 | `tests/test_scenario_router.py` | 5 场景锚定 + 越界修复 ×4 + 兜底 ×2 + JSON 解析失败 + 单/多标的剔除 + 占位检测 | ~190 行 |
 
 **合计 ~475 行 / 预估 3 天 / 单 PR**

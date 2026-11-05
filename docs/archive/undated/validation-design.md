@@ -18,7 +18,7 @@ Each can be invoked separately or all together via `run_validation()`.
 ## 2. Inputs
 
 ```python
-from strategy_research.core.validation import (
+from agentnodes.core.validation import (
     run_validation, TradeInput, MarketType,
 )
 
@@ -87,7 +87,7 @@ market.
 
 ```python
 >>> import warnings
->>> from strategy_research.core.validation import MarketType, run_validation
+>>> from agentnodes.core.validation import MarketType, run_validation
 >>> with warnings.catch_warnings(record=True) as w:
 ...     warnings.simplefilter("always")
 ...     results = run_validation(

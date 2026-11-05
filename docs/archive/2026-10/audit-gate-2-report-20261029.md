@@ -172,13 +172,13 @@
 
 ```bat
 :: item 1 -- 删除兑现
-findstr /n "_ensure_consumer" src\strategy_research\core\study\scheduler.py
-findstr /n "def research_graph_enabled" src\strategy_research\core\gateway\entry_adapters.py
+findstr /n "_ensure_consumer" src\agentnodes\core\study\scheduler.py
+findstr /n "def research_graph_enabled" src\agentnodes\core\gateway\entry_adapters.py
 
 :: item 3 -- 安全四锚点
-findstr /n "_fetch_session_owned" src\strategy_research\api\routers\chat.py
-findstr /n "SR_ADMIN_PASSWORD" src\strategy_research\api\user_db.py
-findstr /n "_require_run_access" src\strategy_research\api\routers\workflow.py
+findstr /n "_fetch_session_owned" src\agentnodes\api\routers\chat.py
+findstr /n "SR_ADMIN_PASSWORD" src\agentnodes\api\user_db.py
+findstr /n "_require_run_access" src\agentnodes\api\routers\workflow.py
 
 :: item 4 -- 性能基线
 D:\tools\python312\python.exe scripts\audit_gate2_perf.py

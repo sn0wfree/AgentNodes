@@ -3,7 +3,7 @@ from __future__ import annotations
 
 import time
 
-from strategy_research.kernel.agent.circuit_breaker import (
+from agentnodes.kernel.agent.circuit_breaker import (
     BreakerState,
     CircuitBreakerConfig,
     RetryPolicy,

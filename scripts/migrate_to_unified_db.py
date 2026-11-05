@@ -2,14 +2,14 @@
 """One-shot migration: merge legacy session DBs into the unified DB.
 
 Merges rows from the two historical DB files into the new unified
-``.quantnodes_strategy_research_session.db`` (located via
+``.quantnodes_agentnodes_session.db`` (located via
 ``resolve_session_db_path``). Uses ``INSERT OR IGNORE`` so sessions
 that already exist in the target are skipped (no duplicate-key errors,
 no data loss).
 
 Source DBs (in merge order — earlier sources win on key conflict):
-  1. <workspace>/quantnodes_strategy_research_user.db  (current production)
-  2. ~/.quantnodes/quantnodes_strategy_research_user.db (older home-dir DB)
+  1. <workspace>/quantnodes_agentnodes_user.db  (current production)
+  2. ~/.quantnodes/quantnodes_agentnodes_user.db (older home-dir DB)
 
 Target:
   resolve_session_db_path()  (SR_SESSIONS_DB > SR_WORKSPACE_PATH > cwd)
@@ -34,7 +34,7 @@ from pathlib import Path
 # Ensure we can import the package when run from the repo root.
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "src"))
 
-from strategy_research.core.agent.memory_manager import resolve_session_db_path  # noqa: E402
+from agentnodes.core.agent.memory_manager import resolve_session_db_path  # noqa: E402
 
 MIGRATE_TABLES = ["sessions", "messages", "message_parts", "event_log", "attempts"]
 
@@ -57,7 +57,7 @@ def _row_count(conn: sqlite3.Connection, table: str) -> int:
 
 def _ensure_target_schema(target_path: Path) -> None:
     """Run the canonical schema setup on the target DB so all tables exist."""
-    from strategy_research.api.routers.web_session import _ensure_schema
+    from agentnodes.api.routers.web_session import _ensure_schema
 
     conn = sqlite3.connect(str(target_path))
     try:
@@ -162,8 +162,8 @@ def main() -> int:
         Path(os.environ.get("SR_WORKSPACE_PATH", str(Path.cwd())))
     )
     sources = [
-        ("workspace_old", workspace_dir / "quantnodes_strategy_research_user.db"),
-        ("home_old", Path.home() / ".quantnodes" / "quantnodes_strategy_research_user.db"),
+        ("workspace_old", workspace_dir / "quantnodes_agentnodes_user.db"),
+        ("home_old", Path.home() / ".quantnodes" / "quantnodes_agentnodes_user.db"),
     ]
 
     grand_total: dict[str, int] = {}

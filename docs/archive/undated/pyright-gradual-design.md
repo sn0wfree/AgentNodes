@@ -20,7 +20,7 @@
 ```json
 {
   "include": ["src"],
-  "exclude": ["**/__pycache__", "src/strategy_research/core/alpha_zoo", "src/strategy_research/core/study/_archived", "src/strategy_research/templates"],
+  "exclude": ["**/__pycache__", "src/agentnodes/core/alpha_zoo", "src/agentnodes/core/study/_archived", "src/agentnodes/templates"],
   "typeCheckingMode": "basic",
   "reportMissingImports": false,
   "reportUnknownMemberType": false,

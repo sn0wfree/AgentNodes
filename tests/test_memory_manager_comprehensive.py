@@ -10,8 +10,8 @@ import pytest
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
 
-from strategy_research.kernel.agent.cache import CacheConfig
-from strategy_research.kernel.agent.memory_manager import (
+from agentnodes.kernel.agent.cache import CacheConfig
+from agentnodes.kernel.agent.memory_manager import (
     InMemoryStore,
     MemoryManagerFactory,
     SQLiteStore,
@@ -196,7 +196,7 @@ class TestSQLiteStoreDirect:
         ``web_session_db._ensure_schema``, so ``message_parts`` exists even
         when SQLiteStore is what created the file.
         """
-        from strategy_research.interfaces.api.session.web_session_db import _ensure_schema
+        from agentnodes.interfaces.api.session.web_session_db import _ensure_schema
 
         db = tmp_path / "schema.db"
         store = SQLiteStore(db)

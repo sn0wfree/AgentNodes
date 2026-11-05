@@ -26,7 +26,7 @@ if py_file:
 ```
 
 该 import 写成了 `from .alpha_zoo_yaml`（相对导入），解析为
-`strategy_research.core.alpha_zoo.alpha_zoo_yaml`——**这个模块从不存在**
+`agentnodes.core.alpha_zoo.alpha_zoo_yaml`——**这个模块从不存在**
 （`alpha_zoo_yaml.py` 一直位于 core 包根下，不在 `alpha_zoo/` 子包内）。
 
 后果：**YAML 分支每次都抛 `ModuleNotFoundError`，被 `except Exception` 静默吞掉，
@@ -41,7 +41,7 @@ if py_file:
 ### 现象
 
 ```python
-from strategy_research.apps.alpha_zoo import compute_alpha
+from agentnodes.apps.alpha_zoo import compute_alpha
 compute_alpha("gtja191_alpha_001", panel)   # → 100% NaN（YAML 路径）
 ```
 

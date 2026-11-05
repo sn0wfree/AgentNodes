@@ -1,7 +1,7 @@
 """Tests for _resolve_threshold_tokens — edge cases and opencode-aligned formula."""
 from __future__ import annotations
 
-from strategy_research.kernel.agent.compact import (
+from agentnodes.kernel.agent.compact import (
     CompactConfig,
     _resolve_threshold_tokens,
 )

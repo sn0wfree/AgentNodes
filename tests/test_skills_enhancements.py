@@ -13,9 +13,9 @@ from pathlib import Path
 
 import pytest
 
-from strategy_research.kernel.skills import SkillRegistry
+from agentnodes.kernel.skills import SkillRegistry
 
-SKILLS_DIR = Path(__file__).resolve().parent.parent / "src" / "strategy_research" / "templates" / ".skills"
+SKILLS_DIR = Path(__file__).resolve().parent.parent / "src" / "agentnodes" / "templates" / ".skills"
 
 # 10 existing skills (must all have frontmatter)
 EXPECTED_EXISTING = {

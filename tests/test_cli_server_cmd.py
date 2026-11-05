@@ -34,15 +34,15 @@ class TestWebUIServe:
     def mock_app_factory(self):
         """mock create_app + configure_from_env.
 
-        A third patch targeted ``strategy_research.webui.routes.router``,
+        A third patch targeted ``agentnodes.webui.routes.router``,
         but that module was deleted in the W3 structure cleanup (see
         api/app.py:240) — the webui router is mounted inside create_app()
         now, and the mocked ``router`` was never asserted. It only kept
         working because serial collection order let some other test make
         the attribute resolvable; under xdist it raised AttributeError.
         """
-        with patch("strategy_research.interfaces.api.app.create_app") as create, \
-             patch("strategy_research.interfaces.api.app.configure_from_env") as config:
+        with patch("agentnodes.interfaces.api.app.create_app") as create, \
+             patch("agentnodes.interfaces.api.app.configure_from_env") as config:
             fake_app = MagicMock()
             create.return_value = fake_app
             config.return_value = {
@@ -53,7 +53,7 @@ class TestWebUIServe:
 
     def test_runs_uvicorn_with_args(self, mock_uvicorn, mock_app_factory):
         """uvicorn.run() 被调用时 host/port 来自 args。"""
-        from strategy_research.interfaces.cli.commands.server import cmd_webui_serve
+        from agentnodes.interfaces.cli.commands.server import cmd_webui_serve
 
         create, config, fake_app = mock_app_factory
         args = argparse.Namespace(
@@ -77,7 +77,7 @@ class TestWebUIServe:
 
     def test_mounts_webui_router(self, mock_uvicorn, mock_app_factory):
         """webui router is now mounted inside create_app() (survives --reload)."""
-        from strategy_research.interfaces.cli.commands.server import cmd_webui_serve
+        from agentnodes.interfaces.cli.commands.server import cmd_webui_serve
 
         create, config, fake_app = mock_app_factory
         args = argparse.Namespace(
@@ -93,7 +93,7 @@ class TestWebUIServe:
 
     def test_static_dir_from_env(self, mock_uvicorn, mock_app_factory):
         """无 args.static_dir 时从 env_config 取。"""
-        from strategy_research.interfaces.cli.commands.server import cmd_webui_serve
+        from agentnodes.interfaces.cli.commands.server import cmd_webui_serve
 
         create, config, fake_app = mock_app_factory
         config.return_value = {"static_dir": "/env/static", "cors_origins": ["*"]}
@@ -111,7 +111,7 @@ class TestWebUIServe:
 
     def test_static_dir_overrides_env(self, mock_uvicorn, mock_app_factory):
         """args.static_dir 优先级高于 env。"""
-        from strategy_research.interfaces.cli.commands.server import cmd_webui_serve
+        from agentnodes.interfaces.cli.commands.server import cmd_webui_serve
 
         create, config, fake_app = mock_app_factory
         config.return_value = {"static_dir": "/env/static", "cors_origins": ["*"]}
@@ -128,8 +128,8 @@ class TestWebUIServe:
 
     def test_banner_shows_configured_llm(self, mock_uvicorn, mock_app_factory, capsys, tmp_path, monkeypatch):
         """已配置 LLM 时 banner 显示 ✓。"""
-        from strategy_research.interfaces.cli import llm_config_check
-        from strategy_research.interfaces.cli.commands.server import cmd_webui_serve
+        from agentnodes.interfaces.cli import llm_config_check
+        from agentnodes.interfaces.cli.commands.server import cmd_webui_serve
 
         create, config, fake_app = mock_app_factory
         qdir = tmp_path / ".quantnodes"
@@ -159,8 +159,8 @@ class TestWebUIServe:
 
     def test_banner_warns_when_unconfigured(self, mock_uvicorn, mock_app_factory, capsys, monkeypatch):
         """未配置 LLM 时 banner 显示 ⚠。"""
-        from strategy_research.interfaces.cli import llm_config_check
-        from strategy_research.interfaces.cli.commands.server import cmd_webui_serve
+        from agentnodes.interfaces.cli import llm_config_check
+        from agentnodes.interfaces.cli.commands.server import cmd_webui_serve
 
         create, config, fake_app = mock_app_factory
         # 重定向到一个不存在的目录
@@ -192,7 +192,7 @@ class TestAPIServe:
             yield m
 
     def test_runs_uvicorn(self, mock_uvicorn):
-        from strategy_research.interfaces.cli.commands.server import cmd_api_serve
+        from agentnodes.interfaces.cli.commands.server import cmd_api_serve
 
         args = argparse.Namespace(
             host="0.0.0.0",
@@ -218,7 +218,7 @@ class TestAPIServe:
 class TestMCPListTools:
     def test_lists_tools(self, capsys):
         """打印已注册的工具列表。"""
-        from strategy_research.interfaces.cli.commands.server import cmd_mcp_list_tools
+        from agentnodes.interfaces.cli.commands.server import cmd_mcp_list_tools
 
         fake_server = MagicMock()
         fake_server.list_tools.return_value = [
@@ -234,7 +234,7 @@ class TestMCPListTools:
             },
         ]
 
-        with patch("strategy_research.interfaces.mcp.MCPServer", return_value=fake_server):
+        with patch("agentnodes.interfaces.mcp.MCPServer", return_value=fake_server):
             args = argparse.Namespace()
             rc = cmd_mcp_list_tools(args)
 
@@ -246,7 +246,7 @@ class TestMCPListTools:
 
     def test_handles_no_properties(self, capsys):
         """inputSchema 无 properties 时应正常显示 'no params'。"""
-        from strategy_research.interfaces.cli.commands.server import cmd_mcp_list_tools
+        from agentnodes.interfaces.cli.commands.server import cmd_mcp_list_tools
 
         fake_server = MagicMock()
         fake_server.list_tools.return_value = [
@@ -257,7 +257,7 @@ class TestMCPListTools:
             },
         ]
 
-        with patch("strategy_research.interfaces.mcp.MCPServer", return_value=fake_server):
+        with patch("agentnodes.interfaces.mcp.MCPServer", return_value=fake_server):
             args = argparse.Namespace()
             rc = cmd_mcp_list_tools(args)
 

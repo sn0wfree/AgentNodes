@@ -11,12 +11,12 @@ from __future__ import annotations
 
 import pytest
 
-from strategy_research.foundation.llm.parser import _chunk_from_dict
-from strategy_research.foundation.llm.provider._think_stream import (
+from agentnodes.foundation.llm.parser import _chunk_from_dict
+from agentnodes.foundation.llm.provider._think_stream import (
     ThinkBlockBuffer,
     strip_think_blocks,
 )
-from strategy_research.foundation.llm.provider.minimax import MiniMaxAdapter
+from agentnodes.foundation.llm.provider.minimax import MiniMaxAdapter
 
 
 def feed(reflow: ThinkBlockBuffer, chunks: list[str]) -> str:

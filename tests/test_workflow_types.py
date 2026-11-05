@@ -8,7 +8,7 @@ from __future__ import annotations
 
 import pytest
 
-from strategy_research.kernel.swarm.types import AgentCall, AgentStatus, SwarmHook
+from agentnodes.kernel.swarm.types import AgentCall, AgentStatus, SwarmHook
 
 
 # ── AgentStatus ─────────────────────────────────────────────────────
@@ -170,7 +170,7 @@ class TestSwarmHookCallbacks:
 
 class TestWorkflowTypesShim:
     def test_re_exports_swarm_types(self):
-        from strategy_research.kernel.workflow import types as shim
+        from agentnodes.kernel.workflow import types as shim
         # Same class objects, not just compatible types
         assert shim.AgentCall is AgentCall
         assert shim.AgentStatus is AgentStatus
@@ -179,13 +179,13 @@ class TestWorkflowTypesShim:
     def test_no_legacy_types(self):
         """RoundResult / SwarmTask were removed; the shim must not export
         them any more."""
-        from strategy_research.kernel.workflow import types as shim
+        from agentnodes.kernel.workflow import types as shim
         assert not hasattr(shim, "RoundResult")
         assert not hasattr(shim, "SwarmTask")
 
     def test_package_level_imports(self):
         """Importing from the package root still works (used by tests)."""
-        from strategy_research.kernel.workflow import (
+        from agentnodes.kernel.workflow import (
             AgentCall as PkgAgentCall,
             AgentStatus as PkgAgentStatus,
             SwarmHook as PkgSwarmHook,

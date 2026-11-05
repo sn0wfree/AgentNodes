@@ -7,7 +7,7 @@
 
 | 测试 | 症状 | 根因 |
 |---|---|---|
-| `test_compact_error_propagation.py::TestPersistPropagatesErrors::test_persist_message_failure_logs_traceback` | `mock_logger.exception.assert_called()` 失败 | 测试 patch `strategy_research.kernel.agent.loop.logger`，但 `logger.exception` 实际由 `loop_compaction.py` 的 logger 发出。应 patch `loop_compaction.logger` |
+| `test_compact_error_propagation.py::TestPersistPropagatesErrors::test_persist_message_failure_logs_traceback` | `mock_logger.exception.assert_called()` 失败 | 测试 patch `agentnodes.kernel.agent.loop.logger`，但 `logger.exception` 实际由 `loop_compaction.py` 的 logger 发出。应 patch `loop_compaction.logger` |
 | `test_compact_error_propagation.py::TestMaybeCompactRollsBack::test_rolls_back_when_compact_raises` | `AttributeError: loop does not have attribute 'compact_messages'` | `compact_messages` 从未在 `loop.py` 中定义（它在 `compact.py`，由 `loop_compaction.py` 调用）。应 patch `loop_compaction.compact_messages` 或 `compact.compact_messages` |
 | `test_regression_2026_08_05.py::TestAmaybeCompactRuntime::test_compact_messages_invoked_via_to_thread` | 同上 | 同上 |
 | `test_regression_2026_08_05.py::TestAmaybeCompactRuntime::test_llm_client_called_directly_not_via_adapter` | 同上 | 同上 |
@@ -35,5 +35,5 @@ Linux/macOS 能通过，属平台差异暴露的测试卫生问题。
 
 ## 计数补充
 
-`tests/attic/test_b6_l4_compaction.py:228` 仍 import `strategy_research.core.agent.loop`
+`tests/attic/test_b6_l4_compaction.py:228` 仍 import `agentnodes.core.agent.loop`
 ——`core/` 已删除，该文件在 `attic/`（不收集），属历史残留，无需处理。

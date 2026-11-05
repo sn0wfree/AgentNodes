@@ -9,7 +9,7 @@ import pytest
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
 
-from strategy_research.kernel.agent.capability import (
+from agentnodes.kernel.agent.capability import (
     CapabilityAlreadyRegistered,
     CapabilityNotFound,
     CapabilityRegistry,

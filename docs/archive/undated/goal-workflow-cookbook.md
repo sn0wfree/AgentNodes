@@ -17,7 +17,7 @@
 Python API：
 
 ```python
-from strategy_research.core.goal.workflow_config import list_goal_workflows
+from agentnodes.core.goal.workflow_config import list_goal_workflows
 
 for wf in list_goal_workflows():
     print(f"{wf['name']}: {wf['description']}")
@@ -28,7 +28,7 @@ for wf in list_goal_workflows():
 ```bash
 # 复制到用户目录
 mkdir -p ~/.quantnodes-research/workflows
-cp src/strategy_research/core/swarm/presets/goal_factor_research.yaml \
+cp src/agentnodes/core/swarm/presets/goal_factor_research.yaml \
    ~/.quantnodes-research/workflows/my_strategy.yaml
 ```
 
@@ -95,8 +95,8 @@ completion:
 # 或 Python API
 python -c "
 import asyncio
-from strategy_research.core.goal.workflow_config import load_goal_workflow
-from strategy_research.core.goal.workflow import GoalWorkflowRunner
+from agentnodes.core.goal.workflow_config import load_goal_workflow
+from agentnodes.core.goal.workflow import GoalWorkflowRunner
 
 config = load_goal_workflow('my_strategy')
 runner = GoalWorkflowRunner(config, session_id='test')
@@ -120,7 +120,7 @@ print(f'goal_id={goal_id}')
 ### 添加自定义 validator
 
 ```python
-from strategy_research.core.goal.validator_registry import ValidatorRegistry
+from agentnodes.core.goal.validator_registry import ValidatorRegistry
 
 class MyValidator:
     def validate(self, result):
@@ -135,7 +135,7 @@ ValidatorRegistry.register("my_analyst", MyValidator())
 ### 添加自定义 completion 策略
 
 ```python
-from strategy_research.core.goal.completion_strategy import CompletionStrategyFactory
+from agentnodes.core.goal.completion_strategy import CompletionStrategyFactory
 
 class MyCompletion:
     def is_complete(self, evidence_count, criteria_count):
@@ -206,7 +206,7 @@ P1.8 已实现真断点续跑：
 CLI 用法：
 
 ```python
-from strategy_research.core.goal.workflow import GoalWorkflowRunner
+from agentnodes.core.goal.workflow import GoalWorkflowRunner
 
 runner = GoalWorkflowRunner(config, session_id="s", goal_id="g")
 await runner.resume_and_continue()

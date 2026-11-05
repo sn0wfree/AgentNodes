@@ -18,9 +18,9 @@ import pytest
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
 
-from strategy_research.foundation.llm.config import LLMConfig
-from strategy_research.foundation.llm.errors import LLMTimeoutError
-from strategy_research.foundation.llm.openai_client import OpenAICompatClient
+from agentnodes.foundation.llm.config import LLMConfig
+from agentnodes.foundation.llm.errors import LLMTimeoutError
+from agentnodes.foundation.llm.openai_client import OpenAICompatClient
 
 
 def _trickle_lines(total: int, gap: float):

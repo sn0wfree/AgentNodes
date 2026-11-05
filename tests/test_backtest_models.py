@@ -9,7 +9,7 @@ from copy import deepcopy
 import pandas as pd
 import pytest
 
-from strategy_research.foundation.utils.backtest_models import (
+from agentnodes.foundation.utils.backtest_models import (
     EquitySnapshot,
     Position,
     TradeRecord,

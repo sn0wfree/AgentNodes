@@ -1,9 +1,9 @@
 """Unit tests for A6 light subtasks: toolset + budget on AgentNodeConfig / task tool."""
 from __future__ import annotations
 
-from strategy_research.kernel.agent.builtin_tools.subagent_tool import SubAgentTool
-from strategy_research.kernel.agent.dag_config import AgentNodeConfig
-from strategy_research.kernel.agent.toolsets import TOOLSETS
+from agentnodes.kernel.agent.builtin_tools.subagent_tool import SubAgentTool
+from agentnodes.kernel.agent.dag_config import AgentNodeConfig
+from agentnodes.kernel.agent.toolsets import TOOLSETS
 
 
 class TestAgentNodeConfigA6:
@@ -44,7 +44,7 @@ class TestSubAgentToolParams:
     def test_toolset_resolves_named_allowlist(self):
         # resolve via toolsets then apply whitelist
         SubAgentTool()
-        from strategy_research.kernel.agent.toolsets import resolve_toolset
+        from agentnodes.kernel.agent.toolsets import resolve_toolset
 
         wl = resolve_toolset("minimal")
         assert wl == TOOLSETS["minimal"]

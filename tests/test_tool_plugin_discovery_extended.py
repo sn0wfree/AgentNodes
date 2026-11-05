@@ -10,8 +10,8 @@ import pytest
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
 
-from strategy_research.kernel.agent.builtin_tools import _discover_tool_plugins
-from strategy_research.kernel.agent.tools import ToolRegistry, BaseTool
+from agentnodes.kernel.agent.builtin_tools import _discover_tool_plugins
+from agentnodes.kernel.agent.tools import ToolRegistry, BaseTool
 
 
 class _TestTool(BaseTool):
@@ -110,7 +110,7 @@ class TestToolPluginDiscoveryExtended:
         ep.load.return_value = _register
 
         # Dict-style entry_points
-        with patch("importlib.metadata.entry_points", return_value={"strategy_research.tools": [ep]}):
+        with patch("importlib.metadata.entry_points", return_value={"agentnodes.tools": [ep]}):
             _discover_tool_plugins(r)
 
         assert r.get("dict_tool") is not None

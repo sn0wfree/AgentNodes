@@ -20,7 +20,7 @@ def temp_db(monkeypatch, tmp_path):
     workspace = tmp_path
     workspace.mkdir(parents=True, exist_ok=True)
     monkeypatch.setenv("SR_WORKSPACE_PATH", str(workspace))
-    yield workspace / "quantnodes_strategy_research_user.db"
+    yield workspace / "quantnodes_agentnodes_user.db"
 
 
 def _insert_session(conn: sqlite3.Connection, session_id: str) -> None:
@@ -84,7 +84,7 @@ def _create_schema(temp_db) -> None:
 
 def _run_migration(temp_db) -> None:
     """Run the migration directly on the temp DB."""
-    from strategy_research.interfaces.api.routers.web_session import _migrate_text_part_ids
+    from agentnodes.interfaces.api.routers.web_session import _migrate_text_part_ids
     conn = sqlite3.connect(str(temp_db))
     conn.row_factory = sqlite3.Row
     _migrate_text_part_ids(conn)

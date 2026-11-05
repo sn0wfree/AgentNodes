@@ -184,13 +184,13 @@ correctly identifies compactions and applies the LLM fix.
 | File | Type | Purpose |
 |------|------|---------|
 | `migrations/003_add_message_type.sql` | NEW | Schema migration |
-| `src/strategy_research/core/agent/compaction_message.py` | NEW | `CompactionMessage` dataclass + DB I/O |
-| `src/strategy_research/core/agent/to_llm_message.py` | NEW | Unified LLM projection |
-| `src/strategy_research/core/agent/compact.py` | MOD | Persist compaction, no inline injection |
-| `src/strategy_research/core/agent/loop.py` | MOD | Use `to_llm_message`, drop `[context summary]` matching |
-| `src/strategy_research/api/session/service.py` | MOD | Filter by `message_type`, compat for old format |
-| `src/strategy_research/api/session/store.py` | MOD | Support `message_type` parameter |
-| `src/strategy_research/cli/tui/app.py` | MOD | Skip rendering `compaction` messages |
+| `src/agentnodes/core/agent/compaction_message.py` | NEW | `CompactionMessage` dataclass + DB I/O |
+| `src/agentnodes/core/agent/to_llm_message.py` | NEW | Unified LLM projection |
+| `src/agentnodes/core/agent/compact.py` | MOD | Persist compaction, no inline injection |
+| `src/agentnodes/core/agent/loop.py` | MOD | Use `to_llm_message`, drop `[context summary]` matching |
+| `src/agentnodes/api/session/service.py` | MOD | Filter by `message_type`, compat for old format |
+| `src/agentnodes/api/session/store.py` | MOD | Support `message_type` parameter |
+| `src/agentnodes/cli/tui/app.py` | MOD | Skip rendering `compaction` messages |
 | `tests/test_compaction_message.py` | NEW | Dataclass + DB I/O tests |
 | `tests/test_to_llm_message.py` | NEW | Projection tests (incl. regression) |
 | `tests/test_compact.py` | MOD | Update existing tests for new format |

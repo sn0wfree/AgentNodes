@@ -130,7 +130,7 @@ auth_tokens 覆写 jwt_secret；init wizard 依赖真实 llm.json 才能通过�
 
 | 层 | 机制 | 防什么 |
 |---|---|---|
-| 进程级重定向 | conftest **顶部**（任何 strategy_research import 前）把 `USERPROFILE`/`HOME` 指向 `tests/_user_home_sandbox` | import 时常量、运行时解析、env 直读三条路全部落沙箱 |
+| 进程级重定向 | conftest **顶部**（任何 agentnodes import 前）把 `USERPROFILE`/`HOME` 指向 `tests/_user_home_sandbox` | import 时常量、运行时解析、env 直读三条路全部落沙箱 |
 | 金丝雀对账 | session 级 `_guard_real_config`：会话前后对真实 `~/.quantnodes`、`~/.quantnodes-research` 做全量文件指纹比对，有变化即报错并列出文件 | 兜底抓绕过 home 解析的写入（win32 直读、绝对路径拼接） |
 | 显式豁免 | live 套件夹具显式把 home 指回 `_home_sandbox.REAL_HOME` | 豁免是显式动作而非默认，宿主配置只在 live 测试可触碰 |
 

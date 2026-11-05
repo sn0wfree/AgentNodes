@@ -17,7 +17,7 @@
 
 | 项 | 值 |
 |---|---|
-| 文件 | `<workspace>/.quantnodes_strategy_research_session.db`（5.4MB + WAL 4.3MB） |
+| 文件 | `<workspace>/.quantnodes_agentnodes_session.db`（5.4MB + WAL 4.3MB） |
 | 表 | 12 张：messages(187) / message_parts(298) / **event_log(6009)** / attempts(98, 17列) / sessions(81) / snapshots(1) / blob_refs(54) + FTS5 五件套（含 3 个同步触发器） |
 | event_log 真实写入 | text.ended(146) / thinking_*(268) / assistant_message(137) / llm_request(121) / attempt.*(169) / tool_*(189)… |
 

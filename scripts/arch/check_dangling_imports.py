@@ -3,7 +3,7 @@
 
 扫描 src/ 与 tests/ 全部 .py，按 PEP 328 解析每条 import 的**真实目标**
 （绝对路径直接取 module；相对导入按 importer 包深度剥离 level-1），
-断言目标模块在 strategy_research/ 下真实存在（.py 文件或目录）。
+断言目标模块在 agentnodes/ 下真实存在（.py 文件或目录）。
 
 为什么存在：文本前缀替换（搬迁改写工具的主模式）对相对导入天然盲区——
 `from ...tools.data_clean import` 这类语句在搬迁后解析到不存在的模块，
@@ -12,8 +12,8 @@
 LLM DAG 规划从未启用等）。
 
 覆盖两种 import 形态（缺一不可）：
-    from strategy_research.apps.db import get_conn   -> ast.ImportFrom
-    import strategy_research.apps.db as db           -> ast.Import
+    from agentnodes.apps.db import get_conn   -> ast.ImportFrom
+    import agentnodes.apps.db as db           -> ast.Import
 2026-11-05 批次 2 教训：本脚本曾只遍历 ast.ImportFrom，漏掉 ast.Import ——
 删掉 interfaces/api/routers/workflow.py 后，两个测试文件用
 `import ...routers.workflow as wf` 继续引用它，门禁显示 0 悬空，
@@ -42,12 +42,12 @@ import pathlib
 import sys
 
 ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-PKG_DIR = os.path.join(ROOT, "src", "strategy_research")
+PKG_DIR = os.path.join(ROOT, "src", "agentnodes")
 
 
 def module_exists(mod: str) -> bool:
-    """strategy_research 相对模块路径是否真实存在（.py 或目录）。"""
-    if not mod.startswith("strategy_research"):
+    """agentnodes 相对模块路径是否真实存在（.py 或目录）。"""
+    if not mod.startswith("agentnodes"):
         return True  # 第三方 / 标准库，不在本门禁范围
     parts = mod.split(".")[1:]
     if not parts:
@@ -63,7 +63,7 @@ def package_dir(mod: str) -> str | None:
     `__init__.py` 是命名空间；普通模块的 `from mod import name` 取的是
     模块属性，静态不可判定，一律放过。
     """
-    if not mod.startswith("strategy_research"):
+    if not mod.startswith("agentnodes"):
         return None
     parts = mod.split(".")[1:]
     if not parts:
@@ -164,7 +164,7 @@ def scan(roots: list[str]) -> list[str]:
                         # 收集期不报错、fixture setup 期才炸 —— 门禁当时是绿的。
                         for alias in node.names:
                             mod = alias.name
-                            if not mod.startswith("strategy_research"):
+                            if not mod.startswith("agentnodes"):
                                 continue
                             if not module_exists(mod):
                                 if _exempt(src_lines, node, alias):
@@ -179,7 +179,7 @@ def scan(roots: list[str]) -> list[str]:
                     else:
                         base_pkg = pkg[: len(pkg) - (node.level - 1)]
                         mod = ".".join(base_pkg + ([node.module] if node.module else []))
-                    if not mod.startswith("strategy_research"):
+                    if not mod.startswith("agentnodes"):
                         continue
                     if not module_exists(mod):
                         if not _exempt(src_lines, node, None):
@@ -189,7 +189,7 @@ def scan(roots: list[str]) -> list[str]:
                     # 第三种形态：`from <包> import <名字>`
                     # 模块本身存在不代表被 import 的名字存在 —— 删掉
                     # interfaces/api/routers/workflow.py 后，
-                    # `from strategy_research.interfaces.api.routers import workflow`
+                    # `from agentnodes.interfaces.api.routers import workflow`
                     # 的宿主包还在，门禁看不出名字已消失。
                     pkg_dir = package_dir(mod)
                     if pkg_dir is None:

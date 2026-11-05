@@ -11,14 +11,14 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Any
 
-from strategy_research.kernel.gateway import SessionController
-from strategy_research.kernel.orchestration import (
+from agentnodes.kernel.gateway import SessionController
+from agentnodes.kernel.orchestration import (
     EntryPoint,
     SourceKind,
     WorkKind,
     WorkRequest,
 )
-from strategy_research.kernel.orchestration.entry_point import EntryPoint
+from agentnodes.kernel.orchestration.entry_point import EntryPoint
 
 
 @dataclass

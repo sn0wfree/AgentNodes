@@ -32,16 +32,16 @@ def _patch_paths(tmp_path: Path, monkeypatch):
     env_path = qn / ".env"
 
     monkeypatch.setattr(
-        "strategy_research.interfaces.cli.onboard._QUANTNODES_LLM_JSON_PATH", llm_path
+        "agentnodes.interfaces.cli.onboard._QUANTNODES_LLM_JSON_PATH", llm_path
     )
     monkeypatch.setattr(
-        "strategy_research.interfaces.cli.onboard._QUANTNODES_DOTENV_PATH", env_path
+        "agentnodes.interfaces.cli.onboard._QUANTNODES_DOTENV_PATH", env_path
     )
     monkeypatch.setattr(
-        "strategy_research.interfaces.cli._auto_onboard._QUANTNODES_LLM_JSON_PATH", llm_path
+        "agentnodes.interfaces.cli._auto_onboard._QUANTNODES_LLM_JSON_PATH", llm_path
     )
     monkeypatch.setattr(
-        "strategy_research.interfaces.cli._auto_onboard._QUANTNODES_DOTENV_PATH", env_path
+        "agentnodes.interfaces.cli._auto_onboard._QUANTNODES_DOTENV_PATH", env_path
     )
     return llm_path, env_path
 
@@ -53,25 +53,25 @@ def _run_init(monkeypatch, llm_path, env_path, args, inputs):
     so no TTY is needed.
 
     ``_auto_onboard`` binds ``run_onboarding`` at import time (module-level
-    ``from strategy_research.interfaces.cli.onboard import run_onboarding``), so once
+    ``from agentnodes.interfaces.cli.onboard import run_onboarding``), so once
     it has been imported by an earlier test, patching ``onboard.run_onboarding``
     is a no-op for the ``main()`` entry path — patch the bound symbol too.
     """
-    from strategy_research.interfaces.cli.onboard import run_onboarding as real_run
+    from agentnodes.interfaces.cli.onboard import run_onboarding as real_run
 
     def fake_run(**kw):
         return real_run(inputs=inputs,
                         llm_json_path=llm_path, dotenv_path=env_path)
 
     monkeypatch.setattr(
-        "strategy_research.interfaces.cli.onboard.run_onboarding", fake_run
+        "agentnodes.interfaces.cli.onboard.run_onboarding", fake_run
     )
     monkeypatch.setattr(
-        "strategy_research.interfaces.cli._auto_onboard.run_onboarding", fake_run
+        "agentnodes.interfaces.cli._auto_onboard.run_onboarding", fake_run
     )
 
     with patch("sys.argv", ["prog", "init"] + args):
-        from strategy_research.interfaces.cli import main
+        from agentnodes.interfaces.cli import main
         return main()
 
 
@@ -124,11 +124,11 @@ class TestInitE2E:
             return None
 
         monkeypatch.setattr(
-            "strategy_research.interfaces.cli.onboard.run_onboarding", fake_cancel
+            "agentnodes.interfaces.cli.onboard.run_onboarding", fake_cancel
         )
 
         with patch("sys.argv", ["prog", "init", "--force"]):
-            from strategy_research.interfaces.cli import main
+            from agentnodes.interfaces.cli import main
             rc = main()
 
         assert rc == 1
@@ -168,7 +168,7 @@ class TestInitE2E:
     def test_help_shows_wizard_description(self, capsys):
         """--help 输出含 'credentials wizard'。"""
         with patch("sys.argv", ["prog", "init", "--help"]):
-            from strategy_research.interfaces.cli import main
+            from agentnodes.interfaces.cli import main
             with pytest.raises(SystemExit) as exc:
                 main()
         assert exc.value.code == 0
@@ -184,11 +184,11 @@ class TestInitE2E:
             raise AssertionError("wizard called when env exists")
 
         monkeypatch.setattr(
-            "strategy_research.interfaces.cli._auto_onboard.run_onboarding", fail_if_called,
+            "agentnodes.interfaces.cli._auto_onboard.run_onboarding", fail_if_called,
         )
 
-        from strategy_research.interfaces.cli._auto_onboard import _maybe_run_onboarding
-        from strategy_research.interfaces.cli.theme import get_console
+        from agentnodes.interfaces.cli._auto_onboard import _maybe_run_onboarding
+        from agentnodes.interfaces.cli.theme import get_console
 
         assert _maybe_run_onboarding(get_console()) is True
 
@@ -198,19 +198,19 @@ class TestInitE2E:
 
         # Skip migration so it doesn't create env_path in tmp.
         monkeypatch.setattr(
-            "strategy_research.interfaces.cli._auto_onboard._migrate_legacy_env",
+            "agentnodes.interfaces.cli._auto_onboard._migrate_legacy_env",
             lambda: None,
         )
         monkeypatch.setattr(
-            "strategy_research.interfaces.cli._auto_onboard._first_existing_dotenv_path",
+            "agentnodes.interfaces.cli._auto_onboard._first_existing_dotenv_path",
             lambda: None,
         )
         monkeypatch.setattr(
-            "strategy_research.interfaces.cli._auto_onboard.sys.stdin",
+            "agentnodes.interfaces.cli._auto_onboard.sys.stdin",
             type("M", (), {"isatty": staticmethod(lambda: True)})(),
         )
         monkeypatch.setattr(
-            "strategy_research.interfaces.cli._auto_onboard.sys.stdout",
+            "agentnodes.interfaces.cli._auto_onboard.sys.stdout",
             type("M", (), {"isatty": staticmethod(lambda: True)})(),
         )
 
@@ -224,12 +224,12 @@ class TestInitE2E:
             return llm_path
 
         monkeypatch.setattr(
-            "strategy_research.interfaces.cli._auto_onboard.run_onboarding",
+            "agentnodes.interfaces.cli._auto_onboard.run_onboarding",
             fake_run_onboarding,
         )
 
-        from strategy_research.interfaces.cli._auto_onboard import _maybe_run_onboarding
-        from strategy_research.interfaces.cli.theme import get_console
+        from agentnodes.interfaces.cli._auto_onboard import _maybe_run_onboarding
+        from agentnodes.interfaces.cli.theme import get_console
 
         assert _maybe_run_onboarding(get_console()) is True
         assert llm_path.exists()
@@ -241,7 +241,7 @@ class TestInitE2E:
 
         with patch("rich.prompt.Confirm.ask", return_value=False):
             with patch("sys.argv", ["prog", "init"]):
-                from strategy_research.interfaces.cli import main
+                from agentnodes.interfaces.cli import main
                 rc = main()
 
         assert rc == 0
@@ -250,7 +250,7 @@ class TestInitE2E:
 
     def test_validate_key_unit(self):
         """_validate_key: prefix / length / empty checks."""
-        from strategy_research.interfaces.cli.onboard import _validate_key
+        from agentnodes.interfaces.cli.onboard import _validate_key
 
         # Wrong prefix
         err = _validate_key("sk-", "wrong-1234567890")
@@ -287,7 +287,7 @@ class TestInitE2E:
         """skip_tushare=True → TUSHARE_TOKEN 不在 .env。"""
         llm_path, env_path = _patch_paths(tmp_path, monkeypatch)
 
-        from strategy_research.interfaces.cli.onboard import run_onboarding
+        from agentnodes.interfaces.cli.onboard import run_onboarding
 
         result = run_onboarding(
             inputs=["OpenAI", "gpt-4o", "sk-test1234567890", "300"],

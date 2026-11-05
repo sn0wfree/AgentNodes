@@ -1,5 +1,5 @@
 include LICENSE
 include README.md
-recursive-include src/strategy_research/templates *.py *.md *.yaml
-recursive-include src/strategy_research/templates/.prompts *.md
-recursive-include src/strategy_research/templates/.skills *.md
+recursive-include src/agentnodes/templates *.py *.md *.yaml
+recursive-include src/agentnodes/templates/.prompts *.md
+recursive-include src/agentnodes/templates/.skills *.md

@@ -10,14 +10,14 @@ from __future__ import annotations
 import pytest
 from fastapi.testclient import TestClient
 
-import strategy_research.interfaces.api.session.web_session_db as _wsdb
-from strategy_research.interfaces.api.app import create_app
-from strategy_research.interfaces.api.auth_tokens import create_token
+import agentnodes.interfaces.api.session.web_session_db as _wsdb
+from agentnodes.interfaces.api.app import create_app
+from agentnodes.interfaces.api.auth_tokens import create_token
 
 
 @pytest.fixture
 def client(tmp_path, monkeypatch):
-    import strategy_research.interfaces.api.routers.web_session as ws
+    import agentnodes.interfaces.api.routers.web_session as ws
     monkeypatch.setattr(_wsdb, "_get_db_path", lambda: str(tmp_path / "sr.db"))
     monkeypatch.setattr(ws, "_get_db_path", lambda: str(tmp_path / "sr.db"))
     return TestClient(create_app())

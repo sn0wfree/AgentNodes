@@ -10,7 +10,7 @@ from pathlib import Path
 
 import pytest
 
-SRC = Path(__file__).resolve().parents[1] / "src" / "strategy_research"
+SRC = Path(__file__).resolve().parents[1] / "src" / "agentnodes"
 # 接缝加固（docs/design/seam-hardening-design-20261030.md）：llm/memory 入严格集。
 # agent 不进——builtin_tools 是能力适配器，合法包装域工具（组合根职责）。
 # 2026-11-04 物理分层：平台包分散在 kernel/ 与 foundation/，按实际落位登记。
@@ -58,7 +58,7 @@ def _imports(path: Path) -> list[tuple[str, int]]:
     """
     tree = ast.parse(path.read_text(encoding="utf-8"))
     rel = path.relative_to(SRC).parts
-    pkg = ("strategy_research",) + rel[:-1]
+    pkg = ("agentnodes",) + rel[:-1]
     found: list[tuple[str, int]] = []
     for node in ast.walk(tree):
         if isinstance(node, ast.Import):
@@ -107,7 +107,7 @@ def test_platform_never_imports_study_domain():
     只锁不修）。（相对导入由 _imports 解析为绝对名后匹配，无绕过空间。）
     """
     banned = tuple(
-        f"strategy_research.apps.{p}" for p in RESEARCH_DOMAIN_PKGS
+        f"agentnodes.apps.{p}" for p in RESEARCH_DOMAIN_PKGS
     )
     all_v: list[str] = []
     for pkg in PLATFORM_PKGS:
@@ -129,7 +129,7 @@ def test_study_platform_touchpoints_are_whitelisted():
     root = SRC / "apps" / "study"
     if not root.exists():
         pytest.skip("apps/study 已随批次 3 归档")
-    allowed_sublayers = tuple(f"strategy_research.core.{s}" for s in (
+    allowed_sublayers = tuple(f"agentnodes.core.{s}" for s in (
         "agent", "llm", "runtimes", "gateway", "orchestration",
         "context", "storage", "memory", "utils", "observability",
         "permission", "strategy_acceptance",
@@ -173,7 +173,7 @@ def test_context_hub_never_imports_producers():
     """
     violations = _violations(
         SRC / "kernel" / "context",
-        tuple(f"strategy_research.apps.{p}" for p in ("agent", "goal", "study")),
+        tuple(f"agentnodes.apps.{p}" for p in ("agent", "goal", "study")),
     )
     assert not violations, "ContextHub 反向依赖生产方:\n" + "\n".join(violations)
 
@@ -195,14 +195,14 @@ def test_platform_never_imports_fastapi():
 
 
 def test_invariants_verify_all_passes():
-    from strategy_research.kernel.gateway.invariants import verify_all
+    from agentnodes.kernel.gateway.invariants import verify_all
 
     verify_all()
 
 
 def test_invariant_registry_covers_documented_set():
     """INV-1/3/5/8/9 必须在登记表里（防悄悄删条目）。"""
-    from strategy_research.kernel.gateway.invariants import invariants
+    from agentnodes.kernel.gateway.invariants import invariants
 
     ids = {inv.id.split(":")[0].strip() for inv in invariants()}
     assert {"INV-1", "INV-3", "INV-5", "INV-8", "INV-9"} <= ids
@@ -291,7 +291,7 @@ def test_research_graph_gate_is_retired():
     """门已退役：恒 True，环境变量无效。"""
     import os
 
-    from strategy_research.kernel.gateway import research_graph_enabled
+    from agentnodes.kernel.gateway import research_graph_enabled
 
     assert research_graph_enabled() is True
     for value in ("0", "1", "false"):
@@ -371,8 +371,8 @@ def test_messages_table_written_only_by_projection_or_guarded_persist():
 
 
 def test_mailbox_kind_filter_never_drops_work():
-    from strategy_research.kernel.gateway import scheduler_request
-    from strategy_research.kernel.orchestration import EntryPoint, WorkKind
+    from agentnodes.kernel.gateway import scheduler_request
+    from agentnodes.kernel.orchestration import EntryPoint, WorkKind
 
     ep = EntryPoint(sink=lambda k, d: None)
     ep.submit(scheduler_request("s", {"study_id": "x"}))
@@ -386,8 +386,8 @@ def test_mailbox_kind_filter_never_drops_work():
 
 
 def test_chat_kind_filter_never_drops_chat_work():
-    from strategy_research.kernel.gateway import api_chat_request
-    from strategy_research.kernel.orchestration import EntryPoint, WorkKind
+    from agentnodes.kernel.gateway import api_chat_request
+    from agentnodes.kernel.orchestration import EntryPoint, WorkKind
 
     ep = EntryPoint(sink=lambda k, d: None)
     ep.submit(api_chat_request("s", "hi"))
@@ -417,7 +417,7 @@ def test_user_home_is_sandboxed_during_tests():
     assert Path.home() == _home_sandbox.SANDBOX_HOME
     assert os.path.expanduser("~") == str(_home_sandbox.SANDBOX_HOME)
     # 模块级常量（import 时求值）也在沙箱里
-    from strategy_research.foundation.llm import quantnodes_bridge
+    from agentnodes.foundation.llm import quantnodes_bridge
 
     assert str(_home_sandbox.SANDBOX_HOME) in str(quantnodes_bridge.CONFIG_PATH)
 

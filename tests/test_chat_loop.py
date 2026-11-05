@@ -52,7 +52,7 @@ def fake_registry(monkeypatch):
     """Patch ``build_default_registry`` to return a deterministic registry."""
     fake = _FakeRegistry(["read", "list", "run_backtest", "websearch"])
     monkeypatch.setattr(
-        "strategy_research.kernel.agent.builtin_tools.build_default_registry",
+        "agentnodes.kernel.agent.builtin_tools.build_default_registry",
         lambda: fake,
     )
     return fake
@@ -71,7 +71,7 @@ def fake_config():
 
 class TestChatLoopFactoryDefaults:
     def test_default_registry_loaded(self, fake_config, fake_registry):
-        from strategy_research.kernel.agent.chat_loop import build_chat_agent_loop
+        from agentnodes.kernel.agent.chat_loop import build_chat_agent_loop
 
         loop = build_chat_agent_loop(config=fake_config, session_id="s1")
         # Registry should be the one returned by build_default_registry()
@@ -83,7 +83,7 @@ class TestChatLoopFactoryDefaults:
 
     def test_chat_role_uses_chat_builder(self, fake_config, fake_registry):
         """role='chat' → PromptBuilderFactory renders via ChatPromptBuilder."""
-        from strategy_research.kernel.agent.chat_loop import build_chat_agent_loop
+        from agentnodes.kernel.agent.chat_loop import build_chat_agent_loop
 
         loop = build_chat_agent_loop(
             config=fake_config, session_id="s1", role="chat"
@@ -94,7 +94,7 @@ class TestChatLoopFactoryDefaults:
 
     def test_researcher_role_uses_static_builder(self, fake_config, fake_registry):
         """role='researcher' → StaticFilePromptBuilder (verbatim researcher.md)."""
-        from strategy_research.kernel.agent.chat_loop import build_chat_agent_loop
+        from agentnodes.kernel.agent.chat_loop import build_chat_agent_loop
 
         loop = build_chat_agent_loop(
             config=fake_config, session_id="s1", role="researcher"
@@ -103,25 +103,25 @@ class TestChatLoopFactoryDefaults:
         assert "# Role: Researcher" in sp
 
     def test_stream_mode_forced_true(self, fake_config, fake_registry):
-        from strategy_research.kernel.agent.chat_loop import build_chat_agent_loop
+        from agentnodes.kernel.agent.chat_loop import build_chat_agent_loop
 
         loop = build_chat_agent_loop(config=fake_config, session_id="s1")
         assert loop._stream_mode is True
 
     def test_max_iterations_default_one(self, fake_config, fake_registry):
-        from strategy_research.kernel.agent.chat_loop import build_chat_agent_loop
+        from agentnodes.kernel.agent.chat_loop import build_chat_agent_loop
 
         loop = build_chat_agent_loop(config=fake_config, session_id="s1")
         assert loop.max_iterations == 1
 
     def test_compact_config_from_config(self, fake_config, fake_registry):
-        from strategy_research.kernel.agent.chat_loop import build_chat_agent_loop
+        from agentnodes.kernel.agent.chat_loop import build_chat_agent_loop
 
         loop = build_chat_agent_loop(config=fake_config, session_id="s1")
         assert loop.cc is fake_config.compact_config
 
     def test_event_bus_passed_through(self, fake_config, fake_registry):
-        from strategy_research.kernel.agent.chat_loop import build_chat_agent_loop
+        from agentnodes.kernel.agent.chat_loop import build_chat_agent_loop
 
         bus = MagicMock()
         loop = build_chat_agent_loop(
@@ -130,7 +130,7 @@ class TestChatLoopFactoryDefaults:
         assert loop._event_bus is bus
 
     def test_on_event_passed_through(self, fake_config, fake_registry):
-        from strategy_research.kernel.agent.chat_loop import build_chat_agent_loop
+        from agentnodes.kernel.agent.chat_loop import build_chat_agent_loop
 
         cb = MagicMock()
         loop = build_chat_agent_loop(
@@ -139,14 +139,14 @@ class TestChatLoopFactoryDefaults:
         assert loop._on_event is cb
 
     def test_session_id_passed(self, fake_config, fake_registry):
-        from strategy_research.kernel.agent.chat_loop import build_chat_agent_loop
+        from agentnodes.kernel.agent.chat_loop import build_chat_agent_loop
 
         loop = build_chat_agent_loop(config=fake_config, session_id="abc-123")
         assert loop.session_id == "abc-123"
 
     def test_goal_and_hypothesis_disabled(self, fake_config, fake_registry):
         """Chat mode disables goal injection + hypothesis auto-create."""
-        from strategy_research.kernel.agent.chat_loop import build_chat_agent_loop
+        from agentnodes.kernel.agent.chat_loop import build_chat_agent_loop
 
         loop = build_chat_agent_loop(config=fake_config, session_id="s1")
         assert loop.enable_goal_injection is False
@@ -161,7 +161,7 @@ class TestChatLoopAllowedToolsUnlock:
         self, fake_config, fake_registry
     ):
         """P2: default allowed_tools=None → AgentLoop keeps full registry."""
-        from strategy_research.kernel.agent.chat_loop import build_chat_agent_loop
+        from agentnodes.kernel.agent.chat_loop import build_chat_agent_loop
 
         loop = build_chat_agent_loop(config=fake_config, session_id="s1")
         # None in AgentLoop means "use all tools" → registry not filtered
@@ -175,7 +175,7 @@ class TestChatLoopAllowedToolsUnlock:
         self, fake_config, fake_registry
     ):
         """P2: explicit allowed_tools=[] still disables tools (compat)."""
-        from strategy_research.kernel.agent.chat_loop import build_chat_agent_loop
+        from agentnodes.kernel.agent.chat_loop import build_chat_agent_loop
 
         loop = build_chat_agent_loop(
             config=fake_config, session_id="s1", allowed_tools=[]
@@ -185,7 +185,7 @@ class TestChatLoopAllowedToolsUnlock:
         assert len(loop.registry._tools) == 0
 
     def test_explicit_allowlist(self, fake_config, fake_registry):
-        from strategy_research.kernel.agent.chat_loop import build_chat_agent_loop
+        from agentnodes.kernel.agent.chat_loop import build_chat_agent_loop
 
         loop = build_chat_agent_loop(
             config=fake_config, session_id="s1",
@@ -208,7 +208,7 @@ class TestChatLoopWorkspaceRendering:
         self, fake_config, fake_registry, tmp_path
     ):
         """P3: workspace path is rendered into {workspace} placeholder."""
-        from strategy_research.kernel.agent.chat_loop import build_chat_agent_loop
+        from agentnodes.kernel.agent.chat_loop import build_chat_agent_loop
 
         ws = tmp_path / "myws"
         loop = build_chat_agent_loop(
@@ -221,7 +221,7 @@ class TestChatLoopWorkspaceRendering:
 
     def test_workspace_none_no_injection(self, fake_config, fake_registry):
         """P3: workspace=None → {workspace} replaced by empty string."""
-        from strategy_research.kernel.agent.chat_loop import build_chat_agent_loop
+        from agentnodes.kernel.agent.chat_loop import build_chat_agent_loop
 
         loop = build_chat_agent_loop(
             config=fake_config, session_id="s1",
@@ -235,7 +235,7 @@ class TestChatLoopWorkspaceRendering:
         self, fake_config, fake_registry
     ):
         """P3: tool_list placeholder rendered from build_default_registry()."""
-        from strategy_research.kernel.agent.chat_loop import build_chat_agent_loop
+        from agentnodes.kernel.agent.chat_loop import build_chat_agent_loop
 
         loop = build_chat_agent_loop(config=fake_config, session_id="s1")
         sp = self._system_prompt(loop)
@@ -247,7 +247,7 @@ class TestChatLoopWorkspaceRendering:
         self, fake_config, fake_registry, tmp_path
     ):
         """extra_context["workspace"] wins over auto-injected workspace."""
-        from strategy_research.kernel.agent.chat_loop import build_chat_agent_loop
+        from agentnodes.kernel.agent.chat_loop import build_chat_agent_loop
 
         ws = tmp_path / "auto_injected"
         loop = build_chat_agent_loop(
@@ -263,7 +263,7 @@ class TestChatLoopWorkspaceRendering:
         self, fake_config, fake_registry, tmp_path
     ):
         """system_prompt_override bypasses PromptBuilderFactory rendering."""
-        from strategy_research.kernel.agent.chat_loop import build_chat_agent_loop
+        from agentnodes.kernel.agent.chat_loop import build_chat_agent_loop
 
         custom = "CUSTOM_SYSTEM_PROMPT"
         loop = build_chat_agent_loop(
@@ -279,7 +279,7 @@ class TestChatLoopWorkspaceRendering:
         self, fake_config, fake_registry
     ):
         """explicit compact_config overrides config.compact_config."""
-        from strategy_research.kernel.agent.chat_loop import build_chat_agent_loop
+        from agentnodes.kernel.agent.chat_loop import build_chat_agent_loop
 
         custom_cc = MagicMock()
         loop = build_chat_agent_loop(
@@ -290,7 +290,7 @@ class TestChatLoopWorkspaceRendering:
 
     def test_explicit_registry_used(self, fake_config):
         """registry= parameter bypasses build_default_registry()."""
-        from strategy_research.kernel.agent.chat_loop import build_chat_agent_loop
+        from agentnodes.kernel.agent.chat_loop import build_chat_agent_loop
 
         custom_registry = _FakeRegistry(["my_custom_tool"])
         loop = build_chat_agent_loop(
@@ -312,7 +312,7 @@ class TestChatLoopShellGating:
     """
 
     def _loop(self, allow_shell_tools: bool, fake_config):
-        from strategy_research.kernel.agent.chat_loop import build_chat_agent_loop
+        from agentnodes.kernel.agent.chat_loop import build_chat_agent_loop
 
         return build_chat_agent_loop(
             config=fake_config,
@@ -354,7 +354,7 @@ class TestChatLoopShellGating:
     def test_explicit_registry_is_gated_too(self, fake_config):
         """allow_shell_tools=False pops run_command from caller-provided
         registries as well — no path leaks the shell tool when disabled."""
-        from strategy_research.kernel.agent.chat_loop import build_chat_agent_loop
+        from agentnodes.kernel.agent.chat_loop import build_chat_agent_loop
 
         custom_registry = _FakeRegistry(["shell", "read"])
         loop = build_chat_agent_loop(
@@ -364,7 +364,7 @@ class TestChatLoopShellGating:
         assert "shell" not in loop.registry._tools
 
     def test_explicit_registry_keeps_tool_when_enabled(self, fake_config):
-        from strategy_research.kernel.agent.chat_loop import build_chat_agent_loop
+        from agentnodes.kernel.agent.chat_loop import build_chat_agent_loop
 
         custom_registry = _FakeRegistry(["shell", "read"])
         loop = build_chat_agent_loop(

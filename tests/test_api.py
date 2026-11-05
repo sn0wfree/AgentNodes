@@ -5,8 +5,8 @@ from __future__ import annotations
 import pytest
 from fastapi.testclient import TestClient
 
-from strategy_research.interfaces.api.app import create_app
-from strategy_research.interfaces.api.auth_tokens import create_token
+from agentnodes.interfaces.api.app import create_app
+from agentnodes.interfaces.api.auth_tokens import create_token
 
 # ============================================================
 # fixtures
@@ -102,7 +102,7 @@ class TestAPIServeCLI:
         import subprocess
         import sys
         result = subprocess.run(
-            [sys.executable, "-m", "strategy_research.interfaces.cli", "api", "serve", "--help"],
+            [sys.executable, "-m", "agentnodes.interfaces.cli", "api", "serve", "--help"],
             capture_output=True, text=True, encoding="utf-8", errors="replace",
         )
         assert result.returncode == 0

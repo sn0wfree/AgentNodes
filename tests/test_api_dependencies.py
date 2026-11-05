@@ -15,18 +15,18 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
 class TestDbPath(unittest.TestCase):
 
     def test_default_db_path(self):
-        from strategy_research.interfaces.api.dependencies import _resolve_db_path
+        from agentnodes.interfaces.api.dependencies import _resolve_db_path
 
         old = os.environ.pop("SR_WORKSPACE_PATH", None)
         try:
             path = _resolve_db_path()
-            self.assertTrue(str(path).endswith(".quantnodes_strategy_research_session.db"))
+            self.assertTrue(str(path).endswith(".quantnodes_agentnodes_session.db"))
         finally:
             if old is not None:
                 os.environ["SR_WORKSPACE_PATH"] = old
 
     def test_db_path_from_env(self):
-        from strategy_research.interfaces.api.dependencies import _resolve_db_path
+        from agentnodes.interfaces.api.dependencies import _resolve_db_path
 
         with TemporaryDirectory() as tmpdir:
             os.environ["SR_WORKSPACE_PATH"] = tmpdir
@@ -37,7 +37,7 @@ class TestDbPath(unittest.TestCase):
                 del os.environ["SR_WORKSPACE_PATH"]
 
     def test_get_db_path_from_workspace(self):
-        from strategy_research.interfaces.api.dependencies import get_db_path
+        from agentnodes.interfaces.api.dependencies import get_db_path
 
         with TemporaryDirectory() as tmpdir:
             state = type("State", (), {})()
@@ -52,7 +52,7 @@ class TestGetEventStore(unittest.TestCase):
 
     def test_caches_on_app_state(self):
         """Calling get_event_store twice should return the same instance."""
-        from strategy_research.interfaces.api.dependencies import get_event_store
+        from agentnodes.interfaces.api.dependencies import get_event_store
 
         request = MagicMock()
         request.app.state = type("State", (), {})()
@@ -63,8 +63,8 @@ class TestGetEventStore(unittest.TestCase):
 
     def test_container_wins(self):
         """An attached container's EventStore is used."""
-        from strategy_research.interfaces.api.container import build_container
-        from strategy_research.interfaces.api.dependencies import get_event_store
+        from agentnodes.interfaces.api.container import build_container
+        from agentnodes.interfaces.api.dependencies import get_event_store
 
         container = build_container(db_path=Path("/tmp/deps_test.db"))
         request = MagicMock()
@@ -79,7 +79,7 @@ class TestGetEventStore(unittest.TestCase):
 class TestGetSessionService(unittest.TestCase):
 
     def test_caches(self):
-        from strategy_research.interfaces.api.dependencies import get_session_service
+        from agentnodes.interfaces.api.dependencies import get_session_service
 
         request = MagicMock()
         request.app.state = type("State", (), {})()
@@ -90,8 +90,8 @@ class TestGetSessionService(unittest.TestCase):
 
     def test_container_wins(self):
         """An attached container's SessionService is the canonical one."""
-        from strategy_research.interfaces.api.container import build_container
-        from strategy_research.interfaces.api.dependencies import get_session_service
+        from agentnodes.interfaces.api.container import build_container
+        from agentnodes.interfaces.api.dependencies import get_session_service
 
         container = build_container(db_path=Path("/tmp/deps_svc.db"))
         request = MagicMock()
@@ -104,7 +104,7 @@ class TestGetSessionService(unittest.TestCase):
 
     def test_state_override(self):
         """app.state._session_service can swap the service (test seam)."""
-        from strategy_research.interfaces.api.dependencies import get_session_service
+        from agentnodes.interfaces.api.dependencies import get_session_service
 
         request = MagicMock()
         request.app.state = type("State", (), {})()
@@ -120,7 +120,7 @@ class TestGetSessionService(unittest.TestCase):
 class TestResetAppState(unittest.TestCase):
 
     def test_reset_clears_state(self):
-        from strategy_research.interfaces.api.dependencies import (
+        from agentnodes.interfaces.api.dependencies import (
             get_event_store,
             get_session_service,
             reset_app_state,
@@ -152,7 +152,7 @@ class TestDependencyIntegration(unittest.TestCase):
 
     def test_services_share_event_store(self):
         """get_session_service should use the cached EventStore."""
-        from strategy_research.interfaces.api.dependencies import (
+        from agentnodes.interfaces.api.dependencies import (
             get_event_store,
             get_session_service,
         )

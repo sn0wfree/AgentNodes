@@ -6,14 +6,14 @@ import re
 from pathlib import Path
 
 MIXINS = [
-    "src/strategy_research/core/agent/loop_tools.py",
-    "src/strategy_research/core/agent/loop_progress.py",
-    "src/strategy_research/core/agent/loop_stream.py",
-    "src/strategy_research/core/agent/loop_compaction.py",
-    "src/strategy_research/core/agent/loop_lifecycle.py",
-    "src/strategy_research/core/agent/loop_telemetry.py",
-    "src/strategy_research/core/study/runner_knowledge.py",
-    "src/strategy_research/core/study/runner_aegis.py",
+    "src/agentnodes/core/agent/loop_tools.py",
+    "src/agentnodes/core/agent/loop_progress.py",
+    "src/agentnodes/core/agent/loop_stream.py",
+    "src/agentnodes/core/agent/loop_compaction.py",
+    "src/agentnodes/core/agent/loop_lifecycle.py",
+    "src/agentnodes/core/agent/loop_telemetry.py",
+    "src/agentnodes/core/study/runner_knowledge.py",
+    "src/agentnodes/core/study/runner_aegis.py",
 ]
 
 

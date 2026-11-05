@@ -5,13 +5,13 @@ import numpy as np
 import pandas as pd
 import pytest
 
-from strategy_research.foundation.utils.backtest_config import (
+from agentnodes.foundation.utils.backtest_config import (
     CostConfig,
     StopLossConfig,
     TrendFilterConfig,
     VolTargetingConfig,
 )
-from strategy_research.foundation.utils.strategy_engine import (
+from agentnodes.foundation.utils.strategy_engine import (
     BacktestResult,
     BaseStrategy,
     StrategyEngine,

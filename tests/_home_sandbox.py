@@ -6,7 +6,7 @@ quantnodes_bridge.CONFIG_PATH 等）。任何只重定向 ``HOME`` 的测试在 
 都拦不住 ``Path.home()``（它读 ``USERPROFILE``/``HOMEDRIVE+HOMEPATH``）——
 曾有一个测试长期覆写宿主的 ``~/.quantnodes/jwt_secret``。
 
-方案：conftest **顶部**（任何 strategy_research 模块 import 之前）调用
+方案：conftest **顶部**（任何 agentnodes 模块 import 之前）调用
 ``apply()``，把整个进程的 home 解析指向会话沙箱。import 时常量、运行时
 解析、env 直读三条路全部落在沙箱。
 
@@ -29,7 +29,7 @@ _HOME_VARS = ("USERPROFILE", "HOME")
 
 
 def apply() -> None:
-    """进程级重定向（幂等）。必须在任何 strategy_research import 之前调用。"""
+    """进程级重定向（幂等）。必须在任何 agentnodes import 之前调用。"""
     SANDBOX_HOME.mkdir(parents=True, exist_ok=True)
     for var in _HOME_VARS:
         os.environ[var] = str(SANDBOX_HOME)

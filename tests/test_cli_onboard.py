@@ -6,7 +6,7 @@ import json
 
 import pytest
 
-from strategy_research.interfaces.cli.onboard import (
+from agentnodes.interfaces.cli.onboard import (
     BACK,
     CANCEL,
     PROVIDERS,

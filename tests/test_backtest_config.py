@@ -5,7 +5,7 @@ import dataclasses
 
 import pytest
 
-from strategy_research.foundation.utils.backtest_config import (
+from agentnodes.foundation.utils.backtest_config import (
     BacktestConfig,
     CostConfig,
     StopLossConfig,

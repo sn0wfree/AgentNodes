@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 """scripts/arch/ 三个架构守卫工具的单元测试。
 
-测试策略：**合成仓库**——用 tmp_path 造 src/strategy_research 最小结构 +
+测试策略：**合成仓库**——用 tmp_path 造 src/agentnodes 最小结构 +
 monkeypatch 工具模块的 ROOT/PKG_DIR 指向它，隔离且可控；同时各保留一个
 对真实仓库的端到端断言（真实仓库当前状态即基准）。
 
@@ -35,7 +35,7 @@ def _load(name: str):
 def dangling_mod(tmp_path, monkeypatch):
     mod = _load("check_dangling_imports")
     monkeypatch.setattr(mod, "ROOT", str(tmp_path))
-    monkeypatch.setattr(mod, "PKG_DIR", str(tmp_path / "src" / "strategy_research"))
+    monkeypatch.setattr(mod, "PKG_DIR", str(tmp_path / "src" / "agentnodes"))
     return mod
 
 
@@ -48,12 +48,12 @@ def _mk_repo(root: Path, files: dict[str, str]) -> None:
 
 def test_dangling_module_exists_true_false(dangling_mod, tmp_path):
     _mk_repo(tmp_path, {
-        "src/strategy_research/apps/db.py": "x = 1\n",
-        "src/strategy_research/apps/pkg/__init__.py": "",
+        "src/agentnodes/apps/db.py": "x = 1\n",
+        "src/agentnodes/apps/pkg/__init__.py": "",
     })
-    assert dangling_mod.module_exists("strategy_research.apps.db")
-    assert dangling_mod.module_exists("strategy_research.apps.pkg")  # 目录形
-    assert not dangling_mod.module_exists("strategy_research.apps.missing")
+    assert dangling_mod.module_exists("agentnodes.apps.db")
+    assert dangling_mod.module_exists("agentnodes.apps.pkg")  # 目录形
+    assert not dangling_mod.module_exists("agentnodes.apps.missing")
     # 第三方模块不在本门禁范围（恒 True）
     assert dangling_mod.module_exists("pandas")
 
@@ -68,9 +68,9 @@ def test_dangling_detects_relative_levels(dangling_mod, tmp_path):
       ..nope          -> kernel.gateway.nope（悬空）
     """
     _mk_repo(tmp_path, {
-        "src/strategy_research/kernel/agent/tools.py": "x = 1\n",
-        "src/strategy_research/apps/db.py": "x = 1\n",
-        "src/strategy_research/kernel/gateway/service.py": (
+        "src/agentnodes/kernel/agent/tools.py": "x = 1\n",
+        "src/agentnodes/apps/db.py": "x = 1\n",
+        "src/agentnodes/kernel/gateway/service.py": (
             "from ..agent.tools import ok\n"
             "from ...apps.db import ok2\n"
             "from .missing_mod import bad\n"
@@ -85,8 +85,8 @@ def test_dangling_detects_relative_levels(dangling_mod, tmp_path):
 def test_dangling_absolute_missing_detected(dangling_mod, tmp_path):
     """绝对 import 指向不存在模块（搬迁改写漏网的形态）必报。"""
     _mk_repo(tmp_path, {
-        "src/strategy_research/kernel/loop.py":
-            "from strategy_research.core.agent import gone\n",  # core/ 已删除
+        "src/agentnodes/kernel/loop.py":
+            "from agentnodes.core.agent import gone\n",  # core/ 已删除
     })
     bad = dangling_mod.scan(["src"])
     assert len(bad) == 1
@@ -103,19 +103,19 @@ def test_dangling_detects_plain_import_alias(dangling_mod, tmp_path):
     """``import a.b.c as x`` 形式的悬空也必须报出。
 
     背景（2026-11-05）：批次 2 删掉 ``interfaces/api/routers/workflow.py`` 后，
-    两个测试文件用 ``import strategy_research.interfaces.api.routers.workflow
+    两个测试文件用 ``import agentnodes.interfaces.api.routers.workflow
     as wf`` 继续引用它。旧的 scan() 只遍历 ``ast.ImportFrom``，**完全不看**
     ``ast.Import``，于是门禁是绿的，而这 24 个用例在 fixture setup 期才炸
     （收集期不报错，所以连 collection 都看不出问题）。
     """
     _mk_repo(tmp_path, {
-        "src/strategy_research/kernel/loop.py": (
-            "import strategy_research.apps.gone as g\n"
+        "src/agentnodes/kernel/loop.py": (
+            "import agentnodes.apps.gone as g\n"
         ),
-        "src/strategy_research/apps/kept.py": "x = 1\n",
+        "src/agentnodes/apps/kept.py": "x = 1\n",
         "tests/test_x.py": (
-            "import strategy_research.kernel.loop\n"
-            "import strategy_research.apps.kept as k\n"
+            "import agentnodes.kernel.loop\n"
+            "import agentnodes.apps.kept as k\n"
         ),
     })
     bad = dangling_mod.scan(["src", "tests"])
@@ -129,17 +129,17 @@ def test_dangling_detects_from_package_import_missing_name(dangling_mod, tmp_pat
 
     背景（2026-11-05）：批次 2 删掉 ``interfaces/api/routers/workflow.py`` 后，
     ``tests/test_workflow_control_api.py`` 仍写
-    ``from strategy_research.interfaces.api.routers import workflow``。
+    ``from agentnodes.interfaces.api.routers import workflow``。
     宿主包 ``routers/`` 还在，旧门禁只解析 ``node.module``（= routers），
     看不出被 import 的**名字**已经消失 → 又一批 fixture 期才炸的用例。
     """
     _mk_repo(tmp_path, {
-        "src/strategy_research/kernel/__init__.py": "",
-        "src/strategy_research/kernel/kept.py": "x = 1\n",
+        "src/agentnodes/kernel/__init__.py": "",
+        "src/agentnodes/kernel/kept.py": "x = 1\n",
         # 没有 kernel/gone.py —— 名字既不是子模块、也不在 __init__ 里
         "tests/test_x.py": (
-            "from strategy_research.kernel import kept\n"
-            "from strategy_research.kernel import gone\n"
+            "from agentnodes.kernel import kept\n"
+            "from agentnodes.kernel import gone\n"
         ),
     })
     bad = dangling_mod.scan(["src", "tests"])
@@ -150,15 +150,15 @@ def test_dangling_detects_from_package_import_missing_name(dangling_mod, tmp_pat
 def test_dangling_package_name_from_init_is_not_reported(dangling_mod, tmp_path):
     """包 ``__init__.py`` 里绑定的名字（def/class/import）不算悬空。"""
     _mk_repo(tmp_path, {
-        "src/strategy_research/kernel/__init__.py": (
+        "src/agentnodes/kernel/__init__.py": (
             "from .reg import Registry\n"
             "VERSION = '1'\n"
             "class Base: pass\n"
             "def helper(): pass\n"
         ),
-        "src/strategy_research/kernel/reg.py": "class Registry: pass\n",
+        "src/agentnodes/kernel/reg.py": "class Registry: pass\n",
         "tests/test_x.py": (
-            "from strategy_research.kernel import Registry, VERSION, Base, helper\n"
+            "from agentnodes.kernel import Registry, VERSION, Base, helper\n"
         ),
     })
     assert dangling_mod.scan(["src", "tests"]) == []
@@ -171,9 +171,9 @@ def test_dangling_exempt_marker_allows_expected_failure(dangling_mod, tmp_path):
     那个名字本就不该存在，门禁报它就是误报。
     """
     _mk_repo(tmp_path, {
-        "src/strategy_research/kernel/__init__.py": "",
+        "src/agentnodes/kernel/__init__.py": "",
         "tests/test_x.py": (
-            "from strategy_research.kernel import gone  # dangling-import: ok\n"
+            "from agentnodes.kernel import gone  # dangling-import: ok\n"
         ),
     })
     assert dangling_mod.scan(["src", "tests"]) == []
@@ -189,8 +189,8 @@ def test_layer_matrix_module_is_importable():
     mod = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(mod)
     assert mod.ORDER == ["L1", "L2", "L3", "L4"]
-    assert mod.layer_of("strategy_research.kernel.agent") == "L3"
-    assert mod.layer_of("strategy_research.apps.study") == "L2"
+    assert mod.layer_of("agentnodes.kernel.agent") == "L3"
+    assert mod.layer_of("agentnodes.apps.study") == "L2"
 
 
 def test_layers_output_matches_gate(tmp_path, monkeypatch, capsys):
@@ -218,17 +218,17 @@ def test_layers_output_matches_gate(tmp_path, monkeypatch, capsys):
 def test_layers_mode_reports_l3l2(tmp_path, monkeypatch, capsys):
     """合成仓库：L3 模块 import L2 → --layers 应报 L3→L2 = 1。"""
     _mk_repo(tmp_path, {
-        "src/strategy_research/__init__.py": "",
-        "src/strategy_research/kernel/__init__.py": "",
-        "src/strategy_research/kernel/agent/__init__.py": "",
-        "src/strategy_research/kernel/agent/tool.py": (
-            "from strategy_research.apps.db import get_conn\n"
+        "src/agentnodes/__init__.py": "",
+        "src/agentnodes/kernel/__init__.py": "",
+        "src/agentnodes/kernel/agent/__init__.py": "",
+        "src/agentnodes/kernel/agent/tool.py": (
+            "from agentnodes.apps.db import get_conn\n"
         ),
-        "src/strategy_research/apps/__init__.py": "",
-        "src/strategy_research/apps/db.py": "def get_conn(): pass\n",
+        "src/agentnodes/apps/__init__.py": "",
+        "src/agentnodes/apps/db.py": "def get_conn(): pass\n",
     })
     mod = _load("check_dangling_imports")
-    mod.PKG_DIR = str(tmp_path / "src" / "strategy_research")
+    mod.PKG_DIR = str(tmp_path / "src" / "agentnodes")
 
     # 直接驱动共享实现，避免依赖 ROOT 的全局状态
     sys.path.insert(0, str(SCRIPTS / "arch"))
@@ -337,7 +337,7 @@ def literals_mod(tmp_path, monkeypatch):
 
 def test_literals_core_segment_detected(literals_mod, tmp_path):
     _mk_repo(tmp_path, {
-        "src/strategy_research/kernel/swarm.py":
+        "src/agentnodes/kernel/swarm.py":
             # 合成内容含原始 pattern——本文件行加豁免（扫描器只看测试文件物理行）
             'presets = Path(__file__).parent / "core" / "swarm" / "presets"\n'  # path-literal: ok
             ,
@@ -350,7 +350,7 @@ def test_literals_core_segment_detected(literals_mod, tmp_path):
 def test_literals_invalid_layer_detected(literals_mod, tmp_path):
     _mk_repo(tmp_path, {
         "tests/test_x.py":
-            'p = Path(__file__).parent / "src" / "strategy_research" / "api" / "routers"\n'  # path-literal: ok
+            'p = Path(__file__).parent / "src" / "agentnodes" / "api" / "routers"\n'  # path-literal: ok
             ,
     })
     bad = literals_mod.scan(set())
@@ -362,7 +362,7 @@ def test_literals_valid_layer_and_exempt_mark(literals_mod, tmp_path):
     _mk_repo(tmp_path, {
         # templates 是合法层段；core 行有豁免标记
         "tests/test_ok.py": (
-            't = base / "strategy_research" / "templates"\n'
+            't = base / "agentnodes" / "templates"\n'
             'c = base / "core" / "swarm"  # path-literal: ok\n'
         ),
     })
@@ -373,7 +373,7 @@ def test_literals_allow_flag(literals_mod, tmp_path):
     # 豁免标记必须进入"被写入合成仓库的文件内容"——扫描器扫物理文件的行为
     _mk_repo(tmp_path, {
         "tests/test_x.py":
-            'p = base / "strategy_research" / "api"  # path-literal: ok\n',
+            'p = base / "agentnodes" / "api"  # path-literal: ok\n',
     })
     assert literals_mod.scan({"api"}) == []
     assert literals_mod.scan(set()) == []
@@ -403,23 +403,23 @@ def test_graph_audit_matrix_and_residual(graph_mod):
     """合成图：矩阵按符号定义层统计；core/ 边进残留；import 无关边不计数。"""
     g = {
         "nodes": [
-            {"id": "s1", "source_file": "src/strategy_research/kernel/agent/loop.py"},
-            {"id": "t1", "source_file": "src/strategy_research/apps/study/runner.py"},
-            {"id": "t2", "source_file": "src/strategy_research/core/legacy.py"},
-            {"id": "t3", "source_file": "src/strategy_research/foundation/llm/config.py"},
-            {"id": "noise", "source_file": "src/strategy_research/kernel/x.py"},
+            {"id": "s1", "source_file": "src/agentnodes/kernel/agent/loop.py"},
+            {"id": "t1", "source_file": "src/agentnodes/apps/study/runner.py"},
+            {"id": "t2", "source_file": "src/agentnodes/core/legacy.py"},
+            {"id": "t3", "source_file": "src/agentnodes/foundation/llm/config.py"},
+            {"id": "noise", "source_file": "src/agentnodes/kernel/x.py"},
         ],
         "edges": [
             # kernel -> apps：一条 import 符号级边
-            _edge("imports", "s1", "t1", "src/strategy_research/kernel/agent/loop.py"),
+            _edge("imports", "s1", "t1", "src/agentnodes/kernel/agent/loop.py"),
             # foundation -> apps：另一条
-            _edge("imports_from", "t3", "t1", "src/strategy_research/foundation/llm/config.py"),
+            _edge("imports_from", "t3", "t1", "src/agentnodes/foundation/llm/config.py"),
             # core 残留：无论方向
-            _edge("imports", "s1", "t2", "src/strategy_research/kernel/agent/loop.py"),
+            _edge("imports", "s1", "t2", "src/agentnodes/kernel/agent/loop.py"),
             # 非 import 关系：不进矩阵
-            _edge("calls", "s1", "t1", "src/strategy_research/kernel/agent/loop.py"),
+            _edge("calls", "s1", "t1", "src/agentnodes/kernel/agent/loop.py"),
             # 同层：不计
-            _edge("imports", "t3", "t3", "src/strategy_research/foundation/llm/config.py"),
+            _edge("imports", "t3", "t3", "src/agentnodes/foundation/llm/config.py"),
         ],
     }
     matrix, residual, indeg, nodes = graph_mod.audit(g)
@@ -428,16 +428,16 @@ def test_graph_audit_matrix_and_residual(graph_mod):
     assert matrix[("L3", "L4")] == 0  # calls 边不进 import 矩阵
     assert sum(residual.values()) == 1
     # residual 按 source 端文件记账（谁 import 了 core/ 里的东西，谁被点名）
-    assert "src/strategy_research/kernel/agent/loop.py" in residual
+    assert "src/agentnodes/kernel/agent/loop.py" in residual
     # indeg 含 calls：imports + imports_from + calls 都指向 t1
     assert indeg["t1"] == 3
 
 
 def test_graph_audit_layer_of_boundaries(graph_mod):
     f = graph_mod.layer_of
-    assert f("src/strategy_research/interfaces/api/app.py") == "L1"
-    assert f("src\\strategy_research\\apps\\db.py") == "L2"   # Windows 分隔符
-    assert f("src/strategy_research/kernel/gateway/x.py") == "L3"
-    assert f("src/strategy_research/foundation/llm/config.py") == "L4"
-    assert f("src/strategy_research/core/anything.py") == "CORE!"
+    assert f("src/agentnodes/interfaces/api/app.py") == "L1"
+    assert f("src\\agentnodes\\apps\\db.py") == "L2"   # Windows 分隔符
+    assert f("src/agentnodes/kernel/gateway/x.py") == "L3"
+    assert f("src/agentnodes/foundation/llm/config.py") == "L4"
+    assert f("src/agentnodes/core/anything.py") == "CORE!"
     assert f("docs/x.md") is None

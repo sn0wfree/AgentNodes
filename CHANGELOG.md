@@ -30,7 +30,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 `archive/`（历史记录）三层；新增 `docs/REFERENCE.md`（命令/工具/环境变量全表）；
 根 `README.md` 从 840 行精简到约 260 行，只描述框架本体。
 
-**包名重命名** `strategy_research` → `agentnodes` 是批次 9，**尚未执行**。
+**包名重命名** `agentnodes` → `agentnodes` 是批次 9，**尚未执行**。
 
 ### Added
 - Chat 智能体 `run_command`（bash/python）能力：`SR_ALLOW_SHELL_TOOLS=1`
@@ -80,7 +80,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `HYPOTHESIS_USE_SQLITE`/`STATIC_DIR`；清理 SessionService 缓存 +
   MemoryManager 单例 + 主线程 SQLite 连接 + logging 级别 + asyncio loop 绑定。
 - **`test_hypothesis_registry_sqlite` 后的日志污染**：`create_app()` 会把
-  `strategy_research` 命名空间日志级别设为 INFO，过滤后续测试的 DEBUG
+  `agentnodes` 命名空间日志级别设为 INFO，过滤后续测试的 DEBUG
   断言（`assertLogs`）——conftest 测试后还原日志级别。
 - **`test_chat_loop` 后的 AgentLoop mock 失效**：`chat_loop` 模块级绑定
   `AgentLoop`，patch `loop.AgentLoop` 对已 import 的 `chat_loop` 无效——
@@ -181,7 +181,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
     (Rich prompt_toolkit wizard, `--force` flag)
   - B. Implicit: `quantnodes-research` bare TTY → `cli._auto_onboard.
     _maybe_run_onboarding` (auto-trigger when no `.env` candidate exists)
-- Both paths write `~/.quantnodes/strategy_research/.env` with chmod 0600,
+- Both paths write `~/.quantnodes/agentnodes/.env` with chmod 0600,
   atomic `.env.partial → os.replace`.
 
 ### Removed
@@ -204,7 +204,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 - Legacy users with `~/.strategy-research/.env` are silently migrated to
-  `~/.quantnodes/strategy_research/.env` on first wizard run (old file
+  `~/.quantnodes/agentnodes/.env` on first wizard run (old file
   left intact).
 
 ## [0.4.0] - 2026-07-24

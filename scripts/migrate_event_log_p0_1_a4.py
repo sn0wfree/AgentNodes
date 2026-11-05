@@ -27,7 +27,7 @@ logger = logging.getLogger("migrate_event_log_p0_1_a4")
 def _resolve_db_path(override: str | None) -> Path:
     if override:
         return Path(override).expanduser()
-    from strategy_research.core.agent.memory_manager import resolve_db_path
+    from agentnodes.core.agent.memory_manager import resolve_db_path
     return resolve_db_path()
 
 
@@ -60,7 +60,7 @@ def main() -> int:
     logger.info("Opening DB at %s", db_path)
     conn = sqlite3.connect(str(db_path))
     try:
-        from strategy_research.core.storage.event_schema import (
+        from agentnodes.core.storage.event_schema import (
             ensure_event_log_schema,
             migrate_event_log_unique,
         )
@@ -70,7 +70,7 @@ def main() -> int:
         ensure_event_log_schema(conn)
 
         if args.dry_run:
-            from strategy_research.core.storage.event_schema import (
+            from agentnodes.core.storage.event_schema import (
                 _existing_unique_sets,
                 _table_exists,
             )

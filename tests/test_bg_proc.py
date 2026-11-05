@@ -12,7 +12,7 @@ from tempfile import TemporaryDirectory
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
 
-from strategy_research.foundation.utils import bg_proc
+from agentnodes.foundation.utils import bg_proc
 
 
 def _py(cmd: str) -> list[str]:

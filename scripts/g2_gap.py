@@ -2,7 +2,7 @@
 from pathlib import Path
 import re
 
-root = Path("src/strategy_research")
+root = Path("src/agentnodes")
 files = [p for p in root.rglob("*.py") if "__pycache__" not in str(p)]
 
 print("==== PersistentMemory: writers vs readers")
@@ -11,7 +11,7 @@ for p in files:
     if "PersistentMemory" in t:
         writes = len(re.findall(r"\.(add|append|store|save|remember|upsert)\w*\(", t))
         reads = len(re.findall(r"\.(find_relevant|search|query|recall)\w*\(", t))
-        print(f"  {str(p).replace(chr(92),'/').split('strategy_research/')[-1]:52s} writes={writes} reads={reads}")
+        print(f"  {str(p).replace(chr(92),'/').split('agentnodes/')[-1]:52s} writes={writes} reads={reads}")
 
 print("\n==== persistent memory API")
 p = root / "core/memory/persistent.py"

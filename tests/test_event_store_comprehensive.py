@@ -13,9 +13,9 @@ import pytest
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
 
-from strategy_research.kernel.agent.event_store import EventStore
-from strategy_research.kernel.agent.cache import CacheConfig
-from strategy_research.kernel.events.event_v2 import EventV2
+from agentnodes.kernel.agent.event_store import EventStore
+from agentnodes.kernel.agent.cache import CacheConfig
+from agentnodes.kernel.events.event_v2 import EventV2
 
 
 @pytest.fixture

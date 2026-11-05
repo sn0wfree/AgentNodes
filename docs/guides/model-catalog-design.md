@@ -18,7 +18,7 @@
 ```
 ┌─────────────────────────────────────────────────────────────┐
 │ L1 源码内置 (Bundled Fallback)                              │
-│   src/strategy_research/core/llm/data/                      │
+│   src/agentnodes/core/llm/data/                      │
 │   ├── _index.json                          # 5 个 provider 索引│
 │   ├── _default_fallback.json               # 静态兜底          │
 │   ├── providers/minimax/minimax-M3.toml    # 575B             │
@@ -266,22 +266,22 @@ case 'session_total_tokens': {
 ### 文件清单
 
 #### Bundled 数据（5 个）
-- `src/strategy_research/core/llm/data/_index.json`
-- `src/strategy_research/core/llm/data/_default_fallback.json`
-- `src/strategy_research/core/llm/data/providers/minimax/minimax-M3.toml`
-- `src/strategy_research/core/llm/data/providers/openai/gpt-4o-mini.toml`
-- `src/strategy_research/core/llm/data/providers/deepseek/deepseek-chat.toml`
-- `src/strategy_research/core/llm/data/providers/alibaba/qwen-plus.toml`
-- `src/strategy_research/core/llm/data/providers/moonshotai/kimi-k2.5.toml`
+- `src/agentnodes/core/llm/data/_index.json`
+- `src/agentnodes/core/llm/data/_default_fallback.json`
+- `src/agentnodes/core/llm/data/providers/minimax/minimax-M3.toml`
+- `src/agentnodes/core/llm/data/providers/openai/gpt-4o-mini.toml`
+- `src/agentnodes/core/llm/data/providers/deepseek/deepseek-chat.toml`
+- `src/agentnodes/core/llm/data/providers/alibaba/qwen-plus.toml`
+- `src/agentnodes/core/llm/data/providers/moonshotai/kimi-k2.5.toml`
 
 #### 后端代码
-- `src/strategy_research/core/llm/model_catalog.py`（新）
-- `src/strategy_research/core/llm/provider/base.py`（加 `default_context_tokens`）
-- `src/strategy_research/core/llm/provider/{minimax,openai,deepseek,qwen,kimi}.py`（实现）
-- `src/strategy_research/core/llm/provider/__init__.py`（加 `MODELS_DEV_ID`）
-- `src/strategy_research/api/routers/system.py`（加端点）
-- `src/strategy_research/api/app_startup.py`（启动 task）
-- `src/strategy_research/api/session/service.py`（`llm_usage` 累加）
+- `src/agentnodes/core/llm/model_catalog.py`（新）
+- `src/agentnodes/core/llm/provider/base.py`（加 `default_context_tokens`）
+- `src/agentnodes/core/llm/provider/{minimax,openai,deepseek,qwen,kimi}.py`（实现）
+- `src/agentnodes/core/llm/provider/__init__.py`（加 `MODELS_DEV_ID`）
+- `src/agentnodes/api/routers/system.py`（加端点）
+- `src/agentnodes/api/app_startup.py`（启动 task）
+- `src/agentnodes/api/session/service.py`（`llm_usage` 累加）
 
 #### 前端代码
 - `webui/frontend/src/stores/system.ts`（加 `modelInfo`）

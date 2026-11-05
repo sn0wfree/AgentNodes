@@ -120,7 +120,7 @@ class TicketStore:
 
 **数据库路径**：沿用 `QUANTNODES_RESEARCH_GOAL_DB_PATH`（与 StudyStore 同库）。
 库名带 `RESEARCH` 是历史包袱，但改它会破坏既有用户数据——留作后续重命名
-（与阶段 2 的 `strategy_research` → `agentnodes` 包名重命名同批处理）。
+（与阶段 2 的 `agentnodes` → `agentnodes` 包名重命名同批处理）。
 
 ### 2.4 capability kind 的去留
 
@@ -141,7 +141,7 @@ def build_ticket_sink() -> Any | None:
     纯 L3 模块，不再经 CapabilityRegistry —— 它已不是业务能力，
     是内核机制（与 CapacityGate / GenomeVersionStore 同类）。
     """
-    from strategy_research.kernel.orchestration.ticket_store import TicketStore
+    from agentnodes.kernel.orchestration.ticket_store import TicketStore
     return TicketStore()
 ```
 
@@ -223,7 +223,7 @@ def build_ticket_sink() -> Any | None:
 **实际用法**（`user_data` 审计视图）：
 
 ```python
-from strategy_research.apps.study.store import _default_db_path as _study_db_path
+from agentnodes.apps.study.store import _default_db_path as _study_db_path
 ...
 data["studies"] = conn.execute(
     "SELECT COUNT(*) FROM studies WHERE owner_session_id IN "
@@ -432,6 +432,6 @@ async def _default_dispatch_study(self, job) -> str:
 
 - **泛化版「目标/准则/证据」机制**：路线图 §5.1（`docs/design/agentnodes-split-plan-20261104.md`）
 - **`graph_shape` Tier 1 组件**：结构性变更，用户已决定延后
-- **包名重命名** `strategy_research` → `agentnodes`：阶段 2 第 5 步
+- **包名重命名** `agentnodes` → `agentnodes`：阶段 2 第 5 步
 - **`scheduled_research` 的 study executor 语义**：本批次只做「报明确错误」，
   不做替代实现

@@ -14,9 +14,9 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
 
-from strategy_research.core.gateway import SessionController
-from strategy_research.core.llm import LLMConfig, OpenAICompatClient
-from strategy_research.core.orchestration import EntryPoint, SourceKind, WorkKind, WorkRequest
+from agentnodes.core.gateway import SessionController
+from agentnodes.core.llm import LLMConfig, OpenAICompatClient
+from agentnodes.core.orchestration import EntryPoint, SourceKind, WorkKind, WorkRequest
 
 
 def main() -> None:

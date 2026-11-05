@@ -12,7 +12,7 @@ counter. Verify:
 """
 from __future__ import annotations
 
-from strategy_research.interfaces.cli.tui.widgets.tools_rail import (
+from agentnodes.interfaces.cli.tui.widgets.tools_rail import (
     TimelineEntry,
     ToolsRail,
 )

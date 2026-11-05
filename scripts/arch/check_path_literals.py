@@ -5,7 +5,7 @@
 路径常量），断言其中不含指向已消失/已搬迁目录的旧路径段。覆盖两种形态：
 
   A. "core" 段拼接     —— `Path(__file__).parent / "core" / "swarm" / "presets"`  # path-literal: ok
-  B. 包内层段拼接      —— `"src" / "strategy_research" / "api" / ...`  # path-literal: ok
+  B. 包内层段拼接      —— `"src" / "agentnodes" / "api" / ...`  # path-literal: ok
      （api/cli 等顶层包搬入 interfaces 后，层段名必须同步）
 
 为什么存在：搬迁改写工具只处理 import 语句与字符串形式的模块前缀；
@@ -41,8 +41,8 @@ ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)
 
 # 形态 A：'"core"' 段参与路径拼接（旧物理结构，W7-1 已删除该目录）
 PATTERN_CORE_SEG = re.compile(r'["\']core["\']\s*/\s*|os\.path\.join\([^)]*["\']core["\']')
-# 形态 B：包内层段拼接（搬迁后层段名必须与 src/strategy_research 顶层一致）
-PATTERN_PKG_SEG = re.compile(r'"strategy_research"\s*/\s*"(\w+)"')
+# 形态 B：包内层段拼接（搬迁后层段名必须与 src/agentnodes 顶层一致）
+PATTERN_PKG_SEG = re.compile(r'"agentnodes"\s*/\s*"(\w+)"')
 VALID_LAYERS = {"apps", "kernel", "foundation", "interfaces", "templates"}
 EXEMPT_MARK = "path-literal: ok"
 

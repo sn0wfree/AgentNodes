@@ -24,5 +24,5 @@
 
 ```text
 pytest tests/test_agent_runtime.py tests/test_tool_result_views.py tests/test_agent_tools.py -q
-ruff check --select C901 src/strategy_research/core/agent/loop.py
+ruff check --select C901 src/agentnodes/core/agent/loop.py
 ```

@@ -11,14 +11,14 @@ from unittest import mock
 
 import pytest
 
-from strategy_research.interfaces.cli.llm_streaming import (
+from agentnodes.interfaces.cli.llm_streaming import (
     _build_messages,
     _consume_sync_stream,
     stream_chat_to_tui,
 )
-from strategy_research.interfaces.cli.tui.session import ChatSession
-from strategy_research.foundation.llm.errors import LLMError, LLMTimeoutError
-from strategy_research.foundation.llm.parser import StreamChunk
+from agentnodes.interfaces.cli.tui.session import ChatSession
+from agentnodes.foundation.llm.errors import LLMError, LLMTimeoutError
+from agentnodes.foundation.llm.parser import StreamChunk
 
 
 @pytest.fixture(autouse=True)
@@ -222,7 +222,7 @@ class _FakeTranscriptViewSink:
                 self._re_render_folder(idx, expand=False)
         self._active_folder_idx = None
         self._stream_baseline = len(self.lines)
-        from strategy_research.interfaces.cli.tui.widgets.streaming_text import StreamingText
+        from agentnodes.interfaces.cli.tui.widgets.streaming_text import StreamingText
         self._streamer = StreamingText()
         self._streamer.start()
 
@@ -578,7 +578,7 @@ async def test_re_render_preserves_inter_folder_content():
 @pytest.mark.asyncio
 async def test_fake_app_write_transcript_helper():
     """Bug C: ResearchApp._write_transcript delegates to write_transcript."""
-    from strategy_research.interfaces.cli.tui.app import ResearchApp
+    from agentnodes.interfaces.cli.tui.app import ResearchApp
 
     app = ResearchApp(skip_resume=True)
     # Should not raise AttributeError.
@@ -652,13 +652,13 @@ async def test_chat_session_dispatches_plain_text_to_llm():
     # Patch the AgentLoop symbol bound in chat_loop (module-level
     # ``from .loop import AgentLoop``) — patching loop.AgentLoop is a no-op
     # once chat_loop has already been imported by earlier tests.
-    with mock.patch("strategy_research.kernel.agent.chat_loop.AgentLoop") as MockLoop, \
-         mock.patch("strategy_research.kernel.agent.builtin_tools.build_default_registry", return_value=None), \
+    with mock.patch("agentnodes.kernel.agent.chat_loop.AgentLoop") as MockLoop, \
+         mock.patch("agentnodes.kernel.agent.builtin_tools.build_default_registry", return_value=None), \
          mock.patch(
              # Force the degraded in-memory path: with the shared session
              # DB unavailable, the assistant reply lands in ctx.history
              # (the legacy behavior this test pins).
-             "strategy_research.kernel.agent.memory_manager.get_default_memory_manager",
+             "agentnodes.kernel.agent.memory_manager.get_default_memory_manager",
              side_effect=RuntimeError("no mm in test"),
          ):
             instance = mock.MagicMock()

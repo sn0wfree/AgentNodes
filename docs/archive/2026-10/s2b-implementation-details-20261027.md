@@ -24,7 +24,7 @@
 
 | 项 | 值 |
 |---|---|
-| 旧库 | `<workspace>/.quantnodes_strategy_research_session.db`，5.4MB + 4.3MB WAL |
+| 旧库 | `<workspace>/.quantnodes_agentnodes_session.db`，5.4MB + 4.3MB WAL |
 | `user_version` | **6**（既有迁移链，S2b 必须接在它之后） |
 | 会话数 | 83 |
 | 行数 | messages 190 / message_parts 299 / attempts 100 / **event_log 6036** / snapshots 1 / blob_refs 54 |

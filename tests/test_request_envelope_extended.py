@@ -15,7 +15,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
 
 class TestTraceLlmRequestEdgeCases:
     def _make_loop(self):
-        from strategy_research.kernel.agent.loop import AgentLoop
+        from agentnodes.kernel.agent.loop import AgentLoop
 
         loop = object.__new__(AgentLoop)
         loop.session_id = "test_session"

@@ -87,7 +87,7 @@ event_log SQL 聚合 → 邻接对计数（同 iter）
 ### 3.3 挖掘器接口
 
 ```python
-# 新模块 src/strategy_research/core/learning/miner.py
+# 新模块 src/agentnodes/core/learning/miner.py
 MinerResult: {candidate_id, pattern, freq, success_rate, sample_ids: [...], params_map_draft}
 def mine_event_log(db_path: str, window_days: int, min_freq: int) -> list[MinerResult]
 def mine_trace_dir(trace_dir: str) -> list[MinerResult]
@@ -113,7 +113,7 @@ def generate_combo_config(candidate: MinerResult) -> dict   # 生成 YAML 候选
 ### 4.2 提案 + 人工确认
 
 - 产出 `propose.md`（或 JSON）：候选 YAML 预览 + 依据（样本 session/turn、频次统计、样例参数）
-- 人工确认通道：CLI 命令（暂定 `python -m strategy_research.learning <confirm|reject|propose>`，读 `workspace/learning/proposals/`）；确认后写入 `workspace/tools/combo/<name>.yml`，注册即生效（`build_default_registry` 自动加载）
+- 人工确认通道：CLI 命令（暂定 `python -m agentnodes.learning <confirm|reject|propose>`，读 `workspace/learning/proposals/`）；确认后写入 `workspace/tools/combo/<name>.yml`，注册即生效（`build_default_registry` 自动加载）
 - 拒绝可附原因（进入反馈统计，后续规则初筛可学习硬规则配置）
 
 ### 4.3 回馈统计
@@ -157,11 +157,11 @@ event_log/trace（记录被动）
 
 | 文件 | 动作 |
 |---|---|
-| `src/strategy_research/core/learning/miner.py` | 新增：挖掘器 |
-| `src/strategy_research/core/learning/evaluator.py` | 新增：规则初筛 + 评分 + 提案 |
-| `src/strategy_research/core/learning/cli.py` | 新增：propose/confirm/reject CLI 入口 |
-| `src/strategy_research/core/agent/trace.py` | 读取（`read`/`find_trace_dir` 已存在，可能小改） |
-| `src/strategy_research/api/session/service.py` / `chat_loop.py` / `role_factory.py` | 改：`trace_dir` 接线 |
+| `src/agentnodes/core/learning/miner.py` | 新增：挖掘器 |
+| `src/agentnodes/core/learning/evaluator.py` | 新增：规则初筛 + 评分 + 提案 |
+| `src/agentnodes/core/learning/cli.py` | 新增：propose/confirm/reject CLI 入口 |
+| `src/agentnodes/core/agent/trace.py` | 读取（`read`/`find_trace_dir` 已存在，可能小改） |
+| `src/agentnodes/api/session/service.py` / `chat_loop.py` / `role_factory.py` | 改：`trace_dir` 接线 |
 | `tests/test_learning_miner.py` / `test_learning_evaluator.py` | 新增：合成数据用例 |
 | `docs/guides/agent-tools-reference.md` | 改：P6 状态 → 实施中/已完成 |
 | `workspace/tools/combo/` | 运行时：沉淀产物落点 |

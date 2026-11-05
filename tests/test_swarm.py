@@ -4,15 +4,15 @@ from __future__ import annotations
 
 import pytest
 
-from strategy_research.kernel.swarm.preset_loader import list_presets, load_preset
-from strategy_research.kernel.swarm.runtime import (
+from agentnodes.kernel.swarm.preset_loader import list_presets, load_preset
+from agentnodes.kernel.swarm.runtime import (
     AgentResult,
     SwarmPreset,
     SwarmResult,
     SwarmRuntime,
 )
-from strategy_research.kernel.workflow.dag import topological_layers
-from strategy_research.kernel.workflow.types import AgentCall, AgentStatus
+from agentnodes.kernel.workflow.dag import topological_layers
+from agentnodes.kernel.workflow.types import AgentCall, AgentStatus
 
 # ── Preset Loader Tests ────────────────────────────────────
 
@@ -156,7 +156,7 @@ class TestSwarmRuntime:
         """
         from types import SimpleNamespace
 
-        import strategy_research.kernel.agent.executor as executor_mod
+        import agentnodes.kernel.agent.executor as executor_mod
 
         captured = {}
 

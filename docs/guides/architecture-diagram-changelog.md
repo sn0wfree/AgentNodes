@@ -120,7 +120,7 @@
   连 collection 都看不出来）。现补 `ast.Import` 分支，并把该形态写成回归测试
   （`tests/test_scripts_arch.py::test_dangling_detects_plain_import_alias`）。
   ② **同门禁漏检 `from <包> import <名字>` 的「名字消失」**：
-  `from strategy_research.interfaces.api.routers import workflow` 的宿主包还在，
+  `from agentnodes.interfaces.api.routers import workflow` 的宿主包还在，
   旧门禁只解析 `node.module`（= routers），看不出被 import 的名字已不存在。
   `tests/test_workflow_control_api.py` 的 10 个用例就藏在这里。现补第三种检查
   （包 `__init__.py` 的顶层绑定 + 子模块存在性；PEP 562 `__getattr__` 兜底时放过）。

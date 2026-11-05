@@ -12,12 +12,12 @@ from typing import Any
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
 
-from strategy_research.core.agent.tools import BaseTool
-from strategy_research.core.gateway import SessionController
-from strategy_research.core.llm import LLMConfig, OpenAICompatClient
-from strategy_research.core.orchestration import EntryPoint, SourceKind, WorkKind, WorkRequest
-from strategy_research.core.runtimes.nodes.react import ReactConfig, make_react_node
-from strategy_research.core.agent.tools import ToolRegistry
+from agentnodes.core.agent.tools import BaseTool
+from agentnodes.core.gateway import SessionController
+from agentnodes.core.llm import LLMConfig, OpenAICompatClient
+from agentnodes.core.orchestration import EntryPoint, SourceKind, WorkKind, WorkRequest
+from agentnodes.core.runtimes.nodes.react import ReactConfig, make_react_node
+from agentnodes.core.agent.tools import ToolRegistry
 
 
 class CalculatorTool(BaseTool):
@@ -59,7 +59,7 @@ def main() -> None:
         sink=sink,
         config=ReactConfig(system="你是量化研究助手。需要计算时调用 calculator 工具，不要心算。回答用中文。"),
     )
-    engine = __import__("strategy_research.core.runtimes.graph_engine", fromlist=["GraphEngine"]).GraphEngine(sink=sink)
+    engine = __import__("agentnodes.core.runtimes.graph_engine", fromlist=["GraphEngine"]).GraphEngine(sink=sink)
     engine.add_node("react", react)
 
     # 复用控制器的准入/身份签发，引擎换成 react 图

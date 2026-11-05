@@ -110,7 +110,7 @@ graphify 复扫（docs/design/structure-review-graphify-20261104.md §3.1）实�
 - `core/engine`（engine/base.py 回测引擎，含 log_stall 数据通道）是研究执行件 → L2，不是 GraphEngine 所在层。
 - `core/scheduled_research` 是 automation 调度（平台机制，经 Gateway 提交）→ L3；包内 `cli.py` 是入口皮肤，簇 A 已计入。
 - `core/db`（market.duckdb 工具）= v6.5 ⑤ 层研究域数据面 D-3 → L2。
-- 顶层 `strategy_research/__init__.py` 与 `core/__init__.py`：re-export 门面，不参与方向断言。
+- 顶层 `agentnodes/__init__.py` 与 `core/__init__.py`：re-export 门面，不参与方向断言。
 - `scripts/`（dev 工具）不在门禁范围。
 
 ### 2.2 foundation 的晋升门槛与反向红线（v7.2）

@@ -6,8 +6,8 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 
-from strategy_research.kernel.runtimes.nodes.llm import make_llm_node
-from strategy_research.kernel.runtimes.nodes.react import ReactConfig, make_react_node
+from agentnodes.kernel.runtimes.nodes.llm import make_llm_node
+from agentnodes.kernel.runtimes.nodes.react import ReactConfig, make_react_node
 
 # ── Fakes ────────────────────────────────────────────────
 
@@ -229,7 +229,7 @@ def test_react_non_stream_still_works():
 
 def test_event_bridge_maps_platform_events_to_ui_vocabulary(monkeypatch):
     """tool.started -> tool_call；text_delta 直通。"""
-    import strategy_research.interfaces.api.routers.chat as chat_mod
+    import agentnodes.interfaces.api.routers.chat as chat_mod
 
     pushed: list[tuple[str, dict, str]] = []
     monkeypatch.setattr(
@@ -259,7 +259,7 @@ def test_event_bridge_maps_platform_events_to_ui_vocabulary(monkeypatch):
 
 
 def test_event_bridge_push_failure_does_not_raise(monkeypatch):
-    import strategy_research.interfaces.api.routers.chat as chat_mod
+    import agentnodes.interfaces.api.routers.chat as chat_mod
 
     def boom(*a, **k):
         raise RuntimeError("sse down")

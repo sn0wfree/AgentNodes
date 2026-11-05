@@ -25,7 +25,7 @@
 
 ### 1.1 AgentLoop Hook 集成
 
-**文件：** `src/strategy_research/core/agent/loop.py`
+**文件：** `src/agentnodes/core/agent/loop.py`
 
 #### 改动内容
 
@@ -141,7 +141,7 @@ def run(self, task: str, *, context: str | None = None) -> LoopResult:
 
 ### 1.2 SessionMemoryHook 增强
 
-**文件：** `src/strategy_research/core/hooks/bundled/session_memory.py`
+**文件：** `src/agentnodes/core/hooks/bundled/session_memory.py`
 
 #### 改动内容
 
@@ -175,7 +175,7 @@ def run(self, task: str, *, context: str | None = None) -> LoopResult:
 
 ### 1.3 ContextBuilder 跨会话记忆
 
-**文件：** `src/strategy_research/core/agent/context.py`
+**文件：** `src/agentnodes/core/agent/context.py`
 
 #### 改动内容
 
@@ -219,7 +219,7 @@ def run(self, task: str, *, context: str | None = None) -> LoopResult:
 
 ### 1.4 CLI Session 命令补全
 
-**文件：** `src/strategy_research/cli.py`
+**文件：** `src/agentnodes/cli.py`
 
 #### 新增 3 个子命令
 

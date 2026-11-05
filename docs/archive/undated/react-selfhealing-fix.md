@@ -12,7 +12,7 @@ autoresearch 流程中 factor_analyst 生成的因子表达式在 backtest 阶�
 
 ### 根因 1：compute_factor 吞掉所有错误
 
-**文件**: `src/strategy_research/core/compute_factor.py:1206-1213`
+**文件**: `src/agentnodes/core/compute_factor.py:1206-1213`
 
 ```python
 def compute_factor(factor_code, prices, factor_name=""):
@@ -30,7 +30,7 @@ def compute_factor(factor_code, prices, factor_name=""):
 
 ### 根因 2：prepare.py 只传 close 列
 
-**文件**: `src/strategy_research/templates/prepare.py:118-120`
+**文件**: `src/agentnodes/templates/prepare.py:118-120`
 
 ```python
 for asset in prices.columns:
@@ -68,7 +68,7 @@ prompt 里只说 "组合 285 个算子"，**从未说明**：
 
 ### 根因 5：factor_analysis 工具的 ValueError（已修复）
 
-**文件**: `src/strategy_research/core/agent/builtin_tools/__init__.py:871`
+**文件**: `src/agentnodes/core/agent/builtin_tools/__init__.py:871`
 
 ```python
 aligned = pd.concat([factor_series, asset_df["fwd_ret"]], axis=1).dropna()
@@ -80,7 +80,7 @@ DuckDB ohlcv 表有重复 date+asset 组合 → set_index("date") 产生重复�
 
 ### 根因 6：parse_failed 触发全量重启
 
-**文件**: `src/strategy_research/core/autoresearch.py:249-269`
+**文件**: `src/agentnodes/core/autoresearch.py:249-269`
 
 ```python
 def retry_agent_spawn(spawn_fn, agent_name, max_retries=3):
@@ -116,7 +116,7 @@ factor_analyst agent (ReAct loop)
 
 ### Fix 1: compute_factor 不再吞错误
 
-**文件**: `src/strategy_research/core/compute_factor.py`
+**文件**: `src/agentnodes/core/compute_factor.py`
 
 **改动**: compute_factor() 不再 catch 所有异常，改为 raise 带结构化信息的错误。
 
@@ -144,7 +144,7 @@ def compute_factor(factor_code, prices, factor_name=""):
 
 ### Fix 2: ComputeFactorTool 返回 actionable 错误
 
-**文件**: `src/strategy_research/core/agent/builtin_tools/__init__.py`
+**文件**: `src/agentnodes/core/agent/builtin_tools/__init__.py`
 
 **改动**: ComputeFactorTool.execute 捕获 FactorComputeError 并返回结构化错误。
 
@@ -165,7 +165,7 @@ except Exception as exc:
 
 ### Fix 3: prepare.py 传全量 OHLCV 列
 
-**文件**: `src/strategy_research/templates/prepare.py`
+**文件**: `src/agentnodes/templates/prepare.py`
 
 **改动**: 不再只传 close，传全量 OHLCV 列。
 
@@ -211,7 +211,7 @@ asset_prices.columns = ["close"]
 
 ### Fix 5: backtest → agent 反馈回路
 
-**文件**: `src/strategy_research/core/autoresearch.py`
+**文件**: `src/agentnodes/core/autoresearch.py`
 
 **改动**: run_execution_phase 返回 factor 计算失败信息，注入 agent 的下一轮上下文。
 
@@ -231,7 +231,7 @@ if factor_failures:
 
 ### Fix 6: parse_failed 不再全量重启
 
-**文件**: `src/strategy_research/core/autoresearch.py`
+**文件**: `src/agentnodes/core/autoresearch.py`
 
 **改动**: retry_agent_spawn 中，parse_failed 时追加 corrective 消息，而不是重启。
 
@@ -270,8 +270,8 @@ if "error" in parsed:
 
 ## 相关文件
 
-- `src/strategy_research/core/compute_factor.py` — 因子表达式解析器 + compute_factor 函数
-- `src/strategy_research/core/agent/builtin_tools/__init__.py` — ComputeFactorTool + FactorAnalysisTool
-- `src/strategy_research/templates/prepare.py` — backtest 因子计算
-- `src/strategy_research/templates/.prompts/factor_analyst.md` — agent prompt
-- `src/strategy_research/core/autoresearch.py` — autoresearch 主循环 + retry_agent_spawn
+- `src/agentnodes/core/compute_factor.py` — 因子表达式解析器 + compute_factor 函数
+- `src/agentnodes/core/agent/builtin_tools/__init__.py` — ComputeFactorTool + FactorAnalysisTool
+- `src/agentnodes/templates/prepare.py` — backtest 因子计算
+- `src/agentnodes/templates/.prompts/factor_analyst.md` — agent prompt
+- `src/agentnodes/core/autoresearch.py` — autoresearch 主循环 + retry_agent_spawn

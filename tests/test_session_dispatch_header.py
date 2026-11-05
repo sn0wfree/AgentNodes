@@ -13,8 +13,8 @@ from __future__ import annotations
 import asyncio
 from unittest import mock
 
-from strategy_research.interfaces.cli.interactive.main import InteractiveContext
-from strategy_research.interfaces.cli.tui.session import ChatSession
+from agentnodes.interfaces.cli.interactive.main import InteractiveContext
+from agentnodes.interfaces.cli.tui.session import ChatSession
 
 
 class TestDispatchRefreshesHeaderAfterArun:
@@ -85,7 +85,7 @@ class TestDispatchRefreshesHeaderAfterArun:
         """Source-level: dispatch() must call _update_header_stats after _run_agent_loop."""
         import inspect
 
-        from strategy_research.interfaces.cli.tui.session import ChatSession
+        from agentnodes.interfaces.cli.tui.session import ChatSession
 
         src = inspect.getsource(ChatSession.dispatch)
         # Find the dispatch method, look for the second call to update_header_stats

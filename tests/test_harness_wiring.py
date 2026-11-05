@@ -17,18 +17,18 @@ import pytest
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
 
-from strategy_research.foundation.compact_config import CompactConfig
-from strategy_research.kernel.agent import harness_resolver
-from strategy_research.kernel.agent.harness_resolver import (
+from agentnodes.foundation.compact_config import CompactConfig
+from agentnodes.kernel.agent import harness_resolver
+from agentnodes.kernel.agent.harness_resolver import (
     AssembledHarness,
     apply_compaction_overrides,
     assemble,
 )
-from strategy_research.kernel.agent.prompt_builder import (
+from agentnodes.kernel.agent.prompt_builder import (
     PromptBuilderFactory,
     StaticFilePromptBuilder,
 )
-from strategy_research.kernel.agent.tools import BaseTool, ToolContext, ToolRegistry
+from agentnodes.kernel.agent.tools import BaseTool, ToolContext, ToolRegistry
 
 
 # ── 用注入的 harness 配置替换真实 RSI 来源 ───────────────────────────
@@ -235,7 +235,7 @@ class TestAssemble:
 class TestNoTier0Leak:
     def test_tier0_keys_dropped_before_consumption(self):
         """从 apps 侧来源出来的 tier0 键不会流入三个消费点。"""
-        from strategy_research.apps.evolution import resolve_harness as real_resolve
+        from agentnodes.apps.evolution import resolve_harness as real_resolve
 
         class _Src:
             def tier1_active(self):

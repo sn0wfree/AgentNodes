@@ -53,7 +53,7 @@ def _get_default_db_path() -> Path:
     """Mirror the webui's DB path resolution."""
     import os
     db_dir = Path(os.environ.get("SR_WORKSPACE_PATH", str(Path.home() / ".quantnodes")))
-    return db_dir / "quantnodes_strategy_research_user.db"
+    return db_dir / "quantnodes_agentnodes_user.db"
 
 
 def _ensure_message_parts_table(conn: sqlite3.Connection) -> None:
@@ -220,7 +220,7 @@ def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__.split("\n\n")[0])
     parser.add_argument(
         "--db", type=Path, default=None,
-        help="Path to user DB (default: $SR_WORKSPACE_PATH/quantnodes_strategy_research_user.db)",
+        help="Path to user DB (default: $SR_WORKSPACE_PATH/quantnodes_agentnodes_user.db)",
     )
     parser.add_argument(
         "--apply", action="store_true",

@@ -3,7 +3,7 @@ from __future__ import annotations
 
 from unittest.mock import MagicMock
 
-from strategy_research.kernel.agent.compact import (
+from agentnodes.kernel.agent.compact import (
     CompactConfig,
     _llm_summarize_v2,
 )

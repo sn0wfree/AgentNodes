@@ -16,14 +16,14 @@ from unittest.mock import patch
 
 import pytest
 
-from strategy_research.kernel.agent.dag_config import AgentNodeConfig
-from strategy_research.kernel.agent.executor import (
+from agentnodes.kernel.agent.dag_config import AgentNodeConfig
+from agentnodes.kernel.agent.executor import (
     _NON_PROMPT_KEYS,
     AgentExecutionResult,
     AgentExecutor,
     _is_retryable_execution_error,
 )
-from strategy_research.kernel.agent.plugin import AgentPlugin
+from agentnodes.kernel.agent.plugin import AgentPlugin
 
 # ── §3.4: max_retries must not leak into the prompt ───────────
 
@@ -178,7 +178,7 @@ def _write_preset(tmp_path: Path, body: str) -> Path:
 
 
 def test_redirect_action_is_rejected(tmp_path):
-    from strategy_research.kernel.swarm.preset_loader import load_preset
+    from agentnodes.kernel.swarm.preset_loader import load_preset
 
     path = _write_preset(tmp_path, """
 name: t
@@ -197,7 +197,7 @@ branches:
 
 
 def test_skip_and_retry_are_allowed(tmp_path):
-    from strategy_research.kernel.swarm.preset_loader import load_preset
+    from agentnodes.kernel.swarm.preset_loader import load_preset
 
     path = _write_preset(tmp_path, """
 name: t
@@ -216,7 +216,7 @@ branches:
 
 
 def test_budget_token_warns(tmp_path, caplog):
-    from strategy_research.kernel.swarm.preset_loader import load_preset
+    from agentnodes.kernel.swarm.preset_loader import load_preset
 
     path = _write_preset(tmp_path, """
 name: t

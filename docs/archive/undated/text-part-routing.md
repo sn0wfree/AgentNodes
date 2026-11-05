@@ -163,10 +163,10 @@ explicit, which is what opencode's design optimizes for.
 ## Files changed
 
 ### Backend
-- `src/strategy_research/core/agent/loop.py` — `_stream_chat` / `_astream_chat` 3-step protocol
-- `src/strategy_research/api/session/service.py` — `_accumulate_part` rewrite
-- `src/strategy_research/api/routers/chat.py` — `_run_agent_loop_background` sync
-- `src/strategy_research/api/routers/web_session.py` — `_migrate_text_part_ids` + caller
+- `src/agentnodes/core/agent/loop.py` — `_stream_chat` / `_astream_chat` 3-step protocol
+- `src/agentnodes/api/session/service.py` — `_accumulate_part` rewrite
+- `src/agentnodes/api/routers/chat.py` — `_run_agent_loop_background` sync
+- `src/agentnodes/api/routers/web_session.py` — `_migrate_text_part_ids` + caller
 
 ### Frontend
 - `webui/frontend/src/stores/chat.ts` — `TextPart.id` required

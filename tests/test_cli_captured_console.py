@@ -9,7 +9,7 @@ from __future__ import annotations
 
 from rich.console import Console
 
-from strategy_research.interfaces.cli.theme import captured_console, get_console
+from agentnodes.interfaces.cli.theme import captured_console, get_console
 
 
 class TestCapturedConsole:

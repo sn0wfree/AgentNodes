@@ -461,11 +461,11 @@ R-4 依据：全仓 `findstr /s build_messages src/` 只命中 `prompt_builder.p
 
 | 文件 | 改动 | 规模（估算） |
 |---|---|---|
-| `src/strategy_research/core/agent/context_providers.py` | 新增 `TodoContextProvider` + `_todo_priority()`；`__all__` 增补 | +45 行 |
-| `src/strategy_research/core/context/hub.py` | `build()` 增 `budget_tokens` / `policy` 关键字；新增 `_arbitrate()`、`_active_scopes()`；`accounting` 增 `budget/over_budget/per_provider.over_cap` | +70 行 |
-| `src/strategy_research/core/context/policy.py` | **新建**：`ContextPolicy`（frozen dataclass：`kind_rank`/`protected_kinds`/`provider_caps`）+ `DEFAULT_KIND_RANK` | +40 行 |
-| `src/strategy_research/core/context/__init__.py` | 导出 `ContextPolicy` | +2 行 |
-| `src/strategy_research/core/context/protocol.py` | **零改动**（硬约束） | 0 |
+| `src/agentnodes/core/agent/context_providers.py` | 新增 `TodoContextProvider` + `_todo_priority()`；`__all__` 增补 | +45 行 |
+| `src/agentnodes/core/context/hub.py` | `build()` 增 `budget_tokens` / `policy` 关键字；新增 `_arbitrate()`、`_active_scopes()`；`accounting` 增 `budget/over_budget/per_provider.over_cap` | +70 行 |
+| `src/agentnodes/core/context/policy.py` | **新建**：`ContextPolicy`（frozen dataclass：`kind_rank`/`protected_kinds`/`provider_caps`）+ `DEFAULT_KIND_RANK` | +40 行 |
+| `src/agentnodes/core/context/__init__.py` | 导出 `ContextPolicy` | +2 行 |
+| `src/agentnodes/core/context/protocol.py` | **零改动**（硬约束） | 0 |
 
 ### 7.2 测试（W-D 验收子集内，契约 §6.3）
 
@@ -479,7 +479,7 @@ R-4 依据：全仓 `findstr /s build_messages src/` 只命中 `prompt_builder.p
 
 | 文件 | 改动 | 净收益 |
 |---|---|---|
-| `src/strategy_research/core/context/render.py`（新） | `join_items(items) -> str` | 消 2 处 3 行重复；+1 文件 |
+| `src/agentnodes/core/context/render.py`（新） | `join_items(items) -> str` | 消 2 处 3 行重复；+1 文件 |
 
 ### 7.4 明确不动
 
@@ -580,28 +580,28 @@ D:\tools\python312\python.exe scripts\c1_gate.py my.log ^
 
 ```bat
 :: 1) 协议冻结面
-findstr /n "priority tokens scopes" src\strategy_research\core\context\protocol.py
+findstr /n "priority tokens scopes" src\agentnodes\core\context\protocol.py
 
 :: 2) hub 不仲裁不渲染、不读 scopes
-findstr /n "arbitrat render scopes" src\strategy_research\core\context\hub.py
+findstr /n "arbitrat render scopes" src\agentnodes\core\context\hub.py
 
 :: 3) todos 三处定义（store / formatter / injector）
-findstr /n "class TodoStore _format_todos_snapshot" src\strategy_research\core\agent\builtin_tools\todo_tools.py
-findstr /n "class TodosInjector _last_hash" src\strategy_research\core\agent\context_injector.py
+findstr /n "class TodoStore _format_todos_snapshot" src\agentnodes\core\agent\builtin_tools\todo_tools.py
+findstr /n "class TodosInjector _last_hash" src\agentnodes\core\agent\context_injector.py
 
 :: 4) 生产 chat 无 hub（形参 + 单例组装）
-findstr /n "context_hub" src\strategy_research\core\gateway\gateway.py src\strategy_research\core\gateway\singleton.py
-findstr /n "context_hub=" src\strategy_research\core\gateway\session_controller.py
+findstr /n "context_hub" src\agentnodes\core\gateway\gateway.py src\agentnodes\core\gateway\singleton.py
+findstr /n "context_hub=" src\agentnodes\core\gateway\session_controller.py
 
 :: 5) todo session 归属缺陷
-findstr /n "kwargs.get(\"session_id\")" src\strategy_research\core\agent\builtin_tools\todo_tools.py
-findstr /n "registry.execute" src\strategy_research\core\runtimes\nodes\react.py
+findstr /n "kwargs.get(\"session_id\")" src\agentnodes\core\agent\builtin_tools\todo_tools.py
+findstr /n "registry.execute" src\agentnodes\core\runtimes\nodes\react.py
 
 :: 6) 预算取数缺陷
-findstr /n "model_context_tokens" src\strategy_research\core\gateway\session_controller.py src\strategy_research\core\llm\config.py
+findstr /n "model_context_tokens" src\agentnodes\core\gateway\session_controller.py src\agentnodes\core\llm\config.py
 
 :: 7) 死契约
-findstr /s /n "build_messages" src\strategy_research\core\*.py
+findstr /s /n "build_messages" src\agentnodes\core\*.py
 
 :: 8) 架构门禁
 D:\tools\python312\python.exe -m pytest tests/test_architecture_gates.py -q

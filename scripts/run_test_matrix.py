@@ -10,7 +10,7 @@
 
   * PR 门按**文件**分片（scripts/pytest_shard.py --mode time-aware），
     每个分片一个进程——比 pytest-xdist 安全，因为同进程并发会让依赖
-    隐式导入顺序的测试互相破坏（实测：`strategy_research.webui.routes`
+    隐式导入顺序的测试互相破坏（实测：`agentnodes.webui.routes`
     已被 W3 删除，仍有 6 个测试 patch 它，串行靠别人导入的副作用才通过）。
   * 每个分片带 `--reruns=2`（与 CI 一致），吸收已知的偶发用例。
   * e2e / browser 单独进程，各自独立超时。
@@ -125,7 +125,7 @@ def run_pr(shards: int, cov: bool, jobs: int,
     并行度用 ``jobs`` 控制（默认 min(shards, cpu-1)）。分片并行安全，
     因为每个分片是一个独立**进程**——这正是它比 pytest-xdist 可靠的原因。
     """
-    extra = ["--cov=strategy_research", "--cov-report=term"] if cov else []
+    extra = ["--cov=agentnodes", "--cov-report=term"] if cov else []
     exclude = _lane_excluded_files()
     plans: list[tuple[int, list[str]]] = []
     for i in range(shards):

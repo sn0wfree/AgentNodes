@@ -9,7 +9,7 @@ from datetime import datetime, timedelta, timezone
 
 import pytest
 
-from strategy_research.kernel.orchestration import (
+from agentnodes.kernel.orchestration import (
     Mailbox,
     QueueMode,
     Receipt,
@@ -18,7 +18,7 @@ from strategy_research.kernel.orchestration import (
     WorkKind,
     WorkRequest,
 )
-from strategy_research.kernel.orchestration.entry_point import EntryPoint
+from agentnodes.kernel.orchestration.entry_point import EntryPoint
 
 
 def make_req(**overrides) -> WorkRequest:

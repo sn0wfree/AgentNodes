@@ -19,11 +19,11 @@ from unittest.mock import MagicMock
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
 
-from strategy_research.kernel.agent.loop import (
+from agentnodes.kernel.agent.loop import (
     _inject_agent_loop,
     _make_strategy_ctx,
 )
-from strategy_research.kernel.agent.strategy import (
+from agentnodes.kernel.agent.strategy import (
     DefaultLLMCallStep,
     DefaultPreRunStep,
     create_strategy,
@@ -117,10 +117,10 @@ class TestStrategyStepBinding:
         # We don't run the full constructor because it needs an LLM
         # config; instead we instantiate LoopStrategy + resolver
         # directly and verify they compose.
-        from strategy_research.kernel.agent.strategy import (
+        from agentnodes.kernel.agent.strategy import (
             StrategyFactory,
         )
-        from strategy_research.kernel.agent.strategy.profile_resolver import (
+        from agentnodes.kernel.agent.strategy.profile_resolver import (
             resolve_loop_strategy,
         )
 

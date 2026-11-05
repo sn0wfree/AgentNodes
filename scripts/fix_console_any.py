@@ -10,7 +10,7 @@ from __future__ import annotations
 import sys
 from pathlib import Path
 
-ROOT = Path("src/strategy_research/cli/commands")
+ROOT = Path("src/agentnodes/cli/commands")
 OLD_PARAM = "console: Optional[Console] = None"
 NEW_PARAM = "console: Any = None"
 OLD_RESOLVE = "def _resolve_console(console: Optional[Console] = None) -> Console:"

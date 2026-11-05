@@ -13,9 +13,9 @@ from __future__ import annotations
 import json
 from types import SimpleNamespace
 
-from strategy_research.kernel.agent.tools import BaseTool, ToolRegistry
-from strategy_research.kernel.gateway.session_controller import SessionController
-from strategy_research.kernel.orchestration import (
+from agentnodes.kernel.agent.tools import BaseTool, ToolRegistry
+from agentnodes.kernel.gateway.session_controller import SessionController
+from agentnodes.kernel.orchestration import (
     EntryPoint,
     SourceKind,
     WorkKind,
@@ -94,7 +94,7 @@ def _chat(text: str, history=None) -> WorkRequest:
 
 def test_tool_events_emitted_in_order():
     """tool.started 必在 tool.completed 之前，且携带工具名。"""
-    from strategy_research.kernel.runtimes.nodes.react import (
+    from agentnodes.kernel.runtimes.nodes.react import (
         ReactConfig,
         make_react_node,
     )
@@ -189,7 +189,7 @@ def test_llm_failure_settles_with_error_not_crash():
 
 def test_tool_exception_becomes_structured_error():
     """工具抛错：结果是结构化 error JSON，循环继续到最终答案。"""
-    from strategy_research.kernel.runtimes.nodes.react import (
+    from agentnodes.kernel.runtimes.nodes.react import (
         ReactConfig,
         make_react_node,
     )

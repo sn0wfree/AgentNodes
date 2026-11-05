@@ -6,8 +6,8 @@ from datetime import datetime, timedelta, timezone
 
 import pytest
 
-from strategy_research.kernel.orchestration.mailbox import Mailbox
-from strategy_research.kernel.orchestration.contracts import (
+from agentnodes.kernel.orchestration.mailbox import Mailbox
+from agentnodes.kernel.orchestration.contracts import (
     DEFAULT_QUEUE_MODE,
     QueueMode,
     SourceKind,

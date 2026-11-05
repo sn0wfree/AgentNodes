@@ -9,8 +9,8 @@ from __future__ import annotations
 
 import argparse
 
-from strategy_research.interfaces.cli import _build_parser
-from strategy_research.interfaces.cli.commands.registry import registered_commands
+from agentnodes.interfaces.cli import _build_parser
+from agentnodes.interfaces.cli.commands.registry import registered_commands
 
 # Commands that live in the registry (core_commands.py + llm.py).
 # autoresearch 已随 apps/autoresearch 移除（2026-11-05 批次 3）。

@@ -7,7 +7,7 @@ from pathlib import Path
 import pytest
 from rich.console import Console
 
-from strategy_research.interfaces.cli.commands.slash_session import (
+from agentnodes.interfaces.cli.commands.slash_session import (
     cmd_export,
     cmd_history,
     cmd_search,
@@ -28,7 +28,7 @@ def _make_sessions_db(tmp_path: Path) -> Path:
     """
     import sqlite3
 
-    from strategy_research.interfaces.api.session.web_session_db import _ensure_schema
+    from agentnodes.interfaces.api.session.web_session_db import _ensure_schema
 
     db_path = tmp_path / "sessions.db"
     conn = sqlite3.connect(str(db_path))

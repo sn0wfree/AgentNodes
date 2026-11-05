@@ -12,10 +12,10 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
 
-from strategy_research.kernel.agent.cache import CacheConfig
-from strategy_research.kernel.agent.event_store import EventStore
-from strategy_research.kernel.agent.memory_manager import InMemoryStore
-from strategy_research.kernel.events.event_v2 import EventType
+from agentnodes.kernel.agent.cache import CacheConfig
+from agentnodes.kernel.agent.event_store import EventStore
+from agentnodes.kernel.agent.memory_manager import InMemoryStore
+from agentnodes.kernel.events.event_v2 import EventType
 
 
 def _emit(es, sid, etype, *, branch="main", seq=None):
@@ -31,7 +31,7 @@ class TestInMemoryStoreFromSeq:
         # failure (set db_path to an invalid location, watch auto_repair
         # fail). Simpler: build an EventStore with InMemoryStore
         # directly.
-        from strategy_research.kernel.agent.event_store import EventStore
+        from agentnodes.kernel.agent.event_store import EventStore
         store = EventStore(
             db_path=tmp_path / "events.db",
             cache_config=CacheConfig(max_entries=4),
@@ -43,7 +43,7 @@ class TestInMemoryStoreFromSeq:
         assert [e.seq for e in replayed] == [4, 5]
 
     async def test_in_memory_types_filter(self, tmp_path):
-        from strategy_research.kernel.agent.event_store import EventStore
+        from agentnodes.kernel.agent.event_store import EventStore
         store = EventStore(
             db_path=tmp_path / "events.db",
             cache_config=CacheConfig(max_entries=4),
@@ -59,7 +59,7 @@ class TestInMemoryStoreFromSeq:
         assert replayed[0].type == EventType.ITER_START
 
     async def test_in_memory_branch_filter(self, tmp_path):
-        from strategy_research.kernel.agent.event_store import EventStore
+        from agentnodes.kernel.agent.event_store import EventStore
         store = EventStore(
             db_path=tmp_path / "events.db",
             cache_config=CacheConfig(max_entries=4),
@@ -72,7 +72,7 @@ class TestInMemoryStoreFromSeq:
         assert replayed[0].branch_id == "exp1"
 
     async def test_in_memory_limit(self, tmp_path):
-        from strategy_research.kernel.agent.event_store import EventStore
+        from agentnodes.kernel.agent.event_store import EventStore
         store = EventStore(
             db_path=tmp_path / "events.db",
             cache_config=CacheConfig(max_entries=8),
@@ -87,17 +87,17 @@ class TestInMemoryStoreFromSeq:
 class TestCacheHitRate:
     async def test_hit_rate_zero_when_no_reads(self, tmp_path):
         """hit_rate is 0.0 before any read, never raises."""
-        from strategy_research.kernel.agent.cache import CacheStats
+        from agentnodes.kernel.agent.cache import CacheStats
         s = CacheStats()
         assert s.hit_rate == 0.0
 
     async def test_hit_rate_proportional(self, tmp_path):
-        from strategy_research.kernel.agent.cache import CacheStats
+        from agentnodes.kernel.agent.cache import CacheStats
         s = CacheStats(hits=3, misses=1)
         assert s.hit_rate == 0.75
 
     async def test_hit_rate_full(self, tmp_path):
-        from strategy_research.kernel.agent.cache import CacheStats
+        from agentnodes.kernel.agent.cache import CacheStats
         s = CacheStats(hits=10, misses=0)
         assert s.hit_rate == 1.0
 

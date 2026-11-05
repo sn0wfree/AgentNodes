@@ -7,7 +7,7 @@ from pathlib import Path
 
 import pytest
 
-from strategy_research.kernel.workflow.builtin import (
+from agentnodes.kernel.workflow.builtin import (
     delete_user_definition,
     list_builtin_names,
     list_definitions,
@@ -15,7 +15,7 @@ from strategy_research.kernel.workflow.builtin import (
     save_user_definition,
     user_dir,
 )
-from strategy_research.kernel.workflow.definition import (
+from agentnodes.kernel.workflow.definition import (
     WorkflowDefinition,
     WorkflowDefinitionError,
 )

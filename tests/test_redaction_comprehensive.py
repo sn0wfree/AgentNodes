@@ -9,7 +9,7 @@ import pytest
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
 
-from strategy_research.kernel.agent.redaction import (
+from agentnodes.kernel.agent.redaction import (
     _fold_key,
     _internal_roots,
     is_sensitive_arg,

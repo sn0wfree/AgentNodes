@@ -43,7 +43,7 @@ logger = logging.getLogger(__name__)
 def _get_default_db_path() -> Path:
     import os
     db_dir = Path(os.environ.get("SR_WORKSPACE_PATH", str(Path.home() / ".quantnodes")))
-    return db_dir / "quantnodes_strategy_research_user.db"
+    return db_dir / "quantnodes_agentnodes_user.db"
 
 
 def _ensure_message_parts_table(conn: sqlite3.Connection) -> None:

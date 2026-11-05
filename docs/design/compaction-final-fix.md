@@ -154,16 +154,16 @@ the original messages (LLM doesn't lose context).
 - `tests/test_compact_defaults.py` (8 tests)
 - `tests/test_loop_threshold.py` (4 tests)
 - `tests/test_compact_error_propagation.py` (3 tests)
-- `src/strategy_research/cli/commands/compact_show.py`
+- `src/agentnodes/cli/commands/compact_show.py`
 - `docs/design/compaction-final-fix.md` (this file)
 
 ### Modified
-- `src/strategy_research/core/agent/compact.py` (4-tuple return,
+- `src/agentnodes/core/agent/compact.py` (4-tuple return,
   opencode formulas, new defaults, `_chars` rename)
-- `src/strategy_research/core/agent/loop.py` (`_persist_compaction_event`
+- `src/agentnodes/core/agent/loop.py` (`_persist_compaction_event`
   signature, `model_max_output_tokens` plumbing, error propagation)
-- `src/strategy_research/core/llm/config.py` (load new fields)
-- `src/strategy_research/cli/tui/session.py` (pass `compact_config`)
+- `src/agentnodes/core/llm/config.py` (load new fields)
+- `src/agentnodes/cli/tui/session.py` (pass `compact_config`)
 - `tests/test_compact_config.py` (update tuple unpacking)
 
 ## Backward Compatibility

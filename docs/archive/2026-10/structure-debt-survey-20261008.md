@@ -81,7 +81,7 @@ from .study.lazy_detect import detect_lazy_behavior  # noqa: E402,F401
 
 # 函数体内又 import 一遍——同一个模块！
 def _run_lazy_detection(...):
-    from strategy_research.core.autoresearch import (   # ← 自我 import
+    from agentnodes.core.autoresearch import (   # ← 自我 import
         detect_lazy_behavior,
         read_agent_history,
         ...

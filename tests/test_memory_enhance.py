@@ -1,6 +1,6 @@
 import time
 
-from strategy_research.kernel.memory.persistent import PersistentMemory
+from agentnodes.kernel.memory.persistent import PersistentMemory
 
 
 class TestMemoryFormatContext:

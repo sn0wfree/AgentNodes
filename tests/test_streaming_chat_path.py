@@ -15,10 +15,10 @@ from typing import Any
 
 import pytest
 
-from strategy_research.kernel.agent.builtin_tools import build_default_registry
-from strategy_research.kernel.agent.loop import AgentLoop
-from strategy_research.foundation.llm import LLMConfig, LLMResponse
-from strategy_research.foundation.llm.errors import (
+from agentnodes.kernel.agent.builtin_tools import build_default_registry
+from agentnodes.kernel.agent.loop import AgentLoop
+from agentnodes.foundation.llm import LLMConfig, LLMResponse
+from agentnodes.foundation.llm.errors import (
     LLMAuthError,
     LLMConfigError,
     LLMMalformedResponseError,
@@ -88,7 +88,7 @@ class TestChatPathStreaming:
         """
         import inspect
 
-        from strategy_research.kernel.agent import chat_loop
+        from agentnodes.kernel.agent import chat_loop
 
         loop_src = inspect.getsource(chat_loop.build_chat_agent_loop)
         assert "stream_mode=True" in loop_src

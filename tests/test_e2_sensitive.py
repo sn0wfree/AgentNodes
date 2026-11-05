@@ -9,7 +9,7 @@ from pathlib import Path
 
 import pytest
 
-from strategy_research.foundation.llm.config_audit import (
+from agentnodes.foundation.llm.config_audit import (
     _key_fingerprint,
     detect_issues,
 )
@@ -75,7 +75,7 @@ def test_c1_still_emitted_with_same_code_and_severity(tmp_path):
 
 
 def test_gateway_emits_config_fingerprint():
-    from strategy_research.kernel.gateway import Gateway
+    from agentnodes.kernel.gateway import Gateway
 
     events: list[tuple[str, dict]] = []
     gw = Gateway(client=object(), sink=lambda k, d: events.append((k, d)))
@@ -92,11 +92,11 @@ def test_gateway_emits_config_fingerprint():
 
 
 def test_gateway_fingerprint_emit_failure_degrades(monkeypatch):
-    from strategy_research.kernel.gateway import Gateway
+    from agentnodes.kernel.gateway import Gateway
 
     gw = Gateway(client=object())
     monkeypatch.setattr(
-        "strategy_research.kernel.orchestration.config_hub.load_platform_config",
+        "agentnodes.kernel.orchestration.config_hub.load_platform_config",
         lambda **k: (_ for _ in ()).throw(RuntimeError("config broken")),
     )
     assert gw.emit_config_fingerprint() is None  # 降级不抛
@@ -109,7 +109,7 @@ def test_sensitive_keys_exclusion_mechanism_works():
     """机制锁定：加入 SENSITIVE_KEYS 的字段不得影响指纹。"""
     from dataclasses import dataclass, replace
 
-    from strategy_research.kernel.orchestration import config_hub as ch
+    from agentnodes.kernel.orchestration import config_hub as ch
 
     @dataclass(frozen=True)
     class _Cfg:

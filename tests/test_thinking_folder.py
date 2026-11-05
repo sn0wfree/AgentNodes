@@ -19,8 +19,8 @@ What we check:
 """
 from __future__ import annotations
 
-from strategy_research.interfaces.cli.tui.widgets.streaming_text import StreamingText
-from strategy_research.interfaces.cli.tui.widgets.transcript import TranscriptView
+from agentnodes.interfaces.cli.tui.widgets.streaming_text import StreamingText
+from agentnodes.interfaces.cli.tui.widgets.transcript import TranscriptView
 
 # ---------------------------------------------------------------- minimal widget fixture
 

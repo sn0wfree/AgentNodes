@@ -2,7 +2,7 @@
 
 > 计划来源：`docs/archive/2026-10/phase-engine-refactor-plan-20261008.md` §3 Step 3
 > 前置：Step 0-2 已完成（claims 修复 → RoundOutcome 契约 → 查表分派）
-> 范围约束：**仅改 `src/strategy_research/core/study/runner.py`**；`_run_loop` 对外行为与返回值（`ShutdownReason`）不变；不碰 phase_engine / monitor / scheduler
+> 范围约束：**仅改 `src/agentnodes/core/study/runner.py`**；`_run_loop` 对外行为与返回值（`ShutdownReason`）不变；不碰 phase_engine / monitor / scheduler
 > 状态：设计定稿（含方向修正），待实施
 
 ## 1. 方向修正：方法抽取，而非 `StudyLifecycle` 类

@@ -39,29 +39,29 @@ def env(tmp_path: Path, monkeypatch):
     db_path = tmp_path / "test.db"
     monkeypatch.setenv("SR_WORKSPACE_PATH", str(tmp_path))
 
-    import strategy_research.interfaces.api.routers.web_session as ws
-    import strategy_research.interfaces.api.session.web_session_db as wsdb
+    import agentnodes.interfaces.api.routers.web_session as ws
+    import agentnodes.interfaces.api.session.web_session_db as wsdb
 
     monkeypatch.setattr(ws, "_get_db_path", lambda: db_path)
     monkeypatch.setattr(wsdb, "_get_db_path", lambda: db_path)
 
-    from strategy_research.kernel.gateway import reset_gateway
+    from agentnodes.kernel.gateway import reset_gateway
 
     reset_gateway()
 
     client = FakeClient()
-    from strategy_research.interfaces.api.app import create_app
+    from agentnodes.interfaces.api.app import create_app
 
     app = create_app()
 
     # 让 Gateway 单例用 FakeClient（构造时注入）
-    from strategy_research.kernel.gateway.singleton import get_gateway
+    from agentnodes.kernel.gateway.singleton import get_gateway
 
     get_gateway(client=client)
 
     with TestClient(app) as tc:
         # P5-5①: /api/chat/ 不再公开——测试带认证头
-        from strategy_research.interfaces.api.auth_tokens import create_token
+        from agentnodes.interfaces.api.auth_tokens import create_token
 
         tc.headers.update({"Authorization": f"Bearer {create_token('tester')}"})
         # 建会话
@@ -175,9 +175,9 @@ def test_idempotent_no_duplicate_rows(env):
 
 def test_controller_ignores_malformed_history():
     """非法 history 被过滤，不影响对话。"""
-    from strategy_research.kernel.gateway.session_controller import SessionController
-    from strategy_research.kernel.orchestration import EntryPoint, WorkRequest
-    from strategy_research.kernel.orchestration.contracts import SourceKind, WorkKind
+    from agentnodes.kernel.gateway.session_controller import SessionController
+    from agentnodes.kernel.orchestration import EntryPoint, WorkRequest
+    from agentnodes.kernel.orchestration.contracts import SourceKind, WorkKind
 
     ep = EntryPoint(sink=lambda k, d: None)
     ctrl = SessionController(ep, client=FakeClient("r"))

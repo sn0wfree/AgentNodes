@@ -340,7 +340,7 @@ D:\tools\python312\python.exe scripts/c1_gate.py my.log --files test_workflow te
 editable install 把**主检出**的 `src` 写死进了 `.pth`：
 
 ```
-D:\tools\python312\Lib\site-packages\__editable__.quantnodes_strategy_research-0.6.0.pth
+D:\tools\python312\Lib\site-packages\__editable__.quantnodes_agentnodes-0.6.0.pth
 内容: D:\Github\quantnodes-strategy-research\src
 ```
 
@@ -436,17 +436,17 @@ set PYTHONPATH=<自己的 worktree 绝对路径>\src
 
 ```bash
 # 能力矩阵：react 节点边界
-sed -n '1,70p' src/strategy_research/core/runtimes/nodes/react.py
+sed -n '1,70p' src/agentnodes/core/runtimes/nodes/react.py
 
 # 事件翻译层
-sed -n '792,824p' src/strategy_research/api/routers/chat.py
+sed -n '792,824p' src/agentnodes/api/routers/chat.py
 
 # 暂停契约
-sed -n '238,304p' src/strategy_research/core/study/graph_preset.py
+sed -n '238,304p' src/agentnodes/core/study/graph_preset.py
 
 # 前端事件权威清单
 sed -n '16,107p' webui/frontend/src/hooks/sse/types.ts
 
 # worktree 隔离陷阱
-cat "D:\tools\python312\Lib\site-packages\__editable__.quantnodes_strategy_research-0.6.0.pth"
+cat "D:\tools\python312\Lib\site-packages\__editable__.quantnodes_agentnodes-0.6.0.pth"
 ```

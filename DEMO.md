@@ -13,7 +13,7 @@
 #### 1. 启动服务
 ```bash
 cd /home/ll/Public/strategy-research
-python -m strategy_research serve --host 127.0.0.1 --port 8783
+python -m agentnodes serve --host 127.0.0.1 --port 8783
 ```
 
 #### 2. 创建会话
@@ -209,7 +209,7 @@ workspace/
 ```bash
 # 1. 启动后端（API 服务，8783）
 cd /home/ll/Public/strategy-research
-python -m strategy_research serve --host 127.0.0.1 --port 8783
+python -m agentnodes serve --host 127.0.0.1 --port 8783
 
 # 2. 启动前端 dev server（5173，/api 代理到后端 8783）
 cd webui/frontend

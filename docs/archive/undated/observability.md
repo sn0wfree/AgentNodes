@@ -148,7 +148,7 @@ SR_LOG_JSON=1   # 启用单行 JSON 日志（默认关闭，输出纯文本）
 启用后每行日志变为：
 
 ```json
-{"ts":"13:45:01","level":"INFO","logger":"strategy_research.core.llm.openai_client",
+{"ts":"13:45:01","level":"INFO","logger":"agentnodes.core.llm.openai_client",
  "trace_id":"a1b2c3d4e5f6","session_id":"sess-1","study_id":"st-9","round_num":3,
  "msg":"stream retryable status 429 (attempt 1/3)"}
 ```
@@ -282,10 +282,10 @@ A1 之前旧会话的后向兼容回退。
 
 | 组件 | 文件 |
 |---|---|
-| dump 端点 + 组装 | `src/strategy_research/api/routers/study.py`（`_study_dump`） |
-| scheduler dump helper | `src/strategy_research/core/study/scheduler.py` |
-| admin metrics | `src/strategy_research/api/routers/admin.py` |
-| 事件表 + 报告 | `src/strategy_research/core/study/hanging_events.py` |
+| dump 端点 + 组装 | `src/agentnodes/api/routers/study.py`（`_study_dump`） |
+| scheduler dump helper | `src/agentnodes/core/study/scheduler.py` |
+| admin metrics | `src/agentnodes/api/routers/admin.py` |
+| 事件表 + 报告 | `src/agentnodes/core/study/hanging_events.py` |
 | 事件埋点 | `core/llm/openai_client.py`、`core/study/scheduler.py`、`core/agent/loop.py`、`core/agent/circuit_breaker.py` |
 | trace context + JSON | `core/observability/trace.py` |
 | agent 事件词汇表 | `core/observability/event_vocab.py`（SUMMARY_EVENT_TYPES） |
@@ -398,7 +398,7 @@ branch_id, seq)` 保证分支内单调。
   缓存 / 导入元数据 / 数据指纹。`DuckDBDataStore` 是默认实现
   （薄包装 `core/db.py` 函数），registry 在 `data_store_registry.py`。
   工具 / 服务通过 `ToolContext.data_store` 注入，或调用
-  `from strategy_research.core.storage import get_store`。
+  `from agentnodes.core.storage import get_store`。
 - **`BacktestResult`** (`core/backtest_models.py`) — 5 字段权威定义
   （含 `factor_failures`）。`utils/backtest_engine` 与
   `utils/strategy_engine` re-export，import 路径不变。

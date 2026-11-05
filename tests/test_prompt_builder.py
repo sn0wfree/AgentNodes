@@ -10,7 +10,7 @@ from __future__ import annotations
 class TestChatPromptBuilder:
     def test_empty_context_renders_blank_placeholders(self):
         """workspace="" tool_list="" → placeholders substituted with empty strings."""
-        from strategy_research.kernel.agent.prompt_builder import (
+        from agentnodes.kernel.agent.prompt_builder import (
             ChatPromptBuilder,
         )
 
@@ -31,7 +31,7 @@ class TestChatPromptBuilder:
 
     def test_with_workspace_renders_correctly(self):
         """workspace="/w" → {workspace} → /w in system prompt."""
-        from strategy_research.kernel.agent.prompt_builder import (
+        from agentnodes.kernel.agent.prompt_builder import (
             ChatPromptBuilder,
         )
 
@@ -46,7 +46,7 @@ class TestChatPromptBuilder:
 
     def test_special_chars_render_safely(self):
         """str.format() handles special chars without escaping (unlike jinja2 autoescape)."""
-        from strategy_research.kernel.agent.prompt_builder import (
+        from agentnodes.kernel.agent.prompt_builder import (
             ChatPromptBuilder,
         )
 
@@ -64,7 +64,7 @@ class TestChatPromptBuilder:
 
     def test_unicode_and_emoji(self):
         """Chinese + emoji round-trip through str.format()."""
-        from strategy_research.kernel.agent.prompt_builder import (
+        from agentnodes.kernel.agent.prompt_builder import (
             ChatPromptBuilder,
         )
 
@@ -79,11 +79,11 @@ class TestChatPromptBuilder:
 
     def test_template_missing_returns_fallback(self, tmp_path, monkeypatch):
         """chat.md missing → returns FALLBACK_PROMPT (not raises)."""
-        from strategy_research.kernel.agent import prompt_builder as pb_mod
+        from agentnodes.kernel.agent import prompt_builder as pb_mod
 
         monkeypatch.setattr(pb_mod, "_PROMPTS_DIR", tmp_path)
 
-        from strategy_research.kernel.agent.prompt_builder import (
+        from agentnodes.kernel.agent.prompt_builder import (
             ChatPromptBuilder,
         )
 
@@ -95,7 +95,7 @@ class TestChatPromptBuilder:
     def test_unrendered_placeholder_returns_raw_text(self, tmp_path, monkeypatch):
         """When chat.md contains an undeclared placeholder like {foo},
         .format() raises KeyError → builder returns raw text (literal)."""
-        from strategy_research.kernel.agent import prompt_builder as pb_mod
+        from agentnodes.kernel.agent import prompt_builder as pb_mod
 
         # Monkeypatch BEFORE instantiating ChatPromptBuilder (since _path
         # is computed at __init__ time).
@@ -103,7 +103,7 @@ class TestChatPromptBuilder:
         fake_md = "You are an assistant. Welcome to {workspace}. {foo}"
         (tmp_path / "chat.md").write_text(fake_md, encoding="utf-8")
 
-        from strategy_research.kernel.agent.prompt_builder import (
+        from agentnodes.kernel.agent.prompt_builder import (
             ChatPromptBuilder,
         )
 
@@ -117,7 +117,7 @@ class TestChatPromptBuilder:
 
     def test_long_history_preserved(self):
         """history=1000 messages → 1002 total (system + history + user)."""
-        from strategy_research.kernel.agent.prompt_builder import (
+        from agentnodes.kernel.agent.prompt_builder import (
             ChatPromptBuilder,
         )
 
@@ -136,7 +136,7 @@ class TestChatPromptBuilder:
         assert messages[-1]["content"] == "final"
 
     def test_validate_ok(self):
-        from strategy_research.kernel.agent.prompt_builder import (
+        from agentnodes.kernel.agent.prompt_builder import (
             ChatPromptBuilder,
         )
 
@@ -149,7 +149,7 @@ class TestChatPromptBuilder:
         assert result.error == ""
 
     def test_validate_overflow(self):
-        from strategy_research.kernel.agent.prompt_builder import (
+        from agentnodes.kernel.agent.prompt_builder import (
             ChatPromptBuilder,
         )
 
@@ -172,7 +172,7 @@ class TestStaticFilePromptBuilder:
         2026-11-05 批次 7：researcher.md 等研究角色已归档到
         testcase/golden/templates/prompts/，改用仍随包分发的通用角色。
         """
-        from strategy_research.kernel.agent.prompt_builder import (
+        from agentnodes.kernel.agent.prompt_builder import (
             StaticFilePromptBuilder,
         )
 
@@ -184,11 +184,11 @@ class TestStaticFilePromptBuilder:
 
     def test_missing_role_returns_empty(self, tmp_path, monkeypatch):
         """StaticFilePromptBuilder for missing .md file → empty string."""
-        from strategy_research.kernel.agent import prompt_builder as pb_mod
+        from agentnodes.kernel.agent import prompt_builder as pb_mod
 
         monkeypatch.setattr(pb_mod, "_PROMPTS_DIR", tmp_path)
 
-        from strategy_research.kernel.agent.prompt_builder import (
+        from agentnodes.kernel.agent.prompt_builder import (
             StaticFilePromptBuilder,
         )
 
@@ -203,7 +203,7 @@ class TestStaticFilePromptBuilder:
         改用 workflows 中的通用角色做同一断言。若该角色不含占位符，
         断言退化为「正文非空且未被替换」——语义不变。
         """
-        from strategy_research.kernel.agent.prompt_builder import (
+        from agentnodes.kernel.agent.prompt_builder import (
             StaticFilePromptBuilder,
         )
 
@@ -215,7 +215,7 @@ class TestStaticFilePromptBuilder:
         assert system.strip(), "prompt 不应为空"
         # Placeholders stay literal — matches old role_factory behavior
         raw = (__import__("pathlib").Path(__file__).parent.parent
-               / "src" / "strategy_research" / "templates" / ".prompts"
+               / "src" / "agentnodes" / "templates" / ".prompts"
                / "workflow_orchestrator.md").read_text(encoding="utf-8")
         assert "{strategy_name}" in system or "{workspace}" in system or raw[:40] in system
 
@@ -226,7 +226,7 @@ class TestStaticFilePromptBuilder:
 class TestPromptBuilderFactory:
     def test_unknown_role_returns_empty_string(self):
         """Unknown role → _NullBuilder → build_system_prompt returns ''."""
-        from strategy_research.kernel.agent.prompt_builder import (
+        from agentnodes.kernel.agent.prompt_builder import (
             PromptBuilderFactory,
         )
 
@@ -236,7 +236,7 @@ class TestPromptBuilderFactory:
         # for backward compat with role_factory)
 
     def test_chat_role_returns_chat_builder(self):
-        from strategy_research.kernel.agent.prompt_builder import (
+        from agentnodes.kernel.agent.prompt_builder import (
             ChatPromptBuilder,
             PromptBuilderFactory,
         )
@@ -245,7 +245,7 @@ class TestPromptBuilderFactory:
         assert isinstance(builder, ChatPromptBuilder)
 
     def test_orchestrator_role_returns_static_builder(self):
-        from strategy_research.kernel.agent.prompt_builder import (
+        from agentnodes.kernel.agent.prompt_builder import (
             PromptBuilderFactory,
             StaticFilePromptBuilder,
         )
@@ -264,11 +264,11 @@ class TestPromptBuilderFactory:
         """
         from pathlib import Path
 
-        from strategy_research.kernel.agent.prompt_builder import (
+        from agentnodes.kernel.agent.prompt_builder import (
             PromptBuilderFactory,
         )
 
-        prompts_dir = (Path(__file__).parent.parent / "src" / "strategy_research"
+        prompts_dir = (Path(__file__).parent.parent / "src" / "agentnodes"
                        / "templates" / ".prompts")
         on_disk = {p.stem for p in prompts_dir.glob("*.md")}
         saved = PromptBuilderFactory._discovered

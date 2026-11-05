@@ -14,14 +14,14 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
 
-from strategy_research.interfaces.api.session import projection_handlers as _ph
-from strategy_research.interfaces.api.session.projector import (
+from agentnodes.interfaces.api.session import projection_handlers as _ph
+from agentnodes.interfaces.api.session.projector import (
     ProjectedMessage,
     ProjectedPart,
     ProjectedSession,
     Projector,
 )
-from strategy_research.kernel.events.event_v2 import EventType, EventV2
+from agentnodes.kernel.events.event_v2 import EventType, EventV2
 
 
 def _make_event(

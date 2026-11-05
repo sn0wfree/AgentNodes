@@ -1,13 +1,13 @@
 import pytest
 
-from strategy_research.kernel.workflow import (
+from agentnodes.kernel.workflow import (
     AgentRegistry,
     AgentStatus,
     topological_layers,
     validate_dag,
 )
-from strategy_research.kernel.workflow.executors import StubExecutor
-from strategy_research.kernel.workflow.validator import AgentValidator
+from agentnodes.kernel.workflow.executors import StubExecutor
+from agentnodes.kernel.workflow.validator import AgentValidator
 
 # P8 cleanup: WorkflowController / ControllerConfig / PromptBuilder removed
 _WorkflowController = None  # type: ignore[assignment,misc]

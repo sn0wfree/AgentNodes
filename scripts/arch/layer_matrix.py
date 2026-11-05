@@ -21,7 +21,7 @@ import os
 from collections import defaultdict
 from pathlib import Path
 
-PKG = "strategy_research"
+PKG = "agentnodes"
 
 ORDER = ["L1", "L2", "L3", "L4"]  # index 0 = highest
 
@@ -29,75 +29,75 @@ ORDER = ["L1", "L2", "L3", "L4"]  # index 0 = highest
 
 LAYER_MEMBERSHIP: dict[str, str] = {
     # L1 interfaces
-    "strategy_research.interfaces": "L1",  # 物理层目录（逐模块迁移中）
-    "strategy_research.interfaces.api": "L1",
-    "strategy_research.interfaces.cli": "L1",
-    "strategy_research.interfaces.mcp": "L1",
+    "agentnodes.interfaces": "L1",  # 物理层目录（逐模块迁移中）
+    "agentnodes.interfaces.api": "L1",
+    "agentnodes.interfaces.cli": "L1",
+    "agentnodes.interfaces.mcp": "L1",
     # L2 apps (research IP)
-    "strategy_research.apps": "L2",  # 物理层目录（逐模块迁移中）
-    "strategy_research.apps.study": "L2",
-    "strategy_research.apps.goal": "L2",
-    "strategy_research.apps.hypothesis": "L2",
+    "agentnodes.apps": "L2",  # 物理层目录（逐模块迁移中）
+    "agentnodes.apps.study": "L2",
+    "agentnodes.apps.goal": "L2",
+    "agentnodes.apps.hypothesis": "L2",
     # alpha_zoo 及 4 个衍生模块已移除（2026-11-04 做减法批次 1）；
     # 归档见 testcase/golden/apps/alpha_zoo/
-    "strategy_research.apps.backtest": "L2",
-    "strategy_research.apps.backtest_engine": "L2",
-    "strategy_research.apps.backtest_models": "L2",
-    "strategy_research.apps.validation": "L2",
-    "strategy_research.apps.portfolio": "L2",
-    "strategy_research.apps.data_source": "L2",
-    "strategy_research.apps.data_import": "L2",
-    "strategy_research.apps.data_readiness": "L2",
-    "strategy_research.apps.db": "L2",
-    "strategy_research.apps.compute_factor": "L2",
-    "strategy_research.apps.factor_validate": "L2",
-    "strategy_research.apps.config_runner": "L2",
-    "strategy_research.apps.strategy_acceptance": "L2",
-    "strategy_research.apps.autoresearch": "L2",
-    "strategy_research.apps.engine": "L2",
-    "strategy_research.apps.export": "L2",
-    "strategy_research.apps.run_card": "L2",
-    "strategy_research.apps.preflight": "L2",
-    "strategy_research.apps.tools": "L2",
-    "strategy_research.apps.capabilities": "L2",
-    "strategy_research.apps.evolution": "L2",
-    "strategy_research.templates": "L2",
+    "agentnodes.apps.backtest": "L2",
+    "agentnodes.apps.backtest_engine": "L2",
+    "agentnodes.apps.backtest_models": "L2",
+    "agentnodes.apps.validation": "L2",
+    "agentnodes.apps.portfolio": "L2",
+    "agentnodes.apps.data_source": "L2",
+    "agentnodes.apps.data_import": "L2",
+    "agentnodes.apps.data_readiness": "L2",
+    "agentnodes.apps.db": "L2",
+    "agentnodes.apps.compute_factor": "L2",
+    "agentnodes.apps.factor_validate": "L2",
+    "agentnodes.apps.config_runner": "L2",
+    "agentnodes.apps.strategy_acceptance": "L2",
+    "agentnodes.apps.autoresearch": "L2",
+    "agentnodes.apps.engine": "L2",
+    "agentnodes.apps.export": "L2",
+    "agentnodes.apps.run_card": "L2",
+    "agentnodes.apps.preflight": "L2",
+    "agentnodes.apps.tools": "L2",
+    "agentnodes.apps.capabilities": "L2",
+    "agentnodes.apps.evolution": "L2",
+    "agentnodes.templates": "L2",
     # L3 kernel (platform mechanisms) — three sub-bands (presentation only;
     # import rules unchanged: same-layer free, downward only)
-    "strategy_research.kernel.gateway": "L3",
-    "strategy_research.kernel.orchestration": "L3",
-    "strategy_research.kernel.events": "L3",
-    "strategy_research.kernel.session": "L3",
-    "strategy_research.kernel.scheduled_research": "L3",
-    "strategy_research.kernel.runtimes": "L3",
-    "strategy_research.kernel.workflow": "L3",
-    "strategy_research.kernel.swarm": "L3",
-    "strategy_research.kernel.agent": "L3",
-    "strategy_research.kernel.context": "L3",
-    "strategy_research.kernel.hooks": "L3",
-    "strategy_research.kernel.permission": "L3",
-    "strategy_research.kernel.memory": "L3",
-    "strategy_research.kernel.skills": "L3",
-    "strategy_research.kernel": "L3",  # 物理层目录（逐模块迁移中）
-    "strategy_research.kernel.seq_generator": "L3",  # 待退役（归 event_log 权威 seq）
+    "agentnodes.kernel.gateway": "L3",
+    "agentnodes.kernel.orchestration": "L3",
+    "agentnodes.kernel.events": "L3",
+    "agentnodes.kernel.session": "L3",
+    "agentnodes.kernel.scheduled_research": "L3",
+    "agentnodes.kernel.runtimes": "L3",
+    "agentnodes.kernel.workflow": "L3",
+    "agentnodes.kernel.swarm": "L3",
+    "agentnodes.kernel.agent": "L3",
+    "agentnodes.kernel.context": "L3",
+    "agentnodes.kernel.hooks": "L3",
+    "agentnodes.kernel.permission": "L3",
+    "agentnodes.kernel.memory": "L3",
+    "agentnodes.kernel.skills": "L3",
+    "agentnodes.kernel": "L3",  # 物理层目录（逐模块迁移中）
+    "agentnodes.kernel.seq_generator": "L3",  # 待退役（归 event_log 权威 seq）
     # L4 foundation
-    "strategy_research.foundation.llm": "L4",
-    "strategy_research.foundation.storage": "L4",
-    "strategy_research.foundation.observability": "L4",
-    "strategy_research.foundation.utils": "L4",
-    "strategy_research.foundation.web": "L4",
-    "strategy_research.foundation.registry": "L4",
-    "strategy_research.foundation.config_loader": "L4",
-    "strategy_research.foundation": "L4",  # W0 试点：层目录 __init__
-    "strategy_research.foundation.errors": "L4",
-    "strategy_research.foundation.git": "L4",
-    "strategy_research.foundation.protocol": "L4",
-    "strategy_research.foundation.compact_config": "L4",
-    "strategy_research.foundation.structured_output": "L4",
+    "agentnodes.foundation.llm": "L4",
+    "agentnodes.foundation.storage": "L4",
+    "agentnodes.foundation.observability": "L4",
+    "agentnodes.foundation.utils": "L4",
+    "agentnodes.foundation.web": "L4",
+    "agentnodes.foundation.registry": "L4",
+    "agentnodes.foundation.config_loader": "L4",
+    "agentnodes.foundation": "L4",  # W0 试点：层目录 __init__
+    "agentnodes.foundation.errors": "L4",
+    "agentnodes.foundation.git": "L4",
+    "agentnodes.foundation.protocol": "L4",
+    "agentnodes.foundation.compact_config": "L4",
+    "agentnodes.foundation.structured_output": "L4",
 }
 
 # Facade __init__ modules excluded from direction assertions (re-exports only)
-SKIP_MODULES = {"strategy_research"}
+SKIP_MODULES = {"agentnodes"}
 
 
 # ── 判定原语 ────────────────────────────────────────────────────────

@@ -5,7 +5,7 @@ and the expanded view shows the full text with a fold hint.
 """
 from __future__ import annotations
 
-from strategy_research.interfaces.cli.tui.widgets.streaming_text import StreamingText
+from agentnodes.interfaces.cli.tui.widgets.streaming_text import StreamingText
 
 
 class TestStreamingTextRender:
@@ -85,7 +85,7 @@ class TestStreamingTextRender:
 
 class TestAppendDone:
     def test_append_done_writes_marker(self):
-        from strategy_research.interfaces.cli.tui.widgets.transcript import TranscriptView
+        from agentnodes.interfaces.cli.tui.widgets.transcript import TranscriptView
         tv = TranscriptView()
         # RichLog needs a screen; test via mock
         with __import__("unittest.mock").mock.patch.object(tv, "write") as m:

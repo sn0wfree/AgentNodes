@@ -11,7 +11,7 @@ import json
 
 import pytest
 
-from strategy_research.kernel.swarm.runtime import (
+from agentnodes.kernel.swarm.runtime import (
     AgentResult,
     AgentStatus,
     SwarmRuntime,

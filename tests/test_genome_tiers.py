@@ -19,8 +19,8 @@ import pytest
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
 
-from strategy_research.foundation.storage.genome_store import GenomeStore
-from strategy_research.kernel.orchestration.genome_version import (
+from agentnodes.foundation.storage.genome_store import GenomeStore
+from agentnodes.kernel.orchestration.genome_version import (
     GenomeVersion,
     GenomeVersionStore,
 )
@@ -34,7 +34,7 @@ def store(tmp_path):
 @pytest.fixture
 def tier0():
     """真实采集结果（不 mock——要验证采集本身能跑通）。"""
-    from strategy_research.interfaces.tier0_snapshot import collect_tier0
+    from agentnodes.interfaces.tier0_snapshot import collect_tier0
 
     return collect_tier0()
 
@@ -71,7 +71,7 @@ class TestTier0SnapshotCollection:
 
     def test_collection_never_raises(self):
         """采集失败必须降级，不能因为审计资产采不到就起不来。"""
-        from strategy_research.interfaces import tier0_snapshot
+        from agentnodes.interfaces import tier0_snapshot
 
         # 默认环境下应该能采到；这里验证的是接口返回 dict 而非抛错
         result = tier0_snapshot.collect_tier0()
@@ -139,7 +139,7 @@ class TestTier0Immutable:
             activated_at="2026-01-01T00:00:00Z",
             activated_by_proposal="p-legacy",
         )
-        from strategy_research.kernel.orchestration.genome_version import _to_dict
+        from agentnodes.kernel.orchestration.genome_version import _to_dict
 
         store.append(_to_dict(old))
         store.set_cursor(0)
@@ -164,7 +164,7 @@ class TestTier0Immutable:
             tier0_frozen=custom,
             activated_at="2026-01-01T00:00:00Z",
         )
-        from strategy_research.kernel.orchestration.genome_version import _to_dict
+        from agentnodes.kernel.orchestration.genome_version import _to_dict
 
         store.append(_to_dict(init))
         store.set_cursor(0)
@@ -178,7 +178,7 @@ class TestTier0Immutable:
             version_id="gv-legacy", tier0_frozen={},
             activated_at="2026-01-01T00:00:00Z",
         )
-        from strategy_research.kernel.orchestration.genome_version import _to_dict
+        from agentnodes.kernel.orchestration.genome_version import _to_dict
 
         store.append(_to_dict(old))
         store.set_cursor(0)

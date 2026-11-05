@@ -22,18 +22,18 @@ class TestPhase5RemovedLegacyPaths:
     def test_chat_py_no_more_get_system_prompt(self):
         """``from .chat import _get_system_prompt`` must raise ImportError."""
         with __import__("pytest").raises(ImportError):
-            from strategy_research.interfaces.api.routers.chat import _get_system_prompt  # noqa: F401
+            from agentnodes.interfaces.api.routers.chat import _get_system_prompt  # noqa: F401
 
     def test_no_chat_prompt_path_constant(self):
         """``from cli.tui import _CHAT_PROMPT_PATH`` must raise ImportError."""
         with __import__("pytest").raises(ImportError):
             # 这个名字本就不该存在（断言 import 会失败）—— 悬空导入门禁豁免
-            from strategy_research.interfaces.cli.tui import _CHAT_PROMPT_PATH  # noqa: F401  # dangling-import: ok
+            from agentnodes.interfaces.cli.tui import _CHAT_PROMPT_PATH  # noqa: F401  # dangling-import: ok
 
     def test_no_load_role_system_prompt_function(self):
         """``from role_factory import _load_role_system_prompt`` must raise."""
         with __import__("pytest").raises(ImportError):
-            from strategy_research.kernel.agent.role_factory import (  # noqa: F401
+            from agentnodes.kernel.agent.role_factory import (  # noqa: F401
                 _load_role_system_prompt,
             )
 
@@ -53,7 +53,7 @@ class TestPhase5CallSitesUseFactory:
         ), f"{file} should reference PromptBuilderFactory or build_chat_agent_loop"
 
     def test_chat_py_routes_through_factory(self):
-        from strategy_research.interfaces.api.routers import chat
+        from agentnodes.interfaces.api.routers import chat
 
         src = open(chat.__file__, encoding="utf-8").read()
         self._assert_routed(src, "chat.py")
@@ -62,7 +62,7 @@ class TestPhase5CallSitesUseFactory:
         )
 
     def test_service_py_routes_through_factory(self):
-        from strategy_research.interfaces.api.session import service
+        from agentnodes.interfaces.api.session import service
 
         src = open(service.__file__, encoding="utf-8").read()
         self._assert_routed(src, "service.py")
@@ -76,7 +76,7 @@ class TestPhase5CallSitesUseFactory:
         引擎侧（``runtimes/nodes/react.py`` → AgentLoop → 同一 factory）。
         所以这里断言的是**新链路的完整性**，而不是旧的字符串存在。
         """
-        from strategy_research.interfaces.cli.tui import session as tui_session
+        from agentnodes.interfaces.cli.tui import session as tui_session
 
         src = open(tui_session.__file__, encoding="utf-8").read()
         assert "_run_via_gateway" in src, "TUI 必须经 Gateway 入口"
@@ -87,7 +87,7 @@ class TestPhase5CallSitesUseFactory:
         assert "_load_role_system_prompt" not in src
 
     def test_role_factory_routes_through_factory(self):
-        from strategy_research.kernel.agent import role_factory
+        from agentnodes.kernel.agent import role_factory
 
         src = open(role_factory.__file__, encoding="utf-8").read()
         # role_factory routes prompt rendering through the shared
@@ -105,7 +105,7 @@ class TestPhase5BehaviorUnchanged:
 
     def test_chat_prompt_matches_legacy_chat_md(self):
         """PromptBuilderFactory.get('chat') returns chat.md content (with empty context)."""
-        from strategy_research.kernel.agent.prompt_builder import (
+        from agentnodes.kernel.agent.prompt_builder import (
             PromptBuilderFactory,
         )
 
@@ -128,11 +128,11 @@ class TestPhase5BehaviorUnchanged:
         """
         from pathlib import Path
 
-        from strategy_research.kernel.agent.prompt_builder import (
+        from agentnodes.kernel.agent.prompt_builder import (
             PromptBuilderFactory,
         )
 
-        prompts_dir = (Path(__file__).parent.parent / "src" / "strategy_research"
+        prompts_dir = (Path(__file__).parent.parent / "src" / "agentnodes"
                        / "templates" / ".prompts")
         roles = sorted(p.stem for p in prompts_dir.glob("*.md"))
         assert roles, "templates/.prompts 不应为空"
@@ -151,7 +151,7 @@ class TestPhase5FactoryConsistency:
 
     def test_factory_singleton_per_role(self):
         """Same role returns the same builder instance (no churn)."""
-        from strategy_research.kernel.agent.prompt_builder import (
+        from agentnodes.kernel.agent.prompt_builder import (
             PromptBuilderFactory,
         )
 
@@ -161,7 +161,7 @@ class TestPhase5FactoryConsistency:
 
     def test_register_persists_across_get(self):
         """Custom registered builder survives subsequent ``get`` calls."""
-        from strategy_research.kernel.agent.prompt_builder import (
+        from agentnodes.kernel.agent.prompt_builder import (
             PromptBuilderFactory,
             _NullBuilder,
         )

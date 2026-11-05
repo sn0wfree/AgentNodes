@@ -275,8 +275,8 @@ class ScheduledResearchExecutor:
 
 ### 新增
 ```
-src/strategy_research/core/study/bootstrap.py   — 共享编排 create_and_queue_study
-src/strategy_research/api/routers/schedule.py   — /api/schedule/*
+src/agentnodes/core/study/bootstrap.py   — 共享编排 create_and_queue_study
+src/agentnodes/api/routers/schedule.py   — /api/schedule/*
 tests/test_scheduled_jobs_store.py
 tests/test_scheduled_executor.py
 tests/test_schedule_api.py

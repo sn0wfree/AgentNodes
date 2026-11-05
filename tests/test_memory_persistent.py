@@ -6,7 +6,7 @@ from pathlib import Path
 
 import pytest
 
-from strategy_research.kernel.memory.persistent import (
+from agentnodes.kernel.memory.persistent import (
     MAX_ENTRY_CHARS,
     MAX_INDEX_LINES,
     MAX_RESULTS,

@@ -11,16 +11,16 @@ from __future__ import annotations
 
 from unittest.mock import MagicMock
 
-from strategy_research.kernel.agent.compact import (
+from agentnodes.kernel.agent.compact import (
     CompactConfig,
     _resolve_threshold_tokens,
     compact_messages,
 )
-from strategy_research.kernel.agent.loop import (
+from agentnodes.kernel.agent.loop import (
     AgentLoop,
     compaction_persister_registered,
 )
-from strategy_research.foundation.llm.config import LLMConfig
+from agentnodes.foundation.llm.config import LLMConfig
 
 # ── _resolve_threshold_tokens (opencode formula) ────────────
 

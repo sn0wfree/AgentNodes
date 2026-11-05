@@ -1,7 +1,7 @@
 from pathlib import Path
 import re
 
-root = Path("src/strategy_research")
+root = Path("src/agentnodes")
 
 print("════ 我们现在有多少种「启动一次工作」的入口")
 entries = []
@@ -11,15 +11,15 @@ for p in root.rglob("*.py"):
     t = p.read_text(encoding="utf-8", errors="ignore")
     # AgentLoop instantiation sites
     for m in re.finditer(r"AgentLoop\(", t):
-        entries.append(("AgentLoop", str(p).replace("\\", "/").split("strategy_research/")[-1]))
+        entries.append(("AgentLoop", str(p).replace("\\", "/").split("agentnodes/")[-1]))
     for m in re.finditer(r"AutoresearchRunner\(", t):
-        entries.append(("AutoresearchRunner", str(p).replace("\\", "/").split("strategy_research/")[-1]))
+        entries.append(("AutoresearchRunner", str(p).replace("\\", "/").split("agentnodes/")[-1]))
     for m in re.finditer(r"SwarmRuntime\(", t):
-        entries.append(("SwarmRuntime", str(p).replace("\\", "/").split("strategy_research/")[-1]))
+        entries.append(("SwarmRuntime", str(p).replace("\\", "/").split("agentnodes/")[-1]))
     for m in re.finditer(r"AgentExecutor\(", t):
-        entries.append(("AgentExecutor", str(p).replace("\\", "/").split("strategy_research/")[-1]))
+        entries.append(("AgentExecutor", str(p).replace("\\", "/").split("agentnodes/")[-1]))
     for m in re.finditer(r"SessionService\(", t):
-        entries.append(("SessionService", str(p).replace("\\", "/").split("strategy_research/")[-1]))
+        entries.append(("SessionService", str(p).replace("\\", "/").split("agentnodes/")[-1]))
 
 from collections import Counter
 c = Counter(e[0] for e in entries)

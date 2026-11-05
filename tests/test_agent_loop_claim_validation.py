@@ -8,9 +8,9 @@ from pathlib import Path
 
 import pytest
 
-from strategy_research.kernel.agent.builtin_tools import build_default_registry
-from strategy_research.kernel.agent.loop import AgentLoop
-from strategy_research.foundation.llm import LLMConfig, LLMResponse, ToolCall
+from agentnodes.kernel.agent.builtin_tools import build_default_registry
+from agentnodes.kernel.agent.loop import AgentLoop
+from agentnodes.foundation.llm import LLMConfig, LLMResponse, ToolCall
 
 
 class MockLLM:
@@ -102,7 +102,7 @@ class TestStrictMode:
     def test_strict_does_not_rewrite_when_verified(self, workspace):
         """strict 模式 + 数字可追溯 → 不追加警告."""
         # Custom tool that returns a sharpe the model then references.
-        from strategy_research.kernel.agent.tools import BaseTool, ToolContext
+        from agentnodes.kernel.agent.tools import BaseTool, ToolContext
 
         class FakeBacktest(BaseTool):
             name = "fake_backtest"

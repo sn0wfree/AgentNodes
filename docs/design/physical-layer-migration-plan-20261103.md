@@ -26,7 +26,7 @@ commit 逐包独立可回滚；`core/` 目录从仓库消失；上行违规全�
 - 只有**跨层引用**（指向已搬层或本包被他人引用）需要改写
 
 **机制二：改写 = 纯文本前缀替换**。跨层引用一律改写为**绝对导入**
-`strategy_research.<layer>.<pkg>`，三种形态（import 语句 / 函数体 lazy import /
+`agentnodes.<layer>.<pkg>`，三种形态（import 语句 / 函数体 lazy import /
 字符串字面量）用同一规则、同一正则命中。不做 AST 级语句重组——v1 失败的根源
 就是试图重组多行 import 语句。
 
@@ -156,7 +156,7 @@ agent 是单包 22k、入边 64（全 src）。整包一 commit 的 diff 过大�
 
 ```bash
 # 多行 import 完整性自检（v1 失败的回归门）
-python -m compileall -q src/strategy_research tests
+python -m compileall -q src/agentnodes tests
 ```
 
 ## 5. 验证门（每 step）
@@ -168,7 +168,7 @@ pytest <受影响清单> -q
 pytest tests/test_layer_matrix.py tests/test_architecture_gates.py \
        tests/test_print_governance.py -q
 # 冒烟
-python -c "import strategy_research"
+python -c "import agentnodes"
 ```
 
 波次结束加跑全量 `pytest tests -q`（失败集不劣于 102F 基线的对应子集）。
@@ -241,9 +241,9 @@ python -c "import strategy_research"
 
 - **陷阱一：同名包前缀混淆（计划已预警，实际命中）**。
   `core/agent/builtin_tools/data_clean_tools.py:85,98` 的 `from ...tools.data_clean`
-  解析为 `strategy_research.core.tools`（研究的 tools 包），与
+  解析为 `agentnodes.core.tools`（研究的 tools 包），与
   `core/agent/tools.py`（另一个包）同形。文本前缀改写只匹配
-  `strategy_research.core.tools` 字面量，**相对导入形态绕过**。修正后必须
+  `agentnodes.core.tools` 字面量，**相对导入形态绕过**。修正后必须
   用 `find_imports_of.py <tail>` 按解析结果复核，不能只依赖文本替换计数。
 - **陷阱二：`__file__` 相对定位随层级语义漂移**。
   `core/mcp/server.py:677,760` 的 `Path(__file__).parent.parent/'swarm'/'presets'`

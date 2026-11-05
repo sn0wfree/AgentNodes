@@ -15,7 +15,7 @@ from pathlib import Path
 
 import pytest
 
-from strategy_research.interfaces.cli import llm_config_check
+from agentnodes.interfaces.cli import llm_config_check
 
 
 @pytest.fixture

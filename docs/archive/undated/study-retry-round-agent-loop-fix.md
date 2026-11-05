@@ -119,7 +119,7 @@ verdict = "discard"
 
 ```python
 # runner.py - 替换硬编码 max_iterations=10
-from strategy_research.core.agent.strategy.explorer import ExplorerStrategyFactory
+from agentnodes.core.agent.strategy.explorer import ExplorerStrategyFactory
 
 loop_strategy = ExplorerStrategyFactory.create()
 run_researcher_phase(..., max_iterations=50, loop_strategy=loop_strategy)
@@ -412,5 +412,5 @@ export function AgentApprovalDialog() {
 - `docs/archive/undated/study-archive-objective-flow-redesign.md` —— Study 归档/修改目标/流程优化
 - `docs/archive/undated/study-ui-improvement.md` —— Study UI 标签页/导航
 - `docs/guides/agent-tools-reference.md` —— Agent 工具白名单
-- `src/strategy_research/core/agent/circuit_breaker.py` —— CircuitBreaker + RetryPolicy 实现
-- `src/strategy_research/core/agent/strategy/explorer.py` —— ExplorerStrategy 实现（已存在）
+- `src/agentnodes/core/agent/circuit_breaker.py` —— CircuitBreaker + RetryPolicy 实现
+- `src/agentnodes/core/agent/strategy/explorer.py` —— ExplorerStrategy 实现（已存在）

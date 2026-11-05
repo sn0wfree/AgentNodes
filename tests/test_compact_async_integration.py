@@ -5,18 +5,18 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
-from strategy_research.kernel.agent.compact import CompactConfig, compact_messages
+from agentnodes.kernel.agent.compact import CompactConfig, compact_messages
 
 
 def _register_mock_persister(mock):
     """Register a mock compaction persister and return cleanup."""
-    from strategy_research.kernel.agent.loop import register_compaction_persister
+    from agentnodes.kernel.agent.loop import register_compaction_persister
     register_compaction_persister(mock)
     return mock
 
 
 def _reset_persister():
-    from strategy_research.kernel.agent.loop import register_compaction_persister
+    from agentnodes.kernel.agent.loop import register_compaction_persister
     register_compaction_persister(None)
 
 
@@ -31,7 +31,7 @@ class TestCompactionMessageFormat:
 
     def test_persist_compaction_event_creates_correct_format(self):
         """_persist_compaction_event creates a user-role compaction message."""
-        from strategy_research.kernel.agent.loop import AgentLoop
+        from agentnodes.kernel.agent.loop import AgentLoop
         cfg = CompactConfig()
         config = MagicMock()
         config.model_context_tokens = 1_000_000
@@ -59,7 +59,7 @@ class TestCompactionMessageFormat:
         assert call_kwargs["message_type"] == "compaction"
 
     def test_persist_compaction_event_empty_summary_skips(self):
-        from strategy_research.kernel.agent.loop import AgentLoop
+        from agentnodes.kernel.agent.loop import AgentLoop
         cfg = CompactConfig()
         config = MagicMock()
         config.model_context_tokens = 1_000_000
@@ -83,7 +83,7 @@ class TestCompactionMessageFormat:
         mock_persist.assert_not_called()
 
     def test_persist_compaction_event_no_session_skips(self):
-        from strategy_research.kernel.agent.loop import AgentLoop
+        from agentnodes.kernel.agent.loop import AgentLoop
         cfg = CompactConfig()
         config = MagicMock()
         config.model_context_tokens = 1_000_000
@@ -111,7 +111,7 @@ class TestAsyncMaybeCompact:
     """Tests for _amaybe_compact async path."""
 
     def _make_loop(self, messages=None):
-        from strategy_research.kernel.agent.loop import AgentLoop
+        from agentnodes.kernel.agent.loop import AgentLoop
         cfg = CompactConfig()
         config = MagicMock()
         config.model_context_tokens = 1_000_000
@@ -152,7 +152,7 @@ class TestAsyncMaybeCompact:
             {"role": "assistant", "content": "y" * 300},
         ]
         with patch(
-            "strategy_research.kernel.agent.compact.compact_messages",
+            "agentnodes.kernel.agent.compact.compact_messages",
             side_effect=RuntimeError("compact error"),
         ):
             result, applied = await loop._amaybe_compact(msgs)
@@ -176,7 +176,7 @@ class TestAsyncMaybeCompact:
             "recent text",
         )
         with patch(
-            "strategy_research.kernel.agent.compact.compact_messages",
+            "agentnodes.kernel.agent.compact.compact_messages",
             return_value=mock_result,
         ), patch.object(
             loop, "_persist_compaction_event",
@@ -203,7 +203,7 @@ class TestAsyncMaybeCompact:
             "recent text",
         )
         with patch(
-            "strategy_research.kernel.agent.compact.compact_messages",
+            "agentnodes.kernel.agent.compact.compact_messages",
             return_value=mock_result,
         ), patch.object(
             loop, "_persist_compaction_event",
@@ -218,7 +218,7 @@ class TestSyncMaybeCompact:
     """Tests for _maybe_compact sync path."""
 
     def _make_loop(self):
-        from strategy_research.kernel.agent.loop import AgentLoop
+        from agentnodes.kernel.agent.loop import AgentLoop
         cfg = CompactConfig()
         config = MagicMock()
         config.model_context_tokens = 1_000_000
@@ -251,7 +251,7 @@ class TestSyncMaybeCompact:
         loop = self._make_loop()
         msgs = [{"role": "user", "content": "hello"}]
         with patch(
-            "strategy_research.kernel.agent.compact.compact_messages",
+            "agentnodes.kernel.agent.compact.compact_messages",
             side_effect=RuntimeError("error"),
         ):
             result, applied = loop._maybe_compact(msgs)
@@ -272,7 +272,7 @@ class TestSyncMaybeCompact:
             "recent",
         )
         with patch(
-            "strategy_research.kernel.agent.compact.compact_messages",
+            "agentnodes.kernel.agent.compact.compact_messages",
             return_value=mock_result,
         ), patch.object(
             loop, "_persist_compaction_event",

@@ -119,7 +119,7 @@ def backend_server(built_frontend: Path) -> Iterator[dict]:
     # Use the package's CLI entry point so we hit the same code path users would.
     cmd = [
         sys.executable, "-u", "-m", "uvicorn",
-        "strategy_research.interfaces.api.app:create_app",
+        "agentnodes.interfaces.api.app:create_app",
         "--factory",
         "--host", "127.0.0.1",
         "--port", str(port),

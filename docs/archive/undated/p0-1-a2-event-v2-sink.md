@@ -35,8 +35,8 @@ core/events/event_v2.py            ← EventType + EventV2 + is_known_event_type
 
 ## 导入变更（src 4 处 + tests 约 24 处）
 
-所有 `from strategy_research.api.session.event_v2 import ...` →
-`from strategy_research.core.events.event_v2 import ...`
+所有 `from agentnodes.api.session.event_v2 import ...` →
+`from agentnodes.core.events.event_v2 import ...`
 
 详细路径变更参见 git diff（commit `d5e4380` 之后的下一次提交）。
 

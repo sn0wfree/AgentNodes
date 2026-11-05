@@ -16,7 +16,7 @@ env.update({
 })
 p = subprocess.Popen(
     [sys.executable, "-u", "-m", "uvicorn",
-     "strategy_research.api.app:create_app", "--factory",
+     "agentnodes.api.app:create_app", "--factory",
      "--host", "127.0.0.1", "--port", "8979", "--log-level", "info"],
     env=env, stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
     text=True, encoding="utf-8", errors="ignore",

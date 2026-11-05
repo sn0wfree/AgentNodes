@@ -7,9 +7,9 @@ from pathlib import Path
 
 import pytest
 
-from strategy_research.kernel.swarm.runtime import AgentStatus
-from strategy_research.kernel.workflow.definition import WorkflowNode
-from strategy_research.kernel.workflow.node_types import (
+from agentnodes.kernel.swarm.runtime import AgentStatus
+from agentnodes.kernel.workflow.definition import WorkflowNode
+from agentnodes.kernel.workflow.node_types import (
     NODE_METADATA,
     NodeContext,
     NodeDispatchError,
@@ -88,7 +88,7 @@ class TestLLMAgent:
         assert fake.calls[0].get("tools_override") == ["read", "websearch"]
 
     def test_upstream_context_injected(self, tmp_path: Path):
-        from strategy_research.kernel.swarm.runtime import AgentResult
+        from agentnodes.kernel.swarm.runtime import AgentResult
         fake = FakeLoop({})
         ctx = make_ctx(tmp_path, loop_factory=fake)
         ctx.upstream = {"prev": AgentResult(agent_id="prev", status=AgentStatus.SUCCESS,
@@ -228,7 +228,7 @@ class TestPythonTool:
             dispatch_node(node, make_ctx(tmp_path))
 
     def test_tool_wrapper_available(self):
-        from strategy_research.kernel.workflow.node_types import register_builtin_tool_executors
+        from agentnodes.kernel.workflow.node_types import register_builtin_tool_executors
         count = register_builtin_tool_executors()
         # 批次 5：run_backtest / check_data 已随回测与数据域移除，
         # 框架侧只剩 tool / llm 等通用 executor

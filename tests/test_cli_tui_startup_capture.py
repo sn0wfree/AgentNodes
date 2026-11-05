@@ -19,17 +19,17 @@ from typing import TYPE_CHECKING
 
 import pytest
 
-from strategy_research.interfaces.cli.tui.app import ResearchApp
-from strategy_research.interfaces.cli.tui.messages import (
+from agentnodes.interfaces.cli.tui.app import ResearchApp
+from agentnodes.interfaces.cli.tui.messages import (
     AgentStreamDelta,
 )
-from strategy_research.interfaces.cli.tui.widgets import (
+from agentnodes.interfaces.cli.tui.widgets import (
     CommandSidebar,
     HintFooter,
     ToolsRail,
     TranscriptView,
 )
-from strategy_research.interfaces.cli.utils.ascii_compat import register_ascii_mode
+from agentnodes.interfaces.cli.utils.ascii_compat import register_ascii_mode
 
 if TYPE_CHECKING:
     pass
@@ -206,7 +206,7 @@ async def test_capture_halt_state():
         await pilot.pause()
 
         # Verify halt state
-        from strategy_research.interfaces.cli.halt import is_halted
+        from agentnodes.interfaces.cli.halt import is_halted
         assert is_halted(), "halt should be active after action_halt()"
 
         # The hint footer should reflect the halted state
@@ -282,7 +282,7 @@ async def test_capture_full_lifecycle():
         app.save_screenshot(str(svg_path))
 
         # Step 5: Resume
-        from strategy_research.interfaces.cli.halt import clear_halt
+        from agentnodes.interfaces.cli.halt import clear_halt
         clear_halt()
         await pilot.pause()
 
@@ -290,7 +290,7 @@ async def test_capture_full_lifecycle():
         app.save_screenshot(str(svg_path))
 
         # Verify we ended up in a clean state
-        from strategy_research.interfaces.cli.halt import is_halted
+        from agentnodes.interfaces.cli.halt import is_halted
         assert not is_halted(), "halt should be cleared after resume()"
 
         # Dump final transcript
@@ -319,7 +319,7 @@ async def test_capture_ascii_fallback_mode():
             await pilot.pause()
 
             # Verify we're in ASCII mode
-            from strategy_research.interfaces.cli.utils.ascii_compat import is_ascii_mode
+            from agentnodes.interfaces.cli.utils.ascii_compat import is_ascii_mode
             assert is_ascii_mode(), "should be in ASCII mode"
 
             # Emit a tool event with status marker

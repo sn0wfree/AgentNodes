@@ -6,14 +6,14 @@ from pathlib import Path
 
 import pytest
 
-from strategy_research.kernel.agent.builtin_tools import build_default_registry
-from strategy_research.kernel.agent.context import (
+from agentnodes.kernel.agent.builtin_tools import build_default_registry
+from agentnodes.kernel.agent.context import (
     ContextBuilder,
     estimate_tokens,
 )
-from strategy_research.kernel.agent.tools import ToolRegistry
-from strategy_research.foundation.llm import LLMConfig
-from strategy_research.kernel.memory.persistent import PersistentMemory
+from agentnodes.kernel.agent.tools import ToolRegistry
+from agentnodes.foundation.llm import LLMConfig
+from agentnodes.kernel.memory.persistent import PersistentMemory
 
 # ── Token estimation ─────────────────────────────────────────────────
 

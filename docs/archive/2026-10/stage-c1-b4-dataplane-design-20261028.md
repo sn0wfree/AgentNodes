@@ -218,7 +218,7 @@ class UnifiedMemoryManager:
    回填复用 `api/session/backfill_event_log.py:36` 的 `backfill_event_log(db_path, session_id=None, force=False)`：
    从 `messages + message_parts` 生成 `message_received/text.started/tool_call/assistant_message/compact` 事件
    （`:140-297`）。**注意它的 CLI 默认路径是旧文件名**（`:335-338` 指向
-   `quantnodes_strategy_research_user.db`），必须显式 `--db-path` 指向统一库。
+   `quantnodes_agentnodes_user.db`），必须显式 `--db-path` 指向统一库。
    回填后，下一次全量 flush 会用 `seq=1..N` 重写行（`_on_message_received` 的 seq 推导），
    顺带修掉 mm 行的 `seq=0` / `message_type` 错配。
 2. **schema 单一主人**：`SQLiteStore._init_schema`（`memory_manager.py:145-191`）改为懒调
@@ -335,7 +335,7 @@ Step 1  MemoryManager 事件化（W-D 主改）
         · 回退：revert 单个提交（MemoryManager 恢复直写，白名单同步恢复）
 
 Step 2  历史回填（一次性脚本调用，不入库新代码）
-        · python -m strategy_research.api.session.backfill_event_log --db-path <统一库> [--force]
+        · python -m agentnodes.api.session.backfill_event_log --db-path <统一库> [--force]
         · 验收：event_log 覆盖 messages 全部 id（§10 复验脚本）
 
 Step 3  消费方迁移（协调者代改，W-D 出清单）
@@ -411,37 +411,37 @@ unified 表 + legacy 行（timestamp 列）        → OperationalError: table m
 
 | 文件 | 改动 | 阶段 |
 |---|---|---|
-| `src/strategy_research/core/agent/memory_manager.py` | ① `append` 改发 `message_received`/`assistant_message`；② `clear` 改发 `compact.ended`（不带 `compacted_until_seq`）；③ **删除 `compact()`**（零生产调用）；④ 删 `SQLiteStore.insert_message` / `delete_session` / `compact_messages`（`:249-364`）；⑤ 新增 `_ensure_session_row`（复用 `:261-268` 的 SQL）与 `_emit`（懒建 EventStore）；⑥ `_init_schema` 代理 `web_session_db._ensure_schema`；⑦ 新增 `event_emitter` 注入参数；⑧ `close()` 一并关闭懒建 emitter | 1 |
-| `src/strategy_research/core/session/manager.py` | 删除（零生产调用） | 4 |
-| `src/strategy_research/core/session/models.py` | 删除（`Session`/`SessionMessage` 只服务旧栈 + 已崩的 TUI 字段读取） | 5 |
-| `src/strategy_research/core/session/metrics.py` | 删除（唯一生产者是旧栈 `db.py:210,322`） | 4 |
-| `src/strategy_research/core/session/rate_limiter.py` | 删除（唯一消费者是旧栈 `db.py:97,194,303`） | 4 |
-| `src/strategy_research/core/session/db.py` | 删除（605 行旧栈） | 5 |
-| `src/strategy_research/core/session/__init__.py` | 删除或清空（随包保留则只留空 docstring） | 5 |
-| `src/strategy_research/core/storage/**` | **零改动**（理由：messages 不归 PlatformStore；`event_log` 写入已由 `platform_store.append_event_row`（`:237-249`）覆盖；本次不碰 `event_schema.py`） | — |
-| `src/strategy_research/core/hooks/bundled/session_memory.py` | 删除（零生产构造） | 4 |
-| `src/strategy_research/core/hooks/bundled/__init__.py` | 去掉 `SessionMemoryHook` 导出（`:2,6`） | 4 |
+| `src/agentnodes/core/agent/memory_manager.py` | ① `append` 改发 `message_received`/`assistant_message`；② `clear` 改发 `compact.ended`（不带 `compacted_until_seq`）；③ **删除 `compact()`**（零生产调用）；④ 删 `SQLiteStore.insert_message` / `delete_session` / `compact_messages`（`:249-364`）；⑤ 新增 `_ensure_session_row`（复用 `:261-268` 的 SQL）与 `_emit`（懒建 EventStore）；⑥ `_init_schema` 代理 `web_session_db._ensure_schema`；⑦ 新增 `event_emitter` 注入参数；⑧ `close()` 一并关闭懒建 emitter | 1 |
+| `src/agentnodes/core/session/manager.py` | 删除（零生产调用） | 4 |
+| `src/agentnodes/core/session/models.py` | 删除（`Session`/`SessionMessage` 只服务旧栈 + 已崩的 TUI 字段读取） | 5 |
+| `src/agentnodes/core/session/metrics.py` | 删除（唯一生产者是旧栈 `db.py:210,322`） | 4 |
+| `src/agentnodes/core/session/rate_limiter.py` | 删除（唯一消费者是旧栈 `db.py:97,194,303`） | 4 |
+| `src/agentnodes/core/session/db.py` | 删除（605 行旧栈） | 5 |
+| `src/agentnodes/core/session/__init__.py` | 删除或清空（随包保留则只留空 docstring） | 5 |
+| `src/agentnodes/core/storage/**` | **零改动**（理由：messages 不归 PlatformStore；`event_log` 写入已由 `platform_store.append_event_row`（`:237-249`）覆盖；本次不碰 `event_schema.py`） | — |
+| `src/agentnodes/core/hooks/bundled/session_memory.py` | 删除（零生产构造） | 4 |
+| `src/agentnodes/core/hooks/bundled/__init__.py` | 去掉 `SessionMemoryHook` 导出（`:2,6`） | 4 |
 
 ### 6.2 请求协调者代改（按依赖顺序）
 
 | 文件 | 改动 | 阶段 | 为什么必须协调者 |
 |---|---|---|---|
 | `tests/test_architecture_gates.py` | ① `:263` 移除 `"core/agent/memory_manager.py"`（Step 1 同提交）；② `:264` 移除 `"core/session/db.py"` + 删 `:287-300`（Step 5 同提交） | 1 / 5 | C 独占（契约 §5） |
-| `src/strategy_research/api/session/projection_handlers.py` | `_on_message_received`/`_on_assistant_message` 透传 `metadata`（约 3 行） | 1 | 不在 W-D 所有权 |
-| `src/strategy_research/api/routers/web_session.py` | **无必须改动**；可选：`persist_message` 保持现状（幂等 + compaction persister）。**不要**在本次扩大它的职责 | — | 任务书指定"请求协调者代改" |
-| `src/strategy_research/api/routers/chat.py` | 删除死簇 `_run_agent_loop_background`（`:395-462`）、`_persist_user_message`（`:321-325`）、`_persist_assistant_message`（`:352-370`）、`_AutoTitle` 通知（`:327-349`）、`_PartAccumulator`（`:216-315`）、`_run_test_script`（`:464-523`）——这是 Web 进程里唯一的 `mm.append` 调用点 | 3 | api/routers |
-| `src/strategy_research/api/routers/slash_commands.py` | `/clear`（`:820-880`）在 Step 1 后自动变成"发标记事件"路径，**代码无需改**；验证 `test_chat_slash_commands.py` 的 mock 是否仍成立（它 mock 了 `mm.clear`，`:83-89`） | 3 | api/routers |
-| `src/strategy_research/api/routers/admin.py` | 退役 `/metrics`（`:164-187`）或改数据源为 `EventStore.health_report()` | 4 | api/routers |
-| `src/strategy_research/cli/commands/session.py` | 退役 `cmd_session_stats/list/show/search/delete`，或按 §4.2 改统一库 | 3-4 | cli |
-| `src/strategy_research/cli/commands/slash_session.py` | 退役 `/history` / `/search`（env 门控，默认不可用） | 4 | cli |
-| `src/strategy_research/cli/__init__.py` | 移除 `session` 子命令注册（`:29-34,656-684,826,856,885-899`） | 4 | cli |
-| `src/strategy_research/cli/tui/app.py` | ① resume 探测/恢复（`:222-285`）改统一库（§4.2 #9/#10，同时修 `session_id`/`title` 字段 bug）；② Ctrl+L（`:648-660`）去掉 `mm.clear` 调用（UI 清屏 + `ctx.history=[]` 即可） | 3 | cli |
-| `src/strategy_research/cli/tui/session.py` | ① `build_chat_agent_loop`（`:272-278`）补 `event_bus=`（否则 TUI 压缩仍走 `persist_message` 直写，`:281-286`）；② 历史注入/持久化代码保持（Step 1 后自动事件化） | 3 | cli |
-| `src/strategy_research/core/mcp/server.py` | `_register_session_tools`（`:634-662`）改统一库或退役 | 4 | core/mcp |
-| `src/strategy_research/core/agent/context.py` | 删 `session_manager` 参数与 `_recall_relevant` 的会话分支（`:90,98,224-233`） | 4 | 未列所有权（默认协调者） |
-| `src/strategy_research/core/agent/loop.py` / `role_factory.py` / `executor.py` | 删 `session_manager` 参数链（`loop.py:347,403,473`；`role_factory.py:92,164,188,239`；`executor.py:33`） | 4 | W-P |
-| `src/strategy_research/core/study/engine_common.py` | 删 `build_agent_ctx` 的 `session_manager` 键（`:74`） | 4 | W-S |
-| `src/strategy_research/core/agent/event_store.py` | 加 `close()`（关 `_ps` 与懒建 projector）——MemoryManager 懒建 emitter 后需要释放连接 | 1 | 未列所有权（默认协调者） |
+| `src/agentnodes/api/session/projection_handlers.py` | `_on_message_received`/`_on_assistant_message` 透传 `metadata`（约 3 行） | 1 | 不在 W-D 所有权 |
+| `src/agentnodes/api/routers/web_session.py` | **无必须改动**；可选：`persist_message` 保持现状（幂等 + compaction persister）。**不要**在本次扩大它的职责 | — | 任务书指定"请求协调者代改" |
+| `src/agentnodes/api/routers/chat.py` | 删除死簇 `_run_agent_loop_background`（`:395-462`）、`_persist_user_message`（`:321-325`）、`_persist_assistant_message`（`:352-370`）、`_AutoTitle` 通知（`:327-349`）、`_PartAccumulator`（`:216-315`）、`_run_test_script`（`:464-523`）——这是 Web 进程里唯一的 `mm.append` 调用点 | 3 | api/routers |
+| `src/agentnodes/api/routers/slash_commands.py` | `/clear`（`:820-880`）在 Step 1 后自动变成"发标记事件"路径，**代码无需改**；验证 `test_chat_slash_commands.py` 的 mock 是否仍成立（它 mock 了 `mm.clear`，`:83-89`） | 3 | api/routers |
+| `src/agentnodes/api/routers/admin.py` | 退役 `/metrics`（`:164-187`）或改数据源为 `EventStore.health_report()` | 4 | api/routers |
+| `src/agentnodes/cli/commands/session.py` | 退役 `cmd_session_stats/list/show/search/delete`，或按 §4.2 改统一库 | 3-4 | cli |
+| `src/agentnodes/cli/commands/slash_session.py` | 退役 `/history` / `/search`（env 门控，默认不可用） | 4 | cli |
+| `src/agentnodes/cli/__init__.py` | 移除 `session` 子命令注册（`:29-34,656-684,826,856,885-899`） | 4 | cli |
+| `src/agentnodes/cli/tui/app.py` | ① resume 探测/恢复（`:222-285`）改统一库（§4.2 #9/#10，同时修 `session_id`/`title` 字段 bug）；② Ctrl+L（`:648-660`）去掉 `mm.clear` 调用（UI 清屏 + `ctx.history=[]` 即可） | 3 | cli |
+| `src/agentnodes/cli/tui/session.py` | ① `build_chat_agent_loop`（`:272-278`）补 `event_bus=`（否则 TUI 压缩仍走 `persist_message` 直写，`:281-286`）；② 历史注入/持久化代码保持（Step 1 后自动事件化） | 3 | cli |
+| `src/agentnodes/core/mcp/server.py` | `_register_session_tools`（`:634-662`）改统一库或退役 | 4 | core/mcp |
+| `src/agentnodes/core/agent/context.py` | 删 `session_manager` 参数与 `_recall_relevant` 的会话分支（`:90,98,224-233`） | 4 | 未列所有权（默认协调者） |
+| `src/agentnodes/core/agent/loop.py` / `role_factory.py` / `executor.py` | 删 `session_manager` 参数链（`loop.py:347,403,473`；`role_factory.py:92,164,188,239`；`executor.py:33`） | 4 | W-P |
+| `src/agentnodes/core/study/engine_common.py` | 删 `build_agent_ctx` 的 `session_manager` 键（`:74`） | 4 | W-S |
+| `src/agentnodes/core/agent/event_store.py` | 加 `close()`（关 `_ps` 与懒建 projector）——MemoryManager 懒建 emitter 后需要释放连接 | 1 | 未列所有权（默认协调者） |
 | `docs/archive/2026-10/stage-c1-acceptance-20261028.md` / 契约 | 门禁计数 13→12 同步 | 5 | C |
 
 ### 6.3 明确不改

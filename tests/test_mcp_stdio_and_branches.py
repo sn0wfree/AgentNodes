@@ -12,7 +12,7 @@ import json
 
 import pytest
 
-from strategy_research.interfaces.mcp.server import MCPServer, MCPTool
+from agentnodes.interfaces.mcp.server import MCPServer, MCPTool
 
 
 def _payload(server, tool: str, args: dict) -> dict:

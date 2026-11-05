@@ -104,10 +104,10 @@ SessionService.send_message()
 
 | 文件 | 来源 | 说明 |
 |------|------|------|
-| `src/strategy_research/api/session/events.py` | 复制 `vibe_trading/src/session/events.py` | EventBus + SSEEvent，直接复用 |
-| `src/strategy_research/api/session/models.py` | 复制 `vibe_trading/src/session/models.py` | Session + Message + Attempt dataclass |
-| `src/strategy_research/api/session/store.py` | 复制 + 适配 | 复用 SessionDB，新增加 attempts 表 |
-| `src/strategy_research/api/session/service.py` | 复制 + 适配 | SessionService 核心 |
+| `src/agentnodes/api/session/events.py` | 复制 `vibe_trading/src/session/events.py` | EventBus + SSEEvent，直接复用 |
+| `src/agentnodes/api/session/models.py` | 复制 `vibe_trading/src/session/models.py` | Session + Message + Attempt dataclass |
+| `src/agentnodes/api/session/store.py` | 复制 + 适配 | 复用 SessionDB，新增加 attempts 表 |
+| `src/agentnodes/api/session/service.py` | 复制 + 适配 | SessionService 核心 |
 | `docs/design/chat-service-design.md` | 新建 | 本文档 |
 
 ### 修改文件

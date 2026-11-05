@@ -13,7 +13,7 @@ from __future__ import annotations
 import os
 from unittest.mock import MagicMock
 
-from strategy_research.kernel.agent.compact import (
+from agentnodes.kernel.agent.compact import (
     CompactConfig,
     _llm_summarize_v2,
     compact_messages,
@@ -144,7 +144,7 @@ class TestEnvVarKillSwitch:
             # Re-import to re-evaluate
             import importlib
 
-            from strategy_research.kernel.agent import compact
+            from agentnodes.kernel.agent import compact
             importlib.reload(compact)
             assert compact._KEEP_ALL_COMPACTIONS_OVERRIDE is False
         finally:
@@ -157,7 +157,7 @@ class TestEnvVarKillSwitch:
         try:
             import importlib
 
-            from strategy_research.kernel.agent import compact
+            from agentnodes.kernel.agent import compact
             importlib.reload(compact)
             assert compact._KEEP_ALL_COMPACTIONS_OVERRIDE is True
         finally:
@@ -170,7 +170,7 @@ class TestEnvVarKillSwitch:
             try:
                 import importlib
 
-                from strategy_research.kernel.agent import compact
+                from agentnodes.kernel.agent import compact
                 importlib.reload(compact)
                 assert compact._KEEP_ALL_COMPACTIONS_OVERRIDE is True, f"Failed for {val}"
             finally:
@@ -183,7 +183,7 @@ class TestEnvVarKillSwitch:
             try:
                 import importlib
 
-                from strategy_research.kernel.agent import compact
+                from agentnodes.kernel.agent import compact
                 importlib.reload(compact)
                 assert compact._KEEP_ALL_COMPACTIONS_OVERRIDE is False, f"Failed for {val!r}"
             finally:

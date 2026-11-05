@@ -4,15 +4,15 @@ from __future__ import annotations
 import time
 from types import SimpleNamespace
 
-from strategy_research.kernel.agent.runtime import (
+from agentnodes.kernel.agent.runtime import (
     ModelIO,
     StopDecision,
     StopPolicy,
     Telemetry,
     limits_from_config,
 )
-from strategy_research.kernel.agent.strategy.budget import BudgetLimits
-from strategy_research.kernel.agent.strategy.loop_strategy import LoopConfig
+from agentnodes.kernel.agent.strategy.budget import BudgetLimits
+from agentnodes.kernel.agent.strategy.loop_strategy import LoopConfig
 
 
 class TestLimitsFromConfig:

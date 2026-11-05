@@ -2,7 +2,7 @@
 
 > Status: v1 (proposed) — 2026-08-05
 > Author: AI assistant (under user direction)
-> Scope: `src/strategy_research/`
+> Scope: `src/agentnodes/`
 
 ## 1. 三类工具的划分
 

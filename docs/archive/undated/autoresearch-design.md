@@ -545,10 +545,10 @@ workspace/
 | P0 | 改 strategy.py | `templates/strategy.py` |
 | P0 | 创建 research-discipline | `templates/.skills/research-discipline.md` |
 | P1 | 创建/修改 10 个 .prompts | `templates/.prompts/` |
-| P1 | 改 cli.py (baseline) | `src/strategy_research/cli.py` |
-| P2 | 改 backtest.py (git-as-log) | `src/strategy_research/core/backtest.py` |
-| P2 | 改 git.py (rich message) | `src/strategy_research/core/git.py` |
-| P2 | 改 db.py (扩展表) | `src/strategy_research/core/db.py` |
+| P1 | 改 cli.py (baseline) | `src/agentnodes/cli.py` |
+| P2 | 改 backtest.py (git-as-log) | `src/agentnodes/core/backtest.py` |
+| P2 | 改 git.py (rich message) | `src/agentnodes/core/git.py` |
+| P2 | 改 db.py (扩展表) | `src/agentnodes/core/db.py` |
 
 ## 10. 实现细节
 

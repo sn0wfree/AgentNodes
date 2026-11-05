@@ -29,7 +29,7 @@ from collections import Counter, defaultdict
 
 ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 SKIP_DIRS = {"__pycache__", "attic", "graphify-out"}
-PREFIX = "strategy_research.core."
+PREFIX = "agentnodes.core."
 
 
 def iter_py(root: str):

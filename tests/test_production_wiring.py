@@ -40,8 +40,8 @@ def gateway(tmp_path, monkeypatch):
     monkeypatch.setenv("QUANTNODES_RESEARCH_GOAL_DB_PATH", str(tmp_path / "goals.db"))
     monkeypatch.setenv("QNODES_PLATFORM_STORE", "1")
 
-    import strategy_research.interfaces  # noqa: F401 —— 注册接线钩子
-    from strategy_research.kernel.gateway.singleton import get_gateway, reset_gateway
+    import agentnodes.interfaces  # noqa: F401 —— 注册接线钩子
+    from agentnodes.kernel.gateway.singleton import get_gateway, reset_gateway
 
     reset_gateway()
     gw = get_gateway(client=_Client())
@@ -84,7 +84,7 @@ class TestWiringHappensOnRealPath:
         （Ticket 迁到 kernel/orchestration，直接构造），所以这里断言
         registry 非空 + evolution.* 在册。
         """
-        from strategy_research.kernel.agent.capability import list_kinds
+        from agentnodes.kernel.agent.capability import list_kinds
 
         kinds = list_kinds()
         assert kinds, "apps 能力未注册"
@@ -100,8 +100,8 @@ class TestTicketActuallyPersists:
     """跑一个真实 turn，断言真的落库。"""
 
     def test_turn_creates_ticket_and_assignment(self, gateway, tmp_path):
-        from strategy_research.kernel.gateway import cli_request, submit_via_entry
-        from strategy_research.kernel.orchestration.ticket_store import TicketStore
+        from agentnodes.kernel.gateway import cli_request, submit_via_entry
+        from agentnodes.kernel.orchestration.ticket_store import TicketStore
 
         events: list[str] = []
         gateway.add_sink(lambda k, d: events.append(k))
@@ -130,7 +130,7 @@ class TestCapacityActuallyGates:
     """容量闸在派发路径上真的挡得住。"""
 
     def test_full_pool_keeps_work_queued(self, gateway):
-        from strategy_research.kernel.gateway import cli_request, submit_via_entry
+        from agentnodes.kernel.gateway import cli_request, submit_via_entry
 
         events: list[str] = []
         gateway.add_sink(lambda k, d: events.append(k))
@@ -159,15 +159,15 @@ class TestRsiLoopAssembles:
     """RSI 闭环能从已接线的 Gateway 组装出来。"""
 
     def test_loop_builds_from_wired_gateway(self, gateway):
-        from strategy_research.interfaces.rsi_wiring import build_rsi_loop
+        from agentnodes.interfaces.rsi_wiring import build_rsi_loop
 
         loop = build_rsi_loop(gateway, seed=42)
         assert loop is not None, "RSI 闭环组装失败（genome/capacity/store 缺一环）"
 
     def test_loop_runs_a_full_cycle(self, gateway):
         """抽 holdout → 提案 → 验证，全链路可跑。"""
-        from strategy_research.apps.evolution.holdout import compute_task_signature
-        from strategy_research.interfaces.rsi_wiring import build_rsi_loop
+        from agentnodes.apps.evolution.holdout import compute_task_signature
+        from agentnodes.interfaces.rsi_wiring import build_rsi_loop
 
         sig = compute_task_signature("动量研究", "researcher", {"read", "write"})
         store = gateway.store
@@ -211,9 +211,9 @@ class TestWiringIsResilientToFailure:
         """apps 不可用时 Gateway 仍能构造（子系统降级为 None）。"""
         monkeypatch.setenv("QUANTNODES_RESEARCH_GOAL_DB_PATH", str(tmp_path / "g.db"))
 
-        import strategy_research.interfaces  # noqa: F401
-        from strategy_research.kernel.gateway import gateway as gw_mod
-        from strategy_research.kernel.gateway.singleton import get_gateway, reset_gateway
+        import agentnodes.interfaces  # noqa: F401
+        from agentnodes.kernel.gateway import gateway as gw_mod
+        from agentnodes.kernel.gateway.singleton import get_gateway, reset_gateway
 
         reset_gateway()
 

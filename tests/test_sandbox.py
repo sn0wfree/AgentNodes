@@ -6,7 +6,7 @@ from pathlib import Path
 
 import pytest
 
-from strategy_research.kernel.agent.sandbox import (
+from agentnodes.kernel.agent.sandbox import (
     DEFAULT_READ_ROOTS,
     DEFAULT_WRITE_ROOTS,
     ASTValidationError,
@@ -128,7 +128,7 @@ class TestASTGuard:
     def test_realistic_strategy_template(self):
         """The actual templates/strategy.py should pass."""
         from pathlib import Path as P
-        template = P("src/strategy_research/templates/strategy.py")
+        template = P("src/agentnodes/templates/strategy.py")
         if template.exists():
             source = template.read_text(encoding="utf-8")
             ok, msg = validate_python_source(source)

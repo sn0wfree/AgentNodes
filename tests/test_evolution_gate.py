@@ -17,7 +17,7 @@ import pytest
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
 
-from strategy_research.apps.evolution import (
+from agentnodes.apps.evolution import (
     DEGRADATION_THRESHOLD,
     EVOLUTION_TOOLS,
     EvolutionAgent,
@@ -30,11 +30,11 @@ from strategy_research.apps.evolution import (
     ValidationGate,
     resolve_harness,
 )
-from strategy_research.apps.evolution.genome_proposals import (
+from agentnodes.apps.evolution.genome_proposals import (
     TIER0_COMPONENTS,
     TIER1_COMPONENTS,
 )
-from strategy_research.kernel.orchestration.genome_version import (
+from agentnodes.kernel.orchestration.genome_version import (
     GenomeVersion,
     GenomeVersionStore,
 )

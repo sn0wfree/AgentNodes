@@ -24,7 +24,7 @@
 
 ## 1. 现状与目标
 
-**现状**：单一 `.quantnodes_strategy_research_session.db`（12 表 + FTS + 触发器），
+**现状**：单一 `.quantnodes_agentnodes_session.db`（12 表 + FTS + 触发器），
 全项目 **33 个 `_get_db()` 调用点 / 11 个文件**共用一条线程本地连接。表分两类用途：
 
 | 类 | 表 | 例子 |

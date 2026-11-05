@@ -11,9 +11,9 @@ from unittest import mock
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
 
-from strategy_research.foundation.llm import openai_client as oc_mod
-from strategy_research.foundation.llm.config import LLMConfig
-from strategy_research.foundation.llm.errors import (
+from agentnodes.foundation.llm import openai_client as oc_mod
+from agentnodes.foundation.llm.config import LLMConfig
+from agentnodes.foundation.llm.errors import (
     LLMAuthError,
     LLMConfigError,
     LLMError,
@@ -416,16 +416,16 @@ class TestLLMQuotaError(unittest.TestCase):
     """LLMQuotaError is a distinct exception type."""
 
     def test_quota_error_is_llm_error(self) -> None:
-        from strategy_research.foundation.llm.errors import LLMQuotaError
+        from agentnodes.foundation.llm.errors import LLMQuotaError
         self.assertTrue(issubclass(LLMQuotaError, LLMError))
 
     def test_quota_error_can_be_raised(self) -> None:
-        from strategy_research.foundation.llm.errors import LLMQuotaError
+        from agentnodes.foundation.llm.errors import LLMQuotaError
         with self.assertRaises(LLMError):
             raise LLMQuotaError("quota exceeded")
 
     def test_quota_error_message(self) -> None:
-        from strategy_research.foundation.llm.errors import LLMQuotaError
+        from agentnodes.foundation.llm.errors import LLMQuotaError
         err = LLMQuotaError("monthly quota reached")
         self.assertIn("quota", str(err))
 

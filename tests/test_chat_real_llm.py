@@ -77,7 +77,7 @@ def real_server():
 
     cmd = [
         sys.executable, "-u", "-m", "uvicorn",
-        "strategy_research.interfaces.api.app:create_app",
+        "agentnodes.interfaces.api.app:create_app",
         "--factory",
         "--host", "127.0.0.1", "--port", str(port),
         "--log-level", "warning",
@@ -363,7 +363,7 @@ class TestRealLLMChat:
         })
         cmd = [
             sys.executable, "-u", "-m", "uvicorn",
-            "strategy_research.interfaces.api.app:create_app",
+            "agentnodes.interfaces.api.app:create_app",
             "--factory",
             "--host", "127.0.0.1", "--port", str(port),
             "--log-level", "warning",

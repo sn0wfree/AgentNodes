@@ -9,7 +9,7 @@ from unittest.mock import MagicMock
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
 
-from strategy_research.kernel.agent.context_injector import (
+from agentnodes.kernel.agent.context_injector import (
     ContextInjector,
     GoalContextInjector,
     GoalContinuationInjector,
@@ -104,7 +104,7 @@ class TestGoalContextInjector:
         loop.session_id = "abc"
         # Force ImportError by mocking the import
         import unittest.mock as mock
-        with mock.patch.dict("sys.modules", {"strategy_research.apps.goal": None}):
+        with mock.patch.dict("sys.modules", {"agentnodes.apps.goal": None}):
             result = inj.inject_pre_run(loop, "task text", [])
             assert result == "task text"
 
@@ -137,9 +137,9 @@ class TestTodosInjector:
         import unittest.mock as mock
         fake_block = "## Todos\n- item1"
         with mock.patch(
-            "strategy_research.kernel.agent.builtin_tools.todo_tools.TodoStore"
+            "agentnodes.kernel.agent.builtin_tools.todo_tools.TodoStore"
         ) as MockStore, mock.patch(
-            "strategy_research.kernel.agent.builtin_tools.todo_tools._format_todos_snapshot",
+            "agentnodes.kernel.agent.builtin_tools.todo_tools._format_todos_snapshot",
             return_value=fake_block,
         ):
             MockStore.get.return_value = [{"task": "item1"}]
@@ -196,5 +196,5 @@ class TestGoalContinuationInjector:
         result.messages = []
         # _get_goal_snapshot returns None (import error)
         import unittest.mock as mock
-        with mock.patch.dict("sys.modules", {"strategy_research.apps.goal": None}):
+        with mock.patch.dict("sys.modules", {"agentnodes.apps.goal": None}):
             assert inj.inject_post_response(loop, response, messages, result, 1) is False

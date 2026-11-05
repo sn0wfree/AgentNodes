@@ -7,7 +7,7 @@ Chinese messages that explain what went wrong and what to do.
 
 from __future__ import annotations
 
-from strategy_research.interfaces.api.session.service import _friendly_error_text
+from agentnodes.interfaces.api.session.service import _friendly_error_text
 
 
 class TestFriendlyErrorTextMinimax:

@@ -17,6 +17,6 @@ for g in diags:
     if g.get("rule") != "reportCallIssue":
         continue
     f = g["range"]["start"]
-    path = g.get("file", "").replace("\\", "/").split("strategy_research/")[-1]
+    path = g.get("file", "").replace("\\", "/").split("agentnodes/")[-1]
     msg = g.get("message", "").replace("\n", " | ")[:130]
     print(f"{path}:{f['line']+1}  {msg}")

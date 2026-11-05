@@ -35,9 +35,9 @@ loop_compaction.py:231  persister = _loop_mod._compaction_persister      ← 唯
 
 运行时后果（已实测）：
 ```python
-import strategy_research.kernel.agent.loop_compaction
+import agentnodes.kernel.agent.loop_compaction
 # ImportError: cannot import name 'LoopCompactionMixin'
-#   from partially initialized module 'strategy_research.kernel.agent.loop'
+#   from partially initialized module 'agentnodes.kernel.agent.loop'
 ```
 「import `loop` 先」则成功——**能否导入取决于导入顺序**，这正是最危险的一类缺陷：
 测试全绿但生产启动路径一换就崩。
@@ -61,9 +61,9 @@ import strategy_research.kernel.agent.loop_compaction
 
 ```bash
 # 1) 环消失：任意顺序都能导入
-python -c "import strategy_research.kernel.agent.loop_compaction"
-python -c "import strategy_research.kernel.agent.loop"
-python -c "from strategy_research.kernel.agent.loop_compaction import LoopCompactionMixin"
+python -c "import agentnodes.kernel.agent.loop_compaction"
+python -c "import agentnodes.kernel.agent.loop"
+python -c "from agentnodes.kernel.agent.loop_compaction import LoopCompactionMixin"
 # 2) eager SCC 归零（用修正版分析器）
 python tmp/p1_scc_v3.py    # 期望 "eager-only 环 0 个"
 # 3) 行为不变
@@ -102,7 +102,7 @@ pytest tests -k "compact or loop" -q
 1. `SwarmPreset` / `AgentResult` / `SwarmResult` 三个 dataclass 平移至 `swarm/types.py`
    （`SwarmResult` 一并搬，保持同族完整；虽无外部依赖，但留在 runtime 会造成「一半契约一半实现」）
 2. `runtime.py` 改为 `from .types import AgentResult, SwarmPreset, SwarmResult` 并 re-export
-   （**保持 `from strategy_research.kernel.swarm.runtime import AgentResult` 全部旧路径可用**）
+   （**保持 `from agentnodes.kernel.swarm.runtime import AgentResult` 全部旧路径可用**）
 3. 契约模块需要 `dataclass/field/Any`——`types.py` 会引入 `from dataclasses import dataclass, field`
 
 **为什么不是 `kernel/workflow/types.py`**：`workflow/types.py` 只有 12 行且是
@@ -120,8 +120,8 @@ pytest tests -k "compact or loop" -q
 ### 2.4 验证口径
 
 ```bash
-python -c "from strategy_research.kernel.swarm.runtime import AgentResult, SwarmPreset, SwarmResult"
-python -c "from strategy_research.kernel.swarm.types import AgentResult, SwarmPreset, SwarmResult"
+python -c "from agentnodes.kernel.swarm.runtime import AgentResult, SwarmPreset, SwarmResult"
+python -c "from agentnodes.kernel.swarm.types import AgentResult, SwarmPreset, SwarmResult"
 pytest tests -k "swarm or workflow or goal" -q
 python tmp/p1_scc_v3.py    # 期望 SCC 数量不增加
 ```
@@ -161,7 +161,7 @@ return StrategyEngine(
 
 ```python
 # config_runner.py
-from strategy_research.apps.backtest_engine import get_engine
+from agentnodes.apps.backtest_engine import get_engine
 
 def create_strategy_engine(cfg: dict) -> Any:
     ...
@@ -198,7 +198,7 @@ pytest tests/test_backtest_engine.py tests/test_backtest_engine_protocol.py -q
 # 2) config_runner 仍能构造引擎且风险参数不丢
 pytest tests -k "config_runner or strategy_engine" -q
 # 3) 接线生效：config_runner 不再直接 import StrategyEngine
-grep -n "StrategyEngine" src/strategy_research/apps/config_runner.py   # 期望只剩 adapter 内
+grep -n "StrategyEngine" src/agentnodes/apps/config_runner.py   # 期望只剩 adapter 内
 ```
 
 ### 3.4 风险

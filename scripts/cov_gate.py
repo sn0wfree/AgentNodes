@@ -11,7 +11,7 @@ C=kernel 能力面四包；H=其余一切（apps 研究工具 + kernel 其余 +
 foundation 其余 + interfaces），聚合时只消费窄档未认领的行。
 
 用法：
-    pytest tests -q --cov=strategy_research --cov-report=term > cov.log 2>&1
+    pytest tests -q --cov=agentnodes --cov-report=term > cov.log 2>&1
     python scripts/cov_gate.py cov.log [--min 90]
 
 退出码：0 达标 · 1 未达标 · 2 用法错误
@@ -70,7 +70,7 @@ def parse_rows(log_path: str) -> list[tuple[str, int, int, int]]:
         )
         if not m or m.group(1).startswith("TOTAL"):
             continue
-        p = m.group(1).replace("src\\strategy_research\\", "").replace("\\", "/")
+        p = m.group(1).replace("src\\agentnodes\\", "").replace("\\", "/")
         rows.append((p, int(m.group(2)), int(m.group(3)), int(float(m.group(4)))))
     return rows
 

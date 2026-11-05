@@ -2,11 +2,11 @@
 """fix_relative_imports — 相对导入的解析级改写（文本替换的盲区补丁）。
 
 按 PEP 328 解析每条相对导入的**真实目标**；凡解析到
-``strategy_research.core.<tail>...`` 的语句，改写为指定的新绝对路径。
+``agentnodes.core.<tail>...`` 的语句，改写为指定的新绝对路径。
 
 为什么存在：rewrite_import_prefix.py 只做文本前缀替换，而
 `from ...tools.data_clean import X` 这类相对导入字面上不含
-`strategy_research.core.tools`——文本工具永远看不见它。物理分层迁移期间
+`agentnodes.core.tools`——文本工具永远看不见它。物理分层迁移期间
 本工具（及其前身逐处手工裁决）处理了 100+ 处；两次重大遗漏
 （factor_tools 的 level-3、data_clean_tools 同形）都是先靠它同类化才收口。
 
@@ -17,7 +17,7 @@
 
 用法（每步迁移协议 §1.2 第 4.5 步，紧跟 rewrite_import_prefix）：
     python scripts/migration/fix_relative_imports.py --check tools
-    python scripts/migration/fix_relative_imports.py tools strategy_research.apps.tools
+    python scripts/migration/fix_relative_imports.py tools agentnodes.apps.tools
 
 注意：改写含多行 import 时按语句整体替换（AST 定位 + 源文替换），
 不做语句重排——v1 教训同 rewrite_import_prefix。
@@ -50,7 +50,7 @@ def iter_py():
 
 
 def run(tail: str, new_mod: str | None) -> tuple[int, int]:
-    old_prefix = "strategy_research.core." + tail
+    old_prefix = "agentnodes.core." + tail
     statements = 0
     files_changed = 0
     for path, base in iter_py():

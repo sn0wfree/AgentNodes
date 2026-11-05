@@ -21,7 +21,7 @@ REPO_ROOT = Path(__file__).resolve().parent.parent
 
 
 def build_openapi() -> dict:
-    from strategy_research.api.app import create_app
+    from agentnodes.api.app import create_app
 
     app = create_app()
     schema = app.openapi()

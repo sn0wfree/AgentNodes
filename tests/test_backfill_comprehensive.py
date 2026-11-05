@@ -10,7 +10,7 @@ import pytest
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
 
-from strategy_research.foundation.storage.event_schema import ensure_event_log_schema
+from agentnodes.foundation.storage.event_schema import ensure_event_log_schema
 
 
 def _setup_legacy_db(db_path: Path, session_id: str = "s1", num_messages: int = 3):
@@ -70,7 +70,7 @@ def _setup_legacy_db(db_path: Path, session_id: str = "s1", num_messages: int = 
 
 class TestBackfillEventLog:
     def test_backfill_empty_db(self, tmp_path):
-        from strategy_research.interfaces.api.session.backfill_event_log import backfill_event_log
+        from agentnodes.interfaces.api.session.backfill_event_log import backfill_event_log
         db_path = tmp_path / "empty.db"
         conn = sqlite3.connect(str(db_path))
         conn.row_factory = sqlite3.Row
@@ -90,7 +90,7 @@ class TestBackfillEventLog:
         assert result["events_inserted"] == 0
 
     def test_backfill_creates_events(self, tmp_path):
-        from strategy_research.interfaces.api.session.backfill_event_log import backfill_event_log
+        from agentnodes.interfaces.api.session.backfill_event_log import backfill_event_log
         db_path = tmp_path / "legacy.db"
         _setup_legacy_db(db_path, session_id="s1", num_messages=3)
         result = backfill_event_log(db_path)
@@ -98,7 +98,7 @@ class TestBackfillEventLog:
         assert result["events_inserted"] > 0
 
     def test_backfill_idempotent(self, tmp_path):
-        from strategy_research.interfaces.api.session.backfill_event_log import backfill_event_log
+        from agentnodes.interfaces.api.session.backfill_event_log import backfill_event_log
         db_path = tmp_path / "legacy.db"
         _setup_legacy_db(db_path, session_id="s1", num_messages=3)
         backfill_event_log(db_path)
@@ -106,7 +106,7 @@ class TestBackfillEventLog:
         assert result["sessions_skipped"] >= 1
 
     def test_backfill_force_reinserts(self, tmp_path):
-        from strategy_research.interfaces.api.session.backfill_event_log import backfill_event_log
+        from agentnodes.interfaces.api.session.backfill_event_log import backfill_event_log
         db_path = tmp_path / "legacy.db"
         _setup_legacy_db(db_path, session_id="s1", num_messages=3)
         backfill_event_log(db_path)
@@ -114,7 +114,7 @@ class TestBackfillEventLog:
         assert result["sessions_backfilled"] >= 1
 
     def test_backfill_specific_session(self, tmp_path):
-        from strategy_research.interfaces.api.session.backfill_event_log import backfill_event_log
+        from agentnodes.interfaces.api.session.backfill_event_log import backfill_event_log
         db_path = tmp_path / "legacy.db"
         _setup_legacy_db(db_path, session_id="s1", num_messages=2)
         # Add second session manually
@@ -129,7 +129,7 @@ class TestBackfillEventLog:
         assert result["sessions_total"] >= 1
 
     def test_backfill_stats_structure(self, tmp_path):
-        from strategy_research.interfaces.api.session.backfill_event_log import backfill_event_log
+        from agentnodes.interfaces.api.session.backfill_event_log import backfill_event_log
         db_path = tmp_path / "legacy.db"
         _setup_legacy_db(db_path)
         result = backfill_event_log(db_path)
@@ -141,7 +141,7 @@ class TestBackfillEventLog:
 
 class TestGenerateEvents:
     def test_generate_for_user_message(self, tmp_path):
-        from strategy_research.interfaces.api.session.backfill_event_log import _generate_events_for_session
+        from agentnodes.interfaces.api.session.backfill_event_log import _generate_events_for_session
         db_path = tmp_path / "legacy.db"
         _setup_legacy_db(db_path, session_id="s1", num_messages=1)
         conn = sqlite3.connect(str(db_path))
@@ -153,7 +153,7 @@ class TestGenerateEvents:
         assert "message_received" in types or "text.started" in types
 
     def test_generate_for_assistant_message(self, tmp_path):
-        from strategy_research.interfaces.api.session.backfill_event_log import _generate_events_for_session
+        from agentnodes.interfaces.api.session.backfill_event_log import _generate_events_for_session
         db_path = tmp_path / "legacy.db"
         _setup_legacy_db(db_path, session_id="s1", num_messages=1)
         conn = sqlite3.connect(str(db_path))
@@ -166,7 +166,7 @@ class TestGenerateEvents:
         assert "text.started" in types or "text.ended" in types
 
     def test_generate_empty_session(self, tmp_path):
-        from strategy_research.interfaces.api.session.backfill_event_log import _generate_events_for_session
+        from agentnodes.interfaces.api.session.backfill_event_log import _generate_events_for_session
         db_path = tmp_path / "legacy.db"
         _setup_legacy_db(db_path, session_id="empty", num_messages=0)
         conn = sqlite3.connect(str(db_path))

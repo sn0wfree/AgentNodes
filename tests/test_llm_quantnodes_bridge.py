@@ -2,7 +2,7 @@
 
 Covers the verbatim copy of QuantNodes' llm.json reader + the
 ``env:VAR`` expander + env-override application, plus the integration
-with :func:`strategy_research.foundation.llm.config.LLMConfig.load`.
+with :func:`agentnodes.foundation.llm.config.LLMConfig.load`.
 
 Direct re-implementation of B-side semantics. See MIT attribution at the
 top of ``quantnodes_bridge.py``.
@@ -12,8 +12,8 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
-from strategy_research.foundation.llm.config import LLMConfig
-from strategy_research.foundation.llm.quantnodes_bridge import (
+from agentnodes.foundation.llm.config import LLMConfig
+from agentnodes.foundation.llm.quantnodes_bridge import (
     CONFIG_PATH,
     _apply_env_overrides,
     _expand_env_var,
@@ -158,7 +158,7 @@ class TestLoadQuantnodesLlmConfig:
         assert result["api_key"] == "env:LLM_API_KEY"
 
     def test_backcompat_alias_load_llm_config(self, tmp_path):
-        from strategy_research.foundation.llm.quantnodes_bridge import load_llm_config
+        from agentnodes.foundation.llm.quantnodes_bridge import load_llm_config
         p = tmp_path / "llm.json"
         p.write_text(json.dumps({"llm": {"provider": "openai"}}))
         assert load_llm_config(p) == {"provider": "openai"}
@@ -181,7 +181,7 @@ class TestLLMConfigIntegration:
             "model": "minimax-M3",
         }}))
         monkeypatch.setattr(
-            "strategy_research.foundation.llm.config._resolve_bridge_path",
+            "agentnodes.foundation.llm.config._resolve_bridge_path",
             lambda env: llm,
         )
         cfg = LLMConfig.load()
@@ -199,7 +199,7 @@ class TestLLMConfigIntegration:
         llm = tmp_path / "llm.json"
         llm.write_text(json.dumps({"llm": {"provider": "openai"}}))
         monkeypatch.setattr(
-            "strategy_research.foundation.llm.config._resolve_bridge_path",
+            "agentnodes.foundation.llm.config._resolve_bridge_path",
             lambda env: llm,
         )
         monkeypatch.setenv("LLM_API_KEY", "sk-from-shell-env")
@@ -216,7 +216,7 @@ class TestLLMConfigIntegration:
             "api_key": "sk-from-bridge",
         }}))
         monkeypatch.setattr(
-            "strategy_research.foundation.llm.config._resolve_bridge_path",
+            "agentnodes.foundation.llm.config._resolve_bridge_path",
             lambda env: llm,
         )
         monkeypatch.setenv("LLM_API_KEY", "sk-from-shell")
@@ -230,7 +230,7 @@ class TestLLMConfigIntegration:
             monkeypatch.delenv(k, raising=False)
         llm = tmp_path / "missing.json"  # never created
         monkeypatch.setattr(
-            "strategy_research.foundation.llm.config._resolve_bridge_path",
+            "agentnodes.foundation.llm.config._resolve_bridge_path",
             lambda env: llm,
         )
         cfg = LLMConfig.load()
@@ -245,7 +245,7 @@ class TestLLMConfigIntegration:
         llm = tmp_path / "llm.json"
         llm.write_text("not json {{{")
         monkeypatch.setattr(
-            "strategy_research.foundation.llm.config._resolve_bridge_path",
+            "agentnodes.foundation.llm.config._resolve_bridge_path",
             lambda env: llm,
         )
         cfg = LLMConfig.load()
@@ -257,7 +257,7 @@ class TestLLMConfigIntegration:
 
 def test_module_has_mit_attribution():
     """Top-of-file SPDX-License-Identifier must say MIT."""
-    import strategy_research.foundation.llm.quantnodes_bridge as m
+    import agentnodes.foundation.llm.quantnodes_bridge as m
     src = Path(m.__file__).read_text(encoding="utf-8")
     assert "SPDX-License-Identifier: MIT" in src
     assert "Derived from QuantNodes" in src

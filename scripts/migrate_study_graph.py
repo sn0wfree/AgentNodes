@@ -74,7 +74,7 @@ def main() -> int:
         return 2
 
     # Lazy import so the script is portable for `--help` outside the venv.
-    from strategy_research.core.study.graph_templates import (
+    from agentnodes.core.study.graph_templates import (
         DEFAULT_STANDARD_GRAPH,
     )
 

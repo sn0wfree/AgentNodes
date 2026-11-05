@@ -6,14 +6,14 @@ from dataclasses import dataclass
 
 import pytest
 
-from strategy_research.kernel.gateway import (
+from agentnodes.kernel.gateway import (
     Gateway,
     api_chat_request,
     cli_request,
     mcp_request,
     scheduler_request,
 )
-from strategy_research.kernel.orchestration import QueueMode, SourceKind, WorkKind
+from agentnodes.kernel.orchestration import QueueMode, SourceKind, WorkKind
 
 
 # ── adapter 翻译 ─────────────────────────────────────────
@@ -115,7 +115,7 @@ def test_gateway_multiple_sessions_isolated():
 
 def test_gateway_engine_factory_injection():
     """A1 前的注入点：自定义引擎（如 react 图）。"""
-    from strategy_research.kernel.runtimes import GraphEngine, make_llm_node
+    from agentnodes.kernel.runtimes import GraphEngine, make_llm_node
 
     client = FakeClient("注入引擎回答")
     gw = Gateway(client=client, engine_factory=lambda: _build(client))
@@ -125,7 +125,7 @@ def test_gateway_engine_factory_injection():
 
 
 def _build(client):
-    from strategy_research.kernel.runtimes import GraphEngine, make_llm_node
+    from agentnodes.kernel.runtimes import GraphEngine, make_llm_node
 
     engine = GraphEngine()
     engine.add_node("llm", make_llm_node(client))

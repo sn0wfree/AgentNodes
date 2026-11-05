@@ -29,7 +29,7 @@ lazy   总数  865  覆盖  627 ( 72.5%)  漏 238
 ```
 
 一个已确认的具体漏点：`apps/study/scheduler.py:779` 的
-`from strategy_research.interfaces.api.routers.web_session import _get_db`
+`from agentnodes.interfaces.api.routers.web_session import _get_db`
 在 graphify 里 **0 条边**——而这正是门禁 L2→L1=1 的唯一来源。
 
 > **方法论结论（建议写进 `scripts/README.md`）：**

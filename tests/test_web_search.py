@@ -32,7 +32,7 @@ HAS_NETWORK = _network_available()
 class TestWebSearch:
     @pytest.mark.skipif(not HAS_NETWORK, reason="network unavailable")
     def test_search_happy_path(self):
-        from strategy_research.foundation.web.search import web_search
+        from agentnodes.foundation.web.search import web_search
         result = web_search("python programming", max_results=3)
         body = json.loads(result)
         assert body["status"] == "ok"
@@ -40,7 +40,7 @@ class TestWebSearch:
         assert body["n_results"] >= 0
 
     def test_search_empty_query(self):
-        from strategy_research.foundation.web.search import web_search
+        from agentnodes.foundation.web.search import web_search
         result = web_search("")
         body = json.loads(result)
         assert body["status"] == "error"
@@ -48,7 +48,7 @@ class TestWebSearch:
 
     @pytest.mark.skipif(not HAS_NETWORK, reason="network unavailable")
     def test_search_max_results(self):
-        from strategy_research.foundation.web.search import web_search
+        from agentnodes.foundation.web.search import web_search
         result = web_search("test query", max_results=2)
         body = json.loads(result)
         assert body["status"] == "ok"
@@ -58,7 +58,7 @@ class TestWebSearch:
 
     @pytest.mark.skipif(not HAS_NETWORK, reason="network unavailable")
     def test_search_result_format(self):
-        from strategy_research.foundation.web.search import web_search
+        from agentnodes.foundation.web.search import web_search
         result = web_search("linux kernel", max_results=1)
         body = json.loads(result)
         assert body["status"] == "ok"
@@ -69,7 +69,7 @@ class TestWebSearch:
             assert "body" in r
 
     def test_search_rate_limit_exists(self):
-        from strategy_research.foundation.web._rate_limit import ExponentialBackoff
+        from agentnodes.foundation.web._rate_limit import ExponentialBackoff
         b = ExponentialBackoff(base=0.01, max_delay=0.1)
         b.wait()
         assert b.current_delay >= 0.01
@@ -77,7 +77,7 @@ class TestWebSearch:
         assert b.current_delay == 0.01
 
     def test_search_exponential_backoff(self):
-        from strategy_research.foundation.web._rate_limit import ExponentialBackoff
+        from agentnodes.foundation.web._rate_limit import ExponentialBackoff
         b = ExponentialBackoff(base=0.01, max_delay=0.5, factor=2.0)
         initial = b.current_delay
         b.wait()
@@ -86,7 +86,7 @@ class TestWebSearch:
         assert b.current_delay > initial * 2
 
     def test_search_backoff_reset(self):
-        from strategy_research.foundation.web._rate_limit import ExponentialBackoff
+        from agentnodes.foundation.web._rate_limit import ExponentialBackoff
         b = ExponentialBackoff(base=0.01, max_delay=0.5)
         b.wait()
         b.wait()
@@ -94,7 +94,7 @@ class TestWebSearch:
         assert b.current_delay == 0.01
 
     def test_search_format(self):
-        from strategy_research.foundation.web.search import web_search
+        from agentnodes.foundation.web.search import web_search
         # 空查询测试格式
         result = web_search("")
         body = json.loads(result)
@@ -109,7 +109,7 @@ class TestWebSearch:
 class TestReadUrl:
     @pytest.mark.skipif(not HAS_NETWORK, reason="network unavailable")
     def test_fetch_happy_path(self):
-        from strategy_research.foundation.web.fetch import read_url
+        from agentnodes.foundation.web.fetch import read_url
         result = read_url("https://httpbin.org/html", max_chars=5000)
         body = json.loads(result)
         assert body["status"] == "ok"
@@ -117,7 +117,7 @@ class TestReadUrl:
         assert body["char_count"] > 0
 
     def test_fetch_empty_url(self):
-        from strategy_research.foundation.web.fetch import read_url
+        from agentnodes.foundation.web.fetch import read_url
         result = read_url("")
         body = json.loads(result)
         assert body["status"] == "error"
@@ -125,7 +125,7 @@ class TestReadUrl:
 
     @pytest.mark.skipif(not HAS_NETWORK, reason="network unavailable")
     def test_fetch_truncation(self):
-        from strategy_research.foundation.web.fetch import read_url
+        from agentnodes.foundation.web.fetch import read_url
         result = read_url("https://httpbin.org/html", max_chars=100)
         body = json.loads(result)
         assert body["status"] == "ok"
@@ -135,35 +135,35 @@ class TestReadUrl:
 
     @pytest.mark.skipif(not HAS_NETWORK, reason="network unavailable")
     def test_fetch_timeout(self):
-        from strategy_research.foundation.web.fetch import read_url
+        from agentnodes.foundation.web.fetch import read_url
         result = read_url("https://httpbin.org/delay/10", timeout=1.0)
         body = json.loads(result)
         assert body["status"] == "error"
 
     @pytest.mark.skipif(not HAS_NETWORK, reason="network unavailable")
     def test_fetch_invalid_url(self):
-        from strategy_research.foundation.web.fetch import read_url
+        from agentnodes.foundation.web.fetch import read_url
         result = read_url("https://this-domain-does-not-exist-12345.com")
         body = json.loads(result)
         assert body["status"] == "error"
 
     @pytest.mark.skipif(not HAS_NETWORK, reason="network unavailable")
     def test_fetch_non_html(self):
-        from strategy_research.foundation.web.fetch import read_url
+        from agentnodes.foundation.web.fetch import read_url
         result = read_url("https://httpbin.org/robots.txt", max_chars=5000)
         body = json.loads(result)
         assert body["status"] == "ok"
         assert body["content_type"] != "text/html" or len(body["markdown"]) > 0
 
     def test_fetch_adds_scheme(self):
-        from strategy_research.foundation.web.fetch import read_url
+        from agentnodes.foundation.web.fetch import read_url
         result = read_url("httpbin.org/html", max_chars=5000)
         body = json.loads(result)
         # 应自动加 https://
         assert body["status"] in ("ok", "error")
 
     def test_fetch_json_format(self):
-        from strategy_research.foundation.web.fetch import read_url
+        from agentnodes.foundation.web.fetch import read_url
         # 测试空 URL 的格式
         result = read_url("")
         body = json.loads(result)
@@ -172,7 +172,7 @@ class TestReadUrl:
 
     @pytest.mark.skipif(not HAS_NETWORK, reason="network unavailable")
     def test_fetch_json_format_with_url(self):
-        from strategy_research.foundation.web.fetch import read_url
+        from agentnodes.foundation.web.fetch import read_url
         result = read_url("https://httpbin.org/html", max_chars=1000)
         body = json.loads(result)
         assert "status" in body
@@ -183,7 +183,7 @@ class TestReadUrl:
 
     @pytest.mark.skipif(not HAS_NETWORK, reason="network unavailable")
     def test_fetch_max_chars_configurable(self):
-        from strategy_research.foundation.web.fetch import read_url
+        from agentnodes.foundation.web.fetch import read_url
         result = read_url("https://httpbin.org/html", max_chars=50)
         body = json.loads(result)
         assert body["status"] == "ok"
@@ -193,7 +193,7 @@ class TestReadUrl:
 
     @pytest.mark.skipif(not HAS_NETWORK, reason="network unavailable")
     def test_fetch_redirect(self):
-        from strategy_research.foundation.web.fetch import read_url
+        from agentnodes.foundation.web.fetch import read_url
         result = read_url("https://httpbin.org/redirect-to?url=https://httpbin.org/html", max_chars=5000)
         body = json.loads(result)
         assert body["status"] == "ok"

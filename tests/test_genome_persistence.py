@@ -16,8 +16,8 @@ import pytest
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
 
-from strategy_research.foundation.storage.genome_store import GenomeStore
-from strategy_research.kernel.orchestration.genome_version import (
+from agentnodes.foundation.storage.genome_store import GenomeStore
+from agentnodes.kernel.orchestration.genome_version import (
     GenomeVersion,
     GenomeVersionStore,
 )

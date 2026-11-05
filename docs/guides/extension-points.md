@@ -108,17 +108,17 @@
 
 ```bash
 # steps 清单
-ls src/strategy_research/core/agent/strategy/steps/
+ls src/agentnodes/core/agent/strategy/steps/
 
 # hooks 生命周期
-rg "async def (before_|after_|on_)" src/strategy_research/core/hooks/composite.py
+rg "async def (before_|after_|on_)" src/agentnodes/core/hooks/composite.py
 
 # injectors 时机
-rg "inject_per_iteration|inject_post_response" src/strategy_research/core/agent/loop.py
+rg "inject_per_iteration|inject_post_response" src/agentnodes/core/agent/loop.py
 
 # toolsets 注册表
-rg "^TOOLSETS" src/strategy_research/core/agent/toolsets.py
+rg "^TOOLSETS" src/agentnodes/core/agent/toolsets.py
 
 # 已标待删
-rg "DELETE-CANDIDATE" src/strategy_research/core/hooks/
+rg "DELETE-CANDIDATE" src/agentnodes/core/hooks/
 ```

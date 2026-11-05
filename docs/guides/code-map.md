@@ -1,7 +1,7 @@
 # 代码地图（code-map）
 
 > 2026-09-21 · 全库梳理快照 · v0.6.0-dev  
-> 范围：`src/strategy_research` + `webui` + `tests` + 根目录杂物
+> 范围：`src/agentnodes` + `webui` + `tests` + 根目录杂物
 
 ---
 
@@ -131,7 +131,7 @@ flowchart TB
 
 **WebUI 双前端**：
 - 主：`webui/frontend/` React 19 + Vite + TS + Tailwind + zustand + SSE hooks
-- 遗留：`src/strategy_research/webui/routes.py` Jinja2 + HTMX（prefix `/webui`）
+- 遗留：`src/agentnodes/webui/routes.py` Jinja2 + HTMX（prefix `/webui`）
 
 **tests**：537 个扁平 `test_*.py` + `attic/` 12 退役 + `_fixtures/` 8 共享。CI：3.10–3.12 矩阵 + ruff + Playwright e2e。
 
@@ -169,7 +169,7 @@ flowchart TB
 ## 8. 一页速查
 
 ```
-strategy_research/
+agentnodes/
 ├── core/          量化域 + Agent + 编排（主战场）
 │   ├── data_source/ storage/ engine/ backtest_engine/
 │   ├── alpha_zoo/ compute_factor factor_validate db backtest

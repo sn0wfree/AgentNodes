@@ -17,13 +17,13 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
 
-from strategy_research.core.orchestration import (  # noqa: E402
+from agentnodes.core.orchestration import (  # noqa: E402
     EntryPoint,
     SourceKind,
     WorkKind,
     WorkRequest,
 )
-from strategy_research.core.runtimes import GraphEngine  # noqa: E402
+from agentnodes.core.runtimes import GraphEngine  # noqa: E402
 
 
 def _graph(n_nodes: int) -> GraphEngine:

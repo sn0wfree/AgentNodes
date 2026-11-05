@@ -1,7 +1,7 @@
 """Tests for _select_by_token_budget — token budget selection logic."""
 from __future__ import annotations
 
-from strategy_research.kernel.agent.compact import (
+from agentnodes.kernel.agent.compact import (
     CompactConfig,
     _select_by_token_budget,
 )

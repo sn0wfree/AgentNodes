@@ -151,7 +151,7 @@ sr llm --show
 
 ```bash
 python3 -c "
-from strategy_research.core.llm import LLMConfig, OpenAICompatClient
+from agentnodes.core.llm import LLMConfig, OpenAICompatClient
 cfg = LLMConfig.load()
 c = OpenAICompatClient(cfg)
 print(c.chat([{'role':'user','content':'你好，回复 OK'}]).content)

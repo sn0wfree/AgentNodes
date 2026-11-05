@@ -280,7 +280,7 @@ def check_llm_config_via_module() -> dict:
     """
     try:
         sys.path.insert(0, str(Path(__file__).parent / "src"))
-        from strategy_research.cli.llm_config_check import check_llm_config
+        from agentnodes.cli.llm_config_check import check_llm_config
         return check_llm_config()
     except Exception:
         return {

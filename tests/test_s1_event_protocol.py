@@ -11,8 +11,8 @@ from pathlib import Path
 
 import pytest
 
-from strategy_research.kernel.agent.event_store import EventStore
-from strategy_research.foundation.storage.event_schema import (
+from agentnodes.kernel.agent.event_store import EventStore
+from agentnodes.foundation.storage.event_schema import (
     ENVELOPE_COLUMNS,
 )
 
@@ -74,7 +74,7 @@ def test_envelope_columns_in_store():
 
 def test_platform_store_emit_writes_envelope(tmp_path: Path):
     """PlatformStore.emit 落 canonical 列；run_id/session_key 可查。"""
-    from strategy_research.foundation.storage.platform_store import PlatformStore
+    from agentnodes.foundation.storage.platform_store import PlatformStore
 
     ps = PlatformStore(data_dir=tmp_path)
     ps.emit(
@@ -136,7 +136,7 @@ def test_legacy_db_migration_and_replay(tmp_path: Path):
 
 def test_compat_single_file_mode(tmp_path: Path):
     """PlatformStore db_path 兼容模式：跨 aggregate 同文件、全局库不可用。"""
-    from strategy_research.foundation.storage.platform_store import PlatformStore
+    from agentnodes.foundation.storage.platform_store import PlatformStore
 
     ps = PlatformStore(db_path=tmp_path / "single.db")
     ps.emit("a", "e", {"x": 1})
@@ -153,7 +153,7 @@ def test_facade_no_direct_event_log_sql():
     """门禁：EventStore 不再直接执行 event_log SQL（存储收口 PlatformStore）。"""
     from pathlib import Path as _P
 
-    src = (_P(__file__).resolve().parents[1] / "src" / "strategy_research"
+    src = (_P(__file__).resolve().parents[1] / "src" / "agentnodes"
            / "kernel" / "agent" / "event_store.py").read_text(encoding="utf-8")
     assert "INSERT INTO event_log" not in src
     assert "FROM event_log" not in src

@@ -20,7 +20,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
 
-from strategy_research.kernel.events.event_v2 import (
+from agentnodes.kernel.events.event_v2 import (
     EventType,
     EventV2,
     is_known_event_type,
@@ -353,7 +353,7 @@ if __name__ == "__main__":
 
 
 def test_study_events_registered():
-    from strategy_research.kernel.events.event_v2 import is_known_event_type
+    from agentnodes.kernel.events.event_v2 import is_known_event_type
     for name in (
         "study_queued", "study_started", "study_paused", "study_resumed",
         "study_cancelled", "study_early_stopped", "study_completed",

@@ -10,7 +10,7 @@ from tempfile import TemporaryDirectory
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
 
-from strategy_research.scripts.backfill_agent_id import backfill
+from agentnodes.scripts.backfill_agent_id import backfill
 
 
 def _setup_db(db_path: Path) -> None:

@@ -107,7 +107,7 @@ flowchart TB
 ## 3. 新包结构（目录级）
 
 ```
-src/strategy_research/
+src/agentnodes/
 ├── core/
 │   ├── orchestration/            ★ 新：通用控制面（与研究域无关）
 │   │   ├── session_controller.py     7 阶段状态机 + 队列模式 + 6 正交真值

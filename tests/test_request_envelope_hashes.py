@@ -18,8 +18,8 @@ class TestTraceLlmRequestHashes:
 
     def _make_loop(self):
         """Create a minimal AgentLoop-like object for testing."""
-        from strategy_research.kernel.agent.loop import AgentLoop
-        from strategy_research.kernel.agent.tools import ToolRegistry
+        from agentnodes.kernel.agent.loop import AgentLoop
+        from agentnodes.kernel.agent.tools import ToolRegistry
 
         loop = object.__new__(AgentLoop)
         loop.session_id = "test_session"
@@ -29,7 +29,7 @@ class TestTraceLlmRequestHashes:
 
     def test_hash_fields_present(self):
         """llm_request entry contains system_prompt_hash, tools_hash, history_hash."""
-        from strategy_research.kernel.agent.loop import AgentLoop
+        from agentnodes.kernel.agent.loop import AgentLoop
 
         loop = self._make_loop()
         messages = [

@@ -21,7 +21,7 @@ import pytest
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
 
-from strategy_research.kernel.agent.strategy import (
+from agentnodes.kernel.agent.strategy import (
     ClaimValidationFinalizationStep,
     ExplorerStrategy,
     ExplorerStrategyFactory,
@@ -35,7 +35,7 @@ from strategy_research.kernel.agent.strategy import (
     ValidatorStrategyFactory,
     create_strategy,
 )
-from strategy_research.kernel.agent.strategy.factory import ReActStrategyFactory
+from agentnodes.kernel.agent.strategy.factory import ReActStrategyFactory
 
 
 class TestExplorerStrategy:

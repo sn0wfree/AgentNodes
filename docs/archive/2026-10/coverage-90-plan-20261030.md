@@ -58,7 +58,7 @@ TOTAL: 53,530 statements · 16,897 missed · 68%
 | 事项 | 内容 |
 |---|---|
 | `.coveragerc` | `omit` 归档目录、`__main__`、`conftest`；`branch = True`（分支覆盖比行覆盖更有意义） |
-| CI 门禁 | `--cov-fail-under=90`，但**只对 A+B+C 生效**（用 `--cov=strategy_research/core/...` 分范围） |
+| CI 门禁 | `--cov-fail-under=90`，但**只对 A+B+C 生效**（用 `--cov=agentnodes/core/...` 分范围） |
 | 报告脚本 | `scripts/cov_gate.py`：按 A/B/C 三档分别断言，避免一刀切的假达标 |
 
 ### 3.2 第二步：按缺口排序补测（3-4d）

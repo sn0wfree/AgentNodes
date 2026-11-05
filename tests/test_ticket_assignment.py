@@ -18,7 +18,7 @@ import pytest
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
 
-from strategy_research.kernel.orchestration.ticket import (
+from agentnodes.kernel.orchestration.ticket import (
     REPORT_STATUSES,
     Assignment,
     AssignmentStatus,
@@ -26,7 +26,7 @@ from strategy_research.kernel.orchestration.ticket import (
     Ticket,
     TicketStatus,
 )
-from strategy_research.kernel.orchestration.ticket_store import TicketStore
+from agentnodes.kernel.orchestration.ticket_store import TicketStore
 
 
 # ── fixtures ─────────────────────────────────────────────────────────
@@ -42,7 +42,7 @@ def store(tmp_path: Path):
 @pytest.fixture()
 def event_store(tmp_path: Path):
     """Isolated EventStore so assignment.report replays are deterministic."""
-    from strategy_research.kernel.agent.event_store import EventStore
+    from agentnodes.kernel.agent.event_store import EventStore
 
     es = EventStore(db_path=tmp_path / "events.db")
     yield es
@@ -348,10 +348,10 @@ class TestControllerIntegration:
     """验证注入路径：kernel 不 import apps（H1），业务侧实现 sink。"""
 
     def test_admit_creates_ticket_and_assignment(self, tmp_path: Path):
-        from strategy_research.kernel.gateway.session_controller import (
+        from agentnodes.kernel.gateway.session_controller import (
             SessionController,
         )
-        from strategy_research.kernel.orchestration import (
+        from agentnodes.kernel.orchestration import (
             EntryPoint,
             SourceKind,
             WorkKind,
@@ -394,10 +394,10 @@ class TestControllerIntegration:
 
     def test_second_turn_reuses_ticket(self, tmp_path: Path):
         """同一 session 的第二个 turn 复用 Ticket，只新增 Assignment。"""
-        from strategy_research.kernel.gateway.session_controller import (
+        from agentnodes.kernel.gateway.session_controller import (
             SessionController,
         )
-        from strategy_research.kernel.orchestration import (
+        from agentnodes.kernel.orchestration import (
             EntryPoint,
             SourceKind,
             WorkKind,
@@ -427,10 +427,10 @@ class TestControllerIntegration:
             assert len(store.list_assignments(tickets[0].ticket_id)) == 2
 
     def test_failed_turn_settles_as_failed(self, tmp_path: Path):
-        from strategy_research.kernel.gateway.session_controller import (
+        from agentnodes.kernel.gateway.session_controller import (
             SessionController,
         )
-        from strategy_research.kernel.orchestration import (
+        from agentnodes.kernel.orchestration import (
             EntryPoint,
             SourceKind,
             WorkKind,
@@ -462,10 +462,10 @@ class TestControllerIntegration:
 
     def test_sink_failure_does_not_break_turn(self, tmp_path: Path):
         """ticket_sink 抛异常时 turn 仍正常完成（只追加，不改控制流）。"""
-        from strategy_research.kernel.gateway.session_controller import (
+        from agentnodes.kernel.gateway.session_controller import (
             SessionController,
         )
-        from strategy_research.kernel.orchestration import (
+        from agentnodes.kernel.orchestration import (
             EntryPoint,
             SourceKind,
             WorkKind,
@@ -641,7 +641,7 @@ class TestGatewayRecoverPendingAssignments:
     """Gateway.recover() 必须把待办 Assignment 重新纳入记账（goal §1）。"""
 
     def test_gateway_recover_reports_assignment_count(self, tmp_path: Path):
-        from strategy_research.kernel.gateway.gateway import Gateway
+        from agentnodes.kernel.gateway.gateway import Gateway
 
         db = tmp_path / "goals.db"
         emitted: list[tuple[str, dict]] = []
@@ -675,7 +675,7 @@ class TestGatewayRecoverPendingAssignments:
         未启用 Ticket 模型的调用方看到的 ``stats`` 不该多键——那会破坏
         既有契约。``assignments`` 只在启用 sink 时出现。
         """
-        from strategy_research.kernel.gateway.gateway import Gateway
+        from agentnodes.kernel.gateway.gateway import Gateway
 
         class _Client:
             def chat(self, messages, **k):
@@ -691,7 +691,7 @@ class TestGatewayRecoverPendingAssignments:
 
     def test_gateway_forwards_ticket_sink_to_controller(self, tmp_path: Path):
         """Gateway 必须把 ticket_sink 传给 controller，否则生产路径不落库。"""
-        from strategy_research.kernel.gateway.gateway import Gateway
+        from agentnodes.kernel.gateway.gateway import Gateway
 
         db = tmp_path / "goals.db"
         sink = TicketStore(db)

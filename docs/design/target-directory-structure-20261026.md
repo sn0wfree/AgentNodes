@@ -1,6 +1,6 @@
 # 目标代码目录结构 — 2026-10-26
 
-> 性质：重构后 `src/strategy_research/` 的目标布局，**后续每一刀的落位检查单**。
+> 性质：重构后 `src/agentnodes/` 的目标布局，**后续每一刀的落位检查单**。
 > 三条已确认的落位规则（2026-10-26 用户确认）：
 > 1. `core/gateway/` 零 FastAPI import（CI import guard 守，0.5）
 > 2. `core/orchestration/` 只放跨界契约，不放实现（controller/engine 各有其家）
@@ -11,7 +11,7 @@
 ## 1. 目标结构
 
 ```
-src/strategy_research/
+src/agentnodes/
 ├─ core/                          # 平台核心（业务无关）
 │  ├─ gateway/                    # ★新建 —— Gateway 本体（A2/A3/C5）
 │  │  ├─ __init__.py              #   start/stop 生命周期（挂载式单进程）

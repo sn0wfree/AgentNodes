@@ -21,7 +21,7 @@ import pytest
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
 
-from strategy_research.kernel.agent.strategy import (
+from agentnodes.kernel.agent.strategy import (
     LoopConfig,
     LoopStrategy,
     ReActStrategyFactory,
@@ -105,7 +105,7 @@ class TestAgentLoopStrategyField:
 
         loop = _LoopLike()
         # Re-run the resolver the same way AgentLoop.__init__ does.
-        from strategy_research.kernel.agent.strategy.profile_resolver import (
+        from agentnodes.kernel.agent.strategy.profile_resolver import (
             resolve_loop_strategy as _resolve,
         )
         loop._strategy = _resolve(kwargs.get("strategy"))

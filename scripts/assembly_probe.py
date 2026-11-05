@@ -2,7 +2,7 @@
 from pathlib import Path
 import re
 
-root = Path("src/strategy_research")
+root = Path("src/agentnodes")
 
 print("==== loop_assembly.py (the assembly point)")
 p = root / "core/agent/loop_assembly.py"

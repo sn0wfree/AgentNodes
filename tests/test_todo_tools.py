@@ -16,15 +16,15 @@ from pathlib import Path
 
 import pytest
 
-from strategy_research.kernel.agent.builtin_tools.todo_tools import (
+from agentnodes.kernel.agent.builtin_tools.todo_tools import (
     TodoStore,
     TodoWriteTool,
     _format_todos_snapshot,
     _normalize_todos,
 )
-from strategy_research.kernel.agent.loop import AgentLoop
-from strategy_research.kernel.agent.tools import ToolContext
-from strategy_research.foundation.llm import LLMConfig, LLMResponse, ToolCall
+from agentnodes.kernel.agent.loop import AgentLoop
+from agentnodes.kernel.agent.tools import ToolContext
+from agentnodes.foundation.llm import LLMConfig, LLMResponse, ToolCall
 
 
 def todo_resp(todos: list[dict], call_id: str = "todo-1") -> LLMResponse:
@@ -166,7 +166,7 @@ class TestTodoStore:
 
 class TestTodoLoopIntegration:
     async def test_todos_injected_into_following_iterations(self):
-        from strategy_research.kernel.agent.builtin_tools import build_default_registry
+        from agentnodes.kernel.agent.builtin_tools import build_default_registry
 
         events: list[tuple[str, dict]] = []
         mock = MockLLM([
@@ -196,7 +196,7 @@ class TestTodoLoopIntegration:
         assert "[in_progress] 加载数据" in injected[0]["content"]
 
     async def test_todo_updated_event_emitted_through_loop(self):
-        from strategy_research.kernel.agent.builtin_tools import build_default_registry
+        from agentnodes.kernel.agent.builtin_tools import build_default_registry
 
         events: list[tuple[str, dict]] = []
         mock = MockLLM([

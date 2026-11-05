@@ -12,11 +12,11 @@
 
 The legacy `core.session.db.SessionDB` is a SQLite store used by the
 TUI, CLI, and MCP server. It is **completely separate** from the
-webui DB (`quantnodes_strategy_research_user.db`):
+webui DB (`quantnodes_agentnodes_user.db`):
 
 | Aspect | Legacy SessionDB | Webui DB |
 |--------|------------------|----------|
-| Path | `~/.quantnodes-research/sessions.db` | `~/.quantnodes/quantnodes_strategy_research_user.db` |
+| Path | `~/.quantnodes-research/sessions.db` | `~/.quantnodes/quantnodes_agentnodes_user.db` |
 | Schema | `id INTEGER`, `role`, `content`, `timestamp` | `id TEXT`, `role`, `content`, `created_at`, `seq`, `message_type`, `message_parts` |
 | Message parts | No | Yes (Phase 2) |
 | Message type | No | Yes (user/assistant/tool/compaction) |
@@ -96,7 +96,7 @@ When ready to migrate (post-B-series):
 ## Verification of non-impact
 
 The legacy SessionDB does **not** affect webui because:
-1. Different DB files (sessions.db vs quantnodes_strategy_research_user.db)
+1. Different DB files (sessions.db vs quantnodes_agentnodes_user.db)
 2. Different schema (no shared IDs)
 3. Different runtime paths (TUI/CLI never invoked from webui)
 4. Webui's `SessionStore` uses the webui DB exclusively
@@ -106,11 +106,11 @@ remains intact and queryable through the MCP server. No data loss.
 
 ## Related files
 
-- `src/strategy_research/core/session/db.py` — legacy SessionDB
-- `src/strategy_research/core/session/manager.py` — SessionManager wrapper
-- `src/strategy_research/core/hooks/bundled/session_memory.py` — archiver
-- `src/strategy_research/api/routers/session.py` — read-only webui use
-- `src/strategy_research/cli/tui/app.py` — TUI use
-- `src/strategy_research/cli/commands/session.py` — CLI use
-- `src/strategy_research/cli/commands/slash_session.py` — CLI use
-- `src/strategy_research/core/mcp/server.py` — MCP server use
+- `src/agentnodes/core/session/db.py` — legacy SessionDB
+- `src/agentnodes/core/session/manager.py` — SessionManager wrapper
+- `src/agentnodes/core/hooks/bundled/session_memory.py` — archiver
+- `src/agentnodes/api/routers/session.py` — read-only webui use
+- `src/agentnodes/cli/tui/app.py` — TUI use
+- `src/agentnodes/cli/commands/session.py` — CLI use
+- `src/agentnodes/cli/commands/slash_session.py` — CLI use
+- `src/agentnodes/core/mcp/server.py` — MCP server use

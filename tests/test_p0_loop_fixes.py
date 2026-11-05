@@ -25,12 +25,12 @@ from pathlib import Path
 import httpx
 import pytest
 
-from strategy_research.kernel.agent.builtin_tools import build_default_registry
-from strategy_research.kernel.agent.loop import AgentLoop, _run_coro_in_sync
-from strategy_research.foundation.llm import LLMConfig, LLMResponse, ToolCall
-from strategy_research.foundation.llm.errors import LLMAuthError, LLMRateLimitError
-from strategy_research.foundation.llm.openai_client import _raise_for_status
-from strategy_research.foundation.llm.provider import get_provider
+from agentnodes.kernel.agent.builtin_tools import build_default_registry
+from agentnodes.kernel.agent.loop import AgentLoop, _run_coro_in_sync
+from agentnodes.foundation.llm import LLMConfig, LLMResponse, ToolCall
+from agentnodes.foundation.llm.errors import LLMAuthError, LLMRateLimitError
+from agentnodes.foundation.llm.openai_client import _raise_for_status
+from agentnodes.foundation.llm.provider import get_provider
 
 # ── Helpers (mirror test_agent_loop.py) ──────────────────────────────
 

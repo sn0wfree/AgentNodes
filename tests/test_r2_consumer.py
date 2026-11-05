@@ -14,12 +14,12 @@ import time
 from dataclasses import dataclass, field
 from pathlib import Path
 
-from strategy_research.kernel.gateway import (
+from agentnodes.kernel.gateway import (
     Gateway,
     SessionController,
     SessionFence,
 )
-from strategy_research.kernel.orchestration import (
+from agentnodes.kernel.orchestration import (
     EntryPoint,
     SourceKind,
     WorkKind,
@@ -110,7 +110,7 @@ def test_run_answer_absent_when_fenced():
 
 
 def test_consumer_drives_submitted_turn():
-    from strategy_research.kernel.gateway import Gateway
+    from agentnodes.kernel.gateway import Gateway
 
     gw = Gateway(client=FakeClient())
     assert not gw.consumer_running()
@@ -127,7 +127,7 @@ def test_consumer_drives_submitted_turn():
 
 
 def test_start_consumer_is_idempotent():
-    from strategy_research.kernel.gateway import Gateway
+    from agentnodes.kernel.gateway import Gateway
 
     gw = Gateway(client=FakeClient())
     gw.start_consumer()
@@ -140,7 +140,7 @@ def test_start_consumer_is_idempotent():
 
 
 def test_wait_turn_unknown_session_times_out():
-    from strategy_research.kernel.gateway import Gateway
+    from agentnodes.kernel.gateway import Gateway
 
     gw = Gateway(client=FakeClient())
     assert gw.wait_turn("chat:never", timeout=0.05) is None
@@ -150,7 +150,7 @@ def test_wait_turn_unknown_session_times_out():
 
 
 def test_bridge_persist_mode_emits_assistant_message():
-    from strategy_research.interfaces.api.routers.chat import _install_chat_event_bridge
+    from agentnodes.interfaces.api.routers.chat import _install_chat_event_bridge
 
     class FakeEventBus:
         def __init__(self) -> None:
@@ -190,7 +190,7 @@ def test_bridge_persist_mode_emits_assistant_message():
 
 
 def test_bridge_persist_mode_reports_failure():
-    from strategy_research.interfaces.api.routers import chat as chat_mod
+    from agentnodes.interfaces.api.routers import chat as chat_mod
 
     class FakeGW:
         def install_sink(self, sink):
@@ -261,22 +261,22 @@ def test_receipt_contract_and_async_persistence(tmp_path, monkeypatch):
     db_path = tmp_path / "r2.db"
     monkeypatch.setenv("SR_WORKSPACE_PATH", str(tmp_path))
     
-    import strategy_research.interfaces.api.routers.web_session as ws
-    import strategy_research.interfaces.api.session.web_session_db as wsdb
+    import agentnodes.interfaces.api.routers.web_session as ws
+    import agentnodes.interfaces.api.session.web_session_db as wsdb
 
     monkeypatch.setattr(ws, "_get_db_path", lambda: db_path)
     monkeypatch.setattr(wsdb, "_get_db_path", lambda: db_path)
 
-    from strategy_research.kernel.gateway import reset_gateway
+    from agentnodes.kernel.gateway import reset_gateway
 
     reset_gateway()
-    from strategy_research.interfaces.api.app import create_app
-    from strategy_research.kernel.gateway.singleton import get_gateway
+    from agentnodes.interfaces.api.app import create_app
+    from agentnodes.kernel.gateway.singleton import get_gateway
 
     get_gateway(client=ApiClient())
     app = create_app()
     with __import__("fastapi.testclient", fromlist=["TestClient"]).TestClient(app) as tc:
-        from strategy_research.interfaces.api.auth_tokens import create_token
+        from agentnodes.interfaces.api.auth_tokens import create_token
 
         tc.headers.update({"Authorization": f"Bearer {create_token('tester')}"})
         tc.post("/api/chat/session", json={"id": "sess-r2", "title": "t"})
@@ -316,24 +316,24 @@ def test_sync_fallback_when_no_consumer(tmp_path, monkeypatch):
     db_path = tmp_path / "r2b.db"
     monkeypatch.setenv("SR_WORKSPACE_PATH", str(tmp_path))
     
-    import strategy_research.interfaces.api.routers.web_session as ws
-    import strategy_research.interfaces.api.session.web_session_db as wsdb
+    import agentnodes.interfaces.api.routers.web_session as ws
+    import agentnodes.interfaces.api.session.web_session_db as wsdb
 
     monkeypatch.setattr(ws, "_get_db_path", lambda: db_path)
     monkeypatch.setattr(wsdb, "_get_db_path", lambda: db_path)
 
-    from strategy_research.kernel.gateway import reset_gateway
+    from agentnodes.kernel.gateway import reset_gateway
 
     reset_gateway()
-    from strategy_research.interfaces.api.app import create_app
-    from strategy_research.kernel.gateway.singleton import get_gateway
+    from agentnodes.interfaces.api.app import create_app
+    from agentnodes.kernel.gateway.singleton import get_gateway
 
     get_gateway(client=ApiClient())
     app = create_app()
     from fastapi.testclient import TestClient
 
     with TestClient(app) as tc:
-        from strategy_research.interfaces.api.auth_tokens import create_token
+        from agentnodes.interfaces.api.auth_tokens import create_token
 
         tc.headers.update({"Authorization": f"Bearer {create_token('tester')}"})
         tc.post("/api/chat/session", json={"id": "sess-r2", "title": "t"})

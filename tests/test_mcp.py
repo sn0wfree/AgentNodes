@@ -6,7 +6,7 @@ import json
 
 import pytest
 
-from strategy_research.interfaces.mcp.server import MCPServer, MCPTool
+from agentnodes.interfaces.mcp.server import MCPServer, MCPTool
 
 
 class TestMCPTool:
@@ -114,7 +114,7 @@ class TestMCPServerDefaultTools:
 
 class TestMCPCLI:
     def test_mcp_help(self):
-        from strategy_research.interfaces.cli import main
+        from agentnodes.interfaces.cli import main
         with pytest.raises(SystemExit) as exc_info:
             import sys
             sys.argv = ["quantnodes-research", "mcp", "--help"]
@@ -122,7 +122,7 @@ class TestMCPCLI:
         assert exc_info.value.code == 0
 
     def test_mcp_list_tools_help(self):
-        from strategy_research.interfaces.cli import main
+        from agentnodes.interfaces.cli import main
         with pytest.raises(SystemExit) as exc_info:
             import sys
             sys.argv = ["quantnodes-research", "mcp", "list-tools", "--help"]

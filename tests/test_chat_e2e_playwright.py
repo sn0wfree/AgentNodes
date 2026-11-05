@@ -66,7 +66,7 @@ def real_llm_server() -> Iterator[dict]:
 
     cmd = [
         sys.executable, "-u", "-m", "uvicorn",
-        "strategy_research.interfaces.api.app:create_app",
+        "agentnodes.interfaces.api.app:create_app",
         "--factory",
         "--host", "127.0.0.1", "--port", str(port),
         "--log-level", "warning",

@@ -24,7 +24,7 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
-from strategy_research.kernel.agent.compact import CompactConfig
+from agentnodes.kernel.agent.compact import CompactConfig
 
 # ════════════════════════════════════════════════════════════════════
 # Fix 1: _amaybe_compact no longer uses nested asyncio.run + to_thread
@@ -55,18 +55,18 @@ class TestAmaybeCompactStructural:
     """Static structural checks on the rewritten _amaybe_compact."""
 
     def test_no_inner_achat_adapter_class(self):
-        from strategy_research.kernel.agent.loop import AgentLoop
+        from agentnodes.kernel.agent.loop import AgentLoop
         src = _strip_docstring(inspect.getsource(AgentLoop._amaybe_compact))
         assert "class _AchatAdapter" not in src
 
     def test_no_nested_asyncio_run(self):
         """asyncio.run() cannot be called from a running event loop."""
-        from strategy_research.kernel.agent.loop import AgentLoop
+        from agentnodes.kernel.agent.loop import AgentLoop
         src = _strip_docstring(inspect.getsource(AgentLoop._amaybe_compact))
         assert "asyncio.run(" not in src
 
     def test_uses_to_thread_to_offload_compact_messages(self):
-        from strategy_research.kernel.agent.loop import AgentLoop
+        from agentnodes.kernel.agent.loop import AgentLoop
         src = _strip_docstring(inspect.getsource(AgentLoop._amaybe_compact))
         assert "await asyncio.to_thread(" in src
         # The offloaded unit is the shared sync core (run_compact injected)
@@ -81,7 +81,7 @@ class TestAmaybeCompactRuntime:
     """Runtime checks: the offloaded call actually runs without warnings."""
 
     def _make_loop(self):
-        from strategy_research.kernel.agent.loop import AgentLoop
+        from agentnodes.kernel.agent.loop import AgentLoop
         cfg = CompactConfig()
         config = MagicMock()
         config.model_context_tokens = 1_000_000
@@ -144,7 +144,7 @@ class TestAmaybeCompactRuntime:
             "recent text",
         )
         with patch(
-            "strategy_research.kernel.agent.loop.compact_messages",
+            "agentnodes.kernel.agent.loop.compact_messages",
             return_value=mock_result,
         ), warnings.catch_warnings(record=True) as caught:
             warnings.simplefilter("always")
@@ -183,7 +183,7 @@ class TestAmaybeCompactRuntime:
 
         msgs = [{"role": "user", "content": "x" * 400}]
         with patch(
-            "strategy_research.kernel.agent.loop.compact_messages",
+            "agentnodes.kernel.agent.loop.compact_messages",
             side_effect=fake_compact,
         ):
             await loop._amaybe_compact(list(msgs))

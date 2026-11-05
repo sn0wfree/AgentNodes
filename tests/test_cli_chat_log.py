@@ -5,7 +5,7 @@ from __future__ import annotations
 from rich.console import Console
 from rich.text import Text
 
-from strategy_research.interfaces.cli.components.chat_log import render_history, render_turn
+from agentnodes.interfaces.cli.components.chat_log import render_history, render_turn
 
 
 def _plain(text: Text) -> str:

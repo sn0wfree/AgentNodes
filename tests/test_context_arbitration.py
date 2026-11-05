@@ -12,9 +12,9 @@ from __future__ import annotations
 
 from types import SimpleNamespace
 
-from strategy_research.kernel.context.hub import ContextHub
-from strategy_research.kernel.context.policy import ContextPolicy
-from strategy_research.kernel.context.protocol import ContextItem, ContextQuery
+from agentnodes.kernel.context.hub import ContextHub
+from agentnodes.kernel.context.policy import ContextPolicy
+from agentnodes.kernel.context.protocol import ContextItem, ContextQuery
 
 
 def _provider(name: str, items: list[ContextItem], scopes=None):
@@ -203,8 +203,8 @@ def test_session_provider_still_runs_for_study_query():
 
 def test_model_limits_read_from_client_config():
     """OpenAICompatClient has no such attrs; they live on .config."""
-    from strategy_research.kernel.gateway.session_controller import SessionController
-    from strategy_research.kernel.orchestration import EntryPoint
+    from agentnodes.kernel.gateway.session_controller import SessionController
+    from agentnodes.kernel.orchestration import EntryPoint
 
     client = SimpleNamespace(
         config=SimpleNamespace(
@@ -217,8 +217,8 @@ def test_model_limits_read_from_client_config():
 
 
 def test_missing_config_yields_no_budget():
-    from strategy_research.kernel.gateway.session_controller import SessionController
-    from strategy_research.kernel.orchestration import EntryPoint
+    from agentnodes.kernel.gateway.session_controller import SessionController
+    from agentnodes.kernel.orchestration import EntryPoint
 
     ctrl = SessionController(EntryPoint(), client=SimpleNamespace())
     assert ctrl._model_limits() == (None, None)
@@ -229,8 +229,8 @@ def test_missing_config_yields_no_budget():
 
 
 def test_over_budget_emits_event():
-    from strategy_research.kernel.gateway.session_controller import SessionController
-    from strategy_research.kernel.orchestration import EntryPoint
+    from agentnodes.kernel.gateway.session_controller import SessionController
+    from agentnodes.kernel.orchestration import EntryPoint
 
     hub = ContextHub()
     hub.register(_provider("p", [_item("goal", 500)]))
@@ -252,8 +252,8 @@ def test_over_budget_emits_event():
 
 
 def test_legacy_duck_typed_hub_still_works():
-    from strategy_research.kernel.gateway.session_controller import SessionController
-    from strategy_research.kernel.orchestration import EntryPoint
+    from agentnodes.kernel.gateway.session_controller import SessionController
+    from agentnodes.kernel.orchestration import EntryPoint
 
     class _LegacyHub:
         def __init__(self):

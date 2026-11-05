@@ -14,8 +14,8 @@ from dataclasses import dataclass, field
 
 import pytest
 
-from strategy_research.kernel.gateway.session_controller import SessionController, _payload_text
-from strategy_research.kernel.orchestration import (
+from agentnodes.kernel.gateway.session_controller import SessionController, _payload_text
+from agentnodes.kernel.orchestration import (
     EntryPoint,
     SourceKind,
     WorkKind,
@@ -262,7 +262,7 @@ def test_no_system_prompt_added_when_none():
 
 def test_engine_factory_override():
     """A1 前注入点：自定义引擎替换默认单节点图。"""
-    from strategy_research.kernel.runtimes import GraphEngine
+    from agentnodes.kernel.runtimes import GraphEngine
 
     probe = Probe()
     ep = EntryPoint(sink=probe)

@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from strategy_research.interfaces.api.routers.auth import (
+from agentnodes.interfaces.api.routers.auth import (
     _hash_password,
     _verify_password,
     _is_legacy_hash,

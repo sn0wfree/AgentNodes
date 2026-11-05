@@ -22,8 +22,8 @@ import pytest
 from fastapi import FastAPI, Request
 from fastapi.testclient import TestClient
 
-from strategy_research.interfaces.api.auth_tokens import _b64_encode, _load_secret
-from strategy_research.interfaces.api.middleware import AuthMiddleware
+from agentnodes.interfaces.api.auth_tokens import _b64_encode, _load_secret
+from agentnodes.interfaces.api.middleware import AuthMiddleware
 
 
 def _sign(encoded: str) -> str:
@@ -350,8 +350,8 @@ class TestDisabledAccount:
     allowed through to let downstream handle auth."""
 
     def test_disabled_user_rejected_403(self, app, client, monkeypatch, tmp_path):
-        from strategy_research.interfaces.api import user_db as user_db_mod
-        from strategy_research.interfaces.api.middleware import AuthMiddleware
+        from agentnodes.interfaces.api import user_db as user_db_mod
+        from agentnodes.interfaces.api.middleware import AuthMiddleware
 
         user_db = user_db_mod.UserDB(tmp_path / "users.db")
         user = user_db.create_user("offline", "Offline", "hash")
@@ -369,7 +369,7 @@ class TestDisabledAccount:
 
     def test_active_user_allowed(self, app, client, monkeypatch, tmp_path):
 
-        from strategy_research.interfaces.api import user_db as user_db_mod
+        from agentnodes.interfaces.api import user_db as user_db_mod
 
         user_db = user_db_mod.UserDB(tmp_path / "users.db")
         user = user_db.create_user("online", "Online", "hash")
@@ -383,7 +383,7 @@ class TestDisabledAccount:
     def test_unknown_user_id_allowed_through(self, client, monkeypatch, tmp_path):
         """Unknown user ids pass the middleware (is_active returns True) so
         the downstream endpoint can 401/404 them."""
-        from strategy_research.interfaces.api import user_db as user_db_mod
+        from agentnodes.interfaces.api import user_db as user_db_mod
 
         user_db = user_db_mod.UserDB(tmp_path / "users.db")
         monkeypatch.setattr(user_db_mod, "get_user_db", lambda *a, **k: user_db)
@@ -395,8 +395,8 @@ class TestDisabledAccount:
     def test_is_active_fails_closed_on_db_errors(self, tmp_path, monkeypatch):
         """If the DB lookup raises, _is_active fails CLOSED (B9 fix:
         a lookup failure must never re-enable a disabled account)."""
-        from strategy_research.interfaces.api import user_db as user_db_mod
-        from strategy_research.interfaces.api.middleware import AuthMiddleware
+        from agentnodes.interfaces.api import user_db as user_db_mod
+        from agentnodes.interfaces.api.middleware import AuthMiddleware
 
         class BrokenDB:
             def get_user_by_id(self, uid):

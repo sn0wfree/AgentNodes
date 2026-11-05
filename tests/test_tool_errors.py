@@ -13,7 +13,7 @@ import json
 
 import pytest
 
-from strategy_research.kernel.agent.tools import (
+from agentnodes.kernel.agent.tools import (
     BaseTool,
     ToolContext,
     ToolError,

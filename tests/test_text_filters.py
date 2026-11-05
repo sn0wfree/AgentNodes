@@ -6,7 +6,7 @@ from __future__ import annotations
 
 import pytest
 
-from strategy_research.interfaces.cli.tui.text_filters import strip_thinking_tags
+from agentnodes.interfaces.cli.tui.text_filters import strip_thinking_tags
 
 # ── closed tags ──────────────────────────────────────────────────────
 

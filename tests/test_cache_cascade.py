@@ -3,7 +3,7 @@ from __future__ import annotations
 
 import pytest
 
-from strategy_research.kernel.agent.cache import (
+from agentnodes.kernel.agent.cache import (
     CacheConfig,
     CascadeEstimator,
     ConfigValidator,

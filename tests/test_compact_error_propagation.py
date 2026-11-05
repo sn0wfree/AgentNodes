@@ -13,9 +13,9 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
-from strategy_research.kernel.agent.compact import CompactConfig
-from strategy_research.kernel.agent.loop import AgentLoop
-from strategy_research.foundation.llm.config import LLMConfig
+from agentnodes.kernel.agent.compact import CompactConfig
+from agentnodes.kernel.agent.loop import AgentLoop
+from agentnodes.foundation.llm.config import LLMConfig
 
 # ── _persist_compaction_event propagates errors ──────────────
 
@@ -46,12 +46,12 @@ class TestPersistPropagatesErrors:
 
         # Register a persister that raises, so the legacy path actually
         # invokes persist_message and we can verify error propagation.
-        from strategy_research.kernel.agent.loop import (
+        from agentnodes.kernel.agent.loop import (
             compaction_persister_registered,
         )
 
         with patch(
-            "strategy_research.interfaces.api.routers.web_session.persist_message",
+            "agentnodes.interfaces.api.routers.web_session.persist_message",
             side_effect=RuntimeError("DB connection lost"),
         ) as mock_persist:
             with compaction_persister_registered(mock_persist):
@@ -62,15 +62,15 @@ class TestPersistPropagatesErrors:
         """logger.exception is called (includes traceback)."""
         loop = self._make_loop()
 
-        from strategy_research.kernel.agent.loop import (
+        from agentnodes.kernel.agent.loop import (
             compaction_persister_registered,
         )
 
         with patch(
-            "strategy_research.kernel.agent.loop.logger"
+            "agentnodes.kernel.agent.loop.logger"
         ) as mock_logger:
             with patch(
-                "strategy_research.interfaces.api.routers.web_session.persist_message",
+                "agentnodes.interfaces.api.routers.web_session.persist_message",
                 side_effect=RuntimeError("DB error"),
             ) as mock_persist:
                 with compaction_persister_registered(mock_persist):
@@ -148,7 +148,7 @@ class TestMaybeCompactRollsBack:
         loop = self._make_loop(msgs)
 
         with patch(
-            "strategy_research.kernel.agent.loop.compact_messages",
+            "agentnodes.kernel.agent.loop.compact_messages",
             side_effect=RuntimeError("compact internal error"),
         ):
             new_messages, applied = loop._maybe_compact(list(msgs))

@@ -17,7 +17,7 @@ for g in diags:
     if g.get("rule") != "reportArgumentType":
         continue
     f = g["range"]["start"]
-    path = g.get("file", "").replace("\\", "/").split("strategy_research/")[-1]
+    path = g.get("file", "").replace("\\", "/").split("agentnodes/")[-1]
     msg = g.get("message", "").replace("\n", " | ")[:140]
     by_file[path].append(f"  {f['line']+1}:{f['character']+1}  {msg}")
 

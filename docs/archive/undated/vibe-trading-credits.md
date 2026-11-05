@@ -8,12 +8,12 @@
 
 | 目标文件 | 行数 | 原始来源 | 适配说明 |
 |---|---|---|---|
-| `src/strategy_research/core/agent/tools.py` | 94 | `src/agent/tools.py` | 无内部依赖，原样复制 |
-| `src/strategy_research/core/agent/frontmatter.py` | 40 | `src/agent/frontmatter.py` | 无内部依赖，原样复制 |
-| `src/strategy_research/core/agent/progress.py` | 184 | `src/agent/progress.py` | 无内部依赖，原样复制 |
-| `src/strategy_research/core/agent/trace.py` | 284 | `src/agent/trace.py` | env var 名 `VIBE_TRADING_*` → `STRATEGY_RESEARCH_*` |
-| `src/strategy_research/core/agent/redaction.py` | 209 | `src/tools/redaction.py` | 路径注释更新（parents[2] 自动指向 strategy_research 包根）|
-| `src/strategy_research/core/memory/persistent.py` | 368 | `src/memory/persistent.py` | `MEMORY_BASE` 改 `~/.quantnodes-research/memory/`；import `from src.agent.frontmatter` → `from ..agent.frontmatter` |
+| `src/agentnodes/core/agent/tools.py` | 94 | `src/agent/tools.py` | 无内部依赖，原样复制 |
+| `src/agentnodes/core/agent/frontmatter.py` | 40 | `src/agent/frontmatter.py` | 无内部依赖，原样复制 |
+| `src/agentnodes/core/agent/progress.py` | 184 | `src/agent/progress.py` | 无内部依赖，原样复制 |
+| `src/agentnodes/core/agent/trace.py` | 284 | `src/agent/trace.py` | env var 名 `VIBE_TRADING_*` → `STRATEGY_RESEARCH_*` |
+| `src/agentnodes/core/agent/redaction.py` | 209 | `src/tools/redaction.py` | 路径注释更新（parents[2] 自动指向 agentnodes 包根）|
+| `src/agentnodes/core/memory/persistent.py` | 368 | `src/memory/persistent.py` | `MEMORY_BASE` 改 `~/.quantnodes-research/memory/`；import `from src.agent.frontmatter` → `from ..agent.frontmatter` |
 | **合计** | **1179** | | |
 
 ## 适配原则

@@ -10,7 +10,7 @@ from pathlib import Path
 
 import pytest
 
-from strategy_research.kernel.memory.persistent import (
+from agentnodes.kernel.memory.persistent import (
     PersistentMemory,
     _coerce_str,
     _sanitize_body,

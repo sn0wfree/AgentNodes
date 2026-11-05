@@ -44,7 +44,7 @@ testcase/
 | **不被 pytest 收集** | `pyproject.toml` 的 `testpaths = ["tests"]`，`testcase/` 天然排除。**不要**把它加进 testpaths。 |
 | **不进 ruff/mypy 门禁** | 快照代码不修 lint；在 `[tool.ruff.lint.per-file-ignores]` 里整体豁免。 |
 | **可独立运行** | `samples/` 下每个样本自带 README，说明如何单独跑通。 |
-| **镜像原路径** | `golden/apps/study/runner.py` 对应原 `src/strategy_research/apps/study/runner.py`，便于反查。 |
+| **镜像原路径** | `golden/apps/study/runner.py` 对应原 `src/agentnodes/apps/study/runner.py`，便于反查。 |
 
 ---
 
@@ -85,7 +85,7 @@ samples/<name>/
 - 体积控制：`apps/alpha_zoo/`（468 文件 / 25,669 行）是**生成产物**，
   归档时只保留**生成器 + 3 个代表性因子**，其余靠生成器重建。
   详情见 `golden/apps/alpha_zoo/README.md`。
-- 需要完整历史时，`git show pre-split-20261104:src/strategy_research/apps/...` 可取回。
+- 需要完整历史时，`git show pre-split-20261104:src/agentnodes/apps/...` 可取回。
 
 ---
 

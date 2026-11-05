@@ -21,7 +21,7 @@ import pytest
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
 
-from strategy_research.foundation.observability.trace import (
+from agentnodes.foundation.observability.trace import (
     JsonFormatter,
     TraceFilter,
     _round_num,
@@ -244,7 +244,7 @@ class TestSetupTraceLogging:
         try:
             setup_trace_logging(json_output=False)
             with bind_trace(trace_id="child-17"):
-                logging.getLogger("strategy_research.child.defect17").info(
+                logging.getLogger("agentnodes.child.defect17").info(
                     "propagated")
             handler.flush()
             assert "child-17" in stream.getvalue()

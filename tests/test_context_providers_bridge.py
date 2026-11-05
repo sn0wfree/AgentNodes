@@ -8,10 +8,10 @@ from __future__ import annotations
 
 from types import SimpleNamespace
 
-from strategy_research.kernel.agent.context_providers import (
+from agentnodes.kernel.agent.context_providers import (
     build_prerun_context_provider,
 )
-from strategy_research.kernel.context import ContextHub, ContextQuery
+from agentnodes.kernel.context import ContextHub, ContextQuery
 
 TASK = "improve momentum_20_60"
 GOAL_BLOCK = "<current-research-goal>\n目标是提升 Calmar\n</current-research-goal>"
@@ -191,8 +191,8 @@ def _real_injectors(memory: _StubMemory, monkeypatch) -> list:
     ADR-003 端口化后 kernel 走 ``resolve("goal.context")``，patch apps 侧
     符号无效；这里替换 default registry 里的 goal.context factory。
     """
-    from strategy_research.kernel.agent.capability import get_default_registry
-    from strategy_research.kernel.agent.context_injector import (
+    from agentnodes.kernel.agent.capability import get_default_registry
+    from agentnodes.kernel.agent.context_injector import (
         GoalContextInjector,
         MemoryRetrieverInjector,
     )
@@ -237,7 +237,7 @@ def test_real_injectors_via_hub_match_legacy(tmp_path, monkeypatch):
 def test_real_memory_empty_task_yields_no_memory_contribution(monkeypatch):
     """真 MemoryRetrieverInjector 的空 task 短路：无 memory 贡献
     （设计文档 §6 验收项「空 task → 无贡献」的真实现钉版）。"""
-    from strategy_research.kernel.agent.context_injector import (
+    from agentnodes.kernel.agent.context_injector import (
         MemoryRetrieverInjector,
     )
 

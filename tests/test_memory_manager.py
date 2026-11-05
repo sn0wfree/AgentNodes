@@ -5,8 +5,8 @@ from pathlib import Path
 
 import pytest
 
-from strategy_research.kernel.agent.cache import CacheConfig
-from strategy_research.kernel.agent.memory_manager import (
+from agentnodes.kernel.agent.cache import CacheConfig
+from agentnodes.kernel.agent.memory_manager import (
     InMemoryStore,
     MemoryManagerFactory,
     SQLiteStore,
@@ -285,7 +285,7 @@ class TestFactory:
 
 class TestResolveDbPath:
     def test_default_creates_parent_dir(self, monkeypatch, tmp_path):
-        from strategy_research.kernel.agent.memory_manager import SESSION_DB_FILENAME
+        from agentnodes.kernel.agent.memory_manager import SESSION_DB_FILENAME
         monkeypatch.setenv("HOME", str(tmp_path))
         monkeypatch.delenv("SR_WORKSPACE_PATH", raising=False)
         monkeypatch.chdir(tmp_path)

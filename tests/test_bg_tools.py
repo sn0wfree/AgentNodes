@@ -11,12 +11,12 @@ from tempfile import TemporaryDirectory
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
 
-from strategy_research.kernel.agent.builtin_tools.bg_tools import (
+from agentnodes.kernel.agent.builtin_tools.bg_tools import (
     RunBgCommandTool,
     active_tasks,
     unregister_task,
 )
-from strategy_research.kernel.agent.tools import ToolContext
+from agentnodes.kernel.agent.tools import ToolContext
 
 
 def _ctx(workspace: Path) -> ToolContext:

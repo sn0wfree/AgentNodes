@@ -2,7 +2,7 @@
 from pathlib import Path
 import re
 
-root = Path("src/strategy_research")
+root = Path("src/agentnodes")
 
 print("════ 编排层：AgentLoop 的两条拆解轴（mixin vs step）是否重叠")
 mix_dir = root / "core/agent"

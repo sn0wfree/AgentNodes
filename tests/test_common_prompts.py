@@ -14,12 +14,12 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from strategy_research.kernel.agent.prompt_builder import (
+from agentnodes.kernel.agent.prompt_builder import (
     PromptBuilderFactory,
     StaticFilePromptBuilder,
 )
 
-_PROMPTS_DIR = Path(__file__).parent.parent / "src" / "strategy_research" / "templates" / ".prompts"
+_PROMPTS_DIR = Path(__file__).parent.parent / "src" / "agentnodes" / "templates" / ".prompts"
 _COMMON_DIR = _PROMPTS_DIR / "_common"
 _RULES_DIR = _COMMON_DIR / "rules"
 

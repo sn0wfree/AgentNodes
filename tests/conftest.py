@@ -8,7 +8,7 @@ import os
 import sys
 from pathlib import Path
 
-# ── 用户主目录沙箱（必须在任何 strategy_research import 之前）──────────
+# ── 用户主目录沙箱（必须在任何 agentnodes import 之前）──────────
 # 28+ 模块解析 Path.home()，13 个是 import 时求值的模块级常量。conftest 是
 # pytest 最早加载的测试模块，这里重定向后整个进程的 home 解析都落沙箱。
 sys.path.insert(0, os.path.dirname(__file__))
@@ -18,7 +18,7 @@ _home_sandbox.apply()
 
 import pytest  # noqa: E402
 
-from strategy_research.interfaces.cli.halt import clear_halt  # noqa: E402
+from agentnodes.interfaces.cli.halt import clear_halt  # noqa: E402
 
 
 @pytest.fixture(autouse=True)
@@ -140,7 +140,7 @@ def _purge_llm_env(monkeypatch):
     ):
         monkeypatch.delenv(var, raising=False)
 
-    import strategy_research.foundation.llm.config as _cfg
+    import agentnodes.foundation.llm.config as _cfg
     monkeypatch.setattr(_cfg, "_try_load_dotenv", lambda: None)
 
 
@@ -240,7 +240,7 @@ def _default_session_workspace(tmp_path_factory):
 
     Code paths that fall back to the current working directory (TUI/CLI
     chat flow, memory manager) otherwise write to the repo-root
-    ``.quantnodes_strategy_research_session.db``, shared across the whole
+    ``.quantnodes_agentnodes_session.db``, shared across the whole
     test session — cross-test message pollution produced order-dependent
     failures (e.g. ``test_tui_event_routing`` expecting an empty
     history). Tests that need a specific workspace override it per-test;
@@ -258,7 +258,7 @@ def _restore_logging_state():
     """Undo process-wide logging side effects of ``create_app()``.
 
     ``api.app.create_app`` calls ``logging.basicConfig`` and sets the
-    ``strategy_research`` namespace level (default INFO), which silently
+    ``agentnodes`` namespace level (default INFO), which silently
     filters DEBUG logs for every later test — e.g. projector tests that
     ``assertLogs(level="DEBUG")`` fail only when run after a test that
     built the app.
@@ -266,7 +266,7 @@ def _restore_logging_state():
     import logging
 
     root = logging.getLogger()
-    sr_logger = logging.getLogger("strategy_research")
+    sr_logger = logging.getLogger("agentnodes")
     saved_root_level = root.level
     saved_sr_level = sr_logger.level
     yield
@@ -299,7 +299,7 @@ def _close_session_services():
     (``web_session._ensure_schema``) fails with ``database is locked``.
     """
     yield
-    import strategy_research.interfaces.api.routers.chat as _chat_mod
+    import agentnodes.interfaces.api.routers.chat as _chat_mod
 
     cache = _chat_mod._session_service_cache
     for svc in cache.values():
@@ -313,7 +313,7 @@ def _close_session_services():
 
     # Close the process-singleton MemoryManager (its SQLiteStore keeps a
     # connection that may hold an uncommitted transaction).
-    from strategy_research.kernel.agent.memory_manager import MemoryManagerFactory
+    from agentnodes.kernel.agent.memory_manager import MemoryManagerFactory
 
     try:
         MemoryManagerFactory.reset()
@@ -325,14 +325,14 @@ def _close_session_services():
     # (and AUTOMATION jobs picked up by scheduler consumers) into later
     # tests — a source of order-dependent failures.
     try:
-        from strategy_research.kernel.gateway import reset_gateway
+        from agentnodes.kernel.gateway import reset_gateway
 
         reset_gateway()
     except Exception:
         pass
 
     # Drop thread-local web_session connections on the main thread.
-    import strategy_research.interfaces.api.routers.web_session as _ws_mod
+    import agentnodes.interfaces.api.routers.web_session as _ws_mod
 
     tl = getattr(_ws_mod, "_db_thread_local", None)
     if tl is not None:
@@ -393,7 +393,7 @@ def real_llm_config():
     for var in ("USERPROFILE", "HOME"):
         monkeypatch.setenv(var, str(_home_sandbox.REAL_HOME))
 
-    from strategy_research.foundation.llm import LLMConfig
+    from agentnodes.foundation.llm import LLMConfig
 
     cfg = LLMConfig.load()
     if not cfg.api_key:
@@ -405,7 +405,7 @@ def real_llm_config():
 
 @pytest.fixture(scope="session")
 def live_client(real_llm_config):
-    from strategy_research.foundation.llm import OpenAICompatClient
+    from agentnodes.foundation.llm import OpenAICompatClient
 
     return OpenAICompatClient(real_llm_config)
 

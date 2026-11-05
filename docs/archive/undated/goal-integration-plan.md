@@ -13,7 +13,7 @@ Session `3a63cdfe` showed that `/goal` in chat doesn't work:
 
 ### Part A: Goal Tools for LLM
 
-**New file:** `src/strategy_research/core/agent/builtin_tools/goal_tools.py`
+**New file:** `src/agentnodes/core/agent/builtin_tools/goal_tools.py`
 
 | Tool | Description | GoalStore Method |
 |------|-------------|-----------------|
@@ -27,7 +27,7 @@ Registration: `register_goal_tools(registry)` in `build_default_registry()`.
 
 ### Part B: Chat Backend Intercept
 
-**File:** `src/strategy_research/api/routers/chat.py`
+**File:** `src/agentnodes/api/routers/chat.py`
 
 Intercept point: `send_async()` before `service.send_message()`
 

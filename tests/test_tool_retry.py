@@ -11,10 +11,10 @@ from pathlib import Path
 
 import pytest
 
-from strategy_research.kernel.agent import loop as loop_mod
-from strategy_research.kernel.agent.loop import AgentLoop, LoopResult
-from strategy_research.kernel.agent.tools import BaseTool, ToolRegistry
-from strategy_research.foundation.llm import LLMConfig, ToolCall
+from agentnodes.kernel.agent import loop as loop_mod
+from agentnodes.kernel.agent.loop import AgentLoop, LoopResult
+from agentnodes.kernel.agent.tools import BaseTool, ToolRegistry
+from agentnodes.foundation.llm import LLMConfig, ToolCall
 
 
 class FlakyTool(BaseTool):

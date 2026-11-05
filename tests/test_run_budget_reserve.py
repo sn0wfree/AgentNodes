@@ -6,13 +6,13 @@ from __future__ import annotations
 
 import pytest
 
-from strategy_research.kernel.agent.strategy.budget import BudgetLimits
-from strategy_research.kernel.runtimes.graph_engine import (
+from agentnodes.kernel.agent.strategy.budget import BudgetLimits
+from agentnodes.kernel.runtimes.graph_engine import (
     GraphEngine,
     GraphInterrupt,
     INTERRUPT_KEY,
 )
-from strategy_research.kernel.runtimes.run_budget import RunBudget
+from agentnodes.kernel.runtimes.run_budget import RunBudget
 
 
 def parent_budget(**limits) -> RunBudget:
@@ -302,7 +302,7 @@ def test_settle_happens_even_when_interrupted():
 
 def test_branch_worker_plugs_real_llm_node_with_slice():
     """切片直接喂 make_llm_node：INV-9 路径在并行分支里原样成立。"""
-    from strategy_research.kernel.runtimes import make_llm_node
+    from agentnodes.kernel.runtimes import make_llm_node
 
     class FakeResp:
         content = "hi"

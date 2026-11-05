@@ -11,7 +11,7 @@ from __future__ import annotations
 
 import pytest
 
-from strategy_research.interfaces.api.routers.chat import _heartbeat_sse
+from agentnodes.interfaces.api.routers.chat import _heartbeat_sse
 
 
 def test_heartbeat_returns_comment_line():
@@ -41,7 +41,7 @@ async def test_event_generator_yields_connected_first():
     A2: the generator is now ``_event_generator_v2`` (EventStore
     subscribe track) — the immediate-flush contract is unchanged.
     """
-    from strategy_research.interfaces.api.routers.chat import _event_generator_v2
+    from agentnodes.interfaces.api.routers.chat import _event_generator_v2
 
     gen = _event_generator_v2("test-sse-immediate-flush", "")
     first_chunk = await gen.__anext__()

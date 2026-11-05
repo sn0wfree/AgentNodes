@@ -70,7 +70,7 @@
 
 ### 2.2 数据模型
 
-**`Ticket`（`src/strategy_research/apps/study/ticket.py`）**
+**`Ticket`（`src/agentnodes/apps/study/ticket.py`）**
 
 ```python
 @dataclass(frozen=True)
@@ -174,15 +174,15 @@ pending ──开始执行──> running
 
 **新增（计划）**
 
-- `src/strategy_research/apps/study/ticket.py`
+- `src/agentnodes/apps/study/ticket.py`
 - `tests/test_ticket_assignment.py`
 
 **修改**
 
-- `src/strategy_research/apps/study/store.py`：加 tickets / assignments 两表 + CRUD（走 `foundation/storage/sqlite.py` 原语）
-- `src/strategy_research/kernel/gateway/session_controller.py`：准入路径追加 upsert Ticket + create Assignment，fence 语义不变
-- `src/strategy_research/kernel/runtimes/graph_engine.py`：settle 路径追加 emit `assignment.report`
-- `src/strategy_research/kernel/gateway/gateway.py`：订阅 `assignment.report`，管理 Worker Slot（不读 Ticket 表）
+- `src/agentnodes/apps/study/store.py`：加 tickets / assignments 两表 + CRUD（走 `foundation/storage/sqlite.py` 原语）
+- `src/agentnodes/kernel/gateway/session_controller.py`：准入路径追加 upsert Ticket + create Assignment，fence 语义不变
+- `src/agentnodes/kernel/runtimes/graph_engine.py`：settle 路径追加 emit `assignment.report`
+- `src/agentnodes/kernel/gateway/gateway.py`：订阅 `assignment.report`，管理 Worker Slot（不读 Ticket 表）
 
 ### 2.7 事件契约
 
@@ -264,7 +264,7 @@ Slot 释放后：进入 waiting 的 Assignment 仍存在于表里；Ticket 仍�
 
 ### 3.2 CapabilityRegistry 设计
 
-**位置**：`src/strategy_research/kernel/agent/capability/registry.py`
+**位置**：`src/agentnodes/kernel/agent/capability/registry.py`
 
 ```python
 class CapabilityRegistry:
@@ -307,7 +307,7 @@ class CapabilityRegistry:
 
 **每批步骤：**
 
-1. `grep -rn "from strategy_research.apps" src/strategy_research/kernel/` 找出该批位置
+1. `grep -rn "from agentnodes.apps" src/agentnodes/kernel/` 找出该批位置
 2. 在 `apps/xxx/__init__.py` 加 `register_capabilities(registry)`
 3. kernel 侧改为 `self._registry.resolve("kind")`
 4. 跑 `pytest tests/` 确认无回归
@@ -318,7 +318,7 @@ class CapabilityRegistry:
 
 ### 3.4 容量组闸设计
 
-**位置**：`src/strategy_research/kernel/gateway/capacity.py`
+**位置**：`src/agentnodes/kernel/gateway/capacity.py`
 
 **三类池：**
 
@@ -344,9 +344,9 @@ class CapabilityRegistry:
 
 **新增（计划）**
 
-- `src/strategy_research/kernel/agent/capability/__init__.py`
-- `src/strategy_research/kernel/agent/capability/registry.py`
-- `src/strategy_research/kernel/gateway/capacity.py`
+- `src/agentnodes/kernel/agent/capability/__init__.py`
+- `src/agentnodes/kernel/agent/capability/registry.py`
+- `src/agentnodes/kernel/gateway/capacity.py`
 - `tests/test_capability_registry.py`
 - `tests/test_capacity_gate.py`
 
@@ -393,7 +393,7 @@ class CapabilityRegistry:
 
 ### 4.2 holdout 抽样（`apps/evolution/holdout.py`）
 
-**位置**：`src/strategy_research/apps/evolution/holdout.py`
+**位置**：`src/agentnodes/apps/evolution/holdout.py`
 
 **职责**：从 EventStore 的永久事件流中抽取"未参与当前 genome_version 生效周期"的轨迹，冻结为只读 holdout 集。
 
@@ -468,7 +468,7 @@ def sample(task_signature: str, seed: int, limit: int = 20) -> list[Trajectory]:
 
 ### 4.6 genome_version 与 ConfigHub
 
-**位置**：`src/strategy_research/kernel/orchestration/config_hub.py`
+**位置**：`src/agentnodes/kernel/orchestration/config_hub.py`
 
 **新增 genome_version 层：**
 
@@ -491,7 +491,7 @@ class GenomeVersion:
 
 ### 4.7 SkillMemoryResolver
 
-**位置**：`src/strategy_research/apps/evolution/skill_memory.py`（或 `config_hub.py` 内新增）
+**位置**：`src/agentnodes/apps/evolution/skill_memory.py`（或 `config_hub.py` 内新增）
 
 **职责**：装配期根据 `task_signature` 返回当前生效的 harness 配置。
 
@@ -504,9 +504,9 @@ def resolve(task_signature: str) -> EffectiveHarnessConfig:
 
 **装配期调用点**（只加调用，不改内部逻辑）：
 
-- `src/strategy_research/kernel/agent/prompt_builder.py`：`PromptBuilderFactory.get(role)` 时调用
-- `src/strategy_research/kernel/agent/tools.py`：ToolRegistry 构造时调用
-- `src/strategy_research/foundation/compact_config.py`：CompactConfig 构造时调用
+- `src/agentnodes/kernel/agent/prompt_builder.py`：`PromptBuilderFactory.get(role)` 时调用
+- `src/agentnodes/kernel/agent/tools.py`：ToolRegistry 构造时调用
+- `src/agentnodes/foundation/compact_config.py`：CompactConfig 构造时调用
 
 **禁止**：不得在 AgentLoop 内部调用 SkillMemoryResolver（避免侵入内部逻辑）。
 
@@ -521,22 +521,22 @@ def resolve(task_signature: str) -> EffectiveHarnessConfig:
 
 **新增（计划）**
 
-- `src/strategy_research/apps/evolution/__init__.py`
-- `src/strategy_research/apps/evolution/holdout.py`
-- `src/strategy_research/apps/evolution/evolution_agent.py`
-- `src/strategy_research/apps/evolution/genome_proposals.py`
-- `src/strategy_research/apps/evolution/validation_gate.py`
-- `src/strategy_research/apps/evolution/skill_memory.py`
+- `src/agentnodes/apps/evolution/__init__.py`
+- `src/agentnodes/apps/evolution/holdout.py`
+- `src/agentnodes/apps/evolution/evolution_agent.py`
+- `src/agentnodes/apps/evolution/genome_proposals.py`
+- `src/agentnodes/apps/evolution/validation_gate.py`
+- `src/agentnodes/apps/evolution/skill_memory.py`
 - `foundation/storage/holdout/`（目录，走 ⑥ 存储原语）
 - `tests/test_evolution_gate.py`
 - `tests/test_holdout_readonly.py`
 
 **修改**
 
-- `src/strategy_research/kernel/orchestration/config_hub.py`：加 genome_version 层
-- `src/strategy_research/kernel/agent/prompt_builder.py`：装配期调用 SkillMemoryResolver.resolve
-- `src/strategy_research/kernel/agent/tools.py`：ToolRegistry 构造时调用
-- `src/strategy_research/foundation/compact_config.py`：CompactConfig 构造时调用
+- `src/agentnodes/kernel/orchestration/config_hub.py`：加 genome_version 层
+- `src/agentnodes/kernel/agent/prompt_builder.py`：装配期调用 SkillMemoryResolver.resolve
+- `src/agentnodes/kernel/agent/tools.py`：ToolRegistry 构造时调用
+- `src/agentnodes/foundation/compact_config.py`：CompactConfig 构造时调用
 
 ### 4.10 测试策略
 
@@ -690,16 +690,16 @@ def compute_task_signature(objective: str, role: str, tool_set: frozenset[str]) 
 
 | 路径 | 阶段 | 说明 |
 |---|---|---|
-| `src/strategy_research/apps/study/ticket.py` | 一 | Ticket / Assignment 数据模型 |
-| `src/strategy_research/kernel/agent/capability/__init__.py` | 二 | 包入口 |
-| `src/strategy_research/kernel/agent/capability/registry.py` | 二 | CapabilityRegistry |
-| `src/strategy_research/kernel/gateway/capacity.py` | 二 | 容量组闸 |
-| `src/strategy_research/apps/evolution/__init__.py` | 三 | 包入口 |
-| `src/strategy_research/apps/evolution/holdout.py` | 三 | holdout 抽样 |
-| `src/strategy_research/apps/evolution/evolution_agent.py` | 三 | EvolutionAgent |
-| `src/strategy_research/apps/evolution/genome_proposals.py` | 三 | 提案表 |
-| `src/strategy_research/apps/evolution/validation_gate.py` | 三 | 验证门控 |
-| `src/strategy_research/apps/evolution/skill_memory.py` | 三 | SkillMemoryResolver |
+| `src/agentnodes/apps/study/ticket.py` | 一 | Ticket / Assignment 数据模型 |
+| `src/agentnodes/kernel/agent/capability/__init__.py` | 二 | 包入口 |
+| `src/agentnodes/kernel/agent/capability/registry.py` | 二 | CapabilityRegistry |
+| `src/agentnodes/kernel/gateway/capacity.py` | 二 | 容量组闸 |
+| `src/agentnodes/apps/evolution/__init__.py` | 三 | 包入口 |
+| `src/agentnodes/apps/evolution/holdout.py` | 三 | holdout 抽样 |
+| `src/agentnodes/apps/evolution/evolution_agent.py` | 三 | EvolutionAgent |
+| `src/agentnodes/apps/evolution/genome_proposals.py` | 三 | 提案表 |
+| `src/agentnodes/apps/evolution/validation_gate.py` | 三 | 验证门控 |
+| `src/agentnodes/apps/evolution/skill_memory.py` | 三 | SkillMemoryResolver |
 | `foundation/storage/holdout/` | 三 | holdout 存储目录 |
 | `tests/test_ticket_assignment.py` | 一 | 阶段一测试 |
 | `tests/test_capability_registry.py` | 二 | Registry 测试 |

@@ -79,7 +79,7 @@ import 算进来了，虚报成 8 个）：
 if source == "config":
     cfg_path = base / "config.yaml"
     if cfg_path.exists():
-        from strategy_research.kernel.agent.capability import resolve
+        from agentnodes.kernel.agent.capability import resolve
         load_yaml_config = resolve("config.runner").load_yaml_config   # ← 会抛
         ...
 ```

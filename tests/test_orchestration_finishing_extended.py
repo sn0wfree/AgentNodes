@@ -6,9 +6,9 @@ import time
 
 import pytest
 
-from strategy_research.kernel.orchestration import BudgetGate, BudgetSpec
-from strategy_research.kernel.orchestration.budget_gate import BudgetUsage
-from strategy_research.kernel.orchestration.config_hub import (
+from agentnodes.kernel.orchestration import BudgetGate, BudgetSpec
+from agentnodes.kernel.orchestration.budget_gate import BudgetUsage
+from agentnodes.kernel.orchestration.config_hub import (
     ConfigError,
     config_fingerprint,
     load_platform_config,
