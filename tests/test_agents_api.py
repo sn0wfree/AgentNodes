@@ -70,8 +70,15 @@ class TestAgentSchemasAPI:
         assert len(_schema_cache) > 0, "startup warm-up should have filled the cache"
 
     def test_mtime_change_refreshes_cache(self, client, tmp_path):
-        """Editing a prompt file (mtime change) invalidates the cache."""
+        """Editing a prompt file (mtime change) invalidates the cache.
+
+        2026-11-05：不再依赖「上一个测试已填充缓存」——pytest-xdist 下
+        测试顺序不受控。这里先显式打一次接口确保缓存已暖。
+        """
         from agentnodes.interfaces.api.routers import agents as agents_router
+
+        warm = client.get("/api/agents/schemas")
+        assert warm.status_code == 200
 
         # Snapshot current cache state
         before = dict(agents_router._schema_cache)
