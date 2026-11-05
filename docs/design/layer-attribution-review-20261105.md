@@ -14,7 +14,7 @@
 
 | 判定 | 数量 | 处置 |
 |---|---:|---|
-| **L4 含量化领域实现** | 8 文件 / 1,385 行 | **归档**（生产零消费者）|
+| **L4 含量化领域实现** | 8 文件 / 1,385 行 | **归档**（生产零消费者）✅ 已执行 |
 | **L4 的 DataStore Protocol 含量化语义** | 1 文件 / 291 行 / 24 方法 | **瘦身**（保留抽象，砍量化方法）|
 | **L4 errors.py 的量化错误类** | 2 类 | **改名或移除** |
 | **L1 有状态模块** | 12 文件 / 4,954 行 | **单独排期**（不在本轮）|
@@ -101,6 +101,11 @@ D:\tools\python312\python.exe -m graphify update . --force --no-cluster
 或在 L4 层额外检查「模块内出现的领域词种类数 ≥ 3 且无对应 L4 语义」。
 本次靠人工复核兜住，但**不应假设自动评分没有漏**。
 
+> **已于 2026-11-05 落地**：该补丁成为评分器的**规则 3**
+> （`scripts/arch/score_layer_attribution.py`），固化后 `metrics.py`
+> 得分 80 分（8 个被归档量化文件里第 2 高），**不再需要人工兜底才命中**。
+> 但「不应假设自动评分没有漏」这条仍然成立——见 §5 的实测与 §1.4 的遗留风险。
+
 **因此本次评审的流程要求**：自动评分只用于**缩小范围**，
 最终结论必须人工复核每个被标红的模块，并**主动扫一遍 L4 全清单**
 （L4 是「零业务」红线，最值得人工过目，且只有 67 个文件）。
@@ -144,10 +149,15 @@ D:\tools\python312\python.exe -m graphify update . --force --no-cluster
 **消费者核查**（`scripts/…/check_consumers` 式全仓库 import 扫描，
 范围 `src/` + `tests/` + `scripts/`）：
 
-> **这 7 个文件在 `src/` 里零生产消费者。** 引用它们的只有彼此（`backtest_engine`
+> **这 8 个文件在 `src/` 里零生产消费者。** 引用它们的只有彼此（`backtest_engine`
 > 引用 `backtest_config`/`backtest_utils`/`backtest_models`）和**测试文件**。
+>
+> 补充核查（2026-11-05 执行 A1 时做）：`foundation/storage/data_store.py` 的
+> `save_ohlcv` / `save_backtest_result` / `save_nav_history` 等量化方法
+> **自行实现**，不经由本批 8 个文件——因此 `DataStore` 的瘦身（A2）不受本批影响。
 
-**处置：归档到 `testcase/golden/foundation/utils/`**（与批次 4 删回测域的处置一致）。
+**处置：归档到 `testcase/golden/foundation/utils/`**（与批次 4 删回测域的处置一致），
+**已执行**（见 §7）。
 
 **连带归档的测试（14 文件 / 2,849 行）**——它们引用 `foundation.utils` 的
 （现已归档的）模块：
@@ -166,9 +176,23 @@ test_token_utils.py              66L    test_typed_ids.py              66L
 > `test_io_utils.py` / `test_token_utils.py` / `test_typed_ids.py` 测的是
 > **留存**模块（`bg_proc` / `io_utils` / `token_utils` / `ids`），
 > 它们引用 `foundation.utils` 只是因为包路径匹配，不一定测被归档的部分。
-> 这 5 个文件应**保留并只改 import**，不归档。真正专属被归档代码的测试是
+> 这 5 个文件应**保留**。真正专属被归档代码的测试是
 > `test_backtest_*.py`(4) · `test_market_detection.py` · `test_strategy_engine.py` ·
-> `test_metrics.py`，共 **9 文件 / 2,189 行**。
+> `test_metrics.py`，共 **9 文件 / 2,369 行**。
+
+**归档前的逐个确认结果**（2026-11-05 执行 A1 时完成）：
+
+| 测试文件 | 实际 import | 判定 |
+|---|---|---|
+| `test_bg_proc.py` | `foundation.utils.bg_proc` | **留存** |
+| `test_bg_shell_and_toolsets.py` | `kernel.agent.toolsets` · `foundation.utils.bg_proc` | **留存** |
+| `test_io_utils.py` | `foundation.utils.io_utils` | **留存** |
+| `test_token_utils.py` | `foundation.utils.token_utils` | **留存** |
+| `test_typed_ids.py` | `foundation.utils.ids` · `interfaces.api.session.service` · `kernel.agent.loop` | **留存** |
+
+> 5 个文件合计 480 行；9 + 5 = 14 文件 / 2,849 行，与 §2.1 清单一致。
+> 5 个留存文件的 import 路径**本来就正确**（指向留存模块），
+> 因此**无需改动任何 import**——「只改 import」是当时的预案，实测不需要改。
 
 **归档后 `foundation/utils/` 剩余**（479 行，全部零业务语义）：
 
@@ -315,16 +339,30 @@ L4      0      0      0     87
 > 本评审的所有结论都建立在「门禁已绿」的前提上——**门禁管依赖方向，
 > 不管归层正确性**，两者互补。
 
+**执行 A1 后的门禁基线**（2026-11-05 实测）：
+
+```
+L1    238      8    115     52
+L2      0      8     39      1
+L3      0      0    389     54
+L4      0      0      0     77
+```
+
+> 只有 `L4→L4` 从 87 降到 77（归档 8 个文件带走 10 条 L4 内部 import）。
+> **六条上行违规仍全为 0**——归档没有引入任何新的层间依赖方向。
+> 层体量随之变化：L4 `67 文件 / 11,415 行` → `59 文件 / 10,030 行`，
+> 总计 `379 / 75,330` → `371 / 73,945`（架构图已回写并复核通过）。
+
 ---
 
 ## 4. 迁移计划（分步，每步完整验证）
 
-| 批次 | 内容 | 规模 | 风险 | 验证 |
-|---|---|---|---|---|
-| **A1** | 归档 L4 的 8 个量化文件 + 专属 9 个测试 | 1,385 + 2,189 行 | **低**（生产零消费者）| 门禁 + 全量回归 |
-| **A2** | `DataStore` Protocol 瘦身 + `errors.py` 清理 | 291 + 170 行 | 低 | 门禁 + 全量回归 |
-| **B1** | L3 的 `kernel/workflow/validator.py` + `kernel/workflow/grounding.py` 研究语义清理 | 155 行 | 低 | 门禁 + 定向回归 |
-| **C**（单独排期）| `api/session/` 下沉 `kernel/session/` | 4,246 行 / 65 测试 | **高** | 门禁 + 全量回归 + 事件溯源专项 |
+| 批次 | 内容 | 规模 | 风险 | 验证 | 状态 |
+|---|---|---|---|---|---|
+| **A1** | 归档 L4 的 8 个量化文件 + 专属 9 个测试 | 1,385 + 2,369 行 | **低**（生产零消费者）| 门禁 + 全量回归 | ✅ **已执行** |
+| **A2** | `DataStore` Protocol 瘦身 + `errors.py` 清理 | 291 + 170 行 | 低 | 门禁 + 全量回归 | 待执行 |
+| **B1** | L3 的 `kernel/workflow/validator.py` + `kernel/workflow/grounding.py` 研究语义清理 | 155 行 | 低 | 门禁 + 定向回归 | 待执行 |
+| **C**（单独排期）| `api/session/` 下沉 `kernel/session/` | 4,246 行 / 65 测试 | **高** | 门禁 + 全量回归 + 事件溯源专项 | 待排期 |
 
 **顺序理由**：A1 是「删无人用的代码」，风险最低、收益最直接，先做；
 A2/B1 紧随其后形成完整的 L4/L3 清理；C 因为触及事件溯源核心链路，
@@ -339,7 +377,49 @@ A2/B1 紧随其后形成完整的 L4/L3 清理；C 因为触及事件溯源核�
 1. **领域标识符须用 AST 提取**，不能用词频——`strategy` 的歧义导致 v1 误报率过半。
 2. **跨层出边与状态信号是硬事实**，优先于任何语义启发式。
 
-评分脚本位置：`scripts/arch/`（随本评审一并归档，见 §4 A1）。
+**脚本已固化到 `scripts/arch/score_layer_attribution.py`**（评分器，恒退出 0，
+不进 pytest 门禁——它的输出必须人工复核后才算数）：
+
+```bash
+python scripts/arch/score_layer_attribution.py                  # 扫 src/agentnodes
+python scripts/arch/score_layer_attribution.py --root testcase/golden   # 扫任意包根
+python scripts/arch/score_layer_attribution.py --json           # 机器可读
+```
+
+固化时相对本评审的临时脚本做了三处修正：
+
+| 修正 | 原临时脚本 | 现在 |
+|---|---|---|
+| **规则 2 的 CamelCase 拆分** | `BacktestConfig` 不拆词 → **漏判** | `_words()` 同时拆 snake_case 与 CamelCase |
+| **规则 1 的匹配位置** | 只看第 2 段 | 动词与领域词**同在一个名字里**即可（`calc_bars_per_year` 能命中）|
+| **规则 3（§1.4 漏判补丁）** | 临时脚本没有 | 已实现：「`_` 前缀 + 领域词」单项匹配 |
+
+固化后的实测（`--root testcase/golden`，即本评审归档的那批量化文件）：
+
+```
+96  backtest_utils.py     80  metrics.py         64  backtest_engine.py
+64  backtest_models.py    48  backtest_config.py 48  backtest_metrics.py
+48  market_detection.py   32  strategy_engine.py
+```
+
+**8 个被归档的量化文件全部被命中**（含规则 3 救回的 `metrics.py`），
+另有 `ic_utils.py`（更早批次归档）也被正确命中。
+
+在当前 `src/agentnodes` 上跑，评分器把评审的**全部真问题**排在前列：
+
+```
+192  foundation/storage/data_store.py   ← A2 目标
+ 32  foundation/errors.py                ← A2 目标（BacktestError / GoalError）
+ 15  interfaces/api/session/*.py 等 7 个  ← L1 有状态模块
+ 12  kernel/workflow/validator.py        ← B1 目标
+  8  kernel/workflow/grounding.py        ← B1 目标
+```
+
+其余低分项（4–8 分）是**已知误报**（`StrategyFactory` / `get_compaction_metrics`
+等），已在脚本 docstring 里列明，人工复核时直接排除。
+
+> **仍然不能假设自动评分没有漏**——§1.4 的教训成立。
+> 领域词表外的专有命名不会被命中，因此 **L4 层仍要人工扫全清单**。
 
 ---
 
@@ -351,3 +431,71 @@ A2/B1 紧随其后形成完整的 L4/L3 清理；C 因为触及事件溯源核�
 | graphify 作为主判据 | 对 lazy import 有 ~27% 盲区，且历史上出现过数值巧合 |
 | `api/session/` 本轮搬家 | 触及事件溯源核心链路，需单独排期（§4 C）|
 | 大模块拆分 | 归层正确，不属本次评审范围（§2.6）|
+
+---
+
+## 7. 执行记录
+
+### 7.1 A1 — 归档 L4 的量化残留（2026-11-05）
+
+**动作**：把 §2.1 的 8 个量化文件与其专属 9 个测试从产品代码树移出，
+归档进 `testcase/`（减法批次的既定处置：代码不丢弃，转金标准快照）。
+
+```
+src/agentnodes/foundation/utils/  →  testcase/golden/foundation/utils/
+    market_detection.py  backtest_engine.py  backtest_utils.py
+    backtest_metrics.py  strategy_engine.py  backtest_config.py
+    backtest_models.py   metrics.py                       （8 文件 / 1,385 行）
+
+tests/                          →  testcase/tests/
+    test_backtest_config.py    test_backtest_engine.py
+    test_backtest_metrics.py   test_backtest_metrics_edge.py
+    test_backtest_models.py    test_backtest_utils.py
+    test_market_detection.py   test_strategy_engine.py
+    test_metrics.py                                    （9 文件 / 2,369 行）
+```
+
+**归档目标遵循 `testcase/README.md` 的既有约定**：
+`golden/` 镜像原路径存源码快照，`tests/` 存被移除的测试（原样保留、不被 pytest 收集）。
+`pyproject.toml` 的 `testpaths = ["tests"]` 使 `testcase/` 天然排除在收集外；
+`check_dangling_imports.py`（扫 `src` + `tests`）与 `check_path_literals.py`
+（扫 `src` + `tests` + `scripts`）**都不扫 `testcase/`**，
+因此归档文件内部对已移出模块的引用不会触发门禁。
+
+**归档后 `foundation/utils/` 剩余**（479 行业务内容 + 4 行 `__init__.py`）：
+
+```
+bg_proc.py      316   后台进程管理（run_bg / shell_command / 任务注册）
+io_utils.py      93   原子写 + dotenv 解析
+token_utils.py   49   chars → token 估算
+ids.py           21   SessionId / AttemptId
+```
+
+四个模块全部零业务语义，L4「零业务知识」红线在 `foundation/utils/` 内**已达成**。
+
+**验证结果**：
+
+| 检查 | 结果 |
+|---|---|
+| `compileall`（`src/agentnodes` + `tests`）| ✅ 通过 |
+| `check_dangling_imports.py --layers` | ✅ 0 悬空；上行违规全 0 |
+| `check_path_literals.py` | ✅ 0 问题 |
+| `pytest tests/test_layer_matrix.py test_scripts_arch.py test_c1_inventory_gate.py` | ✅ 37 passed |
+| `sync_architecture_diagram.py --write` + 复核 | ✅ 图与代码一致 |
+| 全量回归 `pytest tests -n 4 --dist loadgroup` | ✅ 见 §7.2 |
+
+**层体量变化**：L4 `67 → 59` 文件 / `11,415 → 10,030` 行；
+总计 `379 → 371` 文件 / `75,330 → 73,945` 行；`L4→L4` 边 `87 → 77`。
+
+### 7.2 顺带确认（未改动，只记录）
+
+- `.shard-timings.json` 里这 9 个测试的条目**未清理**——该文件是 CI 分片的
+  **测量缓存**（由 `scripts/collect_shard_timings*.py` 重建），
+  且已有 222 条来自更早批次的同类陈旧条目。`scripts/pytest_shard.py`
+  只对**实际收集到的文件**查表，陈旧条目不会被查询，故无害。沿用既有做法不动它。
+- `tests/baselines/pr-lane-nodeids.json` 的 nodeid 基线里**不含**这 9 个文件，
+  归档不影响 PR lane 的基线比对。
+- `docs/design/` 与 `docs/archive/` 里若干历史设计文档提到
+  `utils.market_detection` / `utils.strategy_engine` 等路径——那些是
+  **当时的架构记录**（部分还写着早已不存在的 `agentnodes.core.*`），
+  按文档分层约定归 `design`/`archive`，**不改写历史**。
