@@ -790,9 +790,10 @@ class SwarmRuntime:
 
         Branch config shape: ``{condition, action, target, reason}``.
         """
-        from strategy_research.kernel.agent.capability import resolve
-
-        evaluate_condition = resolve("goal.expression")
+        # 分支条件求值器原走 CapabilityRegistry（kind=goal.expression）；
+        # goal 包移除后它已迁入 kernel/swarm（通用 DSL，无业务依赖），
+        # 直接 import 即可——不再需要端口解析。
+        from .expression_evaluator import evaluate_condition
 
         skipped: list[str] = []
         retried: list[str] = []
@@ -851,49 +852,51 @@ class SwarmRuntime:
 
 
 def _register_builtin_executors() -> None:
-    """Register built-in python_executor functions for backtest and decide."""
-    try:
+    """Register built-in python_executor functions for backtest and decide.
+
+    **resolve 必须在闭包内、调用时才执行**：本函数由模块级 import 触发，
+    而此刻业务包（apps）可能尚未 import，registry 还是空的。
+    早先在注册时就 ``resolve(...)``，一旦测试顺序让 apps 后加载，整个
+    swarm.runtime 导入即抛 CapabilityNotFound——这个缺陷在批次 2
+    删包后暴露（``test_swarm_branches`` 收集失败）。
+
+    与 ``kernel/agent/exec_registry.py`` 的正确做法保持一致：让"谁需要
+    谁解析"，与注册时机解耦。
+    """
+
+    def _backtest_executor(workspace_path, upstream=None, **kwargs):
+        """Run backtest script and return metrics."""
         from strategy_research.kernel.agent.capability import resolve
 
         run_backtest_script = resolve("backtest.script")
+        strategy_name = kwargs.get("strategy_name", "default")
+        action = kwargs.get("action", "unknown")
+        description = kwargs.get("description", "")
+        return run_backtest_script(
+            workspace_path=workspace_path,
+            strategy_name=strategy_name,
+            action=action,
+            description=description,
+        )
 
-        def _backtest_executor(workspace_path, upstream=None, **kwargs):
-            """Run backtest script and return metrics."""
-            strategy_name = kwargs.get("strategy_name", "default")
-            action = kwargs.get("action", "unknown")
-            description = kwargs.get("description", "")
-            result = run_backtest_script(
-                workspace_path=workspace_path,
-                strategy_name=strategy_name,
-                action=action,
-                description=description,
-            )
-            return result
+    SwarmRuntime.register_python_executor("run_backtest_script", _backtest_executor)
 
-        SwarmRuntime.register_python_executor("run_backtest_script", _backtest_executor)
-    except ImportError:
-        logger.debug("backtest module not available, python_executor not registered")
-
-    try:
+    def _decide_executor(metrics=None, **kwargs):
+        """Run decide() for keep/discard decision."""
         from strategy_research.kernel.agent.capability import resolve
 
         _decide_fn = resolve("backtest.decide")
+        llm_verdict = kwargs.get("llm_verdict")
+        cfg = kwargs.get("cfg")
+        stagnation_count = kwargs.get("stagnation_count", 0)
+        return _decide_fn(
+            metrics=metrics or {},
+            llm_verdict=llm_verdict,
+            cfg=cfg,
+            stagnation_count=stagnation_count,
+        )
 
-        def _decide_executor(metrics=None, **kwargs):
-            """Run decide() for keep/discard decision."""
-            llm_verdict = kwargs.get("llm_verdict")
-            cfg = kwargs.get("cfg")
-            stagnation_count = kwargs.get("stagnation_count", 0)
-            return _decide_fn(
-                metrics=metrics or {},
-                llm_verdict=llm_verdict,
-                cfg=cfg,
-                stagnation_count=stagnation_count,
-            )
-
-        SwarmRuntime.register_python_executor("decide", _decide_executor)
-    except ImportError:
-        logger.debug("strategy_acceptance module not available, evaluator not registered")
+    SwarmRuntime.register_python_executor("decide", _decide_executor)
 
 
 # Auto-register on module import

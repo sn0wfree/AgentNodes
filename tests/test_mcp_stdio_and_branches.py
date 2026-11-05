@@ -134,61 +134,23 @@ def server():
     return s
 
 
-def test_update_status_requires_goal_id(server):
-    out = _payload(server, "update_research_goal_status",
-                   {"session_id": "s", "status": "active"})
-    assert out["status"] == "error"
-    assert "goal_id is required" in out["error"]
 
 
-def test_update_status_requires_status(server):
-    out = _payload(server, "update_research_goal_status",
-                   {"session_id": "s", "goal_id": "g"})
-    assert out["status"] == "error"
-    assert "status is required" in out["error"]
 
 
-def test_update_status_rejects_invalid_value(server):
-    out = _payload(server, "update_research_goal_status",
-                   {"session_id": "s", "goal_id": "g", "status": "not_a_status"})
-    assert out["status"] == "error"
-    assert "invalid status" in out["error"]
-    assert "Valid:" in out["error"]
 
 
 # ── add_goal_evidence 校验分支 ──────────────────────────────
 
 
-def test_add_evidence_requires_goal_id(server):
-    out = _payload(server, "add_goal_evidence",
-                   {"session_id": "s", "text": "t"})
-    assert "goal_id is required" in out["error"]
 
 
-def test_add_evidence_requires_text(server):
-    out = _payload(server, "add_goal_evidence",
-                   {"session_id": "s", "goal_id": "g"})
-    assert "text is required" in out["error"]
 
 
 # ── validate_run 校验分支 ───────────────────────────────────
 
 
-def test_validate_run_requires_run_dir(server):
-    out = _payload(server, "validate_run", {})
-    assert "run_dir" in out["error"]
 
 
-def test_validate_run_bad_market_errors_cleanly(server):
-    """坏 market 值 → MarketType() 抛 → error JSON（不崩、不 No module）。"""
-    out = _payload(server, "validate_run",
-                   {"run_dir": "Z:/no/such", "market": "mars"})
-    assert out["status"] == "error"
-    # 回归：import 修复前这里报 "No module named ... mcp.validation"
-    assert "No module named" not in out["error"]
 
 
-def test_validate_run_missing_dir_errors_cleanly(server):
-    out = _payload(server, "validate_run", {"run_dir": "Z:/no/such"})
-    assert out["status"] == "error"
-    assert "No module named" not in out["error"]

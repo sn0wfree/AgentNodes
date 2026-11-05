@@ -449,82 +449,31 @@ async def list_messages(
 
 # ─────────────────────────────────────────────────────────────────────────────
 # Session state (B13): backfill agent / DAG / goal panels after reload.
+# goal / workflow 面板已随 apps/goal 等移除（2026-11-04 批次 2）：
+# state 端点保留，goal/workflow 恒为 null，agents 恒为空。
 # ─────────────────────────────────────────────────────────────────────────────
 
 
 from ..session.web_session_state import (  # noqa: F401  (re-exports)
-    _build_goal_snapshot,
-    _compute_goal_progress_percent,
-    _find_active_workflow_runner,
     _shape_agents_for_frontend,
-    _shape_goal_for_frontend,
-    _shape_workflow_for_frontend,
-    _shape_workflow_for_frontend_from_config,
 )
 
 
 @router.get("/{session_id}/state")
 async def get_session_state(session_id: str, request: Request):
-    """Backfill agent / DAG / goal panels after a page reload (B13).
+    """Backfill panels after a page reload (B13).
 
-    Aggregates three sources:
-      1. GoalStore.get_current_snapshot — goal + criteria + evidence
-      2. Active workflow runner (in-memory) — agent_statuses + DAG
-      3. GoalWorkflowConfig — DAG structure (nodes/edges) for the
-         session's active workflow
-
-    Each subsection gracefully degrades to null / empty when the
-    session has no active goal or no in-flight workflow (a finished
-    workflow's runner is pruned by ``_prune_runners``; for those
-    sessions we still surface the goal snapshot and the config-derived
-    DAG via the goal's workflow_name, if available).
-
-    Returns:
-      {
-        "goal": <frontend-shaped goal or null>,
-        "workflow": <frontend-shaped workflow or null>,
-        "agents": [<frontend-shaped agent>, ...]  # possibly empty
-      }
+    goal / workflow 子面板已随 apps/goal 移除（批次 2）：恒返回 null，
+    前端显示空态；agents 列表恒为空（SSE 流负责刷新 chat 主面板）。
     """
     user_id = getattr(request.state, "user_id", "anonymous")
     conn = _get_db()
     _fetch_session_owned(conn, session_id, user_id)
 
-    # Goal snapshot
-    snapshot = _build_goal_snapshot(request, session_id)
-    goal = _shape_goal_for_frontend(snapshot)
-
-    # Workflow: prefer a live runner, else attempt to derive the DAG
-    # from the goal's stored workflow_name (preserved on goal record
-    # by GoalWorkflowRunner.start).
-    workflow: dict | None = None
-    runner_match = _find_active_workflow_runner(session_id)
-    if runner_match:
-        _goal_id, runner = runner_match
-        wf_name = getattr(getattr(runner, "_config", None), "name", "") or ""
-        workflow = _shape_workflow_for_frontend(runner, wf_name)
-    elif snapshot:
-        # No live runner but the goal may have run a workflow — try to
-        # surface the static DAG structure for the panel. GoalRecord
-        # stores the workflow config name in the ``workflow_id`` column
-        # (set by GoalWorkflowRunner.start — see workflow.py:378).
-        goal_rec = snapshot.get("goal") or {}
-        wf_name = goal_rec.get("workflow_id") or ""
-        if wf_name:
-            try:
-                from strategy_research.apps.goal.workflow_config import load_goal_workflow
-
-                cfg = load_goal_workflow(wf_name)
-                workflow = _shape_workflow_for_frontend_from_config(cfg, wf_name)
-            except Exception as e:  # noqa: BLE001
-                logger.debug("[state] static DAG rebuild failed: %s", e)
-
-    agents = _shape_agents_for_frontend(session_id, workflow)
-
     return {
-        "goal": goal,
-        "workflow": workflow,
-        "agents": agents,
+        "goal": None,
+        "workflow": None,
+        "agents": [],
     }
 
 

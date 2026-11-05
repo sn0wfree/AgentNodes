@@ -294,26 +294,6 @@ def test_swarm_wrap_filters_and_injects_agent_name():
 # ── 5. goal workflow 桥 ──────────────────────────────────
 
 
-def test_goal_bridge_forwards_to_event_bus():
-    """_agent_event_bridge 把 agent 事件送上 WorkflowEventBus。"""
-    from strategy_research.apps.goal.event_bus import CollectingObserver
-    from strategy_research.apps.goal.workflow import GoalWorkflowRunner
-
-    runner = GoalWorkflowRunner.__new__(GoalWorkflowRunner)
-    from strategy_research.apps.goal.event_bus import WorkflowEventBus
-    runner._event_bus = WorkflowEventBus()
-    obs = CollectingObserver()
-    runner._event_bus.subscribe(obs)
-
-    bridge = runner._agent_event_bridge()
-    bridge("llm_request", {"system_prompt": "big", "agent": "researcher"})
-    bridge("text_delta", {"text": "x"})  # 桥不做过滤（runtime 已滤），但大字段要剥
-
-    kinds = [e for e, _ in obs.events]
-    assert kinds == ["llm_request", "text_delta"]
-    data = obs.events[0][1]
-    assert "system_prompt" not in data
-    assert data["agent"] == "researcher"
 
 
 # ── 6. CLI/MCP 的 SR_LOG_JSON 开关 ───────────────────────

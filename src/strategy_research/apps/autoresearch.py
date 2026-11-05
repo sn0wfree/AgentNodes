@@ -655,46 +655,11 @@ def _study_append_evidence(
 ) -> None:
     """Append research evidence for a study session's active goal.
 
-    Mirrors ``cli/commands/autoresearch.py::_append_backtest_evidence``
-    but takes an explicit ``session_id`` (the CLI helper hard-codes
-    ``autoresearch-{strategy_name}``).
+    **已降级为 no-op**：goal 台账随 apps/goal 移除（2026-11-04 批次 2）。
+    指标仍写入 run 产物与 study 事件流，未丢失；只是不再挂到 goal 证据链。
+    保留签名以兼容 4 个调用点。
     """
-    try:
-        from strategy_research.apps.goal import (
-            EvidenceInput,
-            GoalStore,
-        )
-        store = GoalStore()
-        goal = store.get_current_goal(session_id)
-        if goal is None:
-            return
-        text = (
-            f"Backtest {run_name}: "
-            f"Calmar={metrics.get('calmar', 'N/A')} "
-            f"Sharpe={metrics.get('sharpe', 'N/A')} "
-            f"MaxDD={metrics.get('max_dd', 'N/A')}"
-        )
-        criteria = store.list_criteria(goal.goal_id)
-        criterion_id = criteria[0].criterion_id if criteria else None
-        store.append_evidence(
-            session_id=session_id,
-            goal_id=goal.goal_id,
-            expected_goal_id=goal.goal_id,
-            evidence=EvidenceInput(
-                text=text,
-                criterion_id=criterion_id,
-                evidence_type="backtest",
-                run_id=run_name,
-                source_provider="study",
-                source_type="backtest_run",
-                artifact_path=strategist_output.get("hypothesis", "")[:200],
-            ),
-        )
-    except Exception as exc:  # noqa: BLE001
-        import logging
-        logging.getLogger(__name__).debug(
-            "study append_evidence skipped: %s", exc,
-        )
+    return
 
 
 def _study_register_hypothesis(
@@ -702,40 +667,12 @@ def _study_register_hypothesis(
     researcher_output: dict,
     run_name: str,
 ) -> None:
-    """Register the researcher's hypothesis and link it to the study goal."""
-    try:
-        from strategy_research.apps.goal import GoalStore
-        from strategy_research.apps.hypothesis import HypothesisRegistry
+    """Register the researcher's hypothesis and link it to the study goal.
 
-        thesis = researcher_output.get("hypothesis", "")
-        if not thesis:
-            return
-
-        registry = HypothesisRegistry()
-        title = f"{run_name}: {thesis[:60]}"
-        existing = None
-        for h in registry.list():
-            if h.title == title:
-                existing = h
-                break
-        if existing is None:
-            hyp = registry.create(
-                title=title,
-                thesis=thesis[:200],
-                status="exploring",
-            )
-        else:
-            hyp = existing
-
-        goal_store = GoalStore()
-        goal = goal_store.get_current_goal(session_id)
-        if goal is not None and hyp.goal_id != goal.goal_id:
-            registry.link_goal(hyp.hypothesis_id, goal.goal_id)
-    except Exception as exc:  # noqa: BLE001
-        import logging
-        logging.getLogger(__name__).debug(
-            "study register_hypothesis skipped: %s", exc,
-        )
+    **已降级为 no-op**：hypothesis 注册表随 apps/hypothesis 移除
+    （2026-11-04 批次 2）。保留签名以兼容 2 个调用点。
+    """
+    return
 
 
 # ── study single-round: pure extraction of cmd_autoresearch's loop body ──

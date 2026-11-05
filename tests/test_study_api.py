@@ -374,74 +374,6 @@ async def test_directives_list_unknown_study_returns_404(_app_env, tmp_path, mon
         assert r.status_code == 404
 
 
-@pytest.mark.asyncio
-async def test_summary_goal_snapshot_and_scoreboard(_app_env, tmp_path, monkeypatch):
-    """summary 应带 goal_snapshot（进度/标准/证据数）与 journal 派生的 scoreboard。"""
-    from strategy_research.apps.goal import GoalStore
-    from strategy_research.apps.goal.models import EvidenceInput
-    from strategy_research.apps.goal.store import RiskTier
-
-    db_path = tmp_path / "goals.db"
-    with GoalStore(db_path=db_path) as gs:
-        goal = gs.replace_goal(
-            session_id="sess-1",
-            objective="Sharpe 提升目标",
-            criteria=["Sharpe > 1.0", "回撤 < 20%"],
-            risk_tier=RiskTier.RESEARCH_GENERAL,
-        )
-        gs.append_evidence(
-            session_id="sess-1",
-            goal_id=goal.goal_id,
-            expected_goal_id=goal.goal_id,
-            evidence=EvidenceInput(
-                text="动量因子提升 Sharpe",
-                artifact_path="/tmp/ws/strategies/demo/strategy.py",
-                assumptions={"sharpe": 1.3},
-            ),
-        )
-        gs.append_journal_entry(
-            goal_id=goal.goal_id, session_id="sess-1", round_num=1,
-            hypothesis_id="hyp-1", label="动量假设",
-            levers=["momentum"],
-        )
-        gs.fill_journal_attribution(
-            goal_id=goal.goal_id, session_id="sess-1", round_num=1,
-            outcome="accepted", attribution={"sharpe": 1.3},
-        )
-        gs.append_journal_entry(
-            goal_id=goal.goal_id, session_id="sess-1", round_num=2,
-            hypothesis_id="hyp-2", label="反转假设",
-            levers=["reversal"],
-        )
-        gs.fill_journal_attribution(
-            goal_id=goal.goal_id, session_id="sess-1", round_num=2,
-            outcome="reverted", attribution={},
-        )
-        goal_id = goal.goal_id
-
-    monkeypatch.setenv("QUANTNODES_RESEARCH_GOAL_DB_PATH", str(db_path))
-    monkeypatch.setenv("QUANTNODES_RESEARCH_HYPOTHESES_PATH", str(tmp_path / "hyp.json"))
-    study_id = _seed_study(_app_env, tmp_path, monkeypatch, goal_id=goal_id)
-
-    async with _api_client() as client:
-        r = await client.get(f"/api/study/{study_id}/summary")
-        assert r.status_code == 200
-        data = r.json()
-
-        snap = data["goal_snapshot"]
-        assert snap["goal_id"] == goal_id
-        assert snap["objective"] == "Sharpe 提升目标"
-        assert snap["evidence_count"] == 1
-        assert snap["progress_percent"] >= 0
-
-        scoreboard = data["scoreboard"]
-        by_lever = {row["lever"]: row for row in scoreboard}
-        assert by_lever["momentum"]["attempts"] == 1
-        assert by_lever["momentum"]["accepted"] == 1
-        assert by_lever["momentum"]["precision_mean"] == 1.0
-        assert by_lever["reversal"]["attempts"] == 1
-        assert by_lever["reversal"]["reverted"] == 1
-        assert by_lever["reversal"]["precision_mean"] == 0.0
 
 
 @pytest.mark.asyncio
@@ -602,7 +534,8 @@ async def test_start_autoresearch_returns_study_id(_app_env, monkeypatch):
         assert data["execution_status"] == "queued"
         assert data["executor_type"] == "autoresearch"
         assert data["study_id"].startswith("study_")
-        assert data["goal_id"].startswith("goal_")
+        # goal 台账已随 apps/goal 移除（2026-11-04 批次 2）：study 不再挂 goal。
+        assert not data.get("goal_id")
         sched.submit.assert_awaited_once()
 
 
@@ -632,7 +565,12 @@ async def test_start_invalid_objective_returns_400(_app_env, monkeypatch):
 
 @pytest.mark.asyncio
 async def test_start_internal_error_returns_500(_app_env, monkeypatch):
-    """GoalStore 抛非 HTTP 异常 → 500。"""
+    """StudyStore 抛非 HTTP 异常 → 500。
+
+    原先注入 GoalStore.replace_goal 失败；goal 已随 apps/goal 移除
+    （2026-11-04 批次 2），改为注入 create_study 失败——测的是同一个
+    "非 HTTP 异常 → 500" 契约。
+    """
     from unittest.mock import MagicMock, patch
 
     from strategy_research.interfaces.api.routers import study as study_router
@@ -650,7 +588,7 @@ async def test_start_internal_error_returns_500(_app_env, monkeypatch):
         "executor_type": "autoresearch", "max_rounds": 3,
     }
     with patch(
-        "strategy_research.apps.goal.GoalStore.replace_goal",
+        "strategy_research.apps.study.store.StudyStore.create_study",
         side_effect=RuntimeError("simulated"),
     ):
         async with _api_client() as client:
@@ -732,39 +670,6 @@ async def test_status_returns_study_by_id(_app_env, tmp_path, monkeypatch):
         assert r.status_code == 403
 
 
-@pytest.mark.asyncio
-async def test_status_includes_goal_snapshot_when_goal_linked(_app_env, tmp_path, monkeypatch):
-    """study.goal_id 存在时，summary 应包含 goal_snapshot。"""
-    from strategy_research.apps.goal import GoalStore
-    from strategy_research.apps.goal.store import RiskTier
-    from strategy_research.apps.study import StudyStore
-
-    db_path = tmp_path / "goals.db"
-    with GoalStore(db_path=db_path) as gs:
-        goal = gs.replace_goal(
-            session_id="sess-1", objective="with goal",
-            criteria=["Sharpe > 1"], risk_tier=RiskTier.RESEARCH_GENERAL,
-        )
-        goal_id = goal.goal_id
-
-    with StudyStore(db_path=db_path) as store:
-        store.create_study(
-            owner_session_id="sess-1", goal_id=goal_id, objective="with goal",
-            workspace_path=str(_app_env), strategy_name="demo",
-            executor_type="autoresearch", max_rounds=3,
-        )
-
-    monkeypatch.setenv("QUANTNODES_RESEARCH_GOAL_DB_PATH", str(db_path))
-    monkeypatch.setenv("QUANTNODES_RESEARCH_HYPOTHESES_PATH", str(tmp_path / "hyp.json"))
-
-    async with _api_client() as client:
-        r = await client.get("/api/study/status?session_id=sess-1")
-        assert r.status_code == 200
-        data = r.json()
-        snap = data["goal_snapshot"]
-        assert snap["goal_id"] == goal_id
-        assert snap["objective"] == "with goal"
-        assert isinstance(snap["criteria"], list)
 
 
 @pytest.mark.asyncio

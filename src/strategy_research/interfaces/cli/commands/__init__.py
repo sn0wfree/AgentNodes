@@ -19,16 +19,7 @@ from strategy_research.interfaces.cli.commands.slash_chat import (
     cmd_quit,
     cmd_shadow,
 )
-from strategy_research.interfaces.cli.commands.slash_goal import (
-    cmd_cancel,
-    cmd_complete,
-    cmd_evidence,
-    cmd_start,
-    cmd_status,
-)
-from strategy_research.interfaces.cli.commands.slash_goal import (
-    cmd_help as goal_help,
-)
+# slash_goal 已随 apps/goal 移除（2026-11-04 做减法批次 2）
 from strategy_research.interfaces.cli.commands.slash_memory import (
     cmd_forget,
 )
@@ -66,12 +57,6 @@ __all__ = [
     "memory_cmd_list",
     "memory_cmd_search",
     "memory_cmd_show",
-    "cmd_cancel",
-    "cmd_complete",
-    "cmd_evidence",
-    "cmd_start",
-    "cmd_status",
-    "goal_help",
     "cmd_clear",
     "cmd_debug",
     "cmd_journal",

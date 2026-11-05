@@ -184,18 +184,16 @@ def create_app(
     app.add_middleware(AuthMiddleware)
 
     # Register routers
+    # goal / hypothesis / validation / workflow 四个业务 router 已随
+    # apps/goal、apps/hypothesis、apps/validation 移除（2026-11-04 做减法批次 2）。
     from .routers import (
         admin,
         auth,
         chat,
-        goal,
-        hypothesis,
         permission,
         run,
         study,
-        validation,
         web_session,
-        workflow,
     )
 
     app.include_router(auth.router, prefix="/api/auth", tags=["auth"])
@@ -205,13 +203,9 @@ def create_app(
     from .routers import admin_users
     app.include_router(admin_users.router, prefix="/api/admin", tags=["admin-users"])
 
-    app.include_router(goal.router, prefix="/api/goal", tags=["goal"])
-    app.include_router(workflow.router, prefix="/api/goal/workflow", tags=["workflow"])
     app.include_router(study.router, prefix="/api/study", tags=["study"])
     from .routers import schedule
     app.include_router(schedule.router, prefix="/api/schedule", tags=["schedule"])
-    app.include_router(hypothesis.router, prefix="/api/hypothesis", tags=["hypothesis"])
-    app.include_router(validation.router, prefix="/api/validate", tags=["validation"])
     app.include_router(run.router, prefix="/api/run", tags=["run"])
     # MiniMax / DuckDuckGo web search (front-end direct invocation)
     from .routers import search as search_router

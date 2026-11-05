@@ -91,4 +91,28 @@ samples/<name>/
 
 ## 5. 索引（随归档进度更新）
 
-*（待填）*
+### 批次 1（2026-11-04）：`alpha_zoo`
+
+| 归档项 | 内容 | 说明 |
+|---|---|---|
+| `golden/apps/alpha_zoo/` | 880 文件 / 27,263 行 | loader(511) · yaml DSL 求值器(325) · AST→YAML 转换器(1,011) · 算子库(238) · 6 个代表性因子 · **408 个 YAML 定义** · README |
+
+### 批次 2（2026-11-05）：goal / hypothesis / validation / portfolio / export
+
+| 归档项 | 内容 | 说明 |
+|---|---|---|
+| `golden/apps/goal/` | 19 文件 / 6,147 行 | GoalStore 六表模型 · workflow 981 行 · CLI 371 行 · checkpoint/event_bus/dag_renderer |
+| `golden/apps/hypothesis/` | 6 文件 / 1,459 行 | 假设登记 + 验证器（bootstrap/monte_carlo/walk_forward） |
+| `golden/apps/validation/` | 9 文件 / 801 行 | 参数验证 · Monte Carlo · Bootstrap CI · Walk-Forward |
+| `golden/apps/portfolio/` | 6 文件 / 619 行 | 组合构建 · 相关性 · 风险平价 |
+| `golden/apps/export/` | 2 文件 / 302 行 | pine / tdx / vnpy 导出 |
+| `golden/interfaces/` | 8 文件 / 2,604 行 | routers(goal/hypothesis/validation/workflow) · cli(slash_goal/export) · tui(dag_view/workflow_worker) |
+| `tests/` | 32 个测试文件 | goal/hypothesis/validation 全量测试 + 6 个依赖已删包的混合测试 |
+
+**两件残件并入 study 未归档**（仍在 `apps/study/`）：
+- `objective_policy.py`（37 行）：拒绝实盘下单目标 —— scheduler.replace_objective 仍需
+- `scoreboard.py`（210 行）：AEGIS 杠杆 Beta 后验 —— 消费者仅 phase_engine
+
+**泛化重建路线图**：`docs/agentnodes-split-plan-20261104.md` §5.1
+（objective + criteria + evidence 模式，去研究化后重建）。
+

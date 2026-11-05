@@ -277,51 +277,9 @@ def _draft_auth_headers():
     return {"Authorization": f"Bearer {create_token('draft-tester')}"}
 
 
-def test_draft_roundtrip(draft_client):
-    h = _draft_auth_headers()
-    payload = {
-        "dag_id": "alpha_research",
-        "nodes": [{"id": "a", "type": "llm_agent", "label": "A"}],
-        "edges": [],
-    }
-    r = draft_client.put("/api/goal/workflow/orchestrate/draft", json=payload, headers=h)
-    assert r.status_code == 200
-
-    r = draft_client.get("/api/goal/workflow/orchestrate/draft/alpha_research", headers=h)
-    assert r.status_code == 200
-    assert r.json()["dag"]["nodes"][0]["id"] == "a"
-
-    # upsert overwrites
-    payload["nodes"].append({"id": "b", "type": "tool", "label": "B"})
-    draft_client.put("/api/goal/workflow/orchestrate/draft", json=payload, headers=h)
-    r = draft_client.get("/api/goal/workflow/orchestrate/draft/alpha_research", headers=h)
-    assert len(r.json()["dag"]["nodes"]) == 2
-
-    # delete clears
-    r = draft_client.delete("/api/goal/workflow/orchestrate/draft/alpha_research", headers=h)
-    assert r.status_code == 200
-    r = draft_client.get("/api/goal/workflow/orchestrate/draft/alpha_research", headers=h)
-    assert r.json()["dag"] is None
 
 
-def test_draft_missing_returns_null(draft_client):
-    r = draft_client.get("/api/goal/workflow/orchestrate/draft/never_saved", headers=_draft_auth_headers())
-    assert r.status_code == 200
-    assert r.json()["dag"] is None
 
 
-def test_orchestrate_session_idempotent(draft_client):
-    h = _draft_auth_headers()
-    r1 = draft_client.post("/api/goal/workflow/orchestrate/session", json={"dag_id": "alpha_research"}, headers=h)
-    assert r1.status_code == 200
-    sid = r1.json()["session_id"]
-    assert sid == "dag:alpha_research"
-
-    r2 = draft_client.post("/api/goal/workflow/orchestrate/session", json={"dag_id": "alpha_research"}, headers=h)
-    assert r2.status_code == 200
-    assert r2.json()["session_id"] == sid
 
 
-def test_orchestrate_session_invalid_dag_id(draft_client):
-    r = draft_client.post("/api/goal/workflow/orchestrate/session", json={"dag_id": "a/b"}, headers=_draft_auth_headers())
-    assert r.status_code == 400

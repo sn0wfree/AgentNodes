@@ -29,63 +29,8 @@ def _build_attempt_metrics(usage_state: dict[str, int], loop_result: Any) -> dic
     return metrics
 
 
-def _emit_goal_event(
-    event_bus: Any, session_id: str, data: dict[str, Any], cfg: Optional[LLMConfig]
-) -> None:
-    """Detect goal tool results and emit the full-snapshot goal event.
-
-    When create_goal / add_evidence / complete_goal tools execute, emit ONE
-    full-snapshot ``goal_updated`` SSE event (built by
-    core/goal/events.build_goal_updated_payload). The event drives the
-    frontend panel AND is persisted by the projector as a
-    message_type='goal' message that enters the LLM context (see
-    docs/goal-events-panel-link.md).
-    """
-    import json as _json
-
-    tool_name = data.get("name", "")
-    change_type_map = {
-        "create_goal": "create",
-        "add_evidence": "evidence",
-        "complete_goal": "complete",
-    }
-    change_type = change_type_map.get(tool_name)
-    if change_type is None:
-        return
-
-    result_raw = data.get("result", "")
-    try:
-        result = _json.loads(result_raw) if isinstance(result_raw, str) else result_raw
-    except (_json.JSONDecodeError, TypeError, ValueError):
-        return
-
-    if not isinstance(result, dict) or result.get("status") != "ok":
-        return
-
-    from strategy_research.apps.goal import GoalStore
-    from strategy_research.apps.goal.events import build_goal_updated_payload
-
-    truncate = 100
-    if cfg is not None and cfg.compact_config is not None:
-        truncate = cfg.compact_config.goal_evidence_truncate_chars
-
-    payload = None
-    try:
-        with GoalStore() as store:
-            payload = build_goal_updated_payload(
-                session_id,
-                store,
-                change_type,
-                truncate_chars=truncate,
-                evidence_text=result.get("text") if change_type == "evidence" else None,
-            )
-    except Exception:  # noqa: BLE001
-        logger.warning("goal event build failed", exc_info=True)
-
-    if payload is not None:
-        event_bus.emit(session_id, "goal_updated", payload)
-
-
+# _emit_goal_event 已随 apps/goal 移除（2026-11-04 做减法批次 2）：
+# goal 工具不复存在，goal_updated SSE 事件不再产生。
 class _LoopEventForwarder:
     """AgentLoop on_event adapter for the B4 event-sourced path.
 
@@ -181,9 +126,6 @@ class _LoopEventForwarder:
         data.setdefault("attempt_id", self.attempt.attempt_id)
         data.setdefault("message_id", self.attempt.message_id)
 
-        # Detect goal tool results → emit goal SSE events for frontend
-        if event_type == "tool_result":
-            _emit_goal_event(self.event_bus, self.attempt.session_id, data, self.cfg)
 
         self.event_bus.emit(self.attempt.session_id, event_type, data)
 
@@ -285,7 +227,7 @@ _PLAN_READONLY_TOOLS = frozenset({
     "read", "list", "search_code", "search_file",
     "get_file_info", "websearch", "web_fetch", "webfetch",
     "read_document", "think", "tool_help",
-    "list_goals", "get_goal_status",
+    # list_goals / get_goal_status 已随 apps/goal 移除（批次 2）
     "list_history", "git_diff", "factor_analysis",
     "pattern_recognition", "list_skills", "skill",
     "factor_cross_sectional_analysis", "factor_quintile_returns",

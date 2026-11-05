@@ -722,29 +722,14 @@ def _build_parser() -> tuple[argparse.ArgumentParser, dict[str, argparse.Argumen
 
     mcp_subparsers.add_parser("list-tools", help="列出所有 MCP 工具")
 
-    # export
-    export_parser = subparsers.add_parser("export", help="导出策略")
-    export_parser.add_argument("path", nargs="?", default=".", help="工作区路径")
-    export_parser.add_argument("--strategy", "-s", required=True, help="策略名称")
-    export_parser.add_argument("--format", "-f", nargs="+", default=["pine", "tdx", "vnpy"],
-                               choices=["pine", "tdx", "vnpy"], help="导出格式")
-    export_parser.add_argument("--output", "-o", help="输出目录 (默认: workspace/exports/)")
+    # export 子命令已随 apps/export 移除（2026-11-04 做减法批次 2）
 
     # schedule (P5)
     from strategy_research.kernel.scheduled_research.cli import add_schedule_subparsers
     add_schedule_subparsers(subparsers)
 
-    # goal (P3-a)
-    from strategy_research.apps.goal.cli import add_goal_subparsers
-    add_goal_subparsers(subparsers)
-
-    # hypothesis (P3-b)
-    from strategy_research.apps.hypothesis.cli import add_hypothesis_subparsers
-    add_hypothesis_subparsers(subparsers)
-
-    # validation (P3-c)
-    from strategy_research.apps.validation.cli import add_validate_subparsers
-    add_validate_subparsers(subparsers)
+    # goal / hypothesis / validation / portfolio 四组子命令已随对应 apps 包
+    # 移除（2026-11-04 做减法批次 2；归档见 testcase/golden/apps/）。
 
     from strategy_research.apps.engine.cli import add_engine_subparsers
     add_engine_subparsers(subparsers)
@@ -752,10 +737,6 @@ def _build_parser() -> tuple[argparse.ArgumentParser, dict[str, argparse.Argumen
     # strategy acceptance (P6 Step 0) — 离线验收调试工具
     from strategy_research.apps.strategy_acceptance.cli import add_accept_subparsers
     add_accept_subparsers(subparsers)
-
-    # portfolio (P3-d) — 组合回测 / 策略相关性
-    from strategy_research.apps.portfolio.cli import add_portfolio_subparsers
-    add_portfolio_subparsers(subparsers)
 
     # api serve
     api_parser = subparsers.add_parser("api", help="HTTP API 服务器")
@@ -857,11 +838,7 @@ def main() -> int:
         "skills": _dispatch_skills,
         "swarm": _dispatch_swarm,
         "mcp": _dispatch_mcp,
-        "export": _dispatch_export,
         "schedule": _dispatch_schedule,
-        "goal": _dispatch_goal,
-        "hypothesis": _dispatch_hypothesis,
-        "validate-run": _dispatch_validate_run,
         "engine": _dispatch_engine,
         "accept": _dispatch_accept,
         "api": _dispatch_api,
@@ -964,13 +941,6 @@ def _dispatch_mcp(args, parsers) -> int:
         return 0
 
 
-def _dispatch_export(args, parsers) -> int:
-    """Dispatch the export subcommand."""
-    from .commands.export import cmd_export
-
-    return cmd_export(args)
-
-
 def _dispatch_schedule(args, parsers) -> int:
     """Dispatch the schedule subcommand."""
     from strategy_research.kernel.scheduled_research.cli import (
@@ -1000,52 +970,8 @@ def _dispatch_schedule(args, parsers) -> int:
         return 0
 
 
-def _dispatch_goal(args, parsers) -> int:
-    """Dispatch the goal subcommand."""
-    from strategy_research.apps.goal.cli import (
-        cmd_goal_audit,
-        cmd_goal_cancel,
-        cmd_goal_complete,
-        cmd_goal_evidence,
-        cmd_goal_list,
-        cmd_goal_start,
-        cmd_goal_status,
-    )
-    return {
-        "start": cmd_goal_start,
-        "status": cmd_goal_status,
-        "evidence": cmd_goal_evidence,
-        "audit": cmd_goal_audit,
-        "complete": cmd_goal_complete,
-        "list": cmd_goal_list,
-        "cancel": cmd_goal_cancel,
-    }.get(args.goal_command, lambda a: 1)(args)
-
-
-def _dispatch_hypothesis(args, parsers) -> int:
-    """Dispatch the hypothesis subcommand."""
-    from strategy_research.apps.hypothesis.cli import (
-        cmd_hypothesis_create,
-        cmd_hypothesis_link,
-        cmd_hypothesis_list,
-        cmd_hypothesis_search,
-        cmd_hypothesis_show,
-        cmd_hypothesis_update,
-    )
-    return {
-        "create": cmd_hypothesis_create,
-        "list": cmd_hypothesis_list,
-        "show": cmd_hypothesis_show,
-        "update": cmd_hypothesis_update,
-        "search": cmd_hypothesis_search,
-        "link": cmd_hypothesis_link,
-    }.get(args.hypothesis_command, lambda a: 1)(args)
-
-
-def _dispatch_validate_run(args, parsers) -> int:
-    """Dispatch the validate-run subcommand."""
-    from strategy_research.apps.validation.cli import cmd_validate_run
-    return cmd_validate_run(args)
+# _dispatch_goal / _dispatch_hypothesis / _dispatch_validate_run 已随
+# apps/goal、apps/hypothesis、apps/validation 移除（2026-11-04 做减法批次 2）。
 
 
 def _dispatch_engine(args, parsers) -> int:

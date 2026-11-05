@@ -1,4 +1,4 @@
-"""Slash command handlers for the chat API (/goal, /study, /compact, /clear, /help).
+"""Slash command handlers for the chat API (/study, /compact, /clear, /help).
 
 Extracted from ``chat.py`` (P3) — the business logic of the slash
 commands lives here; ``chat.py`` routes into these handlers.
@@ -33,264 +33,35 @@ from ..schemas.chat import ChatMessageRequest as ChatMessage
 from ..schemas.chat import SendMessageResponse
 
 
-async def _handle_goal_command(body: ChatMessage) -> SendMessageResponse:
-    """Handle /goal slash commands without going through AgentLoop.
-
-    B5: All persistence via EventStore → projector.flush(). No direct
-    persist_message / SSE push calls.
-    """
-    from strategy_research.apps.goal import GoalStore
-
-    session_id = body.session_id
-    content = body.content.strip()
-
-    parts = content.split(None, 2)
-    subcmd = parts[1].lower() if len(parts) > 1 else "status"
-    args = parts[2] if len(parts) > 2 else ""
-
-    user_msg_id = str(uuid.uuid4())
-    assistant_msg_id = str(uuid.uuid4())
-
-    service = _get_session_service()
-    event_bus = service.event_bus
-
-    event_bus.emit(session_id, "message_received", {
-        "message_id": user_msg_id,
-        "user_message_id": user_msg_id,
-        "assistant_message_id": assistant_msg_id,
-        "content": content,
-        "role": "user",
-    })
-
-    try:
-        with GoalStore() as store:
-            response_text = _dispatch_goal_command(subcmd, args, session_id, store)
-    except Exception as exc:
-        logger.exception("goal command failed: %s", subcmd)
-        response_text = f"Goal command failed: {exc}"
-
-    # Emit goal SSE events so the frontend GoalTab updates in real-time
-    _emit_goal_sse_event(event_bus, session_id, subcmd)
-
-    _emit_goal_response(event_bus, session_id, assistant_msg_id, response_text)
-
-    return SendMessageResponse(
-        message_id=user_msg_id,
-        user_message_id=user_msg_id,
-        assistant_message_id=assistant_msg_id,
-        event_id="",
-        status="done",
-    )
+# ── /goal 命令已随 apps/goal 移除（2026-11-04 做减法批次 2）──────
 
 
-def _dispatch_goal_command(
-    subcmd: str, args: str, session_id: str, store: Any,
-) -> str:
-    """Dispatch goal subcommand to handler."""
-    handlers = {
-        "start": _goal_start,
-        "create": _goal_start,
-        "status": _goal_status,
-        "": _goal_status,
-        "evidence": _goal_evidence,
-        "ev": _goal_evidence,
-        "complete": _goal_complete,
-        "done": _goal_complete,
-        "cancel": _goal_cancel,
-        "help": _goal_help,
-    }
-    handler = handlers.get(subcmd)
-    if handler is None:
-        return f"Unknown subcommand: {subcmd}. Use /goal help for usage."
-    if handler is _goal_help:
-        return handler()
-    return handler(args, session_id, store)
-
-
-def _goal_start(args: str, session_id: str, store: Any) -> str:
-    """Create a goal + study (manual executor_type, no auto-submit).
-
-    /goal start = /study start without automatic execution.
-    The study record is created for tracking but not submitted to the scheduler.
-    """
-    from strategy_research.apps.goal.context import default_goal_criteria
-    from strategy_research.apps.study import StudyStore
-
-    objective = args or "Research goal"
-
-    # Check for active study first
-    with StudyStore() as study_store:
-        active = study_store.get_active_study(session_id)
-        if active is not None:
-            return (
-                f"Session already has an active study: {active.study_id[:12]}...\n"
-                f"Status: {active.execution_status.value}\n"
-                f"Cancel it first with /study cancel or wait for it to complete."
-            )
-
-    goal = store.replace_goal(
-        session_id=session_id, objective=objective,
-        criteria=default_goal_criteria(),
-    )
-    # Create a study record (manual executor, not submitted to scheduler)
-    with StudyStore() as study_store:
-        study = study_store.create_study(
-            owner_session_id=session_id, goal_id=goal.goal_id,
-            objective=objective, workspace_path=_default_workspace(),
-            strategy_name="manual", executor_type="manual",
-            metric_targets=[],
-        )
-    return (
-        f"Goal created: {goal.goal_id[:12]}...\n"
-        f"Study created: {study.study_id[:12]}...\n"
-        f"Objective: {goal.objective}\n"
-        f"Status: {goal.status.value} (manual mode, no auto-execution)\n"
-        f"Use /goal evidence <text> to add evidence manually."
-    )
-
-
-def _goal_status(args: str, session_id: str, store: Any) -> str:
-    current = store.get_current_goal(session_id)
-    if current is None:
-        return "No active goal. Use /goal start <objective> to create one."
-    snapshot = store.get_current_snapshot(session_id)
-    criteria = snapshot.get("criteria", []) if snapshot else []
-    evidence_count = snapshot.get("evidence_count", 0) if snapshot else 0
-    return (
-        f"Goal: {current.goal_id[:12]}...\n"
-        f"Objective: {current.objective}\n"
-        f"Status: {current.status.value}\n"
-        f"Progress: {current.progress_percent:.0f}%\n"
-        f"Criteria: {len(criteria)} | Evidence: {evidence_count}"
-    )
-
-
-def _goal_evidence(args: str, session_id: str, store: Any) -> str:
-    from strategy_research.apps.goal import EvidenceInput
-    current = store.get_current_goal(session_id)
-    if current is None:
-        return "No active goal. Create one first with /goal start <objective>."
-    text = args or "No evidence text provided"
-    evidence = EvidenceInput(text=text, source_type="chat")
-    record = store.append_evidence(
-        session_id=session_id, goal_id=current.goal_id,
-        expected_goal_id=current.goal_id, evidence=evidence,
-    )
-    updated = store.get_current_goal(session_id)
-    return (
-        f"Evidence added: {record.evidence_id[:12]}...\n"
-        f"Progress: {updated.progress_percent:.0f}%"
-    )
-
-
-def _goal_complete(args: str, session_id: str, store: Any) -> str:
-    current = store.get_current_goal(session_id)
-    if current is None:
-        return "No active goal to complete."
-    recap = args or None
-    updated = store.complete_lite(
-        session_id=session_id, goal_id=current.goal_id,
-        expected_goal_id=current.goal_id, recap=recap,
-    )
-    return (
-        f"Goal completed: {updated.goal_id[:12]}...\n"
-        f"Status: {updated.status.value}"
-    )
-
-
-def _goal_cancel(args: str, session_id: str, store: Any) -> str:
-    from strategy_research.apps.goal import GoalStatus
-    current = store.get_current_goal(session_id)
-    if current is None:
-        return "No active goal to cancel."
-    recap = args or None
-    updated = store.update_status(
-        session_id=session_id, goal_id=current.goal_id,
-        expected_goal_id=current.goal_id,
-        status=GoalStatus.CANCELLED, recap=recap,
-    )
-    return (
-        f"Goal cancelled: {updated.goal_id[:12]}...\n"
-        f"Status: {updated.status.value}"
-    )
-
-
-def _goal_help() -> str:
-    return (
-        "/goal start <objective>  — create a new goal\n"
-        "/goal status             — show current goal\n"
-        "/goal evidence <text>    — add evidence\n"
-        "/goal complete [recap]   — mark complete\n"
-        "/goal cancel [recap]     — cancel goal\n"
-        "/goal help               — this message"
-    )
-
-
-def _emit_goal_sse_event(event_bus: Any, session_id: str, subcmd: str) -> None:
-    """Emit goal SSE event after /goal command execution.
-
-    Reads the current goal snapshot from GoalStore and emits a single
-    full-snapshot ``goal_updated`` event (same payload builder as the
-    chat-tool path — core/goal/events.py) so the frontend panel and
-    the message-stream projector stay in sync.
-    """
-    from strategy_research.apps.goal import GoalStore
-    from strategy_research.apps.goal.events import (
-        CHANGE_TYPE_COMPLETE,
-        CHANGE_TYPE_CREATE,
-        CHANGE_TYPE_EVIDENCE,
-        build_goal_updated_payload,
-    )
-
-    # Only emit for mutation commands
-    if subcmd not in ("start", "create", "evidence", "ev", "complete", "done"):
-        return
-
-    if subcmd in ("start", "create"):
-        change_type = CHANGE_TYPE_CREATE
-    elif subcmd in ("evidence", "ev"):
-        change_type = CHANGE_TYPE_EVIDENCE
-    else:
-        change_type = CHANGE_TYPE_COMPLETE
-
-    payload = None
-    try:
-        with GoalStore() as store:
-            payload = build_goal_updated_payload(
-                session_id, store, change_type,
-            )
-    except Exception:
-        logger.debug("failed to read goal for SSE emit", exc_info=True)
-        return
-
-    if payload is not None:
-        event_bus.emit(session_id, "goal_updated", payload)
-
-
-def _emit_goal_response(
+def _emit_response(
     event_bus: Any, session_id: str, assistant_msg_id: str, response_text: str,
 ) -> None:
-    """Emit goal response as 3-step text protocol."""
-    goal_text_id = str(uuid.uuid4())
+    """Emit a slash-command response as the 3-step text protocol.
+
+    原名 ``_emit_goal_response``；goal 命令移除后由 /study 段继续使用，
+    改成中性的名字——它发射的是通用 SSE 文本协议，与 goal 无关。
+    """
+    text_id = str(uuid.uuid4())
     event_bus.emit(session_id, "text.started", {
-        "message_id": assistant_msg_id, "text_id": goal_text_id,
+        "message_id": assistant_msg_id, "text_id": text_id,
     })
     event_bus.emit(session_id, "text_delta", {
-        "message_id": assistant_msg_id, "text_id": goal_text_id, "text": response_text,
+        "message_id": assistant_msg_id, "text_id": text_id, "text": response_text,
     })
     event_bus.emit(session_id, "text.ended", {
-        "message_id": assistant_msg_id, "text_id": goal_text_id, "text": response_text,
+        "message_id": assistant_msg_id, "text_id": text_id, "text": response_text,
     })
     event_bus.emit(session_id, "assistant_message", {
         "message_id": assistant_msg_id, "content": response_text,
-        "message_type": "assistant", "metadata": {"model": "goal-handler"},
+        "message_type": "assistant", "metadata": {"model": "slash-handler"},
     })
     event_bus.emit(session_id, "agent_done", {
         "message_id": assistant_msg_id, "status": "success",
     })
 
-
-# ── /study command handler ──────────────────────────────────────────
 
 
 async def _handle_study_command(body: ChatMessage) -> SendMessageResponse:
@@ -342,23 +113,17 @@ async def _handle_study_command(body: ChatMessage) -> SendMessageResponse:
     # Flush any pending workflow submits (created by ``/study start``)
     # on this loop before the response round-trips to the user.
     if _study_pending_submits:
-        session_service = _get_session_service()
         for study, config, goal_id, objective, ws in _study_pending_submits:
-            if config is None:
-                # AEGIS: autoresearch → scheduler
-                from .study import _get_study_scheduler
+            # AEGIS: autoresearch → scheduler（workflow 执行器已移除）
+            from .study import _get_study_scheduler
 
-                sched = _get_study_scheduler()
-                import asyncio as _asyncio
-                task = _asyncio.create_task(sched.submit(study))
-                task.add_done_callback(log_task_exception)
-            else:
-                await _start_workflow_runner(
-                    config, session_id, goal_id, objective, ws, session_service,
-                )
+            sched = _get_study_scheduler()
+            import asyncio as _asyncio
+            task = _asyncio.create_task(sched.submit(study))
+            task.add_done_callback(log_task_exception)
         _study_pending_submits.clear()
 
-    _emit_goal_response(event_bus, session_id, assistant_msg_id, response_text)
+    _emit_response(event_bus, session_id, assistant_msg_id, response_text)
 
     return SendMessageResponse(
         message_id=user_msg_id, user_message_id=user_msg_id,
@@ -540,16 +305,11 @@ def _study_start_cmd(rest: list[str], session_id: str) -> str:
     targets = flags["metric_targets"] or default_metric_targets()
 
     try:
-        from strategy_research.apps.goal import GoalStore
-        from strategy_research.apps.goal.context import default_goal_criteria
-        goal_store = GoalStore()
-        goal = goal_store.replace_goal(
-            session_id=session_id, objective=objective,
-            criteria=default_goal_criteria(),
-        )
+        # goal 台账已随 apps/goal 移除（2026-11-04 做减法批次 2）：
+        # study 不再创建/关联 goal，goal_id 置空。
         with StudyStore() as store:
             study = store.create_study(
-                owner_session_id=session_id, goal_id=goal.goal_id,
+                owner_session_id=session_id, goal_id="",
                 objective=objective, workspace_path=ws, strategy_name=strategy,
                 metric_targets=targets,
                 budget_token=None, budget_turn=flags["budget_turn"],
@@ -573,32 +333,21 @@ def _study_start_cmd(rest: list[str], session_id: str) -> str:
             gdir.mkdir(parents=True, exist_ok=True)
             (gdir / "guidance.md").write_text(guidance_text, encoding="utf-8")
 
-        # Phase 3: Build GoalWorkflowConfig for the 9-agent preset
-        # (single factory — see core.goal.workflow_config).
-        from strategy_research.apps.goal.workflow_config import build_autoresearch_workflow_config
-
-        config = build_autoresearch_workflow_config(
-            strategy_name=strategy,
-            objective=objective,
-            metric_targets=targets,
-            monitor_interval_seconds=flags.get("monitor_interval_seconds"),
-            budget_turn=flags.get("budget_turn"),
-            budget_time_seconds=flags.get("budget_time_seconds"),
-        )
-
         # Queue for async submission by _handle_study_command
-        if flags["executor_type"] == "autoresearch":
-            # AEGIS: autoresearch → scheduler → AutoresearchRunner (round-based)
-            _study_pending_submits.append((study, None, goal.goal_id, objective, ws))
-        else:
-            # workflow → GoalWorkflowRunner (single DAG)
-            _study_pending_submits.append((study, config, goal.goal_id, objective, ws))
+        # （workflow 执行器已随 apps/goal.workflow 移除；只剩 autoresearch
+        #   → scheduler → AutoresearchRunner 一条路。）
+        if flags["executor_type"] != "autoresearch":
+            return (
+                "Cannot create study: workflow executor 已移除"
+                "（apps/goal.workflow，2026-11-04）。请使用 "
+                "--executor autoresearch。"
+            )
+        _study_pending_submits.append((study, None, "", objective, ws))
 
     except (ValueError, FileNotFoundError) as e:
         return f"Cannot create study: {e}"
     return (
         f"Study created: {study.study_id[:12]}...\n"
-        f"Goal: {goal.goal_id[:12]}...\n"
         f"Objective: {study.objective}\n"
         f"Strategy: {study.strategy_name} @ {study.workspace_path}\n"
         f"Targets: {targets}\n"
@@ -610,24 +359,6 @@ def _study_start_cmd(rest: list[str], session_id: str) -> str:
 # the FastAPI event loop. _handle_study_command awaits these after the
 # dispatcher returns so the response text + the queued task both happen.
 _study_pending_submits: list = []
-
-
-async def _start_workflow_runner(
-    config, session_id, goal_id, objective, workspace, session_service,
-) -> None:
-    """Start a GoalWorkflowRunner for a /study start command."""
-    from pathlib import Path
-
-    from strategy_research.apps.goal.workflow import GoalWorkflowRunner
-
-    runner = GoalWorkflowRunner(
-        config=config,
-        session_id=session_id,
-        session_service=session_service,
-        workspace=Path(workspace),
-    )
-    runner.set_goal_id(goal_id)
-    await runner.start(objective)
 
 
 def _is_flag_value(tokens, t) -> bool:
@@ -800,7 +531,6 @@ async def _handle_compact_command(body: ChatMessage) -> SendMessageResponse:
 _HELP_TEXT = (
     "## 可用命令\n"
     "\n"
-    "- `/goal <目标描述>` — 创建并跟踪一个复合目标\n"
     "- `/study <目标描述>` — 启动一个研究任务（多轮迭代）\n"
     "- `/compact` — 压缩当前会话的上下文\n"
     "- `/clear` — 清空当前会话的 LLM 上下文（保留历史消息）\n"

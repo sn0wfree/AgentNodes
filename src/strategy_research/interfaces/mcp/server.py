@@ -255,8 +255,8 @@ class MCPServer:
     def register_default_tools(self) -> None:
         """Register all default research-only tools."""
         self._register_skill_tools()
-        self._register_goal_tools()
-        self._register_hypothesis_tools()
+        # _register_goal_tools / _register_hypothesis_tools 已随 apps/goal、
+        # apps/hypothesis 移除（2026-11-04 做减法批次 2）。
         self._register_backtest_tools()
         self._register_factor_tools()
         self._register_memory_tools()
@@ -302,205 +302,9 @@ class MCPServer:
             handler=load_skill,
         ))
 
-    def _register_goal_tools(self) -> None:
-        def start_research_goal(objective: str = "", session_id: str = "default", **kwargs: Any) -> str:
-            # Phase B: 真接 GoalStore (替代旧 stub 返回假数据)
-            try:
-                from strategy_research.apps.goal import GoalStore, RiskTier
-                store = GoalStore()
-                goal = store.replace_goal(
-                    session_id=session_id,
-                    objective=objective,
-                    criteria=["backtest_profitable", "risk_within_limits"],
-                    source="mcp",
-                    risk_tier=RiskTier.RESEARCH_GENERAL,
-                )
-                return json.dumps({
-                    "status": "ok",
-                    "goal_id": goal.goal_id,
-                    "session_id": session_id,
-                    "objective": goal.objective,
-                }, ensure_ascii=False)
-            except Exception as exc:
-                return json.dumps({"status": "error", "error": str(exc)}, ensure_ascii=False)
-
-        def get_research_goal(session_id: str = "default", **kwargs: Any) -> str:
-            try:
-                from strategy_research.apps.goal import GoalStore
-                store = GoalStore()
-                goal = store.get_current_goal(session_id)
-                if goal is None:
-                    return json.dumps({"status": "no_active_goal", "session_id": session_id}, ensure_ascii=False)
-                return json.dumps({
-                    "goal_id": goal.goal_id,
-                    "session_id": session_id,
-                    "objective": goal.objective,
-                    "ui_summary": goal.ui_summary,
-                    "status": goal.status.value,
-                    "criteria": store.list_criteria(goal.goal_id),
-                }, ensure_ascii=False, default=str)
-            except Exception as exc:
-                return json.dumps({"status": "error", "error": str(exc)}, ensure_ascii=False)
-
-        self.register(MCPTool(
-            name="start_research_goal",
-            description="创建研究目标（写入 GoalStore SQLite）",
-            parameters={
-                "type": "object",
-                "properties": {
-                    "objective": {"type": "string", "description": "研究目标"},
-                    "session_id": {"type": "string", "description": "会话 ID", "default": "default"},
-                },
-                "required": ["objective"],
-            },
-            handler=start_research_goal,
-        ))
-        self.register(MCPTool(
-            name="get_research_goal",
-            description="获取当前会话的研究目标",
-            parameters={
-                "type": "object",
-                "properties": {
-                    "session_id": {"type": "string", "description": "会话 ID", "default": "default"},
-                },
-            },
-            handler=get_research_goal,
-        ))
-
-        def add_goal_evidence(
-            session_id: str = "default",
-            goal_id: str = "",
-            text: str = "",
-            criterion_id: str | None = None,
-            claim_id: str | None = None,
-            source_type: str | None = None,
-            source_uri: str | None = None,
-            confidence: str | None = None,
-            caveat: str | None = None,
-            **kwargs: Any,
-        ) -> str:
-            try:
-                from strategy_research.apps.goal import EvidenceInput, GoalStore
-                store = GoalStore()
-                if not goal_id:
-                    return json.dumps({"status": "error", "error": "goal_id is required"}, ensure_ascii=False)
-                if not text:
-                    return json.dumps({"status": "error", "error": "text is required"}, ensure_ascii=False)
-                evidence = EvidenceInput(
-                    text=text,
-                    criterion_id=criterion_id or None,
-                    claim_id=claim_id or None,
-                    source_provider="mcp",
-                    source_type=source_type or None,
-                    source_uri=source_uri or None,
-                    confidence=confidence or None,
-                    caveat=caveat or None,
-                )
-                record = store.append_evidence(
-                    session_id=session_id,
-                    goal_id=goal_id,
-                    expected_goal_id=goal_id,
-                    evidence=evidence,
-                )
-                return json.dumps({
-                    "status": "ok",
-                    "evidence_id": record.evidence_id,
-                    "goal_id": record.goal_id,
-                    "criterion_id": record.criterion_id,
-                }, ensure_ascii=False)
-            except Exception as exc:
-                return json.dumps({"status": "error", "error": str(exc)}, ensure_ascii=False)
-
-        def update_research_goal_status(
-            session_id: str = "default",
-            goal_id: str = "",
-            status: str = "",
-            recap: str | None = None,
-            **kwargs: Any,
-        ) -> str:
-            try:
-                from strategy_research.apps.goal import GoalStatus, GoalStore
-                store = GoalStore()
-                if not goal_id:
-                    return json.dumps({"status": "error", "error": "goal_id is required"}, ensure_ascii=False)
-                if not status:
-                    return json.dumps({"status": "error", "error": "status is required"}, ensure_ascii=False)
-                try:
-                    goal_status = GoalStatus(status)
-                except ValueError:
-                    valid = [s.value for s in GoalStatus]
-                    return json.dumps({
-                        "status": "error",
-                        "error": f"invalid status: {status!r}. Valid: {valid}",
-                    }, ensure_ascii=False)
-                record = store.update_status(
-                    session_id=session_id,
-                    goal_id=goal_id,
-                    expected_goal_id=goal_id,
-                    status=goal_status,
-                    recap=recap or None,
-                )
-                return json.dumps({
-                    "status": "ok",
-                    "goal_id": record.goal_id,
-                    "new_status": record.status.value,
-                    "progress": record.progress_percent,
-                }, ensure_ascii=False)
-            except Exception as exc:
-                return json.dumps({"status": "error", "error": str(exc)}, ensure_ascii=False)
-
-        self.register(MCPTool(
-            name="add_goal_evidence",
-            description="向研究目标追加证据（自动更新 criterion 状态）",
-            parameters={
-                "type": "object",
-                "properties": {
-                    "session_id": {"type": "string", "description": "会话 ID", "default": "default"},
-                    "goal_id": {"type": "string", "description": "目标 ID"},
-                    "text": {"type": "string", "description": "证据内容"},
-                    "criterion_id": {"type": "string", "description": "关联的 criterion ID（可选）"},
-                    "claim_id": {"type": "string", "description": "关联的 claim ID（可选）"},
-                    "source_type": {"type": "string", "description": "来源类型（如 backtest、data、analysis）"},
-                    "source_uri": {"type": "string", "description": "来源 URI（如文件路径、URL）"},
-                    "confidence": {"type": "string", "description": "置信度（high/medium/low）"},
-                    "caveat": {"type": "string", "description": "注意事项或局限性"},
-                },
-                "required": ["goal_id", "text"],
-            },
-            handler=add_goal_evidence,
-        ))
-        self.register(MCPTool(
-            name="update_research_goal_status",
-            description="更新研究目标状态（active/complete/cancelled/paused 等）",
-            parameters={
-                "type": "object",
-                "properties": {
-                    "session_id": {"type": "string", "description": "会话 ID", "default": "default"},
-                    "goal_id": {"type": "string", "description": "目标 ID"},
-                    "status": {"type": "string", "description": "新状态", "enum": [
-                        "active", "paused", "waiting_user", "needs_refresh",
-                        "insufficient_evidence", "blocked", "complete", "cancelled",
-                    ]},
-                    "recap": {"type": "string", "description": "完成/取消时的总结"},
-                },
-                "required": ["goal_id", "status"],
-            },
-            handler=update_research_goal_status,
-        ))
-
-    def _register_hypothesis_tools(self) -> None:
-        def list_hypotheses(**kwargs: Any) -> str:
-            from strategy_research.apps.hypothesis import HypothesisRegistry
-            registry = HypothesisRegistry()
-            hyps = registry.list()
-            return json.dumps([{"id": h.hypothesis_id, "title": h.title, "status": h.status} for h in hyps], ensure_ascii=False)
-
-        self.register(MCPTool(
-            name="list_hypotheses",
-            description="列出所有假说",
-            parameters={"type": "object", "properties": {}},
-            handler=list_hypotheses,
-        ))
+    # _register_goal_tools / _register_hypothesis_tools 已随 apps/goal、
+    # apps/hypothesis 移除（2026-11-04 做减法批次 2；归档见
+    # testcase/golden/apps/{goal,hypothesis}/）。
 
     def _register_backtest_tools(self) -> None:
         # Agent registry's 4-step orchestrated run_backtest (config_load →
@@ -512,57 +316,8 @@ class MCPServer:
             param_map={"strategy": "strategy_name"},
             include_workspace=True,
         ))
-
-        def validate_run(run_dir: str = "", market: str = "a_share", **kwargs: Any) -> str:
-            # Phase B: 真接 core.validation.runner (替代旧 stub)
-            if not run_dir:
-                return json.dumps({"status": "error", "error": "run_dir 是必需参数"}, ensure_ascii=False)
-            try:
-                # 注意：必须是 ``..validation``（core/validation）。写成
-                # ``.validation`` 会解析到 core/mcp/validation——不存在，
-                # MCP 客户端调用 validate_run 永远得到 "No module named"。
-                from strategy_research.apps.validation import MarketType, run_validation
-                from strategy_research.apps.validation.cli import _build_synthetic_trades, _load_nav_synthetic
-
-                run_path = Path(run_dir).resolve()
-                market_enum = MarketType(market)
-
-                equity_curve = _load_nav_synthetic(run_path)
-                trades = _build_synthetic_trades(run_path)
-                if equity_curve is None or len(equity_curve) == 0:
-                    return json.dumps({
-                        "status": "error",
-                        "error": f"无法从 {run_dir} 加载 NAV 时间序列",
-                    }, ensure_ascii=False)
-
-                config = {"validation": {"monte_carlo": True, "bootstrap": True}}
-                results = run_validation(
-                    config=config,
-                    equity_curve=equity_curve,
-                    trades=trades,
-                    market=market_enum,
-                )
-                return json.dumps({
-                    "status": "ok",
-                    "run_dir": run_dir,
-                    "validation": results,
-                }, ensure_ascii=False, default=str)
-            except Exception as exc:
-                return json.dumps({"status": "error", "error": str(exc)}, ensure_ascii=False)
-
-        self.register(MCPTool(
-            name="validate_run",
-            description="验证回测结果（Monte Carlo + Bootstrap + Walk-Forward）",
-            parameters={
-                "type": "object",
-                "properties": {
-                    "run_dir": {"type": "string", "description": "回测运行目录"},
-                    "market": {"type": "string", "description": "市场类型", "default": "a_share"},
-                },
-                "required": ["run_dir"],
-            },
-            handler=validate_run,
-        ))
+        # validate_run 工具已随 apps/validation 移除（2026-11-04 做减法批次 2）；
+        # 此前它就因模块路径问题从未真正可用（注释见 git 历史）。
 
     def _register_factor_tools(self) -> None:
         # Agent registry's compute_factor (expression → factor_code).

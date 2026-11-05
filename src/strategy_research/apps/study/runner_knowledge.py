@@ -71,58 +71,15 @@ class RunnerKnowledgeMixin:
             return 0
 
     def _record_keep_evidence(self, round_num: int, run_name: str, metrics: dict) -> None:
-        """E1: keep rounds append goal evidence + emit progress (design §16.3)."""
+        """E1: keep rounds append goal evidence + emit progress (design §16.3).
+
+        goal 台账已随 apps/goal 移除（2026-11-04 批次 2）：证据写入与
+        goal 快照发射变为 no-op。keep 轮的指标仍在 run 产物与
+        ``study_metrics`` 事件里，未丢失。
+        """
         sid = self._get_study().study_id
         session = self._get_study().session_id
-        try:
-            from strategy_research.apps.goal import EvidenceInput
-            ev = self._goal_store.append_evidence(
-                session_id=session,
-                goal_id=self._get_study().goal_id,
-                expected_goal_id=self._get_study().goal_id,
-                evidence=EvidenceInput(
-                    text=(
-                        f"Study round {round_num} keep — {run_name}: "
-                        f"Calmar={metrics.get('calmar')} Sharpe={metrics.get('sharpe')} "
-                        f"MaxDD={metrics.get('max_dd')}"
-                    ),
-                    evidence_type="study_keep", run_id=run_name,
-                    source_provider="study", source_type="round_keep",
-                ),
-            )
-            self._emit(session, "study_evidence", {
-                "study_id": sid, "evidence_id": ev.evidence_id,
-                "run": run_name,
-            })
-            criteria = self._goal_store.list_criteria(self._get_study().goal_id)
-            evidence = self._goal_store.list_evidence(self._get_study().goal_id)
-            seen = {e.criterion_id for e in evidence if e.criterion_id}
-            covered = sum(1 for c in criteria if c.criterion_id in seen)
-            total = len(criteria)
-            self._emit(session, "study_progress", {
-                "study_id": sid, "covered": covered, "total": total,
-                "percent": round(covered / total * 100) if total else 100,
-            })
-            # ── SSE: study_goal_snapshot (real-time goal state) ──
-            snap = self._goal_store.get_goal_snapshot(
-                self._get_study().goal_id,
-            )
-            if snap:
-                g = snap.get("goal", {}) or {}
-                self._emit(session, "study_goal_snapshot", {
-                    "study_id": sid,
-                    "goal_snapshot": {
-                        "goal_id": g.get("goal_id"),
-                        "goal_status": g.get("status"),
-                        "objective": g.get("objective"),
-                        "progress_percent": g.get("progress_percent", 0),
-                        "evidence_count": snap.get("evidence_count", 0),
-                        "criteria": [
-                            {"criterion_id": c.get("criterion_id"), "text": c.get("text"),
-                             "status": c.get("status"), "required": c.get("required", True)}
-                            for c in snap.get("criteria", []) or []
-                        ],
-                    },
-                })
-        except Exception as exc:  # noqa: BLE001
-            logger.warning("study %s keep evidence failed: %s", sid, exc)
+        # 保留一个可见的进度事件（无 goal 准则可比，percent 恒 100）。
+        self._emit(session, "study_progress", {
+            "study_id": sid, "covered": 0, "total": 0, "percent": 100,
+        })

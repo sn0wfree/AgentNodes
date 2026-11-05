@@ -429,22 +429,10 @@ def create_study_record(
             hitl=hitl,
             loop_config=loop_config,
         )
-        # Goal ledger under the study's own identity: parallel studies
-        # never supersede each other's goals (supersede=False).
-        from strategy_research.apps.goal import GoalStore
-        from strategy_research.apps.goal.context import default_goal_criteria
-
-        goal_store = GoalStore()
-        goal = goal_store.replace_goal(
-            session_id=study.study_id,
-            objective=objective,
-            criteria=default_goal_criteria(),
-            supersede=False,
-        )
-        updated = store.update_goal_id(study.study_id, goal.goal_id)
-        if updated is None:
-            raise RuntimeError(f"update_goal_id failed for {study.study_id}")
-        study = updated
+        # goal 台账已随 apps/goal 移除（2026-11-04 批次 2）：
+        # study 不再创建 goal 行，goal_id 保持为空。原先的
+        # "study 持有 goal_id → 证据挂账 → scoreboard" 链路一并失效，
+        # 研究进度改由 study 自身的 rounds/manifest 承载。
 
         # Record guidance_md as the startup directive so it appears in
         # the "指令记录" audit trail.

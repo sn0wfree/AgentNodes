@@ -170,48 +170,7 @@ class TestFullFlow:
         metrics = json.loads((run_dir / "metrics.json").read_text())
         assert "ann_return" in metrics
 
-    def test_goal_evidence_auto_attach_loop_level(self, workspace, tmp_path):
-        """loop 级: add_evidence 缺 criterion_id 自动挂载 → complete 成功."""
-        llm = ScriptedLLM([
-            resp("建目标。", [tc("create_goal", objective="目标", criteria=["C1", "C2"])]),
-            resp("补证据。", [tc("add_evidence", text="证据文本。")]),
-            resp("完成。", [tc("complete_goal")]),
-            resp("完成。"),
-        ])
-        loop = make_loop(workspace, llm)
-        r = loop.run("goal 流程")
-        assert r.finished_reason == "stop"
-        assert r.tool_calls_made == 3
 
-        tool_evidences = [m for m in r.messages if m.get("role") == "tool"]
-        add = parse(tool_evidences[1]["content"])
-        assert add["status"] == "ok"
-        assert len(add["auto_attached_to"]) == 2
-        complete = parse(tool_evidences[2]["content"])
-        assert complete["goal_status"] == "complete"
-
-    def test_complete_goal_missing_evidence_error_hint(self, workspace):
-        """loop 级: 缺证据直接 complete → 定向 fix, loop 不崩."""
-        llm = ScriptedLLM([
-            resp("建目标。", [tc("create_goal", objective="目标", criteria=["C1"])]),
-            resp("直接完成。", [tc("complete_goal")]),
-            resp("已按要求修正: 先补证据。", [tc("add_evidence", text="证据。")]),
-            resp("重试完成。", [tc("complete_goal", recap="ok")]),
-            resp("完成。"),
-        ])
-        loop = make_loop(workspace, llm)
-        r = loop.run("goal 流程")
-        assert r.finished_reason == "stop"
-        assert r.tool_calls_made == 4
-
-        tool_evidences = [m for m in r.messages if m.get("role") == "tool"]
-        failed = parse(tool_evidences[1]["content"])
-        assert failed["status"] == "error"
-        assert "lacks evidence" in failed["error"]
-        assert "add_evidence" in failed["fix"]
-        assert "C1" in failed["fix"]
-        final = parse(tool_evidences[3]["content"])
-        assert final["goal_status"] == "complete"
 
     def test_missing_required_arg_error_json(self, workspace):
         """LLM 漏必填参数 → TypeError 框架兜底 (hint), loop 继续并自愈."""

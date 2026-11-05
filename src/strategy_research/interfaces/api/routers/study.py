@@ -440,7 +440,6 @@ async def study_status(
     from .web_session import _fetch_session_owned, _get_db
     user_id = getattr(request.state, "user_id", None) or "anonymous"
     _fetch_session_owned(_get_db(), session_id, user_id)
-    from strategy_research.apps.goal import GoalStore
     from strategy_research.apps.study import StudyStore
     with StudyStore() as store:
         if study_id:
@@ -457,11 +456,9 @@ async def study_status(
             study = store.get_active_study(session_id)
         if study is None:
             return {"status": "no_study", "session_id": session_id}
-        # Goal snapshot for criteria/progress/evidence_counts
+        # goal 快照已随 apps/goal 移除（2026-11-04 批次 2）：旧 study 行里
+        # 可能仍有 goal_id，但没有可查询的台账，恒为 None。
         goal_snapshot = None
-        if study.goal_id:
-            with GoalStore() as gs:
-                goal_snapshot = gs.get_goal_snapshot(study.goal_id)
     return {
         "status": "ok",
         "study_id": study.study_id,
@@ -519,20 +516,15 @@ async def study_summary(request: Request, response: Response, study_id: str):
         return cached_data
 
     # ── Cache miss: full DB read ────────────────────────────────
-    from strategy_research.apps.goal import GoalStore
+    # goal 台账已随 apps/goal 移除（2026-11-04 批次 2）：
+    # goal_snapshot / journal / scoreboard 恒为空。
     from strategy_research.apps.study import StudyStore
     with StudyStore() as store:
         recent_rounds = store.list_rounds(study_id, limit=5)
 
         goal_snapshot = None
-        if study.goal_id:
-            with GoalStore() as gs:
-                goal_snapshot = gs.get_goal_snapshot(study.goal_id)
-                journal_entries = gs.list_journal_entries(study.goal_id, limit=10)
-                scoreboard = _build_scoreboard(journal_entries)
-        else:
-            journal_entries = []
-            scoreboard = []
+        journal_entries: list = []
+        scoreboard: list = []
 
     budget_data = None
     try:

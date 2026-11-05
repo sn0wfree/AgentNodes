@@ -270,6 +270,37 @@ MCP server 同时注册 agent 通用工具和业务工具。拆分时需要：
 
 ---
 
+## 5.1 路线图：泛化版「目标/准则/证据」机制（2026-11-05 新增）
+
+**裁决**（用户，2026-11-05）：apps/goal 随减法批次 2 移除，但其背后的
+**「objective + criteria + evidence」模式**被认定为可信 agent 的一等能力，
+列入本路线图，在框架稳定后**从 golden 归档泛化重建**。
+
+**为什么移除而不是保留**（评估证据，2026-11-05 实测）：
+
+| 证据 | 结论 |
+|---|---|
+| RSI / Ticket / todos 三条内核任务线**零引用** goal | goal 不是内核组件 |
+| goals 表 schema 含 `risk_tier` + 全套预算字段 | 与 Ticket/Assignment 的预算记账重复，且是研究形状 |
+| goal 的唯一驱动者是 study（bootstrap 建 goal / budget 写证据 / scheduler 同步） | study 移除后无驱动者，6.1k 行空转 |
+| workflow 1,903 行 = 9 个量化 agent 的 DAG | 纯研究业务 |
+
+**重建时的泛化要点**（设计已归档 `testcase/golden/apps/goal/`）：
+
+1. **schema 去研究化**：criteria 改为通用断言（可挂自定义 evaluator 回调），
+   evidence 去掉 `run_id/source_provider` 等回测字段，去掉 `risk_tier`
+2. **预算字段删掉**——执行预算的事实源是 Ticket/Assignment，不重复记账
+3. **保留的机制核心**（约 1-2k 行）：GoalStore 的六表模型（goals/claims/
+   criteria/evidence/audits/journal）、乐观锁 `expected_goal_id`、
+   3-step SSE 文本响应协议、context 注入协议
+4. **register 到 CapabilityRegistry**（`goal.store` 等 kind 回归），kernel
+   的注入钩子（loop/context_injector）是惰性的，注册即自动复活，无需改 kernel
+
+**触发条件**：框架核心稳定（批次 2-5 完成、包名重命名后）且出现第一个
+真实的「跨会话长期目标」用例。
+
+---
+
 ## 6. 本次已完成的取证
 
 | 项 | 结论 |

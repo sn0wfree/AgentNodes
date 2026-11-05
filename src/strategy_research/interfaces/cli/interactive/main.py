@@ -34,16 +34,6 @@ from strategy_research.interfaces.cli.commands.slash_chat import (
     cmd_quit,
     cmd_shadow,
 )
-from strategy_research.interfaces.cli.commands.slash_goal import (
-    cmd_cancel,
-    cmd_complete,
-    cmd_evidence,
-    cmd_start,
-    cmd_status,
-)
-from strategy_research.interfaces.cli.commands.slash_goal import (
-    cmd_help as goal_help,
-)
 from strategy_research.interfaces.cli.commands.slash_halt import (
     cmd_halt,
     cmd_resume,
@@ -102,23 +92,14 @@ def _memory_dispatch(ctx: Any, *args: str) -> int:
 
 
 def _goal_dispatch(ctx: Any, *args: str) -> int:
-    if not args:
-        return cmd_status()
-    sub = args[0]
-    rest = args[1:]
-    if sub == "status":
-        return cmd_status()
-    if sub == "help":
-        return goal_help()
-    if sub == "start":
-        return cmd_start(" ".join(rest))
-    if sub == "evidence" and rest:
-        return cmd_evidence(rest[0], " ".join(rest[1:]) if len(rest) > 1 else "")
-    if sub == "complete":
-        return cmd_complete(" ".join(rest))
-    if sub == "cancel":
-        return cmd_cancel(" ".join(rest))
-    return goal_help()
+    """`/goal` 已随 apps/goal 移除（2026-11-04 做减法批次 2）。"""
+    from rich.console import Console
+
+    Console().print(
+        "`/goal` 已移除：目标台账随 apps/goal 一并删除。"
+        "改用 `/study` 启动研究任务。"
+    )
+    return 1
 
 
 def _search_dispatch(ctx: Any, *args: str) -> int:

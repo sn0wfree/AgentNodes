@@ -150,51 +150,16 @@ def _strategy_decide(registry: "CapabilityRegistry") -> Callable[..., Any]:
     return decide
 
 
-# ── goal ─────────────────────────────────────────────────────────────
-
-
-def _goal_store_cls(registry: "CapabilityRegistry") -> type:
-    from strategy_research.apps.goal import GoalStore
-
-    return GoalStore
-
-
-def _goal_models(registry: "CapabilityRegistry") -> Any:
-    """``apps.goal.models``（EvidenceInput / GoalStatus / StaleGoalError）。"""
-    import strategy_research.apps.goal.models as m
-
-    return m
-
-
-def _goal_context(registry: "CapabilityRegistry") -> Any:
-    """``apps.goal.context``（get_current_goal_context /
-    goal_needs_continuation / format_goal_continuation_prompt /
-    default_goal_criteria）。"""
-    import strategy_research.apps.goal.context as ctx
-
-    return ctx
-
-
-def _goal_expression_evaluator(registry: "CapabilityRegistry") -> Callable[..., Any]:
-    from strategy_research.apps.goal.expression_evaluator import evaluate_condition
-
-    return evaluate_condition
-
-
-# ── hypothesis ───────────────────────────────────────────────────────
-
-
-def _hypothesis_registry_cls(registry: "CapabilityRegistry") -> type:
-    from strategy_research.apps.hypothesis.registry import HypothesisRegistry
-
-    return HypothesisRegistry
-
-
-def _hypothesis_auto_creator(registry: "CapabilityRegistry") -> type:
-    from strategy_research.apps.hypothesis import HypothesisAutoCreator
-
-    return HypothesisAutoCreator
-
+# ── goal / hypothesis ────────────────────────────────────────────────
+#
+# 已移除（2026-11-04 做减法批次 2）：goal.store / goal.models / goal.context /
+# goal.expression / hypothesis.registry / hypothesis.auto_creator 六个 kind，
+# 连同 apps/goal 与 apps/hypothesis 两个包。归档见
+# testcase/golden/apps/{goal,hypothesis}/。
+#
+# kernel 侧的 goal 注入钩子（loop._get_goal_store / context_injector /
+# swarm 分支条件）全部是惰性 resolve + try/except，kind 消失后运行时
+# 优雅降级为 no-op，不影响框架其他功能。
 
 # ── study ────────────────────────────────────────────────────────────
 
@@ -333,14 +298,8 @@ CAPABILITIES: dict[str, Callable[["CapabilityRegistry"], Any]] = {
     "backtest.from_yaml": _run_backtest_from_yaml,
     "backtest.script": _run_backtest_script,
     "backtest.decide": _strategy_decide,
-    # goal
-    "goal.store": _goal_store_cls,
-    "goal.models": _goal_models,
-    "goal.context": _goal_context,
-    "goal.expression": _goal_expression_evaluator,
-    # hypothesis
-    "hypothesis.registry": _hypothesis_registry_cls,
-    "hypothesis.auto_creator": _hypothesis_auto_creator,
+    # goal / hypothesis 六个 kind 已随 apps/goal、apps/hypothesis 移除
+    # （2026-11-04 做减法批次 2）
     # study
     "study.graph": _study_graph,
     "study.store": _study_store_cls,

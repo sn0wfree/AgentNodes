@@ -46,7 +46,9 @@ class TestBuildParserSingleRegistration:
     def test_legacy_commands_still_present(self):
         parser, _ = _build_parser()
         names = set(_subcommand_names(parser))
-        for name in ("session", "skills", "swarm", "mcp", "api", "webui", "serve", "export"):
+        # export / goal / hypothesis / validate-run / portfolio 已随对应 apps 包
+        # 移除（2026-11-04 做减法批次 2）。
+        for name in ("session", "skills", "swarm", "mcp", "api", "webui", "serve"):
             assert name in names
 
     def test_parse_known_core_command(self):

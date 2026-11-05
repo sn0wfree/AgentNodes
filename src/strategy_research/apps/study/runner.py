@@ -129,8 +129,11 @@ class AutoresearchRunner(RunnerAegisMixin, RunnerKnowledgeMixin):
         self.emitter = emitter or NullEmitter()
         # R4：P-3 通道（大结果落盘+登记，事件只带指针）。None = 现行为。
         self._artifacts = artifacts
-        self._own_goal_store = goal_store is None
-        self._goal_store = goal_store or _state_utils.open_goal_store()
+        # goal 台账已随 apps/goal 移除（2026-11-04 批次 2）：
+        # _goal_store 恒为 None，goal 相关路径（_complete_goal / journal
+        # 注入）全部 no-op。参数 goal_store 保留以兼容既有调用方签名。
+        self._own_goal_store = False
+        self._goal_store = None
         # AEGIS state
         self._prev_passed: set[str] = set()
         self._best_score: float = 0.0
@@ -271,6 +274,7 @@ class AutoresearchRunner(RunnerAegisMixin, RunnerKnowledgeMixin):
                 )
             self._emit(session, "study_failed", {"study_id": sid, "error": f"{type(exc).__name__}: {exc}"[:500], "reason": ShutdownReason.ERROR})
         finally:
+            # goal store 已随 apps/goal 移除（批次 2）：无 store 可关。
             if self._own_goal_store:
                 try:
                     self._goal_store.close()

@@ -40,16 +40,21 @@ class RunnerAegisMixin:
         gating_outcome: str,
         attribution,
     ) -> None:
-        """AEGIS: append journal entry + run the regression gate."""
+        """AEGIS: append journal entry + run the regression gate.
+
+        goal 台账已随 apps/goal 移除（2026-11-04 批次 2）：journal 写入跳过，
+        但回归门仍跑——它只依赖 attribution。
+        """
         session = self._get_study().session_id
-        self._goal_store.append_journal_entry(
-            self._get_study().goal_id, session, round_num, hypothesis, hypothesis[:60],
-            levers=[lever], predicted_affected=predicted_affected,
-            changeset=strategist_output.get("changes") if isinstance(strategist_output, dict) else None,
-        )
-        self._goal_store.fill_journal_attribution(
-            self._get_study().goal_id, session, round_num, gating_outcome, attribution,
-        )
+        if self._goal_store is not None:
+            self._goal_store.append_journal_entry(
+                self._get_study().goal_id, session, round_num, hypothesis, hypothesis[:60],
+                levers=[lever], predicted_affected=predicted_affected,
+                changeset=strategist_output.get("changes") if isinstance(strategist_output, dict) else None,
+            )
+            self._goal_store.fill_journal_attribution(
+                self._get_study().goal_id, session, round_num, gating_outcome, attribution,
+            )
         passes, regressed = self._check_regression(attribution)
         if not passes:
             self._archive_rejected(round_num, hypothesis, "regression", str(regressed))

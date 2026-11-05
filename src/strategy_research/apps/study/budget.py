@@ -52,36 +52,12 @@ def complete_goal(
     study: Any,
     exec_result: dict,
 ) -> None:
-    """Mark goal as complete with evidence when targets are met."""
-    if not study.goal_id:
-        return
-    try:
-        from strategy_research.apps.goal import EvidenceInput
-        metrics = exec_result.get("metrics", {})
-        run_name = exec_result.get("run_name", "")
-        existing = goal_store.list_evidence(study.goal_id)
-        seen = {ev.criterion_id for ev in existing if ev.criterion_id}
-        criteria = goal_store.list_criteria(study.goal_id)
-        for c in criteria:
-            if not c.required or c.criterion_id in seen:
-                continue
-            goal_store.append_evidence(
-                session_id=study.session_id,
-                goal_id=study.goal_id,
-                expected_goal_id=study.goal_id,
-                evidence=EvidenceInput(
-                    text=f"Study 达标自动覆盖 — {run_name}: Calmar={metrics.get('calmar')} Sharpe={metrics.get('sharpe')} MaxDD={metrics.get('max_dd')}",
-                    criterion_id=c.criterion_id, evidence_type="acceptance",
-                    run_id=run_name, source_provider="study", source_type="metric_targets_met",
-                ),
-            )
-        goal_store.complete_lite(
-            session_id=study.session_id, goal_id=study.goal_id,
-            expected_goal_id=study.goal_id,
-            recap=f"研究达标 — Calmar={metrics.get('calmar')}, Sharpe={metrics.get('sharpe')}, MaxDD={metrics.get('max_dd')}",
-        )
-    except Exception as exc:
-        logger.exception("study %s goal completion failed: %s", study.study_id, exc)
+    """Mark goal as complete with evidence when targets are met.
+
+    **已降级为 no-op**：goal 台账随 apps/goal 移除（2026-11-04 批次 2）。
+    保留签名以兼容 ``runner._complete_goal`` 的调用点。
+    """
+    return
 
 
 def round_cooldown(study: Any) -> float:

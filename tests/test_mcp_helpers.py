@@ -282,6 +282,6 @@ def test_server_register_default_tools_all_listed():
     server.register_default_tools()
     names = {t["name"] for t in server.list_tools()}
     # 每个类别至少一个代表
-    for expected in ("list_skills", "start_research_goal", "run_backtest",
-                     "list_swarm_presets"):
+    # start_research_goal 已随 apps/goal 移除（2026-11-04 批次 2）
+    for expected in ("list_skills", "run_backtest", "list_swarm_presets"):
         assert expected in names, expected

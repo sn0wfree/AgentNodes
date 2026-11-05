@@ -290,18 +290,10 @@ class ChatSession:
 
         Also updates the ModeBar widget so the user always sees the
         current mode.
-
-        Failures default to ``"chat"`` (safe fallback — the user always
-        gets *some* response, even if the goal DB is temporarily
-        unreachable).
         """
-        try:
-            from strategy_research.apps.goal import GoalStore
-            store = GoalStore()
-            goal = store.get_current_goal(self.ctx.session_id)
-            self.ctx.interactive_mode = "goal" if goal is not None else "chat"
-        except Exception:
-            self.ctx.interactive_mode = "chat"
+        # goal 模式判定已随 apps/goal 移除（2026-11-04 批次 2）：
+        # 交互模式恒为 "chat"。
+        self.ctx.interactive_mode = "chat"
         # Update the mode bar widget if available
         if self.app is not None:
             try:

@@ -32,7 +32,6 @@ from ..session.service import SessionService
 from .slash_commands import (
     _handle_clear_command,
     _handle_compact_command,
-    _handle_goal_command,
     _handle_help_command,
     _handle_study_command,
 )
@@ -230,9 +229,7 @@ async def send_async(body: ChatMessage, request: Request):
     user_id = getattr(request.state, "user_id", "anonymous")
     _fetch_session_owned(_get_db(), body.session_id, user_id)
 
-# ── /goal command intercept ────────────────────────────────────────
-    if body.content.strip().startswith("/goal"):
-        return await _handle_goal_command(body)
+    # ── /goal command intercept 已随 apps/goal 移除（2026-11-04 批次 2）──
 
     # ── /study command intercept (study task system) ───────────────────
     if body.content.strip().startswith("/study"):

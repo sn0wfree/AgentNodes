@@ -168,7 +168,7 @@ def run_round_phases(
     )
 
     # AEGIS: Scoreboard
-    from strategy_research.apps.goal.scoreboard import LeverScoreboard
+    from strategy_research.apps.study.scoreboard import LeverScoreboard
     if not hasattr(runner, "_scoreboard"):
         runner._scoreboard = LeverScoreboard()
     runner._scoreboard.update([lever], attribution, gating_outcome, round_num, round_num)
@@ -623,16 +623,19 @@ def _capture_round_claims(
         researcher_output.get("predictions"), known_metrics=known,
     )
     hypothesis = researcher_output.get("hypothesis", "") or ""
-    try:
-        runner._goal_store.append_journal_entry(
-            study.goal_id, study.session_id, round_num,
-            hypothesis, hypothesis[:60],
-            levers=[], predicted_affected=predicted_affected,
-            predictions=predictions,
-        )
-    except Exception:  # noqa: BLE001 — claims tracking must not break rounds
-        logger.warning("claims capture failed for round %d", round_num, exc_info=True)
-        return {}
+    # goal 台账已随 apps/goal 移除（2026-11-04 批次 2）：journal 写入跳过。
+    # claims 的可见性改由下面的 study_claims_captured 事件承担。
+    if runner._goal_store is not None:
+        try:
+            runner._goal_store.append_journal_entry(
+                study.goal_id, study.session_id, round_num,
+                hypothesis, hypothesis[:60],
+                levers=[], predicted_affected=predicted_affected,
+                predictions=predictions,
+            )
+        except Exception:  # noqa: BLE001 — claims tracking must not break rounds
+            logger.warning("claims capture failed for round %d", round_num, exc_info=True)
+            return {}
     if predictions:
         runner._emit(study.session_id, "study_claims_captured", {
             "study_id": study.study_id, "round": round_num,
@@ -665,20 +668,23 @@ def _record_journal_and_regression(
     study = runner._get_study()
     session = study.session_id
     changeset = strategist_output.get("changes") if isinstance(strategist_output, dict) else None
-    filled = runner._goal_store.fill_journal_attribution(
-        study.goal_id, session, round_num, gating_outcome, attribution,
-        levers=[lever], changeset=changeset,
-    )
-    if not filled:
-        # No pre-backtest capture for this round — append now.
-        runner._goal_store.append_journal_entry(
-            study.goal_id, session, round_num, hypothesis, hypothesis[:60],
-            levers=[lever], predicted_affected=predicted_affected,
-            changeset=changeset,
-        )
-        runner._goal_store.fill_journal_attribution(
+    # goal 台账已移除（批次 2）：journal 回填跳过。AEGIS 回归门仍跑——
+    # 它只依赖 metrics 与 predictions，不依赖 goal。
+    if runner._goal_store is not None:
+        filled = runner._goal_store.fill_journal_attribution(
             study.goal_id, session, round_num, gating_outcome, attribution,
+            levers=[lever], changeset=changeset,
         )
+        if not filled:
+            # No pre-backtest capture for this round — append now.
+            runner._goal_store.append_journal_entry(
+                study.goal_id, session, round_num, hypothesis, hypothesis[:60],
+                levers=[lever], predicted_affected=predicted_affected,
+                changeset=changeset,
+            )
+            runner._goal_store.fill_journal_attribution(
+                study.goal_id, session, round_num, gating_outcome, attribution,
+            )
     if predictions:
         try:
             outcome = validate_predictions(predictions, metrics)

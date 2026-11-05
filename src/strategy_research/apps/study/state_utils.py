@@ -65,9 +65,12 @@ def emit_with_trace(
 
 
 def open_goal_store() -> Any:
-    """Create a new GoalStore instance."""
-    from strategy_research.apps.goal import GoalStore
-    return GoalStore()
+    """Deprecated: goal 台账已随 apps/goal 移除（2026-11-04 批次 2）。
+
+    保留空实现以兼容既有调用签名（runner._open_goal_store）；
+    返回 None，调用方按「无 goal store」分支处理。
+    """
+    return None
 
 
 def format_directives(directives: list) -> str:

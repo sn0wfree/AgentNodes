@@ -45,7 +45,6 @@ _CHAT_ATTEMPT_TIMEOUT = int(os.environ.get("SR_CHAT_ATTEMPT_TIMEOUT", "600"))
 from .loop_events import (  # noqa: E402,F401
     _bootstrap_workspace,
     _build_attempt_metrics,
-    _emit_goal_event,
     _LoopEventForwarder,
     _plan_mode_allowed_tools,
     _resolve_loop_prompt,

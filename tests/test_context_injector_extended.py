@@ -179,34 +179,3 @@ class TestTodosInjectorEdgeCases:
 # ── GoalContinuationInjector edge cases ──────────────────────────
 
 
-class TestGoalContinuationInjectorEdgeCases:
-    def test_continuation_appends_to_messages_and_result(self):
-        """Continuation adds message to both messages and result."""
-        inj = GoalContinuationInjector()
-        loop = MagicMock()
-        loop.enable_goal_injection = True
-        loop.session_id = "abc"
-        loop._trace = MagicMock()
-        response = MagicMock()
-        response.content = "previous answer"
-        messages: list[dict[str, Any]] = []
-        result = MagicMock()
-        result.messages = []
-        import unittest.mock as mock
-
-        with mock.patch(
-            "strategy_research.kernel.agent.context_injector._get_goal_snapshot",
-            return_value={"goal": {"goal_id": "g1"}},
-        ), mock.patch(
-            "strategy_research.apps.goal.context.goal_needs_continuation",
-            return_value=True,
-        ), mock.patch(
-            "strategy_research.apps.goal.context.format_goal_continuation_prompt",
-            return_value="Continue the research.",
-        ):
-            cont = inj.inject_post_response(loop, response, messages, result, 1)
-            assert cont is True
-            assert len(messages) == 1
-            assert messages[0]["role"] == "user"
-            assert messages[0]["content"] == "Continue the research."
-            assert len(result.messages) == 1

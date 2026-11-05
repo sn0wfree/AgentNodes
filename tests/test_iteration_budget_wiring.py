@@ -76,7 +76,7 @@ class TestSendAsyncPassesConfigBudget(unittest.TestCase):
             patch("strategy_research.interfaces.api.routers.web_session._fetch_session_owned", return_value=None),
             patch("strategy_research.interfaces.api.routers.web_session._get_db", return_value=MagicMock()),
             patch("strategy_research.interfaces.api.routers.chat._get_session_service", return_value=MagicMock(send_message=fake_send_message)),
-            patch("strategy_research.interfaces.api.routers.chat._handle_goal_command"),
+            # _handle_goal_command 已随 apps/goal 移除（批次 2），不再需要 patch
             patch("strategy_research.interfaces.api.routers.chat._handle_compact_command"),
         ):
             body = _Body()

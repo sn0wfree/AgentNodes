@@ -3,6 +3,37 @@
 > 从 `docs/architecture-diagram.html` 外移（2026-11-03 v8 瘦身）。
 > 图身只保留结构与盒级状态；本文件承载 v5.1 → v8.4 的全部演进记录。
 
+- **v9.1（2026-11-05，做减法批次 2 后刷新）**：**数据与模块分组刷新，版式不变**。
+  ① **移除五个业务包**：`apps/goal`(19 文件 6,147 行) · `apps/hypothesis`(6/1,459) ·
+  `apps/validation`(9/801) · `apps/portfolio`(6/619) · `apps/export`(2/302)，
+  合计 42 文件 9,328 行，全部归档到 `testcase/golden/apps/`；连带移除 L1 出口
+  8 文件 2,604 行（routers goal/hypothesis/validation/workflow · cli slash_goal/export ·
+  tui dag_view/workflow_worker），归档 `testcase/golden/interfaces/`。
+  ② **层体量重测**：L1 112/26.6k（原 120/30.3k）· **L2 114/29.8k（原 154/38.9k，-23%）** ·
+  L3 175/36.7k 不变 · L4 64/10.9k 不变；总计 **465 文件 / 103,988 行**（原 513/116.9k）。
+  ③ **模块卡重排**：研究域 14.0k/41 文件（study 12.0k + autoresearch 1.4k + templates 0.5k，
+  内含 method/ 7 文件 1.1k）· 因子与数据 7.8k/25 文件 · 回测与验证 5.7k/35 文件 ·
+  进化与能力供给 2.3k/13 文件（含 apps/__init__ 注册门面）。四域之和经严格分区断言
+  ＝层总量 114 文件 29,755 行，无遗漏无重复。
+  ④ **能力注册 38 → 32 kind**：goal.store/models/context/expression 与
+  hypothesis.registry/auto_creator 六个 kind 随包移除；kernel 侧为惰性 resolve +
+  try/except，kind 缺失时运行时降级为 no-op。
+  ⑤ **两件 goal 残件并入 study**：`objective_policy.py`（拒绝实盘下单目标，37 行）·
+  `scoreboard.py`（AEGIS 杠杆 Beta 后验 + 疲劳检测，210 行，消费者仅 phase_engine）。
+  ⑥ **跨层边数刷新**：L1→L2 171→**91** · L1→L3 120→**106** · L2→L3 39→**25**（11 个文件触点）·
+  L1→L4 53 · L2→L4 48→**42** · L3→L4 48 均重测。上行违规仍是 **3 条**
+  （L2→L1 1 · L3→L1 2 · L3→L2 0），棘轮基线未动。
+  ⑦ **新增一表**「做减法批次 2：移除业务包」，逐项写明体量与归档去向（含 goal 残件归位）。
+  ⑧ **两个通用件迁入 kernel**（不是 goal 残件，是纯机制）：
+  `kernel/swarm/expression_evaluator.py`（255 行，原 `apps/goal/expression_evaluator.py`）
+  —— 分支条件 DSL，消费者只有 `SwarmRuntime._apply_branches`，与 goal 台账无关；
+  连带修复 `swarm/runtime.py` 的**模块级 resolve 缺陷**（`backtest.script` /
+  `backtest.decide` 在 import 时解析，apps 未加载即抛 CapabilityNotFound——
+  这个既存 bug 在批次 2 删包后暴露，现改为闭包内 resolve，与
+  `exec_registry.py` 的正确做法一致）。
+  校验：门禁 `sync_architecture_diagram.py` 全绿（层体量/边数/违规逐项 AST 实测一致）·
+  HTML 标签零错配 · 零未转义 `&` · viewBox 1600×1790 内零越界。
+
 - **v9.0（2026-11-04，用户指示重画）**：**结构重画 —— 脊-翼双平面 → 四层堆叠 + 功能模块化**。
   这是自上图 v5.1 以来第一次**换掉版式**（此前 v6→v8.4 都是同版式的迭代）。
   ① **版式**：弃用「左脊 kernel / 右翼 apps / 面板三栏 + ①-⑦ 编号叙事」，

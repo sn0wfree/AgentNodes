@@ -511,12 +511,14 @@ class StudyScheduler:
         if not new_objective:
             return None
 
-        # Reject live-trading / execution wording (reuse goal policy).
-        try:
-            from strategy_research.apps.goal.policy import reject_live_execution_objective
-            reject_live_execution_objective(new_objective)
-        except ValueError:
-            raise
+        # Reject live-trading / execution wording.
+        # （原 reuse goal.policy；goal 已移除，改为本地最小实现——
+        #   这条防线保护的是"研究目标里不许写实盘执行指令"。）
+        from strategy_research.apps.study.objective_policy import (
+            reject_live_execution_objective,
+        )
+
+        reject_live_execution_objective(new_objective)
 
         # 1. study row + audit row
         entry = self.store.queue_objective_replace(
@@ -527,27 +529,8 @@ class StudyScheduler:
             reason=reason,
         )
 
-        # 2. best-effort: sync goal ledger so they don't drift.
-        if study.goal_id:
-            try:
-                from strategy_research.apps.goal import GoalStore, StaleGoalError
-                with GoalStore() as gs:
-                    try:
-                        gs.update_goal(
-                            session_id=study.session_id,
-                            goal_id=study.goal_id,
-                            expected_goal_id=expected_goal_id,
-                            objective=new_objective,
-                        )
-                    except StaleGoalError:
-                        # Goal was superseded meanwhile; not fatal — the
-                        # study row already carries the new objective.
-                        pass
-            except Exception as exc:  # noqa: BLE001
-                logger.debug(
-                    "replace_objective: goal sync skipped study=%s: %s",
-                    study_id, exc,
-                )
+        # 2. goal 台账同步已随 apps/goal 移除（2026-11-04 批次 2）；
+        #    study 行自身的 objective 已在上面更新，无 ledger 可漂移。
 
         # 3. event
         self._emit_event(study.session_id, "study_objective_replaced", {

@@ -153,8 +153,9 @@ class TestSlashCommandIntercepts:
         rows = _get_messages(client, sid, auth_headers)
         assistant = next(m for m in rows if m["role"] == "assistant")
         assert "可用命令" in assistant["content"]
-        # The cheat sheet mentions all five webui commands.
-        for cmd in ("/goal", "/study", "/compact", "/clear", "/help"):
+        # The cheat sheet mentions the webui commands.
+        # /goal 已随 apps/goal 移除（2026-11-04 批次 2）。
+        for cmd in ("/study", "/compact", "/clear", "/help"):
             assert cmd in assistant["content"]
 
     def test_clear_with_trailing_args_is_not_matched(
