@@ -82,38 +82,38 @@ class CacheConfig:
 
     @classmethod
     def from_env(cls) -> "CacheConfig":
-        """Build config from SR_CACHE_* env vars, then validate."""
+        """Build config from AN_CACHE_* env vars, then validate."""
         config = cls(
             write_policy=WritePolicy(
-                os.environ.get("SR_CACHE_WRITE_POLICY", "write_through")
+                os.environ.get("AN_CACHE_WRITE_POLICY", "write_through")
             ),
             eviction_policy=EvictionPolicy(
-                os.environ.get("SR_CACHE_EVICTION", "lru")
+                os.environ.get("AN_CACHE_EVICTION", "lru")
             ),
-            min_entries=int(os.environ.get("SR_CACHE_MIN_ENTRIES", "1000")),
-            max_entries=int(os.environ.get("SR_CACHE_MAX_ENTRIES", "1000")),
+            min_entries=int(os.environ.get("AN_CACHE_MIN_ENTRIES", "1000")),
+            max_entries=int(os.environ.get("AN_CACHE_MAX_ENTRIES", "1000")),
             avg_tokens_per_message=int(
-                os.environ.get("SR_CACHE_AVG_TOKENS_FALLBACK", "200")
+                os.environ.get("AN_CACHE_AVG_TOKENS_FALLBACK", "200")
             ),
             avg_tokens_estimation_window=int(
-                os.environ.get("SR_CACHE_WINDOW", "100")
+                os.environ.get("AN_CACHE_WINDOW", "100")
             ),
             avg_tokens_safety_factor=float(
-                os.environ.get("SR_CACHE_SAFETY_FACTOR", "2.0")
+                os.environ.get("AN_CACHE_SAFETY_FACTOR", "2.0")
             ),
             avg_tokens_min_samples=int(
-                os.environ.get("SR_CACHE_MIN_SAMPLES", "10")
+                os.environ.get("AN_CACHE_MIN_SAMPLES", "10")
             ),
             chars_per_token=float(
-                os.environ.get("SR_CACHE_CHARS_PER_TOKEN", "3.0")
+                os.environ.get("AN_CACHE_CHARS_PER_TOKEN", "3.0")
             ),
             compaction_linked=os.environ.get(
-                "SR_CACHE_COMPACTION_LINKED", "true"
+                "AN_CACHE_COMPACTION_LINKED", "true"
             ).lower() == "true",
             re_resolve_interval_seconds=float(
-                os.environ.get("SR_CACHE_RE_RESOLVE_SEC", "60")
+                os.environ.get("AN_CACHE_RE_RESOLVE_SEC", "60")
             ),
-            ttl_seconds=float(os.environ.get("SR_CACHE_TTL", "60")),
+            ttl_seconds=float(os.environ.get("AN_CACHE_TTL", "60")),
         )
         return ConfigValidator.validate(config)
 

@@ -12,8 +12,8 @@
 
 | 项 | 现状 | 问题 |
 |---|---|---|
-| 触发执行 | 默认 dispatch = subprocess `quantnodes-research autoresearch` | 走旧 CLI 单轮循环，无执行状态持久化、无断点续跑、无指标停止、前端不可见——与 v2 study 全部能力失联 |
-| 存储 | JSON 文件 `~/.quantnodes-research/scheduled_jobs.json` | 与项目 SQLite 存储风格脱节，无事务/外键 |
+| 触发执行 | 默认 dispatch = subprocess `agentnodes autoresearch` | 走旧 CLI 单轮循环，无执行状态持久化、无断点续跑、无指标停止、前端不可见——与 v2 study 全部能力失联 |
+| 存储 | JSON 文件 `~/.agentnodes/scheduled_jobs.json` | 与项目 SQLite 存储风格脱节，无事务/外键 |
 | 运行模式 | 独立后台线程 + 独立 event loop | 无法直接调用 async `StudyScheduler.submit` |
 | 入口 | 仅 CLI | 无 API、无 server 生命周期集成 |
 
@@ -31,12 +31,12 @@
 ```
 ┌─ 入口层 ──────────────────────────────────────────────────────┐
 │  POST /api/schedule/*（CRUD/run）                             │
-│  CLI: quantnodes-research schedule create|list|show|run|start │
+│  CLI: agentnodes schedule create|list|show|run|start │
 └──────────────────────┬────────────────────────────────────────┘
                        ▼
 ┌─ 持久层：core/scheduled_research/store.py（SQLite 重写）──────┐
 │  scheduled_jobs 表（goals.db 同库）                           │
-│  migrate_from_json()：~/.quantnodes-research/scheduled_jobs.json → 表 │
+│  migrate_from_json()：~/.agentnodes/scheduled_jobs.json → 表 │
 └──────────────────────┬────────────────────────────────────────┘
                        ▼
 ┌─ 调度层：ScheduledResearchExecutor（asyncio-first）───────────┐
@@ -257,7 +257,7 @@ class ScheduledResearchExecutor:
 
 ### 实施记录（S2-S7 落地要点）
 
-- **S2**：`scheduled_jobs` 表进 goals.db（`QUANTNODES_RESEARCH_GOAL_DB_PATH` 同 env）；
+- **S2**：`scheduled_jobs` 表进 goals.db（`AGENTNODES_GOAL_DB_PATH` 同 env）；
   `migrate_from_json` 幂等（`.migrated` 标记 / `.corrupt-<ts>` 损坏兜底）；存量 target 统一 'study'；
   旧 `save()`/`DEFAULT_STORE_PATH` 删除（无外部引用）
 - **S3**：`core/study/bootstrap.py` 承接 API 层全部创建编排——`validate_workspace_strategy`（含路径穿越防护）、

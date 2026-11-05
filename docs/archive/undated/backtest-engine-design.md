@@ -234,7 +234,7 @@ opt_func = lambda ret_df, pos_df, dates: optimize_weights(
 engine.run_backtest(data_map, signal_map, codes, optimizer=opt_func)
 
 # CLI — 直接传参
-quantnodes-research engine run-backtest \
+agentnodes engine run-backtest \
   --workspace ./workspace --strategy my_strategy \
   --signal-engine ./signal_engine.py \
   --optimizer risk_parity
@@ -296,7 +296,7 @@ def main(run_dir: Path):
 
 | 旧路径 | 新路径 |
 |---|---|
-| `quantnodes-research run` | `quantnodes-research backtest run` |
+| `agentnodes run` | `agentnodes backtest run` |
 | `run_strategy(subprocess)` | `BaseEngine._execute_bars()` |
 | `parse_run_log(8 keys)` | `calc_metrics(17 keys)` |
 | close-only panel | full OHLCV DataFrames |

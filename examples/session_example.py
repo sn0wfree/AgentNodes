@@ -188,8 +188,8 @@ def main():
         # CLI 命令演示
         # --------------------------------------------------
         print("\n6. CLI 命令演示:")
-        print("  $ quantnodes-research session stats")
-        print("  $ quantnodes-research session list")
+        print("  $ agentnodes session stats")
+        print("  $ agentnodes session list")
         
         print("\n" + "=" * 60)
         print("示例完成！")

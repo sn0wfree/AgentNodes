@@ -6,7 +6,7 @@ Layers (high priority overrides low):
                            LLM_API_KEY for credentials)
     3. Bridge layer       (``~/.quantnodes/llm.json`` via quantnodes_bridge,
                            which internally reads the canonical QuantNodes
-                           config and also applies QUANTNODES__LLM__* env
+                           config and also applies AGENTNODES__LLM__* env
                            overrides). Translator turns the bridge output
                            into the keys this dataclass uses.
     4. Code defaults      (dataclass field defaults)
@@ -14,7 +14,7 @@ Layers (high priority overrides low):
 Bridge layer sources of truth (lazy-read by the QuantNodes reader):
     - ``~/.quantnodes/llm.json`` (canonical; honoured via
       ``STRATEGY_RESEARCH_LLM_CONFIG`` override for tests).
-    - ``QUANTNODES__LLM__*`` env vars (applied inside the bridge).
+    - ``AGENTNODES__LLM__*`` env vars (applied inside the bridge).
     - Wizard writes the same JSON file at "~/.quantnodes/llm.json" via
       ``cli/onboard.py`` after init.
 
@@ -134,7 +134,7 @@ class LLMConfig:
     # Wall-clock ceiling for a single LLM request (streaming included).
     # Guards against "slow-trickle" streams that keep httpx's per-read
     # timeout from ever firing while producing no finish_reason. 0/None
-    # disables. Configurable via env SR_AGENT_WALLCLOCK_TIMEOUT (seconds,
+    # disables. Configurable via env AN_AGENT_WALLCLOCK_TIMEOUT (seconds,
     # default 1800 = 30min).
     wallclock_timeout_s: float = 1800.0
     max_retries: int = 3                            # total attempts (default 3)
@@ -324,7 +324,7 @@ def _try_load_dotenv() -> None:
         _ld()  # find_dotenv from the caller frame (best-effort)
         # Explicitly load cwd's .env: bare load_dotenv() searches from the
         # library file's location, not the process cwd, so a workspace
-        # .env (e.g. qn-research/.env with SR_ALLOW_SHELL_TOOLS) would
+        # .env (e.g. qn-research/.env with AN_ALLOW_SHELL_TOOLS) would
         # otherwise never be picked up in the serve process.
         cwd_env = Path.cwd() / ".env"
         if cwd_env.exists():
@@ -337,7 +337,7 @@ def _try_load_dotenv() -> None:
 
 
 def _bridge_env_override_fields() -> set[str]:
-    """Names of llm.json fields that QUANTNODES__LLM__* env vars set.
+    """Names of llm.json fields that AGENTNODES__LLM__* env vars set.
 
     Used by profile resolution so a profile never clobbers a runtime
     env override (env priority is higher than the file/profile layer).
@@ -552,7 +552,7 @@ def _coerce_bool(out: dict[str, Any], dst: str, src: Any) -> None:
 def _env_to_overrides(env: Mapping[str, str]) -> dict[str, Any]:
     """Translate the documented env vars to config overrides.
 
-    Handles only the direct env vars (OPENAI_*). QUANTNODES__LLM__* is
+    Handles only the direct env vars (OPENAI_*). AGENTNODES__LLM__* is
     applied inside the bridge layer; STRATEGY_RESEARCH_LLM_PROFILE is
     retired (no profile concept anymore).
     """
@@ -561,7 +561,7 @@ def _env_to_overrides(env: Mapping[str, str]) -> dict[str, Any]:
         overrides["base_url"] = env[ENV_BASE_URL]
     if ENV_MODEL in env and env[ENV_MODEL]:
         overrides["model"] = env[ENV_MODEL]
-    wc_raw = env.get("SR_AGENT_WALLCLOCK_TIMEOUT", "").strip()
+    wc_raw = env.get("AN_AGENT_WALLCLOCK_TIMEOUT", "").strip()
     if wc_raw:
         try:
             overrides["wallclock_timeout_s"] = float(wc_raw)

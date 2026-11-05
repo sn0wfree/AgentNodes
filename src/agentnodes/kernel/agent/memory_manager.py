@@ -54,8 +54,8 @@ Message = dict[str, Any]
 # Lives in the workspace dir so EventStore, web_session, and SessionStore
 # all read/write the SAME file. Resolution order (see
 # ``resolve_session_db_path``):
-#   1. SR_SESSIONS_DB env (explicit override)
-#   2. <SR_WORKSPACE_PATH>/.quantnodes_agentnodes_session.db
+#   1. AN_SESSIONS_DB env (explicit override)
+#   2. <AN_WORKSPACE_PATH>/.quantnodes_agentnodes_session.db
 #   3. <cwd>/.quantnodes_agentnodes_session.db
 #   4. ~/.quantnodes/.quantnodes_agentnodes_session.db (fallback)
 SESSION_DB_FILENAME = ".quantnodes_agentnodes_session.db"
@@ -72,8 +72,8 @@ def resolve_session_db_path() -> Path:
     """Resolve the unified session DB path.
 
     Priority:
-      1. ``SR_SESSIONS_DB`` env var (explicit absolute path override)
-      2. ``SR_WORKSPACE_PATH`` env var / ``<filename>``
+      1. ``AN_SESSIONS_DB`` env var (explicit absolute path override)
+      2. ``AN_WORKSPACE_PATH`` env var / ``<filename>``
       3. current working dir / ``<filename>``
       4. ``~/.quantnodes`` / ``<filename>`` (last-resort fallback)
 
@@ -86,14 +86,14 @@ def resolve_session_db_path() -> Path:
     ``quantnodes_agentnodes_user.db`` split is gone).
     """
     # 1. Explicit override
-    env_explicit = os.environ.get("SR_SESSIONS_DB")
+    env_explicit = os.environ.get("AN_SESSIONS_DB")
     if env_explicit:
         p = Path(env_explicit)
         p.parent.mkdir(parents=True, exist_ok=True)
         return p
 
-    # 2/3. Workspace-relative (SR_WORKSPACE_PATH or cwd)
-    workspace_env = os.environ.get("SR_WORKSPACE_PATH")
+    # 2/3. Workspace-relative (AN_WORKSPACE_PATH or cwd)
+    workspace_env = os.environ.get("AN_WORKSPACE_PATH")
     workspace = Path(workspace_env) if workspace_env else Path.cwd()
     p = (workspace / SESSION_DB_FILENAME).resolve()
     p.parent.mkdir(parents=True, exist_ok=True)
@@ -104,7 +104,7 @@ def resolve_db_path(override: Path | None = None) -> Path:
     """Resolve the session DB path (used by EventStore / MemoryManager).
 
     Priority: explicit ``override`` arg > ``resolve_session_db_path()``
-    (which itself honors ``SR_SESSIONS_DB`` / ``SR_WORKSPACE_PATH`` /
+    (which itself honors ``AN_SESSIONS_DB`` / ``AN_WORKSPACE_PATH`` /
     cwd / ``~/.quantnodes`` fallback).
     """
     if override is not None:

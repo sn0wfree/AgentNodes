@@ -1,4 +1,4 @@
-"""quantnodes-research CLI — 策略研究工作区管理。
+"""agentnodes CLI — 策略研究工作区管理。
 
 Phase 2.2 refactor: the simple top-level commands (init / status / run /
 evaluate / preflight / validate / list / import / autoresearch / reproduce)
@@ -49,7 +49,7 @@ from .llm_config import build_llm_config as build_llm_config
 # ============================================================
 
 def cmd_run_onboarding(args: argparse.Namespace) -> int:
-    """`quantnodes-research init` — 5 步凭证 TTY 向导。
+    """`agentnodes init` — 5 步凭证 TTY 向导。
 
     写入：
     - LLM 结构化字段 → ``~/.quantnodes/llm.json``（保留其它顶层 key）
@@ -105,7 +105,7 @@ def cmd_run_onboarding(args: argparse.Namespace) -> int:
     panel.add_column(ratio=1)
     panel.add_row("LLM config", f"[cyan]{written}[/cyan]")
     panel.add_row("Tokens",     f"[cyan]{_QUANTNODES_DOTENV_PATH}[/cyan]")
-    panel.add_row("Run",        "[bold]quantnodes-research[/bold]")
+    panel.add_row("Run",        "[bold]agentnodes[/bold]")
     console.print(Panel(panel, title="Setup complete",
                         border_style="green", padding=(0, 1)))
     return 0
@@ -231,7 +231,7 @@ def cmd_reproduce(args: argparse.Namespace) -> int:
 
     run_name = args.run
     if not run_name:
-        print("❌ 请指定 run 名称，例如: quantnodes-research reproduce <path> run_0001")
+        print("❌ 请指定 run 名称，例如: agentnodes reproduce <path> run_0001")
         return 1
 
     # 检查 run 目录
@@ -282,7 +282,7 @@ def cmd_reproduce(args: argparse.Namespace) -> int:
 def _build_parser() -> tuple[argparse.ArgumentParser, dict[str, argparse.ArgumentParser]]:
     """Build the top-level CLI argument parser."""
     parser = argparse.ArgumentParser(
-        prog="quantnodes-research",
+        prog="agentnodes",
         description="通用策略自动研究框架",
     )
 

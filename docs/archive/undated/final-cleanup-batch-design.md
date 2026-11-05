@@ -21,7 +21,7 @@
 | 输入 | 删前 | 删后 |
 |---|---|---|
 | `engine='dag'` | 静默 remap → langgraph | **warning + fallback → phases**（历史 if/else 语义的兜底） |
-| `SR_STUDY_DAG_ENGINE=1` | remap phases → langgraph | **不再 remap**（env 被忽略） |
+| `AN_STUDY_DAG_ENGINE=1` | remap phases → langgraph | **不再 remap**（env 被忽略） |
 
 - API/schema/models 三处注释同步去掉 `'dag'`（字段/参数保留接受任意字符串——校验收窄是独立工作）
 - `test_study_engine_dispatch` 两个行为测试**改写**：dag → fallback phases；env 不再改变行为

@@ -15,7 +15,7 @@
 合并理由：两者操作同一份状态机，且都**零业务语义**。拆开只会让
 「谁能改 Assignment」有两个入口。
 
-**数据库**：与 ``StudyStore`` 同库（``goals.db``，``QUANTNODES_RESEARCH_GOAL_DB_PATH``
+**数据库**：与 ``StudyStore`` 同库（``goals.db``，``AGENTNODES_GOAL_DB_PATH``
 可覆盖）。库名里的 ``RESEARCH`` 是历史包袱，改它会破坏既有用户数据——
 留作包名重命名批次一起处理。
 
@@ -49,7 +49,7 @@ from .ticket import (
 
 logger = logging.getLogger(__name__)
 
-_DB_PATH_ENV = "QUANTNODES_RESEARCH_GOAL_DB_PATH"
+_DB_PATH_ENV = "AGENTNODES_GOAL_DB_PATH"
 
 #: ``settle()`` 的 status 字符串 → AssignmentStatus。
 #: 只接受六个会 emit report 的态（施工方案 §2.7）；``pending`` 不在其中。
@@ -66,7 +66,7 @@ _SETTLE_STATUS: dict[str, AssignmentStatus] = {
 def default_db_path() -> Path:
     """Ticket/Assignment 库路径（与 StudyStore 同库）。
 
-    解析顺序：``QUANTNODES_RESEARCH_GOAL_DB_PATH`` → ``~/.quantnodes-research/goals.db``。
+    解析顺序：``AGENTNODES_GOAL_DB_PATH`` → ``~/.agentnodes/goals.db``。
     """
     return resolve_db_path("goals.db", _DB_PATH_ENV)
 

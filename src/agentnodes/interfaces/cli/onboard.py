@@ -2,7 +2,7 @@
 
 Mirrors ``vibe-trading/cli/onboard.py``. Triggered when
 ``~/.quantnodes/llm.json`` has no ``"llm"`` top-level key, or when
-``quantnodes-research init`` is run with no arguments.
+``agentnodes init`` is run with no arguments.
 
 Five back-steppable steps (provider → model → key → timeout → optional
 Tushare for China A-share data).

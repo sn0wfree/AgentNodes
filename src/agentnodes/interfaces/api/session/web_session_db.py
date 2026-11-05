@@ -27,7 +27,7 @@ def _get_db_path() -> Path:
     Both web_session and EventStore route through the same resolver so
     they can never point at different files. See
     ``core.agent.memory_manager.resolve_session_db_path`` for the
-    resolution order (SR_SESSIONS_DB > SR_WORKSPACE_PATH > cwd >
+    resolution order (AN_SESSIONS_DB > AN_WORKSPACE_PATH > cwd >
     ~/.quantnodes fallback).
     """
     from agentnodes.kernel.agent.memory_manager import resolve_session_db_path

@@ -227,7 +227,7 @@ def seed_admin_if_empty(db: UserDB) -> None:
 
     SEC-4 (P5-5④): the seed password is no longer the known constant
     ``admin``. Resolution order:
-        1. ``SR_ADMIN_PASSWORD`` env (ops/tests opt-in to a known value);
+        1. ``AN_ADMIN_PASSWORD`` env (ops/tests opt-in to a known value);
         2. otherwise a random ``secrets.token_urlsafe`` password, persisted
            once to ``~/.quantnodes/admin_password.txt`` (0600 where
            supported) and logged once at first start — the standard
@@ -239,9 +239,9 @@ def seed_admin_if_empty(db: UserDB) -> None:
     if db.user_count() > 0:
         return
     import os as _os
-    password = _os.environ.get("SR_ADMIN_PASSWORD", "")
+    password = _os.environ.get("AN_ADMIN_PASSWORD", "")
     if password:
-        source = "SR_ADMIN_PASSWORD"
+        source = "AN_ADMIN_PASSWORD"
     else:
         import secrets as _secrets
         password = _secrets.token_urlsafe(18)
@@ -258,7 +258,7 @@ def seed_admin_if_empty(db: UserDB) -> None:
             "SEC-4: first-start admin account created with a RANDOM "
             "password — retrieve it from ~/.quantnodes/admin_password.txt "
             "(it is not 'admin'; change it after first login). Set "
-            "SR_ADMIN_PASSWORD to control the seed explicitly.",
+            "AN_ADMIN_PASSWORD to control the seed explicitly.",
         )
 
 

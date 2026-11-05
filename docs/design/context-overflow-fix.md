@@ -86,7 +86,7 @@ max_iterations: int = 9999999999,
 **Fix3'**：行情数据不再进 prompt。
 
 1. `get_market_data`：fetch 后每码写入 loader_cache parquet
-   （`~/.quantnodes-research/loader_cache/<key>.parquet`），返回**摘要**：
+   （`~/.agentnodes/loader_cache/<key>.parquet`），返回**摘要**：
    行数 / 日期区间 / 首末收盘 / 平均成交量 / 前 5 行预览 / cache_key。
    不再返回全量 OHLCV。
 2. 新增 `commit_market_data` 工具：按 cache_key 读取 parquet → 写入 DuckDB

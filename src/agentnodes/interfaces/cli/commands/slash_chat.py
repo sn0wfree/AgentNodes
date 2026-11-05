@@ -51,7 +51,7 @@ def cmd_model(ctx: Any = None, *args: str) -> int:
     console.print(Text(f"Provider: {provider}", style="bold"))
     console.print(Text(f"Model:    {model}", style="bold"))
     console.print()
-    console.print(Text("Run `quantnodes-research init` to switch provider / model / credentials.", style="dim"))
+    console.print(Text("Run `agentnodes init` to switch provider / model / credentials.", style="dim"))
     return 0
 
 

@@ -1,11 +1,11 @@
-# quantnodes-research 自动化策略研发框架设计文档
+# agentnodes 自动化策略研发框架设计文档
 
 > 本文档记录 autoresearch 框架的完整架构设计。
 > Agent 启动时应先读 `README.md`(操作指南),本文档作为完整参考。
 
 ## 1. 项目概述
 
-**quantnodes-research** 是一个面向 AI Agent 的自动化策略研发框架。
+**agentnodes** 是一个面向 AI Agent 的自动化策略研发框架。
 
 - **目标**: Agent 自主迭代策略,直至 Calmar ≥ 0.5
 - **设计哲学**: 所有指令写在磁盘文件里 — Agent 中途崩溃可从同套文件恢复 context
@@ -611,7 +611,7 @@ get_cooldown_seconds()    # 计算带随机抖动的 cooldown 时间
 
 ```bash
 # 运行自动化研究循环
-quantnodes-research autoresearch <path> \
+agentnodes autoresearch <path> \
   --strategy <name> \
   --cooldown 30 \        # 基础 cooldown (秒)
   --jitter 10 \          # 随机抖动范围 (±秒)
@@ -714,7 +714,7 @@ quantnodes-research autoresearch <path> \
 
 ```bash
 # 运行自动化研究循环 (默认每 10 轮检测)
-quantnodes-research autoresearch <path> \
+agentnodes autoresearch <path> \
   --strategy <name> \
   --lazy-detection-interval 10  # 懒惰检测间隔 (轮数)
 ```

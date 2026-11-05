@@ -73,7 +73,7 @@
 ┌─ 调度层：StudyScheduler（core/study/scheduler.py）────┐
 │  每 study 一个微 session（study:{id}）                │
 │  per-session 队列消费者 create_task（真并行）         │
-│  全局 semaphore 限流（SR_STUDY_MAX_CONCURRENT=3）     │
+│  全局 semaphore 限流（AN_STUDY_MAX_CONCURRENT=3）     │
 └───────────────┬───────────────────────────────────────┘
                 ▼
 ┌─ 执行层：AutoresearchRunner（core/study/runner.py）───┐
@@ -199,7 +199,7 @@ sessions 行存在，因此无需为 study 创建会话行。
 | 项 | 设计 |
 |---|---|
 | 并行模型 | `_session_loop` 消费队列 → `asyncio.create_task(self._run_one_study(id))` **不等待** |
-| 全局限流 | `asyncio.Semaphore`，大小 `SR_STUDY_MAX_CONCURRENT`（默认 3，env 可配） |
+| 全局限流 | `asyncio.Semaphore`，大小 `AN_STUDY_MAX_CONCURRENT`（默认 3，env 可配） |
 | 资源锁 | **取消 per-strategy 锁**（study 自治后无共享文件） |
 | 原子创建 | run 目录 `mkdir(exist_ok=False)` 循环重试（防并行序号竞争） |
 | 任务管理 | `_active_tasks` 登记 executor + monitor task；cancel/shutdown 时统一清理 |
@@ -368,7 +368,7 @@ round_N 开始：
 | 全部 discard | baseline/strategy.py |
 
 **stagnation × 全 discard 联动**：连续 N 轮 verdict=discard（默认 N=5，
-`SR_STUDY_MAX_DISCARD` 可配）→ 视为 stagnation 停止
+`AN_STUDY_MAX_DISCARD` 可配）→ 视为 stagnation 停止
 （reason=stagnation_discard_streak）——避免「全部 discard → baseline 兜底」
 被无限重试；与决策层 `stagnation_triggered`（`runner.py:262-266`）并行判断，
 任一触发即停。
@@ -544,7 +544,7 @@ round_N 轮首：
      无 gap_topics → 跳过（零成本）
   ③ 兜底触发（主触发遗漏时）：
      · 轮末评审 info_gap=true（§10.2 ②，补充轮首盲区——轮中新主题）
-     · 距上次实际收集 ≥ K 轮（K=`SR_STUDY_COLLECT_INTERVAL` 默认 5，强制防漏）
+     · 距上次实际收集 ≥ K 轮（K=`AN_STUDY_COLLECT_INTERVAL` 默认 5，强制防漏）
 ```
 
 | 项 | 设计 |
@@ -573,8 +573,8 @@ round_N 轮首：
 **触发条件**（规则化，任一即触发，可配）：
 
 ```
-条目数 > SR_STUDY_KNOWLEDGE_MAX_ENTRIES（默认 100）
-或 文件体积 > SR_STUDY_KNOWLEDGE_MAX_SIZE（默认 64KB）
+条目数 > AN_STUDY_KNOWLEDGE_MAX_ENTRIES（默认 100）
+或 文件体积 > AN_STUDY_KNOWLEDGE_MAX_SIZE（默认 64KB）
 ```
 
 **执行流程**：
@@ -710,7 +710,7 @@ gates:
 
 ### 14.1 背景
 
-`hypotheses.json`（`~/.quantnodes-research/`）全局 JSON 数组，read-modify-write
+`hypotheses.json`（`~/.agentnodes/`）全局 JSON 数组，read-modify-write
 并发丢更新（两个并行 study 的 researcher 阶段可能互相覆盖记录）。
 `HypothesisStore`（`core/hypothesis/store.py`）已有完整 SQLite 实现（WAL +
 `BEGIN IMMEDIATE` 写事务 + FTS5），但 **registry 层未接线**（`_store` 只在

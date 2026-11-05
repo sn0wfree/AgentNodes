@@ -78,15 +78,15 @@ export OPENAI_MODEL=deepseek-chat                    # 可选
 或走 5 步向导：
 
 ```bash
-quantnodes-research init
+agentnodes init
 ```
 
 启动交互界面：
 
 ```bash
-quantnodes-research              # TTY → Textual full-screen TUI
-quantnodes-research --repl       # 旧版 prompt_toolkit REPL
-quantnodes-research --help       # 查看全部子命令
+agentnodes              # TTY → Textual full-screen TUI
+agentnodes --repl       # 旧版 prompt_toolkit REPL
+agentnodes --help       # 查看全部子命令
 ```
 
 ### 程序化使用

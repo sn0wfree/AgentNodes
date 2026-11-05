@@ -30,7 +30,7 @@ def temp_db(monkeypatch, tmp_path):
 
     workspace = tmp_path
     workspace.mkdir(parents=True, exist_ok=True)
-    monkeypatch.setenv("SR_WORKSPACE_PATH", str(workspace))
+    monkeypatch.setenv("AN_WORKSPACE_PATH", str(workspace))
     return resolve_session_db_path()
 
 

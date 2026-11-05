@@ -80,10 +80,10 @@ class TestLoadSinglePath:
 
 class TestApplyEnvOverrides:
     def test_no_env_vars_returns_shallow_copy(self, monkeypatch):
-        for k in ("QUANTNODES__LLM__PROVIDER", "QUANTNODES__LLM__MODEL",
-                  "QUANTNODES__LLM__BASE_URL", "QUANTNODES__LLM__API_KEY",
-                  "QUANTNODES__LLM__TIMEOUT", "QUANTNODES__LLM__MAX_RETRIES",
-                  "QUANTNODES__LLM__MAX_TOKENS", "QUANTNODES__LLM__ENABLED"):
+        for k in ("AGENTNODES__LLM__PROVIDER", "AGENTNODES__LLM__MODEL",
+                  "AGENTNODES__LLM__BASE_URL", "AGENTNODES__LLM__API_KEY",
+                  "AGENTNODES__LLM__TIMEOUT", "AGENTNODES__LLM__MAX_RETRIES",
+                  "AGENTNODES__LLM__MAX_TOKENS", "AGENTNODES__LLM__ENABLED"):
             monkeypatch.delenv(k, raising=False)
         base = {"provider": "openai", "model": "gpt-4o"}
         result = _apply_env_overrides(base)
@@ -91,20 +91,20 @@ class TestApplyEnvOverrides:
         assert result is not base  # shallow copy
 
     def test_env_overrides_string_field(self, monkeypatch):
-        monkeypatch.setenv("QUANTNODES__LLM__PROVIDER", "anthropic")
+        monkeypatch.setenv("AGENTNODES__LLM__PROVIDER", "anthropic")
         result = _apply_env_overrides({"provider": "openai"})
         assert result["provider"] == "anthropic"
 
     def test_empty_env_var_does_not_overwrite(self, monkeypatch):
-        monkeypatch.setenv("QUANTNODES__LLM__PROVIDER", "")
+        monkeypatch.setenv("AGENTNODES__LLM__PROVIDER", "")
         result = _apply_env_overrides({"provider": "openai"})
         assert result["provider"] == "openai"
 
     def test_enabled_coerces_to_bool(self, monkeypatch):
-        monkeypatch.setenv("QUANTNODES__LLM__ENABLED", "true")
+        monkeypatch.setenv("AGENTNODES__LLM__ENABLED", "true")
         assert _apply_env_overrides({})["enabled"] is True
 
-        monkeypatch.setenv("QUANTNODES__LLM__ENABLED", "false")
+        monkeypatch.setenv("AGENTNODES__LLM__ENABLED", "false")
         assert _apply_env_overrides({})["enabled"] is False
 
 
@@ -114,10 +114,10 @@ class TestApplyEnvOverrides:
 class TestLoadQuantnodesLlmConfig:
     def test_returns_empty_when_file_missing(self, tmp_path, monkeypatch):
         # Make sure no env vars are set either
-        for k in ("QUANTNODES__LLM__PROVIDER", "QUANTNODES__LLM__MODEL",
-                  "QUANTNODES__LLM__BASE_URL", "QUANTNODES__LLM__API_KEY",
-                  "QUANTNODES__LLM__TIMEOUT", "QUANTNODES__LLM__MAX_RETRIES",
-                  "QUANTNODES__LLM__MAX_TOKENS", "QUANTNODES__LLM__ENABLED"):
+        for k in ("AGENTNODES__LLM__PROVIDER", "AGENTNODES__LLM__MODEL",
+                  "AGENTNODES__LLM__BASE_URL", "AGENTNODES__LLM__API_KEY",
+                  "AGENTNODES__LLM__TIMEOUT", "AGENTNODES__LLM__MAX_RETRIES",
+                  "AGENTNODES__LLM__MAX_TOKENS", "AGENTNODES__LLM__ENABLED"):
             monkeypatch.delenv(k, raising=False)
         result = load_quantnodes_llm_config(tmp_path / "missing.json")
         assert result == {}
@@ -144,7 +144,7 @@ class TestLoadQuantnodesLlmConfig:
         assert result["api_key"] == "sk-plaintext"
 
     def test_env_overrides_file(self, tmp_path, monkeypatch):
-        monkeypatch.setenv("QUANTNODES__LLM__PROVIDER", "anthropic")
+        monkeypatch.setenv("AGENTNODES__LLM__PROVIDER", "anthropic")
         p = tmp_path / "llm.json"
         p.write_text(json.dumps({"llm": {"provider": "openai"}}))
         result = load_quantnodes_llm_config(p)
@@ -172,7 +172,7 @@ class TestLLMConfigIntegration:
         """Without a yaml file and without env vars, LLMConfig.load()
         reads from the bridge path and merges provider→base_url fallbacks."""
         for k in ("OPENAI_API_KEY", "OPENAI_BASE_URL", "OPENAI_MODEL",
-                  "LLM_API_KEY", "QUANTNODES__LLM__PROVIDER"):
+                  "LLM_API_KEY", "AGENTNODES__LLM__PROVIDER"):
             monkeypatch.delenv(k, raising=False)
         # Override bridge path so we don't read the real ~/.quantnodes/llm.json
         llm = tmp_path / "llm.json"

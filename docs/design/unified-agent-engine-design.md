@@ -100,7 +100,7 @@ core/agent/exec_registry.py  # python/evaluator 函数注册表（从 SwarmRunti
 
 - `graph.py` 增加 `StudyGraph ↔ AgentDAGConfig` 互转
 - `runner._run_one_round_impl`：硬编码 3-phase 替换为按 `topological_layers()` 串行调
-  `AgentExecutor`；行为开关 `SR_STUDY_DAG_ENGINE=1`（默认 0 走旧路径，灰度切换）
+  `AgentExecutor`；行为开关 `AN_STUDY_DAG_ENGINE=1`（默认 0 走旧路径，灰度切换）
 - `StudySwarmHook`：agent 完成 → `save_agent_record` + 实时 `study_graph_node` SSE
   （替代 round 结束后一次性 emit topology）
 - AEGIS round 级检查（novelty/regression/attribution）保留在 runner 层，不进 hook
@@ -127,7 +127,7 @@ core/agent/exec_registry.py  # python/evaluator 函数注册表（从 SwarmRunti
 - 物理删除：`workflow/worker.py`、`workflow/controller.py`、`workflow/prompt.py`、
   `workflow/agent_runner.py`；迁移 `test_swarm_worker.py`(27)、`test_workflow_controller.py`(11)
   等到 AgentExecutor 测试
-- 回归：后端 pytest 全量 + 前端 vitest + build；`SR_STUDY_DAG_ENGINE` 灰度后默认开启并删开关
+- 回归：后端 pytest 全量 + 前端 vitest + build；`AN_STUDY_DAG_ENGINE` 灰度后默认开启并删开关
 
 ## 4. 兼容性与风险
 

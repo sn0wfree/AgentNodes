@@ -143,7 +143,7 @@ class _LoopEventForwarder:
         import hashlib as _hashlib
 
         out = dict(data)
-        threshold = int(os.environ.get("SR_LLM_REQUEST_OFFLOAD_THRESHOLD", "4096"))
+        threshold = int(os.environ.get("AN_LLM_REQUEST_OFFLOAD_THRESHOLD", "4096"))
 
         # Locate the sidecar dir next to the event DB: <dir>/trace-blobs/.
         blob_root = None

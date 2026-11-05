@@ -57,7 +57,7 @@ class TestBuildContainer(unittest.TestCase):
         with TemporaryDirectory() as tmpdir:
             import os
 
-            os.environ["SR_WORKSPACE_PATH"] = tmpdir
+            os.environ["AN_WORKSPACE_PATH"] = tmpdir
             container = None
             try:
                 container = build_container()
@@ -68,7 +68,7 @@ class TestBuildContainer(unittest.TestCase):
             finally:
                 if container is not None:
                     close_container(container)
-                del os.environ["SR_WORKSPACE_PATH"]
+                del os.environ["AN_WORKSPACE_PATH"]
 
     def test_no_workspace(self):
         """build_container works without workspace_path."""

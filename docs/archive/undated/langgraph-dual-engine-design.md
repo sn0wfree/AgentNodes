@@ -6,7 +6,7 @@
 
 ## 1. 背景
 
-当前 study 执行有两套引擎（Phase 引擎 + DAG 引擎），通过 `SR_STUDY_DAG_ENGINE` 环境变量切换。两套引擎各自维护，代码重复，且 DAG 引擎层内串行。
+当前 study 执行有两套引擎（Phase 引擎 + DAG 引擎），通过 `AN_STUDY_DAG_ENGINE` 环境变量切换。两套引擎各自维护，代码重复，且 DAG 引擎层内串行。
 
 引入 LangGraph 作为第三引擎（最终融合为唯一引擎），获得：
 - **真并行**：LangGraph super-step 模型天然支持 fan-out 并行
@@ -18,9 +18,9 @@
 
 ```
 _run_one_round_impl (runner.py:825)
-  ├─ SR_STUDY_DAG_ENGINE != "1"  → Phase 1/2/3 硬编码
+  ├─ AN_STUDY_DAG_ENGINE != "1"  → Phase 1/2/3 硬编码
   │    researcher → novelty gate → execution → evaluation → decide
-  └─ SR_STUDY_DAG_ENGINE == "1"  → _run_round_via_dag (runner.py:1475)
+  └─ AN_STUDY_DAG_ENGINE == "1"  → _run_round_via_dag (runner.py:1475)
        AgentExecutor + graph.json topological layers（层内串行）
 ```
 
@@ -232,9 +232,9 @@ StudyCreate schema 加 `engine` 字段（默认 `phases`）。StudyResponse 包�
 
 ### 7.4 兼容
 
-- `SR_STUDY_DAG_ENGINE=1` 全局变量映射为 `engine='langgraph'`（2026-08 修正：
+- `AN_STUDY_DAG_ENGINE=1` 全局变量映射为 `engine='langgraph'`（2026-08 修正：
   原实现映射到 `'dag'`，但 dispatch 只认 `'langgraph'`，该开关曾静默无效。
-  注意：生效后需要安装 langgraph extra —— `pip install 'quantnodes-strategy-research[langgraph]'`）
+  注意：生效后需要安装 langgraph extra —— `pip install 'agentnodes[langgraph]'`）
 - 新 study 默认 `phases`
 - `engine` 字段优先级高于环境变量
 

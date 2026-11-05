@@ -87,10 +87,10 @@ jobs:
           python -m playwright install chromium
 
       # 跑 E2E + 视觉回归测试（浏览器测试默认在常规套件中跳过，
-      # 必须显式设置 SR_RUN_BROWSER_TESTS=1 才运行）
+      # 必须显式设置 AN_RUN_BROWSER_TESTS=1 才运行）
       - name: Run E2E + visual regression tests
         env:
-          SR_RUN_BROWSER_TESTS: "1"
+          AN_RUN_BROWSER_TESTS: "1"
         run: |
           python -m pytest tests/test_webui_e2e_playwright.py tests/test_webui_visual.py \
             -v --tb=short \

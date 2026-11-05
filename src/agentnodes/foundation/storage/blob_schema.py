@@ -25,7 +25,7 @@ __all__ = [
 
 # Reference-count + last-access tracker for sidecar blobs.
 # Stale-bucket candidates are rows whose last_access is older than
-# ``SR_BLOB_TTL_DAYS`` (default 365 — financial compliance).
+# ``AN_BLOB_TTL_DAYS`` (default 365 — financial compliance).
 BLOB_REFS_DDL = """
 CREATE TABLE IF NOT EXISTS blob_refs (
     blob_path TEXT PRIMARY KEY,

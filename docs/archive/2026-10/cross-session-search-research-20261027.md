@@ -153,6 +153,6 @@ S3 之后 messages 完全从事件派生，索引也从事件派生——索引�
 2. **三条约束**：
    - 会话按 `updated_at` 倒序，凑够 `limit` 即停；
    - 单文件查询加 `LIMIT`；
-   - 最多扫 200 个会话（可配置 `SR_SEARCH_MAX_SESSIONS`），响应带 `scanned` 字段；
+   - 最多扫 200 个会话（可配置 `AN_SEARCH_MAX_SESSIONS`），响应带 `scanned` 字段；
 3. **降级**：某会话文件损坏/缺失 → 跳过并计数，不整体失败；
 4. **返回结构**：保持现状字段 + 新增 `scanned_sessions` / `truncated`（向后兼容）。

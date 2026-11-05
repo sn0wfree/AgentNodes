@@ -3,7 +3,7 @@
 契约：docs/guides/logging-unified-entry-design-20261102.md §4。
 - 策略表：web/mcp → stderr，script → stdout，cli 严格开关
 - 幂等：重复调用不重复挂 handler，外来 handler 不被触碰
-- 级别/JSON/文件三开关统一解析（SR_LOG_LEVEL / SR_LOG_JSON / SR_LOG_FILE）
+- 级别/JSON/文件三开关统一解析（AN_LOG_LEVEL / AN_LOG_JSON / AN_LOG_FILE）
 - handler 层双写（借鉴 CodersWheel LoggerHelper）：console + file 同挂
 - dual_log：有 handler 走 logger 单份，无 handler print 兜底
 """
@@ -33,7 +33,7 @@ from agentnodes.foundation.observability.logging_setup import (
 )
 from agentnodes.foundation.observability.trace import JsonFormatter
 
-_LOG_ENVS = ("SR_LOG_LEVEL", "SR_LOG_JSON", "SR_LOG_FILE")
+_LOG_ENVS = ("AN_LOG_LEVEL", "AN_LOG_JSON", "AN_LOG_FILE")
 
 
 def _sr_handlers(root: logging.Logger) -> list[logging.Handler]:
@@ -120,7 +120,7 @@ class TestCliStrict:
         assert _sr_handlers(clean_root) == []
 
     def test_sr_log_json_enables(self, clean_root, monkeypatch):
-        monkeypatch.setenv("SR_LOG_JSON", "1")
+        monkeypatch.setenv("AN_LOG_JSON", "1")
         configure_logging("cli")
         (h,) = _sr_handlers(clean_root)
         assert isinstance(h.formatter, JsonFormatter)
@@ -130,7 +130,7 @@ class TestCliStrict:
             "agentnodes.foundation.observability.logging_setup.LOG_DIR",
             tmp_path / "logs",
         )
-        monkeypatch.setenv("SR_LOG_FILE", "cli.log")
+        monkeypatch.setenv("AN_LOG_FILE", "cli.log")
         configure_logging("cli")
         assert len(_sr_handlers(clean_root)) == 2  # console + file
 
@@ -175,11 +175,11 @@ class TestSwitches:
         assert resolve_level("warning") == logging.WARNING
 
     def test_resolve_level_env(self, monkeypatch):
-        monkeypatch.setenv("SR_LOG_LEVEL", "debug")
+        monkeypatch.setenv("AN_LOG_LEVEL", "debug")
         assert resolve_level() == logging.DEBUG
 
     def test_resolve_level_env_invalid_falls_back(self, monkeypatch):
-        monkeypatch.setenv("SR_LOG_LEVEL", "LOUD")
+        monkeypatch.setenv("AN_LOG_LEVEL", "LOUD")
         assert resolve_level() == logging.INFO
 
     def test_default_level_info(self, clean_root):
@@ -187,7 +187,7 @@ class TestSwitches:
         assert clean_root.level == logging.INFO
 
     def test_json_via_env(self, clean_root, monkeypatch):
-        monkeypatch.setenv("SR_LOG_JSON", "true")
+        monkeypatch.setenv("AN_LOG_JSON", "true")
         configure_logging("web")
         for h in _sr_handlers(clean_root):
             assert isinstance(h.formatter, JsonFormatter)
@@ -253,7 +253,7 @@ class TestFileLogging:
         monkeypatch.setattr(
             "agentnodes.foundation.observability.logging_setup.LOG_DIR", log_dir,
         )
-        monkeypatch.setenv("SR_LOG_FILE", "sr_run.log")
+        monkeypatch.setenv("AN_LOG_FILE", "sr_run.log")
         configure_logging("web")
         handlers = _sr_handlers(clean_root)
         assert len(handlers) == 2

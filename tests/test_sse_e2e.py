@@ -57,7 +57,7 @@ def sse_server():
         "STATIC_DIR": str(REPO_ROOT / "webui" / "static"),
         "CORS_ORIGINS": "*",
         "PYTHONUNBUFFERED": "1",
-        "SR_WORKSPACE_PATH": str(REPO_ROOT),
+        "AN_WORKSPACE_PATH": str(REPO_ROOT),
     })
 
     cmd = [

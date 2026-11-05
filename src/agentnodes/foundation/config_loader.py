@@ -5,7 +5,7 @@ priority stack:
 
     1. CLI overrides (truthy-only, immediate wins)
     2. Workspace-level YAML  (e.g. ``<workspace>/acceptance.yaml``)
-    3. User-level YAML       (e.g. ``~/.quantnodes-research/acceptance.yaml``)
+    3. User-level YAML       (e.g. ``~/.agentnodes/acceptance.yaml``)
     4. Built-in defaults     (dataclass defaults or constructor defaults)
 
 Before Phase 2.1, each subsystem reimplemented the same merge loop

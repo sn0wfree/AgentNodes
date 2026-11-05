@@ -155,7 +155,7 @@ replaced by the engine's record type.
 ## 6. CLI
 
 ```
-quantnodes-research validate-run <run_dir> [--market ...] \
+agentnodes validate-run <run_dir> [--market ...] \
     [--monte-carlo] [--n-simulations N] \
     [--bootstrap] [--n-bootstrap N] \
     [--walk-forward] [--n-windows N] \

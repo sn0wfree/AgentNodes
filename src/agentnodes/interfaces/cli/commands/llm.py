@@ -2,10 +2,10 @@
 
 Usage::
 
-    quantnodes-research llm --list            # show providers + key status
-    quantnodes-research llm --use minimax     # switch active profile
-    quantnodes-research llm --show            # effective config (masked)
-    quantnodes-research llm --add-key nvidia  # store <NAME>_API_KEY in ~/.quantnodes/.env
+    agentnodes llm --list            # show providers + key status
+    agentnodes llm --use minimax     # switch active profile
+    agentnodes llm --show            # effective config (masked)
+    agentnodes llm --add-key nvidia  # store <NAME>_API_KEY in ~/.quantnodes/.env
 
 Persistent state lives in ``~/.quantnodes/llm.json`` (``profiles`` +
 ``active_profile``) and ``~/.quantnodes/.env`` (``<NAME>_API_KEY``).

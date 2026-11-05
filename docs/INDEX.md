@@ -32,7 +32,7 @@
 | [`toolset-convention.md`](guides/toolset-convention.md) | 工具集命名与组织约定 |
 | [`llm-provider-setup.md`](guides/llm-provider-setup.md) | LLM 供应商配置 |
 | [`model-catalog-design.md`](guides/model-catalog-design.md) | 模型目录（ModelHub 解析入口） |
-| [`logging-unified-entry-design-20261102.md`](guides/logging-unified-entry-design-20261102.md) | 日志统一入口（`SR_LOG_*` 语义） |
+| [`logging-unified-entry-design-20261102.md`](guides/logging-unified-entry-design-20261102.md) | 日志统一入口（`AN_LOG_*` 语义） |
 | [`test-marker-lanes-design.md`](guides/test-marker-lanes-design.md) | 测试 lane（llm/e2e/slow）+ 本地验证矩阵 |
 | [`ci-sharding-strategy.md`](guides/ci-sharding-strategy.md) | CI 分片（LPT + flaky 治理） |
 | [`known-test-defects-20261104.md`](guides/known-test-defects-20261104.md) | 已知测试缺陷（与减法正交的既存问题） |

@@ -191,7 +191,7 @@ python scripts/run_test_matrix.py --lane pr --cov --shards 1   # 覆盖率需单
 |---|---|---|
 | pr（4 分片并行，含 --reruns=2） | 179s | c1_gate clean（61 失败全在基线） |
 | e2e | 245s | 84 passed |
-| browser（SR_RUN_BROWSER_TESTS=1） | 12s | 10 passed |
+| browser（AN_RUN_BROWSER_TESTS=1） | 12s | 10 passed |
 | **合计** | **约 7.5 分钟** | 三层全覆盖 |
 
 ### 为什么不用 pytest-xdist

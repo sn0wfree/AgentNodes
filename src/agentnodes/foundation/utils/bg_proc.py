@@ -27,7 +27,7 @@ from pathlib import Path
 from typing import Any, Optional, Sequence
 
 DEFAULT_STALL_TIMEOUT = float(
-    os.environ.get("SR_BACKTEST_STALL_TIMEOUT", "300")
+    os.environ.get("AN_BACKTEST_STALL_TIMEOUT", "300")
 )
 
 

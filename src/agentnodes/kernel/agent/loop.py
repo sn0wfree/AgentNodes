@@ -81,15 +81,15 @@ _TOOL_RESULT_MAX = 50_000
 
 # Tool result 入 LLM history 前的统一截断上限（字符）。
 # 超长输出在中间截断，保留头尾并标记 [truncated]。
-# 环境变量 SR_TOOL_RESULT_MAX_CHARS 可覆盖（0 = 不截断）。
-_TOOL_RESULT_HISTORY_MAX = int(os.environ.get("SR_TOOL_RESULT_MAX_CHARS", "30000"))
+# 环境变量 AN_TOOL_RESULT_MAX_CHARS 可覆盖（0 = 不截断）。
+_TOOL_RESULT_HISTORY_MAX = int(os.environ.get("AN_TOOL_RESULT_MAX_CHARS", "30000"))
 
 
 # ── Cached GoalStore (goal-snapshot injection) ─────────────────────
 # Constructing a GoalStore per loop iteration leaked one SQLite
 # connection each (the store had no close() before F1-2); a single
 # long-lived store per db path avoids the churn while keeping test
-# isolation when QUANTNODES_RESEARCH_GOAL_DB_PATH is overridden.
+# isolation when AGENTNODES_GOAL_DB_PATH is overridden.
 _goal_store_cache: dict[Path, Any] = {}
 
 

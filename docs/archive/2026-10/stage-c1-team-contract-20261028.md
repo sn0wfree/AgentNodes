@@ -341,7 +341,7 @@ editable install 把**主检出**的 `src` 写死进了 `.pth`：
 
 ```
 D:\tools\python312\Lib\site-packages\__editable__.quantnodes_agentnodes-0.6.0.pth
-内容: D:\Github\quantnodes-strategy-research\src
+内容: D:\Github\agentnodes\src
 ```
 
 实测：在 `D:\Github\qn-wt-probe` worktree 里放探针标记后跑测试，

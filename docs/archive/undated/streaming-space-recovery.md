@@ -100,7 +100,7 @@ parse_chat_response(raw, adapter=None)                        # 非流式：无 
 
 1. `pytest tests/test_space_recovery.py` + 相关测试全过
 2. `ruff check` 0 新错
-3. e2e：`SR_LOG_LEVEL=DEBUG` 重启 → 发消息 → 日志 `delta_thinking` 带前导空格
+3. e2e：`AN_LOG_LEVEL=DEBUG` 重启 → 发消息 → 日志 `delta_thinking` 带前导空格
    → `message_parts` 查 thinking 文本含 `"QuantNodes Research"`（带空格）
    → 硬刷新后 thinking 块无 `Letmeexplore`
 4. 切 OpenAI/Qwen/Kimi 验证零影响（passthrough 路径）

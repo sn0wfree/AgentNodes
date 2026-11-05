@@ -208,21 +208,21 @@ class TestCLISessionCommands:
 
     def test_session_show_help(self):
         from agentnodes.interfaces.cli import main
-        with patch("sys.argv", ["quantnodes-research", "session", "show", "--help"]):
+        with patch("sys.argv", ["agentnodes", "session", "show", "--help"]):
             with pytest.raises(SystemExit) as exc_info:
                 main()
             assert exc_info.value.code == 0
 
     def test_session_search_help(self):
         from agentnodes.interfaces.cli import main
-        with patch("sys.argv", ["quantnodes-research", "session", "search", "--help"]):
+        with patch("sys.argv", ["agentnodes", "session", "search", "--help"]):
             with pytest.raises(SystemExit) as exc_info:
                 main()
             assert exc_info.value.code == 0
 
     def test_session_delete_help(self):
         from agentnodes.interfaces.cli import main
-        with patch("sys.argv", ["quantnodes-research", "session", "delete", "--help"]):
+        with patch("sys.argv", ["agentnodes", "session", "delete", "--help"]):
             with pytest.raises(SystemExit) as exc_info:
                 main()
             assert exc_info.value.code == 0

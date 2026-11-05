@@ -2,7 +2,7 @@
 
 Phase 2.2 migration left both ``_build_parser()`` and
 ``@cli_command``-driven ``_wire()`` adding the same top-level
-subparsers, which made every ``quantnodes-research`` invocation die
+subparsers, which made every ``agentnodes`` invocation die
 with ``argparse.ArgumentError: conflicting subparser``.
 """
 from __future__ import annotations

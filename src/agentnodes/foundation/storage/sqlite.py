@@ -5,7 +5,7 @@ copy-pasted across ``GoalStore``, ``StudyStore``, ``HypothesisStore`` and
 friends:
 
 - ``now_iso`` / ``new_id`` / ``json_dumps`` / ``json_loads`` — column helpers
-- ``resolve_db_path`` — env-override or ``~/.quantnodes-research/<db>``
+- ``resolve_db_path`` — env-override or ``~/.agentnodes/<db>``
 - ``connect`` — PRAGMA-tuned connection (WAL, busy_timeout, FK, NORMAL)
 - ``synchronized`` — per-store RLock decorator for shared connections
 - ``write_transaction`` — ``BEGIN IMMEDIATE`` write transaction
@@ -27,7 +27,7 @@ from typing import Any, Callable, Iterator, TypeVar
 
 F = TypeVar("F", bound=Callable)
 
-DEFAULT_DATA_DIR = Path.home() / ".quantnodes-research"
+DEFAULT_DATA_DIR = Path.home() / ".agentnodes"
 
 
 # ── Column / value helpers ────────────────────────────────────────
@@ -59,7 +59,7 @@ def json_loads(value: str | None, default: object) -> object:
 
 
 def resolve_db_path(db_name: str, env_var: str) -> Path:
-    """Resolve a store's DB path: env override, else ``~/.quantnodes-research/<db>``."""
+    """Resolve a store's DB path: env override, else ``~/.agentnodes/<db>``."""
     raw_path = os.environ.get(env_var, "").strip()
     if raw_path:
         return Path(raw_path).expanduser()

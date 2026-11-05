@@ -1,7 +1,7 @@
 # 设计 — study/goal 的 agent 事件接线（2026-11-02）
 
 > 用户决策：先补 study/goal 事件接线；日志统一入口后议；CLI/MCP 的 JSON
-> 日志走 `SR_LOG_JSON` 开关。
+> 日志走 `AN_LOG_JSON` 开关。
 > 分支：`refactor/v6-gateway`。
 
 ## 0. 问题
@@ -106,17 +106,17 @@ def _make_agent_on_event(self, session_id: str):
 - goal 侧**不**进跨进程 event_log（goal 执行宿主的 EventStore 归属
   属于「日志统一入口」轮，已延后）。本轮 goal 只到 WorkflowEventBus。
 
-### 2.5 CLI/MCP：`SR_LOG_JSON` 开关
+### 2.5 CLI/MCP：`AN_LOG_JSON` 开关
 
 `setup_trace_logging()` 幂等（filter 只挂一次）且 `json_output=None`
-时读 `SR_LOG_JSON`。实施时发现两个入口的约束不同，最终形态：
+时读 `AN_LOG_JSON`。实施时发现两个入口的约束不同，最终形态：
 
-- **CLI/TUI**：`SR_LOG_JSON=1` 才装配整条管线（basicConfig stderr handler
+- **CLI/TUI**：`AN_LOG_JSON=1` 才装配整条管线（basicConfig stderr handler
   + JSON 格式 + trace 过滤）；默认**零改动**——TUI 是全屏交互界面，无条件
   挂 handler 会让 523 处 `logger.info` 刷穿渲染。
 - **MCP stdio**：总是装配（此前进程无任何 handler，INFO 日志全部不可见，
   只剩 lastResort 的 WARNING 兜底）。日志落 stderr（`basicConfig` 默认流），
-  stdout 只走协议帧，`SR_LOG_JSON=1` 同样生效。
+  stdout 只走协议帧，`AN_LOG_JSON=1` 同样生效。
 
 ## 3. 不做什么
 

@@ -1,13 +1,13 @@
 # TUI 界面对比分析报告
 
 **日期**: 2026-07-26
-**目的**: 对比 quantnodes-research 与 vibe-trading / Claude Code / Codex / OpenCode 的 TUI 界面，分析优劣，为后续改进提供依据。
+**目的**: 对比 agentnodes 与 vibe-trading / Claude Code / Codex / OpenCode 的 TUI 界面，分析优劣，为后续改进提供依据。
 
 ---
 
 ## 一、本项目 vs vibe-trading
 
-| 维度 | quantnodes-research (本项目) | vibe-trading |
+| 维度 | agentnodes (本项目) | vibe-trading |
 |---|---|---|
 | **框架** | Textual (全屏固定布局) | Rich + prompt_toolkit (流式布局) |
 | **布局** | 三栏固定: 侧边栏 + 对话 + 活动轨 | 顺序流: 无固定面板，工具输出内联 |

@@ -49,13 +49,13 @@ class TestCmdHistory:
         normal state, not a configuration error.
         """
         monkeypatch.delenv("STRATEGY_RESEARCH_SESSIONS_DB", raising=False)
-        monkeypatch.setenv("SR_SESSIONS_DB", str(tmp_path / "empty.db"))
+        monkeypatch.setenv("AN_SESSIONS_DB", str(tmp_path / "empty.db"))
         rc = cmd_history(console=console)
         assert rc == 0
         assert "no prior sessions" in console.export_text().lower()
 
     def test_db_unset_returns_zero(self, console, tmp_path, monkeypatch):
-        monkeypatch.setenv("SR_SESSIONS_DB", str(tmp_path / "sessions.db"))
+        monkeypatch.setenv("AN_SESSIONS_DB", str(tmp_path / "sessions.db"))
         rc = cmd_history(console=console)
         assert rc == 0
 
@@ -75,14 +75,14 @@ class TestCmdSearch:
     def test_no_db_still_searches(self, console, monkeypatch, tmp_path):
         """B4 Step 3: /search no longer needs the legacy env var either."""
         monkeypatch.delenv("STRATEGY_RESEARCH_SESSIONS_DB", raising=False)
-        monkeypatch.setenv("SR_SESSIONS_DB", str(tmp_path / "empty.db"))
+        monkeypatch.setenv("AN_SESSIONS_DB", str(tmp_path / "empty.db"))
         rc = cmd_search("hello", console=console)
         assert rc == 0
         assert "no matches" in console.export_text().lower()
 
     def test_db_no_match(self, console, tmp_path, monkeypatch):
         db = _make_sessions_db(tmp_path)
-        monkeypatch.setenv("SR_SESSIONS_DB", str(db))
+        monkeypatch.setenv("AN_SESSIONS_DB", str(db))
         rc = cmd_search("nonexistent_term_xyz", console=console)
         assert rc == 0
 

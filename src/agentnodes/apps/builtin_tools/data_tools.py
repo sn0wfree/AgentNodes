@@ -526,7 +526,7 @@ class ImportDataTool(BaseTool):
                     "failed to open DuckDB",
                     received=str(workspace),
                     expected="writable workspace path",
-                    fix="run `quantnodes-research init` first, or check workspace permissions",
+                    fix="run `agentnodes init` first, or check workspace permissions",
                     tool="import_data",
                 )
 

@@ -1,7 +1,7 @@
 # 代码质量升级评估与执行记录（2026-08-13）
 
 > **Status:** In progress (branch `refactor/code-quality-upgrade`)
-> **Scope:** `quantnodes-strategy-research` v0.6.0
+> **Scope:** `agentnodes` v0.6.0
 > **执行范围:** 全部 5 阶段（P0–P5）
 > **用户决策:** ① DI 层真接线 ② 事件总线三代暂不动
 
@@ -77,7 +77,7 @@
 
 | 项 | 状态 |
 | --- | --- |
-| Tier 1: conftest 会话级 `SR_WORKSPACE_PATH` 隔离（灭 cwd 会话库跨测试污染） | ✅ |
+| Tier 1: conftest 会话级 `AN_WORKSPACE_PATH` 隔离（灭 cwd 会话库跨测试污染） | ✅ |
 | Tier 1: 删 DELETE-CANDIDATE 死代码（session router、update_message_content、warm fn、SessionStore 遗留方法） | ✅ |
 | Tier 1: tests 目录 ruff 1163→0（F841 用保留 RHS 求值的正确变换；F821 补导入；F811 删 5 处重复定义；删 3 个引用已移除 API 的死测试类） | ✅ |
 | `run`/`arun` 合一为 `_run_loop_core(async_mode)` + `_run_coro_in_sync` 桥 | ✅ |

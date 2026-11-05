@@ -5,7 +5,7 @@ what's in effect. Highlights opencode-aligned defaults and the
 derived threshold (from model context) when ``threshold_tokens`` is None.
 
 Usage:
-    quantnodes-research compact show
+    agentnodes compact show
 """
 from __future__ import annotations
 

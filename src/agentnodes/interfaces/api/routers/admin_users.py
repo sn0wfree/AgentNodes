@@ -4,7 +4,7 @@ These endpoints let an admin manage user accounts: list, create, update
 role / display_name / is_active, reset password, and view a user's data.
 
 Authorization: an admin may authenticate via either
-  - the ``X-Admin-Token`` header (SR_ADMIN_TOKEN env), OR
+  - the ``X-Admin-Token`` header (AN_ADMIN_TOKEN env), OR
   - a valid login token whose account has ``role == 'admin'``.
 
 This is intentionally separate from the ops-only ``admin.py`` (compaction

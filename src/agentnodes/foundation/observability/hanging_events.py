@@ -19,7 +19,7 @@ from typing import Any
 
 from agentnodes.foundation.storage.sqlite import resolve_db_path
 
-_DB_PATH_ENV = "QUANTNODES_RESEARCH_GOAL_DB_PATH"
+_DB_PATH_ENV = "AGENTNODES_GOAL_DB_PATH"
 
 # 与 scheduler watchdog / agent 熔断器共用的事件种类
 EVENT_WALLCLOCK = "wallclock_timeout"

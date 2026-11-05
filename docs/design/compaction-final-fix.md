@@ -132,7 +132,7 @@ llm.json's "compact" section.
 
 ### 8. CLI: `compact show`
 
-`quantnodes-research compact show` prints every effective value,
+`agentnodes compact show` prints every effective value,
 including derived ones (threshold, buffer). Lets users see exactly
 what's in effect without reading code.
 
@@ -179,5 +179,5 @@ the original messages (LLM doesn't lose context).
 
 1. Apply all changes, run 437+ tests → expect 480+ all pass
 2. Live DB: trigger L4 manually, verify CompactionMessage persists
-3. CLI: `quantnodes-research compact show` shows all values
+3. CLI: `agentnodes compact show` shows all values
 4. Regression: session 700dc7f7-95d, L4 no longer crashes

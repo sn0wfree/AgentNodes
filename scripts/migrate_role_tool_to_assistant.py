@@ -42,7 +42,7 @@ logger = logging.getLogger(__name__)
 
 def _get_default_db_path() -> Path:
     import os
-    db_dir = Path(os.environ.get("SR_WORKSPACE_PATH", str(Path.home() / ".quantnodes")))
+    db_dir = Path(os.environ.get("AN_WORKSPACE_PATH", str(Path.home() / ".quantnodes")))
     return db_dir / "quantnodes_agentnodes_user.db"
 
 

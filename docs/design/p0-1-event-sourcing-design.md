@@ -209,7 +209,7 @@ CREATE TABLE IF NOT EXISTS blob_refs (
 
 | 参数 | 值 | 说明 |
 |------|-----|------|
-| `SR_BLOB_TTL_DAYS` | **365**（默认 1 年） | 非活跃 blob 保留时长 |
+| `AN_BLOB_TTL_DAYS` | **365**（默认 1 年） | 非活跃 blob 保留时长 |
 | 清理频率 | 每周 | 减少 I/O |
 | ref_count = 0 | 可清理 | 活跃 blob 永不清理 |
 | session 删除 | 递减 ref_count，不删文件 | 审计留痕 |

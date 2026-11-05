@@ -107,10 +107,10 @@ Claude Code（每会话一 .jsonl）**不做跨会话全文搜索**；OpenCode /
 
 | 参数 | 值 | 依据（实测） |
 |---|---|---|
-| `SR_SEARCH_TIMEOUT_MS` | **800** | 覆盖 2000+ 真实会话（约 2 年重度使用）；实测 500 会话全量仅 372ms |
-| `SR_SEARCH_PER_SESSION_MS` | **100** | 10 万条消息的会话也只需 20ms，100ms 有充分余量（异常巨大的文件才触发） |
-| `SR_SEARCH_MAX_SESSIONS` | **500** | 按 `updated_at` 倒序，优先搜最近会话 |
-| `SR_SEARCH_HITS_PER_SESSION` | **50** | 与 LIMIT 配合，避免单会话占满结果 |
+| `AN_SEARCH_TIMEOUT_MS` | **800** | 覆盖 2000+ 真实会话（约 2 年重度使用）；实测 500 会话全量仅 372ms |
+| `AN_SEARCH_PER_SESSION_MS` | **100** | 10 万条消息的会话也只需 20ms，100ms 有充分余量（异常巨大的文件才触发） |
+| `AN_SEARCH_MAX_SESSIONS` | **500** | 按 `updated_at` 倒序，优先搜最近会话 |
+| `AN_SEARCH_HITS_PER_SESSION` | **50** | 与 LIMIT 配合，避免单会话占满结果 |
 
 **实现要点**：
 - 连接复用（`_session_db` 线程本地缓存）：单文件成本从 0.45ms 降到 0.13ms（3.5x）；

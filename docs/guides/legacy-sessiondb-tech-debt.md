@@ -16,7 +16,7 @@ webui DB (`quantnodes_agentnodes_user.db`):
 
 | Aspect | Legacy SessionDB | Webui DB |
 |--------|------------------|----------|
-| Path | `~/.quantnodes-research/sessions.db` | `~/.quantnodes/quantnodes_agentnodes_user.db` |
+| Path | `~/.agentnodes/sessions.db` | `~/.quantnodes/quantnodes_agentnodes_user.db` |
 | Schema | `id INTEGER`, `role`, `content`, `timestamp` | `id TEXT`, `role`, `content`, `created_at`, `seq`, `message_type`, `message_parts` |
 | Message parts | No | Yes (Phase 2) |
 | Message type | No | Yes (user/assistant/tool/compaction) |

@@ -276,7 +276,7 @@ class ComputeFactorTool(BaseTool):
         except Exception as exc:                    # noqa: BLE001
             return err_actionable(
                 f"db open failed: {exc}",
-                fix="ensure workspace has data.duckdb; run quantnodes-research init or import_data first",
+                fix="ensure workspace has data.duckdb; run agentnodes init or import_data first",
                 tool="compute_factor",
             )
         if conn is None:

@@ -12,7 +12,7 @@
           "auth"
         ],
         "summary": "Register",
-        "description": "Register a new user (opt-in via SR_ALLOW_REGISTRATION=1).",
+        "description": "Register a new user (opt-in via AN_ALLOW_REGISTRATION=1).",
         "operationId": "register_api_auth_register_post",
         "requestBody": {
           "content": {

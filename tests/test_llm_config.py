@@ -61,10 +61,10 @@ def fake_llm_json(tmp_path: Path, monkeypatch) -> Path:
 @pytest.fixture
 def clear_env(monkeypatch):
     for k in (ENV_API_KEY, ENV_BASE_URL, ENV_MODEL, ENV_LLM_API_KEY,
-              "QUANTNODES__LLM__PROVIDER", "QUANTNODES__LLM__MODEL",
-              "QUANTNODES__LLM__BASE_URL", "QUANTNODES__LLM__API_KEY",
-              "QUANTNODES__LLM__TIMEOUT", "QUANTNODES__LLM__MAX_RETRIES",
-              "QUANTNODES__LLM__MAX_TOKENS", "QUANTNODES__LLM__ENABLED"):
+              "AGENTNODES__LLM__PROVIDER", "AGENTNODES__LLM__MODEL",
+              "AGENTNODES__LLM__BASE_URL", "AGENTNODES__LLM__API_KEY",
+              "AGENTNODES__LLM__TIMEOUT", "AGENTNODES__LLM__MAX_RETRIES",
+              "AGENTNODES__LLM__MAX_TOKENS", "AGENTNODES__LLM__ENABLED"):
         monkeypatch.delenv(k, raising=False)
 
 
@@ -354,49 +354,49 @@ class TestDotenvLoading:
         location, not the process cwd, so a workspace ``.env`` was never
         picked up in the serve process. The fix loads ``cwd/.env`` explicitly.
         """
-        (tmp_path / ".env").write_text("SR_DOTENV_CWD_ONLY=1\n")
+        (tmp_path / ".env").write_text("AN_DOTENV_CWD_ONLY=1\n")
         # Isolate from the host's ~/.quantnodes/.env (real API keys).
         monkeypatch.setenv("HOME", str(tmp_path))
         monkeypatch.setenv("USERPROFILE", str(tmp_path))
         monkeypatch.chdir(tmp_path)
-        monkeypatch.delenv("SR_DOTENV_CWD_ONLY", raising=False)
+        monkeypatch.delenv("AN_DOTENV_CWD_ONLY", raising=False)
         self._restore_dotenv(monkeypatch)
         _ORIGINAL_TRY_LOAD_DOTENV()
-        assert os.environ.get("SR_DOTENV_CWD_ONLY") == "1"
+        assert os.environ.get("AN_DOTENV_CWD_ONLY") == "1"
 
     def test_cwd_dotenv_does_not_override_process_env(self, monkeypatch, tmp_path):
         """dotenv uses override=False: explicit process env vars always win."""
-        (tmp_path / ".env").write_text("SR_DOTENV_CWD_ONLY=from-file\n")
-        monkeypatch.setenv("SR_DOTENV_CWD_ONLY", "from-process-env")
+        (tmp_path / ".env").write_text("AN_DOTENV_CWD_ONLY=from-file\n")
+        monkeypatch.setenv("AN_DOTENV_CWD_ONLY", "from-process-env")
         monkeypatch.setenv("HOME", str(tmp_path))
         monkeypatch.setenv("USERPROFILE", str(tmp_path))
         monkeypatch.chdir(tmp_path)
         self._restore_dotenv(monkeypatch)
         _ORIGINAL_TRY_LOAD_DOTENV()
-        assert os.environ["SR_DOTENV_CWD_ONLY"] == "from-process-env"
+        assert os.environ["AN_DOTENV_CWD_ONLY"] == "from-process-env"
 
     def test_quantnodes_dotenv_still_loaded(self, monkeypatch, tmp_path):
         """The canonical ~/.quantnodes/.env load must keep working."""
         qdir = tmp_path / ".quantnodes"
         qdir.mkdir()
-        (qdir / ".env").write_text("SR_DOTENV_QUANTNODES=1\n")
+        (qdir / ".env").write_text("AN_DOTENV_QUANTNODES=1\n")
         monkeypatch.setenv("HOME", str(tmp_path))
         monkeypatch.setenv("USERPROFILE", str(tmp_path))
         monkeypatch.chdir(tmp_path)  # cwd has no .env — only quantnodes has it
         self._restore_dotenv(monkeypatch)
         _ORIGINAL_TRY_LOAD_DOTENV()
-        assert os.environ.get("SR_DOTENV_QUANTNODES") == "1"
+        assert os.environ.get("AN_DOTENV_QUANTNODES") == "1"
 
     def test_cwd_dotenv_takes_priority_over_quantnodes_env(self, monkeypatch, tmp_path):
         """cwd .env is loaded before ~/.quantnodes/.env; with override=False
         the earlier (cwd) value wins over a conflicting quantnodes value."""
-        (tmp_path / ".env").write_text("SR_DOTENV_BOTH=cwd\n")
+        (tmp_path / ".env").write_text("AN_DOTENV_BOTH=cwd\n")
         qdir = tmp_path / ".quantnodes"
         qdir.mkdir()
-        (qdir / ".env").write_text("SR_DOTENV_BOTH=quantnodes\n")
+        (qdir / ".env").write_text("AN_DOTENV_BOTH=quantnodes\n")
         monkeypatch.setenv("HOME", str(tmp_path))
         monkeypatch.setenv("USERPROFILE", str(tmp_path))
         monkeypatch.chdir(tmp_path)
         self._restore_dotenv(monkeypatch)
         _ORIGINAL_TRY_LOAD_DOTENV()
-        assert os.environ.get("SR_DOTENV_BOTH") == "cwd"
+        assert os.environ.get("AN_DOTENV_BOTH") == "cwd"

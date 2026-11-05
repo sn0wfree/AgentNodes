@@ -12,7 +12,7 @@
 | 卡死防护事件报告 | `GET /api/admin/hangs/report` | X-Admin-Token | 过去 24h 各防护层触发频率，阈值调优依据 |
 | 卡死防护事件（CLI） | `strategy-research hangs --hours 24` | 本地 | 无 HTTP 时手动补跑日报 |
 
-Admin token：`SR_ADMIN_TOKEN` 环境变量。未设置时 admin 端点返回 `503`。
+Admin token：`AN_ADMIN_TOKEN` 环境变量。未设置时 admin 端点返回 `503`。
 
 ---
 
@@ -26,7 +26,7 @@ Admin token：`SR_ADMIN_TOKEN` 环境变量。未设置时 admin 端点返回 `5
 ```json
 {
   "session_id": "sess-x",
-  "db_path": "/home/ll/.quantnodes-research/goals.db",
+  "db_path": "/home/ll/.agentnodes/goals.db",
   "generated_at": "2026-08-14T13:00:00+00:00",
   "watchdog":   { "alive": true, "interval_s": 60, "heartbeat_timeout_s": 3600 },
   "concurrency":{
@@ -97,11 +97,11 @@ Admin token：`SR_ADMIN_TOKEN` 环境变量。未设置时 admin 端点返回 `5
 
 | event_type | 触发点 | 阈值 |
 |---|---|---|
-| `wallclock_timeout` | LLM 流式墙钟超时 | `SR_AGENT_WALLCLOCK_TIMEOUT`（默认 1800s） |
-| `log_stall` | 回测/后台子进程日志停滞 | `SR_BACKTEST_STALL_TIMEOUT`（默认 300s） |
+| `wallclock_timeout` | LLM 流式墙钟超时 | `AN_AGENT_WALLCLOCK_TIMEOUT`（默认 1800s） |
+| `log_stall` | 回测/后台子进程日志停滞 | `AN_BACKTEST_STALL_TIMEOUT`（默认 300s） |
 | `no_progress` | agent 连续 N 次相同 tool_call | `no_progress_window`（默认 3） |
 | `circuit_breaker_open` | 工具熔断器 OPEN | `failure_threshold` / `max_total_failures` |
-| `watchdog_interrupt` | scheduler 心跳陈旧强制中断 | `SR_STUDY_HEARTBEAT_TIMEOUT`（默认 3600s） |
+| `watchdog_interrupt` | scheduler 心跳陈旧强制中断 | `AN_STUDY_HEARTBEAT_TIMEOUT`（默认 3600s） |
 
 **HTTP**：`GET /api/admin/hangs/report?hours=24&limit=50` → `{status, window_hours, report}`，
 `report` 含 `total_events / by_type / by_study / recent`。
@@ -123,13 +123,13 @@ Admin token：`SR_ADMIN_TOKEN` 环境变量。未设置时 admin 端点返回 `5
 | surface | console 流 | 行为 |
 |---|---|---|
 | `web` | stderr | 默认文本格式自带 trace 字段 |
-| `cli` | stderr | 严格开关：SR_LOG_JSON / SR_LOG_FILE 任一设置才装配（TUI 保护） |
+| `cli` | stderr | 严格开关：AN_LOG_JSON / AN_LOG_FILE 任一设置才装配（TUI 保护） |
 | `mcp` | stderr | stdout 是 JSON-RPC 协议帧，绝不混日志 |
 | `script` | stdout | 子进程输出被 run_bg 重定向进 run.log（喂 log_stall） |
 
-- `SR_LOG_LEVEL` / `SR_LOG_JSON` / `SR_LOG_FILE` 三开关统一解析；`SR_LOG_FILE`
+- `AN_LOG_LEVEL` / `AN_LOG_JSON` / `AN_LOG_FILE` 三开关统一解析；`AN_LOG_FILE`
   开启 RotatingFileHandler（10MB×5，默认关闭不建文件，相对路径落
-  `~/.quantnodes-research/logs/`）。
+  `~/.agentnodes/logs/`）。
 - 默认文本格式带 trace 字段：`%(asctime)s %(levelname)-8s %(name)s
   [t=%(trace_id)s sid=%(session_id)s st=%(study_id)s r=%(round_num)s] %(message)s`。
 - 双写在 handler 层完成（console + file 同挂一个 logger，借鉴
@@ -142,7 +142,7 @@ Admin token：`SR_ADMIN_TOKEN` 环境变量。未设置时 admin 端点返回 `5
 ### 4.1 启用 JSON 日志
 
 ```
-SR_LOG_JSON=1   # 启用单行 JSON 日志（默认关闭，输出纯文本）
+AN_LOG_JSON=1   # 启用单行 JSON 日志（默认关闭，输出纯文本）
 ```
 
 启用后每行日志变为：
@@ -201,7 +201,7 @@ journalctl -u strategy-research | jq 'select(.study_id=="st-9")'
 - `TraceFilter` 挂在**各 handler** 上（`ensure_trace_filter`，幂等；defect #17
   修复——logger 级 filter 对子 logger 传播的记录无效），每条被处理的
   LogRecord 注入 `record.trace_id/session_id/study_id/round_num`
-- `setup_trace_logging()` 幂等，`SR_LOG_JSON=1` 时把所有 root handler 的
+- `setup_trace_logging()` 幂等，`AN_LOG_JSON=1` 时把所有 root handler 的
   formatter 换成 `JsonFormatter`；生产入口统一走 `configure_logging(surface)`
 
 ### 4.5 已修 bug
@@ -336,7 +336,7 @@ chat 路径经 `_LoopEventForwarder` offload 到 trace-blobs；study 的 sink �
 EventStore，必须先剥——保留 `system_prompt_hash` / `tools_hash` /
 `system_prompt_len` 指纹（定位「prompt 变没变」足够，体积差三个量级）。
 
-### 8.3 CLI/MCP 的 SR_LOG_JSON 开关
+### 8.3 CLI/MCP 的 AN_LOG_JSON 开关
 
 `setup_trace_logging()` 此前唯一生产调用点是 `api/app.py`——CLI/TUI/MCP
 进程既无 TraceFilter 也无 JsonFormatter，trace_id 关联只在 Web 生效。
@@ -344,9 +344,9 @@ EventStore，必须先剥——保留 `system_prompt_hash` / `tools_hash` /
 
 | 入口 | 行为 |
 |---|---|
-| Web | 不变（`create_app` 装配，`SR_LOG_JSON` 可选） |
-| CLI/TUI | `SR_LOG_JSON=1` 时才建 stderr handler + JSON 格式 + trace 过滤；**默认零改动**（TUI 是全屏界面，无条件挂 handler 会刷穿渲染） |
-| MCP stdio | `serve_stdio` 总是装配 `basicConfig` + TraceFilter（此前进程无 handler，INFO 日志全部不可见）；日志落 stderr，stdout 只走协议帧，`SR_LOG_JSON=1` 同样生效 |
+| Web | 不变（`create_app` 装配，`AN_LOG_JSON` 可选） |
+| CLI/TUI | `AN_LOG_JSON=1` 时才建 stderr handler + JSON 格式 + trace 过滤；**默认零改动**（TUI 是全屏界面，无条件挂 handler 会刷穿渲染） |
+| MCP stdio | `serve_stdio` 总是装配 `basicConfig` + TraceFilter（此前进程无 handler，INFO 日志全部不可见）；日志落 stderr，stdout 只走协议帧，`AN_LOG_JSON=1` 同样生效 |
 
 CLI 日志走 stderr（`logging.basicConfig` 默认），不会污染 TUI 的 stdout 渲染。
 
@@ -375,7 +375,7 @@ branch_id, seq)` 保证分支内单调。
 - 大字段（`system_prompt` / `tools_schema` / `content`）offload 到
   `<event-db>/trace-blobs/`，引用记入 `blob_refs(blob_path, ref_count,
   first_seen, last_access)`。`scripts/cleanup_blobs.py` 按 TTL=365 天
-  (`SR_BLOB_TTL_DAYS`) 删除非活跃 blob，写 `blob-cleanup-audit.log`。
+  (`AN_BLOB_TTL_DAYS`) 删除非活跃 blob，写 `blob-cleanup-audit.log`。
 
 运维：
 

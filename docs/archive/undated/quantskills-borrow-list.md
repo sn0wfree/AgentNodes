@@ -1,7 +1,7 @@
 # QuantStudio-quantskills 调研 — 可借鉴项
 
 > 2026-09-29 · 对象: `D:\Github\QuantStudio-quantskills`  
-> 对照: `quantnodes-strategy-research`（AI Agent 量化研究框架）  
+> 对照: `agentnodes`（AI Agent 量化研究框架）  
 > **许可: GPL-3.0-or-later / PandaAI 商业双授权 — 只借思想，不抄代码**
 
 ---

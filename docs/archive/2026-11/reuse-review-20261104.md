@@ -221,9 +221,9 @@ def fetch(self, codes, start_date, end_date, *, interval="1D", fields=None):
 **环境变量重复读取**（同一变量被多处读）：
 
 ```
-SR_WORKSPACE_PATH   11 处     ← 最值得收敛
-SR_ENFORCE_STUDY_IDOR  4 处
-SR_GOAL_DB_PATH  3 · SR_HYPOTHESES_PATH 3 · STATIC_DIR 3 · CORS_ORIGINS 3
+AN_WORKSPACE_PATH   11 处     ← 最值得收敛
+AN_ENFORCE_STUDY_IDOR  4 处
+AN_GOAL_DB_PATH  3 · AN_HYPOTHESES_PATH 3 · STATIC_DIR 3 · CORS_ORIGINS 3
 ```
 
 `foundation/config_loader.py` 已存在但未被统一使用。
@@ -231,7 +231,7 @@ SR_GOAL_DB_PATH  3 · SR_HYPOTHESES_PATH 3 · STATIC_DIR 3 · CORS_ORIGINS 3
 **建议（Pattern：Facade + frozen dataclass Config）**：
 - 建 `foundation/settings.py`：`@dataclass(frozen=True) class Settings`，
   启动时读一次环境，之后只读
-- `SR_WORKSPACE_PATH` 11 处 → 1 处读取 + N 处引用
+- `AN_WORKSPACE_PATH` 11 处 → 1 处读取 + N 处引用
 
 **成本**：低（机械替换）。**风险**：低 —— 但要保留「测试中改环境变量」的
 现有能力（`monkeypatch.setenv` 目前是有效测试手法），改成 frozen 一次性读取后
@@ -331,7 +331,7 @@ graphify5: 46,029 节点 / 89,986 边   （+47 / +89）
 |---|---|---|---|---|---|---|
 | **1** | 删 `loop.py` 的 `_run_coro_in_sync` + `_get_hook_loop` 双份 | 3 处 | 极低 | 消除**双 event loop 线程**隐患 | Extract Module | ✅ **已做** |
 | **2** | `foundation/registry.py` 定去留（建议删） | 91 行 + 348 行测试 + 4 处登记 | 极低 | 去掉零引用抽象 | —（反向） | ⏸ **待拍板**（见 §2.2） |
-| **3** | `SR_WORKSPACE_PATH` 等 11 处环境变量收敛到 `Settings` | 中 | 中 | 配置可审计、启动只读一次 | Facade + frozen dataclass | 待办 |
+| **3** | `AN_WORKSPACE_PATH` 等 11 处环境变量收敛到 `Settings` | 中 | 中 | 配置可审计、启动只读一次 | Facade + frozen dataclass | 待办 |
 | **4** | 8 loader 的 `fetch()` 模板化 + 后处理统一走 `normalize_ohlcv` | 中 | 中 | 消除 ~70 行重复；统一契约 | Template Method + Protocol | 待办 |
 | **5** | `compute_factor.py`（93 函数）拆分 + Facade 保兼容 | 中 | 中 | 超大模块治理 | Extract Module + Facade | 待办 |
 | 6 | 27 组 `test_empty` 类测试参数化 | 中 | 低 | 缩短 CI | parametrize | 待办 |

@@ -170,7 +170,7 @@ This safety check **terminates the 700dc7f7 infinite loop**:
 
 - `llm.json` "compact" section: deprecated fields are still loadable
   but ignored at runtime. Old configs work without changes.
-- `SR_KEEP_ALL_COMPACTIONS=1` env var: unchanged (still forces
+- `AN_KEEP_ALL_COMPACTIONS=1` env var: unchanged (still forces
   `keep_all_compactions_in_history=True`).
 - Public API: `CompactConfig`, `compact_messages`, `_llm_summarize_v2`,
   `_fix_tool_pairs`, `_serialize_message`, `_estimate_tokens`,

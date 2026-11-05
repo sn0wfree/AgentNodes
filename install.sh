@@ -17,7 +17,7 @@
 #   - 未配置 → 提示运行 init
 #
 # 启动 Web UI:
-#   quantnodes-strategy-research serve --host 0.0.0.0 --port 87183
+#   agentnodes serve --host 0.0.0.0 --port 87183
 #
 # 访问 http://localhost:87183
 
@@ -65,7 +65,7 @@ check_llm_config() {
     _result=$($PYTHON_BIN -c "
 import sys
 sys.path.insert(0, '$PROJECT_ROOT/src')
-from agentnodes.cli.llm_config_check import check_llm_config
+from agentnodes.interfaces.cli.llm_config_check import check_llm_config
 import json
 status = check_llm_config()
 print(json.dumps(status, ensure_ascii=False))
@@ -104,7 +104,7 @@ Examples:
   $0 --dev                        # 开发模式
   $0 --e2e                        # CI 用：完整安装 + E2E + 视觉回归
   $0 --record-baselines           # 首次/大改后：重新录制视觉基线
-  quantnodes-strategy-research serve --host 0.0.0.0 --port 87183
+  agentnodes serve --host 0.0.0.0 --port 87183
 EOF
 }
 
@@ -266,7 +266,7 @@ record_visual_baselines() {
 uninstall_all() {
     header "卸载"
     warn "删除 Python 包 ..."
-    $PIP_BIN uninstall -y quantnodes-strategy-research 2>/dev/null || true
+    $PIP_BIN uninstall -y agentnodes 2>/dev/null || true
 
     warn "删除前端 node_modules ..."
     rm -rf "$PROJECT_ROOT/webui/frontend/node_modules"
@@ -305,7 +305,7 @@ EOF
 
    启动 Web UI 之前，请先配置 LLM（任选其一）：
    1. 交互式向导：
-      quantnodes-research init
+      agentnodes init
    2. 手动创建配置文件：
       mkdir -p ~/.quantnodes
       echo 'LLM_API_KEY=sk-...' > ~/.quantnodes/.env
@@ -318,14 +318,14 @@ EOF
 
     cat <<'EOF'
 📦 启动 Web UI（推荐）：
-   quantnodes-strategy-research serve --host 0.0.0.0 --port 87183
+   agentnodes serve --host 0.0.0.0 --port 87183
    # 浏览器访问 http://localhost:87183
 
 📦 启动 TUI（终端界面）：
-   quantnodes-strategy-research
+   agentnodes
 
 📦 启动纯 API：
-   quantnodes-strategy-research api serve --port 8765
+   agentnodes api serve --port 8765
 
 🧪 运行测试：
    ./install.sh --e2e                              # CI: 完整安装 + E2E (Playwright)
@@ -333,7 +333,7 @@ EOF
    cd webui/frontend && npm test                                 # 前端 27 测试
 
 🛠  开发模式：
-   后端: quantnodes-strategy-research serve --reload --port 87183
+   后端: agentnodes serve --reload --port 87183
    前端: cd webui/frontend && npm run dev   # http://localhost:5173
 EOF
 }

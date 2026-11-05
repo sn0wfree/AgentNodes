@@ -17,7 +17,7 @@
 | 借鉴方式 | 整包复制关键模块 + 自写最小版 |
 | 当前范围 | P0 + P1 + P1.5 + P2（17 周） |
 | Skills 范围 | P0+P1 不涉及；P2 阶段再讨论 |
-| CLI 名 | 保持 `quantnodes-research` |
+| CLI 名 | 保持 `agentnodes` |
 | LLM 集成 | OpenAI 兼容通用（httpx，零 LangChain） |
 | 沙箱策略 | AST guard + 路径白名单 |
 | 测试策略 | 仅 e2e smoke test |
@@ -25,8 +25,8 @@
 | License 处理 | 保留 MIT，致敬原作者（HKUDS + llmwikify） |
 | Hook 系统 | 纯 llmwikify 模式（UnifiedHook + AgentHook 两层） |
 | Session-Memory | 自动归档到 `<workspace>/memory/` |
-| Memory FTS5 | 全局 `~/.quantnodes-research/memory/memory_fts5.db` |
-| Session 存储 | 全局 `~/.quantnodes-research/sessions.db` |
+| Memory FTS5 | 全局 `~/.agentnodes/memory/memory_fts5.db` |
+| Session 存储 | 全局 `~/.agentnodes/sessions.db` |
 | Memory 注入 | 每个 user message 前注入 recalled memories |
 | 自动 reindex | 启动时自动 reindex |
 
@@ -58,7 +58,7 @@
 
 ### 2.1 目标
 
-`quantnodes-research init /path/to/workspace` 真正能跑出 workspace，且 baseline 回测有真实指标。
+`agentnodes init /path/to/workspace` 真正能跑出 workspace，且 baseline 回测有真实指标。
 
 ### 2.2 现状痛点（来自子代理扫描）
 
@@ -106,18 +106,18 @@
 
 ```bash
 $ pip install -e .
-$ quantnodes-research init /tmp/ws
+$ agentnodes init /tmp/ws
 ✓ workspace 已创建（不再 crash）
 $ ls /tmp/ws/strategies/<n>/runs/
 run_0000/
 $ cat /tmp/ws/strategies/<n>/runs/run_0000/metrics.json
 {"sharpe": 0.42, "calmar": 0.38, "max_dd": -0.18, ...}  # 8 项真实指标
-$ quantnodes-research preflight /tmp/ws
+$ agentnodes preflight /tmp/ws
 ✓ LLM provider: ok
 ✓ DuckDB: writable
 ✓ Data source (tencent): reachable
 ✓ OHLCV integrity: ok
-$ quantnodes-research evaluate /tmp/ws --strategy momentum_20_60
+$ agentnodes evaluate /tmp/ws --strategy momentum_20_60
 ✓ 重新跑通
 $ pytest tests/ -v
 ... PASSED
@@ -161,7 +161,7 @@ LLM agent 通过 ReAct 循环修改 `strategy.py` 并 commit；cross-run memory 
 | C3 | `src/agent/progress.py` | ~150 | `core/agent/progress.py` | 改 home dir |
 | C4 | `src/agent/trace.py` | ~300 | `core/agent/trace.py` | 改 home dir |
 | C5 | `src/tools/redaction.py` | ~80 | `core/agent/redaction.py` | 仅改 import |
-| C6 | `src/memory/persistent.py` | 265 | `core/memory/persistent.py` | 改 `~/.quantnodes-research/memory/` |
+| C6 | `src/memory/persistent.py` | 265 | `core/memory/persistent.py` | 改 `~/.agentnodes/memory/` |
 | **合计** | | **~940** | | |
 
 每个文件头加：
@@ -223,8 +223,8 @@ $ export OPENAI_API_KEY=sk-xxx
 $ export OPENAI_BASE_URL=https://api.deepseek.com/v1
 $ export OPENAI_MODEL=deepseek-chat
 
-$ quantnodes-research init /tmp/ws
-$ quantnodes-research run --workspace /tmp/ws \
+$ agentnodes init /tmp/ws
+$ agentnodes run --workspace /tmp/ws \
     --max-iter 3 --target-calmar 0.5 \
     --prompt "试试 momentum_20_60，看 sharpe 能不能到 0.8"
 
@@ -238,7 +238,7 @@ abc1234 agent: iter=1 momentum_20_60 sharpe=0.42
 def5678 agent: iter=2 momentum_20_60 sharpe=0.55
 789abcd agent: iter=3 momentum_20_60 sharpe=0.81
 
-$ cat ~/.quantnodes-research/memory/MEMORY.md
+$ cat ~/.agentnodes/memory/MEMORY.md
 # Memory Index (1 entries)
 - [feedback] momentum_20_60 在中小盘失效
 
@@ -394,7 +394,7 @@ class CompositeHook:
 #### 4.5.1 FTS5 索引
 
 ```sql
--- ~/.quantnodes-research/memory/memory_fts5.db
+-- ~/.agentnodes/memory/memory_fts5.db
 CREATE VIRTUAL TABLE memory_fts USING fts5(
     path,
     title,
@@ -433,7 +433,7 @@ def format_context_for_prompt(self, query: str, max_results: int = 3) -> str:
 #### 4.6.1 数据库 Schema
 
 ```sql
--- ~/.quantnodes-research/sessions.db
+-- ~/.agentnodes/sessions.db
 CREATE TABLE sessions (
     id TEXT PRIMARY KEY,
     created_at REAL,
@@ -521,20 +521,20 @@ class SessionMemoryHook(AgentHook):
 
 ```bash
 # Hook 系统
-$ quantnodes-research run --workspace /tmp/ws --prompt "test"
+$ agentnodes run --workspace /tmp/ws --prompt "test"
 # 验证 hooks 被调用
 
 # Session-Memory
-$ quantnodes-research /reset
+$ agentnodes /reset
 # 验证会话归档到 <workspace>/memory/
 
 # Memory FTS5
-$ quantnodes-research memory search --query "momentum"
+$ agentnodes memory search --query "momentum"
 # 验证 FTS5 搜索
 
 # Session 管理
-$ quantnodes-research session list
-$ quantnodes-research session search --query "strategy"
+$ agentnodes session list
+$ agentnodes session search --query "strategy"
 # 验证 session 管理
 
 # 测试
@@ -775,7 +775,7 @@ $ pytest tests/test_hooks.py tests/test_session_memory.py tests/test_memory_fts5
   - **progress.py** (184 行): ProgressEvent + HeartbeatTimer
   - **trace.py** (284 行): TraceWriter（env var 重命名 VIBE_TRADING_ → STRATEGY_RESEARCH_）
   - **redaction.py** (209 行): redact_payload + is_sensitive_arg
-  - **persistent.py** (368 行): PersistentMemory（路径改 ~/.quantnodes-research/memory/）
+  - **persistent.py** (368 行): PersistentMemory（路径改 ~/.agentnodes/memory/）
 - 适配原则：**不修改文件内容（除上述必要适配），不加任何 header 注释**
 - 归属文档：`docs/archive/undated/vibe-trading-credits.md`（新增，~80 行）
 - 测试：3233 passed（无回归）
@@ -1014,7 +1014,7 @@ $ pytest tests/test_hooks.py tests/test_session_memory.py tests/test_memory_fts5
 ### 3.6.4 P1.5 验收
 
 ```bash
-$ quantnodes-research autoresearch /tmp/ws --strategy momentum_20_60
+$ agentnodes autoresearch /tmp/ws --strategy momentum_20_60
 [Workflow] 启动研究循环
 [Round 1] DAG 调度: 9 个 agent 串行执行
   [Layer 0] researcher → data_quality → factor_analyst → strategist → portfolio_construction

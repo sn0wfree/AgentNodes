@@ -8,7 +8,7 @@ Endpoints (require admin token via X-Admin-Token header):
 - GET /api/admin/audit-log
   Read recent admin actions.
 
-Admin token: set SR_ADMIN_TOKEN env var. If unset, admin endpoints
+Admin token: set AN_ADMIN_TOKEN env var. If unset, admin endpoints
 return 503 (disabled). This is a safety mechanism to prevent
 accidental admin actions.
 
@@ -35,7 +35,7 @@ router = APIRouter()
 
 def _get_admin_token() -> str:
     """Get the admin token from env. Returns empty string if disabled."""
-    return os.environ.get("SR_ADMIN_TOKEN", "").strip()
+    return os.environ.get("AN_ADMIN_TOKEN", "").strip()
 
 
 def _verify_admin(x_admin_token: str | None = Header(None)) -> None:
@@ -44,7 +44,7 @@ def _verify_admin(x_admin_token: str | None = Header(None)) -> None:
     if not expected:
         raise HTTPException(
             status_code=503,
-            detail="Admin endpoints disabled. Set SR_ADMIN_TOKEN env var.",
+            detail="Admin endpoints disabled. Set AN_ADMIN_TOKEN env var.",
         )
     if not x_admin_token or not hmac.compare_digest(x_admin_token, expected):
         raise HTTPException(
@@ -107,7 +107,7 @@ async def toggle_keep_all_compactions(
     return {
         "status": "ok",
         "keep_all_compactions": enabled,
-        "note": "Runtime toggle. Persist by setting in ~/.quantnodes/llm.json or SR_KEEP_ALL_COMPACTIONS env var.",
+        "note": "Runtime toggle. Persist by setting in ~/.quantnodes/llm.json or AN_KEEP_ALL_COMPACTIONS env var.",
     }
 
 

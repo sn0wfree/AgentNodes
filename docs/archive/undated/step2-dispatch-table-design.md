@@ -9,7 +9,7 @@
 
 - `run_round_phases` 仍为 421 行单函数（line 52-473）：前置准备 → 引擎归一化（158）→ if/else 两分支（产出 `RoundOutcome`）→ shared finalization（341+）
 - C901 = **24**（Step 1 预期 ≤18 落空：契约化不改分支结构，见 Step 1 doc §8）
-- 归一化内联 3 个条件：默认 `"phases"`、`SR_STUDY_DAG_ENGINE=1` remap、`engine='dag'` remap
+- 归一化内联 3 个条件：默认 `"phases"`、`AN_STUDY_DAG_ENGINE=1` remap、`engine='dag'` remap
 
 ## 2. 关键事实：dag/env **不能删**
 
@@ -91,7 +91,7 @@ def _resolve_engine(study: Any) -> str:
     """Normalize the study's engine to a dispatch-table key.
 
     Behavior-preserving extraction of the inline remaps:
-      - SR_STUDY_DAG_ENGINE=1  -> langgraph (legacy env switch)
+      - AN_STUDY_DAG_ENGINE=1  -> langgraph (legacy env switch)
       - engine='dag'           -> langgraph (fake option; no dag executor)
     Both remaps now log a warning so the eventual removal (API/schema/
     models must stop accepting 'dag' first) can be data-driven.
@@ -132,7 +132,7 @@ def _resolve_engine(study: Any) -> str:
 | 2 | 定向测试 | phase/langgraph/claims/defense/dispatch/round_outcome/parity 全绿（含 dag/env 两个锁定测试） |
 | 3 | 69 文件回归 | 0 failed（基线 1277） |
 | 4 | ruff | 改动文件 F821/F811 清零；无新增 |
-| 5 | 行为等价 | `engine='dag'` 与 `SR_STUDY_DAG_ENGINE=1` 仍 remap 到 langgraph（warning 出现） |
+| 5 | 行为等价 | `engine='dag'` 与 `AN_STUDY_DAG_ENGINE=1` 仍 remap 到 langgraph（warning 出现） |
 
 ## 6. 风险与回滚
 
@@ -172,5 +172,5 @@ def _resolve_engine(study: Any) -> str:
 ### 未做（按 §2 收口策略留给后续）
 
 - 删除 `engine='dag'` 映射：需 API/schema/models 三处同步 + 更新测试 + DB 存量值检查
-- 删除 `SR_STUDY_DAG_ENGINE`：同上
+- 删除 `AN_STUDY_DAG_ENGINE`：同上
 - 本轮两者**保留但 warning 可观测**，为数据驱动删除铺路

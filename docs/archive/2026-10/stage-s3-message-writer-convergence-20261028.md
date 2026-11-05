@@ -11,7 +11,7 @@
 | ① projector | `api/session/projection_store.py:310` | **统一库** | ✅ 唯一合法写者（事件 fold） |
 | ② 直写 | `api/routers/web_session.py:126`（`persist_message`） | **统一库** | ⚠ 活路径（chat slash/compaction 用）——撞 UNIQUE 风险 |
 | ③ 直写 | `core/agent/memory_manager.py:270,355` | **统一库** | ⚠ MemoryManager 的 SQLiteStore 直写（CLI/goal 用） |
-| ④ 独立库 | `core/session/db.py:188,297`（`SESSIONS_DB = ~/.quantnodes-research/sessions.db`） | **另一个文件** | 🔴 9/5「admin/TUI 读不同历史」根因 |
+| ④ 独立库 | `core/session/db.py:188,297`（`SESSIONS_DB = ~/.agentnodes/sessions.db`） | **另一个文件** | 🔴 9/5「admin/TUI 读不同历史」根因 |
 
 关键发现：④ 是**独立的第二套库**（不是同一张表的第四个写者），消费方 =
 CLI `session` 命令族、TUI、MCP server、admin、`session_memory` hook。它自带
@@ -59,9 +59,9 @@ CLI `session` 命令族、TUI、MCP server、admin、`session_memory` hook。它
 
 | 场景 | 变化 |
 |---|---|
-| 统一库已有会话 | 不变（④ 改成读同一文件后，旧 `~/.quantnodes-research/sessions.db`
+| 统一库已有会话 | 不变（④ 改成读同一文件后，旧 `~/.agentnodes/sessions.db`
 数据**不自动迁移**——旧数据仍在原文件；CLI `/history` 从此看到 WebUI 的会话） |
-| `SR_SESSIONS_DB` 显式指定 | 照旧生效（优先级最高） |
+| `AN_SESSIONS_DB` 显式指定 | 照旧生效（优先级最高） |
 | `slash_session` 自定义 db_path | 不受影响（显式参数优先于默认） |
 | 测试 | 依赖旧库路径的测试需改为 tmp_path 或 env（逐个核对） |
 

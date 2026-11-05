@@ -33,7 +33,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 **包名重命名** `agentnodes` → `agentnodes` 是批次 9，**尚未执行**。
 
 ### Added
-- Chat 智能体 `run_command`（bash/python）能力：`SR_ALLOW_SHELL_TOOLS=1`
+- Chat 智能体 `run_command`（bash/python）能力：`AN_ALLOW_SHELL_TOOLS=1`
   环境变量开启（支持 cwd `.env` 配置），plan mode 始终禁用；
   抽出 `chat._shell_tools_enabled()` 统一开关决策。
 - `tests/test_chat_shell_tools.py` — shell 工具门控决策测试。
@@ -61,22 +61,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - swarm worker / projector / run_backtest 测试同步 v2 行为
   （ctx 注入、compaction 标记保留原消息、结构化错误 envelope）。
 - `auth.py`：注册端点恢复为可配置开关
-  （`SR_ALLOW_REGISTRATION=1` 开启，默认仍禁用；E2E 测试启用）。
+  （`AN_ALLOW_REGISTRATION=1` 开启，默认仍禁用；E2E 测试启用）。
 - `conftest_e2e.py`：前端构建检测 E2E hooks（`VITE_E2E=1`），缺失自动重建。
 - `test_webui_e2e_playwright.py`：适配 Chat 路由 `/chat`（`/` 现为 Dashboard）、
   自动创建会话行为、发送按钮新选择器。
 
 ### Fixed（测试套件顺序污染——全套 391 失败归零）
-- **浏览器测试默认跳过**（`SR_RUN_BROWSER_TESTS=1` 开启，e2e.yml 显式设置）：
+- **浏览器测试默认跳过**（`AN_RUN_BROWSER_TESTS=1` 开启，e2e.yml 显式设置）：
   Playwright sync API 会在主线程保留运行中的 asyncio loop，导致后续所有
   async 测试报 ``Runner.run() cannot be called from a running event loop``
   （波及 300+ 测试）。
 - **`sse_buffer.push`**：无当前 event loop 时（主线程被
   `asyncio.set_event_loop(None)` 分离）直接 `evt.set()`，不再因
   `get_event_loop()` 抛错而静默吞掉通知。
-- **`test_event_log_schema`**：tearDown 还原 `SR_WORKSPACE_PATH`
+- **`test_event_log_schema`**：tearDown 还原 `AN_WORKSPACE_PATH`
   （泄漏后整套 session DB 被重定向到共享临时库 → 级联 `database is locked`）。
-- **conftest 隔离**：每测试快照/还原 `SR_WORKSPACE_PATH`/`SR_SESSIONS_DB`/
+- **conftest 隔离**：每测试快照/还原 `AN_WORKSPACE_PATH`/`AN_SESSIONS_DB`/
   `HYPOTHESIS_USE_SQLITE`/`STATIC_DIR`；清理 SessionService 缓存 +
   MemoryManager 单例 + 主线程 SQLite 连接 + logging 级别 + asyncio loop 绑定。
 - **`test_hypothesis_registry_sqlite` 后的日志污染**：`create_app()` 会把
@@ -175,11 +175,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [0.5.0] - 2026-07-24
 
 ### Changed
-- **`quantnodes-research init`** rewritten as a 5-step TTY credentials wizard
+- **`agentnodes init`** rewritten as a 5-step TTY credentials wizard
   (mirrors vibe-trading). Two init paths now share a single backend:
-  - A. Explicit: `quantnodes-research init` → `cli.cmd_run_onboarding`
+  - A. Explicit: `agentnodes init` → `cli.cmd_run_onboarding`
     (Rich prompt_toolkit wizard, `--force` flag)
-  - B. Implicit: `quantnodes-research` bare TTY → `cli._auto_onboard.
+  - B. Implicit: `agentnodes` bare TTY → `cli._auto_onboard.
     _maybe_run_onboarding` (auto-trigger when no `.env` candidate exists)
 - Both paths write `~/.quantnodes/agentnodes/.env` with chmod 0600,
   atomic `.env.partial → os.replace`.
@@ -210,7 +210,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [0.4.0] - 2026-07-24
 
 ### Added (Textual TUI — full-screen multi-pane interface)
-The ``quantnodes-research`` binary now launches a real Textual-based
+The ``agentnodes`` binary now launches a real Textual-based
 full-screen terminal UI by default (TTY only). All 16 slash commands
 plus the streaming LLM bridge live inside the same Textual app.
 
@@ -334,7 +334,7 @@ so non-UTF-8 environments (legacy ``vt100``, plain serial consoles,
   `{index, label, payload, context}` or `None`, `has_pending_proposal(ctx)`.
 - **Entry dispatcher** — `cli/__main__.main()` picks Rich REPL when argv is empty or
   contains only `--banner`; otherwise delegates to argparse `cli.main()`. New
-  console_script: `quantnodes-research` (v0.4.0).
+  console_script: `agentnodes` (v0.4.0).
 
 ### Fixed
 - ``data_source_registry.get_loader_or_fallback``: unknown source names
@@ -418,7 +418,7 @@ so non-UTF-8 environments (legacy ``vt100``, plain serial consoles,
 ### Changed
 - ``GoalStore._on_goal_complete``: added missing ``logger`` import.
 - ``HypothesisStore._migrate_from_json``: JSON fallback path now derives
-  from ``db_path.parent`` (was hardcoded ``~/.quantnodes-research/``),
+  from ``db_path.parent`` (was hardcoded ``~/.agentnodes/``),
   enabling test isolation via ``tmp_path``.
 - Remove 9 unused imports (F401) across ``cli/`` modules.
 - Remove 2 unused variables (F841): ``rc`` in ``action_show_help``,
@@ -451,15 +451,15 @@ so non-UTF-8 environments (legacy ``vt100``, plain serial consoles,
 - `core/goal/policy.py`: normalize_required_text + reject_live_execution_objective
   (rejects English + Chinese live-trading phrases).
 - `core/goal/store.py`: SQLite-backed GoalStore at
-  `~/.quantnodes-research/goals.db` with WAL + busy_timeout + foreign keys.
+  `~/.agentnodes/goals.db` with WAL + busy_timeout + foreign keys.
 - `core/goal/context.py`: format_goal_context + format_goal_continuation_prompt.
 - `core/goal/cli.py`: 7 subcommands (start / status / evidence / audit /
   complete / list / cancel).
-- `quantnodes-research goal ...` CLI surface.
+- `agentnodes goal ...` CLI surface.
 
 #### P3-b: Hypothesis subsystem
 - `core/hypothesis/registry.py`: File-backed JSON registry at
-  `~/.quantnodes-research/hypotheses.json` (atomic write, malformed
+  `~/.agentnodes/hypotheses.json` (atomic write, malformed
   raises ValueError).
 - `core/hypothesis/auto_create.py`: HypothesisAutoCreator — idempotent
   helper that creates an `exploring` hypothesis on first AgentLoop call
@@ -469,7 +469,7 @@ so non-UTF-8 environments (legacy ``vt100``, plain serial consoles,
 - Token-overlap search across all serialized fields + recency tiebreak.
 - `core/hypothesis/cli.py`: 6 subcommands (create / list / show / update
   / search / link).
-- `quantnodes-research hypothesis ...` CLI surface.
+- `agentnodes hypothesis ...` CLI surface.
 
 #### P3-c: Validation toolkit
 - `core/validation/market.py`: MarketType enum (7 values) +
@@ -482,7 +482,7 @@ so non-UTF-8 environments (legacy ``vt100``, plain serial consoles,
 - `core/validation/runner.py`: Orchestrator with multi-market support.
 - `core/validation/utils.py`: `_json_safe` (NaN/inf → None), `_sharpe`.
 - `core/validation/cli.py`: `validate-run <run_dir>` command.
-- `quantnodes-research validate-run ...` CLI surface.
+- `agentnodes validate-run ...` CLI surface.
 
 #### P3-d: Integration
 - AgentLoop gained `session_id`, `strategy_name`,
@@ -521,7 +521,7 @@ so non-UTF-8 environments (legacy ``vt100``, plain serial consoles,
 ### Added
 - Initial release: workspace init, baseline backtest, AgentLoop, 6 tools.
 
-[0.4.0]: https://github.com/sn0wfree/quantnodes-strategy-research/releases/tag/v0.4.0
-[0.3.0]: https://github.com/sn0wfree/quantnodes-strategy-research/releases/tag/v0.3.0
-[0.2.0]: https://github.com/sn0wfree/quantnodes-strategy-research/releases/tag/v0.2.0
-[0.1.0]: https://github.com/sn0wfree/quantnodes-strategy-research/releases/tag/v0.1.0
+[0.4.0]: https://github.com/sn0wfree/agentnodes/releases/tag/v0.4.0
+[0.3.0]: https://github.com/sn0wfree/agentnodes/releases/tag/v0.3.0
+[0.2.0]: https://github.com/sn0wfree/agentnodes/releases/tag/v0.2.0
+[0.1.0]: https://github.com/sn0wfree/agentnodes/releases/tag/v0.1.0

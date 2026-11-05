@@ -1,6 +1,6 @@
 """MemoryFTS5 — FTS5 全文搜索索引。
 
-存储位置：~/.quantnodes-research/memory/memory_fts5.db
+存储位置：~/.agentnodes/memory/memory_fts5.db
 自动 reindex：启动时自动构建索引
 """
 
@@ -12,7 +12,7 @@ from pathlib import Path
 
 logger = logging.getLogger(__name__)
 
-MEMORY_FTS5_DB = Path.home() / ".quantnodes-research" / "memory" / "memory_fts5.db"
+MEMORY_FTS5_DB = Path.home() / ".agentnodes" / "memory" / "memory_fts5.db"
 
 _CREATE_TABLE = """
 CREATE VIRTUAL TABLE IF NOT EXISTS memory_fts USING fts5(

@@ -12,7 +12,7 @@ Source DBs (in merge order — earlier sources win on key conflict):
   2. ~/.quantnodes/quantnodes_agentnodes_user.db (older home-dir DB)
 
 Target:
-  resolve_session_db_path()  (SR_SESSIONS_DB > SR_WORKSPACE_PATH > cwd)
+  resolve_session_db_path()  (AN_SESSIONS_DB > AN_WORKSPACE_PATH > cwd)
 
 Tables migrated (when present in source):
   sessions, messages, message_parts, event_log, attempts
@@ -144,12 +144,12 @@ def main() -> int:
     parser.add_argument(
         "--workspace",
         default=None,
-        help="Workspace dir (sets SR_WORKSPACE_PATH). Defaults to cwd.",
+        help="Workspace dir (sets AN_WORKSPACE_PATH). Defaults to cwd.",
     )
     args = parser.parse_args()
 
     if args.workspace:
-        os.environ["SR_WORKSPACE_PATH"] = args.workspace
+        os.environ["AN_WORKSPACE_PATH"] = args.workspace
 
     target = resolve_session_db_path()
     print(f"Target unified DB: {target}\n")
@@ -159,7 +159,7 @@ def main() -> int:
 
     # Sources (merge order: workspace first since it's the most current)
     workspace_dir = (
-        Path(os.environ.get("SR_WORKSPACE_PATH", str(Path.cwd())))
+        Path(os.environ.get("AN_WORKSPACE_PATH", str(Path.cwd())))
     )
     sources = [
         ("workspace_old", workspace_dir / "quantnodes_agentnodes_user.db"),

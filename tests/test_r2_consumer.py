@@ -259,7 +259,7 @@ def _wait_for_rows(db_path: Path, want: int, timeout: float = 8.0) -> list[sqlit
 
 def test_receipt_contract_and_async_persistence(tmp_path, monkeypatch):
     db_path = tmp_path / "r2.db"
-    monkeypatch.setenv("SR_WORKSPACE_PATH", str(tmp_path))
+    monkeypatch.setenv("AN_WORKSPACE_PATH", str(tmp_path))
     
     import agentnodes.interfaces.api.routers.web_session as ws
     import agentnodes.interfaces.api.session.web_session_db as wsdb
@@ -314,7 +314,7 @@ def test_receipt_contract_and_async_persistence(tmp_path, monkeypatch):
 def test_sync_fallback_when_no_consumer(tmp_path, monkeypatch):
     """消费者未跑（现有测试/部署形态）→ 同步契约逐字节保留（等价门）。"""
     db_path = tmp_path / "r2b.db"
-    monkeypatch.setenv("SR_WORKSPACE_PATH", str(tmp_path))
+    monkeypatch.setenv("AN_WORKSPACE_PATH", str(tmp_path))
     
     import agentnodes.interfaces.api.routers.web_session as ws
     import agentnodes.interfaces.api.session.web_session_db as wsdb

@@ -292,14 +292,14 @@ docs/archive/undated/PLAN-phase1-4.md
 
 ### 5.1 目标
 
-把 `quantnodes-research init` 从 workspace scaffold（3 个 blocking prompts + 11 template copy + 27 skill copy + DuckDB init + git init + baseline backtest）改为 vibe-trading 风格的 5 步 TTY 向导。
+把 `agentnodes init` 从 workspace scaffold（3 个 blocking prompts + 11 template copy + 27 skill copy + DuckDB init + git init + baseline backtest）改为 vibe-trading 风格的 5 步 TTY 向导。
 
 ### 5.2 两条 init 路径
 
 | 路径 | 入口 | UI | 写 |
 |---|---|---|---|
-| A（显式 CLI） | `quantnodes-research init` | Rich prompt_toolkit | `~/.quantnodes/agentnodes/.env` |
-| B（首启自动） | `quantnodes-research`（TTY + 无 `.env`） | prompt_toolkit | `~/.quantnodes/agentnodes/.env` |
+| A（显式 CLI） | `agentnodes init` | Rich prompt_toolkit | `~/.quantnodes/agentnodes/.env` |
+| B（首启自动） | `agentnodes`（TTY + 无 `.env`） | prompt_toolkit | `~/.quantnodes/agentnodes/.env` |
 
 ### 5.3 文件影响
 

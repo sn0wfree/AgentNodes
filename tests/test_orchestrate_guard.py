@@ -74,20 +74,20 @@ def test_question_mark_inside_sentence_only_does_not_fire() -> None:
 
 def test_max_continues_default_and_env() -> None:
     assert max_continues() == DEFAULT_MAX_CONTINUES
-    os.environ["SR_ORCHESTRATOR_MAX_CONTINUES"] = "3"
+    os.environ["AN_ORCHESTRATOR_MAX_CONTINUES"] = "3"
     try:
         assert max_continues() == 3
     finally:
-        os.environ.pop("SR_ORCHESTRATOR_MAX_CONTINUES", None)
+        os.environ.pop("AN_ORCHESTRATOR_MAX_CONTINUES", None)
     assert max_continues() == DEFAULT_MAX_CONTINUES
 
 
 def test_max_continues_ignores_garbage() -> None:
-    os.environ["SR_ORCHESTRATOR_MAX_CONTINUES"] = "not-a-number"
+    os.environ["AN_ORCHESTRATOR_MAX_CONTINUES"] = "not-a-number"
     try:
         assert max_continues() == DEFAULT_MAX_CONTINUES
     finally:
-        os.environ.pop("SR_ORCHESTRATOR_MAX_CONTINUES", None)
+        os.environ.pop("AN_ORCHESTRATOR_MAX_CONTINUES", None)
 
 
 def test_continue_instruction_mentions_tool_and_done_marker() -> None:

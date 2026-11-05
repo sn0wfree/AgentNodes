@@ -234,6 +234,6 @@ strategist 白名单**含 run_backtest**（role_factory.py:41），agent 可在 
   保留 expected_goal_id/status）——runner 传 study_id 落账通过；
   evidence 落库强制 goal.session_id（goal/store.py:790）
 - scheduler 并行（§5.2）：`_session_loop` create_task 不等待 + 全局
-  semaphore（SR_STUDY_MAX_CONCURRENT=3）+ `_active_tasks`/`_dispatch_tasks`
+  semaphore（AN_STUDY_MAX_CONCURRENT=3）+ `_active_tasks`/`_dispatch_tasks`
 - **测试影响**：`test_goal_account_usage.py:203`（wrong_session_id 期望拒绝）
   已更新为期望通过；`create_study` 删 session_id 参数 → 测试调用点全量直改

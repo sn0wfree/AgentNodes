@@ -222,7 +222,7 @@ def main(argv: Optional[list[str]] = None) -> int:
     script and is exercised manually / by an integration test.
     """
     parser = argparse.ArgumentParser(
-        prog="quantnodes-research-interactive",
+        prog="agentnodes-interactive",
         description="Interactive REPL driver (slim testable wrapper).",
     )
     parser.add_argument("--banner", action="store_true", help="Print the startup banner and exit")

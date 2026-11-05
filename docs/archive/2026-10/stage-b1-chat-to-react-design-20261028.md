@@ -47,7 +47,7 @@ react 节点当前只覆盖 LLM↔工具循环本身：
 **不做「一次性替换」，做「并行接管 + 逐项等价」**：
 
 1. **B1-a/b**：react 节点补系统提示与上下文注入 → 用环境开关让 chat
-   走 react（`SR_CHAT_ENGINE=react`），默认仍 AgentLoop；
+   走 react（`AN_CHAT_ENGINE=react`），默认仍 AgentLoop；
 2. **B1-c/d/e**：逐项移植，每项移植后开关下跑全链路回归；
 3. **B1-f**：开关默认切到 react，观察；AgentLoop 的 chat 路径标记
    deprecated；

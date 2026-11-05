@@ -34,7 +34,7 @@ less-is-more 的两条判据：
 
 ```
 singleton.get_gateway()
-  workspace = resolve_workspace()          # SR_WORKSPACE_PATH 或默认
+  workspace = resolve_workspace()          # AN_WORKSPACE_PATH 或默认
   gw = Gateway(..., data_dir=<workspace>/.quantnodes/platform)
 ```
 

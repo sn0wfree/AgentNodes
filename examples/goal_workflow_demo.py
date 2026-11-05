@@ -7,7 +7,7 @@ Usage::
     python examples/goal_workflow_demo.py
 
 Requires:
-    - ``quantnodes-strategy-research`` installed (``pip install -e .``)
+    - ``agentnodes`` installed (``pip install -e .``)
     - PyYAML (``pip install pyyaml``)
 
 This demo loads the ``goal_market_analysis`` preset, executes the DAG

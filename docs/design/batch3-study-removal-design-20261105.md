@@ -118,7 +118,7 @@ class TicketStore:
     def recover_and_mark(self, reason="restart") -> list[Assignment]: ...
 ```
 
-**数据库路径**：沿用 `QUANTNODES_RESEARCH_GOAL_DB_PATH`（与 StudyStore 同库）。
+**数据库路径**：沿用 `AGENTNODES_GOAL_DB_PATH`（与 StudyStore 同库）。
 库名带 `RESEARCH` 是历史包袱，但改它会破坏既有用户数据——留作后续重命名
 （与阶段 2 的 `agentnodes` → `agentnodes` 包名重命名同批处理）。
 

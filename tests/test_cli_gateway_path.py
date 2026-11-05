@@ -26,8 +26,8 @@ def test_cli_has_no_legacy_agent_loop_path(monkeypatch):
 
 
 def test_cli_flag_on_dispatches_to_gateway(tmp_path, monkeypatch):
-    monkeypatch.setenv("QUANTNODES_RESEARCH_GOAL_DB_PATH", str(tmp_path / "g.db"))
-    monkeypatch.setenv("QUANTNODES_RESEARCH_HYPOTHESES_PATH", str(tmp_path / "h.json"))
+    monkeypatch.setenv("AGENTNODES_GOAL_DB_PATH", str(tmp_path / "g.db"))
+    monkeypatch.setenv("AGENTNODES_HYPOTHESES_PATH", str(tmp_path / "h.json"))
 
     from agentnodes.kernel.gateway import reset_gateway
 

@@ -12,7 +12,7 @@ Design:
 - ``JsonFormatter`` renders the record as a single-line JSON object.
 - ``setup_trace_logging()`` wires the filter onto the root logger and
   optionally swaps the handler's formatter to JSON when
-  ``SR_LOG_JSON=1``.
+  ``AN_LOG_JSON=1``.
 
 ContextVars propagate correctly across ``await`` boundaries and
 ``asyncio.create_task`` (via ``contextvars.copy_context()``), so a
@@ -172,13 +172,13 @@ def setup_trace_logging(
     re-applied based on ``json_output``.
 
     Args:
-        json_output: If ``None``, reads ``SR_LOG_JSON`` env var.
+        json_output: If ``None``, reads ``AN_LOG_JSON`` env var.
             ``1``/``true`` enables JSON; anything else keeps text.
         log_level: Root logger level (default INFO, usually from
-            ``SR_LOG_LEVEL``).
+            ``AN_LOG_LEVEL``).
     """
     if json_output is None:
-        json_output = os.environ.get("SR_LOG_JSON", "").lower() in ("1", "true")
+        json_output = os.environ.get("AN_LOG_JSON", "").lower() in ("1", "true")
 
     root = logging.getLogger()
     root.setLevel(log_level)

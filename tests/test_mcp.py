@@ -117,7 +117,7 @@ class TestMCPCLI:
         from agentnodes.interfaces.cli import main
         with pytest.raises(SystemExit) as exc_info:
             import sys
-            sys.argv = ["quantnodes-research", "mcp", "--help"]
+            sys.argv = ["agentnodes", "mcp", "--help"]
             main()
         assert exc_info.value.code == 0
 
@@ -125,6 +125,6 @@ class TestMCPCLI:
         from agentnodes.interfaces.cli import main
         with pytest.raises(SystemExit) as exc_info:
             import sys
-            sys.argv = ["quantnodes-research", "mcp", "list-tools", "--help"]
+            sys.argv = ["agentnodes", "mcp", "list-tools", "--help"]
             main()
         assert exc_info.value.code == 0

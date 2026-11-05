@@ -14,9 +14,9 @@ runner.py (54KB)
   └─ import phase_engine.run_round_phases     (line 1004, 函数内)
 
 phase_engine.py (36KB)
-  ├─ import runner.SR_AGENT_MAX_ITER          (line 18, 模块级)  ★ 真正的环
-  ├─ import runner.SR_STUDY_COLLECT_INTERVAL  (line 833, 函数内)
-  ├─ import runner.SR_STUDY_MAX_DEVIATION     (line 833, 函数内)
+  ├─ import runner.AN_AGENT_MAX_ITER          (line 18, 模块级)  ★ 真正的环
+  ├─ import runner.AN_STUDY_COLLECT_INTERVAL  (line 833, 函数内)
+  ├─ import runner.AN_STUDY_MAX_DEVIATION     (line 833, 函数内)
   └─ import runner.ShutdownReason             (line 833, 函数内)
 
 engine_common.py
@@ -41,14 +41,14 @@ engine_common.py
 """
 
 # 8 个常量（原样搬，值不变）
-SR_STUDY_MAX_DEVIATION = 3
-SR_STUDY_COLLECT_INTERVAL = 5
-SR_STUDY_MAX_DISCARD = 5
-SR_AGENT_MAX_ITER = 50
-SR_AGENT_NO_PROGRESS_WINDOW = 5
-SR_AGENT_MAX_PARSE_RETRIES = 2
-SR_AGENT_PARSE_BACKOFF_BASE = 5.0
-SR_AGENT_PARSE_BACKOFF_MAX = 30.0
+AN_STUDY_MAX_DEVIATION = 3
+AN_STUDY_COLLECT_INTERVAL = 5
+AN_STUDY_MAX_DISCARD = 5
+AN_AGENT_MAX_ITER = 50
+AN_AGENT_NO_PROGRESS_WINDOW = 5
+AN_AGENT_MAX_PARSE_RETRIES = 2
+AN_AGENT_PARSE_BACKOFF_BASE = 5.0
+AN_AGENT_PARSE_BACKOFF_MAX = 30.0
 
 class ShutdownReason:   # 13 个停因，原样搬
     ...
@@ -62,7 +62,7 @@ def parse_failed_agents(exec_result) -> list[str]:   # 纯函数
 | 文件 | 改动 |
 |---|---|
 | `contracts.py` | **新建**，接收上述符号（原样搬，不改值） |
-| `runner.py` | 删定义，改为 `from .contracts import ...` + 模块级 re-export（保持 `runner.SR_AGENT_MAX_ITER` / `_parse_failed_agents` 等旧路径可用） |
+| `runner.py` | 删定义，改为 `from .contracts import ...` + 模块级 re-export（保持 `runner.AN_AGENT_MAX_ITER` / `_parse_failed_agents` 等旧路径可用） |
 | `phase_engine.py` | `from .runner import ...` → `from .contracts import ...`（模块级 1 处 + 函数内 2 处） |
 | `engine_common.py` | `from .runner import ShutdownReason` → `from .contracts import ShutdownReason` |
 
@@ -107,7 +107,7 @@ def test_no_circular_import_between_engine_modules():
 |---|---|---|
 | 1 | AST：phase_engine 无 runner import | 通过 |
 | 2 | AST：engine_common 无 runner import | 通过 |
-| 3 | 旧路径仍可用 | `from agentnodes.core.study.runner import ShutdownReason` / `SR_AGENT_MAX_ITER` |
+| 3 | 旧路径仍可用 | `from agentnodes.core.study.runner import ShutdownReason` / `AN_AGENT_MAX_ITER` |
 | 4 | 值不变 | 4 个符号的值与搬前逐字相同 |
 | 5 | 域内无环（通用检查） | core/study 内 import 图无环 |
 

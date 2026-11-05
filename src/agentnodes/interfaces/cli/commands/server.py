@@ -86,7 +86,7 @@ def cmd_webui_serve(args) -> int:
         else:
             print("⚠ LLM 配置未完成（聊天 API 会返回 503）：")
             print("   - 缺少 ~/.quantnodes/llm.json 或 .env")
-            print("   - 运行：quantnodes-research init")
+            print("   - 运行：agentnodes init")
             print("   - 或设置：export OPENAI_API_KEY='sk-...'")
     except Exception as exc:  # noqa: BLE001
         print(f"⚠ LLM 配置检测失败: {exc}")
@@ -94,11 +94,11 @@ def cmd_webui_serve(args) -> int:
     # ── Server start ──────────────────────────────────────────────
     if getattr(args, "reload", False):
         # Push CLI args into env so create_app() picks them up on each reload
-        os.environ["SR_WORKSPACE_PATH"] = str(workspace.resolve())
+        os.environ["AN_WORKSPACE_PATH"] = str(workspace.resolve())
         if getattr(args, "goal_db", None):
-            os.environ["SR_GOAL_DB_PATH"] = args.goal_db
+            os.environ["AN_GOAL_DB_PATH"] = args.goal_db
         if getattr(args, "hypotheses_path", None):
-            os.environ["SR_HYPOTHESES_PATH"] = args.hypotheses_path
+            os.environ["AN_HYPOTHESES_PATH"] = args.hypotheses_path
         if static_dir:
             os.environ["STATIC_DIR"] = str(Path(static_dir).resolve())
 
@@ -142,11 +142,11 @@ def cmd_api_serve(args) -> int:
     print(f"   Docs:      http://{args.host}:{args.port}/docs")
 
     if getattr(args, "reload", False):
-        os.environ["SR_WORKSPACE_PATH"] = str(workspace.resolve())
+        os.environ["AN_WORKSPACE_PATH"] = str(workspace.resolve())
         if getattr(args, "goal_db", None):
-            os.environ["SR_GOAL_DB_PATH"] = args.goal_db
+            os.environ["AN_GOAL_DB_PATH"] = args.goal_db
         if getattr(args, "hypotheses_path", None):
-            os.environ["SR_HYPOTHESES_PATH"] = args.hypotheses_path
+            os.environ["AN_HYPOTHESES_PATH"] = args.hypotheses_path
 
         uvicorn.run(
             "agentnodes.interfaces.api.app:create_app",

@@ -18,7 +18,7 @@ if TYPE_CHECKING:
 
 _LLM_PARENT = argparse.ArgumentParser(
     add_help=False,
-    prog="quantnodes-research (LLM flags)",
+    prog="agentnodes (LLM flags)",
     description="LLM configuration overrides",
 )
 _llm_g = _LLM_PARENT.add_argument_group("LLM configuration")
@@ -91,5 +91,5 @@ def _cmd_llm_list_profiles() -> int:
     from agentnodes.foundation.llm.config import find_llm_config_path
     p = find_llm_config_path()
     print(f"# LLM config now lives at: {p}")
-    print("# (profile system retired; use `quantnodes-research init` to reconfigure)")
+    print("# (profile system retired; use `agentnodes init` to reconfigure)")
     return 0

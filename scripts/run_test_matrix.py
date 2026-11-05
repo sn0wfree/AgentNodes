@@ -224,7 +224,7 @@ def main() -> int:
         rc, elapsed, tail, _out = _run(
             ["tests/test_webui_e2e_playwright.py"],
             ["-q", "--tb=short"],
-            {"SR_RUN_BROWSER_TESTS": "1"},
+            {"AN_RUN_BROWSER_TESTS": "1"},
         )
         print(f"    {elapsed:6.1f}s  rc={rc}  {tail}")
         results.append(("browser", rc, elapsed, tail))

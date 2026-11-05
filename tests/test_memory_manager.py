@@ -287,7 +287,7 @@ class TestResolveDbPath:
     def test_default_creates_parent_dir(self, monkeypatch, tmp_path):
         from agentnodes.kernel.agent.memory_manager import SESSION_DB_FILENAME
         monkeypatch.setenv("HOME", str(tmp_path))
-        monkeypatch.delenv("SR_WORKSPACE_PATH", raising=False)
+        monkeypatch.delenv("AN_WORKSPACE_PATH", raising=False)
         monkeypatch.chdir(tmp_path)
         result = resolve_db_path()
         assert result.parent.exists()
@@ -295,7 +295,7 @@ class TestResolveDbPath:
 
     def test_env_override(self, monkeypatch, tmp_path):
         custom = tmp_path / "custom.db"
-        monkeypatch.setenv("SR_SESSIONS_DB", str(custom))
+        monkeypatch.setenv("AN_SESSIONS_DB", str(custom))
         result = resolve_db_path()
         assert result == custom
 

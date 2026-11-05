@@ -9,11 +9,11 @@ Covers:
   :func:`_finalize_llm_json` / :func:`_save_tokens_to_dotenv`
   (atomic JSON write + dotenv write, both chmod 0600).
 * :func:`agentnodes.interfaces.cli._auto_onboard._maybe_run_onboarding`
-  (the auto-trigger on bare ``quantnodes-research`` invocations).
+  (the auto-trigger on bare ``agentnodes`` invocations).
 * :func:`agentnodes.interfaces.cli._auto_onboard._migrate_legacy_env`
   (one-shot copy of legacy ``.env`` files).
 * :func:`agentnodes.interfaces.cli.__init__.cmd_run_onboarding` (the explicit
-  CLI path driven by ``quantnodes-research init``).
+  CLI path driven by ``agentnodes init``).
 
 All tests operate against ``llm_json_path`` + ``dotenv_path`` (test-only
 overrides; defaults point at ``~/.quantnodes/{llm.json,.env}``).

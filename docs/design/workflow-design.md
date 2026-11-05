@@ -286,9 +286,9 @@ Anti-overfit Analyst → Backtest Diagnostics
 
 ### 8.1 命令
 
-- `quantnodes-research workflow round`: 单轮 (JSON)
-- `quantnodes-research workflow loop`: 多轮 (JSONL)
-- `quantnodes-research workflow chat`: 单 Agent 调用 (JSON)
+- `agentnodes workflow round`: 单轮 (JSON)
+- `agentnodes workflow loop`: 多轮 (JSONL)
+- `agentnodes workflow chat`: 单 Agent 调用 (JSON)
 
 ### 8.2 输出格式
 

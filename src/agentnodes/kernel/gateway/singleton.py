@@ -109,11 +109,11 @@ def get_gateway(
 
 
 def _resolve_workspace() -> Any:
-    """workspace 根（SR_WORKSPACE_PATH 或 cwd）——与 gateway._resolve_workspace 同源。"""
+    """workspace 根（AN_WORKSPACE_PATH 或 cwd）——与 gateway._resolve_workspace 同源。"""
     import os
     from pathlib import Path
 
-    env = os.environ.get("SR_WORKSPACE_PATH")
+    env = os.environ.get("AN_WORKSPACE_PATH")
     return Path(env) if env else Path.cwd()
 
 

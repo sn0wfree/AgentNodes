@@ -12,7 +12,7 @@
 | # | 问题 | 证据 |
 |---|------|------|
 | 1 | 日志装配散点：4 处 `basicConfig` + `setup_trace_logging` 各自为政，格式/流/级别不一致 | `api/app.py:44`、`api/session/backfill_event_log.py:326`、`cli/__main__.py:167`、`core/mcp/server.py:882` |
-| 2 | `SR_LOG_LEVEL` 重复解析 3 处 | `api/app.py:42`、`cli/__main__.py:170`、`core/mcp/server.py:879` |
+| 2 | `AN_LOG_LEVEL` 重复解析 3 处 | `api/app.py:42`、`cli/__main__.py:170`、`core/mcp/server.py:879` |
 | 3 | 默认文本格式不含 trace 字段——trace↔log 的 join key（trace_id/session_id/study_id/round_num）只在 JSON 模式可见 | `trace.py` 仅 `JsonFormatter` 输出四字段；default basicConfig 格式无 |
 | 4 | `_dlog` 双写（`logger.info` + `print`）重复定义 4 处，web/MCP 下双份输出（logger→stderr + print→stdout） | `study/{runner,scheduler,store,monitor}.py` 各一份 `def _dlog` |
 | 5 | `hanging_events` 表无 trace_id/round_num 列——卡死事件无法与 trace/日志按轮次关联 | `hanging_events.py:41-54` schema、`:99-123` record() |
@@ -20,7 +20,7 @@
 
 ## 2. 用户决策（2026-11-02 确认）
 
-1. **文件日志**：选 (b) —— `SR_LOG_FILE` 开关 + RotatingFileHandler，默认关闭。
+1. **文件日志**：选 (b) —— `AN_LOG_FILE` 开关 + RotatingFileHandler，默认关闭。
 2. **`_dlog` 双写**：保留 `logger.info + print` 双写能力，**借鉴 CodersWheel `logger.py` 的双写方案**（借鉴分析见 §3）。
 3. **print 治理**：选 (a) 全量治理，先做 subprocess-feed 分类再批量替换。
 4. **hanging_events 加 trace_id/round_num 列**：做，并入 P0.5。
@@ -60,9 +60,9 @@ DEFAULT_TEXT_FORMAT = (
 def configure_logging(
     surface: str,                        # "web" | "cli" | "mcp" | "script"
     *,
-    level: int | str | None = None,      # None → SR_LOG_LEVEL → INFO
-    json_output: bool | None = None,     # None → SR_LOG_JSON → False
-    log_file: str | Path | None = None,  # None → SR_LOG_FILE → off
+    level: int | str | None = None,      # None → AN_LOG_LEVEL → INFO
+    json_output: bool | None = None,     # None → AN_LOG_JSON → False
+    log_file: str | Path | None = None,  # None → AN_LOG_FILE → off
     force: bool = False,                 # cli 严格模式下强制装配
 ) -> None: ...
 ```
@@ -72,15 +72,15 @@ def configure_logging(
 | surface | console 流 | 理由 |
 |---|---|---|
 | `web` | stderr | uvicorn 常规；stdout 不承诺 |
-| `cli` | stderr | TUI/界面输出走 print/rich 占 stdout；**默认不装配**（严格开关语义，与现状逐字节一致），`SR_LOG_JSON`/`SR_LOG_FILE` 任一设置或 `force=True` 才装配 |
+| `cli` | stderr | TUI/界面输出走 print/rich 占 stdout；**默认不装配**（严格开关语义，与现状逐字节一致），`AN_LOG_JSON`/`AN_LOG_FILE` 任一设置或 `force=True` 才装配 |
 | `mcp` | stderr | stdout = JSON-RPC 协议帧，绝不能混日志 |
 | `script` | **stdout** | 子进程/脚本输出被 `run_bg` 重定向进 run.log（喂 log_stall） |
 
 行为细节：
 - 幂等：重复调用先移除本模块此前挂的 handler 再重挂（输出不翻倍）；`TraceFilter` 仍全局只装一次（复用 `trace.py` 守卫）。
-- 级别统一解析：`level` 显式参数 > `SR_LOG_LEVEL` > INFO；同时设 `agentnodes` 命名空间级别。
-- JSON：`SR_LOG_JSON=1` → 全部 handler 换 `JsonFormatter`（复用现有类）。
-- 文件（P1）：`SR_LOG_FILE=path` 或显式 `log_file` → `RotatingFileHandler(path, maxBytes=10MB, backupCount=5, encoding="utf-8")`；相对路径基于**项目数据根** `~/.quantnodes-research/logs/`（`storage.sqlite.DEFAULT_DATA_DIR`，与各 store 同根，测试经 conftest home 沙箱自动重定向）解析；`SR_LOG_FILE` 未设时**不创建**任何文件（默认关闭）。
+- 级别统一解析：`level` 显式参数 > `AN_LOG_LEVEL` > INFO；同时设 `agentnodes` 命名空间级别。
+- JSON：`AN_LOG_JSON=1` → 全部 handler 换 `JsonFormatter`（复用现有类）。
+- 文件（P1）：`AN_LOG_FILE=path` 或显式 `log_file` → `RotatingFileHandler(path, maxBytes=10MB, backupCount=5, encoding="utf-8")`；相对路径基于**项目数据根** `~/.agentnodes/logs/`（`storage.sqlite.DEFAULT_DATA_DIR`，与各 store 同根，测试经 conftest home 沙箱自动重定向）解析；`AN_LOG_FILE` 未设时**不创建**任何文件（默认关闭）。
 - 任何装配失败不得阻断主流程（与现状 try/except 语义一致）。
 
 ### 4.2 `dual_log()`（P2，收敛 `_dlog`）
@@ -136,7 +136,7 @@ def dual_log(module: str, msg: str, *args) -> None:
 |---|---|---|
 | P0 | `logging_setup.py`（策略表+幂等+级别/JSON 解析）+ 4 处替换 | 新增单测 + c1 基线不涨 |
 | P0.5 | `DEFAULT_TEXT_FORMAT` 带 trace 字段 + hanging_events 加列 | 新增单测（旧库迁移、ContextVar 自动补） |
-| P1 | `SR_LOG_FILE` RotatingFileHandler | 新增单测（默认不建文件/开启落盘/轮转参数） |
+| P1 | `AN_LOG_FILE` RotatingFileHandler | 新增单测（默认不建文件/开启落盘/轮转参数） |
 | P2 | `dual_log` 收敛 + B 类替换 + print 门禁测试 | 门禁测试 + c1 基线不涨 |
 
 全量验收：cov 四段 ≥90（A 平台内核 / B 研究域 / C 能力层 / H core 剩余）、c1_gate 冻结基线 104、inventory `+N/0`、e2e `-m e2e` 全绿。
@@ -145,12 +145,12 @@ def dual_log(module: str, msg: str, *args) -> None:
 
 全部四批完成，实现与设计的偏差两处（均为改进）：
 
-1. **文件日志目录勘误**：`~/.quantnodes/logs/` → `~/.quantnodes-research/logs/`（项目数据根 `DEFAULT_DATA_DIR`，见 §4.1 已同步更正）。测试沙箱经 conftest home 重定向天然兼容。
+1. **文件日志目录勘误**：`~/.quantnodes/logs/` → `~/.agentnodes/logs/`（项目数据根 `DEFAULT_DATA_DIR`，见 §4.1 已同步更正）。测试沙箱经 conftest home 重定向天然兼容。
 2. **实现中发现 defect #17（真实缺陷）**：`TraceFilter` 此前挂在 root **logger** 上，但 Python logging 的 logger 级 filter 只对「该 logger 自己产生的记录」生效——子 logger 传播上来的记录不经过 `root.filters`。即 trace 字段机制在**所有 surface（含 JSON 模式）对子 logger 日志从未生效**，JsonFormatter 容错静默省略掩盖了问题。修复：filter 改挂各 handler（`trace.ensure_trace_filter`，幂等、覆盖外来 handler），另加 `_TraceTextFormatter` 防御层（filter 缺席的记录补 `-` 默认值，杜绝文本格式 KeyError 丢日志）。回归测试：`test_trace_context.py::test_child_logger_record_carries_trace_fields`。
 
 交付物：
 - `core/observability/logging_setup.py`（configure_logging 策略表 / dual_log / DEFAULT_TEXT_FORMAT / resolve_level）
-- 4 处 basicConfig 替换（api/app、cli/__main__、mcp/server、backfill_event_log）；SR_LOG_LEVEL 重复解析 3→0
+- 4 处 basicConfig 替换（api/app、cli/__main__、mcp/server、backfill_event_log）；AN_LOG_LEVEL 重复解析 3→0
 - hanging_events：trace_id/round_num 列（幂等 ALTER 迁移）+ 6 写入点零改动自动补 ContextVar
 - `_dlog` 4 处定义收敛为 `dual_log`（`[RUNNER:x]`/`[STUDY:x]` 前缀统一为 `[<MODULE>]`）
 - B 类 print 转换 ~51 处：db.py 26、data_import.py 14（7 失败→warning、7 进度→dual_log）、config_runner.py 5、autoresearch.py 3、mcp 邻接 1（slash_commands）、backtest/loader 各 1

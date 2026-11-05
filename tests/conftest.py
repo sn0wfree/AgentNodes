@@ -33,7 +33,7 @@ def _reset_halt():
 
 _CANARY_DIRS = (
     _home_sandbox.REAL_HOME / ".quantnodes",
-    _home_sandbox.REAL_HOME / ".quantnodes-research",
+    _home_sandbox.REAL_HOME / ".agentnodes",
 )
 
 
@@ -153,7 +153,7 @@ def _admin_seed_password(monkeypatch):
     as admin/admin would break. Declaring it here keeps that dependency
     explicit and host runs unaffected.
     """
-    monkeypatch.setenv("SR_ADMIN_PASSWORD", "admin")
+    monkeypatch.setenv("AN_ADMIN_PASSWORD", "admin")
 
 
 @pytest.fixture(autouse=True)
@@ -163,7 +163,7 @@ def _purge_hypothesis_sqlite_env(monkeypatch):
     ``create_app`` sets ``HYPOTHESIS_USE_SQLITE`` (v2 design §14.2 default-on),
     and some test modules call ``create_app()`` at import time — without this,
     every ``HypothesisRegistry()`` would silently switch to the host SQLite DB
-    (~/.quantnodes-research/hypotheses.db) for the rest of the session.
+    (~/.agentnodes/hypotheses.db) for the rest of the session.
     """
     monkeypatch.delenv("HYPOTHESIS_USE_SQLITE", raising=False)
 
@@ -173,14 +173,14 @@ def _isolate_gate_flags():
     """Snapshot/restore every ``QNODES_*`` and ``SR_*`` env var per test.
 
     Stage 4: gate flags (``QNODES_NEW_ENTRY_STUDY``, ``QNODES_RESEARCH_GRAPH``)
-    and tunables (``SR_STUDY_MAX_CONCURRENT``, ``SR_STUDY_HEARTBEAT_TIMEOUT``,
+    and tunables (``AN_STUDY_MAX_CONCURRENT``, ``AN_STUDY_HEARTBEAT_TIMEOUT``,
     ...) are read at call time by many modules. Tests that set them via
     ``os.environ`` directly and forget to restore leak into later tests — one
     of the documented order-dependent failure sources. ``monkeypatch``
     handles tests that use it; this fixture
     closes the hole for raw ``os.environ`` writes.
 
-    Session defaults (``SR_WORKSPACE_PATH`` etc.) are set by other autouse
+    Session defaults (``AN_WORKSPACE_PATH`` etc.) are set by other autouse
     fixtures; this snapshot runs after them so their values are preserved
     and restored, not clobbered.
     """
@@ -202,13 +202,13 @@ def _isolate_gate_flags():
 def _isolate_workspace_env(tmp_path):
     """Snapshot/restore workspace env vars around every test.
 
-    Guards against tests that mutate ``SR_WORKSPACE_PATH`` /
-    ``SR_SESSIONS_DB`` via raw ``os.environ`` and forget to restore them —
+    Guards against tests that mutate ``AN_WORKSPACE_PATH`` /
+    ``AN_SESSIONS_DB`` via raw ``os.environ`` and forget to restore them —
     a leaked value redirects every later test's session DB to one shared
     file, producing cascade ``database is locked`` failures (the suite is
     order-sensitive otherwise).
 
-    Also sets ``QUANTNODES_RESEARCH_GOAL_DB_PATH`` to a temporary path
+    Also sets ``AGENTNODES_GOAL_DB_PATH`` to a temporary path
     to prevent tests from writing to the production database.
     """
     import os
@@ -216,14 +216,14 @@ def _isolate_workspace_env(tmp_path):
     saved = {
         k: os.environ.get(k)
         for k in (
-            "SR_WORKSPACE_PATH", "SR_SESSIONS_DB", "HYPOTHESIS_USE_SQLITE",
-            "STATIC_DIR", "QUANTNODES_RESEARCH_GOAL_DB_PATH",
+            "AN_WORKSPACE_PATH", "AN_SESSIONS_DB", "HYPOTHESIS_USE_SQLITE",
+            "STATIC_DIR", "AGENTNODES_GOAL_DB_PATH",
         )
     }
 
     # Set goal DB to a temporary path to isolate tests from production
     test_goal_db = tmp_path / "test_goals.db"
-    os.environ["QUANTNODES_RESEARCH_GOAL_DB_PATH"] = str(test_goal_db)
+    os.environ["AGENTNODES_GOAL_DB_PATH"] = str(test_goal_db)
 
     yield
 
@@ -236,7 +236,7 @@ def _isolate_workspace_env(tmp_path):
 
 @pytest.fixture(autouse=True, scope="session")
 def _default_session_workspace(tmp_path_factory):
-    """Default ``SR_WORKSPACE_PATH`` to a session temp dir.
+    """Default ``AN_WORKSPACE_PATH`` to a session temp dir.
 
     Code paths that fall back to the current working directory (TUI/CLI
     chat flow, memory manager) otherwise write to the repo-root
@@ -248,7 +248,7 @@ def _default_session_workspace(tmp_path_factory):
     """
     workspace = tmp_path_factory.mktemp("session_workspace")
     mp = pytest.MonkeyPatch()
-    mp.setenv("SR_WORKSPACE_PATH", str(workspace))
+    mp.setenv("AN_WORKSPACE_PATH", str(workspace))
     yield
     mp.undo()
 

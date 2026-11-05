@@ -139,7 +139,7 @@ class TestEnvVarKillSwitch:
     def test_default_no_override(self):
         """Without env var, _KEEP_ALL_COMPACTIONS_OVERRIDE is False."""
         # Clear env var
-        old = os.environ.pop("SR_KEEP_ALL_COMPACTIONS", None)
+        old = os.environ.pop("AN_KEEP_ALL_COMPACTIONS", None)
         try:
             # Re-import to re-evaluate
             import importlib
@@ -149,11 +149,11 @@ class TestEnvVarKillSwitch:
             assert compact._KEEP_ALL_COMPACTIONS_OVERRIDE is False
         finally:
             if old is not None:
-                os.environ["SR_KEEP_ALL_COMPACTIONS"] = old
+                os.environ["AN_KEEP_ALL_COMPACTIONS"] = old
 
     def test_env_var_true_enables_override(self):
-        """SR_KEEP_ALL_COMPACTIONS=1 sets override to True."""
-        os.environ["SR_KEEP_ALL_COMPACTIONS"] = "1"
+        """AN_KEEP_ALL_COMPACTIONS=1 sets override to True."""
+        os.environ["AN_KEEP_ALL_COMPACTIONS"] = "1"
         try:
             import importlib
 
@@ -161,12 +161,12 @@ class TestEnvVarKillSwitch:
             importlib.reload(compact)
             assert compact._KEEP_ALL_COMPACTIONS_OVERRIDE is True
         finally:
-            del os.environ["SR_KEEP_ALL_COMPACTIONS"]
+            del os.environ["AN_KEEP_ALL_COMPACTIONS"]
 
     def test_env_var_various_truthy_values(self):
         """Various truthy values should enable override."""
         for val in ("1", "true", "True", "yes", "on"):
-            os.environ["SR_KEEP_ALL_COMPACTIONS"] = val
+            os.environ["AN_KEEP_ALL_COMPACTIONS"] = val
             try:
                 import importlib
 
@@ -174,12 +174,12 @@ class TestEnvVarKillSwitch:
                 importlib.reload(compact)
                 assert compact._KEEP_ALL_COMPACTIONS_OVERRIDE is True, f"Failed for {val}"
             finally:
-                del os.environ["SR_KEEP_ALL_COMPACTIONS"]
+                del os.environ["AN_KEEP_ALL_COMPACTIONS"]
 
     def test_env_var_falsy_values_disabled(self):
         """Falsy values should keep override False."""
         for val in ("0", "false", "no", "off", ""):
-            os.environ["SR_KEEP_ALL_COMPACTIONS"] = val
+            os.environ["AN_KEEP_ALL_COMPACTIONS"] = val
             try:
                 import importlib
 
@@ -187,4 +187,4 @@ class TestEnvVarKillSwitch:
                 importlib.reload(compact)
                 assert compact._KEEP_ALL_COMPACTIONS_OVERRIDE is False, f"Failed for {val!r}"
             finally:
-                del os.environ["SR_KEEP_ALL_COMPACTIONS"]
+                del os.environ["AN_KEEP_ALL_COMPACTIONS"]

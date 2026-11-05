@@ -1,6 +1,6 @@
 """Permission ruleset persistence.
 
-Rules live at ``~/.quantnodes-research/permissions.yaml``. The file
+Rules live at ``~/.agentnodes/permissions.yaml``. The file
 is auto-created on first launch with the default ruleset. Users can
 edit it by hand — YAML parse failures degrade to empty ruleset
 (safe default = ask).
@@ -27,7 +27,7 @@ logger = logging.getLogger(__name__)
 DEFAULT_RULES_PATH = Path(
     os.environ.get(
         "STRATEGY_RESEARCH_PERMISSIONS_PATH",
-        str(Path.home() / ".quantnodes-research" / "permissions.yaml"),
+        str(Path.home() / ".agentnodes" / "permissions.yaml"),
     )
 )
 

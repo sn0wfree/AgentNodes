@@ -39,7 +39,7 @@
 
 | 决策 | 选择 | 含义 |
 |---|---|---|
-| 翻转策略 | **带开关灰度** | `SR_SESSION_FILES`（默认关）——关时走旧单库（当前行为完全不变），开时走 per-session；一行配置回退 |
+| 翻转策略 | **带开关灰度** | `AN_SESSION_FILES`（默认关）——关时走旧单库（当前行为完全不变），开时走 per-session；一行配置回退 |
 | 迁移时机 | **启动时全量迁移** | 首次启动迁移全部 83 会话（实测毫秒级），而非惰性；启动快照一致、后续代码路径无「混合态」分支 |
 
 **启动迁移的实现**：`container.build_container` 或 `create_app` 启动阶段调用
@@ -107,7 +107,7 @@ def migrate_all(router, *, src_conn) -> dict                 # 批处理
 - **完整回归**：webui / sse / message_parts / projector / event_log / study 全家族；
 - 旧库 mtime 不变（只读断言）。
 
-**回退**：`SR_SESSION_FILES=0` 开关 → 路由退回单库模式（默认值即关，翻转前零影响）。
+**回退**：`AN_SESSION_FILES=0` 开关 → 路由退回单库模式（默认值即关，翻转前零影响）。
 
 ### 步骤 4：搜索重写（B 方案 + 超时 + 中文兜底）
 
@@ -166,7 +166,7 @@ def migrate_all(router, *, src_conn) -> dict                 # 批处理
 
 | 风险 | 缓解 |
 |---|---|
-| 步骤 3 破坏 WebUI | 先做步骤 2 的离线演练；保留 `SR_SESSION_FILES=0` 开关一版 |
+| 步骤 3 破坏 WebUI | 先做步骤 2 的离线演练；保留 `AN_SESSION_FILES=0` 开关一版 |
 | 投影器按会话化引入连接泄漏 | 路由统一管理连接（LRU 上限），测试断言连接数 |
 | 迁移中断 | 台账 + 事务；失败可重试 |
 | EventStore 多实例内存增长 | 按会话缓存，LRU 上限（如 64）；超出关闭最旧 |

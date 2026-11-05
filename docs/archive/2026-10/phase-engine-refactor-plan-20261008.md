@@ -20,7 +20,7 @@
 
 ```python
 engine = getattr(study, "engine", None) or "phases"      # 默认 phases
-if os.environ.get("SR_STUDY_DAG_ENGINE") == "1" and engine == "phases":
+if os.environ.get("AN_STUDY_DAG_ENGINE") == "1" and engine == "phases":
     engine = "langgraph"                                  # env 遗留开关
 if engine == "dag":
     engine = "langgraph"                                  # 'dag' 是假选项，静默映射
@@ -35,7 +35,7 @@ else:
 - 两分支靠**同名局部变量**（`researcher_output` / `metrics` / `eval_result` / `exec_result` / `captured_predictions`）衔接 line 207 之后的**共享 finalization**
 - langgraph 分支需要 ~20 行 shim 才能让 finalization 不 AttributeError（`phase_engine.py:159-205`）
 - `engine='dag'`：store/API 仍接受，但**无 executor 存在**，静默映射为 langgraph（`phase_engine.py:137-141` 注释自认）
-- `SR_STUDY_DAG_ENGINE` 环境变量是另一个遗留开关
+- `AN_STUDY_DAG_ENGINE` 环境变量是另一个遗留开关
 
 ### 勘误 3：`_run_loop` 复杂度 32 的来源是生命周期控制流，不是引擎分派
 
@@ -70,7 +70,7 @@ else:
 |---|---|---|---|---|
 | **0** | 新增 langgraph 分支 journal/predictions 断言测试 → 确认 line 205 是否真 bug → 若确认，**仅删/改该行**（最小改动） | 零（先测试后一行改动） | 测试本身 | 半天 |
 | **1** | 定义 `RoundOutcome` dataclass：两分支各自构造返回值，finalization 只消费 outcome——把局部变量约定变**显式类型契约**。**对外签名 `run_round_phases(...)` 不变** | 中低（动 806 行函数内部） | `test_langgraph_parity.py` 17 测直接适用 | 1-2 天 |
-| **2** | 分派查表化 `{"phases": ..., "langgraph": ...}`；同步收口 `engine='dag'` 假选项与 `SR_STUDY_DAG_ENGINE` env 遗留 | 低（纯移动，Step 1 契约已立） | Step 1 契约 | 半天-1 天 |
+| **2** | 分派查表化 `{"phases": ..., "langgraph": ...}`；同步收口 `engine='dag'` 假选项与 `AN_STUDY_DAG_ENGINE` env 遗留 | 低（纯移动，Step 1 契约已立） | Step 1 契约 | 半天-1 天 |
 | **3** | `_run_loop` 生命周期状态机化：`cancel/pause/resume/terminate` 抽 `StudyLifecycle`，主循环变 `while not terminal: transition()`。**方向已修正：不是 engine step 化** | 中高（核心循环） | 12,366 全量 + eval 子集 | 2-3 天 |
 
 ### 逻辑链条

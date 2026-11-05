@@ -4,11 +4,11 @@
 
 > **Status:** Draft (Phase 0, 2026-08-01)
 > **Author:** Architecture review
-> **Scope:** `quantnodes-strategy-research` v0.6.0
+> **Scope:** `agentnodes` v0.6.0
 
 ## Executive Summary
 
-`quantnodes-strategy-research` is a **mid-sized Python framework** (~87k LoC, 755 files) for
+`agentnodes` is a **mid-sized Python framework** (~87k LoC, 755 files) for
 quantitative strategy research, built around a multi-agent autoresearch loop. The codebase
 shows **strong test coverage** (~6,071 tests, ~81k LoC test code, ~0.93:1 ratio) and **mature
 adoption of design patterns** (Adapter, Registry, Strategy, Composite, Observer).
@@ -175,7 +175,7 @@ def cmd_autoresearch(args) -> int: ...
 
 # cli/__init__.py
 def build_parser():
-    parser = argparse.ArgumentParser(prog="quantnodes-research")
+    parser = argparse.ArgumentParser(prog="agentnodes")
     sub = parser.add_subparsers(dest="cmd", required=True)
     for module in ALL_COMMANDS:
         module.register(sub)

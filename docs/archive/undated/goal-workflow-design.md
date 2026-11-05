@@ -240,7 +240,7 @@ Runner 内部会反转邻接表传给 `topological_layers()`（后者使用 `key
 1. 显式路径（如果传入的是文件路径）
 2. `core/swarm/presets/goal_{name}.yaml`
 3. `core/swarm/presets/{name}.yaml`
-4. `~/.quantnodes-research/workflows/{name}.yaml`
+4. `~/.agentnodes/workflows/{name}.yaml`
 
 ## 5. 核心组件
 

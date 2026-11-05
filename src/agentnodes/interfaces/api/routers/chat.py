@@ -43,12 +43,12 @@ router = APIRouter()
 def _shell_tools_enabled(mode: str | None = None) -> bool:
     """Whether the ``run_command`` shell tool should be offered to the agent.
 
-    Shell tools are opt-in: set ``SR_ALLOW_SHELL_TOOLS=1`` (accepts
+    Shell tools are opt-in: set ``AN_ALLOW_SHELL_TOOLS=1`` (accepts
     1/true/yes, case-insensitive) in the server environment to enable
     ``run_command``. Plan mode never exposes shell tools (analysis-only,
     single iteration), regardless of the env var.
     """
-    enabled = os.environ.get("SR_ALLOW_SHELL_TOOLS", "").lower() in (
+    enabled = os.environ.get("AN_ALLOW_SHELL_TOOLS", "").lower() in (
         "1", "true", "yes",
     )
     return False if mode == "plan" else enabled
@@ -259,7 +259,7 @@ async def send_async(body: ChatMessage, request: Request):
         _max_iter = _cfg.max_iterations
     except (OSError, ValueError, KeyError):
         _max_iter = 50
-    # Shell tools are opt-in (SR_ALLOW_SHELL_TOOLS=1); plan mode never
+    # Shell tools are opt-in (AN_ALLOW_SHELL_TOOLS=1); plan mode never
     # exposes them (analysis-only, single iteration).
     _mode = body.mode or "build"
     _max_iter_eff = 1 if _mode == "plan" else _max_iter

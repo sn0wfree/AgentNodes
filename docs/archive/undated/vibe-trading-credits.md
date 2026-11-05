@@ -13,7 +13,7 @@
 | `src/agentnodes/core/agent/progress.py` | 184 | `src/agent/progress.py` | 无内部依赖，原样复制 |
 | `src/agentnodes/core/agent/trace.py` | 284 | `src/agent/trace.py` | env var 名 `VIBE_TRADING_*` → `STRATEGY_RESEARCH_*` |
 | `src/agentnodes/core/agent/redaction.py` | 209 | `src/tools/redaction.py` | 路径注释更新（parents[2] 自动指向 agentnodes 包根）|
-| `src/agentnodes/core/memory/persistent.py` | 368 | `src/memory/persistent.py` | `MEMORY_BASE` 改 `~/.quantnodes-research/memory/`；import `from src.agent.frontmatter` → `from ..agent.frontmatter` |
+| `src/agentnodes/core/memory/persistent.py` | 368 | `src/memory/persistent.py` | `MEMORY_BASE` 改 `~/.agentnodes/memory/`；import `from src.agent.frontmatter` → `from ..agent.frontmatter` |
 | **合计** | **1179** | | |
 
 ## 适配原则
@@ -36,7 +36,7 @@
 
 | 原路径 | 新路径 |
 |---|---|
-| `~/.vibe-trading/memory/` | `~/.quantnodes-research/memory/` |
+| `~/.vibe-trading/memory/` | `~/.agentnodes/memory/` |
 
 ### 模块导入（`persistent.py`）
 

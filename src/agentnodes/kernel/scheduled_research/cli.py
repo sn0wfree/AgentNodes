@@ -290,7 +290,7 @@ def cmd_schedule_start(args) -> int:
         print("=== 启动调度器 ===")
         print(f"  待执行任务: {len(jobs)} 个")
         print(f"  Tick 间隔:  {args.tick}s")
-        print("  并发上限:   SR_STUDY_MAX_CONCURRENT（默认 3）")
+        print("  并发上限:   AN_STUDY_MAX_CONCURRENT（默认 3）")
         print("  按 Ctrl+C 停止")
         print()
         executor.start(loop=loop)

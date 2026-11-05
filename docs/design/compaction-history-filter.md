@@ -120,7 +120,7 @@ yield* session.updatePart({...text, synthetic: true})
 **改动**：
 1. `_llm_summarize_v2` 末尾检查 `len(new_messages) < 2` 或无 user role → 返回 `None`
 2. `compact_messages` 检测 `l4_result is None` → 不应用 L4 → 保留原 messages
-3. 环境变量 `SR_KEEP_ALL_COMPACTIONS=1` 紧急回退
+3. 环境变量 `AN_KEEP_ALL_COMPACTIONS=1` 紧急回退
 
 **效果**：
 - L4 失败时，原始 messages（含 user 任务）保留
@@ -159,7 +159,7 @@ yield* session.updatePart({...text, synthetic: true})
 
 ### 环境变量
 ```bash
-SR_KEEP_ALL_COMPACTIONS=1 python3 -m quantnodes_agentnodes.serve
+AN_KEEP_ALL_COMPACTIONS=1 python3 -m quantnodes_agentnodes.serve
 ```
 
 ### Runtime API
@@ -230,7 +230,7 @@ curl -X POST "http://localhost:8783/api/admin/compaction/keep-all/false?confirm=
 
 | 风险 | 等级 | 回退 |
 |------|------|------|
-| LLM context 变小影响回复质量 | 中 | `SR_KEEP_ALL_COMPACTIONS=1` |
+| LLM context 变小影响回复质量 | 中 | `AN_KEEP_ALL_COMPACTIONS=1` |
 | 阶段 2 防御过度 | 低 | 监控 L4 成功率 + 日志告警 |
 | Kill switch 误触发 | 极低 | 二次确认 + audit log |
 | 旧会话不兼容 | 极低 | 兼容性测试覆盖 |

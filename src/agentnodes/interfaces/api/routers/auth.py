@@ -47,8 +47,8 @@ class TokenResponse(BaseModel):
 
 
 def _registration_enabled() -> bool:
-    """Registration is opt-in (``SR_ALLOW_REGISTRATION=1``); off by default."""
-    return os.environ.get("SR_ALLOW_REGISTRATION", "").lower() in ("1", "true", "yes")
+    """Registration is opt-in (``AN_ALLOW_REGISTRATION=1``); off by default."""
+    return os.environ.get("AN_ALLOW_REGISTRATION", "").lower() in ("1", "true", "yes")
 
 
 # ── SEC-1: password hashing ────────────────────────────────────
@@ -150,7 +150,7 @@ def _get_user_db():
 # ── Endpoints ────────────────────────────────────────────────
 
 # Registration endpoint — disabled by default (opt-in via
-# SR_ALLOW_REGISTRATION=1, used by E2E tests / single-user setups).
+# AN_ALLOW_REGISTRATION=1, used by E2E tests / single-user setups).
 # Manual DB insertion alternative:
 #   python3 -c "
 #   from agentnodes.interfaces.api.user_db import get_user_db, hash_password
@@ -159,7 +159,7 @@ def _get_user_db():
 #   "
 @router.post("/register", response_model=TokenResponse)
 async def register(body: UserCreate):
-    """Register a new user (opt-in via SR_ALLOW_REGISTRATION=1)."""
+    """Register a new user (opt-in via AN_ALLOW_REGISTRATION=1)."""
     if not _registration_enabled():
         raise HTTPException(status_code=403, detail="Registration is disabled")
 

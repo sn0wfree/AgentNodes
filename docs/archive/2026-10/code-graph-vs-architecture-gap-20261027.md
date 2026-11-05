@@ -69,7 +69,7 @@
 |---|---|
 | `core/context/hub.py`（collect→arbitrate→render→explain） | **目录不存在**；等价能力散在 `core/agent/context_injector.py`、`memory_manager`、`prompt_builder` |
 | `core/orchestration/runtime_hub.py`（preset + provider 解析） | **不存在**；现状由 `SessionController._build_engine` + `LLMConfig.load()` 隐式完成 |
-| `core/gateway/capacity.py`（容量组） | **不存在**；study 用 `SR_STUDY_MAX_CONCURRENT` 环境变量 |
+| `core/gateway/capacity.py`（容量组） | **不存在**；study 用 `AN_STUDY_MAX_CONCURRENT` 环境变量 |
 | `core/gateway/scheduler.py`（唯一调度器） | **不存在**；study 自己的 `StudyScheduler` + `scheduled_research` 各一套 |
 | `core/orchestration/run_context.py` | **不存在** |
 

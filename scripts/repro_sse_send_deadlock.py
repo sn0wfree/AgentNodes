@@ -12,7 +12,7 @@ env = os.environ.copy()
 env.update({
     "STRATEGY_RESEARCH_TEST_CHAT": "1",
     "PYTHONUNBUFFERED": "1",
-    "SR_WORKSPACE_PATH": os.getcwd(),
+    "AN_WORKSPACE_PATH": os.getcwd(),
 })
 p = subprocess.Popen(
     [sys.executable, "-u", "-m", "uvicorn",

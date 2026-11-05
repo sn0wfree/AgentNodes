@@ -1,7 +1,7 @@
 """C1 tests — chat attempt wallclock timeout + failed attempts visibility.
 
 Covers:
-- SR_CHAT_ATTEMPT_TIMEOUT env var respected
+- AN_CHAT_ATTEMPT_TIMEOUT env var respected
 - Timeout → mark_failed + attempt.failed + agent_done SSE events
 - hanging_events chat_attempt_stall event written
 - list_active_attempts includes failed attempts with error
@@ -20,9 +20,9 @@ if TYPE_CHECKING:
 
 @pytest.fixture(autouse=True)
 def _env(tmp_path: Path, monkeypatch):
-    monkeypatch.setenv("QUANTNODES_RESEARCH_GOAL_DB_PATH", str(tmp_path / "goals.db"))
-    monkeypatch.setenv("QUANTNODES_RESEARCH_HYPOTHESES_PATH", str(tmp_path / "hyp.json"))
-    monkeypatch.setenv("SR_SESSIONS_DB", str(tmp_path / "sessions.db"))
+    monkeypatch.setenv("AGENTNODES_GOAL_DB_PATH", str(tmp_path / "goals.db"))
+    monkeypatch.setenv("AGENTNODES_HYPOTHESES_PATH", str(tmp_path / "hyp.json"))
+    monkeypatch.setenv("AN_SESSIONS_DB", str(tmp_path / "sessions.db"))
     yield
 
 
@@ -32,7 +32,7 @@ class TestChatAttemptTimeout:
         assert _CHAT_ATTEMPT_TIMEOUT == 600
 
     def test_timeout_zero_disables(self, monkeypatch):
-        monkeypatch.setenv("SR_CHAT_ATTEMPT_TIMEOUT", "0")
+        monkeypatch.setenv("AN_CHAT_ATTEMPT_TIMEOUT", "0")
         # Reimport to pick up env change
         import importlib
 
@@ -40,7 +40,7 @@ class TestChatAttemptTimeout:
         importlib.reload(svc_mod)
         assert svc_mod._CHAT_ATTEMPT_TIMEOUT == 0
         # Restore for other tests
-        monkeypatch.setenv("SR_CHAT_ATTEMPT_TIMEOUT", "600")
+        monkeypatch.setenv("AN_CHAT_ATTEMPT_TIMEOUT", "600")
         importlib.reload(svc_mod)
 
 

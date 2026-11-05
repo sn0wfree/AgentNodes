@@ -1,7 +1,7 @@
 """Tests for provider-profile switching (llm.json ``profiles``).
 
 Covers:
-    - Profile merge priority: base < profile < QUANTNODES__LLM__* env
+    - Profile merge priority: base < profile < AGENTNODES__LLM__* env
     - ``LLM_PROFILE`` env selection over ``active_profile``
     - Backward compat: llm.json without ``profiles`` key
     - ``env:VAR`` expansion for profile api_key
@@ -70,8 +70,8 @@ def clear_env(monkeypatch):
         "OPENAI_API_KEY", "OPENAI_BASE_URL", "OPENAI_MODEL",
         "LLM_API_KEY", ENV_PROFILE_ACTIVE,
         "MINIMAX_API_KEY", "NVIDIA_API_KEY",
-        "QUANTNODES__LLM__PROVIDER", "QUANTNODES__LLM__MODEL",
-        "QUANTNODES__LLM__BASE_URL", "QUANTNODES__LLM__API_KEY",
+        "AGENTNODES__LLM__PROVIDER", "AGENTNODES__LLM__MODEL",
+        "AGENTNODES__LLM__BASE_URL", "AGENTNODES__LLM__API_KEY",
     ):
         monkeypatch.delenv(k, raising=False)
 
@@ -180,7 +180,7 @@ class TestProfileResolution:
         self, clear_env, fake_llm_json, monkeypatch
     ):
         fake_llm_json.write_text(json.dumps(PROFILE_JSON))
-        monkeypatch.setenv("QUANTNODES__LLM__PROVIDER", "openai")
+        monkeypatch.setenv("AGENTNODES__LLM__PROVIDER", "openai")
         cfg = LLMConfig.load()
         assert cfg.provider == "openai"
         # but profile fields for non-overridden keys still apply
@@ -464,7 +464,7 @@ class TestProfileResolutionEdge:
         self, clear_env, fake_llm_json, monkeypatch
     ):
         fake_llm_json.write_text(json.dumps(PROFILE_JSON))
-        monkeypatch.setenv("QUANTNODES__LLM__API_KEY", "env-api-key")
+        monkeypatch.setenv("AGENTNODES__LLM__API_KEY", "env-api-key")
         cfg = LLMConfig.load()
         assert cfg.api_key == "env-api-key"  # env override > profile
 

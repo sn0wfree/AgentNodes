@@ -19,7 +19,7 @@ def temp_db(monkeypatch, tmp_path):
     """Point SessionStore / persist_message at a tmp SQLite file."""
     workspace = tmp_path
     workspace.mkdir(parents=True, exist_ok=True)
-    monkeypatch.setenv("SR_WORKSPACE_PATH", str(workspace))
+    monkeypatch.setenv("AN_WORKSPACE_PATH", str(workspace))
     yield workspace / "quantnodes_agentnodes_user.db"
 
 

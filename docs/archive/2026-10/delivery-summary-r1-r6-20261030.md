@@ -686,7 +686,7 @@ close **值**补、缺 volume 用 0）——首批测试的断言是错的（写
 的记录立刻以 Logging error 形式暴露。
 
 同轮交付：`configure_logging(surface)` 统一入口（web/cli/mcp/script 策略
-表，4 处 basicConfig 收敛、SR_LOG_* 三开关统一解析）、SR_LOG_FILE 旋转
+表，4 处 basicConfig 收敛、AN_LOG_* 三开关统一解析）、AN_LOG_FILE 旋转
 文件日志、hanging_events 加 trace_id/round_num 列（6 写入点自动补
 ContextVar）、`_dlog`×4 收敛为 `dual_log`、B 类库内 print 治理 ~51 处 +
 AST 门禁 `test_print_governance.py`。设计与执行记录：

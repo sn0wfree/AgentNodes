@@ -22,7 +22,7 @@ sys.path.insert(0, str(SRC_PATH))
 @pytest.fixture
 def temp_db(tmp_path, monkeypatch):
     db_path = tmp_path / "test.db"
-    monkeypatch.setenv("SR_WORKSPACE_PATH", str(tmp_path))
+    monkeypatch.setenv("AN_WORKSPACE_PATH", str(tmp_path))
     # 路径解析发生在 web_session_db 模块内（router 的同名重导出只影响
     # router 自身的名字，不会改变 web_session_db 里的解析），两个模块都要 patch。
     import agentnodes.interfaces.api.routers.web_session as ws

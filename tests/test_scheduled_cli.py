@@ -29,7 +29,7 @@ from agentnodes.kernel.scheduled_research.store import ScheduledResearchStore
 @pytest.fixture
 def store_env(tmp_path, monkeypatch):
     """store 落到临时 goals.db；workspace 用真实临时目录。"""
-    monkeypatch.setenv("QUANTNODES_RESEARCH_GOAL_DB_PATH",
+    monkeypatch.setenv("AGENTNODES_GOAL_DB_PATH",
                        str(tmp_path / "goals.db"))
     ws = tmp_path / "ws"
     ws.mkdir(exist_ok=True)

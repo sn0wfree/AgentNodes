@@ -10,7 +10,7 @@ Run from the project root:
     python -m scripts.migrate_event_log_p0_1_a4 --dry-run
 
 The DB path is resolved the same way ``web_session`` and ``EventStore``
-resolve it (``SR_SESSIONS_DB`` > ``SR_WORKSPACE_PATH`` > cwd > ``~/.quantnodes``).
+resolve it (``AN_SESSIONS_DB`` > ``AN_WORKSPACE_PATH`` > cwd > ``~/.quantnodes``).
 """
 
 from __future__ import annotations

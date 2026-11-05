@@ -91,7 +91,7 @@ def service(tmp_path, monkeypatch):
     from agentnodes.interfaces.api.session.service import SessionService
     from agentnodes.interfaces.api.session.store import SessionStore
 
-    monkeypatch.setenv("SR_WORKSPACE_PATH", str(tmp_path))
+    monkeypatch.setenv("AN_WORKSPACE_PATH", str(tmp_path))
     db = tmp_path / "test.db"
     _setup_full_db(db)
 

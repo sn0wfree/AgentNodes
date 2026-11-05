@@ -147,7 +147,7 @@ SwarmRuntime 编译时置 True，sink 桥接到 on_agent_complete。
 **顺带收口两个已知缺口**（10-31 盘点 §二）：
 1. **层间自动存档**：join 节点 on_layer_complete 之后调 `checkpoint()`
    （JSON 极小；测试经 `STRATEGY_RESEARCH_CHECKPOINT_BASE_DIR` 隔离，
-   三层防线已保证不触真实 `~/.quantnodes-research`）；
+   三层防线已保证不触真实 `~/.agentnodes`）；
 2. **CLI 真续跑**：`/goal checkpoint resume` 改调
    `GoalWorkflowRunner.resume_from_checkpoint` + `resume_and_continue`
    （两个方法已存在且有测试锁语义，CLI 接线即可），替换「只展示」。

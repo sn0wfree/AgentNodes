@@ -202,11 +202,11 @@ class TestConfigValidator:
 class TestCacheConfigFromEnv:
     def test_defaults(self, monkeypatch):
         for k in [
-            "SR_CACHE_WRITE_POLICY", "SR_CACHE_EVICTION",
-            "SR_CACHE_MIN_ENTRIES", "SR_CACHE_MAX_ENTRIES",
-            "SR_CACHE_AVG_TOKENS_FALLBACK", "SR_CACHE_SAFETY_FACTOR",
-            "SR_CACHE_MIN_SAMPLES", "SR_CACHE_COMPACTION_LINKED",
-            "SR_CACHE_RE_RESOLVE_SEC", "SR_CACHE_TTL",
+            "AN_CACHE_WRITE_POLICY", "AN_CACHE_EVICTION",
+            "AN_CACHE_MIN_ENTRIES", "AN_CACHE_MAX_ENTRIES",
+            "AN_CACHE_AVG_TOKENS_FALLBACK", "AN_CACHE_SAFETY_FACTOR",
+            "AN_CACHE_MIN_SAMPLES", "AN_CACHE_COMPACTION_LINKED",
+            "AN_CACHE_RE_RESOLVE_SEC", "AN_CACHE_TTL",
         ]:
             monkeypatch.delenv(k, raising=False)
         cfg = CacheConfig.from_env()
@@ -215,16 +215,16 @@ class TestCacheConfigFromEnv:
         assert cfg.min_entries == 1000
 
     def test_env_override(self, monkeypatch):
-        monkeypatch.setenv("SR_CACHE_MIN_ENTRIES", "500")
-        monkeypatch.setenv("SR_CACHE_SAFETY_FACTOR", "3.0")
-        monkeypatch.setenv("SR_CACHE_COMPACTION_LINKED", "false")
+        monkeypatch.setenv("AN_CACHE_MIN_ENTRIES", "500")
+        monkeypatch.setenv("AN_CACHE_SAFETY_FACTOR", "3.0")
+        monkeypatch.setenv("AN_CACHE_COMPACTION_LINKED", "false")
         cfg = CacheConfig.from_env()
         assert cfg.min_entries == 500
         assert cfg.avg_tokens_safety_factor == 3.0
         assert cfg.compaction_linked is False
 
     def test_env_validated(self, monkeypatch):
-        monkeypatch.setenv("SR_CACHE_MIN_ENTRIES", "-100")
+        monkeypatch.setenv("AN_CACHE_MIN_ENTRIES", "-100")
         cfg = CacheConfig.from_env()
         # Validator kicks in
         assert cfg.min_entries == 1000

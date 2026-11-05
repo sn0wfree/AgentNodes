@@ -21,10 +21,10 @@ logger = logging.getLogger(__name__)
 
 
 def _resolve_workspace() -> Path:
-    """workspace 根（P-5 指针的 URI 根）：SR_WORKSPACE_PATH 或 cwd。"""
+    """workspace 根（P-5 指针的 URI 根）：AN_WORKSPACE_PATH 或 cwd。"""
     import os
 
-    env = os.environ.get("SR_WORKSPACE_PATH")
+    env = os.environ.get("AN_WORKSPACE_PATH")
     return Path(env) if env else Path.cwd()
 
 

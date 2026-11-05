@@ -366,9 +366,9 @@ def _simulate_backtest(
 def save_metrics(metrics: dict) -> bool:
     """把 evaluate() 结果写入结构化指标契约文件。
 
-    运行目录由框架通过环境变量 ``SR_RUN_DIR`` 注入。写入
-    ``<SR_RUN_DIR>/metrics_raw.json`` 后，框架以该文件作为回测指标的第一
-    来源；未设置 SR_RUN_DIR 时不写文件，框架回退到 run.log 解析。
+    运行目录由框架通过环境变量 ``AN_RUN_DIR`` 注入。写入
+    ``<AN_RUN_DIR>/metrics_raw.json`` 后，框架以该文件作为回测指标的第一
+    来源；未设置 AN_RUN_DIR 时不写文件，框架回退到 run.log 解析。
 
     仅接受数值型指标（非数值键静默跳过）；NaN/Inf 直接抛 ValueError。
     """
@@ -376,7 +376,7 @@ def save_metrics(metrics: dict) -> bool:
     import math
     import os
 
-    run_dir = os.environ.get("SR_RUN_DIR", "").strip()
+    run_dir = os.environ.get("AN_RUN_DIR", "").strip()
     if not run_dir:
         return False
 

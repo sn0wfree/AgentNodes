@@ -5,7 +5,7 @@
 > **第一步：整个项目搬过去，保留历史，然后开始做减法。**
 >
 > 目标仓库：`D:\Github\AgentNodes`（已存在，**空 git 仓库**，remote `sn0wfree/AgentNodes.git`）
-> 来源仓库：`D:\Github\quantnodes-strategy-research`（1594 commits，2026-07-20 → 2026-11-04）
+> 来源仓库：`D:\Github\agentnodes`（1594 commits，2026-07-20 → 2026-11-04）
 
 ---
 
@@ -42,7 +42,7 @@
 ### 1.1 目标形态
 
 ```
-AgentNodes（agent 框架，独立开发）        quantnodes-strategy-research（业务）
+AgentNodes（agent 框架，独立开发）        agentnodes（业务）
 ┌─────────────────────────────┐          ┌──────────────────────────┐
 │  src/agentnodes/            │          │  src/quantnodes/         │
 │    ├─ kernel/   （平台机制）  │  ←依赖→  │    └─ apps/ （研究域）     │
@@ -83,7 +83,7 @@ AgentNodes（agent 框架，独立开发）        quantnodes-strategy-research�
 | `foundation/utils` | 16 | 2,097 | 11.1% | ⚠ **8 个文件是业务语义**（见 §3.2） |
 | `foundation/` 其余 | 6 | 1,023 | <3% | registry/errors/git/… |
 
-#### → 留 quantnodes-strategy-research（业务）
+#### → 留 agentnodes（业务）
 
 | 包 | 文件 | LOC | 备注 |
 |---|---:|---:|---|
@@ -134,7 +134,7 @@ AgentNodes（agent 框架，独立开发）        quantnodes-strategy-research�
 ```bash
 # 1. 在 AgentNodes 仓库加一个 mirror remote
 cd D:\Github\AgentNodes
-git remote add source D:\Github\quantnodes-strategy-research
+git remote add source D:\Github\agentnodes
 git fetch source "+refs/*:refs/*"        # 拉全部 refs
 
 # 2. 推全部 refs 到 AgentNodes 的 GitHub

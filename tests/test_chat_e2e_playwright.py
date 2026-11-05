@@ -24,8 +24,8 @@ pytest_plugins = ["conftest_e2e"]
 # thread, which would break pytest-asyncio for every later test file
 # ("Runner.run() cannot be called from a running event loop").
 pytestmark = pytest.mark.skipif(
-    os.environ.get("SR_E2E_REAL_LLM", "0") != "1",
-    reason="Real-browser + real-LLM E2E; set SR_E2E_REAL_LLM=1 to run",
+    os.environ.get("AN_E2E_REAL_LLM", "0") != "1",
+    reason="Real-browser + real-LLM E2E; set AN_E2E_REAL_LLM=1 to run",
 )
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
@@ -61,7 +61,7 @@ def real_llm_server() -> Iterator[dict]:
         "STATIC_DIR": str(REPO_ROOT / "webui" / "static"),
         "CORS_ORIGINS": "*",
         "PYTHONUNBUFFERED": "1",
-        "SR_WORKSPACE_PATH": str(REPO_ROOT),
+        "AN_WORKSPACE_PATH": str(REPO_ROOT),
     })
 
     cmd = [

@@ -1,8 +1,8 @@
 """SEC-4 (P5-5④): first-start admin seed no longer uses the known
-'admin' password — SR_ADMIN_PASSWORD env opt-in, otherwise random +
+'admin' password — AN_ADMIN_PASSWORD env opt-in, otherwise random +
 one-time persistence to ~/.quantnodes/admin_password.txt.
 
-The conftest autouse fixture sets SR_ADMIN_PASSWORD=admin for the test
+The conftest autouse fixture sets AN_ADMIN_PASSWORD=admin for the test
 suite; these tests override it locally to exercise the production paths.
 """
 from __future__ import annotations
@@ -22,7 +22,7 @@ def db(tmp_path) -> UserDB:
 
 def test_random_seed_when_no_env(db: UserDB, monkeypatch) -> None:
     """Production path: random password, never 'admin', persisted once."""
-    monkeypatch.delenv("SR_ADMIN_PASSWORD", raising=False)
+    monkeypatch.delenv("AN_ADMIN_PASSWORD", raising=False)
 
     seed_admin_if_empty(db)
 
@@ -38,8 +38,8 @@ def test_random_seed_when_no_env(db: UserDB, monkeypatch) -> None:
 
 
 def test_env_opt_in_seed(db: UserDB, monkeypatch) -> None:
-    """SR_ADMIN_PASSWORD controls the seed explicitly (ops/tests)."""
-    monkeypatch.setenv("SR_ADMIN_PASSWORD", "s3cret-op")
+    """AN_ADMIN_PASSWORD controls the seed explicitly (ops/tests)."""
+    monkeypatch.setenv("AN_ADMIN_PASSWORD", "s3cret-op")
 
     seed_admin_if_empty(db)
 
@@ -50,12 +50,12 @@ def test_env_opt_in_seed(db: UserDB, monkeypatch) -> None:
 
 def test_seed_is_idempotent(db: UserDB, monkeypatch) -> None:
     """Existing deployments are untouched (count > 0 short-circuits)."""
-    monkeypatch.setenv("SR_ADMIN_PASSWORD", "first")
+    monkeypatch.setenv("AN_ADMIN_PASSWORD", "first")
 
     seed_admin_if_empty(db)
     first = db.get_user_by_username("admin")
 
-    monkeypatch.setenv("SR_ADMIN_PASSWORD", "second")
+    monkeypatch.setenv("AN_ADMIN_PASSWORD", "second")
     seed_admin_if_empty(db)
 
     again = db.get_user_by_username("admin")

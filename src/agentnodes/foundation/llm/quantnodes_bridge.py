@@ -13,7 +13,7 @@
 #   - _expand_env_var() is invoked on the "api_key" field inside the loader
 #     when resolve_api_key=True, so "env:VAR" syntax is resolved before
 #     the dict is returned to callers.
-#   - Env-override keys retained as "QUANTNODES__LLM__*" per project choice
+#   - Env-override keys retained as "AGENTNODES__LLM__*" per project choice
 #     (α1: keep namespace compatible with QuantNodes).
 #
 # 本文件直接复用 QuantNodes 的 reader 与 env:VAR 展开器，按 MIT 协议 relicense。
@@ -39,14 +39,14 @@ CONFIG_PATH: Final[Path] = Path.home() / ".quantnodes" / "llm.json"
 CONFIG_PATHS: Final[tuple[Path, ...]] = (CONFIG_PATH,)
 
 _ENV_OVERRIDE_KEYS: Final[tuple[str, ...]] = (
-    "QUANTNODES__LLM__PROVIDER",
-    "QUANTNODES__LLM__MODEL",
-    "QUANTNODES__LLM__BASE_URL",
-    "QUANTNODES__LLM__API_KEY",
-    "QUANTNODES__LLM__TIMEOUT",
-    "QUANTNODES__LLM__MAX_RETRIES",
-    "QUANTNODES__LLM__MAX_TOKENS",
-    "QUANTNODES__LLM__ENABLED",
+    "AGENTNODES__LLM__PROVIDER",
+    "AGENTNODES__LLM__MODEL",
+    "AGENTNODES__LLM__BASE_URL",
+    "AGENTNODES__LLM__API_KEY",
+    "AGENTNODES__LLM__TIMEOUT",
+    "AGENTNODES__LLM__MAX_RETRIES",
+    "AGENTNODES__LLM__MAX_TOKENS",
+    "AGENTNODES__LLM__ENABLED",
 )
 
 
@@ -108,7 +108,7 @@ def _load_single_path(path: Path) -> dict[str, Any] | None:
 
 
 def _apply_env_overrides(llm_cfg: dict[str, Any]) -> dict[str, Any]:
-    """Return a shallow-copied llm_cfg with QUANTNODES__LLM__* env vars applied.
+    """Return a shallow-copied llm_cfg with AGENTNODES__LLM__* env vars applied.
 
     Order of preference: explicit env var beats file value.
     Empty / unset env vars do not overwrite.

@@ -283,7 +283,7 @@ class TestRowToAttempt(unittest.TestCase):
 
 
 class TestSessionStoreEnvVar(unittest.TestCase):
-    """Verify SR_EVENT_LOG_READ env var behavior."""
+    """Verify AN_EVENT_LOG_READ env var behavior."""
 
     def setUp(self) -> None:
         self.tmp = tempfile.NamedTemporaryFile(suffix=".db", delete=False)
@@ -293,30 +293,30 @@ class TestSessionStoreEnvVar(unittest.TestCase):
 
     def tearDown(self) -> None:
         os.unlink(self.db_path)
-        os.environ.pop("SR_EVENT_LOG_READ", None)
+        os.environ.pop("AN_EVENT_LOG_READ", None)
 
     def test_default_is_event_log_read(self) -> None:
-        os.environ.pop("SR_EVENT_LOG_READ", None)
+        os.environ.pop("AN_EVENT_LOG_READ", None)
         store = SessionStore(self.db_path)
         self.assertTrue(store._use_event_log_read)
 
     def test_export_0_disables_event_log(self) -> None:
-        os.environ["SR_EVENT_LOG_READ"] = "0"
+        os.environ["AN_EVENT_LOG_READ"] = "0"
         store = SessionStore(self.db_path)
         self.assertFalse(store._use_event_log_read)
 
     def test_export_1_enables_event_log(self) -> None:
-        os.environ["SR_EVENT_LOG_READ"] = "1"
+        os.environ["AN_EVENT_LOG_READ"] = "1"
         store = SessionStore(self.db_path)
         self.assertTrue(store._use_event_log_read)
 
     def test_export_false_enables_event_log(self) -> None:
-        os.environ["SR_EVENT_LOG_READ"] = "false"
+        os.environ["AN_EVENT_LOG_READ"] = "false"
         store = SessionStore(self.db_path)
         self.assertTrue(store._use_event_log_read)
 
     def test_export_empty_enables_event_log(self) -> None:
-        os.environ["SR_EVENT_LOG_READ"] = ""
+        os.environ["AN_EVENT_LOG_READ"] = ""
         store = SessionStore(self.db_path)
         self.assertTrue(store._use_event_log_read)
 

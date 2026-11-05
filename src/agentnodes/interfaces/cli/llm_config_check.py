@@ -197,7 +197,7 @@ def get_install_message(status: LLMConfigStatus) -> str:
     elif not status["env_var_set"] and not status["dotenv_has_api_key"]:
         lines.append("✗ 未找到 API key")
         lines.append("  1. 设置环境变量：export OPENAI_API_KEY=...")
-        lines.append("  2. 或运行：quantnodes-research init")
+        lines.append("  2. 或运行：agentnodes init")
     return "\n".join(lines)
 
 

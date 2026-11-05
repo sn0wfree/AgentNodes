@@ -14,7 +14,7 @@ evaluated:
               Deferred until the user responds once / always / reject
 
 Persistence: user-curated rules live at
-``~/.quantnodes-research/permissions.yaml``. Always responses append a
+``~/.agentnodes/permissions.yaml``. Always responses append a
 new rule; reject-always appends a deny rule.
 """
 

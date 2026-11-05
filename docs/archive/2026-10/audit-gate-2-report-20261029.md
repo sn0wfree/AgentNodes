@@ -77,7 +77,7 @@
 | ① | `/api/chat/` 移出公开前缀 | `middleware.py:20-42` 列表内无该前缀 | ✅ |
 | ② | trace 端点属主校验 | `chat.py` 含 `_fetch_session_owned` | ✅ |
 | ③ | 工作流对象级鉴权 | `workflow.py` 含 `_require_run_access` | ✅ |
-| ④ | admin 种子随机化 | `user_db.py` 含 `SR_ADMIN_PASSWORD` | ✅ |
+| ④ | admin 种子随机化 | `user_db.py` 含 `AN_ADMIN_PASSWORD` | ✅ |
 
 ### 3.2 死代码簇
 
@@ -177,7 +177,7 @@ findstr /n "def research_graph_enabled" src\agentnodes\core\gateway\entry_adapte
 
 :: item 3 -- 安全四锚点
 findstr /n "_fetch_session_owned" src\agentnodes\api\routers\chat.py
-findstr /n "SR_ADMIN_PASSWORD" src\agentnodes\api\user_db.py
+findstr /n "AN_ADMIN_PASSWORD" src\agentnodes\api\user_db.py
 findstr /n "_require_run_access" src\agentnodes\api\routers\workflow.py
 
 :: item 4 -- 性能基线

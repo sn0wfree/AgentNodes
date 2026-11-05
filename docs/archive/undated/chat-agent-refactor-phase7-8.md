@@ -353,7 +353,7 @@ cache.append(sid, msg) → maybe_re_resolve():
 | 7 | `test_concurrent_append_thread_safe` | per-session lock |
 | 8 | `test_compact_invalidates_cache` | compaction → cache |
 | 9 | `test_default_db_path_creates_dir` | ~/.quantnodes mkdir |
-| 10 | `test_env_override_db_path` | SR_SESSIONS_DB env |
+| 10 | `test_env_override_db_path` | AN_SESSIONS_DB env |
 | 11 | `test_cross_process_sqlite_sharing` | TUI → Web 跨进程 |
 | 12 | `test_factory_singleton` | Factory 复用 |
 | 13 | `test_cache_config_from_env` | env 解析 |

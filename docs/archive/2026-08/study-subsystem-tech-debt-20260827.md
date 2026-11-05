@@ -82,24 +82,24 @@ v2 设计文档显式改为 `studies.session_id == study_id`（单身份 §4.2�
 - `src/agentnodes/core/study/langgraph_engine.py:342-346` + `engine_common.py:192-225` `ensure_study_session(...)`：往 **workspace 库**写 sessions 行
 - `src/agentnodes/api/container.py:95` `EventStore(p, flush_to_messages=True)` —— 直接构造（**不走工厂**），`p` = `resolve_session_db_path()`
 - `src/agentnodes/api/dependencies.py:75` 同上
-- `src/agentnodes/core/agent/memory_manager.py:71-100` `resolve_session_db_path()`：优先级 `SR_SESSIONS_DB > SR_WORKSPACE_PATH > cwd > ~/.quantnodes`
+- `src/agentnodes/core/agent/memory_manager.py:71-100` `resolve_session_db_path()`：优先级 `AN_SESSIONS_DB > AN_WORKSPACE_PATH > cwd > ~/.quantnodes`
 - `src/agentnodes/api/routers/chat.py:755-771` chat 自动在 server DB 里补建 `study_*` session 行（兜底 404）
 
 ### 双库分叉逻辑
 
 | 路径 | 写入哪 | 由谁驱动 |
 |---|---|---|
-| Server 容器 / chat | `SR_WORKSPACE_PATH/.quantnodes_agentnodes_session.db`（=`resolve_session_db_path()`） | container.py:95、dependencies.py:75 |
+| Server 容器 / chat | `AN_WORKSPACE_PATH/.quantnodes_agentnodes_session.db`（=`resolve_session_db_path()`） | container.py:95、dependencies.py:75 |
 | langgraph engine | `study.workspace_path/.quantnodes_agentnodes_session.db`（=`get_study_session_db_path(workspace)`） | langgraph_engine.py:327-346 |
 | bootstrap | 同 langgraph engine | bootstrap.py:295-302 |
 
-**何时分叉**：`study.workspace_path != SR_WORKSPACE_PATH` 时。
+**何时分叉**：`study.workspace_path != AN_WORKSPACE_PATH` 时。
 - 同一个进程里 chat 与 study 写入两个不同的 session.db
-- EventStoreFactory 粘路径：如果 Container 先建了一个绑到 server 库的实例（`SR_WORKSPACE_PATH/...`），langgraph_engine 后续的 `EventStoreFactory.create(db_path=workspace/...)` **会复用 Container 实例**，db_path 参数被丢弃
+- EventStoreFactory 粘路径：如果 Container 先建了一个绑到 server 库的实例（`AN_WORKSPACE_PATH/...`），langgraph_engine 后续的 `EventStoreFactory.create(db_path=workspace/...)` **会复用 Container 实例**，db_path 参数被丢弃
 - 反过来：如果 langgraph_engine 先跑（生产路径上 container 先 init），它建出绑到 workspace 库的实例，Container 后建的直接 `EventStore(p)` 是另一个实例，**两个 EventStore 同时活**
 
-**SR_WORKSPACE_PATH 控制服务器 cwd？**
-否。SR_WORKSPACE_PATH 只决定 `resolve_session_db_path()` 的解析、`init_workspace_templates()` 的目标目录、DuckDB init 位置。**和进程 cwd 无关**。
+**AN_WORKSPACE_PATH 控制服务器 cwd？**
+否。AN_WORKSPACE_PATH 只决定 `resolve_session_db_path()` 的解析、`init_workspace_templates()` 的目标目录、DuckDB init 位置。**和进程 cwd 无关**。
 
 ### 影响
 - **用户感知**：多 workspace 场景下，study round 的 `study:{sid}:round:{N}` 频道事件可能不会出现在 SSE buffer；前端可能看不到流式输出
@@ -321,7 +321,7 @@ plan = await asyncio.to_thread(planner.plan, objective, constraints)
 - 测试：`tests/test_study_dag_engine.py`（356 行，3 个 `TestRebuildPhaseOutputs` 测试断言已移除方法）
 
 ### 根因
-1. **dag_engine**：`phase_engine.py:139-143` 有显式安全网——`engine='dag'` 被强制重映射到 `'langgraph'`（包括 API 接受的值、DB 恢复值、`SR_STUDY_DAG_ENGINE=1` env var）。注释明确："dag_engine has no production callers"。`_run_round_via_dag` 因此在生产中 0 调用方。
+1. **dag_engine**：`phase_engine.py:139-143` 有显式安全网——`engine='dag'` 被强制重映射到 `'langgraph'`（包括 API 接受的值、DB 恢复值、`AN_STUDY_DAG_ENGINE=1` env var）。注释明确："dag_engine has no production callers"。`_run_round_via_dag` 因此在生产中 0 调用方。
 2. **runner_context**：`_to_context()` 在整个代码库（生产 + 测试）0 调用方。`docs/archive/undated/runner-context-and-utils-extraction.md` 描述的计划**从未实现**——`aegis.py` 直接接收 `goal_store`，`phase_engine.py` 接收 runner 实例。
 
 ### ⚠️ 不要混淆

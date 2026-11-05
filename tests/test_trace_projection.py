@@ -57,7 +57,7 @@ def _store(tmp_path) -> EventStore:
 def test_projection_reconstructs_offloaded_fields(tmp_path, monkeypatch) -> None:
     """Large system_prompt / tools_schema are offloaded at emit time and
     reconstructed by the projection from the sidecar blobs."""
-    monkeypatch.setenv("SR_LLM_REQUEST_OFFLOAD_THRESHOLD", "64")
+    monkeypatch.setenv("AN_LLM_REQUEST_OFFLOAD_THRESHOLD", "64")
     store = _store(tmp_path)
 
     big_prompt = _big(5000)
@@ -103,7 +103,7 @@ def test_projection_orders_and_limits(tmp_path) -> None:
 
 def test_projection_type_filter(tmp_path, monkeypatch) -> None:
     """A ``types`` allowlist filters which event types are returned."""
-    monkeypatch.setenv("SR_LLM_REQUEST_OFFLOAD_THRESHOLD", "64")
+    monkeypatch.setenv("AN_LLM_REQUEST_OFFLOAD_THRESHOLD", "64")
     store = _store(tmp_path)
     _emit_llm_request(store, system_prompt=_big(5000), tools_schema="[]")
     # A non-trace event (text_delta) should be excluded by the default
@@ -133,7 +133,7 @@ def test_projection_empty_session(tmp_path) -> None:
 def test_projection_reconstructs_llm_response_content(tmp_path, monkeypatch) -> None:
     """A large llm_response content offloaded by the forwarder is reconstructed
     by the projection from the sidecar blob."""
-    monkeypatch.setenv("SR_LLM_REQUEST_OFFLOAD_THRESHOLD", "64")
+    monkeypatch.setenv("AN_LLM_REQUEST_OFFLOAD_THRESHOLD", "64")
     store = _store(tmp_path)
 
     from agentnodes.interfaces.api.session.service import _LoopEventForwarder
@@ -160,7 +160,7 @@ def test_projection_reconstructs_llm_response_content(tmp_path, monkeypatch) -> 
 
 def test_projection_no_offload_when_missing_blob(tmp_path, monkeypatch) -> None:
     """A dangling ``_path`` reference (blob missing) is skipped, not fatal."""
-    monkeypatch.setenv("SR_LLM_REQUEST_OFFLOAD_THRESHOLD", "64")
+    monkeypatch.setenv("AN_LLM_REQUEST_OFFLOAD_THRESHOLD", "64")
     store = _store(tmp_path)
     _emit_llm_request(store, system_prompt=_big(5000), tools_schema="[]")
 

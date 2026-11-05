@@ -109,7 +109,7 @@ S5  全量分道跑 + 审计门②                                              
 | **P5-2** | ✅ **已完成**（`5c4c544`，2026-10-27）：langgraph 分支退役——净删 2782 行（langgraph_engine 679 + runner_langgraph 155 + `_run_langgraph_branch` + checkpoint DDL + `_rebuild_phase_outputs` + 6 个纯分支测试文件）；3 个引擎无关方法（`_load_graph`/`_wait_for_approval`/`_expire_interrupt`）从 mixin 恢复到 runner 本体；`engine='langgraph'` 存量值 warning 后回落图路径（真实 DB 零行，实测无影响）。设计：`stage-p52-langgraph-retirement-design-20261027.md` | 无（前置已就位） | 单引擎达成：研究轮唯一执行体 = GraphEngine 图路径 |
 | P5-3 | SSE 单轨（删 `api/sse_buffer.py` + `api/session/bridge_v2.py`） | 3b-2 一直延后 | 8 个生产文件 + 7 个测试文件，属独立工程 |
 | **P5-4** | ✅ **已完成**（`7e6e183d`，2026-10-27）：ContextHub W0 骨架落地 + pre-run 上下文（goal/memory）迁入。**清单前提修正**：ContextHub 原本不存在于代码（差距图 §2.5）；「4 builder」= injector 家族——goal+memory 转 provider 整链桥接（检索 query 链式语义保持，逐字节等价测试钉死），todos 留 W1、continuation 不转（决策类）。设计：`stage-p54-context-hub-w0-design-20261027.md`。W1/W2 尾项：todos provider 化、记忆注入三改、ContextPlan 并入仲裁面 | 无 | 「目录供件 → 事件记录 → 上下文组装 → LLM」三中枢之二落地（hub + EventStore） |
-| **P5-5** | ✅ **已完成**（2026-10-28，四项独立提交）：安全债 ×4 清零——② trace 端点属主校验（`174ecea1`，任意调用方可读任意会话完整 LLM 轨迹→404/403）；④ admin 种子随机化（`4d6696da`，admin/admin 常量凭据→SR_ADMIN_PASSWORD env 或随机密码落盘 0600）；③ workflow 对象级鉴权（`0c02c346`，双 runner 族 + drafts owner 列 + definitions delete 收紧 admin）；① `/api/chat/` 移出公开前缀 + permission 应答属主化（`87802d5e`，匿名共享身份消除，前端零改动 401→/login） | 无 | 与架构重构正交的 9/5 审计项全部销账；测试适配 6 文件 + 前端零改动（已验证） |
+| **P5-5** | ✅ **已完成**（2026-10-28，四项独立提交）：安全债 ×4 清零——② trace 端点属主校验（`174ecea1`，任意调用方可读任意会话完整 LLM 轨迹→404/403）；④ admin 种子随机化（`4d6696da`，admin/admin 常量凭据→AN_ADMIN_PASSWORD env 或随机密码落盘 0600）；③ workflow 对象级鉴权（`0c02c346`，双 runner 族 + drafts owner 列 + definitions delete 收紧 admin）；① `/api/chat/` 移出公开前缀 + permission 应答属主化（`87802d5e`，匿名共享身份消除，前端零改动 401→/login） | 无 | 与架构重构正交的 9/5 审计项全部销账；测试适配 6 文件 + 前端零改动（已验证） |
 
 ## 8. 本轮实测数据
 
@@ -131,7 +131,7 @@ auth_tokens 覆写 jwt_secret；init wizard 依赖真实 llm.json 才能通过�
 | 层 | 机制 | 防什么 |
 |---|---|---|
 | 进程级重定向 | conftest **顶部**（任何 agentnodes import 前）把 `USERPROFILE`/`HOME` 指向 `tests/_user_home_sandbox` | import 时常量、运行时解析、env 直读三条路全部落沙箱 |
-| 金丝雀对账 | session 级 `_guard_real_config`：会话前后对真实 `~/.quantnodes`、`~/.quantnodes-research` 做全量文件指纹比对，有变化即报错并列出文件 | 兜底抓绕过 home 解析的写入（win32 直读、绝对路径拼接） |
+| 金丝雀对账 | session 级 `_guard_real_config`：会话前后对真实 `~/.quantnodes`、`~/.agentnodes` 做全量文件指纹比对，有变化即报错并列出文件 | 兜底抓绕过 home 解析的写入（win32 直读、绝对路径拼接） |
 | 显式豁免 | live 套件夹具显式把 home 指回 `_home_sandbox.REAL_HOME` | 豁免是显式动作而非默认，宿主配置只在 live 测试可触碰 |
 
 **元测试**（`test_architecture_gates.py`）：home 落沙箱、`expanduser("~")` 落沙箱、

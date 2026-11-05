@@ -41,7 +41,7 @@
 | 活跃 | run.log mtime 持续推进 | 继续等 |
 | 卡死 | 存活但停滞 > stall_timeout（默认 300s） | killpg + 标记 + 告警（停滞秒数 + 最后日志行） |
 | 完成 | 进程退出 | 解析结果 |
-| LLM 阶段 | 无后台任务 | 由 LLM 墙钟兜底（`SR_AGENT_WALLCLOCK_TIMEOUT` 30min），watchdog 跳过 |
+| LLM 阶段 | 无后台任务 | 由 LLM 墙钟兜底（`AN_AGENT_WALLCLOCK_TIMEOUT` 30min），watchdog 跳过 |
 
 ## 3. 架构总览
 
@@ -106,18 +106,18 @@ run_bg_command(action: str, *, task_id: str = "", command: str = "",
 
 | 机制 | 处置 | 默认 |
 |---|---|---|
-| **A** LLM per-call 墙钟 | 保留（LLM 生成不后台化，同步交互） | `SR_AGENT_WALLCLOCK_TIMEOUT` 1800s |
-| **B** 轮级墙钟 | 显式治理选项，**默认禁用**（`SR_STUDY_ROUND_TIMEOUT` 0=禁用） | 禁用 |
+| **A** LLM per-call 墙钟 | 保留（LLM 生成不后台化，同步交互） | `AN_AGENT_WALLCLOCK_TIMEOUT` 1800s |
+| **B** 轮级墙钟 | 显式治理选项，**默认禁用**（`AN_STUDY_ROUND_TIMEOUT` 0=禁用） | 禁用 |
 | **C** heartbeat 阶段级 | 判定依据升级为日志推进；heartbeat 字段保留做前端展示/兜底 | — |
 | **D** 幽灵轮守卫 | 保留（kill 后台任务后的清理/状态守卫） | — |
-| **watchdog** | 升级为日志停滞检测：runner `_current_log` + 注册表停滞 → killpg + INTERRUPTED | `SR_BACKTEST_STALL_TIMEOUT` 300s |
+| **watchdog** | 升级为日志停滞检测：runner `_current_log` + 注册表停滞 → killpg + INTERRUPTED | `AN_BACKTEST_STALL_TIMEOUT` 300s |
 | **engine 埋点** | execute_bars 每 N bar print 进度行（N=max(1,bars//100)，≤100 行/回测） | `progress_every` 默认 None 零输出 |
 
 ## 8. 通用后台化约定（未来程序接入 checklist）
 
 任何长程序后台化三要素：
 
-1. **CLI 入口可独立运行**（如 `quantnodes-research engine run-backtest`）——后台化 = 子进程启动它
+1. **CLI 入口可独立运行**（如 `agentnodes engine run-backtest`）——后台化 = 子进程启动它
 2. **stdout 打进度**（每 N 步/每阶段一行）→ run.log 自动捕获，停滞判定与 agent 观察都靠它
 3. **接入模式**：`proc = run_bg(cmd, run.log)` → `wait_bg(proc, run.log)`——回测、因子计算、数据准备、训练脚本全部同款
 
@@ -164,7 +164,7 @@ core/autoresearch.py                 — study 场景迭代上限 8→10（2 角
 
 ### 实施记录（S2-S8 落地要点）
 
-- **S2**：`core/utils/bg_proc.py` — run_bg（Popen+流式+start_new_session）/wait_bg（启动宽限 max(10s, 5×poll) + 停滞判定）/log_tail/is_stalled/kill_bg/log_progress；`SR_BACKTEST_STALL_TIMEOUT` 默认 300
+- **S2**：`core/utils/bg_proc.py` — run_bg（Popen+流式+start_new_session）/wait_bg（启动宽限 max(10s, 5×poll) + 停滞判定）/log_tail/is_stalled/kill_bg/log_progress；`AN_BACKTEST_STALL_TIMEOUT` 默认 300
 - **S3**：`run_strategy` 超时语义 墙钟→日志停滞；run.log 流式（删一次性写入）；stalled 错误带日志尾部
 - **S4**：`BaseEngine.run_backtest(progress_every)` — align/每 N bar（N=max(1,bars//100)，≤100 行）/metrics 三处 stdout 进度行；CLI run-backtest 默认开启（progress_every=0 自动频率）
 - **S5**：`run_bg_command` 单入口（start/status/wait/log/kill）+ 模块级注册表 + opt-in 注册
@@ -181,7 +181,7 @@ core/autoresearch.py                 — study 场景迭代上限 8→10（2 角
 
 ### 追加轮：A（LLM 流式墙钟）落地（2026-08-14，`e546446`）
 
-- `LLMConfig.wallclock_timeout_s` 默认 **1800s**（30min）；env `SR_AGENT_WALLCLOCK_TIMEOUT` 注入（`_env_to_overrides`）；**≤0 禁用**
+- `LLMConfig.wallclock_timeout_s` 默认 **1800s**（30min）；env `AN_AGENT_WALLCLOCK_TIMEOUT` 注入（`_env_to_overrides`）；**≤0 禁用**
 - `stream()`/`astream()`：请求级 `deadline`（monotonic）——每 chunk 到达时 + 每次重试开始前检查，超时抛 `LLMTimeoutError("wall-clock ...")`；**重试穿透**（墙钟超时不再重试）
 - 语义：httpx 60s 是"单次读等待"，墙钟是"整个请求总预算"——慢吐流（每 59s 一行永不 finish）由墙钟兜底
 - 测试 `test_llm_wallclock.py` 7 个：sync/async 慢吐命中、正常流通过、0 禁用、重试前超时即抛、env 注入、默认值

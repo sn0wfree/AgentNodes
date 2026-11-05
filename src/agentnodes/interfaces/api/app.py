@@ -37,9 +37,9 @@ def create_app(
         cors_origins: CORS allowed origins (default: `["*"]` for dev).
     """
     # 日志统一入口（docs/guides/logging-unified-entry-design-20261102.md §4.4）：
-    # web 面 console → stderr；SR_LOG_LEVEL / SR_LOG_JSON / SR_LOG_FILE
+    # web 面 console → stderr；AN_LOG_LEVEL / AN_LOG_JSON / AN_LOG_FILE
     # 全部由 configure_logging 统一解析。默认文本格式自带 trace 字段
-    # （trace_id/session_id/study_id/round_num），SR_LOG_JSON=1 切 JSON。
+    # （trace_id/session_id/study_id/round_num），AN_LOG_JSON=1 切 JSON。
     # v2 §14.2: hypotheses 默认走 SQLite（旧 JSON 不迁移、不读取）。
     from agentnodes.foundation.observability import configure_logging
     configure_logging("web")
@@ -248,12 +248,12 @@ def _resolve_app_env(
 ) -> tuple:
     """Resolve config values from environment when not explicitly provided."""
     if workspace_path is None:
-        env = os.environ.get("SR_WORKSPACE_PATH")
+        env = os.environ.get("AN_WORKSPACE_PATH")
         workspace_path = Path(env) if env else None
     if goal_db_path is None:
-        goal_db_path = os.environ.get("SR_GOAL_DB_PATH")
+        goal_db_path = os.environ.get("AN_GOAL_DB_PATH")
     if hypotheses_path is None:
-        hypotheses_path = os.environ.get("SR_HYPOTHESES_PATH")
+        hypotheses_path = os.environ.get("AN_HYPOTHESES_PATH")
     if static_dir is None:
         static_dir = os.environ.get("STATIC_DIR")
     if cors_origins is None:

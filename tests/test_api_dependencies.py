@@ -17,24 +17,24 @@ class TestDbPath(unittest.TestCase):
     def test_default_db_path(self):
         from agentnodes.interfaces.api.dependencies import _resolve_db_path
 
-        old = os.environ.pop("SR_WORKSPACE_PATH", None)
+        old = os.environ.pop("AN_WORKSPACE_PATH", None)
         try:
             path = _resolve_db_path()
             self.assertTrue(str(path).endswith(".quantnodes_agentnodes_session.db"))
         finally:
             if old is not None:
-                os.environ["SR_WORKSPACE_PATH"] = old
+                os.environ["AN_WORKSPACE_PATH"] = old
 
     def test_db_path_from_env(self):
         from agentnodes.interfaces.api.dependencies import _resolve_db_path
 
         with TemporaryDirectory() as tmpdir:
-            os.environ["SR_WORKSPACE_PATH"] = tmpdir
+            os.environ["AN_WORKSPACE_PATH"] = tmpdir
             try:
                 path = _resolve_db_path()
                 self.assertEqual(path.parent, Path(tmpdir))
             finally:
-                del os.environ["SR_WORKSPACE_PATH"]
+                del os.environ["AN_WORKSPACE_PATH"]
 
     def test_get_db_path_from_workspace(self):
         from agentnodes.interfaces.api.dependencies import get_db_path

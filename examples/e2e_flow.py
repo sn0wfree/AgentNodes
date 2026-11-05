@@ -108,7 +108,7 @@ def verify() -> None:
 
     import sqlite3
     goal_db = Path(
-        "~/.quantnodes-research/goals.db"
+        "~/.agentnodes/goals.db"
     ).expanduser()
     if goal_db.exists():
         con = sqlite3.connect(str(goal_db))

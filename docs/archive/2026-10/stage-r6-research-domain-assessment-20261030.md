@@ -108,7 +108,7 @@ def propose_next(study: Any, stop_reason: str, *, metrics=None) -> Directive
 （`study.directive`），**不自动 submit**。人工/上层决定是否按建议执行。
 这样：(a) 兑现「产出建议」；(b) 严格不越红线；(c) 零行为变化（默认不自动跑）。
 
-若要「自动接力」，那是后续的显式开关（`SR_STUDY_AUTO_DIRECTIVE=1`），
+若要「自动接力」，那是后续的显式开关（`AN_STUDY_AUTO_DIRECTIVE=1`），
 不在本刀默认打开。
 
 ## 3. 测试计划（`tests/test_r6_director.py`）

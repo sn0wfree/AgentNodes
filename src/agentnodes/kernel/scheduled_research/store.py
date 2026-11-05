@@ -1,10 +1,10 @@
 """Scheduled Research store — SQLite-backed persistence.
 
 ``scheduled_jobs`` table lives in the same DB as the study/goal ledger
-(``goals.db``, env ``QUANTNODES_RESEARCH_GOAL_DB_PATH``) so scheduled
+(``goals.db``, env ``AGENTNODES_GOAL_DB_PATH``) so scheduled
 jobs sit next to the studies they spawn.
 
-Legacy JSON storage (``~/.quantnodes-research/scheduled_jobs.json``) is
+Legacy JSON storage (``~/.agentnodes/scheduled_jobs.json``) is
 migrated once via ``migrate_from_json`` (file renamed to ``.migrated``).
 """
 
@@ -24,16 +24,16 @@ logger = logging.getLogger(__name__)
 
 # Reuse the study/goal ledger DB: scheduled jobs live next to the studies
 # they spawn (same resolution as ``StudyStore._default_db_path``).
-_DB_PATH_ENV = "QUANTNODES_RESEARCH_GOAL_DB_PATH"
-LEGACY_JSON_PATH = Path.home() / ".quantnodes-research" / "scheduled_jobs.json"
+_DB_PATH_ENV = "AGENTNODES_GOAL_DB_PATH"
+LEGACY_JSON_PATH = Path.home() / ".agentnodes" / "scheduled_jobs.json"
 
 
 def _default_db_path() -> Path:
     """Return the configured scheduled-jobs DB path.
 
     Resolution order mirrors ``StudyStore``:
-        1. ``QUANTNODES_RESEARCH_GOAL_DB_PATH`` environment variable
-        2. ``~/.quantnodes-research/goals.db``
+        1. ``AGENTNODES_GOAL_DB_PATH`` environment variable
+        2. ``~/.agentnodes/goals.db``
     """
     return resolve_db_path("goals.db", _DB_PATH_ENV)
 

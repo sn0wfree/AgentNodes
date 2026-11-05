@@ -55,13 +55,13 @@ def _deserialize(s: str) -> ProjectedSession:
 
 ### 触发策略
 
-`flush()` 后，若 `seq % 200 == 0`（默认 `SR_SNAPSHOT_INTERVAL=200`）：
+`flush()` 后，若 `seq % 200 == 0`（默认 `AN_SNAPSHOT_INTERVAL=200`）：
 ```python
 if state.last_seq > 0 and state.last_seq % snapshot_interval == 0:
     self._save_snapshot(conn, state)
 ```
 
-常量命名 `SR_SNAPSHOT_INTERVAL` 通过 `flush(snapshot_interval: int = 200)` 参数覆盖。
+常量命名 `AN_SNAPSHOT_INTERVAL` 通过 `flush(snapshot_interval: int = 200)` 参数覆盖。
 
 ### project() 行为
 

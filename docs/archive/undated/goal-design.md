@@ -85,8 +85,8 @@ class GoalRecord:
 
 ## 3. SQLite Storage
 
-- **Path**: `~/.quantnodes-research/goals.db` (override via
-  `QUANTNODES_RESEARCH_GOAL_DB_PATH`).
+- **Path**: `~/.agentnodes/goals.db` (override via
+  `AGENTNODES_GOAL_DB_PATH`).
 - **Schema**: 5 tables (`goals`, `goal_claims`, `goal_criteria`,
   `goal_evidence`, `goal_audits`). Created on first open.
 - **WAL mode** + `busy_timeout=5000` + `foreign_keys=ON`.
@@ -213,18 +213,18 @@ from ledger state rather than just the objective.
 ## 7. CLI
 
 ```
-quantnodes-research goal start --session-id S --objective "..." \
+agentnodes goal start --session-id S --objective "..." \
     [--criterion "..." ...] [--risk-tier ...] [--token-budget N ...]
-quantnodes-research goal status --session-id S
-quantnodes-research goal status --goal-id G
-quantnodes-research goal evidence --session-id S --text "..." \
+agentnodes goal status --session-id S
+agentnodes goal status --goal-id G
+agentnodes goal evidence --session-id S --text "..." \
     [--criterion-id C] [--artifact PATH --artifact-hash sha256:...]
-quantnodes-research goal audit --session-id S --criterion-id C \
+agentnodes goal audit --session-id S --criterion-id C \
     --result satisfied [--evidence EV_ID ...] [--notes "..."]
-quantnodes-research goal complete --session-id S \
+agentnodes goal complete --session-id S \
     [--audit-file audit.json | --criterion-id C --result R]
-quantnodes-research goal list --session-id S
-quantnodes-research goal cancel --session-id S
+agentnodes goal list --session-id S
+agentnodes goal cancel --session-id S
 ```
 
 ## 8. Integration Points (P3-d, planned)

@@ -117,7 +117,7 @@ class TestBuildLLMConfig:
         """Without any config source, returns dataclass defaults."""
         # Clear everything and point bridge path at a missing file
         for k in ("OPENAI_API_KEY", "OPENAI_BASE_URL", "OPENAI_MODEL",
-                  "LLM_API_KEY", "QUANTNODES__LLM__PROVIDER"):
+                  "LLM_API_KEY", "AGENTNODES__LLM__PROVIDER"):
             monkeypatch.delenv(k, raising=False)
         monkeypatch.setattr(
             "agentnodes.foundation.llm.config._resolve_bridge_path",
@@ -130,7 +130,7 @@ class TestBuildLLMConfig:
     def test_bridge_overrides_defaults(self, tmp_path, monkeypatch):
         """bridge layer sets provider→model/base_url."""
         for k in ("OPENAI_API_KEY", "OPENAI_BASE_URL", "OPENAI_MODEL",
-                  "LLM_API_KEY", "QUANTNODES__LLM__PROVIDER"):
+                  "LLM_API_KEY", "AGENTNODES__LLM__PROVIDER"):
             monkeypatch.delenv(k, raising=False)
         llm = tmp_path / "llm.json"
         llm.write_text(json.dumps({"llm": {
@@ -202,7 +202,7 @@ class TestMainCLI:
         with patch("sys.argv", ["prog"]):
             assert main() == 0
         captured = capsys.readouterr()
-        assert "usage" in captured.out.lower() or "quantnodes-research" in captured.out
+        assert "usage" in captured.out.lower() or "agentnodes" in captured.out
 
 
 # ── End-to-end config propagation ────────────────────────────────────

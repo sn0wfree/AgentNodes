@@ -14,7 +14,7 @@ from agentnodes.kernel.agent.compact import (
 @pytest.fixture
 def client_with_admin_token(monkeypatch):
     """Create test client with admin token enabled."""
-    monkeypatch.setenv("SR_ADMIN_TOKEN", "test-admin-secret-123")
+    monkeypatch.setenv("AN_ADMIN_TOKEN", "test-admin-secret-123")
     reset_compaction_metrics()
     app = create_app()
     return TestClient(app)
@@ -23,7 +23,7 @@ def client_with_admin_token(monkeypatch):
 @pytest.fixture
 def client_no_admin_token(monkeypatch):
     """Create test client with admin token DISABLED."""
-    monkeypatch.delenv("SR_ADMIN_TOKEN", raising=False)
+    monkeypatch.delenv("AN_ADMIN_TOKEN", raising=False)
     app = create_app()
     return TestClient(app)
 
@@ -75,7 +75,7 @@ class TestAdminAuth:
         assert r.status_code == 401
 
     def test_admin_disabled_503(self, client_no_admin_token):
-        """When SR_ADMIN_TOKEN unset, admin endpoints return 503."""
+        """When AN_ADMIN_TOKEN unset, admin endpoints return 503."""
         r = client_no_admin_token.get("/api/admin/compaction/metrics")
         assert r.status_code == 503
 

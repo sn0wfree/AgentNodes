@@ -130,7 +130,7 @@ AgentRuntime
 
 ### P2 安全
 
-- shell 有 `SR_ALLOW_SHELL_TOOLS` ✅  
+- shell 有 `AN_ALLOW_SHELL_TOOLS` ✅  
 - 文件/网络/子进程边界未统一 ToolGateway 授权 ❌  
 - sandbox `legacy` 与 StaticSandbox 分裂，能力实际未封
 

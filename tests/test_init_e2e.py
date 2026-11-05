@@ -1,4 +1,4 @@
-"""E2E tests for quantnodes-research init via CLI entry point.
+"""E2E tests for agentnodes init via CLI entry point.
 
 Tests the full path: CLI argparse → cmd_run_onboarding → run_onboarding
 test-mode branch → ``_finalize_llm_json`` → ``~/.quantnodes/llm.json``
@@ -79,7 +79,7 @@ def _run_init(monkeypatch, llm_path, env_path, args, inputs):
 
 
 class TestInitE2E:
-    """E2E tests for quantnodes-research init via CLI entry point."""
+    """E2E tests for agentnodes init via CLI entry point."""
 
     def test_force_overwrites_existing(self, tmp_path, monkeypatch):
         """--force 跳过确认，直接覆盖旧 llm.json。"""

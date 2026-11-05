@@ -205,15 +205,15 @@ def test_user_data_returns_counts(client: TestClient) -> None:
 
 
 def test_static_admin_token_can_manage(monkeypatch, client: TestClient) -> None:
-    """The static X-Admin-Token (SR_ADMIN_TOKEN) is accepted as admin."""
-    monkeypatch.setenv("SR_ADMIN_TOKEN", "static-secret")
+    """The static X-Admin-Token (AN_ADMIN_TOKEN) is accepted as admin."""
+    monkeypatch.setenv("AN_ADMIN_TOKEN", "static-secret")
     resp = client.get("/api/admin/users", headers={"X-Admin-Token": "static-secret"})
     assert resp.status_code == 200
     assert "users" in resp.json()
 
 
 def test_static_admin_token_wrong_rejected(client: TestClient, monkeypatch) -> None:
-    monkeypatch.setenv("SR_ADMIN_TOKEN", "static-secret")
+    monkeypatch.setenv("AN_ADMIN_TOKEN", "static-secret")
     resp = client.get("/api/admin/users", headers={"X-Admin-Token": "wrong"})
     assert resp.status_code == 401
 
@@ -223,7 +223,7 @@ def test_static_admin_token_self_protection(
 ) -> None:
     """Token-based admin (acting='__token__') is exempt from the
     self-protection guard (no single user to protect)."""
-    monkeypatch.setenv("SR_ADMIN_TOKEN", "static-secret")
+    monkeypatch.setenv("AN_ADMIN_TOKEN", "static-secret")
     headers = {"X-Admin-Token": "static-secret"}
 
     # token admin can create and disable a named user
@@ -243,7 +243,7 @@ def test_static_admin_token_self_protection(
 def test_static_admin_token_create_uses_token_actor(
     monkeypatch, client: TestClient
 ) -> None:
-    monkeypatch.setenv("SR_ADMIN_TOKEN", "static-secret")
+    monkeypatch.setenv("AN_ADMIN_TOKEN", "static-secret")
     resp = client.post(
         "/api/admin/users",
         headers={"X-Admin-Token": "static-secret"},

@@ -37,7 +37,7 @@ class FakeClient:
 @pytest.fixture()
 def env(tmp_path: Path, monkeypatch):
     db_path = tmp_path / "test.db"
-    monkeypatch.setenv("SR_WORKSPACE_PATH", str(tmp_path))
+    monkeypatch.setenv("AN_WORKSPACE_PATH", str(tmp_path))
 
     import agentnodes.interfaces.api.routers.web_session as ws
     import agentnodes.interfaces.api.session.web_session_db as wsdb

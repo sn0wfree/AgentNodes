@@ -1135,7 +1135,7 @@ gantt
 
 ### 反馈通道
 - 项目主分支：`main`
-- 远程：`sn0wfree/quantnodes-strategy-research`
+- 远程：`sn0wfree/agentnodes`
 - 文档位置：`docs/archive/2026-11/backtest-overhaul/README.md`（单文件）
 
 ---

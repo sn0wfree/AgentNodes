@@ -139,7 +139,7 @@ class LoopCompactionMixin:
             summary_text: LLM-generated summary (non-empty).
             recent_text: Pre-serialized recent messages from compact.
             compressed_messages: Post-L4 messages list (system + recent).
-                When provided AND the ``SR_L4_INCLUDE_MESSAGES`` env
+                When provided AND the ``AN_L4_INCLUDE_MESSAGES`` env
                 var is truthy, this list is included in the
                 ``compact.ended`` event so the projector can replace
                 the previous messages table contents — keeping the DB
@@ -173,7 +173,7 @@ class LoopCompactionMixin:
             if self._event_bus is not None:
                 # B6: Event-sourced path. Emit compact.ended event.
                 #
-                # Two modes (controlled by SR_L4_INCLUDE_MESSAGES):
+                # Two modes (controlled by AN_L4_INCLUDE_MESSAGES):
                 # 1. Default: emit only a marker. The DB keeps the
                 #    original messages; the marker records that
                 #    compaction happened.  In-memory state has
@@ -189,7 +189,7 @@ class LoopCompactionMixin:
 
                 include_msgs = (
                     compressed_messages is not None
-                    and os.environ.get("SR_L4_INCLUDE_MESSAGES", "").lower()
+                    and os.environ.get("AN_L4_INCLUDE_MESSAGES", "").lower()
                     in ("1", "true", "yes")
                 )
                 payload: dict[str, Any] = {

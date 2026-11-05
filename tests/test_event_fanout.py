@@ -17,8 +17,8 @@ import pytest
 
 @pytest.fixture
 def store(tmp_path, monkeypatch):
-    monkeypatch.setenv("QUANTNODES_RESEARCH_GOAL_DB_PATH", str(tmp_path / "g.db"))
-    monkeypatch.setenv("QUANTNODES_RESEARCH_HYPOTHESES_PATH", str(tmp_path / "h.json"))
+    monkeypatch.setenv("AGENTNODES_GOAL_DB_PATH", str(tmp_path / "g.db"))
+    monkeypatch.setenv("AGENTNODES_HYPOTHESES_PATH", str(tmp_path / "h.json"))
     from agentnodes.kernel.agent.event_store import EventStore
 
     pushes: list[tuple[str, object]] = []

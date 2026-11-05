@@ -30,7 +30,7 @@
   可关联 criterion_id/claim_id）、thesis claim 自动创建、完成审计（`goal_audits`）
 - `progress_percent` = 必选标准覆盖比例 `covered/required_total * 100`，clamp [0,100]，
   每次变更后重算；零必选标准返回 100
-- 存储：`~/.quantnodes-research/goals.db`（env `QUANTNODES_RESEARCH_GOAL_DB_PATH` 可覆盖）；
+- 存储：`~/.agentnodes/goals.db`（env `AGENTNODES_GOAL_DB_PATH` 可覆盖）；
   5 表 + WAL + `threading.RLock` + `BEGIN IMMEDIATE` 写事务；
   partial unique index `idx_goals_one_current_per_session` 强制每会话单活跃目标
 

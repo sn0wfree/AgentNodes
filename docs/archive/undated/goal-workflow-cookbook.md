@@ -27,15 +27,15 @@ for wf in list_goal_workflows():
 
 ```bash
 # 复制到用户目录
-mkdir -p ~/.quantnodes-research/workflows
+mkdir -p ~/.agentnodes/workflows
 cp src/agentnodes/core/swarm/presets/goal_factor_research.yaml \
-   ~/.quantnodes-research/workflows/my_strategy.yaml
+   ~/.agentnodes/workflows/my_strategy.yaml
 ```
 
 ### 3. 编辑 YAML
 
 ```yaml
-# ~/.quantnodes-research/workflows/my_strategy.yaml
+# ~/.agentnodes/workflows/my_strategy.yaml
 name: my_strategy
 description: 我的自定义策略研究流程
 version: "1.0"
@@ -224,7 +224,7 @@ Workflow not found: my_strategy
 ```
 
 → 检查文件名是否匹配 `goal_*.yaml` 或 `*.yaml`
-→ 检查 `~/.quantnodes-research/workflows/` 目录是否存在
+→ 检查 `~/.agentnodes/workflows/` 目录是否存在
 
 ### DAG 有环
 

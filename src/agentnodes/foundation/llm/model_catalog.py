@@ -677,7 +677,7 @@ def _default_client_factory() -> Any:
     """Build an httpx.AsyncClient with sensible defaults."""
     return httpx.AsyncClient(
         follow_redirects=True,
-        headers={"User-Agent": "quantnodes-strategy-research/0.6"},
+        headers={"User-Agent": "agentnodes/0.6"},
     )
 
 

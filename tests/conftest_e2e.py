@@ -110,10 +110,10 @@ def backend_server(built_frontend: Path) -> Iterator[dict]:
         "STATIC_DIR": str(built_frontend),
         "CORS_ORIGINS": "*",
         "PYTHONUNBUFFERED": "1",
-        "SR_WORKSPACE_PATH": str(ws),
+        "AN_WORKSPACE_PATH": str(ws),
         # E2E exercises the register → login → chat flow; registration is
         # disabled by default in production (auth.py opt-in switch).
-        "SR_ALLOW_REGISTRATION": "1",
+        "AN_ALLOW_REGISTRATION": "1",
     })
 
     # Use the package's CLI entry point so we hit the same code path users would.

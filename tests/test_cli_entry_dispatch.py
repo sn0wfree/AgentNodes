@@ -1,7 +1,7 @@
 """Entry-dispatch tests: TTY-aware routing + REPL/TUI/argparse paths.
 
 The dispatcher lives in :mod:`agentnodes.interfaces.cli.__main__` and is the
-binary entry point (``quantnodes-research`` after ``pip install -e .``).
+binary entry point (``agentnodes`` after ``pip install -e .``).
 
 Routing matrix tested here:
 

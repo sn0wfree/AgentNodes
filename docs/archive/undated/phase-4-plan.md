@@ -117,7 +117,7 @@ def cmd_checkpoint(args: list[str]) -> str:
 | 命令 | 行为 |
 |---|---|
 | `save` | 当前 goal 的 workflow state 落盘（无 active runner 时报错） |
-| `list [session_id]` | 列出 `~/.quantnodes-research/checkpoints/<session>/<goal>/` |
+| `list [session_id]` | 列出 `~/.agentnodes/checkpoints/<session>/<goal>/` |
 | `resume [goal_id]` | 默认最近一个；指定时按 goal_id 恢复 |
 | `delete <goal_id>` | 删除指定 checkpoint 目录 |
 

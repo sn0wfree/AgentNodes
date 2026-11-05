@@ -515,7 +515,7 @@ R-4 依据：全仓 `findstr /s build_messages src/` 只命中 `prompt_builder.p
 ### 9.1 验收子集（契约 §6.3 W-D 行的子集，聚焦本刀）
 
 ```bat
-set PYTHONPATH=D:\Github\quantnodes-strategy-research\src
+set PYTHONPATH=D:\Github\agentnodes\src
 D:\tools\python312\python.exe -m pytest ^
   tests/test_context_hub.py ^
   tests/test_context_providers_bridge.py ^

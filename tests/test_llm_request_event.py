@@ -162,7 +162,7 @@ def _make_forwarder(bus, cfg=None):
 def test_forwarder_offloads_large_system_prompt(tmp_path, monkeypatch) -> None:
     """A system_prompt over the threshold is moved to a sidecar blob and the
     stored event carries path/preview/size instead of the inline value."""
-    monkeypatch.setenv("SR_LLM_REQUEST_OFFLOAD_THRESHOLD", "64")
+    monkeypatch.setenv("AN_LLM_REQUEST_OFFLOAD_THRESHOLD", "64")
     bus = _FakeBus(db_path=tmp_path / "sessions.db")
     fwd = _make_forwarder(bus)
 
@@ -206,7 +206,7 @@ def test_forwarder_keeps_small_fields_inline(tmp_path) -> None:
 
 def test_forwarder_offloads_large_tools_schema(tmp_path, monkeypatch) -> None:
     """tools_schema over the threshold is also offloaded."""
-    monkeypatch.setenv("SR_LLM_REQUEST_OFFLOAD_THRESHOLD", "64")
+    monkeypatch.setenv("AN_LLM_REQUEST_OFFLOAD_THRESHOLD", "64")
     bus = _FakeBus(db_path=tmp_path / "sessions.db")
     fwd = _make_forwarder(bus)
 
@@ -241,7 +241,7 @@ def test_forwarder_injects_attempt_and_message_ids(tmp_path) -> None:
 def test_forwarder_offloads_large_llm_response_content(tmp_path, monkeypatch) -> None:
     """A large llm_response ``content`` is offloaded to a sidecar blob and the
     stored event carries path/preview/size references."""
-    monkeypatch.setenv("SR_LLM_REQUEST_OFFLOAD_THRESHOLD", "64")
+    monkeypatch.setenv("AN_LLM_REQUEST_OFFLOAD_THRESHOLD", "64")
     bus = _FakeBus(db_path=tmp_path / "sessions.db")
     fwd = _make_forwarder(bus)
 

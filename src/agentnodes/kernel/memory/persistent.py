@@ -1,7 +1,7 @@
 """PersistentMemory: file-based cross-session memory, zero external dependencies.
 
 Storage layout:
-    ~/.quantnodes-research/memory/
+    ~/.agentnodes/memory/
     +-- MEMORY.md          # Index (< 200 lines)
     +-- user_prefs.md      # Individual memory entries with YAML frontmatter
     +-- project_btc.md
@@ -21,7 +21,7 @@ from agentnodes.kernel.agent.frontmatter import parse_frontmatter as _parse_fron
 
 logger = logging.getLogger(__name__)
 
-MEMORY_BASE = Path.home() / ".quantnodes-research" / "memory"
+MEMORY_BASE = Path.home() / ".agentnodes" / "memory"
 MAX_INDEX_LINES = 200
 MAX_ENTRY_CHARS = 8000
 MAX_RESULTS = 5
@@ -154,7 +154,7 @@ class PersistentMemory:
         """Initialize PersistentMemory.
 
         Args:
-            memory_dir: Override memory directory (default: ~/.quantnodes-research/memory/).
+            memory_dir: Override memory directory (default: ~/.agentnodes/memory/).
         """
         self._dir = memory_dir or MEMORY_BASE
         self._dir.mkdir(parents=True, exist_ok=True)

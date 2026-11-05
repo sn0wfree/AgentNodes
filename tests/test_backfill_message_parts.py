@@ -19,7 +19,7 @@ sys.path.insert(0, str(ROOT_PATH))
 @pytest.fixture
 def temp_db(tmp_path, monkeypatch):
     db_path = tmp_path / "test.db"
-    monkeypatch.setenv("SR_WORKSPACE_PATH", str(tmp_path))
+    monkeypatch.setenv("AN_WORKSPACE_PATH", str(tmp_path))
     import agentnodes.interfaces.api.routers.web_session as ws
     monkeypatch.setattr(_wsdb, "_get_db_path", lambda: db_path)
     yield db_path

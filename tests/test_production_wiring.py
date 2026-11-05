@@ -37,7 +37,7 @@ class _Client:
 @pytest.fixture
 def gateway(tmp_path, monkeypatch):
     """真实构造路径：import interfaces（触发钩子）→ get_gateway()。"""
-    monkeypatch.setenv("QUANTNODES_RESEARCH_GOAL_DB_PATH", str(tmp_path / "goals.db"))
+    monkeypatch.setenv("AGENTNODES_GOAL_DB_PATH", str(tmp_path / "goals.db"))
     monkeypatch.setenv("QNODES_PLATFORM_STORE", "1")
 
     import agentnodes.interfaces  # noqa: F401 —— 注册接线钩子
@@ -209,7 +209,7 @@ class TestWiringIsResilientToFailure:
 
     def test_missing_apps_still_boots(self, tmp_path, monkeypatch):
         """apps 不可用时 Gateway 仍能构造（子系统降级为 None）。"""
-        monkeypatch.setenv("QUANTNODES_RESEARCH_GOAL_DB_PATH", str(tmp_path / "g.db"))
+        monkeypatch.setenv("AGENTNODES_GOAL_DB_PATH", str(tmp_path / "g.db"))
 
         import agentnodes.interfaces  # noqa: F401
         from agentnodes.kernel.gateway import gateway as gw_mod

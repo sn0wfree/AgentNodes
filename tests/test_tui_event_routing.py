@@ -17,7 +17,7 @@ from agentnodes.interfaces.cli.tui.app import ResearchApp
 @pytest.fixture(autouse=True)
 def _isolate_session_db(tmp_path, monkeypatch):
     """Isolate the unified session DB (TUI flow persists to cwd by default)."""
-    monkeypatch.setenv("SR_WORKSPACE_PATH", str(tmp_path))
+    monkeypatch.setenv("AN_WORKSPACE_PATH", str(tmp_path))
 
 
 class _CaptureSink:

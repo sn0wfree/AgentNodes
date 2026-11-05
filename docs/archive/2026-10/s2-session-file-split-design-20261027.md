@@ -94,8 +94,8 @@ S2b 才切 per-session 模式。
 
 ## 4. 路径基座
 
-`<workspace>/data/`（`SR_WORKSPACE_PATH` 解析，与 D-4 研究目录同根；测试走
-tmp workspace，天然隔离）。`SR_SESSIONS_DB` 环境变量保留：显式指定时整体覆盖
+`<workspace>/data/`（`AN_WORKSPACE_PATH` 解析，与 D-4 研究目录同根；测试走
+tmp workspace，天然隔离）。`AN_SESSIONS_DB` 环境变量保留：显式指定时整体覆盖
 旧库路径（迁移源），不改变新布局位置。
 
 ## 5. 验收

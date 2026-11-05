@@ -36,7 +36,7 @@
 | ① | projector | 统一库 | `projection_store.py:310`（`INSERT INTO messages`，UPSERT） | ✅ 设计唯一写者 |
 | ② | `persist_message` 兼容直写 | 统一库 | `web_session.py:140-143`（INSERT）；幂等防护 `web_session.py:110-118` | ⚠ 活路径（`/compact` persister），带幂等 |
 | ③ | MemoryManager | **统一库**（同一文件） | `memory_manager.py:270`、`355`；路径解析 `memory_manager.py:579` → `71-112` | 🔴 本次处理对象 |
-| ④ | `core/session/db.py` | **独立旧库** `~/.quantnodes-research/sessions.db` | `db.py:22`、`34-36`；INSERT `db.py:202`、`311` | 🔴 本次退役对象 |
+| ④ | `core/session/db.py` | **独立旧库** `~/.agentnodes/sessions.db` | `db.py:22`、`34-36`；INSERT `db.py:202`、`311` | 🔴 本次退役对象 |
 
 门禁白名单现状（`tests/test_architecture_gates.py:259-265`）把 ① ② ③ ④ 四个文件全部登记为已知写者，并注明 ③ ④「到期随 C1 退役」。**白名单只能缩短**（同文件 `:257` 注释）。
 
@@ -83,7 +83,7 @@ SQLiteStore.compact_messages            memory_manager.py:324-364
 | Web `/clear` | `api/routers/slash_commands.py:834-838` | `mm.clear` | 活（**已知会炸 FK**，实测） |
 | Web 旧 chat 后台任务 | `api/routers/chat.py:421-446` | `mm.append`×2 | **死代码**（`_run_agent_loop_background` 零调用方） |
 | token 估算器（内部） | `memory_manager.py:506-517` | `backend.list_recent_sessions` + `list_messages` | 活（只读，采样最近 10 会话） |
-| Web 读取面 | `api/session/store.py:87-110` → `projector.project_to_messages`（`:250-274`） | **不读 mm** | 实测：projector 路径看到 0 条 mm 写入的行；`SR_EVENT_LOG_READ=0` 走 DB 才看得到 1 条 |
+| Web 读取面 | `api/session/store.py:87-110` → `projector.project_to_messages`（`:250-274`） | **不读 mm** | 实测：projector 路径看到 0 条 mm 写入的行；`AN_EVENT_LOG_READ=0` 走 DB 才看得到 1 条 |
 | HTTP `GET /api/chat/session/{id}/messages` | `web_session.py:374-447`；挂载前缀见 `api/app.py:205` | 直读 `messages` | 看得到 mm 行（同表），但 order by `seq` 会很怪（mm 行 seq=0） |
 
 **结论**：MemoryManager 的 messages 数据只有 CLI/TUI 自己读；Web 进程既不读也不（有效地）写。
@@ -395,7 +395,7 @@ unified 表 + legacy 行（timestamp 列）        → OperationalError: table m
 | 现在 → Step 4 | 两栈**不得指向同一文件** | `test_architecture_gates.py:287-300`（`legacy._default_db_path().resolve() != resolve_session_db_path().resolve()`）；`db.py:25-36` 的决策注释 + `_default_db_path()` 硬编码 `SESSIONS_DB`（`db.py:22`） |
 | 现在 → Step 4 | 旧栈不得被统一库读写路径 import | 已是事实：`core/session/**` 不被 `api/session/**` / `core/storage/**` import（grep 确认）；`api/routers/admin.py` 等是反向依赖（api/cli → core.session） |
 | Step 5 | 两栈合一的唯一方式是"旧栈消失"，**不是**改路径 | `SESSIONS_DB` 常量随 `db.py` 删除；`test_legacy_session_db_stays_separate_from_unified_db` 同提交删除 |
-| Step 5 后 | 防止"旧栈复活" | 建议（可选）加一条文本门禁：`src/` 中不得出现 `.quantnodes-research/sessions.db` 字面量，或 `core/session/db.py` 不得重建 |
+| Step 5 后 | 防止"旧栈复活" | 建议（可选）加一条文本门禁：`src/` 中不得出现 `.agentnodes/sessions.db` 字面量，或 `core/session/db.py` 不得重建 |
 
 **关键裁定**：`S3` 修订里"两库不得指向同一文件"的结论在退役期仍然成立，**不要**为了"让 `/history` 看到 Web 会话"
 而去改 `SESSIONS_DB` 指向统一库——那会立刻写坏表（`db.py:25-33` 已经论证过一次，实测再次确认）。
@@ -530,7 +530,7 @@ tests/test_projector_thinking.py
 
 ```bat
 :: 0) 契约 §7.1：若在 worktree 里跑，先设 PYTHONPATH 指向本 worktree 的 src
-set PYTHONPATH=D:\Github\quantnodes-strategy-research\src
+set PYTHONPATH=D:\Github\agentnodes\src
 
 :: 1) 跑子集，落日志
 D:\tools\python312\python.exe -m pytest ^
@@ -588,7 +588,7 @@ D:\tools\python312\python.exe scripts/c1_inventory.py verify collect.log
 | **D1** | `/clear` 语义变更 | (a) 发 `compact.ended` 标记（保留历史，符合 `slash_commands.py:821-829` 文档）(b) 保留物理删除（现状，会炸 FK） | **(a)**；同时把 TUI Ctrl+L 改为纯 UI 清屏（去掉 `mm.clear` 调用，`cli/tui/app.py:654-660`） |
 | **D2** | `message_count` 归属 | (a) 让 projector 维护（api/session 变更）(b) 前端改用 `/messages` 返回的 `total`（`web_session.py:444-447` 已有）(c) 接受永久 0 | **(b)**：真实库实测 93/93 已为 0（实际每会话 1/2/4 条），前端若依赖它早就是坏的；`total` 是权威值，零后端改动 |
 | **D3** | admin `/metrics` + `session stats` 退役 | (a) 退役 (b) 新建写入指标来源 | **(a)**；`EventStore.health_report`（`event_store.py:594-612`）是现成替代 |
-| **D4** | 旧库 `~/.quantnodes-research/sessions.db` 存量数据 | (a) 不迁移（文档声明丢弃）(b) 一次性导出脚本 | **(a)**，但先在旧栈删除提交的 message 里注明；若用户有真实数据，另开迁移工单 |
+| **D4** | 旧库 `~/.agentnodes/sessions.db` 存量数据 | (a) 不迁移（文档声明丢弃）(b) 一次性导出脚本 | **(a)**，但先在旧栈删除提交的 message 里注明；若用户有真实数据，另开迁移工单 |
 | **D5** | CLI/MCP 会话列表可否新增 1 个 helper | 是 / 否（改为全退役） | **是**——5 个消费方共用，且无任何现有函数可复用（§7 已列全）；放在 `core/session/`（W-D 所有权内） |
 | **D6** | flaky 性能测试处置 | (a) 放宽阈值 (b) 加基线 | **(a)**，`0.1 → 2.0`，与同文件风格一致；改测试需协调者（测试文件不在 W-D 独占清单，但属 W-D 验收子集） |
 | **D7** | `projection_handlers.py` metadata 透传 | 加 3 行 / 接受 metadata 丢失 | **加 3 行**（MemoryManager.append 的公开签名承诺了 metadata） |
@@ -602,7 +602,7 @@ D:\tools\python312\python.exe scripts/c1_inventory.py verify collect.log
 1. **mm 与统一库同文件**（§0 D1）：
    ```
    D:\tools\python312\python.exe %TEMP%\c1_b4_probe.py
-   → resolve_session_db_path == SR_SESSIONS_DB 覆盖值；mm.append 后 messages 行可见；
+   → resolve_session_db_path == AN_SESSIONS_DB 覆盖值；mm.append 后 messages 行可见；
      mm.clear 后 messages=0 且 sessions 行=0；legacy 默认 != unified
    ```
 2. **schema 互写失败 + flush 删除语义**（§5.1 / §2.4a）：

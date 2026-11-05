@@ -1,4 +1,4 @@
-"""quantnodes-strategy-research — 通用策略自动研究框架。"""
+"""agentnodes — 通用策略自动研究框架。"""
 
 from __future__ import annotations
 

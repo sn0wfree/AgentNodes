@@ -75,8 +75,10 @@ webui-api = [
 ]
 
 [project.scripts]
-quantnodes-research = "agentnodes.interfaces.cli.__main__:main"
-quantnodes-strategy-research = "agentnodes.interfaces.cli.__main__:main"
+# 批次 9b：CLI 名统一为 agentnodes。
+# 旧名（quantnodes-research / quantnodes-strategy-research）已移除——
+# 安装后只有 agentnodes 一个入口，避免同名覆盖与文档歧义。
+agentnodes = "agentnodes.interfaces.cli.__main__:main"
 
 [tool.setuptools.packages.find]
 where = ["src"]

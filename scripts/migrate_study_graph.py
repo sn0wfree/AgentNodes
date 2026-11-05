@@ -11,7 +11,7 @@ Usage:
     python scripts/migrate_study_graph.py [--db PATH] [--workspace-root PATH]
 
 Defaults:
-    --db            $QUANTNODES_RESEARCH_GOAL_DB_PATH or /home/ll/.quantnodes-research/goals.db
+    --db            $AGENTNODES_GOAL_DB_PATH or /home/ll/.agentnodes/goals.db
     --workspace-root Path stored in ``studies.workspace_path`` (each row's own path)
 """
 from __future__ import annotations
@@ -26,17 +26,17 @@ from pathlib import Path
 def _resolve_db_path(cli_arg: str | None) -> Path:
     if cli_arg:
         return Path(cli_arg)
-    env = os.environ.get("QUANTNODES_RESEARCH_GOAL_DB_PATH")
+    env = os.environ.get("AGENTNODES_GOAL_DB_PATH")
     if env:
         return Path(env)
-    return Path("/home/ll/.quantnodes-research/goals.db")
+    return Path("/home/ll/.agentnodes/goals.db")
 
 
 def _resolve_workspace_root(cli_arg: str | None) -> Path | None:
     """Optional fallback root if ``studies.workspace_path`` is empty."""
     if cli_arg:
         return Path(cli_arg)
-    env = os.environ.get("QUANTNODES_RESEARCH_WORKSPACE_ROOT")
+    env = os.environ.get("AGENTNODES_WORKSPACE_ROOT")
     if env:
         return Path(env)
     return None

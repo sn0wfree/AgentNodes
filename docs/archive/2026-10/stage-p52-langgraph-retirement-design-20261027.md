@@ -11,7 +11,7 @@
 |---|---|
 | src 内 import 方 | 仅 `runner.py:124`（mixin）与 `runner_langgraph.py` 自身 |
 | WebUI 引用 | 零（engine 字段从不传） |
-| **真实存量数据** | `~/.quantnodes-research/goals.db` 的 studies 表**为空**（只读实测）——零行为影响 |
+| **真实存量数据** | `~/.agentnodes/goals.db` 的 studies 表**为空**（只读实测）——零行为影响 |
 | 脏值回落 | `_resolve_branch_fn` 对未知 engine 值 warning + 回落 phases（`phase_engine.py:386-392`），删 registry 项后 `engine='langgraph'` 自动安全回落 |
 | `langgraph` 包依赖 | **保留**——新 GraphEngine 的 StateGraph 基座就是它，退役的只是 study 分支 |
 | CLI/API | `/study/start` 的 `engine` 字段保留（接受任意值，脏值回落），注释更新 |

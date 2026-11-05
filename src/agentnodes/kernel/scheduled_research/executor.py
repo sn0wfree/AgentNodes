@@ -10,7 +10,7 @@ Two run modes:
 The default dispatch resolves by ``job.target``:
 - ``'study'`` (default): create a study via the shared bootstrap and
   submit it to the scheduler; ``job.last_run_id`` = study_id.
-- ``'autoresearch'`` (legacy): subprocess ``quantnodes-research
+- ``'autoresearch'`` (legacy): subprocess ``agentnodes
   autoresearch`` (defensive fallback; new jobs are all ``'study'``).
 
 A custom ``dispatch_fn`` may be sync or async (return value, when
@@ -286,7 +286,7 @@ class ScheduledResearchExecutor:
     def _default_dispatch_subprocess(self, job: ScheduledResearchJob) -> None:
         """Legacy dispatch: run autoresearch as subprocess."""
         cmd = [
-            "quantnodes-research", "autoresearch",
+            "agentnodes", "autoresearch",
             job.workspace,
             "--strategy", job.strategy_name,
             "--max-rounds", str(job.max_rounds),

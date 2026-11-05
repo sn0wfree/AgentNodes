@@ -2,7 +2,7 @@
 
 ## 概述
 
-**AgentQuant** 不是一个统一项目，而是 GitHub 上两个**独立项目**共用的名字，都在探索 AI 代理 + 量化交易研究的交叉领域。本地代码库（`quantnodes-strategy-research`）与它们是**独立开发的平行项目**，无任何直接依赖。
+**AgentQuant** 不是一个统一项目，而是 GitHub 上两个**独立项目**共用的名字，都在探索 AI 代理 + 量化交易研究的交叉领域。本地代码库（`agentnodes`）与它们是**独立开发的平行项目**，无任何直接依赖。
 
 ---
 
@@ -158,4 +158,4 @@ AGPL-3.0（病毒式许可），不建议采纳。
 
 *调研日期：2026-09-02*
 *调研人：opencode*
-*仓库：quantnodes-strategy-research*
+*仓库：agentnodes*

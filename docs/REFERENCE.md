@@ -1,7 +1,7 @@
 # AgentNodes 参考手册
 
 > 命令、工具、配置的完整清单。**README 只放框架主体，细节都在这里。**
-> 本文的数据在 2026-11-05 实测（`quantnodes-research --help` / `mcp list-tools` / `swarm list`）。
+> 本文的数据在 2026-11-05 实测（`agentnodes --help` / `mcp list-tools` / `swarm list`）。
 >
 > ⚠️ **「移除批次」列的含义**：业务功能正按
 > [`design/subtraction-roadmap-v2-20261105.md`](design/subtraction-roadmap-v2-20261105.md)
@@ -11,7 +11,7 @@
 
 ## 1. CLI 顶层命令（18 个，2026-11-05 批次 4 后实测）
 
-`quantnodes-research <command> [args]`
+`agentnodes <command> [args]`
 
 > 批次 4 已删除 `run` / `evaluate` / `list` / `engine` / `accept` 五个子命令；
 > `backtest` / `check` / `reproduce` 仍在命令表中，但其底层 `apps/backtest`
@@ -51,18 +51,18 @@
 ### 1.3 调用矩阵
 
 ```text
-quantnodes-research                → TUI（TTY）/ argparse help（非 TTY）
-quantnodes-research --repl         → 旧版 prompt_toolkit REPL
-quantnodes-research --banner       → 同 --repl（v0.3.x 别名）
-quantnodes-research <subcommand>   → argparse 子命令
-echo "" | quantnodes-research      → argparse help（无 TTY 不进 TUI）
+agentnodes                → TUI（TTY）/ argparse help（非 TTY）
+agentnodes --repl         → 旧版 prompt_toolkit REPL
+agentnodes --banner       → 同 --repl（v0.3.x 别名）
+agentnodes <subcommand>   → argparse 子命令
+echo "" | agentnodes      → argparse help（无 TTY 不进 TUI）
 ```
 
 ---
 
 ## 2. MCP 工具（17 个）
 
-`quantnodes-research mcp serve --transport {stdio,sse} --port 8900`
+`agentnodes mcp serve --transport {stdio,sse} --port 8900`
 
 | 工具 | 参数 | 用途 | 移除批次 |
 |---|---|---|---|
@@ -88,7 +88,7 @@ echo "" | quantnodes-research      → argparse help（无 TTY 不进 TUI）
 
 ## 3. Swarm preset（37 个）
 
-`quantnodes-research swarm run <name> --workspace <path> --task "<描述>"`
+`agentnodes swarm run <name> --workspace <path> --task "<描述>"`
 定义在 `src/agentnodes/kernel/swarm/presets/*.yaml`（YAML DAG：节点 + 依赖 + 工具白名单）。
 
 | 类别 | preset |
@@ -142,27 +142,27 @@ echo "" | quantnodes-research      → argparse help（无 TTY 不进 TUI）
 | `OPENAI_MODEL` | 默认模型 |
 | `DEEPSEEK_API_KEY` / `KIMI_API_KEY` / `QWEN_API_KEY` / `ANTHROPIC_API_KEY` | 其他 provider |
 | `QUANTNODES_LLM_JSON` | `llm.json` 配置路径覆盖 |
-| `QUANTNODES__LLM__*` | 嵌套配置覆盖（与环境变量同名映射） |
+| `AGENTNODES__LLM__*` | 嵌套配置覆盖（与环境变量同名映射） |
 
 ### 5.2 运行时
 
 | 变量 | 默认 | 说明 |
 |---|---|---|
-| `SR_AGENT_WALLCLOCK_TIMEOUT` | — | 单次 agent 墙钟超时（秒） |
-| `SR_ALLOW_SHELL_TOOLS` | 关闭 | `1` 开启 `run_command`（bash/python）；plan mode 始终禁用 |
-| `SR_ALLOW_REGISTRATION` | 关闭 | `1` 开启 API 注册端点 |
+| `AN_AGENT_WALLCLOCK_TIMEOUT` | — | 单次 agent 墙钟超时（秒） |
+| `AN_ALLOW_SHELL_TOOLS` | 关闭 | `1` 开启 `run_command`（bash/python）；plan mode 始终禁用 |
+| `AN_ALLOW_REGISTRATION` | 关闭 | `1` 开启 API 注册端点 |
 | `STRATEGY_RESEARCH_ALLOW_DEV_SECRET` | 关闭 | `1` 允许非生产环境用开发密钥 |
-| `QUANTNODES_RESEARCH_GOAL_DB_PATH` | `~/.quantnodes-research/goals.db` | Ticket/Assignment/调度共用库 |
+| `AGENTNODES_GOAL_DB_PATH` | `~/.agentnodes/goals.db` | Ticket/Assignment/调度共用库 |
 
 ### 5.3 日志
 
 | 变量 | 默认 | 说明 |
 |---|---|---|
-| `SR_LOG_LEVEL` | `INFO` | 日志级别 |
-| `SR_LOG_JSON` | 关闭 | `1` 输出 JSON 格式 |
-| `SR_LOG_FILE` | 关闭 | 文件日志路径；不设则不落文件 |
+| `AN_LOG_LEVEL` | `INFO` | 日志级别 |
+| `AN_LOG_JSON` | 关闭 | `1` 输出 JSON 格式 |
+| `AN_LOG_FILE` | 关闭 | 文件日志路径；不设则不落文件 |
 
-> CLI 是**严格开关语义**：只有 `SR_LOG_JSON` 或 `SR_LOG_FILE` 设置了才装配 stderr handler，
+> CLI 是**严格开关语义**：只有 `AN_LOG_JSON` 或 `AN_LOG_FILE` 设置了才装配 stderr handler，
 > 默认不干扰 TUI/界面输出。
 
 ### 5.4 Web / API

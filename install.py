@@ -16,7 +16,7 @@ Usage:
     - 未配置 → 提示运行 init
 
 启动 Web UI:
-    quantnodes-strategy-research serve --host 0.0.0.0 --port 87183
+    agentnodes serve --host 0.0.0.0 --port 87183
     # 浏览器访问 http://localhost:87183
 """
 
@@ -256,7 +256,7 @@ def uninstall_all(project_root: Path, frontend_dir: Path, pip: str) -> None:
 
     warn("删除 Python 包 ...")
     subprocess.run(
-        [*pip.split(), "uninstall", "-y", "quantnodes-strategy-research"],
+        [*pip.split(), "uninstall", "-y", "agentnodes"],
         capture_output=True,
     )
 
@@ -280,7 +280,7 @@ def check_llm_config_via_module() -> dict:
     """
     try:
         sys.path.insert(0, str(Path(__file__).parent / "src"))
-        from agentnodes.cli.llm_config_check import check_llm_config
+        from agentnodes.interfaces.cli.llm_config_check import check_llm_config
         return check_llm_config()
     except Exception:
         return {
@@ -311,7 +311,7 @@ def show_usage() -> None:
         print(f"{YELLOW}⚠ LLM 配置：未检测到 ~/.quantnodes/llm.json 或缺少 API key{NC}\n")
         print("   启动 Web UI 之前，请先配置 LLM（任选其一）：")
         print("   1. 交互式向导：")
-        print("      quantnodes-research init")
+        print("      agentnodes init")
         print("   2. 手动创建配置文件：")
         print("      mkdir -p ~/.quantnodes")
         print('      echo \'LLM_API_KEY=sk-...\' > ~/.quantnodes/.env')
@@ -320,14 +320,14 @@ def show_usage() -> None:
         print('      export OPENAI_API_KEY="sk-..."\n')
 
     print("""📦 启动 Web UI（推荐）：
-   quantnodes-strategy-research serve --host 0.0.0.0 --port 87183
+   agentnodes serve --host 0.0.0.0 --port 87183
    # 浏览器访问 http://localhost:87183
 
 📦 启动 TUI（终端界面）：
-   quantnodes-strategy-research
+   agentnodes
 
 📦 启动纯 API：
-   quantnodes-strategy-research api serve --port 8765
+   agentnodes api serve --port 8765
 
 🧪 运行测试：
    python install.py --e2e                         # CI: 完整安装 + E2E
@@ -335,7 +335,7 @@ def show_usage() -> None:
    cd webui/frontend && npm test                                 # 前端 27 测试
 
 🛠  开发模式：
-   后端: quantnodes-strategy-research serve --reload --port 87183
+   后端: agentnodes serve --reload --port 87183
    前端: cd webui/frontend && npm run dev   # http://localhost:5173
 """)
 

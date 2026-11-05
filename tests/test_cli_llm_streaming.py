@@ -24,7 +24,7 @@ from agentnodes.foundation.llm.parser import StreamChunk
 @pytest.fixture(autouse=True)
 def _isolate_session_db(tmp_path, monkeypatch):
     """Isolate the unified session DB (TUI flow persists to cwd by default)."""
-    monkeypatch.setenv("SR_WORKSPACE_PATH", str(tmp_path))
+    monkeypatch.setenv("AN_WORKSPACE_PATH", str(tmp_path))
 
 
 def _chunk(content: str, *, finish: str | None = None) -> StreamChunk:
