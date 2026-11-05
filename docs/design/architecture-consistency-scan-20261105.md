@@ -27,6 +27,11 @@
    14.0k+7.8k+5.7k+2.3k」四块已全部不存在。
 5. **门禁有 3 个可见性盲区**：目录名 `scripts` 被硬跳过、非 `.py` 资源资产的
    跨层路径耦合、`templates/` 登记为 L2 但 0 个 `.py`。
+6. **GEP-RSI v1.1 对照（§8）：骨架已实现、P 层最薄、循环无驱动。**
+   Tier 0 三重冻结超出设计要求；但 P 层缺成本/延迟维度、缺 held-in/held-out
+   双集、缺诊断聚类、缺分歧 kill-switch；屏障缺 hash chain、双轨审计、重放审计；
+   循环缺生产驱动与假基因清理。物理四层门禁对这类缺口**结构性失明**——
+   G/E/P 是语义分层，与 L1–L4 正交。
 
 ---
 
@@ -365,6 +370,89 @@ ADR-003 把 L3→L2 从 46 降到 0，代价是运行期失败替代编译期失
 - 把 templates 当 L4 资产（零业务语义？不成立——里面全是研究方法论）
 - 给资源也做端口（`resolve("templates.prompts_dir")`）
 - 承认「资产层」是与四层正交的第五个维度
+
+---
+
+## §8 GEP-RSI v1.1 对照（补遗：为什么首轮扫描漏了它，以及补上后的结论）
+
+### 8.0 为什么首轮扫描没有体现 GEP-RSI
+
+三个原因，按重要性排：
+
+1. **锚定偏差**：扫描以 `architecture-diagram.html`（物理四层）+ 两份 design doc
+   为「架构设计」的口径。GEP-RSI v1.1 是未跟踪的新文件，读了但没当成规范去对表。
+2. **方法论正交**：本轮的三把尺——AST import 门禁、graphify 符号图、运行期探针——
+   只能测**物理分层**与**接线**。GEP-RSI 是**语义分层**（按进化角色分 G/E/P +
+   屏障），两套维度正交：任何 import 违规都不会暴露「GEP-RSI 不符」，
+   反之 GEP-RSI 的缺口在 import 图上也恒为 0。
+3. **后果**：议题 4 把 RSI 缺陷框成「接线问题」；在 GEP-RSI 语境下它们是
+   **屏障与循环的符合性缺口**，且更深的一批缺口（成本维度、双集双门、
+   双轨审计、假基因清理、驱动链）根本没被列出。
+
+### 8.1 G 层 · 基因组层（变异发生地）→ 代码落点
+
+| GEP-RSI 构件 | 代码落点 | 状态 |
+|---|---|---|
+| 模块化基因条目 | `GenomeVersion.tier1_active`（`kernel/orchestration/genome_version.py`，frozen dataclass 版本链 + 磁盘 `GenomeStore`）| ✅ 载体存在，但是运行时 dict 不是 agents.md 式声明文件 |
+| 五字段契约（作用域/触发/指令/证伪/谱系） | `GenomeProposal` 只有 proposal_id / target_component / change / evidence_refs / status | ⚠ **无触发条件、无证伪条件**；谱系靠 `activated_by_proposal` + 版本链（部分）|
+| 变异语法限定（增/调参/删/拆合） | `change` 是自由 dict，无语法校验 | ❌ |
+| Tier 0 冻结 | `TIER0_COMPONENTS = {budget, stop_policy, state_machine, methodology}`；构造期拒绝（`genome_proposals.py:82`）+ validation_gate 反序列化拒绝 + skill_memory 丢键（`skill_memory.py:98`）| ✅ **H3 三重保证，超出 GEP-RSI 要求** |
+| Tier 1 白名单 | `TIER1 = {prompt, skill, graph_shape, tool_set, compaction}`，闭合集合，未知组件构造期抛错 | ✅ 顺带实现了「评估器不在变异面」（MetaRSI 软密封）|
+| 假基因清理（循环第 7 步） | `deactivate()` 有单组件撤销（`genome_version.py:215`），但无周期性「从未激活/负收益」清扫 | ❌ |
+
+### 8.2 E 层 · 表达编译层（选择执行地）→ 代码落点
+
+| GEP-RSI 构件 | 代码落点 | 状态 |
+|---|---|---|
+| 选择性转录 | `SkillMemoryResolver`（`kernel/evolution/skill_memory.py`）从 `tier1_active` 组装 prompt_version / tool_set / skill / compaction_config | ✅ |
+| 转录本（激活的基因 + 原因） | resolver 不记录「为什么激活/哪个提案导致」；只有 `rsi.validated` 事件带 proposal_id | ⚠ 半：可从事件流重建，无结构化转录本 |
+| 回滚锚点 | `rsi_wiring._make_applier`：`rollback_to(before)` 先记锚再应用 | ✅ |
+| 成本硬约束（校准 01） | `compaction` 是 Tier 1 可提组件（`collapse_keep_recent`）——上下文占用可被进化；但成本/延迟不在评分里 | ⚠ 可进化但不可度量 |
+
+### 8.3 P 层 · 能力表型层（选择裁决地）→ 代码落点 —— **全系统最薄的一层**
+
+| GEP-RSI 构件 | 代码落点 | 状态 |
+|---|---|---|
+| 表型向量（任务行为模式，校准 03） | `evals/scorecard.py` `TaskScore` = tool_recall 0.4 + 无违规 0.2 + budget 0.15 + content 0.15 + completed 0.1 | ✅ 方向正确（非人格测量）|
+| **成本/延迟为并列硬维度（校准 01）** | `tokens_used` 只做 0/1 门槛不进总分；**latency 全库无采集**（`grep latency/duration/elapsed` → 0 处）| ❌ |
+| 双门（held-in 显著改进 + held-out 无退化） | `validation_gate` 只在**同一批** golden 抽样上比基线 vs 候选；±20% 双侧（>+20% 拒，<−20% 判 reward-hacking escalate）| ⚠ 是「单集双侧」，不是「双集双门」|
+| 分歧 kill-switch | 不存在（连双集都没有）| ❌ |
+| 表型诊断（第 1 步，失败签名 (c,q,m) 聚类） | `default_policy` 只用 failure_rate + 回滚计数两个标量；`grep signature/cluster` → 0 处 | ❌ |
+| P 层测量代码不参与自我评分 | `evals/` 在 L3、不在 Tier 1 白名单 → 变异面封闭成立；但 `golden_tasks.jsonl` 是包内普通文件，**无完整性校验** | ⚠ 软密封 |
+
+### 8.4 种系屏障层 → 代码落点
+
+| GEP-RSI 构件 | 代码落点 | 状态 |
+|---|---|---|
+| append-only 审计账本 | `event_log`（UNIQUE(aggregate,branch,seq) 约束）+ genome 版本链（append + 游标，frozen）| ✅ append-only 成立 |
+| hash chain | **无**（`grep hash_chain/prev_hash` → 0 处）| ❌ GEP-RSI v1.1 明说 hash-chain 是必要非充分 |
+| 定期用独立评估器快照重放历史 | **无** | ❌ |
+| 双轨审计器（Governance Gauntlet） | **无** | ❌ |
+| 层级终止 | 事实上的终止层级 = 包外 `scripts/arch` 门禁 + 测试 + 人；但 `genome_proposals.py`（白名单本体）就在包内，运行时无机制阻止改它 | ⚠ 终止层级只覆盖 import 方向 |
+| kill-switch | `interfaces/cli/halt.py` 是**人工** kill switch（trip/clear），非评估分歧自动触发 | ⚠ 语义不同 |
+
+### 8.5 RSI 循环七步对照
+
+| 步 | GEP-RSI | 代码 | 判定 |
+|---|---|---|---|
+| 1 | 表型诊断（失败签名聚类） | failure_rate + 回滚计数两个标量 | ❌ |
+| 2 | 有界提议 | 单组件 + Tier1 白名单 + 构造期拒绝 | ✅ |
+| 3 | 屏障预检 | 构造期 + 反序列化期两道 | ✅ |
+| 4 | E 层编译执行 | skill_memory + isolated_replay + 回滚锚点 | ✅ |
+| 5 | P 层双门评估 | 单集双侧 ±20% | ⚠ |
+| 6 | 裁决与回滚 | 3 连败回滚 + 单组件 deactivate + 提案粒度 apply→undo（RePAIR 式）| ⚠ |
+| 7 | 假基因清理 | 无 | ❌ |
+| 0 | **驱动**（谁让循环转起来） | `build_rsi_loop()` 生产零调用（§3 A4）| ❌ **最致命** |
+
+### 8.6 结论
+
+代码实现了 GEP-RSI 的**骨架**且 Tier 0 冻结超出设计要求；
+**缺口集中在三处**：P 层（无成本维度、无双集、无诊断聚类、无分歧 kill-switch）、
+屏障（无双轨审计、无 hash chain、无重放审计）、循环（无驱动、无假基因清理）。
+
+与 goal 重建的关系：goal 的 journal（判据级证据）正是 GEP-RSI 第 1 步
+「表型诊断」缺的细粒度信号——**goal-merge 设计文档的 R3 = GEP-RSI 第 1 步的实现前提**。
+两个文档由此接上了。
 
 ---
 
