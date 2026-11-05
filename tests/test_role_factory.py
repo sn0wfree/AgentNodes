@@ -142,8 +142,9 @@ class TestBuildAgentLoop:
         assert loop is not None
         tool_names = {t.name for t in loop.registry._tools.values()}
         assert "write" in tool_names
-        # 批次 5：run_backtest 已随 apps/backtest 移除
-        assert "run_backtest" not in tool_names
+        # 批次 6：业务工具归位 L2 后经 CapabilityRegistry 重新注册，
+        # run_backtest 又出现在 registry 里（其底层 backtest.* kind 仍缺失，
+        # 调用时走降级路径）。这里只断言「写出能力可用」，不断言具体工具集。
 
     def test_unknown_role_returns_none(self, tmp_path):
         from agentnodes.kernel.agent.role_factory import build_agent_loop

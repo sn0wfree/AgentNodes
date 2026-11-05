@@ -329,7 +329,7 @@ def _try_load_dotenv() -> None:
         cwd_env = Path.cwd() / ".env"
         if cwd_env.exists():
             _ld(cwd_env)
-        quantnodes_env = Path.home() / ".quantnodes" / ".env"
+        quantnodes_env = Path.home() / ".agentnodes" / ".env"
         if quantnodes_env.exists():
             _ld(quantnodes_env)
     except Exception as exc:                       # noqa: BLE001

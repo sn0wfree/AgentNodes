@@ -112,7 +112,7 @@ def _is_placeholder(value: str) -> bool:
 # Canonical QuantNodes config locations (core-owned; api/cli/onboard
 # import from here rather than the reverse — previously this module
 # imported cli.onboard's private constants, forming a core↔cli cycle).
-_QUANTNODES_DIR: Final[Path] = Path.home() / ".quantnodes"
+_QUANTNODES_DIR: Final[Path] = Path.home() / ".agentnodes"
 DEFAULT_LLM_JSON_PATH: Final[Path] = _QUANTNODES_DIR / "llm.json"
 DEFAULT_DOTENV_PATH: Final[Path] = _QUANTNODES_DIR / ".env"
 

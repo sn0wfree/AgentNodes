@@ -198,7 +198,7 @@ def get_user_db(workspace_path: Optional[Path] = None) -> UserDB:
     If workspace_path is None, uses a default location under ~/.quantnodes/.
     """
     if workspace_path is None:
-        workspace_path = Path.home() / ".quantnodes"
+        workspace_path = Path.home() / ".agentnodes"
     workspace_path = Path(workspace_path)
     key = str(workspace_path.resolve())
 
@@ -265,7 +265,7 @@ def seed_admin_if_empty(db: UserDB) -> None:
 def _persist_admin_password(password: str) -> None:
     """Best-effort one-time persistence of the generated seed password."""
     try:
-        pw_file = Path.home() / ".quantnodes" / "admin_password.txt"
+        pw_file = Path.home() / ".agentnodes" / "admin_password.txt"
         pw_file.parent.mkdir(parents=True, exist_ok=True)
         pw_file.write_text(password + "\n", encoding="utf-8")
         try:

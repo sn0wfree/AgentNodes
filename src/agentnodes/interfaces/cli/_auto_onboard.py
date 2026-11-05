@@ -70,7 +70,7 @@ def _migrate_legacy_env() -> None:
     """
     legacy_candidates = (
         Path.home() / ".strategy-research" / ".env",
-        Path.home() / ".quantnodes" / "agentnodes" / ".env",
+        Path.home() / ".agentnodes" / "agentnodes" / ".env",
     )
     if _QUANTNODES_DOTENV_PATH.exists():
         return  # newer config already wins; do not clobber

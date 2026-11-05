@@ -14,7 +14,7 @@ logger = logging.getLogger(__name__)
 
 router = APIRouter()
 
-_QUANTNODES_DIR = Path.home() / ".quantnodes"
+_QUANTNODES_DIR = Path.home() / ".agentnodes"
 _LLM_JSON_PATH = _QUANTNODES_DIR / "llm.json"
 _DOTENV_PATH = _QUANTNODES_DIR / ".env"
 

@@ -65,7 +65,7 @@ AUTO_REPAIR_TIMEOUT_S = 30
 # Backward-compat alias (legacy code may still reference DEFAULT_DB_PATH).
 # Kept so existing imports don't break, but resolve_db_path now routes
 # through resolve_session_db_path which uses the new filename.
-DEFAULT_DB_PATH = Path.home() / ".quantnodes" / SESSION_DB_FILENAME
+DEFAULT_DB_PATH = Path.home() / ".agentnodes" / SESSION_DB_FILENAME
 
 
 def resolve_session_db_path() -> Path:

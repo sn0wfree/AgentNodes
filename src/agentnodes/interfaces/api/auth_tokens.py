@@ -71,7 +71,7 @@ def _load_secret() -> bytes:
         _SECRET_CACHE = env_secret.encode()
         return _SECRET_CACHE
 
-    path = Path.home() / ".quantnodes" / "jwt_secret"
+    path = Path.home() / ".agentnodes" / "jwt_secret"
     try:
         if path.exists():
             existing = path.read_bytes()

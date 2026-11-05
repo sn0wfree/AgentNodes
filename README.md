@@ -2,13 +2,14 @@
 
 **可自我进化的 Agent 框架** — 四层单向依赖 · 依赖方向机器可证 · 能力端口化 · RSI 闭环
 
-> **项目状态：拆分进行中（2026-11-05）**
-> 本仓库从 QuantNodes 量化研究项目中剥离出 **agent 框架**部分独立开发，业务侧（回测、因子、行情）
-> 正按 [`docs/design/subtraction-roadmap-v2-20261105.md`](docs/design/subtraction-roadmap-v2-20261105.md)
-> 的批次计划逐步移除。
-> 当前的 `apps/` 目录是**业务插件示例**，不是框架本体；批次 4–9 完成后它只剩
-> `evolution`（RSI 闭环）与 `capabilities`（注册门面）。
-> 包名 `agentnodes` → `agentnodes` 的重命名是**批次 9**，尚未执行。
+> **项目状态：拆分已完成主体（2026-11-05）**
+> 本仓库从 QuantNodes 量化研究项目中剥离出 **agent 框架**部分独立开发，业务侧（回测、因子、行情、
+> 研究流水线）已按 [`docs/design/subtraction-roadmap-v2-20261105.md`](docs/design/subtraction-roadmap-v2-20261105.md)
+> 分批移除并归档到 `testcase/golden/`。
+> 当前 `apps/` 只剩 `evolution`（RSI 闭环）、`capabilities`（注册门面）与
+> `builtin_tools`（业务工具的 L2 实现，经 CapabilityRegistry 注入 kernel）。
+> **包名与环境变量已重命名**：`strategy_research` → `agentnodes`，
+> `SR_*` / `QUANTNODES_*` → `AN_*` / `AGENTNODES_*`（批次 9，不兼容旧配置）。
 
 ---
 
@@ -102,7 +103,7 @@ register("my.service", lambda registry: MyService())
 service = resolve("my.service")
 ```
 
-> 包名重命名（`agentnodes` → `agentnodes`）是批次 9，完成后以上 import 会同步更新。
+> 已含批次 9 重命名：包名为 `agentnodes`，环境变量前缀 `AN_*` / `AGENTNODES_*`。
 
 ---
 

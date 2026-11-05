@@ -18,7 +18,7 @@ from pathlib import Path
 from typing import TypedDict
 
 # QuantNodes 标准配置位置（与 onboard.py 一致）
-QUANTNODES_DIR = Path.home() / ".quantnodes"
+QUANTNODES_DIR = Path.home() / ".agentnodes"
 LLM_JSON_PATH = QUANTNODES_DIR / "llm.json"
 DOTENV_PATH = QUANTNODES_DIR / ".env"
 

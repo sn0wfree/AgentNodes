@@ -41,7 +41,7 @@ CANCEL = object()
 
 
 # 配置路径改为 PEP 562 模块级 __getattr__ 动态求值（阶段 4）：
-# 旧写法 `_QUANTNODES_DIR: Final[Path] = Path.home() / ".quantnodes"` 在
+# 旧写法 `_QUANTNODES_DIR: Final[Path] = Path.home() / ".agentnodes"` 在
 # import 时固化——进程内 HOME/USERPROFILE 之后的任何变化（测试沙箱重定向、
 # init 向导自身改 env）都不再生效，测试夹具与运行时行为错位。
 # __getattr__ 保证每次访问都重新解析；monkeypatch.setattr 补丁创建真实
@@ -56,7 +56,7 @@ def _patched(name: str) -> Path | None:
 
 def _quantnodes_dir() -> Path:
     patched = _patched("_QUANTNODES_DIR")
-    return patched if patched is not None else Path.home() / ".quantnodes"
+    return patched if patched is not None else Path.home() / ".agentnodes"
 
 
 def _quantnodes_llm_json_path() -> Path:

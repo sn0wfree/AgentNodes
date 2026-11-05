@@ -27,7 +27,7 @@ from agentnodes.foundation.llm.config import _try_load_dotenv as _load_dotenv
 
 _load_dotenv()
 
-QUANTNODES_DIR = Path.home() / ".quantnodes"
+QUANTNODES_DIR = Path.home() / ".agentnodes"
 LLM_JSON_PATH = QUANTNODES_DIR / "llm.json"
 DOTENV_PATH = QUANTNODES_DIR / ".env"
 

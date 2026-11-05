@@ -35,7 +35,7 @@ logger = logging.getLogger(__name__)
 # Constants
 # ---------------------------------------------------------------------------
 
-CONFIG_PATH: Final[Path] = Path.home() / ".quantnodes" / "llm.json"
+CONFIG_PATH: Final[Path] = Path.home() / ".agentnodes" / "llm.json"
 CONFIG_PATHS: Final[tuple[Path, ...]] = (CONFIG_PATH,)
 
 _ENV_OVERRIDE_KEYS: Final[tuple[str, ...]] = (

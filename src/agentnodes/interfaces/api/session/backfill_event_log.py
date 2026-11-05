@@ -336,7 +336,7 @@ def main() -> None:
     else:
         import os
         workspace = Path(os.environ.get(
-            "AN_WORKSPACE_PATH", Path.home() / ".quantnodes",
+            "AN_WORKSPACE_PATH", Path.home() / ".agentnodes",
         ))
         db_path = workspace / "quantnodes_agentnodes_user.db"
 

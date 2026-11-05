@@ -191,7 +191,7 @@ def _build_llm_config():
         from pathlib import Path
 
         from dotenv import load_dotenv
-        load_dotenv(Path.home() / ".quantnodes" / ".env", override=True)
+        load_dotenv(Path.home() / ".agentnodes" / ".env", override=True)
     except Exception:
         pass
     try:

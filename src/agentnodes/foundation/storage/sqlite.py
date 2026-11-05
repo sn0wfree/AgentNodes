@@ -29,6 +29,56 @@ F = TypeVar("F", bound=Callable)
 
 DEFAULT_DATA_DIR = Path.home() / ".agentnodes"
 
+#: 重命名前的数据目录（2026-11-05 批次 9 之前叫 ``~/.quantnodes``）。
+#: 首次访问时由 :func:`ensure_data_dir` 做一次性迁移。
+LEGACY_DATA_DIR = Path.home() / ".quantnodes"
+
+#: 迁移标记文件——存在即表示已迁移过（避免重复拷贝/覆盖用户新数据）。
+_MIGRATED_MARKER = ".migrated-from-quantnodes"
+
+
+def ensure_data_dir(base: Path | None = None) -> Path:
+    """Return the data dir, migrating ``~/.quantnodes`` on first use.
+
+    迁移规则（保守，不丢数据）：
+
+    1. 目标是 ``~/.agentnodes``（可由 ``AN_DATA_DIR`` 覆盖）。
+    2. 若目标已有标记文件 → 直接返回（已迁移过）。
+    3. 若目标不存在且旧目录存在 → 整树复制（``copytree``），**旧目录保留**
+       作为备份（不删，让用户自己决定）。
+    4. 两者都不存在 → 创建目标目录。
+
+    失败不抛错：数据目录不可写时退化为「不迁移、返回目标路径」，
+    由具体 store 在写入时报错，而不是让 import 期崩掉。
+    """
+    target = base or Path(
+        os.environ.get("AN_DATA_DIR", "").strip() or DEFAULT_DATA_DIR
+    )
+    target = Path(target).expanduser()
+
+    try:
+        if (target / _MIGRATED_MARKER).exists():
+            return target
+        if not target.exists() and LEGACY_DATA_DIR.exists():
+            import shutil
+
+            shutil.copytree(LEGACY_DATA_DIR, target, dirs_exist_ok=True)
+            (target / _MIGRATED_MARKER).write_text(
+                "migrated from ~/.quantnodes on 2026-11-05 (batch 9 rename)\n"
+                "old directory kept as backup; delete manually when safe\n",
+                encoding="utf-8",
+            )
+            import logging
+
+            logging.getLogger(__name__).info(
+                "data dir migrated: %s -> %s (legacy kept as backup)",
+                LEGACY_DATA_DIR, target,
+            )
+        target.mkdir(parents=True, exist_ok=True)
+    except OSError:
+        pass  # 不可写就交给调用方报错
+    return target
+
 
 # ── Column / value helpers ────────────────────────────────────────
 
@@ -63,7 +113,7 @@ def resolve_db_path(db_name: str, env_var: str) -> Path:
     raw_path = os.environ.get(env_var, "").strip()
     if raw_path:
         return Path(raw_path).expanduser()
-    return DEFAULT_DATA_DIR / db_name
+    return ensure_data_dir() / db_name
 
 
 def connect(path: Path) -> sqlite3.Connection:
