@@ -81,7 +81,10 @@ def create_app(
         task = asyncio.create_task(_refresh_model_catalog_async())
 
         # Scheduled research daemon: migrate legacy JSON jobs once, then
-        # tick on the main loop dispatching due jobs to the study system.
+        # tick on the main loop dispatching due jobs.
+        # 2026-11-05 批次 3：study 目标已移除（apps/study 归档）。
+        # 调度器骨架保留（cron 计算 + scheduled_jobs 表是通用能力），
+        # target='study' 的 job 会抛明确错误而不是静默 no-op。
         from strategy_research.kernel.scheduled_research.executor import ScheduledResearchExecutor
         from strategy_research.kernel.scheduled_research.store import ScheduledResearchStore
 
@@ -89,27 +92,11 @@ def create_app(
         migrated = schedule_store.migrate_from_json()
         if migrated:
             logger.info("[STARTUP] migrated %d legacy scheduled jobs → SQLite", migrated)
-        from .routers.study import _get_study_scheduler
-
-        scheduler = _get_study_scheduler()
-        # Recover studies left RUNNING/QUEUED from a prior process:
-        # RUNNING → INTERRUPTED (manual resume), QUEUED → re-queue, MONITORING
-        # → rebuild monitor task. Without this, uvicorn reload or crash leaves
-        # ghost studies that no consumer will ever pick up.
-        recovered = await scheduler.recover_on_startup()
-        if recovered:
-            logger.info(
-                "[STARTUP] study scheduler recovered %d studies from prior process",
-                len(recovered),
-            )
 
         # Pre-parse agent schemas from .prompts/*.md (for /api/agents/schemas)
         _agents_warmup()
 
-        schedule_executor = ScheduledResearchExecutor(
-            schedule_store,
-            scheduler=scheduler,
-        )
+        schedule_executor = ScheduledResearchExecutor(schedule_store)
         schedule_executor.start(loop=asyncio.get_running_loop())
         logger.info("[STARTUP] scheduled research daemon started")
 
@@ -185,14 +172,14 @@ def create_app(
 
     # Register routers
     # goal / hypothesis / validation / workflow 四个业务 router 已随
-    # apps/goal、apps/hypothesis、apps/validation 移除（2026-11-04 做减法批次 2）。
+    # apps/goal、apps/hypothesis、apps/validation 移除（2026-11-04 批次 2）。
+    # study / slash_commands 两个 router 已随 apps/study 移除（2026-11-05 批次 3）。
     from .routers import (
         admin,
         auth,
         chat,
         permission,
         run,
-        study,
         web_session,
     )
 
@@ -203,7 +190,7 @@ def create_app(
     from .routers import admin_users
     app.include_router(admin_users.router, prefix="/api/admin", tags=["admin-users"])
 
-    app.include_router(study.router, prefix="/api/study", tags=["study"])
+    # /api/study 路由已随 apps/study 移除（2026-11-05 批次 3）
     from .routers import schedule
     app.include_router(schedule.router, prefix="/api/schedule", tags=["schedule"])
     app.include_router(run.router, prefix="/api/run", tags=["run"])

@@ -220,59 +220,42 @@ def cmd_schedule_delete(args) -> int:
 
 
 def _build_study_scheduler():
-    """In-process StudyScheduler (NullEmitter — no SSE in CLI context)."""
-    # 两级点号 = core/；三级会解析到 strategy_research.study（不存在）。
-    # 此前是 ``...study``，导致 ``schedule run`` / ``schedule start`` 在
-    # 第一行就 ModuleNotFoundError——这两个命令从未真正跑起来过
-    # （2026-11-02 补测发现；与 MCP validate_run 的同一个错误类）。
-    from strategy_research.kernel.agent.capability import resolve
+    """``target='study'`` 已随 apps/study 移除（2026-11-05 批次 3）。
 
-    StudyScheduler = resolve("study.scheduler")
-    StudyStore = resolve("study.store")
-
-    return StudyScheduler(StudyStore(), session_service=None)
+    保留本函数名只为让调用点不必大改；一调用就抛明确错误，
+    而不是 ModuleNotFoundError / CapabilityNotFound 这类难以理解的异常。
+    """
+    raise RuntimeError(
+        "scheduled job target='study' is no longer available —— "
+        "apps/study was removed in subtraction batch 3 (2026-11-05). "
+        "Use target='autoresearch' (subprocess) instead."
+    )
 
 
 async def _run_job_and_wait(job_id: str) -> int:
-    """Dispatch a job once and wait for its study to reach a terminal state."""
-    from strategy_research.kernel.agent.capability import resolve
+    """Dispatch a job once.
 
-    StudyStatus = resolve("study.status")
-    StudyStore = resolve("study.store")
-
+    2026-11-05 批次 3：不再等待 study 终态（study 已移除）。
+    只触发一次并打印结果；``target='study'`` 的 job 会得到明确错误。
+    """
     store = ScheduledResearchStore()
     job = store.get(job_id)
     if job is None:
         print(f"任务 '{job_id}' 不存在")
         return 1
 
-    scheduler = _build_study_scheduler()
-    executor = ScheduledResearchExecutor(store, scheduler=scheduler)
-    await executor.run_once_async(job_id)
+    executor = ScheduledResearchExecutor(store)
+    try:
+        await executor.run_once_async(job_id)
+    except Exception as exc:  # noqa: BLE001 —— CLI 层给可读错误而不是栈
+        print(f"✗ 任务 {job.id} 派发失败: {exc}")
+        return 1
     print(f"✓ 已触发任务 {job.id}")
 
     refreshed = store.get(job_id)
-    study_id = refreshed.last_run_id if refreshed else None
-    if not study_id:
-        print("  任务未产生 study（检查上方错误）")
-        return 1
-
-    print(f"  等待 study {study_id} 完成（Ctrl+C 中断等待，任务在后台继续）...")
-    terminal = {s.value for s in StudyStatus if s.value in _TERMINAL_STATUSES}
-    with StudyStore() as sstore:
-        while True:
-            record = sstore.get_study(study_id)
-            if record is None or record.execution_status.value in terminal:
-                break
-            await asyncio.sleep(1)
-        final = sstore.get_study(study_id)
-    status = final.execution_status.value if final else "gone"
-    print(f"  Study {study_id} 终态: {status}"
-          + (f"（rounds={final.current_round}）" if final else ""))
-    if final and final.last_metrics:
-        print(f"  指标: {final.last_metrics}")
-    if final and final.last_error:
-        print(f"  错误: {final.last_error}")
+    run_id = refreshed.last_run_id if refreshed else None
+    if run_id:
+        print(f"  运行标识: {run_id}")
     return 0
 
 

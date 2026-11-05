@@ -155,8 +155,11 @@ class TestSlashCommandIntercepts:
         assert "可用命令" in assistant["content"]
         # The cheat sheet mentions the webui commands.
         # /goal 已随 apps/goal 移除（2026-11-04 批次 2）。
-        for cmd in ("/study", "/compact", "/clear", "/help"):
+        # /study 已随 apps/study 移除（2026-11-05 批次 3）。
+        for cmd in ("/compact", "/clear", "/help"):
             assert cmd in assistant["content"]
+        assert "/study" not in assistant["content"]
+        assert "/goal" not in assistant["content"]
 
     def test_clear_with_trailing_args_is_not_matched(
         self, client: TestClient, auth_headers,

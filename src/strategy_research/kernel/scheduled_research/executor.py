@@ -63,8 +63,9 @@ class ScheduledResearchExecutor:
         self._store = store
         self._tick_interval = tick_interval
         self._dispatch_fn = dispatch_fn or self._dispatch_by_target
-        # StudyScheduler used by the default study dispatch (may be None —
-        # the study is persisted as QUEUED and submitted by the caller).
+        # ``scheduler`` 参数保留以兼容既有调用点。2026-11-05 批次 3 后
+        # study 目标已移除，默认 dispatch 不再使用它；自定义 dispatch_fn
+        # 仍可自行取用。
         self._scheduler = scheduler
         self._running = False
         self._task: asyncio.Task | None = None
@@ -257,36 +258,30 @@ class ScheduledResearchExecutor:
         if job.target == "autoresearch":
             self._default_dispatch_subprocess(job)
             return None
-        return await self._default_dispatch_study(job)
+        if job.target == "study":
+            return await self._default_dispatch_study(job)
+        raise RuntimeError(
+            f"scheduled job {job.id}: unknown target {job.target!r} "
+            f"(known: 'study', 'autoresearch')"
+        )
 
     async def _default_dispatch_study(self, job: ScheduledResearchJob) -> str:
-        """Dispatch to the in-process study system.
+        """``target='study'`` 已随 apps/study 移除（2026-11-05 批次 3）。
 
-        Creates the study via ``core/study/bootstrap`` (objective =
-        job.prompt) and submits it to the scheduler. Returns the study_id
-        so it lands in ``job.last_run_id``.
+        **为什么抛错而不是静默 no-op**：静默会让用户以为定时任务跑成功了。
+        调度记录必须留 failed 状态与可读原因，运维才能区分「没配好」
+        与「跑完了」。
+
+        调度器骨架（cron 计算 + ``scheduled_jobs`` 表 + asyncio 循环）是
+        通用能力，保留；只有这个默认目标失效。要恢复定时研究，需要业务
+        侧重新提供 study 实现并注册 dispatch 目标（见
+        ``docs/agentnodes-split-plan-20261104.md`` 后续项）。
         """
-        from strategy_research.kernel.agent.capability import resolve
-
-        create_study_record = resolve("study.bootstrap")
-
-        logger.info("Dispatching job %s → study (%s/%s)",
-                    job.id, job.workspace, job.strategy_name)
-        study = create_study_record(
-            # API-created jobs carry the creator session; CLI jobs fall
-            # back to a stable cli: placeholder (owner must be non-empty).
-            owner_session_id=job.owner_session_id or f"cli:{job.id}",
-            objective=job.prompt or f"定时研究 {job.strategy_name}",
-            workspace_path=job.workspace,
-            strategy_name=job.strategy_name,
-            **job.study_params(),
+        raise RuntimeError(
+            f"scheduled job {job.id}: target='study' is no longer available "
+            f"—— apps/study was removed in subtraction batch 3 (2026-11-05). "
+            f"Use target='autoresearch' (subprocess) or remove this job."
         )
-        if self._scheduler is not None:
-            await self._scheduler.submit(study)
-        else:
-            logger.warning("job %s: no scheduler wired — study %s left queued",
-                           job.id, study.study_id)
-        return study.study_id
 
     def _default_dispatch_subprocess(self, job: ScheduledResearchJob) -> None:
         """Legacy dispatch: run autoresearch as subprocess."""

@@ -29,11 +29,10 @@ from ..schemas.chat import (
 )
 from ..session.models import AttemptId, SessionId
 from ..session.service import SessionService
-from .slash_commands import (
+from .slash_common import (
     _handle_clear_command,
     _handle_compact_command,
     _handle_help_command,
-    _handle_study_command,
 )
 
 logger = logging.getLogger(__name__)
@@ -230,10 +229,7 @@ async def send_async(body: ChatMessage, request: Request):
     _fetch_session_owned(_get_db(), body.session_id, user_id)
 
     # ── /goal command intercept 已随 apps/goal 移除（2026-11-04 批次 2）──
-
-    # ── /study command intercept (study task system) ───────────────────
-    if body.content.strip().startswith("/study"):
-        return await _handle_study_command(body)
+    # ── /study command intercept 已随 apps/study 移除（2026-11-05 批次 3）──
 
     # ── /compact command intercept ──────────────────────────────────────
     if body.content.strip() == "/compact":

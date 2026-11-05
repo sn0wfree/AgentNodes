@@ -3,6 +3,45 @@
 > 从 `docs/architecture-diagram.html` 外移（2026-11-03 v8 瘦身）。
 > 图身只保留结构与盒级状态；本文件承载 v5.1 → v8.4 的全部演进记录。
 
+- **v10.0（2026-11-05，做减法批次 3：移除 study/autoresearch）**：
+  **L2 层腰斩 —— 28,922 → 16,284 行（-44%）、113 → 75 文件**。这是四层版式落地以来
+  单批最大的一次减法。
+  ① **移除**：`apps/study`（35 文件 / ~10,700 行）· `apps/autoresearch.py`（1,364 行），
+  全部归档 `testcase/golden/apps/`。
+  ② **L1 同步移除** 4 文件 / ~2,900 行：`routers/study.py`（33 处 study import）·
+  `routers/study_helpers.py` · `routers/slash_commands.py` · `cli/commands/autoresearch.py`；
+  连带 `scripts/migrate_study_history.py`。
+  ③ **Ticket/Assignment 迁到 L3**（本批最重要的裁定）：
+  `apps/study/ticket.py`（325 行）→ `kernel/orchestration/ticket.py`；
+  `ticket_sink.py` + `store.py` 的 ticket 段（2 表 DDL + 7 CRUD + 2 row 转换）
+  → `kernel/orchestration/ticket_store.py`（505 行）。
+  **依据**：逐字段复核后，`objective` / `authorization_scope` / `priority` /
+  `fence_token` / `run_id` 全是通用任务身份概念，全文 325 行业务词汇
+  （策略/因子/回测/行情/研究/收益/风险）出现 **0 次**。原 docstring 的
+  「携带研究域业务身份」理由不成立。对照 `apps/study/models.py` 的
+  `MetricTarget` / `StudyRecord` / `strategy_name` / `workspace_path` 才是业务。
+  ④ **两个「名字带 study、实现零 study 语义」的通用件归位**：
+  `ensure_study_session`（30 行，只做 `INSERT OR IGNORE INTO sessions`）
+  → `interfaces/api/session/web_session_db.py::ensure_session_row`；
+  `_default_db_path` → `ticket_store.py::default_db_path`。
+  ⑤ **三个通用 slash handler 保留**：`/compact` · `/clear` · `/help` 迁到
+  `routers/slash_common.py`；`/study` 系列（~400 行）随包移除。
+  ⑥ **调度器骨架保留**：`kernel/scheduled_research/`（6 文件 1,194 行）不归档 ——
+  cron 计算 + `scheduled_jobs` 表 + asyncio 循环是通用能力。只有
+  `target='study'` 失效，改为**显式抛 RuntimeError**（不静默 no-op：
+  静默会让用户以为定时任务跑成功了）。
+  ⑦ **能力注册 32 → 26 kind**：删除 `study.graph` / `study.store` /
+  `study.scheduler` / `study.status` / `study.bootstrap` / `study.ticket_sink`。
+  ⑧ **上行违规 3 → 2 条**：**`L2→L1` 归零** —— 那个唯一的违规正是
+  `apps/study/scheduler.py:779` 的 lazy import，随 study 一起消失。
+  只剩 `L3→L1` 2 条（展示层引用）。**这是批次 1 以来棘轮基线第一次真正下降。**
+  ⑨ 逐项实测：L1 **109/23,863** · L2 **75/16,284** · L3 **178/37,699** ·
+  L4 **64/10,925** · 总计 **426 文件 / 88,771 行**（原 467/104,337，-15%）。
+  跨层边数：L1→L2 **87 → 36** · L1→L3 106（不变）· L1→L4 53 → 51 ·
+  L2→L3 27 → **6** · L2→L4 42 → 25 · L3→L4 49（不变）。
+  校验：门禁 `sync_architecture_diagram.py --write` 回写后全 `[OK]` ·
+  `check_dangling_imports` **0 悬空** · 收集 **0 errors**。
+
 - **v9.2（2026-11-05，批次 2 收尾：门禁补漏 · 自动回写落地）**：**图面结构与版式一字未改**，
   只刷新了两个总数（L1 26,613 → **26,623** 行 · 总计 104,175 → **104,185** 行，
   来自 `cmd_skill` 修复的 +10 行）。逐项实测：L1 112/26,623 · L2 114/29,679 ·

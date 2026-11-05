@@ -188,17 +188,18 @@ async def schedule_delete(request: Request, job_id: str, session_id: str):
 
 @router.post("/run/{job_id}")
 async def schedule_run(request: Request, job_id: str, session_id: str):
-    """Immediately dispatch a job once (background; study runs async)."""
+    """Immediately dispatch a job once (background).
+
+    2026-11-05 批次 3：``apps/study`` 已移除，不再注入 study scheduler。
+    ``target='study'`` 的 job 会在 executor 里抛明确错误（不静默 no-op）。
+    """
     from strategy_research.kernel.scheduled_research.executor import ScheduledResearchExecutor
     from strategy_research.kernel.scheduled_research.store import ScheduledResearchStore
 
     job = _load_job_owned(request, job_id, session_id)
 
-    from .study import _get_study_scheduler
-
-    sched = _get_study_scheduler()
     with ScheduledResearchStore() as store:
-        executor = ScheduledResearchExecutor(store, scheduler=sched)
+        executor = ScheduledResearchExecutor(store)
         task = asyncio.create_task(executor.run_once_async(job.id))
         task.add_done_callback(log_task_exception)
     return {"status": "ok", "job_id": job.id, "dispatched": True}

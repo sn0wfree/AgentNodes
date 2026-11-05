@@ -13,8 +13,9 @@ from strategy_research.interfaces.cli import _build_parser
 from strategy_research.interfaces.cli.commands.registry import registered_commands
 
 # Commands that live in the registry (core_commands.py + llm.py).
+# autoresearch 已随 apps/autoresearch 移除（2026-11-05 批次 3）。
 REGISTRY_COMMANDS = frozenset({
-    "autoresearch", "evaluate", "import", "init", "list",
+    "evaluate", "import", "init", "list",
     "llm", "preflight", "reproduce", "run", "status", "validate",
 })
 

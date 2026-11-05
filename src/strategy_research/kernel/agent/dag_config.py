@@ -170,92 +170,17 @@ class AgentDAGConfig:
             version=str(d.get("version", "1.0")),
         )
 
-    # ── StudyGraph interop ──────────────────────────────────────
-
-    def to_study_graph(self, registry: AgentPluginRegistry | None = None):
-        """Convert to ``core.study.graph.StudyGraph`` for graph.json."""
-        from strategy_research.kernel.agent.capability import resolve
-
-        _g = resolve("study.graph")
-        GraphEdge = _g.GraphEdge
-        GraphNode = _g.GraphNode
-        StudyGraph = _g.StudyGraph
-
-        reg = registry or get_default_registry()
-        nodes = []
-        for n in self.nodes:
-            plugin = reg.get(n.id)
-            if plugin is None:
-                continue
-            config: dict[str, Any] = {
-                "timeout": n.timeout if n.timeout is not None
-                else plugin.default_timeout,
-                "max_retries": n.max_retries if n.max_retries is not None
-                else plugin.default_max_retries,
-            }
-            if n.max_iterations is not None:
-                config["max_iterations"] = n.max_iterations
-            if plugin.executor_type != "llm":
-                config["executor_type"] = plugin.executor_type
-                if plugin.python_function:
-                    config["python_function"] = plugin.python_function
-            if plugin.tools:
-                config["tools"] = list(plugin.tools)
-            nodes.append(GraphNode(
-                id=n.id,
-                type=_plugin_node_type(plugin),
-                label=n.label or plugin.name,
-                config=config,
-                enabled=n.enabled,
-            ))
-        edges = [
-            GraphEdge(source=dep, target=nid)
-            for nid, deps in self.dag.items()
-            for dep in deps
-        ]
-        return StudyGraph(nodes=tuple(nodes), edges=tuple(edges))
-
-    @classmethod
-    def from_study_graph(
-        cls,
-        graph,
-        name: str = "study_dag",
-        description: str = "",
-        registry: AgentPluginRegistry | None = None,
-    ) -> "AgentDAGConfig":
-        """Build from a ``StudyGraph`` (graph.json)."""
-        nodes: list[AgentNodeConfig] = []
-        for gn in graph.nodes:
-            cfg = dict(gn.config or {})
-            nodes.append(AgentNodeConfig(
-                id=gn.id,
-                enabled=gn.enabled,
-                label=gn.label,
-                timeout=cfg.get("timeout"),
-                max_iterations=cfg.get("max_iterations"),
-                max_retries=cfg.get("max_retries"),
-                context=None,
-            ))
-        dag: dict[str, list[str]] = {n.id: [] for n in nodes}
-        for e in graph.edges:
-            dag.setdefault(e.target, [])
-            if e.source not in dag[e.target]:
-                dag[e.target].append(e.source)
-        return cls(name=name, description=description, nodes=nodes, dag=dag)
-
-
-def _plugin_node_type(plugin: AgentPlugin) -> str:
-    """Map a plugin to a StudyGraph node type."""
-    if plugin.executor_type == "python":
-        return "tool"
-    if plugin.executor_type == "evaluator":
-        return "evaluator"
-    return {
-        "research": "llm_agent",
-        "execution": "llm_agent",
-        "evaluation": "evaluator",
-        "tool": "tool",
-    }.get(plugin.category, "llm_agent")
+    # ── StudyGraph interop 已随 apps/study 移除（2026-11-05 批次 3）──
+    #
+    # ``to_study_graph`` / ``from_study_graph`` 的唯一用途是与
+    # ``apps/study/graph.py::StudyGraph``（graph.json 持久化）互转。
+    # 该包已归档到 ``testcase/golden/apps/study/``，``study.graph``
+    # capability kind 也一并删除 —— 两个方法失去目标类型，故移除。
+    #
+    # 需要恢复时：业务侧重新提供 StudyGraph（或任何等价的 DAG 表示），
+    # 在 ``apps/capabilities.py`` 注册 ``study.graph``，再从 golden
+    # 归档里取回这两个方法的实现（``git show <batch3-commit>^:...``）。
+    # 连带移除只服务 ``to_study_graph`` 的 ``_plugin_node_type``。
 
 
 __all__ = ["AgentDAGConfig", "AgentNodeConfig"]

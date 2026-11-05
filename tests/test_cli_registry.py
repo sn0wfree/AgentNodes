@@ -56,7 +56,8 @@ class TestRegistryBasics(unittest.TestCase):
         cmds = registered_commands()
         self.assertIsInstance(cmds, list)
         self.assertIn("init", cmds)
-        self.assertIn("autoresearch", cmds)
+        # autoresearch 已随 apps/autoresearch 移除（2026-11-05 批次 3）
+        self.assertNotIn("autoresearch", cmds)
 
     def test_reset_clears(self):
         len(registered_commands())

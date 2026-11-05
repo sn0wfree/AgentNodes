@@ -205,33 +205,26 @@ class ExecutorTestCase(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(found.status, JobStatus.COMPLETED)
 
     async def test_default_dispatch_study_bridge(self) -> None:
-        """Default 'study' target: creates a study via bootstrap + submit."""
-        scheduler = MagicMock()
-        scheduler.submit = AsyncMock()
-        executor = ScheduledResearchExecutor(
-            self.store, scheduler=scheduler,
-        )
+        """``target='study'`` 已移除：必须**显式失败**，不得静默 no-op。
+
+        2026-11-05 批次 3：apps/study 归档后，这条默认派发路径没有目标了。
+        契约变更（docs/batch3-study-removal-design-20261105.md §5.1）：
+        抛 RuntimeError + 调度记录留 FAILED + 可读原因 —— 用户能区分
+        「没配好」与「跑完了」。静默成功会让运维以为任务真的执行过。
+        """
+        executor = ScheduledResearchExecutor(self.store)
         job = ScheduledResearchJob(
             id="bridge_1", workspace="/ws", strategy_name="s1",
             prompt="研究动量因子", next_run_at=time.time() - 1,
         )
         self.store.add(job)
 
-        with patch(
-            "strategy_research.apps.study.bootstrap.create_study_record"
-        ) as mock_create:
-            mock_create.return_value = MagicMock(study_id="study_bridge_1")
-            await executor._tick()
+        await executor._tick()
 
-        mock_create.assert_called_once()
-        call_kwargs = mock_create.call_args.kwargs
-        self.assertEqual(call_kwargs["objective"], "研究动量因子")
-        self.assertEqual(call_kwargs["strategy_name"], "s1")
-        self.assertEqual(call_kwargs["workspace_path"], "/ws")
-        scheduler.submit.assert_awaited_once()
         found = self.store.get("bridge_1")
-        self.assertEqual(found.status, JobStatus.COMPLETED)
-        self.assertEqual(found.last_run_id, "study_bridge_1")
+        self.assertEqual(found.status, JobStatus.FAILED)
+        self.assertIn("apps/study", found.config.get("last_error", ""))
+        self.assertIn("batch 3", found.config.get("last_error", ""))
 
     async def test_legacy_autoresearch_target(self) -> None:
         """'autoresearch' target falls back to the subprocess path."""

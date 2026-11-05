@@ -18,7 +18,8 @@ import yaml
 # Core commands: imports this side-effect to register them in the dispatcher.
 from .commands import core_commands  # noqa: F401  (registration side effect)
 from .commands import llm as _llm_cmd  # noqa: F401  (registration side effect)
-from .commands.autoresearch import _spawn_agent as _spawn_agent
+# autoresearch 命令已随 apps/autoresearch 移除（2026-11-05 批次 3）
+from .commands.registry import ensure_builtin_commands as _ensure_builtin
 from .commands.registry import wire_commands as _wire
 from .commands.server import (
     cmd_api_serve,
@@ -798,8 +799,13 @@ def _build_parser() -> tuple[argparse.ArgumentParser, dict[str, argparse.Argumen
 
     # ── Wire registered commands (Phase 2.2) ──────────────
     # All @cli_command-decorated commands (init/status/reproduce/run/
-    # evaluate/preflight/validate/list/import/autoresearch) are
-    # registered via cli.commands.core_commands on import.
+    # evaluate/preflight/validate/list/import) are registered via
+    # cli.commands.core_commands on import.
+    #
+    # ensure_builtin_commands() 兜底：注册依赖 import 副作用，而
+    # reset_registry() 清空注册表后模块不会重新执行 —— 没有这一步，
+    # 同进程内第二次 _build_parser() 会拿到空 registry。
+    _ensure_builtin()
     _wire(subparsers)
 
     return parser, {

@@ -109,6 +109,31 @@ samples/<name>/
 | `golden/interfaces/` | 8 文件 / 2,604 行 | routers(goal/hypothesis/validation/workflow) · cli(slash_goal/export) · tui(dag_view/workflow_worker) |
 | `tests/` | 35 个测试文件 | goal/hypothesis/validation 全量测试 + 6 个依赖已删包的混合测试 + 3 个 workflow 路由 API 测试（`test_workflow_approval_api.py` / `test_workflow_control_api.py` / `test_workflow_ownership.py`，测已移除的 `/api/goal/workflow/*` 面） |
 
+### 批次 3（2026-11-05）：`study` / `autoresearch`
+
+| 归档项 | 内容 | 说明 |
+|---|---|---|
+| `golden/apps/study/` | 35 文件 / ~10,700 行 | 调度器(1,125) · runner(1,277) · phase_engine(958) · store(1,594) · bootstrap(527) · graph_preset(397) · scenario_router(405) · models(312) · method/(7 文件) 等 |
+| `golden/apps/autoresearch.py` | 1 文件 / 1,364 行 | 研究轮次编排 + 10 个角色 stub |
+| `golden/interfaces/` | 4 文件 / ~2,900 行 | routers(study · study_helpers · slash_commands) · cli(autoresearch) |
+| `tests/` | 29 个测试文件 | study 全量测试 + 依赖已删包的混合测试 |
+
+**两个通用件迁到 L3（不归档）**：
+- `kernel/orchestration/ticket.py`（325 行）：Ticket/Assignment 状态机
+- `kernel/orchestration/ticket_store.py`（505 行）：持久化 + admit/settle/recover
+
+**两个「名字带 study、实现零 study 语义」的通用件归位（不归档）**：
+- `ensure_study_session` → `interfaces/api/session/web_session_db.py::ensure_session_row`
+- `_default_db_path` → `kernel/orchestration/ticket_store.py::default_db_path`
+
+**一个通用命令组保留**：`routers/slash_commands.py` 的 3 个通用 handler
+（`/compact` / `/clear` / `/help`）迁到 `routers/slash_common.py`；
+`/study` 系列（~400 行）随 study 移除。
+
+**调度器骨架保留**：`kernel/scheduled_research/`（6 文件 1,194 行）不归档——
+cron 计算 + `scheduled_jobs` 表 + asyncio 循环是通用能力；
+只有 `target='study'` 失效，改为**显式抛错**（不静默 no-op）。
+
 **两件残件并入 study 未归档**（仍在 `apps/study/`）：
 - `objective_policy.py`（37 行）：拒绝实盘下单目标 —— scheduler.replace_objective 仍需
 - `scoreboard.py`（210 行）：AEGIS 杠杆 Beta 后验 —— 消费者仅 phase_engine

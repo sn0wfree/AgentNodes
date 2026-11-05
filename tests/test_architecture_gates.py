@@ -8,6 +8,8 @@ from __future__ import annotations
 import ast
 from pathlib import Path
 
+import pytest
+
 SRC = Path(__file__).resolve().parents[1] / "src" / "strategy_research"
 # 接缝加固（docs/seam-hardening-design-20261030.md）：llm/memory 入严格集。
 # agent 不进——builtin_tools 是能力适配器，合法包装域工具（组合根职责）。
@@ -119,8 +121,14 @@ def test_study_platform_touchpoints_are_whitelisted():
     方向合法（域→平台），但新触点必须是有意的：加文件 = 改此表 +
     在 docs/seam-contract-platform-research-20261030.md 登记理由。
     `study/_archived/` 是隔离区，不参与。
+
+    2026-11-05 批次 3：``apps/study`` 已整体归档
+    （``testcase/golden/apps/study/``），门禁**没有检查对象**了 → skip。
+    接缝契约文件保留作为历史记录（它记录了当年那 9 个触点的理由）。
     """
     root = SRC / "apps" / "study"
+    if not root.exists():
+        pytest.skip("apps/study 已随批次 3 归档")
     allowed_sublayers = tuple(f"strategy_research.core.{s}" for s in (
         "agent", "llm", "runtimes", "gateway", "orchestration",
         "context", "storage", "memory", "utils", "observability",
@@ -295,8 +303,16 @@ def test_research_graph_gate_is_retired():
 
 
 def test_phase_engine_has_no_gate_import():
-    """phase_engine 不再 import research_graph_enabled（门接线已移除）。"""
+    """phase_engine 不再 import research_graph_enabled（门接线已移除）。
+
+    2026-11-05 批次 3：``apps/study/phase_engine.py`` 已随 apps/study 归档
+    （``testcase/golden/apps/study/``），本门禁**没有检查对象**了。
+    保留测试名与断言意图：若将来某处重新引入 phase_engine，它仍然不得
+    import 那道门。文件不存在时视为通过（门禁随被检查对象一起退役）。
+    """
     path = SRC / "apps" / "study" / "phase_engine.py"
+    if not path.exists():
+        pytest.skip("apps/study/phase_engine.py 已随批次 3 归档")
     source = path.read_text(encoding="utf-8")
     # 允许文档字符串提及，但不得有实际调用
     assert "research_graph_enabled()" not in source

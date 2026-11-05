@@ -235,40 +235,8 @@ class TestRunAgentViaLlm:
         assert set(body) == {"error", "iterations", "tool_calls_made"}
 
 
-class TestSpawnAgentFallback:
-    """_spawn_agent() stub 路径 (无 API key 时仍可用)."""
+# TestSpawnAgentFallback 已随 apps/study/stub_agents.py 移除
+# （2026-11-05 批次 3）：stub 输出是研究角色专属（researcher/
+# factor_analyst/strategist…），不属于 agent 框架。真 LLM 路径
+# （run_agent_via_llm / should_use_real_llm）仍由本文件其余用例覆盖。
 
-    def test_still_returns_json_for_known_roles(self, tmp_path, monkeypatch):
-        """_spawn_agent() 在无 API key 时仍返回合法 JSON (走 stub)."""
-        monkeypatch.delenv("AUTORESEARCH_BEHAVIOR", raising=False)
-        monkeypatch.delenv("OPENAI_API_KEY", raising=False)
-        monkeypatch.delenv("LLM_API_KEY", raising=False)
-        # conftest._isolate_llm_bridge disables the bridge, so no api_key
-        # is available -> should_use_real_llm() returns False -> stub.
-        from strategy_research.interfaces.cli import _spawn_agent
-
-        for role in ["researcher", "data_quality", "factor_analyst",
-                     "strategist", "portfolio_construction", "risk_controller",
-                     "attribution_analyst", "anti_overfit_analyst",
-                     "backtest_diagnostics", "critic"]:
-            raw = _spawn_agent(
-                role, tmp_path, "test_strat",
-                {"total_runs": 0}, [],
-            )
-            data = json.loads(raw)
-            assert isinstance(data, dict)
-            # 应该不是 error (无 API key 时不应调真 LLM, 应直接走 stub)
-            assert "error" not in data or "Unknown agent" in data.get("error", "")
-
-    def test_env_var_force_stub(self, tmp_path, monkeypatch):
-        """AUTORESEARCH_BEHAVIOR=improving → 强制 stub, round>=3 approve."""
-        monkeypatch.setenv("AUTORESEARCH_BEHAVIOR", "improving")
-        from strategy_research.interfaces.cli import _spawn_agent
-
-        raw = _spawn_agent(
-            "critic", tmp_path, "test_strat",
-            {"total_runs": 5}, [],
-        )
-        data = json.loads(raw)
-        # round 5 with improving → should be approved
-        assert data["approved"] is True

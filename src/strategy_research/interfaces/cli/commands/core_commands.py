@@ -207,32 +207,5 @@ def cmd_import(args: argparse.Namespace) -> int:
     return _impl(args)
 
 
-# ── autoresearch ────────────────────────────────────────────────────
+# ── autoresearch 命令已随 apps/autoresearch 移除（2026-11-05 批次 3）──
 
-
-@cli_command(
-    "autoresearch",
-    help="运行自动化研究循环",
-    parents=[_LLM_PARENT],
-    add=lambda p: (
-        p.add_argument("path", nargs="?", default=".", help="工作区路径"),
-        p.add_argument("--strategy", "-s", help="策略名称"),
-        p.add_argument("--cooldown", "-c", type=float, default=30.0, help="基础 cooldown (秒)"),
-        p.add_argument("--jitter", "-j", type=float, default=10.0, help="随机抖动范围 (±秒)"),
-        p.add_argument("--min-cooldown", type=float, default=1.0, help="最小 cooldown (秒)"),
-        p.add_argument("--max-retries", type=int, default=3, help="最大重试次数"),
-        p.add_argument("--max-rounds", type=int, help="最大轮数 (不指定则无限循环)"),
-        p.add_argument(
-            "--lazy-detection-interval", type=int, default=10,
-            help="懒惰检测间隔 (轮数, 默认 10)",
-        ),
-        p.add_argument(
-            "--keep-recent", type=int, default=10,
-            help="读取时保留最近 N 轮详细数据 (其他轮次读取 summary.json, 默认 10)",
-        ),
-    ),
-)
-def cmd_autoresearch(args: argparse.Namespace) -> int:
-    """Run the autonomous research loop."""
-    from strategy_research.interfaces.cli.commands.autoresearch import cmd_autoresearch as _impl
-    return _impl(args)

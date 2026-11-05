@@ -195,7 +195,10 @@ def test_user_data_returns_counts(client: TestClient) -> None:
     data = resp.json()
     assert data["user_id"] == created["id"]
     assert data["sessions"] == 0 or data["sessions"] is None
-    assert data["studies"] == 0 or data["studies"] is None
+    # 2026-11-05 批次 3：studies 计数随 apps/study 移除，
+    # 审计视图改为 tickets / assignments（L3 表仍在）。
+    assert data.get("tickets") == 0 or data.get("tickets") is None
+    assert data.get("assignments") == 0 or data.get("assignments") is None
 
 
 # ── X-Admin-Token static-token path ────────────────────────────

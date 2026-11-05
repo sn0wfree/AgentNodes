@@ -6,6 +6,7 @@
 | 文件 | 行数 |
 |---|---:|
 | `test_acceptance_cli.py` | 213 |
+| `test_agent_event_wiring.py` | 340 |
 | `test_alpha_zoo.py` | 318 |
 | `test_alpha_zoo_adapter.py` | 472 |
 | `test_alpha_zoo_convert.py` | 86 |
@@ -15,6 +16,7 @@
 | `test_alpha_zoo_convert_span_chain.py` | 236 |
 | `test_alpha_zoo_convert_where.py` | 233 |
 | `test_alpha_zoo_ops.py` | 378 |
+| `test_anti_overfit_analyst.py` | 256 |
 | `test_api_goal_router.py` | 574 |
 | `test_approve_agent_loop.py` | 83 |
 | `test_archive_race.py` | 192 |
@@ -28,6 +30,7 @@
 | `test_backtest_contract_and_runs.py` | 246 |
 | `test_backtest_metrics_contract.py` | 197 |
 | `test_backtest_run_script.py` | 220 |
+| `test_bg_backtest.py` | 186 |
 | `test_checkpoint_store.py` | 103 |
 | `test_checkpoint_unification_b2.py` | 202 |
 | `test_claims_tracking.py` | 333 |
@@ -42,6 +45,8 @@
 | `test_config_runner_strategy.py` | 282 |
 | `test_converter.py` | 420 |
 | `test_covariance_ic.py` | 441 |
+| `test_dag_planner.py` | 210 |
+| `test_dag_planner_llm.py` | 154 |
 | `test_dag_renderer.py` | 297 |
 | `test_dag_view_widget.py` | 141 |
 | `test_data_clean.py` | 320 |
@@ -88,6 +93,7 @@
 | `test_final_band_push.py` | 413 |
 | `test_fundamental_mock.py` | 150 |
 | `test_futures_base.py` | 253 |
+| `test_gateway_singleton.py` | 82 |
 | `test_goal.py` | 321 |
 | `test_goal_account_usage.py` | 227 |
 | `test_goal_cli.py` | 360 |
@@ -114,7 +120,9 @@
 | `test_goal_workflow_v052.py` | 306 |
 | `test_goal_workflow_v053.py` | 265 |
 | `test_goal_workflow_v054.py` | 191 |
+| `test_hanging_events.py` | 257 |
 | `test_hard_threshold_rule.py` | 141 |
+| `test_hitl_gate_graph.py` | 459 |
 | `test_hitl_resume_rebuild.py` | 84 |
 | `test_hypothesis.py` | 369 |
 | `test_hypothesis_cli.py` | 297 |
@@ -126,9 +134,11 @@
 | `test_hypothesis_validator.py` | 346 |
 | `test_ic_utils.py` | 93 |
 | `test_journal.py` | 179 |
+| `test_lifespan_recover.py` | 82 |
 | `test_llm_eval.py` | 188 |
 | `test_load_ohlcv.py` | 314 |
 | `test_market_mixin.py` | 122 |
+| `test_method_domain.py` | 83 |
 | `test_metric_targets.py` | 152 |
 | `test_monitor_phase.py` | 123 |
 | `test_ohlcv_save.py` | 301 |
@@ -137,12 +147,16 @@
 | `test_optimizer_logging.py` | 238 |
 | `test_p3_e2e.py` | 229 |
 | `test_p3_integration.py` | 185 |
+| `test_param_evolution.py` | 189 |
+| `test_phase_engine_researcher_defense.py` | 48 |
 | `test_phase_engine_round_outcome.py` | 97 |
 | `test_portfolio.py` | 341 |
 | `test_portfolio_correlation.py` | 97 |
 | `test_portfolio_metrics.py` | 100 |
 | `test_pr3_fixes.py` | 222 |
 | `test_preflight.py` | 308 |
+| `test_r3_session_domain.py` | 207 |
+| `test_r4_data_plane.py` | 174 |
 | `test_r6_director.py` | 133 |
 | `test_research_discipline.py` | 136 |
 | `test_research_preset.py` | 306 |
@@ -154,26 +168,41 @@
 | `test_runner_load_graph.py` | 103 |
 | `test_runner_monitor_check.py` | 150 |
 | `test_scenario_router.py` | 196 |
+| `test_schedule_api.py` | 371 |
 | `test_schedule_to_study.py` | 238 |
+| `test_scheduled_cli_runtime.py` | 284 |
+| `test_scheduler_gateway_path.py` | 105 |
 | `test_scheduler_recover_on_startup.py` | 167 |
 | `test_scheduler_state_machine.py` | 258 |
 | `test_scoreboard.py` | 89 |
 | `test_security_quickfix.py` | 96 |
+| `test_spawn_agent_loop_strategy.py` | 99 |
+| `test_stage3c_scheduler_migration.py` | 218 |
 | `test_state_utils.py` | 101 |
 | `test_strategy_acceptance.py` | 261 |
 | `test_strategy_backfill.py` | 128 |
+| `test_study_actions.py` | 869 |
+| `test_study_api.py` | 923 |
 | `test_study_budget.py` | 179 |
 | `test_study_comprehensive.py` | 1458 |
 | `test_study_concurrency.py` | 206 |
 | `test_study_consistency_fixes.py` | 186 |
+| `test_study_dump.py` | 234 |
+| `test_study_e2e_api.py` | 315 |
 | `test_study_e2e_integration.py` | 292 |
+| `test_study_engine_dispatch.py` | 60 |
 | `test_study_error_recovery.py` | 165 |
+| `test_study_event_emit_session_id.py` | 136 |
 | `test_study_executor.py` | 407 |
 | `test_study_graph.py` | 335 |
+| `test_study_guidance.py` | 345 |
+| `test_study_hitl_respond.py` | 218 |
 | `test_study_monitor.py` | 315 |
 | `test_study_no_cycles.py` | 164 |
+| `test_study_objective.py` | 288 |
 | `test_study_p1_gaps.py` | 132 |
 | `test_study_real_world.py` | 356 |
+| `test_study_round_detail.py` | 218 |
 | `test_study_rounds.py` | 87 |
 | `test_study_run_round.py` | 153 |
 | `test_study_runner_comprehensive.py` | 191 |
@@ -182,9 +211,12 @@
 | `test_study_store.py` | 492 |
 | `test_study_store_finalization_ops.py` | 157 |
 | `test_study_store_round_lifecycle.py` | 175 |
+| `test_study_todos_knowledge.py` | 123 |
 | `test_study_v2_micro_session.py` | 358 |
+| `test_study_v2_path_params.py` | 266 |
 | `test_study_v2_review_loop.py` | 268 |
 | `test_study_v2_round_artifacts.py` | 331 |
+| `test_task_exception_logging.py` | 101 |
 | `test_tier1_quickwins.py` | 167 |
 | `test_tool_display_goal.py` | 100 |
 | `test_v05_unit_checkpoint_events_dag.py` | 509 |
@@ -214,7 +246,7 @@
 | `test_workspace_setup.py` | 196 |
 | `test_yaml_evaluator.py` | 503 |
 
-合计：**208 文件 / 51147 行**
+合计：**240 文件 / 59047 行**
 
 ## 复用建议
 

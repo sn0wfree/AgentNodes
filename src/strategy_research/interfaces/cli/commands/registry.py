@@ -167,9 +167,51 @@ def dispatch(
 
 
 def reset_registry() -> None:
-    """Clear the registry (for tests)."""
+    """Clear the registry (for tests).
+
+    **同时清空 ``_BUILTIN_LOADED``**：否则后续 ``ensure_builtin_commands()``
+    会认为内置命令已注册过而跳过，registry 永久为空。
+    2026-11-05 实测：``test_cli_registry.py`` 的 ``test_reset_clears``
+    调用本函数后，同进程内的 ``test_cli_build_parser.py`` 拿到的
+    registry 是空的（``llm`` / ``init`` 全部 0 次）。
+    """
     _HANDLERS.clear()
     _REGISTRARS.clear()
+    _BUILTIN_LOADED.clear()
+
+
+#: 已执行过 side-effect 注册的模块名。``reset_registry()`` 会清空它，
+#: 使 ``ensure_builtin_commands()`` 可以重新加载。
+_BUILTIN_LOADED: set[str] = set()
+
+#: 内置命令模块（import 即通过 ``@cli_command`` 完成注册）。
+_BUILTIN_MODULES = (
+    "strategy_research.interfaces.cli.commands.core_commands",
+    "strategy_research.interfaces.cli.commands.llm",
+)
+
+
+def ensure_builtin_commands() -> None:
+    """确保内置命令已注册（幂等）。
+
+    **为什么需要**：注册依赖 import 副作用，而 Python 的模块缓存意味着
+    ``import`` 只执行一次。``reset_registry()`` 清空注册表后，模块不会
+    重新执行——registry 就永久空了。测试里串行跑多个文件时必然踩到。
+
+    这里按 ``_BUILTIN_LOADED`` 逐个 reload（不是「registry 空才 reload」：
+    一个模块的 reload 会让 registry 非空，从而挡住后续模块的补注册）。
+    """
+    import importlib
+
+    for mod_name in _BUILTIN_MODULES:
+        if mod_name in _BUILTIN_LOADED:
+            continue
+        try:
+            mod = importlib.import_module(mod_name)
+            importlib.reload(mod)
+            _BUILTIN_LOADED.add(mod_name)
+        except Exception:  # noqa: BLE001 —— 单个模块失败不阻断其余
+            logger.exception("Failed to (re)load builtin commands: %s", mod_name)
 
 
 def registered_commands() -> list[str]:
@@ -180,6 +222,7 @@ def registered_commands() -> list[str]:
 __all__ = [
     "cli_command",
     "dispatch",
+    "ensure_builtin_commands",
     "register_command",
     "registered_commands",
     "reset_registry",

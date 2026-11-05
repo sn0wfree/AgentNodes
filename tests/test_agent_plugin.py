@@ -191,28 +191,10 @@ class TestAgentDAGConfig:
         assert cfg2.dag == cfg.dag
         assert cfg2.validate() == []
 
-    def test_study_graph_round_trip(self, registry):
-        cfg = self.make_standard(registry)
-        g = cfg.to_study_graph(registry)
-        assert g.validate() == []
-
-        # Node configs carry plugin defaults.
-        nm = g.node_map
-        assert nm["backtest"].type == "tool"
-        assert nm["backtest"].config["executor_type"] == "python"
-        assert nm["backtest"].config["python_function"] == "run_backtest_script"
-        assert nm["decide"].config["executor_type"] == "evaluator"
-        assert nm["researcher"].type == "llm_agent"
-        assert nm["researcher"].config["tools"] == list(
-            registry.get("researcher").tools
-        )
-
-        # Back-conversion preserves ids + adjacency.
-        cfg2 = AgentDAGConfig.from_study_graph(g, name="rt")
-        assert set(cfg2.node_ids()) == set(cfg.node_ids())
-        for nid in cfg.node_ids():
-            assert set(cfg2.dag[nid]) == set(cfg.dag[nid])
-        assert cfg2.validate() == []
+    # test_study_graph_round_trip / test_node_overrides_in_graph_config
+    # 已随 apps/study 移除（2026-11-05 批次 3）：它们测的是
+    # ``AgentDAGConfig.to_study_graph`` / ``from_study_graph``，而
+    # ``StudyGraph`` 与 ``study.graph`` capability kind 都已归档/删除。
 
     def test_enabled_adjacency_drops_disabled(self, registry):
         cfg = self.make_standard(registry)
@@ -225,16 +207,6 @@ class TestAgentDAGConfig:
         assert "data_quality" not in adj["factor_analyst"]
         # strategist's dep list loses data_quality too.
         assert "data_quality" not in adj["strategist"]
-
-    def test_node_overrides_in_graph_config(self, registry):
-        cfg = self.make_standard(registry)
-        for n in cfg.nodes:
-            if n.id == "researcher":
-                n.timeout = 77
-                n.max_iterations = 5
-        g = cfg.to_study_graph(registry)
-        assert g.node_map["researcher"].config["timeout"] == 77
-        assert g.node_map["researcher"].config["max_iterations"] == 5
 
     def test_effective_plugin_lookup(self, registry):
         cfg = self.make_standard(registry)
