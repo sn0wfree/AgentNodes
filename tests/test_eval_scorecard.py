@@ -8,7 +8,7 @@ ROOT = Path(__file__).resolve().parents[1]
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
-from evals.scorecard import (  # noqa: E402
+from agentnodes.evals.scorecard import (  # noqa: E402
     GoldenTask,
     RunRecord,
     build_scorecard,
@@ -16,7 +16,11 @@ from evals.scorecard import (  # noqa: E402
     score_run,
 )
 
-GOLDEN = Path(__file__).resolve().parents[1] / "evals" / "golden_tasks.jsonl"
+# 2026-11-05：evals/ 已收编进 src/agentnodes/evals/（随包分发）。
+# 用目标模块的 __file__ 定位，而不是数 parent 层数——包再搬家时自愈。
+import agentnodes.evals.scorecard as _scorecard_mod
+
+GOLDEN = Path(_scorecard_mod.__file__).parent / "golden_tasks.jsonl"
 
 
 class TestLoad:

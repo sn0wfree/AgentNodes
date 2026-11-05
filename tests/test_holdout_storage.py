@@ -16,8 +16,8 @@ import pytest
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
 
-from agentnodes.apps.evolution import HoldoutSet, Trajectory
-from agentnodes.apps.evolution.holdout import (
+from agentnodes.kernel.evolution import HoldoutSet, Trajectory
+from agentnodes.kernel.evolution.holdout import (
     decode_holdout,
     load_persisted_holdout,
     persist_holdout,

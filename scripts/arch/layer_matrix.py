@@ -28,42 +28,24 @@ ORDER = ["L1", "L2", "L3", "L4"]  # index 0 = highest
 # ── layer membership (design doc §2, longest-prefix match) ──────────
 
 LAYER_MEMBERSHIP: dict[str, str] = {
-    # L1 interfaces
-    "agentnodes.interfaces": "L1",  # 物理层目录（逐模块迁移中）
+    # ── L1 interfaces ─────────────────────────────────────────────────
+    "agentnodes.interfaces": "L1",  # 物理层目录
     "agentnodes.interfaces.api": "L1",
     "agentnodes.interfaces.cli": "L1",
     "agentnodes.interfaces.mcp": "L1",
-    # L2 apps (research IP)
-    "agentnodes.apps": "L2",  # 物理层目录（逐模块迁移中）
-    "agentnodes.apps.study": "L2",
-    "agentnodes.apps.goal": "L2",
-    "agentnodes.apps.hypothesis": "L2",
-    # alpha_zoo 及 4 个衍生模块已移除（2026-11-04 做减法批次 1）；
-    # 归档见 testcase/golden/apps/alpha_zoo/
-    "agentnodes.apps.backtest": "L2",
-    "agentnodes.apps.backtest_engine": "L2",
-    "agentnodes.apps.backtest_models": "L2",
-    "agentnodes.apps.validation": "L2",
-    "agentnodes.apps.portfolio": "L2",
-    "agentnodes.apps.data_source": "L2",
-    "agentnodes.apps.data_import": "L2",
-    "agentnodes.apps.data_readiness": "L2",
-    "agentnodes.apps.db": "L2",
-    "agentnodes.apps.compute_factor": "L2",
-    "agentnodes.apps.factor_validate": "L2",
-    "agentnodes.apps.config_runner": "L2",
-    "agentnodes.apps.strategy_acceptance": "L2",
-    "agentnodes.apps.autoresearch": "L2",
-    "agentnodes.apps.engine": "L2",
-    "agentnodes.apps.export": "L2",
-    "agentnodes.apps.run_card": "L2",
-    "agentnodes.apps.preflight": "L2",
-    "agentnodes.apps.tools": "L2",
+    # ── L2 apps ───────────────────────────────────────────────────────
+    # 2026-11-05 批次 8 后只剩业务插件面（回测/因子/数据/研究模板都已移除）：
+    #   builtin_tools  6 个业务工具模块（批次 6 从 L3 归位）
+    #   capabilities   注册门面（tool.* kind）
+    #   data_store_registry / workspace_setup  两个小件
+    "agentnodes.apps": "L2",  # 物理层目录
     "agentnodes.apps.capabilities": "L2",
-    "agentnodes.apps.evolution": "L2",
+    "agentnodes.apps.builtin_tools": "L2",
+    "agentnodes.apps.data_store_registry": "L2",
+    "agentnodes.apps.workspace_setup": "L2",
     "agentnodes.templates": "L2",
-    # L3 kernel (platform mechanisms) — three sub-bands (presentation only;
-    # import rules unchanged: same-layer free, downward only)
+    # ── L3 kernel (平台机制) ──────────────────────────────────────────
+    # 2026-11-05 批次 8：evolution 从 L2 移入（RSI 自我进化是内核机制）。
     "agentnodes.kernel.gateway": "L3",
     "agentnodes.kernel.orchestration": "L3",
     "agentnodes.kernel.events": "L3",
@@ -78,8 +60,11 @@ LAYER_MEMBERSHIP: dict[str, str] = {
     "agentnodes.kernel.permission": "L3",
     "agentnodes.kernel.memory": "L3",
     "agentnodes.kernel.skills": "L3",
-    "agentnodes.kernel": "L3",  # 物理层目录（逐模块迁移中）
+    "agentnodes.kernel.evolution": "L3",  # 批次 8：RSI 自我进化（原 apps.evolution）
+    "agentnodes.kernel": "L3",  # 物理层目录
     "agentnodes.kernel.seq_generator": "L3",  # 待退役（归 event_log 权威 seq）
+    # evals —— 金标准评测集，RSI 的信号源（2026-11-05 从仓库根收编进包）
+    "agentnodes.evals": "L3",
     # L4 foundation
     "agentnodes.foundation.llm": "L4",
     "agentnodes.foundation.storage": "L4",

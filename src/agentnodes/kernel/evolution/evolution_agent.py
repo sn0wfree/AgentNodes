@@ -169,29 +169,43 @@ class EvolutionAgent:
         工具的解析在**装配期**发生（一次），不在每次 propose 时——
         与阶段二"register 一次、resolve 一次"的口径一致。
 
-        调用前确保 ``apps`` 包的注册副作用已执行：``import
-        agentnodes.apps`` 是幂等的，但如果调用方先前
-        ``reset_default_registry()`` 过（测试常见），注册表会是空的，
-        此时 resolve 会抛 CapabilityNotFound。这里显式触发一次注册，
-        把"注册时机"从调用方的隐式前提变成显式保证。
+        **2026-11-05 批次 8**：``evolution`` 已从 apps/（L2）搬到
+        kernel/evolution/（L3），它是内核的自我进化机制，不再是业务侧
+        提供的策略。因此这里**不再 import agentnodes.apps**（那会是
+        L3→L2 上行违规），改为直接读本包的 ``tools`` 模块构造注册项。
         """
-        import agentnodes.apps  # noqa: F401 —— 触发注册副作用
-        from agentnodes.apps.capabilities import register_capabilities
         from agentnodes.kernel.agent.capability import (
+            CapabilityNotFound,
             get_default_registry,
-            resolve,
         )
 
         registry = get_default_registry()
-        if not any(k.startswith("evolution.") for k in registry.list_kinds()):
-            # reset 之后重建注册（幂等：逐 kind 跳过已注册项）
-            for kind, factory in __import__(
-                "agentnodes.apps.capabilities", fromlist=["CAPABILITIES"]
-            ).CAPABILITIES.items():
-                if kind not in registry:
-                    registry.register(kind, factory)
+        missing = [
+            k for k in (f"evolution.{n}" for n in sorted(EVOLUTION_TOOLS))
+            if not registry.has(k)
+        ]
 
-        tools = {name: resolve(f"evolution.{name}") for name in sorted(EVOLUTION_TOOLS)}
+        def _factory_for(tool_name: str):
+            """从本包的 tools 模块取实现（L3 内部依赖，同层合法）。"""
+            from agentnodes.kernel.evolution import tools as evo_tools
+
+            def factory(_registry):
+                return getattr(evo_tools, tool_name)
+
+            return factory
+
+        for tool_name in sorted(EVOLUTION_TOOLS):
+            kind = f"evolution.{tool_name}"
+            if kind not in registry:
+                registry.register(kind, _factory_for(tool_name))
+
+        tools = {}
+        for name in sorted(EVOLUTION_TOOLS):
+            try:
+                tools[name] = registry.resolve(f"evolution.{name}")
+            except CapabilityNotFound:
+                # 注册失败（实现缺失）时跳过——不阻断构造
+                continue
         return cls(resolved_tools=tools, **sources)
 
 

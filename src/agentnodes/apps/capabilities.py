@@ -68,75 +68,14 @@ logger = logging.getLogger(__name__)
 # （ticket.py + ticket_store.py），不再经 CapabilityRegistry 解析。
 
 
-# ── evolution（阶段三） ──────────────────────────────────────────────
-
-
-def _evolution_resolve_harness(registry: "CapabilityRegistry") -> Any:
-    """``(task_signature) -> EffectiveHarnessConfig``。
-
-    返回的是**函数**而非配置：装配期调用点各自带自己的 task_signature，
-    提前解析一份全局配置毫无意义。
-    """
-    from agentnodes.apps.evolution.skill_memory import resolve
-
-    return resolve
-
-
-def _evolution_holdout_sample(registry: "CapabilityRegistry") -> Any:
-    from agentnodes.apps.evolution.holdout import sample
-
-    return sample
-
-
-def _evolution_proposal_cls(registry: "CapabilityRegistry") -> Any:
-    from agentnodes.apps.evolution.genome_proposals import GenomeProposal
-
-    return GenomeProposal
-
-
-def _evolution_validation_gate_cls(registry: "CapabilityRegistry") -> Any:
-    from agentnodes.apps.evolution.validation_gate import ValidationGate
-
-    return ValidationGate
-
-
-def _evolution_agent_cls(registry: "CapabilityRegistry") -> Any:
-    from agentnodes.apps.evolution.evolution_agent import EvolutionAgent
-
-    return EvolutionAgent
-
-
-# EvolutionAgent 的 5 个工具（施工方案 §4.3）。kind 名与工具名一一对应，
-# 这样 ``EvolutionAgent.with_capabilities()`` 能按名字解析。
-def _evolution_read_journal(registry: "CapabilityRegistry") -> Any:
-    from agentnodes.apps.evolution.tools import read_journal
-
-    return read_journal
-
-
-def _evolution_read_scoreboard(registry: "CapabilityRegistry") -> Any:
-    from agentnodes.apps.evolution.tools import read_scoreboard
-
-    return read_scoreboard
-
-
-def _evolution_read_validation(registry: "CapabilityRegistry") -> Any:
-    from agentnodes.apps.evolution.tools import read_validation
-
-    return read_validation
-
-
-def _evolution_read_holdout(registry: "CapabilityRegistry") -> Any:
-    from agentnodes.apps.evolution.tools import read_holdout
-
-    return read_holdout
-
-
-def _evolution_propose_genome_update(registry: "CapabilityRegistry") -> Any:
-    from agentnodes.apps.evolution.tools import propose_genome_update
-
-    return propose_genome_update
-
+# ── evolution：已迁到 kernel/evolution/（2026-11-05 批次 8）─────────
+#
+# 10 个 evolution.* kind 不再由 apps 注册。evolution 是**内核的自我进化
+# 机制**，已从 apps/（L2）搬到 kernel/evolution/（L3），工具工厂改由
+# EvolutionAgent.with_capabilities() 在 L3 内部注册（同层依赖合法）。
+#
+# 这消除了原先的一处结构倒置：L2 的工厂 import L3 模块，只为给 L3
+# 提供它自己的实现。
 
 # ── 业务内置工具（批次 6 归位 L2）─────────────────────────────────────
 #
@@ -261,18 +200,6 @@ CAPABILITIES: dict[str, Callable[["CapabilityRegistry"], Any]] = {
     # （2026-11-04 做减法批次 2）
     # study 六个 kind 已随 apps/study 移除（2026-11-05 做减法批次 3）；
     # Ticket/Assignment 迁到 kernel/orchestration，不再经 registry
-    # evolution（阶段三）
-    "evolution.resolve_harness": _evolution_resolve_harness,
-    "evolution.holdout_sample": _evolution_holdout_sample,
-    "evolution.proposal": _evolution_proposal_cls,
-    "evolution.validation_gate": _evolution_validation_gate_cls,
-    "evolution.agent": _evolution_agent_cls,
-    # EvolutionAgent 工具集（§4.3，kind 名 == 工具名）
-    "evolution.read_journal": _evolution_read_journal,
-    "evolution.read_scoreboard": _evolution_read_scoreboard,
-    "evolution.read_validation": _evolution_read_validation,
-    "evolution.read_holdout": _evolution_read_holdout,
-    "evolution.propose_genome_update": _evolution_propose_genome_update,
     # 业务内置工具（批次 6：原住 L3 builtin_tools，现归位 L2）
     "tool.factor": _tool_factor,
     "tool.data": _tool_data,

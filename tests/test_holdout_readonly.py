@@ -16,14 +16,14 @@ import pytest
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
 
-from agentnodes.apps.evolution import holdout as holdout_mod
-from agentnodes.apps.evolution import (
+from agentnodes.kernel.evolution import holdout as holdout_mod
+from agentnodes.kernel.evolution import (
     HoldoutSet,
     Trajectory,
     compute_task_signature,
     sample,
 )
-from agentnodes.apps.evolution.holdout import (
+from agentnodes.kernel.evolution.holdout import (
     EventStoreReportSource,
     StaticGenomeVersion,
 )

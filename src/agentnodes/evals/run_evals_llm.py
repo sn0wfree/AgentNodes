@@ -21,7 +21,7 @@ if str(ROOT) not in sys.path:
 if str(ROOT / "src") not in sys.path:
     sys.path.insert(0, str(ROOT / "src"))
 
-from evals.scorecard import (  # noqa: E402
+from agentnodes.evals.scorecard import (  # noqa: E402
     GoldenTask,
     RunRecord,
     build_scorecard,

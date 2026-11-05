@@ -166,7 +166,7 @@ class TestRsiLoopAssembles:
 
     def test_loop_runs_a_full_cycle(self, gateway):
         """抽 holdout → 提案 → 验证，全链路可跑。"""
-        from agentnodes.apps.evolution.holdout import compute_task_signature
+        from agentnodes.kernel.evolution.holdout import compute_task_signature
         from agentnodes.interfaces.rsi_wiring import build_rsi_loop
 
         sig = compute_task_signature("动量研究", "researcher", {"read", "write"})

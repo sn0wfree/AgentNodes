@@ -52,14 +52,18 @@ def resolve_harness(task_signature: str) -> HarnessConfig:
 
     永不抛出：任何失败都降级为空配置（= 不启用 RSI 的默认行为）。
     这是刻意的——装配期抛错会让整个框架起不来，而 RSI 只是增强。
+
+    **2026-11-05 批次 8**：``evolution`` 已从 apps/（L2）迁到
+    kernel/evolution/（L3），与本模块同层。因此这里**直接 import**，
+    不再经 ``CapabilityRegistry`` —— 走 registry 是为了跨层倒置依赖，
+    同层直接用 import 更简单也更诚实（registry 那层间接会掩盖真实耦合）。
     """
     if not task_signature:
         return _EMPTY
     try:
-        from agentnodes.kernel.agent.capability import resolve
+        from agentnodes.kernel.evolution.skill_memory import resolve
 
-        resolver = resolve("evolution.resolve_harness")
-        return resolver(task_signature)
+        return resolve(task_signature)
     except Exception as exc:  # noqa: BLE001 —— 降级而非崩溃
         logger.debug("harness resolve skipped for %r: %s", task_signature, exc)
         return _EMPTY

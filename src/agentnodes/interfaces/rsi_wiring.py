@@ -78,7 +78,7 @@ class RsiLoop:
             对象不是同一任务。
         """
         try:
-            from agentnodes.apps.evolution.holdout import sample
+            from agentnodes.kernel.evolution.holdout import sample
 
             holdout = sample(
                 task_signature,
@@ -179,15 +179,15 @@ def build_rsi_loop(gw: Any, *, seed: int = 0) -> Any | None:
         return None
 
     try:
-        from agentnodes.apps.evolution.default_policy import default_policy
-        from agentnodes.apps.evolution.evolution_agent import EvolutionAgent
-        from agentnodes.apps.evolution.holdout import (
+        from agentnodes.kernel.evolution.default_policy import default_policy
+        from agentnodes.kernel.evolution.evolution_agent import EvolutionAgent
+        from agentnodes.kernel.evolution.holdout import (
             EventStoreReportSource,
         )
-        from agentnodes.apps.evolution.isolated_replay import (
+        from agentnodes.kernel.evolution.isolated_replay import (
             IsolatedSlotReplay,
         )
-        from agentnodes.apps.evolution.validation_gate import ValidationGate
+        from agentnodes.kernel.evolution.validation_gate import ValidationGate
 
         # 事件源：Gateway 的事件存储（只读 replay）。
         store = getattr(gw, "store", None)
@@ -246,9 +246,9 @@ def _build_replay(
         import sys
         from pathlib import Path
 
-        from evals.scorecard import load_golden_tasks
+        from agentnodes.evals.scorecard import load_golden_tasks
 
-        from agentnodes.apps.evolution.golden_eval import (
+        from agentnodes.kernel.evolution.golden_eval import (
             DEFAULT_SAMPLE_SIZE,
             make_golden_replay,
         )
@@ -286,7 +286,7 @@ def _build_replay(
             "fallback": "holdout_proxy",
             "note": "代理分不能证明提案更好，只用于保持链路可跑",
         })
-        from agentnodes.apps.evolution.holdout_replay import make_replay
+        from agentnodes.kernel.evolution.holdout_replay import make_replay
 
         return make_replay(), []
 
@@ -348,7 +348,7 @@ def _baseline_metric(
         if "value" in cached:
             return cached["value"]
         try:
-            from agentnodes.apps.evolution.golden_eval import (
+            from agentnodes.kernel.evolution.golden_eval import (
                 DEFAULT_SAMPLE_SIZE,
                 run_golden_eval,
             )

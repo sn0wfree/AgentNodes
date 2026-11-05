@@ -30,8 +30,8 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any, Callable, Iterable
 
-from agentnodes.apps.evolution.genome_proposals import GenomeProposal
-from agentnodes.apps.evolution.holdout import HoldoutSet, Trajectory
+from agentnodes.kernel.evolution.genome_proposals import GenomeProposal
+from agentnodes.kernel.evolution.holdout import HoldoutSet, Trajectory
 
 logger = logging.getLogger(__name__)
 
@@ -145,7 +145,7 @@ def run_golden_eval(
     记入回滚计数。混杂这两者会让一次网络故障回滚掉健康基因组。
     """
     try:
-        from evals.scorecard import score_run
+        from agentnodes.evals.scorecard import score_run
     except ImportError as exc:
         # ``evals`` 是仓库根下的独立包（不是 agentnodes 的子包）。
         # 安装形态下它可能不在 sys.path —— 此时评测降级为"无法验证"，
@@ -158,7 +158,7 @@ def run_golden_eval(
 
     if runner is None:
         try:
-            from evals.run_evals_llm import _run_one
+            from agentnodes.evals.run_evals_llm import _run_one
 
             # ``_run_one`` 的签名是 ``(task, *, workspace, max_iterations)``
             # ——关键字限定。包一层统一成位置参数形式，方便注入替身测试。
@@ -266,7 +266,7 @@ def make_golden_replay(
             if result.skipped:
                 # 无法验证 → 抛出让 ValidationGate 走 escalate 路径
                 # （不计回滚计数：这是基础设施问题，不是模型退化）
-                from agentnodes.apps.evolution.isolated_replay import (
+                from agentnodes.kernel.evolution.isolated_replay import (
                     SlotUnavailable,
                 )
 

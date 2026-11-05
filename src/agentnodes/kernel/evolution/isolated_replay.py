@@ -26,8 +26,8 @@ import time
 from dataclasses import dataclass, field
 from typing import Any, Callable
 
-from agentnodes.apps.evolution.genome_proposals import GenomeProposal
-from agentnodes.apps.evolution.holdout import HoldoutSet
+from agentnodes.kernel.evolution.genome_proposals import GenomeProposal
+from agentnodes.kernel.evolution.holdout import HoldoutSet
 
 logger = logging.getLogger(__name__)
 

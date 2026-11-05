@@ -2,12 +2,14 @@
 
 **可自我进化的 Agent 框架** — 四层单向依赖 · 依赖方向机器可证 · 能力端口化 · RSI 闭环
 
-> **项目状态：拆分已完成主体（2026-11-05）**
+> **项目状态：拆分完成（2026-11-05）**
 > 本仓库从 QuantNodes 量化研究项目中剥离出 **agent 框架**部分独立开发，业务侧（回测、因子、行情、
 > 研究流水线）已按 [`docs/design/subtraction-roadmap-v2-20261105.md`](docs/design/subtraction-roadmap-v2-20261105.md)
 > 分批移除并归档到 `testcase/golden/`。
-> 当前 `apps/` 只剩 `evolution`（RSI 闭环）、`capabilities`（注册门面）与
-> `builtin_tools`（业务工具的 L2 实现，经 CapabilityRegistry 注入 kernel）。
+> **RSI 自我进化已归位内核**（批次 8）：`apps/evolution/` → `kernel/evolution/`，
+> 因为 Tier 0/1/2 划分、±20% 退化阈值、holdout 只读语义都是**内核的策略约束**，
+> 不是业务可选项。当前 `apps/`（L2）只剩业务插件面：
+> `capabilities`（注册门面）、`builtin_tools`（业务工具实现）、两个小件。
 > **包名与环境变量已重命名**：`strategy_research` → `agentnodes`，
 > `SR_*` / `QUANTNODES_*` → `AN_*` / `AGENTNODES_*`（批次 9，不兼容旧配置）。
 
@@ -23,7 +25,7 @@
 | **四层单向依赖** | L1 interfaces → L2 apps → L3 kernel → L4 foundation，只准向下 | `tests/test_layer_matrix.py` 逐条解析 import，分簇棘轮只降不升 |
 | **能力端口化** | kernel 不 import apps；kernel 要业务能力时走 `CapabilityRegistry.resolve(kind)` | `L3→L2` 从 46 条清零，基线锁死为 0 |
 | **架构图与代码同源** | 层体量 / 跨层边数 / 上行违规全部 AST 实测 | `scripts/arch/sync_architecture_diagram.py`，图过时即 CI 红 |
-| **自我进化（RSI）** | Tier 0 冻结 · Tier 1 提案-验证-回滚 · Tier 2 研究产物 | `apps/evolution/`，`GenomeProposal` 三处结构性拒绝 Tier 0 |
+| **自我进化（RSI）** | Tier 0 冻结 · Tier 1 提案-验证-回滚 · Tier 2 研究产物 | `kernel/evolution/`，`GenomeProposal` 三处结构性拒绝 Tier 0 |
 
 ---
 

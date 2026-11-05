@@ -33,8 +33,8 @@ from __future__ import annotations
 import logging
 from typing import Any, Callable
 
-from agentnodes.apps.evolution.genome_proposals import GenomeProposal
-from agentnodes.apps.evolution.holdout import HoldoutSet, Trajectory
+from agentnodes.kernel.evolution.genome_proposals import GenomeProposal
+from agentnodes.kernel.evolution.holdout import HoldoutSet, Trajectory
 
 logger = logging.getLogger(__name__)
 

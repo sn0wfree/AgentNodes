@@ -107,8 +107,35 @@ L3 里还有 **6,776 行业务工具** 住在 `kernel/agent/builtin_tools/`：
 | `holdout.py` 的 `EventStoreReportSource` 读 `assignment.report` | 已迁到 L3，OK | — |
 | `evolution` 作为 L2 包，但 kernel 通过 capability 解析它 | 方向正确（L2→L3 注册） | 保留 |
 
-**`apps/evolution` → `kernel/evolution/`？** 不建议。理由：它仍然是「业务侧提供的进化策略」，
-而且它依赖 `foundation.storage.holdout`（L4）+ `kernel.*`（L3）——放 L2 是正确的层位。
+**`apps/evolution` → `kernel/evolution/`？** ~~不建议~~ → **已执行（2026-11-05 决策反转）**。
+
+> **反转记录**：本文原判断是「留在 L2，判据是业务密度不是名字」。执行批次 8 时
+> 用户拍板改为**移入 L3**，理由如下（推翻原判据的三条实证）：
+>
+> 1. **原判据「业务密度」不足以定位依赖方向**。evolution 的 11 个文件
+>    零业务依赖（只依赖 `foundation.storage.holdout` + `kernel.*`），但
+>    它通过 `apps.capabilities` 注册 10 个 `evolution.*` kind，导致
+>    **L2 的工厂函数 import L3 模块**——只是为了给 L3 提供它自己的实现。
+>    这是结构倒置：上层替下层声明它自己的能力。
+> 2. **「业务侧提供的进化策略」这个定性不成立**。`GenomeProposal` 的
+>    Tier 0/1/2 划分、`ValidationGate` 的 ±20% 阈值与 3 次回滚、
+>    `HoldoutSet` 的只读语义——这些是**内核的策略约束**，不是业务可选项。
+>    业务侧能改的是「用哪些 prompt/skill/tool_set」，不是「进化机制长什么样」。
+> 3. **L2 正在消失**。批次 4–7 之后 apps/ 只剩 4 个成员，其中
+>    `builtin_tools` 是批次 6 刚归位的、`capabilities` 是注册门面。
+>    继续把 evolution 留在 L2 会让「apps 层」变成一个语义混杂的杂物间。
+>
+> **执行的改动**（commit 见 git 历史「批次 8」）：
+> - `apps/evolution/` → `kernel/evolution/`（11 文件 1,916 行）
+> - 10 个 `evolution.*` kind 从 `apps/capabilities.py` 移除，改由
+>   `EvolutionAgent.with_capabilities()` 在 L3 内部注册
+> - `harness_resolver.resolve_harness()` 改为直接 import 同层的
+>   `kernel.evolution.skill_memory`（同层无需走 registry）
+> - `evals/`（仓库根独立包）收编进 `src/agentnodes/evals/`，使其随包分发
+> - `layer_matrix` 成员表：`kernel.evolution` / `evals` 登记为 L3
+
+**原判断（保留供对照）**：它仍然是「业务侧提供的进化策略」，而且它依赖
+`foundation.storage.holdout`（L4）+ `kernel.*`（L3）——放 L2 是正确的层位。
 **判据是业务密度，不是「听起来像框架」**。
 
 ### 2.2 `templates/.prompts/` 分成两半

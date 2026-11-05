@@ -18,7 +18,7 @@ import pytest
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
 
-from agentnodes.apps.evolution import (
+from agentnodes.kernel.evolution import (
     EVOLUTION_TOOLS,
     EvolutionAgent,
     GenomeProposal,
@@ -26,7 +26,7 @@ from agentnodes.apps.evolution import (
     TierViolation,
     Trajectory,
 )
-from agentnodes.apps.evolution.tools import TOOL_IMPLS
+from agentnodes.kernel.evolution.tools import TOOL_IMPLS
 from agentnodes.kernel.agent.capability import (
     CapabilityNotFound,
     get_default_registry,
@@ -79,9 +79,16 @@ def _sources():
 
 
 class TestToolKindRegistration:
+    """2026-11-05 批次 8：evolution 迁到 kernel/evolution/（L3）。
+
+    kind 不再由 apps/capabilities.py 注册，改由
+    ``EvolutionAgent.with_capabilities()`` 在 L3 内部注册（同层依赖合法）。
+    测试因此从「import apps 后查表」改为「调用 with_capabilities 后查表」。
+    """
+
     def test_all_five_kinds_registered(self):
         """每个工具名都有对应的 evolution.<name> kind。"""
-        import agentnodes.apps  # noqa: F401 —— 触发注册副作用
+        EvolutionAgent.with_capabilities(**_sources())
 
         reg = get_default_registry()
         missing = [
@@ -91,7 +98,7 @@ class TestToolKindRegistration:
 
     def test_each_kind_resolves_to_the_impl(self):
         """resolve 出来的对象就是 tools 模块里的实现（不是空壳）。"""
-        import agentnodes.apps  # noqa: F401
+        EvolutionAgent.with_capabilities(**_sources())
 
         reg = get_default_registry()
         for name in EVOLUTION_TOOLS:

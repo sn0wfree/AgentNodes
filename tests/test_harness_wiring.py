@@ -235,7 +235,7 @@ class TestAssemble:
 class TestNoTier0Leak:
     def test_tier0_keys_dropped_before_consumption(self):
         """从 apps 侧来源出来的 tier0 键不会流入三个消费点。"""
-        from agentnodes.apps.evolution import resolve_harness as real_resolve
+        from agentnodes.kernel.evolution import resolve_harness as real_resolve
 
         class _Src:
             def tier1_active(self):
