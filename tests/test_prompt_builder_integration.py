@@ -120,19 +120,26 @@ class TestPhase5BehaviorUnchanged:
         assert "{workspace}" not in prompt
 
     def test_role_prompts_load_from_prompts_dir(self):
-        """All 9 roles load their .md from templates/.prompts/."""
+        """所有随包分发的角色都能加载其 .md 正文。
+
+        2026-11-05 批次 7：研究角色（researcher/strategist/... 共 12 个）
+        已归档到 testcase/golden/templates/prompts/。这里改为**动态取
+        实际存在的角色**，避免名单与磁盘再次脱节。
+        """
+        from pathlib import Path
+
         from strategy_research.kernel.agent.prompt_builder import (
             PromptBuilderFactory,
         )
 
-        roles = [
-            "researcher", "data_quality", "factor_analyst", "strategist",
-            "portfolio_construction", "risk_controller", "attribution_analyst",
-            "anti_overfit_analyst", "backtest_diagnostics", "critic",
-        ]
+        prompts_dir = (Path(__file__).parent.parent / "src" / "strategy_research"
+                       / "templates" / ".prompts")
+        roles = sorted(p.stem for p in prompts_dir.glob("*.md"))
+        assert roles, "templates/.prompts 不应为空"
         for role in roles:
             prompt = PromptBuilderFactory.get(role).build_system_prompt(role, {})
             # Common layer prepends principles.md; role header follows.
+            assert prompt.strip(), f"{role} prompt 为空"
             assert "# Role:" in prompt, (
                 f"{role} prompt missing '# Role:' header, got: "
                 f"{prompt[:60]!r}"

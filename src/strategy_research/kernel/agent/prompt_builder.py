@@ -338,22 +338,16 @@ class PromptBuilderFactory:
 
     _BUILDERS: dict[str, PromptBuilder] = {
         "chat": ChatPromptBuilder(),
-        "researcher": StaticFilePromptBuilder("researcher"),
-        "data_quality": StaticFilePromptBuilder("data_quality"),
-        "factor_analyst": StaticFilePromptBuilder("factor_analyst"),
-        "strategist": StaticFilePromptBuilder("strategist"),
-        "portfolio_construction": StaticFilePromptBuilder(
-            "portfolio_construction"
-        ),
-        "risk_controller": StaticFilePromptBuilder("risk_controller"),
-        "attribution_analyst": StaticFilePromptBuilder("attribution_analyst"),
-        "anti_overfit_analyst": StaticFilePromptBuilder("anti_overfit_analyst"),
-        "backtest_diagnostics": StaticFilePromptBuilder("backtest_diagnostics"),
-        "workflow_orchestrator": StaticFilePromptBuilder("workflow_orchestrator"),
-        "critic": StaticFilePromptBuilder("critic"),
-        # Study v2 inter-round roles (design §10-11)
-        "study_reviewer": StaticFilePromptBuilder("study_reviewer"),
-        "study_collector": StaticFilePromptBuilder("study_collector"),
+        # 2026-11-05 批次 7：研究域角色（researcher / data_quality /
+        # factor_analyst / strategist / portfolio_construction /
+        # risk_controller / attribution_analyst / anti_overfit_analyst /
+        # backtest_diagnostics / critic / study_reviewer / study_collector）
+        # 的提示词已归档到 testcase/golden/templates/prompts/。
+        # 未列在这里的角色由下面 ``_discover_prompts()`` 动态扫描
+        # ``templates/.prompts/*.md`` 得到 —— 归档 = 文件消失 = 角色消失，
+        # 不需要维护第二份名单。
+        #
+        # 业务侧若重新挂回角色提示词，把 .md 放回 .prompts/ 即可生效。
     }
 
     # Roles in this set skip the common layer entirely (no principles.md

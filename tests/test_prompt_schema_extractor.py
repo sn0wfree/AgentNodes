@@ -281,27 +281,43 @@ class TestCoreField:
 
 
 # ── Per-agent schema validation ────────────────────────────────────────
+#
+# 2026-11-05 批次 7：研究角色提示词（researcher / risk_controller / … 共
+# 12 个）已随 templates 去研究化归档到 testcase/golden/templates/prompts/。
+# 提取器机制本身仍有效，因此这里改为**对归档目录**做断言——既保住了
+# 对真实提示词的覆盖，又不假设研究角色还随包分发。
 
-class TestExtractAgentSchemas:
-    """Validate schema extraction for each main agent."""
+ARCHIVED_PROMPTS_DIR = (
+    Path(__file__).parent.parent / "testcase" / "golden" / "templates" / "prompts"
+)
+
+_archived = pytest.mark.skipif(
+    not ARCHIVED_PROMPTS_DIR.exists(),
+    reason="归档的研究角色提示词不存在（testcase/golden/templates/prompts/）",
+)
+
+
+@_archived
+class TestExtractArchivedAgentSchemas:
+    """Validate schema extraction against the archived research prompts."""
 
     @pytest.mark.parametrize("role", [
         "researcher", "risk_controller", "portfolio_construction",
         "anti_overfit_analyst", "attribution_analyst", "strategist",
     ])
     def test_extract_returns_schema(self, role):
-        schema = extract_agent_schema(role, PROMPTS_DIR)
+        schema = extract_agent_schema(role, ARCHIVED_PROMPTS_DIR)
         assert schema is not None, f"Expected schema for {role}"
         assert schema.role == role
         assert len(schema.fields) > 0
 
     def test_researcher_has_action_field(self):
-        schema = extract_agent_schema("researcher", PROMPTS_DIR)
+        schema = extract_agent_schema("researcher", ARCHIVED_PROMPTS_DIR)
         assert schema.action_field == "action"
         assert "optimize_param" in (schema.action_enum or [])
 
     def test_risk_controller_core_fields(self):
-        schema = extract_agent_schema("risk_controller", PROMPTS_DIR)
+        schema = extract_agent_schema("risk_controller", ARCHIVED_PROMPTS_DIR)
         core = [k for k, v in schema.field_hints.items() if v.core]
         # From the prompt's JSON example: risk_passed / risk_rating are
         # decisional (core); var_95 / stress_results are detail (non-core).
@@ -311,29 +327,29 @@ class TestExtractAgentSchemas:
         assert "stress_results" not in core
 
     def test_risk_controller_enum_labels(self):
-        schema = extract_agent_schema("risk_controller", PROMPTS_DIR)
+        schema = extract_agent_schema("risk_controller", ARCHIVED_PROMPTS_DIR)
         hints = schema.field_hints["risk_rating"]
         assert hints.enum_values is not None
         assert "Green" in hints.enum_values
         assert "Red" in hints.enum_values
 
     def test_portfolio_construction_weights_type(self):
-        schema = extract_agent_schema("portfolio_construction", PROMPTS_DIR)
+        schema = extract_agent_schema("portfolio_construction", ARCHIVED_PROMPTS_DIR)
         hints = schema.field_hints["weights"]
         assert hints.type == "object"
 
     def test_anti_overfit_verdict_enum(self):
-        schema = extract_agent_schema("anti_overfit_analyst", PROMPTS_DIR)
+        schema = extract_agent_schema("anti_overfit_analyst", ARCHIVED_PROMPTS_DIR)
         hints = schema.field_hints["verdict"]
         assert hints.type in ("enum", "string")
         assert hints.core is True
 
     def test_missing_prompt_returns_none(self):
-        schema = extract_agent_schema("nonexistent_role", PROMPTS_DIR)
+        schema = extract_agent_schema("nonexistent_role", ARCHIVED_PROMPTS_DIR)
         assert schema is None
 
     def test_load_all_schemas(self):
-        schemas = load_all_schemas(PROMPTS_DIR)
+        schemas = load_all_schemas(ARCHIVED_PROMPTS_DIR)
         assert "researcher" in schemas
         assert "risk_controller" in schemas
         assert len(schemas) >= 6  # at least the 6 main agents

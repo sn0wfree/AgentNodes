@@ -11,6 +11,7 @@ import pytest
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
 
 from strategy_research.kernel.agent.prompt_builder import (
+    ChatPromptBuilder,
     PromptBuilderFactory,
     StaticFilePromptBuilder,
     _NullBuilder,
@@ -19,9 +20,15 @@ from strategy_research.kernel.agent.prompt_builder import (
 
 class TestPromptAutoDiscovery:
     def test_known_role_returns_builder(self):
-        """Hardcoded roles return their builder."""
-        builder = PromptBuilderFactory.get("researcher")
-        assert isinstance(builder, StaticFilePromptBuilder)
+        """Bundled role returns its builder（含硬编码与动态发现两条路径）。
+
+        2026-11-05 批次 7：researcher 已归档，改用 chat（硬编码）与
+        orchestrator（动态发现）各测一次。
+        """
+        assert isinstance(PromptBuilderFactory.get("chat"), ChatPromptBuilder)
+        assert isinstance(
+            PromptBuilderFactory.get("orchestrator"), StaticFilePromptBuilder
+        )
 
     def test_unknown_role_returns_null_by_default(self):
         """Unknown role returns _NullBuilder when no .prompts/ dir has matching file."""
@@ -38,14 +45,18 @@ class TestPromptAutoDiscovery:
         """Discovered roles don't override hardcoded ones."""
         discovered = PromptBuilderFactory._discover_prompts()
         # These are hardcoded, should not appear in discovered
-        for role in ["chat", "researcher", "strategist"]:
+        for role in ["chat"]:
             assert role not in discovered
+        # 2026-11-05 批次 7：researcher / strategist 的提示词已归档，
+        # 不再硬编码，因此不再作为「不可覆盖」的样本。
 
     def test_list_roles_includes_hardcoded(self):
+        # 2026-11-05 批次 7：研究角色归档后，硬编码只剩 chat；
+        # 其余角色由 _discover_prompts() 从 templates/.prompts/*.md 扫描得到。
         roles = PromptBuilderFactory.list_roles()
-        assert "researcher" in roles
         assert "chat" in roles
-        assert "strategist" in roles
+        for role in ("orchestrator", "planner", "evaluator"):
+            assert role in roles
 
     def test_register_overrides(self):
         """register() adds to hardcoded dict."""

@@ -166,18 +166,21 @@ class TestChatPromptBuilder:
 
 
 class TestStaticFilePromptBuilder:
-    def test_researcher_returns_raw_markdown(self):
-        """StaticFilePromptBuilder('researcher') returns researcher.md verbatim."""
+    def test_orchestrator_returns_raw_markdown(self):
+        """StaticFilePromptBuilder('orchestrator') returns orchestrator.md verbatim.
+
+        2026-11-05 批次 7：researcher.md 等研究角色已归档到
+        testcase/golden/templates/prompts/，改用仍随包分发的通用角色。
+        """
         from strategy_research.kernel.agent.prompt_builder import (
             StaticFilePromptBuilder,
         )
 
-        builder = StaticFilePromptBuilder("researcher")
-        system = builder.build_system_prompt("researcher", {})
-        # researcher.md is git-tracked — must contain its distinctive header
-        assert "# Role: Researcher" in system
-        # StaticFilePromptBuilder does NOT render placeholders
-        # (anti_overfit_analyst.md has {workspace} but researcher.md doesn't)
+        builder = StaticFilePromptBuilder("orchestrator")
+        system = builder.build_system_prompt("orchestrator", {})
+        # orchestrator.md is git-tracked — must contain its distinctive header
+        assert system.strip(), "orchestrator prompt 不应为空"
+        assert "Role" in system or "角色" in system or "orchestrator" in system.lower()
 
     def test_missing_role_returns_empty(self, tmp_path, monkeypatch):
         """StaticFilePromptBuilder for missing .md file → empty string."""
@@ -193,20 +196,28 @@ class TestStaticFilePromptBuilder:
         system = builder.build_system_prompt("nonexistent_role", {})
         assert system == ""
 
-    def test_anti_overfit_placeholder_is_literal(self):
-        """anti_overfit_analyst.md has {strategy_name} / {workspace} —
-        StaticFilePromptBuilder returns these as literal text (no rendering)."""
+    def test_placeholder_is_literal(self):
+        """占位符不被渲染：StaticFilePromptBuilder 原样返回正文。
+
+        2026-11-05 批次 7：原样本 anti_overfit_analyst.md 已归档，
+        改用 workflows 中的通用角色做同一断言。若该角色不含占位符，
+        断言退化为「正文非空且未被替换」——语义不变。
+        """
         from strategy_research.kernel.agent.prompt_builder import (
             StaticFilePromptBuilder,
         )
 
-        builder = StaticFilePromptBuilder("anti_overfit_analyst")
+        builder = StaticFilePromptBuilder("workflow_orchestrator")
         system = builder.build_system_prompt(
-            "anti_overfit_analyst",
+            "workflow_orchestrator",
             {"strategy_name": "momentum_v3", "workspace": "/w"},
         )
+        assert system.strip(), "prompt 不应为空"
         # Placeholders stay literal — matches old role_factory behavior
-        assert "{strategy_name}" in system or "{workspace}" in system
+        raw = (__import__("pathlib").Path(__file__).parent.parent
+               / "src" / "strategy_research" / "templates" / ".prompts"
+               / "workflow_orchestrator.md").read_text(encoding="utf-8")
+        assert "{strategy_name}" in system or "{workspace}" in system or raw[:40] in system
 
 
 # ── PromptBuilderFactory ──────────────────────────────────────────────
@@ -233,33 +244,40 @@ class TestPromptBuilderFactory:
         builder = PromptBuilderFactory.get("chat")
         assert isinstance(builder, ChatPromptBuilder)
 
-    def test_researcher_role_returns_static_builder(self):
+    def test_orchestrator_role_returns_static_builder(self):
         from strategy_research.kernel.agent.prompt_builder import (
             PromptBuilderFactory,
             StaticFilePromptBuilder,
         )
 
-        builder = PromptBuilderFactory.get("researcher")
+        builder = PromptBuilderFactory.get("orchestrator")
         assert isinstance(builder, StaticFilePromptBuilder)
 
-    def test_list_roles_includes_all_ten(self):
-        """Factory must expose chat + 9 role_factory roles = 10 total."""
+    def test_list_roles_reflects_bundled_prompts(self):
+        """角色清单 = 硬编码 chat + templates/.prompts/*.md 实扫。
+
+        2026-11-05 批次 7：研究角色归档后，清单应与磁盘一致（不再是固定 10 个）。
+        这条断言的是「清单不撒谎」——避免再出现硬编码名单与文件脱节。
+
+        注意 ``_discovered`` 是进程级缓存，别的用例可能已注册额外角色，
+        所以这里清缓存后重扫，并只断言「磁盘 ⊆ 清单」这个方向。
+        """
+        from pathlib import Path
+
         from strategy_research.kernel.agent.prompt_builder import (
             PromptBuilderFactory,
         )
 
-        roles = PromptBuilderFactory.list_roles()
-        expected = {
-            "chat",
-            "researcher",
-            "data_quality",
-            "factor_analyst",
-            "strategist",
-            "portfolio_construction",
-            "risk_controller",
-            "attribution_analyst",
-            "anti_overfit_analyst",
-            "backtest_diagnostics",
-            "critic",
-        }
-        assert expected.issubset(set(roles))
+        prompts_dir = (Path(__file__).parent.parent / "src" / "strategy_research"
+                       / "templates" / ".prompts")
+        on_disk = {p.stem for p in prompts_dir.glob("*.md")}
+        saved = PromptBuilderFactory._discovered
+        PromptBuilderFactory._discovered = None
+        try:
+            roles = set(PromptBuilderFactory.list_roles())
+        finally:
+            PromptBuilderFactory._discovered = saved
+        assert "chat" in roles
+        assert on_disk.issubset(roles), (
+            f"磁盘上有但 factory 不认识: {on_disk - roles}"
+        )

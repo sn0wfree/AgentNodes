@@ -24,12 +24,12 @@ _COMMON_DIR = _PROMPTS_DIR / "_common"
 _RULES_DIR = _COMMON_DIR / "rules"
 
 JSON_ROLES = [
-    "researcher",
-    "strategist",
-    "backtest_diagnostics",
     "orchestrator",
-    "critic",
 ]
+
+# 2026-11-05 批次 7：研究域角色（researcher / strategist / backtest_diagnostics /
+# critic）随 templates 去研究化归档到 testcase/golden/templates/prompts/。
+# 只剩 orchestrator 是通用 JSON role。
 
 
 # ── principles.md ──────────────────────────────────────────────────────
@@ -70,22 +70,27 @@ class TestPrinciplesFile:
 class TestRulesDirectory:
     def test_rules_dir_exists_with_expected_files(self):
         assert _RULES_DIR.is_dir()
-        for f in ["INDEX.md", "backtest.md", "tools.md", "json-output.md", "iteration.md"]:
+        # 批次 7：backtest.md（业务规则）已归档，只剩通用规则
+        for f in ["INDEX.md", "tools.md", "json-output.md", "iteration.md",
+                  "long-task.md"]:
             assert (_RULES_DIR / f).exists(), f"{f} missing"
 
     def test_index_has_trigger_table(self):
         text = (_RULES_DIR / "INDEX.md").read_text(encoding="utf-8")
         assert "触发情况" in text or "何时读哪个 rule" in text
-        assert "backtest.md" in text
         assert "tools.md" in text
         assert "json-output.md" in text
         assert "iteration.md" in text
 
     def test_each_rule_has_examples(self):
         """Anthropic 实验证明：带示例的规则比裸规则提升 76%。"""
-        for rule_file in ["backtest.md", "tools.md", "json-output.md", "iteration.md"]:
+        for rule_file in ["tools.md", "json-output.md", "iteration.md"]:
             text = (_RULES_DIR / rule_file).read_text(encoding="utf-8")
             assert "例" in text, f"{rule_file} 缺示例"
+        # long-task.md 是操作型规则（判断条件 + 命令），不含正反例章节；
+        # 它靠可执行的判据而不是例子，故单独断言其核心原则存在。
+        lt = (_RULES_DIR / "long-task.md").read_text(encoding="utf-8")
+        assert "日志在推进" in lt
 
     def test_no_skills_directory_conflict(self):
         """未来 skills/ 目录不与 rules/ 冲突（保留命名空间）。"""
@@ -105,16 +110,16 @@ class TestCommonInjection:
 
     def test_rules_not_auto_injected(self):
         """rules/ 不进 system prompt（按需读取）。"""
-        for role in ["chat", "researcher"]:
+        for role in ["chat", "orchestrator"]:
             sp = PromptBuilderFactory.get(role).build_system_prompt(role, {})
             assert "Rule Index" not in sp, f"{role} 不应自动注入 rules"
             assert "何时读哪个 rule" not in sp
 
     def test_principles_before_role_content(self):
         """principles 在角色内容之前（primacy 位置）。"""
-        sp = PromptBuilderFactory.get("researcher").build_system_prompt("researcher", {})
+        sp = PromptBuilderFactory.get("orchestrator").build_system_prompt("orchestrator", {})
         p_idx = sp.find("共识原则")
-        r_idx = sp.find("# Role: Researcher")
+        r_idx = sp.find("# Role:")
         assert p_idx >= 0 and r_idx >= 0
         assert p_idx < r_idx
 

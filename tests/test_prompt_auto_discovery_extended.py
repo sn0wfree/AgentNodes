@@ -35,13 +35,18 @@ class TestPromptAutoDiscoveryExtended:
         assert set(r1.keys()) == set(r2.keys())
 
     def test_list_roles_includes_discovered(self):
-        """list_roles includes both hardcoded and discovered roles."""
+        """list_roles includes both hardcoded and discovered roles.
+
+        2026-11-05 批次 7：researcher 等研究角色已归档，改用仍在包内的
+        orchestrator 作为「动态发现」样本。
+        """
         # Reset cache to trigger discovery
         PromptBuilderFactory._discovered = None
         roles = PromptBuilderFactory.list_roles()
         # Should include hardcoded
         assert "chat" in roles
-        assert "researcher" in roles
+        # Should include discovered (still bundled)
+        assert "orchestrator" in roles
 
     def test_register_doesnt_affect_discovered(self):
         """register() adds to _BUILDERS, not _discovered."""
