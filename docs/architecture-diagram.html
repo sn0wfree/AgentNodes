@@ -28,7 +28,7 @@
   <h1>架构 v10.2 · 四层堆叠 · 功能模块化</h1>
   <p class="sub">
     依赖只向下流：<b>L1 interfaces → L2 apps → L3 kernel → L4 foundation</b>。
-    每层内部按<b>功能域</b>分模块，模块边界取自真实包结构（379 文件 / 75,275 行，AST 实测）。
+    每层内部按<b>功能域</b>分模块，模块边界取自真实包结构（379 文件 / 75,330 行，AST 实测）。
     违规仅剩 0 条（<code>L3→L1</code> 0 · <code>L2→L1</code> 0），<code>L3→L2</code> 已清零。
     <b>2026-11-05 做减法批次 5</b>：移除数据域（data_source · compute_factor · db ·
     tools · data_import · data_readiness · preflight，22 文件 6,822 行），
@@ -418,7 +418,7 @@
 </table>
 
 <footer>
-  数据：AST 实测 2026-11-05（379 文件 / 75,275 行 · 批次 2 后）· 门禁：<code>check_dangling_imports.py --layers</code> ·
+  数据：AST 实测 2026-11-05（379 文件 / 75,330 行 · 批次 2 后）· 门禁：<code>check_dangling_imports.py --layers</code> ·
   版本史：<code>docs/architecture-diagram-changelog.md</code> · 设计：<code>docs/layered-skeleton-design-20261103.md</code>
 </footer>
 </div>

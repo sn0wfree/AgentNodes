@@ -5,6 +5,51 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.8.0] — 2026-11-05
+
+### 架构 — 全层上行违规归零
+
+**本项目首次做到 `L2→L1 = 0 · L3→L1 = 0 · L3→L2 = 0 · L4→* = 0`。**
+
+修掉三处 `L3→L1` 反向依赖，全部用**依赖倒置**（内层声明抽象、外层实现、
+组合根装配），而不是靠 lazy import 掩盖：
+
+| 原违规 | 修法 |
+|---|---|
+| `EventStore._get_projector()` 里 `from interfaces.api.session.projector import Projector` | kernel 新增 `projection_port.ProjectionSink`；EventStore 构造注入；container.py 构造一次 |
+| `SQLiteStore._init_schema()` 里 `from interfaces.api.session.web_session_db import _ensure_schema` | foundation 新增 `schema_port`（端口 + 注册表）；`web_session_db` 在 import 时注册真实 DDL |
+| `memory_manager` 813 行基建与会话 CRUD 混在一起 | 拆出 `foundation/storage/db_backend.py`（连接/健康/自愈）与 `session_paths.py`（路径解析） |
+
+顺带消除两个真实缺陷：
+- **两个 Projector 实例**（`event_store.py` 与 `store.py` 各 new 一个，
+  增量缓存互不相通）→ 组合根构造一次、两处共用。
+- **读模型策略写在写侧**（`EventStore._should_flush` 硬编码事件白名单）
+  → 搬到 `Projector.FLUSH_ON`。业界依据：Marten 把 `ProjectionLifecycle`
+  注册在组合根，Spring Modulith 的监听器住消费方模块——**订阅方决定关心什么**。
+
+### 新增 — `apps/chat/`（L2 对话业务策略）
+
+`routers/chat.py`（1,016 行）原先糅了 HTTP 适配 / 会话编排 / 业务策略三类
+职责。按判据拆开：
+
+| 层 | 内容 |
+|---|---|
+| L1 | `send_sync` / `chat_events` / SSE 生成（哑适配器） |
+| **L2（新建）** | `personas.py` 角色展示元数据 · `policy.py` shell 工具开关 · `export.py` 导出格式 |
+| L3 | `_send_via_gateway` / `_install_chat_event_bridge`（有状态编排，未动） |
+
+刻意**不**下沉：`get_session_trace`（读 event_log + 回退 jsonl 是编排，
+不是可替换的产品决策）。
+
+### Breaking
+
+- `EventStore(db_path, ..., projection_sink=<sink>)` —— 不再自建 Projector。
+  未注入 sink 时事件仍写入 `event_log`，但 `messages` 表不会物化
+  （`append` 后 `get` 返回空）。生产路径由 `container.py` 注入。
+- `UnifiedMemoryManager(..., projection_sink=<sink>)` —— 同上。
+
+---
+
 ## [0.7.0] — 2026-11-05
 
 ### Breaking — 包名与环境变量重命名（批次 9）

@@ -40,13 +40,21 @@ def register_schema_initializer(fn: SchemaInitializer) -> None:
 
 
 def ensure_schema(conn: sqlite3.Connection) -> None:
-    """调用已注册的初始化器；未注册时退化为最小可用 DDL。
+    """调用已注册的初始化器；未注册时退化为兼容 DDL。
 
-    退化分支只在「没有任何 L1 装配」的纯内核场景（单元测试、嵌入式
-    使用）走到。**注意**：这里的列必须与 L1 的 `_ensure_schema` 保持
-    兼容——`SQLiteStore.list_messages()` 会 SELECT ``metadata_json`` /
-    ``message_type`` / ``seq``，缺列会直接 OperationalError。完整表集
-    （message_parts / attempts / FTS）仍由 L1 的 ``_ensure_schema`` 负责。
+    退化分支在「没有任何 L1 装配」时走到：纯内核单元测试、嵌入式使用、
+    **以及 pytest-xdist 并行 worker 里的先到者**（每个 worker 是独立进程，
+    注册顺序不一致，某个 worker 可能先建库再 import L1）。
+
+    **为什么退化 DDL 必须列全**：历史上这里是「最小可用」列集，结果并行
+    跑时先到者建出窄表，后到的 `_ensure_schema` 用 ``CREATE TABLE IF NOT
+    EXISTS`` 不会加列，随后投影器/搜索路径撞上
+    ``no such column: seq`` / ``table sessions has no column named archived``。
+    表结构一旦被窄版本占位就无法自愈。
+
+    因此这里与 L1 的 ``_ensure_schema`` **保持列级兼容**（不必字节相同，
+    但每张表的核心列必须齐全，且都带 ``IF NOT EXISTS``）。完整的 FTS 触发器、
+    ``message_parts`` 索引等仍由 L1 的注册实现补齐。
     """
     if _initializer is not None:
         _initializer(conn)
@@ -57,7 +65,11 @@ def ensure_schema(conn: sqlite3.Connection) -> None:
             user_id TEXT NOT NULL DEFAULT 'anonymous',
             title TEXT NOT NULL DEFAULT '',
             created_at REAL NOT NULL,
-            updated_at REAL NOT NULL
+            updated_at REAL NOT NULL,
+            starred INTEGER NOT NULL DEFAULT 0,
+            tags_json TEXT NOT NULL DEFAULT '[]',
+            message_count INTEGER NOT NULL DEFAULT 0,
+            archived INTEGER NOT NULL DEFAULT 0
         )
     """)
     conn.execute("""
@@ -72,20 +84,63 @@ def ensure_schema(conn: sqlite3.Connection) -> None:
             seq INTEGER
         )
     """)
-    # 投影器（Projector.flush）会写 message_parts；缺表会让整个 flush
-    # 失败而不是降级——所以退化路径必须把它建出来。完整字段集（含
-    # part_type / ordering 等）仍以 L1 的 _ensure_schema 为准。
+    # message_parts 的列必须与 L1 的 _ensure_schema **逐字一致**：
+    #   id / message_id / session_id / type / data_json / seq / time_created
+    # 历史故障（2026-11-05）：这里曾用 part_type/content/ordering 的自创列名
+    # 建表，真实 DDL 的 CREATE IF NOT EXISTS 不生效，随后
+    # `CREATE INDEX ... ON message_parts(message_id, seq)` 报
+    # ``no such column: seq`` —— 一个窄表把生产 schema 永久占位。
     conn.execute("""
         CREATE TABLE IF NOT EXISTS message_parts (
             id TEXT PRIMARY KEY,
-            session_id TEXT NOT NULL,
             message_id TEXT NOT NULL,
-            part_type TEXT NOT NULL DEFAULT 'text',
-            content TEXT NOT NULL DEFAULT '',
-            ordering INTEGER NOT NULL DEFAULT 0,
-            created_at REAL NOT NULL
+            session_id TEXT NOT NULL,
+            type TEXT NOT NULL,
+            data_json TEXT NOT NULL,
+            seq INTEGER NOT NULL DEFAULT 0,
+            time_created REAL NOT NULL,
+            FOREIGN KEY (message_id) REFERENCES messages(id) ON DELETE CASCADE,
+            FOREIGN KEY (session_id) REFERENCES sessions(id) ON DELETE CASCADE
         )
     """)
+    conn.execute("""
+        CREATE TABLE IF NOT EXISTS attempts (
+            attempt_id TEXT PRIMARY KEY,
+            session_id TEXT NOT NULL,
+            parent_attempt_id TEXT,
+            status TEXT NOT NULL DEFAULT 'pending',
+            prompt TEXT,
+            run_dir TEXT,
+            summary TEXT,
+            react_trace_json TEXT,
+            metrics_json TEXT,
+            created_at TEXT,
+            completed_at TEXT,
+            error TEXT,
+            message_id TEXT,
+            persona TEXT,
+            mode TEXT,
+            model_override TEXT,
+            thinking TEXT
+        )
+    """)
+    # 列补齐（幂等）：若库已被**更早版本**的窄 DDL 建过，
+    # ``CREATE TABLE IF NOT EXISTS`` 不会加列 —— 必须显式 ALTER。
+    # 历史故障：并行 worker 里先到者用旧窄表建库，后续读到
+    # ``no such column: seq`` / ``table sessions has no column named archived``。
+    for table, column, decl in (
+        ("sessions", "starred", "INTEGER NOT NULL DEFAULT 0"),
+        ("sessions", "tags_json", "TEXT NOT NULL DEFAULT '[]'"),
+        ("sessions", "message_count", "INTEGER NOT NULL DEFAULT 0"),
+        ("sessions", "archived", "INTEGER NOT NULL DEFAULT 0"),
+        ("messages", "metadata_json", "TEXT"),
+        ("messages", "message_type", "TEXT"),
+        ("messages", "seq", "INTEGER"),
+    ):
+        try:
+            conn.execute(f"ALTER TABLE {table} ADD COLUMN {column} {decl}")
+        except sqlite3.OperationalError:
+            pass  # 列已存在
 
 
 def has_initializer() -> bool:
