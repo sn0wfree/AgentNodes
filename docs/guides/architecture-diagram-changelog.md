@@ -3,6 +3,69 @@
 > 从 `docs/architecture-diagram.html` 外移（2026-11-03 v8 瘦身）。
 > 图身只保留结构与盒级状态；本文件承载 v5.1 → v8.4 的全部演进记录。
 
+- **v10.2（2026-11-05，做减法批次 5：移除数据域）**：
+  **L2 层第三次腰斩 —— 10,294 → 2,995 行（-71%）、40 → 17 文件**。
+  批次 4+5 合起来把 L2 从 16,284 打到 2,995 —— **只剩原来的 18%**。
+  ① **移除 22 文件 / 6,822 行**：`apps/data_source/`（13 文件 2,141 行，8 个行情 loader）·
+  `apps/compute_factor.py`（1,388）· `apps/db.py`（1,273）· `apps/tools/`（4/822）·
+  `apps/data_import.py`（496）· `apps/data_readiness.py`（426）· `apps/preflight.py`（276）。
+  全部归档 `testcase/golden/apps/`。
+  ② **能力注册 22 → 10 kind**：删 `db.*`（4）· `factor.*`（3）· `datasource.*`（3）·
+  `data.readiness` · `data.clean`。**只剩 `evolution.*` 10 个** —— 这正是框架该有的样子：
+  能力供给端口只剩「自我进化」一件事。
+  ③ **agent 工具 38 → 18**：从 `build_default_registry` 摘掉 15 个业务工具注册
+  （RunBacktestTool · ComputeFactorTool · FactorAnalysisTool · DataCleanTool ·
+  StrategyCompare · ListDataSourcesTool · SearchSymbolTool · CheckDataTool …）
+  + 4 个 goal 死代码工具。**文件保留到批次 6 一起删**；本批次只保证 agent 的
+  tool 列表里不再出现「调用必然失败」的项。
+  ④ **两个刻意保留的框架接缝**：
+  - `foundation/storage/data_store.py`（`DataStore` Protocol）—— 能力契约，不是实现
+  - `apps/data_store_registry.py` —— 注册表保留但**初始为空**；`get_store()` 抛
+    `KeyError` 并提示「在装配根 register_store(name, cls)」。`app.py` 已改 try/except
+    留空槽。
+  `apps/duckdb_store.py`（DuckDBDataStore 实现）随 `db.py` 一起删 —— 它是
+  `DataStore` 的**实现**，不是契约。
+  ⑤ **一处显式降级**：`templates/prepare.py` 两处 `from apps.{db,compute_factor}`
+  已有 try/except 降级（DuckDB → CSV / 完整因子 → 简单因子），加
+  `# dangling-import: ok` 豁免标记而非改代码。
+  ⑥ 逐项实测：L1 **108/22,980** · L2 **17/2,995** · L3 **178/37,645** ·
+  L4 **64/10,925** · 总计 **367 文件 / 74,545 行**（原 390/82,163，-9.3%）。
+  跨层边数：L1→L2 **27 → 13** · L1→L3 106 → 105 · L1→L4 53 → 51 ·
+  L2→L3 6 · L2→L4 5 → **3** · L3→L4 49。
+  上行违规仍是 **2 条**（L3→L1 2 · L2→L1 0 · L3→L2 0），棘轮基线未动。
+  校验：`sync_architecture_diagram.py --write` 回写后全 `[OK]` ·
+  `check_dangling_imports` **0 悬空** · 收集 **6718 tests / 0 errors**。
+
+- **v10.1（2026-11-05，做减法批次 4：移除回测与验证域）**：
+  **L2 层第二次腰斩 —— 16,284 → 10,294 行（-37%）、75 → 40 文件**。
+  ① **移除 8 个包/文件**（35 文件 / 5,982 行）：
+  `apps/engine/`（21 文件 2,350 行，多市场回测引擎）· `apps/strategy_acceptance/`（4/883）·
+  `apps/backtest.py`（811）· `apps/config_runner.py`（605）· `apps/factor_validate.py`（581）·
+  `apps/backtest_engine/`（5/498）· `apps/run_card.py`（242）· `apps/backtest_models.py`（12）。
+  全部归档 `testcase/golden/apps/`。
+  ② **L1 同步移除**：`routers/run.py`（177 行，整删）· `cli` 的 8 个子命令
+  （run / evaluate / list / validate / backtest / check / engine / accept）·
+  `commands/merged.py` 的 backtest/check 两组（只剩 serve）。
+  ③ **能力注册 26 → 22 kind**：删 `backtest.from_yaml` / `backtest.script` /
+  `backtest.decide` / `config.runner` 四个。
+  **注意**：`datasource.*` / `data.readiness` / `data.clean` 三个**没有**删 ——
+  它们的实现住在 `apps/{data_source,data_readiness,tools}/`，属批次 5。
+  第一版探测用正则窗口把相邻函数的 import 算进来了，虚报成 8 个；AST 精确核算后是 4 个。
+  ④ **连带删除 4 处 kernel 业务 executor**：`kernel/agent/exec_registry.py` 与
+  `kernel/swarm/runtime.py` 各注册了 `run_backtest_script` / `decide` 两个 executor，
+  它们 resolve 已删的 kind。这两个 executor 本身也是回测业务，故一并删除
+  （不是改成 no-op —— 保留一个永远抛 CapabilityNotFound 的注册项没有意义）。
+  ⑤ **一处显式降级**：`builtin_tools/data_tools.py` 的 `source='config'` 路径
+  resolve `config.runner`。改为捕获 `CapabilityNotFound` 并返回可操作错误
+  （`source='explicit' with codes/start_date/end_date`），不静默 `cfg=None`。
+  ⑥ 逐项实测：L1 **108/23,279** · L2 **40/10,294** · L3 **178/37,665** ·
+  L4 **64/10,925** · 总计 **390 文件 / 82,163 行**（原 426/88,771，-7.4%）。
+  跨层边数：L1→L2 **36 → 27** · L1→L3 106 · L1→L4 53 → 51 ·
+  L2→L3 6 · L2→L4 25 → **5** · L3→L4 49。
+  上行违规仍是 **2 条**（L3→L1 2 · L2→L1 0 · L3→L2 0），棘轮基线未动。
+  校验：`sync_architecture_diagram.py --write` 回写后全 `[OK]` ·
+  `check_dangling_imports` **0 悬空** · 收集 **7044 tests / 0 errors**。
+
 - **v10.0（2026-11-05，做减法批次 3：移除 study/autoresearch）**：
   **L2 层腰斩 —— 28,922 → 16,284 行（-44%）、113 → 75 文件**。这是四层版式落地以来
   单批最大的一次减法。

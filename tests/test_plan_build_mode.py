@@ -80,14 +80,14 @@ class TestPlanModeTools:
     """Plan mode restricts tools to read-only set."""
 
     def test_plan_readonly_tools_is_set(self):
-        from strategy_research.interfaces.api.session.service import _PLAN_READONLY_TOOLS
+        from strategy_research.interfaces.api.session.loop_events import _PLAN_READONLY_TOOLS
         assert "read" in _PLAN_READONLY_TOOLS
         assert "websearch" in _PLAN_READONLY_TOOLS
         assert "run_backtest" not in _PLAN_READONLY_TOOLS
 
     def test_plan_mode_sets_allowed_tools(self):
         """When mode='plan', allowed_tools is set to readonly list."""
-        from strategy_research.interfaces.api.session.service import (
+        from strategy_research.interfaces.api.session.loop_events import (
             _PLAN_READONLY_TOOLS,
             _plan_mode_allowed_tools,
         )

@@ -82,8 +82,11 @@ class TestContextBuilder:
         sp = b.build_system_prompt()
         assert "read" in sp
         assert "write" in sp
-        assert "run_backtest" in sp
-        assert "compute_factor" in sp
+        # 批次 5：run_backtest / compute_factor 已从 registry 摘除。
+        # prompt 模板（templates/.prompts/）里仍写着 run_backtest ——
+        # 模板去研究化是批次 7，届时这里改成 not in。
+        assert "run_backtest" in sp   # TODO(批次7): 改 not in
+        # compute_factor 模板里本就没提，不断言
         assert "git_diff" in sp
         assert "list_history" in sp
 
@@ -287,8 +290,8 @@ class TestIntegration:
         )
         sp = builder.build_system_prompt()
         # Check that all 6 tools' names appear with descriptions
-        for tool_name in ["read", "write", "run_backtest",
-                          "compute_factor", "git_diff", "list_history"]:
+        # 批次 5：run_backtest / compute_factor 已移除
+        for tool_name in ["read", "write", "git_diff", "list_history"]:
             assert tool_name in sp, f"tool {tool_name} missing from system prompt"
 
     def test_token_estimation_with_tool_calls(self):

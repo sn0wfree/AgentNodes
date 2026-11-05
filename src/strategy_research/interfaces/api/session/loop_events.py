@@ -212,14 +212,9 @@ def _bootstrap_workspace(workspace: Path) -> None:
     strategies_dir = workspace / "strategies"
     strategies_dir.mkdir(parents=True, exist_ok=True)
 
-    # Ensure data.duckdb exists (init_db handles table creation)
-    db_path = workspace / "data.duckdb"
-    if not db_path.exists():
-        try:
-            from strategy_research.apps.db import init_db
-            init_db(workspace)
-        except Exception as exc:
-            logger.warning("Failed to init DuckDB: %s", exc)
+    # data.duckdb 初始化 —— 2026-11-05 批次 5 移除
+    # apps/db.py 随数据域删除；框架不再创建工作区的 DuckDB 文件。
+    # 需要该文件的业务侧应在自己的启动钩子里建。
 
 
 # Read-only tools allowed in plan mode (agent may observe but not modify).

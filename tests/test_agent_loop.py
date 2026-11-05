@@ -480,7 +480,8 @@ class TestAllowedTools:
         )
         assert loop.registry.get("read") is not None
         assert loop.registry.get("write") is not None
-        assert loop.registry.get("run_backtest") is not None
+        # 批次 5：run_backtest 已随 apps/backtest 移除
+        assert loop.registry.get("run_backtest") is None
 
 
 # ── Readonly mode ────────────────────────────────────────────────────
@@ -521,7 +522,8 @@ class TestReadonly:
         assert loop.registry.get("read") is not None
         assert loop.registry.get("list_history") is not None
         assert loop.registry.get("git_diff") is not None
-        assert loop.registry.get("compute_factor") is not None
+        # 批次 5：compute_factor 已随 apps/compute_factor 移除
+        assert loop.registry.get("compute_factor") is None
 
     def test_readonly_false_keeps_all(self, workspace):
         """readonly=False 时全部工具保留"""

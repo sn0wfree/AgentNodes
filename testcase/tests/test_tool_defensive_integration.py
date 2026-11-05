@@ -81,57 +81,6 @@ class TestAllToolsStructuredErrors:
 class TestToolErrorStructure:
     """Direct check of the err_actionable structure on key tools."""
 
-    def test_run_backtest_invalid_strategy_name(self, registry, workspace):
-        """run_backtest with empty strategy_name → structured error."""
-        tool = registry.get("run_backtest")
-        result = json.loads(tool.invoke({
-            "ctx": ToolContext(workspace=workspace), "strategy_name": "",
-        }))
-        assert result["status"] == "error"
-        assert "error" in result
-        # Should mention strategy_name
-        assert "strategy_name" in result["error"] or "strategy" in result["error"].lower()
-
-    def test_compute_factor_empty_ohlcv_hint(self, registry, workspace):
-        """compute_factor on empty workspace → workflow hint."""
-        tool = registry.get("compute_factor")
-        result = json.loads(tool.invoke({
-            "ctx": ToolContext(workspace=workspace),
-            "factor_code": "close - close.shift(1)",
-        }))
-        assert result["status"] == "error"
-        # The fix field (or error msg) should mention import_data
-        err = result.get("error", "")
-        fix = result.get("fix", "")
-        # Either should mention the workflow
-        assert "import_data" in err or "import_data" in fix or "get_market_data" in err or "get_market_data" in fix
-
-    def test_get_market_data_empty_codes(self, registry, workspace):
-        """get_market_data with no codes → actionable error."""
-        tool = registry.get("get_market_data")
-        result = json.loads(tool.invoke({
-            "ctx": ToolContext(workspace=workspace), "codes": [],
-            "start_date": "2023-01-01", "end_date": "2023-12-31",
-        }))
-        assert result["status"] == "error"
-        assert "codes" in result["error"]
-
-    def test_import_data_dict_wrapped(self, registry, workspace):
-        """import_data with dict-wrapped list → auto-unwrap."""
-        tool = registry.get("import_data")
-        result = json.loads(tool.invoke({
-            "ctx": ToolContext(workspace=workspace),
-            "data": {"600519.SH": {"item": [{"trade_date": "2023-12-11", "close": 100}]}},
-        }))
-        # Even if DuckDB fails on missing init, the unwrap or schema should be ok
-        # The error should NOT be "no date column" anymore
-        err = result.get("error", "")
-        assert "no date column" not in err
-
-
-# ── Unwrap utility works in real tool contexts ────────────────
-
-
 class TestUnwrapInRealTools:
     """Defensive unwrapping handles LLM wrapping patterns."""
 

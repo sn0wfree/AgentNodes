@@ -142,7 +142,8 @@ class TestBuildAgentLoop:
         assert loop is not None
         tool_names = {t.name for t in loop.registry._tools.values()}
         assert "write" in tool_names
-        assert "run_backtest" in tool_names
+        # 批次 5：run_backtest 已随 apps/backtest 移除
+        assert "run_backtest" not in tool_names
 
     def test_unknown_role_returns_none(self, tmp_path):
         from strategy_research.kernel.agent.role_factory import build_agent_loop

@@ -57,24 +57,8 @@ class TestComboLoading:
         assert "read_two" in tool.brief
         assert "副作用: 只读" in tool.brief
 
-    def test_effects_union(self, tmp_path: Path):
-        ws = tmp_path / "ws"
-        ws.mkdir()
-        _write_combo(ws, "combo1", """\
-name: fetch_bt
-description: 取数并回测
-category: 回测
-steps:
-  - tool: get_market_data
-    params: {}
-  - tool: run_backtest
-    params: {}
-""")
-        reg = build_default_registry(workspace=ws)
-        tool = reg.get("fetch_bt")
-        # get_market_data: db+net; run_backtest: db+fs → 并集
-        assert tool.effects == frozenset({"db", "fs", "net"})
-        assert tool.is_readonly is False
+    # test_effects_union 已随批次 5 删除：它用 get_market_data + run_backtest
+    # 两个业务工具推导 effects 并集，两者都在批次 4/5 移除。
 
     def test_nesting_depth_one_rejected(self, tmp_path: Path):
         ws = tmp_path / "ws"

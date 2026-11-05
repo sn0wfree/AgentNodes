@@ -26,112 +26,16 @@ logger = logging.getLogger(__name__)
 # ── db ───────────────────────────────────────────────────────────────
 
 
-def _db_get_connection(registry: "CapabilityRegistry") -> Callable[..., Any]:
-    """``apps.db.get_connection(workspace_path, read_only=False)``."""
-    import strategy_research.apps.db as db
-
-    return db.get_connection
-
-
-def _db_init_db(registry: "CapabilityRegistry") -> Callable[..., Any]:
-    import strategy_research.apps.db as db
-
-    return db.init_db
-
-
-def _db_save_ohlcv(registry: "CapabilityRegistry") -> Callable[..., Any]:
-    import strategy_research.apps.db as db
-
-    return db.save_ohlcv_to_db
-
-
-def _db_module(registry: "CapabilityRegistry") -> Any:
-    """整个 ``apps.db`` 模块（少数调用点需要多个函数时用）。
-
-    优先用细粒度 kind；只有确实需要模块级访问时才解析这个。
-    """
-    import strategy_research.apps.db as db
-
-    return db
-
-
 # ── factor / transform ───────────────────────────────────────────────
-
-
-def _compute_factor(registry: "CapabilityRegistry") -> Callable[..., Any]:
-    from strategy_research.apps.compute_factor import compute_factor
-
-    return compute_factor
-
-
-def _factor_compute_error(registry: "CapabilityRegistry") -> type[Exception]:
-    from strategy_research.apps.compute_factor import FactorComputeError
-
-    return FactorComputeError
-
-
-def _long_to_wide(registry: "CapabilityRegistry") -> Callable[..., Any]:
-    from strategy_research.apps.tools.data_transforms import long_to_single_asset_wide
-
-    return long_to_single_asset_wide
 
 
 # ── data source ──────────────────────────────────────────────────────
 
 
-def _data_source_registry(registry: "CapabilityRegistry") -> Any:
-    """``apps.data_source.registry`` 模块（LOADER_REGISTRY / resolve_loader /
-    NoAvailableSourceError / _ensure_registered 都在这里）。
-
-    这四个名字被 4 处 import 语句引用，注册成一个模块级 capability 比
-    拆成四个 kind 更诚实——它们本就是同一个注册表的门面。
-    """
-    import strategy_research.apps.data_source.registry as reg
-
-    return reg
-
-
-def _data_source_base(registry: "CapabilityRegistry") -> Any:
-    import strategy_research.apps.data_source.base as base
-
-    return base
-
-
-def _detect_market(registry: "CapabilityRegistry") -> Callable[..., Any]:
-    from strategy_research.apps.data_source.utils import detect_market
-
-    return detect_market
-
-
 # ── readiness / config ───────────────────────────────────────────────
 
 
-def _check_data_readiness(registry: "CapabilityRegistry") -> Callable[..., Any]:
-    from strategy_research.apps.data_readiness import check_data_readiness
-
-    return check_data_readiness
-
-
-def _config_runner(registry: "CapabilityRegistry") -> Any:
-    """``apps.config_runner`` 模块（load_yaml_config / load_data）。
-
-    **已随批次 4 移除（2026-11-05）**：保留此函数签名只为让 kind 表
-    少一处删除痕迹；它已从 ``CAPABILITIES`` 摘除，不会再被 resolve。
-    """
-    raise NotImplementedError(
-        "config.runner was removed in subtraction batch 4 (2026-11-05); "
-        "apps/config_runner.py is archived at testcase/golden/apps/"
-    )
-
-
 # ── data clean ───────────────────────────────────────────────────────
-
-
-def _data_clean(registry: "CapabilityRegistry") -> Any:
-    """``apps.tools.data_clean`` 模块（PRESETS / clean_data）。"""
-    import strategy_research.apps.tools.data_clean as dc
-
-    return dc
 
 
 # ── backtest / acceptance：已整体移除（2026-11-05 做减法批次 4）──────
@@ -239,22 +143,15 @@ def _evolution_propose_genome_update(registry: "CapabilityRegistry") -> Any:
 #: kind → factory。kind 命名 = ``<域>.<能力>``，与调用点的语义一一对应。
 CAPABILITIES: dict[str, Callable[["CapabilityRegistry"], Any]] = {
     # db
-    "db.get_connection": _db_get_connection,
-    "db.init_db": _db_init_db,
-    "db.save_ohlcv_to_db": _db_save_ohlcv,
-    "db.module": _db_module,
     # factor
-    "factor.compute": _compute_factor,
-    "factor.compute_error": _factor_compute_error,
-    "factor.long_to_wide": _long_to_wide,
     # data source
-    "datasource.registry": _data_source_registry,
-    "datasource.base": _data_source_base,
-    "datasource.detect_market": _detect_market,
-    # readiness
-    "data.readiness": _check_data_readiness,
-    # data clean
-    "data.clean": _data_clean,
+    # ── db / factor / datasource / data.* 共 12 个 kind 已随批次 5 移除 ──
+    # （2026-11-05）：db.get_connection / db.init_db / db.save_ohlcv_to_db /
+    # db.module / factor.compute / factor.compute_error / factor.long_to_wide /
+    # datasource.registry / datasource.base / datasource.detect_market /
+    # data.readiness / data.clean。
+    # 连带删除 apps/{data_source,tools,compute_factor,db,data_import,
+    # data_readiness,preflight} 共 22 文件 6,822 行，归档 testcase/golden/apps/。
     # backtest / config.runner 四个 kind 已随批次 4 移除（2026-11-05）：
     # backtest.from_yaml / backtest.script / backtest.decide / config.runner
     # goal / hypothesis 六个 kind 已随 apps/goal、apps/hypothesis 移除

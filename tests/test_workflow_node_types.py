@@ -230,9 +230,11 @@ class TestPythonTool:
     def test_tool_wrapper_available(self):
         from strategy_research.kernel.workflow.node_types import register_builtin_tool_executors
         count = register_builtin_tool_executors()
-        assert count >= 4
-        assert NodeExecutors.get("run_backtest") is not None
-        assert NodeExecutors.get("check_data") is not None
+        # 批次 5：run_backtest / check_data 已随回测与数据域移除，
+        # 框架侧只剩 tool / llm 等通用 executor
+        assert count >= 0
+        assert NodeExecutors.get("run_backtest") is None
+        assert NodeExecutors.get("check_data") is None
 
     def test_unknown_node_type_raises(self, tmp_path: Path):
         node = WorkflowNode(id="x", type="nope", config={})

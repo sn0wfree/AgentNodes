@@ -114,12 +114,19 @@ class TestBriefGeneration:
 class TestToolHelp:
 
     def test_returns_docstring_raw(self):
+        # 批次 5：run_backtest 已随 apps/backtest 移除。改用仍存在的
+        # read 工具验证「返回 docstring」这条契约。
+        reg = build_default_registry()
+        result = json.loads(reg.get("tool_help").execute(ctx=None, name="read"))
+        assert result["status"] == "ok"
+        assert result["name"] == "read"
+        assert result["doc"]
+
+    def test_unknown_tool_returns_error(self):
+        """查询已删除的工具必须返回 error，而不是崩。"""
         reg = build_default_registry()
         result = json.loads(reg.get("tool_help").execute(ctx=None, name="run_backtest"))
-        assert result["status"] == "ok"
-        assert result["name"] == "run_backtest"
-        assert "运行回测" in result["doc"]
-        assert "错误处理范式" in result["doc"]
+        assert result["status"] == "error"
 
     def test_unknown_tool(self):
         reg = build_default_registry()

@@ -50,7 +50,9 @@ def load_data() -> dict:
     # 尝试从 DuckDB 加载
     try:
         sys.path.insert(0, str(Path(__file__).parent.parent.parent))
-        from strategy_research.apps.db import load_price_data
+        # 批次 5 后 apps.db 已归档；这里已有 try/except 降级到 CSV，
+        # 门禁豁免（见 scripts/README.md 的 dangling-import 约定）
+        from strategy_research.apps.db import load_price_data  # dangling-import: ok
         prices = load_price_data(workspace_dir, strategy_name)
         if not prices.empty:
             print(f"✓ 从 DuckDB 加载: {prices.shape[1]} 个资产, {prices.shape[0]} 个日期")
@@ -102,7 +104,12 @@ def compute_factors(prices: pd.DataFrame, factor_exprs: list[dict]) -> dict[str,
     # 导入因子计算模块
     try:
         sys.path.insert(0, str(Path(__file__).parent.parent.parent))
-        from strategy_research.apps.compute_factor import FactorComputeError, compute_factor
+        # 批次 5 后 apps.compute_factor 已归档；ImportError 时降级到
+        # _compute_simple_factors，门禁豁免
+        from strategy_research.apps.compute_factor import (  # dangling-import: ok
+            FactorComputeError,
+            compute_factor,
+        )
     except ImportError:
         print("⚠️  无法导入 compute_factor，使用简单因子")
         return _compute_simple_factors(prices, factor_exprs)

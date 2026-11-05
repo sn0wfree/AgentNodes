@@ -17,23 +17,6 @@ from pathlib import Path
 
 from strategy_research.kernel.agent.tools import ToolRegistry
 from .backtest_analysis_tools import BenchmarkComparison, DrawdownAnalysis, StrategyCompare
-from .backtest_tools import (
-    ConfigLoadStep,
-    DataPrepareStep,
-    DataReadinessStep,
-    EngineRunStep,
-    RunBacktestTool,
-)
-from .data_clean_tools import DataCleanTool
-from .factor_tools import (
-    ComputeFactorTool,
-    FactorAnalysisTool,
-    FactorCrossSectionalAnalysis,
-    FactorICDecay,
-    FactorQuintileReturns,
-    FactorTurnover,
-    PatternRecognitionTool,
-)
 from .file_tools import ListFilesTool, ReadFileTool, WriteFileTool
 from .help_tools import ToolHelpTool
 from .options_tools import OptionsPricingTool
@@ -42,6 +25,22 @@ from .workspace_tools import GitDiffTool, ListHistoryTool, ListSkillsTool, LoadS
 logger = logging.getLogger(__name__)
 
 
+
+
+# ── 2026-11-05 做减法批次 5：业务工具已摘除注册 ─────────────────────
+#
+# 以下 9 个工具类依赖批次 4/5 删除的 capability kind（backtest.script /
+# factor.compute / db.get_connection / data.clean / datasource.* /
+# data.readiness），已从 build_default_registry 摘除：
+#
+#   RunBacktestTool · ConfigLoadStep · DataPrepareStep · DataReadinessStep
+#   EngineRunStep · ComputeFactorTool · FactorAnalysisTool
+#   PatternRecognitionTool · DataCleanTool · StrategyCompare
+#   DrawdownAnalysis · BenchmarkComparison
+#   ListDataSourcesTool · SearchSymbolTool · CheckDataTool
+#
+# **文件保留到批次 6**（那时连代码一起删）。本批次只保证 agent 的 tool
+# 列表里不再出现「调用必然失败」的项 —— 比留着让 LLM 撞墙好。
 
 
 def build_default_registry(workspace: Path | None = None) -> ToolRegistry:
@@ -58,50 +57,31 @@ def build_default_registry(workspace: Path | None = None) -> ToolRegistry:
     r.register(ReadFileTool())
     r.register(ListFilesTool())
     r.register(WriteFileTool())
-    r.register(RunBacktestTool())
-    r.register(ComputeFactorTool())
     r.register(GitDiffTool())
     r.register(ListHistoryTool())
-    r.register(FactorAnalysisTool())
-    r.register(PatternRecognitionTool())
     r.register(ListSkillsTool())
     r.register(LoadSkillTool())
     r.register(OptionsPricingTool())
-    # Phase 4: Factor research tools
-    r.register(FactorCrossSectionalAnalysis())
-    r.register(FactorQuintileReturns())
-    r.register(FactorICDecay())
-    r.register(FactorTurnover())
-    # Phase 4: Strategy analysis tools
-    r.register(StrategyCompare())
-    r.register(DrawdownAnalysis())
-    r.register(BenchmarkComparison())
     # Phase 2: Web I/O tools (conditional on dependencies)
     try:
         from .web_tools import register_web_tools
         register_web_tools(r)
     except Exception:
         pass
-    # Phase 3: Market data tools
-    try:
-        from .data_tools import register_data_tools
-        register_data_tools(r)
-    except Exception:
-        pass
-    # Goal management tools
-    try:
-        from .goal_tools import register_goal_tools
-        register_goal_tools(r)
-    except Exception:
-        pass
+    # Phase 3: Market data tools —— 2026-11-05 批次 5 摘除
+    # register_data_tools 注册的 ListDataSourcesTool / SearchSymbolTool /
+    # CheckDataTool 全部依赖 datasource.* / data.readiness 五个已删 kind。
+    # 留着注册会让 LLM 选到「调用必然失败」的工具。文件保留到批次 6。
+    # Goal management tools —— 2026-11-05 批次 5 摘除
+    # apps/goal 已随批次 2 移除，goal_tools.py 是死代码（create_goal /
+    # complete_goal / get_goal_status / list_goals 四个工具全部依赖
+    # 已不存在的 GoalStore）。文件保留到批次 6 一起删。
     # Display tools (agent-driven right panel: show_chart / show_report)
     try:
         from .display_tools import register_display_tools
         register_display_tools(r)
     except Exception:
         pass
-    # Data cleaning tools
-    r.register(DataCleanTool())
     # Shell tools (opt-in, gated by allow_shell_tools)
     try:
         from .shell_tools import register_shell_tools

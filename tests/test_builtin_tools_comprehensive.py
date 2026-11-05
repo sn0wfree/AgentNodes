@@ -182,7 +182,8 @@ class TestBuildDefaultRegistry:
     def test_contains_analysis_tools(self):
         r = build_default_registry()
         assert r.get("options_pricing") is not None
-        assert r.get("clean_data") is not None
+        # 批次 5：clean_data 已随 apps/tools 移除
+        assert r.get("clean_data") is None
 
     def test_tool_count(self):
         r = build_default_registry()

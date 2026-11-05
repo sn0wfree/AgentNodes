@@ -55,9 +55,18 @@ def create_app(
     # slot instead of importing apps.data_store_registry (that would be a
     # L3 → L2 upward import). Money path: without this, ToolContext.data_store
     # is None and DB-backed tools fail at call time.
-    from strategy_research.apps.data_store_registry import get_store
-    from strategy_research.foundation.storage import register_default_data_store
-    register_default_data_store(get_store())
+    #
+    # 2026-11-05 批次 5：DuckDBDataStore 随数据域删除，注册表初始为空。
+    # 这里 try/except —— 无 provider 时留空槽（ToolContext.data_store = None），
+    # 业务侧若要恢复，在装配根 register_store(name, cls) 即可。
+    try:
+        from strategy_research.apps.data_store_registry import get_store
+        from strategy_research.foundation.storage import register_default_data_store
+
+        register_default_data_store(get_store())
+        logger.info("[STARTUP] DataStore provider registered")
+    except Exception as exc:  # noqa: BLE001 —— 无 provider 是合法状态
+        logger.info("[STARTUP] no DataStore provider (%s); data_store slot stays empty", exc)
 
     workspace_path, goal_db_path, hypotheses_path, static_dir, cors_origins = (
         _resolve_app_env(
@@ -138,15 +147,10 @@ def create_app(
     _session_service_cache[str(container.db_path)] = container.session_service
     logger.info("[STARTUP] DI container attached (db=%s)", container.db_path)
 
-    # Initialize DuckDB on startup
+    # DuckDB init on startup —— 2026-11-05 批次 5 移除
+    # apps/db.py（DuckDB OHLCV 表）随数据域一起删除。工作区的 data.duckdb
+    # 若由业务侧维护，请在业务侧的启动钩子里初始化；框架不再建这个文件。
     if workspace_path:
-        try:
-            from strategy_research.apps.db import init_db
-            init_db(workspace_path)
-            logger.info("DuckDB initialized at %s", workspace_path)
-        except Exception as exc:
-            logger.warning("DuckDB init failed: %s", exc)
-
         # Smart scaffold: recursively ensure workspace templates/ mirrors
         # package templates/. Idempotent — user customizations preserved.
         # See apps/workspace_setup.py and docs/archive/undated/scaffold-fix.md.

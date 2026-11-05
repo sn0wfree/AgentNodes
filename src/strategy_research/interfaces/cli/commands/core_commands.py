@@ -88,18 +88,7 @@ def cmd_reproduce(args: argparse.Namespace) -> int:
 # ── evaluate ────────────────────────────────────────────────────────
 
 
-# ── preflight ───────────────────────────────────────────────────────
-
-
-@cli_command(
-    "preflight",
-    help="启动前环境检查",
-    add=lambda p: p.add_argument("path", nargs="?", default=".", help="工作区路径"),
-)
-def cmd_preflight(args: argparse.Namespace) -> int:
-    """Pre-flight checks before running."""
-    from strategy_research.interfaces.cli import cmd_preflight as _impl
-    return _impl(args)
+# ── preflight 已随 apps/preflight 移除（2026-11-05 批次 5）────────────
 
 
 # ── validate ────────────────────────────────────────────────────────
@@ -108,37 +97,7 @@ def cmd_preflight(args: argparse.Namespace) -> int:
 # ── list ────────────────────────────────────────────────────────────
 
 
-# ── import ──────────────────────────────────────────────────────────
-
-
-@cli_command(
-    "import",
-    help="导入价格数据",
-    add=lambda p: (
-        p.add_argument("path", nargs="?", default=".", help="工作区路径"),
-        p.add_argument("--strategy", "-s", required=True, help="策略名称"),
-        p.add_argument(
-            "--source", required=True,
-            choices=["csv", "parquet", "sample", "tushare", "ifind", "fred", "akshare", "auto"],
-            help="数据源",
-        ),
-        p.add_argument("--file", "-f", help="数据文件路径 (csv/parquet)"),
-        p.add_argument("--codes", "-c", help="资产代码列表，逗号分隔 (API 数据源)"),
-        p.add_argument("--start-date", default="2020-01-01", help="开始日期 (API 数据源)"),
-        p.add_argument("--end-date", default="2025-12-31", help="结束日期 (API 数据源)"),
-        p.add_argument("--incremental", action="store_true", default=True, help="增量更新 (默认开启)"),
-        p.add_argument("--no-incremental", dest="incremental", action="store_false", help="全量替换"),
-        p.add_argument("--date-column", default="date", help="日期列名 (csv)"),
-        p.add_argument("--price-column", default="close", help="价格列名 (csv)"),
-        p.add_argument("--asset-column", help="资产代码列名 (csv, 宽格式不需要)"),
-        p.add_argument("--n-assets", type=int, default=10, help="示例资产数量 (sample)"),
-        p.add_argument("--n-days", type=int, default=504, help="示例天数 (sample)"),
-    ),
-)
-def cmd_import(args: argparse.Namespace) -> int:
-    """Import data (OHLCV, factors, ...) into the workspace."""
-    from strategy_research.interfaces.cli import cmd_import as _impl
-    return _impl(args)
+# ── import 已随 apps/data_import 移除（2026-11-05 批次 5）─────────────
 
 
 # ── autoresearch 命令已随 apps/autoresearch 移除（2026-11-05 批次 3）──

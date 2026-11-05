@@ -63,86 +63,6 @@ def _package_fetch_result(data: dict, max_rows: int) -> tuple[dict, int, bool]:
     return result_data, total_rows, truncated
 
 
-def _handle_get_market_data(
-    codes: list[str] | None,
-    start_date: str,
-    end_date: str,
-    interval: str,
-    source: str | None,
-    max_rows: int,
-    force_refresh: bool,
-) -> str:
-    """Handle the get_market_data MCP tool call."""
-    from strategy_research.apps.data_source.base import validate_date_range
-    from strategy_research.apps.data_source.registry import NoAvailableSourceError
-
-    if not codes:
-        return json.dumps({"status": "error", "error": "codes is required"}, ensure_ascii=False)
-    if not start_date or not end_date:
-        return json.dumps({"status": "error", "error": "start_date and end_date are required"}, ensure_ascii=False)
-
-    try:
-        validate_date_range(start_date, end_date)
-    except ValueError as exc:
-        return json.dumps({"status": "error", "error": str(exc)}, ensure_ascii=False)
-
-    try:
-        loader, effective_source = _resolve_market_loader(source, codes)
-        if loader is None:
-            return json.dumps({
-                "status": "error",
-                "error": f"source '{source}' is not available",
-            }, ensure_ascii=False)
-
-        data = loader.fetch(codes, start_date, end_date, interval=interval,
-                           force_refresh=force_refresh)
-
-        result_data, total_rows, truncated = _package_fetch_result(
-            data, max_rows
-        )
-
-        return json.dumps({
-            "status": "ok",
-            "data": result_data,
-            "meta": {
-                "codes": codes,
-                "start_date": start_date,
-                "end_date": end_date,
-                "interval": interval,
-                "source": effective_source,
-                "total_rows": total_rows,
-                "max_rows_per_code": max_rows,
-                "truncated": truncated,
-            },
-        }, ensure_ascii=False, default=str)
-
-    except NoAvailableSourceError as exc:
-        return json.dumps({"status": "error", "error": f"no available data source: {exc}"}, ensure_ascii=False)
-    except Exception as exc:
-        return json.dumps({"status": "error", "error": f"fetch failed: {exc}"}, ensure_ascii=False)
-
-
-def _resolve_market_loader(
-    source: str | None, codes: list[str]
-) -> tuple[Any | None, str]:
-    """Resolve the data loader for an explicit source or auto market detection.
-
-    Returns ``(loader, effective_source)``; ``(None, "")`` when an explicit
-    source is registered but unavailable.
-    """
-    from strategy_research.apps.data_source.registry import LOADER_REGISTRY, resolve_loader
-    from strategy_research.apps.data_source.utils import detect_market
-
-    if source and source in LOADER_REGISTRY:
-        loader = LOADER_REGISTRY[source]()
-        if not loader.is_available():
-            return None, ""
-        return loader, source
-    market = detect_market(codes[0])
-    loader = resolve_loader(market)
-    return loader, loader.name
-
-
 class MCPTool:
     """An MCP tool definition."""
 
@@ -263,7 +183,7 @@ class MCPServer:
         self._register_session_tools()
         self._register_swarm_tools()
         self._register_web_tools()
-        self._register_data_tools()
+        # _register_data_tools 已随 apps/data_source 移除（2026-11-05 批次 5）
         self._register_swarm_execution_tools()
 
     def _register_skill_tools(self) -> None:
@@ -450,45 +370,6 @@ class MCPServer:
 
         for tool in (WebSearchTool(), ReadUrlTool(), ReadDocumentTool()):
             self.register(_wrap_base_tool(tool))
-
-    def _register_data_tools(self) -> None:
-        def get_market_data(
-            codes: list[str] | None = None,
-            start_date: str = "",
-            end_date: str = "",
-            interval: str = "1D",
-            source: str | None = None,
-            max_rows: int = 500,
-            force_refresh: bool = False,
-            **kwargs: Any,
-        ) -> str:
-            return _handle_get_market_data(
-                codes, start_date, end_date, interval, source, max_rows, force_refresh
-            )
-
-        self.register(MCPTool(
-            name="get_market_data",
-            description="获取 OHLCV 市场行情数据（自动选择最佳数据源）",
-            parameters={
-                "type": "object",
-                "properties": {
-                    "codes": {"type": "array", "items": {"type": "string"}, "description": "资产代码列表"},
-                    "start_date": {"type": "string", "description": "开始日期 (YYYY-MM-DD)"},
-                    "end_date": {"type": "string", "description": "结束日期 (YYYY-MM-DD)"},
-                    "interval": {"type": "string", "description": "K 线周期（默认 1D）", "default": "1D"},
-                    "source": {"type": "string", "description": "指定数据源（可选）"},
-                    "max_rows": {"type": "integer", "description": "每个代码最大行数（默认 500）", "default": 500},
-                },
-                "required": ["codes", "start_date", "end_date"],
-            },
-            handler=get_market_data,
-        ))
-
-        # Agent-registry tools with matching MCP contracts (no duplication)
-        from strategy_research.kernel.agent.builtin_tools.data_tools import ListDataSourcesTool, SearchSymbolTool
-
-        self.register(_wrap_base_tool(ListDataSourcesTool()))
-        self.register(_wrap_base_tool(SearchSymbolTool()))
 
     def _register_swarm_execution_tools(self) -> None:
         from strategy_research.kernel.swarm.run_store import RunStore
