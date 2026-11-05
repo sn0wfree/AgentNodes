@@ -71,41 +71,15 @@ def _register_builtin_executors() -> None:
     此刻业务包可能尚未 import，registry 还是空的（ADR-003 端口化后
     kernel 不再直接 import apps）。把 resolve 搬到闭包里，让"谁需要
     谁解析"，与注册时机解耦。
+
+    **2026-11-05 做减法批次 4**：原先这里注册了两个业务 executor
+    （``run_backtest_script`` 与 ``decide``），它们 resolve
+    ``backtest.script`` / ``backtest.decide`` 两个 kind。这两个 kind 随
+    ``apps/backtest`` 与 ``apps/strategy_acceptance`` 一起移除（归档
+    ``testcase/golden/apps/``），executor 本身也是回测业务，故一并删除。
+
+    框架层的 executor 注册（若有）仍在此函数内，与业务解耦。
     """
-    def _backtest_executor(workspace_path, upstream=None, **kwargs):
-        from strategy_research.kernel.agent.capability import resolve
-
-        run_backtest_script = resolve("backtest.script")
-        strategy_name = kwargs.get("strategy_name", "default")
-        action = kwargs.get("action", "unknown")
-        description = kwargs.get("description", "")
-        return run_backtest_script(
-            workspace_path=workspace_path,
-            strategy_name=strategy_name,
-            action=action,
-            description=description,
-        )
-
-    register_python_executor("run_backtest_script", _backtest_executor)
-
-    def _decide_executor(metrics=None, **kwargs):
-        from strategy_research.kernel.agent.capability import resolve
-
-        _decide_fn = resolve("backtest.decide")
-        llm_verdict = kwargs.get("llm_verdict")
-        cfg = kwargs.get("cfg")
-        stagnation_count = kwargs.get("stagnation_count", 0)
-        return _decide_fn(
-            metrics=metrics or {},
-            llm_verdict=llm_verdict,
-            cfg=cfg,
-            stagnation_count=stagnation_count,
-        )
-
-    register_evaluator("decide", _decide_executor)
-    # Parity with the old SwarmRuntime registry: "decide" was also
-    # reachable via the python-executor table.
-    register_python_executor("decide", _decide_executor)
 
 
 _register_builtin_executors()

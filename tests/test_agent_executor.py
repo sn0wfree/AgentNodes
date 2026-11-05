@@ -38,10 +38,6 @@ def executor() -> AgentExecutor:
 
 
 class TestExecRegistry:
-    def test_builtins_registered(self):
-        assert exec_registry.get_python_executor("run_backtest_script") is not None
-        assert exec_registry.get_evaluator("decide") is not None
-
     def test_register_and_get_roundtrip(self):
         def fn(**kw):
             return {"ok": True}

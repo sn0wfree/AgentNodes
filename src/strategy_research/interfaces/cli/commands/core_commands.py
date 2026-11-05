@@ -85,42 +85,7 @@ def cmd_reproduce(args: argparse.Namespace) -> int:
 # ── run ─────────────────────────────────────────────────────────────
 
 
-@cli_command(
-    "run",
-    help="运行回测",
-    parents=[_LLM_PARENT],
-    add=lambda p: (
-        p.add_argument("path", nargs="?", default=".", help="工作区路径"),
-        p.add_argument("--strategy", "-s", help="策略名称"),
-        p.add_argument("--action", "-a", help="行动类型"),
-        p.add_argument("--description", "-d", help="描述"),
-        p.add_argument("--timeout", "-t", type=int, default=300, help="超时时间 (秒)"),
-    ),
-)
-def cmd_run(args: argparse.Namespace) -> int:
-    """Run the research/backtest pipeline."""
-    from strategy_research.interfaces.cli import cmd_run as _impl
-    return _impl(args)
-
-
 # ── evaluate ────────────────────────────────────────────────────────
-
-
-@cli_command(
-    "evaluate",
-    help="复跑当前 strategy.py",
-    parents=[_LLM_PARENT],
-    add=lambda p: (
-        p.add_argument("path", nargs="?", default=".", help="工作区路径"),
-        p.add_argument("--strategy", "-s", help="策略名称"),
-        p.add_argument("--description", "-d", default="", help="描述"),
-        p.add_argument("--timeout", "-t", type=int, default=300, help="超时时间 (秒)"),
-    ),
-)
-def cmd_evaluate(args: argparse.Namespace) -> int:
-    """Evaluate a strategy's results."""
-    from strategy_research.interfaces.cli import cmd_evaluate as _impl
-    return _impl(args)
 
 
 # ── preflight ───────────────────────────────────────────────────────
@@ -140,38 +105,7 @@ def cmd_preflight(args: argparse.Namespace) -> int:
 # ── validate ────────────────────────────────────────────────────────
 
 
-@cli_command(
-    "validate",
-    help="验证因子",
-    add=lambda p: (
-        p.add_argument("path", nargs="?", default=".", help="工作区路径"),
-        p.add_argument("--strategy", "-s", help="策略名称"),
-        p.add_argument("--factor", "-f", help="因子表达式"),
-        p.add_argument("--source", help="因子来源"),
-    ),
-)
-def cmd_validate(args: argparse.Namespace) -> int:
-    """Validate workspace or run outputs."""
-    from strategy_research.interfaces.cli import cmd_validate as _impl
-    return _impl(args)
-
-
 # ── list ────────────────────────────────────────────────────────────
-
-
-@cli_command(
-    "list",
-    help="列出实验",
-    add=lambda p: (
-        p.add_argument("path", nargs="?", default=".", help="工作区路径"),
-        p.add_argument("--strategy", "-s", help="策略名称"),
-        p.add_argument("--limit", "-l", type=int, default=20, help="显示数量"),
-    ),
-)
-def cmd_list(args: argparse.Namespace) -> int:
-    """List strategies or runs in the workspace."""
-    from strategy_research.interfaces.cli import cmd_list as _impl
-    return _impl(args)
 
 
 # ── import ──────────────────────────────────────────────────────────

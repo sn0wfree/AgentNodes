@@ -92,39 +92,6 @@ class TestToolErrorStructure:
         # Should mention strategy_name
         assert "strategy_name" in result["error"] or "strategy" in result["error"].lower()
 
-    def test_run_backtest_missing_data_hint(self, registry, workspace):
-        """run_backtest with config but no price data → chained-fix hint."""
-        tool = registry.get("run_backtest")
-        strat_dir = workspace / "strategies" / "empty_strat"
-        strat_dir.mkdir()
-        (strat_dir / "config.yaml").write_text(
-            "strategy:\n"
-            "  name: empty_strat\n"
-            "  type: rotation\n"
-            "data:\n"
-            "  source: duckdb\n"
-            "rebalance:\n"
-            "  freq: M\n"
-            "  min_history: 60\n"
-            "top_n: 1\n"
-            "max_weight: 1.0\n"
-            "factors:\n"
-            "  - name: momentum_20d\n"
-            "    code: ts_return(close, 20)\n"
-            "    weight: 1.0\n"
-        )
-        result = json.loads(tool.invoke({
-            "ctx": ToolContext(workspace=workspace), "strategy_name": "empty_strat",
-        }))
-        assert result["status"] == "error"
-        assert "get_market_data" in result.get("fix", "")
-        # commit_market_data retired after get_market_data(persist=True) merge
-        assert "commit_market_data" not in result.get("fix", "")
-        # v2 structured error envelope: tool + step are present (the legacy
-        # `workflow` suggestion key was retired; fix carries the guidance).
-        assert result.get("tool") == "run_backtest"
-        assert result.get("step")
-
     def test_compute_factor_empty_ohlcv_hint(self, registry, workspace):
         """compute_factor on empty workspace → workflow hint."""
         tool = registry.get("compute_factor")

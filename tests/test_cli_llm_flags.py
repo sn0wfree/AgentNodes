@@ -188,35 +188,6 @@ class TestMainCLI:
         captured = capsys.readouterr()
         assert "LLM config" in captured.out
 
-    def test_run_subcommand_parses_llm_flags(self):
-        with patch("sys.argv", [
-            "prog", "run", "--strategy", "foo",
-            "--llm-temperature", "0.3",
-            "--llm-max-tokens", "1024",
-        ]):
-            try:
-                main()
-            except SystemExit as exc:
-                assert exc.code != 2, "argparse rejected LLM flags"
-            except Exception:
-                pass
-
-    def test_evaluate_subcommand_parses_llm_flags(self):
-        with patch("sys.argv", [
-            "prog", "evaluate", "--strategy", "foo",
-            "--llm-no-stream",
-        ]):
-            try:
-                main()
-            except SystemExit as exc:
-                assert exc.code != 2, "argparse rejected --llm-no-stream"
-            except Exception:
-                pass
-
-    # test_autoresearch_subcommand_parses_llm_flags 已随 apps/autoresearch
-    # 移除（2026-11-05 批次 3）：autoresearch 子命令不再注册，argparse
-    # 会直接以 code=2 拒绝。其余子命令的 LLM flag 覆盖不变。
-
     def test_subcommand_without_llm_flags(self):
         """`init` runs the credentials wizard (tested with --help)."""
         with patch("sys.argv", ["prog", "init", "--help"]):

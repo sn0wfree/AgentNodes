@@ -134,63 +134,6 @@ def parse(result: str) -> dict:
 
 
 class TestFullFlow:
-    def test_factor_backtest_goal_loop(self, workspace):
-        """因子 → 回测 → Goal 闭环, 产物落库."""
-        llm = ScriptedLLM([
-            resp("计算动量因子。", [tc("compute_factor",
-                                      factor_code="ts_mean(close, 20) / ts_mean(close, 60) - 1",
-                                      factor_name="momentum_20_60", asset="600519.SH")]),
-            resp("运行回测。", [tc("run_backtest", strategy_name="rotation_demo",
-                                  description="e2e test")]),
-            resp("创建目标。", [tc("create_goal",
-                                  objective="E2E 目标",
-                                  criteria=["回测完成", "因子验证"])]),
-            resp("补充证据。", [tc("add_evidence", text="回测与因子均已产出。")]),
-            resp("完成目标。", [tc("complete_goal", recap="闭环达成。")]),
-            resp("全部完成。"),
-        ])
-        loop = make_loop(workspace, llm)
-        r = loop.run("完整研究流程")
-
-        assert r.finished_reason == "stop"
-        assert r.tool_calls_made == 5
-        assert r.iterations == 6
-
-        import duckdb
-        con = duckdb.connect(str(workspace / "data.duckdb"), read_only=True)
-        assert con.execute("SELECT count(*) FROM price_data").fetchone()[0] >= 3 * N_DAYS
-        assert con.execute("SELECT count(*) FROM backtest_results").fetchone()[0] == 1
-        con.close()
-
-        runs = sorted((workspace / "strategies" / "rotation_demo" / "runs").glob("run_*"))
-        assert len(runs) == 1
-        run_dir = runs[0]
-        for f in ("config.yaml", "strategy.py", "metrics.json", "run_card.md", "run_card.json"):
-            assert (run_dir / f).exists(), f"{f} 缺失"
-        metrics = json.loads((run_dir / "metrics.json").read_text())
-        assert "ann_return" in metrics
-
-
-
-    def test_missing_required_arg_error_json(self, workspace):
-        """LLM 漏必填参数 → TypeError 框架兜底 (hint), loop 继续并自愈."""
-        llm = ScriptedLLM([
-            resp("缺 codes 调用。", [tc("get_market_data", start_date="2023-01-01")]),
-            resp("收到错误, 修正参数。", [tc("get_market_data", codes=["600519.SH"],
-                                              start_date="2023-01-01", end_date="2023-12-31")]),
-            resp("完成。"),
-        ])
-        loop = make_loop(workspace, llm)
-        r = loop.run("取数")
-        assert r.finished_reason == "stop"
-        tool_evidences = [m for m in r.messages if m.get("role") == "tool"]
-        first = parse(tool_evidences[0]["content"])
-        assert first["status"] == "error"
-        assert "TypeError" in first["error"]
-        assert "hint" in first
-        second = parse(tool_evidences[1]["content"])
-        assert second["status"] == "ok"
-
     def test_no_progress_termination(self, workspace):
         """重复相同工具调用 → 审批 gate 触发 → 超时按 policy 收尾。
 

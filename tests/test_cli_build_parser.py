@@ -32,12 +32,6 @@ class TestBuildParserSingleRegistration:
         parser, _ = _build_parser()
         assert isinstance(parser, argparse.ArgumentParser)
 
-    def test_registry_commands_present_exactly_once(self):
-        parser, _ = _build_parser()
-        names = _subcommand_names(parser)
-        for name in REGISTRY_COMMANDS:
-            assert names.count(name) == 1, f"{name} registered {names.count(name)} times"
-
     def test_all_registered_commands_appear(self):
         parser, _ = _build_parser()
         names = set(_subcommand_names(parser))

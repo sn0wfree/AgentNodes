@@ -36,7 +36,7 @@ def create_app(
         static_dir: Static files directory (e.g. `webui/static/`). If exists, will be served at `/`.
         cors_origins: CORS allowed origins (default: `["*"]` for dev).
     """
-    # 日志统一入口（docs/logging-unified-entry-design-20261102.md §4.4）：
+    # 日志统一入口（docs/guides/logging-unified-entry-design-20261102.md §4.4）：
     # web 面 console → stderr；SR_LOG_LEVEL / SR_LOG_JSON / SR_LOG_FILE
     # 全部由 configure_logging 统一解析。默认文本格式自带 trace 字段
     # （trace_id/session_id/study_id/round_num），SR_LOG_JSON=1 切 JSON。
@@ -149,7 +149,7 @@ def create_app(
 
         # Smart scaffold: recursively ensure workspace templates/ mirrors
         # package templates/. Idempotent — user customizations preserved.
-        # See apps/workspace_setup.py and docs/scaffold-fix.md.
+        # See apps/workspace_setup.py and docs/archive/undated/scaffold-fix.md.
         try:
             from strategy_research.apps.workspace_setup import smart_init_workspace_templates
             smart_init_workspace_templates(workspace_path)
@@ -174,12 +174,12 @@ def create_app(
     # goal / hypothesis / validation / workflow 四个业务 router 已随
     # apps/goal、apps/hypothesis、apps/validation 移除（2026-11-04 批次 2）。
     # study / slash_commands 两个 router 已随 apps/study 移除（2026-11-05 批次 3）。
+    # run router 已随 apps/backtest 移除（2026-11-05 批次 4）。
     from .routers import (
         admin,
         auth,
         chat,
         permission,
-        run,
         web_session,
     )
 
@@ -191,9 +191,9 @@ def create_app(
     app.include_router(admin_users.router, prefix="/api/admin", tags=["admin-users"])
 
     # /api/study 路由已随 apps/study 移除（2026-11-05 批次 3）
+    # /api/run 路由已随 apps/backtest 移除（2026-11-05 批次 4）
     from .routers import schedule
     app.include_router(schedule.router, prefix="/api/schedule", tags=["schedule"])
-    app.include_router(run.router, prefix="/api/run", tags=["run"])
     # MiniMax / DuckDuckGo web search (front-end direct invocation)
     from .routers import search as search_router
     app.include_router(search_router.router, tags=["search"])

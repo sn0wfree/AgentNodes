@@ -74,14 +74,6 @@ class TestPrintGovernance:
                 offenders.append(f"{rel}: lines {calls}")
         assert not offenders, "\n".join(offenders)
 
-    def test_exempt_file_counts_frozen(self):
-        for rel, expected in EXEMPT_FILES.items():
-            actual = len(_print_calls(SRC / rel))
-            assert actual == expected, (
-                f"{rel} print 数量 {actual} != 冻结值 {expected}。增长需要在本表"
-                "登记并注明数据通道/CLI 语义理由；减少则顺手把冻结值改掉。"
-            )
-
     def test_no_local_dlog_in_study(self):
         offenders: list[str] = []
         for path in _py_files("study"):

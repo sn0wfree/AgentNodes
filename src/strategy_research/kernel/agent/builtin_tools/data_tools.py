@@ -16,7 +16,7 @@ def _summarize_fetch_result(data: dict) -> tuple[dict, dict, int]:
     """Build compact per-code summary + 5-row preview; returns (summary, preview, total_rows).
 
     The full rows must NOT enter the LLM prompt (context-overflow root
-    cause; see docs/context-overflow-fix.md).
+    cause; see docs/design/context-overflow-fix.md).
     """
     summary: dict[str, Any] = {}
     preview: dict[str, Any] = {}
@@ -202,7 +202,7 @@ class GetMarketDataTool(BaseTool):
 
             # Build compact summary + small preview. The full rows must NOT
             # enter the LLM prompt (context-overflow root cause; see
-            # docs/context-overflow-fix.md).
+            # docs/design/context-overflow-fix.md).
             summary, preview, total_rows = _summarize_fetch_result(data)
 
             persisted_rows = 0
@@ -631,7 +631,7 @@ class CheckDataTool(BaseTool):
 
     # ── 工具说明书 ──────────────────────────────
     # 版本: 1.0.0
-    # 变更: 初版 (docs/run-backtest-data-gate.md)
+    # 变更: 初版 (docs/archive/undated/run-backtest-data-gate.md)
     #
     # ## 用途
     # 只读检查策略名下 DuckDB 数据是否就绪可跑回测: 资产覆盖(C1)、
@@ -709,13 +709,30 @@ class CheckDataTool(BaseTool):
         workspace = ctx.workspace
         cfg = None
         if source == "config":
+            # 2026-11-05 做减法批次 4：config.runner kind 随 apps/config_runner
+            # 一起移除（YAML 配置驱动的数据加载已归档）。显式报错而不是
+            # 静默 cfg=None —— 后者会让 check_data 在无配置的情况下继续跑，
+            # 用户以为读到了配置。
+            from strategy_research.kernel.agent.capability import (
+                CapabilityNotFound,
+                resolve as _resolve,
+            )
+
+            try:
+                load_yaml_config = _resolve("config.runner").load_yaml_config
+            except CapabilityNotFound:
+                return err_actionable(
+                    "source='config' is no longer available",
+                    received=strategy_name,
+                    expected="source='explicit' with codes/start_date/end_date",
+                    fix="YAML config-driven data loading was removed in "
+                        "subtraction batch 4. Pass codes/start_date/end_date "
+                        "explicitly, or use source='explicit'.",
+                    tool="check_data",
+                )
             base = ctx.strategy_dir if ctx.strategy_dir is not None else workspace / "strategies" / strategy_name
             cfg_path = base / "config.yaml"
             if cfg_path.exists():
-                from strategy_research.kernel.agent.capability import resolve
-
-                load_yaml_config = resolve("config.runner").load_yaml_config
-
                 try:
                     cfg = load_yaml_config(cfg_path)
                 except Exception:  # noqa: BLE001

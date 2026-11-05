@@ -113,10 +113,15 @@ def _check_data_readiness(registry: "CapabilityRegistry") -> Callable[..., Any]:
 
 
 def _config_runner(registry: "CapabilityRegistry") -> Any:
-    """``apps.config_runner`` 模块（load_yaml_config / load_data）。"""
-    import strategy_research.apps.config_runner as cr
+    """``apps.config_runner`` 模块（load_yaml_config / load_data）。
 
-    return cr
+    **已随批次 4 移除（2026-11-05）**：保留此函数签名只为让 kind 表
+    少一处删除痕迹；它已从 ``CAPABILITIES`` 摘除，不会再被 resolve。
+    """
+    raise NotImplementedError(
+        "config.runner was removed in subtraction batch 4 (2026-11-05); "
+        "apps/config_runner.py is archived at testcase/golden/apps/"
+    )
 
 
 # ── data clean ───────────────────────────────────────────────────────
@@ -129,25 +134,15 @@ def _data_clean(registry: "CapabilityRegistry") -> Any:
     return dc
 
 
-# ── backtest / acceptance ────────────────────────────────────────────
-
-
-def _run_backtest_from_yaml(registry: "CapabilityRegistry") -> Callable[..., Any]:
-    from strategy_research.apps.backtest import run_backtest_from_yaml
-
-    return run_backtest_from_yaml
-
-
-def _run_backtest_script(registry: "CapabilityRegistry") -> Callable[..., Any]:
-    from strategy_research.apps.backtest import run_backtest_script
-
-    return run_backtest_script
-
-
-def _strategy_decide(registry: "CapabilityRegistry") -> Callable[..., Any]:
-    from strategy_research.apps.strategy_acceptance import decide
-
-    return decide
+# ── backtest / acceptance：已整体移除（2026-11-05 做减法批次 4）──────
+#
+# 删除 4 个 kind：backtest.from_yaml / backtest.script / backtest.decide /
+# config.runner。连带删除 apps/{backtest,backtest_engine,backtest_models,
+# config_runner,engine,strategy_acceptance,factor_validate,run_card}
+# 共 35 文件 5,982 行，归档 testcase/golden/apps/。
+#
+# 保留的 datasource.* / data.readiness / data.clean 三个 kind 属批次 5
+# （数据域），它们的实现住在 apps/{data_source,data_readiness,tools}/。
 
 
 # ── goal / hypothesis ────────────────────────────────────────────────
@@ -256,15 +251,12 @@ CAPABILITIES: dict[str, Callable[["CapabilityRegistry"], Any]] = {
     "datasource.registry": _data_source_registry,
     "datasource.base": _data_source_base,
     "datasource.detect_market": _detect_market,
-    # readiness / config
+    # readiness
     "data.readiness": _check_data_readiness,
-    "config.runner": _config_runner,
     # data clean
     "data.clean": _data_clean,
-    # backtest
-    "backtest.from_yaml": _run_backtest_from_yaml,
-    "backtest.script": _run_backtest_script,
-    "backtest.decide": _strategy_decide,
+    # backtest / config.runner 四个 kind 已随批次 4 移除（2026-11-05）：
+    # backtest.from_yaml / backtest.script / backtest.decide / config.runner
     # goal / hypothesis 六个 kind 已随 apps/goal、apps/hypothesis 移除
     # （2026-11-04 做减法批次 2）
     # study 六个 kind 已随 apps/study 移除（2026-11-05 做减法批次 3）；

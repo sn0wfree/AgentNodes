@@ -726,7 +726,7 @@ async def list_active_attempts(
     streaming/queued state: a page reload loses ``streamingMessageId``
     and the in-memory queued placeholders, and SSE replay cannot
     recover ``attempt.started`` / ``message_received`` (they sit before
-    the Last-Event-ID cursor). See docs/streaming-reload-recovery.md.
+    the Last-Event-ID cursor). See docs/archive/undated/streaming-reload-recovery.md.
 
     Returns ``{"attempts": [...]}`` with each entry:
     ``{attempt_id, message_id, status: "running"|"queued", prompt,

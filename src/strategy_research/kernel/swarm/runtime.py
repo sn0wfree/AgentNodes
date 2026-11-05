@@ -85,7 +85,7 @@ class SwarmRuntime:
     ) -> SwarmResult:
         """Execute a swarm preset with optional lifecycle hooks.
 
-        深度统一（docs/deep-unification-graph-engine-design-20261031.md）：
+        深度统一（docs/design/deep-unification-graph-engine-design-20261031.md）：
         自研层循环退役，execute 编译为 GraphEngine 图——每层一个
         ``(split → fanout → join)`` 复合节点，join 条件路由到下一层或 END。
 
@@ -852,7 +852,7 @@ class SwarmRuntime:
 
 
 def _register_builtin_executors() -> None:
-    """Register built-in python_executor functions for backtest and decide.
+    """Register built-in python_executor functions.
 
     **resolve 必须在闭包内、调用时才执行**：本函数由模块级 import 触发，
     而此刻业务包（apps）可能尚未 import，registry 还是空的。
@@ -862,41 +862,16 @@ def _register_builtin_executors() -> None:
 
     与 ``kernel/agent/exec_registry.py`` 的正确做法保持一致：让"谁需要
     谁解析"，与注册时机解耦。
+
+    **2026-11-05 做减法批次 4**：原先这里注册了两个业务 executor
+    （``run_backtest_script`` 与 ``decide``），resolve
+    ``backtest.script`` / ``backtest.decide``。这两个 kind 随
+    ``apps/backtest`` 与 ``apps/strategy_acceptance`` 一起移除，executor
+    本身也是回测业务，故一并删除。
+
+    Swarm 的通用能力（fanout / join / 分支条件）不受影响——它们走
+    ``SwarmRuntime`` 自己的节点执行器，不依赖这两个业务 executor。
     """
-
-    def _backtest_executor(workspace_path, upstream=None, **kwargs):
-        """Run backtest script and return metrics."""
-        from strategy_research.kernel.agent.capability import resolve
-
-        run_backtest_script = resolve("backtest.script")
-        strategy_name = kwargs.get("strategy_name", "default")
-        action = kwargs.get("action", "unknown")
-        description = kwargs.get("description", "")
-        return run_backtest_script(
-            workspace_path=workspace_path,
-            strategy_name=strategy_name,
-            action=action,
-            description=description,
-        )
-
-    SwarmRuntime.register_python_executor("run_backtest_script", _backtest_executor)
-
-    def _decide_executor(metrics=None, **kwargs):
-        """Run decide() for keep/discard decision."""
-        from strategy_research.kernel.agent.capability import resolve
-
-        _decide_fn = resolve("backtest.decide")
-        llm_verdict = kwargs.get("llm_verdict")
-        cfg = kwargs.get("cfg")
-        stagnation_count = kwargs.get("stagnation_count", 0)
-        return _decide_fn(
-            metrics=metrics or {},
-            llm_verdict=llm_verdict,
-            cfg=cfg,
-            stagnation_count=stagnation_count,
-        )
-
-    SwarmRuntime.register_python_executor("decide", _decide_executor)
 
 
 # Auto-register on module import

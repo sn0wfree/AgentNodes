@@ -97,23 +97,6 @@ class TestAppRoot:
 # ============================================================
 
 
-class TestRunRouter:
-    def test_run_list_no_workspace(self, client):
-        resp = client.get("/api/run/list?workspace_path=/nonexistent&strategy_name=test")
-        assert resp.status_code == 200
-        data = resp.json()
-        assert data["runs"] == []
-
-    def test_run_status_not_found(self, client):
-        resp = client.get("/api/run/status?workspace_path=/tmp&strategy_name=test&run_name=run_0001")
-        assert resp.status_code == 404
-
-
-# ============================================================
-# CLI: api serve
-# ============================================================
-
-
 class TestAPIServeCLI:
     def test_api_serve_help(self):
         import subprocess

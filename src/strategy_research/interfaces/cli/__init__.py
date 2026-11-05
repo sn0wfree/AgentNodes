@@ -277,101 +277,6 @@ def cmd_reproduce(args: argparse.Namespace) -> int:
     return 0
 
 
-def cmd_run(args: argparse.Namespace) -> int:
-    """执行 run 命令 - 运行回测。"""
-    path = Path(args.path).resolve()
-
-    # 检查工作区
-    if not (path / "config.yaml").exists():
-        print(f"❌ 不是有效的工作区: {path}")
-        return 1
-
-    # 读取 config.yaml
-    config_path = path / "config.yaml"
-    with open(config_path, "r", encoding="utf-8") as f:
-        config = yaml.safe_load(f)
-
-    strategy_name = args.strategy
-    if not strategy_name:
-        strategy_name = config.get("workspace", {}).get("default_strategy")
-        if not strategy_name:
-            print("❌ 未指定策略名称，请使用 --strategy <name>")
-            return 1
-
-    from strategy_research.apps.backtest import run_backtest_script as run_backtest
-    result = run_backtest(
-        workspace_path=path,
-        strategy_name=strategy_name,
-        action=args.action or "manual",
-        description=args.description or "",
-        timeout=args.timeout,
-    )
-
-    if result["success"]:
-        print(f"✅ 回测完成: {result['run']}")
-        metrics = result["metrics"]
-        print(f"   calmar: {metrics.get('calmar', 'N/A')}")
-        print(f"   sharpe: {metrics.get('sharpe', 'N/A')}")
-        print(f"   max_dd: {metrics.get('max_dd', 'N/A')}")
-        print(f"   ann_return: {metrics.get('ann_return', 'N/A')}")
-    else:
-        print(f"❌ 回测失败: {result['error'][:200]}")
-        return 1
-
-    return 0
-
-
-def cmd_evaluate(args: argparse.Namespace) -> int:
-    """执行 evaluate 命令 — 重跑当前 strategy.py 并写新 run_XXXX。
-
-    与 run 的区别: evaluate 不需要 action / description,
-    专为手动复跑 baseline / 验证修改后的 strategy.py 设计。
-    """
-    path = Path(args.path).resolve()
-
-    if not (path / "config.yaml").exists():
-        print(f"❌ 不是有效的工作区: {path}")
-        return 1
-
-    config_path = path / "config.yaml"
-    with open(config_path, "r", encoding="utf-8") as f:
-        config = yaml.safe_load(f)
-
-    strategy_name = args.strategy
-    if not strategy_name:
-        strategy_name = config.get("workspace", {}).get("default_strategy")
-        if not strategy_name:
-            print("❌ 未指定策略名称，请使用 --strategy <name>")
-            return 1
-
-    from strategy_research.apps.backtest import run_backtest_script
-
-    print(f"🔄 复跑策略: {strategy_name}")
-    result = run_backtest_script(
-        workspace_path=path,
-        strategy_name=strategy_name,
-        action="evaluate",
-        description=args.description or "Manual re-evaluation via `evaluate`",
-        timeout=args.timeout,
-    )
-
-    if result["success"]:
-        m = result["metrics"]
-        print(f"\n✅ 复跑成功: {result['run']}")
-        print(f"   Calmar   = {m.get('calmar', 0):.4f}")
-        print(f"   Sharpe   = {m.get('sharpe', 0):.4f}")
-        print(f"   MaxDD    = {m.get('max_dd', 0):.4f}")
-        print(f"   AnnRet   = {m.get('ann_return', 0):.4f}")
-        print(f"   AnnVol   = {m.get('ann_vol', 0):.4f}")
-        print(f"   Sortino  = {m.get('sortino', 0):.4f}")
-        print(f"   Turnover = {m.get('turnover', 0):.4f}")
-        print(f"\n📁 详见: {path / 'strategies' / strategy_name / 'runs' / result['run']}")
-        return 0
-    else:
-        print(f"\n❌ 复跑失败: {result.get('error', 'unknown')[:300]}")
-        return 1
-
-
 def cmd_preflight(args: argparse.Namespace) -> int:
     """执行 preflight 命令 — 启动前环境检查。
 
@@ -390,127 +295,6 @@ def cmd_preflight(args: argparse.Namespace) -> int:
 
     critical_failed = [r for r in results if r.critical and r.status != "ready"]
     return 1 if critical_failed else 0
-
-
-def cmd_validate(args: argparse.Namespace) -> int:
-    """执行 validate 命令 - 验证因子。"""
-    path = Path(args.path).resolve()
-
-    # 检查工作区
-    if not (path / "config.yaml").exists():
-        print(f"❌ 不是有效的工作区: {path}")
-        return 1
-
-    # 读取 config.yaml
-    config_path = path / "config.yaml"
-    with open(config_path, "r", encoding="utf-8") as f:
-        config = yaml.safe_load(f)
-
-    strategy_name = args.strategy
-    if not strategy_name:
-        strategy_name = config.get("workspace", {}).get("default_strategy")
-        if not strategy_name:
-            print("❌ 未指定策略名称，请使用 --strategy <name>")
-            return 1
-
-    factor_code = args.factor
-    if not factor_code:
-        print("❌ 请指定因子表达式，例如: --factor 'ts_return(close, 20)'")
-        return 1
-
-    import pandas as pd
-
-    from strategy_research.apps.factor_validate import validate_factor
-
-    # 加载价格数据 (简单示例: 从 CSV 加载)
-    prices_file = path / "data" / "prices.csv"
-    if not prices_file.exists():
-        print(f"❌ 价格数据不存在: {prices_file}")
-        print("   请将价格数据保存到 data/prices.csv (index=date, columns=assets)")
-        return 1
-
-    prices = pd.read_csv(prices_file, index_col=0, parse_dates=True)
-
-    # 验证因子
-    result = validate_factor(
-        factor_code=factor_code,
-        prices=prices,
-        strategy_name=strategy_name,
-        source=args.source or "cli",
-    )
-
-    print(f"\n📊 因子验证结果: {factor_code}")
-    print(f"   通过: {'✓' if result['passed'] else '❌'}")
-    print(f"   IC mean: {result['ic_mean']:.4f}")
-    print(f"   IR: {result['ir']:.4f}")
-    print(f"   Rank IC: {result['rank_ic_mean']:.4f}")
-    print(f"   综合评分: {result['overall_score']:.4f}")
-
-    if result["fail_reasons"]:
-        print("\n   失败原因:")
-        for reason in result["fail_reasons"]:
-            print(f"     - {reason}")
-
-    if result["scores"]:
-        print("\n   6 维评分:")
-        for k, v in result["scores"].items():
-            print(f"     {k}: {v:.4f}")
-
-    return 0
-
-
-def cmd_list(args: argparse.Namespace) -> int:
-    """执行 list 命令 - 列出实验。"""
-    path = Path(args.path).resolve()
-
-    # 检查工作区
-    if not (path / "config.yaml").exists():
-        print(f"❌ 不是有效的工作区: {path}")
-        return 1
-
-    # 读取 config.yaml
-    config_path = path / "config.yaml"
-    with open(config_path, "r", encoding="utf-8") as f:
-        config = yaml.safe_load(f)
-
-    strategy_name = args.strategy
-    if not strategy_name:
-        strategy_name = config.get("workspace", {}).get("default_strategy")
-        if not strategy_name:
-            print("❌ 未指定策略名称，请使用 --strategy <name>")
-            return 1
-
-    from strategy_research.apps.backtest import get_best_experiment, get_experiment_history
-
-    experiments = get_experiment_history(path, strategy_name, limit=args.limit)
-
-    if not experiments:
-        print("📭 没有实验记录")
-        return 0
-
-    print(f"\n📋 实验记录 ({strategy_name}):")
-    print(f"{'run':<12} {'action':<20} {'calmar':<10} {'sharpe':<10} {'status':<10} {'description'}")
-    print("-" * 80)
-
-    for exp in experiments:
-        run = exp.get("run", "")
-        action = exp.get("action", "")
-        calmar = exp.get("calmar", "N/A")
-        sharpe = exp.get("sharpe", "N/A")
-        status = exp.get("status", "")
-        desc = exp.get("description", "")
-
-        # 状态标记
-        status_mark = "✓" if status == "keep" else "✗" if status == "discard" else "○"
-
-        print(f"{run:<12} {action:<20} {calmar:<10} {sharpe:<10} {status_mark} {desc}")
-
-    # 显示最佳实验
-    best = get_best_experiment(path, strategy_name)
-    if best:
-        print(f"\n🏆 最佳实验: {best.get('run')} (calmar={best.get('calmar')})")
-
-    return 0
 
 
 def cmd_import(args: argparse.Namespace) -> int:
@@ -731,13 +515,8 @@ def _build_parser() -> tuple[argparse.ArgumentParser, dict[str, argparse.Argumen
 
     # goal / hypothesis / validation / portfolio 四组子命令已随对应 apps 包
     # 移除（2026-11-04 做减法批次 2；归档见 testcase/golden/apps/）。
-
-    from strategy_research.apps.engine.cli import add_engine_subparsers
-    add_engine_subparsers(subparsers)
-
-    # strategy acceptance (P6 Step 0) — 离线验收调试工具
-    from strategy_research.apps.strategy_acceptance.cli import add_accept_subparsers
-    add_accept_subparsers(subparsers)
+    # engine / accept 两组子命令已随 apps/engine、apps/strategy_acceptance
+    # 移除（2026-11-05 做减法批次 4）。
 
     # api serve
     api_parser = subparsers.add_parser("api", help="HTTP API 服务器")
@@ -779,11 +558,8 @@ def _build_parser() -> tuple[argparse.ArgumentParser, dict[str, argparse.Argumen
         help="只启动 HTTP API（不挂 SPA）",
     )
 
-    # W2 merged task commands
-    from .commands.merged import add_backtest_parser, add_check_parser
-
-    add_backtest_parser(subparsers)
-    add_check_parser(subparsers)
+    # W2 merged task commands（backtest / check 两组已随批次 4 移除，
+    # 2026-11-05；只剩 serve 的 dispatch，注册在下方 serve_parser）
 
     # ── compact show (opencode-aligned config inspector) ─────────
     compact_parser = subparsers.add_parser(
@@ -845,14 +621,11 @@ def main() -> int:
         "swarm": _dispatch_swarm,
         "mcp": _dispatch_mcp,
         "schedule": _dispatch_schedule,
-        "engine": _dispatch_engine,
-        "accept": _dispatch_accept,
         "api": _dispatch_api,
         "webui": _dispatch_webui,
         "compact": _dispatch_compact,
         "serve": _dispatch_serve,
-        "backtest": _dispatch_backtest,
-        "check": _dispatch_check,
+        # engine / accept / backtest / check 已随批次 4 移除（2026-11-05）
     }
     handler_fn = dispatcher.get(args.command)
     if handler_fn is not None:
@@ -978,18 +751,8 @@ def _dispatch_schedule(args, parsers) -> int:
 
 # _dispatch_goal / _dispatch_hypothesis / _dispatch_validate_run 已随
 # apps/goal、apps/hypothesis、apps/validation 移除（2026-11-04 做减法批次 2）。
-
-
-def _dispatch_engine(args, parsers) -> int:
-    """Dispatch the engine subcommand."""
-    from strategy_research.apps.engine.cli import dispatch_engine
-    return dispatch_engine(args)
-
-
-def _dispatch_accept(args, parsers) -> int:
-    """Dispatch the accept subcommand."""
-    from strategy_research.apps.strategy_acceptance.cli import cmd_accept
-    return cmd_accept(args)
+# _dispatch_engine / _dispatch_accept 已随 apps/engine、
+# apps/strategy_acceptance 移除（2026-11-05 做减法批次 4）。
 
 
 def _dispatch_api(args, parsers) -> int:
@@ -1028,16 +791,8 @@ def _dispatch_serve(args, parsers) -> int:
     return dispatch_serve(args)
 
 
-def _dispatch_backtest(args, parsers) -> int:
-    from .commands.merged import dispatch_backtest
-
-    return dispatch_backtest(args)
-
-
-def _dispatch_check(args, parsers) -> int:
-    from .commands.merged import dispatch_check
-
-    return dispatch_check(args)
+# _dispatch_backtest / _dispatch_check 已随 apps/backtest、
+# apps/factor_validate、apps/strategy_acceptance 移除（2026-11-05 批次 4）。
 
 
 if __name__ == "__main__":

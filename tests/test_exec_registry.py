@@ -49,15 +49,6 @@ class TestListPythonExecutors:
         for n in before:
             assert n in names
 
-    def test_includes_builtin_run_backtest(self):
-        """The backtest builtin is registered on import."""
-        names = exec_registry.list_python_executors()
-        assert "run_backtest_script" in names
-
-
-# ── evaluator table ──────────────────────────────────────────────────
-
-
 class TestRegisterEvaluator:
     def test_register_and_get_roundtrip(self):
         def fn(**kw): return kw
@@ -88,15 +79,6 @@ class TestListEvaluators:
         assert "_a_ev_list" in names
         for n in before:
             assert n in names
-
-    def test_includes_builtin_decide(self):
-        """The decide builtin is registered on import."""
-        names = exec_registry.list_evaluators()
-        assert "decide" in names
-
-
-# ── module surface ─────────────────────────────────────────────────────
-
 
 class TestModuleSurface:
     def test_all_exports(self):

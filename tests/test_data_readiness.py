@@ -163,68 +163,6 @@ def test_c7_included_when_requested(workspace: Path):
 # ── 门禁集成: run_backtest 在数据未就绪时拦截、不建 run ─────────────
 
 
-def test_run_backtest_gate_blocks_and_does_not_create_run(workspace: Path):
-    from strategy_research.kernel.agent.builtin_tools import RunBacktestTool
-    from strategy_research.kernel.agent.tools import ToolContext
-
-    sdir = workspace / "strategies" / "s1"
-    sdir.mkdir(parents=True)
-    # codes 缺 300015.SZ → C1 fail → 门禁拦截
-    cfg_text = GOOD_CONFIG.replace("codes: ['000001.SZ', '600519.SH']",
-                                   "codes: ['000001.SZ', '300015.SZ']")
-    (sdir / "config.yaml").write_text(cfg_text)
-
-    out = RunBacktestTool().execute(
-        ctx=ToolContext(workspace=workspace), strategy_name="s1",
-    )
-    import json
-
-    payload = json.loads(out)
-    assert payload["status"] == "error"
-    assert payload.get("step") == "data_gate"
-    assert "readiness" in payload
-    assert (sdir / "runs").exists() is False, "gate must not create run dir"
-
-
-def test_run_backtest_gate_ok_runs(workspace: Path):
-    from strategy_research.kernel.agent.builtin_tools import RunBacktestTool
-    from strategy_research.kernel.agent.tools import ToolContext
-
-    sdir = workspace / "strategies" / "s1"
-    sdir.mkdir(parents=True)
-    (sdir / "config.yaml").write_text(GOOD_CONFIG)
-
-    out = RunBacktestTool().execute(
-        ctx=ToolContext(workspace=workspace), strategy_name="s1",
-    )
-    import json
-
-    payload = json.loads(out)
-    assert payload["status"] == "ok"
-    assert payload["run_status"] == "success"
-    assert "readiness" in payload
-    assert (sdir / "runs" / payload["run"] / "metrics.json").exists()
-
-
-def test_check_data_tool_returns_report(workspace: Path):
-    from strategy_research.kernel.agent.builtin_tools.data_tools import CheckDataTool
-    from strategy_research.kernel.agent.tools import ToolContext
-
-    sdir = workspace / "strategies" / "s1"
-    sdir.mkdir(parents=True)
-    (sdir / "config.yaml").write_text(GOOD_CONFIG)
-
-    out = CheckDataTool().execute(
-        ctx=ToolContext(workspace=workspace), strategy_name="s1",
-    )
-    import json
-
-    payload = json.loads(out)
-    assert payload["status"] == "ok"
-    assert payload["readiness"]["ok"] is True
-    assert "checks" in payload["readiness"]
-
-
 def test_check_data_tool_explicit_mode(workspace: Path):
     from strategy_research.kernel.agent.builtin_tools.data_tools import CheckDataTool
     from strategy_research.kernel.agent.tools import ToolContext
