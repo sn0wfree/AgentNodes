@@ -1,7 +1,10 @@
 # 框架与理念（草案 v0.1 · 2026-11-05）
 
-> **地位**：约束性草案，供拍板。**本文档本身不开任何代码**；§2.5 的工作项全部
+> **地位**：约束性草案。**本文档本身不开任何代码**；§2.5 的工作项全部
 > 待 §3 决策点拍板后才排期。
+>
+> **决策进度**：D1 已拍板（2026-11-05）→ 见 §3.1 决策记录；
+> D2 随 D1 采纳理念三默认处置；剩余 D3–D6 待拍。
 >
 > 输入：GEP-RSI v1.1（语义架构）· 四层物理架构（layered-skeleton-design）·
 > 一致性扫描（`e7a6e868` + `d2e962df`）· goal 重建方案（`bd743d99`）。
@@ -202,10 +205,10 @@ src/agentnodes/
 
 | 项 | 内容 | 来源 | 前置 |
 |---|---|---|---|
-| R1 | 恢复 apps/goal + goal.* kind + 测试搬回 | bd743d99 | D1 |
+| W1 | 装配期能力自检（`requires` 声明 + 拓扑解析） | 理念三 | ✅ D1 已拍板 |
+| R1 | 恢复 apps/goal + goal.* kind + 测试搬回（按 §3.1 依赖链自证注册） | bd743d99 + D1 | **W1** |
 | R2 | chat 接线（slash / GoalPanel / SSE / API 路由） | bd743d99 | R1 |
 | R3 | journal/scoreboard 端口接入 + autoresearch preset 化 | bd743d99 | R1 |
-| W1 | 装配期能力自检（`requires` 声明 + 拓扑解析） | 理念三 | D2 |
 | W2 | P 层成本/延迟维度（TaskScore 加列） | 理念五 · 校准 01 | D3 |
 | W3 | held-in / held-out 双集 | GEP-RSI 第 5 步 | W2 |
 | W4 | 评估完整性指纹 + 循环驱动链 | 理念四 / 六 | D4 |
@@ -218,12 +221,45 @@ src/agentnodes/
 
 | # | 问题 | 选项 | 推荐 |
 |---|---|---|---|
-| D1 | L2 的定位 | (a) 恢复 goal 重新充实 / (b) 取消 L2 / (c) 插件槽 + 自检 | **(c) + R1**：goal 恢复，但必须满足理念三 |
-| D2 | 缺依赖工具的处置 | 不注册 / 注册 + degraded 标注 | **不注册 + WARN 事件**（理念三）|
+| D1 ✅ | L2 的定位 | (a) 恢复 goal 重新充实 / (b) 取消 L2 / (c) 插件槽 + 自检 | **已拍板：(c) + R1**（见 §3.1）|
+| D2 ✅ | 缺依赖工具的处置 | 不注册 / 注册 + degraded 标注 | **随 D1 采纳理念三默认：不注册 + WARN**（可推翻）|
 | D3 | 成本/延迟进不进总分 | 进总分加权 / 只做 0/1 门槛 | **进总分**（校准 01：与完成率并列硬维度；权重另定）|
 | D4 | 循环驱动方式 | run.settled 自动 / 仅 cron / 手动 CLI | **run.settled 自动 + cron 兜底 + 频率闸** |
 | D5 | hash chain 现在做吗 | 现在做 / P2 | **P2**：先上评估指纹（W4），hash chain 收益/成本比低 |
 | D6 | Tier 2 现在接线吗 | R1 时接 / 以后 | **R1 时接**：goal 产物写 `set_tier2`，留痕闭环 |
+
+### 3.1 决策记录
+
+**D1 · 已拍板（2026-11-05）：L2 = 业务插件槽 + R1 恢复 goal，goal 必须过理念三自检。**
+
+锁定四件事：
+
+1. **L2 的存在理由改写**：不再是「研究 IP 层」（layered-skeleton-design 的旧口径），
+   而是**业务插件槽**——每个 kind 是一个自带依赖声明的插件，注册即自证可运行。
+   `apps/capabilities.py` 的角色从「kind 表」升级为「插件清单」。
+2. **批次顺序改变**：W1（自检机制）提前为 R1 的前置——没有自检机制，
+   「goal 过自检」无从谈起。新顺序：**W1 → R1 → R2 → R3**。
+3. **R1 验收标准具体化**（插件槽口径下的 goal 依赖链）：
+
+   | kind | requires | 说明 |
+   |---|---|---|
+   | `goal.store` | ∅ | 台账本体（依赖是 import 不是 kind）|
+   | `goal.models` | ∅ | 判据 / 证据 schema |
+   | `goal.expression` | ∅ | 纯表达式求值 |
+   | `goal.context` | `goal.store` | 上下文渲染读台账 |
+   | `tool.goal`（5 工具）| `goal.store, goal.models, goal.context` | 工具组 |
+
+   装配期按拓扑序解析：`store / models / expression → context → tool.goal`；
+   缺一个 → 整组不注册 + `capability.skipped` 事件。
+4. **现存 5 个坏工具组的命运进入 D2 议程**：W1 落地时，
+   `tool.factor / tool.data / tool.backtest / tool.backtest_analysis / tool.data_clean`
+   因依赖的 `db.* / datasource.* / config.runner / data.*` 已删而**全部过不了自检**。
+   其模块文件（约 3,300 行）是删是归档，在 W1 验证通过后单独议。
+
+**D2 · 随 D1 采纳理念三默认处置**：缺依赖 = 整组不注册 + WARN 事件。
+（按 D1 的「必须过理念三自检」视为已采纳；若要 degraded 标注，明确推翻即可。）
+
+**剩余待拍**：D3（成本进总分）· D4（驱动方式）· D5（hash chain）· D6（Tier 2 接线）。
 
 ---
 

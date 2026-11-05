@@ -317,7 +317,7 @@
   <div class="header">
     <h1 class="page-title">框架与理念</h1>
     <p class="page-subtitle">AgentNodes · 自我进化研究 Agent 平台 · 双轴架构</p>
-    <span class="version-badge">v0.1 草案 · 待拍板 · 尚未开任何代码</span>
+    <span class="version-badge">v0.1 草案 · D1/D2 已拍板 · 尚未开任何代码</span>
   </div>
 
   <!-- ==================== 00 一句话 ==================== -->
@@ -606,10 +606,10 @@ src/agentnodes/
         <tr><th style="width:70px">项</th><th>内容</th><th style="width:240px">来源</th><th style="width:120px">前置</th></tr>
       </thead>
       <tbody>
-        <tr><td><span class="pill pill-r">R1</span></td><td>恢复 apps/goal + 注册 goal.* kind + 42 个测试搬回</td><td>goal 重建方案 bd743d99</td><td>D1</td></tr>
+        <tr><td><span class="pill pill-g">W1</span></td><td>装配期能力自检（requires 声明 + 拓扑解析，幽灵工具清零）</td><td>理念 03</td><td>✅ D1 已拍板</td></tr>
+        <tr><td><span class="pill pill-r">R1</span></td><td>恢复 apps/goal + 注册 goal.* kind + 42 个测试搬回（按依赖链自证注册）</td><td>goal 重建方案 bd743d99 · D1</td><td><b>W1</b></td></tr>
         <tr><td><span class="pill pill-r">R2</span></td><td>chat 接线（slash / GoalPanel / SSE / API 路由）</td><td>goal 重建方案 bd743d99</td><td>R1</td></tr>
         <tr><td><span class="pill pill-r">R3</span></td><td>journal / scoreboard 端口接入 + autoresearch preset 化</td><td>goal 重建方案 bd743d99</td><td>R1</td></tr>
-        <tr><td><span class="pill pill-g">W1</span></td><td>装配期能力自检（requires 声明 + 拓扑解析，幽灵工具清零）</td><td>理念 03</td><td>D2</td></tr>
         <tr><td><span class="pill pill-p">W2</span></td><td>P 层成本 / 延迟维度（TaskScore 加列进总分）</td><td>理念 05 · GEP-RSI 校准 01</td><td>D3</td></tr>
         <tr><td><span class="pill pill-p">W3</span></td><td>held-in / held-out 双集双门</td><td>GEP-RSI 第 5 步</td><td>W2</td></tr>
         <tr><td><span class="pill pill-e">W4</span></td><td>评估完整性指纹 + 循环驱动链（run.settled 钩子）</td><td>理念 04 / 06</td><td>D4</td></tr>
@@ -627,17 +627,20 @@ src/agentnodes/
   </div>
 
   <div class="dec-grid">
-    <div class="dec">
-      <div class="dec-id">D1 · 决定框架走向</div>
+    <div class="dec" style="border-color:rgba(16,185,129,0.45);background:linear-gradient(160deg,rgba(16,185,129,0.07),rgba(16,185,129,0.015))">
+      <div class="dec-id" style="color:#6ee7b7">D1 · ✅ 已拍板（2026-11-05）· 决定框架走向</div>
       <div class="dec-q">L2 的定位是什么？</div>
       <div class="dec-opts">(a) 恢复 goal 重新充实　(b) 取消 L2，工具并回组装根　(c) 插件槽 + 注册自检</div>
-      <div class="dec-rec"><b>推荐 (c) + R1</b>：goal 恢复，但必须先过理念 03 的自检——不重蹈「注册成功、调用必败」</div>
+      <div class="dec-rec"><b>拍板：(c) + R1</b> —— L2 = 业务插件槽，每个 kind 自带依赖声明、注册即自证；<br>
+      连锁：W1 提前为 R1 前置，新顺序 <b>W1 → R1 → R2 → R3</b>；<br>
+      goal 依赖链 store / models / expression → context → tool.goal 装配期拓扑自证</div>
     </div>
-    <div class="dec">
-      <div class="dec-id">D2 · 理念 03 的落地形态</div>
+    <div class="dec" style="border-color:rgba(16,185,129,0.45);background:linear-gradient(160deg,rgba(16,185,129,0.07),rgba(16,185,129,0.015))">
+      <div class="dec-id" style="color:#6ee7b7">D2 · ✅ 随 D1 采纳理念三默认</div>
       <div class="dec-q">缺依赖的工具怎么处置？</div>
       <div class="dec-opts">整组不注册 + WARN / 注册但标 degraded</div>
-      <div class="dec-rec"><b>推荐不注册</b>：LLM 看不见就不 hallucinate；degraded 标注仍会被调用</div>
+      <div class="dec-rec"><b>拍板：不注册 + WARN</b> —— LLM 看不见就不 hallucinate；<br>
+      W1 落地时现存 5 个坏工具组（factor / data / backtest / backtest_analysis / data_clean）全部过不了自检，其模块文件去留另议</div>
     </div>
     <div class="dec">
       <div class="dec-id">D3 · P 层表型向量</div>
