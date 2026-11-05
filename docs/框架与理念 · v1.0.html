@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>框架与理念 · v0.1 草案</title>
+<title>框架与理念 · v1.0</title>
 <style>
   * { margin: 0; padding: 0; box-sizing: border-box; }
 
@@ -317,7 +317,7 @@
   <div class="header">
     <h1 class="page-title">框架与理念</h1>
     <p class="page-subtitle">AgentNodes · 自我进化研究 Agent 平台 · 双轴架构</p>
-    <span class="version-badge">v0.1 草案 · D1/D2/D4/D5/D6 已拍板 · 仅剩 D3 · 尚未开任何代码</span>
+    <span class="version-badge">v1.0 定稿 · 六项决策全部拍板 · 自 W1 起开代码</span>
   </div>
 
   <!-- ==================== 00 一句话 ==================== -->
@@ -596,7 +596,7 @@ src/agentnodes/
   <!-- ==================== 06 工作项 ==================== -->
   <div class="section-label">
     <span class="num">06</span>
-    <span class="txt">工作项总表 · 拍板前不排期</span>
+    <span class="txt">工作项总表 · v1.0 起生效</span>
     <span class="line"></span>
   </div>
 
@@ -610,7 +610,7 @@ src/agentnodes/
         <tr><td><span class="pill pill-r">R1</span></td><td>恢复 apps/goal + 注册 goal.* kind + 42 个测试搬回（按依赖链自证注册）</td><td>goal 重建方案 bd743d99 · D1</td><td><b>W1</b></td></tr>
         <tr><td><span class="pill pill-r">R2</span></td><td>chat 接线（slash / GoalPanel / SSE / API 路由）</td><td>goal 重建方案 bd743d99</td><td>R1</td></tr>
         <tr><td><span class="pill pill-r">R3</span></td><td>journal / scoreboard 端口接入 + autoresearch preset 化</td><td>goal 重建方案 bd743d99</td><td>R1</td></tr>
-        <tr><td><span class="pill pill-p">W2</span></td><td>P 层成本 / 延迟维度（并列维度 + 双闸，方案见 md §3.2）</td><td>理念 05 · GEP-RSI 校准 01</td><td>D3（待拍）</td></tr>
+        <tr><td><span class="pill pill-p">W2</span></td><td>P 层成本 / 延迟维度（<b>并列维度 + 双闸</b>：total 不动 · cost = budget 比率 · latency 补采集）</td><td>理念 05 · 校准 01 · D3</td><td>✅ D3 已拍板</td></tr>
         <tr><td><span class="pill pill-p">W3</span></td><td>held-in / held-out 双集双门</td><td>GEP-RSI 第 5 步</td><td>W2</td></tr>
         <tr><td><span class="pill pill-e">W4</span></td><td>评估完整性指纹 + 循环驱动链（阶段 1：CLI + cron + 证据增量门 + 预算闸）</td><td>理念 04 / 06</td><td>✅ D4 已拍板</td></tr>
         <tr><td><span class="pill pill-g">W5</span></td><td>假基因清理（周期 deactivate 从未激活组件）</td><td>GEP-RSI 第 7 步</td><td>R1</td></tr>
@@ -622,7 +622,7 @@ src/agentnodes/
   <!-- ==================== 07 决策点 ==================== -->
   <div class="section-label">
     <span class="num">07</span>
-    <span class="txt">六个决策点 · 拍板后文档升 v1.0，才开代码</span>
+    <span class="txt">六个决策点 · 全部已拍板（2026-11-05）</span>
     <span class="line"></span>
   </div>
 
@@ -642,13 +642,13 @@ src/agentnodes/
       <div class="dec-rec"><b>拍板：不注册 + WARN</b> —— LLM 看不见就不 hallucinate；<br>
       W1 落地时现存 5 个坏工具组（factor / data / backtest / backtest_analysis / data_clean）全部过不了自检，其模块文件去留另议</div>
     </div>
-    <div class="dec">
-      <div class="dec-id">D3 · ⏳ 待拍 · P 层表型向量</div>
+    <div class="dec" style="border-color:rgba(16,185,129,0.45);background:linear-gradient(160deg,rgba(16,185,129,0.07),rgba(16,185,129,0.015))">
+      <div class="dec-id" style="color:#6ee7b7">D3 · ✅ 已拍板（2026-11-05）· P 层表型向量</div>
       <div class="dec-q">成本 / 延迟怎么进表型？</div>
       <div class="dec-opts">A 进总分加权 / B 并列维度 + 双闸 / A0 门槛收紧</div>
-      <div class="dec-rec"><b>修正推荐：B</b>——权重=汇率是自我评分交换面；B 不改 total 语义、历史基线全保；<br>
-      能力闸 ±20% 不动 + 成本闸硬拒（建议 30% 起步）；归一化用 budget_max 比率；先补 latency 采集。<br>
-      完整优劣分析：framework-and-principles-20261105.md §3.2</div>
+      <div class="dec-rec"><b>拍板：B 并列维度 + 双闸</b> —— total 五项权重不动（历史基线全保）；<br>
+      成本闸：token 成本退化 &gt;30% 硬拒 + 暴涨 escalate；cost = 1 − min(1, tokens/budget_max)；<br>
+      先补 latency 采集。原「进总分」推荐作废（权重=汇率是自我评分交换面）</div>
     </div>
     <div class="dec" style="border-color:rgba(16,185,129,0.45);background:linear-gradient(160deg,rgba(16,185,129,0.07),rgba(16,185,129,0.015))">
       <div class="dec-id" style="color:#6ee7b7">D4 · ✅ 已拍板（2026-11-05）· 循环第 0 步</div>
@@ -672,6 +672,28 @@ src/agentnodes/
       <div class="dec-rec"><b>拍板：R1 时接</b> —— set_tier2 已实现但全仓零调用；R1 验收 +1：至少一条 Tier 2 写入路径连通。<br>
       R1 范围累计：+ goal.settled kind（D4）+ Tier 2 接线（D6）</div>
     </div>
+  </div>
+
+  <!-- ==================== 08 v1.0 执行序 ==================== -->
+  <div class="section-label">
+    <span class="num">08</span>
+    <span class="txt">v1.0 执行序 · 四条泳道，泳道内串行、泳道间并行</span>
+    <span class="line"></span>
+  </div>
+
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr><th style="width:70px">批次</th><th>泳道 A · 能力恢复</th><th>泳道 B · P 层与屏障</th></tr>
+      </thead>
+      <tbody>
+        <tr><td><span class="pill pill-r">1</span></td><td><b>W1</b> 能力自检（幽灵工具清零，工具表 44 → 18）</td><td>—</td></tr>
+        <tr><td><span class="pill pill-r">2</span></td><td><b>R1</b> goal 恢复 + goal.settled kind + set_tier2 接线 + 42 测试搬回</td><td><b>W4 阶段 1</b> CLI + cron + 证据增量门 + 预算闸 + 评估指纹（不依赖 R1）</td></tr>
+        <tr><td><span class="pill pill-r">3</span></td><td><b>R2</b> chat 接线（slash / GoalPanel / SSE / API）</td><td><b>W2</b> cost/duration 并列维度 + 双闸</td></tr>
+        <tr><td><span class="pill pill-r">4</span></td><td><b>R3</b> journal/scoreboard 端口接入 + preset 化</td><td><b>W3</b> 双集双门 ∥ <b>W5</b> 假基因清理</td></tr>
+        <tr><td><span class="pill pill-b">P2</span></td><td>—</td><td><b>W6</b> 事件 hash chain</td></tr>
+      </tbody>
+    </table>
   </div>
 
   <!-- ==================== 图例 + 关联 ==================== -->
