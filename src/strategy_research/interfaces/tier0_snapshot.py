@@ -5,14 +5,18 @@
 冻结"只有两道防线（构造时拒绝、验证时拒绝），缺了第三道"值本身被快照
 下来"，也就无法回答一个基本问题：**某个版本生效时，预算是多少？**
 
-**为什么在这里而不在 kernel**：Tier 0 的四类值分散在四个层：
+**为什么在这里而不在 kernel**：Tier 0 的四类值分散在三个层 + 一份资源：
 
 | 值 | 位置 | 层 |
 |---|---|---|
 | 预算上限 | ``kernel.agent.strategy.budget.BudgetLimits`` | L3 |
 | 停止策略 | ``kernel.agent.strategy.loop_strategy.LoopConfig`` | L3 |
-| 状态机 | ``apps.study.ticket._ASSIGNMENT_TRANSITIONS`` | **L2** |
+| 状态机 | ``kernel.orchestration.ticket._ASSIGNMENT_TRANSITIONS`` | L3 |
 | 方法论 | ``templates/.prompts/_common/principles.md`` | 资源 |
+
+> 2026-11-05 批次 3：状态机随 ``apps/study`` 移除，从 L2 迁到 L3
+> （Ticket/Assignment 是通用任务身份，见 ``kernel/orchestration/ticket.py``）。
+> 采集点仍在 L1——它是组装根，且将来若有值回落到 L2，这里不用再改。
 
 kernel 不能 import apps（H1）。L1 组装根是唯一同时看得到四者的位置，
 且依赖方向天然向下（L1 → L2/L3）。
@@ -101,9 +105,14 @@ def _collect_stop_policy() -> dict[str, Any] | None:
 
 
 def _collect_state_machine() -> dict[str, Any] | None:
-    """Ticket / Assignment 的合法转移表（``apps.study.ticket``）。"""
+    """Ticket / Assignment 的合法转移表（``kernel.orchestration.ticket``）。
+
+    2026-11-05 批次 3：随 ``apps/study`` 移除，从 L2 迁到 L3。
+    Ticket/Assignment 是通用任务身份，不是研究业务（逐字段论证见
+    ``kernel/orchestration/ticket.py`` 的模块 docstring）。
+    """
     try:
-        from strategy_research.apps.study.ticket import (
+        from strategy_research.kernel.orchestration.ticket import (
             _ASSIGNMENT_TRANSITIONS,
             _TICKET_TRANSITIONS,
         )
@@ -119,7 +128,7 @@ def _collect_state_machine() -> dict[str, Any] | None:
         return {
             "ticket": _dump(_TICKET_TRANSITIONS),
             "assignment": _dump(_ASSIGNMENT_TRANSITIONS),
-            "source": "apps.study.ticket",
+            "source": "kernel.orchestration.ticket",
         }
     except Exception as exc:  # noqa: BLE001
         logger.debug("tier0 state_machine collection failed: %s", exc)

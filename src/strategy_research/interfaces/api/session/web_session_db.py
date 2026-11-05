@@ -704,3 +704,47 @@ def _row_to_message(
         "metadata": metadata,
         "message_type": row["message_type"] if "message_type" in row.keys() else "assistant",
     }
+
+
+def ensure_session_row(db_path: Path, session_id: str, title: str) -> None:
+    """确保 chat-session 行存在（不存在则创建）。
+
+    **为什么在这里**：它操作的就是本模块管理的 ``sessions`` 表——
+    迁自 ``apps/study/engine_common.py::ensure_study_session``
+    （2026-11-05 批次 3）。原名带 ``study`` 是历史包袱，实现里零 study 语义。
+
+    **用途**：SSE 连接时若 session 行不存在（404）且 id 以 ``study_`` 开头，
+    自动重建该行，好让 SSE 能继续（会话行被删或从未创建的场景）。
+
+    **所有权**：session API 有 IDOR 校验（``_fetch_session_owned``），
+    所以新行必须归真实用户——从现有 session 里取出现最多的非 system 用户。
+    这是「谁在跑这个 study」的合理推断；推断不出来才退回 ``system``。
+
+    失败只记 warning 不抛：重建会话行是尽力而为，不该让 SSE 连接失败。
+    """
+    import time
+
+    conn = None
+    try:
+        conn = sqlite3.connect(str(db_path))
+        conn.row_factory = sqlite3.Row
+        row = conn.execute(
+            "SELECT user_id, COUNT(*) AS c FROM sessions "
+            "WHERE user_id IS NOT NULL AND user_id != 'system' "
+            "GROUP BY user_id ORDER BY c DESC LIMIT 1"
+        ).fetchone()
+        owner = row["user_id"] if row else "system"
+        conn.execute(
+            "INSERT OR IGNORE INTO sessions (id, title, user_id, created_at, updated_at) "
+            "VALUES (?, ?, ?, ?, ?)",
+            (session_id, title, owner, time.time(), time.time()),
+        )
+        conn.commit()
+    except Exception:
+        logger.warning("ensure_session_row failed for %s", session_id, exc_info=True)
+    finally:
+        if conn is not None:
+            try:
+                conn.close()
+            except Exception:
+                pass

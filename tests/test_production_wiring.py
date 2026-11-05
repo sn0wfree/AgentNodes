@@ -78,11 +78,19 @@ class TestWiringHappensOnRealPath:
         assert hasattr(gateway.genome, "rollback")
 
     def test_capability_registry_populated(self, gateway):
-        """能力注册必须发生——否则 harness 链解析不到 evolution.*。"""
+        """能力注册必须发生——否则 harness 链解析不到 evolution.*。
+
+        2026-11-05 批次 3：``study.ticket_sink`` 已不是 kind
+        （Ticket 迁到 kernel/orchestration，直接构造），所以这里断言
+        registry 非空 + evolution.* 在册。
+        """
         from strategy_research.kernel.agent.capability import list_kinds
 
         kinds = list_kinds()
-        assert "study.ticket_sink" in kinds, "apps 能力未注册"
+        assert kinds, "apps 能力未注册"
+        assert not any(k.startswith("study.") for k in kinds), (
+            "study.* kind 应已随 apps/study 移除"
+        )
         assert any(k.startswith("evolution.") for k in kinds), (
             "evolution.* 未注册 —— 装配期 resolver 会永远拿到空配置"
         )
@@ -92,8 +100,8 @@ class TestTicketActuallyPersists:
     """跑一个真实 turn，断言真的落库。"""
 
     def test_turn_creates_ticket_and_assignment(self, gateway, tmp_path):
-        from strategy_research.apps.study.store import StudyStore
         from strategy_research.kernel.gateway import cli_request, submit_via_entry
+        from strategy_research.kernel.orchestration.ticket_store import TicketStore
 
         events: list[str] = []
         gateway.add_sink(lambda k, d: events.append(k))
@@ -105,8 +113,9 @@ class TestTicketActuallyPersists:
         assert "ticket.upserted" in events, "Ticket 未落库事件未发出"
         assert "assignment.report" in events, "assignment.report 未发出"
 
-        db = Path(gateway.ticket_sink._store_factory().db_path)
-        with StudyStore(db) as store:
+        # 批次 3 后 TicketStore 直接持有 db_path（不再有 store_factory）
+        db = Path(gateway.ticket_sink.db_path)
+        with TicketStore(db) as store:
             tickets = store.list_tickets()
             assignments = store.list_assignments()
 

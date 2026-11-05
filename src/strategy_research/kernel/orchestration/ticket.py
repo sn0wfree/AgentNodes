@@ -7,10 +7,28 @@
 - ``Assignment`` = 执行绑定（"谁在做、做到哪"），可重入
 - 每次 Assignment 状态变更 → ``assignment.report`` 事件 → EventStore（H6）
 
-**为什么放 apps/study/ 而非 kernel/**（施工方案 §2.5）：
-``Ticket.objective`` / ``authorization_scope`` 携带研究域业务身份（Tier 1 范围）。
-放 kernel 会让阶段三 EvolutionAgent 读 Ticket 时加重 L3→L2 违规（H1/H2）。
-kernel 侧只通过 ``CapabilityRegistry.resolve("ticket_store")`` 读，不直接 import。
+**为什么在 kernel/orchestration（L3）而非 apps/**（2026-11-05 批次 3 改判）：
+本模块最初住在 ``apps/study/``，理由是「``Ticket.objective`` /
+``authorization_scope`` 携带研究域业务身份」。批次 3 逐字段复核后该理由不成立：
+
+| 字段 | 语义 | 业务相关 |
+|---|---|---|
+| ``ticket_id`` / ``origin_session_key`` / ``priority`` / ``status`` | 通用任务身份 | 否 |
+| ``objective`` | 「要做什么」的自由文本 | 否（泛化目标） |
+| ``authorization_scope`` | dict，结构由调用方定义 | 否 |
+| ``superseded_by`` / ``fence_token`` / ``run_id`` / ``worker_session_id`` | 执行绑定标识 | 否 |
+
+``Assignment.report_event_data()`` 产出的 payload 是
+``reason`` / ``progress_pct`` / ``current_step`` / ``blockers`` —— 通用进度语义。
+全文 325 行业务词汇（策略/因子/回测/行情/研究/收益/风险）出现 **0 次**。
+
+对照：``apps/study/models.py`` 的 ``MetricTarget`` / ``StudyRecord`` /
+``strategy_name`` / ``workspace_path`` 才是业务。Ticket 不是。
+
+搬到 L3 后，kernel 的 ``SessionController`` 可以直接持有它，
+不再需要 ``CapabilityRegistry.resolve("study.ticket_sink")`` 绕一圈——
+少一个跨层端口，L3→L2 仍是 0。设计见
+``docs/batch3-study-removal-design-20261105.md`` §2。
 
 **状态口径**（施工方案 §2.2 尾注）：
 - Ticket 三态：pending / active / ended（ended 是终态）
@@ -33,7 +51,7 @@ from typing import Any
 class StaleTicketError(ValueError):
     """Raised on an illegal Ticket/Assignment state transition.
 
-    与 ``apps/goal/models.py`` 的 ``StaleGoalError`` 同族语义（都是
+    与已移除的 ``apps/goal/models.py`` 里 ``StaleGoalError`` 同族语义（都是
     "状态已过期，不能再转移"），但独立成类：Ticket 的状态机与 Goal 的
     12 态生命周期无关，共用会让两者的合法转移集合互相污染。
     """

@@ -161,45 +161,12 @@ def _strategy_decide(registry: "CapabilityRegistry") -> Callable[..., Any]:
 # swarm 分支条件）全部是惰性 resolve + try/except，kind 消失后运行时
 # 优雅降级为 no-op，不影响框架其他功能。
 
-# ── study ────────────────────────────────────────────────────────────
-
-
-def _study_graph(registry: "CapabilityRegistry") -> Any:
-    """``apps.study.graph``（StudyGraph / GraphNode / GraphEdge）。"""
-    import strategy_research.apps.study.graph as g
-
-    return g
-
-
-def _study_store_cls(registry: "CapabilityRegistry") -> type:
-    from strategy_research.apps.study import StudyStore
-
-    return StudyStore
-
-
-def _study_scheduler_cls(registry: "CapabilityRegistry") -> type:
-    from strategy_research.apps.study import StudyScheduler
-
-    return StudyScheduler
-
-
-def _study_status(registry: "CapabilityRegistry") -> Any:
-    from strategy_research.apps.study import StudyStatus
-
-    return StudyStatus
-
-
-def _study_bootstrap(registry: "CapabilityRegistry") -> Any:
-    from strategy_research.apps.study.bootstrap import create_study_record
-
-    return create_study_record
-
-
-def _ticket_sink(registry: "CapabilityRegistry") -> Any:
-    """阶段一：Ticket/Assignment 持久化钩子（供 kernel 注入 SessionController）。"""
-    from strategy_research.apps.study.ticket_sink import TicketSink
-
-    return TicketSink
+# ── study：已整体移除（2026-11-05 做减法批次 3）──────────────────────
+# apps/study + apps/autoresearch 全部归档到 testcase/golden/apps/。
+# 连带删除 6 个 kind：study.graph / study.store / study.scheduler /
+# study.status / study.bootstrap / study.ticket_sink。
+# Ticket/Assignment 是通用任务身份，已迁到 kernel/orchestration/
+# （ticket.py + ticket_store.py），不再经 CapabilityRegistry 解析。
 
 
 # ── evolution（阶段三） ──────────────────────────────────────────────
@@ -300,13 +267,8 @@ CAPABILITIES: dict[str, Callable[["CapabilityRegistry"], Any]] = {
     "backtest.decide": _strategy_decide,
     # goal / hypothesis 六个 kind 已随 apps/goal、apps/hypothesis 移除
     # （2026-11-04 做减法批次 2）
-    # study
-    "study.graph": _study_graph,
-    "study.store": _study_store_cls,
-    "study.scheduler": _study_scheduler_cls,
-    "study.status": _study_status,
-    "study.bootstrap": _study_bootstrap,
-    "study.ticket_sink": _ticket_sink,
+    # study 六个 kind 已随 apps/study 移除（2026-11-05 做减法批次 3）；
+    # Ticket/Assignment 迁到 kernel/orchestration，不再经 registry
     # evolution（阶段三）
     "evolution.resolve_harness": _evolution_resolve_harness,
     "evolution.holdout_sample": _evolution_holdout_sample,

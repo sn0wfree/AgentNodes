@@ -200,15 +200,19 @@ async def enable_user(user_id: str, admin: str = Depends(require_admin)):
 
 @router.get("/users/{user_id}/data")
 async def user_data(user_id: str, admin: str = Depends(require_admin)):
-    """View a user's study/session counts (audit view).
+    """View a user's ticket/assignment/session counts (audit view).
 
     Returns aggregate counts scoped to the user rather than raw rows.
+    2026-11-05 批次 3：``studies`` 计数随 apps/study 移除，改为
+    ``tickets`` / ``assignments``（L3 表仍在，审计视图仍然有用）。
     """
     _target_user(user_id, admin)
     import sqlite3
 
-    from strategy_research.apps.study.store import _default_db_path as _study_db_path
-    from .web_session import _get_db_path
+    from strategy_research.interfaces.api.session.web_session_db import _get_db_path
+    from strategy_research.kernel.orchestration.ticket_store import (
+        default_db_path as _ticket_db_path,
+    )
 
     data: dict[str, Any] = {"user_id": user_id}
     try:
@@ -222,15 +226,21 @@ async def user_data(user_id: str, admin: str = Depends(require_admin)):
     except Exception:
         data["sessions"] = None
     try:
-        conn = sqlite3.connect(str(_study_db_path()))
+        conn = sqlite3.connect(str(_ticket_db_path()))
         try:
-            data["studies"] = conn.execute(
-                "SELECT COUNT(*) FROM studies WHERE owner_session_id IN "
+            data["tickets"] = conn.execute(
+                "SELECT COUNT(*) FROM tickets WHERE origin_session_key IN "
+                "(SELECT id FROM sessions WHERE user_id = ?)",
+                (user_id,),
+            ).fetchone()[0]
+            data["assignments"] = conn.execute(
+                "SELECT COUNT(*) FROM assignments WHERE worker_session_id IN "
                 "(SELECT id FROM sessions WHERE user_id = ?)",
                 (user_id,),
             ).fetchone()[0]
         finally:
             conn.close()
     except Exception:
-        data["studies"] = None
+        data["tickets"] = None
+        data["assignments"] = None
     return data

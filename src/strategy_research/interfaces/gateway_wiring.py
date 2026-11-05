@@ -20,19 +20,21 @@ logger = logging.getLogger(__name__)
 
 
 def build_ticket_sink() -> Any | None:
-    """构造 TicketSink（Ticket/Assignment 持久化）。
+    """构造 TicketStore（Ticket/Assignment 持久化 + 状态机编排）。
 
-    经 ``CapabilityRegistry`` 解析实现类——kernel 侧的 registry 是 L3，
-    apps 主动注册是 L2→L3，方向正确。解析失败返回 None（不启用）。
+    2026-11-05 批次 3：Ticket/Assignment 从 ``apps/study`` 迁到
+    ``kernel/orchestration``（通用任务身份，非研究业务）。因此这里
+    **不再经 CapabilityRegistry**——它已不是「业务能力」，是内核机制，
+    与 CapacityGate / GenomeVersionStore 同类。
+
+    构造失败返回 None（不启用 Ticket 记账，turn 照常执行）。
     """
     try:
-        import strategy_research.apps  # noqa: F401 —— 触发注册副作用
-        from strategy_research.kernel.agent.capability import resolve
+        from strategy_research.kernel.orchestration.ticket_store import TicketStore
 
-        sink_cls = resolve("study.ticket_sink")
-        return sink_cls()
+        return TicketStore()
     except Exception as exc:  # noqa: BLE001 —— 未接上不得阻断启动
-        logger.debug("ticket_sink unavailable: %s", exc)
+        logger.debug("ticket_store unavailable: %s", exc)
         return None
 
 
@@ -104,11 +106,14 @@ def wire_gateway(gw: Any, *, emit: Callable[[str, dict], None] | None = None) ->
     :param emit: 事件发射器；None 时用 ``gw`` 自身的 sink
 
     **执行顺序固定**（后者依赖前者）：
-    0. apps 能力注册 —— 必须先于 1，否则 ``resolve("study.ticket_sink")``
-       抛 ``CapabilityNotFound``。真实入口从不 import ``apps.capabilities``，
-       所以注册副作用不会自己发生（本轮实测确认：registry 在 0 处停留）。
-    1. ticket_sink —— 回填 emit，使 admit/settle 的事件进入事件流；
-       Gateway 需要一个 setter 才能在构造后注入，见 ``Gateway.attach_ticket_sink``
+    0. apps 能力注册 —— 其余业务能力（backtest / factor / data…）的前提。
+       真实入口从不 import ``apps.capabilities``，所以注册副作用不会自己发生
+       （本轮实测确认：registry 在 0 处停留）。
+       > 2026-11-05 批次 3：``study.ticket_sink`` 已不是 kind（Ticket 迁到 L3），
+       > 所以这一步**不再**是 ticket_sink 的前提。
+    1. ticket_sink —— 构造 L3 ``TicketStore``，回填 emit，使 admit/settle
+       的事件进入事件流；Gateway 需要一个 setter 才能在构造后注入，
+       见 ``Gateway.attach_ticket_sink``
     2. capacity gate —— Gateway 持有引用，派发准入时使用
     3. genome store —— RSI 版本链；装配根保活，避免被 GC 回收导致
        validation_gate 回滚时找不到链
@@ -124,18 +129,18 @@ def wire_gateway(gw: Any, *, emit: Callable[[str, dict], None] | None = None) ->
     }
 
     # ── 0. apps 能力注册 ─────────────────────────────────────────
-    # 这是 1 的前提：TicketSink 经 registry 解析。注册是幂等的
-    # （apps/__init__ 逐 kind 跳过已注册项）。
+    # 幂等（apps/__init__ 逐 kind 跳过已注册项）。批次 3 后这里不再
+    # 检查 study.ticket_sink —— 那是 L3 机制，不归 apps 管。
     try:
         import strategy_research.apps  # noqa: F401 —— 触发注册副作用
         from strategy_research.kernel.agent.capability import list_kinds
 
-        status["capabilities"] = "study.ticket_sink" in list_kinds()
+        status["capabilities"] = len(list_kinds()) > 0
     except Exception as exc:  # noqa: BLE001
         logger.warning("capability registration failed: %s", exc)
         _emit_skip(emit, "capabilities", exc)
 
-    # ── 1. TicketSink ────────────────────────────────────────────
+    # ── 1. TicketStore（L3）──────────────────────────────────────
     sink = getattr(gw, "ticket_sink", None) or build_ticket_sink()
     if sink is not None:
         try:

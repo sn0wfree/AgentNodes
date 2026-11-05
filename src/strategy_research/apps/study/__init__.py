@@ -35,7 +35,11 @@ from .runner import (
 )
 from .scheduler import StudyScheduler, make_event_bus_emitter
 from .store import StudyStore
-from .ticket import (
+
+# Ticket / Assignment 已迁到 kernel/orchestration/ticket.py
+# （2026-11-05 批次 3：通用任务身份，非研究业务）。为兼容尚未更新的
+# 调用点，这里继续 re-export —— 但方向是 L2 → L3，合法。
+from strategy_research.kernel.orchestration.ticket import (
     REPORT_STATUSES,
     Assignment,
     AssignmentStatus,

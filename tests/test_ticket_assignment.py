@@ -18,7 +18,7 @@ import pytest
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
 
-from strategy_research.apps.study import (
+from strategy_research.kernel.orchestration.ticket import (
     REPORT_STATUSES,
     Assignment,
     AssignmentStatus,
@@ -26,7 +26,7 @@ from strategy_research.apps.study import (
     Ticket,
     TicketStatus,
 )
-from strategy_research.apps.study.store import StudyStore
+from strategy_research.kernel.orchestration.ticket_store import TicketStore
 
 
 # ── fixtures ─────────────────────────────────────────────────────────
@@ -34,8 +34,8 @@ from strategy_research.apps.study.store import StudyStore
 
 @pytest.fixture()
 def store(tmp_path: Path):
-    """Isolated StudyStore on a throwaway goals.db."""
-    with StudyStore(tmp_path / "goals.db") as s:
+    """Isolated TicketStore on a throwaway goals.db."""
+    with TicketStore(tmp_path / "goals.db") as s:
         yield s
 
 
@@ -161,7 +161,7 @@ class TestAssignmentStateMachine:
 
 
 class TestTicketPersistence:
-    def test_ticket_upsert_idempotent(self, store: StudyStore):
+    def test_ticket_upsert_idempotent(self, store: TicketStore):
         """同 ticket_id 两次 upsert，只一行（施工方案 §2.4）。"""
         t = Ticket.new("研究目标 A")
         store.upsert_ticket(t)
@@ -170,7 +170,7 @@ class TestTicketPersistence:
         assert len(rows) == 1
         assert rows[0].ticket_id == t.ticket_id
 
-    def test_ticket_upsert_updates_status(self, store: StudyStore):
+    def test_ticket_upsert_updates_status(self, store: TicketStore):
         t = Ticket.new("目标")
         store.upsert_ticket(t)
         store.upsert_ticket(t.transition_to(TicketStatus.ACTIVE))
@@ -179,7 +179,7 @@ class TestTicketPersistence:
         # created_at 保留首次值（幂等语义）
         assert got.created_at == t.created_at
 
-    def test_assignment_roundtrip(self, store: StudyStore):
+    def test_assignment_roundtrip(self, store: TicketStore):
         t = Ticket.new("目标")
         store.upsert_ticket(t)
         a = Assignment.new(t.ticket_id, "sess#1:r0", fence_token="f-1")
@@ -194,7 +194,7 @@ class TestTicketPersistence:
         assert got.report_payload["current_step"] == "step-1"
         assert got.fence_token == "f-1"
 
-    def test_multiple_assignments_per_ticket(self, store: StudyStore):
+    def test_multiple_assignments_per_ticket(self, store: TicketStore):
         """同一 Ticket 可多次 Assignment（对应重试）。"""
         t = Ticket.new("目标")
         store.upsert_ticket(t)
@@ -202,7 +202,7 @@ class TestTicketPersistence:
             store.create_assignment(Assignment.new(t.ticket_id, f"sess#{i}:r0"))
         assert len(store.list_assignments(t.ticket_id)) == 3
 
-    def test_list_tickets_by_status(self, store: StudyStore):
+    def test_list_tickets_by_status(self, store: TicketStore):
         a = Ticket.new("a")
         b = Ticket.new("b")
         store.upsert_ticket(a)
@@ -220,7 +220,7 @@ class TestAssignmentFence:
         a = Assignment.new("tkt-1", "sess#1:r0", fence_token="fence-abc")
         assert a.fence_token == "fence-abc"
 
-    def test_fence_superseded_assignment_dropped(self, store: StudyStore):
+    def test_fence_superseded_assignment_dropped(self, store: TicketStore):
         """被超越的 Assignment → dropped，且不写业务状态表。
 
         fence 校验沿用 R1 逻辑：fence 失配时不落业务产物，只把
@@ -316,7 +316,7 @@ class TestNoNewLayerViolation:
         )
 
 
-# ── end-to-end: controller → TicketSink → store + EventStore ─────────
+# ── end-to-end: controller → TicketStore → EventStore ─────────
 
 
 class _Resp:
@@ -336,12 +336,10 @@ class _FakeClient:
 
 
 def _make_sink(tmp_path: Path, emitted: list[tuple[str, dict]]):
-    """TicketSink bound to a tmp DB + an in-memory event collector."""
-    from strategy_research.apps.study.ticket_sink import TicketSink
-
+    """TicketStore bound to a tmp DB + an in-memory event collector."""
     db = tmp_path / "goals.db"
-    return TicketSink(
-        store_factory=lambda: StudyStore(db),
+    return TicketStore(
+        db,
         emit=lambda kind, data: emitted.append((kind, data)),
     )
 
@@ -377,7 +375,7 @@ class TestControllerIntegration:
         results = ctrl.run_pending()
         assert len(results) == 1 and results[0].ok
 
-        with StudyStore(tmp_path / "goals.db") as store:
+        with TicketStore(tmp_path / "goals.db") as store:
             tickets = store.list_tickets()
             assert len(tickets) == 1
             assert tickets[0].status is TicketStatus.ACTIVE
@@ -423,7 +421,7 @@ class TestControllerIntegration:
             )
             ctrl.run_pending()
 
-        with StudyStore(tmp_path / "goals.db") as store:
+        with TicketStore(tmp_path / "goals.db") as store:
             tickets = store.list_tickets()
             assert len(tickets) == 1, "Ticket 应复用（任务身份不变）"
             assert len(store.list_assignments(tickets[0].ticket_id)) == 2
@@ -456,7 +454,7 @@ class TestControllerIntegration:
         results = ctrl.run_pending()
         assert results[0].ok is False
 
-        with StudyStore(tmp_path / "goals.db") as store:
+        with TicketStore(tmp_path / "goals.db") as store:
             t = store.list_tickets()[0]
             a = store.list_assignments(t.ticket_id)[0]
             assert a.status is AssignmentStatus.FAILED
@@ -502,29 +500,23 @@ class TestControllerIntegration:
         assert any(k == "ticket.admit_failed" for k, _ in probe)
 
 
-class TestTicketSinkSettleContract:
+class TestTicketStoreSettleContract:
     def test_settle_rejects_pending_status(self, tmp_path: Path):
         """pending 不在六态里，settle 必须拒绝。"""
-        from strategy_research.apps.study.ticket_sink import TicketSink
-
-        sink = TicketSink(store_factory=lambda: StudyStore(tmp_path / "g.db"))
+        sink = TicketStore(tmp_path / "g.db")
         a = Assignment.new("tkt-1", "s#1:r0")
         with pytest.raises(ValueError, match="status must be one of"):
             sink.settle(assignment=a, status="pending")
 
     def test_settle_emits_only_for_report_states(self, tmp_path: Path):
-        from strategy_research.apps.study.ticket_sink import TicketSink
-
         emitted: list[tuple[str, dict]] = []
-        sink = TicketSink(
-            store_factory=lambda: StudyStore(tmp_path / "g.db"),
-            emit=lambda k, d: emitted.append((k, d)),
+        sink = TicketStore(tmp_path / "g.db", emit=lambda k, d: emitted.append((k, d)),
         )
         # 先建 ticket，再建 assignment（store FK 语义由调用方保证）
-        with StudyStore(tmp_path / "g.db") as store:
+        with TicketStore(tmp_path / "g.db") as store:
             store.upsert_ticket(Ticket.new("目标"))
         a = Assignment.new("tkt-1", "s#1:r0")
-        with StudyStore(tmp_path / "g.db") as store:
+        with TicketStore(tmp_path / "g.db") as store:
             store.create_assignment(a)
 
         sink.settle(assignment=a, status="dropped", reason="fence lost")
@@ -546,11 +538,9 @@ class TestCrashRecovery:
 
     def test_pending_assignment_survives_restart(self, tmp_path: Path):
         """进程重启后 list_assignments 仍可见待办项。"""
-        from strategy_research.apps.study.ticket_sink import TicketSink
-
         db = tmp_path / "goals.db"
         # ── 进程 1：准入一个 run，然后"崩溃"（不 settle）
-        sink1 = TicketSink(store_factory=lambda: StudyStore(db))
+        sink1 = TicketStore(db)
         a1 = sink1.admit(
             session_key="chat:crash-1",
             session_id="sid-1",
@@ -562,7 +552,7 @@ class TestCrashRecovery:
         del sink1  # 模拟进程退出（未 settle，Assignment 停在 pending）
 
         # ── 进程 2：重启，从同一个 DB 读
-        with StudyStore(db) as store:
+        with TicketStore(db) as store:
             rows = store.list_assignments()
             assert len(rows) == 1, "重启后应仍能看到那条 Assignment"
             got = rows[0]
@@ -573,11 +563,9 @@ class TestCrashRecovery:
 
     def test_recover_returns_non_terminal_only(self, tmp_path: Path):
         """recover() 只返回非终态；failed/dropped/ended 不返回。"""
-        from strategy_research.apps.study.ticket_sink import TicketSink
-
         db = tmp_path / "goals.db"
-        sink = TicketSink(store_factory=lambda: StudyStore(db))
-        with StudyStore(db) as store:
+        sink = TicketStore(db)
+        with TicketStore(db) as store:
             store.upsert_ticket(Ticket.new("目标"))
 
         # 造 5 条：pending / running / failed / dropped / ended
@@ -588,7 +576,7 @@ class TestCrashRecovery:
             (AssignmentStatus.DROPPED, "s#4:r0"),
             (AssignmentStatus.ENDED, "s#5:r0"),
         ]
-        with StudyStore(db) as store:
+        with TicketStore(db) as store:
             for status, run_id in specs:
                 a = Assignment.new("tkt-x", run_id)
                 if status is AssignmentStatus.RUNNING:
@@ -609,17 +597,13 @@ class TestCrashRecovery:
 
     def test_recover_and_mark_emits_blocked_report(self, tmp_path: Path):
         """恢复时把待办标 blocked 并 emit report，且持久化生效。"""
-        from strategy_research.apps.study.ticket_sink import TicketSink
-
         db = tmp_path / "goals.db"
         emitted: list[tuple[str, dict]] = []
-        sink = TicketSink(
-            store_factory=lambda: StudyStore(db),
-            emit=lambda k, d: emitted.append((k, d)),
+        sink = TicketStore(db, emit=lambda k, d: emitted.append((k, d)),
         )
-        with StudyStore(db) as store:
+        with TicketStore(db) as store:
             store.upsert_ticket(Ticket.new("目标"))
-        with StudyStore(db) as store:
+        with TicketStore(db) as store:
             store.create_assignment(Assignment.new("tkt-x", "s#1:r0"))
 
         marked = sink.recover_and_mark(reason="restart")
@@ -633,27 +617,23 @@ class TestCrashRecovery:
         assert reports[0]["payload"]["reason"] == "restart"
 
         # 持久化也生效（再读一次）
-        with StudyStore(db) as store:
+        with TicketStore(db) as store:
             assert store.list_assignments()[0].status is AssignmentStatus.BLOCKED
 
     def test_recover_is_readonly(self, tmp_path: Path):
         """recover() 是纯读：不改行、不发事件。"""
-        from strategy_research.apps.study.ticket_sink import TicketSink
-
         db = tmp_path / "goals.db"
         emitted: list[tuple[str, dict]] = []
-        sink = TicketSink(
-            store_factory=lambda: StudyStore(db),
-            emit=lambda k, d: emitted.append((k, d)),
+        sink = TicketStore(db, emit=lambda k, d: emitted.append((k, d)),
         )
-        with StudyStore(db) as store:
+        with TicketStore(db) as store:
             store.upsert_ticket(Ticket.new("目标"))
-        with StudyStore(db) as store:
+        with TicketStore(db) as store:
             store.create_assignment(Assignment.new("tkt-x", "s#1:r0"))
 
         sink.recover()
         assert emitted == [], "recover() 不得 emit"
-        with StudyStore(db) as store:
+        with TicketStore(db) as store:
             assert store.list_assignments()[0].status is AssignmentStatus.PENDING
 
 
@@ -661,14 +641,11 @@ class TestGatewayRecoverPendingAssignments:
     """Gateway.recover() 必须把待办 Assignment 重新纳入记账（goal §1）。"""
 
     def test_gateway_recover_reports_assignment_count(self, tmp_path: Path):
-        from strategy_research.apps.study.ticket_sink import TicketSink
         from strategy_research.kernel.gateway.gateway import Gateway
 
         db = tmp_path / "goals.db"
         emitted: list[tuple[str, dict]] = []
-        sink = TicketSink(
-            store_factory=lambda: StudyStore(db),
-            emit=lambda k, d: emitted.append((k, d)),
+        sink = TicketStore(db, emit=lambda k, d: emitted.append((k, d)),
         )
         # 造一条待办
         sink.admit(
@@ -714,11 +691,10 @@ class TestGatewayRecoverPendingAssignments:
 
     def test_gateway_forwards_ticket_sink_to_controller(self, tmp_path: Path):
         """Gateway 必须把 ticket_sink 传给 controller，否则生产路径不落库。"""
-        from strategy_research.apps.study.ticket_sink import TicketSink
         from strategy_research.kernel.gateway.gateway import Gateway
 
         db = tmp_path / "goals.db"
-        sink = TicketSink(store_factory=lambda: StudyStore(db))
+        sink = TicketStore(db)
 
         class _Client:
             def chat(self, messages, **k):
