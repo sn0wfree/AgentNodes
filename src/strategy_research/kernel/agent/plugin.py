@@ -4,7 +4,7 @@ One frozen dataclass describes everything needed to execute an agent:
 identity, prompt, tool whitelist, DAG dependencies, executor type and
 default execution knobs. Both the study system and the workflow/
 orchestration system consume plugins from the same registry
-(docs/unified-agent-engine-design.md).
+(docs/design/unified-agent-engine-design.md).
 """
 from __future__ import annotations
 

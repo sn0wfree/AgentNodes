@@ -4,7 +4,7 @@ https://platform.siliconflow.cn — OpenAI Chat Completions-compatible
 endpoint. Most reasoning models served here (DeepSeek-R1 / V4-Flash,
 QwQ-32B, GLM-Z1) emit thinking via ``reasoning_content``, so this
 adapter inherits OpenAIReasoningFieldAdapter. See
-docs/llm-provider-setup.md for onboarding params.
+docs/guides/llm-provider-setup.md for onboarding params.
 
 Also overrides ``sanitize_delta`` / ``sanitize_message``
 to remove the DeepSeek-V4-Flash ``<tools>...</tools>`` /

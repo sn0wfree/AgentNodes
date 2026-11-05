@@ -2,7 +2,7 @@
 from pathlib import Path
 import re
 
-p = Path("docs/architecture-v2-and-rsi-20261008.md")
+p = Path("docs/archive/2026-10/architecture-v2-and-rsi-20261008.md")
 text = p.read_text(encoding="utf-8")
 
 # split at the RSI part marker so we only renumber the RSI half

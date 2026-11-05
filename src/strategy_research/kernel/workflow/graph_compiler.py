@@ -1,6 +1,6 @@
 """WorkflowGraphCompiler — compile WorkflowDefinition into a GraphEngine.
 
-R-B1（docs/plan-retry-fix-and-workflow-migration-20261031.md §2.2）：
+R-B1（docs/archive/2026-10/plan-retry-fix-and-workflow-migration-20261031.md §2.2）：
 把 `WorkflowDefinition` 编译成 GraphEngine 图，`dispatch_node` 作为节点
 执行体——与 B1 的 SwarmRuntime 编译器同模式，消灭最后一个自研调度器。
 

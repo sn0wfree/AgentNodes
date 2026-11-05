@@ -56,7 +56,7 @@ class EventBusV2:
         # Lazy-import projector to avoid circular imports at startup
         self._projector = None
         # Shared sqlite connection for event_log writes, guarded by
-        # self._lock (see docs/projector-incremental.md §3). Created
+        # self._lock (see docs/design/projector-incremental.md §3). Created
         # lazily; recreated on OperationalError (db replaced/deleted).
         self._conn = None
 
@@ -332,7 +332,7 @@ class EventBusV2:
 
         Incremental: replays only events after the last flushed seq
         and writes only the touched messages (see
-        docs/projector-incremental.md). Falls back to a full flush
+        docs/design/projector-incremental.md). Falls back to a full flush
         for whole-session rewrites (compact.ended with replacement
         list) and on cache misses.
 

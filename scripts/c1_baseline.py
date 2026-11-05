@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 """Extract the PR-lane failure baseline for the C1 team gate.
 
-Purpose (docs/stage-c1-team-contract-20261028.md §6.1)
+Purpose (docs/archive/2026-10/stage-c1-team-contract-20261028.md §6.1)
 ------------------------------------------------------
 Each worker's green condition is "my failures are a subset of the
 baseline that falls inside my own files". Counting failures is not

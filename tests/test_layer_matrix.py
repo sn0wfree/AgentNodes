@@ -1,6 +1,6 @@
 """Layer-matrix gate — the four-layer skeleton's machine check.
 
-契约：docs/layered-skeleton-design-20261103.md §2/§4。
+契约：docs/design/layered-skeleton-design-20261103.md §2/§4。
 层名（2026-11-03 拍板，llmwikify 式）：L1 interfaces / L2 apps / L3 kernel /
 L4 foundation —— 物理目录不动，只有逻辑层名。
 
@@ -114,5 +114,5 @@ class TestLayerMatrix:
         assert not over, (
             "上行 import 超基线（方向必须向下：L1→L2→L3→L4；修复后请同步下调基线）:\n"
             + "\n".join(f"  {c}: {n} > baseline {b}" for c, (n, b) in over.items())
-            + "\n设计契约：docs/layered-skeleton-design-20261103.md"
+            + "\n设计契约：docs/design/layered-skeleton-design-20261103.md"
         )

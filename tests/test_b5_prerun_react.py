@@ -1,6 +1,6 @@
 """B5 收口：goal/memory 注入 react 路径（无 AgentLoop）。
 
-契约：docs/stage-c1-b5-prerun-react-20261029.md
+契约：docs/archive/2026-10/stage-c1-b5-prerun-react-20261029.md
 
 关键设计：两个 pre-run injector 只读 loop 的三个属性
 （enable_goal_injection / enable_memory_injection / session_id），

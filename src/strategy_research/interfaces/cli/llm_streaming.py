@@ -1,6 +1,6 @@
 """LLM streaming bridge between :class:`ChatSession` and the Textual TUI.
 
-Implements the TUI display philosophy (see ``docs/tui-display-philosophy.md``):
+Implements the TUI display philosophy (see ``docs/design/tui-display-philosophy.md``):
 
 * **Principle 1 - process/record separation**: streaming tokens update
   the *process layer* (StreamingText, in-place replacement); the final

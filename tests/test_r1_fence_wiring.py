@@ -1,6 +1,6 @@
 """R1 fence 挂根测试 —— INV-4/INV-5 落进控制器的行为契约。
 
-设计：docs/stage-r1-fence-wiring-design-20261030.md
+设计：docs/archive/2026-10/stage-r1-fence-wiring-design-20261030.md
   A. 正常轮：settle 前 fence 已 release
   B. 中途超越：ok=False + run.fenced + settled{fenced:True}；栅栏归超越者
   C. 无 fence：行为不变（等价门）

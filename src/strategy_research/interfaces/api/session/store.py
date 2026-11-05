@@ -307,7 +307,7 @@ class SessionStore:
         Used by the reload-recovery path: the endpoint rebuilds the
         frontend streaming/queued state from the attempts table, with
         in-memory guards applied by the caller (see
-        docs/streaming-reload-recovery.md).
+        docs/archive/undated/streaming-reload-recovery.md).
         """
         if not statuses:
             return []

@@ -1,6 +1,6 @@
 """B5 W2: ContextPlan arbitration + budget sourcing.
 
-Contract: docs/stage-c1-b5-w2-arbitration-20261029.md
+Contract: docs/archive/2026-10/stage-c1-b5-w2-arbitration-20261029.md
 
 Two properties must hold at once:
   1. ``budget_tokens=None`` is byte-identical to W0 (no arbitration).

@@ -11,7 +11,7 @@ Approval nodes never enter execution segments: they are graph cut
 points.  Execution pauses between segments until the user approves
 (see workflow/executor.py for the segment loop).
 
-Design: docs/workflow-module-design.md
+Design: docs/design/workflow-module-design.md
 """
 
 from __future__ import annotations

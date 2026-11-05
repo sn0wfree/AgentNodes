@@ -140,7 +140,7 @@ class EventStore:
 
     # ── Public API ────────────────────────────────────────────────
 
-    # ── emit helpers (P2-2 extraction, docs/p2-c901-final-design.md) ──
+    # ── emit helpers (P2-2 extraction, docs/archive/undated/p2-c901-final-design.md) ──
 
     def _inject_trace_context(self, data: dict[str, Any]) -> dict[str, Any]:
         """C3: merge trace_id/session_id/study_id/round_num from ContextVars.

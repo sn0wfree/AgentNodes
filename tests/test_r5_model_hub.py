@@ -1,6 +1,6 @@
 """R5 ModelHub 测试——解析序、拒绝语义、客户端构造、等价性。
 
-设计：docs/stage-r5-execution-plane-assessment-20261030.md §2.1
+设计：docs/archive/2026-10/stage-r5-execution-plane-assessment-20261030.md §2.1
 """
 from __future__ import annotations
 

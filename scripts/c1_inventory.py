@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 """Freeze and verify the collected-test inventory (C1 anti-silent-loss gate).
 
-Why this exists (docs/stage-c1-acceptance-20261028.md §2.2)
+Why this exists (docs/archive/2026-10/stage-c1-acceptance-20261028.md §2.2)
 -----------------------------------------------------------
 During a migration, ~100 baseline failures are *supposed* to disappear.
 That makes deleting a test file indistinguishable from fixing it, unless

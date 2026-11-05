@@ -1,6 +1,6 @@
 """分 lane + 分片的本地验证矩阵（对齐 CI，替代「混合全量」）。
 
-为什么需要它（docs/test-marker-lanes-design.md 的配套工具）：
+为什么需要它（docs/guides/test-marker-lanes-design.md 的配套工具）：
 `tests/conftest.py` 用文件名白名单把测试分到 llm / e2e / slow 三个 lane。
 把 e2e 与单元测试放进**同一个进程**会互相污染（live uvicorn 的全局 app
 单例、真实 goal DB、端口与 socket 等待）——实测把 7 分钟的 PR 门拉长到

@@ -1,4 +1,4 @@
-"""Incremental projector tests (docs/projector-incremental.md).
+"""Incremental projector tests (docs/design/projector-incremental.md).
 
 Covers:
 - incremental replay equivalence: state built incrementally across

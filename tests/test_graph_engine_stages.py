@@ -1,6 +1,6 @@
 """GraphEngine 阶段图测试 —— 条件边 / 环 / 协作中断 / max_hops / 恢复。
 
-对应 docs/stage-b1a-graph-engine-design-20261027.md §6 验收。
+对应 docs/archive/2026-10/stage-b1a-graph-engine-design-20261027.md §6 验收。
 线性语义 / 事件顺序 / 异常冒出等基础行为由 test_graph_engine.py 覆盖。
 """
 from __future__ import annotations

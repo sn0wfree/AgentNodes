@@ -1,6 +1,6 @@
 """B1 interrupt 语义测试——CancelScope、节点边界取消、controller 收尾。
 
-设计：docs/stage-b1-interrupt-design-20261030.md
+设计：docs/archive/2026-10/stage-b1-interrupt-design-20261030.md
   A. CancelScope 基本语义（单向、幂等、reason 首次生效）
   B. 引擎节点边界响应取消（进入前 / 结束后两个检查点）
   C. 控制器：取消不发 run.answer，发 run.cancelled；fence 释放

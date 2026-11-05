@@ -1,6 +1,6 @@
 """Tests for the merged get_market_data flow (fetch + persist in one step).
 
-Covers the context-overflow fix (docs/context-overflow-fix.md):
+Covers the context-overflow fix (docs/design/context-overflow-fix.md):
 - get_market_data returns a compact summary + preview (NOT full OHLCV).
 - persist=True (default) writes the fetched OHLCV into the workspace
   DuckDB via save_ohlcv_to_db — no separate commit_market_data step.

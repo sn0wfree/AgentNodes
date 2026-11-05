@@ -8,7 +8,7 @@ construct an ``AgentLoop`` (C1 target: GraphEngine is the only runtime).
 callers; ``run_agent_via_llm`` now delegates to ``agent_node`` and
 serialises the result with the historical contract, so study and workflow
 call sites need no change. See
-docs/stage-c1-wp-agent-node-design-20261028.md.
+docs/archive/2026-10/stage-c1-wp-agent-node-design-20261028.md.
 
 Falls back to the deterministic stub when:
 - `AUTORESEARCH_BEHAVIOR` env var is set (test / CI)
@@ -38,7 +38,7 @@ _ROLE_PROMPT_FILES = {
     "anti_overfit_analyst": "anti_overfit_analyst.md",
     "backtest_diagnostics": "backtest_diagnostics.md",
     "critic": "critic.md",
-    # Workflow-module roles (docs/workflow-module-design.md):
+    # Workflow-module roles (docs/design/workflow-module-design.md):
     # planner 生成研究计划子图; evaluator 评估进度并决策.
     "planner": "planner.md",
     "evaluator": "evaluator.md",
@@ -139,7 +139,7 @@ def build_agent_loop(
     from strategy_research.foundation.llm import LLMConfig
 
     # Single-source registry + prompt + strategy (phase 3, shared with
-    # chat_loop — see docs/phase3-dual-factory-design.md).
+    # chat_loop — see docs/design/phase3-dual-factory-design.md).
     assembly = assemble_loop_parts(
         role=role,
         registry=None,

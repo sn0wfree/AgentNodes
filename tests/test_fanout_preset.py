@@ -1,6 +1,6 @@
 """fanout preset v1（F3）测试 —— 子代理并行 / 预算切片真生效 / 失败策略 / steer 承载。
 
-对应 docs/stage-f3-fanout-preset-design-20261027.md §6 验收。
+对应 docs/archive/2026-10/stage-f3-fanout-preset-design-20261027.md §6 验收。
 用 Fake client + Fake registry（无网络）；真 LLM 见 test_fanout_live.py。
 """
 from __future__ import annotations

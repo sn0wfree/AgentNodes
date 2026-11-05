@@ -1,7 +1,7 @@
 """Phase 0 acceptance — trajectory drift detector cases.
 
 Productized from the Phase 0 acceptance run so the detector itself
-cannot silently regress (docs/phase0-trajectory-eval-design.md §6).
+cannot silently regress (docs/archive/undated/phase0-trajectory-eval-design.md §6).
 The real invocation path is exercised end-to-end via subprocess.
 """
 from __future__ import annotations

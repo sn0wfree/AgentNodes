@@ -1,6 +1,6 @@
 """Display tools tests: show_chart / show_report / projector html part.
 
-Covers docs/right-panel-agent-driven.md:
+Covers docs/design/right-panel-agent-driven.md:
 - show_chart: file-reference reading, downsampling, emit, traversal
 - show_report: on-demand report generation + html emit
 - projector._on_html: html part persistence (reload keeps reports)

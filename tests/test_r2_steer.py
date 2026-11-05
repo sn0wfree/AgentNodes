@@ -1,6 +1,6 @@
 """R2.2 steer 真注入测试——路由、安全点注入、滞留晋升、溢出。
 
-设计：docs/stage-r2-consumer-steer-aging-design-20261030.md §3
+设计：docs/archive/2026-10/stage-r2-consumer-steer-aging-design-20261030.md §3
   A. 无活跃 run：steer 直接成正常 turn（steer.became_turn）
   B. 有活跃 run：入 steer 队（steer.queued），不进主队
   C. 安全点注入：react 节点 drain 并追加为 user 消息（steer.applied）

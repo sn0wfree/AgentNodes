@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 """Compare a pytest run against the frozen baseline (C1 gate).
 
-Purpose (docs/stage-c1-team-contract-20261028.md §6.2)
+Purpose (docs/archive/2026-10/stage-c1-team-contract-20261028.md §6.2)
 ------------------------------------------------------
 The gate is *set inclusion*, never a failure count:
 

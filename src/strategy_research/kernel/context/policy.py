@@ -1,7 +1,7 @@
 """ContextPolicy：W2 仲裁的调用方策略（不进协议面）。
 
-设计：docs/stage-c1-b5-w2-arbitration-20261029.md §1
-上游：docs/stage-c1-b5-contexthub-w1w2-design-20261028.md §3
+设计：docs/archive/2026-10/stage-c1-b5-w2-arbitration-20261029.md §1
+上游：docs/archive/2026-10/stage-c1-b5-contexthub-w1w2-design-20261028.md §3
 
 为什么策略由调用方传入而不写进 hub（讨论稿 §3 硬约束）：
 「中枢不定业务优先级——由 provider 的 priority 声明」。hub 只做机制

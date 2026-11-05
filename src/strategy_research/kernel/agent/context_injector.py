@@ -197,7 +197,7 @@ class GoalContinuationInjector:
         # structured answer. Study agents (researcher/strategist/…) emit
         # exactly this shape every round; treating it as "goal not yet
         # done" forced the loop to max_iterations and discarded valid
-        # output (see docs/rootcause-goal-injection-maxiter.md).
+        # output (see docs/archive/undated/rootcause-goal-injection-maxiter.md).
         # Non-JSON / malformed / partial responses still get the
         # continuation nudge — that is the injector's intended purpose.
         # str() 归一：非 str content（测试替身/异常 provider）走 TypeError

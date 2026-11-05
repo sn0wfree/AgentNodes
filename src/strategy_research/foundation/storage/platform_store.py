@@ -1,6 +1,6 @@
 """PlatformStore —— 数据面唯一写入者（不变量 7）。
 
-依据 docs/stage-3b-plan-20261026.md + platform-data-plane-discussion §9/§10。
+依据 docs/archive/2026-10/stage-3b-plan-20261026.md + platform-data-plane-discussion §9/§10。
 
 存储布局（每 session 一自包含库 + 全局小库）：
     <data_dir>/sessions/<session_id>.sqlite   ← event_log + blobs

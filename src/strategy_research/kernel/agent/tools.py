@@ -2,7 +2,7 @@
 
 Paradigm v2: every tool carries a machine-collected brief (注册时从
 docstring 首行 + execute 签名 + effects 生成) and a full docstring
-(详细版说明书, 经 tool_help 按需读取). See docs/agent-tools-reference.md.
+(详细版说明书, 经 tool_help 按需读取). See docs/guides/agent-tools-reference.md.
 """
 
 from __future__ import annotations
@@ -140,7 +140,7 @@ class ToolError(Exception):
         self.fix = fix
         self.tool = tool
         # 组合式工具（多步骤编排）标识失败环节, 如 'config_load' / 'data_gate' /
-        # 'engine_run'（docs/run-backtest-data-gate.md）。
+        # 'engine_run'（docs/archive/undated/run-backtest-data-gate.md）。
         self.step = step
         # 附加结构化字段（如数据就绪报告、workflow 指引）。
         self.extra = dict(extra) if extra else None
@@ -483,7 +483,7 @@ def _walk_strict(node: Any) -> None:
 #   - 返回值统一: str 原样返回; dict → JSON; 其他 → 包装
 #   - transient 异常 (ValueError/TypeError/...) → re-raise 交给 invoke/loop 重试
 # invoke 保持框架层（参数 coerce / 权限 / transient 重试）不动。
-# docs/run-backtest-data-gate.md
+# docs/archive/undated/run-backtest-data-gate.md
 
 
 def tool_errors(func: Callable) -> Callable:

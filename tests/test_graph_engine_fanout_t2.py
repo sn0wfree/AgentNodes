@@ -1,6 +1,6 @@
 """fanout t2（F4）测试 —— 进程池分支 / 硬杀 / 跨进程预算结算。
 
-对应 docs/stage-f4-fanout-t2-design-20261027.md §7 验收。
+对应 docs/archive/2026-10/stage-f4-fanout-t2-design-20261027.md §7 验收。
 worker 必须是模块级函数（spawn 池要求可导入）。
 """
 from __future__ import annotations

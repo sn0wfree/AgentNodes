@@ -1,6 +1,6 @@
 """R-B0: node_outputs carries the full output so a run can be rebuilt.
 
-docs/plan-retry-fix-and-workflow-migration-20261031.md §决定 B：
+docs/archive/2026-10/plan-retry-fix-and-workflow-migration-20261031.md §决定 B：
 审批续跑在进程重启后要能恢复，而 store 此前只存 summary 不存 output
 （下游节点靠 AgentResult.output 做 upstream）。本刀补列 + 迁移 + 重建 API。
 """

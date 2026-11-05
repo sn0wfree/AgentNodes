@@ -1,6 +1,6 @@
 """R7 技术债修复测试——sink 累积、wait_turn 返旧结果、结果留存。
 
-设计：docs/stage-r7-r2-techdebt-design-20261030.md
+设计：docs/archive/2026-10/stage-r7-r2-techdebt-design-20261030.md
   A. add_sink：不累积、可注销、幂等、并发安全
   B. wait_turn：代际比较，第二次等新一轮；超时返回 None
   C. bridge：收尾事件后自注销，不重复推送

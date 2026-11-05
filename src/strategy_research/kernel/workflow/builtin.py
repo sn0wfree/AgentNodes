@@ -4,7 +4,7 @@ Definitions live in ``templates/workflows/*.json`` (shipped with the
 package, read-only) and ``<workspace>/workflows/*.json`` (user,
 writable).  User definitions shadow builtins with the same name.
 
-Design: docs/workflow-module-design.md §9
+Design: docs/design/workflow-module-design.md §9
 """
 
 from __future__ import annotations

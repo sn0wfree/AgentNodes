@@ -54,7 +54,7 @@ def main() -> None:
         if len(by_file[path]) > 8:
             print(f"  ... +{len(by_file[path]) - 8} more")
 
-    out = Path("docs/pyright-batch2-list.md")
+    out = Path("docs/archive/undated/pyright-batch2-list.md")
     lines = [
         "# Pyright batch 2 — B 机械注解对齐清单",
         "",

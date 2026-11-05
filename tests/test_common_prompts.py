@@ -8,7 +8,7 @@ Validates:
 - JSON roles have inline JSON conventions
 - opt-out mechanism works
 
-See docs/truthfulness-common-rules-design.md for the design spec.
+See docs/design/truthfulness-common-rules-design.md for the design spec.
 """
 from __future__ import annotations
 

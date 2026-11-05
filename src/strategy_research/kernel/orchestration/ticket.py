@@ -28,7 +28,7 @@
 搬到 L3 后，kernel 的 ``SessionController`` 可以直接持有它，
 不再需要 ``CapabilityRegistry.resolve("study.ticket_sink")`` 绕一圈——
 少一个跨层端口，L3→L2 仍是 0。设计见
-``docs/batch3-study-removal-design-20261105.md`` §2。
+``docs/design/batch3-study-removal-design-20261105.md`` §2。
 
 **状态口径**（施工方案 §2.2 尾注）：
 - Ticket 三态：pending / active / ended（ended 是终态）

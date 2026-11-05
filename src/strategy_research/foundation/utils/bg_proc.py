@@ -11,7 +11,7 @@ the *log file* making progress, not by wall clock:
   ``killpg`` the whole process group
 - process exited → return its full log output for parsing
 
-See ``docs/study-long-task-background-plan.md`` §2 for the judgement model.
+See ``docs/archive/undated/study-long-task-background-plan.md`` §2 for the judgement model.
 """
 
 from __future__ import annotations

@@ -1,6 +1,6 @@
 """Integration tests: claim validation wired into AgentLoop.
 
-See docs/claim-validation-badge-design.md §7.2.
+See docs/archive/undated/claim-validation-badge-design.md §7.2.
 """
 from __future__ import annotations
 

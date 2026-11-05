@@ -96,7 +96,7 @@ def compaction_persister_registered(fn: Any):
 # Set SR_KEEP_ALL_COMPACTIONS=1 to globally force
 # keep_all_compactions_in_history=True without code changes or config edits.
 # Useful for emergency rollback if the new filter causes issues.
-# See docs/compaction-history-filter.md.
+# See docs/design/compaction-history-filter.md.
 _KEEP_ALL_COMPACTIONS_OVERRIDE: bool = os.environ.get(
     "SR_KEEP_ALL_COMPACTIONS", ""
 ).lower() in ("1", "true", "yes", "on")

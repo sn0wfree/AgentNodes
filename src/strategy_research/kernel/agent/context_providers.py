@@ -1,6 +1,6 @@
 """生产方适配器：把 pre-run injector 链桥接为 ContextProvider。
 
-P5-4（docs/stage-p54-context-hub-w0-design-20261027.md）：AgentLoop 的
+P5-4（docs/archive/2026-10/stage-p54-context-hub-w0-design-20261027.md）：AgentLoop 的
 pre-run 注入通路（GoalContextInjector / MemoryRetrieverInjector）迁入
 ContextHub。桥接是**整链**而非逐 injector 拆散——memory 检索的 query 是
 含 goal 前缀的叠加串（历史语义），逐个拆散会改变检索输入 → 行为漂移。
@@ -161,7 +161,7 @@ def build_prerun_provider_for_session(
 class TodoContextProvider:
     """把 TodoStore 快照暴露为一条 ``kind="todo"`` 的上下文贡献（B5 W1）。
 
-    设计（docs/stage-c1-b5-contexthub-w1w2-design-20261028.md §2.1-2.2）：
+    设计（docs/archive/2026-10/stage-c1-b5-contexthub-w1w2-design-20261028.md §2.1-2.2）：
     - 数据源与渲染**复用** todo_tools 的 TodoStore / _format_todos_snapshot
       ——与 AgentLoop 侧 TodosInjector 共用同一 formatter，格式不可能漂移。
     - **单条 item**（整块快照），不拆逐条：拆条需要 todos 专用渲染器重建

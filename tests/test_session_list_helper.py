@@ -1,6 +1,6 @@
 """B4 D5: the one shared session-listing helper.
 
-Contract: docs/stage-c1-b4-dataplane-design-20261028.md §4.2 (item #3)
+Contract: docs/archive/2026-10/stage-c1-b4-dataplane-design-20261028.md §4.2 (item #3)
 
 Five consumers need "list sessions" and none could reuse an existing
 function: the FastAPI endpoint is Request-bound, PlatformStore's variant

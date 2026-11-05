@@ -5,7 +5,7 @@
 - ``RunBacktestTool`` 内置门禁: 轻量 C1~C6（include_cleaning=False），
   不可跑时在创建 run 之前拦截并返回可行动诊断
 
-设计要点（docs/run-backtest-data-gate.md）:
+设计要点（docs/archive/undated/run-backtest-data-gate.md）:
 - 只读: 不删、不写、不 fetch —— 修复动作由 LLM 自行决策
   （get_market_data / clean_data / 改 config）
 - C2 只管「codes 覆盖」维度; C5 只管「codes 内资产质量」——不重叠

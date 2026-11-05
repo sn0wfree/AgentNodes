@@ -5,7 +5,7 @@ prompt, or a special operation (planner/evaluator/python/tool).
 All nodes produce the unified output envelope (AgentResult +
 summary/artifacts/metrics).
 
-Design: docs/workflow-module-design.md
+Design: docs/design/workflow-module-design.md
 """
 
 from __future__ import annotations

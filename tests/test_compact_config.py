@@ -101,7 +101,7 @@ class TestEstimateTokens:
 # These tests are skipped because L1 (_smart_microcompact, _get_tool_name)
 # was removed in commit A2. The L4-only flow in opencode-style doesn't
 # pre-truncate tool outputs; L4 handles summarization directly.
-# See docs/compaction-phase-a-simplification.md for details.
+# See docs/archive/undated/compaction-phase-a-simplification.md for details.
 
 
 

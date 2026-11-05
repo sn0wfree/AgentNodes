@@ -1,6 +1,6 @@
 """R-B1 影子验证：WorkflowGraphCompiler vs 旧 WorkflowRunner 逐条对比。
 
-docs/plan-retry-fix-and-workflow-migration-20261031.md §2.3 R-B1：
+docs/archive/2026-10/plan-retry-fix-and-workflow-migration-20261031.md §2.3 R-B1：
 同一 definition + 同一 scripted loop → 两边 pre_completed / 事件序列 /
 终态必须一致。差异即失败（这是 R-B2 切换主路径的前置证据）。
 """

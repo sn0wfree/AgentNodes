@@ -627,7 +627,7 @@ class MCPServer:
         # （此前：MCP validate_run、scheduled_research/cli、data_readiness）。
         try:
             # MCP 面日志必须走 stderr——stdout 是 JSON-RPC 协议帧通道。
-            # 统一入口（docs/logging-unified-entry-design-20261102.md §4.1）。
+            # 统一入口（docs/guides/logging-unified-entry-design-20261102.md §4.1）。
             from strategy_research.foundation.observability import configure_logging
 
             configure_logging("mcp")

@@ -13,7 +13,7 @@ Runs a WorkflowDefinition segment by segment:
 Execution is synchronous per segment; the controller stores active
 runs (mirrors _active_runners in api/routers/workflow.py).
 
-Design: docs/workflow-module-design.md
+Design: docs/design/workflow-module-design.md
 """
 
 from __future__ import annotations

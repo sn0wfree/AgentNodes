@@ -1,6 +1,6 @@
 """SwarmRuntime.execute() 集成测试——全流程层推进（stub agent 路径）。
 
-覆盖 docs/coverage-90-plan-20261030.md：`execute()` 主循环此前零覆盖
+覆盖 docs/archive/2026-10/coverage-90-plan-20261030.md：`execute()` 主循环此前零覆盖
 （层推进 / hooks / 预算 / cancel / pre_completed / start_layer）。
 用 `allow_stub` 官方结构测试后门（不触 LLM），覆盖的是**编排语义**：
 拓扑分层、上游聚合、hook 序列、预算熔断、取消、成功判定。

@@ -8,7 +8,7 @@ Two modes:
   Falls back to round-robin + stderr warning when timings are missing.
 
 Both modes skip `test_session_triggers.py` when it exists (known heavy/flake
-magnet, runs in its own nightly job — see docs/ci-sharding-strategy.md). It
+magnet, runs in its own nightly job — see docs/guides/ci-sharding-strategy.md). It
 was retired with the legacy session stack in B4 Step 4-5, so the skip set is
 now usually empty.
 """

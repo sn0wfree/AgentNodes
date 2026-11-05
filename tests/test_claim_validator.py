@@ -1,6 +1,6 @@
 """Unit tests for the claim validator (truthfulness L2).
 
-See docs/claim-validation-badge-design.md §7.1.
+See docs/archive/undated/claim-validation-badge-design.md §7.1.
 """
 from __future__ import annotations
 

@@ -3,7 +3,7 @@
 
 搬迁前的爆破面普查工具：对给定包尾名，列出 src/ tests/ 下所有指向它的
 import 语句（绝对形态 + 按 PEP 328 解析后的相对形态），按文件聚合计数。
-搬迁计划的数据底册（docs/physical-layer-migration-plan-20261103.md §2.1）
+搬迁计划的数据底册（docs/design/physical-layer-migration-plan-20261103.md §2.1）
 即由此类扫描 + graphify 图交叉生成。
 
 用法（搬迁协议 §1.2 第 1 步「定位受影响文件」）：

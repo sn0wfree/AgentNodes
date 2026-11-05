@@ -1,6 +1,6 @@
 """R2.3 优先级老化测试——领先有界，防 interrupt 饿死普通消息。
 
-设计：docs/stage-r2-consumer-steer-aging-design-20261030.md §4
+设计：docs/archive/2026-10/stage-r2-consumer-steer-aging-design-20261030.md §4
   A. 未到龄：interrupt 仍然插队（现行为不变）
   B. 到龄：普通项升入 interrupt 级先被服务（work.aged 事件一次）
   C. aging_s <= 0：禁用

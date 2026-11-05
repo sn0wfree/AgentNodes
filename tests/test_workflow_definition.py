@@ -1,6 +1,6 @@
 """Tests for WorkflowDefinition: model, validation, graph cutting, preset conversion.
 
-Design: docs/workflow-module-design.md
+Design: docs/design/workflow-module-design.md
 """
 
 from __future__ import annotations

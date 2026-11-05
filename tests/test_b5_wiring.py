@@ -1,6 +1,6 @@
 """B5 前置接线：todos 在 chat 生产路径可见（R-1 + B-a + B-c + W1-p）。
 
-契约：docs/stage-c1-b5-wiring-20261029.md
+契约：docs/archive/2026-10/stage-c1-b5-wiring-20261029.md
 
 背景（B5 调查实测）：生产 chat 的 controller._context_hub 恒为 None——
 B1-b 的上下文注入只在旧 /send_async 路径活着；react 路径的 todowrite

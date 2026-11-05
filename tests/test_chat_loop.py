@@ -1,6 +1,6 @@
 """Tests for Phase 6 P1+P2+P3 — build_chat_agent_loop factory.
 
-See docs/chat-agent-refactor-phase6-agent-loop-factory.md §7.1 for the full spec.
+See docs/archive/undated/chat-agent-refactor-phase6-agent-loop-factory.md §7.1 for the full spec.
 """
 from __future__ import annotations
 

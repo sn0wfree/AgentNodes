@@ -1,7 +1,7 @@
 """Event -> ProjectedSession handlers (pure updates, zero IO).
 
 Extracted from projector.py in the Phase 2 split
-(docs/phase2-web-session-projector-design.md). Each handler mutates
+(docs/design/phase2-web-session-projector-design.md). Each handler mutates
 the given ``ProjectedSession`` in place; the dispatcher
 ``apply_event`` routes by ``EventType`` via ``HANDLERS``.
 """
@@ -709,7 +709,7 @@ def _on_goal_updated(
     core/goal/events.build_goal_updated_payload). We persist one
     self-contained ``message_type='goal'`` message per event:
     - role=system + compact content → enters the LLM context so
-      the agent tracks goal evolution (docs/goal-events-panel-link.md)
+      the agent tracks goal evolution (docs/archive/undated/goal-events-panel-link.md)
     - metadata holds the structured snapshot → UI rendering + audit
     - id is derived from the event id → replay is idempotent
       (updates in place, never duplicates)

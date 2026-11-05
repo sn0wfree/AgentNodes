@@ -1,6 +1,6 @@
 """Tests for Phase 5 PromptBuilder — 12 boundary cases.
 
-See docs/chat-agent-refactor-phase5-integration.md §6.1 for the full spec.
+See docs/archive/undated/chat-agent-refactor-phase5-integration.md §6.1 for the full spec.
 """
 from __future__ import annotations
 

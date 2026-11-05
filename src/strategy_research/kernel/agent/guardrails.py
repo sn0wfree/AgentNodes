@@ -1,6 +1,6 @@
 """Runtime input-side injection guard (observation-first).
 
-Phase 5-guardrails (docs/phase5-guardrails-design.md): the runtime
+Phase 5-guardrails (docs/design/phase5-guardrails-design.md): the runtime
 counterpart to the 6 injection/safety eval task expectations. v1
 observation-only — emits GuardrailFinding / guardrail.finding events,
 never alters the message path or blocks the LLM.

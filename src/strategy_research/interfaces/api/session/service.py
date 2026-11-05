@@ -68,7 +68,7 @@ class SessionService:
         self.store = store
         self.event_bus = event_bus
         self._active_loops: dict[str, "asyncio.Task"] = {}
-        # Per-session FIFO message queue (see docs/chat-message-queue-design.md)
+        # Per-session FIFO message queue (see docs/design/chat-message-queue-design.md)
         self._session_queues: dict[str, asyncio.Queue] = {}
         self._processing_sessions: set[str] = set()
         self._paused_sessions: dict[str, asyncio.Event] = {}
@@ -383,7 +383,7 @@ class SessionService:
 
         Powers ``GET /api/chat/attempts``: after a page reload the
         frontend rebuilds its streaming/queued state from this list
-        (see docs/streaming-reload-recovery.md).
+        (see docs/archive/undated/streaming-reload-recovery.md).
 
         Guards (in-memory state is authoritative; the attempts table is
         only a snapshot and survives restarts):
@@ -1352,7 +1352,7 @@ class SessionService:
                 in LLM history (legacy behavior). When False (default), only
                 the MOST RECENT compaction is included; older compactions
                 are hidden from LLM but kept in DB for audit/UI display.
-                See docs/compaction-history-filter.md.
+                See docs/design/compaction-history-filter.md.
         """
         from strategy_research.kernel.agent.compact import _compaction_metrics
 

@@ -5,7 +5,7 @@ Usage:
     check_eval_regression.py                      # compare (exit 1 on regression)
     check_eval_regression.py --update-baseline    # refresh baseline from scorecard
 
-Design (docs/p0-guardrails-design.md §2):
+Design (docs/archive/undated/p0-guardrails-design.md §2):
 - mean drop > --max-mean-drop (default 0.02 absolute)  -> FAIL
 - pass_rate@0.7 drop > --max-pass-drop (default 0.05)  -> FAIL
 - no baseline yet -> write one and pass (first nightly establishes it)
@@ -47,7 +47,7 @@ def load(path: Path) -> dict | None:
 def _trajectory_regressions(
     scorecard: dict, baseline: dict, max_steps_drift: float,
 ) -> list[str]:
-    """T1-T3 trajectory drift checks (docs/phase0-trajectory-eval-design.md §3).
+    """T1-T3 trajectory drift checks (docs/archive/undated/phase0-trajectory-eval-design.md §3).
 
     Returns human-readable regression lines; empty list means no drift.
     """

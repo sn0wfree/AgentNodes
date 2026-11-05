@@ -1,6 +1,6 @@
 """Opencode-aligned compaction retention tests.
 
-Verifies the opencode behavior (docs/compaction-history-filter.md):
+Verifies the opencode behavior (docs/design/compaction-history-filter.md):
 1. Compaction keeps ALL original messages in the projection / messages
    table (chat record preserved for UI / future review).
 2. The compaction marker records `compacted_until_seq`.

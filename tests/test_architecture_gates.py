@@ -11,7 +11,7 @@ from pathlib import Path
 import pytest
 
 SRC = Path(__file__).resolve().parents[1] / "src" / "strategy_research"
-# 接缝加固（docs/seam-hardening-design-20261030.md）：llm/memory 入严格集。
+# 接缝加固（docs/design/seam-hardening-design-20261030.md）：llm/memory 入严格集。
 # agent 不进——builtin_tools 是能力适配器，合法包装域工具（组合根职责）。
 # 2026-11-04 物理分层：平台包分散在 kernel/ 与 foundation/，按实际落位登记。
 PLATFORM_PKGS = (
@@ -25,7 +25,7 @@ RESEARCH_DOMAIN_PKGS = (
     "study", "goal", "hypothesis", "backtest", "autoresearch",
 )
 # 研究域→平台触点白名单（门禁实测，非估算：9 个文件）。
-# 新增触点 = 有意决策，须改此表并在 docs/seam-contract-platform-research-20261030.md
+# 新增触点 = 有意决策，须改此表并在 docs/design/seam-contract-platform-research-20261030.md
 # 登记理由。`study/_archived/` 豁免。
 STUDY_PLATFORM_TOUCHPOINTS: dict[str, set[str]] = {
     "graph_preset.py": {"runtimes"},        # GraphEngine 公共 API（阶段图）
@@ -102,7 +102,7 @@ def _violations(root: Path, prefixes: tuple[str, ...]) -> list[str]:
 def test_platform_never_imports_study_domain():
     """平台严格子层不得 import 研究域全家（study/goal/hypothesis/backtest/autoresearch）。
 
-    接缝加固（docs/seam-hardening-design-20261030.md）：v6.3 图 ⑤ 研究域
+    接缝加固（docs/design/seam-hardening-design-20261030.md）：v6.3 图 ⑤ 研究域
     独立成层，方向必须是 域→平台。llm/memory 随本刀入严格集（实测零引用，
     只锁不修）。（相对导入由 _imports 解析为绝对名后匹配，无绕过空间。）
     """
@@ -119,7 +119,7 @@ def test_study_platform_touchpoints_are_whitelisted():
     """研究域→平台的耦合面锁定为白名单（拆分就绪的看门人）。
 
     方向合法（域→平台），但新触点必须是有意的：加文件 = 改此表 +
-    在 docs/seam-contract-platform-research-20261030.md 登记理由。
+    在 docs/design/seam-contract-platform-research-20261030.md 登记理由。
     `study/_archived/` 是隔离区，不参与。
 
     2026-11-05 批次 3：``apps/study`` 已整体归档
@@ -163,7 +163,7 @@ def _matches_all(module: str, prefixes: tuple[str, ...]) -> list[str]:
 def test_context_hub_never_imports_producers():
     """core/context 不得 import 任何生产方域（agent/goal/study）。
 
-    ContextHub 三条硬约束之一（docs/context-hub-discussion.md §3）：
+    ContextHub 三条硬约束之一（docs/design/context-hub-discussion.md §3）：
     「生产方注册进中枢，中枢从不 import 生产方」——否则它就是下一个
     上帝对象。生产方适配器住在 kernel/agent/context_providers.py，
     方向是 域→平台。（相对导入由 _imports 解析为绝对名后匹配。）
@@ -214,7 +214,7 @@ def test_invariant_registry_covers_documented_set():
 def test_domain_layers_use_the_agent_factory_not_raw_agentloop():
     """域层不直接 new AgentLoop，但**可以**经 role_factory 用它（选项 B）。
 
-    分工（2026-10-28 决策，见 docs/stage-c1-wp-agent-node-design-20261028.md）：
+    分工（2026-10-28 决策，见 docs/archive/2026-10/stage-c1-wp-agent-node-design-20261028.md）：
       - GraphEngine = 编排层（节点/边/中断/预算树），唯一编排 runtime
       - AgentLoop  = agent 执行原语（单 turn），**不是**第二套控制流
 
@@ -275,7 +275,7 @@ def test_agentloop_capability_premise_holds():
     react 节点没有的能力。若未来任何一项被移除，选项 B 的前提即消失，
     应重新评估架构决策而不是继续沿用。
 
-    见 docs/stage-c1-wp-agent-node-design-20261028.md §1.1。
+    见 docs/archive/2026-10/stage-c1-wp-agent-node-design-20261028.md §1.1。
     """
     loop_tools = (SRC / "kernel" / "agent" / "loop_tools.py").read_text(encoding="utf-8")
     assert "_TOOL_MAX_RETRIES" in loop_tools, "瞬时工具重试"

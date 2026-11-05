@@ -3,7 +3,7 @@
 GraphEngine：把「一张图」跑起来，节点间传递 state dict。
 langgraph StateGraph 承载（原生支持环）；事件经注入 sink 发出。
 
-图语义（B1-a，详见 docs/stage-b1a-graph-engine-design-20261027.md）：
+图语义（B1-a，详见 docs/archive/2026-10/stage-b1a-graph-engine-design-20261027.md）：
 - add_node 只注册；默认出边 = 指向下一个注册节点（末节点 → END），
   因此 1a 的「线性串联」用法行为不变。
 - add_edge / add_conditional_edge 声明即覆盖该节点的默认边；

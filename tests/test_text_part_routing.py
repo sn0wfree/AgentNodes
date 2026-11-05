@@ -5,7 +5,7 @@ and the chat.py:_run_agent_loop_background on_event callback correctly route
 text segments by text_id, so back-to-back text→tool_call→text sequences
 land in the right order in parts_json.
 
-Reference: docs/text-part-routing.md
+Reference: docs/archive/undated/text-part-routing.md
 """
 from __future__ import annotations
 

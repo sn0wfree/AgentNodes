@@ -1,6 +1,6 @@
 """P5-1b 验收：流式输出 + 工具链（删旧分支的前置）。
 
-依据 docs/p5-1b-streaming-tools-design-20261027.md §5。
+依据 docs/design/p5-1b-streaming-tools-design-20261027.md §5。
 """
 from __future__ import annotations
 

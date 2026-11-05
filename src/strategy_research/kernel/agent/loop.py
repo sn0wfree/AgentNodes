@@ -373,7 +373,7 @@ class AgentLoop(
             self._injectors = build_default_injectors()
         # P5-4: pre-run 上下文（goal/memory）经 ContextHub 收集——唯一组装点。
         # per-iteration / post-response injector 仍走 self._injectors 原通路
-        # （设计：docs/stage-p54-context-hub-w0-design-20261027.md §1）。
+        # （设计：docs/archive/2026-10/stage-p54-context-hub-w0-design-20261027.md §1）。
         from strategy_research.kernel.context import ContextHub
         from .context_providers import build_prerun_context_provider
 
@@ -537,7 +537,7 @@ class AgentLoop(
             full_task = context + "\n\n" + task
         # P5-4: pre-run 上下文经 ContextHub 收集（原 injector 循环迁入；
         # 整链桥接保持检索 query 的叠加语义，full_task 逐字节等价——
-        # docs/stage-p54-context-hub-w0-design-20261027.md §2）。
+        # docs/archive/2026-10/stage-p54-context-hub-w0-design-20261027.md §2）。
         from strategy_research.kernel.context.protocol import ContextQuery
 
         bundle = self.context_hub.build(
@@ -809,7 +809,7 @@ class AgentLoop(
         await _fire("before_run", hook_ctx)
 
         # Phase 5-guardrails v1: observe injection signatures in the user
-        # task (docs/phase5-guardrails-design.md §2.3). Emits only — never
+        # task (docs/design/phase5-guardrails-design.md §2.3). Emits only — never
         # alters the message path; see extension-points.md hooks red line.
         try:
             from .guardrails import scan_user_input

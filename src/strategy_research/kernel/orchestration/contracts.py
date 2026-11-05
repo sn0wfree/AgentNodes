@@ -1,6 +1,6 @@
 """E1 统一入口契约（v6 两态版）。
 
-依据 docs/entry-controller-contract.md（v6，取代 v5.1 place()/WorkItem/五态回执）。
+依据 docs/design/entry-controller-contract.md（v6，取代 v5.1 place()/WorkItem/五态回执）。
 
 设计要点（与文档一一对应）：
 - WorkRequest 是唯一对外契约；payload 不得携带协议概念（白名单不变量）。

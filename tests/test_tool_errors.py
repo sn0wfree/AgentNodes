@@ -1,6 +1,6 @@
 """tool_errors 装饰器 + BaseTool.__init_subclass__ 自动包装契约。
 
-docs/run-backtest-data-gate.md:
+docs/archive/undated/run-backtest-data-gate.md:
 - 工具内部业务错误一律 raise ToolError → 自动注入 tool 名 → 确定性 JSON
 - 非 transient 意外异常 → 结构化兜底（带 tool + step）
 - dict 返回值 → 统一 JSON 序列化；str 原样

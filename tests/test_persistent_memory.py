@@ -1,6 +1,6 @@
 """PersistentMemory 单元测试——文件式持久记忆的增删查/索引/检索。
 
-覆盖 docs/coverage-90-plan-20261030.md §3.2：`memory/persistent.py` 原
+覆盖 docs/archive/2026-10/coverage-90-plan-20261030.md §3.2：`memory/persistent.py` 原
 79.5%，此前**无任何测试文件**。全部操作都是纯文件 IO（markdown +
 frontmatter 索引），用 tmp_path 即可完整覆盖。
 """

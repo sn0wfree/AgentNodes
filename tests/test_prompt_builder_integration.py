@@ -1,7 +1,7 @@
 """Integration tests for Phase 5 — verify 4 call sites were unified onto
 ``PromptBuilderFactory``.
 
-See docs/chat-agent-refactor-phase5-integration.md §6.2 for the full spec.
+See docs/archive/undated/chat-agent-refactor-phase5-integration.md §6.2 for the full spec.
 """
 from __future__ import annotations
 

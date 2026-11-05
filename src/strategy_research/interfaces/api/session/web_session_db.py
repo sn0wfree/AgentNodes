@@ -1,7 +1,7 @@
 """web_session DB layer: schema, migrations, connection, row mappers.
 
 Extracted from api/routers/web_session.py in the Phase 2 split
-(docs/phase2-web-session-projector-design.md §2.2). DDL and
+(docs/design/phase2-web-session-projector-design.md §2.2). DDL and
 migration order is copied verbatim — order-sensitive blocks must
 not be rearranged. The connection lifecycle lives here; callers
 must close explicitly (WinError-32 flake family).

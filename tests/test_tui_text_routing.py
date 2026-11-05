@@ -5,7 +5,7 @@ text protocol in addition to the legacy text_delta + assistant_message
 fallback. These tests cover route_agent_event dispatch for all relevant
 paths.
 
-Reference: docs/tui-text-routing.md
+Reference: docs/archive/undated/tui-text-routing.md
 """
 from __future__ import annotations
 

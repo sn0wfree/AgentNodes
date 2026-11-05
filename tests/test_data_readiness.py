@@ -1,6 +1,6 @@
 """data_readiness 检查核心 + run_backtest 门禁集成测试。
 
-docs/run-backtest-data-gate.md — C1~C7 检查项。
+docs/archive/undated/run-backtest-data-gate.md — C1~C7 检查项。
 """
 from __future__ import annotations
 

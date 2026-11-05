@@ -41,7 +41,7 @@ _REGISTRY: dict[str, type[ProviderAdapter]] = {
 
 
 # Map internal provider names to models.dev provider_ids used in URL paths.
-# See docs/model-catalog-design.md.
+# See docs/guides/model-catalog-design.md.
 MODELS_DEV_ID: dict[str, str] = {
     "minimax": "minimax-cn-coding-plan",
     "minimax-cn": "minimax-cn",

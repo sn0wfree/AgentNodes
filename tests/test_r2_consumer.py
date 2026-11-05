@@ -1,6 +1,6 @@
 """R2.1 测试——run.answer 事件、常驻消费者、receipt/wait 契约。
 
-设计：docs/stage-r2-consumer-steer-aging-design-20261030.md（E1=C）
+设计：docs/archive/2026-10/stage-r2-consumer-steer-aging-design-20261030.md（E1=C）
   A. run.answer：成功轮发出、fenced 不发
   B. 常驻消费者：submit 后自驱、wait_turn、优雅停止、幂等启动
   C. persist 桥：run.answer → assistant_message + agent_done；失败路径

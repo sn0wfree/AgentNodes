@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 """layer_matrix — 四层骨架的层归属与判定原语（**唯一事实源**）。
 
-契约：``docs/layered-skeleton-design-20261103.md`` §2/§4。
+契约：``docs/design/layered-skeleton-design-20261103.md`` §2/§4。
 层名（2026-11-03 拍板）：L1 interfaces / L2 apps / L3 kernel / L4 foundation
 —— 物理目录不动，只有逻辑层名。导入只允许向下流动。
 

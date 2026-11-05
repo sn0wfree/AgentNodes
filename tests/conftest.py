@@ -410,7 +410,7 @@ def live_client(real_llm_config):
     return OpenAICompatClient(real_llm_config)
 
 
-# ── Lane markers (docs/test-marker-lanes-design.md) ──────────────
+# ── Lane markers (docs/guides/test-marker-lanes-design.md) ──────────────
 # Centralized file-name whitelist: every test NOT listed here stays in
 # the PR gate (default-safe — missing an entry only makes PRs slower;
 # a wrong entry silently drops coverage, so review whitelist changes).

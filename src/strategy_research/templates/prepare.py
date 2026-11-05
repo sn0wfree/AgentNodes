@@ -284,7 +284,7 @@ def _compute_factor_scores(
 ) -> pd.DataFrame:
     """Blend per-factor values into a combined score DataFrame.
 
-    NOTE (single-source scoring iron rule, docs/phase1-research-discipline.md):
+    NOTE (single-source scoring iron rule, docs/archive/undated/phase1-research-discipline.md):
     this is a PORTFOLIO BLEND (weights applied to factor values), not
     factor quality scoring — factor quality must come from
     ``core.factor_validate.compute_overall_score``. If this blend

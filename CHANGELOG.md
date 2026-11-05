@@ -7,6 +7,31 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed — 项目重定位（2026-11-05）
+
+本仓库从 QuantNodes 量化研究项目中剥离出 **agent 框架**部分独立开发。
+业务侧（回测 / 因子 / 行情 / 研究流水线）按
+[`docs/design/subtraction-roadmap-v2-20261105.md`](docs/design/subtraction-roadmap-v2-20261105.md)
+分批移除，最终 `apps/` 只保留 `evolution`（RSI 闭环）与 `capabilities`（注册门面）。
+
+已完成的减法批次（累计删除约 48,600 行，原 L2 的 75%）：
+
+| 批次 | 内容 | 删除行数 |
+|---|---|---:|
+| 1 | `apps/alpha_zoo`（468 文件） | 27,263 |
+| 2 | `goal` / `hypothesis` / `validation` / `portfolio` / `export` | 9,328 |
+| 3 | `study` / `autoresearch`（Ticket 提取到 L3） | ~12,000 |
+| 4 | 回测与验证域（进行中） | ~5,982 |
+
+**结构性成果**：`L3→L2` 从 46 条清零（CapabilityRegistry 端口化），
+`L2→L1` 清零，上行违规从 55 降到 2（均为 L3→L1 展示层引用）。
+
+**文档重组**：`docs/` 分为 `guides/`（现行手册）· `design/`（仍生效的设计）·
+`archive/`（历史记录）三层；新增 `docs/REFERENCE.md`（命令/工具/环境变量全表）；
+根 `README.md` 从 840 行精简到约 260 行，只描述框架本体。
+
+**包名重命名** `strategy_research` → `agentnodes` 是批次 9，**尚未执行**。
+
 ### Added
 - Chat 智能体 `run_command`（bash/python）能力：`SR_ALLOW_SHELL_TOOLS=1`
   环境变量开启（支持 cwd `.env` 配置），plan mode 始终禁用；
@@ -96,7 +121,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 - **4 new workflow presets**: `goal_market_analysis`, `goal_risk_assessment`,
   `goal_strategy_review`, `goal_portfolio_review`.
-- **Cookbook** (`docs/goal-workflow-cookbook.md`): 5-minute tutorial for
+- **Cookbook** (`docs/archive/undated/goal-workflow-cookbook.md`): 5-minute tutorial for
   custom workflow creation.
 - **Demo script** (`examples/goal_workflow_demo.py`): Python API usage example.
 - `tests/test_goal_workflow_v054.py` — 43 tests for presets + cookbook + demo.
@@ -173,9 +198,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `cli/_auto_onboard.py` — auto-trigger wizard on bare TTY launch.
 - `tests/test_init_wizard.py` — 25 test cases covering wizard flow,
   migration, overwrite, auto-trigger, and cancel paths.
-- `docs/research/v0.5.0-init-literature.md` — literature survey
+- `docs/archive/2026-11/research/v0.5.0-init-literature.md` — literature survey
   (Red Hat CLI UX guide, python-prompt_toolkit docs, dotenv README).
-- `docs/PLAN-phase1-4.md §5` — init rewrite design doc.
+- `docs/archive/undated/PLAN-phase1-4.md §5` — init rewrite design doc.
 
 ### Fixed
 - Legacy users with `~/.strategy-research/.env` are silently migrated to
@@ -469,9 +494,9 @@ so non-UTF-8 environments (legacy ``vt100``, plain serial consoles,
 - Workflow layer integration pending (Week 14).
 
 #### Documentation
-- `docs/goal-design.md` — comprehensive design doc for the Goal
+- `docs/archive/undated/goal-design.md` — comprehensive design doc for the Goal
   subsystem (10 sections, including data model + CLI + limitations).
-- `docs/validation-design.md` — multi-market roadmap + current
+- `docs/archive/undated/validation-design.md` — multi-market roadmap + current
   support matrix.
 
 ### Changed

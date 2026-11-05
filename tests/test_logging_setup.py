@@ -1,6 +1,6 @@
 """Tests for the unified logging entry (configure_logging + dual_log).
 
-契约：docs/logging-unified-entry-design-20261102.md §4。
+契约：docs/guides/logging-unified-entry-design-20261102.md §4。
 - 策略表：web/mcp → stderr，script → stdout，cli 严格开关
 - 幂等：重复调用不重复挂 handler，外来 handler 不被触碰
 - 级别/JSON/文件三开关统一解析（SR_LOG_LEVEL / SR_LOG_JSON / SR_LOG_FILE）

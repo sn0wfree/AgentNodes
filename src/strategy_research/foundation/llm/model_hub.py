@@ -4,7 +4,7 @@
 ``OpenAICompatClient(LLMConfig.load())`` 调用点，每处各自决定用哪个
 provider/model。本模块把**解析序 + 拒绝语义 + 客户端构造**收口到一处。
 
-设计（docs/stage-r5-execution-plane-assessment-20261030.md §2.1）：
+设计（docs/archive/2026-10/stage-r5-execution-plane-assessment-20261030.md §2.1）：
 - 解析序：显式 overrides > llm.json 的 provider profile > provider 默认。
 - **不猜、不降级**：provider 不认识 → ModelHubError（``LLMConfig`` 的
   ``get_provider`` 会静默回落 FallbackAdapter；本模块显式识别并拒绝）。

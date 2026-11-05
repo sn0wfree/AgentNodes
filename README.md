@@ -1,840 +1,208 @@
-# quantnodes-strategy-research
+# AgentNodes
 
-**QuantNodes 策略研究子项目** — AI 驱动的量化策略自动研究框架
+**可自我进化的 Agent 框架** — 四层单向依赖 · 依赖方向机器可证 · 能力端口化 · RSI 闭环
 
-> ⚠️ **项目状态**：本项目原为 [QuantNodes](https://github.com/sn0wfree/quantnodes) 整体大项目中的一个模块（`research/strategy-research/`），现**剥离独立开发**，作为 QuantNodes 生态的子项目进行快速迭代。后续会在适当时机合回主仓库。
-
----
-
-## 📑 目录
-
-- [项目背景](#项目背景)
-- [核心特性](#核心特性)
-- [安装](#安装)
-- [快速开始](#快速开始-30-秒)
-- [🖥️ Interactive TUI](#🖥️-interactive-tuiv040-新增)
-- [CLI 命令](#cli-命令13-个)
-- [工作区结构](#工作区结构)
-- [数据源](#数据源)
-- [因子体系](#因子体系)
-- [系统架构](#系统架构)
-- [更新状况](#更新状况)
-- [开发](#开发)
-- [许可证](#许可证)
+> **项目状态：拆分进行中（2026-11-05）**
+> 本仓库从 QuantNodes 量化研究项目中剥离出 **agent 框架**部分独立开发，业务侧（回测、因子、行情）
+> 正按 [`docs/design/subtraction-roadmap-v2-20261105.md`](docs/design/subtraction-roadmap-v2-20261105.md)
+> 的批次计划逐步移除。
+> 当前的 `apps/` 目录是**业务插件示例**，不是框架本体；批次 4–9 完成后它只剩
+> `evolution`（RSI 闭环）与 `capabilities`（注册门面）。
+> 包名 `strategy_research` → `agentnodes` 的重命名是**批次 9**，尚未执行。
 
 ---
 
-## 项目背景
+## 这是一套什么样的框架
 
-### 起源
+大部分 Agent 框架的架构图只能靠人读代码来相信。AgentNodes 的不同点在于：
+**分层规则由 AST 门禁强制执行，图上的每个数字都是实测回写，过时即 CI 红。**
 
-本项目源自 QuantNodes 整体大项目中的 **strategy-research** 模块（路径：`research/strategy-research/`）。QuantNodes 是一个综合性的量化投资平台，包含多个相互依赖的子模块。
-
-### 为什么剥离？
-
-为了**快速迭代和独立发布**，本模块现以独立项目形式开发：
-
-| 优势 | 说明 |
-|---|---|
-| **独立版本控制** | 不受主仓库其他模块影响 |
-| **更快发布周期** | 单独打 tag、单独发 PyPI |
-| **清晰依赖关系** | 仅依赖核心库（httpx、duckdb、pandas 等）|
-| **便于引用** | 其他项目可单独引用 |
-| **独立测试** | 独立 CI/CD，不被主仓库拖累 |
-
-### 与主项目关系
-
-- **上游**：主仓库 `sn0wfree/quantnodes`
-- **本仓库**：`sn0wfree/quantnodes-strategy-research`
-- **依赖方向**：本项目 → 仅依赖通用 Python 库（无 QuantNodes 内部依赖）
-- **未来**：核心功能稳定后，会以 PR 形式合回主仓库
+| 支柱 | 是什么 | 怎么被强制 |
+|---|---|---|
+| **四层单向依赖** | L1 interfaces → L2 apps → L3 kernel → L4 foundation，只准向下 | `tests/test_layer_matrix.py` 逐条解析 import，分簇棘轮只降不升 |
+| **能力端口化** | kernel 不 import apps；kernel 要业务能力时走 `CapabilityRegistry.resolve(kind)` | `L3→L2` 从 46 条清零，基线锁死为 0 |
+| **架构图与代码同源** | 层体量 / 跨层边数 / 上行违规全部 AST 实测 | `scripts/arch/sync_architecture_diagram.py`，图过时即 CI 红 |
+| **自我进化（RSI）** | Tier 0 冻结 · Tier 1 提案-验证-回滚 · Tier 2 研究产物 | `apps/evolution/`，`GenomeProposal` 三处结构性拒绝 Tier 0 |
 
 ---
 
-## 核心特性
+## 核心能力
 
-### 🎯 核心能力
+### 运行时
 
-- ✅ **完整工作区管理**：`init` / `evaluate` / `reproduce` / `run` 全流程
-- ✅ **Full-screen Textual TUI**（v0.4.0）：default entry `quantnodes-research` 即启用 multi-pane 交互界面，slash 命令 + LLM 流式响应 + resume/halt 拦截全在一处
-- ✅ **多数据源**：Tencent / Eastmoney / Akshare / Tushare / YFinance / Local / FRED / iFinD
-- ✅ **460+ 因子库**：Alpha101 / GTJA191 / Qlib158 / Academic / Fundamental
-- ✅ **AI Agent 真跑**：6 个工具 + 沙箱 + 3 层上下文压缩
-- ✅ **Workflow 层**：DAG 调度 + Controller + 4 种 Executor + Grounding
-- ✅ **Hook 系统**：借鉴 llmwikify 13 事件点
-- ✅ **Memory 系统**：FTS5 + Recency boost + Write dedup
-- ✅ **Session 管理**：SQLite + FTS5 + 触发器同步 + 限流 + 监控
-- ✅ **PyPI 发布**：已发布 v0.3.0（自动发布 workflow）；v0.4.0 待发布
+- **AgentLoop** — ReAct 循环，六个 Mixin 分层组合（`kernel/agent`，22.5k 行，最大子模块）
+- **GraphEngine** — 唯一执行引擎：`prepare / run / settle`，llm + react 两类节点（`kernel/runtimes`）
+- **WorkflowCompiler** — 工作流编译到 GraphEngine，支持 `resume_from_store` 断点续跑（`kernel/workflow`）
+- **Swarm** — 多智能体预设，编译为图执行（`kernel/swarm`，37 个内置 preset）
 
-### 🏗️ 技术栈
+### 控制面
 
-- **Python 3.10+**
-- **数据**：DuckDB / SQLite / Pandas
-- **LLM**：OpenAI 兼容（httpx 零依赖）
-- **TUI**：Textual ≥ 0.50（full-screen multi-pane）+ prompt_toolkit（legacy REPL fallback）
-- **测试**：pytest（5,536+ 测试）
-- **借鉴**：vibe-trading-ai 0.1.11（HKUDS，MIT）/ llmwikify（Hook 系统）
+- **Gateway** — 唯一控制入口：`submit` / `receipt` / `cancel` / `recover(fold)`
+- **Orchestration** — `WorkRequest` 契约 + `Mailbox`（cap 20 / 老化 / steer）+ `EntryPoint` + `BudgetGate`
+- **Ticket / Assignment** — 通用任务身份与执行绑定，三态票据 / 七态作业，崩溃恢复
+- **Events** — 事件溯源：`emit` / `subscribe` / `replay`，唯一事实源
+
+### 能力供给
+
+- **CapabilityRegistry** — `kind → factory` 的进程级注册表，apps 注册、kernel 解析（当前 22 kind）
+- **ContextHub** — `collect → arbitrate → render`，中枢不 import 生产方
+- **Permission** — ASK 审批闸，可插拔 evaluator
+- **Memory / Hooks / Skills** — 跨会话记忆（SQLite）、只读钩子、技能包加载
+
+### RSI 自我进化
+
+| Tier | 内容 | 约束 |
+|---|---|---|
+| **Tier 0** | 冻结基线 | 永不可提案；`GenomeProposal.new()` 与 `validation_gate` 双重拒绝 |
+| **Tier 1** | 行为工件（prompt / skill / tool_set / compaction） | 提案 → 验证 → ±20% 退化阈值 → 连续 3 次失败回滚 |
+| **Tier 2** | 研究产物 | 业务侧自决，不过闸 |
 
 ---
 
-## 安装
-
-### 方式 1：独立安装（推荐）
+## 快速开始
 
 ```bash
-# 克隆仓库
-git clone https://github.com/sn0wfree/quantnodes-strategy-research.git
-cd quantnodes-strategy-research
-
-# 开发模式安装
-pip install -e .
-
-# 验证安装
-quantnodes-research --help
+git clone https://github.com/sn0wfree/AgentNodes.git
+cd AgentNodes
+pip install -e ".[dev]"
 ```
 
-### 方式 2：从 PyPI 安装
+配置 LLM（任选其一）：
 
 ```bash
-pip install quantnodes-strategy-research
+export OPENAI_API_KEY=sk-xxx
+export OPENAI_BASE_URL=https://api.deepseek.com/v1   # 可选
+export OPENAI_MODEL=deepseek-chat                    # 可选
 ```
 
-### 方式 3：作为 QuantNodes 子模块
+或走 5 步向导：
 
 ```bash
-# 在 QuantNodes 主仓库中
-git clone https://github.com/sn0wfree/quantnodes-strategy-research.git research/strategy-research
-pip install -e research/strategy-research
-```
-
-### 环境变量
-
-设置至少一个 LLM API Key：
-
-```bash
-# 任选其一
-export OPENAI_API_KEY=sk-xxx        # OpenAI
-export DEEPSEEK_API_KEY=sk-xxx      # DeepSeek
-export KIMI_API_KEY=sk-xxx          # Moonshot Kimi
-export QWEN_API_KEY=sk-xxx          # Alibaba Qwen
-export ANTHROPIC_API_KEY=sk-xxx     # Anthropic Claude
-
-# 可选：自定义 base URL 和模型
-export OPENAI_BASE_URL=https://api.deepseek.com/v1
-export OPENAI_MODEL=deepseek-chat
-```
-
----
-
-## 快速开始（30 秒）
-
-```bash
-# 1. 配置 LLM 凭证（5 步 TTY 向导，vibe-trading 风格）
 quantnodes-research init
-
-# 2. 启动交互式 REPL（在你的策略工作区内）
-cd /path/to/strategy
-quantnodes-research
-
-# 3. 手动复跑（修改 strategy.py 后）
-quantnodes-research evaluate /path/to/strategy
-
-# 4. 复现某个历史 run
-quantnodes-research reproduce /path/to/strategy run_0001
 ```
 
-**首次运行 init 输出：**
-
-```
-? Pick a model provider > OpenAI
-? Enter your OpenAI API key (saved to ~/.quantnodes/strategy_research/.env, never logged)
-? Default request timeout > 300s (5 min — normal autoresearch, recommended)
-? Enable Tushare for China A-share data? > No, skip (most users)
-✓ Wrote ~/.quantnodes/strategy_research/.env
-
-  Config    ~/.quantnodes/strategy_research/.env
-  Run       quantnodes-research
-```
-
-> **注意**：v0.5.0 起 `init` 不再创建工作区文件（config.yaml / .prompts/ / .skills/ / strategies/）。这些文件由 `autoresearch` 按需 lazy 创建。workspace scaffold 可能回归为独立子命令 `quantnodes-research workspace create`（v0.6.0 待定）。
-✓ 运行 baseline 回测 (buy and hold HS300)
-```
-
----
-
-## 🖥️ Interactive TUI（v0.4.0 新增）
-
-不传子命令直接运行 `quantnodes-research` 会启动一个 **Textual 写的 full-screen multi-pane TUI**：
-左侧命令栏 / 中间 transcript / 右侧 activity rail / 底部 prompt 输入。
+启动交互界面：
 
 ```bash
-quantnodes-research            # TTY → Textual TUI 默认入口
-quantnodes-research --repl     # 强制走 prompt_toolkit 老式 REPL（兼容路径）
-quantnodes-research --help     # 显示 argparse help
+quantnodes-research              # TTY → Textual full-screen TUI
+quantnodes-research --repl       # 旧版 prompt_toolkit REPL
+quantnodes-research --help       # 查看全部子命令
 ```
 
-**布局：**
-
-```
-┌─ quantnodes-research · v0.4.0 ──────────────────────────────────────────────┐
-│ [8 行 ASCII 大字渐变 banner : strategy-research logo]                       │
-├──── Commands ──┬──── Transcript ──────────────┬──── Activity ─────────────┤
-│ /help          │ User: hello                   │ ⚙ tool_call              │
-│ /goal start    │ ⏳ thinking…                  │ ✔ tool_result_ok         │
-│ /history       │ Assistant: Hi! How can I ...   │ ✘ tool_result_error      │
-│ /show          │ `(elapsed 0.5s · 7 chars)`      │                            │
-│ /model         │                                │                            │
-│ /halt          │ User: /help                    │                            │
-│ /resume        │ [/help table rendered]         │                            │
-│ /quit          │                                │                            │
-├────────────────┴────────────────────────────────┴──────────────────────────┤
-│ ❯ type a question or /command…                                              │
-├────────────────────────────────────────────────────────────────────────────┤
-│ F1 help · Ctrl+C halt · Ctrl+D quit · /quit                                 │
-└────────────────────────────────────────────────────────────────────────────┘
-```
-
-### 操作
-
-| 行为 | 触发 | 副作用 |
-|---|---|---|
-| 启动 TUI | `quantnodes-research`（TTY） | banner 显示；询问 (r)esume / (n)ew（如有历史 session） |
-| 弹出 help | `F1` 或侧栏 `/help` | 渲染到 transcript |
-| 退出 | `Ctrl+D` 或 `/quit` | 干净退出（rc=0） |
-| 终止 LLM 长跑 | `Ctrl+C` 或输入 `停` | HALT tripped，不退出 |
-| 恢复 LLM | 输入 `/resume` 或 `Ctrl+R` | HALT cleared |
-| 清屏 + 历史 | `/clear` 或 `Ctrl+L` | 清 transcript + ctx.history |
-| Mandate 投票 | 数字 `1`/`2`/`3`（有 pending proposal 时） | 不进 LLM，proposal 清空 |
-| 调 LLM | 在 prompt_toolkit 输入 `OpenAI_API_KEY` 之后输入普通文本 | 流式响应写入 transcript |
-
-### 路由表
-
-```text
-quantnodes-research          → TUI（TTY）/ argparse help（非 TTY）
-quantnodes-research --repl   → legacy prompt_toolkit REPL
-quantnodes-research --banner → legacy REPL（保留 v0.3.x 别名）
-quantnodes-research status   → argparse 子命令（不影响）
-quantnodes-research goal ... → argparse 子命令
-echo "" | quantnodes-research → argparse help（无 TTY 不进 TUI）
-```
-
-### 配置 LLM 流式响应
-
-设置环境变量（任一）：
-
-```bash
-export OPENAI_API_KEY=sk-...
-export OPENAI_BASE_URL=https://api.openai.com/v1     # 默认；可指向 DeepSeek / Kimi / Qwen / 自建
-export OPENAI_MODEL=gpt-4o                          # 默认
-
-# 或 DeepSeek
-export OPENAI_API_KEY=...
-export OPENAI_BASE_URL=https://api.deepseek.com/v1
-export OPENAI_MODEL=deepseek-chat
-```
-
-然后在 TUI 里输入纯文本（不以 `/` 或 `停` 开头）就会触发 LLM 流式响应。
-
-### 程序化接入
+### 程序化使用
 
 ```python
-from strategy_research.cli.tui import ResearchApp
-from strategy_research.core.llm.openai_client import OpenAICompatClient
+from strategy_research.kernel.orchestration import WorkRequest, EntryPoint
+from strategy_research.kernel.agent.capability import register, resolve
 
-# 直接以 API 启动 TUI
-client = OpenAICompatClient()  # reads OPENAI_API_KEY etc.
-app = ResearchApp(model="gpt-4o", version="0.4.0", llm_client=client)
-app.run()
+# 注册一个能力（业务侧职责）
+register("my.service", lambda registry: MyService())
+
+# 框架侧按 kind 解析，不知道实现是谁
+service = resolve("my.service")
 ```
 
-### 已镜像的 `vibe-trading` 体感
+> 包名重命名（`strategy_research` → `agentnodes`）是批次 9，完成后以上 import 会同步更新。
 
-TUI 的 `/halt` 拦截 + 三态 `Ctrl+C`（清空 / 提示 / 退出）+ `(r)esume / (n)ew` 上回会话 + 数字 mandate pick + 全套 16 slash 命令 — 都从 `vibe-trading-ai 0.1.11` 直接 mirror，零行为差异。
+---
 
-### 🔣 Unicode ↔ ASCII fallback
+## 架构
 
-少数组件发 Unicode glyph（`●`、`×`、`…`、`·`、`→`）。在 ASCII-only 终端
-（老 vt100、串口控制台、`LANG=C`）上，这些字符会变成乱码。
-新加的 `cli.utils.ascii_compat` 模块会在以下情况自动降级到 ASCII 同义字符：
+完整架构图（含各层体量、跨层边数、违规矩阵）：**[`docs/architecture-diagram.html`](docs/architecture-diagram.html)**
 
-| Unicode | ASCII | 用途 |
+```
+┌──────────────────────────────────────────────────────────┐
+│ L1 interfaces   渠道层 — api / cli / mcp + 组装根          │
+├──────────────────────────────────────────────────────────┤
+│ L2 apps         业务域 — 当前为插件示例（批次 4–6 移除中）  │
+├──────────────────────────────────────────────────────────┤
+│ L3 kernel       平台机制 — 控制面 / 执行面 / 能力面         │
+├──────────────────────────────────────────────────────────┤
+│ L4 foundation   基础设施 — llm / storage / utils / ...     │
+└──────────────────────────────────────────────────────────┘
+```
+
+层归属表与判定算法在 `scripts/arch/layer_matrix.py`（唯一事实源），
+`tests/test_layer_matrix.py` 与 `scripts/arch/check_dangling_imports.py --layers` 共用它，不会漂移。
+
+### 为什么业务包在 L2
+
+框架需要业务能力，但**不允许**内核反向依赖业务。解法是把依赖方向倒过来：
+
+```
+业务侧                         框架侧
+apps/__init__.py               kernel/agent/capability/
+  register(kind, factory) ──→  registry.resolve(kind)
+       ↑                              │
+       └────── 注册时 import ─────────┘（方向：apps → kernel，合法）
+```
+
+kernel 侧所有 `resolve()` 都是**惰性 + try/except**：kind 不存在时运行时降级为 no-op，
+框架其余功能不受影响。这是业务包可以被整批删除而不破坏框架的结构性原因。
+
+---
+
+## 功能面
+
+| 面 | 数量 | 说明 |
 |---|---|---|
-| `●` | `*` | 状态 marker（running / ok） |
-| `×` | `x` | 错误 marker |
-| `…` | `...` | 截断省略号 |
-| `·` | `-` | 行间分隔符 |
-| `→` | `->` | 箭头（如 `/journal` / `/shadow` 提示） |
-
-**触发条件**（按优先级）：
-
-1. `register_ascii_mode(True)` 程序化覆盖（线程局部）
-2. `STRATEGY_ASCII_MODE=1` 环境变量
-3. `LANG=POSIX` / `LANG=C` 且 `LC_ALL` 不指向 UTF-8
-4. `sys.stdout.encoding` 报告 `ascii` / `ANSI_X3.4` / `646`
-
-显式关闭：
-
-```bash
-STRATEGY_ASCII_MODE=1 quantnodes-research       # 强制 ASCII 输出（即使 LANG=en_US.UTF-8）
-```
-
-### 生成 TUI 截图（开发 / 文档）
-
-```bash
-# 直接打开 TUI 拍一张 banner 截图
-python -c "
-import asyncio
-from strategy_research.cli.tui.app import ResearchApp
-async def main():
-    app = ResearchApp(model='gpt-4o', version='0.4.0')
-    async with app.run_test() as pilot:
-        for _ in range(4): await pilot.pause()
-        app.save_screenshot('tui.svg')
-asyncio.run(main())
-"
-# SVG 写到 ./tui.svg (~80 KB)
-```
-
-CI 也有等价校验：`tests/test_cli_tui_app.py::test_app_save_screenshot_produces_valid_svg`
-确认 `App.save_screenshot` 写出非空 SVG。
-
----
-
-## CLI 命令（32 个 = 13 + 19）
-
-| 命令 | 用途 | 示例 |
-|---|---|---|
-| `init` | 初始化工作区（含 baseline 回测）| `init /tmp/ws` |
-| `init --force` | 非空目录强制初始化 | `init /tmp/ws --force` |
-| `init --no-baseline` | 跳过 baseline 回测（更快）| `init /tmp/ws --no-baseline` |
-| `preflight` | 启动前环境检查（4 项）| `preflight /tmp/ws` |
-| `status` | 查看工作区状态 | `status /tmp/ws` |
-| `evaluate` | 复跑当前 strategy.py 并写新 run_XXXX | `evaluate /tmp/ws` |
-| `run` | 通用回测（带 action/description）| `run /tmp/ws --action integrate` |
-| `reproduce` | 复现历史 run | `reproduce /tmp/ws run_0001` |
-| `validate` | 验证因子（IC/IR/6 维评分）| `validate /tmp/ws --factor 'ts_return(close, 20)'` |
-| `list` | 列出历史实验 | `list /tmp/ws --limit 10` |
-| `import` | 导入价格数据 | `import /tmp/ws --strategy x --source akshare --codes 600519.SH` |
-| `autoresearch` | 自动化研究循环（10 角色串行）| `autoresearch /tmp/ws --max-rounds 5` |
-| `session stats` | 查看写入统计 | `session stats` |
-| `session list` | 列出会话 | `session list` |
-| `goal start` | 创建研究目标（取代当前目标）| `goal start --session-id s1 --objective "..."` |
-| `goal status` | 查看目标状态 | `goal status --session-id s1` |
-| `goal evidence` | 追加证据 | `goal evidence --session-id s1 --text "..." --criterion-id c1` |
-| `goal audit` | 写完成审计 | `goal audit --session-id s1 --criterion-id c1 --result satisfied` |
-| `goal complete` | 完成目标 | `goal complete --session-id s1 --audit-file audit.json` |
-| `goal list` | 列出会话的所有目标 | `goal list --session-id s1` |
-| `goal cancel` | 取消当前目标 | `goal cancel --session-id s1` |
-| `hypothesis create` | 创建研究假设 | `hypothesis create --title "..." --thesis "..."` |
-| `hypothesis list` | 列出假设 | `hypothesis list --status testing` |
-| `hypothesis show` | 显示单个假设 | `hypothesis show hyp_abc123def456` |
-| `hypothesis update` | 更新假设 | `hypothesis update hyp_abc --status validated` |
-| `hypothesis search` | 搜索假设 | `hypothesis search --query "momentum"` |
-| `hypothesis link` | 链接回测结果 | `hypothesis link hyp_abc --run-card /path/run_card.json` |
-| `validate-run` | 跑验证工具（MC/Bootstrap/WF）| `validate-run /tmp/ws/strategies/m/runs/run_0001 --monte-carlo --bootstrap --walk-forward` |
-| `portfolio run` | 组合回测 | `portfolio run --config portfolio.yaml --output-dir ./runs/portfolio` |
-| `portfolio list` | 列出所有策略 | `portfolio list --strategy-dir ./strategies` |
-| `portfolio show` | 显示组合结果 | `portfolio show ./runs/portfolio_001` |
-| `portfolio correlate` | 策略相关性矩阵 | `portfolio correlate --strategy-dir ./strategies` |
-| `api serve` | 启动 HTTP API 服务器 | `api serve --host 0.0.0.0 --port 8765` |
-| `webui serve` | 启动 Web UI 仪表盘 | `webui serve --host 0.0.0.0 --port 8766` |
-
-### `preflight` 输出示例
-
-```
-======================================================================
-  quantnodes-research Pre-flight Check
-======================================================================
-  [FAIL]   LLM Provider         [CRITICAL]
-           未配置任何 LLM API key
-           → Agent 无法调用 LLM...
-  [OK]     DuckDB
-           writable: /tmp/ws/data.duckdb
-  [OK]     Data Sources
-           5 个可用: tencent, akshare, yfinance, eastmoney, local
-  [SKIP]   OHLCV Integrity
-           无 price_data 数据
-======================================================================
-  ❌ 1 项 CRITICAL 检查失败，agent 无法启动
-```
-
-### `evaluate` 输出示例
-
-```
-🔄 复跑策略: test_strat
-
-✅ 复跑成功: run_0002
-   Calmar   = 0.5989
-   Sharpe   = 0.9273
-   MaxDD    = -0.1550
-   AnnRet   = 0.0928
-   AnnVol   = 0.1001
-   Sortino  = 1.5064
-   Turnover = 5.0400
-
-📁 详见: /tmp/ws/strategies/test_strat/runs/run_0002
-```
-
----
-
-## 工作区结构
-
-```
-/path/to/workspace/
-├── README.md              # Agent 入口
-├── config.yaml            # 工作区配置（数据源/回测参数/成本/风控）
-├── data.duckdb            # 共享数据库（9 张表）
-├── .git/
-├── .prompts/              # 11 个 Subagent 提示词
-│   ├── orchestrator.md
-│   ├── researcher.md
-│   ├── factor_analyst.md
-│   ├── strategist.md
-│   ├── critic.md
-│   ├── data_quality.md
-│   ├── portfolio_construction.md
-│   ├── risk_controller.md
-│   ├── attribution_analyst.md
-│   ├── anti_overfit_analyst.md
-│   ├── backtest_diagnostics.md
-│   └── critic.md
-└── .skills/               # 27 份方法论
-    ├── data-routing.md
-    ├── factor-research.md
-    ├── backtest-diagnose.md
-    ├── correlation-analysis.md
-    ├── ml-strategy.md
-    ├── performance-attribution.md
-    ├── quant-statistics.md
-    ├── risk-analysis.md
-    ├── sector-rotation.md
-    └── research-discipline.md
-└── strategies/
-    └── {strategy_name}/
-        ├── program.md     # 策略 playbook（必读）
-        ├── prepare.py     # 目标函数（Agent 不改）
-        ├── strategy.py    # Agent 唯一可改（PARAMS/FACTOR_EXPRS/FACTOR_WEIGHT_METHOD）
-        └── runs/
-            ├── results.tsv
-            └── run_XXXX/
-                ├── strategy.py    # 快照
-                ├── run.log        # stdout
-                ├── metrics.json   # 8 项指标
-                ├── run_card.json  # Trust Layer (SHA-256)
-                └── run_card.md    # 人读版
-```
-
----
-
-## 数据源（5+ 个 loader）
-
-通过 `data.source` 字段配置：
-
-| Loader | 市场 | 鉴权 | 自动 fallback |
-|---|---|---|---|
-| `tencent` | A 股 | ❌ | 是 |
-| `eastmoney` | A 股 + 港股 | ❌ | 是 |
-| `akshare` | 全市场 | ❌ | 是 |
-| `tushare` | A 股 + 期货 + 基金 | ✓ | 是 |
-| `yfinance` | 美股 + 港股 + 加密 | ❌ | 是 |
-| `local` | 自定义 CSV/Parquet | ❌ | **否**（避免静默降级）|
-| `fred` | 美国宏观 | ✓ | 否 |
-| `ifind` | 宏观 + 港美股 | ✓ | 否 |
-
-`FALLBACK_CHAINS`（自动 fallback 链）：
-```python
-"a_share": ["tencent", "eastmoney", "akshare", "tushare", "local"]
-"hk":     ["eastmoney", "yfinance", "akshare", "ifind", "local"]
-"us":     ["yfinance", "akshare", "ifind", "local"]
-"macro":  ["fred", "ifind", "akshare", "tushare", "local"]
-"crypto": ["yfinance", "akshare", "local"]
-```
-
----
-
-## 因子体系（460+ 因子）
-
-5 个 Zoo 库（注册式 API，无需手写算子）：
-
-| Zoo | 数量 | 来源 |
-|---|---|---|
-| `alpha101` | 101 | Kakushadze (2015) "101 Formulaic Alphas", arXiv:1601.00991 |
-| `gtja191` | 191 | 国泰君安证券 2014 短周期 alpha 因子 |
-| `qlib158` | 154 | Microsoft Qlib Alpha158 (Apache-2.0, pin commit d5379c52) |
-| `academic` | 10 | Fama-French / Carhart / Jegadeesh / Amihud 等 |
-| `fundamental` | 4 | ROE / earnings yield / gross profitability / asset growth |
-
-```python
-from strategy_research.core.alpha_zoo_adapter import AlphaZooAdapter
-
-adapter = AlphaZooAdapter()
-alphas = adapter.list_alphas(zoo="gtja191", theme="momentum")
-df = adapter.compute_as_wide("gtja191_001", prices_panel)
-```
-
-**YAML 配置示例：**
-
-```yaml
-factors:
-  # 表达式因子
-  - name: momentum_20d
-    code: ts_return(close, 20)
-    weight: 0.5
-  # Alpha Zoo 因子（需 yaml-driven 回测）
-  - name: gtja_mom
-    alpha_id: gtja191_005
-    weight: 0.3
-  # Alpha Zoo 因子组合
-  - name: composite
-    alpha_ids: [alpha101_001, gtja191_010]
-    combination: equal
-```
-
----
-
-## Swarm Presets (31 个)
-
-`quantnodes-research swarm run --preset <name>` 启动内置多 agent 团队。每个 preset 是 YAML DAG（节点 + 依赖 + 工具白名单），由 `SwarmRuntime` 按拓扑层并行执行。
-
-| 类别 | 数量 | 示例 |
-|------|------|------|
-| Equity 研究 | 5 | `equity_research_team`、`value_investing_committee`、`fundamental_research_team` |
-| Quant 策略 | 4 | `quant_research_team`、`ml_quant_lab`、`pairs_research_lab`、`statistical_arbitrage_desk` |
-| 衍生品/加密 | 3 | `crypto_trading_desk`、`derivatives_strategy_desk`、`convertible_bond_team` |
-| 宏观/全球 | 5 | `macro_strategy_forum`、`global_allocation_committee`、`commodity_research_team` |
-| 情绪/资金流 | 3 | `sentiment_intelligence_team`、`flow_analysis_team`、`social_alpha_team` |
-| 投资委员会 | 4 | `investment_committee`、`risk_committee`、`portfolio_review_board`、`asset_allocation_committee` |
-| 技术分析 | 2 | `technical_analysis_panel`、`market_microstructure_team` |
-| Pipeline | 3 | `full_pipeline`、`crypto_lab`、`sector_rotation` |
-| Event/ETF | 2 | `event_driven_task_force`、`etf_allocation_desk` |
-
-完整列表与 DAG 见 `src/strategy_research/core/swarm/presets/`。Phase D (2026-07) 与 vibe-trading 30 preset 持平（+1 bonus `convertible_bond_team`）。
-
----
-
-## MCP 集成 (13 个工具)
-
-`quantnodes-research mcp serve` 通过 [Model Context Protocol](https://modelcontextprotocol.io) 暴露 13 个研究工具，支持 stdio + SSE 传输。所有工具均**研究只读**（无下单/撮合/交易）— 安全语义借鉴 vibe-trading。
-
-| 工具 | 真接实现 | 用途 |
-|------|----------|------|
-| `list_skills` / `load_skill` | `SkillRegistry` | 浏览/加载 27 个 Skill |
-| `list_hypotheses` | `HypothesisRegistry` | 列出研究假说 |
-| `start_research_goal` / `get_research_goal` | `GoalStore` (SQLite) | 启动/查询研究目标 |
-| `run_backtest` | `core.backtest.run_backtest_script` | 执行回测 |
-| `validate_run` | `core.validation.runner` | Monte Carlo + Bootstrap + Walk-Forward |
-| `compute_factor` | `core.compute_factor` + DuckDB | 计算因子值 |
-| `search_memory` / `add_memory` | `PersistentMemory` | 跨会话记忆 |
-| `list_sessions` / `search_messages` | `SessionDB` (SQLite + FTS5) | 会话搜索 |
-| `list_swarm_presets` | `swarm.preset_loader` | 浏览 31 个 swarm preset |
-
-Phase B (2026-07) 把 7 个原 stub 工具接入真实现，告别"假数据"。
-
----
-
-## 系统架构
-
-### 三层架构
-
-```
-┌─────────────────────────────────────────────────────────────┐
-│  Workflow 层（P1.5）                                          │
-│  - WorkflowController（DAG 调度）                            │
-│  - AgentExecutor Protocol（接口）                           │
-│  - Agent Validators（验证）                                  │
-│  - Grounding Provider（市场数据预取）                       │
-└─────────────────────────────────────────────────────────────┘
-        │
-        ▼
-┌─────────────────────────────────────────────────────────────┐
-│  Agent 层（P1）                                              │
-│  - AgentLoop（ReAct 循环 + 3 层压缩）                       │
-│  - BaseTool + ToolRegistry（6 个工具）                      │
-│  - Sandbox（AST guard + 路径白名单）                        │
-│  - ContextBuilder（system + user prompt）                   │
-└─────────────────────────────────────────────────────────────┘
-        │
-        ▼
-┌─────────────────────────────────────────────────────────────┐
-│  Hook + Memory + Session 层（P2）                            │
-│  - Hook 系统（llmwikify 模式，13 事件点）                    │
-│  - Memory（FTS5 + Recency boost + Dedup）                    │
-│  - Session（SQLite + FTS5 + 触发器同步 + 限流）             │
-└─────────────────────────────────────────────────────────────┘
-```
-
-### Hook 系统（P2）
-
-借鉴 llmwikify 的 13 事件点 Hook 系统：
-
-```python
-from strategy_research.core.hooks import AgentHook, CompositeHook, AgentHookContext
-
-class MyHook(AgentHook):
-    name = "my_hook"
-    
-    def after_iteration(self, ctx: AgentHookContext):
-        print(f"Iteration {ctx.iteration} done")
-
-composite = CompositeHook([MyHook()])
-ctx = AgentHookContext(iteration=1)
-asyncio.run(composite.after_iteration(ctx))
-```
-
-**13 个事件点**：
-`wants_streaming / before_iteration / after_iteration / on_stream / on_stream_end / emit_reasoning / emit_reasoning_end / before_execute_tools / after_tool_executed / on_tool_error / on_confirmation / finalize_content / on_error`
-
-### Memory 系统（P2）
-
-- **FTS5 全文搜索**（全局索引）
-- **Recency boost**（时间衰减）
-- **Write dedup**（SHA-256）
-- **Context injection**（`<recalled-memories>` 块）
-
-```python
-from strategy_research.core.memory import PersistentMemory
-
-memory = PersistentMemory()
-memory.add("factor", "Momentum works in large caps", "feedback", "Momentum")
-results = memory.find_relevant("momentum")
-context = memory.format_context_for_prompt("momentum")
-```
-
-### Session 管理（P2）
-
-- **SQLite + FTS5**（跨 workspace 搜索）
-- **触发器自动同步**（INSERT/UPDATE/DELETE）
-- **限流器**（可配置，默认 80,000 条/秒）
-- **JSONL 监控**（写入指标）
-
-```bash
-# 查看写入统计
-$ quantnodes-research session stats
-
-# 列出会话
-$ quantnodes-research session list
-```
-
-**性能基准：**
-- 1,000 条插入：1.15s
-- 100,000 条插入：4.42s（22,625 条/秒）
-- 搜索：35,000~55,000 次/秒
-- 触发器自动同步：✅ 无应用层代码
-
----
-
-## 更新状况
-
-### 路线图进度
-
-| 阶段 | 范围 | 状态 | 详细说明 |
-|---|---|---|---|
-| **P0** | 修通 init（`.format()`/DuckDB/OHLCV/默认因子/CLI/preflight/eastmoney）| ✅ 完成 | 详见 [enhancement.md §2](docs/enhancement.md) |
-| **P1** | Agent 真跑（替换 stub 接通 LLM，6 个工具，沙箱，3 层压缩）| ✅ 完成 | PR #4-#6 + AgentLoop 改造 |
-| **P1.5** | Workflow 层（DAG 调度 + Controller + 4 种 Executor + Grounding）| ✅ 完成 | 88 测试 |
-| **P2** | Hook + Memory + Session（llmwikify 模式 + FTS5 + 触发器同步）| ✅ 完成 | 116 测试 |
-| **P3** | Goal + Hypothesis + Validation（MC + Bootstrap + WF）| ✅ 完成 | 283 新测试（162 Goal + 58 Hypothesis + 40 Validation + 23 Integration） |
-| **backtest-overhaul** | Phase 1+2+3（dataclass + 17-key metrics + market_detection + run_card + AST guard）| ✅ 完成 | 233 测试 |
-| **P4-b** | Portfolio 多策略组合回测（combiner + correlation + VaR/CVaR）| ✅ 完成 | 27 测试 |
-| **P4-d** | HTTP API server mode（FastAPI + 6 routers + Swagger）| ✅ 完成 | 15 测试 |
-| **P4-c** | Web UI dashboard（FastAPI + Jinja + HTMX, 7 页面）| ✅ 完成 | 9 测试 |
-| **Backtest Engine** | bar-by-bar 执行引擎 + 9 市场引擎 + AST guard + artifacts | ✅ 完成 | 104 测试 |
-
-### 测试统计
-
-- **6,212+ 测试通过**
-- **0 回归**
-- 测试覆盖：P0 + P1 + P1.5 + P2 + P3 + backtest-overhaul + P4 + Backtest Engine + TUI + ASCII fallback 全覆盖
-- CLI 子命令：13 → **32**（+7 goal + 6 hypothesis + 1 validate-run + 4 portfolio + 1 api + 1 webui）
-
-### 版本发布
-
-| 版本 | 日期 | 说明 |
-|---|---|---|
-| **v0.2.0** | 2026-07-22 | 已发布到 PyPI（自动发布 workflow） |
-| **v0.3.0** | 2026-07-22 | 本地 marker，未推送 PyPI；包含 P3 + backtest-overhaul + P4（Portfolio / API / WebUI）|
-| **v0.4.0** | 2026-07-24 | Textual TUI + Unicode/ASCII fallback + vibe-trading parity + CI capture tests（6212 tests）|
-
-### 下一步计划
-
-1. **发布 v0.4.0 到 PyPI**：tag + build + upload
-2. **合回主仓库** sn0wfree/quantnodes：v0.4.0 稳定后启动
-3. **持续优化**：性能 + 用户体验 + 更多 validation 市场（CRYPTO/FUTURES/FOREX）
-
----
-
-## 🖥️ Web UI（v0.6.0 新增）
-
-基于 React 19 + TypeScript + Vite 5 的 Web 界面，提供与 TUI 等价的 LLM 流式对话能力，外加 DAG 可视化、Agent 监控、Goal 跟踪等。
-
-### 启动
-
-```bash
-# 终端 1：构建前端 + 启动后端（一体化）
-cd webui/frontend
-npm install --legacy-peer-deps
-npm run build                    # 输出到 webui/static/
-cd ../..
-pip install -e ".[api]"
-uvicorn strategy_research.api.app:create_app --factory --host 0.0.0.0 --port 8000
-
-# 浏览器访问 http://localhost:8000
-```
-
-### 开发模式
-
-```bash
-# 终端 1：后端
-uvicorn strategy_research.api.app:create_app --factory --port 8000
-
-# 终端 2：前端（带热更新 + API 代理）
-cd webui/frontend
-npm run dev                      # http://localhost:5173，自动代理 /api → :8000
-```
-
-### 测试
-
-```bash
-# 后端 API 测试（22 个）
-pytest tests/test_webui_api.py tests/test_webui_e2e.py -v
-
-# 前端组件测试（27 个）
-cd webui/frontend
-npm test
-```
-
-### 环境变量
-
-| 变量 | 默认 | 说明 |
-|---|---|---|
-| `OPENAI_API_KEY` | 必填 | LLM API key（与 TUI 共享） |
-| `OPENAI_BASE_URL` | - | LLM API base URL |
-| `OPENAI_MODEL` | - | 默认模型名称 |
-| `CORS_ORIGINS` | `*` | 允许的 CORS 来源（逗号分隔） |
-| `STATIC_DIR` | `webui/static/` | 静态文件目录 |
-| `JWT_SECRET` | - | JWT 签名密钥（生产环境必填） |
-
-### 架构
-
-- **前端**：React 19 + Vite 5 + Tailwind CSS 3 + Radix UI + Zustand + React Flow + Recharts
-- **后端**：FastAPI + uvicorn + WebSocket（已接入真实 `AgentLoop`）
-- **协议**：REST API + SSE（Server-Sent Events）
-- **认证**：JWT + bcrypt（内存用户存储，可扩展到 SQLite）
+| CLI 顶层命令 | 18 | 见 [`docs/REFERENCE.md`](docs/REFERENCE.md) |
+| MCP 工具 | 17 | stdio + SSE 传输 |
+| Swarm preset | 37 | YAML DAG，编译为图执行 |
+| 能力 kind | 22 | apps 注册，kernel 解析（批次 4 已删 backtest/config 四类） |
+| 测试 | 7,400+ | `pytest tests --collect-only -q` |
+
+> ⚠️ **批次 4–6 正在移除业务功能**（回测 / 数据 / 因子相关命令与工具）。
+> 上表是本文写作时的快照；每张表的「移除批次」列见 REFERENCE.md。
+> 框架本体的命令（`llm` / `compact` / `skills` / `swarm` / `mcp` / `serve` / `session`）不受影响。
 
 ---
 
 ## 开发
 
-### 安装开发依赖
-
 ```bash
-pip install -e ".[dev]"
-```
+# 架构门禁（改完代码必跑）
+python scripts/arch/check_dangling_imports.py      # 悬空 import
+python scripts/arch/check_path_literals.py          # 坏路径拼接
+python scripts/arch/sync_architecture_diagram.py    # 架构图是否过时
 
-### 运行测试
+# 改图后自动回写实测数字
+python scripts/arch/sync_architecture_diagram.py --write
 
-```bash
-# 全部测试
-pytest                                    # 5,536 passed
+# 测试
+pytest tests -q
+pytest tests -n 4 --dist loadgroup -q               # 并行（8–12 分钟）
 
-# 单跑特定模块
-pytest tests/test_preflight.py -v         # preflight 测试
-pytest tests/test_cli_init.py -v           # init 测试
-pytest tests/test_workflow_e2e.py -v       # Workflow e2e 测试
-pytest tests/test_session.py -v            # Session 测试
-pytest tests/test_webui_api.py tests/test_webui_e2e.py -v  # Web UI API 测试
-
-# 性能测试
-pytest tests/test_session_triggers.py -v   # 触发器同步性能
-```
-
-### 代码检查
-
-```bash
 # Lint
 ruff check .
-
-# 类型检查（可选）
-mypy src/strategy_research/
 ```
 
-### 前端开发
+工具目录的使用契约见 [`scripts/README.md`](scripts/README.md)。
 
-```bash
-cd webui/frontend
-npm run dev         # 开发模式（端口 5173）
-npm run build       # 生产构建（输出 webui/static/）
-npm test            # 运行 Vitest 测试
-npm run test:coverage  # 覆盖率报告
-```
+---
 
-### 测试覆盖（5,536+ 个测试）
-
-| 模块 | 测试数 | 状态 |
-|---|---|---|
-| `test_workflow_*.py` | 88 | ✅ |
-| `test_hooks.py` | 23 | ✅ |
-| `test_memory_fts5.py` | 12 | ✅ |
-| `test_memory_enhance.py` | 11 | ✅ |
-| `test_session.py` | 34 | ✅ |
-| `test_session_triggers.py` | 6 | ✅ |
-| `test_session_rate_limiter.py` | 12 | ✅ |
-| `test_session_metrics.py` | 9 | ✅ |
-| `test_integration.py` | 9 | ✅ |
-| P0 + P1 测试 | 3,608 | ✅ |
-
-### 文档结构
+## 文档
 
 ```
 docs/
-├── enhancement.md                # 借鉴路线图（P0-P3）
-├── workflow-design.md            # P1.5 Workflow 设计
-├── vibe-trading-survey.md        # vibe-trading 调研（1805 行）
-├── vibe-trading-credits.md       # 借鉴致谢
-├── autoresearch-design.md        # autoresearch 设计
-├── llm-config-template.yaml      # LLM 配置模板
-└── backtest-overhaul/            # 回测重构
-
-examples/
-├── demo_workflow.py              # 工作流演示
-└── session_example.py            # Session 使用示例
+├─ INDEX.md          ← 从这里开始
+├─ REFERENCE.md      ← 命令 / 工具 / 环境变量全表
+├─ guides/           ← 现行规范（架构、开发、术语）
+├─ design/           ← 仍有效的设计（含 adr/）
+└─ archive/          ← 历史施工记录（备查，不维护）
 ```
+
+设计先行是本项目的纪律：每个结构改动先有 `*-design.md`，后有实施 commit。
 
 ---
 
 ## 借鉴致谢
 
-本项目借鉴了以下开源项目：
-
-- **vibe-trading-ai 0.1.11**（HKUDS，MIT License）
-  - Agent 工具、Trace、Progress、Memory 等
-  - 详见 `docs/vibe-trading-credits.md`
-- **llmwikify**（MIT License）
-  - Hook 系统（13 事件点）
-  - AgentLoop 设计模式
-
----
-
-## 设计理念
-
-- **Karpathy 极简**: 框架提供工具和循环指引，Agent 自主决策
-- **Skill/Harness 模式**: 外部 Agent 读 prompt 后自主决策
-- **通用性**: 通过 `prepare.evaluate()` 目标函数接口适配不同策略
-- **实验可复现**: 每次实验保存 SHA-256 快照到 `run_card.json`，可随时复现
-- **磁盘优先**: 所有指令写在文件里 — Agent 中途崩溃可从同套文件恢复 context
-- **Hook 解耦**: 通过 Hook 系统实现横切关注点（日志、监控、归档）的解耦
+- **vibe-trading-ai**（HKUDS，MIT）— TUI 交互范式、工具层、Trace、Memory
+- **llmwikify**（MIT）— Hook 系统（13 事件点）、四层骨架与「机器可证」的设计思路
 
 ---
 
 ## 许可证
 
 MIT
-
----
-
-## 相关链接
-
-- **主仓库**：[sn0wfree/quantnodes](https://github.com/sn0wfree/quantnodes)
-- **本仓库**：[sn0wfree/quantnodes-strategy-research](https://github.com/sn0wfree/quantnodes-strategy-research)
-- **PyPI**：[quantnodes-strategy-research](https://pypi.org/project/quantnodes-strategy-research/)
-- **问题反馈**：[GitHub Issues](https://github.com/sn0wfree/quantnodes-strategy-research/issues)

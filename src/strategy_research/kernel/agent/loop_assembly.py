@@ -1,6 +1,6 @@
 """Shared AgentLoop assembly core (registry + prompt + strategy).
 
-Phase 3 of docs/phase3-dual-factory-design.md: both
+Phase 3 of docs/design/phase3-dual-factory-design.md: both
 ``role_factory.build_agent_loop`` and ``chat_loop.build_chat_agent_loop``
 hand-assembled these three pieces — the real drift source between the
 two factories. ``assemble_loop_parts`` is the single source; the two

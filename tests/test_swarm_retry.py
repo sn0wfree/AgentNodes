@@ -1,6 +1,6 @@
 """B3: swarm's declared-but-unhonoured contracts now behave as documented.
 
-Contract: docs/stage-c1-b3-swarm-orchestration-design-20261028.md §3
+Contract: docs/archive/2026-10/stage-c1-b3-swarm-orchestration-design-20261028.md §3
 
 Two classes of defect are covered:
 

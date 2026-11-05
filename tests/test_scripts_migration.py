@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 """scripts/migration/ 三个搬迁工具的单元测试（合成仓库，monkeypatch ROOT）。
 
-搬迁协议（docs/physical-layer-migration-plan-20261103.md §1.2）中三个工具
+搬迁协议（docs/design/physical-layer-migration-plan-20261103.md §1.2）中三个工具
 各管一段：find_importers（普查）→ rewrite_import_prefix（文本级）→
 fix_relative_imports（解析级）。本文件验证各自的解析/改写语义。
 """

@@ -1,6 +1,6 @@
 """C1 acceptance gates: test-inventory freeze + comparison.
 
-Contract: docs/stage-c1-acceptance-20261028.md §2.2
+Contract: docs/archive/2026-10/stage-c1-acceptance-20261028.md §2.2
 
 The inventory gate exists because a migration *legitimately* removes ~100
 baseline failures. Without a frozen set of node ids, deleting the suite is

@@ -1,6 +1,6 @@
 """data_tools 单元测试——纯本地路径（列数据源 / 参数校验 / 错误提示）。
 
-覆盖 docs/coverage-90-plan-20261030.md §3.2：`data_tools.py` 原 70.3%。
+覆盖 docs/archive/2026-10/coverage-90-plan-20261030.md §3.2：`data_tools.py` 原 70.3%。
 只测**不打网、不碰 DuckDB**的路径：ListDataSources（注册表枚举）、
 SearchSymbol 参数校验、ImportData/CheckData 错误分支。
 """

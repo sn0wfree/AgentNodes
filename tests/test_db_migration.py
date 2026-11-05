@@ -4,7 +4,7 @@ The migration (_migrate_text_part_ids) runs idempotently on every
 _get_db() call. It scans messages.parts_json and assigns a deterministic
 id (f"legacy-{msg_id}-{idx}") to any text part missing one.
 
-Reference: docs/text-part-routing.md
+Reference: docs/archive/undated/text-part-routing.md
 """
 from __future__ import annotations
 

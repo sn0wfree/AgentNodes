@@ -1,6 +1,6 @@
 """B2 fold 重建测试——重启恢复状态（不恢复执行）。
 
-设计：docs/stage-b2-fold-recovery-design-20261030.md
+设计：docs/archive/2026-10/stage-b2-fold-recovery-design-20261030.md
   A. turn 计数恢复（下一 turn 续号，不撞号）
   B. session_key → uuid 映射恢复（同 key 落回同一 aggregate）
   C. interrupted 标记（started 无 settled → run.interrupted；幂等）

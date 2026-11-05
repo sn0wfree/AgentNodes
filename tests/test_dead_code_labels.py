@@ -7,7 +7,7 @@ from pathlib import Path
 
 # Each entry: (path-relative-to-repo-root, substring-of-existing-context).
 # All B1-B17 entries have been executed (deletions) or retracted (stale
-# labels with live callers — see docs/final-cleanup-batch-design.md §1).
+# labels with live callers — see docs/archive/undated/final-cleanup-batch-design.md §1).
 # The list is intentionally empty; the reverse check below
 # (test_no_unlabelled_todo_delete_suggestion) is now the only active rule:
 # any NEW 'unused/dormant/0 callers' TODO must still carry a label.

@@ -1,6 +1,6 @@
 # scripts/ — 工具目录说明
 
-物理分层迁移（2026-11-03 → 11-04，docs/physical-layer-migration-plan-20261103.md）
+物理分层迁移（2026-11-03 → 11-04，docs/design/physical-layer-migration-plan-20261103.md）
 沉淀的工具，按「运行时机 × 使用者」分三个子目录。**新增工具必须落对目录、
 按命名规范命名**——目录名即使用契约。
 
@@ -111,7 +111,7 @@ python scripts/arch/sync_architecture_diagram.py            # 复核（应全 [O
 
 ### ⚠ 工具选型规则：graphify 与门禁不可互换
 
-2026-11-04 结构评审（docs/structure-review-graphify-20261104.md §0）实测：
+2026-11-04 结构评审（docs/design/structure-review-graphify-20261104.md §0）实测：
 
 | 度量 | 模块顶层 import | 函数体内 import | 结论 |
 |---|---:|---:|---|
@@ -132,7 +132,7 @@ python scripts/arch/sync_architecture_diagram.py            # 复核（应全 [O
 ## migration/ — 包搬迁工具
 
 下次「core/ → 层目录」级别的搬迁直接复用。每步迁移协议
-（docs/physical-layer-migration-plan-20261103.md §1.2）中它们的位置：
+（docs/design/physical-layer-migration-plan-20261103.md §1.2）中它们的位置：
 
 ```
 1. find_importers.py <tail>                     # 定位受影响文件（爆破面普查）

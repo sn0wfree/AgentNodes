@@ -1,6 +1,6 @@
 """SwarmRuntime 分支机制单元测试。
 
-覆盖 docs/coverage-90-plan-20261030.md §3.2：`swarm/runtime.py` 原 64.8%，
+覆盖 docs/archive/2026-10/coverage-90-plan-20261030.md §3.2：`swarm/runtime.py` 原 64.8%，
 其中 `_build_layer_results` / `_apply_branches` / `_apply_branch_action`
 （约 100 行）零覆盖。这些是**条件分支控制流**——DAG 里「风控不过就跳过
 组合构建」这类逻辑的实现，业务价值高且完全可纯测。

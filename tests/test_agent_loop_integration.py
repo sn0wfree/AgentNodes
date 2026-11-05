@@ -1,6 +1,6 @@
 """AgentLoop 集成测试（scripted LLM，离线确定性）——覆盖 loop 内核。
 
-覆盖 docs/coverage-90-plan-20261030.md §3.2：`agent/loop.py`（63 miss）、
+覆盖 docs/archive/2026-10/coverage-90-plan-20261030.md §3.2：`agent/loop.py`（63 miss）、
 `context_injector.py`（33）、`combo.py`（29）。与 full_flow 的区别：
 本文件**不标 e2e**，作为快速集成测试计入 pr-lane 覆盖率。
 覆盖：run() 全流程（llm 响应→工具调用→循环收尾）、finish_reason 各路径、

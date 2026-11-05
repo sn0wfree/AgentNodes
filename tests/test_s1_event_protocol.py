@@ -1,4 +1,4 @@
-"""S1 验收测试 —— 事件协议统一（docs/s1-event-protocol-unification-design-20261027.md §6）。
+"""S1 验收测试 —— 事件协议统一（docs/design/s1-event-protocol-unification-design-20261027.md §6）。
 
 1. 往返相等：EventV2 → emit → replay 逐字段相等（含信封新列）；
 2. 存量迁移：旧 8 列 schema 库 → ensure 补列 → 既有行可 replay、seq 连续；

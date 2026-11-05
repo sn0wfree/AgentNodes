@@ -1,6 +1,6 @@
 """P5-1 验收：Gateway chat 补齐历史 / 持久化 / message_id。
 
-依据 docs/p5-1-chat-gateway-parity-design-20261027.md §5（执行等价）。
+依据 docs/design/p5-1-chat-gateway-parity-design-20261027.md §5（执行等价）。
 """
 from __future__ import annotations
 

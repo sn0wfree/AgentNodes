@@ -1,7 +1,7 @@
 """WorkflowStore — isolated SQLite persistence for workflow runs.
 
 Stored at ``<workspace>/workflows.db`` — deliberately separate from
-the chat session DB (see docs/workflow-module-design.md §8).
+the chat session DB (see docs/design/workflow-module-design.md §8).
 
 Tables:
     runs          — run lifecycle + params snapshot

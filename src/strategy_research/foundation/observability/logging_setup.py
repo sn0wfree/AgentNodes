@@ -1,6 +1,6 @@
 r"""统一日志入口 — configure_logging(surface) + dual_log。
 
-设计契约：docs/logging-unified-entry-design-20261102.md §4。
+设计契约：docs/guides/logging-unified-entry-design-20261102.md §4。
 
 所有进程入口（web/cli/mcp/script）经由 :func:`configure_logging` 装配
 日志：策略表决定 console 流定向，级别与 JSON 统一读环境变量，

@@ -1,6 +1,6 @@
 """R-A: branches[].action=retry now actually re-runs the target.
 
-docs/plan-retry-fix-and-workflow-migration-20261031.md §1.
+docs/archive/2026-10/plan-retry-fix-and-workflow-migration-20261031.md §1.
 Before this fix the retry action appended the target back to a remaining
 layer, where the split node's "already has a result" filter discarded it —
 the agent never ran twice. The fix threads an explicit retry_queue through

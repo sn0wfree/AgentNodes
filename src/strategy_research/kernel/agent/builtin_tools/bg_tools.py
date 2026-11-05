@@ -2,7 +2,7 @@
 
 Manages nohup-style background tasks for agents: start / status / wait
 / log / kill via one tool with an ``action`` parameter (design
-``docs/study-long-task-background-plan.md`` §5).
+``docs/archive/undated/study-long-task-background-plan.md`` §5).
 
 The task registry lives in ``core/utils/bg_proc.py`` (shared with
 ``RunBacktestTool(background=True)`` and ``backtest.run_strategy``), so

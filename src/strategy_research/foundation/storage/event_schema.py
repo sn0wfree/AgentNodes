@@ -87,7 +87,7 @@ EVENT_LOG_INDEXES = (
     ),
 )
 
-# P-1 信封列（S1，docs/s1-event-protocol-unification-design-20261027.md §2）。
+# P-1 信封列（S1，docs/design/s1-event-protocol-unification-design-20261027.md §2）。
 # canonical 表 = 信封超集：type 即 kind、time_created 即 ts，另补三列。
 _ENVELOPE_COLUMNS = (
     ("session_key", "session_key TEXT"),

@@ -1,6 +1,6 @@
 """Claim validator — structural check that assistant claims trace to tool results.
 
-L2 of the truthfulness work (see docs/claim-validation-badge-design.md).
+L2 of the truthfulness work (see docs/archive/undated/claim-validation-badge-design.md).
 
 Design:
 - Pure function ``validate_claims``: no IO, easy to unit test.

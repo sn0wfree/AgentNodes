@@ -208,7 +208,7 @@ class ExecutorTestCase(unittest.IsolatedAsyncioTestCase):
         """``target='study'`` 已移除：必须**显式失败**，不得静默 no-op。
 
         2026-11-05 批次 3：apps/study 归档后，这条默认派发路径没有目标了。
-        契约变更（docs/batch3-study-removal-design-20261105.md §5.1）：
+        契约变更（docs/design/batch3-study-removal-design-20261105.md §5.1）：
         抛 RuntimeError + 调度记录留 FAILED + 可读原因 —— 用户能区分
         「没配好」与「跑完了」。静默成功会让运维以为任务真的执行过。
         """

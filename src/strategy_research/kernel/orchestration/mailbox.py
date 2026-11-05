@@ -1,6 +1,6 @@
 """Mailbox（E1 骨架）——per-session 排队域：lane 串行 + steer 桩 + cap + deadline。
 
-依据 docs/entry-controller-contract.md §3/§5。
+依据 docs/design/entry-controller-contract.md §3/§5。
 
 语义（全部快同步、纯内存；持久化属 0.4 数据面）：
 - FOLLOWUP：FIFO 入队。

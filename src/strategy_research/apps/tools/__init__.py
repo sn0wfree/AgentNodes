@@ -5,5 +5,5 @@ Convention:
   - core/utils/             ← single-function helpers
   - core/agent/builtin_tools/ ← LLM-callable tools
 
-See ``docs/toolset-convention.md`` for the full design.
+See ``docs/guides/toolset-convention.md`` for the full design.
 """

@@ -1,6 +1,6 @@
 """B3 状态查询测试——非阻塞 session_status 快照。
 
-设计：docs/stage-b3-controller-assessment-20261030.md §3
+设计：docs/archive/2026-10/stage-b3-controller-assessment-20261030.md §3
 """
 from __future__ import annotations
 

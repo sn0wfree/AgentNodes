@@ -1,6 +1,6 @@
 """E2 敏感隔离收尾测试——C1 指纹化、config.fingerprint 事件。
 
-设计：docs/e2-sensitive-closeout-design-20261030.md
+设计：docs/archive/2026-10/e2-sensitive-closeout-design-20261030.md
 """
 from __future__ import annotations
 

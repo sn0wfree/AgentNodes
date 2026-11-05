@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-"""Pyright regressions-gate (docs/pyright-gradual-design.md §3).
+"""Pyright regressions-gate (docs/archive/undated/pyright-gradual-design.md §3).
 
 Compares a pyright --outputjson report against the committed baseline;
 exits 1 only when the error count INCREASES. This is the same
@@ -48,7 +48,7 @@ def main() -> int:
             "errorCount": errors,
             "warningCount": warnings,
             "filesAnalyzed": files,
-            "note": "regressions-gate baseline (docs/pyright-gradual-design.md §3)",
+            "note": "regressions-gate baseline (docs/archive/undated/pyright-gradual-design.md §3)",
         }
         args.baseline.write_text(
             json.dumps(payload, indent=2) + "\n", encoding="utf-8"

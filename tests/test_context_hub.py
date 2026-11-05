@@ -1,6 +1,6 @@
 """ContextHub W0 骨架测试。
 
-设计：docs/context-hub-discussion.md §6 / docs/stage-p54-context-hub-w0-design-20261027.md。
+设计：docs/design/context-hub-discussion.md §6 / docs/archive/2026-10/stage-p54-context-hub-w0-design-20261027.md。
 覆盖：best-effort 降级（provider 抛异常不阻断 + dropped 记录）/ token
 统一口径 / explain / 同 query 同 bundle 确定性 / 同名注册拒绝。
 """

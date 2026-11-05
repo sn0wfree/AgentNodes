@@ -1,6 +1,6 @@
 """fanout preset（F3）—— 多 subagent 并行的通用执行形状。
 
-设计：docs/stage-f3-fanout-preset-design-20261027.md。
+设计：docs/archive/2026-10/stage-f3-fanout-preset-design-20261027.md。
 
 落位说明：与 research preset（study 域，闭包持 BranchContext）相反，
 fanout 是**纯平台件**——只依赖 GraphEngine / react 节点 / RunBudget，

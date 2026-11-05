@@ -1,4 +1,4 @@
-"""Phase 5-guardrails v1 tests (docs/phase5-guardrails-design.md).
+"""Phase 5-guardrails v1 tests (docs/design/phase5-guardrails-design.md).
 
 Covers: pattern detection (4 families, both hit and miss), severity
 grading (info for ordinary mentions vs suspect for real injections),

@@ -3,7 +3,7 @@
 A "profile" in this codebase is the parameter bundle used to construct
 an ``AgentLoop``: the role's tool whitelist, the system prompt, the
 LLM config, etc. Profiles are typically built from YAML configs
-(see ``docs/toolset-convention.md``) but can also be plain dicts.
+(see ``docs/guides/toolset-convention.md``) but can also be plain dicts.
 
 This module adds the ``loop_strategy`` field to the profile shape —
 a separate concern from the role/registry/prompt. The field accepts

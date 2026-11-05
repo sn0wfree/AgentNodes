@@ -8,7 +8,7 @@ Covers:
 - oldest-first ordering
 - HTTP endpoint shape + 404 for unowned session
 
-See docs/streaming-reload-recovery.md.
+See docs/archive/undated/streaming-reload-recovery.md.
 """
 
 from __future__ import annotations

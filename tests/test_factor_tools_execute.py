@@ -1,6 +1,6 @@
 """factor_tools 工具层单元测试——mock 数据入口，驱动 6 个 execute。
 
-覆盖 docs/coverage-90-plan-20261030.md §3.2：`factor_tools.py` 是 C 档最大
+覆盖 docs/archive/2026-10/coverage-90-plan-20261030.md §3.2：`factor_tools.py` 是 C 档最大
 单点缺口（371 条）。6 个工具（compute_factor / factor_analysis / pattern /
 cross_sectional / quintile / ic_decay / turnover）全部经同一个数据入口
 ``_load_ohlcv``——mock 它即可覆盖各工具的完整 execute 分支，无需 DuckDB。

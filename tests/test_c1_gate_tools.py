@@ -7,7 +7,7 @@ false "all green" report. If the parser silently misses a summary line,
 or the comparison falls back to counting, every worker's verdict becomes
 worthless. So the tooling gets its own regression tests.
 
-Contract: docs/stage-c1-team-contract-20261028.md §6
+Contract: docs/archive/2026-10/stage-c1-team-contract-20261028.md §6
 """
 from __future__ import annotations
 

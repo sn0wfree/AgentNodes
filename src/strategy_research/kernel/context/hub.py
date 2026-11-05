@@ -1,7 +1,7 @@
 """ContextHub：唯一上下文组装点（collect → bundle）。
 
-设计：docs/context-hub-discussion.md §6（W0 骨架）；落地记录见
-docs/stage-p54-context-hub-w0-design-20261027.md。
+设计：docs/design/context-hub-discussion.md §6（W0 骨架）；落地记录见
+docs/archive/2026-10/stage-p54-context-hub-w0-design-20261027.md。
 
 本阶段职责边界（与设计稿 W2 的差异如实标注）：
     - 只做 collect + 账本 + 溯源；**不仲裁不裁剪**（W2 ContextPlan 并入）；

@@ -1,6 +1,6 @@
 """B4 hotfix: /clear foreign-key cascade + schema dual-master.
 
-Contract: docs/stage-c1-b4-hotfix-d7-schema-20261029.md
+Contract: docs/archive/2026-10/stage-c1-b4-hotfix-d7-schema-20261029.md
 
 Two live bugs fixed here, both user-visible:
 

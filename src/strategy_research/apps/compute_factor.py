@@ -1323,7 +1323,7 @@ def compute_factor(
     """
     # 数据不足提前报错: OHLC 全 NaN 输入（如只有 1 行残留数据的资产）会让
     # 表达式求值以误导性的「无法解析表达式」失败。明确报「数据不足」更可
-    # 行动（docs/run-backtest-data-gate.md）。volume=0 不算数据缺失
+    # 行动（docs/archive/undated/run-backtest-data-gate.md）。volume=0 不算数据缺失
     # （可能是真实停牌/零成交记录），只判 OHLC 四列。
     if prices is None or getattr(prices, "empty", True):
         raise FactorComputeError(

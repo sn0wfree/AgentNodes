@@ -1,4 +1,4 @@
-"""Architecture gate: print governance (docs/logging-unified-entry-design-20261102.md §5).
+"""Architecture gate: print governance (docs/guides/logging-unified-entry-design-20261102.md §5).
 
 Rules:
 1. ``core/**`` and ``api/**`` — no runtime ``print()`` calls, except

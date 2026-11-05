@@ -111,7 +111,7 @@ def build_chat_agent_loop(
 
     # System prompt + strategy resolution via the shared assembly core
     # (phase 3 — the registry/prompt/strategy trio was duplicated with
-    # role_factory; see docs/phase3-dual-factory-design.md).
+    # role_factory; see docs/design/phase3-dual-factory-design.md).
     assembly = assemble_loop_parts(
         role=role,
         registry=registry,

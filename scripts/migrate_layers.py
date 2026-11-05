@@ -2,7 +2,7 @@
 """物理分层迁移工具 — core/ → foundation · kernel · apps · interfaces。
 
 一次性工具，保留在仓库中以便审计与回放。设计契约见
-docs/layered-skeleton-design-20261103.md 与迁移计划。
+docs/design/layered-skeleton-design-20261103.md 与迁移计划。
 
 用法
 ----

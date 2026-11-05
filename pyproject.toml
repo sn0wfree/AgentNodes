@@ -5,7 +5,10 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "quantnodes-strategy-research"
 version = "0.6.0"
-description = "通用策略自动研究框架 — Karpathy autoresearch 极简 + 多 Agent 增强 + Rich CLI"
+# 项目定位（2026-11-05 重定位）：可自我进化的 Agent 框架。
+# 包名仍是 strategy_research —— 重命名为 agentnodes 是减法批次 9，
+# 尚未执行。在此之前 import 路径与之前一致。
+description = "可自我进化的 Agent 框架 — 四层单向依赖 + 能力端口化 + RSI 闭环"
 readme = "README.md"
 requires-python = ">=3.10"
 license = {text = "MIT"}

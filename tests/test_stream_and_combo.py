@@ -1,6 +1,6 @@
 """AgentLoop 流式路径 + combo 执行体集成测试（离线 scripted）。
 
-覆盖 docs/coverage-90-plan-20261030.md §3.2：loop_stream.py（26 miss，
+覆盖 docs/archive/2026-10/coverage-90-plan-20261030.md §3.2：loop_stream.py（26 miss，
 流式分块聚合/事件发射/异常路径）与 combo.py execute（29 miss，
 参数解析/错误透传/正常串联）。
 """

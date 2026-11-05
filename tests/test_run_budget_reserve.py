@@ -1,6 +1,6 @@
 """预算预留树（F2）测试 —— 均分数学 / 零剩余预标 / settle 归还 / fanout 接线。
 
-对应 docs/stage-f2-budget-tree-design-20261027.md §5 验收。
+对应 docs/archive/2026-10/stage-f2-budget-tree-design-20261027.md §5 验收。
 """
 from __future__ import annotations
 

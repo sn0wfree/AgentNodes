@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """孤儿资产清理：删除 DuckDB 中不属于对应策略 config.codes 的资产行。
 
-背景（docs/run-backtest-data-gate.md）: 历史 get_market_data 用旧 codes
+背景（docs/archive/undated/run-backtest-data-gate.md）: 历史 get_market_data 用旧 codes
 拉取的数据行残留在 price_data 中（如 blue_chip_momentum 名下 21 只资产
 含 6 只残留、其中 5 只仅 1 行），会污染因子分数与权重。代码层已按
 config.codes 过滤（config_runner），本脚本做一次性存量治理。

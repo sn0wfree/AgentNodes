@@ -275,7 +275,7 @@ class ScheduledResearchExecutor:
         调度器骨架（cron 计算 + ``scheduled_jobs`` 表 + asyncio 循环）是
         通用能力，保留；只有这个默认目标失效。要恢复定时研究，需要业务
         侧重新提供 study 实现并注册 dispatch 目标（见
-        ``docs/agentnodes-split-plan-20261104.md`` 后续项）。
+        ``docs/design/agentnodes-split-plan-20261104.md`` 后续项）。
         """
         raise RuntimeError(
             f"scheduled job {job.id}: target='study' is no longer available "

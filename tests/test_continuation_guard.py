@@ -1,6 +1,6 @@
 """GoalContinuation JSON-guard 分支补充测试（现有 test_context_injector.py 未覆盖的路径）。
 
-覆盖 docs/coverage-90-plan-20261030.md §3.2：完整 JSON 跳过 / 空 dict
+覆盖 docs/archive/2026-10/coverage-90-plan-20261030.md §3.2：完整 JSON 跳过 / 空 dict
 候选 / 截断 JSON 候选 / 非字符串 content。
 """
 from __future__ import annotations

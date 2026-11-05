@@ -1,6 +1,6 @@
 """fanout 复合节点（F1）测试 —— 并行执行 / 账本隔离 / 两档失败 / 连坐取消。
 
-对应 docs/stage-f1-fanout-design-20261027.md §3 语义契约。
+对应 docs/archive/2026-10/stage-f1-fanout-design-20261027.md §3 语义契约。
 """
 from __future__ import annotations
 

@@ -1,6 +1,6 @@
 """E1 一致性测试 —— 契约文档 §5 十条不变量的验收。
 
-对应 docs/entry-controller-contract.md §8。每条测试名对应一条不变量，
+对应 docs/design/entry-controller-contract.md §8。每条测试名对应一条不变量，
 失败即违反边界契约。全部纯内存、快同步（不变量 8 本身也在此验证）。
 """
 from __future__ import annotations

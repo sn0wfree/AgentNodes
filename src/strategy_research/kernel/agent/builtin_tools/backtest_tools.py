@@ -33,7 +33,7 @@ class RunBacktestTool(BaseTool):
     # 版本: 1.2.0
     # 变更: v1.2.0 数据就绪性门禁 (C1~C6 预检, 不可跑时返回诊断不建 run);
     #       执行拆分为 3 步组合 (config_load → data_gate → engine_run),
-    #       错误带 step 标识 (docs/run-backtest-data-gate.md)
+    #       错误带 step 标识 (docs/archive/undated/run-backtest-data-gate.md)
     #
     # ## 用途
     # 读取 strategies/<name>/config.yaml 运行回测, 产出新 run 写入
@@ -136,7 +136,7 @@ class RunBacktestTool(BaseTool):
         # ── 步骤 2: 数据准备 ────────────────────────────────────
         # config source=auto/auto+duckdb 语义下引擎会在线获取数据 ——
         # 数据准备先执行（写 DB），门禁随后检查的才是「最终将用于回测
-        # 的数据」（docs/run-backtest-data-gate.md）。
+        # 的数据」（docs/archive/undated/run-backtest-data-gate.md）。
         prepare_step = DataPrepareStep()
         out = json.loads(cast(str, prepare_step.execute(
             ctx=ctx, workspace=workspace, cfg=cfg,
@@ -308,7 +308,7 @@ class RunBacktestTool(BaseTool):
 # ── RunBacktestTool 组合子步骤 ───────────────────────────────────────
 # 每步是 BaseTool 子类（自动获得 tool_errors 标准化），但不注册进
 # ToolRegistry（不占 LLM schema）。RunBacktestTool 顺序编排，错误带
-# step 标识，精确定位失败环节（docs/run-backtest-data-gate.md）。
+# step 标识，精确定位失败环节（docs/archive/undated/run-backtest-data-gate.md）。
 
 
 class ConfigLoadStep(BaseTool):

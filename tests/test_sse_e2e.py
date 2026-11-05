@@ -6,7 +6,7 @@ Tests the SSE infrastructure end-to-end with a real server.
 `_event_generator_v2` 引用了 SessionService 上不存在的 `event_store`
 属性（正确为 `event_bus`），SSE 流首轮 resume 即 AttributeError，
 崩溃的响应任务把客户端连接吊死。修复后本文件全绿；勘查记录见
-docs/known-bug-sse-send-deadlock-20261030.md。
+docs/archive/2026-10/known-bug-sse-send-deadlock-20261030.md。
 """
 
 from __future__ import annotations
@@ -75,7 +75,7 @@ def sse_server():
     # 事件循环线程在 logging 写 stdout 时永久阻塞——整个服务器假死
     # （/health 无响应、send_async 挂死）。此前 fixture 从不读管道，
     # test1 的 INFO 日志量足以填满缓冲，test2 起全部请求冻结。
-    # 诊断记录：docs/known-bug-sse-send-deadlock-20261030.md §6。
+    # 诊断记录：docs/archive/2026-10/known-bug-sse-send-deadlock-20261030.md §6。
     server_logs: list[str] = []
 
     def _drain() -> None:

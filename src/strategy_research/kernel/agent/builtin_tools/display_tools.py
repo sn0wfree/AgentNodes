@@ -1,6 +1,6 @@
 """Display tools: the agent decides what the right panel shows.
 
-Design (docs/right-panel-agent-driven.md):
+Design (docs/design/right-panel-agent-driven.md):
 - ``show_chart``: render a chart from a workspace FILE (CSV/JSON) —
   the data never enters the LLM context (file-reference style). The
   tool reads the file, downsamples to ≤ MAX_POINTS, and emits a

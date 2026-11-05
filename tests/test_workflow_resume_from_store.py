@@ -1,6 +1,6 @@
 """R-B2: resume_from_store — 进程重启后审批续跑（此前永久卡死）。
 
-docs/plan-retry-fix-and-workflow-migration-20261031.md §决定 B：
+docs/archive/2026-10/plan-retry-fix-and-workflow-migration-20261031.md §决定 B：
 `/approve` 原先依赖内存里的 runner 实例（registry.get → None 即 404），
 重启后 awaiting 的 run 永远无法推进。R-B0 补齐 output 列后，本刀从
 store 重建 pre_completed，用新实例续跑。

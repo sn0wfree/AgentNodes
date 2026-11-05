@@ -1,4 +1,4 @@
-"""深度统一 B1 的语义锁测试（docs/deep-unification-graph-engine-design-20261031.md）。
+"""深度统一 B1 的语义锁测试（docs/design/deep-unification-graph-engine-design-20261031.md）。
 
 SwarmRuntime.execute 已改为 SwarmPreset → GraphEngine 编译器。本文件锁定
 迁移中**容易走样**的等价性细节——旧层循环的哪些行为必须逐条保真：

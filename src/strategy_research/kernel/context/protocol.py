@@ -1,7 +1,7 @@
 """ContextHub 协议面：ContextItem / ContextProvider / ContextQuery。
 
-设计：docs/context-hub-discussion.md（W0 骨架）；P5-4 落地记录见
-docs/stage-p54-context-hub-w0-design-20261027.md。
+设计：docs/design/context-hub-discussion.md（W0 骨架）；P5-4 落地记录见
+docs/archive/2026-10/stage-p54-context-hub-w0-design-20261027.md。
 
 硬约束（讨论稿 §3，由架构门禁测试钉死）：
     中枢只依赖协议，绝不 import 生产方；中枢不持有会话状态。

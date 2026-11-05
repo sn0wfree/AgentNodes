@@ -98,7 +98,7 @@ class LoopProgressMixin:
             messages.append(tool_result_msg)
             result.messages.append(tool_result_msg)
             # Phase 5-guardrails v1: observe injection/exfil signatures in
-            # tool outputs (docs/phase5-guardrails-design.md §2.2).
+            # tool outputs (docs/design/phase5-guardrails-design.md §2.2).
             try:
                 from .guardrails import scan_tool_result
 

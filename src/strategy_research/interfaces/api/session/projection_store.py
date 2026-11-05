@@ -1,7 +1,7 @@
 """Projected-state persistence: connection, snapshots, flush.
 
 Extracted from projector.py in the Phase 2 split
-(docs/phase2-web-session-projector-design.md). Owns the sqlite
+(docs/design/phase2-web-session-projector-design.md). Owns the sqlite
 connection lifecycle (close() is explicit — the WinError-32 flake
 family lives where connections are leaked) and the materialized
 messages/message_parts writes. Pure projection loops live in the
@@ -37,7 +37,7 @@ class ProjectionStore:
         # Per-session in-memory projections, keyed by session_id. Only
         # used by project_incremental(); project() remains a pure
         # function. Entries are invalidated on session deletion.
-        # See docs/projector-incremental.md.
+        # See docs/design/projector-incremental.md.
         self._cache: Dict[str, ProjectedSession] = {}
 
 
@@ -133,7 +133,7 @@ class ProjectionStore:
             return None
         return ProjectedSession.from_dict(json.loads(row[0]))
 
-    # ── Incremental projection (see docs/projector-incremental.md) ─
+    # ── Incremental projection (see docs/design/projector-incremental.md) ─
 
 
     @staticmethod
@@ -198,7 +198,7 @@ class ProjectionStore:
 
         Args:
             touched: Optional set of message ids to write (delta
-                flush, see docs/projector-incremental.md). Only those
+                flush, see docs/design/projector-incremental.md). Only those
                 messages are UPSERTed and their parts rewritten.
                 ``None`` or a set containing the ``"*"`` sentinel
                 (whole-session rewrite, e.g. compact.ended) performs a

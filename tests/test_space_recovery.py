@@ -1,4 +1,4 @@
-"""Space-recovery regression tests (docs/streaming-space-recovery.md).
+"""Space-recovery regression tests (docs/archive/undated/streaming-space-recovery.md).
 
 Root cause: DeepSeek-family `reasoning_content` streams one BPE token
 per SSE chunk; the leading space is encoded *inside* the token

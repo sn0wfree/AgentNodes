@@ -1,6 +1,6 @@
 """factor_tools 纯算法单元测试。
 
-覆盖 docs/coverage-90-plan-20261030.md §3.2：该模块原 18.4%，是 C 档最大
+覆盖 docs/archive/2026-10/coverage-90-plan-20261030.md §3.2：该模块原 18.4%，是 C 档最大
 单点缺口（371 条）。这里只测**纯 DataFrame 算法**（IC / 分位 / 衰减 /
 换手），不触 DuckDB、不触网——工具类的 execute 走集成测试。
 

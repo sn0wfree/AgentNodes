@@ -1,6 +1,6 @@
 """B3: workflow's declared-but-unread contracts now behave as documented.
 
-Contract: docs/stage-c1-b3-workflow-assessment-20261028.md §3
+Contract: docs/archive/2026-10/stage-c1-b3-workflow-assessment-20261028.md §3
 
 Four things WorkflowDefinition promised and nothing honoured:
   1. exec.node_max_retries  -- now applied at the node boundary

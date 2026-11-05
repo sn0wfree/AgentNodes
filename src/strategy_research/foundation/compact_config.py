@@ -72,7 +72,7 @@ class CompactConfig:
     # When False (default), only the MOST RECENT compaction is included
     # in LLM context. Older compactions are hidden from LLM but kept in DB
     # so the UI can still render them as audit history.
-    # See docs/compaction-history-filter.md for the opencode-aligned rationale.
+    # See docs/design/compaction-history-filter.md for the opencode-aligned rationale.
     keep_all_compactions_in_history: bool = False
 
     # ── Goal event messages ────────────────────────────────────────

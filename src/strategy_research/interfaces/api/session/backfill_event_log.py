@@ -323,7 +323,7 @@ def main() -> None:
 
     args = parser.parse_args()
 
-    # 统一入口（docs/logging-unified-entry-design-20261102.md §4.4）：
+    # 统一入口（docs/guides/logging-unified-entry-design-20261102.md §4.4）：
     # script 面 console → stdout，日志随 run_bg 重定向进 run.log。
     from strategy_research.foundation.observability import configure_logging
     configure_logging(

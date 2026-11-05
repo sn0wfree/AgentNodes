@@ -1,6 +1,6 @@
 """CancelScope —— 一次 run 的取消信号（B1）。
 
-语义（docs/stage-b1-interrupt-design-20261030.md）：
+语义（docs/archive/2026-10/stage-b1-interrupt-design-20261030.md）：
 - **只置位不反转**：一旦取消，永远取消（一个 run 不能复活）。
 - **节点边界检查**：GraphEngine 在节点开始前/结束后各查一次；节点内部
   （LLM 调用/工具执行）不强杀——Python 无法安全杀线程，强杀会破坏
