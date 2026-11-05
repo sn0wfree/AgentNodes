@@ -174,7 +174,7 @@ class TestLLMConfigIntegration:
         for k in ("OPENAI_API_KEY", "OPENAI_BASE_URL", "OPENAI_MODEL",
                   "LLM_API_KEY", "AGENTNODES__LLM__PROVIDER"):
             monkeypatch.delenv(k, raising=False)
-        # Override bridge path so we don't read the real ~/.quantnodes/llm.json
+        # Override bridge path so we don't read the real ~/.agentnodes/llm.json
         llm = tmp_path / "llm.json"
         llm.write_text(json.dumps({"llm": {
             "provider": "minimax",  # no base_url → A falls back to defaults
@@ -264,4 +264,4 @@ def test_module_has_mit_attribution():
 
 
 def test_config_path_canonical():
-    assert CONFIG_PATH == Path.home() / ".quantnodes" / "llm.json"
+    assert CONFIG_PATH == Path.home() / ".agentnodes" / "llm.json"

@@ -5,6 +5,47 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.7.0] — 2026-11-05
+
+### Breaking — 包名与环境变量重命名（批次 9）
+
+- **包名**：`strategy_research` → `agentnodes`（424 文件 git mv，755 文件 / 3,322 处引用改写）
+- **CLI**：`quantnodes-research` / `quantnodes-strategy-research` → `agentnodes`
+- **env 前缀**：`SR_*` → `AN_*`（64 变量 / 425 处）· `QUANTNODES_RESEARCH_*` → `AGENTNODES_*` ·
+  `QUANTNODES__*` → `AGENTNODES__*`
+- **数据目录**：`~/.quantnodes` → `~/.agentnodes`。
+  **首次启动自动迁移**：`ensure_data_dir()` 把旧目录整树复制到新目录并写
+  `.migrated-from-quantnodes` 标记，**旧目录保留作备份**（不自动删除）。
+  可用 `AN_DATA_DIR` 覆盖目标路径。
+
+> 老用户升级后：环境变量需改名（无兼容回退），数据由迁移逻辑自动搬运。
+
+### Removed — 减法批次 6/7
+
+| 批次 | 内容 | 规模 |
+|---|---|---:|
+| 6 | 6 个业务内置工具（factor/data/backtest/backtest_analysis/data_clean/goal）从 L3 `kernel/agent/builtin_tools/` 归位 L2 `apps/builtin_tools/`，经 `CapabilityRegistry` 注册成 6 个 `tool.*` kind | 3,673 行跨层 |
+| 7 | 9 个纯业务角色提示词归档（market_scanner / regime_classifier / stress_tester / position_auditor / report_writer / benchmark_compare / concentration_check / icarus_review） | 9 文件 |
+
+> 批次 7 首版**误归档**了框架能力（4 个工作流 JSON、26 个 skills、14 个
+> role_factory 角色提示词），已在 `bd3f6009` 全部恢复——它们是 harness 的
+> 技能注入源与多角色编排基础，与量化业务无关。
+
+### Added
+
+- `foundation/storage/sqlite.py::ensure_data_dir()` — 数据目录解析 + 一次性迁移 +
+  进程内锁（`pytest -n 4` 并发安全）。
+- 架构图新增「能力注册」与「业务工具归位」说明；层体量全部 AST 重测。
+
+### Fixed
+
+- `install.py` / `install.sh` 的 `agentnodes.cli.llm_config_check` 路径错误
+  （`cli` 早已搬到 `interfaces/cli/`，原路径永远 ImportError 且被裸 except 吞掉）。
+- `pyproject.toml` 的 `[project.scripts]` 同名定义两次。
+- 3 条指向已删目录的 ruff `per-file-ignores`（alpha_zoo / data_source / study_archived）。
+
+---
+
 ## [Unreleased]
 
 ### Changed — 项目重定位（2026-11-05）

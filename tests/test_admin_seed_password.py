@@ -1,6 +1,6 @@
 """SEC-4 (P5-5④): first-start admin seed no longer uses the known
 'admin' password — AN_ADMIN_PASSWORD env opt-in, otherwise random +
-one-time persistence to ~/.quantnodes/admin_password.txt.
+one-time persistence to ~/.agentnodes/admin_password.txt.
 
 The conftest autouse fixture sets AN_ADMIN_PASSWORD=admin for the test
 suite; these tests override it locally to exercise the production paths.
@@ -30,7 +30,7 @@ def test_random_seed_when_no_env(db: UserDB, monkeypatch) -> None:
     assert not _verify_password("admin", user["password_hash"]), (
         "the known constant must not authenticate after SEC-4",
     )
-    pw_file = Path.home() / ".quantnodes" / "admin_password.txt"
+    pw_file = Path.home() / ".agentnodes" / "admin_password.txt"
     assert pw_file.exists(), "generated password must be retrievable"
     stored = pw_file.read_text(encoding="utf-8").strip()
     assert stored and stored != "admin"

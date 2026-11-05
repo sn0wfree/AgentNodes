@@ -36,6 +36,12 @@ LEGACY_DATA_DIR = Path.home() / ".quantnodes"
 #: 迁移标记文件——存在即表示已迁移过（避免重复拷贝/覆盖用户新数据）。
 _MIGRATED_MARKER = ".migrated-from-quantnodes"
 
+#: 进程内锁：pytest -n 4 的 worker 虽各自独立进程，但同进程内的多线程
+#: （asyncio worker 线程）仍会并发进入 ensure_data_dir。
+import threading as _threading
+
+_ENSURE_LOCK = _threading.Lock()
+
 
 def ensure_data_dir(base: Path | None = None) -> Path:
     """Return the data dir, migrating ``~/.quantnodes`` on first use.
@@ -48,6 +54,11 @@ def ensure_data_dir(base: Path | None = None) -> Path:
        作为备份（不删，让用户自己决定）。
     4. 两者都不存在 → 创建目标目录。
 
+    **并发安全**（2026-11-05）：``pytest -n 4`` 下多个 worker 会同时进入本
+    函数，``copytree`` 与 ``mkdir`` 都可能有竞态。用进程内锁 + 幂等
+    ``exist_ok`` + 迁移标记实现「先到者建、后到者等」；跨进程竞态由
+    ``mkdir(exist_ok=True)`` 与标记文件的存在性判断兜底。
+
     失败不抛错：数据目录不可写时退化为「不迁移、返回目标路径」，
     由具体 store 在写入时报错，而不是让 import 期崩掉。
     """
@@ -56,28 +67,45 @@ def ensure_data_dir(base: Path | None = None) -> Path:
     )
     target = Path(target).expanduser()
 
-    try:
-        if (target / _MIGRATED_MARKER).exists():
-            return target
-        if not target.exists() and LEGACY_DATA_DIR.exists():
-            import shutil
+    with _ENSURE_LOCK:
+        try:
+            if (target / _MIGRATED_MARKER).exists():
+                return target
+            if target.exists():
+                # 目录已存在（可能是别的 worker 刚建的）——不再复制，
+                # 只补标记，避免覆盖正在写入的数据。
+                _write_marker(target)
+                return target
+            if LEGACY_DATA_DIR.exists():
+                import shutil
 
-            shutil.copytree(LEGACY_DATA_DIR, target, dirs_exist_ok=True)
-            (target / _MIGRATED_MARKER).write_text(
-                "migrated from ~/.quantnodes on 2026-11-05 (batch 9 rename)\n"
-                "old directory kept as backup; delete manually when safe\n",
-                encoding="utf-8",
-            )
-            import logging
+                shutil.copytree(LEGACY_DATA_DIR, target, dirs_exist_ok=True)
+                _write_marker(target)
+                import logging
 
-            logging.getLogger(__name__).info(
-                "data dir migrated: %s -> %s (legacy kept as backup)",
-                LEGACY_DATA_DIR, target,
-            )
-        target.mkdir(parents=True, exist_ok=True)
-    except OSError:
-        pass  # 不可写就交给调用方报错
+                logging.getLogger(__name__).info(
+                    "data dir migrated: %s -> %s (legacy kept as backup)",
+                    LEGACY_DATA_DIR, target,
+                )
+            target.mkdir(parents=True, exist_ok=True)
+        except OSError:
+            pass  # 不可写就交给调用方报错
     return target
+
+
+def _write_marker(target: Path) -> None:
+    """写迁移标记（幂等；并发下写失败不致命）。"""
+    marker = target / _MIGRATED_MARKER
+    if marker.exists():
+        return
+    try:
+        marker.write_text(
+            "data dir ready (2026-11-05 batch 9 rename)\n"
+            "if migrated from ~/.quantnodes, the old dir is kept as backup\n",
+            encoding="utf-8",
+        )
+    except OSError:
+        pass
 
 
 # ── Column / value helpers ────────────────────────────────────────

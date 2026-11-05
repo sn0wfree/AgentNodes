@@ -28,7 +28,7 @@
   <h1>架构 v10.2 · 四层堆叠 · 功能模块化</h1>
   <p class="sub">
     依赖只向下流：<b>L1 interfaces → L2 apps → L3 kernel → L4 foundation</b>。
-    每层内部按<b>功能域</b>分模块，模块边界取自真实包结构（366 文件 / 74,161 行，AST 实测）。
+    每层内部按<b>功能域</b>分模块，模块边界取自真实包结构（366 文件 / 74,224 行，AST 实测）。
     违规仅剩 2 条（<code>L3→L1</code> 2 · <code>L2→L1</code> 0），<code>L3→L2</code> 已清零。
     <b>2026-11-05 做减法批次 5</b>：移除数据域（data_source · compute_factor · db ·
     tools · data_import · data_readiness · preflight，22 文件 6,822 行），
@@ -314,7 +314,7 @@
   <text x="86" y="1472" class="lyr" text-anchor="middle">foundation</text>
   <text x="86" y="1494" class="lyrsub" text-anchor="middle">基础设施</text>
   <text x="86" y="1520" class="loc" text-anchor="middle">64 文件</text>
-  <text x="86" y="1538" class="loc" text-anchor="middle">10.9k 行</text>
+  <text x="86" y="1538" class="loc" text-anchor="middle">11.0k 行</text>
 
   <rect x="160" y="1400" width="1416" height="176" rx="12" class="band"/>
   <text x="180" y="1428" class="dom">零业务知识 · 被上面三层共同依赖 · L4 上行违规 = 0</text>
@@ -390,7 +390,7 @@
 <tr><td class="k">L1 interfaces</td><td>108 文件<br>23.0k 行</td><td>唯一出口：把外部请求包成 WorkRequest，订阅事件流回给调用方。不含业务判断。</td><td>按<b>渠道</b>分（api / cli / mcp）+ 一个<b>组装根</b>。组装根是唯一允许知道 apps 具体实现的 L1 模块。</td></tr>
 <tr><td class="k">L2 apps</td><td>22 文件<br>6.3k 行</td><td>研究 IP 的全部所在。方法论、因子、回测、进化都在这层。</td><td>按<b>业务能力</b>分四个功能域；域间不互相 import，协作走 L3 的端口或事件流。</td></tr>
 <tr><td class="k">L3 kernel</td><td>172 文件<br>34.0k 行</td><td>业务无关的平台机制：控制、执行、能力供给。不认识研究语义。</td><td>按<b>机制职责</b>分三个子带（控制面 / 执行面 / 能力面）；同层自由互调，只向下依赖。</td></tr>
-<tr><td class="k">L4 foundation</td><td>64 文件<br>10.9k 行</td><td>零业务知识的基础设施。被上面三层共同依赖。</td><td>按<b>技术能力</b>分（llm / storage / utils / observability / web）。晋升门槛＝去掉 run/session 语义可独立成库。</td></tr>
+<tr><td class="k">L4 foundation</td><td>64 文件<br>11.0k 行</td><td>零业务知识的基础设施。被上面三层共同依赖。</td><td>按<b>技术能力</b>分（llm / storage / utils / observability / web）。晋升门槛＝去掉 run/session 语义可独立成库。</td></tr>
 </tbody>
 </table>
 
@@ -418,7 +418,7 @@
 </table>
 
 <footer>
-  数据：AST 实测 2026-11-05（366 文件 / 74,161 行 · 批次 2 后）· 门禁：<code>check_dangling_imports.py --layers</code> ·
+  数据：AST 实测 2026-11-05（366 文件 / 74,224 行 · 批次 2 后）· 门禁：<code>check_dangling_imports.py --layers</code> ·
   版本史：<code>docs/architecture-diagram-changelog.md</code> · 设计：<code>docs/layered-skeleton-design-20261103.md</code>
 </footer>
 </div>

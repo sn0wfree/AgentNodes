@@ -2,7 +2,7 @@
 
 Covers:
     - Code defaults
-    - Bridge layer (``~/.quantnodes/llm.json`` via quantnodes_bridge)
+    - Bridge layer (``~/.agentnodes/llm.json`` via quantnodes_bridge)
     - Env var overrides
     - CLI overrides
     - Priority chain (CLI > env > bridge > defaults)
@@ -307,7 +307,7 @@ class TestHelpers:
         monkeypatch.delenv(ENV_CONFIG_PATH, raising=False)
         p = find_llm_config_path()
         assert p.name == "llm.json"
-        assert ".quantnodes" in str(p)
+        assert ".agentnodes" in str(p)
 
 
 # ── Constants ────────────────────────────────────────────────────────
@@ -327,7 +327,7 @@ class TestConstants:
 
     def test_default_config_path_points_at_quantnodes(self):
         assert DEFAULT_LLM_CONFIG_PATH.name == "llm.json"
-        assert ".quantnodes" in str(DEFAULT_LLM_CONFIG_PATH)
+        assert ".agentnodes" in str(DEFAULT_LLM_CONFIG_PATH)
 
 
 # ── .env loading ─────────────────────────────────────────────────────
@@ -355,7 +355,7 @@ class TestDotenvLoading:
         picked up in the serve process. The fix loads ``cwd/.env`` explicitly.
         """
         (tmp_path / ".env").write_text("AN_DOTENV_CWD_ONLY=1\n")
-        # Isolate from the host's ~/.quantnodes/.env (real API keys).
+        # Isolate from the host's ~/.agentnodes/.env (real API keys).
         monkeypatch.setenv("HOME", str(tmp_path))
         monkeypatch.setenv("USERPROFILE", str(tmp_path))
         monkeypatch.chdir(tmp_path)
@@ -376,8 +376,8 @@ class TestDotenvLoading:
         assert os.environ["AN_DOTENV_CWD_ONLY"] == "from-process-env"
 
     def test_quantnodes_dotenv_still_loaded(self, monkeypatch, tmp_path):
-        """The canonical ~/.quantnodes/.env load must keep working."""
-        qdir = tmp_path / ".quantnodes"
+        """The canonical ~/.agentnodes/.env load must keep working."""
+        qdir = tmp_path / ".agentnodes"
         qdir.mkdir()
         (qdir / ".env").write_text("AN_DOTENV_QUANTNODES=1\n")
         monkeypatch.setenv("HOME", str(tmp_path))
@@ -388,10 +388,10 @@ class TestDotenvLoading:
         assert os.environ.get("AN_DOTENV_QUANTNODES") == "1"
 
     def test_cwd_dotenv_takes_priority_over_quantnodes_env(self, monkeypatch, tmp_path):
-        """cwd .env is loaded before ~/.quantnodes/.env; with override=False
+        """cwd .env is loaded before ~/.agentnodes/.env; with override=False
         the earlier (cwd) value wins over a conflicting quantnodes value."""
         (tmp_path / ".env").write_text("AN_DOTENV_BOTH=cwd\n")
-        qdir = tmp_path / ".quantnodes"
+        qdir = tmp_path / ".agentnodes"
         qdir.mkdir()
         (qdir / ".env").write_text("AN_DOTENV_BOTH=quantnodes\n")
         monkeypatch.setenv("HOME", str(tmp_path))

@@ -16,7 +16,7 @@ Covers:
   CLI path driven by ``agentnodes init``).
 
 All tests operate against ``llm_json_path`` + ``dotenv_path`` (test-only
-overrides; defaults point at ``~/.quantnodes/{llm.json,.env}``).
+overrides; defaults point at ``~/.agentnodes/{llm.json,.env}``).
 """
 from __future__ import annotations
 
@@ -46,7 +46,7 @@ from agentnodes.interfaces.cli.onboard import (
 @pytest.fixture
 def fresh(tmp_path, monkeypatch):
     """Use fresh llm.json + .env paths for each test."""
-    qn = tmp_path / ".quantnodes"
+    qn = tmp_path / ".agentnodes"
     llm_path = qn / "llm.json"
     env_path = qn / ".env"
     return llm_path, env_path
@@ -322,8 +322,8 @@ class TestMigrateLegacyEnv:
         assert legacy_file.exists()  # legacy NOT deleted
 
     def test_copies_post_rebrand_legacy(self, tmp_path: Path, monkeypatch):
-        """The v0.4.x path ``~/.quantnodes/agentnodes/.env`` is also migrated."""
-        legacy_dir = tmp_path / ".quantnodes" / "agentnodes"
+        """The v0.4.x path ``~/.agentnodes/agentnodes/.env`` is also migrated."""
+        legacy_dir = tmp_path / ".agentnodes" / "agentnodes"
         legacy_dir.mkdir(parents=True)
         legacy_file = legacy_dir / ".env"
         legacy_file.write_text("LLM_API_KEY=sk-postrebrand\n")
@@ -488,7 +488,7 @@ class TestCmdRunOnboarding:
         assert data["llm"]["provider"] == "anthropic"
 
     def test_wizard_cancel_returns_nonzero(self, fresh, monkeypatch):
-        # is_onboarded() reads real ~/.quantnodes/llm.json; force False
+        # is_onboarded() reads real ~/.agentnodes/llm.json; force False
         # so cmd_run_onboarding reaches run_onboarding without prompting.
         monkeypatch.setattr(
             "agentnodes.interfaces.cli.onboard.is_onboarded", lambda **kw: False,

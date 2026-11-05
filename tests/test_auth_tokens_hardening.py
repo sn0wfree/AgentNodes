@@ -1,7 +1,7 @@
 """A6/A7: JWT secret load behavior hardening.
 
 - env JWT_SECRET wins.
-- Persisted file at ~/.quantnodes/jwt_secret is used if readable.
+- Persisted file at ~/.agentnodes/jwt_secret is used if readable.
 - Empty file is treated as "missing" and a fresh secret is written
   atomically (O_EXCL + 0o600).
 - OSError on read/write: by default raises RuntimeError (A6/A7 hardening).
@@ -121,7 +121,7 @@ def test_persisted_secret_is_byte_exact_on_disk(tmp_path, monkeypatch):
 
     secret = at._load_secret()
     assert secret == pinned
-    raw = (Path.home() / ".quantnodes" / "jwt_secret").read_bytes()
+    raw = (Path.home() / ".agentnodes" / "jwt_secret").read_bytes()
     assert len(raw) == 32, f"file holds {len(raw)} bytes, expected 32"
     assert raw == secret
     # And a reload round-trips byte-identically.
@@ -138,7 +138,7 @@ def test_load_secret_does_not_strip_whitespace_bytes(tmp_path, monkeypatch):
     """
     monkeypatch.setenv("JWT_SECRET", "")
     at = _reload()
-    secret_file = Path.home() / ".quantnodes" / "jwt_secret"
+    secret_file = Path.home() / ".agentnodes" / "jwt_secret"
     secret_file.parent.mkdir(parents=True, exist_ok=True)
     payload = b"\n" + b"x" * 30 + b"\r"
     secret_file.write_bytes(payload)
@@ -154,7 +154,7 @@ def test_persisted_file_written_atomically_with_0o600(tmp_path, monkeypatch):
     monkeypatch.setenv("JWT_SECRET", "")
     at = _reload()
     at._load_secret()
-    secret_file = Path.home() / ".quantnodes" / "jwt_secret"
+    secret_file = Path.home() / ".agentnodes" / "jwt_secret"
     assert secret_file.exists()
     mode = secret_file.stat().st_mode & 0o777
     assert mode == 0o600, f"expected 0o600, got {oct(mode)}"
@@ -163,7 +163,7 @@ def test_persisted_file_written_atomically_with_0o600(tmp_path, monkeypatch):
 def test_empty_file_is_treated_as_missing(tmp_path, monkeypatch):
     """A6: an existing-but-empty secret file triggers a fresh write
     instead of returning empty bytes (which would break HMAC)."""
-    secret_file = Path.home() / ".quantnodes" / "jwt_secret"
+    secret_file = Path.home() / ".agentnodes" / "jwt_secret"
     secret_file.parent.mkdir(parents=True, exist_ok=True)
     secret_file.write_bytes(b"")
 
@@ -176,7 +176,7 @@ def test_empty_file_is_treated_as_missing(tmp_path, monkeypatch):
 @_posix_only
 def test_corrupt_permission_unreadable_raises(tmp_path, monkeypatch):
     """A6/A7: OSError on read → RuntimeError (no silent dev fallback)."""
-    secret_file = Path.home() / ".quantnodes" / "jwt_secret"
+    secret_file = Path.home() / ".agentnodes" / "jwt_secret"
     secret_file.parent.mkdir(parents=True, exist_ok=True)
     secret_file.write_bytes(b"valid-secret")
     # Force the next read to fail with PermissionError.
@@ -193,7 +193,7 @@ def test_corrupt_permission_with_opt_in_flag_uses_dev_secret(
 ):
     """A7: STRATEGY_RESEARCH_ALLOW_DEV_SECRET=1 restores the legacy
     behaviour (forgeable but functional) for read-only deployments."""
-    secret_file = Path.home() / ".quantnodes" / "jwt_secret"
+    secret_file = Path.home() / ".agentnodes" / "jwt_secret"
     secret_file.parent.mkdir(parents=True, exist_ok=True)
     secret_file.write_bytes(b"valid-secret")
     secret_file.chmod(0o000)
@@ -221,7 +221,7 @@ def test_oserror_on_write_raises(tmp_path, monkeypatch):
 def test_corrupt_permission_opt_in_value_must_be_one(tmp_path, monkeypatch):
     """STRATEGY_RESEARCH_ALLOW_DEV_SECRET=0/yes/true/anything-else is treated
     as 'off'. Only literal '1' enables the fallback."""
-    secret_file = Path.home() / ".quantnodes" / "jwt_secret"
+    secret_file = Path.home() / ".agentnodes" / "jwt_secret"
     secret_file.parent.mkdir(parents=True, exist_ok=True)
     secret_file.write_bytes(b"valid-secret")
     secret_file.chmod(0o000)
@@ -246,7 +246,7 @@ def test_cache_holds_secret_across_calls(tmp_path):
         secret_a = at._load_secret()
         # Force the file to be deleted + recreated with a fresh secret.
         at._SECRET_CACHE = None
-        (Path.home() / ".quantnodes" / "jwt_secret").unlink()
+        (Path.home() / ".agentnodes" / "jwt_secret").unlink()
         secret_b = at._load_secret()
         # Cache was reset, so a new secret is written. They differ.
         assert secret_a != secret_b
