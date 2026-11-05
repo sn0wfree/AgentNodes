@@ -6,7 +6,7 @@ filesystem. Reuses :mod:`cli.theme` for the shared console.
 * :func:`cmd_show(run_id)` — read ``runs/run_<id>/summary.json``.
 * :func:`cmd_pine(run_id)` — read the same and emit a minimal TradingView
   Pine Script stub.
-* :func:`cmd_skill()` — list bundled skills via ``SkillsLoader``.
+* :func:`cmd_skill()` — list bundled + user skills via ``SkillRegistry``.
 """
 
 from __future__ import annotations
@@ -99,12 +99,22 @@ def cmd_pine(run_id: str, *, console: Any = None) -> int:
 
 
 def cmd_skill(*, console: Any = None) -> int:
-    """``/skill`` — list bundled + user skills via ``SkillsLoader``."""
+    """``/skill`` — list bundled + user skills via ``SkillRegistry``.
+
+    读法与 kernel 装配期一致（``harness_resolver._load_skills``）：
+    随包模板 ``templates/.skills/`` 打底，workspace 侧 ``.skills/`` 覆盖同名。
+    """
     console = _resolve_console(console)
     try:
-        from strategy_research.kernel.skills import SkillsLoader
-        loader = SkillsLoader()
-        skills = loader.list() if hasattr(loader, "list") else []
+        import strategy_research
+
+        from strategy_research.kernel.skills import SkillRegistry
+
+        registry = SkillRegistry()
+        registry.load_directory(
+            Path(strategy_research.__file__).parent / "templates" / ".skills")
+        registry.load_directory(_resolve_workspace() / ".skills")
+        skills = registry.list_all()
     except Exception as exc:  # noqa: BLE001
         console.print(f"[red]/skill failed:[/red] {exc}")
         return 1

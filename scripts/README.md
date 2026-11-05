@@ -29,14 +29,64 @@
 | `layer_matrix.py` | 层归属表 + 判定原语（**唯一事实源**） | `test_layer_matrix` 与 `--layers` 共用，防止两份表漂移 |
 | `sync_architecture_diagram.py` | 架构图数字与 AST 实测是否一致 | 图上的层体量/边数是实测来的；**曾出现图写 46 违规、实际 0 且过时 6 版** |
 
+### 悬空导入门禁的两种 import 形态（2026-11-05 补）
+
+`check_dangling_imports.py` 必须同时看两种 AST 节点，缺一不可：
+
+| 形态 | AST 节点 | 典型写法 |
+|---|---|---|
+| from-import | `ast.ImportFrom` | `from strategy_research.apps.db import get_conn` |
+| plain import | `ast.Import` | `import strategy_research.interfaces.api.routers.workflow as wf` |
+
+**为什么不能只看 `ImportFrom`**：批次 2 删掉 `interfaces/api/routers/workflow.py` 后，
+两个测试文件用 `import ...routers.workflow as wf` 继续引用它。旧版 `scan()` 只遍历
+`ast.ImportFrom`，门禁**显示 0 悬空**，而那 24 个用例在 fixture setup 期才炸——
+收集期不报错，连 `pytest --collect-only` 都看不出问题。
+现已补 `ast.Import` 分支，回归测试见
+`tests/test_scripts_arch.py::test_dangling_detects_plain_import_alias`。
+
+### Windows 控制台编码（GBK）
+
+`arch/` 脚本必须能在 **Windows 默认 GBK 控制台**下跑完并给出正确退出码。
+两个已踩的坑：
+
+- `sync_architecture_diagram.py` 末行 `print("... ✅")` → `UnicodeEncodeError`
+  → **在「全 [OK]」之后**崩、退出码 1，看起来像检查失败。现已
+  `sys.stdout.reconfigure(errors="replace")` 兜底，且统一用 `[OK]` 标记。
+- 新增脚本时不要在 `print()` 里放非 GBK 字符（✅ ⚠️ ❌ 等）。
+
+
+
 运行：
 ```bash
 python scripts/arch/check_dangling_imports.py
 python scripts/arch/check_dangling_imports.py --layers   # 附层方向矩阵
 python scripts/arch/check_path_literals.py
 python scripts/arch/sync_architecture_diagram.py         # 架构图是否过时
+python scripts/arch/sync_architecture_diagram.py --write # 把实测数字回写进图
 python -m graphify extract . --code-only --no-cluster --out tmp/graphify2   # 先抽图
 python scripts/arch/graph_layer_audit.py tmp/graphify2/graphify-out/graph.json
+```
+
+### `--write`：架构图自动回写（2026-11-05 落地）
+
+「每次大改后自动更新架构图」这条规则此前只有**检查**没有**回写**——
+数字得人手工改（错过一次就红一次）。现在 `--write` 把 AST 实测值直接写回：
+
+- **只改数字，不动版式与文案结构**。每条替换都用带上下文的正则锚定
+  （例：「112 文件」在图上出现两处，徽标与表行分别锚定），避免误伤同名数字。
+- **写完立即复核**：`check()` 对**同一份文本**再跑一遍，不过就**还原原图**并报错。
+  宁可不动，也不能写出一张半路坏掉的图。
+- **零命中即报**：任何一条替换没命中，说明图的结构变了（版式改过），
+  报告会点名让人核对，而不是静默跳过。
+- **幂等**：写两次不产生差异（`tests/test_scripts_arch.py::
+  test_architecture_diagram_write_is_idempotent` 断言）。
+
+流程从「量实测 → 手改图 → 验证」变成：
+
+```bash
+python scripts/arch/sync_architecture_diagram.py --write   # 回写
+python scripts/arch/sync_architecture_diagram.py            # 复核（应全 [OK]）
 ```
 
 ### ⚠ 架构图更新规则（用户要求，2026-11-04）

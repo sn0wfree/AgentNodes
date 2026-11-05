@@ -107,7 +107,7 @@ samples/<name>/
 | `golden/apps/portfolio/` | 6 文件 / 619 行 | 组合构建 · 相关性 · 风险平价 |
 | `golden/apps/export/` | 2 文件 / 302 行 | pine / tdx / vnpy 导出 |
 | `golden/interfaces/` | 8 文件 / 2,604 行 | routers(goal/hypothesis/validation/workflow) · cli(slash_goal/export) · tui(dag_view/workflow_worker) |
-| `tests/` | 32 个测试文件 | goal/hypothesis/validation 全量测试 + 6 个依赖已删包的混合测试 |
+| `tests/` | 35 个测试文件 | goal/hypothesis/validation 全量测试 + 6 个依赖已删包的混合测试 + 3 个 workflow 路由 API 测试（`test_workflow_approval_api.py` / `test_workflow_control_api.py` / `test_workflow_ownership.py`，测已移除的 `/api/goal/workflow/*` 面） |
 
 **两件残件并入 study 未归档**（仍在 `apps/study/`）：
 - `objective_policy.py`（37 行）：拒绝实盘下单目标 —— scheduler.replace_objective 仍需

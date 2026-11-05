@@ -11,6 +11,14 @@
 8 处悬空（7 处为迁移前既有的静默功能失效：408 个 YAML alpha 走不通、
 LLM DAG 规划从未启用等）。
 
+覆盖两种 import 形态（缺一不可）：
+    from strategy_research.apps.db import get_conn   -> ast.ImportFrom
+    import strategy_research.apps.db as db           -> ast.Import
+2026-11-05 批次 2 教训：本脚本曾只遍历 ast.ImportFrom，漏掉 ast.Import ——
+删掉 interfaces/api/routers/workflow.py 后，两个测试文件用
+`import ...routers.workflow as wf` 继续引用它，门禁显示 0 悬空，
+而 24 个用例在 fixture setup 期才炸（收集期不报错）。
+
 用法（发现问题时退出码 1，可直接接 CI / pre-commit）：
     python scripts/arch/check_dangling_imports.py            # 扫 src + tests
     python scripts/arch/check_dangling_imports.py --quiet    # 只在失败时输出
@@ -48,6 +56,88 @@ def module_exists(mod: str) -> bool:
     return os.path.isfile(p + ".py") or os.path.isdir(p)
 
 
+def package_dir(mod: str) -> str | None:
+    """mod 若是**包**（目录且含 __init__.py）返回其目录，否则 None。
+
+    只有包才需要检查 `from pkg import name` 的 name 是否存在——包的
+    `__init__.py` 是命名空间；普通模块的 `from mod import name` 取的是
+    模块属性，静态不可判定，一律放过。
+    """
+    if not mod.startswith("strategy_research"):
+        return None
+    parts = mod.split(".")[1:]
+    if not parts:
+        return None
+    d = os.path.join(PKG_DIR, *parts)
+    if os.path.isdir(d) and os.path.isfile(os.path.join(d, "__init__.py")):
+        return d
+    return None
+
+
+def _bound_names(stmts: list) -> set[str]:
+    """一批顶层语句在模块命名空间里绑定的名字。"""
+    names: set[str] = set()
+    for node in stmts:
+        if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef, ast.ClassDef)):
+            names.add(node.name)
+        elif isinstance(node, ast.Assign):
+            for t in node.targets:
+                if isinstance(t, ast.Name):
+                    names.add(t.id)
+        elif isinstance(node, ast.AnnAssign):
+            if isinstance(node.target, ast.Name):
+                names.add(node.target.id)
+        elif isinstance(node, (ast.Import, ast.ImportFrom)):
+            for a in node.names:
+                names.add(a.asname or a.name.split(".")[0])
+        elif isinstance(node, ast.Try):
+            # try: from .x import y / except ImportError: y = None —— 两种分支都绑定
+            names |= _bound_names(node.body)
+            for h in node.handlers:
+                names |= _bound_names(h.body)
+            names |= _bound_names(node.orelse)
+            names |= _bound_names(node.finalbody)
+    return names
+
+
+def package_exports(init_path: str) -> set[str] | None:
+    """包 `__init__.py` 顶层绑定的名字集合。
+
+    返回 None 表示**无法静态判定**（有 PEP 562 的 `__getattr__` 兜底），
+    此时该包的 from-import 一律放过 —— 宁可漏报也不误报。
+    """
+    try:
+        src = io.open(init_path, encoding="utf-8", errors="replace").read()
+        tree = ast.parse(src)
+    except (OSError, SyntaxError):
+        return None
+    names = _bound_names(tree.body)
+    if "__getattr__" in names:
+        return None
+    return names
+
+
+EXEMPT_MARK = "dangling-import: ok"
+
+
+def _exempt(src_lines: list[str], node, alias) -> bool:
+    """该 import 是否带 ``# dangling-import: ok`` 豁免标记。
+
+    豁免的正当场景：**断言 import 会失败**的测试。
+    例如 ``tests/test_prompt_builder_integration.py`` 里
+    ``with pytest.raises(ImportError): from ... import _CHAT_PROMPT_PATH``
+    —— 那个名字本就不该存在，门禁若报它就是误报。
+    标记写在 import 语句行尾（与 ``check_path_literals.py`` 的
+    ``# path-literal: ok`` 同款约定）。
+    """
+    for lineno in {getattr(alias, "lineno", None), node.lineno}:
+        if not lineno:
+            continue
+        if 1 <= lineno <= len(src_lines) and EXEMPT_MARK in src_lines[lineno - 1]:
+            return True
+    return False
+
+
 def scan(roots: list[str]) -> list[str]:
     bad: list[str] = []
     for root in roots:
@@ -63,9 +153,25 @@ def scan(roots: list[str]) -> list[str]:
                     tree = ast.parse(src)
                 except SyntaxError:
                     continue  # 语法错误由编译门禁负责
+                src_lines = src.splitlines()
                 # 相对基准必须用绝对 base（CWD 不在仓库根时 relpath 会跨盘报错）
                 pkg = os.path.relpath(path, base).replace(os.sep, ".").split(".")[:-2]
                 for node in ast.walk(tree):
+                    if isinstance(node, ast.Import):
+                        # `import a.b.c as x` —— 别名形式此前被漏检：
+                        # 2026-11-05 批次 2 删掉 interfaces/api/routers/workflow.py 后，
+                        # 两个测试文件用 `import ...routers.workflow as wf` 继续引用它，
+                        # 收集期不报错、fixture setup 期才炸 —— 门禁当时是绿的。
+                        for alias in node.names:
+                            mod = alias.name
+                            if not mod.startswith("strategy_research"):
+                                continue
+                            if not module_exists(mod):
+                                if _exempt(src_lines, node, alias):
+                                    continue
+                                bad.append(f"{path}:{node.lineno}: "
+                                           f"import {alias.name} -> {mod}")
+                        continue
                     if not isinstance(node, ast.ImportFrom):
                         continue
                     if node.level == 0:
@@ -76,8 +182,35 @@ def scan(roots: list[str]) -> list[str]:
                     if not mod.startswith("strategy_research"):
                         continue
                     if not module_exists(mod):
-                        bad.append(f"{path}:{node.lineno}: "
-                                   f"{'.' * node.level}{node.module or ''} -> {mod}")
+                        if not _exempt(src_lines, node, None):
+                            bad.append(f"{path}:{node.lineno}: "
+                                       f"{'.' * node.level}{node.module or ''} -> {mod}")
+                        continue
+                    # 第三种形态：`from <包> import <名字>`
+                    # 模块本身存在不代表被 import 的名字存在 —— 删掉
+                    # interfaces/api/routers/workflow.py 后，
+                    # `from strategy_research.interfaces.api.routers import workflow`
+                    # 的宿主包还在，门禁看不出名字已消失。
+                    pkg_dir = package_dir(mod)
+                    if pkg_dir is None:
+                        continue
+                    exports = package_exports(os.path.join(pkg_dir, "__init__.py"))
+                    if exports is None:
+                        continue  # PEP 562 __getattr__ 兜底 → 无法静态判定，放过
+                    for alias in node.names:
+                        if alias.name == "*":
+                            continue
+                        if os.path.isfile(os.path.join(pkg_dir, alias.name + ".py")):
+                            continue
+                        if os.path.isdir(os.path.join(pkg_dir, alias.name)):
+                            continue
+                        if alias.name in exports:
+                            continue
+                        if _exempt(src_lines, node, alias):
+                            continue
+                        bad.append(
+                            f"{path}:{node.lineno}: "
+                            f"from {mod} import {alias.name} -> {mod}.{alias.name}")
     return bad
 
 

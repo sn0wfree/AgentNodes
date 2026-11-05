@@ -3,6 +3,39 @@
 > 从 `docs/architecture-diagram.html` 外移（2026-11-03 v8 瘦身）。
 > 图身只保留结构与盒级状态；本文件承载 v5.1 → v8.4 的全部演进记录。
 
+- **v9.2（2026-11-05，批次 2 收尾：门禁补漏 · 自动回写落地）**：**图面结构与版式一字未改**，
+  只刷新了两个总数（L1 26,613 → **26,623** 行 · 总计 104,175 → **104,185** 行，
+  来自 `cmd_skill` 修复的 +10 行）。逐项实测：L1 112/26,623 · L2 114/29,679 ·
+  L3 176/36,958 · L4 64/10,925 · 总计 466 文件 / 104,185 行 · 跨层边数
+  L1→L2 91 · L1→L3 106 · L1→L4 53 · L2→L3 25 · L2→L4 42 · L3→L4 48 ·
+  上行违规仍是 3 条（L2→L1 1 · L3→L1 2 · L3→L2 0）。
+  本版记的是**三个门禁缺陷**——它们让批次 2 的残留错误看起来像「已通过」：
+  ① **悬空导入门禁漏检 `import a.b.c as x` 形式**：`check_dangling_imports.py` 的
+  `scan()` 只遍历 `ast.ImportFrom`，**完全不看** `ast.Import`**。批次 2 删掉
+  `interfaces/api/routers/workflow.py` 后，`tests/test_workflow_approval_api.py` 与
+  `tests/test_workflow_ownership.py` 用 `import ...routers.workflow as wf` 继续引用它——
+  门禁当时是**绿的**，而这 24 个用例在 fixture setup 期才炸（收集期不报错，
+  连 collection 都看不出来）。现补 `ast.Import` 分支，并把该形态写成回归测试
+  （`tests/test_scripts_arch.py::test_dangling_detects_plain_import_alias`）。
+  ② **同门禁漏检 `from <包> import <名字>` 的「名字消失」**：
+  `from strategy_research.interfaces.api.routers import workflow` 的宿主包还在，
+  旧门禁只解析 `node.module`（= routers），看不出被 import 的名字已不存在。
+  `tests/test_workflow_control_api.py` 的 10 个用例就藏在这里。现补第三种检查
+  （包 `__init__.py` 的顶层绑定 + 子模块存在性；PEP 562 `__getattr__` 兜底时放过）。
+  ③ **架构图门禁在 Windows 默认 GBK 控制台上崩**：末行 `print("... ✅")` 抛
+  `UnicodeEncodeError`——**在「全 [OK]」之后**崩，退出码 1，看起来像检查失败。
+  现 `sys.stdout.reconfigure(errors="replace")` 兜底，并把 ✅ 换成全文一致的 `[OK]`。
+  另：**`--write` 从未实现**（docstring 里承诺过），「每次大改后自动更新架构图」
+  此前靠人手工改数字。现已落地：只改数字、锚定上下文、写后复核不过则还原、
+  零命中即报、幂等（5 条测试断言）。三个 workflow 路由测试文件归档到
+  `testcase/tests/`（它们测的是已移除的 `/api/goal/workflow/*` 面）。
+  顺带修掉一个**新发现的死引用**：`cli/commands/show.py::cmd_skill` 引的
+  `SkillsLoader` 在仓库里从不存在（`kernel/skills` 只有 `SkillRegistry` /
+  `parse_skill_file`），`/skill` 命令一直在打印「failed」——改用 `SkillRegistry`
+  + 随包模板目录，与 `kernel/agent/harness_resolver._load_skills` 同一读法。
+  校验：`check_dangling_imports.py` **0 悬空** · `sync_architecture_diagram.py` 退出码 0 ·
+  `tests/test_scripts_arch.py` 23 passed · `tests/test_layer_matrix.py` 2 passed。
+
 - **v9.1（2026-11-05，做减法批次 2 后刷新）**：**数据与模块分组刷新，版式不变**。
   ① **移除五个业务包**：`apps/goal`(19 文件 6,147 行) · `apps/hypothesis`(6/1,459) ·
   `apps/validation`(9/801) · `apps/portfolio`(6/619) · `apps/export`(2/302)，

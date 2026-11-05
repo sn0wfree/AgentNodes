@@ -25,10 +25,10 @@
 </head>
 <body>
 <div class="wrap">
-  <h1>架构 v9.1 · 四层堆叠 · 功能模块化</h1>
+  <h1>架构 v9.2 · 四层堆叠 · 功能模块化</h1>
   <p class="sub">
     依赖只向下流：<b>L1 interfaces → L2 apps → L3 kernel → L4 foundation</b>。
-    每层内部按<b>功能域</b>分模块，模块边界取自真实包结构（466 文件 / 104,175 行，AST 实测）。
+    每层内部按<b>功能域</b>分模块，模块边界取自真实包结构（466 文件 / 104,185 行，AST 实测）。
     违规仅剩 3 条（<code>L3→L1</code> 2 · <code>L2→L1</code> 1），<code>L3→L2</code> 已清零。
     <b>2026-11-04 做减法批次 2</b>：移除 apps 五个业务包（goal / hypothesis / portfolio / validation / export，
     42 文件 9,328 行）与对应出口（8 文件 2,604 行），L2 层 39.1k → 29.7k、L1 层 29.3k → 26.6k。
@@ -416,7 +416,7 @@
 </table>
 
 <footer>
-  数据：AST 实测 2026-11-05（466 文件 / 104,175 行 · 批次 2 后）· 门禁：<code>check_dangling_imports.py --layers</code> ·
+  数据：AST 实测 2026-11-05（466 文件 / 104,185 行 · 批次 2 后）· 门禁：<code>check_dangling_imports.py --layers</code> ·
   版本史：<code>docs/architecture-diagram-changelog.md</code> · 设计：<code>docs/layered-skeleton-design-20261103.md</code>
 </footer>
 </div>

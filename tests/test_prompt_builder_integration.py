@@ -27,7 +27,8 @@ class TestPhase5RemovedLegacyPaths:
     def test_no_chat_prompt_path_constant(self):
         """``from cli.tui import _CHAT_PROMPT_PATH`` must raise ImportError."""
         with __import__("pytest").raises(ImportError):
-            from strategy_research.interfaces.cli.tui import _CHAT_PROMPT_PATH  # noqa: F401
+            # 这个名字本就不该存在（断言 import 会失败）—— 悬空导入门禁豁免
+            from strategy_research.interfaces.cli.tui import _CHAT_PROMPT_PATH  # noqa: F401  # dangling-import: ok
 
     def test_no_load_role_system_prompt_function(self):
         """``from role_factory import _load_role_system_prompt`` must raise."""

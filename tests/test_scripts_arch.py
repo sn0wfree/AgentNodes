@@ -99,6 +99,86 @@ def test_dangling_real_repo_clean():
     assert mod.scan(["src", "tests"]) == []
 
 
+def test_dangling_detects_plain_import_alias(dangling_mod, tmp_path):
+    """``import a.b.c as x`` 形式的悬空也必须报出。
+
+    背景（2026-11-05）：批次 2 删掉 ``interfaces/api/routers/workflow.py`` 后，
+    两个测试文件用 ``import strategy_research.interfaces.api.routers.workflow
+    as wf`` 继续引用它。旧的 scan() 只遍历 ``ast.ImportFrom``，**完全不看**
+    ``ast.Import``，于是门禁是绿的，而这 24 个用例在 fixture setup 期才炸
+    （收集期不报错，所以连 collection 都看不出问题）。
+    """
+    _mk_repo(tmp_path, {
+        "src/strategy_research/kernel/loop.py": (
+            "import strategy_research.apps.gone as g\n"
+        ),
+        "src/strategy_research/apps/kept.py": "x = 1\n",
+        "tests/test_x.py": (
+            "import strategy_research.kernel.loop\n"
+            "import strategy_research.apps.kept as k\n"
+        ),
+    })
+    bad = dangling_mod.scan(["src", "tests"])
+    assert len(bad) == 1, bad
+    assert "apps.gone" in bad[0]
+    assert "test_x.py" not in bad[0]  # 存在的模块不报
+
+
+def test_dangling_detects_from_package_import_missing_name(dangling_mod, tmp_path):
+    """``from <包> import <名字>``：包在、名字不在 → 也要报。
+
+    背景（2026-11-05）：批次 2 删掉 ``interfaces/api/routers/workflow.py`` 后，
+    ``tests/test_workflow_control_api.py`` 仍写
+    ``from strategy_research.interfaces.api.routers import workflow``。
+    宿主包 ``routers/`` 还在，旧门禁只解析 ``node.module``（= routers），
+    看不出被 import 的**名字**已经消失 → 又一批 fixture 期才炸的用例。
+    """
+    _mk_repo(tmp_path, {
+        "src/strategy_research/kernel/__init__.py": "",
+        "src/strategy_research/kernel/kept.py": "x = 1\n",
+        # 没有 kernel/gone.py —— 名字既不是子模块、也不在 __init__ 里
+        "tests/test_x.py": (
+            "from strategy_research.kernel import kept\n"
+            "from strategy_research.kernel import gone\n"
+        ),
+    })
+    bad = dangling_mod.scan(["src", "tests"])
+    assert len(bad) == 1, bad
+    assert "kernel.gone" in bad[0]
+
+
+def test_dangling_package_name_from_init_is_not_reported(dangling_mod, tmp_path):
+    """包 ``__init__.py`` 里绑定的名字（def/class/import）不算悬空。"""
+    _mk_repo(tmp_path, {
+        "src/strategy_research/kernel/__init__.py": (
+            "from .reg import Registry\n"
+            "VERSION = '1'\n"
+            "class Base: pass\n"
+            "def helper(): pass\n"
+        ),
+        "src/strategy_research/kernel/reg.py": "class Registry: pass\n",
+        "tests/test_x.py": (
+            "from strategy_research.kernel import Registry, VERSION, Base, helper\n"
+        ),
+    })
+    assert dangling_mod.scan(["src", "tests"]) == []
+
+
+def test_dangling_exempt_marker_allows_expected_failure(dangling_mod, tmp_path):
+    """``# dangling-import: ok`` 豁免：断言 import 会失败的测试不该被报。
+
+    场景：``with pytest.raises(ImportError): from pkg import gone`` ——
+    那个名字本就不该存在，门禁报它就是误报。
+    """
+    _mk_repo(tmp_path, {
+        "src/strategy_research/kernel/__init__.py": "",
+        "tests/test_x.py": (
+            "from strategy_research.kernel import gone  # dangling-import: ok\n"
+        ),
+    })
+    assert dangling_mod.scan(["src", "tests"]) == []
+
+
 # ── check_dangling_imports --layers ──────────────────────────────────
 
 
@@ -198,6 +278,51 @@ def test_architecture_diagram_structurally_valid():
     assert "[X] HTML 结构" not in text, text
     assert "[X] 未转义 &" not in text, text
     assert "[X] rect 越界" not in text, text
+
+
+def test_architecture_diagram_write_is_idempotent():
+    """``--write`` 回写后图必须与代码一致，且**再写一次不改任何字节**。
+
+    幂等是 --write 可信的前提：每次大改后无脑跑一次即可，不该越写越乱。
+    """
+    mod = _load("sync_architecture_diagram")
+    before = mod.DIAGRAM.read_text(encoding="utf-8")
+    try:
+        ok, report = mod.write()
+        assert ok, "\n".join(report)
+        after = mod.DIAGRAM.read_text(encoding="utf-8")
+        # 幂等：第二次写入不应产生任何变化
+        ok2, report2 = mod.write()
+        assert ok2, "\n".join(report2)
+        assert mod.DIAGRAM.read_text(encoding="utf-8") == after
+        # 回写后必须与代码一致
+        ok3, report3 = mod.check()
+        assert ok3, "\n".join(report3)
+    finally:
+        mod.DIAGRAM.write_text(before, encoding="utf-8")
+
+
+def test_architecture_diagram_write_fixes_stale_numbers(tmp_path, monkeypatch):
+    """合成一张**过时**的图：--write 应把数字改成 AST 实测值。
+
+    这条把「用户要求每次大改后自动更新架构图」变成可执行断言 ——
+    以前这一步靠人记得手改数字（错过一次就红一次）。
+    """
+    mod = _load("sync_architecture_diagram")
+    real = mod.DIAGRAM.read_text(encoding="utf-8")
+    stale = real.replace("466 文件", "999 文件").replace(
+        "L1→L2 91", "L1→L2 7").replace("104,185", "1,234")
+    tmp = tmp_path / "architecture-diagram.html"
+    tmp.write_text(stale, encoding="utf-8")
+    monkeypatch.setattr(mod, "DIAGRAM", tmp)
+
+    ok, report = mod.write()
+    assert ok, "\n".join(report)
+    fixed = tmp.read_text(encoding="utf-8")
+    assert "999 文件" not in fixed
+    assert "L1→L2 7 " not in fixed
+    ok2, report2 = mod.check(text=fixed)
+    assert ok2, "\n".join(report2)
 
 
 # ── check_path_literals ──────────────────────────────────────────────
