@@ -71,7 +71,13 @@ webui/frontend/node_modules/
 webui/frontend/dist/
 webui/static/
 *.db
+# SQLite WAL sidecars —— 运行时产物，永不入库（2026-11-05：曾误提交）
+*.db-shm
+*.db-wal
+*.db-journal
+# 会话库（两种库名：旧 strategy_research / 新 agentnodes）
 .quantnodes_strategy_research_session.db*
+.quantnodes_agentnodes_session.db*
 coverage/
 # 会话笔记/本地记忆（不提交）
 memory/
