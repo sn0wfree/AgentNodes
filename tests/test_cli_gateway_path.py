@@ -60,7 +60,7 @@ def test_cli_gateway_singleton_reused(tmp_path, monkeypatch):
     from agentnodes.kernel.gateway import reset_gateway
 
     reset_gateway()
-    monkeypatch.setenv("STRATEGY_RESEARCH_LLM_CONFIG", str(tmp_path / "cfg.json"))
+    monkeypatch.setenv("AGENTNODES_LLM_CONFIG", str(tmp_path / "cfg.json"))
     (tmp_path / "cfg.json").write_text('{"llm": {"enabled": false}}', encoding="utf-8")
     monkeypatch.setenv("LLM_API_KEY", "dummy")
 

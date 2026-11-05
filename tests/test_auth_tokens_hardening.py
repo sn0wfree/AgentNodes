@@ -5,7 +5,7 @@
 - Empty file is treated as "missing" and a fresh secret is written
   atomically (O_EXCL + 0o600).
 - OSError on read/write: by default raises RuntimeError (A6/A7 hardening).
-  With STRATEGY_RESEARCH_ALLOW_DEV_SECRET=1 the legacy dev-secret
+  With AGENTNODES_ALLOW_DEV_SECRET=1 the legacy dev-secret
   fallback is restored (opt-in, gated).
 """
 
@@ -59,7 +59,7 @@ def _reset_secret_cache(tmp_path, monkeypatch):
     monkeypatch.setenv("HOMEDRIVE", str(tmp_path.drive or "C:"))
     monkeypatch.setenv("HOMEPATH", str(tmp_path)[len(str(tmp_path.drive or "C:")):])
     # Default: do NOT allow the dev secret fallback.
-    monkeypatch.delenv("STRATEGY_RESEARCH_ALLOW_DEV_SECRET", raising=False)
+    monkeypatch.delenv("AGENTNODES_ALLOW_DEV_SECRET", raising=False)
     yield
     _current_at()._SECRET_CACHE = None
 
@@ -183,7 +183,7 @@ def test_corrupt_permission_unreadable_raises(tmp_path, monkeypatch):
     secret_file.chmod(0o000)
 
     at = _reload()
-    with pytest.raises(RuntimeError, match="STRATEGY_RESEARCH_ALLOW_DEV_SECRET"):
+    with pytest.raises(RuntimeError, match="AGENTNODES_ALLOW_DEV_SECRET"):
         at._load_secret()
 
 
@@ -191,14 +191,14 @@ def test_corrupt_permission_unreadable_raises(tmp_path, monkeypatch):
 def test_corrupt_permission_with_opt_in_flag_uses_dev_secret(
     tmp_path, monkeypatch
 ):
-    """A7: STRATEGY_RESEARCH_ALLOW_DEV_SECRET=1 restores the legacy
+    """A7: AGENTNODES_ALLOW_DEV_SECRET=1 restores the legacy
     behaviour (forgeable but functional) for read-only deployments."""
     secret_file = Path.home() / ".agentnodes" / "jwt_secret"
     secret_file.parent.mkdir(parents=True, exist_ok=True)
     secret_file.write_bytes(b"valid-secret")
     secret_file.chmod(0o000)
 
-    monkeypatch.setenv("STRATEGY_RESEARCH_ALLOW_DEV_SECRET", "1")
+    monkeypatch.setenv("AGENTNODES_ALLOW_DEV_SECRET", "1")
     at = _reload()
     secret = at._load_secret()
     assert secret == b"strategy-research-dev-secret"
@@ -219,7 +219,7 @@ def test_oserror_on_write_raises(tmp_path, monkeypatch):
 
 @_posix_only
 def test_corrupt_permission_opt_in_value_must_be_one(tmp_path, monkeypatch):
-    """STRATEGY_RESEARCH_ALLOW_DEV_SECRET=0/yes/true/anything-else is treated
+    """AGENTNODES_ALLOW_DEV_SECRET=0/yes/true/anything-else is treated
     as 'off'. Only literal '1' enables the fallback."""
     secret_file = Path.home() / ".agentnodes" / "jwt_secret"
     secret_file.parent.mkdir(parents=True, exist_ok=True)
@@ -227,7 +227,7 @@ def test_corrupt_permission_opt_in_value_must_be_one(tmp_path, monkeypatch):
     secret_file.chmod(0o000)
 
     for value in ("0", "true", "yes", "on", ""):
-        monkeypatch.setenv("STRATEGY_RESEARCH_ALLOW_DEV_SECRET", value)
+        monkeypatch.setenv("AGENTNODES_ALLOW_DEV_SECRET", value)
         at = _reload()
         with pytest.raises(RuntimeError):
             at._load_secret()

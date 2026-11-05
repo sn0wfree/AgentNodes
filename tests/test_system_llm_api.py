@@ -13,6 +13,7 @@ Covers:
 from __future__ import annotations
 
 import json
+import os
 import stat
 from pathlib import Path
 from unittest.mock import patch
@@ -192,8 +193,11 @@ class TestPutLLM:
         assert "NVIDIA_API_KEY=nvapi-new-key-123" in content
         data = json.loads(llm_json.read_text())
         assert data["llm"]["profiles"]["nvidia"]["api_key"] == "env:NVIDIA_API_KEY"
-        mode = stat.S_IMODE(dotenv.stat().st_mode)
-        assert mode == 0o600
+        # 0600 权限是 POSIX 语义；Windows 上 stat 不反映 chmod
+        # （实测返回 0o666），该断言只在 POSIX 有意义。
+        if os.name == "posix":
+            mode = stat.S_IMODE(dotenv.stat().st_mode)
+            assert mode == 0o600
 
     def test_masked_key_never_written(self, client, auth_headers, isolated):
         llm_json, dotenv = isolated

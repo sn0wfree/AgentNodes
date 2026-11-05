@@ -14,7 +14,7 @@ Layered configuration (higher overrides lower):
     1. Code defaults        (LLMConfig field defaults)
     2. YAML profile file    (~/.agentnodes/llm.yaml)
     3. Environment variables (OPENAI_API_KEY, OPENAI_BASE_URL, OPENAI_MODEL,
-                             STRATEGY_RESEARCH_LLM_PROFILE)
+                             AGENTNODES_LLM_PROFILE)
     4. CLI overrides        (parsed argparse namespace)
 
 Typical usage:

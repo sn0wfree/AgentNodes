@@ -29,7 +29,7 @@ def _resolve_console(console: Any = None) -> Console:
 
 def _memory_dir() -> Optional[str]:
     """Return the memory directory from env, or ``None``."""
-    return os.environ.get("STRATEGY_RESEARCH_MEMORY_DIR") or None
+    return os.environ.get("AGENTNODES_MEMORY_DIR") or None
 
 
 def _store():

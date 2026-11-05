@@ -106,7 +106,7 @@ def backend_server(built_frontend: Path) -> Iterator[dict]:
 
     env = os.environ.copy()
     env.update({
-        "STRATEGY_RESEARCH_TEST_CHAT": "1",
+        "AGENTNODES_TEST_CHAT": "1",
         "STATIC_DIR": str(built_frontend),
         "CORS_ORIGINS": "*",
         "PYTHONUNBUFFERED": "1",

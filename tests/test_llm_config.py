@@ -302,7 +302,7 @@ class TestHelpers:
         assert out2.api_key == "existing"
 
     def test_find_llm_config_path(self, monkeypatch):
-        # conftest sets STRATEGY_RESEARCH_LLM_CONFIG for test isolation;
+        # conftest sets AGENTNODES_LLM_CONFIG for test isolation;
         # clear it here to verify the default path resolution.
         monkeypatch.delenv(ENV_CONFIG_PATH, raising=False)
         p = find_llm_config_path()
@@ -318,12 +318,12 @@ class TestConstants:
         assert ENV_API_KEY == "OPENAI_API_KEY"
         assert ENV_BASE_URL == "OPENAI_BASE_URL"
         assert ENV_MODEL == "OPENAI_MODEL"
-        assert ENV_CONFIG_PATH == "STRATEGY_RESEARCH_LLM_CONFIG"
+        assert ENV_CONFIG_PATH == "AGENTNODES_LLM_CONFIG"
         assert ENV_LLM_API_KEY == "LLM_API_KEY"
 
     def test_legacy_env_profile_kept(self):
         """ENV_PROFILE is a back-compat alias and still importable."""
-        assert ENV_PROFILE == "STRATEGY_RESEARCH_LLM_PROFILE"
+        assert ENV_PROFILE == "AGENTNODES_LLM_PROFILE"
 
     def test_default_config_path_points_at_quantnodes(self):
         assert DEFAULT_LLM_CONFIG_PATH.name == "llm.json"

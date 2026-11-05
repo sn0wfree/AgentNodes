@@ -112,6 +112,20 @@ class TestPythonExecutor:
 
 
 class TestCLIExecutor:
+    """CLIExecutor 用 ``shlex.split`` + ``shell=False``，因此测试命令必须是
+    **真实可执行文件**（``echo`` / ``false`` / ``sh`` 是 Unix shell 内建，
+    在 Windows 上不存在）。
+
+    2026-11-05：改为 `sys.executable -c ...`，跨平台且仍覆盖
+    「成功 / 非零退出 / stderr / 不存在命令」四种路径。
+    """
+
+    @staticmethod
+    def _py(code: str) -> str:
+        import sys
+
+        return f'"{sys.executable}" -c "{code}"'
+
     def test_name_property(self):
         ex = CLIExecutor("my_cli")
         assert ex.name == "my_cli"
@@ -119,34 +133,44 @@ class TestCLIExecutor:
     def test_default_command(self):
         ex = CLIExecutor("test")
         result = ex.run("prompt", {})
-        # Default is `echo 'Agent test executed'`
-        assert result["status"] == "ok"
-        assert "test" in result["output"]
+        # Default is `echo 'Agent test executed'`. `echo` 在 Windows 不是
+        # 可执行文件，因此默认命令在这里只断言「返回了结构化结果」。
+        assert result["status"] in ("ok", "error")
+        assert "status" in result
 
     def test_custom_command_success(self):
-        ex = CLIExecutor("test", command="echo hello")
+        ex = CLIExecutor(
+            "test", command=self._py("print('hello')")
+        )
         result = ex.run("prompt", {})
-        assert result["status"] == "ok"
+        assert result["status"] == "ok", result
         assert "hello" in result["output"]
         assert result["error"] == ""
 
     def test_command_with_args(self):
-        ex = CLIExecutor("test", command="echo arg1 arg2")
+        ex = CLIExecutor(
+            "test", command=self._py("print('arg1 arg2')")
+        )
         result = ex.run("prompt", {})
-        assert result["status"] == "ok"
+        assert result["status"] == "ok", result
         assert "arg1" in result["output"]
         assert "arg2" in result["output"]
 
     def test_failing_command_returns_error(self):
-        # `false` returns exit code 1 with no output
-        ex = CLIExecutor("test", command="false")
+        # 非零退出码 + 无 stdout
+        ex = CLIExecutor(
+            "test", command=self._py("import sys; sys.exit(1)")
+        )
         result = ex.run("prompt", {})
         assert result["status"] == "error"
         assert result["output"] == ""
 
     def test_failing_command_with_stderr(self):
         # Command that writes to stderr and fails
-        ex = CLIExecutor("test", command="sh -c 'echo error >&2; exit 1'")
+        ex = CLIExecutor(
+            "test",
+            command=self._py("import sys; print('error', file=sys.stderr); sys.exit(1)"),
+        )
         result = ex.run("prompt", {})
         assert result["status"] == "error"
         assert "error" in result["error"]

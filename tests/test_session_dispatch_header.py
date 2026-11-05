@@ -55,17 +55,21 @@ class TestDispatchRefreshesHeaderAfterArun:
         )
 
     def test_header_stats_called_after_arun(self):
-        """The second _update_header_stats call happens AFTER arun returned."""
+        """The second _update_header_stats call happens AFTER the LLM turn.
+
+        2026-11-05：CLI 已在 P5-1c ④ 改为唯一入口 Gateway，
+        ``_run_agent_loop`` 更名为 ``_run_via_gateway``。
+        """
         session = self._session()
         call_order: list[str] = []
 
         session._update_header_stats = lambda: call_order.append("header")
 
-        async def fake_run_agent_loop(task):
+        async def fake_run_via_gateway(task):
             session.ctx.history.append({"role": "assistant", "content": "answer"})
             call_order.append("arun_end")
 
-        session._run_agent_loop = fake_run_agent_loop
+        session._run_via_gateway = fake_run_via_gateway
 
         with mock.patch.object(
             session, "_dispatch_with_capture", return_value=(0, "")

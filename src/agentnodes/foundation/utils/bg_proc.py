@@ -161,13 +161,23 @@ def shell_command(command: str) -> list[str]:
     """Wrap a shell string as a process argv for the current platform.
 
     - POSIX: ``bash -lc command``
-    - Windows: ``cmd /c command`` (bash is often unavailable; the
-      previous hard-coded ``bash -lc`` raised FileNotFoundError).
+    - Windows: ``cmd /c <command>``
+
+    **Windows 引号陷阱**（2026-11-05 修复）：``subprocess.Popen(["cmd", "/c",
+    command])`` 时，Python 会给含空白的参数自动加引号，cmd 的解析规则与
+    POSIX shell 不同，带引号的**可执行文件路径**极易被当作一个整体命令名
+    （实测报「不是内部或外部命令」/「找不到指定的路径」）。
+
+    稳妥解法：Windows 上**不经 cmd**，用 ``shell=True`` 让 Python 把整串
+    交给 ``COMSPEC`` 处理——这是 CPython 官方对 Windows shell 调用的推荐
+    路径，引号规则由它统一处理。POSIX 保持 ``bash -lc``（避免 ``shell=True``
+    走 ``/bin/sh`` 丢失 login 环境）。
     """
     import sys
 
     if sys.platform.startswith("win"):
-        return ["cmd", "/c", command]
+        # shell=True 时 Popen 期望**字符串**而非列表。
+        return ["__SHELL_TRUE__", command]  # 由 run_bg 识别
     return ["bash", "-lc", command]
 
 
@@ -188,8 +198,15 @@ def run_bg(
     log_path = Path(log_path)
     log_path.parent.mkdir(parents=True, exist_ok=True)
     log_file = open(log_path, "a", encoding="utf-8")  # noqa: SIM115 — long-lived handle
+
+    # Windows：shell_command 返回哨兵，改用 shell=True + 字符串命令，
+    # 引号规则由 CPython 的 COMSPEC 处理（见 shell_command docstring）。
+    use_shell = bool(command) and command[0] == "__SHELL_TRUE__"
+    argv: str | list[str] = command[1] if use_shell else list(command)
+
     proc = subprocess.Popen(  # noqa: S603
-        list(command),
+        argv,
+        shell=use_shell,
         stdout=log_file,
         stderr=subprocess.STDOUT,
         text=True,

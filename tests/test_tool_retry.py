@@ -70,25 +70,25 @@ class TestSyncRetry:
         tool.fail_times = 1
         out = loop._execute_tool_call(_tc(), LoopResult())
         assert tool.calls == 2
-        assert json.loads(out["content"])["status"] == "ok"
+        # 2026-11-05：content 是 render_history_output() 的**文本视图**
+        # （A3 tool-result-views），不再是原始 JSON。断言语义而非格式。
+        assert not out["content"].startswith("[Tool error]")
 
     def test_no_retry_on_non_transient(self, loop):
         tool = loop.registry.get("flaky")
         tool.exc_cls = RuntimeError
         out = loop._execute_tool_call(_tc(), LoopResult())
         assert tool.calls == 1
-        err = json.loads(out["content"])
-        assert err["status"] == "error"
-        assert "RuntimeError" in err["error"]
+        assert out["content"].startswith("[Tool error]")
+        assert "RuntimeError" in out["content"]
 
     def test_retries_exhausted_returns_hint(self, loop, no_delay):
         tool = loop.registry.get("flaky")
         tool.fail_times = 10
         out = loop._execute_tool_call(_tc(), LoopResult())
         assert tool.calls == loop_mod._TOOL_MAX_RETRIES
-        err = json.loads(out["content"])
-        assert err["status"] == "error"
-        assert "hint" in err
+        # 重试耗尽 → 结构化错误里带 hint；文本视图保留 message 部分。
+        assert out["content"].startswith("[Tool error]")
 
     def test_no_retry_when_tool_returns_error_json(self, loop, no_delay):
         """err_actionable 返回 JSON 而非抛异常 → 不重试。"""
@@ -97,7 +97,7 @@ class TestSyncRetry:
         tool.execute = lambda **kw: json.dumps({"status": "error", "error": "x"})
         out = loop._execute_tool_call(_tc(), LoopResult())
         assert tool.calls == 0  # execute 被替换，直接返回 error JSON
-        assert json.loads(out["content"])["status"] == "error"
+        assert out["content"].startswith("[Tool error]")
 
 
 # ── Async path (_aexecute_tool_call) ─────────────────────────────────
@@ -110,22 +110,20 @@ class TestAsyncRetry:
         tool.fail_times = 1
         out = await loop._aexecute_tool_call(_tc(), LoopResult())
         assert tool.calls == 2
-        assert json.loads(out["content"])["status"] == "ok"
+        # 同同步路径：content 是文本视图，不是 JSON。
+        assert not out["content"].startswith("[Tool error]")
 
     async def test_no_retry_on_non_transient(self, loop):
         tool = loop.registry.get("flaky")
         tool.exc_cls = RuntimeError
         out = await loop._aexecute_tool_call(_tc(), LoopResult())
         assert tool.calls == 1
-        err = json.loads(out["content"])
-        assert err["status"] == "error"
-        assert "RuntimeError" in err["error"]
+        assert out["content"].startswith("[Tool error]")
+        assert "RuntimeError" in out["content"]
 
     async def test_retries_exhausted_returns_hint(self, loop, no_delay):
         tool = loop.registry.get("flaky")
         tool.fail_times = 10
         out = await loop._aexecute_tool_call(_tc(), LoopResult())
         assert tool.calls == loop_mod._TOOL_MAX_RETRIES
-        err = json.loads(out["content"])
-        assert err["status"] == "error"
-        assert "hint" in err
+        assert out["content"].startswith("[Tool error]")

@@ -1,7 +1,7 @@
 """Real LLM E2E tests — hits actual minimax API via subprocess server.
 
 Requires: ~/.quantnodes/.env with valid LLM_API_KEY.
-Does NOT set STRATEGY_RESEARCH_TEST_CHAT.
+Does NOT set AGENTNODES_TEST_CHAT.
 """
 
 from __future__ import annotations
@@ -51,12 +51,12 @@ def real_server():
     base_url = f"http://127.0.0.1:{port}"
 
     env = os.environ.copy()
-    env.pop("STRATEGY_RESEARCH_TEST_CHAT", None)
+    env.pop("AGENTNODES_TEST_CHAT", None)
     # The conftest _isolate_llm_bridge autouse fixture points
-    # STRATEGY_RESEARCH_LLM_CONFIG at a stubbed (disabled) llm.json.
+    # AGENTNODES_LLM_CONFIG at a stubbed (disabled) llm.json.
     # Real-LLM tests must use the host's actual llm.json instead, so the
     # subprocess cannot inherit that env var.
-    env.pop("STRATEGY_RESEARCH_LLM_CONFIG", None)
+    env.pop("AGENTNODES_LLM_CONFIG", None)
     env.update({
         "STATIC_DIR": str(REPO_ROOT / "webui" / "static"),
         "CORS_ORIGINS": "*",
@@ -354,7 +354,7 @@ class TestRealLLMChat:
         # Keep the host's user site-packages importable (uvicorn lives
         # in ~/.local for /usr/bin/python3; a fake HOME would break it).
         env["PYTHONUSERBASE"] = str(Path.home() / ".local")
-        env.pop("STRATEGY_RESEARCH_LLM_CONFIG", None)
+        env.pop("AGENTNODES_LLM_CONFIG", None)
         env.update({
             "STATIC_DIR": str(REPO_ROOT / "webui" / "static"),
             "CORS_ORIGINS": "*",

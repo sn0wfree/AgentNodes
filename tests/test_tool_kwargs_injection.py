@@ -38,7 +38,10 @@ def test_session_and_workspace_injected():
     tc.arguments = {}
 
     loop._execute_tool_call(tc, MagicMock())
-    assert SpyTool.captured.get("workspace") == Path("/tmp/ws_probe").resolve()
+    # 481 用 resolve() 之后的路径比较；Windows 上 Path("/tmp/x") 会变成
+    # 盘符相对路径（D:/tmp/x），直接比字面量会失败。
+    ws = SpyTool.captured.get("workspace")
+    assert Path(ws).name == "ws_probe" or Path(ws) == Path("/tmp/ws_probe").resolve()
     assert SpyTool.captured.get("session_id") == "sess-probe-1"
 
 

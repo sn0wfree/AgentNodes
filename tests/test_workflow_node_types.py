@@ -17,6 +17,9 @@ from agentnodes.kernel.workflow.node_types import (
     dispatch_node,
 )
 
+# 批次 6：业务工具由 apps 注册进 CapabilityRegistry，kernel 侧不 import apps。
+import agentnodes.apps  # noqa: F401,E402
+
 
 class FakeLoop:
     """Scripted loop factory: returns canned answers per role."""
@@ -230,11 +233,9 @@ class TestPythonTool:
     def test_tool_wrapper_available(self):
         from agentnodes.kernel.workflow.node_types import register_builtin_tool_executors
         count = register_builtin_tool_executors()
-        # 批次 5：run_backtest / check_data 已随回测与数据域移除，
-        # 框架侧只剩 tool / llm 等通用 executor
-        assert count >= 0
-        assert NodeExecutors.get("run_backtest") is None
-        assert NodeExecutors.get("check_data") is None
+        # 批次 6：注册器为 agent registry 里的**每个工具**生成 wrapper，
+        # 数量随工具集变化（当前含业务工具）。断言「有注册成功」即可。
+        assert count > 0
 
     def test_unknown_node_type_raises(self, tmp_path: Path):
         node = WorkflowNode(id="x", type="nope", config={})

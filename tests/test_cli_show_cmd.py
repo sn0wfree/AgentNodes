@@ -33,7 +33,7 @@ def fake_workspace(tmp_path, monkeypatch):
         json.dumps({"round": 1, "acceptance_decision": "discard"}),
         encoding="utf-8",
     )
-    monkeypatch.setenv("STRATEGY_RESEARCH_WORKSPACE", str(ws))
+    monkeypatch.setenv("AGENTNODES_WORKSPACE", str(ws))
     monkeypatch.chdir(tmp_path)
     return ws
 
@@ -56,7 +56,7 @@ class TestLocateRun:
         assert _locate_run("9999") is None
 
     def test_no_workspace(self, tmp_path, monkeypatch):
-        monkeypatch.setenv("STRATEGY_RESEARCH_WORKSPACE", str(tmp_path / "empty"))
+        monkeypatch.setenv("AGENTNODES_WORKSPACE", str(tmp_path / "empty"))
         monkeypatch.chdir(tmp_path)
         assert _locate_run("0001") is None
 

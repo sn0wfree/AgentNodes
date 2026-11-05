@@ -13,7 +13,7 @@ Layers (high priority overrides low):
 
 Bridge layer sources of truth (lazy-read by the QuantNodes reader):
     - ``~/.quantnodes/llm.json`` (canonical; honoured via
-      ``STRATEGY_RESEARCH_LLM_CONFIG`` override for tests).
+      ``AGENTNODES_LLM_CONFIG`` override for tests).
     - ``AGENTNODES__LLM__*`` env vars (applied inside the bridge).
     - Wizard writes the same JSON file at "~/.quantnodes/llm.json" via
       ``cli/onboard.py`` after init.
@@ -48,14 +48,14 @@ logger = logging.getLogger(__name__)
 # ── Public constants ────────────────────────────────────────────────
 
 # Legacy alias kept for compatibility: tests / external CLI callers that
-# still set STRATEGY_RESEARCH_LLM_CONFIG to point at the LLM config.
+# still set AGENTNODES_LLM_CONFIG to point at the LLM config.
 DEFAULT_LLM_CONFIG_PATH = QUANTNODES_LLM_JSON
 
 # Env var names (only these are read from environment for direct overrides)
 ENV_API_KEY = "OPENAI_API_KEY"
 ENV_BASE_URL = "OPENAI_BASE_URL"
 ENV_MODEL = "OPENAI_MODEL"
-ENV_CONFIG_PATH = "STRATEGY_RESEARCH_LLM_CONFIG"
+ENV_CONFIG_PATH = "AGENTNODES_LLM_CONFIG"
 # Selects an active provider profile from llm.json["llm"]["profiles"].
 # Beats the file's "active_profile" field; CLI --llm-profile beats both.
 ENV_PROFILE_ACTIVE = "LLM_PROFILE"
@@ -70,7 +70,7 @@ ENV_LLM_API_KEY = "LLM_API_KEY"
 # The old yaml/profile system was retired in favor of the bridge to
 # ~/.quantnodes/llm.json. These names are preserved so existing callers
 # (and tests) don't have to change simultaneously with the migration.
-ENV_PROFILE: str = "STRATEGY_RESEARCH_LLM_PROFILE"     # no longer read
+ENV_PROFILE: str = "AGENTNODES_LLM_PROFILE"     # no longer read
 
 # Provider defaults are now sourced from the provider adapter registry
 # (provider/*.py). This dict is kept for backward compatibility — it is
@@ -209,7 +209,7 @@ class LLMConfig:
             env:           Custom env mapping (defaults to os.environ).
             yaml_path:     Legacy kwarg, kept for compatibility. When given,
                            it overrides the bridge path (otherwise defaults
-                           to ``$STRATEGY_RESEARCH_LLM_CONFIG`` → ``~/.quantnodes/llm.json``).
+                           to ``$AGENTNODES_LLM_CONFIG`` → ``~/.quantnodes/llm.json``).
             load_dotenv:   Whether to call dotenv.load_dotenv() (no-op if
                            not installed).
 
@@ -299,7 +299,7 @@ def _resolve_bridge_path(env: Mapping[str, str]) -> Path:
     """Resolve the bridge (llm.json) path.
 
     Precedence:
-      1. ``STRATEGY_RESEARCH_LLM_CONFIG`` env var (legacy override kept for tests/tooling).
+      1. ``AGENTNODES_LLM_CONFIG`` env var (legacy override kept for tests/tooling).
       2. ``~/.quantnodes/llm.json`` (canonical QuantNodes location).
     """
     p = env.get(ENV_CONFIG_PATH)
@@ -553,7 +553,7 @@ def _env_to_overrides(env: Mapping[str, str]) -> dict[str, Any]:
     """Translate the documented env vars to config overrides.
 
     Handles only the direct env vars (OPENAI_*). AGENTNODES__LLM__* is
-    applied inside the bridge layer; STRATEGY_RESEARCH_LLM_PROFILE is
+    applied inside the bridge layer; AGENTNODES_LLM_PROFILE is
     retired (no profile concept anymore).
     """
     overrides: dict[str, Any] = {}

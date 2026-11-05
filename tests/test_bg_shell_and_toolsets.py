@@ -12,7 +12,9 @@ class TestShellCommand:
         argv = shell_command("echo hi")
         assert isinstance(argv, list) and len(argv) >= 2
         if sys.platform.startswith("win"):
-            assert argv[0] in ("cmd", "powershell", "pwsh")
+            # Windows 走 shell=True 哨兵（见 bg_proc.shell_command docstring）：
+            # 传带引号路径给 cmd /c 会被误解析，改由 CPython 的 COMSPEC 处理。
+            assert argv[0] == "__SHELL_TRUE__"
         else:
             assert argv[0] == "bash"
 

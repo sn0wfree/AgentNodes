@@ -90,7 +90,8 @@ class TestToolContext:
     def test_injected_ctx_is_visible_to_tool(self, registry):
         tool = registry.get("v2tool")
         out = json.loads(tool.invoke({"codes": ["A"], "ctx": _ctx()}))
-        assert out["ws"] == "/ws"
+        # 用 Path 比较，避免 Windows 反斜杠 / POSIX 斜杠差异。
+        assert Path(out["ws"]) == Path("/ws")
         assert out["sid"] == "s1"
 
 

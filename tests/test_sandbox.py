@@ -175,7 +175,8 @@ class TestPathWhitelist:
 
     def test_write_nested_deep(self, wl, workspace):
         p = wl.resolve_write("strategies/sub/deep/file.py")
-        assert str(p).endswith("strategies/sub/deep/file.py")
+        # 用 Path.parts 比较，避免 Windows 反斜杠 / POSIX 斜杠差异。
+        assert p.parts[-4:] == ("strategies", "sub", "deep", "file.py")
 
     def test_write_trailing_slash(self, wl, workspace):
         p = wl.resolve_write("strategies/")

@@ -26,7 +26,7 @@ logger = logging.getLogger(__name__)
 
 DEFAULT_RULES_PATH = Path(
     os.environ.get(
-        "STRATEGY_RESEARCH_PERMISSIONS_PATH",
+        "AGENTNODES_PERMISSIONS_PATH",
         str(Path.home() / ".agentnodes" / "permissions.yaml"),
     )
 )

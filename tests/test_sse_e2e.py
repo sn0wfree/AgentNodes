@@ -53,7 +53,7 @@ def sse_server():
 
     env = os.environ.copy()
     env.update({
-        "STRATEGY_RESEARCH_TEST_CHAT": "1",
+        "AGENTNODES_TEST_CHAT": "1",
         "STATIC_DIR": str(REPO_ROOT / "webui" / "static"),
         "CORS_ORIGINS": "*",
         "PYTHONUNBUFFERED": "1",

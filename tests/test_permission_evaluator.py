@@ -263,13 +263,13 @@ def test_load_rules_falls_back_to_defaults_on_garbage_yaml(tmp_path: Path):
 
 def test_default_rules_path_resolves(tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
     """``DEFAULT_RULES_PATH`` resolves ``~/.agentnodes/permissions.yaml``
-    by default and respects the ``STRATEGY_RESEARCH_PERMISSIONS_PATH``
+    by default and respects the ``AGENTNODES_PERMISSIONS_PATH``
     env override at module-import time."""
     # The module-level DEFAULT_RULES_PATH is bound at import time, so
     # the env override takes effect only when the module is reloaded.
     # We verify the *contract* by importing fresh with the env set.
     monkeypatch.setenv(
-        "STRATEGY_RESEARCH_PERMISSIONS_PATH",
+        "AGENTNODES_PERMISSIONS_PATH",
         str(tmp_path / "perm.yaml"),
     )
     import importlib

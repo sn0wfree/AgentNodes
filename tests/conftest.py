@@ -95,7 +95,7 @@ def _isolate_llm_bridge(tmp_path_factory):
     host's real API key (e.g. minimax), causing unintended network calls
     and breaking tests that assume "no API key -> stub mode".
 
-    Implementation: point the existing ``STRATEGY_RESEARCH_LLM_CONFIG`` env
+    Implementation: point the existing ``AGENTNODES_LLM_CONFIG`` env
     var (read by ``config._resolve_bridge_path``) at a fixture JSON whose
     ``enabled`` flag is false. ``_load_bridge_dict`` then returns ``{}``,
     so the cascade falls through to code defaults and env vars only.
@@ -106,7 +106,7 @@ def _isolate_llm_bridge(tmp_path_factory):
     fixture = tmp_path_factory.mktemp("llm_bridge") / "llm.json"
     fixture.write_text('{"llm": {"enabled": false}}')
     mp = pytest.MonkeyPatch()
-    mp.setenv("STRATEGY_RESEARCH_LLM_CONFIG", str(fixture))
+    mp.setenv("AGENTNODES_LLM_CONFIG", str(fixture))
     yield
     mp.undo()
 
@@ -386,7 +386,7 @@ def real_llm_config():
         pytest.skip(f"no {real_json}")
 
     monkeypatch = pytest.MonkeyPatch()
-    monkeypatch.setenv("STRATEGY_RESEARCH_LLM_CONFIG", str(real_json))
+    monkeypatch.setenv("AGENTNODES_LLM_CONFIG", str(real_json))
     for name, value in _host_key_env().items():
         monkeypatch.setenv(name, value)
     # key 在 ~/.quantnodes/.env：dotenv 解析走 Path.home()，指回真实目录

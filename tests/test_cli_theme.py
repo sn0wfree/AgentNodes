@@ -28,21 +28,21 @@ def _reset_theme():
 
 class TestDarkDetection:
     def test_no_env_returns_dark_default(self, monkeypatch):
-        monkeypatch.delenv("STRATEGY_RESEARCH_THEME", raising=False)
+        monkeypatch.delenv("AGENTNODES_THEME", raising=False)
         monkeypatch.delenv("COLORFGBG", raising=False)
         monkeypatch.delenv("TERM_PROGRAM", raising=False)
         assert _is_dark_terminal() is True
 
     def test_explicit_dark_env(self, monkeypatch):
-        monkeypatch.setenv("STRATEGY_RESEARCH_THEME", "dark")
+        monkeypatch.setenv("AGENTNODES_THEME", "dark")
         assert _is_dark_terminal() is True
 
     def test_explicit_light_env(self, monkeypatch):
-        monkeypatch.setenv("STRATEGY_RESEARCH_THEME", "light")
+        monkeypatch.setenv("AGENTNODES_THEME", "light")
         assert _is_dark_terminal() is False
 
     def test_auto_env(self, monkeypatch):
-        monkeypatch.setenv("STRATEGY_RESEARCH_THEME", "auto")
+        monkeypatch.setenv("AGENTNODES_THEME", "auto")
         # Falls through to COLORFGBG/TERM — none set → default dark.
         monkeypatch.delenv("COLORFGBG", raising=False)
         monkeypatch.delenv("TERM_PROGRAM", raising=False)
@@ -50,27 +50,27 @@ class TestDarkDetection:
 
     def test_colorfgbg_low_brightness_dark(self, monkeypatch):
         monkeypatch.setenv("COLORFGBG", "15;0")  # bg=0 ⇒ dark
-        monkeypatch.delenv("STRATEGY_RESEARCH_THEME", raising=False)
+        monkeypatch.delenv("AGENTNODES_THEME", raising=False)
         assert _is_dark_terminal() is True
 
     def test_colorfgbg_high_brightness_light(self, monkeypatch):
         monkeypatch.setenv("COLORFGBG", "0;15")  # bg=15 ⇒ light
-        monkeypatch.delenv("STRATEGY_RESEARCH_THEME", raising=False)
+        monkeypatch.delenv("AGENTNODES_THEME", raising=False)
         assert _is_dark_terminal() is False
 
     def test_colorfgbg_invalid_falls_back(self, monkeypatch):
         monkeypatch.setenv("COLORFGBG", "garbage")
-        monkeypatch.delenv("STRATEGY_RESEARCH_THEME", raising=False)
+        monkeypatch.delenv("AGENTNODES_THEME", raising=False)
         # Should not raise; falls back to True
         assert _is_dark_terminal() is True
 
     def test_apple_terminal_is_dark(self, monkeypatch):
         monkeypatch.setenv("TERM_PROGRAM", "Apple_Terminal")
-        monkeypatch.delenv("STRATEGY_RESEARCH_THEME", raising=False)
+        monkeypatch.delenv("AGENTNODES_THEME", raising=False)
         assert _is_dark_terminal() is True
 
     def test_forced_dark_override(self, monkeypatch):
-        monkeypatch.setenv("STRATEGY_RESEARCH_THEME", "light")  # overridden below
+        monkeypatch.setenv("AGENTNODES_THEME", "light")  # overridden below
         force_dark(True)
         assert is_dark() is True
 
@@ -79,7 +79,7 @@ class TestDarkDetection:
         assert is_dark() is False
 
     def test_clear_force_dark_restores_detection(self, monkeypatch):
-        monkeypatch.setenv("STRATEGY_RESEARCH_THEME", "light")
+        monkeypatch.setenv("AGENTNODES_THEME", "light")
         force_dark(True)
         assert is_dark() is True
         clear_force_dark()

@@ -1,7 +1,7 @@
 """Real browser + real LLM E2E tests — Playwright drives a real Chromium.
 
 Requires: ~/.quantnodes/.env with valid LLM_API_KEY.
-Does NOT set STRATEGY_RESEARCH_TEST_CHAT.
+Does NOT set AGENTNODES_TEST_CHAT.
 """
 
 from __future__ import annotations

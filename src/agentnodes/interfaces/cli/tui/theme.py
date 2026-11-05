@@ -10,7 +10,7 @@ Why a separate module instead of importing in CSS:
 * Textual ``CSS`` strings are static; they cannot read Python attributes.
 * We want ``styles.tcss`` to use ``$primary`` (the textual CSS variable
   pattern) so widgets get the active brand color without a CSS rewrite
-  when the user toggles ``STRATEGY_RESEARCH_THEME=dark``.
+  when the user toggles ``AGENTNODES_THEME=dark``.
 """
 from __future__ import annotations
 

@@ -227,19 +227,36 @@ class PathWhitelist:
     # ── Internal helpers ─────────────────────────
 
     def _validate_basic(self, rel_path: str) -> None:
-        """Reject absolute, empty, UNC paths."""
+        """Reject absolute, empty, UNC paths.
+
+        **跨平台判据**（2026-11-05 修复真实缺陷）：只用 ``os.path.isabs``
+        不够——Windows 上 ``os.path.isabs("/etc/passwd")`` 返回 ``False``
+        （没有盘符），于是 POSIX 绝对路径会被当成相对路径放过。
+        这里同时检查「以 / 或 \\ 开头」（POSIX 绝对 / UNC 前缀）与
+        ``PureWindowsPath.drive``（盘符 / 网络共享）。
+        """
         if not isinstance(rel_path, str):
             raise PathValidationError(
                 f"path must be a string, got {type(rel_path).__name__}"
             )
         if not rel_path or not rel_path.strip():
             raise PathValidationError("path is empty")
-        if rel_path.startswith(("\\\\", "//")):
-            raise PathValidationError(f"UNC paths are not allowed: {rel_path!r}")
+        if rel_path.startswith(("\\\\", "//", "/", "\\")):
+            raise PathValidationError(f"UNC/absolute paths are not allowed: {rel_path!r}")
         if os.path.isabs(rel_path):
             raise PathValidationError(
                 f"absolute paths are not allowed: {rel_path!r}"
             )
+        # Windows 盘符形态（C:foo / C:\\foo），在 POSIX 上也不该放行
+        try:
+            from pathlib import PureWindowsPath
+
+            if PureWindowsPath(rel_path).drive:
+                raise PathValidationError(
+                    f"absolute paths are not allowed: {rel_path!r}"
+                )
+        except ImportError:  # pragma: no cover - 平台保证存在
+            pass
 
     def _resolve_under_workspace(self, rel_path: str) -> Path:
         """Resolve a relative path under workspace; reject escape via '..'."""

@@ -86,7 +86,7 @@ class TestShouldUseRealLlm:
         monkeypatch.delenv("AUTORESEARCH_BEHAVIOR", raising=False)
         monkeypatch.delenv("OPENAI_API_KEY", raising=False)
         monkeypatch.delenv("LLM_API_KEY", raising=False)
-        monkeypatch.delenv("STRATEGY_RESEARCH_LLM_PROFILE", raising=False)
+        monkeypatch.delenv("AGENTNODES_LLM_PROFILE", raising=False)
         # conftest._isolate_llm_bridge already points the bridge at a
         # disabled fixture, so LLMConfig.load() returns no api_key.
         from agentnodes.kernel.agent.role_factory import should_use_real_llm

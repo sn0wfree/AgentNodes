@@ -51,6 +51,12 @@ def _register_business_tools(registry: ToolRegistry) -> None:
     跳过该组并记 debug 日志——**框架不因业务能力缺失而启动失败**，
     这是 L3→L2 端口化已经建立的模式（与 ``resolve("db.get_connection")``
     的调用点一致）。
+
+    **不在此处 import apps**（2026-11-05）：那会是一条真实的 L3→L2 上行
+    违规（门禁按 import 语句计，实测 +1）。补注册交由
+    ``capability.resolve()`` 内部的 ``_ensure_registered()`` 完成——它只读
+    ``sys.modules`` 里**已被别处 import 过**的 apps，不产生新 import。
+    调用方（CLI/MCP/测试）应在需要业务工具前先 ``import agentnodes.apps``。
     """
     from agentnodes.kernel.agent.capability import (
         CapabilityNotFound,

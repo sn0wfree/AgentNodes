@@ -880,12 +880,12 @@ class SessionService:
                 to avoid the cfg-undefined NameError regression that
                 happened when Phase 1 compaction filter changes were made.
         """
-        # Test mode: when STRATEGY_RESEARCH_TEST_CHAT=1, emit a scripted
+        # Test mode: when AGENTNODES_TEST_CHAT=1, emit a scripted
         # SSE stream and return immediately — no LLM needed. Restores the
         # pre-refactor behavior (chat.py:_run_agent_loop_background) that
         # send_async used to short-circuit to in test mode; the unified
         # SessionService path lost that hook when send_async was migrated.
-        if os.environ.get("STRATEGY_RESEARCH_TEST_CHAT") == "1":
+        if os.environ.get("AGENTNODES_TEST_CHAT") == "1":
             return await self._run_test_script(
                 attempt=attempt,
                 accumulated_parts=accumulated_parts,

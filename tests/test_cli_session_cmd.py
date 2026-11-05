@@ -43,12 +43,12 @@ def _make_sessions_db(tmp_path: Path) -> Path:
 
 class TestCmdHistory:
     def test_no_env_var_still_works(self, console, monkeypatch, tmp_path):
-        """B4 Step 3: /history no longer needs STRATEGY_RESEARCH_SESSIONS_DB.
+        """B4 Step 3: /history no longer needs AGENTNODES_SESSIONS_DB.
 
         It reads the unified DB like every other consumer. An empty DB is a
         normal state, not a configuration error.
         """
-        monkeypatch.delenv("STRATEGY_RESEARCH_SESSIONS_DB", raising=False)
+        monkeypatch.delenv("AGENTNODES_SESSIONS_DB", raising=False)
         monkeypatch.setenv("AN_SESSIONS_DB", str(tmp_path / "empty.db"))
         rc = cmd_history(console=console)
         assert rc == 0
@@ -74,7 +74,7 @@ class TestCmdSearch:
 
     def test_no_db_still_searches(self, console, monkeypatch, tmp_path):
         """B4 Step 3: /search no longer needs the legacy env var either."""
-        monkeypatch.delenv("STRATEGY_RESEARCH_SESSIONS_DB", raising=False)
+        monkeypatch.delenv("AGENTNODES_SESSIONS_DB", raising=False)
         monkeypatch.setenv("AN_SESSIONS_DB", str(tmp_path / "empty.db"))
         rc = cmd_search("hello", console=console)
         assert rc == 0
@@ -88,7 +88,7 @@ class TestCmdSearch:
 
     def test_db_returns_no_match_gracefully(self, console, tmp_path, monkeypatch):
         db = _make_sessions_db(tmp_path)
-        monkeypatch.setenv("STRATEGY_RESEARCH_SESSIONS_DB", str(db))
+        monkeypatch.setenv("AGENTNODES_SESSIONS_DB", str(db))
 
         rc = cmd_search("nonexistent_term_xyz", console=console)
         assert rc == 0

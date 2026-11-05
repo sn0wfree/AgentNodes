@@ -13,10 +13,37 @@ from __future__ import annotations
 import json
 import sqlite3
 import tempfile
+import time
 import unittest
 from pathlib import Path
 
 from agentnodes.interfaces.api.session.projector import Projector
+
+
+def _close_projector(proj) -> None:
+    """释放 Projector 持有的 sqlite 连接（Windows 不关就无法删库文件）。"""
+    for attr in ("_conn", "conn", "_connection"):
+        c = getattr(proj, attr, None)
+        if c is not None and hasattr(c, "close"):
+            try:
+                c.close()
+            except Exception:  # noqa: BLE001
+                pass
+    if hasattr(proj, "close"):
+        try:
+            proj.close()
+        except Exception:  # noqa: BLE001
+            pass
+
+
+def _unlink_db(path: Path) -> None:
+    """Windows 下删库需重试（句柄可能延迟释放）。"""
+    for _ in range(10):
+        try:
+            path.unlink(missing_ok=True)
+            return
+        except (PermissionError, OSError):
+            time.sleep(0.1)
 
 
 def _setup_db(db_path: Path) -> None:
@@ -82,7 +109,8 @@ class TestProjectorKeepsMessages(unittest.TestCase):
         self._seq = 0
 
     def tearDown(self) -> None:
-        self.db_path.unlink(missing_ok=True)
+        _close_projector(self.proj)
+        _unlink_db(self.db_path)
 
     def _emit(self, event_type: str, data: dict, time_created: float) -> None:
         """Persist an event to event_log."""
@@ -223,7 +251,8 @@ class TestHistoryBuilderHidesCovered(unittest.TestCase):
         self._seq = 0
 
     def tearDown(self) -> None:
-        self.db_path.unlink(missing_ok=True)
+        _close_projector(self.proj)
+        _unlink_db(self.db_path)
 
     def _emit(self, event_type: str, data: dict, time_created: float) -> None:
         """Persist an event to event_log."""

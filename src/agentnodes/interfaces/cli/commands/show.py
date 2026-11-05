@@ -26,9 +26,9 @@ def _resolve_console(console: Any = None) -> Console:
 
 
 def _resolve_workspace() -> Path:
-    """Default workspace — overridable via env ``STRATEGY_RESEARCH_WORKSPACE``."""
+    """Default workspace — overridable via env ``AGENTNODES_WORKSPACE``."""
     import os
-    ws = os.environ.get("STRATEGY_RESEARCH_WORKSPACE")
+    ws = os.environ.get("AGENTNODES_WORKSPACE")
     if ws:
         return Path(ws)
     return Path.cwd()

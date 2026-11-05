@@ -55,7 +55,17 @@ def client_with_hypothesis(tmp_path, auth_headers):
 
 class TestAppRoot:
     def test_root_serves_spa(self, client):
-        """`/` serves the SPA index.html (static dir present in dev repo)."""
+        """`/` serves the SPA index.html.
+
+        2026-11-05：SPA 产物 (`webui/static/index.html`) 需要先跑
+        `npm run build`。CI 与本地开发仓库都可能没有它 —— 那时 `/` 返回
+        JSON（API 根信息）而不是 HTML，这不是缺陷。缺产物即 skip。
+        """
+        from pathlib import Path
+
+        static_index = Path(__file__).parent.parent / "webui" / "static" / "index.html"
+        if not static_index.exists():
+            pytest.skip("webui/static/index.html 不存在（需 npm run build）")
         resp = client.get("/")
         assert resp.status_code == 200
         assert resp.headers["content-type"].startswith("text/html")

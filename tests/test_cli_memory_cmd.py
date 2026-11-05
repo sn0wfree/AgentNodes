@@ -24,7 +24,7 @@ def console():
 @pytest.fixture
 def populated_memory(tmp_path: Path, monkeypatch):
     """Create a PersistentMemory with two test entries."""
-    monkeypatch.setenv("STRATEGY_RESEARCH_MEMORY_DIR", str(tmp_path))
+    monkeypatch.setenv("AGENTNODES_MEMORY_DIR", str(tmp_path))
     store = None
     try:
         from agentnodes.kernel.memory.persistent import PersistentMemory
@@ -42,7 +42,7 @@ def populated_memory(tmp_path: Path, monkeypatch):
 
 class TestCmdList:
     def test_empty(self, console, tmp_path, monkeypatch):
-        monkeypatch.setenv("STRATEGY_RESEARCH_MEMORY_DIR", str(tmp_path))
+        monkeypatch.setenv("AGENTNODES_MEMORY_DIR", str(tmp_path))
         rc = cmd_list(console=console)
         assert rc == 0
 

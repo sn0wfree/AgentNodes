@@ -13,6 +13,10 @@ from agentnodes.kernel.agent.tools import ToolRegistry
 from agentnodes.foundation.llm import LLMConfig, LLMResponse, ToolCall
 from agentnodes.foundation.llm.errors import LLMAuthError
 
+# 批次 6：业务工具住在 apps/ 并经 CapabilityRegistry 注册。kernel 侧
+# 不能 import apps（L3→L2 违规），因此**测试**负责触发这次注册。
+import agentnodes.apps  # noqa: F401,E402
+
 # ── Helpers ──────────────────────────────────────────────────────────
 
 
@@ -480,8 +484,9 @@ class TestAllowedTools:
         )
         assert loop.registry.get("read") is not None
         assert loop.registry.get("write") is not None
-        # 批次 5：run_backtest 已随 apps/backtest 移除
-        assert loop.registry.get("run_backtest") is None
+        # 批次 6：业务工具归位 L2 后经 CapabilityRegistry 重新注册。
+        # `allowed_tools=None` 语义是「全部可用」，因此 run_backtest 在列。
+        assert loop.registry.get("run_backtest") is not None
 
 
 # ── Readonly mode ────────────────────────────────────────────────────
@@ -522,8 +527,9 @@ class TestReadonly:
         assert loop.registry.get("read") is not None
         assert loop.registry.get("list_history") is not None
         assert loop.registry.get("git_diff") is not None
-        # 批次 5：compute_factor 已随 apps/compute_factor 移除
-        assert loop.registry.get("compute_factor") is None
+        # 批次 6：compute_factor 随业务工具归位 L2 后重新注册。它是只读工具
+        # （算因子不改工作区），readonly 模式应保留。
+        assert loop.registry.get("compute_factor") is not None
 
     def test_readonly_false_keeps_all(self, workspace):
         """readonly=False 时全部工具保留"""

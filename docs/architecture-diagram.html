@@ -28,7 +28,7 @@
   <h1>架构 v10.2 · 四层堆叠 · 功能模块化</h1>
   <p class="sub">
     依赖只向下流：<b>L1 interfaces → L2 apps → L3 kernel → L4 foundation</b>。
-    每层内部按<b>功能域</b>分模块，模块边界取自真实包结构（366 文件 / 74,224 行，AST 实测）。
+    每层内部按<b>功能域</b>分模块，模块边界取自真实包结构（366 文件 / 74,303 行，AST 实测）。
     违规仅剩 2 条（<code>L3→L1</code> 2 · <code>L2→L1</code> 0），<code>L3→L2</code> 已清零。
     <b>2026-11-05 做减法批次 5</b>：移除数据域（data_source · compute_factor · db ·
     tools · data_import · data_readiness · preflight，22 文件 6,822 行），
@@ -109,7 +109,7 @@
   <line x1="420" y1="276" x2="420" y2="308" class="arrow"/>
   <line x1="800" y1="276" x2="800" y2="308" class="arrow"/>
   <line x1="1180" y1="276" x2="1180" y2="308" class="arrow"/>
-  <text x="1230" y="296" class="st mono" fill="#0284c7">L1→L2 13 · L1→L3 104 · L1→L4 51</text>
+  <text x="1230" y="296" class="st mono" fill="#0284c7">L1→L2 14 · L1→L3 105 · L1→L4 51</text>
 
   <!-- ══════════════ L2 apps ══════════════ -->
   <rect x="24" y="332" width="124" height="132" rx="10" fill="#fef3c7" stroke="#fcd34d" stroke-width="1.4"/>
@@ -359,7 +359,7 @@
   <rect x="160" y="1602" width="700" height="164" rx="10" class="dombox"/>
   <text x="180" y="1628" class="dom">跨层 import 矩阵（ADR-000 物理口径 · 每语句计 1）</text>
   <text x="180" y="1656" class="st mono">        →L1     →L2     →L3     →L4</text>
-  <text x="180" y="1678" class="st mono">L1       —       13     104      51</text>
+  <text x="180" y="1678" class="st mono">L1       —       14     105      51</text>
   <text x="180" y="1700" class="st mono">L2     <tspan fill="#dc2626">0 ⚠</tspan>       —       41      3</text>
   <text x="180" y="1722" class="st mono">L3     <tspan fill="#dc2626">2 ⚠</tspan>       <tspan fill="#16a34a">0 ✅</tspan>       —       49</text>
   <text x="180" y="1744" class="st mono">L4       0       0       0        —</text>
@@ -418,7 +418,7 @@
 </table>
 
 <footer>
-  数据：AST 实测 2026-11-05（366 文件 / 74,224 行 · 批次 2 后）· 门禁：<code>check_dangling_imports.py --layers</code> ·
+  数据：AST 实测 2026-11-05（366 文件 / 74,303 行 · 批次 2 后）· 门禁：<code>check_dangling_imports.py --layers</code> ·
   版本史：<code>docs/architecture-diagram-changelog.md</code> · 设计：<code>docs/layered-skeleton-design-20261103.md</code>
 </footer>
 </div>

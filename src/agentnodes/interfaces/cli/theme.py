@@ -11,7 +11,7 @@ Mirrors the brand palette and dark-mode detection logic from
 
 Environment variables honored:
 
-* ``STRATEGY_RESEARCH_THEME`` — ``dark`` / ``light`` / ``auto`` (default).
+* ``AGENTNODES_THEME`` — ``dark`` / ``light`` / ``auto`` (default).
 * ``NO_COLOR`` — when set to a non-empty value, disables color output.
 """
 
@@ -62,12 +62,12 @@ def _is_dark_terminal() -> bool:
 
     Order (first match wins):
 
-    1. ``STRATEGY_RESEARCH_THEME`` env var (``dark``/``light``/``auto``).
+    1. ``AGENTNODES_THEME`` env var (``dark``/``light``/``auto``).
     2. ``COLORFGBG`` env: low ANSI background brightness ⇒ dark.
     3. ``TERM_PROGRAM=Apple_Terminal`` ⇒ dark.
     4. Otherwise: assume dark (most modern terminals).
     """
-    override = os.environ.get("STRATEGY_RESEARCH_THEME", "").strip().lower()
+    override = os.environ.get("AGENTNODES_THEME", "").strip().lower()
     if override == "dark":
         return True
     if override == "light":

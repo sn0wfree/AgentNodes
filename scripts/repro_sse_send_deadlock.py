@@ -10,7 +10,7 @@ BASE = "http://127.0.0.1:8979"
 
 env = os.environ.copy()
 env.update({
-    "STRATEGY_RESEARCH_TEST_CHAT": "1",
+    "AGENTNODES_TEST_CHAT": "1",
     "PYTHONUNBUFFERED": "1",
     "AN_WORKSPACE_PATH": os.getcwd(),
 })

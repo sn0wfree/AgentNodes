@@ -644,27 +644,26 @@ async def test_chat_session_dispatches_plain_text_to_llm():
     client.config = mock.MagicMock()
     s = ChatSession(ctx, app=app, llm_client=client)
 
-    # Stub AgentLoop to return a fake result
+    # 2026-11-05：阶段 3a 之后 CLI 走 **Gateway + run_once**，不再直接
+    # 构造 AgentLoop。因此这里 patch gateway 侧的 run_once 返回值。
     fake_result = mock.MagicMock()
+    fake_result.ok = True
     fake_result.answer = "model reply here"
     fake_result.error = None
 
-    # Patch the AgentLoop symbol bound in chat_loop (module-level
-    # ``from .loop import AgentLoop``) — patching loop.AgentLoop is a no-op
-    # once chat_loop has already been imported by earlier tests.
-    with mock.patch("agentnodes.kernel.agent.chat_loop.AgentLoop") as MockLoop, \
-         mock.patch("agentnodes.kernel.agent.builtin_tools.build_default_registry", return_value=None), \
-         mock.patch(
-             # Force the degraded in-memory path: with the shared session
-             # DB unavailable, the assistant reply lands in ctx.history
-             # (the legacy behavior this test pins).
-             "agentnodes.kernel.agent.memory_manager.get_default_memory_manager",
-             side_effect=RuntimeError("no mm in test"),
-         ):
-            instance = mock.MagicMock()
-            instance.arun = mock.AsyncMock(return_value=fake_result)
-            MockLoop.return_value = instance
-            rc = await s.dispatch("hi there")
+    fake_gw = mock.MagicMock()
+    fake_gw.entry.submit.return_value = mock.MagicMock(accepted=True, reason="")
+    fake_gw.run_once.return_value = [fake_result]
+
+    with mock.patch(
+        "agentnodes.interfaces.cli.tui.session._get_cli_gateway",
+        return_value=fake_gw,
+    ), mock.patch(
+        # 无 MemoryManager → 退化到 ctx.history（本测试钉住的路径）
+        "agentnodes.kernel.agent.memory_manager.get_default_memory_manager",
+        side_effect=RuntimeError("no mm in test"),
+    ):
+        rc = await s.dispatch("hi there")
 
     assert rc == 0
     # Assistant reply appended.

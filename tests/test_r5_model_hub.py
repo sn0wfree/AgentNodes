@@ -19,7 +19,7 @@ def no_config(tmp_path, monkeypatch):
     """隔离用户 llm.json，避免读到真实配置。"""
     cfg = tmp_path / "llm.json"
     cfg.write_text("{}", encoding="utf-8")
-    monkeypatch.setenv("STRATEGY_RESEARCH_LLM_CONFIG", str(cfg))
+    monkeypatch.setenv("AGENTNODES_LLM_CONFIG", str(cfg))
     monkeypatch.setenv("LLM_API_KEY", "test-key-not-real")
     for key in ("LLM_PROVIDER", "LLM_MODEL", "OPENAI_API_KEY"):
         monkeypatch.delenv(key, raising=False)

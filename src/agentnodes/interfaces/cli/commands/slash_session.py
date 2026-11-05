@@ -21,7 +21,7 @@ from rich.text import Text
 
 from agentnodes.interfaces.cli.theme import get_console
 
-_PATH_ENV = "STRATEGY_RESEARCH_SESSIONS_DB"
+_PATH_ENV = "AGENTNODES_SESSIONS_DB"
 
 
 def _resolve_db_path() -> Optional[str]:
@@ -36,7 +36,7 @@ def _resolve_console(console: Any = None) -> Console:
 def cmd_history(*, console: Any = None, limit: int = 10) -> int:
     """``/history`` — list the most recent sessions (B4 Step 3).
 
-    Used to require ``STRATEGY_RESEARCH_SESSIONS_DB`` and read the legacy
+    Used to require ``AGENTNODES_SESSIONS_DB`` and read the legacy
     stack; it now reads the unified DB like everything else, so it works out
     of the box. (The old path was also broken: it read ``session_id`` /
     ``status`` off a dataclass that had neither.)

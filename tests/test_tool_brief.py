@@ -123,9 +123,13 @@ class TestToolHelp:
         assert result["doc"]
 
     def test_unknown_tool_returns_error(self):
-        """查询已删除的工具必须返回 error，而不是崩。"""
+        """查询不存在的工具必须返回 error，而不是崩。
+
+        2026-11-05 批次 6：run_backtest 已随业务工具归位 L2 重新注册，
+        改用真正不存在的名字。
+        """
         reg = build_default_registry()
-        result = json.loads(reg.get("tool_help").execute(ctx=None, name="run_backtest"))
+        result = json.loads(reg.get("tool_help").execute(ctx=None, name="definitely_gone_tool_xyz"))
         assert result["status"] == "error"
 
     def test_unknown_tool(self):

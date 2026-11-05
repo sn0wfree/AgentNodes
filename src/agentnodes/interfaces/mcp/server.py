@@ -174,6 +174,15 @@ class MCPServer:
 
     def register_default_tools(self) -> None:
         """Register all default research-only tools."""
+        # 业务能力注册（2026-11-05 批次 6 后续）：业务工具住在 apps/ 并经
+        # CapabilityRegistry 注册。MCP 服务器可能被**独立构造**（不经 CLI
+        # 入口），此时 apps 尚未 import -> `resolve("tool.*")` 全部失败，
+        # 工具静默消失。这里显式触发一次注册（幂等）。
+        try:
+            import agentnodes.apps  # noqa: F401 —— 注册副作用
+        except Exception:  # noqa: BLE001 —— 业务包不可用不应阻断框架工具
+            logger.debug("business capabilities unavailable", exc_info=True)
+
         self._register_skill_tools()
         # _register_goal_tools / _register_hypothesis_tools 已随 apps/goal、
         # apps/hypothesis 移除（2026-11-04 做减法批次 2）。
@@ -234,6 +243,8 @@ class MCPServer:
         # apps/builtin_tools/。L1 → L2 是合法下行，但这里走 CapabilityRegistry
         # 保持与 kernel 侧同一套解析路径——业务侧没注册 kind 时不暴露该工具
         # （比暴露一个「调用必然失败」的工具好）。
+        from agentnodes.kernel.agent.capability import resolve
+
         try:
             tools = resolve("tool.backtest")
         except Exception:  # noqa: BLE001 —— 含 CapabilityNotFound
