@@ -9,6 +9,7 @@
 | 目录 | 定位 | 命名规范 | 退出码约定 | 运行时机 |
 |---|---|---|---|---|
 | `arch/` | 架构守卫 | `check_<对象>.py` | 0 通过 · 1 发现问题 | 每次 commit（已接入 pytest 门禁） |
+| `arch/` | 架构评分（**非门禁**） | `score_<对象>.py` | 恒 0 | 按需（评审 / 复查时） |
 | `migration/` | 包搬迁 | 动词开头 `rewrite_*` `fix_*` `find_*` | 0 成功 · 2 用法错误 | 搬迁 step 协议内（见下） |
 | `dev/` | 开发辅助 | 描述式（无固定前缀） | 常规 | 按需 |
 
@@ -18,6 +19,9 @@
    搬迁协议要求每一步可审。
 3. 一次性修复脚本（当时的 fix_*.py 补丁）**不进本目录**——它们的生命周期
    等于那次搬迁，留在 git 历史里即可。
+4. `score_*` 是**评分器不是门禁**：它给「可疑模块」排序，**永远退出 0**，
+   不进 pytest 门禁。它的结论必须**人工复核**后才算数——
+   评分只用来缩小复核范围，不替代裁决。
 
 ## arch/ — 架构守卫（已接入 tests/test_architecture_gates.py）
 
@@ -28,6 +32,7 @@
 | `graph_layer_audit.py` | graphify 符号图的层向矩阵 + core 残留 + god-nodes | 与语句级门禁互为**第二种量纲**；曾暴露门禁 level=0 拼接 bug |
 | `layer_matrix.py` | 层归属表 + 判定原语（**唯一事实源**） | `test_layer_matrix` 与 `--layers` 共用，防止两份表漂移 |
 | `sync_architecture_diagram.py` | 架构图数字与 AST 实测是否一致 | 图上的层体量/边数是实测来的；**曾出现图写 46 违规、实际 0 且过时 6 版** |
+| `score_layer_attribution.py` | **评分器**：可疑归层模块排序（恒退出 0） | 领域标识符须用 AST 提取——词频会把 `strategy`（loop 策略 vs 量化策略）混为一谈，v1 误报率过半 |
 
 ### 悬空导入门禁的两种 import 形态（2026-11-05 补）
 
@@ -64,6 +69,7 @@ python scripts/arch/check_dangling_imports.py --layers   # 附层方向矩阵
 python scripts/arch/check_path_literals.py
 python scripts/arch/sync_architecture_diagram.py         # 架构图是否过时
 python scripts/arch/sync_architecture_diagram.py --write # 把实测数字回写进图
+python scripts/arch/score_layer_attribution.py           # 可疑归层模块排序（评分器，非门禁）
 python -m graphify extract . --code-only --no-cluster --out tmp/graphify2   # 先抽图
 python scripts/arch/graph_layer_audit.py tmp/graphify2/graphify-out/graph.json
 ```
