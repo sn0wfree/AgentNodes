@@ -138,6 +138,109 @@ def _evolution_propose_genome_update(registry: "CapabilityRegistry") -> Any:
     return propose_genome_update
 
 
+# ── 业务内置工具（批次 6 归位 L2）─────────────────────────────────────
+#
+# 这 6 个模块原住 ``kernel/agent/builtin_tools/``（L3），但调用的全是业务
+# 能力，属「L3 里的 L2」。批次 6 起住在 ``apps/builtin_tools/``，由本文件
+# 注册成 ``tool.*`` kind，kernel 的 ``_register_business_tools`` 从 registry 拉。
+#
+# **契约**：每个工厂返回 ``list[BaseTool]``（一个模块可产多个工具）。
+# 工厂内部 import 在本层（apps → kernel 方向合法），且失败时由 kernel 侧
+# 记 warning 并跳过该组——业务能力缺失不阻断框架启动。
+
+
+def _tool_factor(registry: "CapabilityRegistry") -> Any:
+    from strategy_research.apps.builtin_tools.factor_tools import (
+        ComputeFactorTool,
+        FactorAnalysisTool,
+        FactorCrossSectionalAnalysis,
+        FactorICDecay,
+        FactorQuintileReturns,
+        FactorTurnover,
+        PatternRecognitionTool,
+    )
+
+    return [
+        ComputeFactorTool(),
+        FactorAnalysisTool(),
+        PatternRecognitionTool(),
+        FactorCrossSectionalAnalysis(),
+        FactorQuintileReturns(),
+        FactorICDecay(),
+        FactorTurnover(),
+    ]
+
+
+def _tool_data(registry: "CapabilityRegistry") -> Any:
+    from strategy_research.apps.builtin_tools.data_tools import (
+        CheckDataTool,
+        GetMarketDataTool,
+        ImportDataTool,
+        ListDataSourcesTool,
+        SearchSymbolTool,
+    )
+
+    return [
+        GetMarketDataTool(),
+        ListDataSourcesTool(),
+        SearchSymbolTool(),
+        ImportDataTool(),
+        CheckDataTool(),
+    ]
+
+
+def _tool_backtest(registry: "CapabilityRegistry") -> Any:
+    from strategy_research.apps.builtin_tools.backtest_tools import (
+        ConfigLoadStep,
+        DataPrepareStep,
+        DataReadinessStep,
+        EngineRunStep,
+        RunBacktestTool,
+    )
+
+    return [
+        RunBacktestTool(),
+        ConfigLoadStep(),
+        DataPrepareStep(),
+        DataReadinessStep(),
+        EngineRunStep(),
+    ]
+
+
+def _tool_backtest_analysis(registry: "CapabilityRegistry") -> Any:
+    from strategy_research.apps.builtin_tools.backtest_analysis_tools import (
+        BenchmarkComparison,
+        DrawdownAnalysis,
+        StrategyCompare,
+    )
+
+    return [StrategyCompare(), DrawdownAnalysis(), BenchmarkComparison()]
+
+
+def _tool_data_clean(registry: "CapabilityRegistry") -> Any:
+    from strategy_research.apps.builtin_tools.data_clean_tools import DataCleanTool
+
+    return [DataCleanTool()]
+
+
+def _tool_goal(registry: "CapabilityRegistry") -> Any:
+    from strategy_research.apps.builtin_tools.goal_tools import (
+        AddEvidenceTool,
+        CompleteGoalTool,
+        CreateGoalTool,
+        GetGoalStatusTool,
+        ListGoalsTool,
+    )
+
+    return [
+        CreateGoalTool(),
+        AddEvidenceTool(),
+        CompleteGoalTool(),
+        GetGoalStatusTool(),
+        ListGoalsTool(),
+    ]
+
+
 # ── 注册表 ───────────────────────────────────────────────────────────
 
 #: kind → factory。kind 命名 = ``<域>.<能力>``，与调用点的语义一一对应。
@@ -170,6 +273,13 @@ CAPABILITIES: dict[str, Callable[["CapabilityRegistry"], Any]] = {
     "evolution.read_validation": _evolution_read_validation,
     "evolution.read_holdout": _evolution_read_holdout,
     "evolution.propose_genome_update": _evolution_propose_genome_update,
+    # 业务内置工具（批次 6：原住 L3 builtin_tools，现归位 L2）
+    "tool.factor": _tool_factor,
+    "tool.data": _tool_data,
+    "tool.backtest": _tool_backtest,
+    "tool.backtest_analysis": _tool_backtest_analysis,
+    "tool.data_clean": _tool_data_clean,
+    "tool.goal": _tool_goal,
 }
 
 

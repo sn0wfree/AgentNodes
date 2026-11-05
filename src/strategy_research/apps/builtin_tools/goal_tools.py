@@ -15,7 +15,7 @@ import logging
 from typing import Any
 
 from strategy_research.kernel.agent.tools import EFFECT_DB, BaseTool, ToolContext
-from .utils import err_actionable, tool_ok, try_unwrap_list
+from strategy_research.kernel.agent.builtin_tools.utils import err_actionable, tool_ok, try_unwrap_list
 
 logger = logging.getLogger(__name__)
 

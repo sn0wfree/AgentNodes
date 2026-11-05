@@ -207,7 +207,7 @@ class RunBacktestTool(BaseTool):
         import uuid as _uuid
         from pathlib import Path as _Path
 
-        from .bg_tools import (
+        from strategy_research.kernel.agent.builtin_tools.bg_tools import (
             log_progress,
             register_thread_task,
             set_task_result,

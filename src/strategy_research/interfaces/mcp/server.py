@@ -229,25 +229,42 @@ class MCPServer:
     def _register_backtest_tools(self) -> None:
         # Agent registry's 4-step orchestrated run_backtest (config_load →
         # data_prepare → data_gate → engine_run); MCP params map 1:1.
-        from strategy_research.kernel.agent.builtin_tools.backtest_tools import RunBacktestTool
-
-        self.register(_wrap_base_tool(
-            RunBacktestTool(),
-            param_map={"strategy": "strategy_name"},
-            include_workspace=True,
-        ))
+        #
+        # 2026-11-05 批次 6：工具实现已从 kernel/agent/builtin_tools/ 归位到
+        # apps/builtin_tools/。L1 → L2 是合法下行，但这里走 CapabilityRegistry
+        # 保持与 kernel 侧同一套解析路径——业务侧没注册 kind 时不暴露该工具
+        # （比暴露一个「调用必然失败」的工具好）。
+        try:
+            tools = resolve("tool.backtest")
+        except Exception:  # noqa: BLE001 —— 含 CapabilityNotFound
+            return
+        for tool in tools or ():
+            if type(tool).__name__ != "RunBacktestTool":
+                continue
+            self.register(_wrap_base_tool(
+                tool,
+                param_map={"strategy": "strategy_name"},
+                include_workspace=True,
+            ))
         # validate_run 工具已随 apps/validation 移除（2026-11-04 做减法批次 2）；
         # 此前它就因模块路径问题从未真正可用（注释见 git 历史）。
 
     def _register_factor_tools(self) -> None:
         # Agent registry's compute_factor (expression → factor_code).
-        from strategy_research.kernel.agent.builtin_tools.factor_tools import ComputeFactorTool
+        from strategy_research.kernel.agent.capability import resolve
 
-        self.register(_wrap_base_tool(
-            ComputeFactorTool(),
-            param_map={"expression": "factor_code"},
-            include_workspace=True,
-        ))
+        try:
+            tools = resolve("tool.factor")
+        except Exception:  # noqa: BLE001 —— 含 CapabilityNotFound
+            return
+        for tool in tools or ():
+            if type(tool).__name__ != "ComputeFactorTool":
+                continue
+            self.register(_wrap_base_tool(
+                tool,
+                param_map={"expression": "factor_code"},
+                include_workspace=True,
+            ))
 
     def _register_memory_tools(self) -> None:
         def search_memory(query: str = "", limit: int = 5, **kwargs: Any) -> str:

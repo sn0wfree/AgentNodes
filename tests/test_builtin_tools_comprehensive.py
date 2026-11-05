@@ -38,12 +38,12 @@ class TestOptionsPricingTool:
 
 class TestDataCleanTool:
     def test_tool_exists(self):
-        from strategy_research.kernel.agent.builtin_tools.data_clean_tools import DataCleanTool
+        from strategy_research.apps.builtin_tools.data_clean_tools import DataCleanTool
         tool = DataCleanTool()
         assert tool.name == "clean_data"
 
     def test_tool_schema(self):
-        from strategy_research.kernel.agent.builtin_tools.data_clean_tools import DataCleanTool
+        from strategy_research.apps.builtin_tools.data_clean_tools import DataCleanTool
         tool = DataCleanTool()
         schema = tool.to_openai_schema()
         assert "function" in schema
@@ -182,8 +182,10 @@ class TestBuildDefaultRegistry:
     def test_contains_analysis_tools(self):
         r = build_default_registry()
         assert r.get("options_pricing") is not None
-        # 批次 5：clean_data 已随 apps/tools 移除
-        assert r.get("clean_data") is None
+        # 批次 6：业务工具归位 L2（apps/builtin_tools/）后经 CapabilityRegistry
+        # 重新注册，因此 clean_data 又出现在 registry 里。它们的底层能力
+        # （factor.compute / db.* / backtest.*）仍缺失，调用时走降级路径。
+        assert r.get("clean_data") is not None
 
     def test_tool_count(self):
         r = build_default_registry()

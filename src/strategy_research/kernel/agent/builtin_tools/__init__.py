@@ -3,12 +3,18 @@
 域模块:
     file_tools            文件: read_file / list_files / write_file
     workspace_tools       工作区: git_diff / list_history / list_skills / load_skill
-    backtest_tools        回测编排: run_backtest + 4 子步骤
-    factor_tools          因子: compute_factor / factor_analysis / 因子研究套件
     options_tools         期权定价: options_pricing
-    backtest_analysis_tools  回测分析: strategy_compare / drawdown / benchmark
-    data_clean_tools      数据清洗: clean_data
     help_tools            工具文档: tool_help
+
+**业务工具已归位 L2（2026-11-05 批次 6）**：backtest_tools / factor_tools /
+data_tools / goal_tools / backtest_analysis_tools / data_clean_tools 六个模块
+原本住在本目录，但它们调用的全是业务能力（factor.compute / db.* / backtest.*），
+属「L3 里的 L2」。已 git mv 到 ``apps/builtin_tools/``，由
+``apps/capabilities.py`` 注册成 ``tool.*`` kind，本中枢通过
+:func:`_register_business_tools` 从 registry 拉取。
+
+降级语义：kind 缺失时静默跳过（``logger.debug`` 一行），工具不出现在
+registry 里——比注册一个「调用必然失败」的工具好。
 """
 from __future__ import annotations
 
@@ -16,7 +22,6 @@ import logging
 from pathlib import Path
 
 from strategy_research.kernel.agent.tools import ToolRegistry
-from .backtest_analysis_tools import BenchmarkComparison, DrawdownAnalysis, StrategyCompare
 from .file_tools import ListFilesTool, ReadFileTool, WriteFileTool
 from .help_tools import ToolHelpTool
 from .options_tools import OptionsPricingTool
@@ -25,22 +30,53 @@ from .workspace_tools import GitDiffTool, ListHistoryTool, ListSkillsTool, LoadS
 logger = logging.getLogger(__name__)
 
 
+#: 业务工具 kind → 在 ToolRegistry 里的注册方式。
+#:
+#: 每个 kind 的工厂返回 ``list[BaseTool]``（一个模块可以产多个工具）。
+#: 批次 6 之后这些实现住在 ``apps/builtin_tools/``，由 apps 侧注册。
+BUSINESS_TOOL_KINDS = (
+    "tool.factor",
+    "tool.data",
+    "tool.backtest",
+    "tool.backtest_analysis",
+    "tool.data_clean",
+    "tool.goal",
+)
 
 
-# ── 2026-11-05 做减法批次 5：业务工具已摘除注册 ─────────────────────
-#
-# 以下 9 个工具类依赖批次 4/5 删除的 capability kind（backtest.script /
-# factor.compute / db.get_connection / data.clean / datasource.* /
-# data.readiness），已从 build_default_registry 摘除：
-#
-#   RunBacktestTool · ConfigLoadStep · DataPrepareStep · DataReadinessStep
-#   EngineRunStep · ComputeFactorTool · FactorAnalysisTool
-#   PatternRecognitionTool · DataCleanTool · StrategyCompare
-#   DrawdownAnalysis · BenchmarkComparison
-#   ListDataSourcesTool · SearchSymbolTool · CheckDataTool
-#
-# **文件保留到批次 6**（那时连代码一起删）。本批次只保证 agent 的 tool
-# 列表里不再出现「调用必然失败」的项 —— 比留着让 LLM 撞墙好。
+def _register_business_tools(registry: ToolRegistry) -> None:
+    """从 CapabilityRegistry 拉业务工具（L2 提供的实现）。
+
+    每个 kind 的工厂返回 ``list[BaseTool]``；kind 缺失或工厂抛错时
+    跳过该组并记 debug 日志——**框架不因业务能力缺失而启动失败**，
+    这是 L3→L2 端口化已经建立的模式（与 ``resolve("db.get_connection")``
+    的调用点一致）。
+    """
+    from strategy_research.kernel.agent.capability import (
+        CapabilityNotFound,
+        resolve,
+    )
+
+    for kind in BUSINESS_TOOL_KINDS:
+        try:
+            tools = resolve(kind)
+        except CapabilityNotFound:
+            logger.debug("business tool kind not registered: %s", kind)
+            continue
+        except Exception as exc:  # noqa: BLE001
+            logger.debug("business tool kind resolve failed: %s (%s)", kind, exc)
+            continue
+        # ``resolve()`` 已执行 factory，返回值就是工厂产物（这里是 list[BaseTool]）。
+        if tools is None:
+            logger.debug("business tool kind returned None: %s", kind)
+            continue
+        if not isinstance(tools, (list, tuple)):
+            tools = [tools]
+        for tool in tools:
+            try:
+                registry.register(tool)
+            except Exception as exc:  # noqa: BLE001
+                logger.warning("register business tool failed (%s): %s", kind, exc)
 
 
 def build_default_registry(workspace: Path | None = None) -> ToolRegistry:
@@ -62,20 +98,14 @@ def build_default_registry(workspace: Path | None = None) -> ToolRegistry:
     r.register(ListSkillsTool())
     r.register(LoadSkillTool())
     r.register(OptionsPricingTool())
+    # 业务工具（L2 实现，经 CapabilityRegistry 注入）— 批次 6
+    _register_business_tools(r)
     # Phase 2: Web I/O tools (conditional on dependencies)
     try:
         from .web_tools import register_web_tools
         register_web_tools(r)
     except Exception:
         pass
-    # Phase 3: Market data tools —— 2026-11-05 批次 5 摘除
-    # register_data_tools 注册的 ListDataSourcesTool / SearchSymbolTool /
-    # CheckDataTool 全部依赖 datasource.* / data.readiness 五个已删 kind。
-    # 留着注册会让 LLM 选到「调用必然失败」的工具。文件保留到批次 6。
-    # Goal management tools —— 2026-11-05 批次 5 摘除
-    # apps/goal 已随批次 2 移除，goal_tools.py 是死代码（create_goal /
-    # complete_goal / get_goal_status / list_goals 四个工具全部依赖
-    # 已不存在的 GoalStore）。文件保留到批次 6 一起删。
     # Display tools (agent-driven right panel: show_chart / show_report)
     try:
         from .display_tools import register_display_tools
@@ -149,22 +179,7 @@ def _discover_tool_plugins(registry: ToolRegistry) -> None:
 
 
 __all__ = [
-    "BenchmarkComparison",
-    "DrawdownAnalysis",
-    "StrategyCompare",
-    "ConfigLoadStep",
-    "DataPrepareStep",
-    "DataReadinessStep",
-    "EngineRunStep",
-    "RunBacktestTool",
-    "DataCleanTool",
-    "ComputeFactorTool",
-    "FactorAnalysisTool",
-    "FactorCrossSectionalAnalysis",
-    "FactorICDecay",
-    "FactorQuintileReturns",
-    "FactorTurnover",
-    "PatternRecognitionTool",
+    # 框架工具（本层）
     "ListFilesTool",
     "ReadFileTool",
     "WriteFileTool",
@@ -174,5 +189,7 @@ __all__ = [
     "ListHistoryTool",
     "ListSkillsTool",
     "LoadSkillTool",
+    # 注册中枢
+    "BUSINESS_TOOL_KINDS",
     "build_default_registry",
 ]
