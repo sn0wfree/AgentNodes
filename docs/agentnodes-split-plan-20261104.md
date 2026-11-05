@@ -109,6 +109,14 @@ AgentNodes（agent 框架，独立开发）        quantnodes-strategy-research�
 
 ## 2. 阶段规划
 
+> **⚠ 2026-11-05 更新**：阶段 2（AgentNodes 侧减法）的**执行顺序已重排**。
+> 见 `docs/subtraction-roadmap-v2-20261105.md` —— 那份文档基于批次 1–3 的
+> 实测数据（业务词密度 / 跨层依赖 / capability 注册面）重新规划了批次 4–9，
+> 并给出三个关键判断：`apps/evolution` 留下（业务密度 1.5%）、
+> `templates/.prompts` 分两半、`builtin_tools` 是「L3 里的 L2」。
+>
+> 本文档的**边界定义**（§1 逐包归属表）仍然有效。
+
 ### 阶段 0 · 准备（本次执行）
 
 **目标**：两个仓库都处于可回滚的干净状态。
