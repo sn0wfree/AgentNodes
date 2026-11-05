@@ -1,0 +1,688 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>框架与理念 · v0.1 草案</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC',
+                 'Hiragino Sans GB', 'Microsoft YaHei', sans-serif;
+    background: #0a0e1a;
+    color: #e2e8f0;
+    min-height: 100vh;
+    padding: 40px 22px 70px;
+    background-image:
+      radial-gradient(ellipse at 12% 0%, rgba(16,185,129,0.07) 0%, transparent 48%),
+      radial-gradient(ellipse at 88% 10%, rgba(59,130,246,0.07) 0%, transparent 45%),
+      radial-gradient(ellipse at 50% 100%, rgba(99,102,241,0.06) 0%, transparent 50%);
+  }
+
+  .page { max-width: 1400px; margin: 0 auto; }
+
+  /* ============ 标题 ============ */
+  .header { text-align: center; margin-bottom: 44px; }
+  .page-title {
+    font-size: 34px; font-weight: 800; letter-spacing: 3px;
+    background: linear-gradient(90deg, #34d399 0%, #60a5fa 50%, #a78bfa 100%);
+    -webkit-background-clip: text; background-clip: text;
+    -webkit-text-fill-color: transparent;
+    margin-bottom: 8px;
+  }
+  .page-subtitle { color: #64748b; font-size: 13px; letter-spacing: 1.4px; margin-bottom: 14px; }
+  .version-badge {
+    display: inline-block; font-size: 11px; font-weight: 700;
+    padding: 4px 16px; border-radius: 100px;
+    background: rgba(99,102,241,0.1);
+    border: 1px solid rgba(99,102,241,0.35);
+    color: #a5b4fc; letter-spacing: 0.8px;
+  }
+
+  /* ============ 分节 ============ */
+  .section-label {
+    display: flex; align-items: center; gap: 14px;
+    margin: 52px 0 22px;
+  }
+  .section-label .num {
+    font-size: 11px; font-weight: 800; letter-spacing: 1.5px;
+    color: #6366f1; padding: 3px 10px; border-radius: 6px;
+    background: rgba(99,102,241,0.12);
+    border: 1px solid rgba(99,102,241,0.3);
+  }
+  .section-label .txt { font-size: 18px; font-weight: 800; color: #e2e8f0; letter-spacing: 0.5px; }
+  .section-label .line {
+    flex: 1; height: 1px;
+    background: linear-gradient(90deg, rgba(255,255,255,0.12), transparent);
+  }
+  .section-label:first-of-type { margin-top: 0; }
+
+  /* ============ 一句话 ============ */
+  .onesentence {
+    padding: 30px 34px; border-radius: 18px;
+    background: linear-gradient(135deg, rgba(99,102,241,0.10), rgba(16,185,129,0.05));
+    border: 1px solid rgba(99,102,241,0.3);
+    text-align: center;
+  }
+  .onesentence p { font-size: 16.5px; line-height: 2.0; color: #dbe3f0; font-weight: 500; }
+  .onesentence b.k1 { color: #60a5fa; font-weight: 800; }
+  .onesentence b.k2 { color: #34d399; font-weight: 800; }
+  .onesentence b.k3 { color: #fbbf24; font-weight: 800; }
+  .onesentence b.k4 { color: #fb7185; font-weight: 800; }
+  .onesentence b.k5 { color: #a78bfa; font-weight: 800; }
+
+  /* ============ 双轴总图 ============ */
+  .axis-wrap {
+    background: rgba(18,24,40,0.72);
+    border: 1px solid rgba(255,255,255,0.075);
+    border-radius: 20px; padding: 28px 26px 24px;
+  }
+  .axis-tag {
+    font-size: 11px; font-weight: 800; letter-spacing: 1.6px;
+    margin-bottom: 16px; display: flex; align-items: center; gap: 10px;
+  }
+  .axis-tag .dot { width: 9px; height: 9px; border-radius: 3px; }
+
+  /* 语义轴：G→E→P 循环 */
+  .sep-row { display: grid; grid-template-columns: 1fr 150px 1fr 150px 1fr; gap: 0; align-items: stretch; }
+  .sep-box {
+    border-radius: 15px; padding: 18px 18px 15px; position: relative;
+  }
+  .sep-box.g { background: linear-gradient(135deg, rgba(16,185,129,0.12), rgba(20,184,166,0.05)); border: 1px solid rgba(16,185,129,0.35); }
+  .sep-box.e { background: linear-gradient(135deg, rgba(59,130,246,0.12), rgba(99,102,241,0.05)); border: 1px solid rgba(59,130,246,0.35); }
+  .sep-box.p { background: linear-gradient(135deg, rgba(245,158,11,0.12), rgba(249,115,22,0.05)); border: 1px solid rgba(245,158,11,0.35); }
+  .sep-badge {
+    font-size: 10px; font-weight: 800; padding: 3px 9px; border-radius: 6px;
+    letter-spacing: 0.8px; display: inline-block; margin-bottom: 8px;
+  }
+  .sep-box.g .sep-badge { background: rgba(16,185,129,0.2); color: #34d399; }
+  .sep-box.e .sep-badge { background: rgba(59,130,246,0.2); color: #60a5fa; }
+  .sep-box.p .sep-badge { background: rgba(245,158,11,0.2); color: #fbbf24; }
+  .sep-name { font-size: 16px; font-weight: 700; margin-bottom: 3px; }
+  .sep-box.g .sep-name { color: #6ee7b7; }
+  .sep-box.e .sep-name { color: #93c5fd; }
+  .sep-box.p .sep-name { color: #fcd34d; }
+  .sep-role { font-size: 11px; color: #64748b; margin-bottom: 9px; }
+  .sep-items { display: flex; flex-wrap: wrap; gap: 5px; }
+  .sep-item {
+    font-size: 10.5px; padding: 3px 9px; border-radius: 7px;
+    background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.08);
+    color: #cbd5e1;
+  }
+  .sep-note {
+    margin-top: 10px; font-size: 11px; line-height: 1.6; color: #94a3b8;
+    padding: 8px 11px; border-radius: 9px; background: rgba(0,0,0,0.25);
+    border-left: 3px solid rgba(255,255,255,0.14);
+  }
+  .sep-box.g .sep-note { border-left-color: rgba(16,185,129,0.55); }
+  .sep-box.e .sep-note { border-left-color: rgba(59,130,246,0.55); }
+  .sep-box.p .sep-note { border-left-color: rgba(245,158,11,0.55); }
+
+  .harrow { display: flex; flex-direction: column; justify-content: center; align-items: center; gap: 5px; padding: 0 8px; }
+  .harrow .line {
+    width: 100%; height: 2px; position: relative;
+    background: linear-gradient(90deg, rgba(255,255,255,0.05), rgba(255,255,255,0.3), rgba(255,255,255,0.05));
+  }
+  .harrow .line::after {
+    content: ''; position: absolute; right: 2px; top: 50%; transform: translateY(-50%);
+    border-top: 5px solid transparent; border-bottom: 5px solid transparent;
+    border-left: 8px solid rgba(255,255,255,0.4);
+  }
+  .harrow .lbl { font-size: 10.5px; color: #94a3b8; text-align: center; line-height: 1.45; white-space: nowrap; }
+
+  /* P→G 反馈 */
+  .feedback-bar {
+    margin-top: 16px; position: relative;
+    border: 1.5px dashed rgba(251,191,36,0.45); border-radius: 13px;
+    padding: 13px 18px; text-align: center;
+    background: rgba(251,191,36,0.05);
+  }
+  .feedback-bar .t { font-size: 12.5px; font-weight: 700; color: #fcd34d; letter-spacing: 0.5px; }
+  .feedback-bar .d { font-size: 11px; color: #a8a29e; margin-top: 4px; line-height: 1.6; }
+
+  /* 桥接条 */
+  .bridge {
+    margin: 20px 0; border: 1.5px dashed rgba(167,139,250,0.45); border-radius: 13px;
+    padding: 14px 18px; background: rgba(167,139,250,0.05);
+    display: flex; align-items: center; gap: 18px; flex-wrap: wrap;
+  }
+  .bridge .bt { font-size: 12.5px; font-weight: 800; color: #c4b5fd; letter-spacing: 0.6px; white-space: nowrap; }
+  .bridge .bd { font-size: 11.5px; color: #94a3b8; line-height: 1.6; flex: 1; min-width: 260px; }
+  .tier-chips { display: flex; gap: 8px; flex-wrap: wrap; }
+  .tier-chip {
+    font-size: 10.5px; padding: 4px 11px; border-radius: 100px; font-weight: 600;
+    white-space: nowrap;
+  }
+  .tier-chip.t0 { background: rgba(244,63,94,0.1); border: 1px solid rgba(244,63,94,0.35); color: #fda4af; }
+  .tier-chip.t1 { background: rgba(251,191,36,0.1); border: 1px solid rgba(251,191,36,0.35); color: #fcd34d; }
+  .tier-chip.t2 { background: rgba(52,211,153,0.1); border: 1px solid rgba(52,211,153,0.35); color: #6ee7b7; }
+
+  /* 物理轴堆叠 */
+  .phy-stack { display: flex; flex-direction: column; gap: 0; }
+  .phy-layer {
+    display: grid; grid-template-columns: 92px 1fr auto; gap: 16px; align-items: center;
+    border-radius: 12px; padding: 13px 18px;
+    background: rgba(255,255,255,0.028); border: 1px solid rgba(255,255,255,0.07);
+  }
+  .phy-layer .code { font-size: 20px; font-weight: 800; }
+  .phy-layer .nm { font-size: 13.5px; font-weight: 700; color: #e2e8f0; }
+  .phy-layer .ds { font-size: 11px; color: #94a3b8; margin-top: 2px; line-height: 1.55; }
+  .phy-layer .st { font-size: 10.5px; padding: 3px 10px; border-radius: 100px; white-space: nowrap; font-weight: 700; }
+  .st-ok { background: rgba(16,185,129,0.12); border: 1px solid rgba(16,185,129,0.35); color: #6ee7b7; }
+  .l1 .code { color: #7dd3fc; } .l2 .code { color: #a5b4fc; }
+  .l3 .code { color: #818cf8; } .l4 .code { color: #6ee7b7; }
+  .phy-arrow { text-align: center; padding: 3px 0; color: #475569; font-size: 12px; }
+
+  /* ============ 理念卡片 ============ */
+  .idea-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
+  @media (max-width: 1000px) { .idea-grid { grid-template-columns: 1fr; } }
+  .idea {
+    background: rgba(18,24,40,0.72); border: 1px solid rgba(255,255,255,0.08);
+    border-radius: 16px; padding: 20px 20px 17px; position: relative; overflow: hidden;
+  }
+  .idea::before {
+    content: ''; position: absolute; top: 0; left: 0; right: 0; height: 3px;
+  }
+  .idea.i1::before { background: linear-gradient(90deg, #34d399, rgba(52,211,153,0.1)); }
+  .idea.i2::before { background: linear-gradient(90deg, #60a5fa, rgba(96,165,250,0.1)); }
+  .idea.i3::before { background: linear-gradient(90deg, #f43f5e, rgba(244,63,94,0.1)); }
+  .idea.i4::before { background: linear-gradient(90deg, #a78bfa, rgba(167,139,250,0.1)); }
+  .idea.i5::before { background: linear-gradient(90deg, #fbbf24, rgba(251,191,36,0.1)); }
+  .idea.i6::before { background: linear-gradient(90deg, #22d3ee, rgba(34,211,238,0.1)); }
+  .idea-num { font-size: 10px; font-weight: 800; letter-spacing: 1.4px; color: #64748b; margin-bottom: 7px; }
+  .idea-title { font-size: 14.5px; font-weight: 800; color: #e2e8f0; margin-bottom: 10px; line-height: 1.45; }
+  .idea-sec { font-size: 11.5px; line-height: 1.65; margin-bottom: 8px; }
+  .idea-sec .k {
+    font-size: 10px; font-weight: 800; letter-spacing: 1px; display: inline-block;
+    margin-right: 6px; padding: 1px 7px; border-radius: 5px; vertical-align: 1px;
+  }
+  .k-tension { background: rgba(244,63,94,0.12); color: #fda4af; }
+  .k-rule { background: rgba(59,130,246,0.12); color: #93c5fd; }
+  .k-check { background: rgba(16,185,129,0.12); color: #6ee7b7; }
+  .idea-sec .v { color: #b8c2d4; }
+  .idea-sec .v b { color: #e2e8f0; font-weight: 700; }
+
+  /* ============ 三回路时间轴 ============ */
+  .loops { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
+  @media (max-width: 1000px) { .loops { grid-template-columns: 1fr; } }
+  .loop {
+    border-radius: 16px; padding: 20px;
+    background: rgba(18,24,40,0.72); border: 1px solid rgba(255,255,255,0.08);
+    position: relative;
+  }
+  .loop .scale {
+    font-size: 10px; font-weight: 800; letter-spacing: 1.2px;
+    display: inline-block; padding: 3px 11px; border-radius: 100px; margin-bottom: 10px;
+  }
+  .loop.l1b .scale { background: rgba(52,211,153,0.13); color: #6ee7b7; border: 1px solid rgba(52,211,153,0.35); }
+  .loop.l2b .scale { background: rgba(96,165,250,0.13); color: #93c5fd; border: 1px solid rgba(96,165,250,0.35); }
+  .loop.l3b .scale { background: rgba(251,191,36,0.13); color: #fcd34d; border: 1px solid rgba(251,191,36,0.35); }
+  .loop-name { font-size: 14.5px; font-weight: 800; color: #e2e8f0; margin-bottom: 8px; }
+  .loop-desc { font-size: 11.5px; color: #94a3b8; line-height: 1.7; margin-bottom: 10px; }
+  .loop-desc b { color: #cbd5e1; }
+  .loop-status { font-size: 11px; padding: 8px 12px; border-radius: 9px; line-height: 1.6; }
+  .loop.l1b .loop-status { background: rgba(16,185,129,0.07); border-left: 3px solid rgba(16,185,129,0.6); color: #86c5a8; }
+  .loop.l2b .loop-status { background: rgba(59,130,246,0.07); border-left: 3px solid rgba(59,130,246,0.6); color: #9db2d8; }
+  .loop.l3b .loop-status { background: rgba(245,158,11,0.07); border-left: 3px solid rgba(245,158,11,0.6); color: #cbb27e; }
+
+  /* ============ 表格 ============ */
+  .table-wrap {
+    background: rgba(18,24,40,0.6);
+    border: 1px solid rgba(255,255,255,0.07);
+    border-radius: 17px; overflow: hidden;
+  }
+  table { width: 100%; border-collapse: collapse; font-size: 12px; }
+  thead th {
+    text-align: left; padding: 12px 16px;
+    background: rgba(255,255,255,0.035);
+    color: #94a3b8; font-weight: 700; font-size: 11px;
+    letter-spacing: 0.8px; border-bottom: 1px solid rgba(255,255,255,0.08);
+  }
+  tbody td {
+    padding: 10px 16px; border-bottom: 1px solid rgba(255,255,255,0.04);
+    color: #cbd5e1; line-height: 1.55; vertical-align: top;
+  }
+  tbody tr:last-child td { border-bottom: none; }
+  tbody tr:hover { background: rgba(255,255,255,0.018); }
+  .mono { font-family: Consolas, monospace; font-size: 11px; color: #a5b4fc; }
+  .pill { font-size: 10px; font-weight: 800; padding: 2px 9px; border-radius: 5px; white-space: nowrap; }
+  .pill-g { background: rgba(16,185,129,0.14); color: #34d399; }
+  .pill-e { background: rgba(59,130,246,0.14); color: #60a5fa; }
+  .pill-p { background: rgba(245,158,11,0.14); color: #fbbf24; }
+  .pill-b { background: rgba(244,63,94,0.14); color: #fb7185; }
+  .pill-r { background: rgba(99,102,241,0.14); color: #a5b4fc; }
+
+  /* ============ 目录树 ============ */
+  .tree {
+    background: rgba(10,14,26,0.85); border: 1px solid rgba(255,255,255,0.08);
+    border-radius: 15px; padding: 20px 24px;
+    font-family: Consolas, monospace; font-size: 12.5px; line-height: 1.9;
+    color: #94a3b8; overflow-x: auto;
+  }
+  .tree .cm { color: #64748b; }
+  .tree .hi { color: #6ee7b7; font-weight: 700; }
+  .tree .warn { color: #fcd34d; }
+  .tree .dir { color: #e2e8f0; font-weight: 700; }
+
+  /* ============ 决策点 ============ */
+  .dec-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 15px; }
+  @media (max-width: 900px) { .dec-grid { grid-template-columns: 1fr; } }
+  .dec {
+    background: linear-gradient(160deg, rgba(234,179,8,0.06), rgba(234,179,8,0.012));
+    border: 1px solid rgba(234,179,8,0.26);
+    border-radius: 15px; padding: 18px 19px 16px;
+  }
+  .dec-id { font-size: 10px; font-weight: 800; letter-spacing: 1.3px; color: #facc15; margin-bottom: 6px; }
+  .dec-q { font-size: 13.5px; font-weight: 700; color: #fef3c7; margin-bottom: 9px; line-height: 1.5; }
+  .dec-opts { font-size: 11.5px; color: #a8a29e; line-height: 1.7; margin-bottom: 9px; }
+  .dec-rec {
+    font-size: 11.5px; color: #6ee7b7; line-height: 1.6;
+    background: rgba(16,185,129,0.07); border-left: 3px solid rgba(16,185,129,0.55);
+    padding: 7px 11px; border-radius: 8px;
+  }
+  .dec-rec b { color: #34d399; }
+
+  /* ============ 图例/页脚 ============ */
+  .legend {
+    display: flex; flex-wrap: wrap; gap: 20px; justify-content: center;
+    margin-top: 44px; padding-top: 24px;
+    border-top: 1px solid rgba(255,255,255,0.06);
+  }
+  .legend-item { display: flex; align-items: center; gap: 8px; font-size: 11px; color: #94a3b8; }
+  .legend-dot { width: 10px; height: 10px; border-radius: 3px; }
+
+  .related {
+    margin-top: 30px; padding: 18px 24px;
+    background: rgba(18,24,40,0.6); border: 1px solid rgba(255,255,255,0.06);
+    border-radius: 14px; text-align: center;
+  }
+  .related .rt { font-size: 11px; font-weight: 800; letter-spacing: 1.2px; color: #64748b; margin-bottom: 8px; }
+  .related a { color: #93c5fd; text-decoration: none; font-size: 12px; margin: 0 8px; }
+  .related a:hover { text-decoration: underline; }
+
+  @media (max-width: 720px) {
+    .page-title { font-size: 24px; }
+    body { padding: 26px 12px 50px; }
+    .sep-row { grid-template-columns: 1fr; gap: 10px; }
+    .harrow { flex-direction: row; padding: 4px 0; }
+    .harrow .line { height: 2px; width: 40px; }
+  }
+</style>
+</head>
+<body>
+<div class="page">
+
+  <!-- ==================== 标题 ==================== -->
+  <div class="header">
+    <h1 class="page-title">框架与理念</h1>
+    <p class="page-subtitle">AgentNodes · 自我进化研究 Agent 平台 · 双轴架构</p>
+    <span class="version-badge">v0.1 草案 · 待拍板 · 尚未开任何代码</span>
+  </div>
+
+  <!-- ==================== 00 一句话 ==================== -->
+  <div class="section-label">
+    <span class="num">00</span>
+    <span class="txt">一句话</span>
+    <span class="line"></span>
+  </div>
+
+  <div class="onesentence">
+    <p>
+      <b class="k1">物理轴（L1–L4）</b>管「谁可以 import 谁」，<b class="k2">语义轴（G/E/P）</b>管「谁可以改变谁」；<br>
+      两轴在 <b class="k5">Tier 0/1/2</b> 相交；<b class="k3">三条反馈回路</b>按分钟 / 小时 / 天分时标运行；<br>
+      <b class="k4">评估器与变异白名单的守护在进程外</b>。
+    </p>
+  </div>
+
+  <!-- ==================== 01 双轴总图 ==================== -->
+  <div class="section-label">
+    <span class="num">01</span>
+    <span class="txt">双轴正交总图</span>
+    <span class="line"></span>
+  </div>
+
+  <div class="axis-wrap">
+
+    <!-- 语义轴 -->
+    <div class="axis-tag">
+      <span class="dot" style="background:linear-gradient(135deg,#10b981,#f59e0b)"></span>
+      语义轴（GEP-RSI）· 谁可以改变谁 —— 变异面 ⊂ 表达面 ⊂ 表型面
+    </div>
+
+    <div class="sep-row">
+      <div class="sep-box g">
+        <span class="sep-badge">G 层 · 基因组</span>
+        <div class="sep-name">变异发生地</div>
+        <div class="sep-role">Tier 0 冻结 · Tier 1 白名单 · Tier 2 产物</div>
+        <div class="sep-items">
+          <span class="sep-item">GenomeProposal</span>
+          <span class="sep-item">版本链 + 游标</span>
+          <span class="sep-item">default_policy</span>
+        </div>
+        <div class="sep-note">提案构造期即拒绝 Tier 0；变更只有「提案 → 验证 → 留痕」一条路</div>
+      </div>
+      <div class="harrow">
+        <div class="line"></div>
+        <div class="lbl">选择性转录<br>+ 编译</div>
+      </div>
+      <div class="sep-box e">
+        <span class="sep-badge">E 层 · 表达</span>
+        <div class="sep-name">选择执行地</div>
+        <div class="sep-role">harness 组装 · 隔离回放 · 驱动</div>
+        <div class="sep-items">
+          <span class="sep-item">skill_memory</span>
+          <span class="sep-item">harness_resolver</span>
+          <span class="sep-item">isolated_replay</span>
+        </div>
+        <div class="sep-note">从 tier1_active 组装本轮执行面；回滚锚点先记后用</div>
+      </div>
+      <div class="harrow">
+        <div class="line"></div>
+        <div class="lbl">执行轨迹<br>+ 证据包</div>
+      </div>
+      <div class="sep-box p">
+        <span class="sep-badge">P 层 · 表型</span>
+        <div class="sep-name">选择裁决地</div>
+        <div class="sep-role">冻结基准 · 判据证据 · 事件流</div>
+        <div class="sep-items">
+          <span class="sep-item">evals / scorecard</span>
+          <span class="sep-item">goal journal</span>
+          <span class="sep-item">event_log</span>
+        </div>
+        <div class="sep-note">测量代码属屏障层、不参与自我评分；最薄的一层（待补）</div>
+      </div>
+    </div>
+
+    <div class="feedback-bar">
+      <div class="t">⟲ 选择信号（经验证 · 过屏障）—— 从 P 写回 G 的唯一通道</div>
+      <div class="d">ValidationGate：隔离回放 + 基线对比 + ±20% 双侧阈值 + 3 连败回滚。绕过它的一切变更都不存在。</div>
+    </div>
+
+    <!-- 桥接 -->
+    <div class="bridge">
+      <span class="bt">桥接 · Tier 0/1/2</span>
+      <span class="bd">每个可变基因同时有一个<b style="color:#e2e8f0">物理地址</b>（住在哪层）和一个<b style="color:#e2e8f0">变异权限</b>（能不能被提案）——两轴在此相交，互不推导。</span>
+      <span class="tier-chips">
+        <span class="tier-chip t0">Tier 0 冻结 · budget / stop_policy / state_machine / methodology</span>
+        <span class="tier-chip t1">Tier 1 可提 · prompt / skill / graph_shape / tool_set / compaction</span>
+        <span class="tier-chip t2">Tier 2 产物 · 只留痕不验证</span>
+      </span>
+    </div>
+
+    <!-- 物理轴 -->
+    <div class="axis-tag">
+      <span class="dot" style="background:linear-gradient(135deg,#38bdf8,#6ee7b7)"></span>
+      物理轴（四层骨架）· 谁可以 import 谁 —— 上行违规 = 0（棘轮锁定）
+    </div>
+
+    <div class="phy-stack">
+      <div class="phy-layer l1">
+        <span class="code">L1</span>
+        <div>
+          <div class="nm">interfaces · 渠道层</div>
+          <div class="ds">chat / api / mcp / 组装根（gateway_wiring · rsi_wiring · tier0_snapshot）—— 哑适配器 + 唯一知道 apps 的位置</div>
+        </div>
+        <span class="st st-ok">108 文件 · 23.0k 行</span>
+      </div>
+      <div class="phy-arrow">▼</div>
+      <div class="phy-layer l2">
+        <span class="code">L2</span>
+        <div>
+          <div class="nm">apps · 业务插件层</div>
+          <div class="ds">goal 台账（R1 恢复）· chat 产品策略 · builtin_tools（W1 自检后只留可运行的组）</div>
+        </div>
+        <span class="st st-ok">15 文件 · 4.5k 行</span>
+      </div>
+      <div class="phy-arrow">▼</div>
+      <div class="phy-layer l3">
+        <span class="code">L3</span>
+        <div>
+          <div class="nm">kernel · 平台机制层</div>
+          <div class="ds">agent loop · workflow · gateway · events · <b style="color:#818cf8">evolution（G/E/P 循环机制）</b> · orchestration</div>
+        </div>
+        <span class="st st-ok">189 文件 · 36.4k 行</span>
+      </div>
+      <div class="phy-arrow">▼</div>
+      <div class="phy-layer l4">
+        <span class="code">L4</span>
+        <div>
+          <div class="nm">foundation · 基础设施层</div>
+          <div class="ds">llm · storage · observability · utils —— 零业务知识，被三层共同依赖</div>
+        </div>
+        <span class="st st-ok">59 文件 · 10.0k 行</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==================== 02 六条理念 ==================== -->
+  <div class="section-label">
+    <span class="num">02</span>
+    <span class="txt">六条理念 · 每条 = 实测张力 + 规则 + 可执行检查</span>
+    <span class="line"></span>
+  </div>
+
+  <div class="idea-grid">
+
+    <div class="idea i1">
+      <div class="idea-num">理念 01</div>
+      <div class="idea-title">双轴正交：物理轴管依赖，语义轴管变异</div>
+      <div class="idea-sec"><span class="k k-tension">张力</span><span class="v">GEP-RSI 的全部缺口在 import 图上<b>恒为 0</b>——物理门禁全绿 ≠ 架构对</span></div>
+      <div class="idea-sec"><span class="k k-rule">规则</span><span class="v">两轴不互相推导也不合并；桥接点是 Tier 0/1/2</span></div>
+      <div class="idea-sec"><span class="k k-check">检查</span><span class="v">物理轴：AST 门禁（已有）；语义轴：W4 待建</span></div>
+    </div>
+
+    <div class="idea i2">
+      <div class="idea-num">理念 02</div>
+      <div class="idea-title">变更三关口：提案 → 验证 → 留痕</div>
+      <div class="idea-sec"><span class="k k-tension">张力</span><span class="v">能直接改配置的 agent 总能把指标调好看</span></div>
+      <div class="idea-sec"><span class="k k-rule">规则</span><span class="v">GenomeProposal 唯一入口（构造期拒 Tier 0）→ ValidationGate 唯一生效入口 → 事件 + 版本链 append-only</span></div>
+      <div class="idea-sec"><span class="k k-check">检查</span><span class="v">三道已成立；缺口：<b>set_tier2 全仓零调用</b>（Tier 2 设计了没接线）</span></div>
+    </div>
+
+    <div class="idea i3">
+      <div class="idea-num">理念 03</div>
+      <div class="idea-title">注册即可运行，或不可见</div>
+      <div class="idea-sec"><span class="k k-tension">张力</span><span class="v"><b>26 个业务工具注册成功、调用必败</b>（CapabilityNotFound）——端口化把失败从编译期推到运行期</span></div>
+      <div class="idea-sec"><span class="k k-rule">规则</span><span class="v">kind 注册的前提 = 全部依赖 kind 可解析；不满足 → 整组不注册 + WARN 事件，绝不注册必然失败的壳</span></div>
+      <div class="idea-sec"><span class="k k-check">检查</span><span class="v">W1：工厂声明 <b>requires</b> 依赖清单，装配期拓扑自检</span></div>
+    </div>
+
+    <div class="idea i4">
+      <div class="idea-num">理念 04</div>
+      <div class="idea-title">评估器在循环外，终止层级在进程外</div>
+      <div class="idea-sec"><span class="k k-tension">张力</span><span class="v">评估器可被循环改写 = 自进化退化为自欺骗；「永远不可变」又不可实现</span></div>
+      <div class="idea-sec"><span class="k k-rule">规则</span><span class="v">评估器不在 Tier 1 白名单（闭合集合）；修改唯一路径 = PR + 人审 + 包外门禁；终止层级 = scripts/arch + 测试 + 人</span></div>
+      <div class="idea-sec"><span class="k k-check">检查</span><span class="v">1–3 已成立；W4 补<b>评估完整性指纹</b>（评测前校验，不符即 escalate）</span></div>
+    </div>
+
+    <div class="idea i5">
+      <div class="idea-num">理念 05</div>
+      <div class="idea-title">两条反馈回路不合并，goal 是桥</div>
+      <div class="idea-sec"><span class="k k-tension">张力</span><span class="v">合并会把两种噪声混在一起，并让「把判据写松」成为指标攻击面</span></div>
+      <div class="idea-sec"><span class="k k-rule">规则</span><span class="v">能力反馈（golden eval，冻结基准）喂第 5 步双门；任务反馈（goal journal，判据证据）喂第 1 步诊断；端口方向恒为 L2 实现 → L3 消费</span></div>
+      <div class="idea-sec"><span class="k k-check">检查</span><span class="v">JournalSource / ScoreboardSource 协议已声明；<b>rsi_wiring 四源同指是待修 bug</b></span></div>
+    </div>
+
+    <div class="idea i6">
+      <div class="idea-num">理念 06</div>
+      <div class="idea-title">没有驱动的循环不存在</div>
+      <div class="idea-sec"><span class="k k-tension">张力</span><span class="v">五个零件各有测试，<b>build_rsi_loop() 生产零调用</b>——七步之外缺第 0 步：谁拉起一轮</span></div>
+      <div class="idea-sec"><span class="k k-rule">规则</span><span class="v">主驱动 run.settled 收尾钩子 + cron 兜底 + 每 session 至多 1 cycle（复用容量闸）</span></div>
+      <div class="idea-sec"><span class="k k-check">检查</span><span class="v">W4：rsi.cycle_started / cycle_skipped(reason) —— 没有驱动也必须<b>以事件现形</b></span></div>
+    </div>
+
+  </div>
+
+  <!-- ==================== 03 三条反馈回路 ==================== -->
+  <div class="section-label">
+    <span class="num">03</span>
+    <span class="txt">三条反馈回路 · 时标分层</span>
+    <span class="line"></span>
+  </div>
+
+  <div class="loops">
+    <div class="loop l1b">
+      <span class="scale">回路 1 · 分钟 · 会话内</span>
+      <div class="loop-name">Goal Continuation</div>
+      <div class="loop-desc">判据未满足 → 注入续跑提示，直到 <b>run.settled</b> 或判据达成。改的是「这一轮任务做完没」。</div>
+      <div class="loop-status">✅ 活着 —— GoalContinuationInjector 已在默认注入链（order 100），chat / API 全路径生效</div>
+    </div>
+    <div class="loop l2b">
+      <span class="scale">回路 2 · 小时 · 任务级</span>
+      <div class="loop-name">Goal Journal → 表型诊断</div>
+      <div class="loop-desc">判据达成 / 未达成 + 证据 → GEP-RSI 第 1 步「表型诊断」的细粒度原料。改的是「这类任务难在哪」。</div>
+      <div class="loop-status">⚠ 断在两处 —— goal 台账待恢复（R1）；journal/scoreboard 端口待接入（R3，现为四源同指）</div>
+    </div>
+    <div class="loop l3b">
+      <span class="scale">回路 3 · 天 · 能力级</span>
+      <div class="loop-name">RSI Cycle</div>
+      <div class="loop-desc">holdout 诊断 → 提案 → 隔离回放 → 双门评估 → activate / rollback。改的是「系统会不会」。</div>
+      <div class="loop-status">⚠ 零件齐全、链路未通 —— 缺驱动（W4）、缺成本维度（W2）、缺双集（W3）、缺假基因清理（W5）</div>
+    </div>
+  </div>
+
+  <!-- ==================== 04 构件落位 ==================== -->
+  <div class="section-label">
+    <span class="num">04</span>
+    <span class="txt">构件落位 · 语义轴 × 物理轴</span>
+    <span class="line"></span>
+  </div>
+
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr><th style="width:80px">语义层</th><th>构件</th><th style="width:330px">物理落点</th><th style="width:70px">层</th><th style="width:230px">现状</th></tr>
+      </thead>
+      <tbody>
+        <tr><td><span class="pill pill-b">屏障</span></td><td>Tier 0 冻结快照</td><td class="mono">interfaces/tier0_snapshot.py</td><td>L1</td><td>✅ 已有</td></tr>
+        <tr><td><span class="pill pill-g">G</span></td><td>基因组版本链（frozen + 游标）</td><td class="mono">kernel/orchestration/genome_version.py</td><td>L3</td><td>✅ 已有（含 deactivate / set_tier2）</td></tr>
+        <tr><td><span class="pill pill-g">G</span></td><td>提案语法 + Tier 白名单</td><td class="mono">kernel/evolution/genome_proposals.py</td><td>L3</td><td>✅ 已有（缺证伪条件字段）</td></tr>
+        <tr><td><span class="pill pill-g">G</span></td><td>提案生成（确定性 policy）</td><td class="mono">kernel/evolution/default_policy.py</td><td>L3</td><td>✅ 已有（LLM policy 后续替换）</td></tr>
+        <tr><td><span class="pill pill-e">E</span></td><td>选择性转录（tier1 → harness）</td><td class="mono">kernel/evolution/skill_memory.py + agent/harness_resolver.py</td><td>L3</td><td>✅ 已有（缺结构化转录本）</td></tr>
+        <tr><td><span class="pill pill-e">E</span></td><td>隔离回放 + 回滚锚点</td><td class="mono">kernel/evolution/isolated_replay.py + rsi_wiring</td><td>L1/L3</td><td>✅ 已有</td></tr>
+        <tr><td><span class="pill pill-e">E</span></td><td><b>循环驱动（第 0 步）</b></td><td class="mono">run.settled 钩子（待建）+ scheduled_research</td><td>L1/L3</td><td>❌ W4</td></tr>
+        <tr><td><span class="pill pill-p">P</span></td><td>冻结基准 + scorecard</td><td class="mono">evals/（70 条 golden 任务）</td><td>L3</td><td>✅ 已有（缺指纹 · 缺成本维度）</td></tr>
+        <tr><td><span class="pill pill-p">P</span></td><td>执行轨迹（append-only）</td><td class="mono">kernel/events + foundation/storage</td><td>L3/L4</td><td>✅ 已有（无 hash chain，W6 P2）</td></tr>
+        <tr><td><span class="pill pill-p">P</span></td><td>任务级判据证据</td><td class="mono">apps/goal journal（经端口）</td><td>L2</td><td>⚠ 待恢复（R1），端口接入（R3）</td></tr>
+        <tr><td><span class="pill pill-b">屏障</span></td><td>Tier 0 三重冻结</td><td class="mono">proposals / validation_gate / skill_memory</td><td>L3</td><td>✅ 已有（超出 GEP-RSI 要求）</td></tr>
+        <tr><td><span class="pill pill-b">屏障</span></td><td>物理门禁 + 评估指纹</td><td class="mono">scripts/arch/（进程外）</td><td>—</td><td>✅ 门禁已有 · ❌ 指纹 W4</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- ==================== 05 目录形态 ==================== -->
+  <div class="section-label">
+    <span class="num">05</span>
+    <span class="txt">落地后的目录形态（R1–R3 之后）</span>
+    <span class="line"></span>
+  </div>
+
+  <div class="tree">
+src/agentnodes/
+├── <span class="dir">interfaces/</span>          <span class="cm"># L1 渠道 + 组装根（R2：/goal slash · GoalPanel · SSE 恢复接线）</span>
+├── <span class="dir">apps/</span>                <span class="cm"># L2 业务插件</span>
+│   ├── <span class="hi">goal/</span>             <span class="cm"># R1 恢复（19 文件：判据 / 台账 / DAG 工作流）</span>
+│   ├── chat/             <span class="cm"># 产品策略（222 行，维持）</span>
+│   └── builtin_tools/    <span class="cm"># 业务工具（<span class="warn">W1 自检后只留可运行的组</span>）</span>
+├── <span class="dir">kernel/</span>              <span class="cm"># L3 平台机制</span>
+│   ├── <span class="hi">evolution/</span>        <span class="cm"># G/E/P 循环机制（R3：journal/scoreboard 端口接入）</span>
+│   └── agent/ workflow/ gateway/ orchestration/ events/ ...
+├── <span class="dir">foundation/</span>          <span class="cm"># L4 零业务原语</span>
+├── <span class="dir">evals/</span>               <span class="cm"># 冻结基准（W4 完整性指纹）</span>
+└── <span class="dir">templates/</span>           <span class="cm"># 资产（归属另议 —— 扫描议题 6）</span>
+  </div>
+
+  <!-- ==================== 06 工作项 ==================== -->
+  <div class="section-label">
+    <span class="num">06</span>
+    <span class="txt">工作项总表 · 拍板前不排期</span>
+    <span class="line"></span>
+  </div>
+
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr><th style="width:70px">项</th><th>内容</th><th style="width:240px">来源</th><th style="width:120px">前置</th></tr>
+      </thead>
+      <tbody>
+        <tr><td><span class="pill pill-r">R1</span></td><td>恢复 apps/goal + 注册 goal.* kind + 42 个测试搬回</td><td>goal 重建方案 bd743d99</td><td>D1</td></tr>
+        <tr><td><span class="pill pill-r">R2</span></td><td>chat 接线（slash / GoalPanel / SSE / API 路由）</td><td>goal 重建方案 bd743d99</td><td>R1</td></tr>
+        <tr><td><span class="pill pill-r">R3</span></td><td>journal / scoreboard 端口接入 + autoresearch preset 化</td><td>goal 重建方案 bd743d99</td><td>R1</td></tr>
+        <tr><td><span class="pill pill-g">W1</span></td><td>装配期能力自检（requires 声明 + 拓扑解析，幽灵工具清零）</td><td>理念 03</td><td>D2</td></tr>
+        <tr><td><span class="pill pill-p">W2</span></td><td>P 层成本 / 延迟维度（TaskScore 加列进总分）</td><td>理念 05 · GEP-RSI 校准 01</td><td>D3</td></tr>
+        <tr><td><span class="pill pill-p">W3</span></td><td>held-in / held-out 双集双门</td><td>GEP-RSI 第 5 步</td><td>W2</td></tr>
+        <tr><td><span class="pill pill-e">W4</span></td><td>评估完整性指纹 + 循环驱动链（run.settled 钩子）</td><td>理念 04 / 06</td><td>D4</td></tr>
+        <tr><td><span class="pill pill-g">W5</span></td><td>假基因清理（周期 deactivate 从未激活组件）</td><td>GEP-RSI 第 7 步</td><td>R1</td></tr>
+        <tr><td><span class="pill pill-b">W6</span></td><td>事件 hash chain（防篡改审计）</td><td>屏障 · GEP-RSI v1.1</td><td>D5（可选，P2）</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- ==================== 07 决策点 ==================== -->
+  <div class="section-label">
+    <span class="num">07</span>
+    <span class="txt">六个决策点 · 拍板后文档升 v1.0，才开代码</span>
+    <span class="line"></span>
+  </div>
+
+  <div class="dec-grid">
+    <div class="dec">
+      <div class="dec-id">D1 · 决定框架走向</div>
+      <div class="dec-q">L2 的定位是什么？</div>
+      <div class="dec-opts">(a) 恢复 goal 重新充实　(b) 取消 L2，工具并回组装根　(c) 插件槽 + 注册自检</div>
+      <div class="dec-rec"><b>推荐 (c) + R1</b>：goal 恢复，但必须先过理念 03 的自检——不重蹈「注册成功、调用必败」</div>
+    </div>
+    <div class="dec">
+      <div class="dec-id">D2 · 理念 03 的落地形态</div>
+      <div class="dec-q">缺依赖的工具怎么处置？</div>
+      <div class="dec-opts">整组不注册 + WARN / 注册但标 degraded</div>
+      <div class="dec-rec"><b>推荐不注册</b>：LLM 看不见就不 hallucinate；degraded 标注仍会被调用</div>
+    </div>
+    <div class="dec">
+      <div class="dec-id">D3 · P 层表型向量</div>
+      <div class="dec-q">成本 / 延迟进不进总分？</div>
+      <div class="dec-opts">进总分加权 / 只做 0/1 门槛（现状）</div>
+      <div class="dec-rec"><b>推荐进总分</b>：校准 01 硬要求——成本与完成率并列；权重另议（建议起步 0.15）</div>
+    </div>
+    <div class="dec">
+      <div class="dec-id">D4 · 循环第 0 步</div>
+      <div class="dec-q">RSI 循环由谁驱动？</div>
+      <div class="dec-opts">run.settled 自动 / 仅 cron / 手动 CLI</div>
+      <div class="dec-rec"><b>推荐自动 + 兜底</b>：run.settled 钩子 + cron + 每 session 限 1 cycle；skip 必须发事件</div>
+    </div>
+    <div class="dec">
+      <div class="dec-id">D5 · 屏障强度</div>
+      <div class="dec-q">hash chain 现在做吗？</div>
+      <div class="dec-opts">现在做 / 推到 P2</div>
+      <div class="dec-rec"><b>推荐 P2</b>：先上评估指纹（W4，收益大成本低）；hash chain 收益/成本比低</div>
+    </div>
+    <div class="dec">
+      <div class="dec-id">D6 · Tier 2 接线</div>
+      <div class="dec-q">研究产物现在进版本链吗？</div>
+      <div class="dec-opts">R1 时接（goal 产物写 set_tier2）/ 以后</div>
+      <div class="dec-rec"><b>推荐 R1 时接</b>：set_tier2 已实现但零调用——接上才算「留痕」闭环</div>
+    </div>
+  </div>
+
+  <!-- ==================== 图例 + 关联 ==================== -->
+  <div class="legend">
+    <div class="legend-item"><span class="legend-dot" style="background:linear-gradient(135deg,#10b981,#14b8a6)"></span>G 层 · 基因组（变异）</div>
+    <div class="legend-item"><span class="legend-dot" style="background:linear-gradient(135deg,#3b82f6,#6366f1)"></span>E 层 · 表达（执行）</div>
+    <div class="legend-item"><span class="legend-dot" style="background:linear-gradient(135deg,#f59e0b,#f97316)"></span>P 层 · 表型（裁决）</div>
+    <div class="legend-item"><span class="legend-dot" style="background:linear-gradient(135deg,#f43f5e,#e11d48)"></span>屏障 · 不可变治理</div>
+    <div class="legend-item"><span class="legend-dot" style="background:linear-gradient(135deg,#6366f1,#8b5cf6)"></span>桥接 · Tier 0/1/2</div>
+    <div class="legend-item"><span class="legend-dot" style="background:linear-gradient(135deg,#38bdf8,#0ea5e9)"></span>物理轴 · L1–L4</div>
+  </div>
+
+  <div class="related">
+    <div class="rt">关联文档</div>
+    <a href="framework-and-principles-20261105.md">框架与理念（本文的 md 底稿）</a>·
+    <a href="architecture-consistency-scan-20261105.md">架构一致性扫描（理念的证据来源）</a>·
+    <a href="goal-capability-merge-design-20261105.md">goal 能力族重建方案（R1–R3）</a>·
+    <a href="GEP-RSI 架构说明图 · v1.1 校准版.html">GEP-RSI v1.1（语义轴的设计语言）</a>
+  </div>
+
+</div>
+</body>
+</html>
