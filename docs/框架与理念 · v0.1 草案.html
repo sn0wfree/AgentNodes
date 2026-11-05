@@ -317,7 +317,7 @@
   <div class="header">
     <h1 class="page-title">框架与理念</h1>
     <p class="page-subtitle">AgentNodes · 自我进化研究 Agent 平台 · 双轴架构</p>
-    <span class="version-badge">v0.1 草案 · D1/D2 已拍板 · 尚未开任何代码</span>
+    <span class="version-badge">v0.1 草案 · D1/D2/D4 已拍板 · 尚未开任何代码</span>
   </div>
 
   <!-- ==================== 00 一句话 ==================== -->
@@ -538,7 +538,7 @@
       <span class="scale">回路 3 · 天 · 能力级</span>
       <div class="loop-name">RSI Cycle</div>
       <div class="loop-desc">holdout 诊断 → 提案 → 隔离回放 → 双门评估 → activate / rollback。改的是「系统会不会」。</div>
-      <div class="loop-status">⚠ 零件齐全、链路未通 —— 缺驱动（W4）、缺成本维度（W2）、缺双集（W3）、缺假基因清理（W5）</div>
+      <div class="loop-status">⚠ 零件齐全、链路未通 —— 缺驱动（W4，方案已定：E 分层，阶段 1 = CLI+cron）、缺成本维度（W2）、缺双集（W3）、缺假基因清理（W5）</div>
     </div>
   </div>
 
@@ -612,7 +612,7 @@ src/agentnodes/
         <tr><td><span class="pill pill-r">R3</span></td><td>journal / scoreboard 端口接入 + autoresearch preset 化</td><td>goal 重建方案 bd743d99</td><td>R1</td></tr>
         <tr><td><span class="pill pill-p">W2</span></td><td>P 层成本 / 延迟维度（TaskScore 加列进总分）</td><td>理念 05 · GEP-RSI 校准 01</td><td>D3</td></tr>
         <tr><td><span class="pill pill-p">W3</span></td><td>held-in / held-out 双集双门</td><td>GEP-RSI 第 5 步</td><td>W2</td></tr>
-        <tr><td><span class="pill pill-e">W4</span></td><td>评估完整性指纹 + 循环驱动链（run.settled 钩子）</td><td>理念 04 / 06</td><td>D4</td></tr>
+        <tr><td><span class="pill pill-e">W4</span></td><td>评估完整性指纹 + 循环驱动链（阶段 1：CLI + cron + 证据增量门 + 预算闸）</td><td>理念 04 / 06</td><td>✅ D4 已拍板</td></tr>
         <tr><td><span class="pill pill-g">W5</span></td><td>假基因清理（周期 deactivate 从未激活组件）</td><td>GEP-RSI 第 7 步</td><td>R1</td></tr>
         <tr><td><span class="pill pill-b">W6</span></td><td>事件 hash chain（防篡改审计）</td><td>屏障 · GEP-RSI v1.1</td><td>D5（可选，P2）</td></tr>
       </tbody>
@@ -648,11 +648,14 @@ src/agentnodes/
       <div class="dec-opts">进总分加权 / 只做 0/1 门槛（现状）</div>
       <div class="dec-rec"><b>推荐进总分</b>：校准 01 硬要求——成本与完成率并列；权重另议（建议起步 0.15）</div>
     </div>
-    <div class="dec">
-      <div class="dec-id">D4 · 循环第 0 步</div>
+    <div class="dec" style="border-color:rgba(16,185,129,0.45);background:linear-gradient(160deg,rgba(16,185,129,0.07),rgba(16,185,129,0.015))">
+      <div class="dec-id" style="color:#6ee7b7">D4 · ✅ 已拍板（2026-11-05）· 循环第 0 步</div>
       <div class="dec-q">RSI 循环由谁驱动？</div>
-      <div class="dec-opts">run.settled 自动 / 仅 cron / 手动 CLI</div>
-      <div class="dec-rec"><b>推荐自动 + 兜底</b>：run.settled 钩子 + cron + 每 session 限 1 cycle；skip 必须发事件</div>
+      <div class="dec-opts">A run.settled 自动 / B cron / C 手动 CLI / D goal.settled / E 分层混合</div>
+      <div class="dec-rec"><b>拍板：E 分层混合，分两阶段</b> ——<br>
+      阶段 1（= W4 验收范围）：CLI（seed 可复现）+ cron 夜间（证据增量门）+ 预算闸 + skip 事件；<br>
+      阶段 2（R1 后）：+ goal.settled 高信号触发 + run.settled 去重入队；<br>
+      护栏：每 session ≤1 cycle · cron 隔离池 · halt 生效 · 成本基准 = 一轮 ≈ 20 次 golden 评测</div>
     </div>
     <div class="dec">
       <div class="dec-id">D5 · 屏障强度</div>

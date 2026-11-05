@@ -3,8 +3,8 @@
 > **地位**：约束性草案。**本文档本身不开任何代码**；§2.5 的工作项全部
 > 待 §3 决策点拍板后才排期。
 >
-> **决策进度**：D1 已拍板（2026-11-05）→ 见 §3.1 决策记录；
-> D2 随 D1 采纳理念三默认处置；剩余 D3–D6 待拍。
+> **决策进度**：D1 / D2 / D4 已拍板（2026-11-05）→ 见 §3.1 决策记录；
+> 剩余 D3（成本进总分）· D5（hash chain）· D6（Tier 2 接线）待拍。
 >
 > 输入：GEP-RSI v1.1（语义架构）· 四层物理架构（layered-skeleton-design）·
 > 一致性扫描（`e7a6e868` + `d2e962df`）· goal 重建方案（`bd743d99`）。
@@ -211,7 +211,7 @@ src/agentnodes/
 | R3 | journal/scoreboard 端口接入 + autoresearch preset 化 | bd743d99 | R1 |
 | W2 | P 层成本/延迟维度（TaskScore 加列） | 理念五 · 校准 01 | D3 |
 | W3 | held-in / held-out 双集 | GEP-RSI 第 5 步 | W2 |
-| W4 | 评估完整性指纹 + 循环驱动链 | 理念四 / 六 | D4 |
+| W4 | 评估完整性指纹 + 循环驱动链（**范围已定 = 阶段 1：CLI + cron + 证据增量门 + 预算闸**） | 理念四 / 六 | ✅ D4 已拍板 |
 | W5 | 假基因清理（周期性 deactivate 从未激活组件） | GEP-RSI 第 7 步 | R1 |
 | W6 | 事件 hash chain | 屏障 | D5（可选）|
 
@@ -224,7 +224,7 @@ src/agentnodes/
 | D1 ✅ | L2 的定位 | (a) 恢复 goal 重新充实 / (b) 取消 L2 / (c) 插件槽 + 自检 | **已拍板：(c) + R1**（见 §3.1）|
 | D2 ✅ | 缺依赖工具的处置 | 不注册 / 注册 + degraded 标注 | **随 D1 采纳理念三默认：不注册 + WARN**（可推翻）|
 | D3 | 成本/延迟进不进总分 | 进总分加权 / 只做 0/1 门槛 | **进总分**（校准 01：与完成率并列硬维度；权重另定）|
-| D4 | 循环驱动方式 | run.settled 自动 / 仅 cron / 手动 CLI | **run.settled 自动 + cron 兜底 + 频率闸** |
+| D4 ✅ | 循环驱动方式 | A run.settled / B cron / C CLI / D goal.settled / E 分层混合 | **已拍板：E 分层混合，分两阶段**（见 §3.1）|
 | D5 | hash chain 现在做吗 | 现在做 / P2 | **P2**：先上评估指纹（W4），hash chain 收益/成本比低 |
 | D6 | Tier 2 现在接线吗 | R1 时接 / 以后 | **R1 时接**：goal 产物写 `set_tier2`，留痕闭环 |
 
@@ -259,7 +259,30 @@ src/agentnodes/
 **D2 · 随 D1 采纳理念三默认处置**：缺依赖 = 整组不注册 + WARN 事件。
 （按 D1 的「必须过理念三自检」视为已采纳；若要 degraded 标注，明确推翻即可。）
 
-**剩余待拍**：D3（成本进总分）· D4（驱动方式）· D5（hash chain）· D6（Tier 2 接线）。
+**D4 · 已拍板（2026-11-05）：E —— 分层混合驱动，分两阶段落地。**
+
+四个驱动源全部收敛到**单一入队点**，统一过预算闸，统一 skip 词表：
+
+| 阶段 | 驱动 | 触发点 | 门 |
+|---|---|---|---|
+| 阶段 1（= W4 范围）| C · 手动 CLI | `agentnodes rsi run --seed N`（可复现，调链路用）| 人工 |
+| 阶段 1（= W4 范围）| B · cron 定时 | scheduled_research 域（基建已有），夜间 | **证据增量门**：自上次 cycle 后无新 `assignment.report` / journal → `skip(no_new_evidence)` |
+| 阶段 2（R1 后）| D · goal.settled | goal 判据达成/失败事件——信号密度最高，直喂第 1 步表型诊断 | （随 R1 就位）|
+| 阶段 2（R1 后）| A · run.settled | run 收尾事件，异步入队 | **去重门**：冷却窗口 ≥ 数小时，或证据增量 ≥ N 条 |
+
+全程护栏（理念六硬要求，非选项）：每 session ≤ 1 cycle + 每日 ≤ N cycle（N 待定，
+建议 3–5）；cron 隔离池（capacity 车道，现默认 2 槽）；`halt.py` 全局 kill switch
+对 RSI 生效；成本核算基准 = **一轮 ≈ 20 次 golden 评测**（候选 10 + 基线 10，
+`DEFAULT_SAMPLE_SIZE=10`）。
+
+**连锁**：
+- **W4 验收标准 = 阶段 1 范围**：CLI + cron + 证据增量门 + 预算闸 +
+  `rsi.cycle_started / cycle_skipped(reason)` 事件。阶段 2 的两个触发点
+  移入 R1 之后的跟进项。
+- **R1 新增一条小交付**：补 `goal.settled` 事件 kind（阶段 2 驱动 D 的前置；
+  现在只有 `goal_updated`，且其 emit 方已随批次 2 删除）。
+
+**剩余待拍**：D3（成本进总分）· D5（hash chain）· D6（Tier 2 接线）。
 
 ---
 
