@@ -95,20 +95,26 @@ class NodeExecutors:
 
 
 def register_builtin_tool_executors() -> int:
-    """Register tool-node wrappers for common builtin tools.
+    """Register tool-node wrappers for every tool in the default registry.
 
-    Each wrapper calls the underlying BaseTool with a ToolContext
-    (workspace injected).  Returns the number registered.
+    每个 wrapper 都用 ToolContext 调底层 BaseTool（workspace 注入）。
+    返回注册数量。
+
+    **2026-11-06 批次 1 收尾（W1 精神）**：原实现硬编码了 7 个业务工具名
+    （``run_backtest`` / ``get_market_data`` / ``check_data`` / ``clean_data`` /
+    ``compute_factor`` / ``factor_analysis`` / ``search_symbol``），而这些实现
+    模块已随批次 1 删除 → 恒返回 0，且新增工具永远不会被注册。
+
+    改为**从 registry 动态枚举**：registry 是工具集的唯一事实源，本函数只做
+    「谁在册就给谁生成 wrapper」，不再维护第二份名单（那正是 D2 要杀的
+    「注册不上来的壳」的镜像——名单与实现漂移）。
     """
     from agentnodes.kernel.agent.builtin_tools import build_default_registry
 
     registry = build_default_registry()
     count = 0
-    for name in ("run_backtest", "get_market_data", "check_data", "clean_data",
-                 "compute_factor", "factor_analysis", "search_symbol"):
-        tool = registry.get(name)
-        if tool is None:
-            continue
+    for tool in registry.all_tools():
+        name = tool.name
         NodeExecutors.register(name, _make_tool_wrapper(tool, name))
         count += 1
     return count

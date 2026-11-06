@@ -188,6 +188,9 @@ _BUILTIN_LOADED: set[str] = set()
 _BUILTIN_MODULES = (
     "agentnodes.interfaces.cli.commands.core_commands",
     "agentnodes.interfaces.cli.commands.llm",
+    # W4 批次 2：RSI 驱动入口。注册依赖 import 副作用，必须在这里登记，
+    # 否则 ``ensure_builtin_commands()`` 的 reload 路径不认识它。
+    "agentnodes.interfaces.cli.commands.rsi",
 )
 
 

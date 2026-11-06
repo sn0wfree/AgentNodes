@@ -230,12 +230,23 @@ class TestPythonTool:
         with pytest.raises(NodeDispatchError, match="no tool executor"):
             dispatch_node(node, make_ctx(tmp_path))
 
-    def test_tool_wrapper_available(self):
+    def test_tool_wrapper_availability_is_consistent(self):
+        """注册器为 agent registry 里的每个工具生成 wrapper。
+
+        2026-11-06 批次 1 收尾：5 组业务工具的实现模块已删除（其依赖能力
+        全随批次 4/5 直删），`register_builtin_tool_executors()` 的返回值
+        因此会随「框架工具集」变化。**不再断言 count > 0**（那是「业务工具
+        必定在册」的旧契约），改为断言「等于当前 registry 的工具数」——
+        注册器与 registry 的一致性才是这条测试真正该守的语义。
+        """
+        from agentnodes.kernel.agent.builtin_tools import build_default_registry
         from agentnodes.kernel.workflow.node_types import register_builtin_tool_executors
+
         count = register_builtin_tool_executors()
-        # 批次 6：注册器为 agent registry 里的**每个工具**生成 wrapper，
-        # 数量随工具集变化（当前含业务工具）。断言「有注册成功」即可。
-        assert count > 0
+        expected = len(build_default_registry())
+        assert count == expected, (
+            f"tool executor 注册数 {count} != registry 工具数 {expected}"
+        )
 
     def test_unknown_node_type_raises(self, tmp_path: Path):
         node = WorkflowNode(id="x", type="nope", config={})

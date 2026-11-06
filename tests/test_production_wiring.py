@@ -78,11 +78,16 @@ class TestWiringHappensOnRealPath:
         assert hasattr(gateway.genome, "rollback")
 
     def test_capability_registry_populated(self, gateway):
-        """能力注册必须发生——否则 harness 链解析不到 evolution.*。
+        """能力注册必须发生。
 
         2026-11-05 批次 3：``study.ticket_sink`` 已不是 kind
-        （Ticket 迁到 kernel/orchestration，直接构造），所以这里断言
-        registry 非空 + evolution.* 在册。
+        （Ticket 迁到 kernel/orchestration，直接构造）。
+        2026-11-05 批次 8：evolution 从 apps/ 迁到 kernel/evolution/，
+        其 ``evolution.*`` kind 由 ``EvolutionAgent.with_capabilities()``
+        在 L3 内部按需注册——是否在册取决于**此前有没有人调过它**
+        （完整套件里大概率已经注册过，单跑本文件则没有）。
+        所以这里**不对 evolution.* 做任何断言**（那会让测试依赖执行顺序）；
+        只验 apps 侧注册面：registry 非空、无 study.*、R1 后 goal.* 在册。
         """
         from agentnodes.kernel.agent.capability import list_kinds
 
@@ -91,9 +96,9 @@ class TestWiringHappensOnRealPath:
         assert not any(k.startswith("study.") for k in kinds), (
             "study.* kind 应已随 apps/study 移除"
         )
-        assert any(k.startswith("evolution.") for k in kinds), (
-            "evolution.* 未注册 —— 装配期 resolver 会永远拿到空配置"
-        )
+        # R1（2026-11-06）恢复 apps/goal 后，三个 goal.* kind 应已注册。
+        for expected in ("goal.store", "goal.models", "goal.context"):
+            assert expected in kinds, f"{expected} 未注册（apps/goal 未生效）"
 
 
 class TestTicketActuallyPersists:

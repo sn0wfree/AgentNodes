@@ -163,6 +163,27 @@ class EventType:
     # message_type='goal' — see projector._on_goal_updated)
     GOAL_UPDATED = "goal_updated"
 
+    # Goal settled (R1, 2026-11-06 · framework v1.1 D4 阶段 2 驱动的前置)
+    #
+    # GOAL_UPDATED 是「状态变了」的连续信号；本 kind 是「判据达成 / 放弃」
+    # 的终止信号，用它触发 RSI 的一轮 cycle（信号密度最高：一个刚结束的
+    # goal 就是一份完整证据包，直喂 GEP-RSI 第 1 步表型诊断）。
+    #
+    # 与 GOAL_UPDATED 的分工：后者驱动 UI 投影（panel/SSE），前者驱动
+    # 进化循环。两者**不可合并**——投影要每个中间态，进化只要终态。
+    #
+    # payload 契约（阶段 2 消费者 = RSI 驱动，schema 当天写死，评审 J）：
+    #   goal_id         str   目标 id
+    #   session_id      str   归属会话（评审 P2i：report 曾全落 "default"）
+    #   outcome         str   "completed" | "abandoned" | "failed"
+    #   criteria_total  int   判据总数
+    #   criteria_met    int   已覆盖判据数
+    #   evidence_count  int   证据条数
+    #   writer          str   ★ 写入方鉴别字段（评审 C7：阶段 2 前置要求，
+    #                         由产出方填，消费者据此区分「业务侧正常完成」
+    #                         与「工具侧自证完成」）
+    GOAL_SETTLED = "goal.settled"
+
     # Study lifecycle (v2 design §16 — 5 groups)
     STUDY_QUEUED = "study_queued"
     STUDY_STARTED = "study_started"

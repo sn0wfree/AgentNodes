@@ -27,13 +27,16 @@ Ticket 准入 → ``ticket.upserted``。``emit`` 为 None 时只持久化不发�
 from __future__ import annotations
 
 import logging
+import os
 import sqlite3
 import threading
+from dataclasses import replace
 from pathlib import Path
-from typing import Any, Callable
+from typing import Any, Callable, Iterable
 
 from agentnodes.foundation.storage.sqlite import (
     connect,
+    ensure_column,
     json_dumps,
     json_loads,
     resolve_db_path,
@@ -71,6 +74,99 @@ def default_db_path() -> Path:
     return resolve_db_path("goals.db", _DB_PATH_ENV)
 
 
+#: 任务签名口径的 env 覆盖。**为什么放在 kernel 而不是组装根**：
+#: ``TicketStore`` 是签名的唯一计算点，口径必须与它同源；把这些名字写在
+#: L1 会创造"两处都知道签名怎么算"的第二事实源。
+_SIG_ROLE_ENV = "AGENTNODES_RSI_ROLE"
+_SIG_TOOLSET_ENV = "AGENTNODES_RSI_TOOLSET"
+
+#: 解析不到任何工具集时的最小口径。**刻意很窄**：一个确定性的窄空间好过
+#: 一个随运行时漂移的宽空间——后者会让"同一签名"逐渐收集到语义不同的
+#: 轨迹，holdout 从"同任务历史"退化成"随便一批历史"。
+_FALLBACK_ROLE = "chat"
+_FALLBACK_TOOLSET: tuple[str, ...] = ("read",)
+
+
+#: 解析缓存：``(role_env, toolset_env) -> scope``。
+#:
+#: ``build_default_registry()`` 首次调用约 200ms（要 import 全量工具模块）。
+#: 装配根在同一个进程里可能多次构造 TicketStore（测试尤其如此），重复付
+#: 这笔钱还带来一个隐蔽风险：两次构造拿到**不同的**工具集 → 同一份历史
+#: 被算成两种签名。按 env 键缓存，既省时间又保证同进程内口径一致。
+_SCOPE_CACHE: dict[tuple[str, str], tuple[str, tuple[str, ...]]] = {}
+
+
+def resolve_signature_scope() -> tuple[str, tuple[str, ...]]:
+    """推出生效的 ``(role, tool_set)`` 签名口径（确定性、有缓存）。
+
+    解析顺序：
+    1. ``AGENTNODES_RSI_ROLE`` / ``AGENTNODES_RSI_TOOLSET``（逗号分隔）
+       —— 运维可钉住，测试可隔离。
+    2. 默认工具链的实际注册 kind（``build_default_registry``）—— 生产口径
+       与真实可用的工具一致。
+    3. ``("chat", ("read",))`` —— 工具链不可用时的最小可用口径。
+
+    任一步的异常都被吞掉并继续下沉：签名是"证据归类"的辅助字段，不该
+    因为工具链装配失败就把 turn 打挂。
+    """
+    role = os.environ.get(_SIG_ROLE_ENV, "").strip()
+    raw_tools = os.environ.get(_SIG_TOOLSET_ENV, "").strip()
+    cache_key = (role, raw_tools)
+    cached = _SCOPE_CACHE.get(cache_key)
+    if cached is not None:
+        return cached
+
+    if raw_tools:
+        resolved = (role or _FALLBACK_ROLE, _tool_names_from(raw_tools))
+        _SCOPE_CACHE[cache_key] = resolved
+        return resolved
+
+    try:
+        from agentnodes.kernel.agent.builtin_tools import build_default_registry
+
+        registry = build_default_registry()
+        names = _registry_kinds(registry)
+        if names:
+            resolved = (
+                role or _FALLBACK_ROLE,
+                tuple(sorted({n.split(".")[-1] for n in names if n})),
+            )
+            _SCOPE_CACHE[cache_key] = resolved
+            return resolved
+    except Exception:  # noqa: BLE001 —— 工具链不可用，退回最小口径
+        logger.debug("signature tool_set resolution failed", exc_info=True)
+
+    resolved = (role or _FALLBACK_ROLE, _FALLBACK_TOOLSET)
+    _SCOPE_CACHE[cache_key] = resolved
+    return resolved
+
+
+def _tool_names_from(raw: str) -> tuple[str, ...]:
+    """``"read, write"`` → ``("read", "write")``（去空、排序、小写）。"""
+    return tuple(sorted({t.strip().lower() for t in raw.split(",") if t.strip()}))
+
+
+def _registry_kinds(registry: Any) -> list[str]:
+    """尽力读出工具名列表（不同实现暴露不同名字）。
+
+    已知形态：
+    - ``CapabilityRegistry.list_kinds()`` / ``.kinds``（阶段二注册表）
+    - ``ToolRegistry.tool_names()``（``build_default_registry`` 的真实返回）
+    """
+    for attr in ("list_kinds", "kinds", "registered_kinds", "tool_names"):
+        candidate = getattr(registry, attr, None)
+        if candidate is None:
+            continue
+        try:
+            value = candidate() if callable(candidate) else candidate
+            names = [str(v) for v in (value or ())]
+            if names:
+                return names
+        except Exception:  # noqa: BLE001 —— 换下一个候选
+            continue
+    return []
+
+
 class TicketStore:
     """Ticket/Assignment 的 SQLite 持久化 + 状态机编排。
 
@@ -88,13 +184,37 @@ class TicketStore:
         db_path: Path | None = None,
         *,
         emit: Callable[[str, dict[str, Any]], None] | None = None,
+        role: str | None = None,
+        tool_set: Iterable[str] | None = None,
     ) -> None:
+        """构造 store。
+
+        :param role: 任务签名用的 role。None = 按 :func:`resolve_signature_scope`
+            解析（env → 缺省）。默认 ``""`` 是"未分类"的**合法**签名空间
+            （``""`` 与 ``"chat"`` 是两个不同空间，不会互相污染），但生产
+            路径不该用它——所以 None（未指定）走解析，显式 ``""`` 才固定
+            为空空间。
+        :param tool_set: 任务签名用的工具集（排序后才进哈希）。None 同
+            ``role``：走解析。显式空元组 = 固定为空集。
+
+        **为什么要显式区分 None 与空值**：``TicketStore()`` 的两个参数都
+        缺省时若都取空，生产签名的空间就退化成 ``("", ())``——所有任务
+        挤进同一个桶，holdout 抽到的"历史"与当前任务无关（验证失去意义）。
+        None 让"没指定"能落到一个确定的、与工具链一致的缺省口径。
+        """
+        if role is None or tool_set is None:
+            default_role, default_tools = resolve_signature_scope()
+            role = default_role if role is None else role
+            tool_set = default_tools if tool_set is None else tool_set
+
         self.db_path = Path(db_path) if db_path is not None else default_db_path()
         self.db_path.parent.mkdir(parents=True, exist_ok=True)
         self._conn = connect(self.db_path)
         self._closed = False
         self._lock = threading.RLock()
         self._emit = emit
+        self._role = role
+        self._tool_set: tuple[str, ...] = tuple(sorted(str(t) for t in tool_set))
         self._init_db()
 
     # ── 生命周期 ────────────────────────────────────────────────────
@@ -168,9 +288,17 @@ class TicketStore:
                     fence_token         TEXT NOT NULL DEFAULT '',
                     report_payload      TEXT,
                     started_at          TEXT NOT NULL,
-                    ended_at            TEXT
+                    ended_at            TEXT,
+                    task_signature      TEXT NOT NULL DEFAULT ''
                 )
                 """
+            )
+            # 增量迁移（W4 批次 2）：老库的 assignments 表没有
+            # task_signature 列。``CREATE TABLE IF NOT EXISTS`` 不会补列，
+            # 故显式 ALTER。缺了它 settle 时写不进去 → holdout 恒空。
+            ensure_column(
+                self._conn, "assignments", "task_signature",
+                "TEXT NOT NULL DEFAULT ''",
             )
             self._conn.execute(
                 "CREATE INDEX IF NOT EXISTS idx_assignments_ticket "
@@ -254,8 +382,9 @@ class TicketStore:
                 """
                 INSERT INTO assignments (
                     assignment_id, ticket_id, run_id, worker_session_id,
-                    status, fence_token, report_payload, started_at, ended_at
-                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+                    status, fence_token, report_payload, started_at, ended_at,
+                    task_signature
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                 """,
                 (
                     assignment.assignment_id,
@@ -267,6 +396,7 @@ class TicketStore:
                     json_dumps(assignment.report_payload),
                     assignment.started_at,
                     assignment.ended_at,
+                    assignment.task_signature,
                 ),
             )
         return assignment
@@ -277,13 +407,15 @@ class TicketStore:
             conn.execute(
                 """
                 UPDATE assignments SET
-                    status = ?, report_payload = ?, ended_at = ?
+                    status = ?, report_payload = ?, ended_at = ?,
+                    task_signature = ?
                 WHERE assignment_id = ?
                 """,
                 (
                     assignment.status.value,
                     json_dumps(assignment.report_payload),
                     assignment.ended_at,
+                    assignment.task_signature,
                     assignment.assignment_id,
                 ),
             )
@@ -311,6 +443,37 @@ class TicketStore:
             rows = self._conn.execute(sql, tuple(args)).fetchall()
         return [self._assignment_from_row(r) for r in rows]
 
+    # ── 任务签名 ────────────────────────────────────────────────────
+
+    @property
+    def signature_role(self) -> str:
+        """签名口径里的 role（只读；RSI 驱动据此算同一签名空间）。"""
+        return self._role
+
+    @property
+    def signature_tool_set(self) -> tuple[str, ...]:
+        """签名口径里的 tool_set（已排序、只读）。"""
+        return self._tool_set
+
+    def _signature_for(self, objective: str) -> str:
+        """按本 store 的 ``(role, tool_set)`` 计算任务签名（确定性、无 LLM）。
+
+        **为什么由 store 算而不是事件发起方填**：签名是 holdout 的匹配键，
+        决定了"哪些历史轨迹能进验证集"。若发起方可以自填，验证集就能被
+        挑选（H5 防奖励黑客的最后一环）。store 是唯一的准入/收尾入口，
+        所以它是唯一合法的计算点。
+
+        计算失败（kernel.evolution 不可用）返回空串并记 debug——签名缺失
+        只会让 holdout 抽不到样本，不会阻断 turn。
+        """
+        try:
+            from agentnodes.kernel.evolution.holdout import compute_task_signature
+
+            return compute_task_signature(objective, self._role, self._tool_set)
+        except Exception:  # noqa: BLE001 —— 签名算不出不阻断准入/收尾
+            logger.debug("task signature computation failed", exc_info=True)
+            return ""
+
     # ── 编排：准入 ──────────────────────────────────────────────────
 
     def admit(
@@ -327,6 +490,10 @@ class TicketStore:
 
         返回新建的 Assignment，供控制器在收尾时 ``settle()``。
         任何异常都向上抛，由控制器降级为 ``ticket.admit_failed`` 事件。
+
+        W4 批次 2：这里把 ``task_signature`` 算好并**随行持久化**。此前
+        report 不带签名 → ``holdout.sample()`` 的签名匹配恒空 → RSI 闭环
+        永远走 ``empty_holdout``。
         """
         existing = self._find_ticket_for(session_key)
         if existing is None:
@@ -347,12 +514,21 @@ class TicketStore:
             worker_session_id=session_id,
             fence_token=fence_token,
         )
+        # 用**持久化的** ticket.objective 而非调用方入参：复用既有 Ticket
+        # 时两者可能不同（同一 session 的第二轮），而签名必须与 Ticket
+        # 身份一致，否则同一任务会产生多个签名空间。
+        assignment = replace(
+            assignment,
+            task_signature=self._signature_for(ticket.objective),
+        )
         self.create_assignment(assignment)
 
         self._emit_event("ticket.upserted", {
             "ticket_id": ticket.ticket_id,
             "objective": ticket.objective,
             "status": ticket.status.value,
+            "session_id": session_id,
+            "task_signature": assignment.task_signature,
         })
         return assignment
 
@@ -369,6 +545,10 @@ class TicketStore:
 
         ``status`` 只接受六个 report 态（施工方案 §2.7 口径）；非法值抛
         ``ValueError``（控制器已 catch，不会打断 turn）。
+
+        W4 批次 2：签名在这里**再兜一次**——历史行（迁移前）或调用方直构
+        的 Assignment 可能没有签名；此时从 Ticket.objective 重算，保证
+        ``assignment.report`` 一定带签名（否则该条轨迹对 holdout 不可见）。
         """
         target = _SETTLE_STATUS.get(status)
         if target is None:
@@ -391,6 +571,15 @@ class TicketStore:
             moved = moved.transition_to(target, payload=payload)
         elif moved.status is not target:
             moved = moved.transition_to(target, payload=payload)
+
+        if not moved.task_signature:
+            objective = ""
+            try:
+                ticket = self.get_ticket(moved.ticket_id)
+                objective = ticket.objective if ticket is not None else ""
+            except Exception:  # noqa: BLE001 —— 查 ticket 失败不阻断收尾
+                logger.debug("ticket lookup for signature failed", exc_info=True)
+            moved = replace(moved, task_signature=self._signature_for(objective))
 
         self.update_assignment(moved)
 
@@ -489,7 +678,12 @@ class TicketStore:
             report_payload=json_loads(row["report_payload"], {}) or {},
             started_at=row["started_at"],
             ended_at=row["ended_at"],
+            # 老库（迁移前）的行没有该列值 → 空串，holdout 自然跳过。
+            task_signature=(
+                row["task_signature"]
+                if "task_signature" in row.keys() else ""
+            ) or "",
         )
 
 
-__all__ = ["TicketStore", "default_db_path"]
+__all__ = ["TicketStore", "default_db_path", "resolve_signature_scope"]

@@ -147,9 +147,11 @@ def run_golden_eval(
     try:
         from agentnodes.evals.scorecard import score_run
     except ImportError as exc:
-        # ``evals`` 是仓库根下的独立包（不是 agentnodes 的子包）。
-        # 安装形态下它可能不在 sys.path —— 此时评测降级为"无法验证"，
-        # 而不是让 import 崩溃带走整个 RSI 闭环。
+        # ``evals`` 是 ``agentnodes`` 的子包（``src/agentnodes/evals``，
+        # 2026-11-05 从仓库根收编进包）。此前的注释说它是"仓库根下的独立
+        # 包"——那是收编前的旧事实，会让维护者按错误的路径去修 import。
+        # 若安装形态缺这个子包，评测降级为"无法验证"，而不是让 import
+        # 崩溃带走整个 RSI 闭环。
         logger.warning("evals.scorecard unavailable: %s", exc)
         return GoldenEvalResult(
             metric=0.0, tasks_run=0, skipped=True,

@@ -235,6 +235,11 @@ class Assignment:
     report_payload: dict[str, Any] = field(default_factory=dict)
     started_at: str = ""
     ended_at: str | None = None
+    #: 任务签名（W4 批次 2）。**由 TicketStore 在 admit/settle 时计算并
+    #: 注入**，事件发起方不得自填——签名是 holdout 抽样的匹配键，若允许
+    #: 发起方自填，"验证集"就能被挑选（H5 的反面）。空串 = 未经 store
+    #: 装配（测试直构对象），此时 report 里该字段为空，holdout 会自然跳过。
+    task_signature: str = ""
 
     @classmethod
     def new(
@@ -296,24 +301,45 @@ class Assignment:
 
         Raises when called on a non-report status — emitting a report for
         ``pending``/``ended`` would violate the six-state contract.
+
+        **W4 批次 2 增量字段**（全部向后兼容，旧消费者忽略即可）:
+
+        - ``session_id``（顶层）：``Gateway._default_sink`` 用它决定事件落
+          哪个 PlatforfmStore 会话分区。此前顶层没有该键 → 所有 report 都
+          落 ``"default"`` 键（评审 P2i）。``worker_session_id`` 就是物理
+          session id，直接暴露为顶层字段。
+        - ``task_signature``：holdout 抽样的匹配键。由 ``TicketStore`` 在
+          admit/settle 时算好放到 ``Assignment`` 上，这里只负责搬进事件。
+          放**顶层**而非 ``payload`` 内：``EventStoreReportSource`` 读的就是
+          顶层 ``raw["task_signature"]``。
+        - ``payload.session_id``：同一值的 payload 内副本，供只解析
+          ``payload`` 的消费者使用。**仅当非空时才写入**——空串会让
+          "未知归属"看起来像"归属为空"，而且旧测试把 payload 的键集合
+          当契约锁住了（``test_report_payload_schema``），条件写入让
+          "有值才出现"成为可验证规则而不是破坏性变更。
         """
         if not self.should_emit_report:
             raise StaleTicketError(
                 f"status {self.status.value} does not emit assignment.report"
             )
         payload = dict(self.report_payload)
+        nested: dict[str, Any] = {
+            "reason": payload.get("reason"),
+            "progress_pct": payload.get("progress_pct", 0.0),
+            "current_step": payload.get("current_step", ""),
+            "blockers": list(payload.get("blockers", [])),
+        }
+        if self.worker_session_id:
+            nested["session_id"] = self.worker_session_id
         return {
             "type": "assignment.report",
             "run_id": self.run_id,
             "assignment_id": self.assignment_id,
             "ticket_id": self.ticket_id,
+            "session_id": self.worker_session_id,
             "status": self.status.value,
-            "payload": {
-                "reason": payload.get("reason"),
-                "progress_pct": payload.get("progress_pct", 0.0),
-                "current_step": payload.get("current_step", ""),
-                "blockers": list(payload.get("blockers", [])),
-            },
+            "task_signature": self.task_signature,
+            "payload": nested,
             "ts": self.started_at,
         }
 

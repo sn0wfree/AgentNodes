@@ -243,24 +243,39 @@ def _build_replay(
     无效"看起来像"验证通过"。
     """
     try:
-        import sys
         from pathlib import Path
 
         from agentnodes.evals.scorecard import load_golden_tasks
-
         from agentnodes.kernel.evolution.golden_eval import (
             DEFAULT_SAMPLE_SIZE,
             make_golden_replay,
         )
 
-        # evals 是仓库根下的独立包；从 gateway 的 workspace 找不到它时，
-        # 按本文件位置回溯两级（interfaces → agentnodes → src → 根）。
-        golden_path = Path(__file__).resolve().parents[4] / "evals" / "golden_tasks.jsonl"
+        # ``evals`` 是 ``agentnodes`` 的子包（``src/agentnodes/evals``），不
+        # 是仓库根下的独立包。本文件在 ``src/agentnodes/interfaces/``：
+        #   parents[0] = interfaces
+        #   parents[1] = agentnodes    ← evals 的父目录
+        #   parents[2] = src
+        #   parents[3] = 仓库根
+        # 早先写成 ``parents[4]``（= 仓库的上一级，如 D:\Github），路径必然
+        # 不存在 → 每轮都静默降级到代理分（评审簇二：golden 路径错一级恒降级）。
+        golden_path = (
+            Path(__file__).resolve().parents[1] / "evals" / "golden_tasks.jsonl"
+        )
         if not golden_path.exists():
-            golden_path = Path.cwd() / "evals" / "golden_tasks.jsonl"
-        root = str(golden_path.parent.parent)
-        if root not in sys.path:
-            sys.path.insert(0, root)
+            # 安装形态 / 非源码运行时兜底：先看 cwd 下的 evals，再按已 import
+            # 的 ``agentnodes.evals`` 包的 __file__ 定位（包内资源目录一律
+            # 用「目标模块 __file__.parent」定位，不要数 parent 层数拼包内段
+            # ——那会被 scripts/arch/check_path_literals.py 当层名门禁报错）。
+            import agentnodes.evals as _evals_pkg
+
+            for candidate in (
+                Path.cwd() / "evals" / "golden_tasks.jsonl",
+                Path(_evals_pkg.__file__).resolve().parent / "golden_tasks.jsonl",
+            ):
+                if candidate.exists():
+                    golden_path = candidate
+                    break
 
         tasks = load_golden_tasks(golden_path)
         if not tasks:

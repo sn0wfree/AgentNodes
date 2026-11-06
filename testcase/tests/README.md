@@ -3,6 +3,68 @@
 > 这些测试原本在 `tests/`，因只依赖将被移除的业务侧（`apps/`）而归档。
 > **不被 pytest 收集**（`testpath = tests`）。保留原因：可作端到端样本与契约参考。
 
+## 批次 2「R1 泳道」处置（2026-11-06）
+
+R1 恢复 `apps/goal` 后，本目录 42 个 goal/workflow 测试按可达性分档处置：
+
+| 档 | 数量 | 处置 | 去向 |
+|---|---:|---|---|
+| A | 27 | 改 `strategy_research.` → `agentnodes.` 后搬回 | `tests/`（**已实跑全绿**：511 passed / 3 skipped） |
+| B | 含在 A | 同上 + `kernel.agent.builtin_tools.goal_tools` → `apps.builtin_tools.goal_tools` | `tests/`（2 个：`test_goal_tools` / `test_tool_display_goal`） |
+| C | 10 | **不搬**，等 R2 恢复 L1 接口层 | 留在本目录，依赖清单见 `R2_PENDING.md` |
+| D | 5 | **不搬**，永久不可达 | 留在本目录，见下方「档 D」 |
+
+> 27 + 10 + 5 = 42，一一对应。下方索引表**未改动**（保持 2026-08-31 归档时的原始
+> 快照价值）；搬回的文件仍列在其中，以本节的档位表为准。
+>
+> **与原清单的差异（实测修正）**：原计划档 A ~21 / 档 C 10。实际档 C 的 10 个里
+> `test_goal_panel.py` 模块全在、28 用例全绿，**移入档 A**；而 `test_workflow_ownership.py`
+> （原本不在 10 个枚举内）fixture 体内硬 import `routers/workflow.py`，8 用例全 ERROR，
+> **补入档 C**。此外原 A 档枚举漏了 4 个无 import 期硬依赖的文件
+> （`test_goal_p3b` / `test_goal_v2_session_decouple` / `test_workflow_checkpoint_resume` /
+> `test_goal_workflow_state`），经 AST + 实跑确认可达后一并搬回。档 A 因此是 27 而非 21。
+
+### 档 D —— 永久不可达（依赖批次 2/4/5 直删且无档案的域）
+
+这 5 个文件 import 的包在减法批次中被**直接删除且不留档案**，
+不存在「等某个后续批次恢复」的路径。保持归档，不搬回、不写 skip 占位：
+
+| 文件 | 行数 | 永久阻塞依赖 | 删除批次 |
+|---|---:|---|---|
+| `test_goal_e2e.py` | 434 | `apps.config_runner`、`apps.db`、`kernel.agent.builtin_tools.data_tools` | 批次 5（数据域） |
+| `test_goal_hook_p3d.py` | 309 | `apps.hypothesis`、`interfaces.cli.commands.autoresearch` | 批次 2（hypothesis）+ 后续 CLI 收敛 |
+| `test_goal_scoping.py` | 205 | `apps.hypothesis`、`apps.hypothesis.store` | 批次 2（hypothesis） |
+| `test_hypothesis_goal_linking.py` | 253 | `apps.hypothesis`（`HypothesisRegistry` / `HypothesisStore`） | 批次 2（hypothesis） |
+| `test_workflow_monitor_and_skills.py` | 170 | `apps.backtest`、`kernel.agent.builtin_tools.workspace_tools` 的旧路径 | 批次 4（回测域） |
+
+注：`apps/hypothesis` 的源码快照仍在 `testcase/golden/apps/hypothesis/`（6 文件 /
+1,459 行），但那是**归档参考**，不在 `src/agentnodes/` 的 import 路径上；
+`goal-capability-merge-design-20261105.md` §5.4 明确「本轮不恢复」。
+
+### 档 D 的派生失败（已搬回文件内的单点 skip）
+
+搬回的 A 档文件里有 3 个用例间接依赖上述直删域，跑不通且**不是等 A 流**：
+
+| 文件::用例 | 阻塞原因 | 处置 |
+|---|---|---|
+| `tests/test_workflow_graph_shadow.py::test_shadow_alpha_research_matches` | builtin `alpha_research` 的 tool 节点用 `check_data` / `run_backtest`；实现模块随批次 1 删除 | `@pytest.mark.skip(reason=...)` |
+| `tests/test_workflow_graph_shadow.py::test_shadow_data_quality_audit_matches` | 同上（`data_quality_audit` 只有 `check_data` 节点） | 同上 |
+| `tests/test_workflow_resume_from_store.py::test_resume_from_store_returns_none_for_terminal_run` | 需要 `alpha_research` 跑到 `completed` 才能构造「终态」前置 | 同上 |
+
+`node_types.register_builtin_tool_executors()` 实测注册 **0 个**执行器
+（7 个候选工具名全部无实现），这是永久状态；模板文件
+`src/agentnodes/templates/workflows/{alpha_research,data_quality_audit}.json`
+仍在引用这两个已删工具，属待清理的悬空引用（**本批未动 `src/`**）。
+
+### 新发现的同类问题（不在本批范围，供后续批次处理）
+
+`tests/test_workflow_node_types.py::TestPythonTool::test_tool_wrapper_available`
+断言 `register_builtin_tool_executors() > 0`，在同一批 1 删除后**同样恒为 0**。
+该文件本批未修改（不在 42 个清单内），但它与上面 3 个 skip 同根因。
+建议在恢复任何数据/回测能力时一并复核；若确认数据域永不复原，
+该断言应改为 `>= 0` 或删除，并同步清理两个 builtin 模板的 `check_data` /
+`run_backtest` 节点。
+
 | 文件 | 行数 |
 |---|---:|
 | `test_acceptance_cli.py` | 213 |

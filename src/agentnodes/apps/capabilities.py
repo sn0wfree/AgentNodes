@@ -51,14 +51,61 @@ logger = logging.getLogger(__name__)
 
 # ── goal / hypothesis ────────────────────────────────────────────────
 #
-# 已移除（2026-11-04 做减法批次 2）：goal.store / goal.models / goal.context /
-# goal.expression / hypothesis.registry / hypothesis.auto_creator 六个 kind，
-# 连同 apps/goal 与 apps/hypothesis 两个包。归档见
-# testcase/golden/apps/{goal,hypothesis}/。
+# **R1 恢复（2026-11-06）**：goal.store / goal.models / goal.context 三个
+# kind 随 ``apps/goal`` 恢复重新注册。拓扑按框架 v1.1 §3.1：
+#
+#     goal.store (∅) ─┐
+#     goal.models (∅) ─┴→ goal.context ({goal.store}) → tool.goal（三者）
+#
+# **goal.expression 不恢复**（v1.1 裁定）：全仓零消费者，唯一历史消费者
+# ``kernel/swarm/runtime.py:793-796`` 已改本地副本；恢复它 = 注册一个无人
+# resolve 的 kind + 双份实现。判据求值器的**单一实现 = kernel/swarm**。
+#
+# **hypothesis 不恢复**：hypothesis.registry / hypothesis.auto_creator 两个
+# kind 仍归档在 testcase/golden/apps/hypothesis/，本轮不在范围内；goal 的
+# ``_on_goal_complete`` 已按可选依赖降级（debug 日志 + 跳过转换）。
 #
 # kernel 侧的 goal 注入钩子（loop._get_goal_store / context_injector /
-# swarm 分支条件）全部是惰性 resolve + try/except，kind 消失后运行时
-# 优雅降级为 no-op，不影响框架其他功能。
+# swarm 分支条件）全部是惰性 resolve + try/except，kind 就位后自动生效。
+
+
+def _goal_store(registry: "CapabilityRegistry") -> type:
+    """``GoalStore`` 类（台账本体）。
+
+    requires 为空：它依赖的 ``models`` / ``store_utils`` 是**同包 import**，
+    不是 kind，按 §3.1「依赖是 import 不是 kind」不计入 requires。
+    """
+    from agentnodes.apps.goal import GoalStore
+
+    return GoalStore
+
+
+def _goal_models(registry: "CapabilityRegistry") -> Any:
+    """``apps.goal.models``（EvidenceInput / GoalStatus / StaleGoalError）。"""
+    import agentnodes.apps.goal.models as m
+
+    return m
+
+
+def _goal_context(registry: "CapabilityRegistry") -> Any:
+    """``apps.goal.context``（get_current_goal_context /
+    goal_needs_continuation / format_goal_continuation_prompt /
+    default_goal_criteria）。
+
+    **requires = ∅，这是有意的**（口径 = factory 执行期闭包，拍板包 B）：
+
+    ``context.py:185`` 在**函数体内** ``from .store import GoalStore``——
+    只在调用 ``get_current_goal_context()`` 时才发生；工厂本身只 import
+    模块，不触发它。按 factory 执行期闭包口径，本 kind 的真实依赖为空。
+
+    这正是框架 v1.1 §3.1 明文的「方法级双向 import 属已接受例外」
+    （context → store 与 store → context 各一处）。静态门禁用不松口：
+    `check_capability_requires.py` 按同一口径算，声明 ∅ 才是「与代码一致」。
+    """
+    import agentnodes.apps.goal.context as ctx
+
+    return ctx
+
 
 # ── study：已整体移除（2026-11-05 做减法批次 3）──────────────────────
 # apps/study + apps/autoresearch 全部归档到 testcase/golden/apps/。
@@ -151,17 +198,39 @@ CAPABILITIES: dict[str, tuple[Any, frozenset[str]]] = {
     # backtest / config.runner 四个 kind 已随批次 4 移除（2026-11-05）：
     # backtest.from_yaml / backtest.script / backtest.decide / config.runner
     # （同样直删无档案，源码在 00548ccd^）
-    # goal / hypothesis 六个 kind 已随 apps/goal、apps/hypothesis 移除
-    # （2026-11-04 批次 2；这两批**有**档案：testcase/golden/apps/）
+    # goal 三个 kind 已随 R1 恢复（2026-11-06，见下方「goal 台账」段）；
+    # hypothesis 两个 kind 仍归档（2026-11-04 批次 2，档案 testcase/golden/apps/）
     # study 六个 kind 已随 apps/study 移除（2026-11-05 批次 3，直删无档案）；
     # Ticket/Assignment 迁到 kernel/orchestration，不再经 registry
     #
+    # ── goal 台账（R1 恢复 · 框架 v1.1 §3.1）──────────────────────────
+    # 拓扑：goal.store (∅) + goal.models (∅) + goal.context (∅)
+    #       → tool.goal（依赖三者）。缺任一依赖 → 整组不注册 + WARN 事件。
+    #
+    # **goal.context 的 requires 是 ∅ 而非 {goal.store}**（2026-11-06 实测定案）：
+    # 它读台账走的是 ``context.py:185`` 的**函数体内** import，工厂执行期
+    # 不触发——按拍板包 B 的「factory 执行期闭包」口径，真实依赖为空。
+    # 真写成 {goal.store} 会被 `check_capability_requires.py` 判过声明
+    # （门禁不松口是对的：声明必须等于代码事实，否则是假门禁）。
+    # goal.expression 已按 v1.1 裁定**不恢复**（零消费者，单一实现留 kernel/swarm）。
+    "goal.store": (
+        _goal_store,
+        frozenset(),
+    ),
+    "goal.models": (
+        _goal_models,
+        frozenset(),
+    ),
+    "goal.context": (
+        _goal_context,
+        frozenset(),
+    ),
     # ── 业务内置工具（批次 6：原住 L3 builtin_tools，现归位 L2）──────────
     # **2026-11-06 批次 1 收尾**：tool.factor / tool.data / tool.backtest /
     # tool.backtest_analysis / tool.data_clean 五组的**实现模块已删除**
     # （5 文件 3,091 行）。W1 证明它们依赖的能力全部随批次 4/5 直删，
     # 永远注册不上——留着只是永远 skip 的壳。考古锚见上方模块注释。
-    # 只保留 tool.goal：R1 恢复 apps/goal 后其 goal.* kind 就位即自动注册。
+    # tool.goal：R1 已恢复 apps/goal 及 goal.* kind，本组随之注册。
     "tool.goal": (
         _tool_goal,
         frozenset({"goal.store", "goal.models", "goal.context"}),

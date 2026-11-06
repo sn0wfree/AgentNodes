@@ -204,22 +204,46 @@ class TestFiltering:
 
 
 class TestTaskSignature:
+    """签名契约（W4 · 2026-11-06 降维后）。
+
+    口径变更：旧版 = ``sha256(objective 原文 | role | tools)``——objective 是
+    agent 自由措辞，导致**同一类任务几乎永不聚合**（单签名样本恒 <
+    MIN_HOLDOUT_SAMPLES=5，default_policy 永不提案）。
+    新版 = ``sha256("v2|" + role + "|" + intent桶 + "|" + sorted(tools))``，
+    确定性降维、无 LLM、意图桶是 5 个封闭常量（research/implement/
+    evaluate/operate/other，关键词表可审计）。
+
+    因此「不同措辞 → 不同签名」不再是契约，**同桶同措辞池化**才是。
+    """
+
     def test_stable(self):
         a = compute_task_signature("研究动量", "researcher", {"x", "y"})
         b = compute_task_signature("研究动量", "researcher", {"y", "x"})
         assert a == b
 
     def test_objective_normalized(self):
-        """strip + lower 后相同则签名相同。"""
+        """同意图桶内：措辞不同（strip/lower 之外也一样）签名相同。"""
         a = compute_task_signature("  Momentum  ", "researcher", {"x"})
         b = compute_task_signature("momentum", "researcher", {"x"})
         assert a == b
 
+    def test_same_bucket_pools(self):
+        """降维的核心收益：同 role+同意图桶+同工具集 → 同一签名。
+
+        （这正是让 holdout 能攒到 ≥5 样本、default_policy 能真正提案的前提）
+        """
+        a = compute_task_signature("研究动量因子", "researcher", {"x"})
+        b = compute_task_signature("分析一下动量", "researcher", {"x"})
+        assert a == b
+
     def test_different_inputs_differ(self):
         base = compute_task_signature("m", "r", {"x"})
-        assert compute_task_signature("m2", "r", {"x"}) != base
+        # role 不同 → 不同
         assert compute_task_signature("m", "r2", {"x"}) != base
+        # 工具集不同 → 不同
         assert compute_task_signature("m", "r", {"y"}) != base
+        # 意图桶不同 → 不同（"analyze" 落 evaluate，"fix" 落 implement）
+        assert compute_task_signature("analyze m", "r", {"x"}) != base
 
     def test_length_16(self):
         assert len(compute_task_signature("m", "r", set())) == 16
