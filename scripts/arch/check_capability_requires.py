@@ -443,8 +443,11 @@ def _imported_binding_file(
         if not _is_apps_mod(base):
             continue
         for alias in node.names:
-            if (alias.asname or alias.name) == name:
-                target = _module_file(ctx, f"{base}.{alias.name}")
+            if (alias.asname or alias.name) != name:
+                continue
+            # `from pkg import sub` 优先当子模块；否则是 pkg 模块里的函数
+            for cand in (f"{base}.{alias.name}", base):
+                target = _module_file(ctx, cand)
                 if target is not None:
                     return target
     return None
