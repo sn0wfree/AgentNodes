@@ -13,6 +13,23 @@ from agentnodes.kernel.agent.loop import AgentLoop
 from agentnodes.foundation.llm import LLMConfig, LLMResponse, ToolCall
 
 
+@pytest.fixture(autouse=True)
+def _register_quant_claim_keywords():
+    """批次 4d：指标关键词表默认空，本模块测量化指标识别需先注册。"""
+    from agentnodes.apps.agent_plugins.quant_display import (
+        QUANT_CLAIM_KEYWORDS,
+    )
+    from agentnodes.kernel.agent.validators.claim_validator import (
+        clear_registered_keywords,
+        register_metric_keywords,
+    )
+
+    clear_registered_keywords()
+    register_metric_keywords(QUANT_CLAIM_KEYWORDS)
+    yield
+    clear_registered_keywords()
+
+
 class MockLLM:
     """Simple mock that returns queued LLMResponse objects."""
 

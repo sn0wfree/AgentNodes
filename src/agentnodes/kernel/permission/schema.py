@@ -23,10 +23,19 @@ class PermissionAction(str, Enum):
 class Permission(str, Enum):
     """Tool categories that the ruleset can gate.
 
-    Tools NOT in this enum are treated as R0 (read-only / safe) and
-    are auto-allowed by the evaluator. Use ``Permission.UNKNOWN``
-    when the tool name has no mapping yet — it still falls through to
-    the default ``ask`` action.
+    **这不是白名单**（2026-11-06 批次 4d 修正旧 docstring）：本枚举只是
+    ``DEFAULT_RULES`` 的构造常量。判定走 ``PermissionEvaluator`` 的
+    「last-match-wins 字符串 glob」，**不查枚举**。所以：
+
+    - 任意工具名都能被 ``permissions.yaml`` 里的字符串规则匹配
+    - 本枚举里没有的工具 → 走兜底 ``ASK``（安全默认），不是自动放行
+    - 只有 ``_is_auto_allowed()`` 里那三个只读工具是自动放行的
+
+    **为什么去掉四个业务成员**（RUN_BACKTEST / GET_MARKET_DATA /
+    IMPORT_DATA / COMPUTE_FACTOR）：kernel 只声明**通用工具类别**，
+    业务工具由 L2 插件自带权限配置。删掉后这四个工具走兜底 ASK，
+    与删除前显式 ASK 规则**行为一致**；用户已写的
+    ``permission: run_backtest`` 规则仍然有效（字符串匹配）。
     """
 
     # ── R0 read-only (auto-allowed) ────────────────────────────
@@ -44,10 +53,6 @@ class Permission(str, Enum):
 
     # ── R3 execute side-effects (ask every call default) ──────
     RUN_COMMAND = "shell"
-    RUN_BACKTEST = "run_backtest"
-    GET_MARKET_DATA = "get_market_data"
-    IMPORT_DATA = "import_data"
-    COMPUTE_FACTOR = "compute_factor"
 
     # ── R4 destructive (deny by default) ───────────────────────
     DELETE_FILE = "delete_file"

@@ -29,15 +29,28 @@ class FailingExecutor:
 
 class TestWorkflowE2E:
     def test_validator_integration(self):
-        validator = AgentValidator()
+        """业务校验器需先注册（批次 4d：kernel 不再硬编码它们）。"""
+        from agentnodes.apps.agent_plugins.quant_validators import register_all
 
-        output = {"action": "tweak_factor", "factor_direction": "positive"}
-        result = validator.validate("researcher", output)
-        assert result.valid is True
+        AgentValidator.clear_output_validators()
+        register_all()
+        try:
+            validator = AgentValidator()
 
-        output = {"action": "invalid"}
-        result = validator.validate("researcher", output)
-        assert result.valid is False
+            output = {"action": "tweak_factor", "factor_direction": "positive"}
+            result = validator.validate("researcher", output)
+            assert result.valid is True
+
+            output = {"action": "invalid"}
+            result = validator.validate("researcher", output)
+            assert result.valid is False
+        finally:
+            AgentValidator.clear_output_validators()
+
+    def test_kernel_validator_has_no_business_rules(self):
+        """kernel 默认无业务校验器——删掉 apps/ 也能跑的直接体现。"""
+        AgentValidator.clear_output_validators()
+        assert AgentValidator.registered_agents() == []
 
     def test_dag_layers_computation(self):
         # deps convention: {node: [upstream_deps]}

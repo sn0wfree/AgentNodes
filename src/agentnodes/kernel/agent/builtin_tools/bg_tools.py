@@ -174,7 +174,7 @@ class RunBgCommandTool(BaseTool):
                 return json.dumps({
                     "status": "error",
                     "error": f"unknown task_id: {task_id}",
-                    "fix": "先 start 或 run_backtest(background=True) 获取 task_id",
+                    "fix": "先 start 或 shell(background=True) 获取 task_id",
                 }, ensure_ascii=False)
             if action == "status":
                 return json.dumps(_status_payload(task_id, handle), ensure_ascii=False)

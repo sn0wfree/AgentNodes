@@ -77,15 +77,15 @@ class StaticSandbox:
         memory_limit_mb: int = 512,
     ) -> Any:
         raise NotImplementedError(
-            "StaticSandbox.execute_strategy is a v0.1 stub; use the "
-            "existing backtest.py subprocess path until v0.2 lands the "
+            "StaticSandbox.execute is a v0.1 stub; use the "
+            "existing subprocess path until v0.2 lands the "
             "sandbox-backed runner."
         )
 
     def allow_network(self, hosts: list[str] | None = None) -> None:
         raise NotImplementedError(
             "StaticSandbox.allow_network is a v0.1 stub; the legacy "
-            "backtest.py env whitelist stays in effect."
+            "env whitelist stays in effect."
         )
 
     def get_resource_usage(self) -> dict[str, Any]:

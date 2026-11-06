@@ -167,7 +167,7 @@ class ShowChartTool(BaseTool):
                 received=source_file,
                 expected="relative workspace path to a CSV/JSON file, e.g. "
                          "'runs/momentum_20d/run_0007/equity_curve.csv'",
-                fix="use the artifacts.equity_curve reference from run_backtest",
+                fix="use the artifacts reference returned by the producing tool",
                 tool="show_chart",
             )
         if chart_type not in ALLOWED_CHART_TYPES:
@@ -198,7 +198,7 @@ class ShowChartTool(BaseTool):
             return err_actionable(
                 "source file not found",
                 received=str(path),
-                fix="verify with list_files; run_backtest artifacts are under "
+                fix="verify with list_files; artifacts are under "
                     "runs/<strategy>/<run>/",
                 tool="show_chart",
             )
@@ -219,7 +219,7 @@ class ShowChartTool(BaseTool):
             return err_actionable(
                 "no data rows in file",
                 received=str(path),
-                fix="run a backtest first so equity_curve.csv has data",
+                fix="produce the data first with the tool that generates it",
                 tool="show_chart",
             )
 
@@ -293,7 +293,7 @@ class ShowReportTool(BaseTool):
                 "missing or invalid 'strategy_name'",
                 received=strategy_name,
                 expected="non-empty strategy directory name",
-                fix="use the strategy_name from run_backtest",
+                fix="use the run name returned by the producing tool",
                 tool="show_report",
             )
         if not isinstance(run, str) or not run.strip():
@@ -301,7 +301,7 @@ class ShowReportTool(BaseTool):
                 "missing or invalid 'run'",
                 received=run,
                 expected="run name, e.g. run_0007",
-                fix="use the run field from run_backtest",
+                fix="use the run field returned by the producing tool",
                 tool="show_report",
             )
         if ctx.workspace is None:
@@ -331,7 +331,7 @@ class ShowReportTool(BaseTool):
                 return err_actionable(
                     "cannot generate report: run artifacts missing",
                     received=str(run_dir),
-                    fix="run a backtest first: run_backtest(strategy_name=...)",
+                    fix="produce the data first: <producing_tool>(...)",
                     tool="show_report",
                 )
 
@@ -443,16 +443,34 @@ def _svg_curve(points: list[dict[str, float]], width: int = 640, height: int = 2
     )
 
 
-_METRIC_LABELS = {
-    "ann_return": "年化收益",
-    "sharpe": "夏普比率",
-    "max_dd": "最大回撤",
-    "calmar": "卡玛比率",
-    "sortino": "索提诺",
-    "ann_vol": "年化波动",
-    "turnover": "年换手",
-    "win_rate": "胜率",
-}
+#: 指标 key → 显示名（**批次 4d：默认空，业务域注册**）。
+#:
+#: 原表是量化专属（夏普比率 / 卡玛比率 / 最大回撤 ...）。通用平台不该
+#: 内置任何一个业务域的指标名称——法律报告讲"胜诉率"，医学报告讲
+#: "灵敏度"，硬编码量化指标名等于把 kernel 钉死在金融域。
+#:
+#: 业务域通过 ``register_metric_labels()`` 注册；量化域的在
+#: ``apps/agent_plugins/quant_display.py``。
+_METRIC_LABELS: dict[str, str] = {}
+
+#: 业务域注册的标签（进程级，与默认分开以便 clear）。
+_REGISTERED_METRIC_LABELS: dict[str, str] = {}
+
+
+def register_metric_labels(labels: dict[str, str]) -> None:
+    """注册指标显示名（幂等：同名覆盖）。"""
+    for k, v in (labels or {}).items():
+        _REGISTERED_METRIC_LABELS[str(k)] = str(v)
+
+
+def active_metric_labels() -> dict[str, str]:
+    """当前生效的标签表。"""
+    return {**_METRIC_LABELS, **_REGISTERED_METRIC_LABELS}
+
+
+def clear_registered_metric_labels() -> None:
+    """清空业务注册（测试用）。"""
+    _REGISTERED_METRIC_LABELS.clear()
 
 
 def _generate_report(run_dir: Path, strategy_name: str, run: str) -> bool:
@@ -464,17 +482,15 @@ def _generate_report(run_dir: Path, strategy_name: str, run: str) -> bool:
 
     curve_svg = _svg_curve(nav)
 
+    # **遍历 metrics，不是遍历标签表**（批次 4d 修）：标签表只决定
+    # 「显示名」，不决定「显示哪些指标」。业务域没注册标签时，指标仍应
+    # 全部显示（用原始 key 当显示名），否则报告会变成"无指标"。
+    labels = active_metric_labels()
+    percent_keys = {"ann_return", "max_dd", "turnover"}
     metric_cards = ""
-    for key, label in _METRIC_LABELS.items():
-        if key not in metrics:
-            continue
-        value = metrics[key]
-        if key == "ann_return" or key == "max_dd":
-            text = _fmt_pct(value)
-        elif key == "turnover":
-            text = _fmt_pct(value)
-        else:
-            text = _fmt_num(value)
+    for key, value in metrics.items():
+        label = labels.get(key, key)
+        text = _fmt_pct(value) if key in percent_keys else _fmt_num(value)
         metric_cards += (
             f"<div class='metric'><div class='m-label'>{label}</div>"
             f"<div class='m-value'>{text}</div></div>"

@@ -76,21 +76,47 @@ class AgentSchema:
 # ── Core field heuristic ───────────────────────────────────────────────
 
 # Fields that are decisional / conclusion-like and should be shown by default.
+#
+# **批次 4d**：只保留**领域无关**的通用字段（action / verdict / status /
+# reason / analysis ...）。量化专属字段（risk_passed / overfit_passed /
+# weighted_score）已移除——它们属于业务域的输出 schema。
 _DEFAULT_CORE_FIELDS = {
-    "action", "verdict", "risk_passed", "risk_rating", "overfit_passed",
-    "hypothesis", "reason", "recommendation", "status", "level",
-    "method", "weighted_score", "analysis",
+    "action", "verdict", "status", "level",
+    "hypothesis", "reason", "recommendation", "analysis",
 }
 
 # Fields that are data/detail-like and should be collapsible.
+#
+# **批次 4d**：同样只保留通用字段（metrics / suggestions / config_audit ...）。
+# 量化专属（weights / var_95 / cvar_95 / max_drawdown / stress_results /
+# tail_risk / methods_passed）已移除。业务域的字段可以通过
+# ``register_field_hints()`` 注册（见下）。
 _DEFAULT_NON_CORE_FIELDS = {
-    "weights", "risk_contributions", "var_95", "cvar_95", "max_drawdown",
-    "stress_results", "tail_risk", "thresholds", "config_audit",
-    "evidence_contribution", "human_guidance_observed", "decision_blockers",
-    "open_required_items", "thresholds_breached", "predicted_affected",
-    "avoid_actions", "bias_check", "context_notes",
-    "methods_passed", "metrics", "suggestions",
+    "metrics", "suggestions", "thresholds", "config_audit",
+    "decision_blockers", "context_notes", "predicted_affected",
+    "avoid_actions", "bias_check", "human_guidance_observed",
 }
+
+#: 业务域注册的核心字段（累加）。
+_REGISTERED_CORE_FIELDS: set[str] = set()
+#: 业务域注册的非核心字段（累加）。
+_REGISTERED_NON_CORE_FIELDS: set[str] = set()
+
+
+def register_field_hints(
+    core: set[str] | None = None, non_core: set[str] | None = None
+) -> None:
+    """业务域注册自己的字段展示偏好（幂等）。"""
+    if core:
+        _REGISTERED_CORE_FIELDS.update(core)
+    if non_core:
+        _REGISTERED_NON_CORE_FIELDS.update(non_core)
+
+
+def clear_field_hints() -> None:
+    """清空业务注册（测试用）。"""
+    _REGISTERED_CORE_FIELDS.clear()
+    _REGISTERED_NON_CORE_FIELDS.clear()
 
 
 def _is_core_field(name: str, hints: FieldHints | None) -> bool:

@@ -334,39 +334,66 @@ class PromptBuilderFactory:
 
     DSH-inspired: auto-discovers prompts from ``templates/.prompts/*.md``
     at first lookup for unknown roles (cached).
+
+    **批次 4d：通用角色留 kernel，业务角色迁 L2**。
+
+    原实现把 13 个角色全部硬编码在这里，其中 8 个是**量化域专属**
+    （data_quality / factor_analyst / strategist / portfolio_construction /
+    risk_controller / attribution_analyst / anti_overfit_analyst /
+    backtest_diagnostics）。它们在 kernel 里意味着：换一个业务域
+    （法律 / 医学 / 代码）就得改 kernel 的提示词路由表。
+
+    现在的分层：
+
+    - **通用角色**（下面 ``_BUILDERS`` 里那 5 个）：任何 agent 平台都可能用
+    - **业务角色**：L2 通过 ``register_prompt_builder()`` 注册，
+      装配根 (L1) 在需要时调用 ``apps.agent_plugins`` 的装配函数
+
+    判据：这个角色的**提示词内容**是否含业务域名词。含 → L2。
     """
 
     _BUILDERS: dict[str, PromptBuilder] = {
         "chat": ChatPromptBuilder(),
-        # 2026-11-05 批次 7（修正）：role_factory 的 14 个角色是**框架多角色
-        # 编排能力**——researcher→strategist→critic 等构成通用的研究/评审
-        # 角色链，与量化业务无关，因此提示词仍随包分发。
-        # 只有 9 个纯业务角色（market_scanner / regime_classifier /
-        # stress_tester / position_auditor / report_writer / benchmark_compare /
-        # concentration_check / icarus_review）归档到
-        # testcase/golden/templates/prompts/。
+        # ── 通用编排角色（提示词内容与业务域无关）───────────────────
         "researcher": StaticFilePromptBuilder("researcher"),
-        "data_quality": StaticFilePromptBuilder("data_quality"),
-        "factor_analyst": StaticFilePromptBuilder("factor_analyst"),
-        "strategist": StaticFilePromptBuilder("strategist"),
-        "portfolio_construction": StaticFilePromptBuilder(
-            "portfolio_construction"
-        ),
-        "risk_controller": StaticFilePromptBuilder("risk_controller"),
-        "attribution_analyst": StaticFilePromptBuilder("attribution_analyst"),
-        "anti_overfit_analyst": StaticFilePromptBuilder("anti_overfit_analyst"),
-        "backtest_diagnostics": StaticFilePromptBuilder("backtest_diagnostics"),
-        "workflow_orchestrator": StaticFilePromptBuilder("workflow_orchestrator"),
         "critic": StaticFilePromptBuilder("critic"),
+        "planner": StaticFilePromptBuilder("planner"),
+        "evaluator": StaticFilePromptBuilder("evaluator"),
+        "workflow_orchestrator": StaticFilePromptBuilder("workflow_orchestrator"),
         # Study v2 inter-round roles (design §10-11)
         "study_reviewer": StaticFilePromptBuilder("study_reviewer"),
         "study_collector": StaticFilePromptBuilder("study_collector"),
     }
 
+    #: kernel 内建的通用角色集合（``clear_registered`` 用它恢复）
+    _BUILTIN_ROLES: frozenset[str] = frozenset()
+
+    @classmethod
+    def register_prompt_builder(cls, role: str, builder: PromptBuilder) -> None:
+        """注册（或替换）某角色的提示词构造器（L2 装配期调用）。
+
+        幂等：重复注册覆盖。
+        """
+        cls._BUILDERS[str(role)] = builder
+
+    @classmethod
+    def registered_roles(cls) -> list[str]:
+        """当前可解析的全部角色名（排序）。"""
+        return sorted(cls._BUILDERS)
+
+    @classmethod
+    def clear_registered(cls) -> None:
+        """移除所有**非内建**角色（测试用）。
+
+        内建角色在类定义时记入 ``_BUILTIN_ROLES``，本方法只删后注册的。
+        """
+        for role in list(cls._BUILDERS):
+            if role not in cls._BUILTIN_ROLES:
+                del cls._BUILDERS[role]
+
     # Roles in this set skip the common layer entirely (no principles.md
     # prepend). Reserved slot for future opt-out use; currently empty.
     _COMMON_OPT_OUT: set[str] = set()
-
     # DSH-inspired: auto-discovered prompts (cached after first scan)
     _discovered: dict[str, PromptBuilder] | None = None
 
@@ -500,6 +527,12 @@ class PromptBuilderFactory:
                 builders[role] = StaticFilePromptBuilder(role)
                 logger.debug("Auto-discovered prompt: %s", role)
         return builders
+
+
+# kernel 内建的通用角色快照（``clear_registered`` 的恢复基线）。
+# 必须在类定义**之后**执行：类体里的 ``_BUILDERS`` 才是唯一事实源，
+# 这里只是它在模块加载完成时的快照。
+PromptBuilderFactory._BUILTIN_ROLES = frozenset(PromptBuilderFactory._BUILDERS)
 
 
 __all__ = [

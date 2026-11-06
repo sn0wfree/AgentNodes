@@ -26,17 +26,17 @@ import os
 from pathlib import Path
 from typing import Any
 
-# 9 角色对应的 templates/.prompts/<role>.md 文件名
+# 通用角色对应的 templates/.prompts/<role>.md 文件名
+#
+# **批次 4d 收缩**：原 14 个角色里 8 个是量化域专属（data_quality /
+# factor_analyst / strategist / portfolio_construction / risk_controller /
+# attribution_analyst / anti_overfit_analyst / backtest_diagnostics），
+# 已迁 ``apps/agent_plugins/quant_prompts.py``。
+#
+# 保留的都是**过程角色**：它们的提示词讲「怎么研究 / 怎么评审 / 怎么规划」，
+# 与具体领域无关。判据：这份提示词换个业务域还能不能用？
 _ROLE_PROMPT_FILES = {
     "researcher": "researcher.md",
-    "data_quality": "data_quality.md",
-    "factor_analyst": "factor_analyst.md",
-    "strategist": "strategist.md",
-    "portfolio_construction": "portfolio_construction.md",
-    "risk_controller": "risk_controller.md",
-    "attribution_analyst": "attribution_analyst.md",
-    "anti_overfit_analyst": "anti_overfit_analyst.md",
-    "backtest_diagnostics": "backtest_diagnostics.md",
     "critic": "critic.md",
     # Workflow-module roles (docs/design/workflow-module-design.md):
     # planner 生成研究计划子图; evaluator 评估进度并决策.

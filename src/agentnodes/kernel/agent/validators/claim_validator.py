@@ -17,17 +17,39 @@ from __future__ import annotations
 import re
 from dataclasses import dataclass, field
 
-# Metric keywords (EN + CN) that mark a nearby number as a "claim".
-# Keep this list focused on quant / backtest metrics so dates, counts,
-# run_ids and sequence numbers are not treated as claims.
-DEFAULT_METRIC_KEYWORDS: list[str] = [
-    # English
-    "sharpe", "sortino", "calmar", "ic", "return", "pnl", "nav",
-    "alpha", "beta", "drawdown", "mdd", "maxdd", "volatility", "vol",
-    "turnover", "winrate", "win rate", "profit", "yield",
-    # Chinese
-    "夏普", "年化", "收益", "回撤", "胜率", "波动", "换手", "净值", "盈利",
-]
+#: 指标关键词（EN + CN）——标记附近数字为「断言」。
+#:
+#: **批次 4d：本表默认空，业务域自己注册**。
+#:
+#: 原表是量化专属（sharpe / calmar / ic / 回撤 / 夏普 ...）。它的问题：
+#: 换一个业务域（法律条款金额、医学剂量、代码行数）就得改 kernel。
+#:
+#: **判据**：「夏普比率」这个词能用于法律域吗？不能 → 它是业务内容。
+#:
+#: 业务域通过 ``register_metric_keywords()`` 注册自己的词表；
+#: ``/`` 量化域的注册在 ``apps/agent_plugins/quant_claims.py``。
+DEFAULT_METRIC_KEYWORDS: list[str] = []
+
+#: 业务域注册的额外关键词（进程级）。
+_REGISTERED_KEYWORDS: list[str] = []
+
+
+def register_metric_keywords(words: list[str]) -> None:
+    """注册业务域的指标关键词（累加，幂等按词去重）。"""
+    for w in words:
+        w = str(w)
+        if w and w not in _REGISTERED_KEYWORDS:
+            _REGISTERED_KEYWORDS.append(w)
+
+
+def active_metric_keywords() -> list[str]:
+    """当前生效的关键词 = 默认（空） + 已注册。"""
+    return list(DEFAULT_METRIC_KEYWORDS) + list(_REGISTERED_KEYWORDS)
+
+
+def clear_registered_keywords() -> None:
+    """清空业务注册（测试用）。"""
+    _REGISTERED_KEYWORDS.clear()
 
 # Maximum character window around a metric keyword to look for its value.
 _KEYWORD_WINDOW = 30
@@ -99,7 +121,10 @@ def validate_claims(
         A ``ClaimValidationResult``. ``total_claims == 0`` yields
         ``ok=True`` (nothing to verify → UI stays quiet).
     """
-    keywords = metric_keywords if metric_keywords is not None else DEFAULT_METRIC_KEYWORDS
+    keywords = (
+        metric_keywords if metric_keywords is not None
+        else active_metric_keywords()
+    )
     text = assistant_text or ""
 
     # 1. Locate metric claims: for each keyword occurrence, look for a

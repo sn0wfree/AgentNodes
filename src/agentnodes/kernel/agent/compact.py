@@ -202,18 +202,9 @@ Rules:
 
 # ── Config ────────────────────────────────────────────────────────
 
-# DEPRECATED since Phase A: was the L1 per-tool-type threshold table.
-# Kept only as documentation reference for the (now-unused) tool_truncate_chars
-# field default. Field default now uses an empty dict; L4 doesn't pre-truncate.
-_LEGACY_L1_TOOL_LIMITS_DOC: dict[str, int] = {
-    "read": 3000,
-    "search_code": 2000,
-    "shell": 2000,
-    "backtest_run": 4000,
-    "list": 1000,
-    "_default": 2000,
-}
-
+# 已删除：``_LEGACY_L1_TOOL_LIMITS_DOC``（批次 4d）。它自 Phase A 起就是
+# DEPRECATED 文档参考（``tool_truncate_chars`` 字段默认已改为空 dict），
+# 全仓零引用——留着只是一个带业务工具名（``backtest_run``）的死字典。
 
 # CompactConfig 已下沉 foundation（W5-8）；re-export 保持 API 不变。
 from agentnodes.foundation.compact_config import CompactConfig  # noqa: F401

@@ -63,7 +63,7 @@ NODE_METADATA: dict[str, NodeMeta] = {
     ),
     "tool": NodeMeta(
         "tool", "调用工具",
-        "直接调用注册工具（run_backtest / check_data / ...）",
+        "直接调用注册工具（read / write / shell / ...）",
         {"tool": "str", "params": "dict?"},
     ),
 }
@@ -373,20 +373,55 @@ def _parse_plan(answer: str) -> list[dict[str, Any]] | None:
 
 
 def _fallback_plan(max_steps: int) -> list[dict[str, Any]]:
-    """5-step standard pipeline fallback (hypothesis→data→backtest→validate→report)."""
+    """无 planner 时的**通用**兜底计划：澄清 → 收集 → 执行 → 汇报。
+
+    **批次 4d 改通用**（原为量化五步流水线：假设→数据→回测→稳健→报告）。
+    原实现引用 ``factor_analysis`` / ``get_market_data`` / ``run_backtest`` /
+    ``drawdown_analysis`` —— **四个工具全部已删除**，兜底计划本身就是
+    一组"调用必败"的步骤。
+
+    **现在的契约**：只引用**通用工具**（read / websearch / webfetch /
+    write / shell / show_report），适用于任意领域。业务域需要自己的
+    流水线时，应提供 planner（LLM 或静态模板），而不是依赖这个兜底——
+    兜底是"planner 挂了也能跑出个结果"的最后一道保险，不该承载业务知识。
+
+    :param max_steps: 最多几步（截断，至少 1）
+    """
     steps = [
-        ("step_001", "提出研究假设", "基于目标提出可检验的研究假设，明确验证指标。预期产出：假设列表。",
-         ["read", "websearch", "factor_analysis"], []),
-        ("step_002", "准备数据", "检查并准备所需行情/因子数据，确认覆盖与质量。预期产出：数据就绪说明。",
-         ["get_market_data", "check_data"], ["step_001"]),
-        ("step_003", "回测验证", "对假设构建策略并运行回测，产出绩效指标。预期产出：回测结果与指标。",
-         ["run_backtest"], ["step_002"]),
-        ("step_004", "稳健性检查", "检查回测结果稳健性（回撤/换手/参数敏感性）。预期产出：稳健性结论。",
-         ["read", "drawdown_analysis"], ["step_003"]),
-        ("step_005", "结论报告", "汇总发现，输出最终研究结论与建议。预期产出：完整研究报告。",
-         ["show_chart", "show_report"], ["step_004"]),
+        (
+            "step_001",
+            "澄清目标",
+            "明确任务要达成的具体结果、约束条件与验收标准。"
+            "预期产出：一句话目标 + 3-5 条验收标准。",
+            ["read", "websearch"],
+            [],
+        ),
+        (
+            "step_002",
+            "收集信息",
+            "检索完成任务所需的资料、代码或数据，记录来源。"
+            "预期产出：带出处的信息要点清单。",
+            ["websearch", "webfetch", "read"],
+            ["step_001"],
+        ),
+        (
+            "step_003",
+            "执行任务",
+            "按目标产出实际内容（写文件 / 改代码 / 跑命令 / 调工具）。"
+            "预期产出：可验证的产出物。",
+            ["write", "read", "shell"],
+            ["step_002"],
+        ),
+        (
+            "step_004",
+            "汇总汇报",
+            "对照验收标准逐条核对，输出结论与遗留问题。"
+            "预期产出：完成情况说明 + 产物位置。",
+            ["read", "show_report"],
+            ["step_003"],
+        ),
     ]
-    steps = steps[:max_steps]
+    steps = steps[: max(1, max_steps)]
     return [
         {"id": sid, "title": title, "description": desc, "type": "llm_agent",
          "tools": tools, "depends_on": deps}

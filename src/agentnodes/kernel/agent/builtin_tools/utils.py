@@ -43,7 +43,7 @@ logger = logging.getLogger(__name__)
 
 # Common LLM "wrong wrapping" patterns
 _LIST_WRAPPER_KEYS = (
-    "item", "data", "records", "bars", "rows", "ohlcv", "values",
+    "item", "data", "records", "rows", "values",
     "list", "items", "result", "results", "output",
 )
 _DICT_WRAPPER_KEYS = (

@@ -115,7 +115,7 @@ class ToolHelpTool(BaseTool):
             return err_actionable(
                 "missing or invalid 'name'",
                 received=name,
-                expected="tool name, e.g. 'run_backtest'",
+                expected="tool name, e.g. 'read'",
                 fix="pass a tool name from the tool list in the system prompt",
                 tool="tool_help",
             )

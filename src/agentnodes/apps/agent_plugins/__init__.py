@@ -32,6 +32,23 @@ if TYPE_CHECKING:
 __all_plugin_modules__: tuple[str, ...] = ("quant",)
 
 
+def register_all_asset_modules() -> dict[str, int]:
+    """注册各插件模块的**非插件资产**（输出校验器等）。
+
+    与 ``populate()`` 分开：``populate`` 注册 agent 插件定义，
+    本函数注册「插件运行时需要的配套规则」。两者都由装配根显式调用。
+
+    返回 ``{"模块名": 注册数量}``。
+    """
+    from . import quant_display, quant_prompts, quant_validators
+
+    return {
+        "quant_validators": quant_validators.register_all(),
+        "quant_prompts": quant_prompts.register_all(),
+        "quant_display": quant_display.register_all(),
+    }
+
+
 def all_available_plugins() -> tuple["AgentPlugin", ...]:
     """返回当前环境下**工具齐备**的全部插件（跨插件集汇总）。
 
@@ -57,4 +74,9 @@ def populate(registry: "AgentPluginRegistry") -> int:
     return len(plugins)
 
 
-__all__ = ["__all_plugin_modules__", "all_available_plugins", "populate"]
+__all__ = [
+    "__all_plugin_modules__",
+    "all_available_plugins",
+    "populate",
+    "register_all_asset_modules",
+]

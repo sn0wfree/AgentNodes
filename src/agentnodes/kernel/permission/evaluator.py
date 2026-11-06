@@ -92,22 +92,6 @@ DEFAULT_RULES: list[PermissionRule] = [
         comment="Shell commands ask by default",
     ),
     PermissionRule(
-        permission=Permission.RUN_BACKTEST.value, pattern="*",
-        action=PermissionAction.ASK,
-    ),
-    PermissionRule(
-        permission=Permission.GET_MARKET_DATA.value, pattern="*",
-        action=PermissionAction.ASK,
-    ),
-    PermissionRule(
-        permission=Permission.IMPORT_DATA.value, pattern="*",
-        action=PermissionAction.ASK,
-    ),
-    PermissionRule(
-        permission=Permission.COMPUTE_FACTOR.value, pattern="*",
-        action=PermissionAction.ASK,
-    ),
-    PermissionRule(
         permission=Permission.DELEGATE_TO_AGENT.value, pattern="*",
         action=PermissionAction.ASK,
     ),
@@ -243,8 +227,6 @@ class PermissionEvaluator:
         if tool_name == Permission.RUN_COMMAND.value:
             cmd = str(args.get("command") or "").strip()
             return cmd.split()[0] if cmd else tool_name
-        if tool_name == Permission.RUN_BACKTEST.value:
-            return str(args.get("strategy_name") or "") or tool_name
         return tool_name
 
 

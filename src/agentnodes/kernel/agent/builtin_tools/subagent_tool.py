@@ -81,7 +81,7 @@ class SubAgentTool(BaseTool):
     # - 子 agent 失败 → error + 透传子 agent 错误信息
     #
     # ## 相关工具
-    # 子 agent 内部可用: read_file, write_file, run_backtest, compute_factor 等
+    # 子 agent 内部可用: read, write, shell, websearch 等
     # ─────────────────────────────────────────────
     """
 
@@ -116,7 +116,7 @@ class SubAgentTool(BaseTool):
             "toolset": {
                 "type": "string",
                 "description": (
-                    "命名工具集（A6）：minimal/chat/researcher/factor_analyst/"
+                    "命名工具集（A6）：minimal/chat/coder/explorer/"
                     "strategist/critic 等。与 tools 二选一，tools 优先。"
                 ),
             },

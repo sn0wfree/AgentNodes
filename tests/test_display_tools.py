@@ -128,6 +128,17 @@ class TestShowChartTool(unittest.TestCase):
 
 class TestShowReportTool(unittest.TestCase):
     def setUp(self) -> None:
+        # 批次 4d：指标显示名默认空（kernel 不内置业务指标名），
+        # 本测试验证量化报告渲染，需先注册量化标签表。
+        from agentnodes.apps.agent_plugins.quant_display import (
+            register_all,
+        )
+        from agentnodes.kernel.agent.builtin_tools.display_tools import (
+            clear_registered_metric_labels,
+        )
+
+        clear_registered_metric_labels()
+        register_all()
         self._tmp = tempfile.TemporaryDirectory()
         self.ws = Path(self._tmp.name)
         self.run_dir = _make_run(self.ws)
@@ -135,6 +146,11 @@ class TestShowReportTool(unittest.TestCase):
         self.ctx = _Ctx(self.ws)
 
     def tearDown(self) -> None:
+        from agentnodes.kernel.agent.builtin_tools.display_tools import (
+            clear_registered_metric_labels,
+        )
+
+        clear_registered_metric_labels()
         self._tmp.cleanup()
 
     def test_generates_and_emits_html(self) -> None:
@@ -147,8 +163,24 @@ class TestShowReportTool(unittest.TestCase):
         etype, data = self.ctx.events[0]
         self.assertEqual(etype, "html")
         self.assertIn("<svg", data["content"])
+        # 注册量化标签表后「年化收益」才出现（未注册时显示原始 key）
         self.assertIn("年化收益", data["content"])
         self.assertEqual(data["title"], "momentum_20d / run_0007 回测报告")
+
+    def test_report_without_registered_labels(self) -> None:
+        """未注册标签时报告仍生成，只是用原始 metric key。"""
+        from agentnodes.kernel.agent.builtin_tools.display_tools import (
+            clear_registered_metric_labels,
+        )
+
+        clear_registered_metric_labels()
+        res = json.loads(self.tool.execute(
+            self.ctx, strategy_name="momentum_20d", run="run_0007",
+        ))
+        self.assertEqual(res["status"], "ok")
+        _etype, data = self.ctx.events[0]
+        self.assertNotIn("年化收益", data["content"])
+        self.assertIn("ann_return", data["content"])
 
     def test_reuses_existing_report(self) -> None:
         report = self.run_dir / "report.html"

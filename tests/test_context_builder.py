@@ -82,13 +82,14 @@ class TestContextBuilder:
         sp = b.build_system_prompt()
         assert "read" in sp
         assert "write" in sp
-        # 批次 5：run_backtest / compute_factor 已从 registry 摘除。
-        # prompt 模板（templates/.prompts/）里仍写着 run_backtest ——
-        # 模板去研究化是批次 7，届时这里改成 not in。
-        assert "run_backtest" in sp   # TODO(批次7): 改 not in
-        # compute_factor 模板里本就没提，不断言
+        # 批次 4d：系统提示词已改为**领域无关**的通用版本，
+        # 不再提 run_backtest / compute_factor 这类业务工具。
+        assert "run_backtest" not in sp
+        assert "compute_factor" not in sp
         assert "git_diff" in sp
         assert "list_history" in sp
+        # 通用工作流仍然完整（读 → 分析 → 产出 → 验证 → 汇报）
+        assert "workspace" in sp
 
     def test_system_prompt_has_role(self, registry, workspace):
         b = ContextBuilder(LLMConfig(), registry, workspace=workspace)

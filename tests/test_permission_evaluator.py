@@ -110,10 +110,41 @@ def test_extract_target_run_command_uses_first_token():
     assert d.target == "rm"
 
 
-def test_extract_target_run_backtest_uses_strategy_name():
+def test_extract_target_unknown_business_tool_falls_back_to_name():
+    """批次 4d：kernel 不再为业务工具做 target 提取。
+
+    原测试 ``test_extract_target_run_backtest_uses_strategy_name`` 断言
+    ``run_backtest`` 的 target 取 ``strategy_name``——那是量化域专属知识。
+    删掉后 target 退化为工具名本身，业务工具的规则匹配依赖
+    ``pattern="*"``（或用户直接写工具名规则）。
+
+    **这是有意的行为变更**，代价已记入设计文档 §2.2：
+    用户若写 ``permission: run_backtest, pattern: "my_strat"``，
+    该命名 pattern 不再生效（退化成工具名匹配）。
+    """
     ev = PermissionEvaluator()
     d = ev.evaluate("run_backtest", {"strategy_name": "momentum_v3"})
-    assert d.target == "momentum_v3"
+    assert d.target == "run_backtest"
+    # 兜底 ASK（安全默认），不是放行
+    assert d.action.value == "ask"
+
+
+def test_business_tool_rule_with_wildcard_still_works():
+    """用户写的业务工具规则（pattern="*"）仍然生效——字符串匹配不查枚举。"""
+    from agentnodes.kernel.permission.schema import (
+        PermissionAction,
+        PermissionRule,
+    )
+
+    ev = PermissionEvaluator([
+        PermissionRule(
+            permission="run_backtest",
+            pattern="*",
+            action=PermissionAction.DENY,
+        ),
+    ])
+    d = ev.evaluate("run_backtest", {"strategy_name": "x"})
+    assert d.action is PermissionAction.DENY
 
 
 def test_extract_target_read_file_falls_back_to_file_path():

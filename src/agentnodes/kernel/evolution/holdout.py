@@ -193,7 +193,7 @@ INTENT_KEYWORDS: dict[str, tuple[str, ...]] = {
     ),
     "evaluate": (
         "评估", "评测", "回测", "验证", "测试",
-        "evaluate", "benchmark", "backtest", "validate", "test",
+        "evaluate", "benchmark", "validate", "test", "review",
     ),
     "operate": (
         "运行", "执行", "部署", "启动", "跑一下",

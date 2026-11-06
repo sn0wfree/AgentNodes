@@ -1,10 +1,57 @@
 """Unit tests for the claim validator (truthfulness L2).
 
 See docs/archive/undated/claim-validation-badge-design.md §7.1.
+
+**批次 4d**：指标关键词表默认空（kernel 不再内置量化指标名），
+本文件测试的是**量化词表生效时**的行为，因此模块级注册。
 """
 from __future__ import annotations
 
+import pytest
+
 from agentnodes.kernel.agent.validators import validate_claims
+
+
+@pytest.fixture(autouse=True)
+def _register_quant_keywords():
+    """本模块测试量化指标识别，需先注册量化词表（与生产装配路径一致）。"""
+    from agentnodes.apps.agent_plugins.quant_display import (
+        QUANT_CLAIM_KEYWORDS,
+    )
+    from agentnodes.kernel.agent.validators.claim_validator import (
+        clear_registered_keywords,
+        register_metric_keywords,
+    )
+
+    clear_registered_keywords()
+    register_metric_keywords(QUANT_CLAIM_KEYWORDS)
+    yield
+    clear_registered_keywords()
+
+
+class TestKernelDefaults:
+    """kernel 默认无业务词表——这是「删掉 apps/ 也能跑」的直接体现。"""
+
+    def test_no_keywords_by_default(self):
+        from agentnodes.kernel.agent.validators.claim_validator import (
+            active_metric_keywords,
+            clear_registered_keywords,
+        )
+
+        clear_registered_keywords()
+        assert active_metric_keywords() == []
+
+    def test_no_claims_without_keywords(self):
+        """不注册词表时，任何数字都不被当成 metric claim。"""
+        from agentnodes.kernel.agent.validators.claim_validator import (
+            clear_registered_keywords,
+        )
+
+        clear_registered_keywords()
+        result = validate_claims(
+            "sharpe 是 1.5", tool_result_texts=[]
+        )
+        assert result.total_claims == 0
 
 
 class TestFlagsUnverified:

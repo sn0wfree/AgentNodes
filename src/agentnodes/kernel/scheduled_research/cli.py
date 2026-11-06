@@ -322,7 +322,7 @@ def add_schedule_subparsers(subparsers: argparse._SubParsersAction) -> None:
     create_p.add_argument("--interval", "-i", type=int, help="间隔秒数")
     create_p.add_argument("--prompt", "-p", help="研究目标（映射 study objective）")
     create_p.add_argument("--max-rounds", "-m", type=int, default=1, help="每次最大轮数")
-    create_p.add_argument("--metric", help="验收指标: calmar>=0.5,sharpe>=0.3")
+    create_p.add_argument("--metric", help="acceptance metric, e.g. score>=0.5")
     create_p.add_argument("--budget-turn", type=int, help="轮数预算")
     create_p.add_argument("--budget-token", type=int, help="token 预算")
     create_p.add_argument("--budget-time", type=int, help="时间预算（秒）")

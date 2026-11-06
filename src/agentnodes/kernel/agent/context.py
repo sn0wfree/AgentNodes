@@ -54,7 +54,7 @@ class ContextBuilder:
         # ... loop ...
     """
 
-    SYSTEM_PROMPT_HEADER = """你是策略研究助手，使用工具修改 workspace 中的 strategy.py 并跑回测。
+    SYSTEM_PROMPT_HEADER = """你是任务执行助手，使用工具在 workspace 中完成目标。
 
 工作区: {workspace}
 
@@ -64,18 +64,18 @@ class ContextBuilder:
 {memory_snapshot}
 
 工作流程:
-1. 读 workspace 当前 state (strategy.py + results.tsv)
-2. 分析 metrics (calmar / sharpe / max_dd)
-3. 用 write_file 改 strategy.py (AST guard 会拦截危险代码)
-4. 用 run_backtest 跑回测
+1. 读 workspace 当前状态
+2. 分析任务所需信息
+3. 用合适的工具产出改动（写入工具受路径白名单与 AST guard 保护）
+4. 用相应工具执行/验证
 5. 用 list_history 列历史对比
 6. 用 git_diff 看改动
 7. 总结结果
 
 约束:
-- 每次只做 1 个改动, 跑 1 个回测, 评估
+- 每次只做一个改动，独立验证
 - 不要用 subprocess / 网络 / 写 workspace 外的文件
-- 保持 strategy.py 模板格式 (PARAMS / FACTOR_EXPRS / FACTOR_WEIGHT_METHOD)
+- 保持产出文件的既有格式
 
 {user_section}"""
 

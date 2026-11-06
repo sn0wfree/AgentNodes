@@ -37,10 +37,9 @@ _HEADER_COMMENT = """# Permission ruleset (auto-managed).
 # Resolution order is *last-match-wins*. To grant a tool an exception,
 # add a more specific rule below the broad default. Format:
 #
-#   - permission: write_file | run_command | run_backtest | ... | "*"
+#   - permission: write_file | run_command | shell | ... | "*"
 #     pattern:    <glob>          # path for file tools, first command
-#                                # token for run_command, strategy name
-#                                # for run_backtest, "*" otherwise
+#                                # token for run_command, "*" otherwise
 #     action:     allow | ask | deny
 #     comment:    optional
 #
