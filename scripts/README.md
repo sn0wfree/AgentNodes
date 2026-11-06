@@ -165,3 +165,6 @@ python scripts/arch/sync_architecture_diagram.py            # 复核（应全 [O
 全部工具来自 2026-11-03/04 物理分层迁移的实战沉淀，固化时做了三件事：
 路径参数化（去 tmp 硬编码）、docstring 补「为什么存在」与历史教训、
 退出码对齐目录契约。迁移期间的 20+ 个一次性 fix_*.py 补丁未固化。
+
+## batch_gate.cmd
+`scripts\batch_gate.cmd`: 默认跑 5 个必需步骤（collect 锚 / 悬空导入+层向 / 路径字面量 / capability requires / 语义归位），第 6 步 graphify 需 `--graph`（extract + graph_layer_audit），`--update-anchor` 回写 `tests/baselines/collect_anchor.json`。双解释器是环境现实：Python313 有 pytest 无 playwright（5 个 e2e 收集失败属基线，故只判数字不判 pytest 退出码），Python312 跑 `arch/` 门禁。
