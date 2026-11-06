@@ -49,6 +49,14 @@ interfaces / apps / kernel / foundation**（物理目录不动——`core/study`
 | **L3** | kernel 平台机制（三子带 · v7.2） | 业务无关的编排与防护 | **控制面**（②Gateway 对应 · ~4.1k）：`gateway` `orchestration` `events` `session` `scheduled_research` ｜ **执行面**（③对应 · ~6.0k）：`runtimes`(GraphEngine) `workflow`(编译器) `swarm`(编译器) ｜ **能力面**（AgentLoop 域 · ~24.6k，agent 22k 独大）：`agent` `context` `hooks` `permission` `memory` `skills` `seq_generator`(待退役) |
 | **L4** | foundation 基础设施 | 零业务知识的机制件 | `core/llm` `storage` `observability` `utils` `web`(搜索机制) **`registry`**(通用注册基类 · v7.2 归位) `config_loader` `errors` `git` |
 
+> **⚠ 历史口径声明（2026-11-06 · framework v1.1）**：上表 L2 行为**本节撰写时点
+> （2026-11-03）的历史快照**，所列 20+ 成员已经减法批次 1–5 移除。
+> L2 的现行身份自 framework-and-principles v1.1 起改判为**「业务插件槽」**
+> （D1 拍板：每个 kind 是自带依赖声明的插件，注册即自证可运行——理念三），
+> 现行成员与验收以 framework 文档 §2.4/§2.5 为准。本表保留仅作决策考古，
+> **不得作为恢复依据**——这是继架构图手写文案、capabilities.py 归档注释之后
+> 被评审标记的第三处文档失真源，以此声明封口。
+
 ### 2.0 L1 判据修正（2026-11-04 · 结构评审 W9）
 
 **L1 的判据不是「目录在 `interfaces/` 下」，而是「无状态 · 无编排 · 只做协议转换」。**

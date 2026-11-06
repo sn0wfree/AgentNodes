@@ -1,10 +1,13 @@
-# 框架与理念（v1.0 定稿 · 2026-11-05）
+# 框架与理念（v1.1 · 2026-11-06）
 
-> **地位**：**v1.0 定稿**。六项决策（D1–D6）全部拍板（2026-11-05），记录见 §3.1；
-> §2.5 工作项自本版起生效，执行序见 §3.3。开代码自 W1 始。
+> **地位**：**v1.1**。v1.0（2026-11-05 六项决策 D1–D6，记录见 §3.1）经
+> **三轮 agent-team 评审**（4 评审员独立评审 → 交叉质证 → 元评审 + 独立盲评，
+> **5/5 GO 附条件**）后应用修正案升版。评审全文见 `framework-review-20261106.md`；
+> GO 条件 C1–C14 见 §3.4。**W1 自本版起具备开工条件**（批次 1）。
 >
 > 输入：GEP-RSI v1.1（语义架构）· 四层物理架构（layered-skeleton-design）·
-> 一致性扫描（`e7a6e868` + `d2e962df`）· goal 重建方案（`bd743d99`）。
+> 一致性扫描（`e7a6e868` + `d2e962df`）· goal 重建方案（`bd743d99`）·
+> 三轮评审（`415bc663` + `a1bb0a8c`）。
 >
 > 本文档回答：这个「自我进化的研究 agent 平台」的理念是什么、框架长什么样、
 > 已排期的 R1–R3 与扫描出的缺口如何装进同一个框架。
@@ -15,11 +18,11 @@
 
 **物理轴（L1–L4）管「谁可以 import 谁」，语义轴（G/E/P）管「谁可以改变谁」；
 两轴在 Tier 0/1/2 相交；三条反馈回路按分钟 / 小时 / 天分时标运行；
-评估器与变异白名单的守护在进程外。**
+评估器与变异白名单的守护在进程外；检查信号必须经由被检方不可控的通道产生。**
 
 ---
 
-## §1 理念（六条）
+## §1 理念（七条）
 
 体例：每条理念 = 一个实测张力 + 一条规则 + 一个可执行检查。
 **没有检查的理念不进本文**——这是本仓库自己的门禁文化（layer_matrix、
@@ -74,26 +77,49 @@ R1 恢复 goal 后，goal 产物应成为第一个 Tier 2 写入方（决策点 
 > kind 注册进 registry 的前提：其全部依赖 kind 在同一装配语境可解析。
 > 不满足 → 整组不注册 + `capability.skipped` 事件；**绝不注册必然失败的壳**。
 
-**机制（W1，机制本身待拍板）**：工厂声明 `requires: frozenset[str]`
+**机制（W1 · v1.1 拍板包，评审 4/4 收敛）**：工厂声明 `requires: frozenset[str]`
 （依赖 kind 清单）；装配期按依赖拓扑序解析，缺一个整组跳过。
 替代方案（注册时 dry-run 一次）开销大且不可静态分析，不推荐。
 
-**检查**：装配后 `registry.list_kinds()` 与「声明可运行的 kind 集合」
-做一致性断言（测试门禁）；运行期出现缺口时 emit 事件，不允许静默。
+**W1 机制拍板包五条（v1.1 · 三轮评审收敛，缺一即假门禁）**：
+
+| # | 拍板 | 理由（评审实证） |
+|---|---|---|
+| A | **自检闸住 `CapabilityRegistry.register` 内核侧**——import 副作用、填充器钩子、懒补注册路径 B 三条注册路径全部经此一处 | 路径 B（`capability/__init__.py:95-104`）直读 CAPABILITIES 逐条注册，可绕过任何 apps 侧检查 |
+| B | **requires 语义 = factory 执行期闭包**；方法级双向边（`store.py:1347` ↔ `context.py:185`）明注为已接受例外 | 按「方法路径闭包」语义 store↔context 成环，整组拒绝——口径必须先拍板 |
+| C | **校验 = 对 kind 实现模块集 AST 提取 resolve 字面量集，与声明求双向差集**；kind 名必须字符串字面量（动态构造即违规）；动态 kind（如 `f"evolution.{name}"`）列豁免清单 | 红队原案「扫 factory body」对全部真实案例漏报（`tool.goal` 的 body 只有 import+构造）——照落地会造出「检查永远绿」的假门禁 |
+| D | **两阶段装配**：全清单收集 → 计算 skip 集 → 提交；新 kind 注册时**重算 skip 集（域限定 CAPABILITIES 清单）**；`capability.skipped` 定义兜底 sink | 注册发生在 import 副作用期，顺序依赖 + skipped 无 sink = 「不允许静默」落空 |
+| E | **W1 测试破坏面 4 处改断言方向不归档**：`test_agent_loop.py:489,532`、`test_builtin_tools_comprehensive.py:188`、`test_mcp.py:89` | 它们测的语义（allowed_tools=None、readonly 过滤、MCP 默认面）仍有效 |
+
+**检查**：装配后 `registry.list_kinds()` 与「声明可运行的 kind 集合」做一致性断言
+（测试门禁）；运行期缺口 emit 事件。**W1 开工日自举验证**：用 AST 差集提取器对现存
+kind 跑一遍，产出**带 resolve 调用点证据的 requires 全表**（GO 条件 C3）——声明表
+本身错误率若高，自检越严错得越自信；差异项人工裁决后才启用自检。
 
 ### 理念四 · 评估器在循环外，终止层级在进程外
 
 **张力**（GEP-RSI 校准 02 + 扫描 §8.4）：评估器若可被循环改写，
 自进化退化为自欺骗；而「永远不可变」的绝对命题又不可实现（MetaRSI 的教训）。
 
-**规则**（前三条已成立，第四条待建）：
+**规则**（前三条已成立；第四、五条 v1.1 补齐）：
 1. 评估器（`evals/`、golden_tasks.jsonl、scorecard）**不在 Tier 1 白名单内**
    ——白名单是闭合集合，构造期即封死（已验证：未知组件 `TierViolation`）
 2. 评估器修改的唯一路径 = 循环外治理：PR + 人审 + 包外门禁。
    运行时进程没有改 `genome_proposals.py`（白名单本体）的合法入口
 3. **终止层级** = 包外 `scripts/arch/` 门禁 + 测试套件 + 人。进程重启带不走它
-4. **评估完整性指纹（W4）**：golden_tasks.jsonl 与 scorecard.py 的 hash 由包外
-   脚本 pin 住；评测前校验，不符 → escalate 而非放行
+4. **评估完整性指纹（W4 · v1.1 pin 集扩全）**：pin 集 = **evals/ 全部 + kernel/evolution/
+   全部 + rsi_wiring.py**（v1.0 只 pin 2 文件——阈值 / 白名单本体 / 抽样 / 回放全裸露）；
+   **关键常量启动时与包外基线比对**（`DEGRADATION_THRESHOLD` / TIER0/TIER1 /
+   `DEFAULT_SAMPLE_SIZE` / select_tasks——进程内属性补丁可让任何文件级指纹失明）；
+   **评估链跑在密封子进程**：子进程自行重算哈希、拒收父进程传值、eval 期 agent 工具
+   白名单为受限集、解释器钉死；manifest 住 `scripts/arch/`（进程外），更新走
+   PR 人审 + 基线纪元重置记录（防「pin 疲劳」死锁）；**pin 时点 = strategy_research
+   根改写人审之后、通电之前**
+5. **运行期写盘防线（v1.1 · 两轴之间的第三类行为）**：运行期进程用 file/shell 工具改
+   包内文件，既非上行 import 也非合法变异——两轴门禁同时失明。防线 = `ctx.write_roots`
+   禁止覆盖出包目录（**红队修正**：默认写根本不含 src/，真洞是 ctx 运行时整体覆盖默认
+   白名单，不是「给白名单加拒绝」）+ **halt 持久化**（落盘 + 启动读取——进程内布尔对
+   cron 夜间新进程无效，D4 护栏「kill switch 对 RSI 生效」以此为准）
 
 ### 理念五 · 两条反馈回路不合并，goal 是桥
 
@@ -125,6 +151,36 @@ GEP-RSI 七步之外还缺一个**第 0 步：谁拉起一轮 cycle**。
 - 频率预算：每 session 至多 1 cycle（复用 `gateway.capacity` 闸）
 - 可观测：`rsi.cycle_started` / `rsi.cycle_skipped(reason=...)`——
   「没有驱动」也必须以 skipped 事件现形，**不允许静默**
+- **skip 聚合升级（v1.1）**：skip 事件必须有读者——滚动 24h 计数按 reason 分类
+  （`empty_holdout` / `no_new_evidence` / …），单类超阈（建议 3）→ escalate 人工；
+  escalate 本身限频（防振荡刷屏）、须定义送达通道；`capability.skipped` 同样适用此条
+- **D4 阶段 2 的启动前置（v1.1）**：判据强度门（见理念七/簇三）+ 事件写入方鉴别——
+  无此二件，阶段 2 的 goal.settled / run.settled 驱动是可投毒的输入通道
+
+---
+
+### 理念七 · 检查信号必须经由被检方不可控的通道产生（v1.1 新增）
+
+**张力**（红队元发现，三轮评审收敛为设计原则）：框架的全部「检查」的通过信号
+都由被检查方自己的代码路径产出——W1 自检靠自报 requires；证据增量门靠自报事件；
+goal 判据靠自写 evidence（`complete_lite` + `evaluate("true")==True` 实测恒真）；
+基线与候选分靠同一进程内可被降级 / 投毒的 golden eval
+（`golden_eval.py:196-198` 单任务异常记 0.0 进均值 → `rsi_wiring.py:356-359`
+无条件缓存——基线投毒通道闭环实证）。**这不是四个 bug，是缺一条原则。**
+
+**规则**：任何「检查」的信号，产生通道必须是以下三选一：
+1. **kernel 侧计算**——不经事件发起方之手（如 task_signature 由 TicketStore 在
+   admit/settle 时计算注入，而非工具/agent 自填）
+2. **进程外持有**——如 held-out 集由 `scripts/arch/` 包外脚本持有，agent 不可读；
+   评估指纹基线住包外
+3. **不可伪造源**——如 append-only 事件库 + 未来 hash chain
+
+**已知残差（诚实声明）**：W1 的 AST 差集抓运行期**动态** resolve（kind 名非常量）
+不可能——原则七在静态检查层只兑现一半；agent 措辞 objective 聚进高失败率签名的
+「输入构造」攻击不被 kernel 侧签名防住（被配额与 golden eval 双重兜底，风险有界）。
+
+**检查**：每加一个新关口组件，先答「这个信号谁产生、被检方能不能控制该通道」；
+答不出即不得上线（理念二关口组件 × 穿透通道 × 封堵机制清单，随理念二维护）。
 
 ---
 
@@ -198,19 +254,19 @@ src/agentnodes/
 └── templates/           资产（归属另议——扫描议题 6）
 ```
 
-### 2.5 工作项总表（**拍板前不排期**）
+### 2.5 工作项总表（v1.1 · 验收条款以 §3.4 GO 条件为准）
 
 | 项 | 内容 | 来源 | 前置 |
 |---|---|---|---|
-| W1 | 装配期能力自检（`requires` 声明 + 拓扑解析） | 理念三 | ✅ D1 已拍板 |
-| R1 | 恢复 apps/goal + goal.* kind + 测试搬回 + `goal.settled` kind（D4）+ Tier 2 接线（D6），按 §3.1 依赖链自证注册 | bd743d99 + D1/D4/D6 | **W1** |
-| R2 | chat 接线（slash / GoalPanel / SSE / API 路由） | bd743d99 | R1 |
-| R3 | journal/scoreboard 端口接入 + autoresearch preset 化 | bd743d99 | R1 |
-| W2 | P 层成本/延迟维度（**并列维度 + 双闸**：total 五项不动；`cost = 1 − min(1, tokens/budget_max)`；latency 补采集） | 理念五 · 校准 01 · D3 | ✅ 已拍板 |
-| W3 | held-in / held-out 双集 | GEP-RSI 第 5 步 | W2 |
-| W4 | 评估完整性指纹 + 循环驱动链（**范围已定 = 阶段 1：CLI + cron + 证据增量门 + 预算闸**） | 理念四 / 六 | ✅ D4 已拍板 |
+| W1 | 装配期能力自检（理念三拍板包 A–E + 自举验证 requires 全表 + **batch_gate 门禁固化为附带交付**） | 理念三 · C1–C3 | ✅ |
+| R1 | 恢复 apps/goal（**删 goal.expression kind**）+ goal.* kind 自证注册 + **4 阻断点逐一处置** + `goal.settled` kind（schema 预留写入方鉴别字段）+ Tier 2 接线三细则 + **判据强度门** + **GOAL_UPDATED 投影链复活** + 测试按 **collect 通过数**搬回（方向性锚；档 E 随 R2 同生共死、档 D 归档 + skip(reason)、核心域最小集下限） | bd743d99 + D1/D4/D6 + 评审簇一 | **W1** |
+| R2 | chat 接线（slash / GoalPanel / SSE / API 路由）；**前置：修 A5 双头环境变量**（`AN_GOAL_DB_PATH` vs `AGENTNODES_GOAL_DB_PATH`） | bd743d99 + 评审 F10 | R1 |
+| R3 | journal/scoreboard 端口接入 + autoresearch preset 化；**前置：6 个 goal_*.yaml 判据强度审查** | bd743d99 + 评审簇三 | R1 |
+| W2 | P 层成本/延迟维度（**并列维度 + 双闸**：total 五项不动；cost 分子维度分别过闸或统一归一化——**禁混合均值**；`ReplayOutcome(metric, cost)` 向后兼容；**基线硬条款**：单任务异常剔除 + 最小有效样本数 + 滚动中位数 + 报错率健康度；latency 透传自既有 elapsed_s） | 理念五 · 校准 01 · D3 | ✅ 已拍板 |
+| W3 | held-in / held-out 双集；**held-out 进程外持有（agent 不可读）**；分歧 kill-switch 并入本项 | GEP-RSI 第 5 步 | **W4**（原 W2，评审 Q）|
+| W4 | 评估完整性指纹（**pin 全集 + 常量包外比对 + 密封子进程 + 更新协议**）+ 循环驱动链（阶段 1：CLI + cron + 证据增量门**验真** + 预算闸 + skip 聚合升级）+ **F1/F2/F7 三地雷修复**（F1 必须在驱动上线前）+ **回放状态隔离** | 理念四 / 六 · 评审簇二 | ✅ D4 已拍板 |
 | W5 | 假基因清理（周期性 deactivate 从未激活组件） | GEP-RSI 第 7 步 | R1 |
-| W6 | 事件 hash chain（P2，评估指纹先行） | 屏障 | ✅ D5 已拍板 |
+| W6 | 事件 hash chain（P2；折中先行：失败计数落盘 + 事件写入方鉴别提前至 W4） | 屏障 | ✅ D5 已拍板 |
 
 ---
 
@@ -236,18 +292,26 @@ src/agentnodes/
    `apps/capabilities.py` 的角色从「kind 表」升级为「插件清单」。
 2. **批次顺序改变**：W1（自检机制）提前为 R1 的前置——没有自检机制，
    「goal 过自检」无从谈起。新顺序：**W1 → R1 → R2 → R3**。
-3. **R1 验收标准具体化**（插件槽口径下的 goal 依赖链）：
+3. **R1 验收标准具体化**（插件槽口径下的 goal 依赖链；**v1.1 修正**：删 goal.expression 行
+   ——4/4 实证零消费者，`kernel/swarm/runtime.py:793-796` 已改本地副本；恢复它 =
+   注册无人 resolve 的 kind + 双份实现。**判据求值器单一实现 = kernel/swarm**）：
 
    | kind | requires | 说明 |
    |---|---|---|
    | `goal.store` | ∅ | 台账本体（依赖是 import 不是 kind）|
    | `goal.models` | ∅ | 判据 / 证据 schema |
-   | `goal.expression` | ∅ | 纯表达式求值 |
    | `goal.context` | `goal.store` | 上下文渲染读台账 |
    | `tool.goal`（5 工具）| `goal.store, goal.models, goal.context` | 工具组 |
 
-   装配期按拓扑序解析：`store / models / expression → context → tool.goal`；
+   装配期按拓扑序解析：`store / models → context → tool.goal`；
    缺一个 → 整组不注册 + `capability.skipped` 事件。
+   **v1.1 追加三条 R1 验收**（评审簇一）：① **4 个运行期阻断点逐一处置并声明降级语义**
+   （`store.py:1037/1649`、`workflow.py:402/425`——全是函数级惰性 import，
+   「按依赖链自证注册」对它们假通过；`store.py:1649` 无 try，在 goal.context 渲染链上，
+   R1 恢复即暴露）；② 测试搬回口径 = **collect 通过数（方向性锚）**，分档处置成文
+   （档 E 依赖 R2 接口层的随 R2 同生共死；档 D 依赖已删包的归档 + skip(reason)；
+   goal 核心域测试为不可裁剪最小集）；③ **GOAL_UPDATED 死投影链复活验证**
+   （~100 行，R2 的 GoalPanel/SSE 依赖它）。
 4. **现存 5 个坏工具组的命运进入 D2 议程**：W1 落地时，
    `tool.factor / tool.data / tool.backtest / tool.backtest_analysis / tool.data_clean`
    因依赖的 `db.* / datasource.* / config.runner / data.*` 已删而**全部过不了自检**。
@@ -268,16 +332,24 @@ src/agentnodes/
 | 阶段 2（R1 后）| A · run.settled | run 收尾事件，异步入队 | **去重门**：冷却窗口 ≥ 数小时，或证据增量 ≥ N 条 |
 
 全程护栏（理念六硬要求，非选项）：每 session ≤ 1 cycle + 每日 ≤ N cycle（N 待定，
-建议 3–5）；cron 隔离池（capacity 车道，现默认 2 槽）；`halt.py` 全局 kill switch
-对 RSI 生效；成本核算基准 = **一轮 ≈ 20 次 golden 评测**（候选 10 + 基线 10，
-`DEFAULT_SAMPLE_SIZE=10`）。
+建议 3–5）；cron 隔离池（capacity 车道，现默认 2 槽）；**halt 持久化**（落盘 + 启动
+读取——进程内布尔对 cron 新进程无效，v1.1 修正）；成本核算基准 = **一轮 ≈ 20 次
+golden 评测**（候选 10 + 基线 10，`DEFAULT_SAMPLE_SIZE=10`）。
 
 **连锁**：
-- **W4 验收标准 = 阶段 1 范围**：CLI + cron + 证据增量门 + 预算闸 +
-  `rsi.cycle_started / cycle_skipped(reason)` 事件。阶段 2 的两个触发点
-  移入 R1 之后的跟进项。
+- **W4 验收标准 = 阶段 1 范围 + 评审簇二**：CLI + cron + 证据增量门**验真** +
+  预算闸 + `rsi.cycle_started / cycle_skipped(reason)` 事件 + **task_signature
+  进 report payload（kernel 侧 TicketStore 计算）+ 确定性降维（role+toolset，
+  不用 LLM 意图分类）+ 配额去重 + A3 路径修复（`parents[1]`）+ 指纹 pin 全集 +
+  密封子进程 + skip 聚合升级 + F1/F2/F7 三地雷修复 + 回放状态隔离（N/S 合并设计，
+  一切子进程以显式 genome 版本 id 重建状态）**。阶段 1 跑通的判据 =
+  **端到端反测试**：真实 emit 链 → holdout 非空 → 真实 golden 数值 ≠ 代理分。
+- **阶段 2 启动前置（v1.1）**：判据强度门（R1 交付）+ 事件写入方鉴别（W4 验收
+  组成部分，非阶段 2 才做——阶段 1 的 holdout 采样源同样吃事件流）。
 - **R1 新增一条小交付**：补 `goal.settled` 事件 kind（阶段 2 驱动 D 的前置；
   现在只有 `goal_updated`，且其 emit 方已随批次 2 删除）。
+- **批次 2 工作量预警（v1.1）**：W4 范围较 v1.0 翻倍以上——周期按两倍预留，
+  或把回放/评估子进程化拆到批次 3（避免「批次 2 卡住 = 框架失败」的误判）。
 
 **D5 · 已拍板（2026-11-05）：P2。** hash chain 是「必要非充分」（GEP-RSI v1.1 原话），
 先落评估完整性指纹（W4）——同样的审计目标，收益/成本比高一个量级。
@@ -287,6 +359,11 @@ hash chain 待指纹机制跑稳后作为 W6 排入 P2。
 经 `set_tier2(key, value, by=...)` 写入版本链——补上全仓唯一缺失的留痕闭环
 （`set_tier2` 至今零调用，扫描 §8）。R1 验收随之 +1：至少一条 Tier 2 写入路径连通
 （事件与版本链各留一条记录）。
+**v1.1 三细则（评审收敛）**：① 接线写死 **apps/goal journal 写入路径内**（不放装配根，
+避免与 W4 双头编辑 rsi_wiring.py）；② 失败 emit `tier2.write_failed`，**不许静默**；
+③ **tier2 写入不得推 `activated_at`**——防污染锚语义归 Tier 1 变异（推荐 holdout
+锚改锚「最后一次 Tier 1 activate」），否则高频 tier2 写入会把 holdout 防污染窗口
+归零（D6 与证据供给隐藏互毁，`genome_version.py:280` 实证）。
 
 **R1 范围累计变更**：+ `goal.settled` 事件 kind（D4）+ Tier 2 接线（D6）。
 **D3 · 已拍板（2026-11-05）：B —— 并列维度（向量）+ 双闸。**
@@ -294,17 +371,32 @@ hash chain 待指纹机制跑稳后作为 W6 排入 P2。
 - 成本闸：平均 token 成本退化 > 30% → **硬拒**（无论能力涨多少）；
   能力升但成本暴涨超上限 → escalate 人工审（复用「暴涨 escalate」先例）
 - 归一化：`cost = 1 − min(1, tokens / budget_max)`；无 `budget_max` 的任务 cost 记 None，只参与能力闸
-- 采集前提：`RunRecord.duration_ms` 打点（先 tokens 后 latency）
+- 采集前提：latency **透传自既有 elapsed_s**（v1.1 更正：kernel 侧已广泛采集，
+  原「全库零采集」陈述有误；缺的只是 evals RunRecord/TaskScore 透传；
+  tokens→cost 管线改动面 5 源文件不变）
 - 修正记录：v0.1 原推荐「进总分」**作废**——权重=汇率是自我评分交换面，与理念二冲突
+- **v1.1 修正（评审 P 条 + C10）**：budget_max 实测仅覆盖 7/70 任务、seed=0 抽样
+  仅 2 条——原 None fallback「只参与能力闸」= **90% 语料成本免检**；
+  且绝对 tokens 与 cost∈[0,1] 混入同一均值会让 budget 任务退化信号被稀释到
+  噪声以下。修正为：**无 budget_max 任务记 tokens 绝对量，分子维度分别过闸
+  或统一按任务基线归一——禁止混合均值**；None/有效样本数口径写死
+  （不足最小样本 → 成本闸降级 escalate，不装 0 分）
+- **v1.1 基线硬条款（分歧 3 已由代码链定论关闭）**：`golden_eval.py:196-198`
+  单任务异常记 0.0 进均值 + `rsi_wiring.py:356-359` 无条件缓存 = 基线投毒通道
+  闭环实证。修复进 W2：单任务异常剔除 + 最小有效样本数（不足整轮 skipped）+
+  基线滚动中位数 + 报错率健康度
 
-**剩余待拍**：无。六项全部落定，本文升 v1.0，执行序见 §3.3。
+**剩余待拍**：无。六项全部落定；v1.1 应用三轮评审修正案，GO 条件见 §3.4。
 
 ### 3.2 D3 方案分析（已拍板：方案 B）
 
-**事实底座**（全部实测）：
+**事实底座**（全部实测；v1.1 更正 latency 表述）：
 - 现有总分：`total = 0.40·tool_recall + 0.20·无违规 + 0.15·budget_ok + 0.15·content_ok + 0.10·completed`（`evals/scorecard.py:112`）
 - `tokens_used` 已采集（`RunRecord`），但只做 0/1 门槛（`budget_max_tokens`）
-- **latency 全库零采集**（grep latency/duration/elapsed → 0 处）——任何方案都要先补采集
+- latency：kernel 侧已广泛采集 elapsed_s/elapsed_ms（复现：`git grep -c elapsed`），
+  **缺的只是 evals RunRecord/TaskScore 透传**（v1.0「全库零采集」陈述有误，已更正）
+- budget_max 覆盖实测 **7/70**、seed=0 抽样 10 条中仅 2 条带预算
+  （`golden_tasks.jsonl`，评审两组独立探针同数）
 - ValidationGate 已有「暴涨同样 escalate」的先例（`validation_gate.py:193-205`：
   退化 < −20% 判 reward-hacking），双闸有语义先例可循
 
@@ -355,26 +447,52 @@ hash chain 待指纹机制跑稳后作为 W6 排入 P2。
 「加权和」会让交换率内生于优化目标，与理念二「评分不经自我」冲突；
 校准 01 的「并列」一词指的就是向量。
 
-### 3.3 v1.0 执行序
+### 3.3 v1.1 执行序
 
 四条泳道收敛为两列：泳道内串行、泳道间并行。每批次完成后全量验证
-（collect-only 基线 6,158 + 层门禁全绿 + graphify 符号级复扫）再进下一批。
+（**batch_gate：collect 方向性锚 `collected ≥ 上批值` 且 `errors==5`（playwright 项）
+不变 + 层门禁全绿 + graphify 符号级复扫**——batch_gate 固化是 W1 附带交付）。
 
 | 批次 | 泳道 A · 能力恢复 | 泳道 B · P 层与屏障 |
 |---|---|---|
-| 1 | **W1** 能力自检（requires 声明 + 拓扑解析；幽灵工具清零，工具表 44 → 18） | — |
-| 2 | **R1** goal 恢复 + goal.settled kind + set_tier2 接线 + 42 测试搬回 | **W4 阶段 1** CLI + cron + 证据增量门 + 预算闸 + 评估指纹（不依赖 R1） |
-| 3 | **R2** chat 接线（slash / GoalPanel / SSE / API） | **W2** cost/duration 并列维度 + 双闸 |
-| 4 | **R3** journal/scoreboard 端口接入 + autoresearch preset 化 | **W3** 双集双门 ∥ **W5** 假基因清理 |
+| 1 | **W1** 能力自检（理念三拍板包 A–E；幽灵工具清零 44→18；自举 requires 全表；**batch_gate 固化**） | — |
+| 2（周期按两倍预留） | **R1** goal 恢复（删 goal.expression）+ 4 阻断点处置 + goal.settled kind + set_tier2 三细则 + 判据强度门 + GOAL_UPDATED 复活 + 测试分档搬回 | **W4 阶段 1** CLI + cron + 证据增量门验真 + 预算闸 + 指纹 pin 全集 + 密封子进程 + skip 聚合 + **F1/F2/F7 地雷修复** + 回放状态隔离 |
+| 3 | **R2** chat 接线（前置：A5 双头环境变量） | **W2** cost 并列维度 + 双闸 + 基线硬条款 ∥ **W3** 双集（**held-out 进程外持有**）+ kill-switch |
+| 4 | **R3** 端口接入 + preset 化（前置：6 preset 判据强度审查） | **W5** 假基因清理 |
 | P2 | — | **W6** 事件 hash chain |
 
-另议（W1 验证通过后）：5 个过不了自检的工具组模块文件（约 3,300 行）去留——删或归档。
+另议（W1 验证通过后）：5 个过不了自检的工具组模块文件（约 3,300 行）去留——
+**删 + 决策记录留 commit hash 考古锚**（批次 3/4/5 直删无档案的教训，评审合并案）。
+
+### 3.4 v1.1 GO 条件（C1–C14，三轮评审 5/5 收敛；全文见 framework-review-20261106.md §7.4）
+
+| 组 | 条件 | 阻塞对象 |
+|---|---|---|
+| C1 | 簇一应用五缺口：档 D 处置成文 / 2 个路径漂移测试文件 / kind 名字面量规范 / factory 签名不变明文 / 成本基线提供方 + batch_gate 固化 | 批次 1 |
+| C2 | C 条实施写死：AST 提取（非 import 反射）+ 动态 kind 豁免清单 + 「实现模块集」定义 + 重算触发域限定 | 批次 1 |
+| C3 | **C 提取器自举验证**：产出带 resolve 调用点证据的 requires 全表，差异人工裁决后才启用自检 | 批次 1 |
+| C4 | 报告文本修正三条（已随本版应用） | — |
+| C5 | W6 折中落条款（失败计数落盘 + 事件写入方鉴别）+ halt 持久化 | 批次 2 |
+| C6 | pin 时点（根改写人审后、通电前）+ 指纹更新协议（PR 人审 + 基线纪元重置）+ manifest 住 scripts/arch/ | 批次 2 |
+| C7 | tier2 value 格式约束（仅指针 + hash、key 命名空间受控）；判据求值器单一实现；goal.settled schema 预留写入方鉴别字段 | 批次 2 |
+| C8 | collect 锚加下限（核心域最小集）+ A5 双头环境变量挂 R2 前置 | 批次 2 |
+| C9 | **A3 反窥探三件套**（held-out 进程外持有 / must_contain 评测期解密 / seed 进程外注入） | 批次 2 泳道 B / 批次 3 |
+| C10 | cost 口径禁混合均值 + 基线硬条款（分歧 3 关闭） | 批次 3 |
+| C11 | 写盘防线 = ctx.write_roots 封口断言；N+S 进程隔离合并设计（子进程自验指纹 + eval 工具白名单 + 解释器钉死） | 批次 2 泳道 B |
+| C12 | skip 告警按 reason 分类 + 限频 + 送达通道；capability.skipped 聚合读者 | 批次 2 泳道 B |
+| C13 | **F1/F2/F7 地雷进 W4 验收**（F1 必须在驱动上线前修复） | 批次 2 泳道 B |
+| C14 | R3 前 preset 判据强度审查；批次 2 周期两倍预留或子进程化拆批次 3 | 批次 3 |
 
 ---
 
 ## §4 本文档不决定的事
 
-- `templates/` 资产层的归属（扫描议题 6）——等 D1 定了再议
+- `templates/` 资产层的归属（扫描议题 6）——**v1.1 注**：裁决时必须带上
+  `tier0_snapshot.py:15` 的 methodology 快照消费方（资产归属直接牵动 Tier 0 冻结值采集）
 - 执行面三套并存（AgentLoop 22.5k / GraphEngine+workflow 4.8k / SwarmRuntime 1.5k）
   的收敛——独立议题，不属理念层
 - `kernel/agent` 是否拆分——结构/性能话题，不属理念层
+- **校准 03 的「行为轨迹特征」表型维度**（轨迹已采集未进任何闸）——范围裁剪的显式
+  声明，非遗忘；GEP-RSI 剩余远期缺口：失败签名 (c,q,m) 聚类、分布外/跨模型维度、
+  双轨审计器
+- 语义轴「构件→层」落位映射的机器可读静态断言——backlog（评审 P2-8）

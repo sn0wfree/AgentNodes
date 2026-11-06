@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>框架与理念 · v1.0</title>
+<title>框架与理念 · v1.1</title>
 <style>
   * { margin: 0; padding: 0; box-sizing: border-box; }
 
@@ -317,7 +317,7 @@
   <div class="header">
     <h1 class="page-title">框架与理念</h1>
     <p class="page-subtitle">AgentNodes · 自我进化研究 Agent 平台 · 双轴架构</p>
-    <span class="version-badge">v1.0 定稿 · 六项决策全部拍板 · 自 W1 起开代码</span>
+    <span class="version-badge">v1.1 · 三轮评审修正已应用（GO 条件 C1–C14）· W1 具备开工条件</span>
   </div>
 
   <!-- ==================== 00 一句话 ==================== -->
@@ -508,8 +508,16 @@
       <div class="idea-num">理念 06</div>
       <div class="idea-title">没有驱动的循环不存在</div>
       <div class="idea-sec"><span class="k k-tension">张力</span><span class="v">五个零件各有测试，<b>build_rsi_loop() 生产零调用</b>——七步之外缺第 0 步：谁拉起一轮</span></div>
-      <div class="idea-sec"><span class="k k-rule">规则</span><span class="v">主驱动 run.settled 收尾钩子 + cron 兜底 + 每 session 至多 1 cycle（复用容量闸）</span></div>
-      <div class="idea-sec"><span class="k k-check">检查</span><span class="v">W4：rsi.cycle_started / cycle_skipped(reason) —— 没有驱动也必须<b>以事件现形</b></span></div>
+      <div class="idea-sec"><span class="k k-rule">规则</span><span class="v">主驱动 run.settled 收尾钩子 + cron 兜底 + 每 session 至多 1 cycle（复用容量闸）；阶段 2 前置 = 判据强度门 + 事件写入方鉴别</span></div>
+      <div class="idea-sec"><span class="k k-check">检查</span><span class="v">W4：rsi.cycle_started / cycle_skipped(reason) —— 没有驱动也必须<b>以事件现形</b>；skip 按 reason 分类聚合，超阈升级人工（v1.1）</span></div>
+    </div>
+
+    <div class="idea i1" style="border-color:rgba(52,211,153,0.4)">
+      <div class="idea-num">理念 07 · v1.1 新增</div>
+      <div class="idea-title">检查信号必须经由被检方不可控的通道产生</div>
+      <div class="idea-sec"><span class="k k-tension">张力</span><span class="v">全部「检查」的通过信号都由被检查方自己产出——自报 requires / 自报事件 / 自写 evidence（实测 <b>evaluate("true")==True</b>）/ 同进程可投毒的 golden eval（0.0 进均值 + 无条件缓存，代码链闭环实证）——不是四个 bug，是缺一条原则</span></div>
+      <div class="idea-sec"><span class="k k-rule">规则</span><span class="v">检查信号通道三选一：<b>kernel 侧计算</b>（不经事件发起方之手）/ <b>进程外持有</b>（held-out 由包外脚本持有）/ <b>不可伪造源</b>（append-only + 未来 hash chain）</span></div>
+      <div class="idea-sec"><span class="k k-check">检查</span><span class="v">每加一个新关口组件先答「信号谁产生、被检方能否控制通道」；已知残差诚实声明（动态 kind 名 / 输入构造攻击不在静态检查范围）</span></div>
     </div>
 
   </div>
