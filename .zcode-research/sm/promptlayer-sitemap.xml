@@ -1,0 +1,1473 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9" xmlns:news="http://www.google.com/schemas/sitemap-news/0.9" xmlns:xhtml="http://www.w3.org/1999/xhtml" xmlns:image="http://www.google.com/schemas/sitemap-image/1.1" xmlns:video="http://www.google.com/schemas/sitemap-video/1.1">
+    
+  <url>
+    <loc>https://docs.promptlayer.com/AGENTS</loc>
+    <lastmod>2026-08-12T20:09:48.328Z</lastmod>
+  </url>
+
+  <url>
+    <loc>https://docs.promptlayer.com/agents/overview</loc>
+    <lastmod>2026-07-10T21:17:19.825Z</lastmod>
+  </url>
+
+  <url>
+    <loc>https://docs.promptlayer.com/changelog</loc>
+    <lastmod>2026-11-05T13:08:13.044Z</lastmod>
+  </url>
+
+  <url>
+    <loc>https://docs.promptlayer.com/enterprise-deployments/aws</loc>
+    <lastmod>2026-05-27T20:09:45.765Z</lastmod>
+  </url>
+
+  <url>
+    <loc>https://docs.promptlayer.com/features/concentrate-integration</loc>
+    <lastmod>2026-08-12T20:09:48.333Z</lastmod>
+  </url>
+
+  <url>
+    <loc>https://docs.promptlayer.com/features/custom-providers</loc>
+    <lastmod>2026-08-11T18:56:02.556Z</lastmod>
+  </url>
+
+  <url>
+    <loc>https://docs.promptlayer.com/features/evaluations/building-pipelines</loc>
+    <lastmod>2026-08-12T20:09:48.325Z</lastmod>
+  </url>
+
+  <url>
+    <loc>https://docs.promptlayer.com/features/evaluations/column-types</loc>
+    <lastmod>2026-06-11T20:13:00.166Z</lastmod>
+  </url>
+
+  <url>
+    <loc>https://docs.promptlayer.com/features/evaluations/continuous-integration</loc>
+    <lastmod>2026-08-12T20:09:48.324Z</lastmod>
+  </url>
+
+  <url>
+    <loc>https://docs.promptlayer.com/features/evaluations/datasets-create-from-file</loc>
+    <lastmod>2026-08-12T20:09:48.323Z</lastmod>
+  </url>
+
+  <url>
+    <loc>https://docs.promptlayer.com/features/evaluations/datasets-create-from-history</loc>
+    <lastmod>2026-08-12T20:09:48.323Z</lastmod>
+  </url>
+
+  <url>
+    <loc>https://docs.promptlayer.com/features/evaluations/datasets-overview</loc>
+    <lastmod>2026-06-11T20:13:02.529Z</lastmod>
+  </url>
+
+  <url>
+    <loc>https://docs.promptlayer.com/features/evaluations/eval-types</loc>
+    <lastmod>2026-08-12T20:09:48.322Z</lastmod>
+  </url>
+
+  <url>
+    <loc>https://docs.promptlayer.com/features/evaluations/examples</loc>
+    <lastmod>2026-08-12T20:09:48.321Z</lastmod>
+  </url>
+
+  <url>
+    <loc>https://docs.promptlayer.com/features/evaluations/overview</loc>
+    <lastmod>2026-08-12T20:09:48.320Z</lastmod>
+  </url>
+
+  <url>
+    <loc>https://docs.promptlayer.com/features/evaluations/programmatic</loc>
+    <lastmod>2026-08-12T20:09:48.320Z</lastmod>
+  </url>
+
+  <url>
+    <loc>https://docs.promptlayer.com/features/evaluations/score-card</loc>
+    <lastmod>2026-08-12T20:09:48.319Z</lastmod>
+  </url>
+
+  <url>
+    <loc>https://docs.promptlayer.com/features/exa-integration</loc>
+    <lastmod>2026-05-15T21:36:10.755Z</lastmod>
+  </url>
+
+  <url>
+    <loc>https://docs.promptlayer.com/features/faq</loc>
+    <lastmod>2026-08-12T20:09:48.318Z</lastmod>
+  </url>
+
+  <url>
+    <loc>https://docs.promptlayer.com/features/image-generation</loc>
+    <lastmod>2026-08-12T20:09:48.318Z</lastmod>
+  </url>
+
+  <url>
+    <loc>https://docs.promptlayer.com/features/mcp-servers/overview</loc>
+    <lastmod>2026-08-12T20:09:48.317Z</lastmod>
+  </url>
+
+  <url>
+    <loc>https://docs.promptlayer.com/features/observability/overview</loc>
+    <lastmod>2026-08-06T22:30:45.180Z</lastmod>
+  </url>
+
+  <url>
+    <loc>https://docs.promptlayer.com/features/observability/request-logs</loc>
+    <lastmod>2026-08-06T22:30:45.168Z</lastmod>
+  </url>
+
+  <url>
+    <loc>https://docs.promptlayer.com/features/observability/request-logs/custom-logging</loc>
+    <lastmod>2026-08-12T20:09:48.369Z</lastmod>
+  </url>
+
+  <url>
+    <loc>https://docs.promptlayer.com/features/observability/request-logs/metadata</loc>
+    <lastmod>2026-08-12T20:09:48.345Z</lastmod>
+  </url>
+
+  <url>
+    <loc>https://docs.promptlayer.com/features/observability/request-logs/request-ids</loc>
+    <lastmod>2026-08-12T20:09:48.316Z</lastmod>
+  </url>
+
+  <url>
+    <loc>https://docs.promptlayer.com/features/observability/request-logs/scores</loc>
+    <lastmod>2026-08-12T20:09:48.313Z</lastmod>
+  </url>
+
+  <url>
+    <loc>https://docs.promptlayer.com/features/observability/request-logs/signals</loc>
+    <lastmod>2026-08-06T22:30:45.185Z</lastmod>
+  </url>
+
+  <url>
+    <loc>https://docs.promptlayer.com/features/observability/request-logs/structured-outputs</loc>
+    <lastmod>2026-08-12T20:09:48.308Z</lastmod>
+  </url>
+
+  <url>
+    <loc>https://docs.promptlayer.com/features/observability/request-logs/tags</loc>
+    <lastmod>2026-08-12T20:09:48.307Z</lastmod>
+  </url>
+
+  <url>
+    <loc>https://docs.promptlayer.com/features/observability/request-logs/tracking-templates</loc>
+    <lastmod>2026-08-12T20:09:48.315Z</lastmod>
+  </url>
+
+  <url>
+    <loc>https://docs.promptlayer.com/features/observability/traces</loc>
+    <lastmod>2026-08-04T16:30:11.689Z</lastmod>
+  </url>
+
+  <url>
+    <loc>https://docs.promptlayer.com/features/observability/traces/auto-instrumentation/anthropic</loc>
+    <lastmod>2026-08-04T21:07:37.623Z</lastmod>
+  </url>
+
+  <url>
+    <loc>https://docs.promptlayer.com/features/observability/traces/auto-instrumentation/bedrock</loc>
+    <lastmod>2026-08-04T21:07:37.627Z</lastmod>
+  </url>
+
+  <url>
+    <loc>https://docs.promptlayer.com/features/observability/traces/auto-instrumentation/google</loc>
+    <lastmod>2026-08-04T21:07:37.628Z</lastmod>
+  </url>
+
+  <url>
+    <loc>https://docs.promptlayer.com/features/observability/traces/auto-instrumentation/openai</loc>
+    <lastmod>2026-08-04T21:07:37.622Z</lastmod>
+  </url>
+
+  <url>
+    <loc>https://docs.promptlayer.com/features/observability/traces/auto-instrumentation/overview</loc>
+    <lastmod>2026-08-07T16:33:22.861Z</lastmod>
+  </url>
+
+  <url>
+    <loc>https://docs.promptlayer.com/features/observability/traces/integrations</loc>
+    <lastmod>2026-08-04T16:30:11.683Z</lastmod>
+  </url>
+
+  <url>
+    <loc>https://docs.promptlayer.com/features/observability/traces/manual-tracing</loc>
+    <lastmod>2026-08-04T21:07:37.625Z</lastmod>
+  </url>
+
+  <url>
+    <loc>https://docs.promptlayer.com/features/observability/traces/opentelemetry</loc>
+    <lastmod>2026-08-04T16:30:11.680Z</lastmod>
+  </url>
+
+  <url>
+    <loc>https://docs.promptlayer.com/features/openrouter-integration</loc>
+    <lastmod>2026-08-11T18:56:02.555Z</lastmod>
+  </url>
+
+  <url>
+    <loc>https://docs.promptlayer.com/features/prompt-history/sharing-prompts</loc>
+    <lastmod>2026-08-12T20:09:48.305Z</lastmod>
+  </url>
+
+  <url>
+    <loc>https://docs.promptlayer.com/features/prompt-registry/dynamic-release-labels</loc>
+    <lastmod>2026-08-12T20:09:48.306Z</lastmod>
+  </url>
+
+  <url>
+    <loc>https://docs.promptlayer.com/features/prompt-registry/input-variable-sets</loc>
+    <lastmod>2026-08-12T20:09:48.327Z</lastmod>
+  </url>
+
+  <url>
+    <loc>https://docs.promptlayer.com/features/prompt-registry/overview</loc>
+    <lastmod>2026-07-07T18:01:01.827Z</lastmod>
+  </url>
+
+  <url>
+    <loc>https://docs.promptlayer.com/features/prompt-registry/placeholder-messages</loc>
+    <lastmod>2026-08-12T20:09:48.309Z</lastmod>
+  </url>
+
+  <url>
+    <loc>https://docs.promptlayer.com/features/prompt-registry/prompt-editor-versioning</loc>
+    <lastmod>2026-05-14T21:24:07.590Z</lastmod>
+  </url>
+
+  <url>
+    <loc>https://docs.promptlayer.com/features/prompt-registry/release-labels</loc>
+    <lastmod>2026-08-12T20:09:48.307Z</lastmod>
+  </url>
+
+  <url>
+    <loc>https://docs.promptlayer.com/features/prompt-registry/snippet-dependency-ordering</loc>
+    <lastmod>2026-08-12T20:09:48.314Z</lastmod>
+  </url>
+
+  <url>
+    <loc>https://docs.promptlayer.com/features/prompt-registry/snippets</loc>
+    <lastmod>2026-08-12T20:09:48.205Z</lastmod>
+  </url>
+
+  <url>
+    <loc>https://docs.promptlayer.com/features/prompt-registry/structured-outputs</loc>
+    <lastmod>2026-08-12T20:09:48.204Z</lastmod>
+  </url>
+
+  <url>
+    <loc>https://docs.promptlayer.com/features/prompt-registry/template-variables</loc>
+    <lastmod>2026-08-12T20:09:48.204Z</lastmod>
+  </url>
+
+  <url>
+    <loc>https://docs.promptlayer.com/features/prompt-registry/tool-calling</loc>
+    <lastmod>2026-08-12T20:09:48.203Z</lastmod>
+  </url>
+
+  <url>
+    <loc>https://docs.promptlayer.com/features/prompt-registry/webhook-events</loc>
+    <lastmod>2026-08-12T20:09:48.206Z</lastmod>
+  </url>
+
+  <url>
+    <loc>https://docs.promptlayer.com/features/prompt-registry/webhooks</loc>
+    <lastmod>2026-04-30T14:00:49.510Z</lastmod>
+  </url>
+
+  <url>
+    <loc>https://docs.promptlayer.com/features/prompt-registry/zero-downtime-releases</loc>
+    <lastmod>2026-08-12T20:09:48.202Z</lastmod>
+  </url>
+
+  <url>
+    <loc>https://docs.promptlayer.com/features/search-and-analytics/analytics</loc>
+    <lastmod>2026-08-04T16:30:11.245Z</lastmod>
+  </url>
+
+  <url>
+    <loc>https://docs.promptlayer.com/features/search-and-analytics/search</loc>
+    <lastmod>2026-08-06T22:30:45.054Z</lastmod>
+  </url>
+
+  <url>
+    <loc>https://docs.promptlayer.com/features/search-and-analytics/search-data-model</loc>
+    <lastmod>2026-08-12T20:09:48.202Z</lastmod>
+  </url>
+
+  <url>
+    <loc>https://docs.promptlayer.com/features/skill-collections/editing-with-wrangler</loc>
+    <lastmod>2026-05-14T21:42:39.137Z</lastmod>
+  </url>
+
+  <url>
+    <loc>https://docs.promptlayer.com/features/skill-collections/overview</loc>
+    <lastmod>2026-04-27T20:51:53.935Z</lastmod>
+  </url>
+
+  <url>
+    <loc>https://docs.promptlayer.com/features/skill-collections/pulling-skills</loc>
+    <lastmod>2026-04-20T17:52:27.953Z</lastmod>
+  </url>
+
+  <url>
+    <loc>https://docs.promptlayer.com/features/skill-collections/sharing-and-remixing</loc>
+    <lastmod>2026-04-20T17:52:27.952Z</lastmod>
+  </url>
+
+  <url>
+    <loc>https://docs.promptlayer.com/features/skill-collections/tuning-skills</loc>
+    <lastmod>2026-04-20T17:52:27.952Z</lastmod>
+  </url>
+
+  <url>
+    <loc>https://docs.promptlayer.com/features/supported-providers</loc>
+    <lastmod>2026-08-11T18:56:01.962Z</lastmod>
+  </url>
+
+  <url>
+    <loc>https://docs.promptlayer.com/features/tables/best-practices</loc>
+    <lastmod>2026-06-11T20:13:05.277Z</lastmod>
+  </url>
+
+  <url>
+    <loc>https://docs.promptlayer.com/features/tables/cells-and-runs</loc>
+    <lastmod>2026-06-11T20:13:05.270Z</lastmod>
+  </url>
+
+  <url>
+    <loc>https://docs.promptlayer.com/features/tables/column-types</loc>
+    <lastmod>2026-07-23T16:17:37.209Z</lastmod>
+  </url>
+
+  <url>
+    <loc>https://docs.promptlayer.com/features/tables/columns</loc>
+    <lastmod>2026-06-11T20:13:05.276Z</lastmod>
+  </url>
+
+  <url>
+    <loc>https://docs.promptlayer.com/features/tables/history-and-analytics</loc>
+    <lastmod>2026-06-11T20:13:05.273Z</lastmod>
+  </url>
+
+  <url>
+    <loc>https://docs.promptlayer.com/features/tables/migrate-from-evaluations-and-datasets</loc>
+    <lastmod>2026-06-11T20:13:05.273Z</lastmod>
+  </url>
+
+  <url>
+    <loc>https://docs.promptlayer.com/features/tables/overview</loc>
+    <lastmod>2026-07-16T16:10:27.432Z</lastmod>
+  </url>
+
+  <url>
+    <loc>https://docs.promptlayer.com/features/tables/scorecards</loc>
+    <lastmod>2026-11-04T22:24:58.948Z</lastmod>
+  </url>
+
+  <url>
+    <loc>https://docs.promptlayer.com/features/tables/scoring</loc>
+    <lastmod>2026-11-04T22:24:58.946Z</lastmod>
+  </url>
+
+  <url>
+    <loc>https://docs.promptlayer.com/features/tables/sheets</loc>
+    <lastmod>2026-07-14T14:16:06.465Z</lastmod>
+  </url>
+
+  <url>
+    <loc>https://docs.promptlayer.com/features/tool-registry/auto-execution</loc>
+    <lastmod>2026-08-12T20:09:48.246Z</lastmod>
+  </url>
+
+  <url>
+    <loc>https://docs.promptlayer.com/features/tool-registry/mock-tool-responses</loc>
+    <lastmod>2026-08-12T20:09:48.247Z</lastmod>
+  </url>
+
+  <url>
+    <loc>https://docs.promptlayer.com/features/tool-registry/overview</loc>
+    <lastmod>2026-08-12T20:09:48.195Z</lastmod>
+  </url>
+
+  <url>
+    <loc>https://docs.promptlayer.com/features/tool-registry/save-inline-to-registry</loc>
+    <lastmod>2026-08-12T20:09:48.187Z</lastmod>
+  </url>
+
+  <url>
+    <loc>https://docs.promptlayer.com/features/tool-registry/using-in-prompts</loc>
+    <lastmod>2026-08-12T20:09:48.197Z</lastmod>
+  </url>
+
+  <url>
+    <loc>https://docs.promptlayer.com/features/xai-integration</loc>
+    <lastmod>2026-05-15T21:36:10.885Z</lastmod>
+  </url>
+
+  <url>
+    <loc>https://docs.promptlayer.com/onboarding-guides/backtesting-prompt-changes</loc>
+    <lastmod>2026-06-11T20:13:05.886Z</lastmod>
+  </url>
+
+  <url>
+    <loc>https://docs.promptlayer.com/onboarding-guides/batch-runs</loc>
+    <lastmod>2026-06-11T20:13:05.883Z</lastmod>
+  </url>
+
+  <url>
+    <loc>https://docs.promptlayer.com/onboarding-guides/compare-models</loc>
+    <lastmod>2026-06-11T20:13:05.889Z</lastmod>
+  </url>
+
+  <url>
+    <loc>https://docs.promptlayer.com/onboarding-guides/deployment-strategies</loc>
+    <lastmod>2026-07-10T21:17:24.699Z</lastmod>
+  </url>
+
+  <url>
+    <loc>https://docs.promptlayer.com/overview</loc>
+    <lastmod>2026-08-04T16:30:11.242Z</lastmod>
+  </url>
+
+  <url>
+    <loc>https://docs.promptlayer.com/quickstart</loc>
+    <lastmod>2026-05-15T19:38:17.561Z</lastmod>
+  </url>
+
+  <url>
+    <loc>https://docs.promptlayer.com/reference/add-report-columns</loc>
+    <lastmod>2026-08-12T20:09:48.191Z</lastmod>
+  </url>
+
+  <url>
+    <loc>https://docs.promptlayer.com/reference/add-request-log-to-dataset</loc>
+    <lastmod>2026-08-12T20:09:48.196Z</lastmod>
+  </url>
+
+  <url>
+    <loc>https://docs.promptlayer.com/reference/add-table-sheet-rows</loc>
+    <lastmod>2026-06-10T03:22:55.251Z</lastmod>
+  </url>
+
+  <url>
+    <loc>https://docs.promptlayer.com/reference/add-trace-to-dataset</loc>
+    <lastmod>2026-08-12T20:09:48.185Z</lastmod>
+  </url>
+
+  <url>
+    <loc>https://docs.promptlayer.com/reference/cancel-table-sheet-operation</loc>
+    <lastmod>2026-06-10T03:22:55.259Z</lastmod>
+  </url>
+
+  <url>
+    <loc>https://docs.promptlayer.com/reference/close-trace</loc>
+    <lastmod>2026-08-04T16:30:11.244Z</lastmod>
+  </url>
+
+  <url>
+    <loc>https://docs.promptlayer.com/reference/configure-table-sheet-score</loc>
+    <lastmod>2026-06-10T03:22:55.251Z</lastmod>
+  </url>
+
+  <url>
+    <loc>https://docs.promptlayer.com/reference/create-dataset-group</loc>
+    <lastmod>2026-08-12T20:09:48.075Z</lastmod>
+  </url>
+
+  <url>
+    <loc>https://docs.promptlayer.com/reference/create-dataset-version-from-file</loc>
+    <lastmod>2026-08-12T20:09:48.074Z</lastmod>
+  </url>
+
+  <url>
+    <loc>https://docs.promptlayer.com/reference/create-dataset-version-from-filter-params</loc>
+    <lastmod>2026-08-12T20:09:48.082Z</lastmod>
+  </url>
+
+  <url>
+    <loc>https://docs.promptlayer.com/reference/create-draft-dataset-version</loc>
+    <lastmod>2026-08-12T20:09:48.081Z</lastmod>
+  </url>
+
+  <url>
+    <loc>https://docs.promptlayer.com/reference/create-folder</loc>
+    <lastmod>2026-08-12T20:09:48.080Z</lastmod>
+  </url>
+
+  <url>
+    <loc>https://docs.promptlayer.com/reference/create-reports</loc>
+    <lastmod>2026-08-12T20:09:48.070Z</lastmod>
+  </url>
+
+  <url>
+    <loc>https://docs.promptlayer.com/reference/create-skill-collection</loc>
+    <lastmod>2026-08-12T20:09:48.070Z</lastmod>
+  </url>
+
+  <url>
+    <loc>https://docs.promptlayer.com/reference/create-table</loc>
+    <lastmod>2026-07-14T14:16:06.816Z</lastmod>
+  </url>
+
+  <url>
+    <loc>https://docs.promptlayer.com/reference/create-table-sheet</loc>
+    <lastmod>2026-06-10T03:22:55.279Z</lastmod>
+  </url>
+
+  <url>
+    <loc>https://docs.promptlayer.com/reference/create-table-sheet-column</loc>
+    <lastmod>2026-06-10T03:22:55.281Z</lastmod>
+  </url>
+
+  <url>
+    <loc>https://docs.promptlayer.com/reference/create-table-sheet-file-import</loc>
+    <lastmod>2026-06-10T03:22:55.279Z</lastmod>
+  </url>
+
+  <url>
+    <loc>https://docs.promptlayer.com/reference/create-table-sheet-operation</loc>
+    <lastmod>2026-06-10T03:22:55.283Z</lastmod>
+  </url>
+
+  <url>
+    <loc>https://docs.promptlayer.com/reference/create-table-sheet-request-log-import</loc>
+    <lastmod>2026-06-10T03:22:55.282Z</lastmod>
+  </url>
+
+  <url>
+    <loc>https://docs.promptlayer.com/reference/create-table-sheet-version</loc>
+    <lastmod>2026-06-10T03:22:55.280Z</lastmod>
+  </url>
+
+  <url>
+    <loc>https://docs.promptlayer.com/reference/create-workflow</loc>
+    <lastmod>2026-08-12T20:09:48.062Z</lastmod>
+  </url>
+
+  <url>
+    <loc>https://docs.promptlayer.com/reference/delete-folder-entities</loc>
+    <lastmod>2026-08-12T20:09:48.061Z</lastmod>
+  </url>
+
+  <url>
+    <loc>https://docs.promptlayer.com/reference/delete-report</loc>
+    <lastmod>2026-08-12T20:09:48.059Z</lastmod>
+  </url>
+
+  <url>
+    <loc>https://docs.promptlayer.com/reference/delete-report-column</loc>
+    <lastmod>2026-08-12T20:09:48.060Z</lastmod>
+  </url>
+
+  <url>
+    <loc>https://docs.promptlayer.com/reference/delete-reports-by-name</loc>
+    <lastmod>2026-08-12T20:09:48.073Z</lastmod>
+  </url>
+
+  <url>
+    <loc>https://docs.promptlayer.com/reference/edit-report-column</loc>
+    <lastmod>2026-08-12T20:09:48.071Z</lastmod>
+  </url>
+
+  <url>
+    <loc>https://docs.promptlayer.com/reference/env-vars-tool-create</loc>
+    <lastmod>2026-08-12T20:09:48.057Z</lastmod>
+  </url>
+
+  <url>
+    <loc>https://docs.promptlayer.com/reference/env-vars-tool-delete</loc>
+    <lastmod>2026-08-12T20:09:48.056Z</lastmod>
+  </url>
+
+  <url>
+    <loc>https://docs.promptlayer.com/reference/env-vars-tool-list</loc>
+    <lastmod>2026-08-12T20:09:48.056Z</lastmod>
+  </url>
+
+  <url>
+    <loc>https://docs.promptlayer.com/reference/env-vars-tool-update</loc>
+    <lastmod>2026-08-12T20:09:48.055Z</lastmod>
+  </url>
+
+  <url>
+    <loc>https://docs.promptlayer.com/reference/env-vars-workspace-create</loc>
+    <lastmod>2026-08-12T20:09:48.054Z</lastmod>
+  </url>
+
+  <url>
+    <loc>https://docs.promptlayer.com/reference/env-vars-workspace-delete</loc>
+    <lastmod>2026-08-12T20:09:48.053Z</lastmod>
+  </url>
+
+  <url>
+    <loc>https://docs.promptlayer.com/reference/env-vars-workspace-list</loc>
+    <lastmod>2026-08-12T20:09:48.053Z</lastmod>
+  </url>
+
+  <url>
+    <loc>https://docs.promptlayer.com/reference/env-vars-workspace-update</loc>
+    <lastmod>2026-08-12T20:09:48.065Z</lastmod>
+  </url>
+
+  <url>
+    <loc>https://docs.promptlayer.com/reference/external-ids-dataset-groups-attach</loc>
+    <lastmod>2026-08-12T20:09:48.123Z</lastmod>
+  </url>
+
+  <url>
+    <loc>https://docs.promptlayer.com/reference/external-ids-dataset-groups-delete</loc>
+    <lastmod>2026-08-12T20:09:48.122Z</lastmod>
+  </url>
+
+  <url>
+    <loc>https://docs.promptlayer.com/reference/external-ids-dataset-groups-list</loc>
+    <lastmod>2026-08-12T20:09:48.052Z</lastmod>
+  </url>
+
+  <url>
+    <loc>https://docs.promptlayer.com/reference/external-ids-folders-attach</loc>
+    <lastmod>2026-08-12T20:09:48.041Z</lastmod>
+  </url>
+
+  <url>
+    <loc>https://docs.promptlayer.com/reference/external-ids-folders-delete</loc>
+    <lastmod>2026-08-12T20:09:48.051Z</lastmod>
+  </url>
+
+  <url>
+    <loc>https://docs.promptlayer.com/reference/external-ids-folders-list</loc>
+    <lastmod>2026-08-12T20:09:48.045Z</lastmod>
+  </url>
+
+  <url>
+    <loc>https://docs.promptlayer.com/reference/external-ids-overview</loc>
+    <lastmod>2026-05-15T18:13:28.647Z</lastmod>
+  </url>
+
+  <url>
+    <loc>https://docs.promptlayer.com/reference/external-ids-prompt-templates-attach</loc>
+    <lastmod>2026-08-12T20:09:48.072Z</lastmod>
+  </url>
+
+  <url>
+    <loc>https://docs.promptlayer.com/reference/external-ids-prompt-templates-delete</loc>
+    <lastmod>2026-08-12T20:09:48.049Z</lastmod>
+  </url>
+
+  <url>
+    <loc>https://docs.promptlayer.com/reference/external-ids-prompt-templates-list</loc>
+    <lastmod>2026-08-12T20:09:48.067Z</lastmod>
+  </url>
+
+  <url>
+    <loc>https://docs.promptlayer.com/reference/external-ids-prompt-templates-upsert</loc>
+    <lastmod>2026-08-12T20:09:48.039Z</lastmod>
+  </url>
+
+  <url>
+    <loc>https://docs.promptlayer.com/reference/external-ids-reports-attach</loc>
+    <lastmod>2026-08-12T20:09:48.048Z</lastmod>
+  </url>
+
+  <url>
+    <loc>https://docs.promptlayer.com/reference/external-ids-reports-delete</loc>
+    <lastmod>2026-08-12T20:09:48.049Z</lastmod>
+  </url>
+
+  <url>
+    <loc>https://docs.promptlayer.com/reference/external-ids-reports-list</loc>
+    <lastmod>2026-08-12T20:09:48.047Z</lastmod>
+  </url>
+
+  <url>
+    <loc>https://docs.promptlayer.com/reference/external-ids-skill-collections-attach</loc>
+    <lastmod>2026-08-12T20:09:48.041Z</lastmod>
+  </url>
+
+  <url>
+    <loc>https://docs.promptlayer.com/reference/external-ids-skill-collections-delete</loc>
+    <lastmod>2026-08-12T20:09:48.058Z</lastmod>
+  </url>
+
+  <url>
+    <loc>https://docs.promptlayer.com/reference/external-ids-skill-collections-list</loc>
+    <lastmod>2026-08-12T20:09:48.043Z</lastmod>
+  </url>
+
+  <url>
+    <loc>https://docs.promptlayer.com/reference/external-ids-tool-registry-attach</loc>
+    <lastmod>2026-08-12T20:09:48.051Z</lastmod>
+  </url>
+
+  <url>
+    <loc>https://docs.promptlayer.com/reference/external-ids-tool-registry-delete</loc>
+    <lastmod>2026-08-12T20:09:48.050Z</lastmod>
+  </url>
+
+  <url>
+    <loc>https://docs.promptlayer.com/reference/external-ids-tool-registry-list</loc>
+    <lastmod>2026-08-12T20:09:48.040Z</lastmod>
+  </url>
+
+  <url>
+    <loc>https://docs.promptlayer.com/reference/external-ids-workflows-attach</loc>
+    <lastmod>2026-08-12T20:09:48.038Z</lastmod>
+  </url>
+
+  <url>
+    <loc>https://docs.promptlayer.com/reference/external-ids-workflows-delete</loc>
+    <lastmod>2026-08-12T20:09:48.042Z</lastmod>
+  </url>
+
+  <url>
+    <loc>https://docs.promptlayer.com/reference/external-ids-workflows-list</loc>
+    <lastmod>2026-08-12T20:09:47.936Z</lastmod>
+  </url>
+
+  <url>
+    <loc>https://docs.promptlayer.com/reference/get-dataset-rows</loc>
+    <lastmod>2026-08-12T20:09:47.933Z</lastmod>
+  </url>
+
+  <url>
+    <loc>https://docs.promptlayer.com/reference/get-evaluation-rows</loc>
+    <lastmod>2026-08-12T20:09:47.932Z</lastmod>
+  </url>
+
+  <url>
+    <loc>https://docs.promptlayer.com/reference/get-report</loc>
+    <lastmod>2026-08-12T20:09:47.931Z</lastmod>
+  </url>
+
+  <url>
+    <loc>https://docs.promptlayer.com/reference/get-report-score</loc>
+    <lastmod>2026-08-12T20:09:47.932Z</lastmod>
+  </url>
+
+  <url>
+    <loc>https://docs.promptlayer.com/reference/get-request</loc>
+    <lastmod>2026-08-12T20:09:47.930Z</lastmod>
+  </url>
+
+  <url>
+    <loc>https://docs.promptlayer.com/reference/get-skill-collection</loc>
+    <lastmod>2026-08-12T20:09:47.930Z</lastmod>
+  </url>
+
+  <url>
+    <loc>https://docs.promptlayer.com/reference/get-snippet-usage</loc>
+    <lastmod>2026-08-12T20:09:47.929Z</lastmod>
+  </url>
+
+  <url>
+    <loc>https://docs.promptlayer.com/reference/get-table</loc>
+    <lastmod>2026-06-10T03:22:55.480Z</lastmod>
+  </url>
+
+  <url>
+    <loc>https://docs.promptlayer.com/reference/get-table-sheet</loc>
+    <lastmod>2026-06-10T03:22:55.440Z</lastmod>
+  </url>
+
+  <url>
+    <loc>https://docs.promptlayer.com/reference/get-table-sheet-cell</loc>
+    <lastmod>2026-06-10T03:22:55.440Z</lastmod>
+  </url>
+
+  <url>
+    <loc>https://docs.promptlayer.com/reference/get-table-sheet-operation</loc>
+    <lastmod>2026-06-10T03:22:55.442Z</lastmod>
+  </url>
+
+  <url>
+    <loc>https://docs.promptlayer.com/reference/get-table-sheet-operation-status</loc>
+    <lastmod>2026-06-10T03:22:55.438Z</lastmod>
+  </url>
+
+  <url>
+    <loc>https://docs.promptlayer.com/reference/get-table-sheet-score</loc>
+    <lastmod>2026-06-10T03:22:55.439Z</lastmod>
+  </url>
+
+  <url>
+    <loc>https://docs.promptlayer.com/reference/get-table-sheet-score-history</loc>
+    <lastmod>2026-06-10T03:22:55.442Z</lastmod>
+  </url>
+
+  <url>
+    <loc>https://docs.promptlayer.com/reference/get-table-sheet-version</loc>
+    <lastmod>2026-06-10T03:22:55.443Z</lastmod>
+  </url>
+
+  <url>
+    <loc>https://docs.promptlayer.com/reference/get-trace</loc>
+    <lastmod>2026-08-12T20:09:47.935Z</lastmod>
+  </url>
+
+  <url>
+    <loc>https://docs.promptlayer.com/reference/get-workflow</loc>
+    <lastmod>2026-08-12T20:09:47.922Z</lastmod>
+  </url>
+
+  <url>
+    <loc>https://docs.promptlayer.com/reference/get-workflow-labels</loc>
+    <lastmod>2026-08-12T20:09:47.934Z</lastmod>
+  </url>
+
+  <url>
+    <loc>https://docs.promptlayer.com/reference/introduction</loc>
+    <lastmod>2026-07-07T18:16:15.053Z</lastmod>
+  </url>
+
+  <url>
+    <loc>https://docs.promptlayer.com/reference/list-datasets</loc>
+    <lastmod>2026-08-12T20:09:47.921Z</lastmod>
+  </url>
+
+  <url>
+    <loc>https://docs.promptlayer.com/reference/list-evaluations</loc>
+    <lastmod>2026-08-12T20:09:47.921Z</lastmod>
+  </url>
+
+  <url>
+    <loc>https://docs.promptlayer.com/reference/list-folder-entities</loc>
+    <lastmod>2026-08-12T20:09:47.920Z</lastmod>
+  </url>
+
+  <url>
+    <loc>https://docs.promptlayer.com/reference/list-prompt-templates</loc>
+    <lastmod>2026-08-12T20:09:47.920Z</lastmod>
+  </url>
+
+  <url>
+    <loc>https://docs.promptlayer.com/reference/list-skill-collections</loc>
+    <lastmod>2026-08-12T20:09:47.919Z</lastmod>
+  </url>
+
+  <url>
+    <loc>https://docs.promptlayer.com/reference/list-table-sheet-columns</loc>
+    <lastmod>2026-06-10T03:22:55.512Z</lastmod>
+  </url>
+
+  <url>
+    <loc>https://docs.promptlayer.com/reference/list-table-sheet-operations</loc>
+    <lastmod>2026-06-10T03:22:55.518Z</lastmod>
+  </url>
+
+  <url>
+    <loc>https://docs.promptlayer.com/reference/list-table-sheet-rows</loc>
+    <lastmod>2026-06-10T03:22:55.511Z</lastmod>
+  </url>
+
+  <url>
+    <loc>https://docs.promptlayer.com/reference/list-table-sheet-versions</loc>
+    <lastmod>2026-06-10T03:22:55.515Z</lastmod>
+  </url>
+
+  <url>
+    <loc>https://docs.promptlayer.com/reference/list-table-sheets</loc>
+    <lastmod>2026-06-10T03:22:55.518Z</lastmod>
+  </url>
+
+  <url>
+    <loc>https://docs.promptlayer.com/reference/list-tables</loc>
+    <lastmod>2026-06-10T03:22:55.519Z</lastmod>
+  </url>
+
+  <url>
+    <loc>https://docs.promptlayer.com/reference/list-workflows</loc>
+    <lastmod>2026-08-12T20:09:47.951Z</lastmod>
+  </url>
+
+  <url>
+    <loc>https://docs.promptlayer.com/reference/log-request</loc>
+    <lastmod>2026-08-12T20:09:47.953Z</lastmod>
+  </url>
+
+  <url>
+    <loc>https://docs.promptlayer.com/reference/move-folder-entities</loc>
+    <lastmod>2026-08-12T20:09:47.910Z</lastmod>
+  </url>
+
+  <url>
+    <loc>https://docs.promptlayer.com/reference/otlp-ingest-traces</loc>
+    <lastmod>2026-08-12T20:09:47.912Z</lastmod>
+  </url>
+
+  <url>
+    <loc>https://docs.promptlayer.com/reference/patch-workflow</loc>
+    <lastmod>2026-08-12T20:09:47.907Z</lastmod>
+  </url>
+
+  <url>
+    <loc>https://docs.promptlayer.com/reference/prompt-labels-create</loc>
+    <lastmod>2026-08-12T20:09:47.914Z</lastmod>
+  </url>
+
+  <url>
+    <loc>https://docs.promptlayer.com/reference/prompt-labels-delete</loc>
+    <lastmod>2026-08-12T20:09:47.913Z</lastmod>
+  </url>
+
+  <url>
+    <loc>https://docs.promptlayer.com/reference/prompt-labels-patch</loc>
+    <lastmod>2026-08-12T20:09:47.910Z</lastmod>
+  </url>
+
+  <url>
+    <loc>https://docs.promptlayer.com/reference/recalculate-table-sheet-cell</loc>
+    <lastmod>2026-06-10T03:22:55.557Z</lastmod>
+  </url>
+
+  <url>
+    <loc>https://docs.promptlayer.com/reference/recalculate-table-sheet-cells</loc>
+    <lastmod>2026-06-10T03:22:55.553Z</lastmod>
+  </url>
+
+  <url>
+    <loc>https://docs.promptlayer.com/reference/recalculate-table-sheet-score</loc>
+    <lastmod>2026-06-10T03:22:55.556Z</lastmod>
+  </url>
+
+  <url>
+    <loc>https://docs.promptlayer.com/reference/rename-report</loc>
+    <lastmod>2026-08-12T20:09:47.924Z</lastmod>
+  </url>
+
+  <url>
+    <loc>https://docs.promptlayer.com/reference/request-analytics</loc>
+    <lastmod>2026-08-12T20:09:47.911Z</lastmod>
+  </url>
+
+  <url>
+    <loc>https://docs.promptlayer.com/reference/request-analytics-custom-analytics</loc>
+    <lastmod>2026-08-12T20:09:47.916Z</lastmod>
+  </url>
+
+  <url>
+    <loc>https://docs.promptlayer.com/reference/resolve-folder-id</loc>
+    <lastmod>2026-08-12T20:09:47.909Z</lastmod>
+  </url>
+
+  <url>
+    <loc>https://docs.promptlayer.com/reference/run-report</loc>
+    <lastmod>2026-08-12T20:09:47.908Z</lastmod>
+  </url>
+
+  <url>
+    <loc>https://docs.promptlayer.com/reference/run-workflow</loc>
+    <lastmod>2026-08-12T20:09:47.916Z</lastmod>
+  </url>
+
+  <url>
+    <loc>https://docs.promptlayer.com/reference/save-draft-dataset-version</loc>
+    <lastmod>2026-08-12T20:09:47.912Z</lastmod>
+  </url>
+
+  <url>
+    <loc>https://docs.promptlayer.com/reference/save-skill-collection-version</loc>
+    <lastmod>2026-08-12T20:09:47.915Z</lastmod>
+  </url>
+
+  <url>
+    <loc>https://docs.promptlayer.com/reference/search-request-logs</loc>
+    <lastmod>2026-08-12T20:09:47.842Z</lastmod>
+  </url>
+
+  <url>
+    <loc>https://docs.promptlayer.com/reference/search-request-suggestions</loc>
+    <lastmod>2026-08-12T20:09:47.842Z</lastmod>
+  </url>
+
+  <url>
+    <loc>https://docs.promptlayer.com/reference/spans-bulk</loc>
+    <lastmod>2026-08-12T20:09:47.841Z</lastmod>
+  </url>
+
+  <url>
+    <loc>https://docs.promptlayer.com/reference/table-sheet-cells-get</loc>
+    <lastmod>2026-06-10T03:22:55.580Z</lastmod>
+  </url>
+
+  <url>
+    <loc>https://docs.promptlayer.com/reference/table-sheet-cells-recalculate</loc>
+    <lastmod>2026-06-10T03:22:55.589Z</lastmod>
+  </url>
+
+  <url>
+    <loc>https://docs.promptlayer.com/reference/table-sheet-cells-recalculate-batch</loc>
+    <lastmod>2026-06-10T03:22:55.587Z</lastmod>
+  </url>
+
+  <url>
+    <loc>https://docs.promptlayer.com/reference/table-sheet-cells-update</loc>
+    <lastmod>2026-06-10T03:22:55.610Z</lastmod>
+  </url>
+
+  <url>
+    <loc>https://docs.promptlayer.com/reference/table-sheet-columns-create</loc>
+    <lastmod>2026-06-10T03:22:55.615Z</lastmod>
+  </url>
+
+  <url>
+    <loc>https://docs.promptlayer.com/reference/table-sheet-columns-delete</loc>
+    <lastmod>2026-07-01T19:37:56.430Z</lastmod>
+  </url>
+
+  <url>
+    <loc>https://docs.promptlayer.com/reference/table-sheet-columns-list</loc>
+    <lastmod>2026-07-10T12:44:54.704Z</lastmod>
+  </url>
+
+  <url>
+    <loc>https://docs.promptlayer.com/reference/table-sheet-columns-update</loc>
+    <lastmod>2026-06-10T03:22:55.614Z</lastmod>
+  </url>
+
+  <url>
+    <loc>https://docs.promptlayer.com/reference/table-sheet-imports-file-create</loc>
+    <lastmod>2026-06-10T03:22:55.609Z</lastmod>
+  </url>
+
+  <url>
+    <loc>https://docs.promptlayer.com/reference/table-sheet-imports-request-logs-create</loc>
+    <lastmod>2026-06-10T03:22:55.613Z</lastmod>
+  </url>
+
+  <url>
+    <loc>https://docs.promptlayer.com/reference/table-sheet-operations-cancel</loc>
+    <lastmod>2026-06-10T03:22:55.613Z</lastmod>
+  </url>
+
+  <url>
+    <loc>https://docs.promptlayer.com/reference/table-sheet-operations-create</loc>
+    <lastmod>2026-06-10T03:22:55.611Z</lastmod>
+  </url>
+
+  <url>
+    <loc>https://docs.promptlayer.com/reference/table-sheet-operations-get</loc>
+    <lastmod>2026-06-10T03:22:55.611Z</lastmod>
+  </url>
+
+  <url>
+    <loc>https://docs.promptlayer.com/reference/table-sheet-operations-list</loc>
+    <lastmod>2026-06-10T03:22:55.608Z</lastmod>
+  </url>
+
+  <url>
+    <loc>https://docs.promptlayer.com/reference/table-sheet-rows-add</loc>
+    <lastmod>2026-06-10T03:22:55.650Z</lastmod>
+  </url>
+
+  <url>
+    <loc>https://docs.promptlayer.com/reference/table-sheet-rows-list</loc>
+    <lastmod>2026-06-10T03:22:55.641Z</lastmod>
+  </url>
+
+  <url>
+    <loc>https://docs.promptlayer.com/reference/table-sheet-score-configure</loc>
+    <lastmod>2026-06-10T03:22:55.643Z</lastmod>
+  </url>
+
+  <url>
+    <loc>https://docs.promptlayer.com/reference/table-sheet-score-get</loc>
+    <lastmod>2026-07-16T16:10:27.145Z</lastmod>
+  </url>
+
+  <url>
+    <loc>https://docs.promptlayer.com/reference/table-sheet-score-history-get</loc>
+    <lastmod>2026-06-10T03:22:55.645Z</lastmod>
+  </url>
+
+  <url>
+    <loc>https://docs.promptlayer.com/reference/table-sheet-score-recalculate</loc>
+    <lastmod>2026-07-16T16:10:27.110Z</lastmod>
+  </url>
+
+  <url>
+    <loc>https://docs.promptlayer.com/reference/table-sheet-scorecard-calculation-get</loc>
+    <lastmod>2026-07-16T16:10:27.114Z</lastmod>
+  </url>
+
+  <url>
+    <loc>https://docs.promptlayer.com/reference/table-sheet-scorecard-cancel</loc>
+    <lastmod>2026-07-16T16:28:15.375Z</lastmod>
+  </url>
+
+  <url>
+    <loc>https://docs.promptlayer.com/reference/table-sheet-scorecard-configure</loc>
+    <lastmod>2026-07-16T16:10:27.108Z</lastmod>
+  </url>
+
+  <url>
+    <loc>https://docs.promptlayer.com/reference/table-sheet-scorecard-delete</loc>
+    <lastmod>2026-07-16T16:10:27.111Z</lastmod>
+  </url>
+
+  <url>
+    <loc>https://docs.promptlayer.com/reference/table-sheet-scorecard-get</loc>
+    <lastmod>2026-07-16T16:10:27.112Z</lastmod>
+  </url>
+
+  <url>
+    <loc>https://docs.promptlayer.com/reference/table-sheet-scorecard-migrate-legacy-score</loc>
+    <lastmod>2026-07-16T16:10:27.149Z</lastmod>
+  </url>
+
+  <url>
+    <loc>https://docs.promptlayer.com/reference/table-sheet-scorecard-recalculate</loc>
+    <lastmod>2026-07-16T16:28:15.378Z</lastmod>
+  </url>
+
+  <url>
+    <loc>https://docs.promptlayer.com/reference/table-sheet-scorecard-row-get</loc>
+    <lastmod>2026-07-16T16:28:15.381Z</lastmod>
+  </url>
+
+  <url>
+    <loc>https://docs.promptlayer.com/reference/table-sheet-scorecard-rows-list</loc>
+    <lastmod>2026-07-16T16:28:15.374Z</lastmod>
+  </url>
+
+  <url>
+    <loc>https://docs.promptlayer.com/reference/table-sheet-versions-create</loc>
+    <lastmod>2026-06-10T03:22:55.649Z</lastmod>
+  </url>
+
+  <url>
+    <loc>https://docs.promptlayer.com/reference/table-sheet-versions-get</loc>
+    <lastmod>2026-06-10T03:22:55.644Z</lastmod>
+  </url>
+
+  <url>
+    <loc>https://docs.promptlayer.com/reference/table-sheet-versions-list</loc>
+    <lastmod>2026-06-10T03:22:55.644Z</lastmod>
+  </url>
+
+  <url>
+    <loc>https://docs.promptlayer.com/reference/table-sheets-create</loc>
+    <lastmod>2026-07-10T21:18:37.605Z</lastmod>
+  </url>
+
+  <url>
+    <loc>https://docs.promptlayer.com/reference/table-sheets-delete</loc>
+    <lastmod>2026-07-01T19:40:04.085Z</lastmod>
+  </url>
+
+  <url>
+    <loc>https://docs.promptlayer.com/reference/table-sheets-get</loc>
+    <lastmod>2026-06-10T03:22:55.674Z</lastmod>
+  </url>
+
+  <url>
+    <loc>https://docs.promptlayer.com/reference/table-sheets-get-operation</loc>
+    <lastmod>2026-06-10T03:22:55.678Z</lastmod>
+  </url>
+
+  <url>
+    <loc>https://docs.promptlayer.com/reference/table-sheets-list</loc>
+    <lastmod>2026-06-10T03:22:55.676Z</lastmod>
+  </url>
+
+  <url>
+    <loc>https://docs.promptlayer.com/reference/table-sheets-update</loc>
+    <lastmod>2026-06-10T03:22:55.675Z</lastmod>
+  </url>
+
+  <url>
+    <loc>https://docs.promptlayer.com/reference/tables-create</loc>
+    <lastmod>2026-07-14T14:16:07.121Z</lastmod>
+  </url>
+
+  <url>
+    <loc>https://docs.promptlayer.com/reference/tables-delete</loc>
+    <lastmod>2026-07-01T19:40:04.083Z</lastmod>
+  </url>
+
+  <url>
+    <loc>https://docs.promptlayer.com/reference/tables-get</loc>
+    <lastmod>2026-06-10T03:22:55.673Z</lastmod>
+  </url>
+
+  <url>
+    <loc>https://docs.promptlayer.com/reference/tables-list</loc>
+    <lastmod>2026-06-10T03:22:55.679Z</lastmod>
+  </url>
+
+  <url>
+    <loc>https://docs.promptlayer.com/reference/tables-update</loc>
+    <lastmod>2026-06-10T03:22:55.672Z</lastmod>
+  </url>
+
+  <url>
+    <loc>https://docs.promptlayer.com/reference/templates-get</loc>
+    <lastmod>2026-08-12T20:09:47.824Z</lastmod>
+  </url>
+
+  <url>
+    <loc>https://docs.promptlayer.com/reference/templates-get-raw</loc>
+    <lastmod>2026-08-12T20:09:47.819Z</lastmod>
+  </url>
+
+  <url>
+    <loc>https://docs.promptlayer.com/reference/templates-labels-get</loc>
+    <lastmod>2026-08-12T20:09:47.828Z</lastmod>
+  </url>
+
+  <url>
+    <loc>https://docs.promptlayer.com/reference/templates-patch</loc>
+    <lastmod>2026-08-12T20:09:47.817Z</lastmod>
+  </url>
+
+  <url>
+    <loc>https://docs.promptlayer.com/reference/templates-publish</loc>
+    <lastmod>2026-08-12T20:09:47.704Z</lastmod>
+  </url>
+
+  <url>
+    <loc>https://docs.promptlayer.com/reference/tool-registry-create</loc>
+    <lastmod>2026-08-12T20:09:47.698Z</lastmod>
+  </url>
+
+  <url>
+    <loc>https://docs.promptlayer.com/reference/tool-registry-create-version</loc>
+    <lastmod>2026-08-12T20:09:47.703Z</lastmod>
+  </url>
+
+  <url>
+    <loc>https://docs.promptlayer.com/reference/tool-registry-get</loc>
+    <lastmod>2026-08-12T20:09:47.697Z</lastmod>
+  </url>
+
+  <url>
+    <loc>https://docs.promptlayer.com/reference/tool-registry-list</loc>
+    <lastmod>2026-08-12T20:09:47.696Z</lastmod>
+  </url>
+
+  <url>
+    <loc>https://docs.promptlayer.com/reference/tool-registry-test-execute</loc>
+    <lastmod>2026-08-12T20:09:47.695Z</lastmod>
+  </url>
+
+  <url>
+    <loc>https://docs.promptlayer.com/reference/trace-analytics-custom-analytics</loc>
+    <lastmod>2026-08-12T20:09:47.694Z</lastmod>
+  </url>
+
+  <url>
+    <loc>https://docs.promptlayer.com/reference/track-metadata</loc>
+    <lastmod>2026-08-12T20:09:47.692Z</lastmod>
+  </url>
+
+  <url>
+    <loc>https://docs.promptlayer.com/reference/track-prompt</loc>
+    <lastmod>2026-08-12T20:09:47.691Z</lastmod>
+  </url>
+
+  <url>
+    <loc>https://docs.promptlayer.com/reference/track-score</loc>
+    <lastmod>2026-08-12T20:09:47.748Z</lastmod>
+  </url>
+
+  <url>
+    <loc>https://docs.promptlayer.com/reference/update-folder</loc>
+    <lastmod>2026-08-12T20:09:47.685Z</lastmod>
+  </url>
+
+  <url>
+    <loc>https://docs.promptlayer.com/reference/update-report-score-card</loc>
+    <lastmod>2026-08-12T20:09:47.685Z</lastmod>
+  </url>
+
+  <url>
+    <loc>https://docs.promptlayer.com/reference/update-skill-collection</loc>
+    <lastmod>2026-08-12T20:09:47.684Z</lastmod>
+  </url>
+
+  <url>
+    <loc>https://docs.promptlayer.com/reference/update-table</loc>
+    <lastmod>2026-06-10T03:22:55.778Z</lastmod>
+  </url>
+
+  <url>
+    <loc>https://docs.promptlayer.com/reference/update-table-sheet</loc>
+    <lastmod>2026-06-10T03:22:55.777Z</lastmod>
+  </url>
+
+  <url>
+    <loc>https://docs.promptlayer.com/reference/update-table-sheet-cell</loc>
+    <lastmod>2026-06-10T03:22:55.772Z</lastmod>
+  </url>
+
+  <url>
+    <loc>https://docs.promptlayer.com/reference/update-table-sheet-column</loc>
+    <lastmod>2026-06-10T03:22:55.777Z</lastmod>
+  </url>
+
+  <url>
+    <loc>https://docs.promptlayer.com/reference/workflow-version-execution-results</loc>
+    <lastmod>2026-08-12T20:09:47.690Z</lastmod>
+  </url>
+
+  <url>
+    <loc>https://docs.promptlayer.com/running-requests/prompt-blueprints</loc>
+    <lastmod>2026-08-12T20:09:47.701Z</lastmod>
+  </url>
+
+  <url>
+    <loc>https://docs.promptlayer.com/scorecard-api/TABLE_SCORECARDS_PUBLIC_API_HANDOFF</loc>
+    <lastmod>2026-08-12T20:09:47.708Z</lastmod>
+  </url>
+
+  <url>
+    <loc>https://docs.promptlayer.com/sdks/evals/agent-tracing</loc>
+    <lastmod>2026-08-04T16:30:09.040Z</lastmod>
+  </url>
+
+  <url>
+    <loc>https://docs.promptlayer.com/sdks/evals/building-an-eval</loc>
+    <lastmod>2026-08-04T16:30:09.067Z</lastmod>
+  </url>
+
+  <url>
+    <loc>https://docs.promptlayer.com/sdks/evals/cli-and-ci</loc>
+    <lastmod>2026-07-23T16:17:30.588Z</lastmod>
+  </url>
+
+  <url>
+    <loc>https://docs.promptlayer.com/sdks/evals/columns/overview</loc>
+    <lastmod>2026-07-29T15:56:14.597Z</lastmod>
+  </url>
+
+  <url>
+    <loc>https://docs.promptlayer.com/sdks/evals/concurrency</loc>
+    <lastmod>2026-07-29T15:56:14.595Z</lastmod>
+  </url>
+
+  <url>
+    <loc>https://docs.promptlayer.com/sdks/evals/datasets</loc>
+    <lastmod>2026-07-29T15:56:14.593Z</lastmod>
+  </url>
+
+  <url>
+    <loc>https://docs.promptlayer.com/sdks/evals/overview</loc>
+    <lastmod>2026-07-29T15:56:14.594Z</lastmod>
+  </url>
+
+  <url>
+    <loc>https://docs.promptlayer.com/sdks/evals/quickstart</loc>
+    <lastmod>2026-08-12T20:09:47.689Z</lastmod>
+  </url>
+
+  <url>
+    <loc>https://docs.promptlayer.com/sdks/evals/results-and-failures</loc>
+    <lastmod>2026-07-29T15:56:14.597Z</lastmod>
+  </url>
+
+  <url>
+    <loc>https://docs.promptlayer.com/sdks/evals/scorers/overview</loc>
+    <lastmod>2026-08-04T16:30:09.045Z</lastmod>
+  </url>
+
+  <url>
+    <loc>https://docs.promptlayer.com/sdks/javascript</loc>
+    <lastmod>2026-08-12T20:09:47.674Z</lastmod>
+  </url>
+
+  <url>
+    <loc>https://docs.promptlayer.com/sdks/python</loc>
+    <lastmod>2026-08-12T20:09:47.681Z</lastmod>
+  </url>
+
+  <url>
+    <loc>https://docs.promptlayer.com/self-hosted</loc>
+    <lastmod>2026-07-06T20:17:38.574Z</lastmod>
+  </url>
+
+  <url>
+    <loc>https://docs.promptlayer.com/tutorial-videos</loc>
+    <lastmod>2026-08-12T20:09:47.673Z</lastmod>
+  </url>
+
+  <url>
+    <loc>https://docs.promptlayer.com/why-promptlayer/ab-releases</loc>
+    <lastmod>2026-08-12T20:09:47.672Z</lastmod>
+  </url>
+
+  <url>
+    <loc>https://docs.promptlayer.com/why-promptlayer/data-retention</loc>
+    <lastmod>2026-07-08T21:00:14.060Z</lastmod>
+  </url>
+
+  <url>
+    <loc>https://docs.promptlayer.com/why-promptlayer/enterprise-identity/audit-log</loc>
+    <lastmod>2026-07-06T20:17:52.799Z</lastmod>
+  </url>
+
+  <url>
+    <loc>https://docs.promptlayer.com/why-promptlayer/enterprise-identity/overview</loc>
+    <lastmod>2026-07-06T20:17:52.798Z</lastmod>
+  </url>
+
+  <url>
+    <loc>https://docs.promptlayer.com/why-promptlayer/enterprise-identity/provisioning</loc>
+    <lastmod>2026-07-06T20:17:52.795Z</lastmod>
+  </url>
+
+  <url>
+    <loc>https://docs.promptlayer.com/why-promptlayer/enterprise-identity/setup</loc>
+    <lastmod>2026-07-06T20:17:52.793Z</lastmod>
+  </url>
+
+  <url>
+    <loc>https://docs.promptlayer.com/why-promptlayer/enterprise-identity/sign-in-security</loc>
+    <lastmod>2026-07-06T20:17:52.797Z</lastmod>
+  </url>
+
+  <url>
+    <loc>https://docs.promptlayer.com/why-promptlayer/fine-tuning</loc>
+    <lastmod>2026-08-12T20:09:47.671Z</lastmod>
+  </url>
+
+  <url>
+    <loc>https://docs.promptlayer.com/why-promptlayer/multi-turn-chat</loc>
+    <lastmod>2026-08-12T20:09:47.670Z</lastmod>
+  </url>
+
+  <url>
+    <loc>https://docs.promptlayer.com/why-promptlayer/organizations</loc>
+    <lastmod>2026-07-06T20:17:52.795Z</lastmod>
+  </url>
+
+  <url>
+    <loc>https://docs.promptlayer.com/why-promptlayer/playground</loc>
+    <lastmod>2026-08-12T20:09:47.670Z</lastmod>
+  </url>
+
+  <url>
+    <loc>https://docs.promptlayer.com/why-promptlayer/rbac</loc>
+    <lastmod>2026-07-06T20:18:06.362Z</lastmod>
+  </url>
+
+  <url>
+    <loc>https://docs.promptlayer.com/why-promptlayer/shared-workspaces</loc>
+    <lastmod>2026-07-08T21:00:21.973Z</lastmod>
+  </url>
+
+  <url>
+    <loc>https://docs.promptlayer.com/why-promptlayer/voice-agents</loc>
+    <lastmod>2026-08-12T20:09:47.658Z</lastmod>
+  </url>
+
+  <url>
+    <loc>https://docs.promptlayer.com/why-promptlayer/workflows</loc>
+    <lastmod>2026-08-12T20:09:47.659Z</lastmod>
+  </url>
+
+  <url>
+    <loc>https://docs.promptlayer.com/why-promptlayer/workspaces</loc>
+    <lastmod>2026-04-27T20:52:04.733Z</lastmod>
+  </url>
+</urlset>

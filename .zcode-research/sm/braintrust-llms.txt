@@ -1,0 +1,614 @@
+# Braintrust
+
+> Braintrust is the active observability platform for instrumenting, understanding, and improving agents. By actively applying intelligence to agent traces and automatically surfacing the most critical patterns, Braintrust gives teams the visibility to understand how agents behave in production and the tools to improve them.
+
+- [Guides (113 pages)](https://docs.braintrust.dev/_llms/guides.txt): Documentation for Guides.
+
+## Integrations
+
+- [Integrations](https://docs.braintrust.dev/integrations/index.md): Connect Braintrust with your AI providers and frameworks
+
+### AI providers
+
+- [AI providers](https://docs.braintrust.dev/integrations/ai-providers/index.md): AI provider configuration
+- [Custom providers](https://docs.braintrust.dev/integrations/ai-providers/custom.md): Set up custom AI providers with Braintrust for evaluation and tracing
+
+#### Model providers
+
+- [OpenAI](https://docs.braintrust.dev/integrations/ai-providers/openai.md): Trace OpenAI SDK calls, evaluate GPT models, and route them through the Braintrust gateway
+- [OpenRouter](https://docs.braintrust.dev/integrations/ai-providers/openrouter.md): Trace OpenRouter SDK calls in Braintrust to debug prompts, evaluate models, and monitor production usage
+- [Anthropic](https://docs.braintrust.dev/integrations/ai-providers/anthropic.md): Trace Anthropic SDK calls, evaluate Claude models, and route them through the Braintrust gateway
+- [Gemini](https://docs.braintrust.dev/integrations/ai-providers/gemini.md): Trace Gemini SDK calls, run evals, and use Gemini models in Braintrust
+- [Mistral](https://docs.braintrust.dev/integrations/ai-providers/mistral.md): Trace Mistral SDK calls and evaluate Mistral models in Braintrust
+- [Baseten](https://docs.braintrust.dev/integrations/ai-providers/baseten.md): Baseten model provider configuration and integration guide
+- [Cerebras](https://docs.braintrust.dev/integrations/ai-providers/cerebras.md): Cerebras model provider configuration and integration guide
+- [Cohere](https://docs.braintrust.dev/integrations/ai-providers/cohere.md): Trace Cohere SDK calls in Braintrust to debug prompts, evaluate models, and monitor production usage
+- [ElevenLabs](https://docs.braintrust.dev/integrations/ai-providers/elevenlabs.md): Trace ElevenLabs SDK calls in Braintrust to debug audio generation, evaluate models, and monitor production usage
+- [Fireworks](https://docs.braintrust.dev/integrations/ai-providers/fireworks.md): Fireworks AI model provider configuration and integration guide
+- [Groq](https://docs.braintrust.dev/integrations/ai-providers/groq.md): Trace Groq SDK calls and use Groq models in Braintrust
+- [Hugging Face](https://docs.braintrust.dev/integrations/ai-providers/huggingface.md): Trace Hugging Face Inference, Transformers.js, and local Transformers pipeline calls in Braintrust to debug prompts, evaluate models, and monitor production usage
+- [Lepton](https://docs.braintrust.dev/integrations/ai-providers/lepton.md): Lepton AI model provider configuration and integration guide
+- [Ollama](https://docs.braintrust.dev/integrations/ai-providers/ollama.md): Trace Ollama SDK calls in Braintrust to debug local model inference for chat, generate, and embedding calls
+- [Perplexity](https://docs.braintrust.dev/integrations/ai-providers/perplexity.md): Perplexity AI model provider configuration and integration guide
+- [Replicate](https://docs.braintrust.dev/integrations/ai-providers/replicate.md): Replicate model provider configuration and integration guide
+- [Together](https://docs.braintrust.dev/integrations/ai-providers/together.md): Together AI model provider configuration and integration guide
+- [TypeSafe](https://docs.braintrust.dev/integrations/ai-providers/typesafe.md): Trace TypeSafe Jev calls, inspect structured decisions, and use Jev as an LLM judge to score or label AI outputs against your criteria.
+- [Voyage AI](https://docs.braintrust.dev/integrations/ai-providers/voyageai.md): Trace Voyage AI SDK calls in Braintrust to debug prompts, evaluate models, and monitor production usage
+- [xAI](https://docs.braintrust.dev/integrations/ai-providers/xai.md): xAI model provider configuration and integration guide
+
+#### Cloud providers
+
+- [AWS Bedrock](https://docs.braintrust.dev/integrations/ai-providers/bedrock.md): Trace AWS Bedrock SDK calls and use Bedrock models in Braintrust
+- [Google Vertex AI](https://docs.braintrust.dev/integrations/ai-providers/google.md): Configure Google Cloud Vertex AI in Braintrust to access Google and partner models
+- [Azure AI Foundry](https://docs.braintrust.dev/integrations/ai-providers/azure.md): Trace Azure OpenAI SDK calls and use Azure AI Foundry models in Braintrust
+- [Azure AI Gateway](https://docs.braintrust.dev/integrations/ai-providers/azure-ai-gateway.md): Use the models behind your Azure AI Gateway in Braintrust playgrounds, prompts, and scorers
+- [Databricks](https://docs.braintrust.dev/integrations/ai-providers/databricks.md): Configure Databricks Model Serving to access foundation models
+
+### SDKs
+
+- [SDK integrations](https://docs.braintrust.dev/integrations/sdk-integrations/index.md): Integrate with existing frameworks
+
+#### Tracing integrations
+
+- [Vercel](https://docs.braintrust.dev/integrations/sdk-integrations/vercel.md): Trace Vercel AI SDK calls and collect Vercel Marketplace traces in Braintrust
+- [LangChain](https://docs.braintrust.dev/integrations/sdk-integrations/langchain.md): Trace LangChain applications in Braintrust to debug prompts, evaluate models, and monitor production usage
+- [LangChain4j](https://docs.braintrust.dev/integrations/sdk-integrations/langchain4j.md): Trace LangChain4j calls in Braintrust to debug prompts, evaluate models, and monitor production usage
+- [LangSmith](https://docs.braintrust.dev/integrations/sdk-integrations/langsmith.md): Trace LangSmith applications in Braintrust to observe and evaluate LLM calls, chains, and tools
+- [LlamaIndex](https://docs.braintrust.dev/integrations/sdk-integrations/llamaindex.md): Trace LlamaIndex calls in Braintrust to debug prompts, evaluate models, and monitor RAG pipelines
+- [Apollo GraphQL](https://docs.braintrust.dev/integrations/sdk-integrations/apollo-graphql.md): Trace Apollo GraphQL queries, mutations, and resolvers in Braintrust to debug and monitor your GraphQL API
+- [Cloudflare](https://docs.braintrust.dev/integrations/sdk-integrations/cloudflare.md): Trace Cloudflare AI Gateway and Workers AI calls, and export Cloudflare Agents traces to Braintrust with OpenTelemetry
+- [CloudWeGo Eino](https://docs.braintrust.dev/integrations/sdk-integrations/cloudwego-eino.md): Trace CloudWeGo Eino chat model, tool, and embedding calls in Braintrust to debug and evaluate your LLM apps
+- [DSPy](https://docs.braintrust.dev/integrations/sdk-integrations/dspy.md): Trace DSPy pipelines in Braintrust to debug modules, evaluate prompts, and monitor LLM calls
+- [Firebase Genkit](https://docs.braintrust.dev/integrations/sdk-integrations/firebase-genkit.md): Trace Firebase Genkit calls in Braintrust to debug prompts, evaluate models, and monitor production usage
+- [Google Discovery Engine](https://docs.braintrust.dev/integrations/sdk-integrations/google-discovery-engine.md): Trace Google Cloud Discovery Engine SDK calls in Braintrust to debug AI-powered search, answer generation, and ranking
+- [Instructor](https://docs.braintrust.dev/integrations/sdk-integrations/instructor.md): Trace Instructor structured-output calls in Braintrust to debug extractions, evaluate models, and monitor retries
+- [LiteLLM](https://docs.braintrust.dev/integrations/sdk-integrations/litellm.md): Trace LiteLLM calls in Braintrust to debug routing and outputs across 100+ model providers
+- [MCP SDK](https://docs.braintrust.dev/integrations/sdk-integrations/mcp-sdk.md): Trace the tool calls, prompt requests, and resource reads your MCP server handles to debug failures and monitor production usage
+- [RubyLLM](https://docs.braintrust.dev/integrations/sdk-integrations/ruby-llm.md): Trace RubyLLM applications in Braintrust to debug prompts, evaluate models, and monitor production usage
+- [Spring AI](https://docs.braintrust.dev/integrations/sdk-integrations/spring-ai.md): Trace Spring AI calls in Braintrust to debug prompts, evaluate models, and monitor production usage
+- [Temporal](https://docs.braintrust.dev/integrations/sdk-integrations/temporal.md): Trace Temporal workflow and activity executions in Braintrust to debug and monitor distributed applications
+- [Traceloop](https://docs.braintrust.dev/integrations/sdk-integrations/traceloop.md): Trace LLM calls and workflows from Traceloop OpenLLMetry in Braintrust to debug prompts and monitor production usage
+- [TrueFoundry](https://docs.braintrust.dev/integrations/sdk-integrations/truefoundry.md): Export LLM traces from TrueFoundry AI Gateway to Braintrust
+
+##### OpenTelemetry
+
+- [Send OpenTelemetry traces and logs to Braintrust](https://docs.braintrust.dev/integrations/sdk-integrations/opentelemetry/send-traces-and-logs.md): Send OpenTelemetry traces and logs to Braintrust using an exporter, Collector, or Braintrust span processor
+- [Link Braintrust and OpenTelemetry spans](https://docs.braintrust.dev/integrations/sdk-integrations/opentelemetry/link-spans.md): Combine Braintrust and OpenTelemetry spans in one trace within an application or across services
+- [OpenTelemetry attributes and events](https://docs.braintrust.dev/integrations/sdk-integrations/opentelemetry/attributes.md): Map OpenTelemetry span attributes and events to Braintrust fields and understand how log records are stored
+
+#### Agent frameworks
+
+- [A2A (Agent2Agent)](https://docs.braintrust.dev/integrations/agent-frameworks/a2a.md): Trace A2A protocol client and server calls in Braintrust to debug and evaluate multi-agent interactions
+- [Agno](https://docs.braintrust.dev/integrations/agent-frameworks/agno.md): Trace Agno agents, teams, and workflows in Braintrust to debug prompts, evaluate models, and monitor production usage
+- [OpenAI Agents SDK](https://docs.braintrust.dev/integrations/agent-frameworks/openai-agents-sdk.md): Trace OpenAI Agents SDK runs in Braintrust to debug agents, evaluate models, and monitor production
+- [OpenAI Codex SDK](https://docs.braintrust.dev/integrations/agent-frameworks/openai-codex-sdk.md): Trace OpenAI Codex SDK runs in Braintrust to debug agent turns, tool calls, and code-editing workflows
+- [Pi Coding Agent SDK](https://docs.braintrust.dev/integrations/agent-frameworks/pi-coding-agent.md): Trace Pi Coding Agent SDK prompts, Anthropic LLM calls, and tool invocations in Braintrust
+- [OpenRouter Agent](https://docs.braintrust.dev/integrations/agent-frameworks/openrouter-agent.md): Trace OpenRouter Agent calls with Braintrust
+- [Claude Agent SDK](https://docs.braintrust.dev/integrations/agent-frameworks/claude-agent-sdk.md): Trace Claude Agent SDK runs in Braintrust to debug agent queries, tool calls, and multi-step reasoning
+- [Cursor SDK](https://docs.braintrust.dev/integrations/agent-frameworks/cursor-sdk.md): Trace Cursor agent SDK runs in Braintrust to debug tool calls, subagents, and multi-step reasoning
+- [Cloudflare Think](https://docs.braintrust.dev/integrations/agent-frameworks/cloudflare-think.md): Trace @cloudflare/think agent runs in Braintrust to debug multi-turn reasoning, LLM calls, and tool use on Cloudflare Workers
+- [Flue](https://docs.braintrust.dev/integrations/agent-frameworks/flue.md): Trace Flue agent workflows in Braintrust to debug LLM turns, tool calls, delegated tasks, and context compaction
+- [Deep Agents](https://docs.braintrust.dev/integrations/agent-frameworks/deepagents.md): Trace Deep Agents workflows in Braintrust to debug agent plans, tool calls, and model calls. Uses the Braintrust LangChain integration with auto-instrumentation or manual callbacks.
+- [DeepSeek Harness](https://docs.braintrust.dev/integrations/agent-frameworks/deepseek-harness.md): Trace DeepSeek Harness agent sessions in Braintrust to observe user turns, LLM steps, tool calls, and child session interactions
+- [Eve](https://docs.braintrust.dev/integrations/agent-frameworks/eve.md): Trace Eve agent sessions in Braintrust to observe LLM steps, tool calls, and subagent interactions
+- [LangGraph](https://docs.braintrust.dev/integrations/agent-frameworks/langgraph.md): Trace LangGraph graph execution in Braintrust to debug agent runs, inspect node transitions, evaluate models, and monitor production usage
+- [CrewAI](https://docs.braintrust.dev/integrations/agent-frameworks/crew-ai.md): Trace CrewAI multi-agent runs in Braintrust to debug crews, agents, and tool calls
+- [AutoGen](https://docs.braintrust.dev/integrations/agent-frameworks/autogen.md): Trace AutoGen multi-agent runs in Braintrust to debug agents, teams, and tool calls
+- [AgentScope](https://docs.braintrust.dev/integrations/agent-frameworks/agentscope.md): Trace AgentScope multi-agent runs in Braintrust to debug agents, pipelines, and tool calls
+- [Google ADK (Agent Development Kit)](https://docs.braintrust.dev/integrations/agent-frameworks/google.md): Trace Google ADK agents in Braintrust to debug prompts, tool calls, and multi-step reasoning
+- [LiveKit Agents](https://docs.braintrust.dev/integrations/agent-frameworks/livekit-agents.md): Trace real-time voice AI pipelines built with LiveKit Agents, including LLM turns, speech-to-text, text-to-speech, and function tool calls
+- [Pipecat](https://docs.braintrust.dev/integrations/agent-frameworks/pipecat.md): Trace Pipecat AI voice pipelines in Braintrust to debug LLM turns, speech-to-text, text-to-speech, and tool calls
+- [Mastra](https://docs.braintrust.dev/integrations/agent-frameworks/mastra.md)
+- [Microsoft Agent Framework](https://docs.braintrust.dev/integrations/agent-frameworks/microsoft-agent-framework.md): Trace Microsoft Agent Framework agents in Braintrust to debug agent runs, model calls, and tool executions
+- [Pydantic AI](https://docs.braintrust.dev/integrations/agent-frameworks/pydantic-ai.md): Trace Pydantic AI agents in Braintrust to debug prompts, evaluate models, and monitor production usage
+- [Roast](https://docs.braintrust.dev/integrations/agent-frameworks/roast.md): Trace Roast AI workflows and individual cogs in Braintrust to debug step-by-step execution, inspect LLM calls, and monitor workflow failures
+- [Strands Agents SDK](https://docs.braintrust.dev/integrations/agent-frameworks/strands-agent.md): Trace Strands agent runs in Braintrust to debug agent reasoning, model calls, and tool execution
+- [Cloudflare Agents](https://docs.braintrust.dev/integrations/agent-frameworks/cloudflare-agents.md): Trace Cloudflare Agents tool calls in Braintrust to debug agent behavior, inspect tool inputs and outputs, and monitor errors
+- [Cloudflare AI Chat](https://docs.braintrust.dev/integrations/agent-frameworks/cloudflare-ai-chat.md): Trace Cloudflare AI Chat agent conversations in Braintrust to debug chat turns, LLM calls, tool use, and errors
+
+#### Eval frameworks
+
+- [Harbor](https://docs.braintrust.dev/integrations/sdk-integrations/harbor.md): Sync Harbor agent evaluation results to Braintrust with the native Harbor job plugin, capturing datasets, experiments, scores, and agent traces
+
+#### Testing frameworks
+
+- [Pytest](https://docs.braintrust.dev/integrations/sdk-integrations/pytest.md)
+- [Node.js test runner](https://docs.braintrust.dev/integrations/sdk-integrations/node-test-runner.md)
+- [Vitest](https://docs.braintrust.dev/integrations/sdk-integrations/vitest.md): Run Braintrust evaluations from Vitest and report test results as experiments
+
+### Developer tools
+
+- [Braintrust MCP](https://docs.braintrust.dev/integrations/developer-tools/mcp.md): Connect Claude Code, Cowork, Cursor, Codex, and other MCP clients to Braintrust. Query logs, author scorers, configure Topics, and run evaluations
+- [Claude Code](https://docs.braintrust.dev/integrations/developer-tools/claude-code.md): Trace Claude Code sessions to Braintrust and access your Braintrust data through the MCP server
+- [Claude Cowork](https://docs.braintrust.dev/integrations/developer-tools/claude-cowork.md): Connect Claude Cowork to Braintrust MCP with a remote connector to query logs, compare experiments, and work with Braintrust data from Cowork.
+- [Codex](https://docs.braintrust.dev/integrations/developer-tools/codex.md): Trace Codex sessions to Braintrust and access your Braintrust data through the MCP server
+- [Cursor](https://docs.braintrust.dev/integrations/developer-tools/cursor.md): Trace Cursor agent sessions to Braintrust and access your Braintrust data through the MCP server
+- [Devin Desktop](https://docs.braintrust.dev/integrations/developer-tools/devin-desktop.md): Connect the Braintrust MCP server to Devin Desktop so its coding agent can access your projects, experiments, and logs
+- [Google Antigravity](https://docs.braintrust.dev/integrations/developer-tools/antigravity.md): Trace Antigravity coding sessions to Braintrust and access your Braintrust data through the MCP server
+- [Grok](https://docs.braintrust.dev/integrations/developer-tools/grok.md): Trace Grok sessions to Braintrust and access your Braintrust data through the MCP server
+- [Muse Code](https://docs.braintrust.dev/integrations/developer-tools/muse-code.md): Trace Muse Code sessions to Braintrust and access your Braintrust data through the MCP server
+- [OpenCode](https://docs.braintrust.dev/integrations/developer-tools/opencode.md): Trace OpenCode sessions to Braintrust and access your Braintrust data through built-in tools or MCP
+- [pi](https://docs.braintrust.dev/integrations/developer-tools/pi.md): Trace your pi coding sessions to Braintrust and use the Braintrust MCP server to query projects, experiments, logs, and datasets from pi
+- [VS Code](https://docs.braintrust.dev/integrations/developer-tools/vscode.md): Connect VS Code to the Braintrust MCP server to query logs, compare experiments, and work with datasets
+
+### Runtime environments
+
+- [AWS Lambda](https://docs.braintrust.dev/integrations/runtime-environments/aws-lambda.md): Reduce request-path logging latency from AWS Lambda functions with the Braintrust Lambda Extension
+
+## SDKs
+
+### All SDKs
+
+- [SDKs](https://docs.braintrust.dev/sdks/index.md): Build, evaluate, and observe AI applications with Braintrust in your own code.
+
+### TypeScript
+
+- [TypeScript SDK quickstart](https://docs.braintrust.dev/sdks/typescript/quickstart.md): Install the Braintrust TypeScript SDK, instrument your application, and verify that traces appear in Braintrust.
+
+#### Use the SDK
+
+- [Install and instrument](https://docs.braintrust.dev/sdks/typescript/install-and-instrument.md): Install the TypeScript SDK, set an API key, and configure tracing by hand.
+- [TypeScript SDK integrations](https://docs.braintrust.dev/sdks/typescript/sdk-integrations.md): AI providers, agent frameworks, and tools the Braintrust TypeScript SDK integrates with.
+- [Troubleshooting](https://docs.braintrust.dev/sdks/typescript/troubleshooting.md): Diagnose and fix common issues when installing or using the Braintrust TypeScript SDK.
+
+#### Features
+
+- [Workflow evaluations](https://docs.braintrust.dev/sdks/typescript/workflow-evaluations.md): Submit evaluation tasks and scorers to asynchronous provider APIs, then collect results through polling or webhooks in one Braintrust experiment.
+- [Application logs](https://docs.braintrust.dev/sdks/typescript/application-logs.md): Emit application logs from the TypeScript SDK or forward console output, then associate them with the traces they belong to.
+- [Redact sensitive data](https://docs.braintrust.dev/sdks/typescript/redact-sensitive-data.md): Remove sensitive data from TypeScript SDK traces before upload with a masking function, span customizers, or both.
+
+#### Reference
+
+- [API reference](https://docs.braintrust.dev/sdks/typescript/api-reference.md): Functions, classes, and configuration options found in the Braintrust TypeScript SDK.
+- [Changelog](https://docs.braintrust.dev/sdks/typescript/changelog.md)
+- [GitHub](https://docs.braintrust.dev/sdks/typescript/github.md)
+
+##### Versions
+
+- [Braintrust TypeScript SDK](https://docs.braintrust.dev/sdks/typescript/versions/3.42.0.md): TypeScript API reference for Braintrust SDK v3.42.0
+
+##### Migration guides
+
+- [Migrate from v2.x to v3.x](https://docs.braintrust.dev/sdks/typescript/migrations/v2-to-v3.md): Guide for migrating from TypeScript SDK v2.x to v3.x
+- [Migrate from v1.x to v2.x](https://docs.braintrust.dev/sdks/typescript/migrations/v1-to-v2.md): Guide for migrating from TypeScript SDK v1.x to v2.x
+- [Migrate from v0.x to v1.x](https://docs.braintrust.dev/sdks/typescript/migrations/v0-to-v1.md): Guide for migrating from TypeScript SDK v0.x to v1.x
+
+#### Related packages
+
+- [TypeScript SDK: related packages](https://docs.braintrust.dev/sdks/typescript/related/index.md): Adjacent npm packages that work alongside the Braintrust TypeScript SDK.
+
+##### Audio
+
+- [Audio JS package](https://docs.braintrust.dev/sdks/typescript/related/audio/0.1.0.md): Compress LiveKit Agents call recordings to Opus audio in Ogg files with @braintrust/audio v0.1.0, which the TypeScript SDK loads automatically.
+
+##### Autoevals
+
+- [Autoevals TypeScript API](https://docs.braintrust.dev/sdks/typescript/related/autoevals/0.3.0.md): TypeScript API reference for Autoevals v0.3.0
+
+##### LangChain (deprecated)
+
+- [LangChain JS Integration](https://docs.braintrust.dev/sdks/typescript/related/langchain/0.2.5.md): LangChain JS Integration v0.2.5
+
+##### OpenAI Agents
+
+- [OpenAI Agents JS Integration](https://docs.braintrust.dev/sdks/typescript/related/openai-agents/0.1.7.md): OpenAI Agents JS Integration v0.1.7
+
+##### OpenTelemetry
+
+- [OpenTelemetry JS Integration](https://docs.braintrust.dev/sdks/typescript/related/otel/1.1.0.md): OpenTelemetry JS Integration v1.1.0
+
+### Python
+
+- [Python SDK quickstart](https://docs.braintrust.dev/sdks/python/quickstart.md): Install the Braintrust Python SDK, instrument your application, and verify that traces appear in Braintrust.
+
+#### Use the SDK
+
+- [Install and instrument](https://docs.braintrust.dev/sdks/python/install-and-instrument.md): Install the Python SDK, set an API key, and configure tracing by hand.
+- [Python SDK integrations](https://docs.braintrust.dev/sdks/python/sdk-integrations.md): AI providers, agent frameworks, and tools the Braintrust Python SDK integrates with.
+- [Troubleshooting](https://docs.braintrust.dev/sdks/python/troubleshooting.md): Diagnose and fix common issues when installing or using the Braintrust Python SDK.
+
+#### Features
+
+- [Workflow evaluations](https://docs.braintrust.dev/sdks/python/workflow-evaluations.md): Submit evaluation tasks and scorers to asynchronous provider APIs, then collect results through polling or webhooks in one Braintrust experiment.
+- [Application logs](https://docs.braintrust.dev/sdks/python/application-logs.md): Emit application logs from the Python SDK or forward standard-library logging records, then associate them with the traces they belong to.
+- [Redact sensitive data](https://docs.braintrust.dev/sdks/python/redact-sensitive-data.md): Remove sensitive data from Python SDK traces before upload with a masking function, span customizers, or both.
+
+#### Reference
+
+- [API reference](https://docs.braintrust.dev/sdks/python/api-reference.md): Functions, classes, and configuration options found in the Braintrust Python SDK.
+- [Changelog](https://docs.braintrust.dev/sdks/python/changelog.md)
+- [GitHub](https://docs.braintrust.dev/sdks/python/github.md)
+
+##### Versions
+
+- [Braintrust Python SDK](https://docs.braintrust.dev/sdks/python/versions/0.49.2.md): Python API reference for Braintrust SDK v0.49.2
+
+#### Related packages
+
+- [Python SDK: related packages](https://docs.braintrust.dev/sdks/python/related/index.md): Adjacent Python packages that work alongside the Braintrust Python SDK.
+
+##### Autoevals
+
+- [Autoevals Python API](https://docs.braintrust.dev/sdks/python/related/autoevals/0.3.0.md): Python API reference for Autoevals v0.3.0
+
+##### LangChain (deprecated)
+
+- [LangChain Python Integration](https://docs.braintrust.dev/sdks/python/related/langchain/0.3.0.md): Braintrust integration for LangChain Python v0.3.0 (deprecated)
+
+##### Google ADK (deprecated)
+
+- [Google ADK Integration](https://docs.braintrust.dev/sdks/python/related/adk/0.4.0.md): Braintrust integration for Google ADK v0.4.0 (deprecated)
+
+### Go
+
+- [Go SDK quickstart](https://docs.braintrust.dev/sdks/go/quickstart.md): Install the Braintrust Go SDK, instrument your application, and verify that traces appear in Braintrust.
+
+#### Use the SDK
+
+- [Install and instrument](https://docs.braintrust.dev/sdks/go/install-and-instrument.md): Install the Go SDK, set an API key, and configure tracing by hand.
+- [Go SDK integrations](https://docs.braintrust.dev/sdks/go/sdk-integrations.md): AI providers and tools the Braintrust Go SDK integrates with.
+- [Troubleshooting](https://docs.braintrust.dev/sdks/go/troubleshooting.md): Diagnose and fix common issues when installing or using the Braintrust Go SDK.
+
+#### Features
+
+- [Workflow evaluations](https://docs.braintrust.dev/sdks/go/workflow-evaluations.md): Submit Go evaluation tasks and scorers to asynchronous provider APIs, then collect results through polling or webhooks in one Braintrust experiment.
+- [Redact sensitive data](https://docs.braintrust.dev/sdks/go/redact-sensitive-data.md): Remove sensitive data from Go SDK traces before upload with span customizers, which run on every span the SDK exports.
+
+#### Reference
+
+- [API reference](https://docs.braintrust.dev/sdks/go/api-reference.md): Functions and configuration options found in the Braintrust Go SDK.
+- [Changelog](https://docs.braintrust.dev/sdks/go/changelog.md)
+- [GitHub](https://docs.braintrust.dev/sdks/go/github.md)
+
+##### Versions
+
+- [Braintrust Go SDK](https://docs.braintrust.dev/sdks/go/versions/0.19.0.md): Go API reference for Braintrust SDK v0.19.0
+- [Braintrust Go SDK](https://docs.braintrust.dev/sdks/go/versions/0.9.1.md): Go API reference for Braintrust SDK v0.9.1
+
+##### Migration guides
+
+- [Migrate from v0.3.x to v0.4.x](https://docs.braintrust.dev/sdks/go/migrations/v0-3-to-v0-4.md): Guide for migrating from Go SDK v0.3.x to v0.4.x
+
+### Java
+
+- [Java SDK quickstart](https://docs.braintrust.dev/sdks/java/quickstart.md): Install the Braintrust Java SDK, instrument your application, and verify that traces appear in Braintrust.
+
+#### Use the SDK
+
+- [Install and instrument](https://docs.braintrust.dev/sdks/java/install-and-instrument.md): Install the Java SDK, set an API key, and configure tracing by hand.
+- [Java SDK integrations](https://docs.braintrust.dev/sdks/java/sdk-integrations.md): AI providers and frameworks the Braintrust Java SDK integrates with.
+- [Troubleshooting](https://docs.braintrust.dev/sdks/java/troubleshooting.md): Diagnose and fix common issues when installing or using the Braintrust Java SDK.
+
+#### Features
+
+- [Redact sensitive data](https://docs.braintrust.dev/sdks/java/redact-sensitive-data.md): Remove sensitive data from Java SDK traces before upload with span customizers, which run on every span the SDK exports.
+
+#### Reference
+
+- [API reference](https://docs.braintrust.dev/sdks/java/api-reference.md): Functions, classes, and configuration options found in the Braintrust Java SDK.
+- [Changelog](https://docs.braintrust.dev/sdks/java/changelog.md)
+- [GitHub](https://docs.braintrust.dev/sdks/java/github.md)
+
+##### Versions
+
+- [0.3.28](https://docs.braintrust.dev/sdks/java/versions/0.3.28.md)
+
+### Ruby
+
+- [Ruby SDK quickstart](https://docs.braintrust.dev/sdks/ruby/quickstart.md): Install the Braintrust Ruby SDK, instrument your application, and verify that traces appear in Braintrust.
+
+#### Use the SDK
+
+- [Install and instrument](https://docs.braintrust.dev/sdks/ruby/install-and-instrument.md): Install the Ruby SDK, set an API key, and configure tracing by hand.
+- [Ruby SDK integrations](https://docs.braintrust.dev/sdks/ruby/sdk-integrations.md): AI providers and tools the Braintrust Ruby SDK integrates with.
+- [Troubleshooting](https://docs.braintrust.dev/sdks/ruby/troubleshooting.md): Diagnose and fix common issues when installing or using the Braintrust Ruby SDK.
+
+#### Features
+
+- [Redact sensitive data](https://docs.braintrust.dev/sdks/ruby/redact-sensitive-data.md): Remove sensitive data from Ruby SDK traces before they reach Braintrust using span customizers, which run on every span the SDK exports.
+
+#### Reference
+
+- [API reference](https://docs.braintrust.dev/sdks/ruby/api-reference.md): Functions, classes, and configuration options found in the Braintrust Ruby SDK.
+- [Changelog](https://docs.braintrust.dev/sdks/ruby/changelog.md)
+- [GitHub](https://docs.braintrust.dev/sdks/ruby/github.md)
+
+##### Versions
+
+- [0.6.0](https://docs.braintrust.dev/sdks/ruby/versions/0.6.0.md)
+
+### C#
+
+- [C# SDK quickstart](https://docs.braintrust.dev/sdks/csharp/quickstart.md): Install the Braintrust .NET SDK, instrument your application, and verify that traces appear in Braintrust.
+
+#### Use the SDK
+
+- [Install and instrument](https://docs.braintrust.dev/sdks/csharp/install-and-instrument.md): Install the .NET SDK, set an API key, and configure tracing by hand.
+- [C# SDK integrations](https://docs.braintrust.dev/sdks/csharp/sdk-integrations.md): AI providers and tools the Braintrust .NET SDK integrates with.
+- [Troubleshooting](https://docs.braintrust.dev/sdks/csharp/troubleshooting.md): Diagnose and fix common issues when installing or using the Braintrust .NET SDK.
+
+#### Reference
+
+- [API reference](https://docs.braintrust.dev/sdks/csharp/api-reference.md): Functions, classes, and configuration options found in the Braintrust .NET SDK.
+- [Changelog](https://docs.braintrust.dev/sdks/csharp/changelog.md)
+- [GitHub](https://docs.braintrust.dev/sdks/csharp/github.md)
+
+- [Reference (204 pages)](https://docs.braintrust.dev/_llms/reference.txt): Documentation for Reference.
+
+## Cookbook
+
+- [Cookbook](https://docs.braintrust.dev/cookbook/index.md)
+
+### Recipes
+
+- [Improving coding agents with coding agent insights](https://docs.braintrust.dev/cookbook/recipes/CodingAgentInsights.md): Track your team's coding-agent usage and cost, and use a daily Loop automation to identify recurring problems.
+- [Supervising agent behavior with behavior specs](https://docs.braintrust.dev/cookbook/recipes/AgentBehavior.md)
+- [Analyzing agent traces from Hugging Face](https://docs.braintrust.dev/cookbook/recipes/HuggingFaceAgentTraces.md)
+- [Finding production issues using Topics](https://docs.braintrust.dev/cookbook/recipes/FindingProductionIssues.md)
+- [Building a deep research agent with Temporal](https://docs.braintrust.dev/cookbook/recipes/TemporalDeepResearch.md)
+- [Evaluating and iterating on AI apps with Lovable](https://docs.braintrust.dev/cookbook/recipes/Lovable.md)
+- [Using Loop in AI product development](https://docs.braintrust.dev/cookbook/recipes/Loop.md)
+- [Observability for Strands Agents on Amazon Bedrock](https://docs.braintrust.dev/cookbook/recipes/AmazonBedrockStrands.md)
+- [Building reliable AI agents](https://docs.braintrust.dev/cookbook/recipes/AgentWhileLoop.md)
+- [Using PDF attachments in playgrounds](https://docs.braintrust.dev/cookbook/recipes/PDFPlayground.md)
+- [Tracing Vercel AI SDK applications](https://docs.braintrust.dev/cookbook/recipes/VercelAISDKTracing.md)
+- [Evaluating video QA with Twelve Labs](https://docs.braintrust.dev/cookbook/recipes/VideoQATwelveLabs.md)
+- [Evaluating a web agent](https://docs.braintrust.dev/cookbook/recipes/WebAgent.md)
+- [Prompt versioning and deployment](https://docs.braintrust.dev/cookbook/recipes/PromptVersioning.md)
+- [Evaluating video QA](https://docs.braintrust.dev/cookbook/recipes/VideoQA.md)
+- [Evaluating a voice agent](https://docs.braintrust.dev/cookbook/recipes/VoiceAgent.md)
+- [Classifying spam using structured outputs](https://docs.braintrust.dev/cookbook/recipes/SpamClassifier.md)
+- [Evaluating a prompt chaining agent](https://docs.braintrust.dev/cookbook/recipes/PromptChaining.md)
+- [Evaluating the precision and recall of an emotion classifier](https://docs.braintrust.dev/cookbook/recipes/PrecisionRecall.md)
+- [Evaluating audio with the OpenAI Realtime API](https://docs.braintrust.dev/cookbook/recipes/Realtime.md)
+- [Evaluating SimpleQA](https://docs.braintrust.dev/cookbook/recipes/SimpleQA.md)
+- [Evaluating voice AI agents with Evalion](https://docs.braintrust.dev/cookbook/recipes/EvalionVoiceAgentEval.md)
+- [Using Python functions to extract text from images](https://docs.braintrust.dev/cookbook/recipes/ToolOCR.md)
+- [Using OpenTelemetry for LLM observability](https://docs.braintrust.dev/cookbook/recipes/OTEL-logging.md)
+- [Using functions to build a RAG agent](https://docs.braintrust.dev/cookbook/recipes/ToolRAG.md)
+- [Evaluating multimodal receipt extraction](https://docs.braintrust.dev/cookbook/recipes/ReceiptExtraction.md)
+- [Unreleased AI: A full stack Next.js app for generating changelogs](https://docs.braintrust.dev/cookbook/recipes/UnreleasedAI.md)
+- [An agent that runs OpenAPI commands](https://docs.braintrust.dev/cookbook/recipes/APIAgent-Py.md)
+- [Benchmarking inference providers](https://docs.braintrust.dev/cookbook/recipes/ProviderBenchmark.md)
+- [Tool calls in LLaMa 3.1](https://docs.braintrust.dev/cookbook/recipes/LLaMa-3_1-Tools.md)
+- [Evaluating a chat assistant](https://docs.braintrust.dev/cookbook/recipes/EvaluatingChatAssistant.md)
+- [LLM Eval For Text2SQL](https://docs.braintrust.dev/cookbook/recipes/Text2SQL-Data.md)
+- [Optimizing Ragas to evaluate a RAG pipeline](https://docs.braintrust.dev/cookbook/recipes/SimpleRagas.md)
+- [Comparing evals across multiple AI models](https://docs.braintrust.dev/cookbook/recipes/ModelComparison.md)
+- [Detecting Prompt Injections](https://docs.braintrust.dev/cookbook/recipes/PromptInjectionDetector.md)
+- [AI Search Bar](https://docs.braintrust.dev/cookbook/recipes/AISearch.md)
+- [How Zapier uses assertions to evaluate tool usage in chatbots](https://docs.braintrust.dev/cookbook/recipes/Assertions.md)
+- [Generating release notes and hill-climbing to improve them](https://docs.braintrust.dev/cookbook/recipes/ReleaseNotes.md)
+- [Generating beautiful HTML components](https://docs.braintrust.dev/cookbook/recipes/HTMLGenerator.md)
+- [Coda's Help Desk with and without RAG](https://docs.braintrust.dev/cookbook/recipes/CodaHelpDesk.md)
+- [Improving Github issue titles using their contents](https://docs.braintrust.dev/cookbook/recipes/Github-Issues.md)
+- [Classifying news articles](https://docs.braintrust.dev/cookbook/recipes/ClassifyingNewsArticles.md)
+- [Text-to-SQL](https://docs.braintrust.dev/cookbook/recipes/Text2SQL.md)
+
+## Troubleshooting
+
+### All troubleshooting guides
+
+- [Knowledge Base](https://docs.braintrust.dev/kb/index.md): Troubleshooting guides, configuration instructions, and system documentation
+- [Troubleshooting guides](https://docs.braintrust.dev/kb/troubleshooting-guides.md): Resolve errors, debug issues, and fix common problems
+- [Config guides](https://docs.braintrust.dev/kb/config-guides.md): Set up features, configure integrations, and enable capabilities
+- [Process & systems](https://docs.braintrust.dev/kb/process-systems.md): Understand system behavior and technical architecture
+- [Azure AD client secret rotation SSO failures](https://docs.braintrust.dev/kb/azure-ad-client-secret-rotation-sso-failures.md)
+- [OTLP traces endpoint payload limits](https://docs.braintrust.dev/kb/otlp-traces-endpoint-payload-limits.md)
+- [Include runtime LLM output in dataset exports](https://docs.braintrust.dev/kb/include-runtime-llm-output-in-dataset-exports.md)
+
+## Changelog
+
+### Changelog
+
+- [Product updates](https://docs.braintrust.dev/changelog.md): New updates and product improvements
+- [Self-hosting releases](https://docs.braintrust.dev/data-plane-changelog.md): Release notes and infrastructure requirements for self-hosted Braintrust deployments
+- [Feature lifecycle](https://docs.braintrust.dev/feature-lifecycle.md): Understand what private preview, public preview, and general availability mean for the availability, stability, and production readiness of features in Braintrust.
+
+## Other
+
+- [C# SDK changelog](https://docs.braintrust.dev/changelog/csharp-sdk.md)
+- [Go SDK changelog](https://docs.braintrust.dev/changelog/go-sdk.md)
+- [Java SDK changelog](https://docs.braintrust.dev/changelog/java-sdk.md)
+- [Python SDK changelog](https://docs.braintrust.dev/changelog/python-sdk.md)
+- [Ruby SDK changelog](https://docs.braintrust.dev/changelog/ruby-sdk.md)
+- [TypeScript SDK changelog](https://docs.braintrust.dev/changelog/typescript-sdk.md)
+- [500 error when iterating over a dataset](https://docs.braintrust.dev/kb/500-error-when-iterating-over-a-dataset.md)
+- [Aggregate scores across multiple experiments with BTQL](https://docs.braintrust.dev/kb/aggregate-scores-across-multiple-experiments-with-btql.md)
+- [API keys cannot create API keys via impersonation](https://docs.braintrust.dev/kb/api-keys-cannot-create-api-keys-via-impersonation.md)
+- [API rate limits during backfill operations](https://docs.braintrust.dev/kb/api-rate-limits-during-backfill-operations.md)
+- [Apply log retention policies across all projects via API](https://docs.braintrust.dev/kb/apply-log-retention-policies-across-all-projects-via-api.md)
+- [Assigning log rows to users for review using the API](https://docs.braintrust.dev/kb/assigning-log-rows-to-users-for-review-using-the-api-1780952401983.md)
+- [Attaching debuggers to Braintrust eval CLI](https://docs.braintrust.dev/kb/attaching-debuggers-to-braintrust-eval-cli.md)
+- [Autoevals Scorer 401 Braintrust gateway error](https://docs.braintrust.dev/kb/autoevals-scorer-401-braintrust-gateway-error.md)
+- [Automation scorer failures due to Gemini gateway routing errors](https://docs.braintrust.dev/kb/automation-scorer-failures-due-to-gemini-gateway-routing-errors.md)
+- [AWS Bedrock IAM permissions for Braintrust integration](https://docs.braintrust.dev/kb/aws-bedrock-iam-permissions-for-braintrust-integration.md)
+- [Trace-scoped automation scores missing from Monitor charts](https://docs.braintrust.dev/kb/backfilled-trace-scores-missing-from-monitor-charts.md): Understand why trace-scoped automation scores don't appear in Monitor charts after online scoring or a rewind, and how to make them visible.
+- [Bedrock model variations for on-demand throughput](https://docs.braintrust.dev/kb/bedrock-model-variations-for-on-demand-throughput.md)
+- [Bedrock Nova 2 inference-profile IAM and custom provider setup](https://docs.braintrust.dev/kb/bedrock-nova-2-inference-profile-iam-and-custom-provider-setup.md)
+- [Blank comparison rows due to mismatched inputs](https://docs.braintrust.dev/kb/blank-comparison-rows-due-to-mismatched-inputs.md)
+- [Blank iframe requires console log inspection](https://docs.braintrust.dev/kb/blank-iframe-requires-console-log-inspection.md)
+- [BTQL multiline query formatting error](https://docs.braintrust.dev/kb/btql-multiline-query-formatting-error.md)
+- [BTQL rate limits](https://docs.braintrust.dev/kb/btql-rate-limits.md)
+- [BTQL timeouts caused by oversized row fields](https://docs.braintrust.dev/kb/btql-timeouts-caused-by-oversized-row-fields.md): Diagnose and fix 502 errors and timeouts caused by very large rows during SQL exports.
+- [Claude Agent SDK API keys recorded in trace metadata](https://docs.braintrust.dev/kb/claude-agent-sdk-api-keys-recorded-in-trace-metadata.md): Understand whether Claude Agent SDK traces contain API keys, how to detect affected spans safely, and how to upgrade and rotate credentials.
+- [Claude Sonnet 4 missing from playground model picker](https://docs.braintrust.dev/kb/claude-sonnet-4-missing-from-playground-model-picker.md)
+- [Code scorer fails with pagination key error](https://docs.braintrust.dev/kb/code-scorer-fails-with-pagination-key-error.md)
+- [Code scorer function must be named handler](https://docs.braintrust.dev/kb/code-scorer-function-must-be-named-handler.md)
+- [Configure dataset schemas via API](https://docs.braintrust.dev/kb/configure-dataset-schemas-via-api.md)
+- [Allowlist Braintrust egress IPs for private provider endpoints](https://docs.braintrust.dev/kb/configure-litellm-as-a-custom-provider.md)
+- [Configure Microsoft Entra ID SAML SSO](https://docs.braintrust.dev/kb/configure-microsoft-entra-id-saml-sso.md): Configure Microsoft Entra ID as a SAML identity provider for Braintrust SSO, including exact ACS and Entity ID values, metadata upload, and troubleshooting identifier mismatches.
+- [Context length error caused by wrong AI provider routing](https://docs.braintrust.dev/kb/context-length-error-caused-by-wrong-ai-provider-routing.md)
+- [COUNT(DISTINCT) in GROUP BY returns row count](https://docs.braintrust.dev/kb/count-distinct-in-group-by-returns-row-count.md)
+- [Create a blank dashboard via API](https://docs.braintrust.dev/kb/create-a-blank-monitoring-view-via-api.md)
+- [Create a root span with client-generated conversation IDs](https://docs.braintrust.dev/kb/create-a-root-span-with-client-generated-conversation-ids.md)
+- [Create project-level AI providers via API](https://docs.braintrust.dev/kb/create-project-level-ai-providers-via-api.md): Create and update project-level AI provider credentials and configuration programmatically.
+- [Create Slack alerts via the project_automation API](https://docs.braintrust.dev/kb/create-slack-alerts-via-the-project-automation-api.md): Programmatically create Slack alerts for a project using the project_automation API with a POST request and action type "slack".
+- [Creating prompts with encoded custom provider model names](https://docs.braintrust.dev/kb/creating-prompts-with-custom-provider-model-names.md)
+- [Creating trace views requires create prompt permission](https://docs.braintrust.dev/kb/creating-trace-views-requires-create-prompt-permission.md)
+- [Cross-project scorer automation missing read access](https://docs.braintrust.dev/kb/cross-project-scorer-automation-missing-read-access.md)
+- [Cross-trace cost dashboard SQL patterns](https://docs.braintrust.dev/kb/cross-trace-cost-dashboard-sql-patterns.md): Build accurate cross-trace cost dashboards by filtering on root-span metadata and aggregating costs across multiple projects using SQL patterns.
+- [Cursor Cloud MCP JWT validation error fix](https://docs.braintrust.dev/kb/cursor-cloud-mcp-jwt-validation-error-fix.md)
+- [Custom code scorers with internet access](https://docs.braintrust.dev/kb/custom-code-scorers-with-internet-access.md): Configure a custom code scorer to make outbound HTTP requests and map external search results to a 0–1 score.
+- [Custom provider base URL causes chat prompt errors](https://docs.braintrust.dev/kb/custom-provider-base-url-causes-chat-prompt-errors.md)
+- [Custom view code cannot use package imports](https://docs.braintrust.dev/kb/custom-view-code-cannot-use-package-imports.md)
+- [Customizing experiment names in the SDK](https://docs.braintrust.dev/kb/customizing-experiment-names-in-the-sdk.md)
+- [Logs hidden by a span name schema error](https://docs.braintrust.dev/kb/dashboard-logs-missing-due-to-span.md): Recover logs hidden by a schema error after a span was logged with a non-string name, and prevent the error in new spans.
+- [Rows not attached to a dataset or experiment](https://docs.braintrust.dev/kb/dataset-not-linked-to-experiment-when-using-evalasync-with-parent.md)
+- [Dataset search limited to 1000 records](https://docs.braintrust.dev/kb/dataset-search-limited-to-1000-records.md)
+- [Debug hanging eval processes with external dependencies](https://docs.braintrust.dev/kb/debug-hanging-eval-processes-with-external.md)
+- [Deleting logs via API using correct row IDs](https://docs.braintrust.dev/kb/deleting-logs-via-api-using-correct-row-ids.md)
+- [Detecting Remote Eval and CLI Execution Context: SDK Hooks and Environment Variables](https://docs.braintrust.dev/kb/detecting-remote-eval-and-cli-execution-context-sdk-hooks-and-environment-variables.md)
+- [EMFILE Error (Too Many Open Files) During Evaluations: Controlling Concurrency to Prevent Resource Exhaustion](https://docs.braintrust.dev/kb/emfile-error-too-many-open-files-during-evaluations-controlling-concurrency-to-prevent-resource-exhaustion.md)
+- [Unexpected score columns in Logs](https://docs.braintrust.dev/kb/empty-automation-column-persists-after-scorer-deletion.md)
+- [Estimated cost missing in logs table with project-level providers](https://docs.braintrust.dev/kb/estimated-cost-missing-in-logs-table-with-project-level-providers.md)
+- [Remote eval runner environment variable size limit](https://docs.braintrust.dev/kb/eval-runner-environment-variable-size-limit.md): Diagnose and fix `Argument list too long` errors caused by the Linux per-environment-variable size cap (~128 KB) in the eval runner.
+- [Export billing usage data for reporting](https://docs.braintrust.dev/kb/export-billing-usage-data-for-reporting.md): Retrieve Braintrust billing usage data for internal reporting, dashboards, or data warehouse loading using the getOrganizationUsage API.
+- [Extend retention for specific traces using separate projects](https://docs.braintrust.dev/kb/extend-retention-for-specific-traces-using-separate-projects.md)
+- [Score logs by Topics facet values with batch scoring](https://docs.braintrust.dev/kb/facets-field-unavailable-in-automation-sql-filters.md)
+- [Fetching human review comments via API and BTQL](https://docs.braintrust.dev/kb/fetching-human-review-comments-via-api-and-btql.md)
+- [File attachment support across models](https://docs.braintrust.dev/kb/file-attachment-support-across-models.md)
+- [Filter logs for automatically converted file attachments](https://docs.braintrust.dev/kb/filter-logs-by-file-attachments.md): Filter your logs to find traces that contain automatically converted file attachments using SQL span filters.
+- [Filter logs by topic classification ID](https://docs.braintrust.dev/kb/filter-logs-by-topic-classification-id.md): Use Loop to retrieve a Topics classification ID, then filter Logs or a dataset pipeline by that ID to isolate matching traces.
+- [Filter logs for failed LLM calls](https://docs.braintrust.dev/kb/filter-logs-for-failed-llm-calls.md)
+- [Model cost missing when using third-party SDKs](https://docs.braintrust.dev/kb/fireworks-cost-missing-when-using-vercel-ai-sdk.md)
+- [Fix AI provider auth format and endpoint path after data plane v2](https://docs.braintrust.dev/kb/fix-ai-provider-auth-format-and-endpoint-path-after-data-plane-v2.md): Resolve AI provider authentication failures after upgrading to data plane v2 by correcting auth_format values and removing empty endpoint_path fields.
+- [Use custom preprocessor to fix missing Topics facet](https://docs.braintrust.dev/kb/fix-missing-topics-facet-with-custom-preprocessor.md): Restore missing Topics facet summaries by adding a custom preprocessor when your trace structure is not recognized by the default Thread preprocessor.
+- [Flagging logs and users for review via API](https://docs.braintrust.dev/kb/flagging-logs-and-users-for-review-via-api.md)
+- [Flagging users for review via API](https://docs.braintrust.dev/kb/flagging-users-for-review-via-api.md)
+- [Gateway calls fail in bt eval --dev mode](https://docs.braintrust.dev/kb/gateway-calls-fail-in-bt-eval-dev-mode.md)
+- [How fixed-amount coupons are applied to invoice charges](https://docs.braintrust.dev/kb/how-fixed-amount-coupons-are-applied-to-invoice-charges.md): Understand how fixed-amount coupon discounts are allocated across eligible invoice charges and how to identify usage-based overages.
+- [How to configure OpenAI for EU organizations](https://docs.braintrust.dev/kb/how-to-configure-openai-for-eu-organizations-1776438526526.md)
+- [How to Save Custom Instructions for Loop Using Project](https://docs.braintrust.dev/kb/how-to-save-custom-instructions-for.md)
+- [Human review assignee cannot see assigned experiments](https://docs.braintrust.dev/kb/human-review-assignee-cannot-see-assigned-experiments.md)
+- [Human review keyboard shortcuts](https://docs.braintrust.dev/kb/human-review-keyboard-shortcuts.md): Keyboard shortcuts for human review: keys, behaviors, and workarounds.
+- [Human review output format: string vs JSON](https://docs.braintrust.dev/kb/human-review-output-format-string-vs-json.md)
+- [Human review with multiple scores in expected field](https://docs.braintrust.dev/kb/human-review-with-multiple-scores-in.md)
+- [Include scorer explanations in S3 exports](https://docs.braintrust.dev/kb/include-scorer-explanations-in-s3-exports.md): Include scorer explanations in S3 exports by switching to span exports or using a custom SQL query.
+- [Invoke saved preprocessors from custom code scorers](https://docs.braintrust.dev/kb/invoke-saved-preprocessors-from-custom-code-scorers.md): Apply saved preprocessors in Python and TypeScript custom code scorers using direct invocation, project defaults, or manual thread assembly.
+- [Java SDK proxy configuration with authentication](https://docs.braintrust.dev/kb/java-sdk-proxy-configuration-with-authentication.md)
+- [JIT domain mapping setup for new users](https://docs.braintrust.dev/kb/jit-domain-mapping-setup-for-new-users.md): Configure JIT domain mappings for new Okta SAML users by submitting the required setup information to support and verifying that users are provisioned into the correct organization and permission group.
+- [Keyboard shortcuts for trace and span navigation](https://docs.braintrust.dev/kb/keyboard-shortcuts-for-trace-and-span-navigation.md): Navigate traces and spans in the Braintrust UI using keyboard shortcuts, including arrow keys for the log list and p/n for span navigation.
+- [Large experiment downloads timeout in UI](https://docs.braintrust.dev/kb/large-experiment-downloads-timeout-in-ui.md)
+- [Large trace download fails with 'Invalid string length'](https://docs.braintrust.dev/kb/large-trace-download-fails-with-invalid-string-length.md)
+- [LiteLLM instrumentation may record provider credentials](https://docs.braintrust.dev/kb/litellm-instrumentation-may-record-provider-credentials.md): Review common questions about the LiteLLM instrumentation security advisory, affected versions, credential exposure, and remediation.
+- [Lock down a single project with org groups](https://docs.braintrust.dev/kb/lock-down-a-single-project-with-org-groups.md): Move users from broad organization-wide groups to project-specific permission groups in stages, or isolate a project in a separate organization.
+- [Log filtering with large user ID sets](https://docs.braintrust.dev/kb/log-filtering-with-large-user-id-sets.md)
+- [Log filtering with tags stalls after 50 results](https://docs.braintrust.dev/kb/log-filtering-with-tags-stalls-after-50-results.md)
+- [Log user feedback selectively with init_logger](https://docs.braintrust.dev/kb/log-user-feedback-selectively-with-init-logger.md)
+- [Logger and experiment span parent type mismatch error](https://docs.braintrust.dev/kb/logger-and-experiment-span-parent-type-mismatch-error.md)
+- [Logs page broken by custom column expression](https://docs.braintrust.dev/kb/logs-page-broken-by-custom-column-expression.md): Resolve "Field 'spans' not found in schema" errors caused by a saved custom column expression in the Logs table.
+- [Troubleshoot a slow or unresponsive Logs page](https://docs.braintrust.dev/kb/logs-page-frozen-by-custom-column-expressions.md): Troubleshoot a slow or unresponsive Logs page caused by custom column expressions, broad filters, or saved view settings that stall the Logs table.
+- [Loop selects wrong project: include explicit context](https://docs.braintrust.dev/kb/loop-selects-wrong-project-include-explicit-context.md): Troubleshoot cases where Loop applies changes to the wrong project and learn what evidence to collect for support.
+- [Configure an AI provider for Loop](https://docs.braintrust.dev/kb/manage-loop-model-defaults-and-cost.md): Resolve Add provider and No org-level provider in the Loop model picker by configuring a compatible organization- or project-level AI provider.
+- [Managing your organization's support requests](https://docs.braintrust.dev/kb/managing-your-organizations-support-requests.md)
+- [Map UUID ACL grants to user identities](https://docs.braintrust.dev/kb/map-uuid-acl-grants-to-user-identities.md): Find the human user or service account behind any Braintrust ACL UUID by calling GET /v1/user and GET /v1/service_token with an org-scoped key.
+- [Minimum OpenAI API key permissions for Braintrust](https://docs.braintrust.dev/kb/minimum-openai-api-key-permissions-for-braintrust.md)
+- [Missing classification values from automated scorer](https://docs.braintrust.dev/kb/missing-classification-values-from-automated-scorer.md)
+- [Missing conversation turns after lightweight de‑id migration](https://docs.braintrust.dev/kb/missing-conversation-turns-after-lightweight-de-id-migration.md): How to diagnose missing conversation turns after Gusto's de-identification pipeline migration and request historical recovery.
+- [Missing scorers in automation rules editor](https://docs.braintrust.dev/kb/missing-scorers-in-automation-rules-editor.md)
+- [Missing source preview for a deployed scorer](https://docs.braintrust.dev/kb/missing-source-preview-for-deployed-scorer.md): Inspect a deployed scorer with no source preview, understand why it can still run, and identify what to check before contacting support.
+- [Nest LLM spans beneath code scorers to preserve span context](https://docs.braintrust.dev/kb/nest-llm-spans-beneath-code-scorers-to-preserve-span-context.md): Check deployment and pass active span context to nest Gateway LLM calls beneath hosted scorers.
+- [Nested LLM call counting discrepancy](https://docs.braintrust.dev/kb/nested-llm-call-counting-discrepancy.md)
+- [Node version causing long invoke timeouts](https://docs.braintrust.dev/kb/node-version-causing-long-invoke-timeouts.md)
+- [Null input on spans when using OTEL attributes](https://docs.braintrust.dev/kb/null-input-on-spans-when-using-otel-attributes.md)
+- [Okta SAML tile login fails with missing RelayState](https://docs.braintrust.dev/kb/okta-saml-tile-login-fails-with-missing-relaystate.md): Troubleshoot the missing RelayState error when signing in to Braintrust from an Okta tile with SAML SSO.
+- [Online scorer deduplication with concurrent feedback](https://docs.braintrust.dev/kb/online-scorer-deduplication-with-concurrent-feedback.md)
+- [Online scorers not finding production traces](https://docs.braintrust.dev/kb/online-scorers-not-finding-production-traces-time-based-filter-issues-and-query-best-practices.md)
+- [Online scoring results not visible in UI](https://docs.braintrust.dev/kb/online-scoring-results-not-visible-in-ui-understanding-async-scoring-and-alert-timing.md)
+- [Online scoring rule failing after SDK update](https://docs.braintrust.dev/kb/online-scoring-rule-failing-after-sdk-update.md)
+- [Online scoring service accounts in project ACLs](https://docs.braintrust.dev/kb/online-scoring-service-accounts-in-project-acls.md)
+- [Open trace URLs in a specific view mode](https://docs.braintrust.dev/kb/open-trace-urls-in-a-specific-view-mode.md)
+- [OpenAI regional endpoint troubleshooting](https://docs.braintrust.dev/kb/openai-regional-endpoint-troubleshooting.md): Fix OpenAI model availability errors caused by regional API endpoints.
+- [OTEL metadata mapping and attachment rendering with PydanticAI](https://docs.braintrust.dev/kb/otel-metadata-mapping-and-attachment-rendering-with-pydanticai.md)
+- [OTLP routing: span attribute vs request header](https://docs.braintrust.dev/kb/otlp-routing-span-attribute-vs-request-header.md): Route OTLP spans to experiments using span attributes or request headers when collecting telemetry through a shared BYOC or hosted collector.
+- [Pass Gemini Google Search via Braintrust Gateway](https://docs.braintrust.dev/kb/pass-gemini-google-search-via-braintrust-gateway.md): Enable Google Search grounding for Gemini models through the Braintrust Gateway.
+- [Permissions required to view custom trace views](https://docs.braintrust.dev/kb/permissions-required-to-view-custom-trace-views.md)
+- [Playground gateway error despite valid API keys](https://docs.braintrust.dev/kb/playground-gateway-error-despite-valid-api-keys.md)
+- [Playground timeout with long-running model requests](https://docs.braintrust.dev/kb/playground-timeout-with-long-running-model.md)
+- [Populate project names in list prompts API](https://docs.braintrust.dev/kb/populate-project-names-in-list-prompts-api.md)
+- [Recover a deleted or inaccessible project](https://docs.braintrust.dev/kb/project-disappeared-or-inaccessible-data-recovery.md): Diagnose why a project disappeared, check whether it was deleted, and request recovery from Braintrust support.
+- [PydanticAI integration counts wrapper spans as LLM calls](https://docs.braintrust.dev/kb/pydanticai-integration-counts-wrapper-spans-as.md)
+- [Python SDK Docker containerization setup](https://docs.braintrust.dev/kb/python-sdk-docker-containerization-setup.md)
+- [Python sdk s3 presigned response handling](https://docs.braintrust.dev/kb/python-sdk-s3-presigned-response-handling.md)
+- [Query scorer span token costs with SQL](https://docs.braintrust.dev/kb/query-scorer-span-token-costs-with-sql.md)
+- [Rate limit error during dataset iteration](https://docs.braintrust.dev/kb/rate-limit-error-during-dataset-iteration.md)
+- [Recover or retrieve a deleted prompt](https://docs.braintrust.dev/kb/recover-or-retrieve-a-deleted-prompt.md)
+- [Recovering deleted experiment rows with versioned BTQL queries](https://docs.braintrust.dev/kb/recovering-deleted-experiment-rows.md)
+- [Remote eval dev mode fails with Pydantic parameters](https://docs.braintrust.dev/kb/remote-eval-dev-mode-fails-with-pydantic-parameters.md)
+- [Remote eval OpenTelemetry header propagation](https://docs.braintrust.dev/kb/remote-eval-opentelemetry-header-propagation.md): Propagate OpenTelemetry trace context from a remote eval handler by creating spans and attaching Braintrust request context as span attributes.
+- [Remote evals firewall egress and auth troubleshooting](https://docs.braintrust.dev/kb/remote-evals-firewall-egress-and-auth-troubleshooting.md): Diagnose and fix HTTP 401 errors and TLS handshake resets on remote eval servers by configuring hostname-based egress rules and verifying outbound login connectivity.
+- [Repair unhealthy Topics automation references](https://docs.braintrust.dev/kb/repair-unhealthy-topics-automation-references.md): Identify missing facet or topic map references, repair unhealthy Topics automation rows, and collect diagnostics for support.
+- [Reporting a critical outage](https://docs.braintrust.dev/kb/reporting-a-critical-outage-1778110794263.md)
+- [Fix “slug already exists” errors for prompts that are not visible](https://docs.braintrust.dev/kb/resolve-invisible-prompt-slug-conflict-with-put.md)
+- [Retry-safe eval workers with stable row IDs](https://docs.braintrust.dev/kb/retry-safe-eval-workers-with-stable-row-ids.md)
+- [Root span id encoding for trace grouping](https://docs.braintrust.dev/kb/root-span-id-encoding-for-trace-grouping.md)
+- [Run multi-turn agent evaluations](https://docs.braintrust.dev/kb/run-multi-turn-agent-evaluations.md): Send predefined user messages sequentially, preserve generated agent responses, and record the full conversation in one evaluation row.
+- [Running Evaluations Per Git Commit: SHA-Based Experiment](https://docs.braintrust.dev/kb/running-evaluations-per-git-commit-sha.md)
+- [SAML login fails with email domain mismatch](https://docs.braintrust.dev/kb/saml-login-fails-with-email-domain-mismatch.md)
+- [Scale S3 export automation across multiple projects](https://docs.braintrust.dev/kb/scale-s3-export-automation-across-multiple-projects.md)
+- [Scorer overwriting human review data with identical names](https://docs.braintrust.dev/kb/scorer-overwriting-human-review-data-with.md)
+- [Scorer pane columns collapse on open](https://docs.braintrust.dev/kb/scorer-pane-columns-collapse-on-open.md)
+- [Scores added via API not displaying in UI](https://docs.braintrust.dev/kb/scores-added-via-api-not-displaying-in-ui.md)
+- [SDK rate limits during dataset iteration](https://docs.braintrust.dev/kb/sdk-rate-limits-during-dataset-iteration.md)
+- [Search Timeout on Log Queries: CAST Operations in Custom](https://docs.braintrust.dev/kb/search-timeout-on-log-queries-cast.md)
+- [Securing remote eval endpoints: authentication and](https://docs.braintrust.dev/kb/securing-remote-eval-endpoints-authentication-and.md)
+- [Service token permissions for log ingestion](https://docs.braintrust.dev/kb/service-token-permissions-for-log-ingestion.md)
+- [Set sub-5-minute export automation intervals via API](https://docs.braintrust.dev/kb/set-sub-5-minute-export-automation-intervals-via-api.md)
+- [Setting up SSO integration in Braintrust](https://docs.braintrust.dev/kb/setting-up-sso-integration-in-braintrust-1777472841602.md): Set up SAML or OIDC SSO with Braintrust, including provider requirements, connection values, and optional JIT group mapping.
+- [Slack alert permissions in project settings](https://docs.braintrust.dev/kb/slack-alert-permissions-in-project-settings.md)
+- [Span Name Filtering Not Working on Monitoring Page:](https://docs.braintrust.dev/kb/span-name-filtering-not-working-on.md)
+- [SpanComponents encoding error when attaching feedback spans](https://docs.braintrust.dev/kb/spancomponents-encoding-error-when-attaching-feedback-spans.md)
+- [SSL certificate verification failure behind corporate proxy](https://docs.braintrust.dev/kb/ssl-certificate-verification-failure-behind-corporate-proxy.md)
+- [SSO login fails with 'did not grant access' error](https://docs.braintrust.dev/kb/sso-login-fails-with-did-not-grant-access-error.md)
+- [Stitch multi-turn chat into one trace with wrapAISDK](https://docs.braintrust.dev/kb/stitch-multi-turn-chat-into-one-trace-with-wrapaisdk.md)
+- [Strict mode omits required field in structured output](https://docs.braintrust.dev/kb/strict-mode-omits-required-field-in-structured-output.md)
+- [Structured outputs unsupported for Azure providers](https://docs.braintrust.dev/kb/structured-outputs-unsupported-for-azure-providers.md)
+- [Tag filter dropdown missing tags from logged data](https://docs.braintrust.dev/kb/tag-filter-dropdown-missing-tags-from-logged-data.md)
+- [Datetime fields in trace data are normalized to UTC](https://docs.braintrust.dev/kb/timestamps-converted-to-utc-in-traces.md): Understand why Brainstore normalizes timezone-aware datetime fields in trace data to UTC at index time, and how to preserve the original offset.
+- [Topics automation can exhaust your monthly Topics credit quickly](https://docs.braintrust.dev/kb/topics-automation-exhausts-log-analysis-limits-quickly.md)
+- [Topics automation idle timeout and trace update behavior](https://docs.braintrust.dev/kb/topics-automation-idle-timeout-and-trace-update-behavior.md)
+- [Topics facets empty due to Skipped status](https://docs.braintrust.dev/kb/topics-facets-empty-due-to-skipped-status.md)
+- [Total LLM cost preset shows no data](https://docs.braintrust.dev/kb/total-llm-cost-preset-requirements.md)
+- [Trace gaps when exported span context is not persisted across restarts](https://docs.braintrust.dev/kb/trace-gaps-when-parent-span-export-is-not-persisted-across-restarts.md)
+- [Trace scorers rerun due to metrics.end updates](https://docs.braintrust.dev/kb/trace-scorers-rerun-due-to-metrics-end-updates.md): Diagnose why trace-level scorers run multiple times and apply workarounds to reduce retriggers caused by metrics.end updates or asynchronous scorer failures.
+- [Unexpected "Created" dates appearing under a "Created between" filter](https://docs.braintrust.dev/kb/traces-vs-spans-created-filter-and-date-discrepancies.md): Understand why a "Created between" filter in Traces mode can match child spans while the "Created" column shows the root span's date.
+- [Tracing Anthropic models via LiteLLM with Braintrust](https://docs.braintrust.dev/kb/tracing-anthropic-models-via-litellm-with-braintrust.md)
+- [Tracing OpenAI Realtime API with WebSockets](https://docs.braintrust.dev/kb/tracing-openai-realtime-api-with-websockets.md)
+- [Transient JSONL.GZ files in S3 export bucket](https://docs.braintrust.dev/kb/transient-jsonl-gz-files-in-s3-export-bucket.md)
+- [Troubleshoot Braintrust alerts not appearing in incident.io](https://docs.braintrust.dev/kb/troubleshoot-braintrust-alerts-not-appearing-in-incident-io.md): Debug webhook delivery to incident.io, identify payload validation errors, and verify required fields and alert creation.
+- [Troubleshoot 'No projects are available'](https://docs.braintrust.dev/kb/troubleshoot-no-projects-are-available.md): Restore access when the 'No projects are available' message appears and the project is not visible in the project selector.
+- [Troubleshooting Traces Stuck in Progress](https://docs.braintrust.dev/kb/troubleshooting-traces-stuck-in-progress.md)
+- [TypeScript SDK eval process hangs after completion](https://docs.braintrust.dev/kb/typescript-sdk-eval-process-hangs-after-completion-debugging-open-handles-and-resource-leaks.md)
+- [UI cache hit rate shows zero with raw metrics](https://docs.braintrust.dev/kb/ui-cache-hit-rate-shows-zero-with-raw-metrics.md): Fix a 0% cache hit rate in the UI by mapping provider cache token fields to the normalized metrics Braintrust expects from custom logging.
+- [Understanding Experiment Score Aggregation: Simple vs](https://docs.braintrust.dev/kb/understanding-experiment-score-aggregation-simple-vs.md)
+- [Subquery alias conflicts with column names](https://docs.braintrust.dev/kb/unpivot-subquery-alias-conflicts-with-column-names.md)
+- [Update AWS Bedrock credentials using API](https://docs.braintrust.dev/kb/update-aws-bedrock-credentials-using-api.md)
+- [Use project IDs to prevent duplicate projects after rename](https://docs.braintrust.dev/kb/use-project-ids-to-prevent-duplicate-projects-after-rename.md)
+- [Use S3 export instead of polling SQL for pipelines](https://docs.braintrust.dev/kb/use-s3-export-instead-of-polling-btql-for-pipelines.md)
+- [Use `_xact_id` to dedupe exports and determine update time](https://docs.braintrust.dev/kb/use-xact-id-to-dedupe-exports-and-determine-update-time.md): Deduplicate cloud export rows and track updated records using stable IDs and _xact_id.
+- [User Engagement Tracking](https://docs.braintrust.dev/kb/user-engagement-tracking.md)
+- [Using Google OAuth for Google Workspace domains](https://docs.braintrust.dev/kb/using-google-oauth-for-google-workspace-domains.md): Enable Google Workspace users to sign in with Google OAuth immediately, then migrate to custom SAML SSO when a super-admin is available.
+- [Using OpenAI Responses API with Braintrust SDKs](https://docs.braintrust.dev/kb/using-openai-responses-api-with-braintrust-sdks.md)
+- [Vertex AI gemini model region and registry issues](https://docs.braintrust.dev/kb/vertex-ai-gemini-model-region-and-registry-issues.md)
+- [View logs timeouts from broad IS NOT NULL filters](https://docs.braintrust.dev/kb/view-logs-timeouts-from-broad-is-not-null-filters.md)
+- [Configure sustained score alerts with Time window alerts](https://docs.braintrust.dev/kb/webhook-based-sustained-alerts-for-llm-scores.md): Alert when LLM score degradations persist over a time window using Time window alerts or webhook-based external aggregation.
+- [Why mark complete is missing on log span reviews](https://docs.braintrust.dev/kb/why-mark-complete-is-missing-on-log-span-reviews.md)
+- [wrapAISDK interleaved traces with concurrent calls](https://docs.braintrust.dev/kb/wrapaisdk-interleaved-traces-with-concurrent-calls.md)
+- [Autoevals](https://docs.braintrust.dev/sdks/python/related/autoevals/overview.md): Autoevals is a tool to quickly and easily evaluate AI model outputs
+- [Autoevals](https://docs.braintrust.dev/sdks/typescript/related/autoevals/overview.md): Autoevals is a tool to quickly and easily evaluate AI model outputs
+
+## OpenAPI Specs
+
+- [openapi](/openapi.yaml)
+- [openapi](/openapi.json)
+
+> The links below point to documentation indexes. Follow each `/_llms/` index recursively until you reach documentation pages.
+
+## Indexes
+
+- [Guides (113 pages)](https://docs.braintrust.dev/_llms/guides.txt): Documentation for Guides.
+- [Reference (204 pages)](https://docs.braintrust.dev/_llms/reference.txt): Documentation for Reference.
+
+
+This documentation is built and hosted on [Mintlify](https://mintlify.com), a developer documentation platform.

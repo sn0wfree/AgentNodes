@@ -1,11 +1,19 @@
 """Named toolsets for Agent runs (A2).
 
-Single source of truth for role / task → tool whitelist. Replaces the
-scattered ``_ROLE_TOOL_WHITELIST`` in role_factory and ad-hoc
-``allowed_tools`` lists.
+Single source of truth for role / task → tool whitelist.
+
+**只收通用能力**（2026-11-06 批次 4 · 三步走第一步）：本表是 kernel 内置的
+"标准库"——类比 Python 的 ``builtins``，只放平台无关、任何 agent 都可能用到的
+工具。业务域工具（量化/回测/因子）不在此表，它们由 L2 插件自带工具清单，
+在装配期经 ``CapabilityRegistry`` 注入（见 ``apps/agent_plugins/``）。
+
+历史上的 10 个业务角色（researcher / data_quality / factor_analyst /
+strategist / portfolio_construction / risk_controller / attribution_analyst /
+anti_overfit_analyst / backtest_diagnostics / evaluator）已迁到
+``apps/agent_plugins/quant.py``，本表不再持有它们。
 
 Fail-safe: unknown toolset name resolves to the minimal read-only set.
-``None`` / ``\"full\"`` means "do not filter".
+``None`` / ``\\"full\\"`` means "do not filter".
 """
 
 from __future__ import annotations
@@ -15,6 +23,9 @@ from typing import Iterable
 from .tools import ToolRegistry
 
 # Name → tool names. Keep lists small: every entry costs prompt tokens.
+#
+# **只收通用工具**。此处出现的每个名字都必须能在 ``build_default_registry()``
+# 里找到（`scripts/arch/check_tool_refs.py` 强制）。
 TOOLSETS: dict[str, list[str]] = {
     # Absolute minimum: look around + ask for docs.
     "minimal": [
@@ -22,124 +33,83 @@ TOOLSETS: dict[str, list[str]] = {
         "list",
         "tool_help",
     ],
-    # Generic chat assistant.
+    # Generic chat assistant: read, write, browse, run commands.
     "chat": [
         "read",
         "list",
         "write",
-        "compute_factor",
-        "factor_analysis",
-        "get_market_data",
-        "search_symbol",
-        "tool_help",
-    ],
-    # Study-round researcher (read-heavy).
-    "researcher": [
-        "read",
-        "list_history",
-        "factor_analysis",
         "websearch",
         "webfetch",
-        "get_market_data",
-        "search_symbol",
-        "show_chart",
-        "tool_help",
-    ],
-    "data_quality": [
-        "read",
-        "websearch",
-        "webfetch",
-        "get_market_data",
-        "list_data_sources",
-        "check_data",
-        "clean_data",
+        "shell",
         "run_bg_command",
         "tool_help",
     ],
-    "factor_analyst": [
+    # Read-only exploration (code/data archaeology).
+    "explorer": [
         "read",
-        "compute_factor",
-        "factor_analysis",
-        "factor_cross_sectional_analysis",
-        "factor_quintile_returns",
-        "factor_ic_decay",
-        "factor_turnover",
-        "get_market_data",
-        "tool_help",
-    ],
-    "strategist": [
-        "read",
-        "write",
-        "run_backtest",
+        "list",
+        "list_history",
         "git_diff",
         "websearch",
         "webfetch",
-        "get_market_data",
-        "show_chart",
-        "show_report",
         "tool_help",
     ],
-    "portfolio_construction": [
+    # Code editing / implementation work.
+    "coder": [
         "read",
-        "get_market_data",
-        "tool_help",
-    ],
-    "risk_controller": [
-        "read",
-        "factor_analysis",
-        "get_market_data",
-        "tool_help",
-    ],
-    "attribution_analyst": [
-        "read",
-        "factor_analysis",
-        "tool_help",
-    ],
-    "anti_overfit_analyst": [
-        "read",
-        "list_history",
-        "factor_analysis",
-        "tool_help",
-    ],
-    "backtest_diagnostics": [
-        "read",
-        "run_backtest",
+        "list",
+        "write",
         "git_diff",
-        "strategy_compare",
-        "drawdown_analysis",
-        "benchmark_comparison",
-        "show_chart",
-        "show_report",
-        "tool_help",
-    ],
-    "critic": [
-        "read",
         "list_history",
+        "shell",
+        "run_bg_command",
+        "todowrite",
         "tool_help",
     ],
+    # Planning: think about what to do next, no side effects.
     "planner": [
         "read",
+        "list",
+        "list_history",
+        "todowrite",
+        "tool_help",
+    ],
+    # Reviewing someone else's work.
+    "critic": [
+        "read",
+        "list",
+        "list_history",
+        "git_diff",
+        "tool_help",
+    ],
+    # Delegating to sub-agents.
+    "orchestrator": [
+        "read",
+        "list",
+        "task",
+        "todowrite",
+        "skill",
+        "list_skills",
+        "tool_help",
+    ],
+    # Default full-capability agent (everything the registry offers).
+    "general": [
+        "read",
+        "list",
+        "write",
+        "git_diff",
+        "list_history",
         "websearch",
         "webfetch",
-        "list_goals",
-        "get_market_data",
-        "tool_help",
-    ],
-    "evaluator": [
-        "read",
-        "list_history",
-        "factor_analysis",
-        "tool_help",
-    ],
-    "study_reviewer": [
-        "read",
-        "tool_help",
-    ],
-    "study_collector": [
-        "read",
-        "websearch",
-        "webfetch",
-        "list_history",
+        "shell",
+        "run_bg_command",
+        "task",
+        "skill",
+        "list_skills",
+        "todowrite",
+        "show_chart",
+        "show_report",
+        "read_document",
         "tool_help",
     ],
 }

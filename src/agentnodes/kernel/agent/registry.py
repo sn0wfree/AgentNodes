@@ -3,12 +3,20 @@
 Single lookup point for every consumer (study runner, SwarmRuntime,
 SubAgentTool, WorkflowRunner). Provides dependency closure completion
 for AI-planner output fixing and selection validation.
+
+**不持有任何具体插件**（2026-11-06 批次 4 · 三步走第一步）：插件定义是
+业务内容（L2），本模块只是**注册机制**（L3）。默认注册表**为空**——
+需要业务插件的调用方显式地 ``import agentnodes.apps.agent_plugins``
+并调用 ``populate(registry)``。
+
+理由：kernel 里写死 ``BUILTIN_PLUGINS`` 会让「平台」和「某个业务领域的
+角色定义」绑死。量化域的角色（researcher / factor_analyst / strategist）
+住在 kernel，换成别的业务域就得改 kernel——那不是平台。
 """
 from __future__ import annotations
 
 from collections.abc import Iterable
 
-from .builtin_plugins import BUILTIN_PLUGINS
 from .plugin import AgentPlugin
 
 
@@ -94,11 +102,30 @@ _default_registry: AgentPluginRegistry | None = None
 
 
 def get_default_registry() -> AgentPluginRegistry:
-    """Module-level registry pre-loaded with BUILTIN_PLUGINS."""
+    """Module-level registry.
+
+    **默认无插件**（第 4 批次起）：插件是 L2 内容，由调用方显式填充。
+    需要业务插件时先 ``import agentnodes.apps.agent_plugins`` 再
+    ``agent_plugins.populate(get_default_registry())``。
+
+    ``reset_default_registry()`` 后重新拿到的仍是空表——这是有意的：
+    空表是**基线状态**，不是「漏加载」。IDE/IDE 自动补全、纯 LLM 对话、
+    工具调试都不需要业务插件。
+    """
     global _default_registry
     if _default_registry is None:
-        _default_registry = AgentPluginRegistry(BUILTIN_PLUGINS)
+        _default_registry = AgentPluginRegistry()
     return _default_registry
 
 
-__all__ = ["AgentPluginRegistry", "get_default_registry"]
+def reset_default_registry() -> None:
+    """丢弃默认注册表（测试用）。下一次 ``get_default_registry()`` 重建空表。"""
+    global _default_registry
+    _default_registry = None
+
+
+__all__ = [
+    "AgentPluginRegistry",
+    "get_default_registry",
+    "reset_default_registry",
+]

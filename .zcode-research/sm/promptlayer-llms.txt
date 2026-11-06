@@ -1,0 +1,303 @@
+# PromptLayer
+
+- [Quickstart](https://docs.promptlayer.com/quickstart.md): Create, run, and evaluate your first prompt.
+- [Tutorial Videos](https://docs.promptlayer.com/tutorial-videos.md)
+- [Prompt Registry](https://docs.promptlayer.com/features/prompt-registry/overview.md): Use Prompt Registry as the system of record for prompt versions, testing, releases, and observability.
+- [Editor and Versioning](https://docs.promptlayer.com/features/prompt-registry/prompt-editor-versioning.md): Create prompts, edit messages, test changes, and review version history in the Prompt Registry.
+- [Template Variables](https://docs.promptlayer.com/features/prompt-registry/template-variables.md)
+- [Input Variable Sets](https://docs.promptlayer.com/features/prompt-registry/input-variable-sets.md)
+- [Snippets](https://docs.promptlayer.com/features/prompt-registry/snippets.md)
+- [Snippet Dependency Ordering](https://docs.promptlayer.com/features/prompt-registry/snippet-dependency-ordering.md)
+- [Placeholder Messages](https://docs.promptlayer.com/features/prompt-registry/placeholder-messages.md)
+- [Structured Outputs](https://docs.promptlayer.com/features/prompt-registry/structured-outputs.md)
+- [Tool Calling](https://docs.promptlayer.com/features/prompt-registry/tool-calling.md)
+- [Image Generation](https://docs.promptlayer.com/features/image-generation.md)
+- [Playground](https://docs.promptlayer.com/why-promptlayer/playground.md)
+- [Sharing Requests](https://docs.promptlayer.com/features/prompt-history/sharing-prompts.md)
+- [Release Labels](https://docs.promptlayer.com/features/prompt-registry/release-labels.md)
+- [Dynamic Release Labels](https://docs.promptlayer.com/features/prompt-registry/dynamic-release-labels.md)
+- [A/B Testing](https://docs.promptlayer.com/why-promptlayer/ab-releases.md)
+- [Overview](https://docs.promptlayer.com/features/tables/overview.md): Understand the Table model and the main Tables workflow in PromptLayer.
+- [Sheets](https://docs.promptlayer.com/features/tables/sheets.md): Import data, manage sheet tabs, add rows, and scope Table work by sheet.
+- [Columns](https://docs.promptlayer.com/features/tables/columns.md): Add, configure, map, filter, sort, run, and manage Table columns.
+- [Column Types](https://docs.promptlayer.com/features/tables/column-types.md): Reference for input and computed Table column types, including evaluation columns, helper columns, and composition.
+- [Cells and Runs](https://docs.promptlayer.com/features/tables/cells-and-runs.md): Understand Table cells, statuses, stale values, reruns, and cancellation.
+- [Scorecards](https://docs.promptlayer.com/features/tables/scorecards.md): Version, run, and monitor table evaluations with reusable criteria, row-level results, and evidence.
+- [History and Analytics](https://docs.promptlayer.com/features/tables/history-and-analytics.md): Use version history, score history, diffs, and request analytics to review Table changes.
+- [Migrate from Evaluations and Datasets](https://docs.promptlayer.com/features/tables/migrate-from-evaluations-and-datasets.md): Move legacy Dataset, Evaluation, and Report workflows into Tables.
+- [Overview](https://docs.promptlayer.com/sdks/evals/overview.md): Eval agents using the PromptLayer SDK
+- [Quickstart](https://docs.promptlayer.com/sdks/evals/quickstart.md)
+- [Building an eval](https://docs.promptlayer.com/sdks/evals/building-an-eval.md): Reference for evaluate(...): dataset, runner, scorers, and every option.
+- [Datasets](https://docs.promptlayer.com/sdks/evals/datasets.md): Pass inline cases or a dashboard Table as the evaluate(...) dataset.
+- [Runner and tracing](https://docs.promptlayer.com/sdks/evals/agent-tracing.md): Pass any callable as the evaluate(...) runner. Return a final value; use tool spans only for Trajectory.
+- [Columns](https://docs.promptlayer.com/sdks/evals/columns/overview.md): Add processing columns to evaluate(...) with column(...).
+- [Scorers](https://docs.promptlayer.com/sdks/evals/scorers/overview.md): Add scorecard checks to evaluate(...) with typed helpers.
+- [CLI and CI](https://docs.promptlayer.com/sdks/evals/cli-and-ci.md): Run evaluate(...) files locally and fail CI when scores miss your bar.
+- [Results and failures](https://docs.promptlayer.com/sdks/evals/results-and-failures.md): Read EvalResult and fail the run when scores miss your bar.
+- [Concurrency](https://docs.promptlayer.com/sdks/evals/concurrency.md): Speed up evaluate(...) by running cases in parallel when it is safe.
+- [Overview](https://docs.promptlayer.com/features/observability/overview.md): Understand the request logs and traces that make up PromptLayer observability.
+- [Overview](https://docs.promptlayer.com/features/observability/request-logs.md): Inspect individual model calls, including their content, status, usage, cost, and metadata.
+- [Request IDs](https://docs.promptlayer.com/features/observability/request-logs/request-ids.md)
+- [Tags](https://docs.promptlayer.com/features/observability/request-logs/tags.md)
+- [Metadata](https://docs.promptlayer.com/features/observability/request-logs/metadata.md)
+- [Scores](https://docs.promptlayer.com/features/observability/request-logs/scores.md)
+- [Signals](https://docs.promptlayer.com/features/observability/request-logs/signals.md): Label production request logs with automated yes/no assertions, reasoning, and citations.
+- [Tracking Templates](https://docs.promptlayer.com/features/observability/request-logs/tracking-templates.md)
+- [Custom Logging](https://docs.promptlayer.com/features/observability/request-logs/custom-logging.md)
+- [Structured Outputs](https://docs.promptlayer.com/features/observability/request-logs/structured-outputs.md)
+- [Overview](https://docs.promptlayer.com/features/observability/traces.md): Understand PromptLayer traces and choose how to instrument your application.
+- [Manual Tracing](https://docs.promptlayer.com/features/observability/traces/manual-tracing.md): Add PromptLayer SDK spans around prompt runs, application functions, and tools.
+- [Overview](https://docs.promptlayer.com/features/observability/traces/auto-instrumentation/overview.md): Trace calls made through model provider SDKs without wrapping each request.
+- [OpenAI SDK](https://docs.promptlayer.com/features/observability/traces/auto-instrumentation/openai.md): Automatically trace supported direct OpenAI SDK calls with PromptLayer.
+- [Anthropic SDK](https://docs.promptlayer.com/features/observability/traces/auto-instrumentation/anthropic.md): Automatically trace supported direct Anthropic SDK calls with PromptLayer.
+- [Google SDK](https://docs.promptlayer.com/features/observability/traces/auto-instrumentation/google.md): Automatically trace supported direct Google GenAI SDK calls with PromptLayer.
+- [AWS Bedrock](https://docs.promptlayer.com/features/observability/traces/auto-instrumentation/bedrock.md): Automatically trace supported direct Amazon Bedrock Runtime calls made with Boto3 or AWS SDK v3.
+- [OpenTelemetry](https://docs.promptlayer.com/features/observability/traces/opentelemetry.md): Send an existing or custom OpenTelemetry pipeline to PromptLayer.
+- [Telemetry Integrations](https://docs.promptlayer.com/features/observability/traces/integrations.md): Send traces, spans, LLM calls, tool calls, and agent telemetry into PromptLayer.
+- [Search](https://docs.promptlayer.com/features/search-and-analytics/search.md): Find request logs and traces with structured filters, date ranges, and request-content search.
+- [Analytics](https://docs.promptlayer.com/features/search-and-analytics/analytics.md): Turn a filtered set of request logs or traces into usage, performance, cost, and quality charts.
+- [Search Data Model](https://docs.promptlayer.com/features/search-and-analytics/search-data-model.md)
+- [Workflows](https://docs.promptlayer.com/why-promptlayer/workflows.md)
+- [Overview](https://docs.promptlayer.com/features/tool-registry/overview.md)
+- [Using Tools in Prompts](https://docs.promptlayer.com/features/tool-registry/using-in-prompts.md)
+- [Save Inline to Registry](https://docs.promptlayer.com/features/tool-registry/save-inline-to-registry.md)
+- [Auto Tool Execution](https://docs.promptlayer.com/features/tool-registry/auto-execution.md)
+- [Mock Tool Responses](https://docs.promptlayer.com/features/tool-registry/mock-tool-responses.md)
+- [MCP Servers](https://docs.promptlayer.com/features/mcp-servers/overview.md)
+- [Overview](https://docs.promptlayer.com/features/skill-collections/overview.md): Versioned folders of agent instructions (SKILL.md files) you can share, remix, and pull into Claude Code, OpenAI/Codex, or OpenClaw.
+- [Editing with Wrangler AI](https://docs.promptlayer.com/features/skill-collections/editing-with-wrangler.md): Use PromptLayer's in-dashboard assistant to create, edit, rename, and migrate Skill Collections without learning SKILL.md conventions yourself.
+- [Sharing and remixing collections](https://docs.promptlayer.com/features/skill-collections/sharing-and-remixing.md): Publish a read-only link to a Skill Collection so others can view, remix, or pull it into their own workspace.
+- [Pulling skills into your agent](https://docs.promptlayer.com/features/skill-collections/pulling-skills.md): Download a Skill Collection with the PromptLayer SDK or public REST API so Claude Code, Codex, Cursor, or OpenClaw can load it from disk.
+- [Tune skills for your team](https://docs.promptlayer.com/features/skill-collections/tuning-skills.md): Edit Skill Collections you own in the dashboard: provider layout, folder names, frontmatter, size limits, and SDK pull pins.
+- [Overview](https://docs.promptlayer.com/why-promptlayer/shared-workspaces.md): Use organizations and workspaces to manage teams, environments, access, billing, and shared resources in PromptLayer.
+- [Organizations](https://docs.promptlayer.com/why-promptlayer/organizations.md): Manage company-level members, roles, billing, settings, and usage across PromptLayer workspaces.
+- [Workspaces](https://docs.promptlayer.com/why-promptlayer/workspaces.md): Create shared environments for teams, projects, and deployment stages in PromptLayer.
+- [Data Retention](https://docs.promptlayer.com/why-promptlayer/data-retention.md): Control how long request logs and trace data are kept in a workspace.
+- [RBAC](https://docs.promptlayer.com/why-promptlayer/rbac.md): Define reusable roles and assign fine-grained permissions to workspace members.
+- [Overview](https://docs.promptlayer.com/why-promptlayer/enterprise-identity/overview.md): Centralize authentication and user lifecycle for your organization with SSO, Directory Sync, and automated workspace access.
+- [Setup](https://docs.promptlayer.com/why-promptlayer/enterprise-identity/setup.md): Connect your identity provider to PromptLayer through WorkOS SSO and Directory Sync.
+- [Provisioning & access](https://docs.promptlayer.com/why-promptlayer/enterprise-identity/provisioning.md): How users get workspace access through JIT provisioning, group mappings, and Directory Sync deprovisioning.
+- [Sign-in policy & break-glass](https://docs.promptlayer.com/why-promptlayer/enterprise-identity/sign-in-security.md): Require SSO, configure JIT provisioning, emergency Owner access, and MFA expectations.
+- [Audit log](https://docs.promptlayer.com/why-promptlayer/enterprise-identity/audit-log.md): Review SSO, SCIM, mapping, and access events for your enterprise-managed organization.
+- [Supported Providers](https://docs.promptlayer.com/features/supported-providers.md): Review the LLM providers and model capabilities PromptLayer supports.
+- [OpenRouter](https://docs.promptlayer.com/features/openrouter-integration.md): Use OpenRouter as a first-class provider in PromptLayer for chat, image, video, and speech.
+- [Configure Providers](https://docs.promptlayer.com/features/custom-providers.md): Connect OpenAI-compatible providers and custom models to PromptLayer.
+- [Exa](https://docs.promptlayer.com/features/exa-integration.md): Set up Exa as a custom provider in PromptLayer.
+- [xAI (Grok)](https://docs.promptlayer.com/features/xai-integration.md): Set up xAI Grok models as a custom provider in PromptLayer.
+- [Concentrate AI](https://docs.promptlayer.com/features/concentrate-integration.md)
+- [Choose a Deployment Strategy](https://docs.promptlayer.com/onboarding-guides/deployment-strategies.md): Choose from four integration patterns. Direct SDK calls, webhook caching, GitOps with CI/CD, or managed workflows.
+- [Zero Downtime Releases](https://docs.promptlayer.com/features/prompt-registry/zero-downtime-releases.md)
+- [Self-Hosted PromptLayer](https://docs.promptlayer.com/self-hosted.md): Deploy PromptLayer in your own infrastructure for complete data control and compliance
+- [Deploy PromptLayer on AWS](https://docs.promptlayer.com/enterprise-deployments/aws.md): Deploy PromptLayer in your AWS account with OpenTofu, Amazon EKS, and Helm.
+- [Multi-Turn Chat](https://docs.promptlayer.com/why-promptlayer/multi-turn-chat.md)
+- [Fine-Tuning](https://docs.promptlayer.com/why-promptlayer/fine-tuning.md)
+- [Prompt Blueprints](https://docs.promptlayer.com/running-requests/prompt-blueprints.md)
+- [MCP & Skills](https://docs.promptlayer.com/agents/overview.md): Use PromptLayer with AI tools.
+- [Python](https://docs.promptlayer.com/sdks/python.md)
+- [JavaScript](https://docs.promptlayer.com/sdks/javascript.md)
+- [Introduction](https://docs.promptlayer.com/reference/introduction.md): Use the PromptLayer REST API to manage prompts, workflows, evaluations, datasets, request logs, traces, and other workspace resources programmatically.
+- [Get Prompt Template](https://docs.promptlayer.com/reference/templates-get.md)
+- [Get Prompt Template (Raw)](https://docs.promptlayer.com/reference/templates-get-raw.md)
+- [List Prompt Templates](https://docs.promptlayer.com/reference/list-prompt-templates.md)
+- [Publish Prompt Template](https://docs.promptlayer.com/reference/templates-publish.md)
+- [Patch Prompt Template Version](https://docs.promptlayer.com/reference/templates-patch.md)
+- [List Prompt Template Labels](https://docs.promptlayer.com/reference/templates-labels-get.md)
+- [Create a Prompt Template Label](https://docs.promptlayer.com/reference/prompt-labels-create.md)
+- [Move Prompt Template Labels](https://docs.promptlayer.com/reference/prompt-labels-patch.md)
+- [Delete a Prompt Template Label](https://docs.promptlayer.com/reference/prompt-labels-delete.md)
+- [Get Snippet Usage](https://docs.promptlayer.com/reference/get-snippet-usage.md)
+- [Upsert Prompt Template by External ID](https://docs.promptlayer.com/reference/external-ids-prompt-templates-upsert.md)
+- [Attach Prompt Template External ID](https://docs.promptlayer.com/reference/external-ids-prompt-templates-attach.md)
+- [List Prompt Template External IDs](https://docs.promptlayer.com/reference/external-ids-prompt-templates-list.md)
+- [Delete Prompt Template External ID](https://docs.promptlayer.com/reference/external-ids-prompt-templates-delete.md)
+- [Get Request](https://docs.promptlayer.com/reference/get-request.md)
+- [Get Trace](https://docs.promptlayer.com/reference/get-trace.md)
+- [Close Trace](https://docs.promptlayer.com/reference/close-trace.md): Marks a trace as closed, preventing any further span ingestion for that trace. Once closed, subsequent calls to `/spans-bulk` or `/v1/traces` that include spans for this trace will have those spans rejected.
+- [Search Request Logs](https://docs.promptlayer.com/reference/search-request-logs.md)
+- [Search Request Suggestions](https://docs.promptlayer.com/reference/search-request-suggestions.md)
+- [Request Analytics](https://docs.promptlayer.com/reference/request-analytics.md)
+- [Request Analytics — Custom Queries](https://docs.promptlayer.com/reference/request-analytics-custom-analytics.md)
+- [Trace Analytics — Custom Queries](https://docs.promptlayer.com/reference/trace-analytics-custom-analytics.md)
+- [Log Request](https://docs.promptlayer.com/reference/log-request.md)
+- [Track Prompt](https://docs.promptlayer.com/reference/track-prompt.md)
+- [Track Score](https://docs.promptlayer.com/reference/track-score.md)
+- [Track Metadata](https://docs.promptlayer.com/reference/track-metadata.md)
+- [Create Spans Bulk](https://docs.promptlayer.com/reference/spans-bulk.md)
+- [Ingest Traces (OTLP)](https://docs.promptlayer.com/reference/otlp-ingest-traces.md)
+- [Create Table](https://docs.promptlayer.com/reference/tables-create.md): Create a new Table. By default, an empty Sheet 1 with a Column A text column and one empty row is created. Pass create_default_sheet: false to create a table without a default sheet. Requests are scoped to the workspace associated with the API key; table, sheet, column, cell, operation, and version…
+- [List Tables](https://docs.promptlayer.com/reference/tables-list.md): List Tables in the workspace. Supports cursor-based pagination and optional filtering by folder or prompt column. Requests are scoped to the workspace associated with the API key; table, sheet, column, cell, operation, and version IDs must belong to that workspace.
+- [Get Table](https://docs.promptlayer.com/reference/tables-get.md): Get Table. Requests are scoped to the workspace associated with the API key; table, sheet, column, cell, operation, and version IDs must belong to that workspace.
+- [Update Table](https://docs.promptlayer.com/reference/tables-update.md): Update Table. Requests are scoped to the workspace associated with the API key; table, sheet, column, cell, operation, and version IDs must belong to that workspace.
+- [Delete Table](https://docs.promptlayer.com/reference/tables-delete.md): Delete a Table. This soft deletes the table and removes it from active list responses. Requests are scoped to the workspace associated with the API key; table, sheet, column, cell, operation, and version IDs must belong to that workspace.
+- [List Sheets](https://docs.promptlayer.com/reference/table-sheets-list.md): List all sheets in a table, ordered by their index. Requests are scoped to the workspace associated with the API key; table, sheet, column, cell, operation, and version IDs must belong to that workspace.
+- [Create Sheet](https://docs.promptlayer.com/reference/table-sheets-create.md): Create a new sheet in a table. Omit source to create a blank sheet with a default Column A scaffold (returns 201), or import data from a file (CSV or JSON, base64-encoded) or from request log history (returns 202). Requests are scoped to the workspace associated with the API key; table, sheet, colum…
+- [Get Sheet Import Operation](https://docs.promptlayer.com/reference/table-sheets-get-operation.md): Poll the status of an asynchronous sheet import operation. Requests are scoped to the workspace associated with the API key; table, sheet, column, cell, operation, and version IDs must belong to that workspace.
+- [Get Sheet](https://docs.promptlayer.com/reference/table-sheets-get.md): Get Sheet. Requests are scoped to the workspace associated with the API key; table, sheet, column, cell, operation, and version IDs must belong to that workspace.
+- [Update Sheet](https://docs.promptlayer.com/reference/table-sheets-update.md): Update Sheet. Requests are scoped to the workspace associated with the API key; table, sheet, column, cell, operation, and version IDs must belong to that workspace.
+- [Delete Sheet](https://docs.promptlayer.com/reference/table-sheets-delete.md): Delete a sheet. This soft deletes the sheet and removes it from active sheet list responses. Requests are scoped to the workspace associated with the API key; table, sheet, column, cell, operation, and version IDs must belong to that workspace.
+- [List Columns](https://docs.promptlayer.com/reference/table-sheet-columns-list.md): List columns in a sheet, ordered by position rank. By default, system-managed metadata columns such as price and latency columns are excluded; pass `include_system_columns=true` to include them. Requests are scoped to the workspace associated with the API key; table, sheet, column, cell, operation,…
+- [Create Column](https://docs.promptlayer.com/reference/table-sheet-columns-create.md): Add a new column to a sheet. Non-text columns will generate cells for all existing rows. Requests are scoped to the workspace associated with the API key; table, sheet, column, cell, operation, and version IDs must belong to that workspace.
+- [Update Column](https://docs.promptlayer.com/reference/table-sheet-columns-update.md): Update a column's title, config, or dependencies. Returns `requires_recalculation: true` when the change invalidates existing cell values. Requests are scoped to the workspace associated with the API key; table, sheet, column, cell, operation, and version IDs must belong to that workspace.
+- [Delete Column](https://docs.promptlayer.com/reference/table-sheet-columns-delete.md): Delete a column and its cells. The operation creates a new sheet version and may mark downstream dependent cells as stale. Requests are scoped to the workspace associated with the API key; table, sheet, column, cell, operation, and version IDs must belong to that workspace.
+- [List Rows](https://docs.promptlayer.com/reference/table-sheet-rows-list.md): List rows in a sheet, each containing a map of column_id to cell. For prompt-template column cells, each cell can include a `request_metrics` object with price, latency, and token usage when available. Pass `include_columns=true` on the first page to receive column metadata alongside rows. Requests…
+- [Add Rows](https://docs.promptlayer.com/reference/table-sheet-rows-add.md): Append one or more rows to a sheet. Text column values can be set immediately; non-text column cells are created with `stale` status and must be triggered via a recalculation. Requests are scoped to the workspace associated with the API key; table, sheet, column, cell, operation, and version IDs mus…
+- [Get Cell](https://docs.promptlayer.com/reference/table-sheet-cells-get.md): Retrieve a single cell by ID. For prompt-template column cells, the response includes a `request_metrics` object with price, latency, and token usage when available. Requests are scoped to the workspace associated with the API key; table, sheet, column, cell, operation, and version IDs must belong t…
+- [Update Cell](https://docs.promptlayer.com/reference/table-sheet-cells-update.md): Edit the value of a text column cell. Only cells in `text` type columns can be edited directly; computed cells are recalculated automatically. Requests are scoped to the workspace associated with the API key; table, sheet, column, cell, operation, and version IDs must belong to that workspace.
+- [Recalculate Cell](https://docs.promptlayer.com/reference/table-sheet-cells-recalculate.md): Trigger recalculation for a single cell. Requests are scoped to the workspace associated with the API key; table, sheet, column, cell, operation, and version IDs must belong to that workspace.
+- [Recalculate Cells (Batch)](https://docs.promptlayer.com/reference/table-sheet-cells-recalculate-batch.md): Trigger recalculation for a batch of cells identified by ID. Requests are scoped to the workspace associated with the API key; table, sheet, column, cell, operation, and version IDs must belong to that workspace.
+- [Import File](https://docs.promptlayer.com/reference/table-sheet-imports-file-create.md): Start an asynchronous CSV import into an existing Table sheet. Requests are scoped to the workspace associated with the API key; table, sheet, column, cell, operation, and version IDs must belong to that workspace.
+- [Import Request Logs](https://docs.promptlayer.com/reference/table-sheet-imports-request-logs-create.md): Start an asynchronous request-history import into an existing Table sheet. Requests are scoped to the workspace associated with the API key; table, sheet, column, cell, operation, and version IDs must belong to that workspace.
+- [List Operations](https://docs.promptlayer.com/reference/table-sheet-operations-list.md): List active recalculation operations and cell status counts for a Table sheet. Requests are scoped to the workspace associated with the API key; table, sheet, column, cell, operation, and version IDs must belong to that workspace.
+- [Create Operation](https://docs.promptlayer.com/reference/table-sheet-operations-create.md): Queue a recalculation operation for selected columns, rows, and cell statuses. Requests are scoped to the workspace associated with the API key; table, sheet, column, cell, operation, and version IDs must belong to that workspace.
+- [Get Operation](https://docs.promptlayer.com/reference/table-sheet-operations-get.md): Poll a Table sheet recalculation operation by operation ID. Requests are scoped to the workspace associated with the API key; table, sheet, column, cell, operation, and version IDs must belong to that workspace.
+- [Cancel Operation](https://docs.promptlayer.com/reference/table-sheet-operations-cancel.md): Cancel an active Table sheet recalculation operation. Requests are scoped to the workspace associated with the API key; table, sheet, column, cell, operation, and version IDs must belong to that workspace.
+- [Get Score](https://docs.promptlayer.com/reference/table-sheet-score-get.md): Retrieve the current score payload for a Table sheet. Requests are scoped to the workspace associated with the API key; table, sheet, column, cell, operation, and version IDs must belong to that workspace.
+- [Configure Score](https://docs.promptlayer.com/reference/table-sheet-score-configure.md): Configure scoring for a Table sheet. This endpoint updates the configuration and returns whether recalculation is required; it does not queue score calculation. Requests are scoped to the workspace associated with the API key; table, sheet, column, cell, operation, and version IDs must belong to tha…
+- [Recalculate Score](https://docs.promptlayer.com/reference/table-sheet-score-recalculate.md): Queue recalculation for an existing Table sheet score configuration. Requests are scoped to the workspace associated with the API key; table, sheet, column, cell, operation, and version IDs must belong to that workspace.
+- [Get Scorecard](https://docs.promptlayer.com/reference/table-sheet-scorecard-get.md): Get the active scorecard for a table sheet, including latest and display calculation metadata.
+- [Configure Scorecard](https://docs.promptlayer.com/reference/table-sheet-scorecard-configure.md): Create or update the active scorecard for a table sheet.
+- [Delete Scorecard](https://docs.promptlayer.com/reference/table-sheet-scorecard-delete.md): Soft-delete the active scorecard for a table sheet.
+- [Migrate Legacy Score to Scorecard](https://docs.promptlayer.com/reference/table-sheet-scorecard-migrate-legacy-score.md): Convert legacy sheet score configuration into scorecard criteria.
+- [Recalculate Scorecard](https://docs.promptlayer.com/reference/table-sheet-scorecard-recalculate.md): Queue scorecard recalculation for a table sheet.
+- [Cancel Scorecard](https://docs.promptlayer.com/reference/table-sheet-scorecard-cancel.md): Cancel active queued or running scorecard work for a table sheet.
+- [Get Scorecard Calculation](https://docs.promptlayer.com/reference/table-sheet-scorecard-calculation-get.md): Get details for a single scorecard calculation.
+- [List Scorecard Rows](https://docs.promptlayer.com/reference/table-sheet-scorecard-rows-list.md): List row-level scorecard summaries for a calculation.
+- [Get Scorecard Row](https://docs.promptlayer.com/reference/table-sheet-scorecard-row-get.md): Get row-level scorecard breakdown for a single row index.
+- [List Versions](https://docs.promptlayer.com/reference/table-sheet-versions-list.md): List saved versions for a Table sheet. Requests are scoped to the workspace associated with the API key; table, sheet, column, cell, operation, and version IDs must belong to that workspace.
+- [Create Version](https://docs.promptlayer.com/reference/table-sheet-versions-create.md): Create a named Table sheet version, or restore from an existing version while creating a new version. Requests are scoped to the workspace associated with the API key; table, sheet, column, cell, operation, and version IDs must belong to that workspace.
+- [Get Version](https://docs.promptlayer.com/reference/table-sheet-versions-get.md): Retrieve one Table sheet version, including its snapshot. Requests are scoped to the workspace associated with the API key; table, sheet, column, cell, operation, and version IDs must belong to that workspace.
+- [Get Score History](https://docs.promptlayer.com/reference/table-sheet-score-history-get.md): Retrieve score-history points across Table sheet versions. Requests are scoped to the workspace associated with the API key; table, sheet, column, cell, operation, and version IDs must belong to that workspace.
+- [List Workflows](https://docs.promptlayer.com/reference/list-workflows.md)
+- [Get Workflow](https://docs.promptlayer.com/reference/get-workflow.md)
+- [Get Workflow Labels](https://docs.promptlayer.com/reference/get-workflow-labels.md)
+- [Create Workflow](https://docs.promptlayer.com/reference/create-workflow.md)
+- [Update Workflow (PATCH)](https://docs.promptlayer.com/reference/patch-workflow.md)
+- [Run Workflow](https://docs.promptlayer.com/reference/run-workflow.md)
+- [Get Workflow Version Execution Results](https://docs.promptlayer.com/reference/workflow-version-execution-results.md)
+- [Attach Workflow External ID](https://docs.promptlayer.com/reference/external-ids-workflows-attach.md)
+- [List Workflow External IDs](https://docs.promptlayer.com/reference/external-ids-workflows-list.md)
+- [Delete Workflow External ID](https://docs.promptlayer.com/reference/external-ids-workflows-delete.md)
+- [List Skill Collections](https://docs.promptlayer.com/reference/list-skill-collections.md)
+- [Create Skill Collection](https://docs.promptlayer.com/reference/create-skill-collection.md)
+- [Get Skill Collection](https://docs.promptlayer.com/reference/get-skill-collection.md)
+- [Update Skill Collection](https://docs.promptlayer.com/reference/update-skill-collection.md)
+- [Save Skill Collection Version](https://docs.promptlayer.com/reference/save-skill-collection-version.md)
+- [Attach Skill Collection External ID](https://docs.promptlayer.com/reference/external-ids-skill-collections-attach.md)
+- [List Skill Collection External IDs](https://docs.promptlayer.com/reference/external-ids-skill-collections-list.md)
+- [Delete Skill Collection External ID](https://docs.promptlayer.com/reference/external-ids-skill-collections-delete.md)
+- [List Tool Registries](https://docs.promptlayer.com/reference/tool-registry-list.md)
+- [Get Tool Registry](https://docs.promptlayer.com/reference/tool-registry-get.md)
+- [Create Tool Registry](https://docs.promptlayer.com/reference/tool-registry-create.md)
+- [Create Tool Version](https://docs.promptlayer.com/reference/tool-registry-create-version.md)
+- [Test Execute Tool](https://docs.promptlayer.com/reference/tool-registry-test-execute.md)
+- [Attach Tool Registry External ID](https://docs.promptlayer.com/reference/external-ids-tool-registry-attach.md)
+- [List Tool Registry External IDs](https://docs.promptlayer.com/reference/external-ids-tool-registry-list.md)
+- [Delete Tool Registry External ID](https://docs.promptlayer.com/reference/external-ids-tool-registry-delete.md)
+- [List Workspace Env Vars](https://docs.promptlayer.com/reference/env-vars-workspace-list.md)
+- [Create Workspace Env Var](https://docs.promptlayer.com/reference/env-vars-workspace-create.md)
+- [Update Workspace Env Var](https://docs.promptlayer.com/reference/env-vars-workspace-update.md)
+- [Delete Workspace Env Var](https://docs.promptlayer.com/reference/env-vars-workspace-delete.md)
+- [List Tool Env Vars](https://docs.promptlayer.com/reference/env-vars-tool-list.md)
+- [Create Tool Env Var](https://docs.promptlayer.com/reference/env-vars-tool-create.md)
+- [Update Tool Env Var](https://docs.promptlayer.com/reference/env-vars-tool-update.md)
+- [Delete Tool Env Var](https://docs.promptlayer.com/reference/env-vars-tool-delete.md)
+- [Create Folder](https://docs.promptlayer.com/reference/create-folder.md)
+- [Update Folder](https://docs.promptlayer.com/reference/update-folder.md)
+- [List Folder Entities](https://docs.promptlayer.com/reference/list-folder-entities.md)
+- [Move Folder Entities](https://docs.promptlayer.com/reference/move-folder-entities.md)
+- [Delete Folder Entities](https://docs.promptlayer.com/reference/delete-folder-entities.md)
+- [Resolve Folder ID by Path](https://docs.promptlayer.com/reference/resolve-folder-id.md)
+- [Attach Folder External ID](https://docs.promptlayer.com/reference/external-ids-folders-attach.md)
+- [List Folder External IDs](https://docs.promptlayer.com/reference/external-ids-folders-list.md)
+- [Delete Folder External ID](https://docs.promptlayer.com/reference/external-ids-folders-delete.md)
+- [External IDs](https://docs.promptlayer.com/reference/external-ids-overview.md): Attach identifiers from your own systems to PromptLayer resources so your integrations can easily find and sync resources.
+- [Introduction](https://docs.promptlayer.com/features/prompt-registry/webhooks.md): Use webhooks to receive notifications about prompt, dataset, evaluation, workflow, and skill collection events in your workspace.
+- [Events](https://docs.promptlayer.com/features/prompt-registry/webhook-events.md)
+- [Overview](https://docs.promptlayer.com/features/evaluations/overview.md)
+- [Getting Started](https://docs.promptlayer.com/features/evaluations/building-pipelines.md)
+- [Eval Types](https://docs.promptlayer.com/features/evaluations/eval-types.md)
+- [Node & Column Types](https://docs.promptlayer.com/features/evaluations/column-types.md): Complete reference for all node types used in Workflows and evaluation pipelines
+- [Score Card](https://docs.promptlayer.com/features/evaluations/score-card.md)
+- [Continuous Integration](https://docs.promptlayer.com/features/evaluations/continuous-integration.md)
+- [Online or Programmatic Evals](https://docs.promptlayer.com/features/evaluations/programmatic.md)
+- [Eval Examples](https://docs.promptlayer.com/features/evaluations/examples.md)
+- [Voice Agents](https://docs.promptlayer.com/why-promptlayer/voice-agents.md)
+- [Overview](https://docs.promptlayer.com/features/evaluations/datasets-overview.md): Use Datasets as the versioned system of record for evaluation inputs, backtests, and batch workflows.
+- [Create from File](https://docs.promptlayer.com/features/evaluations/datasets-create-from-file.md)
+- [Create from History](https://docs.promptlayer.com/features/evaluations/datasets-create-from-history.md)
+- [Compare Models](https://docs.promptlayer.com/onboarding-guides/compare-models.md): Compare prompt outputs across providers and models with an evaluation pipeline.
+- [Backtest Prompt Changes](https://docs.promptlayer.com/onboarding-guides/backtesting-prompt-changes.md): Test a new prompt version against historical request data before releasing it.
+- [Run Batch Jobs](https://docs.promptlayer.com/onboarding-guides/batch-runs.md): Use evaluations as spreadsheet-style batch runs for labeling, research, generation, and enrichment.
+- [Legacy Scoring](https://docs.promptlayer.com/features/tables/scoring.md): Legacy sheet score configuration with score columns, Boolean and numeric scoring, custom code, and winner aggregation.
+- [List Datasets](https://docs.promptlayer.com/reference/list-datasets.md)
+- [Get Dataset Rows](https://docs.promptlayer.com/reference/get-dataset-rows.md)
+- [Create Dataset Group](https://docs.promptlayer.com/reference/create-dataset-group.md)
+- [Create Dataset Version from File](https://docs.promptlayer.com/reference/create-dataset-version-from-file.md)
+- [Create Dataset Version from Request History](https://docs.promptlayer.com/reference/create-dataset-version-from-filter-params.md)
+- [Create Draft Dataset Version](https://docs.promptlayer.com/reference/create-draft-dataset-version.md)
+- [Add Request Log to Dataset](https://docs.promptlayer.com/reference/add-request-log-to-dataset.md)
+- [Add Trace to Dataset](https://docs.promptlayer.com/reference/add-trace-to-dataset.md)
+- [Save Draft Dataset Version](https://docs.promptlayer.com/reference/save-draft-dataset-version.md)
+- [Attach Dataset Group External ID](https://docs.promptlayer.com/reference/external-ids-dataset-groups-attach.md)
+- [List Dataset Group External IDs](https://docs.promptlayer.com/reference/external-ids-dataset-groups-list.md)
+- [Delete Dataset Group External ID](https://docs.promptlayer.com/reference/external-ids-dataset-groups-delete.md)
+- [List Evaluations](https://docs.promptlayer.com/reference/list-evaluations.md)
+- [Get Evaluation Rows](https://docs.promptlayer.com/reference/get-evaluation-rows.md)
+- [Create Evaluation Pipeline](https://docs.promptlayer.com/reference/create-reports.md)
+- [Run Full Evaluation](https://docs.promptlayer.com/reference/run-report.md)
+- [Get Evaluation](https://docs.promptlayer.com/reference/get-report.md)
+- [Get Evaluation Score](https://docs.promptlayer.com/reference/get-report-score.md)
+- [Add Column to Evaluation Pipeline](https://docs.promptlayer.com/reference/add-report-columns.md)
+- [Edit Evaluation Pipeline Column](https://docs.promptlayer.com/reference/edit-report-column.md)
+- [Delete Evaluation Pipeline Column](https://docs.promptlayer.com/reference/delete-report-column.md)
+- [Configure Custom Scoring](https://docs.promptlayer.com/reference/update-report-score-card.md)
+- [Rename Evaluation Pipeline](https://docs.promptlayer.com/reference/rename-report.md)
+- [Delete Evaluation Pipeline](https://docs.promptlayer.com/reference/delete-report.md)
+- [Delete Reports by Name](https://docs.promptlayer.com/reference/delete-reports-by-name.md)
+- [Attach Report External ID](https://docs.promptlayer.com/reference/external-ids-reports-attach.md)
+- [List Report External IDs](https://docs.promptlayer.com/reference/external-ids-reports-list.md)
+- [Delete Report External ID](https://docs.promptlayer.com/reference/external-ids-reports-delete.md)
+- [AGENTS](https://docs.promptlayer.com/AGENTS.md)
+- [Changelog](https://docs.promptlayer.com/changelog.md): Daily updates on new features and improvements to PromptLayer.
+- [FAQ](https://docs.promptlayer.com/features/faq.md)
+- [Table Design Patterns](https://docs.promptlayer.com/features/tables/best-practices.md): Design patterns for building reliable Table workflows.
+- [PromptLayer Documentation](https://docs.promptlayer.com/overview.md): Docs for PromptLayer — prompt management, LLM observability, and evals. Version, test, and monitor every prompt, agent, and workflow.
+- [Add Table Sheet Rows](https://docs.promptlayer.com/reference/add-table-sheet-rows.md): Append rows to a Table sheet.
+- [Cancel Table Sheet Operation](https://docs.promptlayer.com/reference/cancel-table-sheet-operation.md): Cancel a Table sheet operation.
+- [Configure Table Sheet Score](https://docs.promptlayer.com/reference/configure-table-sheet-score.md): Configure scoring for a Table sheet.
+- [Create Table](https://docs.promptlayer.com/reference/create-table.md): Create a Table from the public API.
+- [Create Table Sheet](https://docs.promptlayer.com/reference/create-table-sheet.md): Create a Table sheet by importing file or request log data.
+- [Create Table Sheet Column](https://docs.promptlayer.com/reference/create-table-sheet-column.md): Create a column in a Table sheet.
+- [Create Table Sheet File Import](https://docs.promptlayer.com/reference/create-table-sheet-file-import.md): Import a CSV file into an existing Table sheet.
+- [Create Table Sheet Operation](https://docs.promptlayer.com/reference/create-table-sheet-operation.md): Queue a Table sheet operation.
+- [Create Table Sheet Request Log Import](https://docs.promptlayer.com/reference/create-table-sheet-request-log-import.md): Import request history into an existing Table sheet.
+- [Create Table Sheet Version](https://docs.promptlayer.com/reference/create-table-sheet-version.md): Create a Table sheet version.
+- [Get Table](https://docs.promptlayer.com/reference/get-table.md): Retrieve Table details.
+- [Get Table Sheet](https://docs.promptlayer.com/reference/get-table-sheet.md): Retrieve Table sheet details.
+- [Get Table Sheet Cell](https://docs.promptlayer.com/reference/get-table-sheet-cell.md): Retrieve a Table sheet cell.
+- [Get Table Sheet Import Operation](https://docs.promptlayer.com/reference/get-table-sheet-operation.md): Check the status of an asynchronous Table sheet import.
+- [Get Table Sheet Operation](https://docs.promptlayer.com/reference/get-table-sheet-operation-status.md): Poll a Table sheet operation.
+- [Get Table Sheet Score](https://docs.promptlayer.com/reference/get-table-sheet-score.md): Retrieve Table sheet score data.
+- [Get Table Sheet Score History](https://docs.promptlayer.com/reference/get-table-sheet-score-history.md): Retrieve Table sheet score history.
+- [Get Table Sheet Version](https://docs.promptlayer.com/reference/get-table-sheet-version.md): Retrieve a Table sheet version.
+- [List Table Sheet Columns](https://docs.promptlayer.com/reference/list-table-sheet-columns.md): Retrieve columns from a Table sheet.
+- [List Table Sheet Operations](https://docs.promptlayer.com/reference/list-table-sheet-operations.md): List active operations for a Table sheet.
+- [List Table Sheet Rows](https://docs.promptlayer.com/reference/list-table-sheet-rows.md): Retrieve rows from a Table sheet.
+- [List Table Sheet Versions](https://docs.promptlayer.com/reference/list-table-sheet-versions.md): List versions for a Table sheet.
+- [List Table Sheets](https://docs.promptlayer.com/reference/list-table-sheets.md): Retrieve sheets in a Table.
+- [List Tables](https://docs.promptlayer.com/reference/list-tables.md): Retrieve Tables.
+- [Recalculate Table Sheet Cell](https://docs.promptlayer.com/reference/recalculate-table-sheet-cell.md): Queue recalculation for one Table sheet cell.
+- [Recalculate Table Sheet Cells](https://docs.promptlayer.com/reference/recalculate-table-sheet-cells.md): Queue recalculation for multiple Table sheet cells.
+- [Recalculate Table Sheet Score](https://docs.promptlayer.com/reference/recalculate-table-sheet-score.md): Queue score recalculation for a Table sheet.
+- [Update Table](https://docs.promptlayer.com/reference/update-table.md): Update a Table title or folder.
+- [Update Table Sheet](https://docs.promptlayer.com/reference/update-table-sheet.md): Update a Table sheet title or index.
+- [Update Table Sheet Cell](https://docs.promptlayer.com/reference/update-table-sheet-cell.md): Update a Table sheet cell.
+- [Update Table Sheet Column](https://docs.promptlayer.com/reference/update-table-sheet-column.md): Update a Table sheet column.
+- [TABLE SCORECARDS PUBLIC API HANDOFF](https://docs.promptlayer.com/scorecard-api/TABLE_SCORECARDS_PUBLIC_API_HANDOFF.md)
+
+## OpenAPI Specs
+
+- [openapi](/openapi.json)
+
+
+This documentation is built and hosted on [Mintlify](https://mintlify.com), a developer documentation platform.

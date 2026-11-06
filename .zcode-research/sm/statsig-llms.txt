@@ -1,0 +1,114 @@
+# Statsig Documentation
+
+> Official documentation for Statsig feature flags, experimentation, analytics, Warehouse Native, SDKs, APIs, and AI products.
+
+Statsig Feature Gates are feature flags. Statsig Cloud processes hosted event data; Warehouse Native runs analysis against data in the customer's warehouse.
+Use Docs MCP for targeted, read-only public documentation retrieval. Authenticated Statsig MCP accesses product resources according to the user's account permissions.
+Prefer current SDKs for new implementations. Verify plan requirements, lifecycle status, and availability on the linked live page before making recommendations.
+AI Experimentation is Early Access and is not accepting new customers. Use Docs MCP or `/api/content/<slug>` for targeted retrieval; use `llms-full.txt` only as an offline full-corpus resource.
+
+## Start here
+
+- [Statsig Overview](https://docs.statsig.com/api/content/welcome): Ship, measure, & learn with the same tools as the world's largest Tech companies. Run thousands of A/B tests, safely rollout features, & dive deep on user behavior in a single, unified platform.
+- [Platform Overview](https://docs.statsig.com/api/content/understanding-platform): Learn what Statsig is used for and how to set it up with our Cloud and Warehouse Native deployment models Deployment: Both.
+- [Statsig SDK Quickstart Guide](https://docs.statsig.com/api/content/sdks/quickstart): Get data flowing into Statsig with only a few lines of code.
+- [Create your first feature flag](https://docs.statsig.com/api/content/guides/check-gate): How to call checkGate in Statsig client and server SDKs to evaluate a feature gate, including parameters, return values, and exposure logging.
+- [Create an Experiment](https://docs.statsig.com/api/content/experiments/create-new): Learn how to create a new experiment in the Statsig console, including device-level, custom ID, and isolated experiments, then configure it on the Setup tab before you start it. Deployment: Both.
+
+## Choose Statsig by goal
+
+- [Feature Flags](https://docs.statsig.com/api/content/feature-flags/overview): Feature Gates, commonly known as feature flags, allow you to toggle the behavior of your product in real time without deploying new code.
+- [Dynamic Config](https://docs.statsig.com/api/content/dynamic-config/overview): Dynamic configs replace hard-coded values in your application with JSON defined on the server.
+- [Experiments Overview](https://docs.statsig.com/api/content/experiments/overview): Learn the fundamentals of experimentation with Statsig, including key concepts, randomization units, and statistical significance.
+- [When to Use Feature Gates vs. Experiments?](https://docs.statsig.com/api/content/guides/featureflags-or-experiments): Decide whether to ship with a feature gate or run an experiment, and understand how the two work together.
+- [Autotune (Bandits)](https://docs.statsig.com/api/content/autotune/overview): Autotune and Autotune AI automatically weigh explore versus exploit to deliver the best-performing variant for a single metric.
+- [Product Analytics Overview](https://docs.statsig.com/api/content/product-analytics/overview): Understand how your users experience and interact with your product through the analysis of product data
+- [Statsig Web Analytics Overview](https://docs.statsig.com/api/content/webanalytics/overview): Overview of Statsig Web Analytics for tracking page views, autocapture events, conversions, and running A/B tests on your website.
+- [Infra Analytics Overview](https://docs.statsig.com/api/content/infra-analytics/overview): Monitor and debug the health of your services directly inside Statsig
+- [Session Replay Overview](https://docs.statsig.com/api/content/session-replay/overview): Overview of Statsig Session Replay for capturing and replaying real user sessions to debug bugs, study UX, and investigate experiment anomalies.
+- [About Warehouse Native](https://docs.statsig.com/api/content/statsig-warehouse-native/introduction): Introduction to Statsig Warehouse Native, a deployment model that runs experiment analysis directly on your data warehouse for privacy and control. Deployment: Warehouse Native.
+- [Comparing Warehouse Native and Cloud](https://docs.statsig.com/api/content/statsig-warehouse-native/native-vs-cloud): Understand the different Statsig products Deployment: Warehouse Native.
+- [AI Experimentation Overview](https://docs.statsig.com/api/content/ai-evals/overview): Early Access; not accepting new customers. Status: Early Access.
+
+## Agent access
+
+- [Docs MCP server](https://docs.statsig.com/api/content/integrations/mcp/docs-mcp-server): Connect AI clients to the public Statsig documentation MCP endpoint.
+- [Overview](https://docs.statsig.com/api/content/integrations/mcp/overview): The Statsig MCP (Model Context Protocol) server brings the power of Statsig into tools like Codex, Cursor, and Claude Code. With this setup, you can ask questions, explore experiments, and access your Statsig data using AI.
+
+## Build with Statsig
+
+- [SDK Getting Started](https://docs.statsig.com/api/content/sdks/getting-started): Get started with a Statsig SDK by choosing your platform, installing the package, initializing with your API key, and evaluating your first gate.
+- [Client vs Server SDKs](https://docs.statsig.com/api/content/sdks/client-vs-server): Compare Statsig client and server SDKs to choose the right SDK for your platform based on security, latency, identity, and supported features.
+
+## API Reference
+
+- [Console API Overview](https://docs.statsig.com/api/content/console-api/introduction): Introduction to the Statsig Console API for programmatically managing feature gates, experiments, dynamic configs, metrics, and project settings.
+- [Check Feature Gate(s)](https://docs.statsig.com/api/content/api-reference/feature-gates/check-feature-gates): Evaluates one or more feature gates for a user and returns pass/fail results. Automatically logs exposure events for analytics.
+- [Log Custom Events](https://docs.statsig.com/api/content/api-reference/events/log-custom-events): Logs one or more custom events for analytics and metric calculation. Events are used to measure experiment outcomes and user behavior.
+
+## Product Docs
+
+- [Experiment Process Overview](https://docs.statsig.com/api/content/experiments/process-overview): The order of steps for running a Statsig experiment, from sizing it with a power analysis through configuring, implementing, testing, launching, and reading results. Deployment: Both.
+- [Read Parameters, Not Group Names](https://docs.statsig.com/api/content/experiments/implementation/getting-group): Why Statsig experiment code reads parameters rather than group names, how that lets you add variants without a code change, and what each Diagnostics exposure-stream rule means.
+- [Best Practices and Avoiding False Positives](https://docs.statsig.com/api/content/experiments/interpreting-results/best-practices): Best practices for interpreting Statsig experiment results, including avoiding common biases, reading lift correctly, and trusting statistical significance. Deployment: Both.
+- [Slicing by User Properties](https://docs.statsig.com/api/content/experiments/interpreting-results/user-properties): Break down Statsig experiment results by user properties like country, platform, or subscription tier to identify heterogeneous treatment effects. Deployment: Both.
+- [Participating Units](https://docs.statsig.com/api/content/experiments/interpreting-results/participating-units): Understand how Statsig counts participating units in an experiment, including exposure rules, deduplication, and how to interpret unit counts in results. Deployment: Both.
+- [Metric Insights and Aggregated Impact](https://docs.statsig.com/api/content/experiments/exploring-results/aggregated-impact): How Statsig calculates the aggregated business impact of an experiment across metrics so you can quantify total launch impact in one summary view.
+- [Topline and Projected Impact](https://docs.statsig.com/api/content/experiments/statistical-methods/topline-impact): How Statsig estimates the topline impact of an experiment on company metrics by scaling experiment lift to your total addressable user base.
+- [Running an A/A Test](https://docs.statsig.com/api/content/experiments/types/aa-test): Learn how to run A/A tests to validate your experimentation setup and ensure proper metrics configuration.
+- [Build Your First Feature](https://docs.statsig.com/api/content/guides/first-feature): Walk through creating a feature gate, targeting audiences, and rolling out your first feature with the JavaScript SDK.
+- [Guided Tutorial](https://docs.statsig.com/api/content/guides/first-dynamic-config): A step-by-step tutorial to create your first dynamic config for building a flexible homepage banner
+- [Creating Your First Experiment](https://docs.statsig.com/api/content/guides/sidecar-experiments/creating-experiments): Learn how to create and configure A/B experiments using Sidecar without writing code or deploying to production.
+- [Build your first Device-level Experiment](https://docs.statsig.com/api/content/guides/first-device-level-experiment): Step-by-step guide to running your first device-level experiment in Statsig, where assignment is based on device or stable ID rather than user ID.
+
+## Warehouse Native
+
+- [Warehouse Native Quickstart](https://docs.statsig.com/api/content/statsig-warehouse-native/guides/quick-start): Quick start guide for Statsig Warehouse Native: connect your warehouse, define a metric source, run an A/A test, and analyze your first results. Deployment: Warehouse Native.
+- [Migrating to Warehouse Native](https://docs.statsig.com/api/content/statsig-warehouse-native/guides/migrate-to-whn): Migrate to Statsig Warehouse Native from Statsig Cloud or from an existing Warehouse Native project by setting up a new Warehouse Native project side by side, validating results, and switching over when you're confident. Deployment: Warehouse Native.
+- [Self-Serve Migration Wizard (Early Access)](https://docs.statsig.com/api/content/statsig-warehouse-native/guides/self-serve-migration): Copy an existing Statsig project's configuration into a new Warehouse Native project with the self-serve migration wizard. The wizard copies gates, experiments, segments, and more in dependency order while your source project stays unchanged. Status: Early Access.
+- [Running a Warehouse Native POC](https://docs.statsig.com/api/content/statsig-warehouse-native/guides/running_a_poc): How to plan a proof of concept with Statsig Warehouse Native (WHN), including the components of our solution, steps required to successfully lead a proof of concept & validation/next steps to productionize Deployment: Warehouse Native.
+- [How to Run a Playground Evaluation](https://docs.statsig.com/api/content/statsig-warehouse-native/guides/playground_eval): Use the Statsig Warehouse Native playground to evaluate metric and experiment configurations with sample data before committing to production pipelines. Deployment: Warehouse Native.
+- [Working With the SDK](https://docs.statsig.com/api/content/statsig-warehouse-native/guides/sdks): Use Statsig SDKs alongside Statsig Warehouse Native to assign users to experiments client-side while analyzing results from your data warehouse. Deployment: Warehouse Native.
+- [Running Analysis Across Unit Types, AKA Cluster Experiments](https://docs.statsig.com/api/content/metrics/different-id): Learn how to run analysis when the experiment assignment unit differs from the analysis unit. Deployment: Warehouse Native.
+- [Setup Checklist](https://docs.statsig.com/api/content/statsig-warehouse-native/guides/checklist): Onboarding checklist for Statsig Warehouse Native, covering warehouse connection, metric setup, assignment sources, and your first experiment launch. Deployment: Warehouse Native.
+- [Bootstrapping Your Experimentation Program](https://docs.statsig.com/api/content/statsig-warehouse-native/guides/experimentation-program): Best practices for running an experimentation program on Statsig Warehouse Native, including org design, metric hygiene, review processes, and tooling. Deployment: Warehouse Native.
+- [Forwarded Data](https://docs.statsig.com/api/content/statsig-warehouse-native/connecting-your-warehouse/forwarded-data): Use forwarded data in Statsig Warehouse Native to send events to Statsig and store them in your warehouse for experiment and analytics use. Deployment: Warehouse Native.
+- [Egress, Privacy, & Storage](https://docs.statsig.com/api/content/statsig-warehouse-native/analysis-tools/data-privacy): Understand how Statsig uses your warehouse Deployment: Warehouse Native.
+- [Warehouse Costs](https://docs.statsig.com/api/content/statsig-warehouse-native/guides/costs): How you can manage costs with statsig Deployment: Warehouse Native.
+
+## SDKs & APIs
+
+- [Run your first A/B test](https://docs.statsig.com/api/content/guides/abn-tests): Run A/B/n experiments in Statsig with three or more variants to compare multiple candidate designs against a single control group in one test.
+- [Log your first custom event](https://docs.statsig.com/api/content/guides/logging-events): How to log custom events to Statsig from client and server SDKs, including event names, values, and metadata used for metrics and analytics.
+- [Initializing SDKs](https://docs.statsig.com/api/content/client/concepts/initialize): Initialize Statsig client SDKs correctly across web, mobile, and React Native applications to ensure feature gates and experiments evaluate as expected.
+- [How Evaluation Works](https://docs.statsig.com/api/content/sdks/how-evaluation-works): How Statsig SDKs evaluate feature gates, experiments, and dynamic configs, including rule ordering, conditions, and exposure logging behavior.
+- [On Device Client SDKs](https://docs.statsig.com/api/content/client/onDeviceOverview): Overview of Statsig on-device evaluation client SDKs that evaluate feature gates and experiments locally for low-latency rules evaluation on devices.
+- [Server Core Overview](https://docs.statsig.com/api/content/server-core): Learn about Statsig Server Core, our second generation of Server SDKs with improved performance and features
+- [Client Persistent Assignment](https://docs.statsig.com/api/content/client/concepts/persistent_assignment): Configure persistent assignment in Statsig client SDKs so users stay in the same experiment group across sessions and devices for consistent experiences.
+- [Server Persistent Assignment](https://docs.statsig.com/api/content/server/concepts/persistent_assignment): Configure persistent assignment in Statsig server SDKs so users stay in the same experiment group across requests, sessions, and devices over time.
+- [Server Data Stores  / Data Adapter](https://docs.statsig.com/api/content/server/concepts/data_store): Configure a custom data store adapter in Statsig server SDKs to cache rule configurations in Redis, DynamoDB, or another store you control.
+- [Target Apps](https://docs.statsig.com/api/content/sdks/target-apps): Use target apps in Statsig SDKs to scope feature gates, experiments, and dynamic configs to specific applications inside a single project.
+- [Statsig CLI ("Siggy")](https://docs.statsig.com/api/content/statsigcli/introduction): Introduction to the Statsig CLI for managing feature gates, experiments, and project configuration from your terminal and CI environments.
+- [HTTP API](https://docs.statsig.com/api/content/http-api/overview): Overview of the Statsig HTTP API for retrieving feature gate, experiment, and dynamic config values and logging events directly without an SDK.
+
+## Management & Integrations
+
+- [Workspace Management Overview](https://docs.statsig.com/api/content/access-management/introduction): Overview of Statsig access management features for organizations, projects, teams, and SSO so you can scale adoption across your company securely.
+- [Organization Settings & Administration](https://docs.statsig.com/api/content/access-management/organizations): Configure Statsig organizations for Enterprise customers, including creating organizations, assigning admins, and managing settings across multiple projects.
+- [Teams](https://docs.statsig.com/api/content/access-management/teams): Configure Statsig Teams to add an organizational and permissions layer on top of a project, enabling team-scoped settings, reviewers, and ownership.
+- [Single Sign-On With OIDC](https://docs.statsig.com/api/content/access-management/sso/overview): Overview of Single Sign-On with OIDC in Statsig, supported identity providers, and how to enable SSO for Enterprise customers and large organizations.
+- [SCIM User Provisioning](https://docs.statsig.com/api/content/access-management/scim/overview): Overview of SCIM user and group provisioning in Statsig, supported identity providers, and how automated sync works for Enterprise customers.
+- [SCIM Concepts](https://docs.statsig.com/api/content/access-management/scim/concepts): Core SCIM concepts in Statsig, including users, groups, role mappings, and how provisioning sync works between your identity provider and Statsig.
+- [Integrations Overview](https://docs.statsig.com/api/content/integrations/introduction): Overview of Statsig integrations with data warehouses, CDPs, messaging tools, CDNs, and developer tools to fit Statsig into your existing stack.
+- [Data Warehouse Ingestion](https://docs.statsig.com/api/content/data-warehouse-ingestion/introduction): Introduction to Statsig data warehouse ingestion, which imports events and metrics from Snowflake, BigQuery, Redshift, and other warehouses on a schedule.
+- [OpenAI](https://docs.statsig.com/api/content/integrations/openai): Integrate Statsig with OpenAI to log AI requests, capture metrics, and run experiments on prompts, models, and parameters across your applications.
+- [Statsig Lite](https://docs.statsig.com/api/content/integrations/statsiglite): Use Statsig Lite, a lightweight integration option for embedding Statsig into low-resource environments and lightweight client surfaces.
+- [Running A/B Tests](https://docs.statsig.com/api/content/integrations/azureai/running-experiments): Run experiments on Azure OpenAI prompts, models, and parameters with Statsig, including variant configuration, exposure logging, and result analysis.
+- [Pre-Commit Webhooks Guide](https://docs.statsig.com/api/content/guides/pre-commit-webhooks): Configure pre-commit webhooks to validate Statsig resource edits and creations with an external service before they take effect.
+
+## Optional
+
+- [SDK overview](https://docs.statsig.com/sdks/getting-started): Choose a supported Statsig SDK.
+- [Console API introduction](https://docs.statsig.com/console-api/introduction): Manage Statsig resources programmatically.
+- [FAQ](https://docs.statsig.com/faq): Find answers to common Statsig questions.
+- [Full documentation corpus](https://docs.statsig.com/llms-full.txt): Offline full-corpus resource; prefer Docs MCP or `/api/content/<slug>` for targeted retrieval.

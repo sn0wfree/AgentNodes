@@ -46,23 +46,31 @@ class TestRolePromptLoading:
 
 
 class TestToolWhitelist:
-    """role → tool whitelist 映射."""
+    """role → tool whitelist 映射.
 
-    def test_strategist_has_write_tools(self):
-        """strategist 必须能 write_file + run_backtest."""
+    **第 4 批次起只测通用角色**：量化角色（strategist / data_quality /
+    factor_analyst ...）的工具清单已随插件迁到 ``apps/agent_plugins/quant.py``，
+    kernel 的 ``TOOLSETS`` 不再持有它们。原断言验证的是业务角色能拿到
+    ``run_backtest`` 这类业务工具——那是插件层的职责，不是 kernel 的。
+    """
+
+    def test_coder_has_write_tools(self):
+        """coder 必须能 write + shell（通用编码 agent 的底线能力）。"""
         from agentnodes.kernel.agent.role_factory import _get_tool_whitelist
-        wl = _get_tool_whitelist("strategist")
+        wl = _get_tool_whitelist("coder")
         assert "write" in wl
-        assert "run_backtest" in wl
         assert "read" in wl
+        assert "shell" in wl
 
-    def test_data_quality_minimal(self):
-        """data_quality 是只读 agent, 包含 read_file + web tools."""
+    def test_explorer_is_readonly(self):
+        """explorer 是只读 agent：能读能搜，不能写不能执行。"""
         from agentnodes.kernel.agent.role_factory import _get_tool_whitelist
-        wl = _get_tool_whitelist("data_quality")
+        wl = _get_tool_whitelist("explorer")
         assert "read" in wl
         assert "websearch" in wl
         assert "webfetch" in wl
+        assert "write" not in wl
+        assert "shell" not in wl
 
     def test_critic_is_readonly(self):
         """critic 不能 write_file."""
@@ -131,20 +139,25 @@ class TestBuildAgentLoop:
         tool_names = [t.name for t in loop.registry._tools.values()]
         assert "read" in tool_names
 
-    def test_strategist_has_write_tools(self, tmp_path):
+    def test_chat_has_write_tools(self, tmp_path):
+        """通用 chat 角色能构建出带 write 能力 + shell 的 loop。
+
+        **第 4 批次替换**：原测试用 ``role="strategist"``（量化插件角色），
+        该角色已迁 ``apps/agent_plugins/quant.py``，kernel 里落到 minimal
+        → 天然没有 write。改用平台的通用 ``chat`` 角色（有 chat.md 提示词）
+        验证同一件事。
+        """
         from agentnodes.kernel.agent.role_factory import build_agent_loop
 
         loop = build_agent_loop(
-            role="strategist",
+            role="chat",
             workspace_path=tmp_path,
             strategy_name="test_strat",
         )
         assert loop is not None
         tool_names = {t.name for t in loop.registry._tools.values()}
         assert "write" in tool_names
-        # 批次 6：业务工具归位 L2 后经 CapabilityRegistry 重新注册，
-        # run_backtest 又出现在 registry 里（其底层 backtest.* kind 仍缺失，
-        # 调用时走降级路径）。这里只断言「写出能力可用」，不断言具体工具集。
+        assert "shell" in tool_names
 
     def test_unknown_role_returns_none(self, tmp_path):
         from agentnodes.kernel.agent.role_factory import build_agent_loop

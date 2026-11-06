@@ -23,10 +23,23 @@ class TestShellCommand:
 
 
 class TestToolsetHygieneAfterEval:
-    def test_factor_analyst_has_no_bg_shell(self):
-        assert "run_bg_command" not in TOOLSETS["factor_analyst"]
-        assert "compute_factor" in TOOLSETS["factor_analyst"]
+    """第 4 批次起量化角色已迁 apps/agent_plugins/，kernel 表只收通用角色。
 
-    def test_backtest_diagnostics_has_no_bg_shell(self):
-        assert "run_bg_command" not in TOOLSETS["backtest_diagnostics"]
-        assert "run_backtest" in TOOLSETS["backtest_diagnostics"]
+    原断言验证的是 ``factor_analyst`` / ``backtest_diagnostics`` 两个业务角色
+    的后台 shell 卫生；它们已不在 kernel 表里，断言目标随之换成
+    **通用角色是否有后台 shell**（coder/general 该有，只读角色该没有）。
+    """
+
+    def test_readonly_roles_have_no_bg_shell(self):
+        for role in ("minimal", "explorer", "planner", "critic"):
+            assert "run_bg_command" not in TOOLSETS[role], role
+            assert "shell" not in TOOLSETS[role], role
+
+    def test_execution_roles_have_bg_shell(self):
+        for role in ("coder", "general"):
+            assert "run_bg_command" in TOOLSETS[role], role
+            assert "shell" in TOOLSETS[role], role
+
+    def test_business_roles_absent(self):
+        assert "factor_analyst" not in TOOLSETS
+        assert "backtest_diagnostics" not in TOOLSETS

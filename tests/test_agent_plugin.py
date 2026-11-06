@@ -11,7 +11,7 @@ from pathlib import Path
 
 import pytest
 
-from agentnodes.kernel.agent.builtin_plugins import (
+from agentnodes.apps.agent_plugins.quant import (
     BUILTIN_PLUGINS,
     standard_pipeline_adjacency,
     standard_pipeline_plugin_ids,
@@ -33,7 +33,12 @@ TEMPLATES_DIR = (
 
 @pytest.fixture
 def registry() -> AgentPluginRegistry:
-    return get_default_registry()
+    """带插件的注册表。
+
+    **不再是 ``get_default_registry()``**（第 4 批次起默认表为空）：
+    插件是 L2 内容，测试要显式构造。这本身就是在验证「kernel 不认识业务插件」。
+    """
+    return AgentPluginRegistry(BUILTIN_PLUGINS)
 
 
 # ── AgentPlugin dataclass ────────────────────────────────────────────
@@ -160,7 +165,9 @@ class TestAgentDAGConfig:
 
     def test_validate_ok(self, registry):
         cfg = self.make_standard(registry)
-        assert cfg.validate() == []
+        # 第 4 批次起默认注册表为空（kernel 不预加载业务插件），
+        # 因此必须显式传 registry —— 这正是「插件是 L2 内容」的直接体现。
+        assert cfg.validate(registry) == []
 
     def test_validate_unknown_node(self, registry):
         cfg = AgentDAGConfig(
@@ -189,7 +196,7 @@ class TestAgentDAGConfig:
         assert cfg2.nodes[0].timeout == 99
         assert cfg2.nodes[1].tools_override == ["read"]
         assert cfg2.dag == cfg.dag
-        assert cfg2.validate() == []
+        assert cfg2.validate(registry) == []
 
     # test_study_graph_round_trip / test_node_overrides_in_graph_config
     # 已随 apps/study 移除（2026-11-05 批次 3）：它们测的是

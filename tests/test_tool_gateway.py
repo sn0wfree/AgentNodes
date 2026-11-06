@@ -52,8 +52,24 @@ class TestResolveToolset:
         assert resolve_toolset(["a", "b"]) == ["a", "b"]
 
     def test_role_names_present(self):
-        for role in ("researcher", "factor_analyst", "strategist", "critic"):
+        """第 4 批次起只收通用角色（量化角色已迁 apps/agent_plugins/）。
+
+        判据：每个 toolset 名必须是平台无关的能力分类，不是业务域角色。
+        """
+        for role in ("minimal", "chat", "explorer", "coder", "planner"):
             assert role in TOOLSETS
+
+    def test_no_business_roles_in_kernel(self):
+        """kernel 的 toolset 表不得含业务域角色（三步走第一步的硬约束）。"""
+        for business_role in (
+            "researcher", "factor_analyst", "strategist", "data_quality",
+            "portfolio_construction", "risk_controller", "attribution_analyst",
+            "anti_overfit_analyst", "backtest_diagnostics", "evaluator",
+            "study_reviewer", "study_collector",
+        ):
+            assert business_role not in TOOLSETS, (
+                f"{business_role} 是业务角色，应住在 apps/agent_plugins/"
+            )
 
 
 class TestApplyToolset:
@@ -118,8 +134,13 @@ class TestToolGateway:
 
 class TestRoleToolset:
     def test_known_roles_resolve(self):
-        for role in ("researcher", "factor_analyst", "strategist"):
+        for role in ("chat", "explorer", "coder", "general"):
             assert toolset_for_role(role) == TOOLSETS[role]
+
+    def test_business_role_falls_back_to_minimal(self):
+        """业务角色名不再出现在 kernel 表里 → 落到最小集（fail-safe）。"""
+        for role in ("researcher", "factor_analyst", "strategist"):
+            assert toolset_for_role(role) == TOOLSETS[MINIMAL]
 
     def test_unknown_role_is_minimal(self):
         assert toolset_for_role("nobody") == TOOLSETS[MINIMAL]

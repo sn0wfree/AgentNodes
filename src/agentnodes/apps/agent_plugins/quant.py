@@ -1,18 +1,53 @@
-"""Built-in agent plugins.
+"""量化研究插件集（L2 · 业务内容）。
 
-Merges the previously duplicated agent definitions:
-- ``role_factory._ROLE_PROMPT_FILES`` / ``_ROLE_TOOL_WHITELIST`` (study path)
-- the 9-agent autoresearch YAML preset topology (orchestration path)
+**归属（2026-11-06 批次 4 · 三步走第一步）**：原住 ``kernel/agent/builtin_plugins.py``
+（L3），但插件定义是**业务内容**——研究员/因子分析师/策略师这些角色属于
+特定领域，不是平台原语。按「平台 + 插件」定位迁到 L2。
 
-Hard dependencies (``requires``) are the *minimum* upstream agents an
-agent cannot run without; richer topologies (e.g. strategist waiting on
-data_quality + factor_analyst) are expressed in each DAG config, not
-here. Non-LLM nodes (backtest / decide) use executor types
-``python`` / ``evaluator``.
+**第三阶段状态**：这些插件引用的工具（``factor_analysis`` / ``run_backtest`` /
+``get_market_data`` / ``check_data`` / ``compute_factor`` / ``search_symbol`` /
+``list_data_sources`` / ``clean_data`` / ``strategy_compare`` /
+``drawdown_analysis`` / ``benchmark_comparison`` / ``list_goals``）的实现
+**已随批次 4/5 直删且未恢复**（3,091 行 / 21 个工具可从
+``9e2432de^`` 恢复，见 ``docs/design/progress-and-plan-20261106.md`` §7.0）。
+
+因此本模块的插件**默认不加载**：``available_plugins()`` 只返回工具齐备的插件，
+当前环境下一个都不齐 → 返回空元组。第三阶段恢复工具包后，同一份定义自动生效。
+
+**为什么不删除这些定义**：它们是第三步「核心工具包 + 知识库 = 特质 agent」的
+现成素材（角色提示词、依赖拓扑、工具清单都已写好）。删掉等于把第三步的设计
+文档一并扔掉。保留 + 显式标注缺什么，比删掉更有用。
 """
 from __future__ import annotations
 
-from .plugin import AgentPlugin
+from agentnodes.kernel.agent.plugin import AgentPlugin
+
+#: 本插件集引用、但当前环境**没有实现**的工具。
+#: 与 ``tools.py`` 里的定义逐项对应，用于两件事：
+#:   1. ``available_plugins()`` 判定哪些插件可加载
+#:   2. ``scripts/arch/check_tool_refs.py`` 的豁免依据（必须是**显式清单**，
+#:      不允许通配豁免——否则这道门禁就是假的）
+#:
+#: 恢复路径：``git show "9e2432de^:src/agentnodes/apps/builtin_tools/XXX.py"``
+PENDING_TOOLS: frozenset[str] = frozenset({
+    "benchmark_comparison",
+    "check_data",
+    "clean_data",
+    "compute_factor",
+    "drawdown_analysis",
+    "factor_analysis",
+    "factor_cross_sectional_analysis",
+    "factor_ic_decay",
+    "factor_quintile_returns",
+    "factor_turnover",
+    "get_market_data",
+    "import_data",
+    "list_data_sources",
+    "list_goals",
+    "pattern_recognition",
+    "search_symbol",
+    "strategy_compare",
+})
 
 _RESEARCHER_TOOLS = (
     "read", "list_history", "factor_analysis", "websearch", "webfetch",
@@ -188,6 +223,82 @@ BUILTIN_PLUGINS: tuple[AgentPlugin, ...] = (
 )
 
 BUILTIN_PLUGIN_IDS: tuple[str, ...] = tuple(p.id for p in BUILTIN_PLUGINS)
+
+
+def available_plugins(
+    installed_tools: frozenset[str] | set[str] | None = None,
+) -> tuple[AgentPlugin, ...]:
+    """只返回工具齐备的插件（当前环境下）。
+
+    :param installed_tools: 已注册工具名集合；None = 用
+        ``build_default_registry()`` 现算一次
+
+    **为什么要有这个函数**：插件的 ``tools`` 是声明，不是事实。声明了
+    ``factor_analysis`` 但实现已删，装配出来就是一个调用必败的壳——
+    这正是 W1 要根治的「幽灵工具」病。本函数把同一个判据用在插件层：
+    **引用了不存在的工具 → 该插件不可用**，而不是让它带着空工具集跑。
+
+    当前环境下 ``PENDING_TOOLS`` 里的工具全部缺失 → 所有插件都不可用
+    → 返回空元组。第三阶段工具包恢复后自动生效，无需改这里。
+
+    **三层校验，缺一不可**（2026-11-06 修 bug）：
+
+    1. ``tools``：每个工具名都必须在 registry 里
+    2. ``python_function``：非 LLM 插件声明的执行器/评估器必须已注册
+    3. ``prompt_file``：LLM 插件声明的提示词文件必须存在
+
+    只查第 1 层会漏掉最危险的情况——``tools=()`` 的空工具集插件
+    （``backtest`` / ``decide``）看起来"没有悬空引用"，实则执行器
+    （``run_backtest_script`` / ``decide``）根本不存在。**空集合不是通过，
+    是没有可检查项——那恰恰是最该拦的。**
+    """
+    if installed_tools is None:
+        from agentnodes.kernel.agent.builtin_tools import (
+            build_default_registry,
+        )
+
+        installed_tools = {
+            t.name for t in build_default_registry().all_tools()
+        }
+    have = set(installed_tools)
+    return tuple(p for p in BUILTIN_PLUGINS if _is_plugin_usable(p, have))
+
+
+def _is_plugin_usable(plugin: AgentPlugin, have: set[str]) -> bool:
+    """三层校验：tools + python_function + prompt_file。"""
+    # ① 工具
+    if any(t not in have for t in plugin.tools):
+        return False
+
+    # ② 执行器 / 评估器（非 LLM 插件）
+    fn = plugin.python_function
+    if fn:
+        from agentnodes.kernel.agent.exec_registry import (
+            get_evaluator,
+            get_python_executor,
+        )
+
+        lookup = (
+            get_evaluator if plugin.executor_type == "evaluator"
+            else get_python_executor
+        )
+        try:
+            if lookup(fn) is None:
+                return False
+        except Exception:  # noqa: BLE001 —— 查不到即不可用
+            return False
+
+    # ③ 提示词文件（LLM 插件）
+    if plugin.executor_type == "llm" and plugin.prompt_file:
+        from pathlib import Path
+
+        prompts_dir = (
+            Path(__file__).resolve().parents[2] / "templates" / ".prompts"
+        )
+        if not (prompts_dir / plugin.prompt_file.split("/")[-1]).exists():
+            return False
+
+    return True
 
 
 def standard_pipeline_plugin_ids() -> tuple[str, ...]:
