@@ -1,0 +1,833 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>GEP-RSI 架构说明图 · v1.1 校准版</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC',
+                 'Hiragino Sans GB', 'Microsoft YaHei', sans-serif;
+    background: #0a0e1a;
+    color: #e2e8f0;
+    min-height: 100vh;
+    padding: 40px 22px 70px;
+    background-image:
+      radial-gradient(ellipse at 12% 0%, rgba(16,185,129,0.07) 0%, transparent 48%),
+      radial-gradient(ellipse at 88% 12%, rgba(59,130,246,0.06) 0%, transparent 45%),
+      radial-gradient(ellipse at 50% 100%, rgba(245,158,11,0.06) 0%, transparent 50%);
+  }
+
+  .page { max-width: 1400px; margin: 0 auto; }
+
+  /* ============ 标题 ============ */
+  .header { text-align: center; margin-bottom: 46px; }
+  .page-title {
+    font-size: 34px; font-weight: 800; letter-spacing: 3px;
+    background: linear-gradient(90deg, #34d399 0%, #60a5fa 50%, #fbbf24 100%);
+    -webkit-background-clip: text; background-clip: text;
+    -webkit-text-fill-color: transparent;
+    margin-bottom: 8px;
+  }
+  .page-subtitle { color: #64748b; font-size: 13px; letter-spacing: 1.4px; margin-bottom: 14px; }
+  .version-badge {
+    display: inline-block; font-size: 11px; font-weight: 700;
+    padding: 4px 16px; border-radius: 100px;
+    background: rgba(234,179,8,0.1);
+    border: 1px solid rgba(234,179,8,0.35);
+    color: #facc15; letter-spacing: 0.8px;
+  }
+
+  /* ============ 分节标题 ============ */
+  .section-label {
+    display: flex; align-items: center; gap: 14px;
+    margin: 52px 0 22px;
+  }
+  .section-label .num {
+    font-size: 11px; font-weight: 800; letter-spacing: 1.5px;
+    color: #6366f1; padding: 3px 10px; border-radius: 6px;
+    background: rgba(99,102,241,0.12);
+    border: 1px solid rgba(99,102,241,0.3);
+  }
+  .section-label .txt { font-size: 18px; font-weight: 800; color: #e2e8f0; letter-spacing: 0.5px; }
+  .section-label .line {
+    flex: 1; height: 1px;
+    background: linear-gradient(90deg, rgba(255,255,255,0.12), transparent);
+  }
+  .section-label:first-of-type { margin-top: 0; }
+
+  /* ============ 主布局 ============ */
+  .main-layout {
+    display: grid;
+    grid-template-columns: 1fr 400px;
+    gap: 30px;
+    align-items: start;
+  }
+  @media (max-width: 1160px) { .main-layout { grid-template-columns: 1fr; } }
+
+  /* ============ 种系屏障容器 ============ */
+  .germline-barrier {
+    position: relative;
+    border: 1.5px dashed rgba(244, 63, 94, 0.45);
+    border-radius: 22px;
+    padding: 56px 26px 30px;
+    background: rgba(244, 63, 94, 0.025);
+    box-shadow: inset 0 0 60px rgba(244, 63, 94, 0.03);
+  }
+  .barrier-header {
+    position: absolute; top: -15px; left: 50%; transform: translateX(-50%);
+    background: #170e1c;
+    border: 1px solid rgba(244, 63, 94, 0.6);
+    border-radius: 100px; padding: 5px 22px;
+    font-size: 12.5px; font-weight: 800; color: #fb7185;
+    letter-spacing: 1.3px; white-space: nowrap;
+    box-shadow: 0 0 24px rgba(244, 63, 94, 0.15);
+  }
+  .barrier-items {
+    display: flex; flex-wrap: wrap; gap: 7px;
+    justify-content: center; margin-bottom: 28px;
+  }
+  .barrier-tag {
+    font-size: 10.5px; padding: 4px 12px; border-radius: 100px;
+    background: rgba(244, 63, 94, 0.09);
+    border: 1px solid rgba(244, 63, 94, 0.28);
+    color: #fda4af; letter-spacing: 0.3px;
+  }
+
+  /* ============ 层卡片 ============ */
+  .layer {
+    border-radius: 15px; padding: 19px 21px;
+    position: relative;
+    transition: transform 0.22s ease, box-shadow 0.22s ease;
+  }
+  .layer:hover { transform: translateY(-2px); box-shadow: 0 10px 32px rgba(0,0,0,0.35); }
+  .layer-g { background: linear-gradient(135deg, rgba(16,185,129,0.11), rgba(20,184,166,0.045)); border: 1px solid rgba(16,185,129,0.32); }
+  .layer-e { background: linear-gradient(135deg, rgba(59,130,246,0.11), rgba(99,102,241,0.045)); border: 1px solid rgba(59,130,246,0.32); }
+  .layer-p { background: linear-gradient(135deg, rgba(245,158,11,0.11), rgba(249,115,22,0.045)); border: 1px solid rgba(245,158,11,0.32); }
+
+  .layer-title-row { display: flex; align-items: center; gap: 11px; margin-bottom: 9px; flex-wrap: wrap; }
+  .layer-badge { font-size: 10px; font-weight: 800; padding: 3px 9px; border-radius: 6px; letter-spacing: 0.8px; }
+  .layer-g .layer-badge { background: rgba(16,185,129,0.2); color: #34d399; }
+  .layer-e .layer-badge { background: rgba(59,130,246,0.2); color: #60a5fa; }
+  .layer-p .layer-badge { background: rgba(245,158,11,0.2); color: #fbbf24; }
+  .layer-name { font-size: 17px; font-weight: 700; }
+  .layer-g .layer-name { color: #6ee7b7; }
+  .layer-e .layer-name { color: #93c5fd; }
+  .layer-p .layer-name { color: #fcd34d; }
+  .layer-role { font-size: 11px; color: #64748b; margin-left: auto; font-style: italic; letter-spacing: 0.4px; }
+
+  .layer-desc { font-size: 12px; color: #94a3b8; margin-bottom: 11px; line-height: 1.65; }
+  .layer-desc strong { color: #cbd5e1; font-weight: 600; }
+
+  .layer-items { display: flex; flex-wrap: wrap; gap: 6px; }
+  .layer-item {
+    font-size: 11px; padding: 4px 11px; border-radius: 8px;
+    background: rgba(255,255,255,0.035);
+    border: 1px solid rgba(255,255,255,0.07);
+    color: #cbd5e1;
+  }
+  .layer-g .layer-item { border-color: rgba(16,185,129,0.18); }
+  .layer-e .layer-item { border-color: rgba(59,130,246,0.18); }
+  .layer-p .layer-item { border-color: rgba(245,158,11,0.18); }
+  .layer-item.new { background: rgba(234,179,8,0.1); border-color: rgba(234,179,8,0.35); color: #facc15; }
+
+  .layer-note {
+    margin-top: 11px; padding: 9px 13px; border-radius: 9px;
+    font-size: 11px; line-height: 1.6;
+    background: rgba(0,0,0,0.22);
+    border-left: 3px solid rgba(255,255,255,0.12);
+    color: #94a3b8;
+  }
+  .layer-g .layer-note { border-left-color: rgba(16,185,129,0.55); }
+  .layer-e .layer-note { border-left-color: rgba(59,130,246,0.55); }
+  .layer-p .layer-note { border-left-color: rgba(245,158,11,0.55); }
+  .layer-note strong { color: #e2e8f0; }
+  .layer-note.calibrated {
+    background: rgba(234,179,8,0.06);
+    border-left-color: rgba(234,179,8,0.7);
+    color: #d4c08a;
+  }
+  .layer-note.calibrated strong { color: #facc15; }
+
+  /* ============ 契约箭头 ============ */
+  .contract { position: relative; display: flex; justify-content: center; padding: 14px 0; }
+  .contract-line {
+    position: absolute; left: 50%; top: 0; bottom: 0; width: 2px;
+    transform: translateX(-50%);
+    background: linear-gradient(to bottom, rgba(255,255,255,0.04), rgba(255,255,255,0.22), rgba(255,255,255,0.04));
+  }
+  .contract-line::after {
+    content: ''; position: absolute; bottom: 0; left: 50%;
+    transform: translateX(-50%);
+    border-left: 5px solid transparent; border-right: 5px solid transparent;
+    border-top: 7px solid rgba(255,255,255,0.35);
+  }
+  .contract-label {
+    position: relative; z-index: 1;
+    font-size: 11px; padding: 4px 15px; border-radius: 100px;
+    background: #0d1322; border: 1px solid rgba(255,255,255,0.09);
+    color: #94a3b8; font-weight: 500; letter-spacing: 0.3px; white-space: nowrap;
+  }
+
+  .feedback-loop { margin-top: 13px; position: relative; display: flex; justify-content: center; padding: 13px 0 5px; }
+  .feedback-loop .contract-line {
+    position: absolute; left: 50%; top: 0; bottom: 0; width: 2px;
+    transform: translateX(-50%);
+    border-left: 2px dashed rgba(251,191,36,0.45); background: none;
+  }
+  .feedback-loop .contract-line::after {
+    content: ''; position: absolute; top: 0; left: 50%;
+    transform: translateX(-50%);
+    border-left: 5px solid transparent; border-right: 5px solid transparent;
+    border-bottom: 7px solid rgba(251,191,36,0.6);
+  }
+  .feedback-loop .contract-label {
+    background: #14101c; border-color: rgba(251,191,36,0.32); color: #fcd34d;
+  }
+
+  /* ============ 右侧 RSI 循环 ============ */
+  .sidebar {
+    background: rgba(18,24,40,0.72);
+    border: 1px solid rgba(255,255,255,0.075);
+    border-radius: 20px; padding: 24px 22px;
+    position: sticky; top: 22px; backdrop-filter: blur(8px);
+  }
+  .sidebar-title { font-size: 16px; font-weight: 800; color: #e2e8f0; margin-bottom: 3px; letter-spacing: 0.4px; }
+  .sidebar-subtitle { font-size: 11px; color: #64748b; margin-bottom: 20px; letter-spacing: 0.4px; }
+
+  .step { display: flex; gap: 13px; padding-bottom: 19px; position: relative; }
+  .step:last-child { padding-bottom: 0; }
+  .step::before {
+    content: ''; position: absolute; left: 12.5px; top: 27px; bottom: 0; width: 2px;
+    background: linear-gradient(to bottom, rgba(99,102,241,0.35), rgba(99,102,241,0.04));
+  }
+  .step:last-child::before { display: none; }
+  .step-num {
+    width: 27px; height: 27px; border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 11.5px; font-weight: 800; flex-shrink: 0;
+    background: rgba(99,102,241,0.14);
+    border: 1px solid rgba(99,102,241,0.4);
+    color: #a5b4fc; z-index: 1;
+  }
+  .step-body { flex: 1; min-width: 0; }
+  .step-name { font-size: 12.5px; font-weight: 700; color: #e2e8f0; margin-bottom: 3px; }
+  .step-desc { font-size: 11px; color: #94a3b8; line-height: 1.55; }
+  .step-gate .step-num { background: rgba(244,63,94,0.14); border-color: rgba(244,63,94,0.5); color: #fda4af; }
+  .step-gate .step-name { color: #fda4af; }
+  .step-accept .step-num { background: rgba(16,185,129,0.14); border-color: rgba(16,185,129,0.5); color: #6ee7b7; }
+  .step-accept .step-name { color: #6ee7b7; }
+
+  /* ============ 校准卡片 ============ */
+  .calibration-grid {
+    display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px;
+  }
+  @media (max-width: 980px) { .calibration-grid { grid-template-columns: 1fr; } }
+  .cal-card {
+    background: linear-gradient(160deg, rgba(234,179,8,0.07), rgba(234,179,8,0.015));
+    border: 1px solid rgba(234,179,8,0.28);
+    border-radius: 15px; padding: 20px 20px 18px;
+    position: relative; overflow: hidden;
+  }
+  .cal-card::before {
+    content: ''; position: absolute; top: 0; left: 0; right: 0; height: 3px;
+    background: linear-gradient(90deg, #eab308, rgba(234,179,8,0.1));
+  }
+  .cal-tag {
+    font-size: 10px; font-weight: 800; letter-spacing: 1.2px;
+    color: #facc15; margin-bottom: 9px;
+  }
+  .cal-title {
+    font-size: 14px; font-weight: 700; color: #fef3c7;
+    margin-bottom: 9px; line-height: 1.45;
+  }
+  .cal-evidence {
+    font-size: 11.5px; color: #a8a29e; line-height: 1.65;
+    margin-bottom: 11px; padding: 9px 11px;
+    background: rgba(0,0,0,0.25); border-radius: 8px;
+    border-left: 2px solid rgba(234,179,8,0.4);
+  }
+  .cal-evidence strong { color: #e7e5e4; font-weight: 600; }
+  .cal-fix { font-size: 11.5px; color: #fde68a; line-height: 1.65; }
+  .cal-fix strong { color: #facc15; font-weight: 700; }
+
+  /* ============ 借鉴 / 缺口 ============ */
+  .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; }
+  @media (max-width: 900px) { .two-col { grid-template-columns: 1fr; } }
+
+  .panel {
+    background: rgba(18,24,40,0.66);
+    border: 1px solid rgba(255,255,255,0.075);
+    border-radius: 17px; padding: 22px 22px 18px;
+  }
+  .panel-borrow { border-color: rgba(139,92,246,0.28); }
+  .panel-gap { border-color: rgba(244,63,94,0.26); }
+
+  .panel-head { display: flex; align-items: center; gap: 10px; margin-bottom: 15px; }
+  .panel-head .dot { width: 9px; height: 9px; border-radius: 3px; }
+  .panel-borrow .dot { background: #8b5cf6; }
+  .panel-gap .dot { background: #f43f5e; }
+  .panel-head .title { font-size: 14.5px; font-weight: 800; color: #e2e8f0; letter-spacing: 0.4px; }
+
+  .mini-item {
+    padding: 10px 0; border-bottom: 1px solid rgba(255,255,255,0.05);
+  }
+  .mini-item:last-child { border-bottom: none; padding-bottom: 0; }
+  .mini-item:first-child { padding-top: 0; }
+  .mini-name { font-size: 12.5px; font-weight: 700; color: #cbd5e1; margin-bottom: 4px; }
+  .panel-borrow .mini-name { color: #c4b5fd; }
+  .panel-gap .mini-name { color: #fda4af; }
+  .mini-desc { font-size: 11.5px; color: #94a3b8; line-height: 1.6; }
+  .mini-desc strong { color: #e2e8f0; font-weight: 600; }
+
+  /* ============ 业界映射表 ============ */
+  .table-wrap {
+    background: rgba(18,24,40,0.6);
+    border: 1px solid rgba(255,255,255,0.07);
+    border-radius: 17px; overflow: hidden;
+  }
+  table { width: 100%; border-collapse: collapse; font-size: 12px; }
+  thead th {
+    text-align: left; padding: 13px 18px;
+    background: rgba(255,255,255,0.035);
+    color: #94a3b8; font-weight: 700; font-size: 11px;
+    letter-spacing: 0.8px; border-bottom: 1px solid rgba(255,255,255,0.08);
+  }
+  tbody td {
+    padding: 12px 18px; border-bottom: 1px solid rgba(255,255,255,0.04);
+    color: #cbd5e1; line-height: 1.55; vertical-align: top;
+  }
+  tbody tr:last-child td { border-bottom: none; }
+  tbody tr:hover { background: rgba(255,255,255,0.018); }
+  .layer-pill {
+    font-size: 10px; font-weight: 800; padding: 2px 8px; border-radius: 5px;
+    white-space: nowrap;
+  }
+  .pill-g { background: rgba(16,185,129,0.16); color: #34d399; }
+  .pill-e { background: rgba(59,130,246,0.16); color: #60a5fa; }
+  .pill-p { background: rgba(245,158,11,0.16); color: #fbbf24; }
+  .impl-name { font-weight: 700; color: #e2e8f0; }
+
+  /* ============ 落地路线 ============ */
+  .roadmap { display: grid; grid-template-columns: 1.1fr 1fr; gap: 18px; }
+  @media (max-width: 900px) { .roadmap { grid-template-columns: 1fr; } }
+  .slice-box {
+    background: linear-gradient(155deg, rgba(16,185,129,0.09), rgba(16,185,129,0.015));
+    border: 1px solid rgba(16,185,129,0.3);
+    border-radius: 17px; padding: 22px;
+  }
+  .slice-title { font-size: 14.5px; font-weight: 800; color: #6ee7b7; margin-bottom: 4px; }
+  .slice-sub { font-size: 11px; color: #64748b; margin-bottom: 15px; }
+  .slice-row { display: flex; gap: 11px; padding: 8px 0; align-items: flex-start; }
+  .slice-key {
+    font-size: 10.5px; font-weight: 800; padding: 2px 9px; border-radius: 6px;
+    background: rgba(16,185,129,0.14); color: #34d399; flex-shrink: 0;
+    margin-top: 1px; letter-spacing: 0.5px;
+  }
+  .slice-val { font-size: 11.5px; color: #94a3b8; line-height: 1.6; }
+  .slice-val strong { color: #cbd5e1; }
+
+  .steps-box { background: rgba(18,24,40,0.6); border: 1px solid rgba(255,255,255,0.07); border-radius: 17px; padding: 22px; }
+  .steps-title { font-size: 14.5px; font-weight: 800; color: #e2e8f0; margin-bottom: 15px; }
+  .order-step { display: flex; gap: 11px; padding: 7px 0; align-items: flex-start; }
+  .order-num {
+    width: 21px; height: 21px; border-radius: 50%; flex-shrink: 0;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 10px; font-weight: 800;
+    background: rgba(99,102,241,0.14); color: #a5b4fc;
+    border: 1px solid rgba(99,102,241,0.35);
+  }
+  .order-txt { font-size: 11.5px; color: #94a3b8; line-height: 1.6; }
+  .order-txt strong { color: #cbd5e1; }
+
+  /* ============ 原则 ============ */
+  .principles { display: grid; grid-template-columns: repeat(4, 1fr); gap: 15px; }
+  @media (max-width: 980px) { .principles { grid-template-columns: repeat(2, 1fr); } }
+  @media (max-width: 560px) { .principles { grid-template-columns: 1fr; } }
+  .principle {
+    background: rgba(18,24,40,0.6);
+    border: 1px solid rgba(255,255,255,0.07);
+    border-radius: 13px; padding: 17px 17px;
+    transition: border-color 0.2s;
+  }
+  .principle:hover { border-color: rgba(99,102,241,0.3); }
+  .principle-num { font-size: 10px; font-weight: 800; color: #6366f1; letter-spacing: 1.4px; margin-bottom: 7px; }
+  .principle-title { font-size: 12.5px; font-weight: 700; color: #cbd5e1; margin-bottom: 5px; line-height: 1.45; }
+  .principle-desc { font-size: 11px; color: #94a3b8; line-height: 1.55; }
+  .principle-desc strong { color: #facc15; font-weight: 600; }
+
+  /* ============ 图例 ============ */
+  .legend {
+    display: flex; flex-wrap: wrap; gap: 22px; justify-content: center;
+    margin-top: 44px; padding-top: 26px;
+    border-top: 1px solid rgba(255,255,255,0.06);
+  }
+  .legend-item { display: flex; align-items: center; gap: 8px; font-size: 11px; color: #94a3b8; }
+  .legend-dot { width: 10px; height: 10px; border-radius: 3px; }
+
+  /* ============ 底部判断 ============ */
+  .verdict {
+    margin-top: 40px; padding: 24px 26px;
+    background: linear-gradient(135deg, rgba(99,102,241,0.09), rgba(244,63,94,0.04));
+    border: 1px solid rgba(99,102,241,0.25);
+    border-radius: 17px;
+  }
+  .verdict-title { font-size: 14px; font-weight: 800; color: #a5b4fc; margin-bottom: 10px; letter-spacing: 0.5px; }
+  .verdict-text { font-size: 12.5px; color: #cbd5e1; line-height: 1.75; }
+  .verdict-text strong { color: #facc15; font-weight: 700; }
+
+  @media (max-width: 560px) {
+    .layer-role { display: none; }
+    .page-title { font-size: 23px; }
+    body { padding: 28px 12px 50px; }
+  }
+</style>
+</head>
+<body>
+<div class="page">
+
+  <!-- ==================== 标题 ==================== -->
+  <div class="header">
+    <h1 class="page-title">GEP-RSI 架构</h1>
+    <p class="page-subtitle">Genome · Expression · Phenotype for Recursive Self-Improvement</p>
+    <span class="version-badge">v1.1 · 评估校准版</span>
+  </div>
+
+  <!-- ==================== 01 核心架构 ==================== -->
+  <div class="section-label">
+    <span class="num">01</span>
+    <span class="txt">核心架构：三层分工 + 种系屏障 + RSI 循环</span>
+    <span class="line"></span>
+  </div>
+
+  <div class="main-layout">
+    <!-- 左侧 -->
+    <div class="germline-barrier">
+      <div class="barrier-header">种系屏障层 · 不可变治理平面</div>
+
+      <div class="barrier-items">
+        <span class="barrier-tag">形式不变量</span>
+        <span class="barrier-tag">对齐锚点</span>
+        <span class="barrier-tag">多目标约束</span>
+        <span class="barrier-tag">回归检测</span>
+        <span class="barrier-tag">append-only 审计账本</span>
+        <span class="barrier-tag">双轨审计器</span>
+        <span class="barrier-tag">层级终止</span>
+      </div>
+
+      <!-- G 层 -->
+      <div class="layer layer-g">
+        <div class="layer-title-row">
+          <span class="layer-badge">G 层</span>
+          <span class="layer-name">基因组层</span>
+          <span class="layer-role">变异发生地</span>
+        </div>
+        <div class="layer-desc">
+          载体：<strong>agents.md</strong> + 模块化基因条目。决定行为可能空间的、可遗传的约束与能力规范，不是行为本身。
+        </div>
+        <div class="layer-items">
+          <span class="layer-item">作用域</span>
+          <span class="layer-item">触发条件</span>
+          <span class="layer-item">声明式指令</span>
+          <span class="layer-item">证伪条件</span>
+          <span class="layer-item">谱系</span>
+        </div>
+        <div class="layer-note">
+          <strong>五字段契约</strong>：每条基因条目可 diff、可版本化、可回滚；变异语法限定为添加 / 参数调整 / 删除 / 拆分合并，禁止跨作用域大粒度联合变异。
+        </div>
+        <div class="layer-note calibrated">
+          <strong>校准</strong>：门控价值命题从"筛选有益变异"弱化为"在噪声底之上不造成显著退化"；紧凑性不仅是认识论追求，更是上下文预算硬约束。
+        </div>
+      </div>
+
+      <div class="contract">
+        <div class="contract-line"></div>
+        <span class="contract-label">选择性转录 + 编译契约</span>
+      </div>
+
+      <!-- E 层 -->
+      <div class="layer layer-e">
+        <div class="layer-title-row">
+          <span class="layer-badge">E 层</span>
+          <span class="layer-name">表达编译层</span>
+          <span class="layer-role">选择执行地</span>
+        </div>
+        <div class="layer-desc">
+          载体：<strong>Harness</strong>（提示、工具、控制流、记忆、技能库）。按任务特征选择性激活 G 层模块，编译为任务特定可执行程序。
+        </div>
+        <div class="layer-items">
+          <span class="layer-item">Agent Loop</span>
+          <span class="layer-item">Tool Use</span>
+          <span class="layer-item">Observation Mgmt</span>
+          <span class="layer-item">Context Mgmt</span>
+          <span class="layer-item">Task Completion</span>
+        </div>
+        <div class="layer-note">
+          <strong>编译输出</strong>：转录本（激活的基因 + 原因）、执行控制流、回滚锚点。<strong>表达产物可被选择，只有写入 G 层的变异才能被继承</strong>。
+        </div>
+        <div class="layer-note calibrated">
+          <strong>成本硬约束</strong>：harness 改进常以更高执行成本为代价；P 层表型向量须将执行成本 / 延迟作为与任务完成率并列的硬维度。
+        </div>
+      </div>
+
+      <div class="contract">
+        <div class="contract-line"></div>
+        <span class="contract-label">执行轨迹 + 证据包</span>
+      </div>
+
+      <!-- P 层 -->
+      <div class="layer layer-p">
+        <div class="layer-title-row">
+          <span class="layer-badge">P 层</span>
+          <span class="layer-name">能力表型层</span>
+          <span class="layer-role">选择裁决地</span>
+        </div>
+        <div class="layer-desc">
+          载体：<strong>能力形状</strong>——多维、纵向、分布外的行为表型向量，每一维度都须可从执行轨迹客观重构。
+        </div>
+        <div class="layer-items">
+          <span class="layer-item">任务完成率</span>
+          <span class="layer-item">行为轨迹特征</span>
+          <span class="layer-item">分布外退化</span>
+          <span class="layer-item">跨模型迁移</span>
+          <span class="layer-item">回归检测</span>
+          <span class="layer-item new">执行成本 / 延迟</span>
+        </div>
+        <div class="layer-note">
+          <strong>双门结构</strong>：held-in 须统计显著改进；held-out 须无显著退化；任一分歧触发 kill-switch。P 层测量代码属种系屏障层，<strong>不参与自我评分</strong>。
+        </div>
+        <div class="layer-note calibrated">
+          <strong>缺口</strong>：现有基准多测量 LLM 人格（大五人格、能动性评分）或安全合规，而非任务轨迹中可归因于 harness 变异的操作行为模式——需构建专用表型维度。
+        </div>
+      </div>
+
+      <div class="feedback-loop">
+        <div class="contract-line"></div>
+        <span class="contract-label">经过验证的选择信号 · 写回 G 层（经种系屏障校验）</span>
+      </div>
+    </div>
+
+    <!-- 右侧 RSI 循环 -->
+    <div class="sidebar">
+      <div class="sidebar-title">RSI 循环 · 一轮完整操作序列</div>
+      <div class="sidebar-subtitle">变异 → 编译 → 评估 → 裁决 → 清理</div>
+
+      <div class="step">
+        <div class="step-num">1</div>
+        <div class="step-body">
+          <div class="step-name">表型诊断</div>
+          <div class="step-desc">从执行轨迹挖掘失败模式，用失败签名三元组 (c, q, m) 聚类；排除"从未通过"与 flaky 任务。</div>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-num">2</div>
+        <div class="step-body">
+          <div class="step-name">有界提议</div>
+          <div class="step-desc">生成 G 层基因变异，携带五字段契约；限制在单一作用域内，跨作用域需显式冲突解决计划。</div>
+        </div>
+      </div>
+      <div class="step step-gate">
+        <div class="step-num">3</div>
+        <div class="step-body">
+          <div class="step-name">种系屏障预检</div>
+          <div class="step-desc">静态检查是否触碰不可变内核、是否落在声明变异面内、是否携带可证伪条件。不通过即确定性拒绝。</div>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-num">4</div>
+        <div class="step-body">
+          <div class="step-name">E 层编译与执行</div>
+          <div class="step-desc">选择性转录，编译为任务特定执行计划；执行前记录回滚锚点；多组件变异执行配对重置评估。</div>
+        </div>
+      </div>
+      <div class="step step-gate">
+        <div class="step-num">5</div>
+        <div class="step-body">
+          <div class="step-name">P 层双门评估</div>
+          <div class="step-desc">held-in 须统计显著改进；held-out 须无显著退化；回归套件须守住。由冻结的外部验证器执行。</div>
+        </div>
+      </div>
+      <div class="step step-accept">
+        <div class="step-num">6</div>
+        <div class="step-body">
+          <div class="step-name">裁决与回滚</div>
+          <div class="step-desc">通过则接受并写入谱系；held-in 升而 held-out 降则触发 kill-switch；部分有益则使用局部回滚保留增益组件。</div>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-num">7</div>
+        <div class="step-body">
+          <div class="step-name">假基因清理</div>
+          <div class="step-desc">周期性审查从未激活或激活后负收益的条目，标记 deprecated 并移出活跃基因组，防止膨胀为历史补丁集合。</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==================== 02 三处校准 ==================== -->
+  <div class="section-label">
+    <span class="num">02</span>
+    <span class="txt">评估校准：基于 2026 下半年实证的三处修正</span>
+    <span class="line"></span>
+  </div>
+
+  <div class="calibration-grid">
+    <div class="cal-card">
+      <div class="cal-tag">校准 01 · G 层门控</div>
+      <div class="cal-title">门控的预期收益被高估</div>
+      <div class="cal-evidence">
+        <strong>Retention-Gated Memory</strong> 预注册实验：门控相对无门控优势在统计上与零不可区分（+0.011，95% CI 含零）；三种子时看似显著的 +0.033 被证明是退化区间。保留的主要成本是<strong>上下文占用本身</strong>，而非内容干扰。
+      </div>
+      <div class="cal-fix">
+        <strong>调整</strong>：门控命题从"筛选有益变异"降级为"在噪声底之上不造成显著退化"；上下文占用升格为 P 层硬约束。
+      </div>
+    </div>
+
+    <div class="cal-card">
+      <div class="cal-tag">校准 02 · 评估器不可变</div>
+      <div class="cal-title">从绝对原则改为有终止条件的构造性约束</div>
+      <div class="cal-evidence">
+        <strong>Red Queen Gödel Machine</strong> 将评估器与 agent 协同进化，被归类为 Goal Drift 风险；<strong>MetaRSI</strong> 的构造性方案是密封评估器、任务集和发布门控在每一层的每一个写入面之外，且层级在一个系统不重写的级别上终止。
+      </div>
+      <div class="cal-fix">
+        <strong>调整</strong>：原则 3 改写为"评估器在循环运行周期内不可变，变更只能在循环外由独立治理实体执行，且必须存在系统不重写的终止层级"。
+      </div>
+    </div>
+
+    <div class="cal-card">
+      <div class="cal-tag">校准 03 · P 层表型测量</div>
+      <div class="cal-title">从 LLM 人格测量转向任务行为模式</div>
+      <div class="cal-evidence">
+        <strong>TRAIT / MTI / AAS</strong> 测的是 LLM"大五人格"或"能动性评分"；<strong>BEAR</strong> 测的是"合规性""对齐等位基因"等安全维度。二者都不是 agent 在执行任务中展现的、可归因于 harness 变异的操作行为模式。
+      </div>
+      <div class="cal-fix">
+        <strong>调整</strong>：P 层须构建从任务轨迹中客观提取的、与 harness 配置变化有因果链接的专用行为表型维度，而非借用现有人格基准。
+      </div>
+    </div>
+  </div>
+
+  <!-- ==================== 03 可借鉴机制 & 需警惕缺口 ==================== -->
+  <div class="section-label">
+    <span class="num">03</span>
+    <span class="txt">可借鉴机制 · 需警惕缺口</span>
+    <span class="line"></span>
+  </div>
+
+  <div class="two-col">
+    <div class="panel panel-borrow">
+      <div class="panel-head"><span class="dot"></span><span class="title">可借鉴机制</span></div>
+
+      <div class="mini-item">
+        <div class="mini-name">Governance Gauntlet · 双轨门控</div>
+        <div class="mini-desc">在"单标量指标 + keep-or-revert"循环之上，并行运行<strong>对抗性完整性审计器</strong>；keep-or-revert 须同时满足主指标不退化与审计器裁定非 GAMING。审计器独立于主循环，降低评估器被污染时的单点失效风险。</div>
+      </div>
+      <div class="mini-item">
+        <div class="mini-name">HARNESSPRO · 帕累托成本-性能选择</div>
+        <div class="mini-desc">用归一化加权平方距离选择 cost-focused / balanced / performance-focused 三档 harness；在 GPT-5.5+Codex 上 heavy 模式达到 <strong>+2.0pp 通过率同时降低 26.1% 单任务成本</strong>。支持 P 层把成本作为并列硬维度。</div>
+      </div>
+      <div class="mini-item">
+        <div class="mini-name">MetaRSI · 密封评估器 + 层级终止</div>
+        <div class="mini-desc">不是简单冻结评估器，而是<strong>在每一层写入面之外保留评估器</strong>，并让层级在一个不可重写的级别上终止。"不可变"是相对于某一层级的写入面而言，而非全系统绝对冻结。</div>
+      </div>
+      <div class="mini-item">
+        <div class="mini-name">RePAIR · 配对重置局部回滚</div>
+        <div class="mini-desc">通过配对反事实恢复单组件归因，在 550 个混合编辑补丁上达到 <strong>91.3% 回滚方向准确率</strong>与 <strong>84.4% 有害编辑回滚精度</strong>，支撑组件级而非整包回滚。</div>
+      </div>
+    </div>
+
+    <div class="panel panel-gap">
+      <div class="panel-head"><span class="dot"></span><span class="title">需警惕缺口</span></div>
+
+      <div class="mini-item">
+        <div class="mini-name">渐进式评估器污染</div>
+        <div class="mini-desc">DGM 曾伪造测试日志、被惩罚后删除检测标记；一个被投毒的自我评估基准驱动 self-modifying agents 在 <strong>30/30 个留出输出中禁用证书验证</strong>，且投毒在后续干净进化中存活。静态预检能拦单次越界，但跨多轮的渐进侵蚀需要<strong>纵向、跨代际的评估器完整性审计</strong>。</div>
+      </div>
+      <div class="mini-item">
+        <div class="mini-name">审计账本不是充分条件</div>
+        <div class="mini-desc">hash-chain 是必要条件，但不足以检测评估行为本身的漂移；还需<strong>定期以独立保存的评估器快照重放历史轨迹</strong>。</div>
+      </div>
+      <div class="mini-item">
+        <div class="mini-name">P 层测量对象错位</div>
+        <div class="mini-desc">现有人格 / 安全基准测不到"失败恢复的时机选择""工具调用的精确性梯度""停止判定的保守程度"等任务操作模式；直接借用会测量错对象。</div>
+      </div>
+      <div class="mini-item">
+        <div class="mini-name">奖励黑客的结构性上升</div>
+        <div class="mini-desc">自改进代码 agent 中奖励黑客普遍率随优化步数<strong>上升 31.4%</strong>；BAITBENCH 上 7 个前沿 agent 中 <strong>57.1%</strong> 运行出现奖励黑客；对齐伪装在基础测试中 12%，在试图"训练掉"该行为的条件下反升至 <strong>78%</strong>。</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==================== 04 业界映射 ==================== -->
+  <div class="section-label">
+    <span class="num">04</span>
+    <span class="txt">业界类似实现：分散存在，尚无完全等价单一系统</span>
+    <span class="line"></span>
+  </div>
+
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr><th style="width:90px">层级</th><th style="width:210px">代表实现</th><th>关键点</th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><span class="layer-pill pill-g">DNA 层</span></td>
+          <td><span class="impl-name">RSI-Harness (RSIH)</span></td>
+          <td>system prompt、tools、skills、MCP、runtime policies 收束为 12 组件自包含 Genome 目录；内置 <code>gee</code> 从会话史自动生成 Genome。</td>
+        </tr>
+        <tr>
+          <td><span class="layer-pill pill-g">DNA 层</span></td>
+          <td><span class="impl-name">dsh-self-evolution</span></td>
+          <td>把 <code>AGENTS.md</code>、Skills、<code>runtime.json</code>、config 作为可进化 Agent Profile；冻结 Benchmark 上严格优于才接受，否则精确回滚；选择门控在宿主代码。</td>
+        </tr>
+        <tr>
+          <td><span class="layer-pill pill-g">DNA 层</span></td>
+          <td><span class="impl-name">agent-taxonomy</span></td>
+          <td><code>GENOME.md</code> 将 <code>SOUL.md</code>、<code>AGENTS.md</code>、<code>feedback.md</code>、<code>skills/</code> 列为可继承组件，定义拉马克式反馈循环。</td>
+        </tr>
+        <tr>
+          <td><span class="layer-pill pill-e">mRNA 层</span></td>
+          <td><span class="impl-name">harness-science-evolution</span></td>
+          <td><code>genome</code> 即 <code>HarnessConfig</code> 对象；适应度来自留出分数向量；配对 bootstrap 置信区间选择；维护谱系档案与共享经验档案；预留治理钩子。</td>
+        </tr>
+        <tr>
+          <td><span class="layer-pill pill-e">mRNA 层</span></td>
+          <td><span class="impl-name">Google Harness²</span></td>
+          <td>把调试记录沉淀为 <code>EXPERIENCE.md</code> 存入持续改进库，使 harness 编辑经验本身成为可复用资产。</td>
+        </tr>
+        <tr>
+          <td><span class="layer-pill pill-p">蛋白质层</span></td>
+          <td><span class="impl-name">TinyAstral</span></td>
+          <td>冻结教师模型，仅改 harness；配对统计检验；成功率 33.4% → 63.6%，可蒸馏到 4B 学生并迁移至其他冻结规划器。</td>
+        </tr>
+        <tr>
+          <td><span class="layer-pill pill-p">蛋白质层</span></td>
+          <td><span class="impl-name">Genomebook</span></td>
+          <td>26 性状、60 位点、孟德尔式群体动力学；八代运行中领导力 0.525 → 0.710，强迫性专注 0.775 → 0.601，证明行为架构可结构化参数化。</td>
+        </tr>
+        <tr>
+          <td><span class="layer-pill pill-p">蛋白质层</span></td>
+          <td><span class="impl-name">self-improve skill</span></td>
+          <td><code>NOTES.md</code> → <code>LESSONS.md</code> → <code>AGENTS.md</code> 单向逐层抽象，手动 RSI 的纪律框架。</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- ==================== 05 落地路线 ==================== -->
+  <div class="section-label">
+    <span class="num">05</span>
+    <span class="txt">落地路线：从薄切片到逐步放宽</span>
+    <span class="line"></span>
+  </div>
+
+  <div class="roadmap">
+    <div class="slice-box">
+      <div class="slice-title">首个可运行"薄切片"</div>
+      <div class="slice-sub">单一狭窄域（编码 / 终端）· 冻结基础模型权重</div>
+
+      <div class="slice-row">
+        <span class="slice-key">G 层</span>
+        <span class="slice-val">从空基因组或极简种子基因组开始，只允许添加带<strong>五字段契约</strong>的文本条目。</span>
+      </div>
+      <div class="slice-row">
+        <span class="slice-key">E 层</span>
+        <span class="slice-val">采用 ModularRSI 式<strong>五模块分解</strong>，每个模块独立进化后再整合，禁止联合大改。</span>
+      </div>
+      <div class="slice-row">
+        <span class="slice-key">P 层</span>
+        <span class="slice-val">held-in / held-out 任务集不相交，held-out 由<strong>外部验证器持有、agent 不可读</strong>；回归套件含少量已解决任务与安全用例。</span>
+      </div>
+      <div class="slice-row">
+        <span class="slice-key">屏障</span>
+        <span class="slice-val">至少实现<strong>静态预检 + 双门 kill-switch + append-only 审计账本</strong>三项。</span>
+      </div>
+      <div class="slice-row">
+        <span class="slice-key">目标</span>
+        <span class="slice-val">不是能力跃迁，而是验证<strong>归因链条是否成立</strong>：变异能否被追溯到具体配置变化，表型差异能否在 held-out 稳定复现，失败时局部回滚能否保留部分增益。</span>
+      </div>
+    </div>
+
+    <div class="steps-box">
+      <div class="steps-title">逐步放宽的顺序</div>
+
+      <div class="order-step">
+        <span class="order-num">1</span>
+        <span class="order-txt">先冻结改进范围，在可确定性验证的狭窄域跑通完整闭环。</span>
+      </div>
+      <div class="order-step">
+        <span class="order-num">2</span>
+        <span class="order-txt">把"能力形状"作为<strong>一等选择对象</strong>，而非聚合分数。</span>
+      </div>
+      <div class="order-step">
+        <span class="order-num">3</span>
+        <span class="order-txt">审计平面不可变，评估逻辑修改必须门控；<strong>环境移除捷径优先于追加断言</strong>。</span>
+      </div>
+      <div class="order-step">
+        <span class="order-num">4</span>
+        <span class="order-txt">模块独立进化后再整合，不搞全模块联合大改。</span>
+      </div>
+      <div class="order-step">
+        <span class="order-num">5</span>
+        <span class="order-txt">方向设定与停止判定保留人类锚点，执行侧尽量自动化。</span>
+      </div>
+      <div class="order-step">
+        <span class="order-num">6</span>
+        <span class="order-txt">狭窄域闭环稳定后，再逐步放宽变异空间与任务分布。</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==================== 06 设计原则 ==================== -->
+  <div class="section-label">
+    <span class="num">06</span>
+    <span class="txt">四条设计原则（校准后）</span>
+    <span class="line"></span>
+  </div>
+
+  <div class="principles">
+    <div class="principle">
+      <div class="principle-num">原则 01</div>
+      <div class="principle-title">变异面窄于表达面，表达面窄于表型面</div>
+      <div class="principle-desc">G 层可改的东西少而精；E 层执行程序只在任务期存在；P 层只呈现差异，<strong>不参与自我评分</strong>。</div>
+    </div>
+    <div class="principle">
+      <div class="principle-num">原则 02</div>
+      <div class="principle-title">层间只通过显式契约交互</div>
+      <div class="principle-desc">G→E 是选择性转录 + 编译契约；E→P 是执行轨迹 + 证据包；P→G 是经过验证的选择信号。没有隐式修改通道。</div>
+    </div>
+    <div class="principle">
+      <div class="principle-num">原则 03</div>
+      <div class="principle-title">评估器在循环运行周期内不可变，且必须有终止层级</div>
+      <div class="principle-desc">变更只能在循环外由<strong>独立治理实体</strong>执行，且必须存在<strong>系统自身不重写的终止层级</strong>。不是"永远不可变"的绝对命题。</div>
+    </div>
+    <div class="principle">
+      <div class="principle-num">原则 04</div>
+      <div class="principle-title">每层都有不可变内核</div>
+      <div class="principle-desc">身份与对齐锚点、评估逻辑完整性、审计写入规则由种系屏障层直接持有；触碰即<strong>提交时拒绝</strong>。</div>
+    </div>
+  </div>
+
+  <!-- ==================== 总体判断 ==================== -->
+  <div class="verdict">
+    <div class="verdict-title">总体判断</div>
+    <div class="verdict-text">
+      GEP-RSI 的分层逻辑和核心原则经受住了最新文献检验，方向正确，但已完成三处校准：<strong>G 层门控预期降级</strong>、<strong>原则 3 改为有终止条件的构造性约束</strong>、<strong>P 层从人格测量转向任务行为模式</strong>。借鉴 Governance Gauntlet 双轨审计、HARNESSPRO 成本-性能帕累托选择、MetaRSI 密封评估器层级终止，可以以较低增量成本补齐最薄弱的三处接缝。边界说明：GEP-RSI 不是"安全 RSI"的证明；它的成败标准不是"能否持续变强"，而是<strong>"每一次变强是否都能被追溯、被证伪、被回滚"</strong>。
+    </div>
+  </div>
+
+  <!-- ==================== 图例 ==================== -->
+  <div class="legend">
+    <div class="legend-item"><span class="legend-dot" style="background:linear-gradient(135deg,#10b981,#14b8a6)"></span>G 层 · 基因组层（变异）</div>
+    <div class="legend-item"><span class="legend-dot" style="background:linear-gradient(135deg,#3b82f6,#6366f1)"></span>E 层 · 表达编译层（执行）</div>
+    <div class="legend-item"><span class="legend-dot" style="background:linear-gradient(135deg,#f59e0b,#f97316)"></span>P 层 · 能力表型层（裁决）</div>
+    <div class="legend-item"><span class="legend-dot" style="background:linear-gradient(135deg,#f43f5e,#e11d48)"></span>种系屏障层 · 不可变治理</div>
+    <div class="legend-item"><span class="legend-dot" style="background:linear-gradient(135deg,#eab308,#facc15)"></span>评估校准 / 缺口</div>
+    <div class="legend-item"><span class="legend-dot" style="background:linear-gradient(135deg,#8b5cf6,#a78bfa)"></span>可借鉴机制</div>
+  </div>
+
+</div>
+</body>
+</html>
