@@ -165,10 +165,17 @@ def build_rsi_loop(gw: Any, *, seed: int = 0) -> Any | None:
 
     :param gw: 已由 ``wire_gateway`` 接线的 Gateway
     :param seed: holdout 抽样种子（附录 C：必须显式给，不许默认随机）
+
+    **C9 seed 进程外注入**：若设置了 ``AN_GOLDEN_SEED``，它**覆盖**本参数。
+    理由：抽样种子是评测指纹的一部分，让同进程的调用方决定种子等于把
+    「按固定抽样过拟合」的入口留在被检方手里。未设时沿用 ``seed``，并
+    emit ``rsi.golden_seed``（``source=default``）让默认值可见。
     """
     emit = getattr(gw, "_combined_sink", None) or (lambda k, d: None)
     genome = getattr(gw, "genome", None)
     capacity = getattr(gw, "capacity", None)
+
+    seed = _resolve_seed(seed, emit=emit)
 
     missing = [
         name for name, val in (("genome", genome), ("capacity", capacity))
@@ -212,11 +219,23 @@ def build_rsi_loop(gw: Any, *, seed: int = 0) -> Any | None:
             journal=source, scoreboard=source, validation=source, holdout=source,
             policy=default_policy,
         )
+
+        # ── C9 双集双门：held-out 门 + 分歧 kill-switch ──────────────
+        #
+        # held-out 集住**仓库外**（``ensure_data_dir()/eval_heldout/``），
+        # 由 ``evals.golden_sets`` 负责路径与加载；gate 只收两个 callable。
+        # ``trip_halt`` 必须从这里注入：gate 在 L3，直接 import
+        # ``interfaces.cli.halt`` 会新增一条 L3→L1 上行（层门禁只许降）。
+        #
+        # held-out 缺失时 gate **不会**放行——它会 escalate 并 emit
+        # ``genome.heldout_gate``；``rsi.heldout_status`` 提前把缺失告知
+        # 运维，免得每轮 RSI 都在"看似跑通、实际全拒"的状态里空转。
         gate = ValidationGate(
             genome=genome,
             emit=emit,
             replay=replay,
             baseline_metric=_baseline_metric(gw, golden_tasks, seed),
+            **_heldout_kwargs(gw, seed=seed, emit=emit),
         )
         return RsiLoop(
             agent=agent,
@@ -231,6 +250,56 @@ def build_rsi_loop(gw: Any, *, seed: int = 0) -> Any | None:
         logger.warning("rsi loop assembly failed: %s", exc)
         emit("rsi.wiring_skipped", {"error": str(exc)})
         return None
+
+
+def _resolve_seed(
+    seed: int, *, emit: Callable[[str, dict], None]
+) -> int:
+    """C9：``AN_GOLDEN_SEED`` 优先于调用方传值；未设则用传入值并 emit 提示。
+
+    ``heldout_gate_kwargs`` 与 held-in 抽样必须用**同一个** seed——两侧
+    抽到不同任务时，基线/候选的对比仍成立，但"同一轮验证"的可审计性
+    就断了（审计时无法用一条 seed 复现整轮）。所以本函数是唯一解析点，
+    结果同时喂给两条通道。
+    """
+    try:
+        from agentnodes.evals.golden_sets import SEED_ENV, resolve_golden_seed
+
+        resolved, source = resolve_golden_seed(emit=emit, default=int(seed))
+        if source.startswith("default") and int(seed) != resolved:
+            # 不该发生（default 就是 seed），留作断言式的防御
+            logger.warning(
+                "seed resolution drifted: requested=%s resolved=%s", seed, resolved,
+            )
+        return resolved
+    except Exception as exc:  # noqa: BLE001 —— evals 不可用时用传入值
+        logger.warning("seed injection unavailable, using seed=%s: %s", seed, exc)
+        return int(seed)
+
+
+def _heldout_kwargs(
+    gw: Any, *, seed: int, emit: Callable[[str, dict], None]
+) -> dict[str, Any]:
+    """C9：构造 ``ValidationGate`` 的 held-out 关键字参数（失败即空 dict）。
+
+    失败（``evals.golden_sets`` 不可用）时返回 ``{}``——此时 gate 走
+    ``heldout_unwired_policy``（拒 + escalate），**不会**退回单集通过。
+    这是刻意的：装配半边失败不等于验证可以降级。
+
+    ``trip_halt`` 在这里导入并注入：kill-switch 必须落盘（halt.py 已改
+    持久化），而 gate 在 L3 不能自己 import L1。
+    """
+    try:
+        from agentnodes.evals.golden_sets import heldout_gate_kwargs
+        from agentnodes.interfaces.cli.halt import trip_halt
+
+        return heldout_gate_kwargs(
+            seed=seed, emit=emit, trip_halt=trip_halt,
+        )
+    except Exception as exc:  # noqa: BLE001 —— 装配失败按未接线处理
+        logger.warning("held-out gate wiring failed (gate will reject): %s", exc)
+        emit("rsi.heldout_wiring_skipped", {"error": str(exc)})
+        return {}
 
 
 def _build_replay(
@@ -259,9 +328,15 @@ def _build_replay(
         #   parents[3] = 仓库根
         # 早先写成 ``parents[4]``（= 仓库的上一级，如 D:\Github），路径必然
         # 不存在 → 每轮都静默降级到代理分（评审簇二：golden 路径错一级恒降级）。
-        golden_path = (
-            Path(__file__).resolve().parents[1] / "evals" / "golden_tasks.jsonl"
-        )
+        #
+        # C9 双集：held-in 门只该跑 **held-in** 子集。``golden_tasks.jsonl``
+        # 在拆分后被改成 held-in 的兼容副本（见 split_golden_sets.py），
+        # 所以这里的路径不变；显式优先 ``golden_tasks_heldin.jsonl``，让
+        # 「读的是哪一份」在代码里可读。
+        evals_dir = Path(__file__).resolve().parents[1] / "evals"
+        golden_path = evals_dir / "golden_tasks_heldin.jsonl"
+        if not golden_path.exists():
+            golden_path = evals_dir / "golden_tasks.jsonl"
         if not golden_path.exists():
             # 安装形态 / 非源码运行时兜底：先看 cwd 下的 evals，再按已 import
             # 的 ``agentnodes.evals`` 包的 __file__ 定位（包内资源目录一律
@@ -270,7 +345,10 @@ def _build_replay(
             import agentnodes.evals as _evals_pkg
 
             for candidate in (
+                Path.cwd() / "evals" / "golden_tasks_heldin.jsonl",
                 Path.cwd() / "evals" / "golden_tasks.jsonl",
+                Path(_evals_pkg.__file__).resolve().parent
+                / "golden_tasks_heldin.jsonl",
                 Path(_evals_pkg.__file__).resolve().parent / "golden_tasks.jsonl",
             ):
                 if candidate.exists():
@@ -354,14 +432,40 @@ def _baseline_metric(
 
     无 golden task（降级路径）时返回 None，``ValidationGate`` 对 None 的
     处理是 escalate（"无法判断"），不是静默放行。
-    """
-    cached: dict[str, float] = {}
 
-    def _baseline() -> float | None:
+    **返回值是 ``ReplayOutcome``**（D3 双闸）：只返回能力分会让成本闸在
+    候选侧有样本、基线侧恒为 None → 成本闸永远 skipped，整道闸形同虚设。
+    这里把同一轮评测的 cost / tokens 一起交出去，两侧口径一致。
+
+    **滚动中位数（C10 / 评审 F7）**：旧实现 ``cached["value"]`` 无条件
+    缓存单轮值，长驻进程里多轮改进后基线永久停留在第一轮，候选正常提升
+    就会被读成"暴涨 → reward hacking"（假阳性）。现在的口径：
+
+    - 每次调用都**重新评测**，把结果推入有界滚动窗口，返回窗口**中位数**
+    - 窗口按 genome_version 分区：基因组升版 = 基线失效，旧样本不再
+      代表"当前配置"
+    - 中位数而非均值：单轮偶发低分（网络抖动/超时率升高）不会把基线
+      拖低——那正是"监考被收买"的入口
+
+    ``run_golden_eval`` 返回 ``skipped`` 时**不写入窗口**（基线硬条款：
+    无效轮次不得污染基线），返回窗口现状；窗口空则 None。
+    """
+    # 有界窗口：最近 N 次有效基线观察。N=5 在"抗抖动"与"跟上真实漂移"
+    # 之间取折中，且必为奇数以便中位数落在一个真实观测上。
+    window_size = 5
+    observations: list[dict[str, Any]] = []
+    window_version: dict[str, str] = {}
+
+    def _baseline() -> Any:
         if not tasks:
             return None
-        if "value" in cached:
-            return cached["value"]
+
+        # 基因组升版 → 窗口失效（旧版本下的分数不代表当前基线）
+        version = _genome_version_id(gw)
+        if version and window_version.get("version") != version:
+            observations.clear()
+            window_version["version"] = version
+
         try:
             from agentnodes.kernel.evolution.golden_eval import (
                 DEFAULT_SAMPLE_SIZE,
@@ -370,14 +474,73 @@ def _baseline_metric(
 
             result = run_golden_eval(tasks, seed=seed, size=DEFAULT_SAMPLE_SIZE)
             if result.skipped:
+                # 无效轮次不入窗口（不装 0 分、不污染基线）
+                logger.warning(
+                    "baseline golden eval skipped: %s (window n=%d)",
+                    result.skip_reason, len(observations),
+                )
+            else:
+                observations.append({
+                    "metric": float(result.metric),
+                    "cost": result.cost,
+                    "cost_samples": int(result.cost_samples),
+                    "tokens": result.tokens,
+                    "tokens_samples": int(result.tokens_samples),
+                })
+                if len(observations) > window_size:
+                    del observations[0: len(observations) - window_size]
+            if not observations:
                 return None
-            cached["value"] = result.metric
-            return result.metric
+            return _aggregate_baseline(observations)
         except Exception as exc:  # noqa: BLE001
             logger.warning("baseline golden eval failed: %s", exc)
-            return None
+            return _aggregate_baseline(observations) if observations else None
 
     return _baseline
+
+
+def _aggregate_baseline(observations: list[dict[str, Any]]) -> Any:
+    """把窗口内的多轮观察汇成 ``ReplayOutcome``（各维度独立取中位数）。
+
+    ``*_samples`` 取窗口内**最小**的有效任务数：中位数跨轮平滑了值，
+    但没有凭空产生独立任务样本——最小样本数检查必须按真实任务数算。
+    """
+    from agentnodes.kernel.evolution.validation_gate import ReplayOutcome
+
+    metrics = [o["metric"] for o in observations]
+    costs = [o["cost"] for o in observations if o["cost"] is not None]
+    tokens = [o["tokens"] for o in observations if o["tokens"] is not None]
+    cost_counts = [o["cost_samples"] for o in observations if o["cost"] is not None]
+    token_counts = [o["tokens_samples"] for o in observations if o["tokens"] is not None]
+
+    return ReplayOutcome(
+        metric=_median(metrics),
+        cost=_median(costs) if costs else None,
+        cost_samples=min(cost_counts) if cost_counts else 0,
+        tokens=_median(tokens) if tokens else None,
+        tokens_samples=min(token_counts) if token_counts else 0,
+    )
+
+
+def _median(values: list[float]) -> float:
+    """中位数（不改变输入）。滚动基线用它抗单轮离群值。"""
+    ordered = sorted(values)
+    n = len(ordered)
+    mid = n // 2
+    if n % 2:
+        return ordered[mid]
+    return (ordered[mid - 1] + ordered[mid]) / 2.0
+
+
+def _genome_version_id(gw: Any) -> str:
+    """当前 genome_version_id；拿不到返回空串（空串 = 不做分区失效）。"""
+    genome = getattr(gw, "genome", None)
+    if genome is None:
+        return ""
+    try:
+        return str(genome.current_version_id())
+    except Exception:  # noqa: BLE001
+        return ""
 
 
 def _baseline_from_source(source: Any, genome: Any) -> Callable[[], float | None]:

@@ -9,7 +9,7 @@ unchanged.
 from __future__ import annotations
 
 from agentnodes.interfaces.cli.tui.widgets.banner import Banner
-# dag_view 已随 apps/goal.dag_renderer 移除（2026-11-04 做减法批次 2）
+from agentnodes.interfaces.cli.tui.widgets.dag_view import DAGView
 from agentnodes.interfaces.cli.tui.widgets.goal_panel import GoalPanel
 from agentnodes.interfaces.cli.tui.widgets.hint_footer import HintFooter
 from agentnodes.interfaces.cli.tui.widgets.input_bar import ChatInput
@@ -27,6 +27,7 @@ __all__ = [
     "Banner",
     "ChatInput",
     "CommandSidebar",
+    "DAGView",
     "GoalPanel",
     "HintFooter",
     "ModeBar",

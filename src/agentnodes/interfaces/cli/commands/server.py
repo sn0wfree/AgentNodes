@@ -92,11 +92,16 @@ def cmd_webui_serve(args) -> int:
         print(f"⚠ LLM 配置检测失败: {exc}")
 
     # ── Server start ──────────────────────────────────────────────
+    # A5 (评审 F10): ``--goal-db`` must reach EVERY consumer (API routes,
+    # agent tools, ticket store, scheduler, hanging-events), not just
+    # ``app.state.goal_db_path``. The canonical env var is
+    # ``AGENTNODES_GOAL_DB_PATH`` — set it for both the reload and the
+    # in-process branch so the whole server process shares one ledger.
+    if getattr(args, "goal_db", None):
+        os.environ["AGENTNODES_GOAL_DB_PATH"] = args.goal_db
     if getattr(args, "reload", False):
         # Push CLI args into env so create_app() picks them up on each reload
         os.environ["AN_WORKSPACE_PATH"] = str(workspace.resolve())
-        if getattr(args, "goal_db", None):
-            os.environ["AN_GOAL_DB_PATH"] = args.goal_db
         if getattr(args, "hypotheses_path", None):
             os.environ["AN_HYPOTHESES_PATH"] = args.hypotheses_path
         if static_dir:
@@ -141,10 +146,12 @@ def cmd_api_serve(args) -> int:
     print(f"   Workspace: {workspace}")
     print(f"   Docs:      http://{args.host}:{args.port}/docs")
 
+    # A5 (评审 F10): same env-var contract as cmd_webui_serve — the flag
+    # must reach the agent tools / ticket / scheduler consumers too.
+    if getattr(args, "goal_db", None):
+        os.environ["AGENTNODES_GOAL_DB_PATH"] = args.goal_db
     if getattr(args, "reload", False):
         os.environ["AN_WORKSPACE_PATH"] = str(workspace.resolve())
-        if getattr(args, "goal_db", None):
-            os.environ["AN_GOAL_DB_PATH"] = args.goal_db
         if getattr(args, "hypotheses_path", None):
             os.environ["AN_HYPOTHESES_PATH"] = args.hypotheses_path
 

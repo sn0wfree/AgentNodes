@@ -18,13 +18,16 @@ import pytest
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
 
 from agentnodes.kernel.evolution import (
+    COST_DEGRADATION_THRESHOLD,
     DEGRADATION_THRESHOLD,
     EVOLUTION_TOOLS,
+    MIN_COST_SAMPLES,
+    ROLLBACK_AFTER_FAILURES,
     EvolutionAgent,
     GenomeProposal,
     HoldoutSet,
     ProposalStatus,
-    ROLLBACK_AFTER_FAILURES,
+    ReplayOutcome,
     TierViolation,
     Trajectory,
     ValidationGate,
@@ -66,11 +69,23 @@ def _holdout(n: int = 3) -> HoldoutSet:
 
 
 def _gate(genome, emit, metric_fn, baseline=1.0):
+    # C9（批次 3）：双集双门。held-out 侧复用**本次** held-in 的读数，
+    # 于是两侧判定永远一致——本文件只测 held-in 机制（含 `metric_fn`
+    # 是单次迭代器这种用法），双集/分歧的专门用例在 test_golden_sets.py。
+    last: dict[str, float] = {}
+
+    def _heldin(proposal, holdout):
+        value = float(metric_fn())
+        last["metric"] = value
+        return value
+
     return ValidationGate(
         genome=genome,
         emit=emit,
-        replay=lambda proposal, holdout: metric_fn(),
+        replay=_heldin,
         baseline_metric=lambda: baseline,
+        heldout_replay=lambda proposal, holdout: last.get("metric", baseline),
+        heldout_baseline=lambda: baseline,
     )
 
 
@@ -246,6 +261,192 @@ class TestGenomeVersionStore:
         g = GenomeVersionStore()
         with pytest.raises(KeyError):
             g.rollback_to("gv-nope")
+
+
+# ── 双闸：成本（D3，2026-11-06）───────────────────────────────────────
+
+
+def _cost_gate(genome, emit, cand: ReplayOutcome, base: ReplayOutcome):
+    # C9：held-out 侧沿用同一对桩值，保证成本闸用例只考察成本语义。
+    return ValidationGate(
+        genome=genome,
+        emit=emit,
+        replay=lambda proposal, holdout: cand,
+        baseline_metric=lambda: base,
+        heldout_replay=lambda proposal, holdout: cand.metric,
+        heldout_baseline=lambda: base.metric,
+    )
+
+
+def _validate(gate, proposal_id: str = "p") -> tuple:
+    """跑一次 validate，返回 ``(proposal, ValidationResult)``。
+
+    ``validate()`` 的返回值是推进后的提案；判定细节在 ``gate.history[-1]``。
+    """
+    out = gate.validate(GenomeProposal.new("prompt", {"a": proposal_id}), _holdout())
+    return out, gate.history[-1]
+
+
+class TestReplayOutcomeCompat:
+    """交付 2：float 向后兼容（现存 ~12 个测试桩零改动）。"""
+
+    def test_bare_float_still_accepted(self):
+        out = _gate(GenomeVersionStore(), _Emitter(), lambda: 1.0).validate(
+            GenomeProposal.new("prompt", {"a": 1}), _holdout()
+        )
+        assert out.status is ProposalStatus.APPROVED
+
+    def test_float_means_no_cost_samples(self):
+        genome = GenomeVersionStore()
+        emit = _Emitter()
+        gate = _gate(genome, emit, lambda: 1.0)
+        gate.validate(GenomeProposal.new("prompt", {"a": 1}), _holdout())
+        verdict = gate.history[-1]
+        assert verdict.cost_checked is False
+        # 无样本 → 跳过并留痕，不装 0 分、不误判
+        assert emit.of("genome.cost_gate")[0]["verdict"] == "skipped"
+
+    def test_outcome_baseline_also_accepted(self):
+        out = _cost_gate(
+            GenomeVersionStore(), _Emitter(),
+            cand=ReplayOutcome(metric=1.0, cost=0.9, cost_samples=5),
+            base=ReplayOutcome(metric=1.0, cost=0.9, cost_samples=5),
+        ).validate(GenomeProposal.new("prompt", {"a": 1}), _holdout())
+        assert out.status is ProposalStatus.APPROVED
+
+
+class TestCostGate:
+    """交付 3 探针 ③：双闸各自独立触发。"""
+
+    def test_probe3_cost_degrades_while_metric_flat_rejected(self):
+        """成本退化但能力不变 → 硬拒（能力闸本身会放行）。"""
+        genome = GenomeVersionStore()
+        emit = _Emitter()
+        gate = _cost_gate(
+            genome, emit,
+            cand=ReplayOutcome(metric=1.0, cost=0.5, cost_samples=6),
+            base=ReplayOutcome(metric=1.0, cost=1.0, cost_samples=6),
+        )
+        out, verdict = _validate(gate)
+        assert out.status is ProposalStatus.REJECTED
+        assert "cost degraded 50.0%" in out.rejection_reason
+        assert "hard reject" in out.rejection_reason
+        assert genome.current_version_id() == "gv-0", "硬拒不得升版"
+        assert emit.of("genome.cost_gate")[0]["verdict"] == "rejected"
+        assert verdict.degradation == 0.0, "能力闸读数必须仍是 0（两闸独立）"
+
+    def test_cost_within_threshold_passes(self):
+        out = _cost_gate(
+            GenomeVersionStore(), _Emitter(),
+            cand=ReplayOutcome(metric=1.0, cost=0.9, cost_samples=6),
+            base=ReplayOutcome(metric=1.0, cost=1.0, cost_samples=6),
+        ).validate(GenomeProposal.new("prompt", {"a": 1}), _holdout())
+        assert out.status is ProposalStatus.APPROVED
+
+    def test_ability_improves_but_cost_spikes_escalates(self):
+        """能力升 + 成本涨超 tradeshold → escalate（不静默通过、不计回滚）。"""
+        genome = GenomeVersionStore()
+        emit = _Emitter()
+        gate = _cost_gate(
+            genome, emit,
+            cand=ReplayOutcome(metric=1.05, cost=0.8, cost_samples=6),
+            base=ReplayOutcome(metric=1.0, cost=1.0, cost_samples=6),
+        )
+        out, verdict = _validate(gate)
+        assert out.status is ProposalStatus.REJECTED
+        assert verdict.escalated is True
+        assert "cost rose" in out.rejection_reason
+        assert gate.consecutive_failures == 0, "escalate 不计入回滚计数"
+        assert genome.current_version_id() == "gv-0"
+        assert emit.of("genome.cost_gate")[0]["verdict"] == "escalated"
+
+    def test_ability_gate_unchanged_threshold(self):
+        assert DEGRADATION_THRESHOLD == 0.20
+        assert COST_DEGRADATION_THRESHOLD == 0.30
+
+    def test_cost_improvement_passes(self):
+        out = _cost_gate(
+            GenomeVersionStore(), _Emitter(),
+            cand=ReplayOutcome(metric=1.0, cost=1.0, cost_samples=6),
+            base=ReplayOutcome(metric=1.0, cost=0.5, cost_samples=6),
+        ).validate(GenomeProposal.new("prompt", {"a": 1}), _holdout())
+        assert out.status is ProposalStatus.APPROVED
+
+
+class TestNoMixedMean:
+    """禁混合均值：cost(0..1) 与绝对 tokens 是两个独立维度。"""
+
+    def test_probe2_tokens_drive_gate_when_cost_is_none(self):
+        """探针 ②：无预算任务 → cost=None，token 绝对量独立过闸。
+
+        token 翻倍（+100%）必须被拒——即便 cost 侧**完全没样本**。
+        若把绝对 tokens 混进 cost 均值（或把 None 装成 0），这条退化就
+        会被稀释/伪造掉，这正是评审 P 条的 90% 盲区。
+        """
+        genome = GenomeVersionStore()
+        emit = _Emitter()
+        gate = _cost_gate(
+            genome, emit,
+            cand=ReplayOutcome(metric=1.0, cost=None, tokens=8000.0, tokens_samples=8),
+            base=ReplayOutcome(metric=1.0, cost=None, tokens=4000.0, tokens_samples=8),
+        )
+        out, verdict = _validate(gate)
+        assert out.status is ProposalStatus.REJECTED
+        assert "tokens degraded 100.0%" in out.rejection_reason
+        assert verdict.cost_degradation is None, "cost 侧无样本，不得伪造 0"
+        assert verdict.tokens_degradation == pytest.approx(1.0)
+        assert emit.of("genome.cost_gate")[0]["dimension"] == "tokens"
+
+    def test_tokens_do_not_enter_cost_mean(self):
+        """tokens 的巨幅变化不改变 cost 维度读数（两均值物理隔离）。"""
+        gate = _cost_gate(
+            GenomeVersionStore(), _Emitter(),
+            cand=ReplayOutcome(
+                metric=1.0, cost=0.95, cost_samples=5,
+                tokens=9000.0, tokens_samples=5,
+            ),
+            base=ReplayOutcome(
+                metric=1.0, cost=1.0, cost_samples=5,
+                tokens=1000.0, tokens_samples=5,
+            ),
+        )
+        out, verdict = _validate(gate)
+        # tokens +800% 触发硬拒，但被判维度必须是 tokens，cost 读数独立
+        assert out.status is ProposalStatus.REJECTED
+        assert "tokens degraded 800.0%" in out.rejection_reason
+        assert verdict.cost_degradation == pytest.approx(0.05), "cost 只反映自身均值"
+
+    def test_no_cost_samples_skips_gate_not_zero(self):
+        """两侧 cost 均 None → 跳过 + emit，不装 0 分（不误拒也不误放）。"""
+        genome = GenomeVersionStore()
+        emit = _Emitter()
+        gate = _cost_gate(
+            genome, emit,
+            cand=ReplayOutcome(metric=1.0, cost=None),
+            base=ReplayOutcome(metric=1.0, cost=None),
+        )
+        out, verdict = _validate(gate)
+        assert out.status is ProposalStatus.APPROVED
+        assert verdict.cost_checked is False
+        ev = emit.of("genome.cost_gate")
+        assert ev and ev[0]["verdict"] == "skipped"
+
+    def test_insufficient_samples_escalates(self):
+        """有效样本 < 最小值 → 降级 escalate，而不是静默放行。"""
+        genome = GenomeVersionStore()
+        emit = _Emitter()
+        gate = _cost_gate(
+            genome, emit,
+            cand=ReplayOutcome(metric=1.0, cost=0.5, cost_samples=2),
+            base=ReplayOutcome(metric=1.0, cost=1.0, cost_samples=2),
+        )
+        out, verdict = _validate(gate)
+        assert out.status is ProposalStatus.REJECTED
+        assert verdict.escalated is True
+        assert "insufficient cost samples" in out.rejection_reason
+        assert MIN_COST_SAMPLES == 3
+        assert emit.of("genome.cost_gate")[0]["verdict"] == "insufficient_samples"
+        assert gate.consecutive_failures == 0, "escalate 不计入回滚计数"
 
 
 # ── SkillMemoryResolver ──────────────────────────────────────────────

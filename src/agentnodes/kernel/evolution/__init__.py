@@ -37,13 +37,19 @@ from .holdout import (
 from .isolated_replay import IsolatedSlotReplay, SlotUnavailable
 from .skill_memory import EffectiveHarnessConfig, resolve as resolve_harness
 from .validation_gate import (
+    COST_DEGRADATION_THRESHOLD,
+    COST_TRADE_ESCALATION_THRESHOLD,
     DEGRADATION_THRESHOLD,
+    MIN_COST_SAMPLES,
     ROLLBACK_AFTER_FAILURES,
+    ReplayOutcome,
     ValidationGate,
     ValidationResult,
 )
 
 __all__ = [
+    "COST_DEGRADATION_THRESHOLD",
+    "COST_TRADE_ESCALATION_THRESHOLD",
     "DEGRADATION_THRESHOLD",
     "EVOLUTION_TOOLS",
     "EffectiveHarnessConfig",
@@ -53,8 +59,10 @@ __all__ = [
     "HOLDOUT_STATUSES",
     "HoldoutSet",
     "IsolatedSlotReplay",
+    "MIN_COST_SAMPLES",
     "ProposalStatus",
     "ROLLBACK_AFTER_FAILURES",
+    "ReplayOutcome",
     "SlotUnavailable",
     "TIER0_COMPONENTS",
     "TIER1_COMPONENTS",

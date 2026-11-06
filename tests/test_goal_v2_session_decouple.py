@@ -17,7 +17,7 @@ from agentnodes.apps.goal.models import EvidenceInput, StaleGoalError
 @pytest.fixture
 def store(tmp_path, monkeypatch):
     monkeypatch.setenv(
-        "QUANTNODES_RESEARCH_GOAL_DB_PATH", str(tmp_path / "goals.db")
+        "AGENTNODES_GOAL_DB_PATH", str(tmp_path / "goals.db")
     )
     monkeypatch.setenv(
         "QUANTNODES_RESEARCH_HYPOTHESES_PATH", str(tmp_path / "hyp.json")

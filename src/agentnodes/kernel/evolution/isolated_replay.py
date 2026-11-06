@@ -48,7 +48,7 @@ class IsolatedSlotReplay:
     """
 
     gate: Any | None
-    replay_fn: Callable[[GenomeProposal, HoldoutSet], float]
+    replay_fn: Callable[[GenomeProposal, HoldoutSet], Any]
     pool: str = "study"
     wait_timeout: float = 30.0
     _poll_interval: float = field(default=0.05, repr=False)
@@ -58,12 +58,18 @@ class IsolatedSlotReplay:
     waits: int = field(default=0, init=False)
     slot_unavailable: int = field(default=0, init=False)
 
-    def __call__(self, proposal: GenomeProposal, holdout: HoldoutSet) -> float:
-        """CapacityGate 风格的可调用入口，直接作为 gate 的 ``replay`` 参数。"""
+    def __call__(self, proposal: GenomeProposal, holdout: HoldoutSet) -> Any:
+        """CapacityGate 风格的可调用入口，直接作为 gate 的 ``replay`` 参数。
+
+        **不解包 float**：``replay_fn`` 可能返回 ``ReplayOutcome``（能力 +
+        成本维度，D3）。这里只负责 slot 生命周期，结果原样透传——强制
+        ``float(...)`` 会把成本维度静默丢掉，双闸的第二道闸就永远拿不到
+        成本样本。裸 float 的旧契约同样原样透传，由 ValidationGate 归一化。
+        """
         token = self._acquire()
         try:
             self.replays += 1
-            return float(self.replay_fn(proposal, holdout))
+            return self.replay_fn(proposal, holdout)
         finally:
             self._release(token)
 

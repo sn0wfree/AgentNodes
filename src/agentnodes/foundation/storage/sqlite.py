@@ -136,11 +136,59 @@ def json_loads(value: str | None, default: object) -> object:
 # ── Path / connection ─────────────────────────────────────────────
 
 
+#: A5 (评审 F10) — 目标台账的唯一环境变量名。
+#:
+#: 历史上有三个名字并存（``AN_GOAL_DB_PATH`` 出现在 L1 的 app/server，
+#: ``QUANTNODES_RESEARCH_GOAL_DB_PATH`` 出现在 apps/goal，旧测试用
+#: ``STRATEGY_RESEARCH_GOAL_DB``），导致 ``--goal-db`` 只影响 API 路由、
+#: 不影响 agent 工具 / ticket / 调度器 —— 同一个进程里两个 goals.db。
+#: 现在统一为 ``AGENTNODES_GOAL_DB_PATH``（与 kernel/foundation 多数派一致），
+#: 旧名保留为**只读兜底**，避免已部署环境的配置静默失效。
+GOAL_DB_ENV = "AGENTNODES_GOAL_DB_PATH"
+
+#: 目标台账的旧环境变量名（按优先级，新名永远先查）。
+GOAL_DB_LEGACY_ENVS = (
+    "AN_GOAL_DB_PATH",
+    "QUANTNODES_RESEARCH_GOAL_DB_PATH",
+    "STRATEGY_RESEARCH_GOAL_DB",
+)
+
+
+def goal_db_env_value() -> str:
+    """Return the raw goal-DB env override (canonical name first).
+
+    Empty string when nothing is configured. Exposed so L1 entrypoints
+    (:mod:`agentnodes.interfaces.api.app`, CLI ``--goal-db``) read the
+    same name/priority as :func:`resolve_db_path` — no second fact source.
+    """
+    for name in (GOAL_DB_ENV, *GOAL_DB_LEGACY_ENVS):
+        raw = os.environ.get(name, "").strip()
+        if raw:
+            return raw
+    return ""
+
+
 def resolve_db_path(db_name: str, env_var: str) -> Path:
-    """Resolve a store's DB path: env override, else ``~/.agentnodes/<db>``."""
-    raw_path = os.environ.get(env_var, "").strip()
-    if raw_path:
-        return Path(raw_path).expanduser()
+    """Resolve a store's DB path: env override, else ``~/.agentnodes/<db>``.
+
+    For the goal ledger (``goals.db``) the canonical
+    ``AGENTNODES_GOAL_DB_PATH`` is checked first, then the historical
+    aliases in :data:`GOAL_DB_LEGACY_ENVS`, then the ``env_var`` the caller
+    passed (A5 统一：新名优先、旧名兜底). Every other store keeps the
+    caller-supplied single env var.
+    """
+    candidates: list[str] = []
+    if db_name == "goals.db":
+        candidates = [GOAL_DB_ENV, *GOAL_DB_LEGACY_ENVS]
+        if env_var not in candidates:
+            candidates.append(env_var)
+    else:
+        candidates = [env_var]
+
+    for name in candidates:
+        raw_path = os.environ.get(name, "").strip()
+        if raw_path:
+            return Path(raw_path).expanduser()
     return ensure_data_dir() / db_name
 
 

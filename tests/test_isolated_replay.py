@@ -203,6 +203,10 @@ def _wired_gate(*, study=2, metric=1.0, wait_timeout=1.0):
     )
     gate = ValidationGate(
         genome=genome, emit=emit, replay=replay, baseline_metric=lambda: 1.0,
+        # C9：本文件测 slot 生命周期，held-out 侧沿用同一 metric 桩值。
+        # 双集/分歧的专门用例在 tests/test_golden_sets.py。
+        heldout_replay=lambda p, h: metric,
+        heldout_baseline=lambda: 1.0,
     )
     return gate, capacity, emit, genome, replay
 

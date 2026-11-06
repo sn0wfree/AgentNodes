@@ -175,16 +175,20 @@ def create_app(
     app.add_middleware(AuthMiddleware)
 
     # Register routers
-    # goal / hypothesis / validation / workflow 四个业务 router 已随
-    # apps/goal、apps/hypothesis、apps/validation 移除（2026-11-04 批次 2）。
+    # goal / workflow 两个业务 router 已随 R2（批次 3）恢复：apps/goal 在
+    # 批次 2（R1）重建，L1 的 goal.py / workflow.py 随之搬回并重新挂载。
+    # hypothesis / validation router 仍保持移除状态（apps/hypothesis、
+    # apps/validation 未恢复，无条件不可达）。
     # study / slash_commands 两个 router 已随 apps/study 移除（2026-11-05 批次 3）。
     # run router 已随 apps/backtest 移除（2026-11-05 批次 4）。
     from .routers import (
         admin,
         auth,
         chat,
+        goal,
         permission,
         web_session,
+        workflow,
     )
 
     app.include_router(auth.router, prefix="/api/auth", tags=["auth"])
@@ -193,6 +197,14 @@ def create_app(
     app.include_router(admin.router, prefix="/api/admin", tags=["admin"])
     from .routers import admin_users
     app.include_router(admin_users.router, prefix="/api/admin", tags=["admin-users"])
+
+    # Goal ledger (R2): /api/goal/* — frontend panel + goal_updated SSE.
+    app.include_router(goal.router, prefix="/api/goal", tags=["goal"])
+    # Goal workflow control + modular DAG workflow runs.
+    # Frontend contract is /api/goal/workflow/* (see webui types.gen.ts).
+    app.include_router(
+        workflow.router, prefix="/api/goal/workflow", tags=["goal-workflow"],
+    )
 
     # /api/study 路由已随 apps/study 移除（2026-11-05 批次 3）
     # /api/run 路由已随 apps/backtest 移除（2026-11-05 批次 4）
@@ -251,7 +263,13 @@ def _resolve_app_env(
         env = os.environ.get("AN_WORKSPACE_PATH")
         workspace_path = Path(env) if env else None
     if goal_db_path is None:
-        goal_db_path = os.environ.get("AN_GOAL_DB_PATH")
+        # A5 (评审 F10): one name for the goal ledger. The helper reads
+        # AGENTNODES_GOAL_DB_PATH first, then the legacy aliases
+        # (AN_GOAL_DB_PATH / QUANTNODES_* / STRATEGY_RESEARCH_*), so the
+        # CLI ``--goal-db`` flag and the agent tools resolve the same file.
+        from agentnodes.foundation.storage.sqlite import goal_db_env_value
+
+        goal_db_path = goal_db_env_value() or None
     if hypotheses_path is None:
         hypotheses_path = os.environ.get("AN_HYPOTHESES_PATH")
     if static_dir is None:

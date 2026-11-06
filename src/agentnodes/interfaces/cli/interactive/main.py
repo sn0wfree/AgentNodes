@@ -92,14 +92,65 @@ def _memory_dispatch(ctx: Any, *args: str) -> int:
 
 
 def _goal_dispatch(ctx: Any, *args: str) -> int:
-    """`/goal` 已随 apps/goal 移除（2026-11-04 做减法批次 2）。"""
-    from rich.console import Console
+    """``/goal`` — delegate to :mod:`cli.commands.slash_goal`.
 
-    Console().print(
-        "`/goal` 已移除：目标台账随 apps/goal 一并删除。"
-        "改用 `/study` 启动研究任务。"
-    )
-    return 1
+    R2 (批次 3) 恢复了 goal 台账，dispatch 从「已移除」提示改回真实调用。
+    ``session_id`` 取 ``ctx.session_id``（TUI/REPL 每会话一个），缺省
+    回落到 slash_goal 自己的 ``"cli"`` 默认值。
+    """
+    from agentnodes.interfaces.cli.commands import slash_goal
+
+    session_id = getattr(ctx, "session_id", None) or "cli"
+    if not args:
+        return slash_goal.cmd_status(session_id=session_id)
+    sub = args[0]
+    rest = list(args[1:])
+    if sub == "status":
+        return slash_goal.cmd_status(session_id=session_id)
+    if sub == "help":
+        return slash_goal.cmd_help()
+    if sub == "templates":
+        return slash_goal.cmd_templates()
+    if sub == "workflows":
+        return slash_goal.cmd_workflows(*rest)
+    if sub == "checkpoint":
+        return slash_goal.cmd_checkpoint(*rest, session_id=session_id)
+    if sub == "start":
+        template_key = ""
+        workflow_name = ""
+        objective_parts: list[str] = []
+        i = 0
+        while i < len(rest):
+            if rest[i] == "--template" and i + 1 < len(rest):
+                template_key = rest[i + 1]
+                i += 2
+            elif rest[i] == "--workflow" and i + 1 < len(rest):
+                workflow_name = rest[i + 1]
+                i += 2
+            else:
+                objective_parts.append(rest[i])
+                i += 1
+        return slash_goal.cmd_start(
+            " ".join(objective_parts),
+            session_id=session_id,
+            template_key=template_key,
+            workflow_name=workflow_name,
+        )
+    if sub == "evidence":
+        if not rest:
+            return slash_goal.cmd_help()
+        return slash_goal.cmd_evidence(
+            rest[0], " ".join(rest[1:]), session_id=session_id,
+        )
+    if sub == "complete":
+        lite = "--lite" in rest
+        rest = [r for r in rest if r != "--lite"]
+        return slash_goal.cmd_complete(
+            " ".join(rest), session_id=session_id, lite=lite,
+        )
+    if sub == "cancel":
+        return slash_goal.cmd_cancel(" ".join(rest), session_id=session_id)
+    return slash_goal.cmd_help()
 
 
 def _search_dispatch(ctx: Any, *args: str) -> int:

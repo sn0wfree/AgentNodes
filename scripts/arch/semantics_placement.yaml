@@ -72,6 +72,22 @@
   allowed_layers: [L3]
   evidence: framework v1.1 §2.2
 
+- name: 双集拆分（held-in 明文）
+  semantic: P
+  files:
+    - src/agentnodes/evals/golden_sets.py
+    - src/agentnodes/evals/golden_tasks_heldin.jsonl   # 非 py：只断言路径存在
+  allowed_layers: [L3]
+  evidence: framework v1.1 C9 / GEP-RSI 第 5 步（批次 3 W3）
+
+- name: 屏障·held-out 进程外持有
+  semantic: barrier          # 被测方读不到 → 检查信号不由被检方产生（理念七）
+  files:
+    - scripts/arch/split_golden_sets.py
+    - scripts/arch/export_heldout.py
+  allowed_layers: [external]
+  evidence: framework v1.1 C9（held-out 进程外持有 + seed 进程外注入）
+
 - name: 执行轨迹
   semantic: P
   files:

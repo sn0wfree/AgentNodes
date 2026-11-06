@@ -78,9 +78,14 @@ def _parse_goal(parser: argparse.ArgumentParser, *args: str) -> argparse.Namespa
 
 @pytest.fixture
 def store_db(tmp_path: Path, monkeypatch) -> Path:
-    """Use a fresh DB for each test by setting QUANTNODES_RESEARCH_GOAL_DB_PATH."""
+    """Use a fresh DB for each test by setting AGENTNODES_GOAL_DB_PATH.
+
+    A5: 规范名；旧名 QUANTNODES_RESEARCH_GOAL_DB_PATH 现在只是
+    resolve_db_path 的兜底，而 conftest 的 autouse fixture 已先设了规范名，
+    只设旧名会被规范名盖掉、DB 指向 conftest 的临时库。
+    """
     db = tmp_path / "cli_test.db"
-    monkeypatch.setenv("QUANTNODES_RESEARCH_GOAL_DB_PATH", str(db))
+    monkeypatch.setenv("AGENTNODES_GOAL_DB_PATH", str(db))
     return db
 
 

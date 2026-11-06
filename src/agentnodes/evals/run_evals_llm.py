@@ -29,6 +29,26 @@ from agentnodes.evals.scorecard import (  # noqa: E402
 )
 
 
+def _elapsed_ms(metrics: dict) -> int:
+    """Read the loop's already-measured elapsed time, in milliseconds.
+
+    **Passthrough, not collection** (W2 / review R): ``loop_lifecycle``
+    writes ``elapsed_s``; ``executor`` writes ``elapsed_s`` on its result
+    objects. Prefer the seconds key when both exist. Missing → 0, which the
+    cost/latency aggregation treats as "no sample" rather than as 0 ms.
+    """
+    try:
+        seconds = metrics.get("elapsed_s")
+        if seconds is None:
+            seconds = metrics.get("elapsed_ms")
+            if seconds is None:
+                return 0
+            return int(float(seconds))
+        return int(round(float(seconds) * 1000.0))
+    except (TypeError, ValueError):
+        return 0
+
+
 def _run_one(task: GoldenTask, *, workspace: Path, max_iterations: int = 6) -> RunRecord:
     from agentnodes.foundation.llm.config import LLMConfig
     from agentnodes.kernel.agent.builtin_tools import build_default_registry
@@ -83,13 +103,14 @@ def _run_one(task: GoldenTask, *, workspace: Path, max_iterations: int = 6) -> R
             if content and isinstance(content, str):
                 evidence_parts.append(content[:2000])
         evidence = "\n".join(evidence_parts)[:12000]
+        metrics = getattr(result, "metrics", {}) or {}
         return RunRecord(
             task_id=task.id,
             tools_used=tools_used,
             tokens_used=int(
-                getattr(result, "metrics", {}).get("usage_tokens")
+                metrics.get("usage_tokens")
                 or getattr(loop, "_budget_tokens", 0)
-                or getattr(result, "metrics", {}).get("tokens")
+                or metrics.get("tokens")
                 or 0
             ),
             finished_reason=getattr(result, "finished_reason", "stop"),
@@ -100,6 +121,11 @@ def _run_one(task: GoldenTask, *, workspace: Path, max_iterations: int = 6) -> R
             iterations=int(getattr(result, "iterations", 0) or 0),
             tool_calls_made=int(getattr(result, "tool_calls_made", 0) or 0),
             tool_sequence=list(tools_used),
+            # Latency **passthrough** (D3 / W2): the agent loop already
+            # records ``elapsed_s`` in ``result.metrics`` (see
+            # ``kernel/agent/loop_lifecycle.py::_finalize_metrics``). evals
+            # adds no second clock — it only converts s → ms for the record.
+            duration_ms=_elapsed_ms(metrics),
         )
     except Exception as exc:  # noqa: BLE001
         return RunRecord(

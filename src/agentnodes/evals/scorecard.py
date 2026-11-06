@@ -58,6 +58,10 @@ class RunRecord:
     iterations: int = 0
     tool_calls_made: int = 0
     tool_sequence: list[str] = field(default_factory=list)  # ordered, repeats kept
+    #: Wall-clock latency for this run. **Passthrough only** — the kernel
+    #: already measures ``elapsed_s`` (``kernel/agent/loop_lifecycle.py`` /
+    #: ``executor.py`` metrics); evals must not invent a second clock.
+    duration_ms: int = 0
 
 
 @dataclass
@@ -75,6 +79,29 @@ class TaskScore:
     tool_calls_made: int = 0
     tool_sequence: list[str] = field(default_factory=list)
     finished_reason: str = "stop"
+    #: **Independent** cost dimension (D3: vector + dual gate). ``None`` when
+    #: the task has no ``budget_max_tokens`` — a missing cost is *not* 0.
+    #: Never folded into ``total``: the five weights above stay frozen so
+    #: historical scorecards remain comparable.
+    cost: float | None = None
+    duration_ms: int = 0
+
+
+def normalized_cost(task: GoldenTask, run: RunRecord) -> float | None:
+    """Normalized token cost in ``[0, 1]`` — 1.0 = cheap, 0.0 = at/over budget.
+
+    ``cost = 1 - min(1, tokens_used / budget_max_tokens)`` (D3 normalization
+    option b2: reuse the budget the task author already declared).
+
+    Returns ``None`` when the task declares no ``budget_max_tokens``. ``None``
+    is a first-class "not measurable" value: callers must **not** substitute
+    0.0 — that would silently mark 63/70 golden tasks (no budget) as free.
+    """
+    budget = task.budget_max_tokens
+    if not budget or budget <= 0:
+        return None
+    ratio = run.tokens_used / float(budget)
+    return round(1.0 - min(1.0, ratio), 6)
 
 
 def score_run(task: GoldenTask, run: RunRecord) -> TaskScore:
@@ -109,6 +136,8 @@ def score_run(task: GoldenTask, run: RunRecord) -> TaskScore:
     completed = run.success and run.finished_reason in ("stop", "max_iter")
 
     # Weights: tools 0.4, violations 0.2, budget 0.15, content 0.15, completed 0.1
+    # D3: these five weights are frozen. ``cost`` is a parallel dimension and
+    # must never enter this sum (weight = exchange rate = self-scoring surface).
     total = (
         0.40 * recall
         + 0.20 * (1.0 if violations == 0 else 0.0)
@@ -140,6 +169,8 @@ def score_run(task: GoldenTask, run: RunRecord) -> TaskScore:
         tool_calls_made=run.tool_calls_made,
         tool_sequence=list(run.tool_sequence),
         finished_reason=run.finished_reason,
+        cost=normalized_cost(task, run),
+        duration_ms=int(run.duration_ms or 0),
     )
 
 
@@ -156,6 +187,33 @@ class Scorecard:
             return 0.0
         return round(sum(1 for s in self.scores if s.total >= threshold) / len(self.scores), 4)
 
+    # ── 成本/延迟维度（D3：并列，不进 total） ──────────────────────────
+
+    @property
+    def cost_samples(self) -> list[float]:
+        """Normalized costs of tasks that declared a budget (``None`` excluded).
+
+        Deliberately **not** zero-filled: a task without ``budget_max_tokens``
+        is unmeasurable, not free. Mixing absolute token counts into this list
+        would let a 4k-vs-2k token regression drown next to a 0.9 cost value.
+        """
+        return [s.cost for s in self.scores if s.cost is not None]
+
+    @property
+    def cost_mean(self) -> float | None:
+        """Mean normalized cost over budget-bearing tasks; ``None`` if none."""
+        samples = self.cost_samples
+        if not samples:
+            return None
+        return round(sum(samples) / len(samples), 6)
+
+    @property
+    def duration_ms_mean(self) -> float | None:
+        samples = [s.duration_ms for s in self.scores if s.duration_ms > 0]
+        if not samples:
+            return None
+        return round(sum(samples) / len(samples), 1)
+
     def to_dict(self) -> dict[str, Any]:
         steps = [s.iterations for s in self.scores]
         tool_calls = [s.tool_calls_made for s in self.scores]
@@ -166,6 +224,13 @@ class Scorecard:
             "n": len(self.scores),
             "mean": self.mean,
             "pass_rate@0.7": self.pass_rate(0.7),
+            "cost": {
+                # Only budget-bearing tasks enter this mean (b2 normalization).
+                "mean": self.cost_mean,
+                "samples": len(self.cost_samples),
+                "tasks_total": len(self.scores),
+            },
+            "duration_ms_mean": self.duration_ms_mean,
             "trajectory": {
                 "steps_mean": round(sum(steps) / len(steps), 3) if steps else 0.0,
                 "steps_p90": sorted(steps)[int(len(steps) * 0.9)] if steps else 0,
@@ -184,6 +249,8 @@ class Scorecard:
                     "tool_calls_made": s.tool_calls_made,
                     "tool_sequence": s.tool_sequence,
                     "finished_reason": s.finished_reason,
+                    "cost": s.cost,
+                    "duration_ms": s.duration_ms,
                 }
                 for s in self.scores
             ],

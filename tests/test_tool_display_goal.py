@@ -65,7 +65,7 @@ def test_list_goals_with_real_store(ctx, tmp_path, monkeypatch):
 
     db = tmp_path / "goals.db"
     store = GoalStore(db_path=db)
-    monkeypatch.setenv("QUANTNODES_RESEARCH_GOAL_DB_PATH", str(db))
+    monkeypatch.setenv("AGENTNODES_GOAL_DB_PATH", str(db))
     try:
         created = store.replace_goal(
             session_id="sess-wt", objective="研究动量因子",
@@ -89,7 +89,7 @@ def test_get_goal_status_no_active_goal_is_ok(ctx, tmp_path, monkeypatch):
 
     db = tmp_path / "goals2.db"
     store = GoalStore(db_path=db)
-    monkeypatch.setenv("QUANTNODES_RESEARCH_GOAL_DB_PATH", str(db))
+    monkeypatch.setenv("AGENTNODES_GOAL_DB_PATH", str(db))
     try:
         out = json.loads(GetGoalStatusTool().execute(ctx=ctx))
         assert out.get("has_goal") is False

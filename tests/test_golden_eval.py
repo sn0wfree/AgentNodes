@@ -28,6 +28,7 @@ from agentnodes.kernel.evolution.golden_eval import (  # noqa: E402
     select_tasks,
 )
 from agentnodes.kernel.evolution.holdout import HoldoutSet  # noqa: E402
+from agentnodes.kernel.evolution.validation_gate import ReplayOutcome  # noqa: E402
 from agentnodes.kernel.orchestration.genome_version import (  # noqa: E402
     GenomeVersionStore,
 )
@@ -141,20 +142,58 @@ class TestRunGoldenEval:
         assert "infrastructure" in r.skip_reason or "errored" in r.skip_reason
         assert r.errors
 
-    def test_partial_failure_not_skipped(self):
-        """部分失败仍可算分——那是真实的"这个提案让某些任务变差了"。"""
+    def test_partial_failure_excluded_not_scored_zero(self):
+        """单任务异常**剔除**，不记 0.0（C10 基线硬条款 1）。
+
+        旧实现把异常折算成 0.0 计入均值：每轮随机踩到几条超时 → 基线
+        系统性偏低 → 候选只要"少崩一点"就自动"变好"。这是基线投毒通道。
+        现在有效样本全部满分时，均值必须仍是 1.0。
+        """
         calls = {"n": 0}
 
-        def flaky(task, ws, max_iter):
+        def one_in_ten_boom(task, ws, max_iter):
+            calls["n"] += 1
+            if calls["n"] == 5:  # 10 条里坏 1 条
+                raise RuntimeError("boom")
+            return _perfect(task, ws, max_iter)
+
+        r = run_golden_eval(_tasks(20), seed=42, size=10, runner=one_in_ten_boom)
+        assert not r.skipped
+        assert r.tasks_run == 9, "异常任务必须被剔除出有效样本"
+        assert r.tasks_selected == 10
+        assert r.metric == pytest.approx(1.0), "异常不得折算成 0 分进均值"
+        assert len(r.errors) == 1
+        assert r.error_rate == pytest.approx(0.1)
+
+    def test_high_error_rate_skips_round(self):
+        """报错率超健康度上限 → 整轮 skipped（基线硬条款 2）。"""
+        calls = {"n": 0}
+
+        def alternate_boom(task, ws, max_iter):
             calls["n"] += 1
             if calls["n"] % 2:
                 raise RuntimeError("boom")
             return _perfect(task, ws, max_iter)
 
-        r = run_golden_eval(_tasks(), seed=42, size=6, runner=flaky)
-        assert not r.skipped
-        assert r.tasks_run == 6
-        assert 0.0 < r.metric < 1.0
+        r = run_golden_eval(_tasks(), seed=42, size=6, runner=alternate_boom)
+        assert r.skipped is True
+        assert "error rate" in r.skip_reason
+        assert r.tasks_run == 3, "幸存者仍记录下来，但不得据此给结论"
+
+    def test_insufficient_valid_samples_skips_round(self):
+        """有效样本 < 最小值 → 整轮 skipped（基线硬条款 1）。"""
+        calls = {"n": 0}
+
+        def mostly_boom(task, ws, max_iter):
+            calls["n"] += 1
+            if calls["n"] > 2:
+                raise RuntimeError("boom")
+            return _perfect(task, ws, max_iter)
+
+        r = run_golden_eval(_tasks(), seed=42, size=6, runner=mostly_boom)
+        assert r.skipped is True
+        assert "insufficient valid samples" in r.skip_reason
+        assert r.tasks_run == 2
 
     def test_errors_recorded(self):
         r = run_golden_eval(_tasks(), seed=42, size=3, runner=_boom)
@@ -167,8 +206,13 @@ class TestRunGoldenEval:
 class TestMakeGoldenReplay:
     def test_returns_metric(self):
         replay = make_golden_replay(_tasks(), seed=42, size=5, runner=_perfect)
-        m = replay(GenomeProposal.new("tool_set", {"tools": ["read"]}), HoldoutSet((), 1, "s"))
-        assert m > 0.8
+        out = replay(GenomeProposal.new("tool_set", {"tools": ["read"]}), HoldoutSet((), 1, "s"))
+        # D3: replay 返回 ReplayOutcome（能力 + 并列成本维度）
+        assert isinstance(out, ReplayOutcome)
+        assert out.metric > 0.8
+        # 无预算任务 → cost 无样本，但绝对 tokens 单列
+        assert out.cost is None
+        assert out.cost_samples == 0
 
     def test_skipped_raises_slot_unavailable(self):
         """无法验证必须走 escalate（抛 SlotUnavailable），不能静默返回 0。"""
@@ -179,6 +223,93 @@ class TestMakeGoldenReplay:
         replay = make_golden_replay(_tasks(), seed=42, size=5, runner=_boom)
         with pytest.raises(SlotUnavailable):
             replay(GenomeProposal.new("tool_set", {"tools": []}), HoldoutSet((), 1, "s"))
+
+
+class TestBaselineRollingMedian:
+    """交付 4：基线滚动中位数（C10 / 评审 F7 假阳性来源）。
+
+    旧实现 ``cached["value"]`` 无条件缓存单轮值 → 长驻进程里基线永不更新，
+    多轮改进后正常候选被读成"暴涨 → reward hacking"。
+    """
+
+    def _gw(self, version: str = "gv-0"):
+        class _Genome:
+            def current_version_id(self) -> str:
+                return version
+
+        class _Gw:
+            genome = _Genome()
+
+        return _Gw()
+
+    def _run(self, monkeypatch, values, *, skipped=False):
+        """把 rsi_wiring 里的 run_golden_eval 换成按序返回 fixed result。
+
+        ``values`` 依次消费；用完后重复最后一个（便于断言稳态）。
+        """
+        import agentnodes.interfaces.rsi_wiring as rw
+        import agentnodes.kernel.evolution.golden_eval as ge
+
+        seq = list(values)
+        calls = {"n": 0}
+
+        def fake_run(tasks, *, seed, size=ge.DEFAULT_SAMPLE_SIZE):
+            idx = min(calls["n"], len(seq) - 1)
+            calls["n"] += 1
+            value = seq[idx]
+            if value is None:
+                return ge.GoldenEvalResult(
+                    metric=0.0, tasks_run=0, skipped=True,
+                    skip_reason="insufficient valid samples", tasks_selected=10,
+                )
+            return ge.GoldenEvalResult(
+                metric=value, tasks_run=10, tasks_selected=10,
+                cost=0.8, cost_samples=5, tokens=1200.0, tokens_samples=5,
+            )
+
+        monkeypatch.setattr(ge, "run_golden_eval", fake_run)
+        baseline = rw._baseline_metric(self._gw(), tasks=[object()], seed=0)
+        return baseline, calls
+
+    def test_median_smooths_single_low_round(self, monkeypatch):
+        """单轮低分不得把基线拖低（均值会被拖，中位数不会）。"""
+        baseline, _ = self._run(monkeypatch, [1.0, 1.0, 0.2])
+        observed = [baseline().metric for _ in range(3)]
+        assert observed[:2] == [1.0, 1.0]
+        assert observed[2] == 1.0, "三轮 [1.0, 1.0, 0.2] 的中位数必须是 1.0"
+
+    def test_baseline_tracks_multi_round_improvement(self, monkeypatch):
+        """连续改进后基线跟着上移（旧实现的假阳性根因）。"""
+        baseline, _ = self._run(monkeypatch, [0.60, 0.70, 0.80, 0.90, 0.95])
+        values = [baseline().metric for _ in range(5)]
+        assert values[0] == 0.60
+        assert values[-1] == 0.80, "5 轮窗口的中位数应是中间观测，而非第一轮"
+        assert values[-1] > values[0]
+
+    def test_skipped_round_does_not_pollute_window(self, monkeypatch):
+        """skipped 轮次不进窗口：基线不得因无效轮次被覆盖。"""
+        baseline, _ = self._run(monkeypatch, [1.0, None, None])
+        assert baseline().metric == 1.0
+        assert baseline().metric == 1.0, "skipped 后仍应返回窗口内有效值，而非 None"
+
+    def test_no_valid_round_yet_returns_none(self, monkeypatch):
+        baseline, _ = self._run(monkeypatch, [None])
+        assert baseline() is None, "从无有效样本 → None（Gate 会 escalate）"
+
+    def test_window_carries_cost_and_tokens(self, monkeypatch):
+        """基线必须带 cost/tokens，否则成本闸在基线侧恒无样本 → 永跳过。"""
+        baseline, _ = self._run(monkeypatch, [0.9])
+        out = baseline()
+        assert isinstance(out, ReplayOutcome)
+        assert out.cost == pytest.approx(0.8)
+        assert out.cost_samples == 5
+        assert out.tokens == pytest.approx(1200.0)
+        assert out.tokens_samples == 5
+
+    def test_empty_tasks_returns_none(self, monkeypatch):
+        import agentnodes.interfaces.rsi_wiring as rw
+
+        assert rw._baseline_metric(self._gw(), tasks=[], seed=0)() is None
 
 
 class TestApplyProposal:

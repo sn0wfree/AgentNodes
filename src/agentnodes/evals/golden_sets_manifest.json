@@ -1,0 +1,20 @@
+{
+  "split_version": 1,
+  "rule": "sha256(task_id)[:8] as big-endian uint % 100 < 70 -> held-in",
+  "source": "golden_tasks_union.jsonl",
+  "total": 70,
+  "heldin": {
+    "count": 47,
+    "file": "golden_tasks_heldin.jsonl",
+    "ids_digest": "7583398c58431c7764328644d717c5125dd2f089b8cc45db249eca51aeb9c053",
+    "rows_digest": "87f950cdae81700984275e08c7931b713b6d611becbe39875db50e0906e7c4df"
+  },
+  "heldout": {
+    "count": 23,
+    "file": "golden_tasks_heldout.jsonl",
+    "location": "outside-repo (ensure_data_dir()/eval_heldout)",
+    "ids_digest": "2b8864d55684c63c972e061843fceea9ff367601e84ef6de4fa26c317c10631e",
+    "rows_digest": "7153a0315f67ee23e18c75dd45baced36c794a6c48c8339aa79a74d42d0aa78e"
+  },
+  "union_digest": "d260c55af176a2feaae4f3e9c5aa477fdea260b8a34da34799e324417c32088d"
+}

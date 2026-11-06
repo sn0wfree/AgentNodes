@@ -508,8 +508,11 @@ class TestDelete:
 
 class TestEnvOverride:
     def test_env_var_path(self, tmp_path: Path, monkeypatch):
+        # A5: canonical name; conftest's autouse fixture also sets it, so
+        # this test must override (monkeypatch does) rather than add a new
+        # legacy name that resolve_db_path would only use as fallback.
         custom = tmp_path / "custom_goals.db"
-        monkeypatch.setenv("QUANTNODES_RESEARCH_GOAL_DB_PATH", str(custom))
+        monkeypatch.setenv("AGENTNODES_GOAL_DB_PATH", str(custom))
         s = GoalStore()
         assert s.db_path == custom.expanduser().resolve()
 
