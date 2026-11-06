@@ -173,13 +173,13 @@ _DATA_DEPENDENT_REASON = (
 
 
 @pytest.mark.skip(reason=_DATA_DEPENDENT_REASON)
-def test_shadow_alpha_research_matches(tmp_path):
-    """alpha_research：4 个 llm/tool 节点串联，无 planner/evaluator。"""
+def test_shadow_plan_execute_approval_matches(tmp_path):
+    """plan_execute_approval：4 个 llm/tool 节点串联，无 planner/evaluator。"""
     old_events: list[str] = []
-    old = _run_old("alpha_research", tmp_path, loop_factory=FakeLoop(), events=old_events)
+    old = _run_old("plan_execute_approval", tmp_path, loop_factory=FakeLoop(), events=old_events)
 
     new_events: list[str] = []
-    new = _run_new("alpha_research", tmp_path, loop_factory=FakeLoop(), events=new_events)
+    new = _run_new("plan_execute_approval", tmp_path, loop_factory=FakeLoop(), events=new_events)
 
     assert sorted(old.pre_completed) == sorted(new.results)
     for node_id in old.pre_completed:
@@ -189,12 +189,12 @@ def test_shadow_alpha_research_matches(tmp_path):
 
 
 @pytest.mark.skip(reason=_DATA_DEPENDENT_REASON)
-def test_shadow_data_quality_audit_matches(tmp_path):
+def test_shadow_plan_execute_auto_matches(tmp_path):
     old_events: list[str] = []
-    old = _run_old("data_quality_audit", tmp_path,
+    old = _run_old("plan_execute_auto", tmp_path,
                    loop_factory=FakeLoop(), events=old_events)
     new_events: list[str] = []
-    new = _run_new("data_quality_audit", tmp_path,
+    new = _run_new("plan_execute_auto", tmp_path,
                    loop_factory=FakeLoop(), events=new_events)
 
     assert sorted(old.pre_completed) == sorted(new.results)
@@ -296,7 +296,7 @@ def test_shadow_gate_resume_starts_at_next_segment(tmp_path):
 
 def test_every_builtin_definition_compiles(tmp_path):
     """4 个出厂模板都能编译（构造期不抛 Unsupported）。"""
-    for name in ("alpha_research", "data_quality_audit",
+    for name in ("plan_execute_approval", "plan_execute_auto",
                  "plan_execute_approval", "plan_execute_auto"):
         definition = _definition(name, tmp_path)
         compiler = WorkflowGraphCompiler(

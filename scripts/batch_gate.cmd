@@ -60,37 +60,43 @@ echo ============================================================
 
 REM --- step 1/6: pytest collect directional anchor -------------------------
 echo.
-echo [1/6] pytest collect anchor
+echo [1/7] pytest collect anchor
 call :step_collect
 if errorlevel 1 set "FAILED=1"
 
 REM --- step 2/6: cross-layer import direction ------------------------------
 echo.
-echo [2/6] dangling imports + layer direction
+echo [2/7] dangling imports + layer direction
 call :step_dangling
 if errorlevel 1 set "FAILED=1"
 
 REM --- step 3/6: non-import path literals -----------------------------------
 echo.
-echo [3/6] path literals
+echo [3/7] path literals
 call :step_path_literals
 if errorlevel 1 set "FAILED=1"
 
 REM --- step 4/6: capability requires (W1, optional while landing) -----------
 echo.
-echo [4/6] capability requires
+echo [4/7] capability requires
 call :step_capability
 if errorlevel 1 set "FAILED=1"
 
 REM --- step 5/6: semantic placement (W1, optional while landing) ------------
 echo.
-echo [5/6] semantic placement
+echo [5/7] semantic placement
 call :step_semantics
 if errorlevel 1 set "FAILED=1"
 
-REM --- step 6/6: graphify symbolic audit (optional, second dimension) ------
+REM --- step 6/7: tool name references (batch 4c) ---------------------------
 echo.
-echo [6/6] graphify symbolic audit ^(optional^)
+echo [6/7] tool references
+call :step_tool_refs
+if errorlevel 1 set "FAILED=1"
+
+REM --- step 7/7: graphify symbolic audit (optional, second dimension) ------
+echo.
+echo [7/7] graphify symbolic audit ^(optional^)
 if "%WANT_GRAPH%"=="1" (
     call :step_graph
     if errorlevel 1 set "FAILED=1"
@@ -259,6 +265,22 @@ if errorlevel 1 (
     exit /b 1
 )
 echo   [OK] semantic placement: consistent
+exit /b 0
+
+
+:step_tool_refs
+if not exist "scripts\arch\check_tool_refs.py" (
+    echo   [SKIP] check_tool_refs.py not present
+    exit /b 0
+)
+set "LOG=%TEMP%\batch_gate_step6.log"
+"%PROBE_PI%" scripts\arch\check_tool_refs.py > "%LOG%" 2>&1
+if errorlevel 1 (
+    echo   [X] check_tool_refs.py: violations found
+    call :tail "%LOG%" 30
+    exit /b 1
+)
+echo   [OK] tool refs: consistent
 exit /b 0
 
 

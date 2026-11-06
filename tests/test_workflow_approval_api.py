@@ -158,13 +158,13 @@ class TestDefinitionsCRUD:
             assert resp.status_code == 200
             names = {d["name"] for d in resp.json()["definitions"]}
             assert "plan_execute_auto" in names
-            assert "alpha_research" in names
+            assert "plan_execute_approval" in names
 
     async def test_delete_builtin_rejected(self, api_env):
         app, _ = api_env
         async with _client(app) as client:
             resp = await client.delete(
-                "/api/goal/workflow/definitions/alpha_research",
+                "/api/goal/workflow/definitions/plan_execute_approval",
                 headers={"X-Admin-Token": "test-admin-token"},
             )
             assert resp.status_code == 422
@@ -173,24 +173,24 @@ class TestDefinitionsCRUD:
     async def test_copy_builtin_then_delete(self, api_env):
         app, tmp_path = api_env
         async with _client(app) as client:
-            resp = await client.post("/api/goal/workflow/definitions/alpha_research/copy")
+            resp = await client.post("/api/goal/workflow/definitions/plan_execute_approval/copy")
             assert resp.status_code == 200
-            assert user_dir(tmp_path).joinpath("alpha_research.json").is_file()
+            assert user_dir(tmp_path).joinpath("plan_execute_approval.json").is_file()
             # P5-5③: destructive delete needs the admin token
             resp = await client.delete(
-                "/api/goal/workflow/definitions/alpha_research",
+                "/api/goal/workflow/definitions/plan_execute_approval",
                 headers={"X-Admin-Token": "test-admin-token"},
             )
             assert resp.status_code == 200
-            assert resp.json()["deleted"] == "alpha_research"
+            assert resp.json()["deleted"] == "plan_execute_approval"
 
     async def test_delete_without_admin_token_rejected(self, api_env):
         """P5-5③: user-token DELETE of a user definition → 401/403
         (destructive writes need the admin token)."""
         app, _ = api_env
         async with _client(app) as client:
-            await client.post("/api/goal/workflow/definitions/alpha_research/copy")
-            resp = await client.delete("/api/goal/workflow/definitions/alpha_research")
+            await client.post("/api/goal/workflow/definitions/plan_execute_approval/copy")
+            resp = await client.delete("/api/goal/workflow/definitions/plan_execute_approval")
             assert resp.status_code in (401, 403)
 
     async def test_missing_definition_404(self, api_env):

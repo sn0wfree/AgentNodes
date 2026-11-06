@@ -45,8 +45,22 @@ PENDING_TOOLS: frozenset[str] = frozenset({
     "list_data_sources",
     "list_goals",
     "pattern_recognition",
+    "run_backtest",
     "search_symbol",
     "strategy_compare",
+})
+
+#: 本插件集引用、但当前环境**没有注册**的 python 执行器 / 评估器。
+#:
+#: 与 ``PENDING_TOOLS`` 同性质：``backtest.from_yaml`` / ``backtest.script`` /
+#: ``backtest.decide`` 三个 kind 随 ``apps/backtest`` 与
+#: ``apps/strategy_acceptance`` 一起移除（归档），对应的
+#: ``run_backtest_script`` / ``decide`` 两个实现不再注册。
+#:
+#: 恢复锚：``git show 00548ccd^:src/strategy_research/apps/...``
+PENDING_EXECUTORS: frozenset[str] = frozenset({
+    "decide",
+    "run_backtest_script",
 })
 
 _RESEARCHER_TOOLS = (
@@ -273,6 +287,8 @@ def _is_plugin_usable(plugin: AgentPlugin, have: set[str]) -> bool:
     # ② 执行器 / 评估器（非 LLM 插件）
     fn = plugin.python_function
     if fn:
+        if fn in PENDING_EXECUTORS:
+            return False  # 已登记待恢复，仍不可用
         from agentnodes.kernel.agent.exec_registry import (
             get_evaluator,
             get_python_executor,

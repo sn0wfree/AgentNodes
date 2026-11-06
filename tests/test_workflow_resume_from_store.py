@@ -51,13 +51,13 @@ def _definition(name: str, tmp_path: Path):
 def test_node_outputs_persisted_with_full_output(tmp_path):
     """跑一遍后，node_outputs 每行都有 output 列（R-B0 列接线生效）。
 
-    alpha_research 的 tool 节点在本机无数据源时回退为空输出，所以这里
+    plan_execute_approval 的 tool 节点在本机无数据源时回退为空输出，所以这里
     只断言「列存在且被写入」，不要求每行非空——那是数据依赖，不是
     本刀契约。
     """
     store = WorkflowStore(db_path=tmp_path / "w.db")
     runner = WorkflowRunner(
-        _definition("alpha_research", tmp_path), tmp_path, "目标",
+        _definition("plan_execute_approval", tmp_path), tmp_path, "目标",
         store=store, loop_factory=FakeLoop(),
     )
     run_id = runner.start()
@@ -71,28 +71,28 @@ def test_node_outputs_persisted_with_full_output(tmp_path):
 def test_resume_from_store_returns_none_for_unknown_run(tmp_path):
     store = WorkflowStore(db_path=tmp_path / "w.db")
     runner = WorkflowRunner.resume_from_store(
-        "no-such-run", _definition("alpha_research", tmp_path), tmp_path, "o",
+        "no-such-run", _definition("plan_execute_approval", tmp_path), tmp_path, "o",
         store=store,
     )
     assert runner is None
 
 
 @pytest.mark.skip(
-    reason="alpha_research 的 tool 节点依赖 check_data/run_backtest；其实现模块"
+    reason="plan_execute_approval 的 tool 节点依赖 check_data/run_backtest；其实现模块"
            "（apps/builtin_tools/{data,backtest}_tools.py）随批次 1 直删且无档案，"
            "run 永远 failed，无法构造「跑到终态」这一前置",
 )
 def test_resume_from_store_returns_none_for_terminal_run(tmp_path):
     store = WorkflowStore(db_path=tmp_path / "w.db")
     first = WorkflowRunner(
-        _definition("alpha_research", tmp_path), tmp_path, "目标",
+        _definition("plan_execute_approval", tmp_path), tmp_path, "目标",
         store=store, loop_factory=FakeLoop(),
     )
     run_id = first.start()
     assert first.status == "completed"
 
     resumed = WorkflowRunner.resume_from_store(
-        run_id, _definition("alpha_research", tmp_path), tmp_path, "目标",
+        run_id, _definition("plan_execute_approval", tmp_path), tmp_path, "目标",
         store=store,
     )
     assert resumed is None   # 终态不再续跑
@@ -101,7 +101,7 @@ def test_resume_from_store_returns_none_for_terminal_run(tmp_path):
 def test_resume_from_store_rebuilds_pre_completed(tmp_path):
     """模拟「跑到一半进程挂了」：手工写库，新实例应能重建已完成节点。"""
     store = WorkflowStore(db_path=tmp_path / "w.db")
-    definition = _definition("alpha_research", tmp_path)
+    definition = _definition("plan_execute_approval", tmp_path)
     store.create_run("r-crash", definition.name, "s", "目标", {})
 
     from agentnodes.kernel.swarm.runtime import AgentResult
@@ -124,29 +124,36 @@ def test_resume_from_store_rebuilds_pre_completed(tmp_path):
 
 
 def test_resume_from_store_continues_and_completes(tmp_path):
-    """重建后继续跑：已完成节点不重跑，其余补齐。"""
+    """重建后继续跑：已完成节点不重跑，其余补齐。
+
+    **批次 4c 后改用通用模板**：原用 ``plan_execute_auto`` 的量化变体
+    （已迁 ``apps/agent_plugins/quant_templates/``）。这里用
+    ``plan_execute_auto`` 本身 —— 它是**无审批**的通用编排模板
+    （planner + 动态段），正好符合本测试「一路跑到 completed」的前提。
+    """
     store = WorkflowStore(db_path=tmp_path / "w.db")
-    definition = _definition("data_quality_audit", tmp_path)
+    definition = _definition("plan_execute_auto", tmp_path)
     store.create_run("r1", definition.name, "s", "目标", {})
 
     from agentnodes.kernel.swarm.runtime import AgentResult
     store.save_node_output("r1", 0, AgentResult(
-        agent_id="check", status=AgentStatus.SUCCESS,
-        output="checked", summary="ok",
+        agent_id="planner", status=AgentStatus.SUCCESS,
+        output="planned", summary="ok",
     ))
     store.update_run("r1", status="running")
 
     runner = WorkflowRunner.resume_from_store(
         "r1", definition, tmp_path, "目标", store=store,
-        loop_factory=FakeLoop(),
+        loop_factory=FakeLoop(planner=PLAN_2),
     )
     assert runner is not None
     runner._run_loop()
 
     assert runner.status == "completed"
-    # check 保留旧输出（未重跑），diagnose 已执行
-    assert runner.pre_completed["check"].output == "checked"
-    assert "diagnose" in runner.pre_completed
+    # planner 保留旧输出（未重跑）
+    assert runner.pre_completed["planner"].output == "planned"
+    # 其余动态段节点已执行
+    assert len(runner.pre_completed) > 1
 
 
 def test_awaiting_run_survives_instance_loss(tmp_path):

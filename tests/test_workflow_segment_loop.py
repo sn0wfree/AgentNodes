@@ -256,12 +256,29 @@ class TestApprovalFlow:
 
 
 class TestStaticFlow:
-    def test_alpha_research_runs_through(self, tmp_path: Path):
+    """静态流水线（无 planner/evaluator）的运行语义。
+
+    **批次 4c 后本条链路的模板已迁 L2**：``alpha_research`` 与
+    ``data_quality_audit`` 引用的 ``check_data`` / ``run_backtest`` /
+    ``factor_analysis`` 等工具实现随批次 1 删除，两个模板已迁到
+    ``apps/agent_plugins/quant_templates/`` 作为第三步素材。
+
+    这两个测试验证的是**那两个具体模板的节点拓扑与执行语义**，
+    不是通用机制——模板不在 kernel 的 builtin 集里了，测试也不该指向
+    kernel 的 builtin 加载器。第三步恢复工具包时，它们应随模板一起
+    迁到插件域的测试里。
+    """
+
+    @pytest.mark.skip(
+        reason="模板已迁 apps/agent_plugins/quant_templates/（批次 4c）；"
+               "本测试验证的是该模板的具体节点拓扑，第三步恢复工具包后随模板迁回"
+    )
+    def test_plan_execute_approval_runs_through(self, tmp_path: Path):
         from agentnodes.kernel.workflow.node_types import NodeExecutors
         NodeExecutors.reset()
         NodeExecutors.register("run_backtest", lambda **kw: {"summary": "回测完成", "sharpe": 0.9})
         NodeExecutors.register("check_data", lambda **kw: {"summary": "数据 OK"})
-        runner = make_runner("alpha_research", tmp_path,
+        runner = make_runner("plan_execute_approval", tmp_path,
                              loop_factory=FakeLoop(planner=PLAN_2))
         runner.start()
         assert runner.status == "completed"
@@ -270,11 +287,15 @@ class TestStaticFlow:
         assert "backtest" in runner.pre_completed
         assert "evaluator" in runner.pre_completed
 
-    def test_data_quality_audit(self, tmp_path: Path):
+    @pytest.mark.skip(
+        reason="模板已迁 apps/agent_plugins/quant_templates/（批次 4c）；"
+               "本测试验证的是该模板的具体节点集合，第三步恢复工具包后随模板迁回"
+    )
+    def test_plan_execute_auto(self, tmp_path: Path):
         from agentnodes.kernel.workflow.node_types import NodeExecutors
         NodeExecutors.reset()
         NodeExecutors.register("check_data", lambda **kw: {"summary": "数据 OK"})
-        runner = make_runner("data_quality_audit", tmp_path,
+        runner = make_runner("plan_execute_auto", tmp_path,
                              loop_factory=FakeLoop(planner=PLAN_2))
         runner.start()
         assert runner.status == "completed"

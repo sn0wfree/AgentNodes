@@ -23,6 +23,14 @@ if TYPE_CHECKING:
     from agentnodes.kernel.agent.plugin import AgentPlugin
     from agentnodes.kernel.agent.registry import AgentPluginRegistry
 
+#: 本包内提供插件集的模块名（不含本 ``__init__``）。
+#:
+#: **为什么要显式列**：``scripts/arch/check_tool_refs.py`` 需要扫遍所有
+#: 插件模块做悬空引用检查。用 ``pkgutil.iter_modules`` 自动发现也能做到，
+#: 但那会把任何放错位置的临时文件也当成插件集扫——显式清单让「本包有
+#: 哪几个插件集」成为可审计的事实，新增插件集时必须在这里登记。
+__all_plugin_modules__: tuple[str, ...] = ("quant",)
+
 
 def all_available_plugins() -> tuple["AgentPlugin", ...]:
     """返回当前环境下**工具齐备**的全部插件（跨插件集汇总）。
@@ -49,4 +57,4 @@ def populate(registry: "AgentPluginRegistry") -> int:
     return len(plugins)
 
 
-__all__ = ["all_available_plugins", "populate"]
+__all__ = ["__all_plugin_modules__", "all_available_plugins", "populate"]
