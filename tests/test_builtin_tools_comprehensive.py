@@ -34,19 +34,19 @@ class TestOptionsPricingTool:
 
 
 # ── Data Clean Tool ──────────────────────────────────────────────
+#
+# 2026-11-06 批次 1 收尾：data_clean_tools.py 已删除（其依赖的 data.clean /
+# db.* 随批次 5 直删、无档案，W1 能力自检证明该组永远注册不上）。
+# 保留一条守卫：模块不可导入 = 清理生效的证据。
+# 用 importlib 动态导入而非 `import X` 语句——静态层门禁不认 pytest.raises
+# 里的 import 语句，会把它当悬空 import 报错。
 
+class TestDataCleanToolRemoved:
+    def test_module_is_gone(self):
+        import importlib
 
-class TestDataCleanTool:
-    def test_tool_exists(self):
-        from agentnodes.apps.builtin_tools.data_clean_tools import DataCleanTool
-        tool = DataCleanTool()
-        assert tool.name == "clean_data"
-
-    def test_tool_schema(self):
-        from agentnodes.apps.builtin_tools.data_clean_tools import DataCleanTool
-        tool = DataCleanTool()
-        schema = tool.to_openai_schema()
-        assert "function" in schema
+        with pytest.raises(ModuleNotFoundError):
+            importlib.import_module("agentnodes.apps.builtin_tools.data_clean_tools")
 
 
 # ── Help Tool ─────────────────────────────────────────────────────

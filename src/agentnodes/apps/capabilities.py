@@ -86,80 +86,24 @@ logger = logging.getLogger(__name__)
 # **契约**：每个工厂返回 ``list[BaseTool]``（一个模块可产多个工具）。
 # 工厂内部 import 在本层（apps → kernel 方向合法），且失败时由 kernel 侧
 # 记 warning 并跳过该组——业务能力缺失不阻断框架启动。
-
-
-def _tool_factor(registry: "CapabilityRegistry") -> Any:
-    from agentnodes.apps.builtin_tools.factor_tools import (
-        ComputeFactorTool,
-        FactorAnalysisTool,
-        FactorCrossSectionalAnalysis,
-        FactorICDecay,
-        FactorQuintileReturns,
-        FactorTurnover,
-        PatternRecognitionTool,
-    )
-
-    return [
-        ComputeFactorTool(),
-        FactorAnalysisTool(),
-        PatternRecognitionTool(),
-        FactorCrossSectionalAnalysis(),
-        FactorQuintileReturns(),
-        FactorICDecay(),
-        FactorTurnover(),
-    ]
-
-
-def _tool_data(registry: "CapabilityRegistry") -> Any:
-    from agentnodes.apps.builtin_tools.data_tools import (
-        CheckDataTool,
-        GetMarketDataTool,
-        ImportDataTool,
-        ListDataSourcesTool,
-        SearchSymbolTool,
-    )
-
-    return [
-        GetMarketDataTool(),
-        ListDataSourcesTool(),
-        SearchSymbolTool(),
-        ImportDataTool(),
-        CheckDataTool(),
-    ]
-
-
-def _tool_backtest(registry: "CapabilityRegistry") -> Any:
-    from agentnodes.apps.builtin_tools.backtest_tools import (
-        ConfigLoadStep,
-        DataPrepareStep,
-        DataReadinessStep,
-        EngineRunStep,
-        RunBacktestTool,
-    )
-
-    return [
-        RunBacktestTool(),
-        ConfigLoadStep(),
-        DataPrepareStep(),
-        DataReadinessStep(),
-        EngineRunStep(),
-    ]
-
-
-def _tool_backtest_analysis(registry: "CapabilityRegistry") -> Any:
-    from agentnodes.apps.builtin_tools.backtest_analysis_tools import (
-        BenchmarkComparison,
-        DrawdownAnalysis,
-        StrategyCompare,
-    )
-
-    return [StrategyCompare(), DrawdownAnalysis(), BenchmarkComparison()]
-
-
-def _tool_data_clean(registry: "CapabilityRegistry") -> Any:
-    from agentnodes.apps.builtin_tools.data_clean_tools import DataCleanTool
-
-    return [DataCleanTool()]
+#
+# **2026-11-06 W1 后清理（批次 1 收尾）**：`tool.factor` / `tool.data` /
+# `tool.backtest` / `tool.backtest_analysis` / `tool.data_clean` 五组工具
+# 的**实现模块已删除**（共 5 文件 3,091 行）。理由：它们依赖的
+# `db.* / factor.* / datasource.* / data.* / config.runner / backtest.from_yaml`
+# 全部随批次 4/5 直删（无档案），W1 能力自检证明这五组**永远注册不上**——
+# 留着只是「注册不上来的壳」，与其让声明表维护 5 个永远 skip 的条目，
+# 不如删掉。
+#
+# **考古锚（万一将来要恢复）**：
+#   - 被删模块最后存在的 commit：`5ebc7a12`
+#     `git show 5ebc7a12:src/agentnodes/apps/builtin_tools/factor_tools.py`
+#   - 它们依赖的底层能力（批次 4/5 直删，无 golden 档案）：
+#     回测/验证域 `git show 00548ccd^:src/strategy_research/apps/...`
+#     数据域     `git show cd1e79d9^:src/strategy_research/apps/...`
+#
+# **`tool.goal` 保留**：R1 会恢复 apps/goal，届时 goal.* kind 就位后该组
+# 自动注册（这正是自检机制的预期行为，不是遗留缺陷）。
 
 
 def _tool_goal(registry: "CapabilityRegistry") -> Any:
@@ -213,58 +157,11 @@ CAPABILITIES: dict[str, tuple[Any, frozenset[str]]] = {
     # Ticket/Assignment 迁到 kernel/orchestration，不再经 registry
     #
     # ── 业务内置工具（批次 6：原住 L3 builtin_tools，现归位 L2）──────────
-    # W1 起 requires 显式声明：5 个工具组依赖的 db.* / datasource.* /
-    # data.* / config.runner 均已随批次 4/5 删除 → **全部过不了自检**，
-    # 装配期整组不注册（工具表 44 → 18）。这是 D2（不注册 + WARN）的
-    # 首次真实生效，不是回归。
-    "tool.factor": (
-        _tool_factor,
-        # factor_tools.py 里除 db.get_connection 外还 resolve 三个因子能力
-        # （compute / compute_error / long_to_wide）——全部随批次 5 删除。
-        frozenset({
-            "db.get_connection",
-            "factor.compute",
-            "factor.compute_error",
-            "factor.long_to_wide",
-        }),
-    ),
-    "tool.data": (
-        _tool_data,
-        frozenset({
-            "datasource.base",
-            "datasource.registry",
-            "datasource.detect_market",
-            "db.get_connection",
-            "db.init_db",
-            "db.save_ohlcv_to_db",
-            "config.runner",
-            "data.readiness",
-        }),
-    ),
-    "tool.backtest": (
-        _tool_backtest,
-        # 5 个工具里 4 个是可组合 Step，各自在 execute 里 resolve：
-        #   ConfigLoadStep → config.runner
-        #   DataPrepareStep → config.runner
-        #   DataReadinessStep → data.readiness
-        #   EngineRunStep → backtest.from_yaml
-        # RunBacktestTool 本身只调 bg_tools（无 capability 依赖）。
-        # 依赖全缺 → 整组跳过（这是 W1 首次真实生效的证据）。
-        frozenset({
-            "config.runner",
-            "data.readiness",
-            "backtest.from_yaml",
-        }),
-    ),
-    "tool.backtest_analysis": (
-        _tool_backtest_analysis,
-        frozenset({"db.get_connection"}),
-    ),
-    "tool.data_clean": (
-        _tool_data_clean,
-        frozenset({"data.clean", "db.get_connection", "db.save_ohlcv_to_db"}),
-    ),
-    # goal：五个工具全部依赖台账/models/context（R1 恢复后才有实现）
+    # **2026-11-06 批次 1 收尾**：tool.factor / tool.data / tool.backtest /
+    # tool.backtest_analysis / tool.data_clean 五组的**实现模块已删除**
+    # （5 文件 3,091 行）。W1 证明它们依赖的能力全部随批次 4/5 直删，
+    # 永远注册不上——留着只是永远 skip 的壳。考古锚见上方模块注释。
+    # 只保留 tool.goal：R1 恢复 apps/goal 后其 goal.* kind 就位即自动注册。
     "tool.goal": (
         _tool_goal,
         frozenset({"goal.store", "goal.models", "goal.context"}),

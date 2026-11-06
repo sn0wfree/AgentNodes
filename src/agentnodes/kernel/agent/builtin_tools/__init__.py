@@ -6,15 +6,20 @@
     options_tools         期权定价: options_pricing
     help_tools            工具文档: tool_help
 
-**业务工具已归位 L2（2026-11-05 批次 6）**：backtest_tools / factor_tools /
-data_tools / goal_tools / backtest_analysis_tools / data_clean_tools 六个模块
-原本住在本目录，但它们调用的全是业务能力（factor.compute / db.* / backtest.*），
-属「L3 里的 L2」。已 git mv 到 ``apps/builtin_tools/``，由
-``apps/capabilities.py`` 注册成 ``tool.*`` kind，本中枢通过
-:func:`_register_business_tools` 从 registry 拉取。
+**业务工具已归位 L2（2026-11-05 批次 6）**：原本住在本目录的六个业务工具
+模块（调用的全是业务能力 factor.compute / db.* / backtest.*，属「L3 里的 L2」）
+已 git mv 到 ``apps/builtin_tools/``，由 ``apps/capabilities.py`` 注册成
+``tool.*`` kind，本中枢通过 :func:`_register_business_tools` 从 registry 拉取。
 
-降级语义：kind 缺失时静默跳过（``logger.debug`` 一行），工具不出现在
-registry 里——比注册一个「调用必然失败」的工具好。
+**2026-11-06 批次 1 收尾**：其中 5 个模块（factor_tools / data_tools /
+backtest_tools / backtest_analysis_tools / data_clean_tools）已删除——它们
+依赖的能力全随批次 4/5 直删，W1 能力自检证明永远注册不上。只剩
+``goal_tools``（R1 恢复 apps/goal 后可用）。考古锚见
+``apps/capabilities.py`` 的模块注释。
+
+降级语义（W1 起）：kind 缺失由 ``CapabilityRegistry`` 在**注册期**整组拒绝
+（不再注册壳），并 emit ``capability.skipped``（WARNING 级）。本中枢在这里
+补一层 debug 日志，属于双保险而非唯一防线。
 """
 from __future__ import annotations
 
@@ -33,13 +38,12 @@ logger = logging.getLogger(__name__)
 #: 业务工具 kind → 在 ToolRegistry 里的注册方式。
 #:
 #: 每个 kind 的工厂返回 ``list[BaseTool]``（一个模块可以产多个工具）。
-#: 批次 6 之后这些实现住在 ``apps/builtin_tools/``，由 apps 侧注册。
+#: 实现住在 ``apps/builtin_tools/``，由 apps 侧注册。
+#:
+#: **2026-11-06 批次 1 收尾**：只剩 ``tool.goal``。其余五组（factor / data /
+#: backtest / backtest_analysis / data_clean）的实现模块已删除——依赖的
+#: 能力全随批次 4/5 直删，W1 自检证明永远注册不上。
 BUSINESS_TOOL_KINDS = (
-    "tool.factor",
-    "tool.data",
-    "tool.backtest",
-    "tool.backtest_analysis",
-    "tool.data_clean",
     "tool.goal",
 )
 
