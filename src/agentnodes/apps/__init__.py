@@ -48,10 +48,11 @@ def _register_capabilities(force: bool = False) -> None:
         registry = get_default_registry()
         from .capabilities import CAPABILITIES
 
-        for kind, factory in CAPABILITIES.items():
+        for kind, entry in CAPABILITIES.items():
             if kind in registry:  # 幂等：已注册则跳过
                 continue
-            registry.register(kind, factory)
+            factory, reqs = entry if isinstance(entry, tuple) else (entry, ())
+            registry.register(kind, factory, requires=reqs)
         _registered_generation = generation
     except Exception:  # noqa: BLE001 —— 注册失败不阻断业务包 import
         import logging
@@ -67,13 +68,18 @@ def _populate(registry) -> None:
     与 ``_register_capabilities()`` 的差别只在**触发方式**：后者是 import
     副作用（模块已缓存时不会重跑），本函数由 kernel 在 ``get_default_registry()``
     新建表时主动调用。两者填的是同一份 ``CAPABILITIES``。
+
+    W1 起带 ``requires`` 声明逐条注册；缺依赖的 kind 由 registry 自行跳过
+    （记入跳过集 + ``capability.skipped``），本函数不重复判定。
+    两条路径（import 副作用 / 新建表填充）共用同一份声明，避免口径漂移。
     """
     from .capabilities import CAPABILITIES
 
-    for kind, factory in CAPABILITIES.items():
+    for kind, entry in CAPABILITIES.items():
         if kind in registry:
             continue
-        registry.register(kind, factory)
+        factory, reqs = entry if isinstance(entry, tuple) else (entry, ())
+        registry.register(kind, factory, requires=reqs)
 
 
 _register_capabilities()

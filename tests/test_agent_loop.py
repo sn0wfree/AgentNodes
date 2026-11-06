@@ -484,9 +484,12 @@ class TestAllowedTools:
         )
         assert loop.registry.get("read") is not None
         assert loop.registry.get("write") is not None
-        # 批次 6：业务工具归位 L2 后经 CapabilityRegistry 重新注册。
-        # `allowed_tools=None` 语义是「全部可用」，因此 run_backtest 在列。
-        assert loop.registry.get("run_backtest") is not None
+        # W1（2026-11-06 · 理念三能力自检）：业务工具依赖的 db.* / config.runner
+        # / backtest.from_yaml 等能力已随批次 4/5 删除，`tool.backtest` 组在
+        # 装配期整组不注册。`allowed_tools=None` 语义（「全部可用」）不变——
+        # 只是「全部」现在不含注册不上来的壳。旧断言 `run_backtest is not None`
+        # 正是 W1 要杀死的假象（扫描 §4：注册成功、调用必败）。
+        assert loop.registry.get("run_backtest") is None
 
 
 # ── Readonly mode ────────────────────────────────────────────────────
@@ -527,9 +530,9 @@ class TestReadonly:
         assert loop.registry.get("read") is not None
         assert loop.registry.get("list_history") is not None
         assert loop.registry.get("git_diff") is not None
-        # 批次 6：compute_factor 随业务工具归位 L2 后重新注册。它是只读工具
-        # （算因子不改工作区），readonly 模式应保留。
-        assert loop.registry.get("compute_factor") is not None
+        # W1：compute_factor 属 tool.factor 组，依赖 db.get_connection（批次 5 已删）
+        # → 装配期整组不注册。readonly 过滤逻辑本身仍由上面三个只读框架工具覆盖。
+        assert loop.registry.get("compute_factor") is None
 
     def test_readonly_false_keeps_all(self, workspace):
         """readonly=False 时全部工具保留"""

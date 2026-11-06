@@ -1,0 +1,5 @@
+{
+  "min_collected": 6158,
+  "errors_expected": 5,
+  "note": "errors 全部为 playwright 缺失（test_e2e_chat / test_e2e_comprehensive / test_e2e_persist / test_webui_catalog / test_webui_visual）。方向性锚：collected 只许涨不许跌。W1 后实测 6158/5 不变。"
+}

@@ -182,39 +182,105 @@ def _tool_goal(registry: "CapabilityRegistry") -> Any:
 
 # ── 注册表 ───────────────────────────────────────────────────────────
 
-#: kind → factory。kind 命名 = ``<域>.<能力>``，与调用点的语义一一对应。
-CAPABILITIES: dict[str, Callable[["CapabilityRegistry"], Any]] = {
-    # db
-    # factor
-    # data source
+#: kind → (factory, requires)。kind 命名 = ``<域>.<能力>``。
+#:
+#: **requires（W1 能力自检，2026-11-06 · 框架 v1.1 理念三）**：本 kind
+#: **运行时**依赖的其他 kind。装配期缺任一依赖 → 整组不注册 +
+#: ``capability.skipped`` 事件（WARNING 级，绝不静默）——绝不注册一个
+#: 「包装存在、调用必败」的壳（扫描 §4 的 26 个幽灵工具就是这么来的）。
+#:
+#: **口径 = factory 执行期闭包**（拍板包 B）：只算 factory 与它 import 的
+#: apps 内模块**在函数/方法体里**调用的 resolve 字面量。归档 goal 的
+#: store↔context 方法级双向 import 属已接受例外（不在本表恢复期内）。
+#:
+#: **静态校验**：`scripts/arch/check_capability_requires.py` 对实现模块集
+#: 做 AST 双向差集（欠声明 / 过声明都 FAIL）。声明改了必须同步跑它。
+CAPABILITIES: dict[str, tuple[Any, frozenset[str]]] = {
     # ── db / factor / datasource / data.* 共 12 个 kind 已随批次 5 移除 ──
     # （2026-11-05）：db.get_connection / db.init_db / db.save_ohlcv_to_db /
     # db.module / factor.compute / factor.compute_error / factor.long_to_wide /
     # datasource.registry / datasource.base / datasource.detect_market /
     # data.readiness / data.clean。
     # 连带删除 apps/{data_source,tools,compute_factor,db,data_import,
-    # data_readiness,preflight} 共 22 文件 6,822 行，归档 testcase/golden/apps/。
+    # data_readiness,preflight} 共 22 文件 6,822 行，**直删无档案**（见扫描 §0；
+    # 源码仅在 git 历史 cd1e79d9^）。
     # backtest / config.runner 四个 kind 已随批次 4 移除（2026-11-05）：
     # backtest.from_yaml / backtest.script / backtest.decide / config.runner
+    # （同样直删无档案，源码在 00548ccd^）
     # goal / hypothesis 六个 kind 已随 apps/goal、apps/hypothesis 移除
-    # （2026-11-04 做减法批次 2）
-    # study 六个 kind 已随 apps/study 移除（2026-11-05 做减法批次 3）；
+    # （2026-11-04 批次 2；这两批**有**档案：testcase/golden/apps/）
+    # study 六个 kind 已随 apps/study 移除（2026-11-05 批次 3，直删无档案）；
     # Ticket/Assignment 迁到 kernel/orchestration，不再经 registry
-    # 业务内置工具（批次 6：原住 L3 builtin_tools，现归位 L2）
-    "tool.factor": _tool_factor,
-    "tool.data": _tool_data,
-    "tool.backtest": _tool_backtest,
-    "tool.backtest_analysis": _tool_backtest_analysis,
-    "tool.data_clean": _tool_data_clean,
-    "tool.goal": _tool_goal,
+    #
+    # ── 业务内置工具（批次 6：原住 L3 builtin_tools，现归位 L2）──────────
+    # W1 起 requires 显式声明：5 个工具组依赖的 db.* / datasource.* /
+    # data.* / config.runner 均已随批次 4/5 删除 → **全部过不了自检**，
+    # 装配期整组不注册（工具表 44 → 18）。这是 D2（不注册 + WARN）的
+    # 首次真实生效，不是回归。
+    "tool.factor": (
+        _tool_factor,
+        # factor_tools.py 里除 db.get_connection 外还 resolve 三个因子能力
+        # （compute / compute_error / long_to_wide）——全部随批次 5 删除。
+        frozenset({
+            "db.get_connection",
+            "factor.compute",
+            "factor.compute_error",
+            "factor.long_to_wide",
+        }),
+    ),
+    "tool.data": (
+        _tool_data,
+        frozenset({
+            "datasource.base",
+            "datasource.registry",
+            "datasource.detect_market",
+            "db.get_connection",
+            "db.init_db",
+            "db.save_ohlcv_to_db",
+            "config.runner",
+            "data.readiness",
+        }),
+    ),
+    "tool.backtest": (
+        _tool_backtest,
+        # 5 个工具里 4 个是可组合 Step，各自在 execute 里 resolve：
+        #   ConfigLoadStep → config.runner
+        #   DataPrepareStep → config.runner
+        #   DataReadinessStep → data.readiness
+        #   EngineRunStep → backtest.from_yaml
+        # RunBacktestTool 本身只调 bg_tools（无 capability 依赖）。
+        # 依赖全缺 → 整组跳过（这是 W1 首次真实生效的证据）。
+        frozenset({
+            "config.runner",
+            "data.readiness",
+            "backtest.from_yaml",
+        }),
+    ),
+    "tool.backtest_analysis": (
+        _tool_backtest_analysis,
+        frozenset({"db.get_connection"}),
+    ),
+    "tool.data_clean": (
+        _tool_data_clean,
+        frozenset({"data.clean", "db.get_connection", "db.save_ohlcv_to_db"}),
+    ),
+    # goal：五个工具全部依赖台账/models/context（R1 恢复后才有实现）
+    "tool.goal": (
+        _tool_goal,
+        frozenset({"goal.store", "goal.models", "goal.context"}),
+    ),
 }
 
 
 def register_capabilities(registry: "CapabilityRegistry") -> None:
     """Register every business capability on ``registry``.
 
-    装配期调用一次。重复调用会因 ``register_many`` 的 fail-fast 抛错——
-    装配路径必须幂等的是调用方，不是 registry。
+    装配期调用一次。``register_many`` 是**两阶段**（先收集全清单、再算
+    可注册闭包、最后提交），因此结果与 import/声明顺序无关；缺依赖的
+    kind 记入跳过集 + emit ``capability.skipped``，不影响其余 kind。
+
+    重复调用会因 ``register_many`` 的 fail-fast 抛错——装配路径必须幂等的
+    是调用方，不是 registry。
     """
     registry.register_many(dict(CAPABILITIES))
 

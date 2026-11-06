@@ -182,10 +182,11 @@ class TestBuildDefaultRegistry:
     def test_contains_analysis_tools(self):
         r = build_default_registry()
         assert r.get("options_pricing") is not None
-        # 批次 6：业务工具归位 L2（apps/builtin_tools/）后经 CapabilityRegistry
-        # 重新注册，因此 clean_data 又出现在 registry 里。它们的底层能力
-        # （factor.compute / db.* / backtest.*）仍缺失，调用时走降级路径。
-        assert r.get("clean_data") is not None
+        # W1（2026-11-06 · 理念三能力自检）：`tool.data_clean` 依赖
+        # data.clean / db.*（批次 4/5 已删）→ 装配期整组不注册。
+        # 旧断言 `clean_data is not None` 记录的正是「注册成功、调用必败」的
+        # 假象（扫描 §4）。分析类工具里真正无依赖依赖的只有 options_pricing。
+        assert r.get("clean_data") is None
 
     def test_tool_count(self):
         r = build_default_registry()

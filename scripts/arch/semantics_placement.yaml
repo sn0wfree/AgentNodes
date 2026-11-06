@@ -1,0 +1,137 @@
+# semantics_placement.yaml — 语义轴「构件→层」静态门禁的机器可读落位表
+# （框架 v1.1 §3.5-D；条目清单 = §2.2 落位表全量收录，一列不许少）
+#
+# 判定器：同目录 check_semantics_placement.py。物理层计算复用 layer_matrix.py
+# （唯一事实源），本表只声明「语义构件 → 允许物理层集合」——语义落位从散文
+# 变成可断言。
+#
+# 数据模型（每条 entry）：
+#   name           构件名（§2.2 落位表原名）
+#   semantic       G | E | P | barrier | graph
+#                    G = 基因组/变异   E = 表达/编译   P = 表型/裁决
+#                    barrier = 屏障    graph = 执行图（用户裁定：执行图属 Graph Engineering）
+#   files          该构件的主文件（相对仓库根，正斜杠）
+#   allowed_layers 允许的物理层集合（L1-L4，layer_matrix 口径）；
+#                  [external] = 进程外构件，断言**不在** src/agentnodes/ 包内
+#                  （不得与 L1-L4 混用；external 不断言文件存在——占位路径允许暂缺）
+#   evidence       出处
+#
+# 非代码文件（.jsonl 等）非 py 无层可言：check 只断言路径存在。
+# 全量实跑出现 FAIL 时：先核对是落位表与仓库漂移还是代码搬错——不要改数据迁就代码。
+
+# ── 语义构件 ──────────────────────────────────────────────────────────
+
+- name: Tier 0 冻结快照
+  semantic: barrier          # 屏障：进程内只读快照
+  files:
+    - src/agentnodes/interfaces/tier0_snapshot.py
+  allowed_layers: [L1]
+  evidence: framework v1.1 §2.2
+
+- name: 基因组版本链
+  semantic: G
+  files:
+    - src/agentnodes/kernel/orchestration/genome_version.py
+  allowed_layers: [L3]
+  evidence: framework v1.1 §2.2
+
+- name: 提案语法+白名单
+  semantic: G
+  files:
+    - src/agentnodes/kernel/evolution/genome_proposals.py
+  allowed_layers: [L3]
+  evidence: framework v1.1 §2.2
+
+- name: 提案生成
+  semantic: G
+  files:
+    - src/agentnodes/kernel/evolution/default_policy.py
+  allowed_layers: [L3]
+  evidence: framework v1.1 §2.2
+
+- name: 选择性转录
+  semantic: E
+  files:                     # 两文件都断言
+    - src/agentnodes/kernel/evolution/skill_memory.py
+    - src/agentnodes/kernel/agent/harness_resolver.py
+  allowed_layers: [L3]
+  evidence: framework v1.1 §2.2
+
+- name: 隔离回放
+  semantic: E
+  files:
+    - src/agentnodes/kernel/evolution/isolated_replay.py
+  allowed_layers: [L3]
+  evidence: framework v1.1 §2.2
+
+- name: 冻结基准+scorecard
+  semantic: P
+  files:
+    - src/agentnodes/evals/scorecard.py
+    - src/agentnodes/evals/golden_tasks.jsonl   # 非 py：只断言路径存在
+  allowed_layers: [L3]
+  evidence: framework v1.1 §2.2
+
+- name: 执行轨迹
+  semantic: P
+  files:
+    - src/agentnodes/kernel/events/event_v2.py
+  allowed_layers: [L3]
+  evidence: framework v1.1 §2.2
+
+# ── 执行图（用户裁定：执行图属 Graph Engineering，semantic=graph） ────
+
+- name: 执行图·引擎
+  semantic: graph
+  files:
+    - src/agentnodes/kernel/runtimes/graph_engine.py
+  allowed_layers: [L3]
+  evidence: framework v1.1 §2.2
+
+- name: 执行图·swarm 编译器
+  semantic: graph
+  files:
+    - src/agentnodes/kernel/swarm/runtime.py
+  allowed_layers: [L3]
+  evidence: framework v1.1 §2.2
+
+- name: 执行图·workflow 编译器
+  semantic: graph
+  files:
+    - src/agentnodes/kernel/workflow/graph_compiler.py
+  allowed_layers: [L3]
+  evidence: framework v1.1 §2.2
+
+# ── 屏障 ─────────────────────────────────────────────────────────────
+
+- name: 屏障·Tier0 三重冻结
+  semantic: barrier          # 提案 → 校验门 → 转录，三道闸同在 evolution
+  files:
+    - src/agentnodes/kernel/evolution/genome_proposals.py
+    - src/agentnodes/kernel/evolution/validation_gate.py
+    - src/agentnodes/kernel/evolution/skill_memory.py
+  allowed_layers: [L3]
+  evidence: framework v1.1 §2.2
+
+- name: 屏障·物理门禁
+  semantic: barrier          # 门禁本体在进程外（scripts/arch/）
+  files:
+    - scripts/arch/layer_matrix.py
+  allowed_layers: [external]
+  evidence: framework v1.1 §2.2（物理轴 AST 层门禁唯一事实源，进程外）
+
+- name: 屏障·评估指纹
+  semantic: barrier          # W4 未建：README.md 为占位路径，落地后替换
+  files:
+    - scripts/arch/README.md
+  allowed_layers: [external]
+  evidence: framework v1.1 §2.2（W4 占位条目——评估指纹门禁未建，external 不断言存在）
+
+# ── 组装根 ───────────────────────────────────────────────────────────
+
+- name: 循环驱动
+  semantic: E
+  files:
+    - src/agentnodes/interfaces/rsi_wiring.py
+  allowed_layers: [L1, L3]   # 组装根合法跨两层的现成例子
+  evidence: framework v1.1 §2.2（组装根合法跨 L1/L3 两层）

@@ -86,7 +86,10 @@ class TestMCPServerDefaultTools:
         tool_names = {t["name"] for t in server.list_tools()}
         assert "list_skills" in tool_names
         assert "skill" in tool_names
-        assert "run_backtest" in tool_names
+        # W1（2026-11-06 · 理念三能力自检）：run_backtest 属 tool.backtest 组，
+        # 依赖 config.runner / data.readiness / backtest.from_yaml（批次 4 已删）
+        # → 装配期整组不注册，MCP 面同步消失（server.py 的 try/except 降级路径）。
+        assert "run_backtest" not in tool_names
         assert "search_memory" in tool_names
         assert "list_sessions" in tool_names
         assert "list_swarm_presets" in tool_names
