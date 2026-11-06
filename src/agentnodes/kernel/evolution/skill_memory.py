@@ -53,6 +53,60 @@ class Tier1Source(Protocol):
         ...
 
 
+def _normalise_tool_set(raw: Any) -> frozenset[str] | None:
+    """把 tier1 里的白名单值规范成 ``frozenset[str] | None``（F1 修复）。
+
+    **修的病**（评审 F1 / 2026-11-06 实测复现）：``default_policy`` 产出的
+    提案 change 是 ``{"tools": [...]}``，``validation_gate.activate()`` 把
+    change **原样**写进 ``tier1_active[component]``，于是
+    ``tier1["tool_set"] == {"tools": ["read", "list"]}``。旧代码直接
+    ``frozenset(那个 dict)`` → ``{'tools'}``（只剩字面量 key），
+    ``apply_tool_set`` 再取交集 → **工具清零**。
+
+    **两侧都修的其中一侧**（另一侧在 ``default_policy`` 产出正确形状）：
+    已经写进磁盘的历史 genome 可能带着旧形状，resolver 必须能读得回来，
+    否则升级后老库全部把工具清空。
+
+    接受的输入形态：
+    - ``None``               → ``None``（不限制）
+    - ``{"tools": [...]}``   → 该列表（提案 change 的原始形状）
+    - ``{"tools": None}``    → ``None``（"不限制"的显式写法）
+    - ``[...]`` / ``{...}``  → 按元素集合
+    - 其他（str/int 等）      → ``None`` + WARNING（宁可放开也不清空）
+
+    **为什么"其他"退回 None 而不是空集**：空集在 ``apply_tool_set`` 里
+    等于"一个工具都不给"，那是最坏的结果。形状看不懂时的安全默认是
+    "不限制"，并大声告警——宁可宽松可用，也不静默变砖。
+    """
+    if raw is None:
+        return None
+
+    # 提案 change 的原始形状：{"tools": [...]} / {"tools": None}
+    if isinstance(raw, dict):
+        if "tools" not in raw:
+            logger.warning(
+                "tier1 tool_set dict has no 'tools' key: %s — treating as unrestricted",
+                sorted(raw),
+            )
+            return None
+        raw = raw["tools"]
+        if raw is None:
+            return None
+
+    if isinstance(raw, str):
+        # 单个工具名写成了裸字符串：按单元素处理比报错更有用
+        return frozenset({raw})
+
+    try:
+        return frozenset(raw)
+    except TypeError:
+        logger.warning(
+            "unrecognised tier1 tool_set shape %r — treating as unrestricted",
+            type(raw).__name__,
+        )
+        return None
+
+
 def _default_source() -> Tier1Source | None:
     """进程级默认源：装配根登记的基因组版本链。
 
@@ -105,12 +159,12 @@ def resolve(
             tier1.pop(k, None)
 
     raw_tools = tier1.get("tool_set")
-    tool_set = frozenset(raw_tools) if raw_tools is not None else None
+    tool_set = _normalise_tool_set(raw_tools)
 
     # skill 组件：Tier 1 提案可以指定一组方法论技能包（.skills/*.md 的名字）。
     # 与 tool_set 同构——None = 不限制，列表 = 只注入这几个。
     raw_skills = tier1.get("skill")
-    skill_set = frozenset(raw_skills) if raw_skills is not None else None
+    skill_set = _normalise_tool_set(raw_skills)
 
     return EffectiveHarnessConfig(
         prompt_version=dict(tier1.get("prompt") or {}),

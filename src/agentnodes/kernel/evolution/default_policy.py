@@ -43,6 +43,25 @@ LOW_FAILURE_RATE = 0.2
 NARROW_TOOL_SET = ["read", "list", "list_history", "tool_help"]
 
 
+def _tool_set_change(tools: list[str] | None) -> dict[str, Any]:
+    """构造 ``tool_set`` 组件的 change（F1 形状契约的**产出侧**）。
+
+    ``validation_gate.activate()`` 把 change **原样**写进
+    ``tier1_active["tool_set"]``，所以产出形状必须与
+    ``skill_memory._normalise_tool_set`` 的读取形状对齐：
+
+    - ``{"tools": [...]}`` → 收窄到这几个
+    - ``{"tools": None}``  → 不限制
+
+    **为什么保留 ``{"tools": ...}`` 这层包装而不是直接给裸列表**：
+    ``tool_set`` 组件以后可能还有别的键（如 ``exclude`` / ``version``），
+    用 dict 承载才留得住扩展位。裸列表一旦写进磁盘，schema 就没法演进了。
+
+    :param tools: None = 不限制；list = 白名单
+    """
+    return {"tools": None if tools is None else list(tools)}
+
+
 def default_policy(ctx: Any) -> GenomeProposal | None:
     """从 ``EvolutionContext`` 推导提案。无足够证据时返回 None。
 
@@ -65,7 +84,7 @@ def default_policy(ctx: Any) -> GenomeProposal | None:
     if failure_rate > HIGH_FAILURE_RATE:
         return GenomeProposal.new(
             "tool_set",
-            {"tools": list(NARROW_TOOL_SET)},
+            _tool_set_change(NARROW_TOOL_SET),
             evidence_refs=evidence + ["policy:high_failure_rate"],
         )
 
@@ -73,7 +92,7 @@ def default_policy(ctx: Any) -> GenomeProposal | None:
     if failure_rate < LOW_FAILURE_RATE:
         return GenomeProposal.new(
             "tool_set",
-            {"tools": None},  # None = 不限制（与 harness_resolver 口径一致）
+            _tool_set_change(None),  # None = 不限制（与 harness_resolver 口径一致）
             evidence_refs=evidence + ["policy:low_failure_rate"],
         )
 

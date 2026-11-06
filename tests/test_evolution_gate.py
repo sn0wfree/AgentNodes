@@ -227,6 +227,89 @@ class TestRollback:
         assert genome.rollback() == v0
         assert genome.rollback() == v0
 
+    def test_rollback_does_not_discard_approved_version(self):
+        """F2 回归（评审 C13）：三连败**不得**回退掉上一个已批准的好版本。
+
+        旧实现 ``_rollback`` 调 ``genome.rollback()`` = 盲目 ``cursor−1``。
+        由于 ``activate()`` 只在验证通过时调用，历史链上从来没有「候选的
+        临时版本」，所以 ``cursor−1`` 退掉的是**已批准的合法版本**——
+        「候选失败 ⇒ 当前基因组退化」这个推断根本不成立。
+
+        实测（修复前）：``gv-c7a08b59 {'prompt': {'v': 1}}`` → ``gv-0 {}``。
+        """
+        genome = GenomeVersionStore()
+        # 先造一个「已批准的好版本」
+        genome.activate("good-1", {"prompt": {"v": 1}})
+        good_version = genome.current_version_id()
+        good_tier1 = dict(genome.tier1_active())
+        assert good_version != "gv-0"
+
+        emit = _Emitter()
+        gate = _gate(genome, emit, lambda: 0.1)  # 远低于基线 → 必定失败
+        results = [
+            gate.validate(
+                GenomeProposal.new("tool_set", {"tools": ["read"]}), _holdout()
+            )
+            for _ in range(ROLLBACK_AFTER_FAILURES)
+        ]
+
+        assert results[-1].status is ProposalStatus.ROLLED_BACK
+        # 核心断言：仍停在好版本上，tier1 一字未动
+        assert genome.current_version_id() == good_version, (
+            f"F2 未修：好版本 {good_version} 被回退成 "
+            f"{genome.current_version_id()}"
+        )
+        assert dict(genome.tier1_active()) == good_tier1, "F2 未修：tier1 被清空"
+
+        # 回滚事件必须带上锚，便于审计
+        events = emit.of("genome.rollback")
+        assert len(events) == 1
+        assert events[0]["anchor_version"] == good_version
+        assert events[0]["new_version_id"] == good_version
+
+    def test_anchor_is_recorded_per_validate_call(self):
+        """锚是**每次 validate() 入口**重记的，不是整个 gate 生命周期一份。
+
+        这是有意的语义：锚回答的是「**这次**验证开始前的版本是什么」。
+        如果做成一次性锚，第二次之后的验证就失去意义（回滚可能退到很久
+        以前的版本）。这条测试把该语义钉住，防止将来「优化」成复用锚。
+        """
+        genome = GenomeVersionStore()
+        genome.activate("good-1", {"prompt": {"v": 1}})
+        v1 = genome.current_version_id()
+
+        emit = _Emitter()
+        gate = _gate(genome, emit, lambda: 0.1)
+
+        gate.validate(GenomeProposal.new("prompt", {"v": 2}), _holdout())
+        assert gate._anchor_version == v1
+
+        # 外部升版后，下一次 validate 的锚应当是**新版本**，不是 v1
+        genome.activate("good-2", {"prompt": {"v": 2}})
+        v2 = genome.current_version_id()
+        assert v2 != v1
+
+        gate.validate(GenomeProposal.new("prompt", {"v": 3}), _holdout())
+        assert gate._anchor_version == v2, (
+            "锚应在每次 validate() 入口按当时的生效版本重记"
+        )
+
+    def test_rollback_reports_anchor_in_event(self):
+        """回滚事件必须带 anchor_version，便于审计「回的是哪个点」。"""
+        genome = GenomeVersionStore()
+        genome.activate("good-1", {"prompt": {"v": 1}})
+        anchor = genome.current_version_id()
+
+        emit = _Emitter()
+        gate = _gate(genome, emit, lambda: 0.1)
+        for i in range(ROLLBACK_AFTER_FAILURES):
+            gate.validate(GenomeProposal.new("prompt", {"v": i}), _holdout())
+
+        events = emit.of("genome.rollback")
+        assert len(events) == 1
+        assert events[0]["anchor_version"] == anchor
+        assert events[0]["new_version_id"] == anchor
+
 
 # ── genome_version 层 ────────────────────────────────────────────────
 
@@ -489,6 +572,80 @@ class TestSkillMemoryResolver:
         g.activate("p1", {"prompt": {"r": "v2"}})
         cfg = resolve_harness("sig", source=g)
         assert cfg.prompt_version == {"r": "v2"}
+
+    # ── F1 回归：tool_set 形状契约（评审 F1 / 2026-11-06）────────────
+    #
+    # 病理：``default_policy`` 产出 ``{"tools": [...]}``，``activate()`` 把
+    # change 原样写进 ``tier1_active["tool_set"]``，旧 resolver 直接
+    # ``frozenset(那个 dict)`` → ``{'tools'}`` → ``apply_tool_set`` 交集后
+    # **工具清零**。修法是两侧对齐：产出侧用 ``_tool_set_change``，
+    # 读取侧用 ``_normalise_tool_set``。
+
+    @pytest.mark.parametrize(
+        "raw,expected",
+        [
+            ({"tools": ["read", "list"]}, frozenset({"read", "list"})),
+            ({"tools": None}, None),
+            (None, None),
+            (["read", "write"], frozenset({"read", "write"})),
+            (("read",), frozenset({"read"})),
+            (frozenset({"read"}), frozenset({"read"})),
+            ("read", frozenset({"read"})),
+            ({"no_tools_key": 1}, None),
+            (123, None),  # 无法识别的形状 → 放开而非清空
+        ],
+    )
+    def test_tool_set_shape_normalisation(self, raw, expected):
+        """读取侧接受历史 dataset 的所有形状，绝不退化成 {'tools'}。"""
+        from agentnodes.kernel.evolution.skill_memory import _normalise_tool_set
+
+        assert _normalise_tool_set(raw) == expected
+
+    def test_proposal_tool_set_does_not_wipe_tools(self):
+        """端到端：提案通过 → activate → resolver 读回 → 工具不被清零。"""
+        g = GenomeVersionStore()
+        gate = _gate(g, _Emitter(), lambda: 0.9)  # 高通过率 → approved
+        out = gate.validate(
+            GenomeProposal.new(
+                "tool_set", {"tools": ["read", "list", "write"]}
+            ),
+            _holdout(),
+        )
+        assert out.status is ProposalStatus.APPROVED
+
+        cfg = resolve_harness("sig", source=g)
+        assert cfg.tool_set == frozenset({"read", "list", "write"})
+
+        # 模拟 apply_tool_set 的交集：必须保留工具
+        available = ["read", "list", "write", "shell"]
+        filtered = [t for t in available if t in cfg.tool_set]
+        assert filtered == ["read", "list", "write"], (
+            f"F1 未修：工具被清零 -> {filtered}"
+        )
+
+    def test_default_policy_produces_readable_shape(self):
+        """产出侧：default_policy 的 change 必须能被 resolver 读回。"""
+        from agentnodes.kernel.evolution.default_policy import _tool_set_change
+
+        narrow = _tool_set_change(["read", "list"])
+        assert narrow == {"tools": ["read", "list"]}
+        from agentnodes.kernel.evolution.skill_memory import _normalise_tool_set
+
+        assert _normalise_tool_set(narrow) == frozenset({"read", "list"})
+
+        unrestricted = _tool_set_change(None)
+        assert unrestricted == {"tools": None}
+        assert _normalise_tool_set(unrestricted) is None
+
+    def test_legacy_bad_shape_on_disk_is_readable(self):
+        """已入库的老 genome（坏形状）升级后不得把工具清空。"""
+        src = _Tier1({"tool_set": {"tools": ["read", "search"]}})
+        cfg = resolve_harness("sig", source=src)
+        assert cfg.tool_set == frozenset({"read", "search"}), (
+            "老数据的 {'tools': [...]} 形状必须仍可读"
+        )
+        # 反向：绝不能是 {'tools'} 这种把 key 当工具名的结果
+        assert cfg.tool_set != frozenset({"tools"})
 
 
 # ── EvolutionAgent ───────────────────────────────────────────────────

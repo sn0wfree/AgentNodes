@@ -316,6 +316,14 @@ class ValidationGate:
 
     _consecutive_failures: int = field(default=0, init=False)
     _history: list[ValidationResult] = field(default_factory=list, init=False)
+    #: 本轮验证开始时的基因组版本 id（F2 / 评审 C13 · anchor 式回滚）。
+    #:
+    #: **为什么必须记锚**：``activate()`` 只在验证通过时调用，所以历史链上
+    #: **从来没有「候选的临时版本」**。三连败时 ``genome.rollback()`` 的
+    #: ``cursor−1`` 退掉的是**上一个已批准的合法版本**——「候选失败 ⇒ 当前
+    #: 基因组退化」这个推断根本不成立。anchor 记下「进入验证前的版本」，
+    #: 回滚只回这里：候选本来就没生效，回锚上等于原地不动（幂等且安全）。
+    _anchor_version: str = field(default="", init=False)
 
     def __post_init__(self) -> None:
         # 策略值拼错时早失败：静默回落到某个默认策略会让「怎么处置
@@ -337,7 +345,16 @@ class ValidationGate:
         """验证提案并推进其状态。
 
         返回推进后的提案（approved / rejected / rolled_back）。
+
+        **anchor 式回滚（F2 / C13）**：入口先记下「当前生效版本」。
+        失败回滚只回到这个锚，绝不 ``cursor−1``——原因见
+        ``_anchor_version`` 的字段注释。
         """
+        # 记锚：本提案验证开始前的生效版本。候选无论成败都不会留下
+        # 临时版本（activate 只在通过时调），所以这个锚就是唯一正确的
+        # 回滚落点。
+        self._anchor_version = self._current_version_id()
+
         # 规则 1：Tier 0 一律拒绝（H3）。即便提案对象绕过了 new()，
         # 这里也必须拦住。
         if proposal.target_component in TIER0_COMPONENTS or proposal.is_tier0:
@@ -990,19 +1007,58 @@ class ValidationGate:
     def _rollback(
         self, rejected: GenomeProposal, reason: str
     ) -> GenomeProposal:
+        """回滚到**本轮验证的锚**，不是 ``cursor−1``（F2 / C13）。
+
+        **修复的病**：旧实现调 ``genome.rollback()`` = 盲目游标减一。
+        由于 ``activate()`` 只在通过时调用，历史链上不存在候选的临时版本，
+        ``cursor−1`` 退掉的是**上一个已批准的合法版本**——候选失败反而
+        让当前基因组退化，且回退到的好版本无法自动找回。
+
+        **现在的语义**：
+        - 锚 = 进入 ``validate()`` 时的版本
+        - 候选失败从未 ``activate``，所以回到锚 = **原地不动**
+        - 若期间有别的路径升了版（理论上不该发生，验证是串行的），
+          回锚仍能纠回——这是比「不动」更强的保证
+
+        回滚动作依然留痕：``genome.rollback_to(anchor)`` 会持久化游标，
+        ``genome.rollback`` 事件带 ``anchor_version`` 字段。
+        """
         rolled = rejected.to_rolled_back(
             f"rolled back after {ROLLBACK_AFTER_FAILURES} consecutive failures: {reason}"
         )
-        new_version = self.genome.rollback()
+        anchor = self._anchor_version or self._current_version_id()
+        try:
+            new_version = self.genome.rollback_to(anchor)
+        except KeyError:
+            # 锚不在链上（例如外部重建了 genome / 锚已被裁剪）：
+            # 不能盲目 cursor−1（那正是原 bug），保持现状并大声记下。
+            logger.error(
+                "anchor version %s not found in genome chain; "
+                "keeping current version (no blind rollback)",
+                anchor,
+            )
+            new_version = self._current_version_id()
         self.emit("genome.rollback", {
             "proposal_id": rolled.proposal_id,
             "target_component": rolled.target_component,
             "reason": rolled.rejection_reason,
             "new_version_id": new_version,
+            "anchor_version": anchor,
             "consecutive_failures": self._consecutive_failures,
         })
         self._consecutive_failures = 0
         return rolled
+
+    def _current_version_id(self) -> str:
+        """当前生效版本 id（genome 适配器的统一读取口）。"""
+        getter = getattr(self.genome, "current_version_id", None)
+        if callable(getter):
+            return str(getter())
+        # 退化路径：只有 current() 的适配器
+        cur = getattr(self.genome, "current", None)
+        if callable(cur):
+            return str(getattr(cur(), "version_id", ""))
+        return ""
 
     # ── 观测 ────────────────────────────────────────────────────────
 
