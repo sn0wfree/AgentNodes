@@ -22,9 +22,13 @@ from .approvals import PermissionGateway
 from .evaluator import PermissionDeniedError, PermissionEvaluator
 from .rules_io import DEFAULT_RULES_PATH, load_rules, save_rule
 from .schema import (
+    DEFAULT_HARD_DENY,
+    MODE_PRESETS,
+    HardDenyRule,
     Permission,
     PermissionAction,
     PermissionDecision,
+    PermissionMode,
     PermissionResponse,
     PermissionRule,
 )
@@ -35,6 +39,10 @@ __all__ = [
     "PermissionDecision",
     "PermissionResponse",
     "PermissionRule",
+    "HardDenyRule",
+    "DEFAULT_HARD_DENY",
+    "PermissionMode",
+    "MODE_PRESETS",
     "PermissionEvaluator",
     "PermissionDeniedError",
     "PermissionGateway",

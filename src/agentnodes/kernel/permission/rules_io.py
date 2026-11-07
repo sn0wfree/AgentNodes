@@ -20,7 +20,7 @@ from typing import Any
 import yaml
 
 from .evaluator import DEFAULT_RULES
-from .schema import PermissionAction, PermissionRule
+from .schema import Permission, PermissionAction, PermissionRule
 
 logger = logging.getLogger(__name__)
 
@@ -119,7 +119,26 @@ def save_rule(
     (avoids the user spamming the same "always" pick). Writes are
     atomic via ``tempfile + os.replace`` so a crashed write cannot
     leave a truncated file.
+
+    **批次 6（P3）**：拒绝 **pattern 化的 shell allow 规则**——
+    shell 的 target 只取命令首 token（``rm -rf /`` 与 ``rm x`` 的 target
+    都是 ``rm``），``pattern: "git *"`` 这类规则给人"已限制"的错觉，
+    实际拦不住任何复合命令。shell 的安全边界靠**模式分级**
+    （L1 默认全问），不靠文本规则；因此持久化层只允许
+    ``pattern="*"`` 的 shell allow（即"此会话我信了"的显式放行）。
     """
+    if (
+        rule.permission == Permission.RUN_COMMAND.value
+        and rule.action == PermissionAction.ALLOW
+        and rule.pattern not in ("*", "**")
+    ):
+        raise ValueError(
+            "shell allow rules must use pattern '*' — pattern-based shell "
+            "rules cannot parse compound commands (rm -rf / vs rm x share "
+            "the same target token). Scope shell auto-run via "
+            "AGENTNODES_PERMISSION_MODE=L2_sandbox_exec instead."
+        )
+
     path.parent.mkdir(parents=True, exist_ok=True)
 
     existing = load_rules(path)

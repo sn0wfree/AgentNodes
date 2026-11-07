@@ -37,12 +37,25 @@ def test_r0_tools_auto_allow():
     assert decision.rule is None
 
 
-def test_default_action_is_ask_for_unknown_tool():
+def test_default_action_for_workspace_write_is_allow_in_L1():
+    """批次 6：默认模式 = L1（工作区编辑）——write 自动放行。
+
+    旧行为（write=ask）被 L0-L4 分级取代：E3「能写任意工作区文件」
+    是第一阶段 checklist 的前提；workspace 边界由 PathWhitelist 把守。
+    """
     ev = PermissionEvaluator()
-    decision = ev.evaluate("write", {"path": "/tmp/x"})
-    assert decision.action == PermissionAction.ASK
+    decision = ev.evaluate("write", {"path": "hello.py"})
+    assert decision.action == PermissionAction.ALLOW
     assert decision.rule is not None
-    assert decision.rule.action == PermissionAction.ASK
+    assert decision.rule.action == PermissionAction.ALLOW
+
+
+def test_default_action_is_ask_for_unmodeled_tool():
+    """预设没覆盖的工具（如自定义工具）→ 兜底 ASK。"""
+    ev = PermissionEvaluator()
+    decision = ev.evaluate("some_custom_tool", {})
+    assert decision.action == PermissionAction.ASK
+    assert decision.rule is None
 
 
 def test_destructive_tool_denied_by_default():
@@ -268,8 +281,8 @@ def test_save_rule_idempotent_for_duplicate_tail(tmp_path: Path):
     """Saving the same rule twice does NOT produce two appends."""
     path = tmp_path / "permissions.yaml"
     rule = PermissionRule(
-        permission=Permission.RUN_COMMAND.value,
-        pattern="git",
+        permission=Permission.WEB_FETCH.value,
+        pattern="*",
         action=PermissionAction.ALLOW,
     )
     save_rule(rule, path=path)
@@ -277,8 +290,8 @@ def test_save_rule_idempotent_for_duplicate_tail(tmp_path: Path):
     loaded = load_rules(path)
     matching = [
         r for r in loaded
-        if r.permission == Permission.RUN_COMMAND.value
-        and r.pattern == "git"
+        if r.permission == Permission.WEB_FETCH.value
+        and r.pattern == "*"
         and r.action == PermissionAction.ALLOW
     ]
     assert len(matching) == 1

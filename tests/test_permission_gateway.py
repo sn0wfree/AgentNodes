@@ -146,20 +146,24 @@ def test_request_emits_hook_callback():
 
 def test_request_persists_permanent_allow_rule(tmp_path: Path):
     """permanent=True ALLOW writes an allow rule that the evaluator
-    picks up on subsequent calls in the same session."""
+    picks up on subsequent calls in the same session.
+
+    **批次 6**：用 ``shell`` 验证——L1 下 shell=ASK（write 已变 ALLOW，
+    不再触发握手）。
+    """
     path = tmp_path / "perm.yaml"
     gw = PermissionGateway(rules_path=path, timeout_s=1.0)
 
     async def run():
-        # write_file defaults to ASK — confirm before the handshake.
-        decision = gw.evaluator.evaluate("write", {"path": "y.py"})
+        # shell 在 L1 下默认 ASK — confirm before the handshake.
+        decision = gw.evaluator.evaluate("shell", {"command": "echo hi"})
         assert decision.action == PermissionAction.ASK
 
         task = asyncio.create_task(
             gw.request(
                 tool_call_id="tc-perm",
-                tool_name="write",
-                args={"path": "y.py"},
+                tool_name="shell",
+                args={"command": "echo hi"},
                 decision=decision,
             ),
         )

@@ -25,10 +25,12 @@ from pathlib import Path
 from typing import Any, Callable
 
 from .evaluator import PermissionEvaluator
-from .rules_io import DEFAULT_RULES_PATH, save_rule
+from .rules_io import DEFAULT_RULES_PATH, load_rules, save_rule
 from .schema import (
+    MODE_PRESETS,
     PermissionAction,
     PermissionDecision,
+    PermissionMode,
     PermissionResponse,
     PermissionRule,
 )
@@ -38,6 +40,19 @@ logger = logging.getLogger(__name__)
 
 # ── Default handshake parameters ──
 DEFAULT_TIMEOUT_S: float = 300.0  # 5 min — matches opencode defaults
+
+
+def _ruleset_for_mode(
+    mode: str | PermissionMode, rules_path: Path
+) -> list[PermissionRule]:
+    """模式预设 + 用户 YAML 叠加（批次 6）。
+
+    预设在前、用户规则在后 —— last-match-wins 让用户能覆盖预设的
+    allow/ask/deny；hard_deny 独立本表之外（evaluator 构造），
+    任何来源都改不了（P1 修复的落点）。
+    """
+    preset = MODE_PRESETS[PermissionMode.from_value(mode).value]
+    return [*preset, *load_rules(rules_path)]
 
 
 # ── Event hook signature: gateway -> SSE / TUI ──
@@ -59,11 +74,27 @@ class PermissionGateway:
         evaluator: PermissionEvaluator | None = None,
         timeout_s: float = DEFAULT_TIMEOUT_S,
         on_request: RequestHook | None = None,
+        *,
+        mode: str | PermissionMode = PermissionMode.default(),
+        interactive: bool = True,
     ) -> None:
-        self._evaluator = evaluator or PermissionEvaluator()
+        if evaluator is None:
+            # 批次 6：模式预设 + 用户 YAML 叠加（load_rules 在 _load_ruleset）
+            # hard_deny 独立于 ruleset，构造在 evaluator 内部。
+            evaluator = PermissionEvaluator(
+                ruleset=_ruleset_for_mode(mode, rules_path),
+                interactive=interactive,
+                on_decision=lambda d: logger.info(
+                    "permission: %s %s -> %s%s",
+                    d.get("tool"), d.get("target"), d.get("action"),
+                    " [HARD]" if d.get("hard") else "",
+                ),
+            )
+        self._evaluator = evaluator
         self._rules_path = rules_path
         self._timeout_s = timeout_s
         self._on_request = on_request
+        self._mode = PermissionMode.from_value(mode)
         # tool_call_id -> (Future[PermissionResponse], owner session_id)
         self._pending: dict[str, tuple[asyncio.Future[PermissionResponse], str]] = {}
         # Audit log: every ASK response is recorded for debugging.
