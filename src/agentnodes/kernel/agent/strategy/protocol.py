@@ -17,6 +17,14 @@ Each Step Protocol is a ``runtime_checkable`` ``Protocol`` so that
 ``isinstance(step, PreRunStep)`` works at the boundary. The same
 shape — ``should_run(ctx)`` + ``execute(ctx, *, async_mode)`` — applies
 to every step so composition stays uniform.
+
+**批次 9（B1）**：本文件是**当前在跑的职责划分**，运行时行为不变。
+目标底座已落地：``kernel/agent/_core_types.py`` 的
+``StepHandler`` / ``StreamingHandler`` / ``StepResult`` / ``Pipeline``——
+停止判定（Stop/Continuation/Progress/Resilience）在 B2 变为
+**deciders dict**（三检查点显式配置），事件副作用（``_fire``）在
+B2/B3 收编进 ``StepResult.events``。旧步骤经
+``kernel/agent/step_adapters.py::LegacyStepAdapter`` 即可进新底座。
 """
 
 from __future__ import annotations
