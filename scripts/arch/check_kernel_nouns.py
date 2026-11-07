@@ -292,14 +292,26 @@ def scan_tree(
     exempt_files: dict[str, str] | None = None,
     exempt_lines: dict[tuple[str, int], str] | None = None,
 ) -> list[Hit]:
+    """扫描 kernel：``*.py``（AST）+ ``*.yaml/*.yml/*.json``（文本切词）
+    + **目录名**（批次 8/1-F 扩展）。
+
+    为什么扩展：批次 4d 的门禁只扫 ``.py``，``kernel/swarm/presets/``
+    的 **37 个量化 YAML** 与 ``scheduled_research`` 的**目录名本身**
+    全部漏网——「检查项不全被当成通过」的又一次发作。
+    """
     root = root or KERNEL
     nouns = nouns if nouns is not None else BUSINESS_NOUNS
     exempt_files = exempt_files if exempt_files is not None else EXEMPT_FILES
     exempt_lines = exempt_lines if exempt_lines is not None else EXEMPT_LINES
 
     hits: list[Hit] = []
-    for path in sorted(root.rglob("*.py")):
+    for path in sorted(root.rglob("*")):
         if "__pycache__" in path.parts:
+            continue
+        if path.is_dir():
+            continue
+        suffix = path.suffix.lower()
+        if suffix not in (".py", ".yaml", ".yml", ".json"):
             continue
         try:
             rel = str(path.relative_to(ROOT)).replace("\\", "/")
@@ -308,11 +320,72 @@ def scan_tree(
             rel = str(path.relative_to(root)).replace("\\", "/")
         if rel in exempt_files:
             continue
-        for hit in scan_file(path, nouns, base=root):
+
+        if suffix == ".py":
+            file_hits = scan_file(path, nouns, base=root)
+            source = "identifier"
+        else:
+            file_hits = scan_text_asset(path, nouns, base=root)
+            source = "asset"
+
+        for hit in file_hits:
             if (hit.file, hit.line) in exempt_lines:
                 continue
+            if source == "asset":
+                hit.source = source
             hits.append(hit)
+
+    # 目录名：切词后逐段比对（``scheduled_research`` 这类业务目录名
+    # 在文件移走后仍会留下痕迹）
+    hits.extend(scan_dir_names(root, nouns))
     return hits
+
+
+def scan_text_asset(
+    path: Path, nouns: frozenset[str], *, base: Path | None = None
+) -> list[Hit]:
+    """yaml/yml/json 资产：整文件按行切词比对（无 AST，无注释豁免——
+    资产文件没有注释文化，全扫）。"""
+    base = base or ROOT
+    try:
+        text = path.read_text(encoding="utf-8", errors="replace")
+    except OSError:
+        return []
+    out: list[Hit] = []
+    for lineno, line in enumerate(text.splitlines(), 1):
+        for w in _check_raw(line, _split_literal(line), nouns):
+            try:
+                rel = str(path.relative_to(base)).replace("\\", "/")
+            except ValueError:
+                rel = str(path).replace("\\", "/")
+            out.append(Hit(
+                file=rel, line=lineno, noun=w, source="asset",
+                context=line.strip()[:110],
+            ))
+    return out
+
+
+def scan_dir_names(
+    root: Path | None = None, nouns: frozenset[str] | None = None
+) -> list[Hit]:
+    """kernel 下的目录名切词比对（相对 kernel 的每一段路径）。"""
+    root = root or KERNEL
+    nouns = nouns if nouns is not None else BUSINESS_NOUNS
+    out: list[Hit] = []
+    for path in sorted(root.rglob("*")):
+        if not path.is_dir() or "__pycache__" in path.parts:
+            continue
+        rel = path.relative_to(root)
+        for part in rel.parts:
+            for w in _check_raw(part, _split_identifier(part), nouns):
+                out.append(Hit(
+                    file="kernel/" + str(rel).replace("\\", "/"),
+                    line=0,
+                    noun=w,
+                    source="dirname",
+                    context=f"directory name segment {part!r}",
+                ))
+    return out
 
 
 # ── selftest ─────────────────────────────────────────────────────────

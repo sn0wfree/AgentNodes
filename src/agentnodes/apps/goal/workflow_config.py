@@ -23,11 +23,10 @@ from .workflow import (
 
 logger = logging.getLogger(__name__)
 
-# 跟随 swarm 包实际位置解析（2026-11-03 W4d）：原先按本文件深度拼
-# 'core/swarm/presets'，swarm 迁入 kernel 后该路径失效。
-import agentnodes.kernel.swarm as _swarm_mod
+# 预设目录（批次 8 迁 L2）：``apps/swarm_presets/``。
+from agentnodes.apps import swarm_presets as _swarm_presets
 
-_PRESETS_DIR = Path(_swarm_mod.__file__).parent / "presets"
+_PRESETS_DIR = _swarm_presets.PRESETS_DIR  # batch 8: presets moved to L2
 _USER_WORKFLOWS_DIR = Path.home() / ".quantnodes-research" / "workflows"
 
 

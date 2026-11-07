@@ -10,8 +10,8 @@ from tempfile import TemporaryDirectory
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
 
-from agentnodes.kernel.scheduled_research.models import JobStatus, ScheduledResearchJob
-from agentnodes.kernel.scheduled_research.store import ScheduledResearchStore
+from agentnodes.apps.scheduled_research.models import JobStatus, ScheduledResearchJob
+from agentnodes.apps.scheduled_research.store import ScheduledResearchStore
 
 
 class TestJobStatus(unittest.TestCase):

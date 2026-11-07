@@ -10,14 +10,14 @@ Contains:
 from __future__ import annotations
 
 from pathlib import Path
+from agentnodes.apps import swarm_presets as _swarm_presets
 
 
 def cmd_swarm_list(args) -> int:
     """列出所有 swarm preset。"""
     from agentnodes.kernel.swarm import list_presets
 
-    import agentnodes.kernel.swarm as _swarm_mod
-    presets_dir = Path(_swarm_mod.__file__).parent / "presets"
+    presets_dir = _swarm_presets.PRESETS_DIR  # batch 8: presets moved to L2
     presets = list_presets(presets_dir)
 
     if not presets:
@@ -36,8 +36,7 @@ def cmd_swarm_inspect(args) -> int:
     """显示 swarm preset 结构。"""
     from agentnodes.kernel.swarm import load_preset
 
-    import agentnodes.kernel.swarm as _swarm_mod
-    presets_dir = Path(_swarm_mod.__file__).parent / "presets"
+    presets_dir = _swarm_presets.PRESETS_DIR  # batch 8: presets moved to L2
     preset = None
     for ext in ("*.yaml", "*.yml"):
         for f in presets_dir.glob(ext):
@@ -75,8 +74,7 @@ def cmd_swarm_run(args) -> int:
     """执行 swarm preset。"""
     from agentnodes.kernel.swarm import SwarmRuntime, load_preset
 
-    import agentnodes.kernel.swarm as _swarm_mod
-    presets_dir = Path(_swarm_mod.__file__).parent / "presets"
+    presets_dir = _swarm_presets.PRESETS_DIR  # batch 8: presets moved to L2
     preset = None
     for ext in ("*.yaml", "*.yml"):
         for f in presets_dir.glob(ext):

@@ -372,7 +372,7 @@ def _build_parser() -> tuple[argparse.ArgumentParser, dict[str, argparse.Argumen
     # export 子命令已随 apps/export 移除（2026-11-04 做减法批次 2）
 
     # schedule (P5)
-    from agentnodes.kernel.scheduled_research.cli import add_schedule_subparsers
+    from agentnodes.apps.scheduled_research.cli import add_schedule_subparsers
     add_schedule_subparsers(subparsers)
 
     # goal / hypothesis / validation / portfolio 四组子命令已随对应 apps 包
@@ -584,7 +584,7 @@ def _dispatch_mcp(args, parsers) -> int:
 
 def _dispatch_schedule(args, parsers) -> int:
     """Dispatch the schedule subcommand."""
-    from agentnodes.kernel.scheduled_research.cli import (
+    from agentnodes.apps.scheduled_research.cli import (
         cmd_schedule_cancel,
         cmd_schedule_create,
         cmd_schedule_delete,

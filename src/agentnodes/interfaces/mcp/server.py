@@ -20,6 +20,7 @@ from typing import Any, Callable
 
 from agentnodes.kernel.agent.builtin_tools.utils import tool_err
 from agentnodes.kernel.agent.tools import BaseTool, ToolContext, _schema_from_signature
+from agentnodes.apps import swarm_presets as _swarm_presets
 
 logger = logging.getLogger(__name__)
 
@@ -378,7 +379,7 @@ class MCPServer:
         def list_swarm_presets(**kwargs: Any) -> str:
             import agentnodes.kernel.swarm as swarm_module
             from agentnodes.kernel.swarm import list_presets
-            presets_dir = Path(swarm_module.__file__).parent / "presets"  # 层无关：跟随 swarm 包实际位置
+            presets_dir = _swarm_presets.PRESETS_DIR  # batch 8: presets moved to L2  # 层无关：跟随 swarm 包实际位置
             presets = list_presets(presets_dir)
             return json.dumps([{"name": p.name, "description": p.description, "agents": len(p.agents)} for p in presets], ensure_ascii=False)
 
@@ -423,7 +424,7 @@ class MCPServer:
             import agentnodes.kernel.swarm as swarm_module
             from agentnodes.kernel.swarm import SwarmRuntime, load_preset
 
-            presets_dir = Path(swarm_module.__file__).parent / "presets"  # 层无关：跟随 swarm 包实际位置
+            presets_dir = _swarm_presets.PRESETS_DIR  # batch 8: presets moved to L2  # 层无关：跟随 swarm 包实际位置
             preset = None
             for ext in ("*.yaml", "*.yml"):
                 for f in presets_dir.glob(ext):

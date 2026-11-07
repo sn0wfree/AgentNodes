@@ -94,8 +94,8 @@ def create_app(
         # 2026-11-05 批次 3：study 目标已移除（apps/study 归档）。
         # 调度器骨架保留（cron 计算 + scheduled_jobs 表是通用能力），
         # target='study' 的 job 会抛明确错误而不是静默 no-op。
-        from agentnodes.kernel.scheduled_research.executor import ScheduledResearchExecutor
-        from agentnodes.kernel.scheduled_research.store import ScheduledResearchStore
+        from agentnodes.apps.scheduled_research.executor import ScheduledResearchExecutor
+        from agentnodes.apps.scheduled_research.store import ScheduledResearchStore
 
         schedule_store = ScheduledResearchStore()
         migrated = schedule_store.migrate_from_json()
