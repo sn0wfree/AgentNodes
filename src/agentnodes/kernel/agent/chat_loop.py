@@ -14,10 +14,13 @@ rendering) can be applied uniformly.
 """
 from __future__ import annotations
 
+import logging
 from pathlib import Path
 from typing import Any, Callable
 
 from .loop import AgentLoop
+
+logger = logging.getLogger(__name__)
 
 
 def build_chat_agent_loop(
@@ -35,7 +38,7 @@ def build_chat_agent_loop(
     system_prompt_override: str | None = None,
     registry: Any = None,
     compact_config: Any | None = None,
-    allow_shell_tools: bool = False,
+    allow_shell_tools: bool = True,
     enable_claim_validation: bool = False,
     strict_claim_validation: bool = False,
     enable_goal_injection: bool = False,
@@ -148,10 +151,45 @@ def build_chat_agent_loop(
     # ToolContext can pick them up per tool call (see AgentLoop._*
     # hooks in loop.py). Defaults to None — sync / TUI paths can
     # opt out by simply not passing these kwargs.
-    if permission_evaluator is not None:
-        loop._permission_evaluator = permission_evaluator
-    if permission_gateway is not None:
-        loop._permission_gateway = permission_gateway
+    #
+    # **批次 7（E2）**：未显式传 evaluator 时**默认接线**——shell 已进
+    # registry，权限闸必须同时在岗（否则分级形同虚设）。模式解析：
+    # 显式参数 > AGENTNODES_PERMISSION_MODE env > 路径默认。
+    # CLI/TUI 无提问通道 → 默认 L2（批次 7 设计 §4）；
+    # web 路由自行传 L1 evaluator + SSE gateway。
+    if permission_evaluator is None and permission_gateway is None:
+        import os
+
+        from agentnodes.kernel.permission import PermissionEvaluator
+        from agentnodes.kernel.permission.schema import (
+            MODE_PRESETS,
+            PermissionMode,
+        )
+
+        env_mode = os.environ.get("AGENTNODES_PERMISSION_MODE", "")
+        if env_mode:
+            mode = PermissionMode.from_value(env_mode)
+        else:
+            # 无提问通道的默认：L2（shell 自动，hard_deny 兜底）。
+            mode = PermissionMode.L2_SANDBOX_EXEC
+        permission_evaluator = PermissionEvaluator(
+            ruleset=list(MODE_PRESETS[mode.value]),
+            interactive=True,
+        )
+    # 防御式挂载：测试/子类可能传入不接受任意属性的 loop 替身。
+    for _attr, _val in (
+        ("_permission_evaluator", permission_evaluator),
+        ("_permission_gateway", permission_gateway),
+    ):
+        if _val is None:
+            continue
+        try:
+            setattr(loop, _attr, _val)
+        except AttributeError:
+            logger.debug(
+                "loop %r rejects %s; permission gate not wired",
+                type(loop).__name__, _attr,
+            )
     return loop
 
 

@@ -103,8 +103,9 @@ class ReadFileTool(BaseTool):
             return err_actionable(
                 str(exc),
                 received=path,
-                expected="path under an allowed read root (strategies/templates/memory/logs/data/docs/)",
-                fix="use a path under strategies/, templates/, memory/, logs/, data/, or docs/",
+                expected="a relative path inside the workspace",
+                fix="use a workspace-relative path (e.g. 'docs/notes.md'); "
+                    "absolute paths and '..' escapes are rejected",
                 tool="read",
             )
 
@@ -348,8 +349,9 @@ class WriteFileTool(BaseTool):
             return err_actionable(
                 str(exc),
                 received=path,
-                expected="path under an allowed write root (strategies/templates/memory/logs)",
-                fix="use a path under strategies/, templates/, memory/, or logs/",
+                expected="a relative path inside the workspace",
+                fix="use a workspace-relative path (e.g. 'src/main.py'); "
+                    "absolute paths and '..' escapes are rejected",
                 tool="write",
             )
 

@@ -86,15 +86,23 @@ def test_allow_runs_tool_with_ctx():
     assert _RecordingTool.executed[0]["ctx"] is ctx
 
 
-def test_ask_without_gateway_keeps_documented_fail_open(caplog):
-    """ASK + 无 gateway：保持既有 fail-open 语义（有 warning）。"""
+def test_ask_without_gateway_fails_closed():
+    """ASK + 无 gateway：**fail-closed**（批次 7 修复）。
+
+    旧行为（当 allow + warning）是一个安全洞：CLI 路径从不接 gateway，
+    等于所有 ask 规则实际都在放行。修复后拒绝并给出可操作出路
+    （切 L2 模式或接入 gateway），与 sync 路径的
+    ``test_ask_with_gateway_denied_on_sync_path`` 同语义。
+    """
     reg = _registry()
     ctx = ToolContext(permission_evaluator=_evaluator("ask"), tool_call_id="tc3")
 
     out = json.loads(reg.execute("danger", {}, ctx=ctx))
 
-    assert out["status"] == "ok"  # fail-open（与 tools.py:688 一致）
-    assert len(_RecordingTool.executed) == 1
+    assert _RecordingTool.executed == []  # 未执行
+    assert out["status"] == "error"
+    assert out["permission_denied"] is True
+    assert "AGENTNODES_PERMISSION_MODE" in out["error"]
 
 
 def test_ask_with_gateway_denied_on_sync_path():

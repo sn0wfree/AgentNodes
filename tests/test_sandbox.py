@@ -142,8 +142,12 @@ class TestASTGuard:
 class TestPathWhitelist:
     @pytest.fixture
     def workspace(self, tmp_path: Path) -> Path:
-        """Build a workspace with default subdirs."""
-        for d in DEFAULT_WRITE_ROOTS + ("data", "docs"):
+        """Build a workspace with default subdirs.
+
+        批次 7：``DEFAULT_WRITE_ROOTS`` 已改为 ``(".",)``，目录树改为
+        **显式列出**（写根不再隐含目录约定）。
+        """
+        for d in ("strategies", "templates", "memory", "logs", "data", "docs"):
             (tmp_path / d).mkdir(parents=True, exist_ok=True)
         # add a few root files
         (tmp_path / "README.md").write_text("# test")
@@ -182,13 +186,15 @@ class TestPathWhitelist:
         p = wl.resolve_write("strategies/")
         assert p.parent == workspace  # resolves to workspace/strategies
 
-    def test_write_data_blocked(self, wl):
-        with pytest.raises(PathValidationError, match="not under any allowed write root"):
-            wl.resolve_write("data/foo.parquet")
+    def test_write_data_allowed(self, wl):
+        """批次 7（E3）：写根 = 工作区本身，data/ 不再特殊。"""
+        p = wl.resolve_write("data/foo.parquet")
+        assert p.parent.name == "data"
 
-    def test_write_root_file_blocked(self, wl):
-        with pytest.raises(PathValidationError):
-            wl.resolve_write("README.md")
+    def test_write_root_file_allowed(self, wl):
+        """批次 7（E3）：工作区根文件（README.md 等）可写。"""
+        p = wl.resolve_write("README.md")
+        assert p.name == "README.md"
 
     # ── Read paths ──────────────────────────────────
 
@@ -259,7 +265,7 @@ class TestPathWhitelist:
 
     def test_is_safe_write(self, wl):
         assert wl.is_safe_write("strategies/x.py")
-        assert not wl.is_safe_write("data/x.py")
+        assert wl.is_safe_write("data/x.py")   # 批次 7：全工作区可写
         assert not wl.is_safe_write("/etc/passwd")
         assert not wl.is_safe_write("../escape.py")
 

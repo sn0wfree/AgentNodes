@@ -134,11 +134,20 @@ class PathValidationError(ValueError):
 
 
 # Default allowed roots (relative to workspace)
+#
+# **批次 7（E3）**：写根默认 = 工作区本身（`"."`）——通用 agent 要能写
+# `hello.py` / `src/main.py` / `README.md`，旧值
+# `("strategies", "templates", "memory", "logs")` 是量化工作区约定，
+# 曾让「coding 能力」实际不存在（已实测）。读根本就含 `"."`（读一直是
+# 全工作区），写的限制是孤例。
+#
+# 边界不变：
+# - `..` 逃逸仍拒（`_resolve_under_workspace` 的 `relative_to` 检查）
+# - 绝对路径 / UNC / 盘符仍拒（`_validate_basic`）
+# - 收紧能力保留：`ToolContext.write_roots` 显式传参即覆盖默认
+#   （量化插件可收紧回 4 目录，与旧行为一致）
 DEFAULT_WRITE_ROOTS: tuple[str, ...] = (
-    "strategies",
-    "templates",
-    "memory",
-    "logs",
+    ".",
 )
 
 DEFAULT_READ_ROOTS: tuple[str, ...] = (
@@ -243,6 +252,13 @@ class PathWhitelist:
             raise PathValidationError("path is empty")
         if rel_path.startswith(("\\\\", "//", "/", "\\")):
             raise PathValidationError(f"UNC/absolute paths are not allowed: {rel_path!r}")
+        # **批次 7**：显式拒 ``~``——开放工作区根后，``~/x`` 不再被根清单
+        # 意外拦截，会被当字面量目录名写进工作区（``ws/~``/``x``）。
+        # 家目录语义只属于 shell，不属于工作区相对路径。
+        if rel_path.startswith("~"):
+            raise PathValidationError(
+                f"home-relative paths (~) are not allowed: {rel_path!r}"
+            )
         if os.path.isabs(rel_path):
             raise PathValidationError(
                 f"absolute paths are not allowed: {rel_path!r}"
@@ -259,9 +275,21 @@ class PathWhitelist:
             pass
 
     def _resolve_under_workspace(self, rel_path: str) -> Path:
-        """Resolve a relative path under workspace; reject escape via '..'."""
-        # Normalize: strip leading ./, collapse //, expand ~
-        cleaned = rel_path.strip().lstrip("./")
+        """Resolve a relative path under workspace; reject escape via '..'.
+
+        **批次 7 修一个潜伏 bug**：旧实现用 ``rel_path.lstrip("./")`` 去
+        ``./`` 前缀——``lstrip`` 按**字符集**剥除，会把 ``"../escape.txt"``
+        的 ``../`` 整个吃掉变成 ``"escape.txt"``，**悄悄改写目标路径**
+        （``../../etc/passwd`` → ``etc/passwd``）。旧 4 目录白名单碰巧
+        把改写后的路径也拒了，所以从未显形；批次 7 开放工作区根后
+        它会变成「写到了不是用户要的位置」。
+
+        现在只剥**完整的** ``./`` 前缀；``..`` 段保留给 resolve +
+        ``relative_to`` 的逃逸检查去拒。
+        """
+        cleaned = rel_path.strip()
+        while cleaned.startswith("./"):
+            cleaned = cleaned[2:]
         candidate = (self.workspace / cleaned).resolve()
         # Verify resolved stays inside workspace
         try:

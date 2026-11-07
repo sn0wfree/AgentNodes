@@ -682,14 +682,19 @@ class BaseTool(ABC):
         # ASK — defer to the user via the gateway.
         gateway: PermissionGateway | None = ctx.permission_gateway
         if gateway is None:
-            # No gateway wired up (e.g. tests, sync path). Fail open
-            # to ASK behaviour but skip the handshake — the loop
-            # logs a warning so operators notice.
-            logger.warning(
-                "tool %s gated by ASK but no permission_gateway on ctx; "
-                "treating as allow", self.name,
+            # **批次 7（fail-closed）**：ASK 且无提问通道 → 拒绝，不再
+            # fail-open。旧行为（当 allow + warning）是一个安全洞：
+            # CLI 路径从不接 gateway，等于所有 ask 规则实际都在放行。
+            # 报错给模型/用户可操作的出路：切 L2 模式，或接入 gateway。
+            raise PermissionDeniedError(
+                f"Permission required: {self.name} needs user approval "
+                f"(ASK) but no approval channel is wired on this path. "
+                f"Fix: set AGENTNODES_PERMISSION_MODE=L2_sandbox_exec to "
+                f"auto-approve within the sandbox boundary, or run via the "
+                f"web chat (SSE approval gateway).",
+                rule=decision.rule,
+                target=decision.target,
             )
-            return
 
         tool_call_id = ctx.tool_call_id or ""
         if not tool_call_id:
@@ -728,12 +733,9 @@ class BaseTool(ABC):
 
         ``react`` is a synchronous node, so it cannot await
         ``ainvoke``. This applies the *rule* verdict synchronously —
-        DENY raises, ALLOW passes — and for ASK it falls back to the
-        documented fail-open path (no gateway handshake is possible
-        without a loop). That exactly matches the existing
-        ``ASK + no gateway`` semantics in ``_enforce_permission``
-        (``tools.py:684-692``), so chat behaviour is unchanged for
-        rule-allowed tools and SAFE for rule-denied ones.
+        DENY raises, ALLOW passes. **批次 7（fail-closed）**：ASK 一律拒绝
+        ——同步路径既无 gateway 握手、也无提问通道；旧行为（无 gateway
+        时当 allow）与异步路径的同一个洞一并封死。
 
         Async callers (AgentLoop) keep using ``ainvoke`` and get the
         full ASK handshake.
@@ -752,20 +754,12 @@ class BaseTool(ABC):
                 rule=decision.rule,
                 target=decision.target,
             )
-        # ASK: no async handshake available on this path.
-        gateway = getattr(ctx, "permission_gateway", None)
-        if gateway is None:
-            logger.warning(
-                "tool %s gated by ASK but no permission_gateway on ctx; "
-                "treating as allow", self.name,
-            )
-            return
-        # A gateway exists but we cannot await it synchronously. Deny
-        # rather than silently allowing: a configured gateway means the
-        # operator expects ASK to be honoured.
+        # ASK: 同步路径无提问通道 —— fail-closed（批次 7）。
         raise PermissionDeniedError(
-            f"Permission ASK for {self.name} requires an async executor; "
-            f"denied on the synchronous path",
+            f"Permission required: {self.name} needs user approval (ASK) "
+            f"but the synchronous path has no approval channel. "
+            f"Fix: set AGENTNODES_PERMISSION_MODE=L2_sandbox_exec, or "
+            f"run via an async executor with the SSE approval gateway.",
             rule=decision.rule,
             target=decision.target,
         )
