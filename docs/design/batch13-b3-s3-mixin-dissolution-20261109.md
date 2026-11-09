@@ -177,12 +177,18 @@
 
 ### S3-b · mixin 解体（原范围，按耦合度两小步）
 
-**S3-b1（低耦合，先做手法验证）**
+### S3-b1（低耦合，先做手法验证）
 
 | mixin | 行数 | 去向 |
 |---|---|---|
-| `loop_telemetry.py` | 93 | → `telemetry.py` 模块级函数 + `AgentLoop` 上的 5 行转发；`_trace_llm_request` 从 `loop.py` 一并搬入 |
-| `loop_lifecycle.py` | 123 | → `loop_lifecycle` 保留 `_handle_*` 作为纯函数（入参 result/loop 状态），由 `LoopFinalize` 调用 |
+| `loop_telemetry.py` | 93 | → `agent_telemetry.py`：模块级函数 `emit(loop, ...)` / `trace(loop, ...)` / `fire_hooks_async(loop, ...)` / `trace_llm_request(loop, ...)`；`loop_telemetry.py` 保留为 mixin 薄壳，方法体 1 行转发（阶段 3 删）|
+| `loop_lifecycle.py` | 123 | → `loop_endings.py`：`handle_max_iter(loop, result)` / `handle_stop(loop, resp, result, it)` / `finalize_metrics(loop, result, msgs, t0)` / `run_claim_validation(loop, result, msgs)` 全部改成显式传 loop 的纯函数 |
+
+**收益**：这两个 mixin 的方法**已经是纯转发/纯函数形态**，改签名的风险低；
+它们验证「loop 显式传递」这一手法，为 S3-b2 的 4 个大文件铺路。
+
+**注意**：`_trace_llm_request` 95 行在 `loop.py` 里（不在 mixin），本步一并搬进
+`agent_telemetry.py`——这是 loop.py 唯一能靠 S3-b1 减少的 95 行。
 
 **S3-b2（高耦合）**
 
@@ -202,15 +208,29 @@
 
 ## §3 行数预算（实测，不是估计）
 
-`loop.py` 当前 1,451 行，构成：
+### 3.0 先纠正一个前提：**mixin 解体不会减少 loop.py 一行**
+
+`loop_tools.py`(389) / `loop_compaction.py`(284) / `loop_progress.py`(280) /
+`loop_stream.py`(261) / `loop_lifecycle.py`(123) / `loop_telemetry.py`(93)
+**本来就在各自独立文件里**——`loop.py` 不包含它们的任何一行，只做
+`from .loop_X import LoopXMixin` 然后写进继承列表。
+
+所以「mixin 解体」（MRO 继承 → 组合）是**结构性改动**：
+- 收益：`AgentLoop` 不再是一个 6 基类的上帝对象；各职责可独立测试/注入。
+- 收益：`compaction` 能复用既有 `compaction_runtime.make_compactor`，减 ~190 行。
+- **不收益**：`loop.py` 行数一个都不减。
+
+`batch12` 设计的「S3 → loop.py ≤400 行」这个因果链是错的，本批明确纠正。
+
+### 3.1 loop.py 的真实构成
 
 | 分块 | 行数 | S3 后 |
 |---|---|---|
 | 类外头部（docstring/imports/全局/模块函数/`LoopResult`） | 272 | 保留（可减 ~40：`_merge_spec`、`_inject_agent_loop`、`_get_goal_store` 可搬） |
 | `__init__`（签名 73 + fold 49 + 赋值 119） | 241 | 签名/fold 保留（阶段 3 删），**赋值块 119 可搬** |
 | `_run_loop_core` | 246 | **删除**（阶段 3 删 legacy 引擎时）；S3 保留 |
-| `_record_budget_usage` + `_check_budget` | 36 | 搬走（S3-a） |
-| 公共入口/状态机入口（`run`/`arun`/`_run_via_skeleton`/`inject`/`_drain_inbox`/`_call_step`/`_prepare_run`/超时包装等） | 261 | 保留 |
+| `_record_budget_usage` + `_check_budget` | 36 | 搬走（S3-a 已改由骨架调用，方法仍在） |
+| 公共入口/状态机入口 | 261 | 保留 |
 | 上下文/工具装配（`_build_data_store`/`_build_sandbox`/`_build_hook_context`） | 59 | 搬走 |
 | trace/遥测（`_trace`/`_trace_llm_request`/`_emit_compaction`/`_emit_iter_start`） | 122 | 搬走 |
 | goal/hypothesis（`_maybe_auto_create_hypothesis`/`_get_goal_snapshot`） | 56 | 搬走 |
@@ -221,9 +241,24 @@
 再搬 `__init__` 赋值块（119）与 trace 组（122）→ **600 行**。
 
 **结论：≤400 行在 S3 内不可达。** 必须等阶段 3 删掉 `__init__` 的 73 行
-旧签名 + `_run_loop_core` 的 246 行才现实（241+261+67+272-73-246 ≈ 522，
+旧签名 + `_run_loop_core` 的 246 行才现实（241+261+67+272−73−246 ≈ 522，
 再把模块头部拆出去可到 ~400）。**本批把目标改为「≤650 行且能力零倒退」**，
 并在设计文档里明确记录这次修正（避免下批重复「怎么还没到 400」的疑问）。
+
+### 3.2 S3-b 的真实收益（按文件，不是按 loop.py 行数）
+
+| 文件 | 现 | 后 | 减 | 依据 |
+|---|---|---|---|---|
+| `loop_compaction.py` | 284 | ~90 | **−194** | 复用 `compaction_runtime.make_compactor`（§4.1，已存在且语义等价） |
+| `loop_telemetry.py` | 93 | ~50 | −43 | 5 个方法已是纯转发；去 mixin 壳，实现在模块级函数 |
+| `loop_lifecycle.py` | 123 | ~95 | −28 | `_handle_*` 已是纯函数形态；去 mixin 壳 |
+| `loop_tools.py` | 389 | 389 | 0 | 无重复实现，纯搬位置（→ `tool_actor.py`） |
+| `loop_progress.py` | 280 | 280 | 0 | 同上（→ `progress_hook.py`） |
+| `loop_stream.py` | 261 | 261 | 0 | 同上（→ `streaming_reasoner.py`） |
+| **合计** | **1,430** | **~1,165** | **−265** | |
+
+拓扑上，6 个 mixin 从 `AgentLoop` 的基类变成 `AgentLoop.__init__` 里
+组合的 6 个对象（handler/hook）。这使 `AgentLoop` 的 MRO 从 7 层变 2 层。
 
 ---
 
