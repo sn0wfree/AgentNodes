@@ -66,13 +66,27 @@ class TestAmaybeCompactStructural:
         assert "asyncio.run(" not in src
 
     def test_uses_to_thread_to_offload_compact_messages(self):
+        """Offload unit is the sync compaction core, run in a worker thread.
+
+        批次 13 S3-b2：sync 核心从 ``_maybe_compact_impl``（手写 58 行）
+        改为既有 ``compaction_runtime.make_compactor``（语义等价，已由
+        ``test_b1c_react_compaction.py`` 7 个测试独立钉住）。断言随实现
+        更新——**核心性质不变**：``await asyncio.to_thread(...)`` 包裹的
+        是同步压缩入口，且引擎调用仍传 sync 客户端（无 adapter）。
+        """
         from agentnodes.kernel.agent.loop import AgentLoop
+
         src = _strip_docstring(inspect.getsource(AgentLoop._amaybe_compact))
         assert "await asyncio.to_thread(" in src
-        # The offloaded unit is the shared sync core (run_compact injected)
-        assert "_maybe_compact_impl" in src
-        # The engine invocation passes the sync client directly (no adapter)
-        impl_src = _strip_docstring(inspect.getsource(AgentLoop._run_compact_messages))
+        # The offloaded unit is still the sync compaction entry point.
+        # （用 ``self._maybe_compact,`` 精确匹配——``_amaybe_compact`` 这个
+        #   方法名本身含同前缀，只写 ``_maybe_compact(`` 会自匹配。）
+        assert "self._maybe_compact," in src
+
+        # The engine invocation passes the sync client directly (no adapter).
+        impl_src = _strip_docstring(
+            inspect.getsource(AgentLoop._run_compact_messages)
+        )
         assert "compact_messages(" in impl_src
         assert "llm_client=self.client" in impl_src
 
