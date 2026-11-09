@@ -78,6 +78,9 @@ webui/static/
 # 会话库（两种库名：旧 strategy_research / 新 agentnodes）
 .quantnodes_strategy_research_session.db*
 .quantnodes_agentnodes_session.db*
+# 运行时数据目录（2026-11-09 路径统一后 platform store / genome 落这里；
+# cwd=repo root 启动服务时会在仓库内生成——永不入库）
+.agentnodes/
 coverage/
 # 会话笔记/本地记忆（不提交）
 memory/

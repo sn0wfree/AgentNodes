@@ -50,11 +50,17 @@ def get_gateway(
     sink: Callable[[str, dict], None] | None = None,
     registry: Any | None = None,
     stream: bool = False,
+    permission_evaluator: Any | None = None,
 ) -> Any:
     """返回进程内唯一 Gateway（首次调用时构造并自检不变量）。
 
     `client` 仅在首次构造时生效（后续调用忽略，避免半途换 client 造成
     session 状态混乱）。测试可用 `reset_gateway()` 清空。
+
+    **W5**：``permission_evaluator`` 缺省时装配 chat 默认 evaluator
+    （``build_default_permission_evaluator``，与 /send_async 同构）——
+    此前 gateway /send 路径完全不设防（evaluator=None + shell 工具
+    无条件注册），任何登录用户可经 /send 执行任意命令。
     """
     gw = _singleton.get("gw")
     if gw is None:
@@ -83,8 +89,23 @@ def get_gateway(
                 )
 
                 registry = build_default_registry()
+                # **W5**：shell / run_bg_command 按同一 env 闸 opt-in（与
+                # /send_async 的 ``shell_tools_enabled`` 同判据）。此前
+                # gateway 注册表无条件含这两个工具 + evaluator=None——
+                # 不设防组合。
+                _gate_shell_tools(registry)
             except Exception:  # noqa: BLE001 —— 工具链不可用则退化为纯 LLM
                 registry = None
+        if permission_evaluator is None:
+            try:
+                from agentnodes.kernel.agent.chat_loop import (
+                    build_default_permission_evaluator,
+                )
+
+                permission_evaluator = build_default_permission_evaluator()
+            except Exception:  # noqa: BLE001 —— evaluator 不可用不拒启
+                # （registry 已被 _gate_shell_tools 收紧，降级安全）
+                pass
         # B5 R-1（选项 A）：组装 ContextHub 并注入 Gateway。此前生产 chat
         # 的 controller._context_hub 恒为 None——B1-b 的上下文注入只在旧
         # /send_async 路径活着。失败降级 None（与 registry 降级同款）。
@@ -103,6 +124,8 @@ def get_gateway(
             # 工具轮走不完（实跑抓到：写文件成功但无最终答复）。与
             # /send_async（chat.py 的 LLMConfig.max_iterations）取同一值。
             max_iterations=_resolve_max_iterations(),
+            # **W5**：Tier 1 权限闸门（默认 = chat 默认 evaluator）。
+            permission_evaluator=permission_evaluator,
         )
         # 阶段一/二/三：L1 组装根的后置接线（Ticket/Assignment、容量闸、
         # 基因组版本链）。**在 verify_invariants 之前**——自检要看到已接线
@@ -134,6 +157,32 @@ def _resolve_max_iterations() -> int:
         return int(LLMConfig.load().max_iterations)
     except Exception:
         return 50
+
+
+#: **W5**：受同一 opt-in 闸管控的高危工具（与 /send_async 的
+#: ``allow_shell_tools`` 语义对齐）。registry 未注册时静默跳过。
+_SHELL_GATED_TOOLS = ("shell", "run_bg_command")
+
+
+def _gate_shell_tools(registry: Any) -> None:
+    """按 ``AGENTNODES_ALLOW_SHELL_TOOLS`` 剔除 shell / run_bg_command。
+
+    与 ``apps/chat/policy.shell_tools_enabled`` 同一判据（canonical 名，
+    旧名 AN_ALLOW_SHELL_TOOLS 经 alias 索引兼容）。plan 模式的恒禁在
+    gateway 路径由 evaluator 兜底（task/shell 的 ASK→deny）——这里只做
+    **注册表级**的全局 opt-in（gateway 是进程级单例，没有 per-request
+    注册表）。
+    """
+    enabled = _settings.get_str(
+        "AGENTNODES_ALLOW_SHELL_TOOLS"
+    ).strip().lower() in ("1", "true", "yes")
+    if enabled:
+        return
+    tools = getattr(registry, "_tools", None)
+    if not isinstance(tools, dict):
+        return  # MagicMock / 鸭子类型替身——测试路径，无从剔除
+    for name in _SHELL_GATED_TOOLS:
+        tools.pop(name, None)
 
 
 def _platform_data_dir(workspace: Any) -> Any | None:

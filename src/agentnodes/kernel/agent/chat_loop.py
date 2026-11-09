@@ -24,6 +24,37 @@ from agentnodes.foundation import settings as _settings
 logger = logging.getLogger(__name__)
 
 
+def build_default_permission_evaluator() -> Any:
+    """构造 chat 场景的**默认**权限 evaluator（W5 提取，两路共享）。
+
+    模式解析：显式参数 > ``AGENTNODES_PERMISSION_MODE`` env > 路径默认。
+    无提问通道的默认是 **L2**（shell 自动、沙箱边界内、hard_deny 兜底）。
+
+    **消费者**：
+    - ``build_chat_agent_loop``（/send_async 路径，原内联逻辑提取）
+    - ``gateway/singleton.get_gateway``（/send 路径，W5 之前恒为 None
+      ——不设防；现在与 /send_async 同构）
+
+    ``interactive=True``：ASK 判定在无 approval channel 时 fail-closed
+    deny（``PermissionDeniedError``），与生产实测一致（冒烟 tool_help）。
+    """
+    from agentnodes.kernel.permission import PermissionEvaluator
+    from agentnodes.kernel.permission.schema import (
+        MODE_PRESETS,
+        PermissionMode,
+    )
+
+    env_mode = _settings.get_str("AGENTNODES_PERMISSION_MODE")
+    if env_mode:
+        mode = PermissionMode.from_value(env_mode)
+    else:
+        mode = PermissionMode.L2_SANDBOX_EXEC
+    return PermissionEvaluator(
+        ruleset=list(MODE_PRESETS[mode.value]),
+        interactive=True,
+    )
+
+
 def build_chat_agent_loop(
     config: Any,
     session_id: str,
@@ -159,24 +190,9 @@ def build_chat_agent_loop(
     # CLI/TUI 无提问通道 → 默认 L2（批次 7 设计 §4）；
     # web 路由自行传 L1 evaluator + SSE gateway。
     if permission_evaluator is None and permission_gateway is None:
-        import os
-
-        from agentnodes.kernel.permission import PermissionEvaluator
-        from agentnodes.kernel.permission.schema import (
-            MODE_PRESETS,
-            PermissionMode,
-        )
-
-        env_mode = _settings.get_str("AGENTNODES_PERMISSION_MODE")
-        if env_mode:
-            mode = PermissionMode.from_value(env_mode)
-        else:
-            # 无提问通道的默认：L2（shell 自动，hard_deny 兜底）。
-            mode = PermissionMode.L2_SANDBOX_EXEC
-        permission_evaluator = PermissionEvaluator(
-            ruleset=list(MODE_PRESETS[mode.value]),
-            interactive=True,
-        )
+        # **W5 提取**：默认选型逻辑原内联于此——现在与 gateway /send 路径
+        # 共享同一实现（两路同构，漂移即测试失败）。
+        permission_evaluator = build_default_permission_evaluator()
     # 防御式挂载：测试/子类可能传入不接受任意属性的 loop 替身。
     for _attr, _val in (
         ("_permission_evaluator", permission_evaluator),
@@ -194,4 +210,4 @@ def build_chat_agent_loop(
     return loop
 
 
-__all__ = ["build_chat_agent_loop"]
+__all__ = ["build_chat_agent_loop", "build_default_permission_evaluator"]

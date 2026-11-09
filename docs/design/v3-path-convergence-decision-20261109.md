@@ -400,7 +400,7 @@ workspace），都是"参数存在但没人传"的静默缺省。gateway 路径�
 无权限检查，chat.py 的 PermissionGateway 只服务 /permission/respond）
 ——修复涉及权限模式选型（L1/L2/env），归权限批，见 W5。
 
-### 8.3 观察到的既有摩擦（记录，不在本批处理）
+### 8.3 观察到的既有摩擦（W5 已修第一条；其余记录待排期）
 
 - **`tool_help` ASK 被拒**：SessionService 路径的模型调 `tool_help`
   → L1 预设未列该工具 → ASK → 该上下文无审批通道 → `PermissionDeniedError`
@@ -409,6 +409,48 @@ workspace），都是"参数存在但没人传"的静默缺省。gateway 路径�
   tool_help 自动放行）属权限批。
 - **`no default DataStore registered`**：裸 workspace 的预期信息
   （批次 5 删了 DuckDB store），非错误。
+
+### 8.3-b W5（已修复，2026-11-10）：gateway /send 权限接线
+
+重估（§9）时确认这是**安全暴露**而非普通缺口，提到 V3-c 之前修：
+
+**不设防组合**（W4 之前 + W4 之后各自成立）：
+- `singleton.get_gateway()` 从不传 evaluator → gateway 路径
+  `permission_evaluator=None` → 工具**无权限检查**；
+- `build_default_registry()` 无条件注册 `shell` + `run_bg_command`
+  （`register_shell_tools` 内部无闸——注释说的 "opt-in" 闸只在
+  chat_loop 调用侧存在）；
+- 叠加：任何登录用户经 `/send` 可让 agent 执行任意命令。同期
+  `/send_async` 有 evaluator + shell opt-in——同一家公司的两个门，
+  一个查证件一个不查。冒烟期间模型真的调到了 shell（当时因 workspace
+  缺失失败；W4 修好 workspace 等于把这条路修通了——这正是把 W5
+  提前的原因）。
+
+**修复（两路同构）**：
+- chat_loop 的默认选型逻辑提取为
+  `build_default_permission_evaluator()`（env `AGENTNODES_PERMISSION_MODE`
+  → 否则 L2_SANDBOX_EXEC，interactive=True，ASK fail-closed），
+  chat_loop 与 singleton 共享同一实现——漂移即测试失败；
+- `Gateway.__init__` 新增 `permission_evaluator` 参数（None = 不接线，
+  直构测试路径行为不变），singleton 缺省装配默认 evaluator；
+- singleton 装配 registry 后按 `AGENTNODES_ALLOW_SHELL_TOOLS`（与
+  `/send_async` 同判据）剔除 `shell` / `run_bg_command`——默认注册表
+  级 opt-in off。
+
+**选型说明**：默认 L2（非 L1）与 chat_loop 的既有默认一致——CLI/TUI
+无提问通道时 L2 是既定决策（shell 自动、沙箱边界 + PathWhitelist 把守、
+hard_deny 兜底）；gateway 无审批通道，同理。`plan` 模式的 shell 恒禁
+在 gateway 路径由 evaluator 兜底（shell 本就不在注册表）。未来接
+SSE approval 通道（`/api/chat/permission/respond` 已存在）后可切 L1。
+
+**验证**：
+- 新增 `tests/test_gateway_permission_wiring.py` 9 条（透传/默认 None/
+  端到端 deny/singleton 默认装配/env 覆盖/显式优先/shell 闸 ×2/端到端
+  registry 缺 shell）；
+- chat_loop + permission 系 135 条全绿（提取无回归）；
+- **真机复验**：要求跑 shell → 模型如实报告"本轮没有 shell 工具"，
+  只调了自动放行的 `tool_help` 排查，零执行；写文件（L2 ALLOW）→
+  完整走通且落盘核对一致。
 
 ### 8.4 观察结论
 
@@ -421,3 +463,52 @@ V3-c（删 react.py）的前置观察可以开始积累；W4 修复建议排在 
 
 脚本与数据在 `tmp/webchat-smoke/`（gitignore 内）；冒烟用户 ×3 已从
 真实 user DB 删除；sessions.db 为隔离文件不触碰生产数据。
+
+---
+
+## §9 阶段性重估（2026-11-10，W4 落地后）
+
+用户指令：「再评估一下」。以下全部基于当日实测取证，非印象。
+
+### 9.1 记分板
+
+| 维度 | 状态 |
+|---|---|
+| 双执行路径 | **已归一**：SessionService / gateway / evals 全部跑 AgentLoop；`react.py`（282 行）成无生产消费者孤岛（剩 `presets/fanout.py`——其生产消费者 = 0，只剩 2 个测试文件——和 `stage1b_demo.py` 演示脚本）|
+| gateway `/send` 装配 | W4 后功能完整（50 轮 + workspace + 事件直通 + 持久化）+ W5 后权限对齐，真机验证 |
+| 观察期实质 | gateway 路径累计 3 轮真机 + 30+ 单测；**前端不使用 /send**（Composer 走 /send_async），生产 chat 流量未被触碰 |
+| 回归 | 7074+ passed / 0 failed；batch_gate ALL GREEN |
+| loop.py | 1,437 行（V3-b +21；≤650 的目标在 V4）|
+
+### 9.2 风险重排
+
+1. **W5 从"记录"升级为安全暴露**（已按此执行，见 §8.3-b）——shell 无闸
+   不是理论风险，冒烟里模型真的调到了 shell。
+2. **观察期对 V3-c 已经花得差不多**：V3-c 的爆炸半径不在生产链路
+   （react.py 只剩 test-only 的 fanout 在用），真正要盯的是 fanout 迁
+   适配器后的分支并发语义（有 opt-in 的 `fanout_live` 真机测试兜底）。
+   观察期真正还欠的是 **W5 之后给 /send 放真实流量**。
+3. **W3 优先级下调**：前端流式本就靠 `appendStreamingText` 兜底
+   （react 时代连 text_id 都没有），W4 后 gateway 事件带全 payload——
+   体验改进而非缺陷，归前端接线批。
+4. 批 C/D/E、V4 无新信息，维持原判。
+
+### 9.3 重排后的执行序
+
+```
+W5 权限接线（0.5d）          ← 唯一安全项，已执行 ✅
+  → /send 放真实流量，观察期正式开始
+  → V3-c 删 react.py + 迁 fanout（0.5d，爆炸半径 = 测试）
+  → W3 + SSE 前端接线批（体验）
+  → 批 C/D/E（等用户点头）→ V4（RSI 前）
+```
+
+### 9.4 一次实跑抓出三个装配缺口的教训
+
+`/send` 这条 P5-1c ④ "统一入口"的装配根（singleton）此前从未被端到端
+真正用过——三个缺口（max_iterations、workspace、permission）全是
+**"参数/闸门存在但装配根没人传"**的静默缺省，且每个都绕过了既有
+单测（单测直构 Gateway，不经过 singleton）。教训已体现在 W4/W5 的
+测试形状里：**singleton 级装配测试**（`test_gateway_max_iterations_wiring`
+/ `test_gateway_permission_wiring`）从此成为入口路径变更的必改点。
+剩余未知的同类缺口需要真实流量暴露——这正是观察期的目的。

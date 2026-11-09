@@ -64,6 +64,10 @@ class Gateway:
         # 装配（build=50 / 用户覆盖）；None 保持 SessionController 默认 1
         # （直构 Gateway 的测试路径行为不变）。
         max_iterations: int | None = None,
+        # **W5**：权限 evaluator（Tier 1 闸门）。None = 不接线（直构测试
+        # 路径的既有行为）；singleton 装配生产 Gateway 时注入默认
+        # evaluator（与 /send_async 的 chat_loop 同构选型）。
+        permission_evaluator: Any | None = None,
     ) -> None:
         self._events: list[tuple[str, dict]] = []
         # 阶段一 §2.8：Worker Slot 管理器——订阅 assignment.report 管理
@@ -121,6 +125,8 @@ class Gateway:
             registry=registry, stream=stream,
             # **W4**：工具的工作区根（ToolContext.workspace 的来源）。
             workspace=self._workspace,
+            # **W5**：Tier 1 权限闸门（None = 不设防，直构测试路径）。
+            permission_evaluator=permission_evaluator,
             # B5 R-1（选项 A）：组装根构造 ContextHub 并注入。None = 无上下
             # 文注入——直构 controller 的测试路径行为不变。
             context_hub=context_hub,
