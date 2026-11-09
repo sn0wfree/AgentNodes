@@ -11,6 +11,7 @@ A2 会把这里升级为正式生命周期管理（start/stop、worker 自检、
 from __future__ import annotations
 
 from typing import Any, Callable
+from agentnodes.foundation import settings as _settings
 
 _singleton: dict[str, Any] = {}
 
@@ -113,7 +114,7 @@ def _resolve_workspace() -> Any:
     import os
     from pathlib import Path
 
-    env = os.environ.get("AN_WORKSPACE_PATH")
+    env = _settings.get_str("AN_WORKSPACE_PATH")
     return Path(env) if env else Path.cwd()
 
 
@@ -125,7 +126,7 @@ def _platform_data_dir(workspace: Any) -> Any | None:
     """
     import os
 
-    if os.environ.get("QNODES_PLATFORM_STORE", "").strip().lower() in (
+    if _settings.get_str("QNODES_PLATFORM_STORE").strip().lower() in (
         "0", "false", "no", "off",
     ):
         return None

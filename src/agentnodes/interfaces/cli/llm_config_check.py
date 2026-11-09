@@ -16,6 +16,7 @@ import json
 import os
 from pathlib import Path
 from typing import TypedDict
+from agentnodes.foundation import settings as _settings
 
 # QuantNodes 标准配置位置（与 onboard.py 一致）
 QUANTNODES_DIR = Path.home() / ".agentnodes"
@@ -126,8 +127,8 @@ def check_llm_config() -> LLMConfigStatus:
 
     # 3. api_key 来源探测（优先级：env var > .env > llm.json）
     env_var_value = (
-        os.environ.get("OPENAI_API_KEY", "")
-        or os.environ.get("LLM_API_KEY", "")
+        _settings.get_str("OPENAI_API_KEY")
+        or _settings.get_str("LLM_API_KEY")
     )
     env_var_set = bool(env_var_value)
 

@@ -21,6 +21,7 @@ from rich.panel import Panel
 from rich.table import Table
 
 from agentnodes.interfaces.cli.theme import get_console
+from agentnodes.foundation import settings as _settings
 
 
 def _resolve_console(console: Any = None) -> Console:
@@ -29,7 +30,7 @@ def _resolve_console(console: Any = None) -> Console:
 
 def _memory_dir() -> Optional[str]:
     """Return the memory directory from env, or ``None``."""
-    return os.environ.get("AGENTNODES_MEMORY_DIR") or None
+    return _settings.get_str("AGENTNODES_MEMORY_DIR") or None
 
 
 def _store():

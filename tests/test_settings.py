@@ -23,15 +23,33 @@ from agentnodes.foundation import settings
 
 SRC = Path(__file__).resolve().parents[1] / "src" / "agentnodes"
 
-#: `os.environ.get("NAME", DEFAULT)` / `os.getenv("NAME", DEFAULT)`
-#: **支持跨行**：`cache.py` 就有一处写
-#: ``os.environ.get(\n    "AN_CACHE_COMPACTION_LINKED", "true"\n).lower()``，
-#: 逐行正则扫不到它——批次 B 首次迁移就漏了这个变量。
-_READ_PAT = re.compile(
+#: `os.environ.get("NAME", DEFAULT)` / `os.getenv(...)` —— 批 A 的形态
+_RAW_READ_PAT = re.compile(
     r'(?:os\.environ\.get|os\.getenv)\(\s*["\']([A-Z_0-9]+)["\']'
     r'(?:\s*,\s*([^)]+))?\)',
     re.S,
 )
+
+#: `_settings.get_str/get_int/get_float/get_bool/get("NAME")` —— 批 B 的形态
+_SETTINGS_READ_PAT = re.compile(
+    r'_settings\.(?:get_str|get_int|get_float|get_bool|get)\(\s*["\']([A-Z_0-9]+)["\']'
+)
+
+
+def _scan_settings_reads() -> set[str]:
+    """扫描经 settings 读取的变量名（批 B 之后的规范形态）。"""
+    names: set[str] = set()
+    for p in SRC.rglob("*.py"):
+        if "__pycache__" in p.parts:
+            continue
+        text = p.read_text(encoding="utf-8", errors="ignore")
+        names.update(m.group(1) for m in _SETTINGS_READ_PAT.finditer(text))
+    return names
+
+
+def _scan_raw_reads() -> list[tuple[str, str, int, str | None]]:
+    """扫描仍然直接读 env 的地方（批 B 后应当只剩外部变量）。"""
+    return _scan_reads()
 
 
 def _scan_reads() -> list[tuple[str, str, int, str | None]]:
@@ -45,17 +63,15 @@ def _scan_reads() -> list[tuple[str, str, int, str | None]]:
             continue
         rel = p.relative_to(SRC).as_posix()
         text = p.read_text(encoding="utf-8", errors="ignore")
-        for m in _READ_PAT.finditer(text):
+        for m in _RAW_READ_PAT.finditer(text):
             lineno = text.count("\n", 0, m.start()) + 1
-            # 跳过纯注释行（该行以 # 开头）
             line_start = text.rfind("\n", 0, m.start()) + 1
-            line_text = text[line_start:text.find("\n", m.start())
-                             if text.find("\n", m.start()) != -1 else len(text)]
+            line_end = text.find("\n", m.start())
+            line_text = text[line_start:line_end if line_end != -1 else len(text)]
             if line_text.lstrip().startswith("#"):
                 continue
             default = m.group(2)
             default = default.strip() if default else None
-            # 归一化跨行默认值里的空白
             if default:
                 default = re.sub(r"\s+", " ", default)
             out.append((m.group(1), rel, lineno, default))
@@ -72,22 +88,35 @@ def _all_read_names() -> set[str]:
 def test_every_read_env_var_is_declared():
     """源码读的每个 env 名都必须在表里，或显式归入外部变量。
 
-    这条防的是「新增了开关但忘了登记」——登记表一旦缺项，
-    ``--print-config`` 与文档就会漏掉它。
+    **批 B 后**：本项目配置一律经 `_settings.get_*`，所以「裸读」应当只剩
+    外部生态变量。这条同时守住两个方向：
+    - 裸读的项目变量 -> 说明有人绕过了 settings
+    - 经 settings 读的未登记变量 -> 说明开了开关没登记
     """
-    read = _all_read_names()
     declared = set(settings.ENV_TABLE)
     external = set(settings.EXTERNAL_ENV_VARS)
-    missing = sorted(read - declared - external)
-    assert not missing, (
-        f"这些 env 变量在源码里被读取，但既没在 ENV_TABLE 声明，"
-        f"也没归入 EXTERNAL_ENV_VARS: {missing}"
+
+    raw = _scan_raw_reads()
+    bypassed = sorted({n for n, _, _, _ in raw} - declared - external)
+    assert not bypassed, (
+        f"这些 env 变量仍是裸读（绕过 settings），且不在 EXTERNAL_ENV_VARS: {bypassed}"
+    )
+
+    via_settings = _scan_settings_reads()
+    undeclared = sorted(via_settings - declared)
+    assert not undeclared, (
+        f"这些变量经 settings 读取但未登记进 ENV_TABLE: {undeclared}"
+    )
+
+    # 兜底：外部变量不该经 settings 读（它们就不该进表）
+    assert not (via_settings & external), (
+        f"外部变量被当成本项目配置读取: {sorted(via_settings & external)}"
     )
 
 
 def test_no_phantom_declarations():
-    """表里声明的每个名字都必须真的被读到（或是一个已文档化的保留项）。"""
-    read = _all_read_names()
+    """表里声明的每个名字都必须真的被用到（或是一个已文档化的保留项）。"""
+    used = _scan_settings_reads() | {n for n, _, _, _ in _scan_raw_reads()}
     #: 已声明但当前**没有读取点**——即"预留/兼容"项，必须逐个解释。
     RESERVED = {
         # 由 foundation/paths.py 消费（通过 env_override 与
@@ -96,8 +125,10 @@ def test_no_phantom_declarations():
         "AN_CHECKPOINTS_DIR",
         "AN_WORKFLOWS_DIR",
         "AN_MODEL_CATALOG_DIR",
+        # 由 foundation/paths.py 的 PROFILE 机制间接使用
+        "AN_DATA_DIR",
     }
-    phantom = sorted(set(settings.ENV_TABLE) - read - RESERVED)
+    phantom = sorted(set(settings.ENV_TABLE) - used - RESERVED)
     assert not phantom, (
         f"这些声明在表里但源码从未读取，属死声明（要么删，要么加进 RESERVED 并说明）: "
         f"{phantom}"
@@ -172,10 +203,11 @@ def _coerce_like_declared(raw, setting: settings.Setting):
 
 @pytest.mark.parametrize("name,rel,lineno,default_expr", _scan_reads())
 def test_declared_default_matches_source(name, rel, lineno, default_expr):
-    """每个读取点的默认值必须与声明表一致（按声明类型归一后）。
+    """**仍裸读**的变量，其默认值必须与声明表一致。
 
-    **这是「零行为变化」的直接证明**：只要这条全绿，把读取点改成
-    ``settings.get_xxx(name)`` 就不会改变任何行为。
+    批 B 后大多数读取点已改走 settings（见下一条测试），所以这里只覆盖
+    剩余的裸读点。它们的默认值仍必须与声明表一致——否则
+    ``settings.snapshot()`` 展示的默认值会与实际行为不符。
     """
     setting = settings.ENV_TABLE.get(name)
     if setting is None:
@@ -186,7 +218,6 @@ def test_declared_default_matches_source(name, rel, lineno, default_expr):
         pytest.skip(f"{name} 的默认值是复杂表达式，无法静态比较")
 
     if src_default == "<NO-DEFAULT>":
-        # 源码 `os.environ.get(NAME)` 无默认 → 未设置时返回 None。
         assert setting.default is None, (
             f"{rel}:{lineno} 读 {name} 时没有默认值（未设置返回 None），"
             f"但声明表给了 default={setting.default!r}"
@@ -194,17 +225,87 @@ def test_declared_default_matches_source(name, rel, lineno, default_expr):
         return
 
     src_value = _coerce_like_declared(src_default, setting)
-
-    # 同一个变量可能有多个读取点、默认值不同（如 CORS_ORIGINS 的
-    # None / ""）。声明表只记录一个"权威默认"，其余形态必须在这里
-    # 显式登记，否则就是真的不一致。
     if src_value != setting.default:
         allowed = _MULTI_DEFAULT_ALLOWED.get(name, set())
         assert src_value in allowed, (
             f"{rel}:{lineno} {name} 的源码默认值 {src_value!r} 与声明表 "
-            f"{setting.default!r} 不一致——改成 settings 读取会改变行为。"
+            f"{setting.default!r} 不一致。"
             f"若这是有意的多形态读取，请加进 _MULTI_DEFAULT_ALLOWED。"
         )
+
+
+def test_settings_call_sites_use_the_declared_getter():
+    """经 settings 读取的每个变量，其 getter 必须与声明的 kind **兼容**。
+
+    **两种合法形态**：
+
+    1. ``_settings.get_int(X)`` —— getter 与 kind 完全匹配。
+    2. ``int(_settings.get_str(X))`` —— get_str 后由**外层**显式转换。
+       这是批 B 迁移脚本采用的形态：保留原代码的转换表达式，只替换
+       内层读取，从而做到**逐字节等价**（原代码本来就是
+       ``int(os.environ.get(X, "1000"))``）。
+
+    非法形态：``kind=bool`` 却用 ``get_str`` 后直接 ``.lower()``——
+    未设置时 get_str 返回声明表的 bool 默认值，会在 bool 上调字符串方法
+    而崩溃（批 B 实际踩到过这个坑，见 cache.py 的 compaction_linked）。
+    """
+    by_kind = {
+        "int": "get_int",
+        "float": "get_float",
+        "bool": "get_bool",
+        "str": "get_str",
+        "path": "get_str",
+    }
+    #: 允许「外层转换」的 kind：get_str 之后紧跟这些转换函数
+    WRAPPED_OK = {"int": "int", "float": "float", "bool": None}
+
+    offenders = []
+    pat = re.compile(
+        r'_settings\.(get_str|get_int|get_float|get_bool|get)\(\s*["\']([A-Z_0-9]+)["\']'
+    )
+    for p in SRC.rglob("*.py"):
+        if "__pycache__" in p.parts:
+            continue
+        rel = p.relative_to(SRC).as_posix()
+        lines = p.read_text(encoding="utf-8", errors="ignore").splitlines()
+        for i, line in enumerate(lines, 1):
+            for m in pat.finditer(line):
+                getter, name = m.group(1), m.group(2)
+                setting = settings.ENV_TABLE.get(name)
+                if setting is None:
+                    continue
+                want = by_kind.get(setting.kind)
+                if want is None:
+                    continue            # flag / misc：不约束
+                if getter == "get":
+                    continue            # 原始读取，有意保留字符串语义
+                if getter == want:
+                    continue            # 完全匹配
+
+                # get_str + 外层转换 → 合法
+                if getter == "get_str":
+                    wrapper = WRAPPED_OK.get(setting.kind)
+                    if wrapper is None:
+                        # bool 不能用 get_str（默认值是 bool，会崩）
+                        offenders.append(
+                            f"{rel}:{i} {name} kind={setting.kind} 用了 get_str "
+                            f"（bool 必须用 get_bool，否则默认值 True 上调 .lower() 会崩）"
+                        )
+                        continue
+                    prefix = line[:m.start()].rstrip()
+                    if prefix.endswith(f"{wrapper}(") or (
+                        f"{wrapper}(" in line[max(0, m.start() - 30):m.start()]
+                    ):
+                        continue        # int(get_str(...)) / float(get_str(...))
+                    # 也允许直接用在本行（跨行形式由下一行体现）
+                    prev = lines[i - 2] if i >= 2 else ""
+                    if prev.rstrip().endswith(f"{wrapper}("):
+                        continue
+                offenders.append(
+                    f"{rel}:{i} {name} kind={setting.kind} 用了 {getter}"
+                    f"（应为 {want}，或用 {WRAPPED_OK.get(setting.kind)}(get_str(...))）"
+                )
+    assert not offenders, "getter 与声明 kind 不匹配：\n  " + "\n  ".join(offenders)
 
 
 #: 同一变量在不同读取点使用不同默认值的**已知形态**。
@@ -332,12 +433,18 @@ def test_real_read_point_swap_is_equivalent(monkeypatch):
 
 
 def test_bg_proc_read_point_is_declared_correctly():
-    """真实模块 `bg_proc.py` 的读取与声明表一致（具体实例验证）。"""
+    """真实模块 `bg_proc.py` 的读取与声明表一致（具体实例验证）。
+
+    **批 B 后**：源码形态从 ``os.environ.get(X, "300")`` 变成
+    ``_settings.get_int(X)``（或 get_str 后由下游 int()）。
+    """
     src = (SRC / "foundation" / "utils" / "bg_proc.py").read_text(encoding="utf-8")
-    assert 'os.environ.get("AN_BACKTEST_STALL_TIMEOUT", "300")' in src
+    assert 'AN_BACKTEST_STALL_TIMEOUT' in src
+    assert "_settings.get_" in src, "bg_proc 未走 settings 读取层"
     setting = settings.ENV_TABLE["AN_BACKTEST_STALL_TIMEOUT"]
-    assert setting.kind == "int"
-    assert setting.default == 300
+    # 源码是 float(os.environ.get(X, "300")) —— 允许小数，故 kind=float。
+    assert setting.kind == "float"
+    assert setting.default == 300.0
 
 
 def test_engine_switch_reads_are_consistent():

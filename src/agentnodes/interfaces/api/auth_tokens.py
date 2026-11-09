@@ -30,6 +30,7 @@ import secrets
 import time
 from pathlib import Path
 from typing import Optional
+from agentnodes.foundation import settings as _settings
 
 TOKEN_TTL_SECONDS = 86400  # 24h
 
@@ -50,7 +51,7 @@ def _allow_dev_secret() -> bool:
     must configure JWT_SECRET explicitly. The fallback is kept as an
     opt-in escape hatch for read-only filesystems / local dev.
     """
-    return os.environ.get("AGENTNODES_ALLOW_DEV_SECRET") == "1"
+    return _settings.get_str("AGENTNODES_ALLOW_DEV_SECRET") == "1"
 
 
 def _load_secret() -> bytes:
@@ -66,7 +67,7 @@ def _load_secret() -> bytes:
     if _SECRET_CACHE is not None:
         return _SECRET_CACHE
 
-    env_secret = os.environ.get("JWT_SECRET")
+    env_secret = _settings.get_str("JWT_SECRET")
     if env_secret:
         _SECRET_CACHE = env_secret.encode()
         return _SECRET_CACHE

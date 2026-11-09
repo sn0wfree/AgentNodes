@@ -35,6 +35,7 @@ from .trace import JsonFormatter, TraceFilter, ensure_trace_filter
 # 文件日志默认目录：项目数据根下 logs/（与各 store 的 ~/.agentnodes
 # 同根；测试经 conftest home 沙箱自动重定向，不触真实目录）。
 from agentnodes.foundation.storage.sqlite import DEFAULT_DATA_DIR
+from agentnodes.foundation import settings as _settings
 
 DEFAULT_TEXT_FORMAT = (
     "%(asctime)s %(levelname)-8s %(name)s "
@@ -68,7 +69,7 @@ _dual_logger = logging.getLogger(__name__)
 def resolve_level(level: int | str | None = None) -> int:
     """级别解析：显式参数 > ``AN_LOG_LEVEL`` > INFO（非法名回落 INFO）。"""
     if level is None:
-        level = os.environ.get("AN_LOG_LEVEL", "INFO")
+        level = _settings.get_str("AN_LOG_LEVEL")
     if isinstance(level, str):
         return getattr(logging, level.strip().upper(), logging.INFO)
     return int(level)
@@ -77,7 +78,7 @@ def resolve_level(level: int | str | None = None) -> int:
 def _json_requested(json_output: bool | None) -> bool:
     if json_output is not None:
         return json_output
-    return os.environ.get("AN_LOG_JSON", "").strip().lower() in ("1", "true")
+    return _settings.get_str("AN_LOG_JSON").strip().lower() in ("1", "true")
 
 
 def _resolve_log_file(log_file: str | Path | None) -> Path | None:

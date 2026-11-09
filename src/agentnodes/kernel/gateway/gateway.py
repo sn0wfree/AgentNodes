@@ -16,6 +16,7 @@ from typing import Any, Callable
 from agentnodes.kernel.gateway.fencing import SessionFence
 from agentnodes.kernel.gateway.session_controller import RunResult, SessionController
 from agentnodes.kernel.orchestration import EntryPoint
+from agentnodes.foundation import settings as _settings
 
 logger = logging.getLogger(__name__)
 
@@ -24,7 +25,7 @@ def _resolve_workspace() -> Path:
     """workspace 根（P-5 指针的 URI 根）：AN_WORKSPACE_PATH 或 cwd。"""
     import os
 
-    env = os.environ.get("AN_WORKSPACE_PATH")
+    env = _settings.get_str("AN_WORKSPACE_PATH")
     return Path(env) if env else Path.cwd()
 
 

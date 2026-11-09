@@ -41,6 +41,7 @@ from pathlib import Path
 from typing import Any, Callable
 
 from agentnodes.foundation.git import git_commit
+from agentnodes.foundation import settings as _settings
 from agentnodes.kernel.hooks.composite import CompositeHook
 from agentnodes.kernel.hooks.context import AgentHookContext
 from agentnodes.foundation.llm import LLMConfig, LLMResponse, OpenAICompatClient, ToolCall
@@ -83,7 +84,7 @@ _TOOL_RESULT_MAX = 50_000
 # Tool result 入 LLM history 前的统一截断上限（字符）。
 # 超长输出在中间截断，保留头尾并标记 [truncated]。
 # 环境变量 AN_TOOL_RESULT_MAX_CHARS 可覆盖（0 = 不截断）。
-_TOOL_RESULT_HISTORY_MAX = int(os.environ.get("AN_TOOL_RESULT_MAX_CHARS", "30000"))
+_TOOL_RESULT_HISTORY_MAX = int(_settings.get_str("AN_TOOL_RESULT_MAX_CHARS"))
 
 
 # ── Cached GoalStore (goal-snapshot injection) ─────────────────────
@@ -866,10 +867,10 @@ class AgentLoop(
             # 批次 12 S1：默认翻到 skeleton。回退链：
             #   AGENTNODES_ENGINE=legacy  → 旧循环体（显式回退）
             #   AGENTNODES_SKELETON=0     → 同上（兼容别名）
-            env_engine = os.environ.get("AGENTNODES_ENGINE", "").strip().lower()
+            env_engine = _settings.get_str("AGENTNODES_ENGINE").strip().lower()
             if env_engine in ("legacy", "skeleton"):
                 engine = env_engine
-            elif os.environ.get("AGENTNODES_SKELETON") == "0":
+            elif _settings.get_str("AGENTNODES_SKELETON") == "0":
                 engine = "legacy"
             else:
                 engine = "skeleton"

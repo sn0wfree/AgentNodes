@@ -16,6 +16,7 @@ import time
 import uuid
 from pathlib import Path
 from typing import Optional
+from agentnodes.foundation import settings as _settings
 
 logger = logging.getLogger(__name__)
 
@@ -239,7 +240,7 @@ def seed_admin_if_empty(db: UserDB) -> None:
     if db.user_count() > 0:
         return
     import os as _os
-    password = _os.environ.get("AN_ADMIN_PASSWORD", "")
+    password = _settings.get_str("AN_ADMIN_PASSWORD")
     if password:
         source = "AN_ADMIN_PASSWORD"
     else:

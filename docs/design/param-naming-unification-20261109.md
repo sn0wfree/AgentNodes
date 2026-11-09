@@ -247,6 +247,44 @@ CLI 参数 > 环境变量 > 配置文件 > 内置默认
 
 **验证**：新增 `test_settings_aliases.py`（28 个改名逐条验证新名生效 + 旧名 warn）。
 
+### 批 B · 迁移调用点（**已完成**）
+
+> **用户已拍板**：批 B 只做「换读取层 + 别名」，**不改变量名**。
+> 改名（`AN_*` → `AGENTNODES_*`）留给批 B'，避免一次动太多。
+
+#### 批 B 已执行结果（2026-11-09）
+
+| 产出 | 说明 |
+|---|---|
+| `settings.get()` 支持别名解析 | canonical 优先 → `aliases` 回退 + warn 一次（进程内去重） |
+| `settings.resolve_canonical()` | 旧名 → 新名映射（供诊断/迁移） |
+| 62 处读取点迁移 | 33 个文件，`os.environ.get(X)` → `_settings.get_str(X)` |
+| 门禁升级为**硬门禁** | `check_env_access` 去掉 `--allow-legacy`；0 违规 |
+| `tests/test_settings.py` 18 passed | 新增 getter/kind 匹配检查 |
+
+**迁移脚本的设计教训（重要，写下来防止重复踩坑）**：
+
+| 问题 | 后果 | 教训 |
+|---|---|---|
+| 逐行正则扫不到**跨行调用** | `AN_CACHE_COMPACTION_LINKED` 完全漏掉 | 必须**全文扫描 + 回推行号** |
+| import 插在「最后一个 import」 | 插进了未闭合的 `from x import (` 里，产生语法错误（3 个文件） | import 只能插在**顶层 import 块**，不能盲选“最后一个” |
+| 正则跨行匹配吞掉默认值 | `rules_io.py` 的 `Path.home() / ".agentnodes" / ...` 被吃掉，留下残骸 | 默认值里含括号/函数调用时**必须手工确认** |
+| **前缀粘连**：原代码 `_os.environ.get(...)` 被替换成 `__settings.get_str(...)` | `NameError: name '__settings' is not defined`，引发 **43 个测试失败**（23 个直接 + 20 个 500 连锁） | 正则要匹配词边界；替换后必须**全仓 grep 残留** |
+| `bool` 声明的变量用 `get_str` | 未设置时返回 `True`，`.lower()` 崩溃（`cache.py`） | **kind 与 getter 必须匹配**；已加测试钉住 |
+| `int(...)` 外层 + `get_str` 内层 | 功能等价但形式不优 | 允许两种形态（`get_int` 或 `int(get_str(...))`），测试显式放行 |
+| `float(...)` 外层被声明成 `int` | `AN_BACKTEST_STALL_TIMEOUT` / `AN_CACHE_RE_RESOLVE_SEC` 声明错误（原文允许小数） | **声明类型必须读源码的外层转换函数**，不能猜 |
+
+**验证流程的教训**：只跑 `py_compile` 不够——语法正确但 `NameError` 在运行期才炸。
+必须做**导入冒烟**（21 个关键模块）+ **受影响测试文件**才可靠。
+
+**最终验证**：411 个源文件全部编译通过、21 个关键模块导入成功、
+`check_env_access` 0 违规、受影响的 4 个测试文件 58 passed。
+
+### 批 B' · 改名（未执行）
+
+把 `AN_*` / `QNODES_*` / `SR_*` 改为 `AGENTNODES_*`：只需改声明表的
+`name`，把旧名放进 `aliases`。**因为所有读取都已经 settings，改名是一处改动。**
+
 ### 批 C · CLI 参数统一
 
 77 个参数中，识别「平台配置」子集（约 20 个）加 `--an-` 前缀；

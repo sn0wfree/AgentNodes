@@ -158,8 +158,9 @@ _DECLARED: tuple[Setting, ...] = (
        "compact.ended 事件是否携带压缩后 messages"),
     _s("AGENTNODES_PERMISSION_MODE", "engine", "",
        "权限模式 L0-L4（空 = 按路径默认）"),
-    _i("AN_BACKTEST_STALL_TIMEOUT", "engine", 300,
-       "后台进程停滞判定秒数"),
+    # 注意：源码是 float(...)，允许小数（如 0.5 秒）；声明必须是 float。
+    _f("AN_BACKTEST_STALL_TIMEOUT", "engine", 300.0,
+       "后台进程停滞判定秒数（源码 float，允许小数）"),
 
     # ── 缓存（domain: cache）───────────────────────────────────
     _s("AN_CACHE_WRITE_POLICY", "cache", "write_through",
@@ -173,7 +174,8 @@ _DECLARED: tuple[Setting, ...] = (
     _f("AN_CACHE_SAFETY_FACTOR", "cache", 2.0, "安全系数"),
     _i("AN_CACHE_MIN_SAMPLES", "cache", 10, "最小样本数"),
     _f("AN_CACHE_CHARS_PER_TOKEN", "cache", 3.0, "每 token 字符数估算"),
-    _i("AN_CACHE_RE_RESOLVE_SEC", "cache", 60, "重新解析间隔（秒）"),
+    # 源码是 float(...)，允许小数（如 0.5 秒）。
+    _f("AN_CACHE_RE_RESOLVE_SEC", "cache", 60.0, "重新解析间隔（秒）"),
     _f("AN_CACHE_TTL", "cache", 60.0, "缓存 TTL（秒）"),
     # 跨行读取（cache.py:110 的 os.environ.get( 与变量名不在同一行）——
     # 批次 B 首次迁移时被逐行正则漏掉，是「扫描器自身盲区」的实例。

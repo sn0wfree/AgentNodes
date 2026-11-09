@@ -29,6 +29,7 @@ import time
 import uuid
 from pathlib import Path
 from typing import Optional
+from agentnodes.foundation import settings as _settings
 
 logger = logging.getLogger(__name__)
 
@@ -335,9 +336,9 @@ def main() -> None:
         db_path = Path(args.db_path)
     else:
         import os
-        workspace = Path(os.environ.get(
-            "AN_WORKSPACE_PATH", Path.home() / ".agentnodes",
-        ))
+        workspace = Path(
+            _settings.get_str("AN_WORKSPACE_PATH") or str(Path.home() / ".agentnodes")
+        )
         db_path = workspace / "quantnodes_agentnodes_user.db"
 
     if not db_path.exists():

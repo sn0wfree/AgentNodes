@@ -19,6 +19,7 @@ from pathlib import Path
 from typing import Any, Callable
 
 from .loop import AgentLoop
+from agentnodes.foundation import settings as _settings
 
 logger = logging.getLogger(__name__)
 
@@ -166,7 +167,7 @@ def build_chat_agent_loop(
             PermissionMode,
         )
 
-        env_mode = os.environ.get("AGENTNODES_PERMISSION_MODE", "")
+        env_mode = _settings.get_str("AGENTNODES_PERMISSION_MODE")
         if env_mode:
             mode = PermissionMode.from_value(env_mode)
         else:

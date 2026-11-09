@@ -24,6 +24,7 @@ from typing import Any
 
 from agentnodes.foundation.utils.token_utils import estimate_tokens
 from . import compact as _compact_mod
+from agentnodes.foundation import settings as _settings
 
 logger = logging.getLogger(__name__)
 
@@ -192,7 +193,7 @@ class LoopCompactionMixin:
 
                 include_msgs = (
                     compressed_messages is not None
-                    and os.environ.get("AN_L4_INCLUDE_MESSAGES", "").lower()
+                    and _settings.get_str("AN_L4_INCLUDE_MESSAGES").lower()
                     in ("1", "true", "yes")
                 )
                 payload: dict[str, Any] = {

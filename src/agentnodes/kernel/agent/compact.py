@@ -26,6 +26,8 @@ from contextlib import contextmanager
 from dataclasses import dataclass, field
 from typing import Any
 
+from agentnodes.foundation import settings as _settings
+
 logger = logging.getLogger(__name__)
 
 
@@ -97,9 +99,10 @@ def compaction_persister_registered(fn: Any):
 # keep_all_compactions_in_history=True without code changes or config edits.
 # Useful for emergency rollback if the new filter causes issues.
 # See docs/design/compaction-history-filter.md.
-_KEEP_ALL_COMPACTIONS_OVERRIDE: bool = os.environ.get(
-    "AN_KEEP_ALL_COMPACTIONS", ""
-).lower() in ("1", "true", "yes", "on")
+# 批次 B：改用 get_bool（声明表 kind=bool），避免 None/False 上调 .lower()。
+_KEEP_ALL_COMPACTIONS_OVERRIDE: bool = _settings.get_bool(
+    "AN_KEEP_ALL_COMPACTIONS"
+)
 
 
 # ── In-memory monitoring counters ────────────────────────────────────

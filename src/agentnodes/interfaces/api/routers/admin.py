@@ -25,6 +25,7 @@ from collections import deque
 from typing import Any
 
 from fastapi import APIRouter, Header, HTTPException, Query
+from agentnodes.foundation import settings as _settings
 
 logger = logging.getLogger(__name__)
 
@@ -35,7 +36,7 @@ router = APIRouter()
 
 def _get_admin_token() -> str:
     """Get the admin token from env. Returns empty string if disabled."""
-    return os.environ.get("AN_ADMIN_TOKEN", "").strip()
+    return _settings.get_str("AN_ADMIN_TOKEN").strip()
 
 
 def _verify_admin(x_admin_token: str | None = Header(None)) -> None:

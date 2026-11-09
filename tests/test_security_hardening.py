@@ -98,7 +98,14 @@ class TestTokenForgery:
         )
         token = resp.json()["access_token"]
         payload, sig = token.rsplit(".", 1)
-        bad_sig = ("A" if sig[-1] != "A" else "B") + sig[1:]
+        # **只翻转最后一位**，保持长度与 base64 字符集不变。
+        #
+        # 旧实现是 `("A" if sig[-1] != "A" else "B") + sig[1:]` —— 它丢掉了
+        # 签名的第一个字符，使长度少 1 位，base64 不再合法。于是 FastAPI 的
+        # 请求校验先返回 **422（格式错误）** 而不是 401（鉴权失败），
+        # 断言 `== 401` 偶发失败（依赖签名长度，故只在大顺序下出现）。
+        flipped = "A" if sig[-1] != "A" else "B"
+        bad_sig = sig[:-1] + flipped
         resp2 = client.get("/api/goal/status", headers={
             "Authorization": f"Bearer {payload}.{bad_sig}",
         })

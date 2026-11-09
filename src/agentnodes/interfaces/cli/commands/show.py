@@ -19,6 +19,7 @@ from rich.console import Console
 from rich.panel import Panel
 
 from agentnodes.interfaces.cli.theme import get_console
+from agentnodes.foundation import settings as _settings
 
 
 def _resolve_console(console: Any = None) -> Console:
@@ -28,7 +29,7 @@ def _resolve_console(console: Any = None) -> Console:
 def _resolve_workspace() -> Path:
     """Default workspace — overridable via env ``AGENTNODES_WORKSPACE``."""
     import os
-    ws = os.environ.get("AGENTNODES_WORKSPACE")
+    ws = _settings.get_str("AGENTNODES_WORKSPACE")
     if ws:
         return Path(ws)
     return Path.cwd()

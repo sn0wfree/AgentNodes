@@ -91,7 +91,7 @@ def _user_cache_dir() -> Path:
     缓存可再生，所以硬切换——旧的 ``~/.quantnodes/model_catalog.json``
     不再读取，下次会重新拉取。
     """
-    override = os.environ.get("AN_MODEL_CATALOG_DIR", "").strip()
+    override = _settings.get_str("AN_MODEL_CATALOG_DIR").strip()
     if override:
         return Path(override).expanduser()
     home = Path(os.environ.get("HOME", str(Path.home())))
@@ -116,6 +116,7 @@ _REQUEST_TIMEOUT = 5.0
 # so `from .model_catalog import MODELS_DEV_ID` keeps working; keep it
 # as a sync alias rather than a second hand-maintained copy.
 from .provider import MODELS_DEV_ID  # noqa: F401  (re-export, see below)
+from agentnodes.foundation import settings as _settings
 
 MODELS_DEV_ID: dict[str, str] = dict(MODELS_DEV_ID)
 

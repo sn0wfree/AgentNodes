@@ -15,6 +15,7 @@ import os
 from pathlib import Path
 
 from agentnodes.foundation.paths import active_profile, session_db_filename
+from agentnodes.foundation import settings as _settings
 
 #: 统一会话库文件名（点号前缀 → 文件管理器里隐藏）。
 #: 放在工作区目录，EventStore / web_session / SessionStore 读写同一个文件。
@@ -51,7 +52,7 @@ def resolve_session_db_path() -> Path:
     且不会在 import 期因 env 未设而固化默认值。
     """
     # 1. Explicit override
-    env_explicit = os.environ.get("AN_SESSIONS_DB")
+    env_explicit = _settings.get_str("AN_SESSIONS_DB")
     if env_explicit:
         p = Path(env_explicit)
         p.parent.mkdir(parents=True, exist_ok=True)
@@ -60,7 +61,7 @@ def resolve_session_db_path() -> Path:
     filename = session_db_filename()
 
     # 2/3. Workspace-relative (AN_WORKSPACE_PATH or cwd)
-    workspace_env = os.environ.get("AN_WORKSPACE_PATH")
+    workspace_env = _settings.get_str("AN_WORKSPACE_PATH")
     workspace = Path(workspace_env) if workspace_env else Path.cwd()
     p = (workspace / filename).resolve()
     p.parent.mkdir(parents=True, exist_ok=True)

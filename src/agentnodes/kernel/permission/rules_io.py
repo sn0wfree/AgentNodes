@@ -21,14 +21,13 @@ import yaml
 
 from .evaluator import DEFAULT_RULES
 from .schema import Permission, PermissionAction, PermissionRule
+from agentnodes.foundation import settings as _settings
 
 logger = logging.getLogger(__name__)
 
 DEFAULT_RULES_PATH = Path(
-    os.environ.get(
-        "AGENTNODES_PERMISSIONS_PATH",
-        str(Path.home() / ".agentnodes" / "permissions.yaml"),
-    )
+    _settings.get_str("AGENTNODES_PERMISSIONS_PATH")
+    or str(Path.home() / ".agentnodes" / "permissions.yaml")
 )
 
 

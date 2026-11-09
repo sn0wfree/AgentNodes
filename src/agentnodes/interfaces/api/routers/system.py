@@ -9,6 +9,7 @@ from typing import Optional
 
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
+from agentnodes.foundation import settings as _settings
 
 logger = logging.getLogger(__name__)
 
@@ -56,7 +57,7 @@ async def system_info():
     db = get_user_db()
 
     # Workspace path
-    workspace = os.environ.get("AN_WORKSPACE_PATH", str(Path.cwd()))
+    workspace = _settings.get_str("AN_WORKSPACE_PATH") or str(Path.cwd())
 
     # LLM status (legacy dict for frontend compat)
     try:

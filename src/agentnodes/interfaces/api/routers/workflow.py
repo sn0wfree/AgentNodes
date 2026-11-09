@@ -338,6 +338,7 @@ async def workflow_events(goal_id: str, request: Request):
 # ─────────────────────────────────────────────────────────────────────
 
 from pathlib import Path as _Path  # noqa: E402
+from agentnodes.foundation import settings as _settings
 
 _run_registry = None
 _run_store = None
@@ -351,9 +352,10 @@ def _definition_workspace() -> _Path:
     existing deployments keep their definitions directory.
     """
     import os
+    # 批次 B：AN_WORKSPACE_PATH 的声明 default 是 None，先兜底成 "" 再 .strip()。
     raw = (
-        os.environ.get("AN_WORKSPACE_PATH", "").strip()
-        or os.environ.get("SR_WORKSPACE_PATH", "").strip()
+        (_settings.get_str("AN_WORKSPACE_PATH") or "").strip()
+        or _settings.get_str("SR_WORKSPACE_PATH").strip()
         or str(_Path.cwd())
     )
     return _Path(raw)

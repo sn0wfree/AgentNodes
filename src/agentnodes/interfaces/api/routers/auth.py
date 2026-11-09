@@ -17,6 +17,7 @@ from typing import Optional
 
 from fastapi import APIRouter, Depends, HTTPException, Request
 from pydantic import BaseModel
+from agentnodes.foundation import settings as _settings
 
 router = APIRouter()
 
@@ -48,7 +49,7 @@ class TokenResponse(BaseModel):
 
 def _registration_enabled() -> bool:
     """Registration is opt-in (``AN_ALLOW_REGISTRATION=1``); off by default."""
-    return os.environ.get("AN_ALLOW_REGISTRATION", "").lower() in ("1", "true", "yes")
+    return _settings.get_str("AN_ALLOW_REGISTRATION").lower() in ("1", "true", "yes")
 
 
 # ── SEC-1: password hashing ────────────────────────────────────

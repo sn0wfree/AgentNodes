@@ -37,6 +37,7 @@ import os
 import threading
 import time
 from pathlib import Path
+from agentnodes.foundation import settings as _settings
 
 logger = logging.getLogger(__name__)
 
@@ -106,7 +107,7 @@ def _peek_path() -> Path:
         from agentnodes.foundation.storage.sqlite import DEFAULT_DATA_DIR
 
         base = (
-            os.environ.get("AN_DATA_DIR", "").strip() or str(DEFAULT_DATA_DIR)
+            _settings.get_str("AN_DATA_DIR").strip() or str(DEFAULT_DATA_DIR)
         )
         return Path(base).expanduser() / _HALT_FILENAME
     except Exception:  # noqa: BLE001

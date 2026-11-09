@@ -6,6 +6,7 @@ from typing import Optional
 
 from fastapi import APIRouter, HTTPException, Request
 from pydantic import BaseModel
+from agentnodes.foundation import settings as _settings
 
 router = APIRouter()
 
@@ -20,9 +21,9 @@ def _session_owned(request: Request, session_id: str) -> None:
     """
     import os as _os
 
-    if _os.environ.get("AN_ENFORCE_STUDY_IDOR", "").strip() == "0":
+    if _settings.get_str("AN_ENFORCE_STUDY_IDOR").strip() == "0":
         return
-    if _os.environ.get("SR_ENFORCE_STUDY_IDOR", "1") == "0":
+    if _settings.get_str("SR_ENFORCE_STUDY_IDOR") == "0":
         return
     from .web_session import _fetch_session_owned, _get_db
     user_id = getattr(request.state, "user_id", None) or "anonymous"

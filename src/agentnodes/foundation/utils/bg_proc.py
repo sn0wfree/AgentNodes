@@ -25,9 +25,10 @@ import uuid
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, Optional, Sequence
+from agentnodes.foundation import settings as _settings
 
 DEFAULT_STALL_TIMEOUT = float(
-    os.environ.get("AN_BACKTEST_STALL_TIMEOUT", "300")
+    _settings.get_str("AN_BACKTEST_STALL_TIMEOUT")
 )
 
 

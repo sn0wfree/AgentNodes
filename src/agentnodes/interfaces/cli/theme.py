@@ -26,6 +26,7 @@ from typing import Optional
 
 from rich.console import Console
 from rich.theme import Theme as _RichThemeType
+from agentnodes.foundation import settings as _settings
 
 # Brand palette — kept in sync with QuantNodes-Research frontend.
 _BRAND_HEX = "#d97706"
@@ -67,7 +68,7 @@ def _is_dark_terminal() -> bool:
     3. ``TERM_PROGRAM=Apple_Terminal`` ⇒ dark.
     4. Otherwise: assume dark (most modern terminals).
     """
-    override = os.environ.get("AGENTNODES_THEME", "").strip().lower()
+    override = _settings.get_str("AGENTNODES_THEME").strip().lower()
     if override == "dark":
         return True
     if override == "light":

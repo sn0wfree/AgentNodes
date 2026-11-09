@@ -20,6 +20,7 @@ from pathlib import Path
 from typing import Any, Optional, Sequence
 
 from .models import Attempt, AttemptStatus, Message
+from agentnodes.foundation import settings as _settings
 
 logger = logging.getLogger(__name__)
 
@@ -44,7 +45,7 @@ class SessionStore:
         # Default: enabled (event_log is the source of truth in B3).
         # Set AN_EVENT_LOG_READ=0 to fall back to direct DB reads.
         import os
-        self._use_event_log_read = os.environ.get("AN_EVENT_LOG_READ", "1") != "0"
+        self._use_event_log_read = _settings.get_str("AN_EVENT_LOG_READ") != "0"
         # Lazily-built cached Projector (see _get_projector).
         self._projector = None
 

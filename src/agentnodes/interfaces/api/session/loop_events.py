@@ -14,6 +14,7 @@ if TYPE_CHECKING:
 
 from agentnodes.foundation.llm.config import LLMConfig
 from .part_accumulate import _accumulate_part
+from agentnodes.foundation import settings as _settings
 
 logger = logging.getLogger(__name__)
 
@@ -143,7 +144,7 @@ class _LoopEventForwarder:
         import hashlib as _hashlib
 
         out = dict(data)
-        threshold = int(os.environ.get("AN_LLM_REQUEST_OFFLOAD_THRESHOLD", "4096"))
+        threshold = int(_settings.get_str("AN_LLM_REQUEST_OFFLOAD_THRESHOLD"))
 
         # Locate the sidecar dir next to the event DB: <dir>/trace-blobs/.
         blob_root = None

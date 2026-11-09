@@ -313,22 +313,21 @@ exit /b 0
 
 
 :step_env_access
-REM Batch A: settings.ENV_TABLE is the single source for config reads.
-REM --allow-legacy is intentional: batch B is what actually rewrites the
-REM existing ~58 call sites. Until then this step still runs every batch
-REM (so NEW violations are visible in the log) without failing the gate.
+REM settings.ENV_TABLE is the single source for config reads.
+REM Batch B migrated all call sites, so this is now a HARD gate:
+REM any direct os.environ.get of a project-prefixed var fails the batch.
 if not exist "scripts\arch\check_env_access.py" (
     echo   [SKIP] check_env_access.py not present
     exit /b 0
 )
 set "LOG=%TEMP%\batch_gate_step8.log"
-"%PROBE_PI%" scripts\arch\check_env_access.py --allow-legacy > "%LOG%" 2>&1
+"%PROBE_PI%" scripts\arch\check_env_access.py > "%LOG%" 2>&1
 if errorlevel 1 (
-    echo   [X] check_env_access.py: hard failure
+    echo   [X] check_env_access.py: direct env reads bypass settings
     call :tail "%LOG%" 30
     exit /b 1
 )
-echo   [OK] env access: settings layer enforced ^(legacy backlog allowed until batch B^)
+echo   [OK] env access: all config reads via settings
 exit /b 0
 
 

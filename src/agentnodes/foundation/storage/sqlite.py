@@ -43,6 +43,7 @@ _MIGRATED_MARKER = ".migrated-from-quantnodes"
 #: 进程内锁：pytest -n 4 的 worker 虽各自独立进程，但同进程内的多线程
 #: （asyncio worker 线程）仍会并发进入 ensure_data_dir。
 import threading as _threading
+from agentnodes.foundation import settings as _settings
 
 _ENSURE_LOCK = _threading.Lock()
 
@@ -67,7 +68,7 @@ def ensure_data_dir(base: Path | None = None) -> Path:
     由具体 store 在写入时报错，而不是让 import 期崩掉。
     """
     target = base or Path(
-        os.environ.get("AN_DATA_DIR", "").strip() or DEFAULT_DATA_DIR
+        _settings.get_str("AN_DATA_DIR").strip() or DEFAULT_DATA_DIR
     )
     target = Path(target).expanduser()
 

@@ -25,6 +25,7 @@ from __future__ import annotations
 
 import os
 import re
+from agentnodes.foundation import settings as _settings
 
 DEFAULT_MAX_CONTINUES = 10
 """Upper bound on automatic continuation attempts for one user message.
@@ -101,7 +102,7 @@ def looks_like_question(answer: str) -> bool:
 
 def max_continues() -> int:
     """Resolved continuation bound from env (``AN_ORCHESTRATOR_MAX_CONTINUES``)."""
-    raw = os.environ.get("AN_ORCHESTRATOR_MAX_CONTINUES", "").strip()
+    raw = _settings.get_str("AN_ORCHESTRATOR_MAX_CONTINUES").strip()
     if raw.isdigit():
         return max(0, int(raw))
     return DEFAULT_MAX_CONTINUES

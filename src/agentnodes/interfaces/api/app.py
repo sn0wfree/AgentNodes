@@ -16,6 +16,7 @@ from starlette.middleware.cors import CORSMiddleware
 
 import agentnodes
 from agentnodes import __version__
+from agentnodes.foundation import settings as _settings
 
 logger = logging.getLogger(__name__)
 
@@ -260,7 +261,7 @@ def _resolve_app_env(
 ) -> tuple:
     """Resolve config values from environment when not explicitly provided."""
     if workspace_path is None:
-        env = os.environ.get("AN_WORKSPACE_PATH")
+        env = _settings.get_str("AN_WORKSPACE_PATH")
         workspace_path = Path(env) if env else None
     if goal_db_path is None:
         # A5 (评审 F10): one name for the goal ledger. The helper reads
@@ -271,11 +272,11 @@ def _resolve_app_env(
 
         goal_db_path = goal_db_env_value() or None
     if hypotheses_path is None:
-        hypotheses_path = os.environ.get("AN_HYPOTHESES_PATH")
+        hypotheses_path = _settings.get_str("AN_HYPOTHESES_PATH")
     if static_dir is None:
-        static_dir = os.environ.get("STATIC_DIR")
+        static_dir = _settings.get_str("STATIC_DIR")
     if cors_origins is None:
-        cors_str = os.environ.get("CORS_ORIGINS")
+        cors_str = _settings.get_str("CORS_ORIGINS")
         cors_origins = cors_str.split(",") if cors_str else None
     return workspace_path, goal_db_path, hypotheses_path, static_dir, cors_origins
 
@@ -317,10 +318,13 @@ def _mount_static_files(app: FastAPI, static_path: Path) -> None:
 
 def configure_from_env():
     """Read environment variables and return configuration."""
+    # 批次 B：CORS_ORIGINS 的声明 default 是 None（源码原本两处读取都无默认），
+    # 所以链式 .split() 前必须先兜底成 ""，否则 None.split() 会崩。
+    _cors = _settings.get_str("CORS_ORIGINS") or ""
     config = {
-        "cors_origins": os.environ.get("CORS_ORIGINS", "").split(",") if os.environ.get("CORS_ORIGINS") else None,
-        "static_dir": os.environ.get("STATIC_DIR"),
-        "jwt_secret": os.environ.get("JWT_SECRET"),
+        "cors_origins": _cors.split(",") if _cors else None,
+        "static_dir": _settings.get_str("STATIC_DIR"),
+        "jwt_secret": _settings.get_str("JWT_SECRET"),
     }
     return config
 

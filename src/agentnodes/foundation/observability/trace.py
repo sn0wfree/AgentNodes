@@ -29,6 +29,7 @@ import uuid
 from contextlib import contextmanager
 from contextvars import ContextVar
 from typing import Any, Iterator
+from agentnodes.foundation import settings as _settings
 
 # ── ContextVars ──────────────────────────────────────────────────────
 
@@ -178,7 +179,7 @@ def setup_trace_logging(
             ``AN_LOG_LEVEL``).
     """
     if json_output is None:
-        json_output = os.environ.get("AN_LOG_JSON", "").lower() in ("1", "true")
+        json_output = _settings.get_str("AN_LOG_JSON").lower() in ("1", "true")
 
     root = logging.getLogger()
     root.setLevel(log_level)

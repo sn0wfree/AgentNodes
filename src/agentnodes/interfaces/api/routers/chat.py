@@ -9,6 +9,8 @@ import os
 import time
 from typing import TYPE_CHECKING, Any, Optional
 
+from agentnodes.foundation import settings as _settings
+
 from fastapi import APIRouter, Header, HTTPException, Query, Request
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
@@ -520,7 +522,7 @@ def _push_sse(kind: str, data: dict, session_id: str) -> None:
 
 def _chat_wait_timeout() -> float:
     """wait=true 的等待上限（秒）。turn 可能很长，默认 300s。"""
-    raw = os.environ.get("QNODES_CHAT_WAIT_TIMEOUT", "").strip()
+    raw = _settings.get_str("QNODES_CHAT_WAIT_TIMEOUT").strip()
     try:
         return float(raw) if raw else 300.0
     except ValueError:

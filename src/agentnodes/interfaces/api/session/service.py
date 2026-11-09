@@ -20,6 +20,7 @@ from datetime import datetime
 from pathlib import Path
 from typing import Any, Optional
 
+from agentnodes.foundation import settings as _settings
 from agentnodes.kernel.agent.compact import CompactConfig, compact_messages
 from agentnodes.kernel.agent.event_store import EventStore
 from agentnodes.foundation.llm import LLMConfig
@@ -39,7 +40,7 @@ _QUEUE_LIMIT = 10
 # exceeds this duration is killed (CancelledError → mark_failed). This
 # prevents a single hung tool call / LLM stream from permanently
 # blocking the session's queue. Set to 0 to disable.
-_CHAT_ATTEMPT_TIMEOUT = int(os.environ.get("AN_CHAT_ATTEMPT_TIMEOUT", "600"))
+_CHAT_ATTEMPT_TIMEOUT = int(_settings.get_str("AN_CHAT_ATTEMPT_TIMEOUT"))
 
 
 from .loop_events import (  # noqa: E402,F401
@@ -885,7 +886,7 @@ class SessionService:
         # pre-refactor behavior (chat.py:_run_agent_loop_background) that
         # send_async used to short-circuit to in test mode; the unified
         # SessionService path lost that hook when send_async was migrated.
-        if os.environ.get("AGENTNODES_TEST_CHAT") == "1":
+        if _settings.get_str("AGENTNODES_TEST_CHAT") == "1":
             return await self._run_test_script(
                 attempt=attempt,
                 accumulated_parts=accumulated_parts,
@@ -909,7 +910,9 @@ class SessionService:
         )
 
         # Build AgentLoop (Phase 6: via shared factory)
-        workspace_path = Path(os.environ.get("AN_WORKSPACE_PATH", str(Path.cwd())))
+        workspace_path = Path(
+            _settings.get_str("AN_WORKSPACE_PATH") or str(Path.cwd())
+        )
 
         # Bootstrap workspace if incomplete
         _bootstrap_workspace(workspace_path)

@@ -17,6 +17,7 @@ import time
 from dataclasses import dataclass
 from enum import Enum
 from typing import Any
+from agentnodes.foundation import settings as _settings
 
 logger = logging.getLogger(__name__)
 
@@ -85,35 +86,40 @@ class CacheConfig:
         """Build config from AN_CACHE_* env vars, then validate."""
         config = cls(
             write_policy=WritePolicy(
-                os.environ.get("AN_CACHE_WRITE_POLICY", "write_through")
+                _settings.get_str("AN_CACHE_WRITE_POLICY")
             ),
             eviction_policy=EvictionPolicy(
-                os.environ.get("AN_CACHE_EVICTION", "lru")
+                _settings.get_str("AN_CACHE_EVICTION")
             ),
-            min_entries=int(os.environ.get("AN_CACHE_MIN_ENTRIES", "1000")),
-            max_entries=int(os.environ.get("AN_CACHE_MAX_ENTRIES", "1000")),
+            min_entries=int(_settings.get_str("AN_CACHE_MIN_ENTRIES")),
+            max_entries=int(_settings.get_str("AN_CACHE_MAX_ENTRIES")),
             avg_tokens_per_message=int(
-                os.environ.get("AN_CACHE_AVG_TOKENS_FALLBACK", "200")
+                _settings.get_str("AN_CACHE_AVG_TOKENS_FALLBACK")
             ),
             avg_tokens_estimation_window=int(
-                os.environ.get("AN_CACHE_WINDOW", "100")
+                _settings.get_str("AN_CACHE_WINDOW")
             ),
             avg_tokens_safety_factor=float(
-                os.environ.get("AN_CACHE_SAFETY_FACTOR", "2.0")
+                _settings.get_str("AN_CACHE_SAFETY_FACTOR")
             ),
             avg_tokens_min_samples=int(
-                os.environ.get("AN_CACHE_MIN_SAMPLES", "10")
+                _settings.get_str("AN_CACHE_MIN_SAMPLES")
             ),
             chars_per_token=float(
-                os.environ.get("AN_CACHE_CHARS_PER_TOKEN", "3.0")
+                _settings.get_str("AN_CACHE_CHARS_PER_TOKEN")
             ),
-            compaction_linked=os.environ.get(
-                "AN_CACHE_COMPACTION_LINKED", "true"
-            ).lower() == "true",
+            # 批次 B：声明 kind=bool/default=True，但**原语义只认字面 "true"**
+            # （`os.environ.get(X, "true").lower() == "true"`），不认 1/yes/on。
+            # 用 `get`（原始读取，不注入声明默认）而非 get_str：get_str 在
+            # 未设置时返回声明表里的 bool True，会导致 True.lower() 崩溃。
+            compaction_linked=(
+                (_settings.get("AN_CACHE_COMPACTION_LINKED", "true") or "true").lower()
+                == "true"
+            ),
             re_resolve_interval_seconds=float(
-                os.environ.get("AN_CACHE_RE_RESOLVE_SEC", "60")
+                _settings.get_str("AN_CACHE_RE_RESOLVE_SEC")
             ),
-            ttl_seconds=float(os.environ.get("AN_CACHE_TTL", "60")),
+            ttl_seconds=float(_settings.get_str("AN_CACHE_TTL")),
         )
         return ConfigValidator.validate(config)
 
