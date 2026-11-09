@@ -550,8 +550,15 @@ def _install_chat_event_bridge(
     里兜底注销。
     """
     mapping = {
+        # react 节点词表（V3-b 起默认图已换 AgentLoop；映射保留到 V3-c
+        # 删 react.py 时一并移除——fanout preset 在那之前仍会发它们）
         "tool.started": "tool_call",
         "tool.completed": "tool_result",
+        # AgentLoop 词表：直通。payload 形状本就是前端 handlers 消费的
+        # 契约（tool_call{id,name,arguments} / tool_result{id,status,
+        # result}，projection_handlers.py 同一形状）。
+        "tool_call": "tool_call",
+        "tool_result": "tool_result",
     }
     state: dict[str, Any] = {"unsubscribe": None, "closed": False}
 
@@ -579,6 +586,15 @@ def _install_chat_event_bridge(
                 _close()
 
     def _bridge_body(kind: str, data: dict) -> None:
+        # **批次 V3-b**：run_id 就是 assistant message id（run.answer 落库
+        # 时用它作 message_id）。在 run.started 就把 holder 置上——此后的
+        # 流式事件（text_delta/thinking_delta/tool_call）经 setdefault 拿到
+        # message_id，前端按 text_id/think_id 路由的 handlers 才能落件。
+        # 此前 holder 到 run.answer 才置，整个流式阶段的 chunk 全部无主。
+        if kind == "run.started" and not message_id_holder.get("id"):
+            mid = str(data.get("run_id") or "")
+            if mid:
+                message_id_holder["id"] = mid
         if persist:
             if kind == "run.answer":
                 mid = str(data.get("run_id") or "")
@@ -613,8 +629,15 @@ def _install_chat_event_bridge(
 
         out_kind = mapping.get(kind)
         if out_kind is None:
-            # text_delta / thinking_delta / thinking_done / stream.failed 直通
-            if kind in ("text_delta", "thinking_delta", "thinking_done", "stream.failed"):
+            # 流式词表直通。AgentLoop 的 3-step 协议（text.started →
+            # text_delta{text_id} → text.ended）与 thinking 协议
+            # （thinking_start/delta/done/end）前端 handlers 全都注册；
+            # stream.failed 是 react 词表（V3-c 随 react.py 删）。
+            if kind in (
+                "text_delta", "thinking_delta", "thinking_done", "stream.failed",
+                "text.started", "text.ended",
+                "thinking_start", "thinking_end",
+            ):
                 out_kind = kind
             else:
                 return

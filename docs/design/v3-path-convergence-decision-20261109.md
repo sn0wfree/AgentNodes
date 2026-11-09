@@ -5,7 +5,8 @@
 > **性质**：**决策文档**（含推荐与代价）。本文件不实施，实施见 V4。
 > **计划要求**：「不预设结论，由 V2 数据说话」。
 > **实施状态**：**V3-a 已落地**（`task_signature` 进 `LoopSpec.ContextSpec` +
-> `_effective_tools` 分支 + 6 条测试）；V3-b / V3-c 未开始。
+> `_effective_tools` 分支 + 6 条测试）；**V3-b 已落地**（默认图换
+> `AgentLoop` 适配器，见 §3 V3-b 的「落地实录」）；V3-c 未开始。
 
 ---
 
@@ -123,6 +124,81 @@ V2 抓到两个 bug，都在路径 A 上，且都已修：
 | 风险 | **中**。react 节点是同步的（GraphEngine 同步驱动），`AgentLoop` 是 async——适配器需要 `_run_coro_in_sync` 桥（已存在）|
 | 验证 | `test_session_controller_*` 全过 + 手工跑 web chat 一次 + E1–E5 |
 | 工作量 | 1 天 |
+| **状态** | ✅ **已完成**（真实模型端到端过 + 全量回归绿；详见下方落地实录）|
+
+#### V3-b 落地实录（2026-11-09，与原方案的偏差全部有实测依据）
+
+**落点**：新模块 `kernel/runtimes/nodes/agent_loop_node.py`
+（`make_agent_loop_node` / `wrap_async_capable_client` /
+`make_loop_event_sink`）；`session_controller._build_engine` 的默认图
+换成 AgentLoop，**节点名沿用 `"react"`**（`test_react_node_receives_assembled_prompt`
+钉住节点名，消费方按名路由）。
+
+**Q4/W1 的实测修正——事件词表方向反了**：原方案假设「AgentLoop 发
+`tool_call`/`tool_result`，前端听 react 的 `tool.started`/`tool.completed`，
+所以要做映射层」。落地时逐消费者核对（`event_v2.EventType` 注释、
+`projection_handlers.py:284`、前端 `messageHandlers.ts`/`textHandlers.ts`）
+发现：**产品词表本来就是 AgentLoop 的**——
+- `EventType` 注释明示 "Names match the existing SSE event names emitted
+  by AgentLoop"；react 的 `tool.started`/`tool.completed` 根本不在
+  事件注册表里（projector 视为 unknown 丢弃）；
+- 前端 `toolCall` handler 读 `message_id/id/name/arguments`——正是
+  AgentLoop `tool_call` 的 payload；react 经旧 bridge 翻译后的 payload
+  `{run_id, tool, iteration}` **缺 id/name/arguments**（前端拿到
+  undefined）；
+- 前端 `textDelta` 要求 `text_id` 路由，react 的 `text_delta{run_id,delta}`
+  没有 `text_id` → chunk 被丢弃（只剩 legacy 全局缓冲兜底）。
+
+所以 V3-b 的真实工作是**删翻译而不是加翻译**：`chat.py` bridge 的映射表
+追加 `tool_call`/`tool_result` 直通 + AgentLoop 的 3-step 流式词表
+（`text.started/text.ended/thinking_start/thinking_end`）进直通表；
+react 词表映射保留到 V3-c（fanout 仍会发）。另修两个顺带发现：
+- `message_id_holder` 原来到 `run.answer` 才置 → 整个流式阶段的 chunk
+  全部无 `message_id`。现在 `run.started` 就置（run_id 即 assistant
+  message id，run.answer 落库用的同一个）；
+- `llm_request`（system_prompt/tools_schema）经
+  `make_loop_event_sink` 剥大字段——react 从不发它，不剥会把事件日志
+  撑大三个量级（`event_vocab.strip_llm_request_fields` 既有约定）。
+
+**契约对等的关键决定**（每条都有对应测试或注释）：
+
+| 决定 | 理由 |
+|---|---|
+| client 整体注入 `loop.client = caller 的 client` | AgentLoop 构造器自建 client；生产要复用 ModelHub 实例，等价性测试的脚本假 client（只有 `chat`）必须原样可用。骨架引擎要 `achat`/`astream` → `wrap_async_capable_client` 原生四件套直通、缺的用 `asyncio.to_thread` 桥补齐 |
+| `injectors=[]` + `enable_goal/memory_injection=False` | pre-run 注入契约不变：仍由 controller `_inject_context` 经注入的 hub 做（P5-4）。否则 loop 自带 injector 链会与 hub 双注入（goal/todos 各来一份） |
+| `approval_timeout=30.0` + `approval_on_timeout="continue"` | web chat 没有 loop 级审批提问通道（`agent_approval_requested` 不进 SSE bridge 直通表）；默认 1800s 阻塞等一个永远不来的批准会挂住消费者线程。30s 后按 continue 继续——终态与 react（无此闸，循环到 max_iter）一致 |
+| compact_config 经 `apply_compaction_overrides` 传入 loop | 保持装配期 harness 覆盖语义（原 `_build_compactor` 的行为）；压缩器本体由 loop 内部构造（同一 `make_compactor`），`_build_compactor` 删除 |
+| 权限闸 `setattr` 挂载（chat_loop 同型） | `ToolContext` 由 `loop._build_tool_kwargs` 无条件构造，ctx 比 react 的 `ctx_factory` 更全（workspace/emit_event/data_store/sandbox 一并就位） |
+| `state["usage"]` 保持 RunBudget.snapshot 形状 | fanout join 与测试读它；数值来自 loop 的 A1 预算四字段 |
+| `result.error` 非空 → 节点重新抛出 | react 语义：异常冒泡 → controller 捕获 → `run.failed{error}`（`DefaultLLMCallStep` 已把任意 LLM 异常折叠进 `result.error`） |
+
+**顺带的行为变更（有意，均有注释与测试）**：
+
+1. **todo 归属会话从条件变无条件**：react 时代「无 hub/workspace/权限
+   就无 ctx → todowrite 落共享 default 桶」；AgentLoop 的 ToolContext
+   无条件携带 session_id → 永远归属会话桶。这是 B-c 想要的方向性结果
+   （`test_b5_wiring` 改名 + 断言收紧到物理会话 id 精确匹配）。
+2. **压缩在默认构造下激活**：`compact_config=None` 时 loop 回落
+   `config.compact_config`（与 chat_loop 取值序一致）；且压缩事件获得
+   L4 持久化（react 的 compactor 没有 persist 回调）。app.py 已注册
+   persister，生产可用；持久化失败由 `make_compactor` 回滚、不丢上下文。
+3. **fake client 保真度缺口暴露**：`_ToolCallClient._Resp` 缺
+   `finish_reason`、b5 的 `_RealRegistry` 缺 loop 契约方法（`get`/
+   `all_tools`/`check_guards`）——都按生产形状补齐；还修了
+   `_clean_todos` fixture 只清两个桶导致 e2e 断言被残留桶假绿的隔离
+   缺陷（断言改为物理会话 id 精确匹配后，残留桶再也骗不过）。
+
+**已知遗留（记入 W3，非本批）**：web chat 的 assistant 占位消息要等
+`message_received` 事件带 `assistant_message_id` 才会 seed，而
+`_send_via_gateway` 的 emit 没带这个字段——流式 chunk 即使有
+message_id 也落不进消息（今天也一样，`appendStreamingText` 兜底）。
+修它要动 SSE 语义（比如 run.started 时补推一条 seed），归入前端接线批。
+
+**验证**：新增 `tests/test_agent_loop_node.py`（14 条：async 壳 3 +
+节点契约 5 + controller 级 5 + 真实模型端到端 1）；b1f/b5/b1c 的
+controller 级测试全部在新路径上跑绿；真实模型端到端
+（`QNODES_LIVE_LLM=1`，MiniMax-M3.1-Flash，calculator 工具循环）**3.16s
+通过**。
 
 **关键前置**：V3-b 前必须确认 GraphEngine 的节点调用约定
 （是否允许节点内部起事件循环）。若不允许，适配器要用线程桥。
@@ -186,10 +262,11 @@ V3-a (0.3d)  →  V3-b (1d)  →  观察一个版本  →  V3-c (0.5d)
 
 ### §7.2 由答案推出的两个新增工作项
 
-**W1 · 事件名映射层**（Q4 的后果）
+**W1 · 事件名映射层**（Q4 的后果）——**V3-b 落地时修正了方向**
 
 `AgentLoop` 发 `tool_call` / `tool_result`，`react.py` 发
-`tool.started` / `tool.completed` / `tool.ctx_failed`。前端监听的是后者。
+`tool.started` / `tool.completed` / `tool.ctx_failed`。原方案假设
+「前端监听的是后者」——**实测相反**：
 
 **消费者实测**（全仓 grep，src + webui/frontend + tests）：
 
@@ -204,12 +281,17 @@ V3-a (0.3d)  →  V3-b (1d)  →  观察一个版本  →  V3-c (0.5d)
 | `budget.exhausted` | 3 | react.py + 测试 |
 | `stream.failed` | 4 | `chat.py` / `nodes/llm.py` |
 
-**结论：不能只改前端**——`chat.py`（SSE 路由）与 `event_vocab.py`
-（事件词表）都在消费。迁移必须在**事件发射层**做映射
-（`tool_call → tool.started`、`tool_result → tool.completed`），
-而不是在消费端逐个改。
+**修正后的结论**：`tool.started` 的 10 个"消费者"里没有一个是最终
+消费——`chat.py:553` 的 bridge 把它**翻译成** `tool_call` 再推 SSE；
+`event_v2.EventType` 注册表（projector/持久化的唯一口径）里只有
+`tool_call`/`tool_result`，没有 react 词表；前端 handlers 读的
+`message_id/id/name/arguments` 正是 AgentLoop payload 的形状。**产品
+词表 = AgentLoop 词表**。所以 W1 的实施形态是：bridge 追加
+`tool_call`/`tool_result` 直通 + AgentLoop 流式词表进直通表（已做），
+V3-c 删掉 react 词表映射即可，无需任何前端改动。
 
-`tool.ctx_failed` 只有 react.py 自身引用（无外部消费者），映射时可省。
+`tool.ctx_failed` 只有 react.py 自身引用（无外部消费者），V3-c 随
+react.py 一并消失。
 
 **W2 · `max_iterations` 语义保持**（Q2 的后果）
 
@@ -221,4 +303,16 @@ plan 模式 1 轮。迁移到 `AgentLoop` 后必须**保持同一套取值逻辑
 
 好消息：Q2 的答案是"两边已经一致"（都最终由 `LLMConfig.max_iterations`
 或调用方显式值决定），所以这是**接线问题**不是**语义问题**——
-适配器里把 `max_iterations` 透传即可。
+V3-b 的适配器把 controller 的 `max_iterations` 透传给 AgentLoop 构造
+参数，语义保持 ✅（已落地）。
+
+**W3 · assistant 占位消息 seed**（V3-b 落地时新发现）
+
+前端只有在 `message_received` 事件带 `assistant_message_id` 时才 seed
+assistant 占位消息（`queueHandlers.messageReceived`），而
+`_send_via_gateway` 的 emit 不带该字段；`updateMessage` 对不存在的
+消息是 no-op → 流式 chunk（即使已有 message_id）落不进消息，只能靠
+legacy 全局缓冲 + `assistant_message` 终态兜底。这个问题 react 时代
+就存在（且 react 的 text_delta 连 text_id 都没有，比现在更糟）。
+修复要动 SSE 语义（run.started 时补推 seed 或 emit 带 assistant
+id），归入前端接线批，不阻塞 V3-c。

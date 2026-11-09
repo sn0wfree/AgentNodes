@@ -379,16 +379,24 @@ class SessionController:
         Zero-argument by contract (tests inject ``lambda: engine``); the
         per-turn session id arrives via ``_current_session_id``.
 
-        P5-1b：有 registry 时用 react 节点（无工具调用时退化为单次 LLM 调用，
-        有工具时自动进入循环）；否则退化为纯 llm 节点。
+        **批次 V3-b**：有 registry 时默认图换成 ``AgentLoop``（路径 A）
+        ——``make_agent_loop_node`` 适配器把它包成同步 NodeFn，节点名沿用
+        ``"react"``（消费方与测试按名路由）。此前是 ``make_react_node``
+        （路径 B，手写同步循环）——能力差集 9 项 vs 1 项，且 V2 实测的
+        两个框架 bug 都在 B 侧契约里。V3-c 删除 react.py。
 
         B1-a：系统提示经 ``assemble_loop_parts`` 统一渲染——与
         ``build_chat_agent_loop`` 同一实现，保证 chat 两条路径的 prompt
         逐字节一致。
 
-        B1-d：react 路径注入 ``ctx_factory``（ToolContext 按 tool_call 构造）
-        ——权限 evaluator/gateway、workspace、session_id 全部经它传递。
-        不注入 = 工具裸跑（仅测试路径）。
+        B1-d（演进）：权限 evaluator/gateway 经 ``setattr`` 挂到 loop 上
+        （``chat_loop`` 同型），由 ``ToolContext``（``loop._build_tool_kwargs``）
+        携带进每次工具调用——ctx 形状比 react 的 ``ctx_factory`` 更全
+        （workspace/emit_event/data_store/sandbox 一并就位）。
+
+        pre-run 上下文注入契约不变：仍由 ``_inject_context`` 经注入的
+        hub 做（P5-4），所以 loop 自带的 injector 链全关（``injectors=[]``
+        + 两个 enable 开关 False），避免双注入。
         """
         if self._engine_factory is not None:
             return self._engine_factory()
@@ -396,46 +404,75 @@ class SessionController:
         system = self._resolve_system_prompt()
         engine = GraphEngine(sink=self._sink)
         if self._registry is not None:
-            from agentnodes.kernel.agent.tool_context import make_ctx_factory
-            from agentnodes.kernel.runtimes.nodes.react import (
-                ReactConfig,
-                make_react_node,
+            from agentnodes.foundation.llm import LLMConfig
+            from agentnodes.kernel.agent.harness_resolver import (
+                apply_compaction_overrides,
+            )
+            from agentnodes.kernel.agent.loop import AgentLoop
+            from agentnodes.kernel.runtimes.nodes.agent_loop_node import (
+                make_agent_loop_node,
+                make_loop_event_sink,
+                wrap_async_capable_client,
             )
 
-            ctx_factory = None
-            if (
-                self._permission_evaluator is not None
-                or self._permission_gateway is not None
-                or self._workspace is not None
-                # B5 B-c：生产 chat（hub 已接线）的工具调用必须归属会话，
-                # 否则 todowrite 等落到共享 "default" 桶。仅带 session_id
-                # 的 ToolContext 不改变权限行为——enforce_permission_sync
-                # 在无 evaluator 时直接返回（tools.py:878-880）。
-                or self._context_hub is not None
-            ):
-                ctx_factory = make_ctx_factory(
-                    workspace=self._workspace,
-                    session_id=self._current_session_id or None,
-                    permission_evaluator=self._permission_evaluator,
-                    permission_gateway=self._permission_gateway,
-                    emit_event=lambda kind, data: self._sink(kind, data),
+            # client 可能没有 ``.config``（测试脚本替身）——退化最小配置；
+            # 真正的请求走注入的 client（下方整体替换 ``loop.client``）。
+            config = getattr(self._client, "config", None) or LLMConfig(api_key="")
+
+            # 压缩配置：装配期按 task_signature 应用 harness 覆盖（施工方案
+            # §4.7，与原 ``_build_compactor`` 同一语义）；None 时 AgentLoop
+            # 会回落到 ``config.compact_config``——与 chat_loop 的取值序一致。
+            compact_config = self._compact_config
+            if compact_config is not None:
+                compact_config = apply_compaction_overrides(
+                    compact_config, getattr(self, "_task_signature", "") or "",
                 )
 
-            engine.add_node(
-                "react",
-                make_react_node(
-                    self._client, self._registry, sink=self._sink,
-                    config=ReactConfig(
-                        system=system,
-                        stream=self._stream,
-                        max_iterations=self._max_iterations,
-                        ctx_factory=ctx_factory,
-                        compactor=self._build_compactor(),
-                        # 阶段三：非空时工具定义按 tier-1 tool_set 裁剪。
-                        task_signature=getattr(self, "_task_signature", "") or "",
-                    ),
-                ),
+            loop = AgentLoop(
+                config=config,
+                registry=self._registry,
+                workspace=self._workspace,
+                session_id=self._current_session_id or None,
+                system_prompt=system,
+                stream_mode=self._stream,
+                max_iterations=self._max_iterations,
+                compact_config=compact_config,
+                # 阶段三：非空时工具定义按 tier-1 tool_set 裁剪（V3-a）。
+                task_signature=getattr(self, "_task_signature", "") or "",
+                # pre-run 注入仍由 controller._inject_context 做——loop 的
+                # injector 链全关，避免双注入（goal/todos/continuation）。
+                enable_goal_injection=False,
+                enable_memory_injection=False,
+                injectors=[],
+                # react 契约对等：web chat 没有 loop 级审批提问通道
+                # （``agent_approval_requested`` 不进 SSE bridge 的直通表），
+                # 无进展时短暂等待后按 continue 继续（react 无此闸，行为
+                # 终态一致——都是循环到 max_iter）。
+                approval_timeout=30.0,
+                approval_on_timeout="continue",
+                # ``llm_request`` 大字段剥离（转发 sink 约定）——react 从不
+                # 发它，不剥会把 system_prompt/tools_schema 逐调用落库。
+                on_event=make_loop_event_sink(self._sink),
             )
+            # client 注入：AgentLoop 构造器自建 client；换成调用方的同一个
+            # （生产 = ModelHub 解析实例；测试 = 脚本化假 client）。骨架
+            # 引擎要 ``achat``/``astream``——原生四件套直通，否则包兼容壳。
+            loop.client = wrap_async_capable_client(self._client)
+            # 权限闸挂载（chat_loop 同型的防御式 setattr）。
+            for _attr, _val in (
+                ("_permission_evaluator", self._permission_evaluator),
+                ("_permission_gateway", self._permission_gateway),
+            ):
+                if _val is None:
+                    continue
+                try:
+                    setattr(loop, _attr, _val)
+                except AttributeError:
+                    logger.debug(
+                        "loop %r rejects %s; permission gate not wired",
+                        type(loop).__name__, _attr,
+                    )
+            engine.add_node("react", make_agent_loop_node(loop))
         else:
             from agentnodes.kernel.runtimes.nodes.llm import make_llm_node
 
@@ -463,45 +500,10 @@ class SessionController:
             getattr(cfg, "model_max_output_tokens", None),
         )
 
-    def _build_compactor(self):
-        """B1-c: mid-loop compactor, or None when compaction is disabled.
-
-        Reuses ``kernel/agent/compaction_runtime.make_compactor`` — the same
-        implementation the AgentLoop mixin uses, so compression semantics
-        cannot drift between the two executors.
-
-        **阶段三 compaction 覆盖的真实消费点**：装配期按 task_signature
-        解析 Tier 1 覆盖并 ``replace`` 到配置上。此前
-        ``CompactConfig.harness_task_signature`` 字段只定义、零写入，
-        compaction 这一路 RSI 提案改了也不生效。
-        """
-        if self._compact_config is None:
-            return None
-        try:
-            from agentnodes.kernel.agent.compaction_runtime import (
-                make_compactor,
-            )
-            from agentnodes.kernel.agent.harness_resolver import (
-                apply_compaction_overrides,
-            )
-
-            # 装配期问一次（施工方案 §4.7）：有覆盖就换配置，没有就原样。
-            # ``_task_signature`` 为空时 apply_ 直接返回原对象（零开销）。
-            compact_config = apply_compaction_overrides(
-                self._compact_config, getattr(self, "_task_signature", "") or "",
-            )
-
-            ctx_tokens, max_out = self._model_limits()
-            return make_compactor(
-                compact_config=compact_config,
-                model_context_tokens=ctx_tokens,
-                model_max_output_tokens=max_out,
-                llm_client=self._client,
-                session_id=self._current_session_id or None,
-            )
-        except Exception as exc:  # noqa: BLE001 — 压缩不可用不阻断 chat
-            self._sink("context.compactor_init_failed", {"error": str(exc)})
-            return None
+    # **批次 V3-b**：``_build_compactor`` 已删——压缩器由 AgentLoop 内部
+    # 构造（``loop_compaction._build_compactor``，同一 ``make_compactor``
+    # 实现），装配期 harness 覆盖在 ``_build_engine`` 里做
+    # （``apply_compaction_overrides``）。
 
     def _resolve_system_prompt(self) -> str | None:
         """Render the system prompt via the shared assembly core.

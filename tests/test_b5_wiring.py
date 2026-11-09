@@ -29,9 +29,11 @@ from agentnodes.kernel.gateway.singleton import reset_gateway
 def _clean_todos():
     TodoStore.clear("default")
     TodoStore.clear("sess-1")
+    TodoStore.clear("sess-kw")
     yield
     TodoStore.clear("default")
     TodoStore.clear("sess-1")
+    TodoStore.clear("sess-kw")
 
 
 class _Ctx:
@@ -130,6 +132,9 @@ class _ToolCallClient:
             self.content = ""
             self.usage = {}
             self.tool_calls = tool_calls
+            # **批次 V3-b**：loop 的 tool_calls 分支读它（缺了会以
+            # llm_call step failed 收场，工具根本不会执行）。
+            self.finish_reason = "stop"
 
         def has_tool_calls(self):
             return bool(self.tool_calls)
@@ -143,7 +148,12 @@ class _ToolCallClient:
 
 class _RealRegistry:
     """Real ToolRegistry carrying only todowrite — B-c must exercise the
-    real execute(name, params, ctx=ctx) path, duck-typed fakes can't."""
+    real execute(name, params, ctx=ctx) path, duck-typed fakes can't.
+
+    **批次 V3-b**：默认图换成 AgentLoop 后，registry 契约从 react 的
+    ``{get_definitions, execute}`` 扩到 loop 的
+    ``{get, all_tools, check_guards}``——这里如实补齐委托（生产注册表
+    本来就是 ToolRegistry，方法齐全）。"""
 
     def __init__(self) -> None:
         from agentnodes.kernel.agent.tools import ToolRegistry
@@ -151,8 +161,17 @@ class _RealRegistry:
         self._reg = ToolRegistry()
         self._reg.register(TodoWriteTool())
 
+    def get(self, name):
+        return self._reg.get(name)
+
     def get_definitions(self):
         return self._reg.get_definitions()
+
+    def all_tools(self):
+        return self._reg.all_tools()
+
+    def check_guards(self, name, arguments):
+        return self._reg.check_guards(name, arguments)
 
     def execute(self, name, params, ctx=None):
         return self._reg.execute(name, params, ctx=ctx)
@@ -199,19 +218,31 @@ def _all_todo_buckets():
 
 
 def test_react_todowrite_lands_in_session_bucket(tmp_path):
-    """端到端：hub 已接线 → ctx 带 session_id → todo 落专属桶（非 default）。"""
-    _submit(_controller(tmp_path, _hub_with_todos()), "sess-e2e")
+    """端到端：hub 已接线 → ctx 带 session_id → todo 落专属桶（非 default）。
+
+    **批次 V3-b**：断言收紧到「物理会话 id 的专属桶里确实有这条 todo」
+    ——此前只断言「default 不在桶里」，结果共享 TodoStore 里任何其他
+    测试的残留桶都能让断言假绿（_clean_todos 只清 default/sess-1，
+    'sess-kw' 泄漏过——现在 fixture 清干净 + 这里按物理 id 精确断言）。"""
+    ctrl = _controller(tmp_path, _hub_with_todos())
+    _submit(ctrl, "sess-e2e")
     buckets = _all_todo_buckets()
     assert buckets, "todo must be written"
     assert "default" not in buckets, f"must not leak into shared bucket: {buckets}"
+    physical = ctrl._ep.session_id_for("chat:sess-e2e")
+    assert buckets.get(physical), (
+        f"todo must land in the physical session bucket {physical!r}: {buckets}"
+    )
 
 
-def test_react_todowrite_without_hub_keeps_legacy_default_bucket(tmp_path):
-    """hub 未接线且无 workspace/权限（旧默认构造）→ 无 ctx → 落 default。
+def test_todowrite_without_hub_still_lands_in_session_bucket(tmp_path):
+    """hub 未接线（旧默认构造）→ todo 仍归属会话桶（不再落共享 default）。
 
-    注意不能传 workspace：那会触发**原有**的 ctx_factory 条件
-    （B1-d），工具拿到 ctx.session_id（物理会话 id）——归属生效，
-    但那就不是本测试要固化的「旧默认构造」了。
+    **批次 V3-b 行为变更（有意）**：默认图换成 AgentLoop 后，ToolContext
+    由 ``loop._build_tool_kwargs`` 无条件构造（session_id 随 loop 构造参数
+    进入 ctx）——react 时代的「无 hub/workspace 就无 ctx → 落 default」
+    条件不复存在。归属会话是 B-c 想要的方向性结果（否则 todowrite 泄进
+    共享桶）；本测试从「固化 react 的条件接线」改为「固化归属总是生效」。
     """
     from agentnodes.kernel.gateway.session_controller import SessionController
 
@@ -228,7 +259,13 @@ def test_react_todowrite_without_hub_keeps_legacy_default_bucket(tmp_path):
     )
     _submit(controller, "sess-legacy")
     buckets = _all_todo_buckets()
-    assert buckets.get("default"), f"legacy path keeps the shared bucket: {buckets}"
+    assert buckets, "todo must be written"
+    assert "default" not in buckets, (
+        f"session attribution is unconditional now: {buckets}"
+    )
+    # 物理会话 id 由 EntryPoint 惰性分配（见 _submit 注释）——按它断言归属
+    physical = controller._ep.session_id_for("chat:sess-legacy")
+    assert buckets.get(physical), f"todo must land in the session bucket: {buckets}"
 
 
 def test_hub_build_returns_todo_item_for_session():

@@ -981,6 +981,21 @@ class AgentLoop(
 
     def _drain_inbox(self, messages: list[dict[str, Any]]) -> None:
         """Drain all queued inbox messages into the conversation."""
+        # **批次 V3-b**：外部注入源合流。``_inbox`` 是进程内 API 的
+        # asyncio.Queue（``inject``/``ainject``）；GraphEngine 编排路径的
+        # steer 走 mailbox 的 ``SteerInbox``——经构造方挂到本钩子，在同一
+        # 安全点（compaction 后、LLM 前）进入会话。合批形状与 react 节点
+        # 逐字一致（单条 user 消息、``"\\n\\n".join``）；失败不崩轮。
+        hook = getattr(self, "_inbox_drain_hook", None)
+        if hook is not None:
+            try:
+                texts = hook() or []
+            except Exception:  # noqa: BLE001 — 注入失败不崩轮（react 同款）
+                texts = []
+            if texts:
+                messages.append(
+                    {"role": "user", "content": "\n\n".join(str(t) for t in texts)}
+                )
         while not self._inbox.empty():
             try:
                 msg = self._inbox.get_nowait()

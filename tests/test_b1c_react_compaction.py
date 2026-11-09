@@ -259,7 +259,18 @@ def test_make_compactor_rolls_back_when_persistence_fails(monkeypatch):
 # ── SessionController 接线 ─────────────────────────────────
 
 
-def test_controller_builds_compactor_only_when_configured():
+def test_controller_compaction_wiring_goes_through_loop():
+    """**批次 V3-b**：压缩器由 AgentLoop 内部构造（同一 ``make_compactor``
+    实现），controller 只负责把 compact_config 传给 loop。
+
+    - 未传 compact_config → loop 回落 ``config.compact_config``（无则
+      ``CompactConfig()`` 默认）——与 chat_loop 的取值序一致；
+    - 显式传入 → loop.cc 就是该对象（空 signature 时 harness 覆盖按
+      ``apply_compaction_overrides`` 契约原样返回同一实例）。
+    """
+    from agentnodes.foundation.compact_config import CompactConfig
+    from agentnodes.foundation.llm import LLMConfig
+    from agentnodes.kernel.agent.loop import AgentLoop
     from agentnodes.kernel.gateway.session_controller import SessionController
 
     class _EP:
@@ -269,11 +280,35 @@ def test_controller_builds_compactor_only_when_configured():
         def session_id_for(self, key):
             return key
 
-    no_cfg = SessionController(_EP(), client=object())
-    assert no_cfg._build_compactor() is None
+    class _FakeRegistry:
+        """AgentLoop 构造期触碰的最小面（_tools/all_tools/get_definitions）。"""
 
+        def __init__(self) -> None:
+            self._tools: dict = {}
+
+        def get_definitions(self):
+            return []
+
+        def all_tools(self):
+            return list(self._tools.values())
+
+        def get(self, name):
+            return self._tools.get(name)
+
+    def _loop_of(ctrl: SessionController) -> AgentLoop:
+        node = ctrl._build_engine()._fns["react"]
+        return next(
+            c.cell_contents for c in node.__closure__
+            if isinstance(c.cell_contents, AgentLoop)
+        )
+
+    no_cfg = SessionController(_EP(), client=object(), registry=_FakeRegistry())
+    loop = _loop_of(no_cfg)
+    assert isinstance(loop.cc, CompactConfig)
+
+    marker = SimpleNamespace(overflow_ratio=0.8)
     with_cfg = SessionController(
-        _EP(), client=object(), compact_config=SimpleNamespace(overflow_ratio=0.8),
+        _EP(), client=object(), registry=_FakeRegistry(),
+        compact_config=marker,
     )
-    compactor = with_cfg._build_compactor()
-    assert callable(compactor)
+    assert _loop_of(with_cfg).cc is marker
