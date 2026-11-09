@@ -28,7 +28,7 @@
   <h1>架构 v10.2 · 四层堆叠 · 功能模块化</h1>
   <p class="sub">
     依赖只向下流：<b>L1 interfaces → L2 apps → L3 kernel → L4 foundation</b>。
-    每层内部按<b>功能域</b>分模块，模块边界取自真实包结构（407 文件 / 86,277 行，AST 实测）。
+    每层内部按<b>功能域</b>分模块，模块边界取自真实包结构（407 文件 / 86,278 行，AST 实测）。
     违规仅剩 0 条（<code>L3→L1</code> 0 · <code>L2→L1</code> 0），<code>L3→L2</code> 已清零。
     <b>2026-11-05 做减法批次 5</b>：移除数据域（data_source · compute_factor · db ·
     tools · data_import · data_readiness · preflight，22 文件 6,822 行），
@@ -276,7 +276,7 @@
   <text x="1068" y="992" class="loc">24.9k 行 · 115 文件</text>
   <rect x="1066" y="1004" width="476" height="76" rx="6" class="mod"/>
   <text x="1078" y="1024" class="st" font-weight="600">agent · AgentLoop（22.5k，最大子模块）</text>
-  <text x="1078" y="1042" class="sm">loop 六 Mixin · tools · prompt_builder</text>
+  <text x="1078" y="1042" class="sm">loop 状态机 + 转义壳 · tools · prompt_builder</text>
   <text x="1078" y="1060" class="sm">harness_resolver · capability/registry</text>
   <text x="1078" y="1076" class="loc">22.5k</text>
   <rect x="1066" y="1086" width="232" height="76" rx="6" class="mod"/>
@@ -298,7 +298,7 @@
   <text x="1322" y="1206" class="sm">只读钩子 · 技能包加载</text>
   <text x="1322" y="1222" class="loc">0.3k + 0.2k</text>
   <text x="1068" y="1258" class="sm">能力面是 react 节点的机制底座；</text>
-  <text x="1068" y="1278" class="sm">AgentLoop 内部 Mixin 结构冻结（不改）。</text>
+  <text x="1068" y="1278" class="sm">AgentLoop 的 6 个 Mixin 已改为转发壳；实现见 agent_telemetry / loop_endings / deciders。</text>
 
   <text x="180" y="1340" class="sm">L3 不含任何业务判断。业务能力一律经 CapabilityRegistry 解析（apps 注册、kernel 读），这是 L3→L2 从 46 降到 0 的唯一原因。</text>
 
@@ -418,7 +418,7 @@
 </table>
 
 <footer>
-  数据：AST 实测 2026-11-05（407 文件 / 86,277 行 · 批次 2 后）· 门禁：<code>check_dangling_imports.py --layers</code> ·
+  数据：AST 实测 2026-11-05（407 文件 / 86,278 行 · 批次 2 后）· 门禁：<code>check_dangling_imports.py --layers</code> ·
   版本史：<code>docs/architecture-diagram-changelog.md</code> · 设计：<code>docs/layered-skeleton-design-20261103.md</code>
 </footer>
 </div>

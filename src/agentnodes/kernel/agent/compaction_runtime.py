@@ -41,8 +41,9 @@ def make_compactor(
 ) -> Compactor:
     """Build a ``messages -> (messages, applied_layers)`` compressor.
 
-    Semantics match ``LoopCompactionMixin._maybe_compact_impl`` exactly
-    (same engine call, same rollback-on-failure rules):
+    **批次 13 S3-b2 起这是唯一实现**：``LoopCompactionMixin`` 原先手写的
+    等价版本（``_maybe_compact_impl``，58 行）已删除，mixin 现在直接调用
+    本函数——压缩语义不可能再漂移（此前是「两份实现靠注释约定一致」）。
 
     - below threshold → messages unchanged, ``applied`` empty;
     - L4 runs → messages replaced, layers reported;
