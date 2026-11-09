@@ -129,7 +129,9 @@ class MaxIterationsDecider(Decider):
 
     def decide(self, input: Any, ctx: LoopContext) -> tuple[Decision, str | None]:
         iteration = getattr(ctx, "iteration", 0) or 0
-        if iteration >= self._max:
+        # legacy 语义（for-else）：跑完第 N 轮**之后**才停——
+        # `>` 而非 `>=`（第 N 轮仍执行，PRECHECK 在 N+1 轮开头拦）。
+        if iteration > self._max:
             return Decision.STOP, "max_iterations"
         return Decision.PROCEED, None
 

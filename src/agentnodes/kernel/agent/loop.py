@@ -726,6 +726,7 @@ class AgentLoop(
         *,
         context: str | None = None,
         history: list[dict[str, Any]] | None = None,
+        engine: str | None = None,
     ) -> LoopResult:
         """Async version of run() - all I/O points use await.
 
@@ -740,11 +741,70 @@ class AgentLoop(
                 ``{"role": ..., "content": ...}`` format. Inserted between
                 the system prompt and the current user message so the LLM
                 has full conversation context.
+            engine: ``"legacy"``（默认）/ ``"skeleton"``。骨架引擎
+                （批次 11 · B3 阶段 1）消费 deciders 的状态机；影子模式，
+                等价性由 ``tests/test_skeleton_equivalence.py`` 钉住。
+                ``AGENTNODES_SKELETON=1`` 环境变量翻转默认（灰度用）。
 
         Returns:
             LoopResult with answer, iterations, tool_calls_made, finished_reason.
         """
+        if engine is None:
+            import os
+
+            engine = (
+                "skeleton" if os.environ.get("AGENTNODES_SKELETON") == "1"
+                else "legacy"
+            )
+        if engine == "skeleton":
+            return await self._run_via_skeleton(task, context, history)
         return await self._run_loop_core(task, context, history, async_mode=True)
+
+    async def _run_via_skeleton(
+        self,
+        task: str,
+        context: str | None,
+        history: list[dict[str, Any]] | None,
+    ) -> LoopResult:
+        """B3 阶段 1 影子路径：ReActSkeleton 消费 deciders 的状态机。
+
+        handlers（LoopReasoner/LoopActor/LoopPrepare/LoopHooks/LoopFinalize）
+        绑定 self，复用全部既有能力——骨架本体不知道预算怎么算、工具怎么执行。
+        """
+        import os
+
+        from .modes import deciders_for
+        from .skeleton import ReActSkeleton, SkeletonRunSpec
+        from .skeleton_adapters import (
+            LoopActor,
+            LoopFinalize,
+            LoopHooks,
+            LoopPrepare,
+            LoopReasoner,
+        )
+
+        strategy = self._strategy
+        max_iter = self._effective_max_iterations()
+        deciders = deciders_for(strategy, self, max_iterations=max_iter)
+        # 骨架需要 strategy 槽位被绑定（deciders_for 已做），再补
+        # skeleton 自身的 hooks。
+        skeleton = ReActSkeleton(
+            reasoner=LoopReasoner(self),
+            actor=LoopActor(self),
+            deciders=deciders,
+            hooks=LoopHooks(self),
+            finalize=LoopFinalize(self),
+            prepare=LoopPrepare(self),
+        )
+        spec = SkeletonRunSpec(
+            task=task,
+            context=context,
+            history=history,
+            max_iterations=max_iter,
+            session_id=self.session_id or "",
+        )
+        _ = os.environ.get("AGENTNODES_SKELETON", "")  # noqa: F841 — 语义文档
+        return await skeleton.run_to_completion(spec)
 
     # ── DSH-inspired: steering inbox ──────────────────────────────
 

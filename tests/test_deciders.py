@@ -49,9 +49,14 @@ def _run(decider, inp, ctx):
 
 
 class TestMaxIterations:
-    def test_at_limit_stops(self):
+    def test_at_limit_still_runs(self):
+        """legacy for-else 语义：第 N 轮仍执行，N+1 轮开头才拦。"""
         d = MaxIterationsDecider(5)
-        ctx = _ctx(iteration=5)
+        assert _run(d, None, _ctx(iteration=5))[0] is Decision.PROCEED
+
+    def test_above_limit_stops(self):
+        d = MaxIterationsDecider(5)
+        ctx = _ctx(iteration=6)
         assert _run(d, None, ctx) == (Decision.STOP, "max_iterations")
 
     def test_below_limit_proceeds(self):
@@ -265,7 +270,7 @@ class TestDeciderContract:
 
     def test_handle_returns_stepresult_with_tuple(self):
         d = MaxIterationsDecider(1)
-        r = d.handle(None, _ctx(iteration=1))
+        r = d.handle(None, _ctx(iteration=2))  # 2 > 1 → STOP
         assert r.success is True
         decision, reason = r.output
         assert decision is Decision.STOP and reason == "max_iterations"
