@@ -49,6 +49,7 @@ from agentnodes.kernel.memory.persistent import PersistentMemory
 from agentnodes.foundation.utils.ids import SessionId
 from .circuit_breaker import RetryPolicy, ToolLoopCircuitBreaker
 from .compact import CompactConfig
+from . import agent_telemetry as _tel
 from .context import ContextBuilder, estimate_tokens
 from .runtime.sync_bridge import _get_hook_loop as _get_hook_loop  # noqa: F401
 from .runtime.sync_bridge import _run_coro_in_sync
@@ -1273,12 +1274,11 @@ class AgentLoop(
 
 
     def _trace(self, entry: dict[str, Any]) -> None:
-        """Write a trace entry if trace writer is active."""
-        if self._trace_writer is not None:
-            try:
-                self._trace_writer.write(entry)
-            except Exception:                       # noqa: BLE001
-                pass  # trace failures should never break the loop
+        """Write a trace entry if trace writer is active.
+
+        批次 13 S3-b1：实现搬到 ``agent_telemetry.trace``（全仓 32 处按
+        方法名引用，故名字保留在此）。"""
+        _tel.trace(self, entry)
 
     def _trace_llm_request(
         self,
@@ -1288,93 +1288,10 @@ class AgentLoop(
     ) -> None:
         """Log full LLM request envelope (DSH request/header pattern).
 
-        Records system prompt, tools schema, and history metadata for each
-        LLM call.  Large fields (system prompt, tools JSON) are offloaded to
-        sidecar files when they exceed the threshold.
-
-        Two sinks:
-        1. ``llm_request`` on_event → the B4 forwarder (service.py) offloads
-           large fields and persists to event_log (single source of truth).
-        2. trace.jsonl (optional, backward-compat) if a trace_writer is set.
-
-        This provides the foundation for Trajectory View / Trace Viewer.
+        批次 13 S3-b1：实现（95 行）搬到 ``agent_telemetry.trace_llm_request``。
+        两个 sink 的语义与阈值保持不变。
         """
-        try:
-            import json as _json
-
-            # Extract system prompt from first message
-            system_prompt = ""
-            if messages and messages[0].get("role") == "system":
-                system_prompt = messages[0].get("content", "")
-
-            # Tools schema as JSON
-            tools_json = _json.dumps(tools, ensure_ascii=False) if tools else "[]"
-
-            # History metadata (don't log full content — too large)
-            history_meta = []
-            for m in messages[1:]:  # skip system prompt
-                history_meta.append({
-                    "role": m.get("role", "?"),
-                    "content_len": len(m.get("content", "")),
-                    "has_tool_calls": bool(m.get("tool_calls")),
-                })
-
-            # DSH-inspired: hash fields for fast diff detection
-            system_prompt_hash = hashlib.sha256(system_prompt.encode()).hexdigest()[:16]
-            tools_hash = hashlib.sha256(tools_json.encode()).hexdigest()[:16]
-            # History hash: content-length fingerprint (cheap, no full-text hash)
-            history_fingerprint = "|".join(
-                f"{m.get('role', '?')}:{len(m.get('content', ''))}"
-                for m in messages[1:]
-            )
-            history_hash = hashlib.sha256(history_fingerprint.encode()).hexdigest()[:16]
-
-            entry: dict[str, Any] = {
-                "type": "llm_request",
-                "iteration": iteration,
-                "session_id": self.session_id or "",
-                "history_count": len(messages),
-                "history_meta": history_meta,
-                "tools_count": len(tools) if tools else 0,
-                "system_prompt_len": len(system_prompt),
-                "system_prompt": system_prompt,
-                "tools_schema": tools_json,
-                # DSH-inspired: hash fields
-                "system_prompt_hash": system_prompt_hash,
-                "tools_hash": tools_hash,
-                "history_hash": history_hash,
-                "estimated_tokens": estimate_tokens(messages),
-            }
-
-            # Sink 1: event_log via the on_event forwarder (offloads large
-            # fields itself). Best-effort — never break the loop.
-            try:
-                self._emit("llm_request", dict(entry))
-            except Exception:  # noqa: BLE001
-                logger.debug("llm_request emit failed", exc_info=True)
-
-            # Sink 2: trace.jsonl (optional, backward-compat).
-            if self._trace_writer is not None:
-                try:
-                    # Use sidecar offload for large fields
-                    self._trace_writer.write_text_entry(
-                        dict(entry),
-                        field="system_prompt",
-                        value=system_prompt,
-                        offload_kind=f"llm-request-system-{iteration}",
-                    )
-                    # Tools schema goes inline (usually small) or offloaded
-                    self._trace_writer.write_text_entry(
-                        dict(entry),
-                        field="tools_schema",
-                        value=tools_json,
-                        offload_kind=f"llm-request-tools-{iteration}",
-                        threshold=10_000,  # tools schema usually fits inline
-                    )
-                except Exception:  # noqa: BLE001
-                    pass  # trace failures should never break the loop
-        except Exception:                       # noqa: BLE001
-            pass  # trace failures should never break the loop
+        _tel.trace_llm_request(self, messages, iteration, tools)
 
     # ── P3-d: Goal + Hypothesis integration ────────
 

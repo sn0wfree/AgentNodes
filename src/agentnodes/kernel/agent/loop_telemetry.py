@@ -1,60 +1,41 @@
-"""W-split: hooks + emit/trace (from AgentLoop)."""
+"""W-split 兼容层：hooks + emit/trace（批次 13 S3-b1 起为薄转发）。
+
+**实现已搬到** ``agent_telemetry.py``（模块级函数，显式传 loop）。
+本文件只保留 mixin 形状供 ``AgentLoop`` 的 MRO 与既有导入点使用——
+阶段 3 删 mixin 时整文件删除。
+
+保留理由：``tests/test_loop_compaction_cycle.py`` 等按名字 import mixin；
+``AgentLoop`` 的继承列表也引用它。方法体已无逻辑（1 行转发）。
+"""
 from __future__ import annotations
 
+import asyncio
 from typing import Any
 
-import asyncio
-import logging
-from typing import TYPE_CHECKING, Any
+from . import agent_telemetry as _tel
 
-if TYPE_CHECKING:
-    pass
+__all__ = ["LoopTelemetryMixin"]
 
-from agentnodes.kernel.agent.runtime.sync_bridge import _get_hook_loop
-
-logger = logging.getLogger(__name__)
 
 class LoopTelemetryMixin:
-# ── Host surface (provided by AgentLoop / AutoresearchRunner) ──
+    """薄转发壳——见模块 docstring。"""
+
+    # ── Host surface (provided by AgentLoop / AutoresearchRunner) ──
     _hooks: Any
     _on_event: Any
     _trace: Any
 
     def _fire_hooks(self, method_name: str, *args: Any, **kwargs: Any) -> None:
-        """Sync adapter for async CompositeHook methods.
-
-        The coroutine runs on the shared persistent hook loop (see
-        ``_get_hook_loop``) via ``run_coroutine_threadsafe`` — safe from
-        any thread, and no per-call loop construction/teardown.
-        """
-        if self._hooks is None:
-            return
-        try:
-            method = getattr(self._hooks, method_name)
-            coro = method(*args, **kwargs)
-            if asyncio.iscoroutine(coro):
-                fut = asyncio.run_coroutine_threadsafe(coro, _get_hook_loop())
-                fut.result()
-        except Exception:  # noqa: BLE001
-            logger.warning("Hook %s failed", method_name, exc_info=True)
+        """Sync adapter for async CompositeHook methods."""
+        _tel.fire_hooks(self, method_name, *args, **kwargs)
 
     def _emit(self, event_type: str, data: dict | None = None) -> None:
         """Emit an event to the on_event callback (if set)."""
-        if self._on_event is not None:
-            try:
-                self._on_event(event_type, data or {})
-            except Exception:  # noqa: BLE001
-                logger.warning("on_event callback failed for %s", event_type, exc_info=True)
+        _tel.emit(self, event_type, data)
 
     def _trace_and_emit(self, event_type: str, data: dict | None = None) -> None:
-        """Write a trace entry AND emit it onto the event bus.
-
-        Keeps ``trace.jsonl`` (backward-compat) and the event_log in sync
-        for the same logical event, so the Trajectory View can be derived
-        from the event_log alone (single source of truth).
-        """
-        self._trace({"type": event_type, **(data or {})})
-        self._emit(event_type, data or {})
+        """Write a trace entry AND emit it onto the event bus."""
+        _tel.trace_and_emit(self, event_type, data)
 
     def emit_tool_progress(
         self,
@@ -66,28 +47,12 @@ class LoopTelemetryMixin:
         total: int | None = None,
         message: str = "",
     ) -> None:
-        """Emit a tool_progress event from inside a tool execution.
+        """Emit a tool_progress event from inside a tool execution."""
+        _tel.emit_tool_progress(
+            self, tool=tool, call_id=call_id, stage=stage,
+            current=current, total=total, message=message,
+        )
 
-        Tools can call this to report in-flight progress (e.g. "downloaded
-        chunk 3/10").  Stage names are tool-specific (e.g. "fetching",
-        "parsing", "validating").
-        """
-        self._emit("tool_progress", {
-            "tool": tool,
-            "call_id": call_id,
-            "stage": stage,
-            "current": current,
-            "total": total,
-            "message": message,
-        })
     async def _afire_hooks(self, method_name: str, *args: Any, **kwargs: Any) -> None:
         """Async version of _fire_hooks - awaits coroutine hooks directly."""
-        if self._hooks is None:
-            return
-        try:
-            method = getattr(self._hooks, method_name)
-            result = method(*args, **kwargs)
-            if asyncio.iscoroutine(result):
-                await result
-        except Exception:  # noqa: BLE001
-            logger.warning("Hook %s failed", method_name, exc_info=True)
+        await _tel.afire_hooks(self, method_name, *args, **kwargs)
