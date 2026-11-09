@@ -17,6 +17,7 @@ from .deciders import (
     CircuitBreakerDecider,
     Decider,
     GoalContinuationDecider,
+    InjectorContinuationDecider,
     MaxIterationsDecider,
     NoProgressDecider,
     StopSignalDecider,
@@ -102,13 +103,21 @@ def deciders_for(strategy: Any, loop: Any, *, max_iterations: int) -> dict[str, 
     现有槽位/机制      闸位                       decider（包装对象）
     ================  ========================  ==========================
     stop (Budget)     after_reason + precheck   BudgetDecider
+    continuation      after_reason              GoalContinuationDecider
+    injectors>=100    after_reason              InjectorContinuationDecider
     （外部信号）        after_reason              StopSignalDecider
     （内联 :898）      after_reason              TextFinalDecider
-    continuation      after_reason              GoalContinuationDecider
     resilience        pre_act（并入 precheck）   CircuitBreakerDecider
     progress          after_act                 NoProgressDecider
     （for-else）       precheck                  MaxIterationsDecider
     ================  ========================  ==========================
+
+    **批次 13（S3-a）顺序修正**：``after_reason`` 的 decider 顺序必须是
+    「续跑类在前、终答判定在后」——与 legacy 一致（``loop.py:1070-1098``：
+    先 continuation → 再 post-response injector → 最后 ``_handle_stop``）。
+    修正前 ``TextFinalDecider`` 排第二，无 tool_calls 时直接 STOP，
+    后面的 ``GoalContinuationDecider`` 是死代码——默认引擎因此丢掉了
+    goal 长程续跑（实测：legacy 4 轮 / skeleton 1 轮）。
 
     :param strategy: ``LoopStrategy``（其 stop/continuation/resilience/
         progress 槽位被包装）
@@ -132,10 +141,17 @@ def deciders_for(strategy: Any, loop: Any, *, max_iterations: int) -> dict[str, 
             BudgetDecider(strategy.stop),
             CircuitBreakerDecider(strategy.resilience),
         ],
+        # 顺序敏感：续跑判定（goal / injector）必须在文本终答之前——
+        # 否则模型第一次给出文本就会结束整个 run。
+        # BudgetDecider 同时在 precheck 与 after_reason：legacy 在每次
+        # LLM 返回后立即判预算（loop.py:1056-1068），precheck 那份只是
+        # 兜底（保证 t0 维度在下一轮开头也能拦住）。
         "after_reason": [
+            BudgetDecider(strategy.stop),
+            GoalContinuationDecider(strategy.continuation),
+            InjectorContinuationDecider(),
             StopSignalDecider(name="llm_error"),
             TextFinalDecider(),
-            GoalContinuationDecider(strategy.continuation),
         ],
         "after_act": [
             NoProgressDecider(strategy.progress, approval_gate=_make_approval_gate(loop, strategy)),

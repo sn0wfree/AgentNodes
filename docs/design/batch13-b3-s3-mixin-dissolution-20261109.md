@@ -9,8 +9,9 @@
 
 ## §0 结论摘要（三句话）
 
-1. **S1 翻默认之后，默认引擎（skeleton）已丢失 3 项在产能力**：预算记账、
-   `wrap_up_nudge`、用户输入 guardrail、`max_iter` 终答文案，以及 hook 计数偏差。
+1. **S1 翻默认之后，默认引擎（skeleton）已丢失 6 项在产能力**：预算记账、
+   `wrap_up_nudge`、用户输入 guardrail、`max_iter` 终答文案、hook 计数偏差，
+   以及**最严重的 post-response injectors / goal 续跑**。
    全部有实测证据（§1）。
 2. 因此 S3 **不能只做搬家**。先把这 5 个缺口补进 skeleton 路径，再动 mixin——
    否则「搬家」搬的是删掉了功能之后的空壳，全量测试仍会绿（因为这些能力
@@ -114,7 +115,37 @@
 - `after_run`：`DefaultFinalizationStep.execute`（`finalization.py:48`）
   发一次，骨架 `run_stream` 末尾（`skeleton.py:284`）再发一次。
 
-### 1.6 其他实测（**无差异**，记录以免后人重复验证）
+### 1.6 post-response injectors / goal 续跑 —— **完全丢失**（最严重）
+
+| engine | `inject_post_response` 调用次数 | iterations | finished_reason |
+|---|---|---|---|
+| legacy | 4 | 4 | `max_iter` |
+| skeleton | **0** | **1** | `stop` |
+
+条件：注入一个 `order=100` 的 injector，其 `inject_post_response` 恒返回
+`True`（"goal 还没跑完，继续"）。
+
+**根因（两层，任一层不修都不会生效）**：
+
+1. **没有调用点**：`inject_post_response` 的循环只在
+   `_run_loop_core:1077-1084`，骨架的 `LoopReasoner` 只跑了
+   `order==0` 的 per-iteration 分支（`skeleton_adapters.py:51-56`）。
+2. **闸位顺序错**：即使补上调用点，`deciders_for` 的 `after_reason`
+   顺序是 `[StopSignalDecider, TextFinalDecider, GoalContinuationDecider]`。
+   `TextFinalDecider` 命中（无 tool_calls）就直接 STOP，后面的
+   `GoalContinuationDecider` 是**死代码**。legacy 的顺序相反：
+   先问 continuation（`loop.py:1070-1074`），再问 injector
+   （`:1077-1086`），最后才 `_handle_stop`（`:1096`）。
+
+**影响**：`GoalContinuationInjector` 是 `build_default_injectors()` 的默认成员
+（`context_injector.py:400`）。对 `session_id` + 活跃 goal 的会话
+（即"长程研究"这一核心用法），**默认引擎会在模型第一次给出文本时直接结束**，
+而 legacy 会继续推进 goal。这是用户明确的定位（"goal 设定是一个长程研究工具"）
+被静默破坏。
+
+**这是本批发现的 6 个缺口里唯一影响业务语义的**，其余 5 个是记账/文案/计数。
+
+### 1.7 其他实测（**无差异**，记录以免后人重复验证）
 
 | 能力 | legacy | skeleton |
 |---|---|---|
@@ -129,18 +160,19 @@
 
 ## §2 修正后的 S3 范围
 
-### S3-a · 补齐 5 个缺口（**必须先做**）
+### S3-a · 补齐 6 个缺口（**必须先做**）
 
 | 缺口 | 修法 | 落点 |
 |---|---|---|
-| 预算记账 | 把 `_record_budget_usage` 从 `loop.py` 搬到**骨架 REASON 之后**的固定位置；`LoopReasoner.handle` 在拿到 response 后调用 | `skeleton_adapters.LoopReasoner` |
+| 预算记账 | `LoopReasoner.handle` 拿到 response 后调 `_record_budget_usage`；累计逻辑改调既有的 `strategy/budget.record_usage`（`loop.py:671-689` 是它的手写重复） | `skeleton_adapters.LoopReasoner` |
+| **post-response injectors / goal 续跑** | `LoopReasoner` 补 `order>=100` 分支；**并把 `GoalContinuationDecider` 提到 `TextFinalDecider` 之前**（对齐 legacy 顺序） | `skeleton_adapters.LoopReasoner` + `modes.deciders_for` |
 | `wrap_up_nudge` | `loop._run_via_skeleton` 传入 `on_iteration_start`，实现搬进 `skeleton_adapters` | `loop.py` + `skeleton_adapters.py` |
 | 用户输入 guardrail | 搬进 `LoopHooks.before_run`（骨架已在 prepare 后立即调用它） | `skeleton_adapters.LoopHooks` |
 | `max_iter` 文案 | 搬进 `LoopFinalize`：`finished_reason=="max_iter"` 且 `answer` 空时补文案 | `skeleton_adapters.LoopFinalize` |
 | hook 计数 | `after_iteration` 在 STOP 分支补发；`after_run` 去掉骨架末尾那次（由 `LoopFinalize` 统一发） | `skeleton.py` + `skeleton_adapters.py` |
 
-**验收**：新增 `tests/test_engine_parity.py`，把 §1 的 6 组对比全部写成
-参数化断言（双引擎逐字段比对），**并且**这 6 组在修之前必须先红一次
+**验收**：新增 `tests/test_engine_parity.py`，把 §1 的 **7 组**对比全部写成
+参数化断言（双引擎逐字段比对），**并且**这 7 组在修之前必须先红一次
 （证明断言有效，不是空集合）。
 
 ### S3-b · mixin 解体（原范围，按耦合度两小步）
@@ -230,13 +262,27 @@
 
 | 步骤 | 内容 | 回滚 |
 |---|---|---|
-| **S3-a1** | 写 `tests/test_engine_parity.py`，6 组断言**先红** | 无需回滚（只加测试） |
-| **S3-a2** | 补 5 个缺口 → 该测试转绿 | revert 单 commit |
+| **S3-a1** | 写 `tests/test_engine_parity.py`，7 组断言**先红** | 无需回滚（只加测试） |
+| **S3-a2** | 补 6 个缺口 → 该测试转绿 | revert 单 commit |
 | **S3-b1** | telemetry + lifecycle 搬家 | revert 单 commit |
 | **S3-b2-1** | tools 搬家 | 同上 |
 | **S3-b2-2** | compaction 改调 `make_compactor` | 同上 |
 | **S3-b2-3** | progress 搬家 | 同上 |
 | **S3-b2-4** | stream 搬家 | 同上 |
+
+### S3-a2 实际改动（已完成，commit 见 git log）
+
+| 缺口 | 改动 |
+|---|---|
+| 预算记账 | `LoopReasoner` 在 REASON 后调 `_record_budget_usage`，并把结果同步进 `ctx.tokens_used` / `ctx.cost_usd`；`after_reason` 闸位加入 `BudgetDecider`（同轮生效，对齐 legacy `loop.py:1056`）；`skeleton.py` STOP 分支把 `budget*` 映射到 `finished_reason="budget"` |
+| post-response injectors | `LoopReasoner` 补 `order>=100` 分支（仅在无 tool_calls 时，对齐 legacy）；新增 `InjectorContinuationDecider` 消费 `ctx.metadata["injector_continued"]`；`after_reason` 顺序改为 **Budget → GoalContinuation → InjectorContinuation → StopSignal → TextFinal** |
+| `wrap_up_nudge` | 新增 `LoopIterationStart`，由 `loop._run_via_skeleton` 传给 `ReActSkeleton(on_iteration_start=...)` |
+| 用户输入 guardrail | 搬进 `LoopHooks.before_run`；`LoopPrepare` 把原始 task 写进 `ctx.metadata["raw_task"]`（`ctx.task` 已含 pre-run 前缀） |
+| `max_iter` 文案 | `LoopFinalize` 在发事件前补 `"Reached max_iterations=N without a final answer."` |
+| hook 计数 | `skeleton.py` 的 STOP 分支补发 `after_iteration`；`LoopHooks.after_run` 用 `ctx._after_run_fired` 标记去重，`LoopFinalize` 在 finalization step 之后置位（EXIT 路径不走 step，仍能正常发） |
+
+**验证**：`tests/test_engine_parity.py` 7 passed；相关 8 个测试文件 251 passed；
+全量见 §5 末尾。
 
 每步验证：
 1. `pytest tests -q` 0 failed（基线 6977 passed / 71 skipped / 5 collect errors）

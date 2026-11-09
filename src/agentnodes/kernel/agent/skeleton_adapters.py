@@ -20,15 +20,32 @@ from .strategy.loop_context import LoopContext
 
 logger = logging.getLogger(__name__)
 
-__all__ = ["LoopActor", "LoopFinalize", "LoopHooks", "LoopPrepare", "LoopReasoner"]
+__all__ = [
+    "LoopActor",
+    "LoopFinalize",
+    "LoopHooks",
+    "LoopIterationStart",
+    "LoopPrepare",
+    "LoopReasoner",
+]
 
 
 class LoopReasoner(StepHandler):
-    """REASON 位：compaction + inbox drain + injectors(0) + LLM 调用。
+    """REASON 位：compaction + inbox drain + injectors + LLM 调用 + 预算记账。
 
     复用 ``strategy.compaction`` 与 ``strategy.llm_call`` 两个 step
     （经 ``_call_step`` 的既有隔离）。产出 = LLM response
     （``None`` = 终止信号，交给 StopSignalDecider / 骨架）。
+
+    **批次 13（S3-a）**：injectors 的两个 order 分支与预算记账都收在这里
+    ——翻默认后实测漏掉它们（见 ``docs/design/batch13-*.md`` §1.1/§1.6）：
+
+    - ``order == 0``：per-iteration（TodosInjector 等）
+    - ``order >= 100``：post-response（``GoalContinuationInjector``）——
+      返回 True = 追加了续跑提示，须让本轮走 CONTINUE
+    - 预算：``_record_budget_usage`` 原只在 legacy 的 ``_run_loop_core``
+      调用，导致 ``budget_max_tokens`` / ``budget_max_cost_usd`` 在默认引擎
+      完全不生效
     """
 
     def __init__(self, loop: Any) -> None:
@@ -46,7 +63,7 @@ class LoopReasoner(StepHandler):
         )
         ctx.messages = comp_ctx.messages
 
-        # inbox drain + per-iteration injectors（loop.py:855-863 等价）
+        # inbox drain + per-iteration injectors（order==0）
         loop._drain_inbox(ctx.messages)
         for injector in getattr(loop, "_injectors", []):
             if getattr(injector, "order", 0) == 0:
@@ -71,6 +88,36 @@ class LoopReasoner(StepHandler):
         if llm_ctx.response is None:
             ctx.should_stop = True
             ctx.stop_reason = ctx.stop_reason or "llm_no_response"
+            return StepResult.ok(llm_ctx.response)
+
+        # ── 预算记账（批次 13 S3-a）────────────────────────────────
+        # 顺序与 legacy 一致：记账 → 判预算（legacy: 1050-1064）。
+        # 记账必须在 after_reason 闸位之前完成，否则 BudgetDecider 读到的
+        # tokens_used 恒为 0（这正是翻默认后预算失效的根因）。
+        loop._record_budget_usage(llm_ctx.response, ctx.t0 or 0.0)
+        # 同步进骨架的 ctx——after_reason 的 BudgetDecider 读的是
+        # ``ctx.tokens_used``（BudgetStopStep._resolve），它不会自己去看
+        # loop 的私有字段。
+        ctx.tokens_used = int(getattr(loop, "_budget_tokens", 0) or 0)
+        ctx.cost_usd = float(getattr(loop, "_budget_cost_usd", 0.0) or 0.0)
+
+        # ── post-response injectors（order>=100，批次 13 S3-a）──────
+        # GoalContinuationInjector 是默认成员；返回 True = 已追加续跑提示。
+        # **只在无 tool_calls 时调用**——与 legacy 一致（loop.py:1066 的
+        # ``if not response.has_tool_calls():`` 分支内）。
+        if not llm_ctx.response.has_tool_calls():
+            for injector in getattr(loop, "_injectors", []):
+                if getattr(injector, "order", 0) >= 100:
+                    try:
+                        if injector.inject_post_response(
+                            loop, llm_ctx.response, ctx.messages,
+                            ctx.result, ctx.iteration,
+                        ):
+                            ctx.metadata["injector_continued"] = True
+                            break
+                    except Exception:  # noqa: BLE001
+                        pass  # injectors must not break the loop
+
         return StepResult.ok(llm_ctx.response)
 
 
@@ -124,11 +171,43 @@ class LoopPrepare:
         )
         ctx.result = result
         ctx.hook_ctx = hook_ctx
+        # 批次 13 S3-a：保留用户原始 task（``full_task`` 已被 pre-run
+        # 上下文前缀污染，guardrail 必须扫原文）。
+        ctx.metadata["raw_task"] = spec.task
         # 批次 12 S1：把当前 ctx 挂到 loop 上——NoProgressDecider 的
         # approval gate 是闭包（decider 不持有 loop），需要它取
         # response/result/iteration 喂 `_check_no_progress`
         loop._skeleton_ctx = ctx
         return ctx, result
+
+
+class LoopIterationStart:
+    """每轮开头动作：``wrap_up_nudge``（legacy ``_run_loop_core:1002-1009``）。
+
+    **批次 13（S3-a）新增**：注入逻辑原先内联在 legacy 循环体里，骨架
+    ``ReActSkeleton`` 预留了 ``on_iteration_start`` 钩子但从未收到实现，
+    于是 ``wrap_up_nudge=True`` 在默认引擎是空操作。
+    """
+
+    #: 与 legacy 同源（``loop.WRAP_UP_NUDGE_TEXT``）——单一文案，
+    #: 避免两引擎给出不同的提醒措辞。
+    def __init__(self, loop: Any) -> None:
+        self._loop = loop
+
+    def __call__(self, state: Any, iteration: int) -> None:
+        loop = self._loop
+        if not getattr(loop, "_wrap_up_nudge", False):
+            return
+        from .loop import WRAP_UP_RATIO, WRAP_UP_NUDGE_TEXT
+
+        max_iter = loop._effective_max_iterations()
+        ratio = getattr(loop, "_wrap_up_ratio", WRAP_UP_RATIO)
+        if iteration != max(1, int(max_iter * ratio)):
+            return
+        state.messages.append({
+            "role": "system",
+            "content": WRAP_UP_NUDGE_TEXT,
+        })
 
 
 class LoopHooks:
@@ -143,13 +222,33 @@ class LoopHooks:
         骨架传入的是 LoopContext（prepare 产出），这里取它的 hook_ctx。
         批次 12 S1 补：原为空实现，翻默认后 ``test_arun_hooks_are_awaited``
         暴露缺失（hooks 只有 after_run）。
+
+        **批次 13（S3-a）**：用户输入的 guardrail 扫描也在这一步——legacy
+        在 ``_run_loop_core:980-989`` 于 before_run 之后立刻扫描，骨架
+        完全没有对应点（翻默认后 ``scan_user_input`` 永不执行）。
         """
+        loop = self._loop
         hook_ctx = getattr(ctx, "hook_ctx", None)
         if hook_ctx is None:
-            hook_ctx = self._loop._build_hook_context(
+            hook_ctx = loop._build_hook_context(
                 getattr(ctx, "iteration", 0), getattr(ctx, "messages", []),
             )
-        await self._loop._afire_hooks("before_run", hook_ctx)
+        await loop._afire_hooks("before_run", hook_ctx)
+
+        # Phase 5-guardrails v1: observe injection signatures in the user
+        # task. Emits only — never alters the message path.
+        # ``raw_task`` 由 LoopPrepare 写入（``ctx.task`` 已含 pre-run 前缀）。
+        original_task = (getattr(ctx, "metadata", None) or {}).get("raw_task", "")
+        try:
+            from .guardrails import scan_user_input
+
+            for finding in scan_user_input(
+                original_task, source_id=loop.session_id or "",
+            ):
+                loop._emit("guardrail.finding", finding.to_dict())
+                await loop._afire_hooks("on_guardrail_finding", hook_ctx, finding)
+        except Exception:  # noqa: BLE001 — guardrails never break the loop
+            logger.debug("guardrail scan failed (user input)", exc_info=True)
 
     async def before_iteration(self, ctx: LoopContext, iteration: int) -> None:
         pass  # llm_call step 内部已发 before_iteration（loop.py:932-934 注释）
@@ -161,6 +260,21 @@ class LoopHooks:
             await self._loop._afire_hooks("after_iteration", hook_ctx)
 
     async def after_run(self, ctx: Any, result: Any) -> None:
+        """``after_run`` 只发一次（批次 13 S3-a）。
+
+        两个调用方都会到这一步：``DefaultFinalizationStep.execute``
+        （finalization step 内部）与骨架 ``run_stream`` 末尾。两者都在
+        骨架路径上，实测 legacy 发 1 次、skeleton 发 2 次。
+        用 ctx 上的标记做幂等——比删任一方更稳（删 step 里那次会破坏
+        「Step 自触发 hook」的既有协议；删骨架末尾那次会漏掉 EXIT 路径，
+        它不走 finalization step）。
+        """
+        if getattr(ctx, "_after_run_fired", False):
+            return
+        try:
+            ctx._after_run_fired = True
+        except Exception:  # noqa: BLE001 — 冻结对象则退回不去重
+            pass
         hook_ctx = getattr(ctx, "hook_ctx", None)
         if hook_ctx is None:
             hook_ctx = self._loop._build_hook_context(
@@ -179,6 +293,14 @@ class LoopFinalize:
     ``iter_end`` / ``assistant_message`` / ``loop_end`` 一条未发——
     legacy 这三个事件由 ``_handle_stop`` / ``_handle_max_iter`` 发
     （loop_lifecycle.py:41-68），骨架没调那两个方法。
+
+    **批次 13（S3-a）**：
+
+    - ``max_iter`` 终答文案（legacy ``_handle_max_iter`` 补
+      "Reached max_iterations=N without a final answer."；骨架原先留空，
+      导致 ``LoopResult.success`` 由 True 变 False）
+    - ``after_run`` 只在这里发一次（原先 ``DefaultFinalizationStep`` 发
+      一次、骨架末尾再发一次 → 实测 2 次 vs legacy 1 次）
     """
 
     def __init__(self, loop: Any) -> None:
@@ -187,8 +309,18 @@ class LoopFinalize:
     async def __call__(self, ctx: LoopContext, result: Any) -> None:
         loop = self._loop
 
-        # ── 收尾事件（legacy _handle_stop / _handle_max_iter 的等价）──
+        # ── max_iter 终答文案（批次 13 S3-a）────────────────────────
+        # 在发事件与跑 finalization step 之前补，这样 assistant_message /
+        # metrics 看到的都是最终答案文本。语义与 legacy _handle_max_iter
+        # 逐字一致（含 "Reached max_iterations=N" 前缀）。
         finish = getattr(result, "finished_reason", "stop") or "stop"
+        if finish == "max_iter" and not getattr(result, "answer", ""):
+            result.answer = (
+                f"Reached max_iterations={loop.max_iterations} "
+                f"without a final answer."
+            )
+
+        # ── 收尾事件（legacy _handle_stop / _handle_max_iter 的等价）──
         iteration = getattr(result, "iterations", 0) or 0
         try:
             loop._trace_and_emit("loop_end", {
@@ -212,6 +344,14 @@ class LoopFinalize:
         await loop._call_step(
             loop._strategy.finalization, fin_ctx, async_mode=True,
         )
+        # ``DefaultFinalizationStep`` 内部已发过一次 after_run（它直接调
+        # ``loop._afire_hooks``，绕过 LoopHooks）——在这里打标记，让骨架
+        # 末尾那次 ``_fire("after_run")`` 跳过。EXIT 路径不走 finalization
+        # step，标记未置位，末尾那次正常发（所以两处都不能删）。
+        try:
+            ctx._after_run_fired = True
+        except Exception:  # noqa: BLE001
+            pass
         # git commit + trace close（阶段 2 后半收编为 hook）
         import asyncio as _aio
 

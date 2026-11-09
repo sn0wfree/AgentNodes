@@ -197,6 +197,17 @@ class ReActSkeleton:
                 if decision is Decision.STOP:
                     state.stop_reason = reason or "final"
                     result.stop_reason = state.stop_reason
+                    # 预算类 stop 的 finished_reason 口径与 legacy 一致
+                    # （loop.py:1059 → "budget"）；不做这层映射会落成
+                    # "max_iter"（for-else 兜底），调用方分不清是跑满还是超支。
+                    if "budget" in (reason or ""):
+                        result.finished_reason = "budget"
+                        state.stop_reason = reason
+                        result.stop_reason = reason
+                    # Legacy 在文本终答前也发 after_iteration
+                    # （_run_loop_core:1097）；批次 13 S3-a 实测骨架缺这一次
+                    # （legacy 3 次 vs skeleton 2 次）。
+                    await self._fire("after_iteration", state, iteration)
                     # LoopResult 用 answer 而非 final_content
                     if hasattr(result, "answer"):
                         result.answer = getattr(response, "content", "") or ""

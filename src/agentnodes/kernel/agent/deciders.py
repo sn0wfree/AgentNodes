@@ -39,6 +39,7 @@ __all__ = [
     "Decision",
     "Decider",
     "GoalContinuationDecider",
+    "InjectorContinuationDecider",
     "MaxIterationsDecider",
     "NoProgressDecider",
     "StopSignalDecider",
@@ -172,6 +173,29 @@ class GoalContinuationDecider(Decider):
         should_continue, reason = self._step.evaluate(ctx)
         if should_continue:
             return Decision.CONTINUE, reason
+        return Decision.PROCEED, None
+
+
+class InjectorContinuationDecider(Decider):
+    """post-response injector 请求续跑（``ctx.metadata["injector_continued"]``）。
+
+    **批次 13（S3-a）新增**。legacy 在 ``_run_loop_core:1075-1086`` 直接
+    问 injector 的返回值并 ``continue``；骨架把它表达成 CONTINUE 决策，
+    使顺序与 legacy 一致：continuation → injector → stop。
+
+    ``LoopReasoner`` 负责调用 ``inject_post_response`` 并把结论写进
+    ``ctx.metadata``——「谁问 injector」与「谁按结论分派」分离，符合
+    decider 只读的契约。
+    """
+
+    @property
+    def name(self) -> str:
+        return "injector_continuation"
+
+    def decide(self, input: Any, ctx: LoopContext) -> tuple[Decision, str | None]:
+        meta = getattr(ctx, "metadata", None) or {}
+        if meta.get("injector_continued"):
+            return Decision.CONTINUE, "injector_continued"
         return Decision.PROCEED, None
 
 

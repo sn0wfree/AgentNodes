@@ -887,6 +887,7 @@ class AgentLoop(
             LoopActor,
             LoopFinalize,
             LoopHooks,
+            LoopIterationStart,
             LoopPrepare,
             LoopReasoner,
         )
@@ -903,6 +904,9 @@ class AgentLoop(
             hooks=LoopHooks(self),
             finalize=LoopFinalize(self),
             prepare=LoopPrepare(self),
+            # 批次 13 S3-a：wrap_up_nudge 原内联在 legacy 循环体，
+            # 翻默认后丢失——收进骨架的 on_iteration_start 钩子。
+            on_iteration_start=LoopIterationStart(self),
         )
         spec = SkeletonRunSpec(
             task=task,
