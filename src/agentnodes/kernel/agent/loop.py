@@ -924,7 +924,6 @@ class AgentLoop(
             max_iterations=max_iter,
             session_id=self.session_id or "",
         )
-        _ = os.environ.get("AGENTNODES_SKELETON", "")  # noqa: F841 — 语义文档
         return await skeleton.run_to_completion(spec)
 
     # ── DSH-inspired: steering inbox ──────────────────────────────

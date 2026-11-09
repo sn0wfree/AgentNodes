@@ -94,13 +94,17 @@ echo [6/8] tool references
 call :step_tool_refs
 if errorlevel 1 set "FAILED=1"
 
-echo [7/8] kernel nouns
+echo [7/9] kernel nouns
 call :step_kernel_nouns
 if errorlevel 1 set "FAILED=1"
 
-REM --- step 8/8: graphify symbolic audit (optional, second dimension) ------
+echo [8/9] env access ^(settings read layer^)
+call :step_env_access
+if errorlevel 1 set "FAILED=1"
+
+REM --- step 9/9: graphify symbolic audit (optional, second dimension) ------
 echo.
-echo [8/8] graphify symbolic audit ^(optional^)
+echo [9/9] graphify symbolic audit ^(optional^)
 if "%WANT_GRAPH%"=="1" (
     call :step_graph
     if errorlevel 1 set "FAILED=1"
@@ -130,7 +134,11 @@ REM ===========================================================================
 
 :step_collect
 set "LOG=%LOG1%"
-"%PYTEST_PI%" -m pytest tests --collect-only -q > "%LOG%" 2>&1
+REM -p no:hypothesis* : this host's application-control policy blocks
+REM hypothesis' native DLL (_native). Without these flags pytest dies at
+REM plugin load and prints no summary at all (seen 2026-11-09). Disabling
+REM the plugin does not change collection counts.
+"%PYTEST_PI%" -m pytest tests --collect-only -q -p no:hypothesispytest -p no:hypothesis > "%LOG%" 2>&1
 REM Nonzero exit is EXPECTED here (5 collection errors). Never gate on it.
 set "LINE="
 for /f "delims=" %%L in ('findstr /r /c:"^[0-9][0-9]* tests collected" "%LOG%"') do set "LINE=%%L"
@@ -301,6 +309,26 @@ if errorlevel 1 (
     exit /b 1
 )
 echo   [OK] kernel nouns: clean
+exit /b 0
+
+
+:step_env_access
+REM Batch A: settings.ENV_TABLE is the single source for config reads.
+REM --allow-legacy is intentional: batch B is what actually rewrites the
+REM existing ~58 call sites. Until then this step still runs every batch
+REM (so NEW violations are visible in the log) without failing the gate.
+if not exist "scripts\arch\check_env_access.py" (
+    echo   [SKIP] check_env_access.py not present
+    exit /b 0
+)
+set "LOG=%TEMP%\batch_gate_step8.log"
+"%PROBE_PI%" scripts\arch\check_env_access.py --allow-legacy > "%LOG%" 2>&1
+if errorlevel 1 (
+    echo   [X] check_env_access.py: hard failure
+    call :tail "%LOG%" 30
+    exit /b 1
+)
+echo   [OK] env access: settings layer enforced ^(legacy backlog allowed until batch B^)
 exit /b 0
 
 

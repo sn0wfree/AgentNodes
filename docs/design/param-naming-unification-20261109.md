@@ -209,6 +209,37 @@ CLI 参数 > 环境变量 > 配置文件 > 内置默认
 
 **验证**：现有 56 个名字全部经 settings 读取，行为零变化，全量绿。
 
+#### 批 A 已执行结果（2026-11-09）
+
+| 产出 | 说明 |
+|---|---|
+| `foundation/settings.py`（~430 行）| 56 条声明，9 个 domain（paths/engine/cache/log/api/orch/cli/llm），`get_*` 类型化读取，`snapshot()` 脱敏，`unknown_env_vars()` 诊断 |
+| `scripts/arch/check_env_access.py` | 新门禁：已登记变量必须经 settings；未登记的项目前缀变量报错；生态变量放行 |
+| `batch_gate.cmd` 第 8 步 | 接入（带 `--allow-legacy`，因为批 B 才重写调用点）|
+| `tests/test_settings.py`（71 passed）| 见下 |
+
+**测试的三层防线**：
+
+1. **覆盖完整性**：源码读的每个 env 名都在表里或显式归入 `EXTERNAL_ENV_VARS`
+   （防"加了开关忘了登记"）；反过来表里每条都必须真被读到（防死声明）。
+2. **默认值等价**：对 71 个读取点**逐个参数化**，比对源码
+   `os.environ.get(NAME, DEFAULT)` 的默认值与声明表（按 kind 归一）。
+   **这是"零行为变化"的直接证明。**
+3. **重复登记会炸**：import 期检查重名并 `raise`。
+
+**这套防线立刻抓到 3 类问题**（不是测试写完就绿）：
+
+| 问题 | 数量 | 处理 |
+|---|---|---|
+| 源码 `"1000"`（字符串）vs 声明 `1000`（int）| 13 | 测试按 kind 归一后比较——声明表记录**语义值**，转换由 `get_int` 负责 |
+| `CORS_ORIGINS` 两个读取点默认值不同（`None` / `""`）| 2 | 以源码为准改声明为 `None`；差异登记进 `_MULTI_DEFAULT_ALLOWED` |
+| `AGENTNODES_SKELETON` 有一个**纯消耗的读取点**（`_ = os.environ.get(...)  # 语义文档`）| 1 | **直接删除**（无任何作用）|
+
+**一个重要差异（有意保留，批 B 生效时需注意）**：
+`settings.get_int()` 遇到非法值回落默认值，而原代码 `int(os.environ.get(...))`
+会抛 `ValueError` 崩掉模块 import。**这是更安全的行为**，但属于行为变更——
+批 B 替换调用点时才生效，届时需在批次说明里写明。
+
 ### 批 B · 改名（一次性机械替换）
 
 按 §2 映射表替换 71 个读取点。**同时**在 settings 里声明 `aliases=(旧名,)`，
