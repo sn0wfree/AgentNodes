@@ -41,6 +41,7 @@ from pathlib import Path
 from typing import Any, Callable, Iterable
 
 from agentnodes.evals.scorecard import GoldenTask, load_golden_tasks
+from agentnodes.foundation import settings as _settings
 
 logger = logging.getLogger(__name__)
 
@@ -135,7 +136,7 @@ def heldout_dir() -> Path:
     并建目录；解析失败时退回 ``Path.home()/.agentnodes``（与 ``halt.py``
     同款兜底），但**不**在 import 期调用——只有真正读写时才解析。
     """
-    override = os.environ.get(HELDOUT_PATH_ENV, "").strip()
+    override = _settings.get_str("AGENTNODES_GOLDEN_HELDOUT_PATH").strip()
     if override:
         return Path(override).expanduser().parent
     try:
@@ -148,7 +149,7 @@ def heldout_dir() -> Path:
 
 def heldout_path() -> Path:
     """held-out 集的外部路径（**仓库外**；默认 ``~/.agentnodes/eval_heldout``）。"""
-    override = os.environ.get(HELDOUT_PATH_ENV, "").strip()
+    override = _settings.get_str("AGENTNODES_GOLDEN_HELDOUT_PATH").strip()
     if override:
         return Path(override).expanduser()
     return heldout_dir() / HELDOUT_FILENAME
@@ -156,7 +157,7 @@ def heldout_path() -> Path:
 
 def union_master_path() -> Path:
     """外部并集母本路径（与 held-out 同目录，同样在仓库外）。"""
-    override = os.environ.get(HELDOUT_PATH_ENV, "").strip()
+    override = _settings.get_str("AGENTNODES_GOLDEN_HELDOUT_PATH").strip()
     if override:
         return Path(override).expanduser().parent / UNION_FILENAME
     return heldout_dir() / UNION_FILENAME

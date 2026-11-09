@@ -80,7 +80,7 @@ def halt_path() -> Path:
     **不硬编码 home 路径**：数据目录的迁移/覆盖逻辑（env、旧目录搬迁）
     全部复用 foundation 的唯一实现。
     """
-    override = os.environ.get(_HALT_PATH_ENV, "").strip()
+    override = _settings.get_str("AGENTNODES_HALT_PATH").strip()
     if override:
         return Path(override).expanduser()
     try:
@@ -100,7 +100,7 @@ def _peek_path() -> Path:
     （``AN_DATA_DIR`` → ``~/.agentnodes``），不做任何 IO；实际写入时
     （``trip_halt``）才走 ``halt_path()`` 的全量解析。
     """
-    override = os.environ.get(_HALT_PATH_ENV, "").strip()
+    override = _settings.get_str("AGENTNODES_HALT_PATH").strip()
     if override:
         return Path(override).expanduser()
     try:

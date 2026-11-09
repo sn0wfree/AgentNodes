@@ -36,6 +36,7 @@ from pathlib import Path
 from typing import Any, Mapping
 
 from agentnodes.foundation.compact_config import CompactConfig
+from agentnodes.foundation import settings as _settings
 from .quantnodes_bridge import (
     CONFIG_PATH as QUANTNODES_LLM_JSON,
 )
@@ -420,7 +421,7 @@ def _resolve_active_profile(raw: dict[str, Any]) -> dict[str, Any]:
 
     Priority: env overrides > profile > base.
     """
-    profile_name = os.environ.get(ENV_PROFILE_ACTIVE) or raw.get("active_profile")
+    profile_name = _settings.get_str("AGENTNODES_LLM_PROFILE") or raw.get("active_profile")
     if not profile_name:
         return raw
     profiles = raw.get("profiles")

@@ -119,10 +119,40 @@ hypothesis）。
 
 ---
 
-## §4 遗留
+## §4 遗留（**已修**，2026-11-09）
 
-- 上述 4 个缺陷已修，但它们的**共同根因**（依赖全局副作用的测试设计）
-  没有系统性防线。建议：新增测试若依赖进程级全局（模块级 dict / 文件 /
-  环境变量），必须在 fixture 里显式重置，而不是依赖执行顺序。
-- `check_env_access.py` 的盲区：只扫字面量 `os.environ.get("NAME")`，
-  扫不到 `os.environ.get(SOME_CONST)`（`AGENTNODES_HALT_PATH` 因此逃过检查）。
+### 4.1 `check_env_access.py` 的盲区 —— 已修，代价是 13 个未登记变量
+
+**盲区**：只扫字面量 `os.environ.get("NAME")`，扫不到
+`os.environ.get(SOME_CONST)` 这种**模块级常量**形式。
+
+**修法**：门禁额外解析同文件内的常量赋值（`_CONST = "REAL_NAME"`），
+把真实变量名提取出来再检查。函数参数形式（`os.environ.get(name)` 里的
+`name` 是形参）无法静态解析，跳过。
+
+**盲区揭开后抓到的 13 处**：
+
+| 类型 | 数量 | 例子 |
+|---|---|---|
+| 未登记的新变量 | 8 | `AN_ALLOW_SHELL_TOOLS` / `AN_GOLDEN_HELDOUT_PATH` / `LLM_PROFILE` / `AN_LOG_FILE` / `AGENTNODES_RSI_STATE_PATH` / `AGENTNODES_HALT_PATH` / `AGENTNODES_RSI_ROLE` / `AGENTNODES_RSI_TOOLSET` |
+| 已登记但仍裸读 | 4 | `AGENTNODES_HALT_PATH`×2 / `AGENTNODES_RSI_STATE_PATH` / `AGENTNODES_RSI_ROLE` / `AGENTNODES_RSI_TOOLSET` |
+| **拼写不一致（真 bug）** | 1 | `AGENTNODES_SESSIONS_DB`（多一个 S）vs 声明表的 `AGENTNODES_SESSION_DB` |
+
+**拼写 bug 的后果**：用户按文档设 `AGENTNODES_SESSION_DB`，在
+`slash_session.py` 里**不生效**（它读的是多写一个 S 的名字）。
+修法：统一为 `AGENTNODES_SESSION_DB`，旧拼法保留为别名。
+
+**处置**：8 个未登记变量全部补进 `ENV_TABLE`（含旧名别名），4 处裸读改走
+`settings`，拼写统一。门禁从 13 处违规 → 0。
+
+### 4.2 `tests/conftest.py` 仍引用 `~/.quantnodes` —— 已修
+
+| 位置 | 处置 |
+|---|---|
+| `real_llm_config` fixture | 新位置 `~/.agentnodes/llm.json` 优先，旧位置兼容回退 |
+| `_host_key_env` 的 dotenv | 同上（`.agentnodes/.env` 优先）|
+| `_CANARY_DIRS` | **保留两处**——金丝雀的职责就是监视"真实配置目录是否被测试写入"，新旧都要盯 |
+
+**为什么不硬切**：live 测试读的是**用户宿主**的真实配置，用户可能还没迁移。
+这里做两位置查找是合理的兼容，与"项目自己的数据目录硬切换"不冲突
+（后者是本项目自己写的地方）。

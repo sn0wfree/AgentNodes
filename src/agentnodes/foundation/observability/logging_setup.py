@@ -87,7 +87,7 @@ def _resolve_log_file(log_file: str | Path | None) -> Path | None:
     绝对路径原样使用；相对路径/裸文件名落到 ``<数据根>/logs/`` 下。
     返回 ``None`` 表示不启用文件日志（默认）。
     """
-    raw = log_file if log_file is not None else os.environ.get(LOG_DIR_ENV, "")
+    raw = log_file if log_file is not None else _settings.get_str("AGENTNODES_LOG_FILE")
     if not raw or not str(raw).strip():
         return None
     path = Path(str(raw)).expanduser()

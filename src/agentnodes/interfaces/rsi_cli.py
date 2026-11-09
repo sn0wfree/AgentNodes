@@ -35,6 +35,7 @@ from dataclasses import dataclass
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Callable, Iterable
+from agentnodes.foundation import settings as _settings
 
 logger = logging.getLogger(__name__)
 
@@ -90,7 +91,7 @@ class CycleOutcome:
 
 def state_path() -> Path:
     """状态文件路径（env 覆盖优先，否则数据目录）。"""
-    override = os.environ.get(_STATE_PATH_ENV, "").strip()
+    override = _settings.get_str("AGENTNODES_RSI_STATE_PATH").strip()
     if override:
         return Path(override).expanduser()
     try:

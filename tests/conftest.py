@@ -374,9 +374,15 @@ collect_ignore_glob = ["attic/*"]
 # ~/.quantnodes/.env 中的 key。
 
 def _host_key_env() -> dict[str, str]:
+    """从宿主真实 .env 读 key（新位置优先，旧位置兼容回退）。"""
     env: dict[str, str] = {}
-    dotenv = Path.home() / ".quantnodes" / ".env"
-    if dotenv.exists():
+    _real = _home_sandbox.REAL_HOME
+    dotenv = None
+    for cand in (_real / ".agentnodes" / ".env", _real / ".quantnodes" / ".env"):
+        if cand.exists():
+            dotenv = cand
+            break
+    if dotenv is not None:
         for line in dotenv.read_text(encoding="utf-8", errors="ignore").splitlines():
             line = line.strip()
             if not line or line.startswith("#") or "=" not in line:
@@ -391,20 +397,29 @@ def _host_key_env() -> dict[str, str]:
 def real_llm_config():
     """真实 LLMConfig（bypass 隔离）。key 不在 → skip。
 
-    豁免主目录沙箱：显式读**真实** ~/.quantnodes/llm.json——live 测试是
-    唯一合法触碰宿主配置的场景（``_home_sandbox.restore_real``）。
+    豁免主目录沙箱：显式读**真实**宿主配置——live 测试是唯一合法触碰
+    宿主配置的场景（``_home_sandbox.restore_real``）。
+
+    **2026-11-09 路径统一**：默认位置是 ``~/.agentnodes/llm.json``；
+    ``~/.quantnodes/llm.json`` 只作为**兼容回退**（用户可能还没迁移）。
+    顺序：新位置优先 → 旧位置回退。
     """
     if os.environ.get("QNODES_LIVE_LLM") != "1":
         pytest.skip("live LLM is opt-in: set QNODES_LIVE_LLM=1")
-    real_json = _home_sandbox.REAL_HOME / ".quantnodes" / "llm.json"
-    if not real_json.exists():
-        pytest.skip(f"no {real_json}")
+
+    candidates = (
+        _home_sandbox.REAL_HOME / ".agentnodes" / "llm.json",   # 默认
+        _home_sandbox.REAL_HOME / ".quantnodes" / "llm.json",   # 兼容回退
+    )
+    real_json = next((p for p in candidates if p.exists()), None)
+    if real_json is None:
+        pytest.skip(f"no LLM config at {[str(p) for p in candidates]}")
 
     monkeypatch = pytest.MonkeyPatch()
     monkeypatch.setenv("AGENTNODES_LLM_CONFIG", str(real_json))
     for name, value in _host_key_env().items():
         monkeypatch.setenv(name, value)
-    # key 在 ~/.quantnodes/.env：dotenv 解析走 Path.home()，指回真实目录
+    # key 在 llm.json 同级的 .env：dotenv 解析走 Path.home()，指回真实目录
     for var in ("USERPROFILE", "HOME"):
         monkeypatch.setenv(var, str(_home_sandbox.REAL_HOME))
 

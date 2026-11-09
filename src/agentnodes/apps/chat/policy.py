@@ -13,6 +13,7 @@ CLI、API、MCP 三个渠道都要用同一套判据——放在某个 router �
 from __future__ import annotations
 
 import os
+from agentnodes.foundation import settings as _settings
 
 #: 环境变量名（``1`` / ``true`` / ``yes`` 视为开启）。
 ENV_ALLOW_SHELL = "AN_ALLOW_SHELL_TOOLS"
@@ -32,7 +33,7 @@ def shell_tools_enabled(mode: str | None = None) -> bool:
     """
     if mode in SHELL_BLOCKED_MODES:
         return False
-    return os.environ.get(ENV_ALLOW_SHELL, "").strip().lower() in (
+    return _settings.get_str("AGENTNODES_ALLOW_SHELL_TOOLS").strip().lower() in (
         "1", "true", "yes",
     )
 

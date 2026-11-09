@@ -209,6 +209,27 @@ _DECLARED: tuple[Setting, ...] = (
     _b("AGENTNODES_COMPACT_KEEP_ALL", "compact", False,
        "紧急开关：强制保留所有压缩记录在历史里"),
 
+    # ── 门禁盲区补登记（2026-11-09）─────────────────────────────
+    # 这些变量原先通过**模块级常量**间接读取（os.environ.get(_CONST)），
+    # check_env_access 的正则只认字面量，因此长期逃过登记。用 AST/常量
+    # 解析后一次性补上。
+    _s("AGENTNODES_ALLOW_SHELL_TOOLS", "engine", "",
+       "shell 工具 opt-in（1/true/yes 开启）"),
+    _s("AGENTNODES_GOLDEN_HELDOUT_PATH", "paths", "",
+       "held-out 评测集目录覆盖"),
+    _s("AGENTNODES_LLM_PROFILE", "llm", "",
+       "LLM profile 覆盖（llm.json 的 active_profile）"),
+    _s("AGENTNODES_LOG_FILE", "log", "",
+       "日志文件路径覆盖"),
+    _s("AGENTNODES_RSI_STATE_PATH", "paths", "",
+       "RSI 状态文件路径覆盖"),
+    _s("AGENTNODES_HALT_PATH", "paths", "",
+       "halt.json 路径覆盖"),
+    _s("AGENTNODES_RSI_ROLE", "orch", "",
+       "RSI ticket 签名用的 role"),
+    _s("AGENTNODES_RSI_TOOLSET", "orch", "",
+       "RSI ticket 签名用的 toolset"),
+
     # ── 日志与可观测（domain: log）─────────────────────────────
     _s("AGENTNODES_LOG_LEVEL", "log", "INFO", "日志级别"),
     _s("AGENTNODES_LOG_JSON", "log", "", "日志 JSON 格式（1/true 开启）"),
@@ -264,6 +285,13 @@ _DECLARED: tuple[Setting, ...] = (
 # 旧名在 `aliases` 里，`resolve_canonical()` 负责归一。
 # 这样 62 处既有调用点（传旧名）与用户环境（可能设旧名）都能工作。
 _LEGACY_NAMES: dict[str, tuple[str, ...]] = {
+    "AGENTNODES_ALLOW_SHELL_TOOLS": ("AN_ALLOW_SHELL_TOOLS",),
+    "AGENTNODES_GOLDEN_HELDOUT_PATH": ("AN_GOLDEN_HELDOUT_PATH",),
+    "AGENTNODES_LLM_PROFILE": ("LLM_PROFILE",),
+    "AGENTNODES_LOG_FILE": ("AN_LOG_FILE",),
+    "AGENTNODES_CHECKPOINTS_DIR": ("AN_CHECKPOINTS_DIR",
+                                   "STRATEGY_RESEARCH_CHECKPOINT_BASE_DIR"),
+    "AGENTNODES_SESSION_DB": ("AN_SESSIONS_DB", "AGENTNODES_SESSIONS_DB"),
     "AGENTNODES_ADMIN_PASSWORD": ("AN_ADMIN_PASSWORD",),
     "AGENTNODES_ADMIN_TOKEN": ("AN_ADMIN_TOKEN",),
     "AGENTNODES_API_ALLOW_DEV_SECRET": ("AGENTNODES_ALLOW_DEV_SECRET",),
@@ -283,7 +311,6 @@ _LEGACY_NAMES: dict[str, tuple[str, ...]] = {
     "AGENTNODES_CACHE_WRITE_POLICY": ("AN_CACHE_WRITE_POLICY",),
     "AGENTNODES_CHAT_ATTEMPT_TIMEOUT": ("AN_CHAT_ATTEMPT_TIMEOUT",),
     "AGENTNODES_CHAT_WAIT_TIMEOUT": ("QNODES_CHAT_WAIT_TIMEOUT",),
-    "AGENTNODES_CHECKPOINTS_DIR": ("AN_CHECKPOINTS_DIR",),
     "AGENTNODES_CLI_THEME": ("AGENTNODES_THEME",),
     "AGENTNODES_COMPACT_INCLUDE_MESSAGES": ("AN_L4_INCLUDE_MESSAGES",),
     "AGENTNODES_COMPACT_KEEP_ALL": ("AN_KEEP_ALL_COMPACTIONS",),
@@ -301,7 +328,6 @@ _LEGACY_NAMES: dict[str, tuple[str, ...]] = {
     "AGENTNODES_ORCH_MAX_CONTINUES": ("AN_ORCHESTRATOR_MAX_CONTINUES",),
     "AGENTNODES_PLATFORM_STORE": ("QNODES_PLATFORM_STORE",),
     "AGENTNODES_PROFILE": ("AN_DATA_PROFILE",),
-    "AGENTNODES_SESSION_DB": ("AN_SESSIONS_DB",),
     "AGENTNODES_STATIC_DIR": ("STATIC_DIR",),
     "AGENTNODES_TOOL_RESULT_MAX_CHARS": ("AN_TOOL_RESULT_MAX_CHARS",),
     "AGENTNODES_WORKFLOWS_DIR": ("AN_WORKFLOWS_DIR",),

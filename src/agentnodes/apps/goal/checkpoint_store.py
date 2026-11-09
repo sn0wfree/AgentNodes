@@ -19,6 +19,7 @@ from pathlib import Path
 from typing import Any
 
 from agentnodes.foundation import paths as _paths
+from agentnodes.foundation import settings as _settings
 
 logger = logging.getLogger(__name__)
 
@@ -45,8 +46,8 @@ class CheckpointStore:
     def __init__(self, base_dir: Path | None = None) -> None:
         import os
         # 优先级：显式 arg > 新 env > 历史 env > profile 默认。
-        new_env = os.environ.get(_CHECKPOINT_DIR_ENV_NEW, "").strip()
-        old_env = os.environ.get(_CHECKPOINT_DIR_ENV, "").strip()
+        new_env = _settings.get_str("AGENTNODES_CHECKPOINTS_DIR").strip()
+        old_env = _settings.get_str("AGENTNODES_CHECKPOINTS_DIR").strip()
         if base_dir is not None:
             self._base_dir = base_dir
         elif new_env:

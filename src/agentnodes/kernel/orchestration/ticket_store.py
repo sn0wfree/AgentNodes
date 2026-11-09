@@ -34,6 +34,7 @@ from dataclasses import replace
 from pathlib import Path
 from typing import Any, Callable, Iterable
 
+from agentnodes.foundation import settings as _settings
 from agentnodes.foundation.storage.sqlite import (
     connect,
     ensure_column,
@@ -109,8 +110,8 @@ def resolve_signature_scope() -> tuple[str, tuple[str, ...]]:
     任一步的异常都被吞掉并继续下沉：签名是"证据归类"的辅助字段，不该
     因为工具链装配失败就把 turn 打挂。
     """
-    role = os.environ.get(_SIG_ROLE_ENV, "").strip()
-    raw_tools = os.environ.get(_SIG_TOOLSET_ENV, "").strip()
+    role = _settings.get_str("AGENTNODES_RSI_ROLE").strip()
+    raw_tools = _settings.get_str("AGENTNODES_RSI_TOOLSET").strip()
     cache_key = (role, raw_tools)
     cached = _SCOPE_CACHE.get(cache_key)
     if cached is not None:

@@ -47,10 +47,23 @@ ALLOW_MARKS = (
 )
 
 READ_PAT = re.compile(
-    r'(?:os\.environ\.get|os\.getenv)\(\s*["\']([A-Z_0-9]+)["\']'
+    r'(?:os\.environ\.get|os\.getenv|_os\.environ\.get)\(\s*'
+    r'(?:["\']([A-Z_0-9]+)["\']|([A-Za-z_][A-Za-z0-9_]*))'
 )
 
-PROJECT_PREFIXES = ('AN_', 'AGENTNODES_', 'QNODES_', 'QUANTNODES_', 'SR_')
+#: 模块级常量形如 ``_HALT_PATH_ENV = "AGENTNODES_HALT_PATH"``。
+#: **这是门禁的第一版盲区**（2026-11-09 实测）：原正则只认字面量
+#: ``os.environ.get("NAME")``，扫不到 ``os.environ.get(_HALT_PATH_ENV)``——
+#: 于是 13 个变量长期逃过登记（其中 ``AGENTNODES_SESSIONS_DB`` 还拼错了：
+#: 声明表与 CLI 各写一种拼法）。
+#: 现在额外解析同文件内的常量赋值，把真实变量名提取出来。
+CONST_PAT = re.compile(
+    r'^(_?[A-Z][A-Z0-9_]*)\s*(?::\s*[^=]+)?=\s*["\']([A-Za-z_0-9]+)["\']',
+    re.M,
+)
+
+PROJECT_PREFIXES = ('AN_', 'AGENTNODES_', 'QNODES_', 'QUANTNODES_', 'SR_',
+                    'LLM_', 'OPENAI_')
 
 
 def _load_tables():
@@ -73,9 +86,12 @@ def scan() -> list[str]:
             if any(rel == x for x in EXEMPT_FILES):
                 continue
             try:
-                lines = io.open(path, encoding='utf-8', errors='replace').read().splitlines()
+                text = io.open(path, encoding='utf-8', errors='replace').read()
             except OSError:
                 continue
+            # 同文件内的模块级常量（把 _CONST 解析成真实变量名）
+            consts = dict(CONST_PAT.findall(text))
+            lines = text.splitlines()
             for i, line in enumerate(lines, 1):
                 s = line.strip()
                 if s.startswith('#'):
@@ -83,7 +99,14 @@ def scan() -> list[str]:
                 if any(m in line for m in ALLOW_MARKS):
                     continue
                 for m in READ_PAT.finditer(line):
-                    name = m.group(1)
+                    literal, var = m.group(1), m.group(2)
+                    if literal is not None:
+                        name = literal
+                    else:
+                        # 常量形式：能解析就检查，不能解析（函数参数）跳过
+                        name = consts.get(var)
+                        if name is None:
+                            continue
                     if name in external:
                         continue          # 生态变量，允许直读
                     if name in declared:
@@ -93,7 +116,8 @@ def scan() -> list[str]:
                         )
                     elif name.startswith(PROJECT_PREFIXES):
                         problems.append(
-                            f'{rel}:{i}: 读了未登记的项目变量 {name} —— '
+                            f'{rel}:{i}: 读了未登记的项目变量 {name} '
+                            f'（经常量 {var or "字面量"}）—— '
                             f'登记进 settings.ENV_TABLE，或加进 EXTERNAL_ENV_VARS'
                         )
     return problems

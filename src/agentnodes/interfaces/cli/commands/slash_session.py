@@ -21,12 +21,20 @@ from rich.text import Text
 
 from agentnodes.interfaces.cli.theme import get_console
 
-_PATH_ENV = "AGENTNODES_SESSIONS_DB"
+_PATH_ENV = "AGENTNODES_SESSION_DB"
 
 
 def _resolve_db_path() -> Optional[str]:
-    """Find the sessions DB path. Returns ``None`` if env unset."""
-    return os.environ.get(_PATH_ENV) or None
+    """Find the sessions DB path. Returns ``None`` if env unset.
+
+    **2026-11-09 修正拼写**：原为 ``AGENTNODES_SESSIONS_DB``（多一个 S），
+    与 settings 声明的 ``AGENTNODES_SESSION_DB`` / ``AN_SESSIONS_DB`` 不一致
+    ——用户按文档设 ``AGENTNODES_SESSION_DB`` 在这里**不生效**。
+    旧拼法保留为 settings 别名，已设旧名的部署不受影响。
+    """
+    from agentnodes.foundation.settings import get_str as _get_str
+
+    return _get_str("AGENTNODES_SESSION_DB") or None
 
 
 def _resolve_console(console: Any = None) -> Console:
