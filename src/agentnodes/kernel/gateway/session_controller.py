@@ -54,7 +54,9 @@ class SessionController:
         engine_factory: Callable[[], GraphEngine] | None = None,
         registry: Any | None = None,
         stream: bool = False,
-        max_iterations: int = 1,
+        # **W4**：None → 1（原默认）。singleton 装配生产 Gateway 时显式传
+        # ``LLMConfig.max_iterations``（build=50）；per-turn 覆盖见 _execute。
+        max_iterations: int | None = None,
         role: str = "chat",
         workspace: Any | None = None,
         extra_context: dict[str, Any] | None = None,
@@ -76,7 +78,7 @@ class SessionController:
         self._engine_factory = engine_factory  # None = 默认图（react 或 llm）
         self._registry = registry
         self._stream = stream
-        self._max_iterations = max_iterations
+        self._max_iterations = 1 if max_iterations is None else int(max_iterations)
         # B1-a/b：与 AgentLoop 路径共享的装配输入（同一渲染核、同一上下文源）
         self._role = role
         self._workspace = workspace
@@ -113,6 +115,9 @@ class SessionController:
         # 计算后注入；测试路径留空。
         self._task_signature = task_signature
         self._current_session_id: str = ""  # per-turn, set by _execute
+        # **W4**：per-turn 迭代上限覆盖（payload["max_iterations"]，/send 的
+        # plan 模式传 1）。None = 用构造值 self._max_iterations。
+        self._turn_max_iterations: int | None = None
         self._turn_counters: dict[str, int] = {}  # session_id -> 已发 turn 数
 
     # ── 驱动 ─────────────────────────────────────────────
@@ -241,6 +246,13 @@ class SessionController:
         # _build_engine keeps its zero-arg contract (tests replace it with
         # a lambda); the current session reaches it via this attribute.
         self._current_session_id = session_id
+        # **W4**：per-turn 迭代上限（/send 的 plan 模式走 payload 显式 1）。
+        # None = 用构造值（singleton 已按 LLMConfig.max_iterations 装配）。
+        # 与 _current_session_id 同一先例：_build_engine 每轮重建，读它。
+        _raw_iter = request.payload.get("max_iterations")
+        self._turn_max_iterations = (
+            int(_raw_iter) if isinstance(_raw_iter, (int, float)) else None
+        )
         engine = self._build_engine()
         # P5-1：payload 可携带已格式化历史（旧路径 _convert_messages_to_history 的
         # 输出同构）。顺序：历史在前、当前输入在后——调用方须在 emit 本轮事件
@@ -435,7 +447,9 @@ class SessionController:
                 session_id=self._current_session_id or None,
                 system_prompt=system,
                 stream_mode=self._stream,
-                max_iterations=self._max_iterations,
+                # **W4**：per-turn 覆盖优先（plan 模式 = 1），否则构造值
+                # （singleton 按 LLMConfig.max_iterations 装配，默认 50）。
+                max_iterations=self._turn_max_iterations or self._max_iterations,
                 compact_config=compact_config,
                 # 阶段三：非空时工具定义按 tier-1 tool_set 裁剪（V3-a）。
                 task_signature=getattr(self, "_task_signature", "") or "",

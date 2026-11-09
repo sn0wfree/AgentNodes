@@ -53,7 +53,9 @@ class TestSendSync:
 
         persisted: list[tuple[str, str]] = []
 
-        async def fake_send_via_gateway(session_id: str, content: str, *, wait: bool = False):
+        # **W4**：路由新增 mode 透传（plan → payload max_iterations=1），
+        # 桩签名跟上（**kwargs 兜底，后续加参数不再破桩）。
+        async def fake_send_via_gateway(session_id: str, content: str, **kwargs):
             persisted.append((session_id, content))
             # 复现真实路径的落库动作（event_bus → projector）。
             service = chat_router._get_session_service()

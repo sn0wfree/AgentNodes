@@ -60,6 +60,10 @@ class Gateway:
         max_worker_slots: int | None = None,
         ticket_sink: Any | None = None,
         task_signature: str = "",
+        # **W4**（V3 §8.2）：迭代上限——singleton 按 ``LLMConfig.max_iterations``
+        # 装配（build=50 / 用户覆盖）；None 保持 SessionController 默认 1
+        # （直构 Gateway 的测试路径行为不变）。
+        max_iterations: int | None = None,
     ) -> None:
         self._events: list[tuple[str, dict]] = []
         # 阶段一 §2.8：Worker Slot 管理器——订阅 assignment.report 管理
@@ -98,6 +102,11 @@ class Gateway:
             # B1：interrupt 工单在有活跃 run 时触发取消（定稿语义）。
             on_interrupt=self._cancel_active_run,
         )
+        # **W4**：workspace 提前解析并注入 controller——此前只进
+        # ``self._workspace``（构造后才赋值），controller/AgentLoop/ToolContext
+        # 的 workspace 恒为 None → 工具全部 "missing workspace context"
+        # （模型只能靠猜绝对路径塞参数侥幸工作；生产实跑 2026-11-09 抓到）。
+        self._workspace = workspace or _resolve_workspace()
         self.controller = SessionController(
             self.entry, client=client, system=system, sink=combined,
             engine_factory=engine_factory,
@@ -110,6 +119,8 @@ class Gateway:
             # P5-1b：有 registry 时控制器默认图用 react 节点（无工具调用时
             # 退化为单次 LLM），否则纯 llm 节点。
             registry=registry, stream=stream,
+            # **W4**：工具的工作区根（ToolContext.workspace 的来源）。
+            workspace=self._workspace,
             # B5 R-1（选项 A）：组装根构造 ContextHub 并注入。None = 无上下
             # 文注入——直构 controller 的测试路径行为不变。
             context_hub=context_hub,
@@ -119,6 +130,8 @@ class Gateway:
             ticket_sink=self._ticket_sink,
             # 阶段三：装配期 RSI 入口。空 = 未启用（默认路径零变化）。
             task_signature=task_signature,
+            # **W4**：/send 与 /send_async 同一取值序（LLMConfig.max_iterations）。
+            max_iterations=max_iterations,
         )
         # 阶段 3b：PlatformStore（事件持久化 + blob + artifact 登记）
         self._store = None
@@ -130,10 +143,9 @@ class Gateway:
         # 指针。显式注入优先；否则 store 可用时自建（workspace 为 URI 根）。
         # None = 现行为（测试/无 store 路径，事件内容逐字节不变）。
         self._artifacts = artifact_channel
-        # 装配根需要的 workspace（基因组持久化等子系统据此定位落盘目录）。
-        # 单独保存而非临时计算：接入方（L1 组装根）在 Gateway 构造后
-        # 才执行，那时局部变量已不可见。
-        self._workspace = workspace or _resolve_workspace()
+        # ``self._workspace`` 已在 controller 构造前解析（**W4**：同时供
+        # 装配根子系统定位落盘目录——接入方在 Gateway 构造后才执行，
+        # 那时局部变量已不可见，故仍挂实例属性）。
         if self._artifacts is None and self._store is not None:
             ws = self._workspace
             try:

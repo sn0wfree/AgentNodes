@@ -33,6 +33,7 @@ def api_chat_request(
     content: str,
     *,
     history: list[dict] | None = None,
+    max_iterations: int | None = None,
 ) -> WorkRequest:
     """把 API chat 请求翻译成 WorkRequest。
 
@@ -41,10 +42,15 @@ def api_chat_request(
 
     ``history``：已格式化的对话历史（与旧路径 `_convert_messages_to_history`
     输出同构），供引擎构造完整 messages。仅入 payload，不进事件。
+
+    ``max_iterations``：**W4** per-turn 覆盖（/send 的 plan 模式传 1）。
+    None = 用控制器装配值（singleton 按 LLMConfig.max_iterations）。
     """
     payload: dict[str, object] = {"text": content}
     if history:
         payload["history"] = history
+    if max_iterations is not None:
+        payload["max_iterations"] = int(max_iterations)
     return WorkRequest(
         kind=WorkKind.CHAT,
         source=SourceKind.API_CHAT,

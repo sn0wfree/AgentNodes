@@ -99,6 +99,10 @@ def get_gateway(
             # QNODES_PLATFORM_STORE=0 可关闭（灰度回退位）；构造失败降级 None。
             data_dir=_platform_data_dir(ws),
             workspace=ws,
+            # **W4**（V3 §8.2）：/send 此前恒为 controller 默认 1 轮——
+            # 工具轮走不完（实跑抓到：写文件成功但无最终答复）。与
+            # /send_async（chat.py 的 LLMConfig.max_iterations）取同一值。
+            max_iterations=_resolve_max_iterations(),
         )
         # 阶段一/二/三：L1 组装根的后置接线（Ticket/Assignment、容量闸、
         # 基因组版本链）。**在 verify_invariants 之前**——自检要看到已接线
@@ -116,6 +120,20 @@ def _resolve_workspace() -> Any:
 
     env = _settings.get_str("AN_WORKSPACE_PATH")
     return Path(env) if env else Path.cwd()
+
+
+def _resolve_max_iterations() -> int:
+    """**W4**：gateway 的迭代上限与 /send_async 同源（``LLMConfig.max_iterations``，
+    默认 50；plan 模式的单轮语义由 /send 路由按 payload 覆盖，见
+    ``session_controller._execute`` 的 per-turn 分支）。装载失败回退 50
+    ——与 chat.py:261 的回退值一致，配错不阻断对话。
+    """
+    try:
+        from agentnodes.foundation.llm.config import LLMConfig
+
+        return int(LLMConfig.load().max_iterations)
+    except Exception:
+        return 50
 
 
 def _platform_data_dir(workspace: Any) -> Any | None:

@@ -347,7 +347,7 @@ id），归入前端接线批，不阻塞 V3-c。
 服务日志：MiniMax 调用全程 HTTP 200；除下述 8.3 的 `tool_help` 摩擦外
 **零异常**——适配器、压缩、持久化、事件链路无一报错。
 
-### 8.2 W4（新）：gateway `/send` 路径 max_iterations=1
+### 8.2 W4（已修复，2026-11-10）：gateway `/send` 路径 max_iterations=1
 
 **现象**：`/send` 的每个 turn 只跑 1 轮——模型发工具调用、工具执行完
 就终止（"Reached max_iterations=1 without a final answer."），没有
@@ -363,11 +363,42 @@ id），归入前端接线批，不阻塞 V3-c。
 "[达到最大迭代次数 1，任务未完成]"）。V3-b 只是把文案变清晰了。
 W2 决策（"build=cfg.max_iterations"）在 gateway 路径上从未被接线。
 
-**修复方案**（待排期）：`get_gateway()` 读 `LLMConfig.load().max_iterations`
-（try/except → 50）传给 `Gateway(max_iterations=...)` →
-`SessionController(max_iterations=...)`；plan 模式语义随 `/send` 的
-`body.mode` 一起接（schema 已有 `mode` 字段）。改动 ≤ 20 行 + 2 条
-测试。
+**修复（已落地）**：
+- `singleton.get_gateway()` 读 `LLMConfig.load().max_iterations`
+  （装载失败回退 50）传给 `Gateway(max_iterations=...)` → controller；
+- per-turn：`/send` 的 `body.mode="plan"` → payload
+  `max_iterations=1`（`api_chat_request` 新增可选字段，
+  `session_controller._execute` per-turn 覆盖，与
+  `_current_session_id` 同一先例）；
+- 直构 `Gateway()` 不传 → controller 默认 1（既有测试路径零变化）。
+
+**真机复验**（MiniMax，隔离 workspace）：build 模式写文件任务完整完成
+（"已写好并读回验证……内容 W4 OK"，文件落盘核对一致）；plan 模式单轮
+分析正确作答。测试：`tests/test_gateway_max_iterations_wiring.py` 9 条。
+
+#### 8.2-b 复验中抓到的第二个接线缺口（已一并修复）：gateway 不传 workspace
+
+W4 复验第一轮：所有工作区工具（write/list/read/shell/git_diff…）报
+**"missing workspace context"**，模型只能靠从工具错误信息里拼出绝对
+路径塞参数侥幸写成功（它自己的 attempt 总结原话："前几次 write 调用
+因 missing workspace context 报错失败，重试后才成功落盘"；50 轮里
+大多耗在盲探 websearch/read_document/task 委派上）。
+
+**根因**：`Gateway.__init__` 把解析出的 workspace 只挂自身属性
+（controller 构造**之后**才赋值），从未传入 controller →
+`controller._workspace=None` → AgentLoop/ToolContext.workspace=None。
+react 时代同样如此（ctx_factory 也吃 None）——**既有缺陷**；
+SessionService 路径（chat_loop）一直有 workspace，所以前端正常。
+
+**修复**：`Gateway.__init__` 把 workspace 解析提前到 controller 构造前
+并传入（`SessionController(workspace=...)` 参数本就存在，只是没人传）。
+
+**经验**：`/send` 这条"P5-1c ④ 统一入口"的装配根（singleton）从未被
+端到端真正用过——W4 一次实跑抓出两个接线缺口（max_iterations、
+workspace），都是"参数存在但没人传"的静默缺省。gateway 路径的第三个
+同类缺口已记录：**permission evaluator 也不接线**（gateway 路径工具
+无权限检查，chat.py 的 PermissionGateway 只服务 /permission/respond）
+——修复涉及权限模式选型（L1/L2/env），归权限批，见 W5。
 
 ### 8.3 观察到的既有摩擦（记录，不在本批处理）
 

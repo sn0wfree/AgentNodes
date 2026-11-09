@@ -362,7 +362,9 @@ def _get_gateway():
     return get_gateway()
 
 
-async def _send_via_gateway(session_id: str, content: str, *, wait: bool = False) -> dict:
+async def _send_via_gateway(
+    session_id: str, content: str, *, wait: bool = False, mode: str | None = None,
+) -> dict:
     """新路径：WorkRequest → EntryPoint → 准入 → 引擎 → 事件流。
 
     P5-1：补齐历史注入与持久化，**照抄旧路径的两条机制**（不改选型）：
@@ -380,6 +382,10 @@ async def _send_via_gateway(session_id: str, content: str, *, wait: bool = False
     同步路径（消费者未跑 = 测试/直构；或 ``wait=true``）保持现契约：
     阻塞至 turn 完成、响应携带 reply。wait=true 只是**等待**，执行仍是
     消费者的事（无消费者时回落请求内驱动）。
+
+    **W4**：``mode="plan"`` → payload 带 ``max_iterations=1``（与
+    /send_async 的 chat.py:265 同一语义：分析单轮、不进循环）。
+    build 模式不传 → 用 singleton 按 LLMConfig.max_iterations 装配的值。
 
     顺序关键：**先读历史、再 emit 本轮事件**——否则当前轮会被重复注入。
     """
@@ -411,8 +417,12 @@ async def _send_via_gateway(session_id: str, content: str, *, wait: bool = False
     user_mid = str(_uuid.uuid4())
     assistant_mid_holder: dict[str, str] = {}
 
+    turn_max_iter = 1 if (mode or "").strip().lower() == "plan" else None
     receipt = gw.entry.submit(
-        api_chat_request(session_id, content, history=history)
+        api_chat_request(
+            session_id, content, history=history,
+            max_iterations=turn_max_iter,
+        )
     )
     if not receipt.accepted:
         raise HTTPException(
@@ -684,7 +694,9 @@ async def send_sync(body: ChatMessage, request: Request):
     wait = (request.query_params.get("wait") or "").strip().lower() in (
         "1", "true", "yes",
     )
-    return await _send_via_gateway(body.session_id, body.content, wait=wait)
+    return await _send_via_gateway(
+        body.session_id, body.content, wait=wait, mode=body.mode,
+    )
 
 
 @router.get("/events")
