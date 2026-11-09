@@ -101,7 +101,9 @@ class ContextSpec:
     strategy_name: str | None = None
     enable_goal_injection: bool = True
     enable_memory_injection: bool = True
-    enable_hypothesis_auto_create: bool = True
+    #: **批次 13 附录 §4**：hypothesis 子系统归档中，capability 未注册，
+    #: 该开关永不生效——默认 False 以免谎报。恢复注册后翻回 True。
+    enable_hypothesis_auto_create: bool = False
     enable_claim_validation: bool = False
     strict_claim_validation: bool = False
     role: str | None = None

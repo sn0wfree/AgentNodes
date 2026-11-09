@@ -117,10 +117,37 @@ def test_extract_target_write_file_uses_path():
     assert d.target == "strategies/x.py"
 
 
-def test_extract_target_run_command_uses_first_token():
+def test_extract_target_run_command_uses_whole_command():
+    """shell 的 target 是**整条命令串**，不是首词。
+
+    **批次 13 附录 §1（P0 修复）**：旧实现取 ``cmd.split()[0]``，于是
+    ``hard_deny`` 的路径模式（``**/.ssh/**`` / ``**/.aws/**``）对
+    ``cat ~/.ssh/id_rsa`` **永远匹配不上**——实测两条路径都放行。
+    原则七：检查信号必须看见真实操作对象，而不是它的第一个词。
+
+    副作用（可接受）：首词规则需写成 ``sudo *`` 形态在整串上匹配；
+    ``DEFAULT_HARD_DENY`` 里 ``sudo`` / ``su`` / ``doas*`` / ``pkexec*``
+    都已兼容（走 ``_glob_match``）。
+    """
     ev = PermissionEvaluator()
     d = ev.evaluate("shell", {"command": "rm -rf /"})
-    assert d.target == "rm"
+    assert d.target == "rm -rf /"
+
+
+def test_run_command_still_denied_via_hard_deny():
+    """整串 target 之后，``rm -rf /`` 仍必须被拒绝（行为不回退）。"""
+    from agentnodes.kernel.permission.schema import PermissionAction
+
+    ev = PermissionEvaluator(hard_deny=(
+        # 与 DEFAULT_HARD_DENY 的 shell_escape 同形：危险命令直接 deny
+        # （此处用 hard_deny 构造，避免依赖默认表里是否恰有该条）
+        __import__(
+            "agentnodes.kernel.permission.schema", fromlist=["HardDenyRule"],
+        ).HardDenyRule("shell", "rm -rf *", "destructive command"),
+    ))
+    d = ev.evaluate("shell", {"command": "rm -rf /"})
+    assert d.action == PermissionAction.DENY
+    assert getattr(d, "hard", False) is True
 
 
 def test_extract_target_unknown_business_tool_falls_back_to_name():

@@ -140,12 +140,37 @@ class LoopToolsMixin:
         # guard-denied calls, inflating the metric.
         result.tool_calls_made += 1
         # ── Tool-level auto-retry for transient errors ──────────────
+        # 批次 13 附录 §3：优先读**显式注入**的 ``_retry_policy``——旧实现
+        # 只用模块常量，``AgentLoop(retry_policy=RetryPolicy(max_retries=5))``
+        # 完全无效（该参数在 __init__ 赋值后零读取点）。
+        #
+        # ``max_retries`` 语义是「总尝试次数」，与 ``range(n)`` 一致。
+        # **只在调用方显式传了 policy 时生效**：``AgentLoop.__init__`` 在
+        # 未传时构造默认 ``RetryPolicy()``（max_retries=3），若无条件采用
+        # 会把既有行为从 2 次改成 3 次——这不是本批要改变的东西。
+        _policy = getattr(self, "_retry_policy", None)
+        _explicit = getattr(self, "_retry_policy_explicit", False)
+        max_attempts = (
+            max(1, int(getattr(_policy, "max_retries", _TOOL_MAX_RETRIES)))
+            if _explicit else _TOOL_MAX_RETRIES
+        )
         last_exc = None
-        for _attempt in range(_TOOL_MAX_RETRIES):
+        for _attempt in range(max_attempts):
             try:
                 if async_mode:
                     output = await tool.ainvoke(kwargs, kwargs.get("ctx"))
                 else:
+                    # **批次 13 附录 P0**：sync 路径原先直调 ``tool.invoke``，
+                    # 而权限闸只在 ``ainvoke`` 里 → ``AgentLoop.run()`` 完全
+                    # 绕过权限（实测：evaluator 明确 deny shell，
+                    # sync 仍执行了 ``echo hi``，exit_code=0）。
+                    # ``enforce_permission_sync`` 是既有实现（原只被
+                    # ``ToolRegistry.execute`` 使用），语义与 async 侧的
+                    # 规则判定一致；ASK 在同步路径无提问通道 → fail-closed。
+                    tool.enforce_permission_sync(
+                        dict(tc.arguments) if isinstance(tc.arguments, dict) else {},
+                        kwargs.get("ctx"),
+                    )
                     output = tool.invoke(kwargs)
                 last_exc = None
                 break
@@ -153,8 +178,8 @@ class LoopToolsMixin:
                 last_exc = exc
                 logger.warning("tool %s raised %s (attempt %d/%d): %s",
                                tc.name, type(exc).__name__, _attempt + 1,
-                               _TOOL_MAX_RETRIES, exc)
-                if _attempt < _TOOL_MAX_RETRIES - 1:
+                               max_attempts, exc)
+                if _attempt < max_attempts - 1:
                     if async_mode:
                         await asyncio.sleep(_TOOL_RETRY_DELAY)
                     else:

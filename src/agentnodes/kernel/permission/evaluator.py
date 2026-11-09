@@ -287,13 +287,24 @@ class PermissionEvaluator:
         """Derive the rule-pattern target from the call args.
 
         - file-path tools: ``args["path"]``
-        - run_command:    first token of ``args["command"]``
+        - shell / run_command: **整条命令串**（批次 13 附录 P0 修）
+        - web_fetch:       URL
         - everything else: tool name itself (so a rule keyed on
           ``run_backtest`` still matches when the path glob doesn't
           apply).
 
         When the relevant arg is missing or empty, fall back to the
         tool name so the rule still matches via a ``pattern="*"``.
+
+        **为什么 shell 用整条命令串而不是首词**（批次 13 附录 §1 实测）：
+        旧实现对 shell 取 ``cmd.split()[0]``，于是 hard_deny 的
+        ``**/.ssh/**`` 对 ``cat ~/.ssh/id_rsa`` **永远不匹配**——两条路径
+        都放行（原则七：检查信号必须看见真实操作对象）。
+
+        代价：``sudo`` 这类**首词规则**需要 ``sudo *`` 形态在整串上匹配。
+        ``_glob_match`` 已把 ``*`` 当任意非空串，因此
+        ``fnmatch("sudo echo x", "sudo*")`` → True，
+        ``DEFAULT_HARD_DENY`` 里的 ``sudo *`` / ``pkexec*`` 仍然命中。
         """
         if tool_name in {
             Permission.WRITE_FILE.value,
@@ -304,7 +315,7 @@ class PermissionEvaluator:
             return str(args.get("path") or args.get("file_path") or "") or tool_name
         if tool_name == Permission.RUN_COMMAND.value:
             cmd = str(args.get("command") or "").strip()
-            return cmd.split()[0] if cmd else tool_name
+            return cmd or tool_name
         # web_fetch：target = URL（批次 6）——H3 的云 metadata hard deny
         # （169.254.169.254）需要看到 URL 才能拦。
         if tool_name == Permission.WEB_FETCH.value:

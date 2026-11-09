@@ -312,7 +312,11 @@ class AgentLoop(
         read_roots: tuple[str, ...] | None = None,
         enable_goal_injection: bool = True,
         enable_memory_injection: bool = True,
-        enable_hypothesis_auto_create: bool = True,
+        # **批次 13 附录 §4**：默认改为 False——``hypothesis.auto_creator``
+        # capability 随 hypothesis 子系统归档在 testcase/golden/，未注册；
+        # 旧默认 True 让这个开关**永不生效**（resolve 抛异常被吞）。
+        # 恢复注册后再翻回 True。
+        enable_hypothesis_auto_create: bool = False,
         hooks: CompositeHook | None = None,
         session_manager: Any | None = None,
         on_event: Any | None = None,
@@ -437,6 +441,10 @@ class AgentLoop(
         self._event_bus = _folded.capability.event_bus
         self._circuit_breaker = _folded.capability.circuit_breaker
         self._retry_policy = _folded.capability.retry_policy or RetryPolicy()
+        # 批次 13 附录 §3：旧实现只赋值不读——现在 loop_tools 会消费它，
+        # 但**仅当调用方显式传入**（默认 RetryPolicy() 的 3 次不应悄悄
+        # 覆盖既有的 2 次重试行为）。
+        self._retry_policy_explicit = _folded.capability.retry_policy is not None
         # P1-5: build / resolve the LoopStrategy from the spec.
         # v0.1 stores it on self; ``_run_loop_core`` does not yet
         # consult it (that's L7's job).
@@ -1299,12 +1307,20 @@ class AgentLoop(
         """Auto-create an exploring hypothesis per (strategy, market) on first run.
 
         Per the P3-b user decision, this fires only when:
-          - enable_hypothesis_auto_create is True (default)
+          - enable_hypothesis_auto_create is True
           - session_id is set
           - strategy_name is set
           - registry has no matching (strategy, market) hypothesis yet
 
         Failures are swallowed (logged at most) to avoid breaking the loop.
+
+        **批次 13 附录 §4**：``hypothesis.auto_creator`` 这个 capability
+        目前**未注册**（随 hypothesis 子系统一起归档在
+        ``testcase/golden/apps/hypothesis/``，见 ``apps/capabilities.py:64``），
+        因此本函数每一次都会在 ``resolve()`` 处抛
+        ``CapabilityNotFound`` 并被下面的 ``except`` 吞掉——功能实际不存在。
+        默认值已改为 ``False`` 以免开关谎报；hypothesis 恢复注册后
+        再把它翻回 ``True``。
         """
         if not self.enable_hypothesis_auto_create:
             return
