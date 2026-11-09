@@ -142,6 +142,10 @@ _DECLARED: tuple[Setting, ...] = (
        "hypotheses 文件路径"),
     _s("STATIC_DIR", "paths", None,
        "静态资源目录（web UI）"),
+    # 权限规则 YAML 路径（rules_io.py）。默认值含 Path.home()，属复杂表达式，
+    # 声明表只记录 None（= 由 rules_io 自己拼默认路径）。
+    _s("AGENTNODES_PERMISSIONS_PATH", "paths", None,
+       "permissions.yaml 路径覆盖"),
 
     # ── 引擎与 agent（domain: engine）──────────────────────────
     _s("AGENTNODES_ENGINE", "engine", "",
@@ -171,6 +175,17 @@ _DECLARED: tuple[Setting, ...] = (
     _f("AN_CACHE_CHARS_PER_TOKEN", "cache", 3.0, "每 token 字符数估算"),
     _i("AN_CACHE_RE_RESOLVE_SEC", "cache", 60, "重新解析间隔（秒）"),
     _f("AN_CACHE_TTL", "cache", 60.0, "缓存 TTL（秒）"),
+    # 跨行读取（cache.py:110 的 os.environ.get( 与变量名不在同一行）——
+    # 批次 B 首次迁移时被逐行正则漏掉，是「扫描器自身盲区」的实例。
+    _b("AN_CACHE_COMPACTION_LINKED", "cache", True,
+       "缓存条目数与压缩联动"),
+
+    # ── 压缩（domain: compact）─────────────────────────────────
+    # 紧急开关：模块级 import 期求值，运行期改 env 不生效（已知限制）。
+    # kind=bool（不是 flag）：源码是 `.get(X, "").lower() in ("1","true",...)`，
+    # 即"值真才开"，不是"存在即开"。
+    _b("AN_KEEP_ALL_COMPACTIONS", "compact", False,
+       "紧急开关：强制保留所有压缩记录在历史里"),
 
     # ── 日志与可观测（domain: log）─────────────────────────────
     _s("AN_LOG_LEVEL", "log", "INFO", "日志级别"),
@@ -250,16 +265,21 @@ EXTERNAL_ENV_VARS: frozenset[str] = frozenset({
 
 
 def get(name: str, default: Any = None) -> str | None:
-    """读原始字符串值。
+    """读原始字符串值（解析别名）。
 
     ``default`` 的语义与 ``os.environ.get(name, default)`` 一致：未设置时
     返回 ``default``（可能是 ``None``，表示"调用方自己处理"）。
+
+    **批次 B**：会先查 canonical 名，再按声明表的 ``aliases`` 回退
+    （回退时 warn 一次）。
     """
-    return os.environ.get(name, default)
+    raw, _ = _resolve(name)
+    return default if raw is None else raw
 
 
 def is_set(name: str) -> bool:
-    return name in os.environ
+    raw, _ = _resolve(name)
+    return raw is not None
 
 
 def _coerce(setting: Setting, raw: str) -> Any:
@@ -348,17 +368,99 @@ def _mask(value: Any) -> str:
     return s[:2] + "*" * (len(s) - 4) + s[-2:]
 
 
+# ── 别名解析（批次 B）────────────────────────────────────────────────
+#
+# **为什么需要**：改名不能一步到位——用户环境里可能还留着旧名。别名让
+# 新名（canonical）优先、旧名（aliases）回退，并在回退时 warn 一次。
+#
+# **为什么 warn 只一次**：这些读取点都在热路径（每次工具调用/每轮循环），
+# 逐次 warn 会淹没日志。用模块级集合去重，每个进程每个别名一条。
+
+_warned_aliases: set[str] = set()
+
+_logger = None
+
+
+def _get_logger():
+    global _logger
+    if _logger is None:
+        import logging
+
+        _logger = logging.getLogger(__name__)
+    return _logger
+
+
+def _warn_alias(alias: str, canonical: str) -> None:
+    if alias in _warned_aliases:
+        return
+    _warned_aliases.add(alias)
+    _get_logger().warning(
+        "[deprecated] env %s -> %s (old name still honored this release; "
+        "update your environment/config)", alias, canonical,
+    )
+
+
+def _resolve(name: str) -> tuple[str | None, str | None]:
+    """返回 (原始值, 实际命中的变量名)。
+
+    顺序：canonical 名（``os.environ[name]``）-> 声明里的 ``aliases``。
+
+    **注意**：``aliases`` 只在 ``name`` 是声明表里的 canonical 名时才有意义。
+    直接读一个 ``aliases`` 里出现的旧名（把它当 name 传）会走 canonical
+    分支，因为旧名也可能被登记为独立条目——这种情况由
+    :func:`resolve_canonical` 处理，不在本函数职责内。
+    """
+    if name in os.environ:
+        return os.environ[name], name
+    setting = ENV_TABLE.get(name)
+    if setting is not None:
+        for alias in setting.aliases:
+            if alias in os.environ:
+                _warn_alias(alias, name)
+                return os.environ[alias], alias
+    return None, None
+
+
+def resolve_canonical(name: str) -> str:
+    """把可能是旧名的标识符映射到 canonical 名（用于诊断/迁移）。
+
+    若 ``name`` 是某个条目的 canonical 名，返回自身；若是某条目的 alias，
+    返回该条目的 canonical 名；否则原样返回。
+    """
+    if name in ENV_TABLE:
+        return name
+    for setting in ENV_TABLE.values():
+        if name in setting.aliases:
+            return setting.name
+    return name
+
+
+def reset_alias_warnings() -> None:
+    """清空 warn 去重集合（测试用）。"""
+    _warned_aliases.clear()
+
+
 def snapshot(environ: dict[str, str] | None = None) -> dict[str, Any]:
     """当前生效配置的快照（脱敏）。
 
     只包含**已设置**的项 + 声明了默认值的项——用于日志与
     ``--print-config``。密钥（``secret=True``）脱敏。
+
+    **别名**：canonical 名未设但别名设了时，``source`` 记录为
+    ``"alias:<旧名>"``，让诊断能看出用户还在用旧名。
     """
     env = environ if environ is not None else os.environ
     out: dict[str, Any] = {}
     for name in sorted(ENV_TABLE):
         setting = ENV_TABLE[name]
         raw = env.get(name)
+        source = "env"
+        if raw is None:
+            for alias in setting.aliases:
+                if alias in env:
+                    raw = env[alias]
+                    source = f"alias:{alias}"
+                    break
         if raw is None:
             if setting.default is None:
                 continue
@@ -366,7 +468,6 @@ def snapshot(environ: dict[str, str] | None = None) -> dict[str, Any]:
             source = "default"
         else:
             value = raw
-            source = "env"
         if setting.secret:
             value = _mask(value)
         out[name] = {"value": value, "source": source, "domain": setting.domain}

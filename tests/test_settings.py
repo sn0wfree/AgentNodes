@@ -24,26 +24,41 @@ from agentnodes.foundation import settings
 SRC = Path(__file__).resolve().parents[1] / "src" / "agentnodes"
 
 #: `os.environ.get("NAME", DEFAULT)` / `os.getenv("NAME", DEFAULT)`
+#: **支持跨行**：`cache.py` 就有一处写
+#: ``os.environ.get(\n    "AN_CACHE_COMPACTION_LINKED", "true"\n).lower()``，
+#: 逐行正则扫不到它——批次 B 首次迁移就漏了这个变量。
 _READ_PAT = re.compile(
     r'(?:os\.environ\.get|os\.getenv)\(\s*["\']([A-Z_0-9]+)["\']'
-    r'(?:\s*,\s*([^)]+))?\)'
+    r'(?:\s*,\s*([^)]+))?\)',
+    re.S,
 )
 
 
 def _scan_reads() -> list[tuple[str, str, int, str | None]]:
-    """返回 (NAME, relpath, lineno, default_expr_or_None)。"""
+    """返回 (NAME, relpath, lineno, default_expr_or_None)。
+
+    **按全文扫描再回推行号**，而不是逐行正则——跨行调用必须能被看见。
+    """
     out = []
     for p in SRC.rglob("*.py"):
         if "__pycache__" in p.parts:
             continue
         rel = p.relative_to(SRC).as_posix()
-        for i, line in enumerate(p.read_text(encoding="utf-8", errors="ignore").splitlines(), 1):
-            stripped = line.strip()
-            if stripped.startswith("#"):
+        text = p.read_text(encoding="utf-8", errors="ignore")
+        for m in _READ_PAT.finditer(text):
+            lineno = text.count("\n", 0, m.start()) + 1
+            # 跳过纯注释行（该行以 # 开头）
+            line_start = text.rfind("\n", 0, m.start()) + 1
+            line_text = text[line_start:text.find("\n", m.start())
+                             if text.find("\n", m.start()) != -1 else len(text)]
+            if line_text.lstrip().startswith("#"):
                 continue
-            for m in _READ_PAT.finditer(line):
-                default = m.group(2).strip() if m.group(2) else None
-                out.append((m.group(1), rel, i, default))
+            default = m.group(2)
+            default = default.strip() if default else None
+            # 归一化跨行默认值里的空白
+            if default:
+                default = re.sub(r"\s+", " ", default)
+            out.append((m.group(1), rel, lineno, default))
     return out
 
 
@@ -129,7 +144,12 @@ def _normalize_default(expr: str | None):
 
 
 def _coerce_like_declared(raw, setting: settings.Setting):
-    """把源码字面量按声明表的 kind 转成语义值。"""
+    """把源码字面量按声明表的 kind 转成语义值。
+
+    **为什么 bool/flag 也要转**：源码常见的写法是
+    ``os.environ.get(X, "true").lower() == "true"`` —— 字面量是字符串
+    ``"true"``，但语义是 ``True``。声明表记录语义值。
+    """
     if raw is None or raw == "<COMPLEX>" or raw == "<NO-DEFAULT>":
         return raw
     kind = setting.kind
@@ -143,6 +163,10 @@ def _coerce_like_declared(raw, setting: settings.Setting):
             return float(raw)
         except (TypeError, ValueError):
             return raw
+    if kind in ("bool", "flag"):
+        if isinstance(raw, bool):
+            return raw
+        return str(raw).strip().lower() in ("1", "true", "yes", "y", "on")
     return raw
 
 
