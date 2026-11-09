@@ -40,6 +40,14 @@
 
 **关键事实**：用户日常用的 web chat 走的是**路径 B**，而路径 B 是能力最弱的那条。
 
+> **⚠ 生产实跑修正（2026-11-09 冒烟，见 §8）**：上面这行**说错了方向**。
+> 前端 Composer 实际调的是 **`/chat/send_async`** → SessionService →
+> `build_chat_agent_loop` → **路径 A（AgentLoop）**——生产 web chat 的
+> 执行引擎**本来就是 A**（这也是 §2.3 "A 被真实端到端验证过"的由来）。
+> 路径 B（gateway `/send`）是 P5-1c ④ 起的新统一入口（receipt 契约、
+> E1=C 消费者架构的载体），前端尚未切换、能力最弱。V3-b 换的正是这条
+> gateway 路径的引擎；V3-c 删 react.py 后两路归一才真正完成。
+
 ### 1.2 能力差集（代码 grep 实测，非印象）
 
 | 能力 | 路径 A | 路径 B |
@@ -316,3 +324,69 @@ legacy 全局缓冲 + `assistant_message` 终态兜底。这个问题 react 时�
 就存在（且 react 的 text_delta 连 text_id 都没有，比现在更糟）。
 修复要动 SSE 语义（run.started 时补推 seed 或 emit 带 assistant
 id），归入前端接线批，不阻塞 V3-c。
+
+---
+
+## §8 生产实跑观察记录（2026-11-09，V3-b 落地后）
+
+用户指令：「先在生产 web chat 上跑一段再动（V3-c）」。实跑方式：
+`agentnodes serve` 起真实服务（隔离 workspace + 隔离 sessions.db，
+`AN_ALLOW_REGISTRATION=1`），HTTP/SSE 全真链路驱动，MiniMax-M3.1-Flash。
+
+### 8.1 结果总表
+
+| # | 用例 | 路径 | 结果 |
+|---|---|---|---|
+| E1 | 读文件并回答内容 | `/send_async`（**前端真实路径**，SessionService→AgentLoop，build=50 轮） | ✅ 正确读出 `V3-B SMOKE OK` |
+| E2 | 写第二个文件 + 报两个文件名（多工具+历史） | 同上 | ✅ 第二轮正确引用第一轮写的文件；复跑时还自行回读验证 |
+| A1 | 写文件 | `/send`（gateway 路径，V3-b 换的引擎） | ⚠️ 工具**执行成功**（文件落盘），但轮次终止于 max_iterations=1，无最终答复（见 8.2 W4） |
+| A2 | receipt + SSE 流 | `/send` | ✅ 全通：`tool_call`/`tool_result` payload 完整（id/name/arguments/message_id）、run.answer、assistant_message 落库 |
+| A3 | 多轮历史（gateway 路径） | `/send` | ⚠️ 同 W4（单轮上限） |
+| D | 持久化 | messages 表 | ✅ user/assistant 成对落库、排序正确 |
+
+服务日志：MiniMax 调用全程 HTTP 200；除下述 8.3 的 `tool_help` 摩擦外
+**零异常**——适配器、压缩、持久化、事件链路无一报错。
+
+### 8.2 W4（新）：gateway `/send` 路径 max_iterations=1
+
+**现象**：`/send` 的每个 turn 只跑 1 轮——模型发工具调用、工具执行完
+就终止（"Reached max_iterations=1 without a final answer."），没有
+第二轮 LLM 调用把工具结果变成答复。
+
+**根因**：`singleton.get_gateway()` 不传 `max_iterations` →
+`SessionController` 默认值 1。而 `/send_async`（chat.py:259）早已按
+`LLMConfig.max_iterations`（build=50 / plan=1）取值——**两条 HTTP
+路径取值不一致**。
+
+**定性**：**既有缺陷，非 V3-b 引入**——react 节点吃的是同一个
+`max_iterations=1`，行为一模一样（react 的文案是
+"[达到最大迭代次数 1，任务未完成]"）。V3-b 只是把文案变清晰了。
+W2 决策（"build=cfg.max_iterations"）在 gateway 路径上从未被接线。
+
+**修复方案**（待排期）：`get_gateway()` 读 `LLMConfig.load().max_iterations`
+（try/except → 50）传给 `Gateway(max_iterations=...)` →
+`SessionController(max_iterations=...)`；plan 模式语义随 `/send` 的
+`body.mode` 一起接（schema 已有 `mode` 字段）。改动 ≤ 20 行 + 2 条
+测试。
+
+### 8.3 观察到的既有摩擦（记录，不在本批处理）
+
+- **`tool_help` ASK 被拒**：SessionService 路径的模型调 `tool_help`
+  → L1 预设未列该工具 → ASK → 该上下文无审批通道 → `PermissionDeniedError`
+  （结构化错误进工具结果，模型自行绕开改用 `read`，任务仍完成）。
+  代价 = 一次浪费的往返 + 两条 ERROR 日志。修法（调规则集或给
+  tool_help 自动放行）属权限批。
+- **`no default DataStore registered`**：裸 workspace 的预期信息
+  （批次 5 删了 DuckDB store），非错误。
+
+### 8.4 观察结论
+
+前端生产路径（SessionService→AgentLoop）**本批未受影响且功能完整**；
+V3-b 换的 gateway 路径链路全通，唯一拦路的是**既有**的 W4 单轮上限。
+V3-c（删 react.py）的前置观察可以开始积累；W4 修复建议排在 V3-c 之前
+（它是 gateway 路径可用性的前提，改动极小）。
+
+### 8.5 冒烟产物
+
+脚本与数据在 `tmp/webchat-smoke/`（gitignore 内）；冒烟用户 ×3 已从
+真实 user DB 删除；sessions.db 为隔离文件不触碰生产数据。
