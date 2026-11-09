@@ -127,7 +127,7 @@ def _isolate_llm_bridge(tmp_path_factory):
 
 
 @pytest.fixture(autouse=True)
-def _purge_llm_env(monkeypatch):
+def _purge_llm_env(monkeypatch, request):
     """Strip host LLM credentials before every test.
 
     ``LLMConfig.load()`` calls ``_try_load_dotenv()`` which re-injects keys
@@ -142,7 +142,14 @@ def _purge_llm_env(monkeypatch):
     ``_try_load_dotenv`` is neutralized entirely so ``LLMConfig.load()`` can
     never pull host keys from ``~/.quantnodes/.env`` mid-test (tests that
     genuinely need a key load it explicitly, e.g. ``test_chat_real_llm``).
+
+    **豁免**（2026-11-09）：标了 ``live_llm`` 的测试需要真实 key——它们
+    走 ``_home_sandbox`` 的显式 bypass + ``QNODES_LIVE_LLM=1`` 双重 opt-in，
+    再被这里清掉就永远拿不到 key（V2 首次运行时踩到）。
     """
+    if request.node.get_closest_marker("live_llm"):
+        return
+
     for var in (
         "LLM_API_KEY",
         "OPENAI_API_KEY",

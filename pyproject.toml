@@ -109,6 +109,9 @@ markers = [
     "llm: needs a real LLM or live network (excluded from PR gate)",
     "e2e: end-to-end across process/browser boundaries (excluded from PR gate)",
     "slow: >=~5s wall time per .shard-timings.json (excluded from PR gate)",
+    # Opt-in真实 LLM（QNODES_LIVE_LLM=1）。与 llm 的区别：llm 是"需要网络"，
+    # live_llm 是"需要宿主真 key 且跳过 conftest 的 key 清除 fixture"。
+    "live_llm: needs host credentials; conftest skips its env purge for these",
 ]
 
 [tool.ruff]

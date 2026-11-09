@@ -531,6 +531,26 @@ class AgentLoop(
         self._approval_event = threading.Event()
         self._approval_response: str | None = None
         self._approval_thread: threading.Thread | None = None
+        # ── 权限闸（批次 V2）────────────────────────────────────
+        #
+        # **实测背景**（2026-11-09 V2）：真实模型执行 `sudo echo ...` 时
+        # hard_deny 没拦住——因为直接构造 `AgentLoop` 时 evaluator 是 None，
+        # 工具裸执行。`chat_loop.build_chat_agent_loop` 会 setattr 挂上，
+        # 但 evals / scheduled / 脚本 / 测试都绕过了它。
+        #
+        # **为什么默认仍是 None 而不是自动接线**：`AgentLoop` 是**低级构造器**，
+        # 大量既有调用方（含 27 个测试）依赖「无 evaluator = 无权限检查」的
+        # 旧行为；在构造器里静默加安全策略会让它们全部 fail-closed 拒绝
+        # （实测：27 个测试红）。安全策略应由**工厂层**决定。
+        #
+        # 因此：
+        #   - `spec.permission.*` 显式给了 -> 用它（新入口，供工厂/调用方）
+        #   - 否则保持 None -> 由 `chat_loop` / 未来其它工厂 setattr 挂载
+        # 生产安全由 `chat_loop` 的默认接线 + `AGENTNODES_PERMISSION_MODE` 保证；
+        # 直接构造 AgentLoop 的场景（评测/脚本）需要调用方显式传 permission spec。
+        _perm = _folded.permission
+        self._permission_evaluator = _perm.permission_evaluator
+        self._permission_gateway = _perm.permission_gateway
         # Subagent delegation counter (reset per arun())
         self._subagent_count: list[int] = [0]  # mutable ref for SubAgentTool
         # Trace writer (optional)

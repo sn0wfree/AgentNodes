@@ -82,6 +82,15 @@ class LoopReasoner(StepHandler):
 
         # 状态回写（骨架的 ctx 就是 LoopContext，steps 已变异它）
         ctx.response = llm_ctx.response
+        # **批次 V2 修：必须回写 messages**。
+        # ``_make_strategy_ctx`` 做 ``messages=list(messages)``（浅拷贝），
+        # 而 ``DefaultLLMCallStep`` 往**那个副本**里 append assistant 消息。
+        # 不回写的话：assistant 消息丢在副本里，后续 tool 结果却进原列表 ——
+        # 于是发给 provider 的消息序列是 [system, user, tool]，
+        # 缺少带 tool_calls 的 assistant 轮次。MiniMax 严格校验直接 400：
+        #   "tool result's tool id(...) not found (2013)"
+        # 多数 provider 不校验，所以这个 bug 之前一直没暴露。
+        ctx.messages = llm_ctx.messages
         if llm_ctx.should_stop:
             ctx.should_stop = True
             ctx.stop_reason = llm_ctx.stop_reason
