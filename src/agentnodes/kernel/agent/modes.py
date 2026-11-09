@@ -57,6 +57,42 @@ def list_modes() -> list[str]:
     return sorted(_MODE_REGISTRY)
 
 
+def _make_approval_gate(loop: Any, strategy: Any) -> Any | None:
+    """包装 ``loop._check_no_progress`` 为 ``(tool_hashes) -> bool``。
+
+    **批次 12 S1（approval gate 收编）**：legacy 的 no-progress 交互
+    （用户批准/拒绝/超时）由 ``_check_no_progress`` 承担——它写
+    ``result.finished_reason``（user_rejected / approval_timeout_rejected）
+    并发事件。decider 只翻译结论。
+
+    需要 response/result/iteration 三个参数，从 loop 的当前运行状态取：
+    - result ← ``ctx.result``（LoopPrepare 已挂上）
+    - response ← ``ctx.response``（LoopReasoner 已回写）
+    - iteration ← ``ctx.iteration``
+    """
+    if loop is None:
+        return None
+    check_fn = getattr(loop, "_check_no_progress", None)
+    if check_fn is None:
+        return None
+
+    def _gate(tool_hashes: list[str]) -> bool:
+        # decider 的 decide 拿到的 ctx 是骨架 state（LoopContext）
+        # 但 gate 是闭包——需要当前 ctx。用 loop 上暂存的最近 ctx。
+        ctx = getattr(loop, "_skeleton_ctx", None)
+        if ctx is None:
+            return True  # 无 ctx = 保守退出
+        return bool(check_fn(
+            tool_hashes,
+            getattr(ctx, "response", None),
+            getattr(ctx, "result", None),
+            getattr(ctx, "iteration", 0),
+            hashes_pre_recorded=True,
+        ))
+
+    return _gate
+
+
 def deciders_for(strategy: Any, loop: Any, *, max_iterations: int) -> dict[str, list[Decider]]:
     """从 ``LoopStrategy`` 槽位组装**默认** deciders。
 
@@ -102,6 +138,6 @@ def deciders_for(strategy: Any, loop: Any, *, max_iterations: int) -> dict[str, 
             GoalContinuationDecider(strategy.continuation),
         ],
         "after_act": [
-            NoProgressDecider(strategy.progress),
+            NoProgressDecider(strategy.progress, approval_gate=_make_approval_gate(loop, strategy)),
         ],
     }

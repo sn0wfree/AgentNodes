@@ -199,17 +199,32 @@ class CircuitBreakerDecider(Decider):
 class NoProgressDecider(Decider):
     """no-progress（包装 ``strategy.progress.record_hash + is_no_progress``）。
 
-    **检查点 = after_act**（工具结果已入消息，loop.py:971-996）。
-    触发 → ``_check_no_progress`` 询问用户：拒绝/超时 → **EXIT 整个
-    run**（return result，自带 after_run）；批准 → PROCEED 续跑。
+    **检查点 = after_act**（工具结果已入消息，loop.py:1035-1055）。
+    触发 → 若注入了 ``approval_gate``（AgentLoop 的
+    ``_check_no_progress``），先走 approval 交互再定论：
+    - gate 返回 True（拒绝/超时拒绝）→ **EXIT 整个 run**
+    - gate 返回 False（批准/超时继续）→ PROCEED 续跑
+    无 gate（纯检测场景）→ 直接 EXIT。
+
     ``input`` = 本轮 tool hashes 列表。
     """
 
-    def __init__(self, progress_step: Any, *, approved_continuation: bool = False) -> None:
+    def __init__(
+        self,
+        progress_step: Any,
+        *,
+        approved_continuation: bool = False,
+        approval_gate: Any | None = None,
+        context_provider: Any | None = None,
+    ) -> None:
         self._step = progress_step
-        # 批准续跑由用户交互决定；decider 只表达「检测到无进展」半边，
-        # 交互半边归骨架的 ``_check_no_progress``（B3 收编）。
         self._approved = approved_continuation
+        #: ``(tool_hashes) -> bool``——True = 应退出。绑定 AgentLoop 的
+        #: ``_check_no_progress`` 包装（批次 12 S1 收编 approval gate）。
+        self._gate = approval_gate
+        #: 提供 (response, result, iteration) 给 gate —— 闭包注入，
+        #: decider 自身不持有 loop。
+        self._ctx_provider = context_provider
 
     @property
     def name(self) -> str:
@@ -220,8 +235,23 @@ class NoProgressDecider(Decider):
         self._step.record_hash(ctx, hash_value)
 
     def decide(self, input: Any, ctx: LoopContext) -> tuple[Decision, str | None]:
-        if self._step.is_no_progress(ctx):
-            if self._approved:
-                return Decision.PROCEED, "no_progress_approved"
-            return Decision.EXIT, "no_progress"
-        return Decision.PROCEED, None
+        if not self._step.is_no_progress(ctx):
+            return Decision.PROCEED, None
+
+        # approval gate（批次 12 S1）：有 gate 时让 legacy 的
+        # _check_no_progress 决定——它处理「用户批准/拒绝/超时」全部语义
+        # 并写好 result.finished_reason（user_rejected /
+        # approval_timeout_rejected）。decider 只翻译成 Decision。
+        if self._gate is not None:
+            tool_hashes = input if isinstance(input, list) else []
+            try:
+                should_exit = self._gate(tool_hashes)
+            except Exception:  # noqa: BLE001 —— gate 失败按退出处理（保守）
+                return Decision.EXIT, "no_progress"
+            if should_exit:
+                return Decision.EXIT, "no_progress"
+            return Decision.PROCEED, "no_progress_approved"
+
+        if self._approved:
+            return Decision.PROCEED, "no_progress_approved"
+        return Decision.EXIT, "no_progress"

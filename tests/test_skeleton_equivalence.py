@@ -44,8 +44,8 @@ class MockLLM:
         return self.chat(messages, **kwargs)
 
 
-def _build(ws, responses):
-    loop = AgentLoop(
+def _build(ws, responses, extra=None):
+    kw = dict(
         stream_mode=False,
         config=LLMConfig(api_key="sk-test"),
         registry=build_default_registry(),
@@ -56,6 +56,11 @@ def _build(ws, responses):
         approval_timeout=1,
         approval_on_timeout="reject",
     )
+    if extra:
+        # 预算是 LoopConfig 的字段（不是 AgentLoop 构造参数）——
+        # 经 strategy spec 传入，两引擎读同一个 strategy.config
+        kw["strategy"] = {"name": "react", "config": dict(extra)}
+    loop = AgentLoop(**kw)
     mock = MockLLM(responses)
     loop.client.chat = mock.chat
     loop.client.achat = mock.achat
@@ -67,6 +72,7 @@ async def main():
     (ws / "strategies" / "foo").mkdir(parents=True)
 
     responses = json.loads(sys.argv[1])
+    extra = json.loads(sys.argv[2]) if len(sys.argv) > 2 else {}
     # JSON dicts → LLMResponse objects (tool_calls → ToolCall)
     parsed = []
     for r in responses:
@@ -81,9 +87,9 @@ async def main():
         ))
 
     async def _run_both():
-        legacy = _build(ws, list(parsed))
+        legacy = _build(ws, list(parsed), extra)
         lr = await legacy.arun("测试任务", engine="legacy")
-        skel = _build(ws, list(parsed))
+        skel = _build(ws, list(parsed), extra)
         sr = await skel.arun("测试任务", engine="skeleton")
         return lr, sr
 
@@ -102,11 +108,12 @@ asyncio.run(main())
 '''.replace("{root}", str(ROOT))
 
 
-def _run_scenario(responses: list, name: str) -> tuple[dict, dict]:
+def _run_scenario(responses: list, name: str, extra: dict | None = None) -> tuple[dict, dict]:
     """Run both engines in a subprocess, parse two JSON lines."""
     payload = json.dumps(responses)
+    extra_payload = json.dumps(extra or {})
     r = subprocess.run(
-        [sys.executable, "-c", _INNER, payload, name],
+        [sys.executable, "-c", _INNER, payload, extra_payload],
         capture_output=True,
         text=True,
         encoding="utf-8",
@@ -129,15 +136,29 @@ def _run_scenario(responses: list, name: str) -> tuple[dict, dict]:
 
 
 class TestEquivalence:
-    @pytest.mark.parametrize("scenario,responses", [
-        ("pure_text", [{"content": "最终答案", "tool_calls": [], "finish_reason": "stop"}]),
+    @pytest.mark.parametrize("scenario,responses,extra", [
+        ("pure_text",
+         [{"content": "最终答案", "tool_calls": [], "finish_reason": "stop"}],
+         None),
         ("tool_then_text", [
             {"content": "", "tool_calls": [{"id": "c1", "name": "list_history", "arguments": {}}], "finish_reason": "tool_calls"},
             {"content": "工具跑完了", "tool_calls": [], "finish_reason": "stop"},
-        ]),
+        ], None),
+        # 批次 12 S1 新增场景 —— 翻默认前的边界覆盖
+        ("tool_error", [
+            # read 不存在的文件 → tool 返回 error（不是异常），两引擎应同判
+            {"content": "", "tool_calls": [{"id": "c1", "name": "read", "arguments": {"path": "nope.txt"}}], "finish_reason": "tool_calls"},
+            {"content": "文件不存在", "tool_calls": [], "finish_reason": "stop"},
+        ], None),
+        ("budget_exhausted",
+         [{"content": "预算内", "tool_calls": [], "finish_reason": "stop"}],
+         {"budget_max_seconds": 0.0}),
+        ("history_multi_turn", [
+            {"content": "第二轮答案", "tool_calls": [], "finish_reason": "stop"},
+        ], None),
     ])
-    def test_engines_agree(self, scenario, responses):
-        legacy, skeleton = _run_scenario(responses, scenario)
+    def test_engines_agree(self, scenario, responses, extra):
+        legacy, skeleton = _run_scenario(responses, scenario, extra)
         # stop_reason 措辞允许不同（skeleton 用 decider 语义标签如
         # "final_text"，legacy 用 None/_handle_stop 的 reason）——
         # 核心断言：answer / finished_reason / iterations / tool_calls 一致

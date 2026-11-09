@@ -154,7 +154,7 @@ class ReActSkeleton:
         self, spec: SkeletonRunSpec
     ) -> AsyncIterator[dict[str, Any]]:
         state, result = self._prepare_state(spec)
-        await self._fire("before_run", spec)
+        await self._fire("before_run", state)
 
         try:
             for iteration in range(1, max(1, spec.max_iterations) + 1):
@@ -169,6 +169,9 @@ class ReActSkeleton:
                 if decision is Decision.STOP:
                     state.stop_reason = reason or "precheck"
                     result.stop_reason = state.stop_reason
+                    # legacy 口径映射：budget → "budget"，超时 → "timeout"
+                    if "budget" in (reason or ""):
+                        result.finished_reason = "budget"
                     break
                 if decision is Decision.EXIT:
                     result.finished_reason = "exit"
@@ -240,7 +243,11 @@ class ReActSkeleton:
                     "after_act", state, payload=r.output
                 )
                 if decision is Decision.EXIT:
-                    result.finished_reason = "exit"
+                    # **不覆盖 finished_reason**（批次 12 S1）：approval gate
+                    # 已写好精确语义（user_rejected / approval_timeout_rejected）；
+                    # 无 gate（无精确语义）时才落通用的 "exit"。
+                    if getattr(result, "finished_reason", "stop") == "stop":
+                        result.finished_reason = "exit"
                     result.stop_reason = reason
                     self._last_result = result  # run_to_completion 需要
                     await self._fire("after_run", state, result)
@@ -255,8 +262,10 @@ class ReActSkeleton:
 
             else:
                 # for 耗尽 = 上限（PRECHECK 每轮先判，这里兜底）
+                # legacy 口径：finished_reason="max_iter"（LoopResult 的枚举值）
                 state.stop_reason = state.stop_reason or "max_iterations"
                 result.stop_reason = result.stop_reason or state.stop_reason
+                result.finished_reason = "max_iter"
 
         except Exception as exc:  # noqa: BLE001 — 骨架级兜底
             result.error = str(exc)

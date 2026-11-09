@@ -741,10 +741,11 @@ class AgentLoop(
                 ``{"role": ..., "content": ...}`` format. Inserted between
                 the system prompt and the current user message so the LLM
                 has full conversation context.
-            engine: ``"legacy"``（默认）/ ``"skeleton"``。骨架引擎
-                （批次 11 · B3 阶段 1）消费 deciders 的状态机；影子模式，
-                等价性由 ``tests/test_skeleton_equivalence.py`` 钉住。
-                ``AGENTNODES_SKELETON=1`` 环境变量翻转默认（灰度用）。
+            engine: ``"skeleton"``（默认，批次 12 S1 翻转）/ ``"legacy"``。
+                ``AGENTNODES_ENGINE=legacy`` 环境变量可回退到旧循环体；
+                ``AGENTNODES_SKELETON=0`` 保留为兼容别名（等价于 legacy）。
+                骨架：``ReActSkeleton`` 消费 deciders 的状态机，等价性由
+                ``tests/test_skeleton_equivalence.py``（5 场景）钉住。
 
         Returns:
             LoopResult with answer, iterations, tool_calls_made, finished_reason.
@@ -752,10 +753,16 @@ class AgentLoop(
         if engine is None:
             import os
 
-            engine = (
-                "skeleton" if os.environ.get("AGENTNODES_SKELETON") == "1"
-                else "legacy"
-            )
+            # 批次 12 S1：默认翻到 skeleton。回退链：
+            #   AGENTNODES_ENGINE=legacy  → 旧循环体（显式回退）
+            #   AGENTNODES_SKELETON=0     → 同上（兼容别名）
+            env_engine = os.environ.get("AGENTNODES_ENGINE", "").strip().lower()
+            if env_engine in ("legacy", "skeleton"):
+                engine = env_engine
+            elif os.environ.get("AGENTNODES_SKELETON") == "0":
+                engine = "legacy"
+            else:
+                engine = "skeleton"
         if engine == "skeleton":
             return await self._run_via_skeleton(task, context, history)
         return await self._run_loop_core(task, context, history, async_mode=True)

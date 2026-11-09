@@ -108,6 +108,12 @@ class LoopPrepare:
         full_task, result, messages, t0 = loop._prepare_run(
             spec.task, spec.context, spec.history,
         )
+        # 批次 12 S1：每轮 run 重置委派计数（legacy 在 _run_loop_core:799
+        # 做同一件事；漏了会让 subagent 的 per-turn 上限跨调用累积）
+        try:
+            loop._subagent_count[0] = 0
+        except Exception:  # noqa: BLE001
+            pass
         hook_ctx = loop._build_hook_context(0, messages)
         ctx = LoopContext(
             task=full_task,
@@ -118,6 +124,10 @@ class LoopPrepare:
         )
         ctx.result = result
         ctx.hook_ctx = hook_ctx
+        # 批次 12 S1：把当前 ctx 挂到 loop 上——NoProgressDecider 的
+        # approval gate 是闭包（decider 不持有 loop），需要它取
+        # response/result/iteration 喂 `_check_no_progress`
+        loop._skeleton_ctx = ctx
         return ctx, result
 
 
@@ -127,11 +137,23 @@ class LoopHooks:
     def __init__(self, loop: Any) -> None:
         self._loop = loop
 
-    async def before_run(self, spec: Any) -> None:
-        pass  # 首轮 before_iteration 已覆盖（对齐 legacy :809 只发一次）
+    async def before_run(self, ctx: Any) -> None:
+        """legacy :809 在 prepare 后发一次 before_run（hook_ctx 形态）。
+
+        骨架传入的是 LoopContext（prepare 产出），这里取它的 hook_ctx。
+        批次 12 S1 补：原为空实现，翻默认后 ``test_arun_hooks_are_awaited``
+        暴露缺失（hooks 只有 after_run）。
+        """
+        hook_ctx = getattr(ctx, "hook_ctx", None)
+        if hook_ctx is None:
+            hook_ctx = self._loop._build_hook_context(
+                getattr(ctx, "iteration", 0), getattr(ctx, "messages", []),
+            )
+        await self._loop._afire_hooks("before_run", hook_ctx)
 
     async def before_iteration(self, ctx: LoopContext, iteration: int) -> None:
-        pass  # llm_call step 内部已发 before_iteration（loop.py:866-868）
+        pass  # llm_call step 内部已发 before_iteration（loop.py:932-934 注释）
+        #      适配器再发会重复——legacy 每轮只发一次
 
     async def after_iteration(self, ctx: LoopContext, iteration: int) -> None:
         hook_ctx = getattr(ctx, "hook_ctx", None)
@@ -151,13 +173,37 @@ class LoopHooks:
 
 
 class LoopFinalize:
-    """终局：finalization step + git commit + trace close。"""
+    """终局：finalization step + git commit + trace close + **收尾事件**。
+
+    批次 12 S1 补：翻默认后 ``test_arun_emits_iter_start_and_end`` 暴露
+    ``iter_end`` / ``assistant_message`` / ``loop_end`` 一条未发——
+    legacy 这三个事件由 ``_handle_stop`` / ``_handle_max_iter`` 发
+    （loop_lifecycle.py:41-68），骨架没调那两个方法。
+    """
 
     def __init__(self, loop: Any) -> None:
         self._loop = loop
 
     async def __call__(self, ctx: LoopContext, result: Any) -> None:
         loop = self._loop
+
+        # ── 收尾事件（legacy _handle_stop / _handle_max_iter 的等价）──
+        finish = getattr(result, "finished_reason", "stop") or "stop"
+        iteration = getattr(result, "iterations", 0) or 0
+        try:
+            loop._trace_and_emit("loop_end", {
+                "reason": finish, "iteration": iteration,
+            })
+            if getattr(result, "answer", ""):
+                loop._emit("assistant_message", {"content": result.answer})
+            loop._emit("iter_end", {
+                "iteration": iteration,
+                "finish_reason": finish,
+                "tool_calls_made": getattr(result, "tool_calls_made", 0),
+            })
+        except Exception:  # noqa: BLE001 — 事件发射不阻断收尾
+            logger.debug("skeleton finalize events failed", exc_info=True)
+
         fin_ctx = _make_strategy_ctx(loop,
             ctx.messages, None, result, result.iterations,
             getattr(ctx, "hook_ctx", None),
@@ -166,7 +212,7 @@ class LoopFinalize:
         await loop._call_step(
             loop._strategy.finalization, fin_ctx, async_mode=True,
         )
-        # git commit + trace close（阶段 1 直调，阶段 2 收编为 hook）
+        # git commit + trace close（阶段 2 后半收编为 hook）
         import asyncio as _aio
 
         task = getattr(ctx, "task", "")
