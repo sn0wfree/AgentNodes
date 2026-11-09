@@ -1,8 +1,8 @@
-"""进程级配置的唯一声明表（批次 A：只声明 + 统一读取，不改名）。
+"""进程级配置的唯一声明表（批次 A → B → B' 三步建成）。
 
 ## 为什么需要这个模块
 
-`src/agentnodes/` 里有 **56 个环境变量、71 个读取点**，分散在 5 种前缀
+`src/agentnodes/` 里曾有 **56 个环境变量、71 个读取点**，分散在 5 种前缀
 （`AN_` / `AGENTNODES_` / `QNODES_` / `QUANTNODES_` / `SR_`）下，且**每个模块
 各自 `os.environ.get(...)`**。后果：
 
@@ -10,16 +10,36 @@
 - 无法集中文档化（新人不知道有哪些开关）
 - 无法做配置快照（出问题时不知道进程实际用了什么）
 
-## 本批（A）的边界：**零行为变化**
+## 三步演进
 
-只做三件事：
+| 批 | 内容 | 结果 |
+|---|---|---|
+| **A** | 建声明表 + 统一读取 + 快照（**零行为变化**） | 71 个读取点被 56 条声明覆盖 |
+| **B** | 62 处调用点改走 `settings.get_*`（**不改名**） | 门禁从 58 违规→0，转为硬门禁 |
+| **B'** | 声明表 name 改为 `AGENTNODES_*`，旧名进 `aliases` | 零调用点改动（见下） |
 
-1. **声明表**：`SETTINGS` 把 71 个读取点归纳成带类型/默认值/域名的条目
-2. **统一读取**：`settings.get(name, default=...)` 走声明表 → `os.environ`
-3. **快照**：`settings.snapshot()` 输出脱敏后的当前生效值（供日志/诊断）
+## 命名规范（批次 B' 之后）
 
-**不改任何变量名**（改名是批次 B），**不强制改造既有读取点**（那需要逐点
-验证默认值等价，属于批次 B）。
+- **规范名**：`AGENTNODES_<DOMAIN>_<PARAM>`（domain: paths/engine/cache/
+  log/api/orch/cli/compact/llm）
+- **旧名**：`AN_*` / `QNODES_*` / `SR_*` / 无前缀的（`JWT_SECRET` /
+  `CORS_ORIGINS` / `STATIC_DIR`）—— 全部作为 `aliases` 保留，仍可读、仍生效
+- **外部生态名不改**：`OPENAI_API_KEY` / `LLM_API_KEY` / `HOME` / `NO_COLOR` /
+  `LANGCHAIN_*` 等（改它们会破坏互操作性）
+
+## 归一链（为什么零调用点改动）
+
+```
+调用点传旧名 "AN_LOG_LEVEL"
+  ↓ _ALIAS_INDEX 归一
+规范名 "AGENTNODES_LOG_LEVEL"
+  ↓ 查 os.environ[规范名]        ← 用户设了新名 → 命中
+  ↓ 未命中则按 aliases 回退      ← 用户只设了旧名 → 命中 + warn 一次
+  ↓ 仍未命中则用声明 default
+```
+
+所以**用户设新名或旧名都工作，调用点传新名或旧名也都工作**。
+`resolve_canonical()` / `legacy_names()` 供诊断与迁移使用。
 
 ## 与 `foundation/paths.py` 的分工
 
@@ -57,6 +77,8 @@ __all__ = [
     "get_str",
     "is_set",
     "known_names",
+    "legacy_names",
+    "resolve_canonical",
     "snapshot",
     "unknown_env_vars",
 ]
@@ -120,27 +142,25 @@ def _flag(name: str, domain: str, doc: str = "") -> Setting:
 _DECLARED: tuple[Setting, ...] = (
     # ── 路径与数据（domain: paths）─────────────────────────────
     # 与 foundation/paths.py 配合：settings 读取值，paths 拼路径。
-    _s("AN_DATA_DIR", "paths", "",
+    _s("AGENTNODES_DATA_DIR", "paths", "",
        "数据根目录覆盖（空 = 用 profile 默认）"),
-    _s("AN_DATA_PROFILE", "paths", "",
+    _s("AGENTNODES_PROFILE", "paths", "",
        "数据命名 profile：agentnodes（默认）/ quantnodes"),
-    _s("AN_SESSIONS_DB", "paths", None,
+    _s("AGENTNODES_SESSION_DB", "paths", None,
        "会话库绝对路径覆盖"),
-    _s("AN_WORKSPACE_PATH", "paths", None,
-       "workspace 根覆盖"),
     _s("AGENTNODES_WORKSPACE", "paths", None,
-       "workspace 根覆盖（CLI show 用；与 AN_WORKSPACE_PATH 同义）"),
-    _s("AN_MODEL_CATALOG_DIR", "paths", "",
+       "workspace 根覆盖（旧名：AN_WORKSPACE_PATH / SR_WORKSPACE_PATH）"),
+    _s("AGENTNODES_MODEL_CATALOG_DIR", "paths", "",
        "model catalog 缓存目录覆盖"),
-    _s("AN_CHECKPOINTS_DIR", "paths", "",
+    _s("AGENTNODES_CHECKPOINTS_DIR", "paths", "",
        "workflow checkpoint 目录覆盖"),
-    _s("AN_WORKFLOWS_DIR", "paths", "",
+    _s("AGENTNODES_WORKFLOWS_DIR", "paths", "",
        "用户 workflow 目录覆盖"),
     _s("AGENTNODES_MEMORY_DIR", "paths", None,
        "memory 目录覆盖（None = 用数据目录默认）"),
-    _s("AN_HYPOTHESES_PATH", "paths", None,
+    _s("AGENTNODES_HYPOTHESES_PATH", "paths", None,
        "hypotheses 文件路径"),
-    _s("STATIC_DIR", "paths", None,
+    _s("AGENTNODES_STATIC_DIR", "paths", None,
        "静态资源目录（web UI）"),
     # 权限规则 YAML 路径（rules_io.py）。默认值含 Path.home()，属复杂表达式，
     # 声明表只记录 None（= 由 rules_io 自己拼默认路径）。
@@ -152,83 +172,82 @@ _DECLARED: tuple[Setting, ...] = (
        "执行引擎：skeleton（默认）/ legacy"),
     Setting("AGENTNODES_SKELETON", "flag", None, "engine",
             "旧回退开关：=0 等价 AGENTNODES_ENGINE=legacy"),
-    _i("AN_TOOL_RESULT_MAX_CHARS", "engine", 30000,
+    _i("AGENTNODES_TOOL_RESULT_MAX_CHARS", "engine", 30000,
        "工具结果入 LLM history 的截断上限（字符）"),
-    _s("AN_L4_INCLUDE_MESSAGES", "engine", "",
+    _s("AGENTNODES_COMPACT_INCLUDE_MESSAGES", "engine", "",
        "compact.ended 事件是否携带压缩后 messages"),
     _s("AGENTNODES_PERMISSION_MODE", "engine", "",
        "权限模式 L0-L4（空 = 按路径默认）"),
     # 注意：源码是 float(...)，允许小数（如 0.5 秒）；声明必须是 float。
-    _f("AN_BACKTEST_STALL_TIMEOUT", "engine", 300.0,
+    _f("AGENTNODES_BACKTEST_STALL_TIMEOUT", "engine", 300.0,
        "后台进程停滞判定秒数（源码 float，允许小数）"),
 
     # ── 缓存（domain: cache）───────────────────────────────────
-    _s("AN_CACHE_WRITE_POLICY", "cache", "write_through",
+    _s("AGENTNODES_CACHE_WRITE_POLICY", "cache", "write_through",
        "缓存写策略"),
-    _s("AN_CACHE_EVICTION", "cache", "lru", "缓存淘汰策略"),
-    _i("AN_CACHE_MIN_ENTRIES", "cache", 1000, "缓存最小条目数"),
-    _i("AN_CACHE_MAX_ENTRIES", "cache", 1000, "缓存最大条目数"),
-    _i("AN_CACHE_AVG_TOKENS_FALLBACK", "cache", 200,
+    _s("AGENTNODES_CACHE_EVICTION", "cache", "lru", "缓存淘汰策略"),
+    _i("AGENTNODES_CACHE_MIN_ENTRIES", "cache", 1000, "缓存最小条目数"),
+    _i("AGENTNODES_CACHE_MAX_ENTRIES", "cache", 1000, "缓存最大条目数"),
+    _i("AGENTNODES_CACHE_AVG_TOKENS_FALLBACK", "cache", 200,
        "token 估算回退值"),
-    _i("AN_CACHE_WINDOW", "cache", 100, "采样窗口大小"),
-    _f("AN_CACHE_SAFETY_FACTOR", "cache", 2.0, "安全系数"),
-    _i("AN_CACHE_MIN_SAMPLES", "cache", 10, "最小样本数"),
-    _f("AN_CACHE_CHARS_PER_TOKEN", "cache", 3.0, "每 token 字符数估算"),
+    _i("AGENTNODES_CACHE_WINDOW", "cache", 100, "采样窗口大小"),
+    _f("AGENTNODES_CACHE_SAFETY_FACTOR", "cache", 2.0, "安全系数"),
+    _i("AGENTNODES_CACHE_MIN_SAMPLES", "cache", 10, "最小样本数"),
+    _f("AGENTNODES_CACHE_CHARS_PER_TOKEN", "cache", 3.0, "每 token 字符数估算"),
     # 源码是 float(...)，允许小数（如 0.5 秒）。
-    _f("AN_CACHE_RE_RESOLVE_SEC", "cache", 60.0, "重新解析间隔（秒）"),
-    _f("AN_CACHE_TTL", "cache", 60.0, "缓存 TTL（秒）"),
+    _f("AGENTNODES_CACHE_RE_RESOLVE_SEC", "cache", 60.0, "重新解析间隔（秒）"),
+    _f("AGENTNODES_CACHE_TTL", "cache", 60.0, "缓存 TTL（秒）"),
     # 跨行读取（cache.py:110 的 os.environ.get( 与变量名不在同一行）——
     # 批次 B 首次迁移时被逐行正则漏掉，是「扫描器自身盲区」的实例。
-    _b("AN_CACHE_COMPACTION_LINKED", "cache", True,
+    _b("AGENTNODES_CACHE_COMPACTION_LINKED", "cache", True,
        "缓存条目数与压缩联动"),
 
     # ── 压缩（domain: compact）─────────────────────────────────
     # 紧急开关：模块级 import 期求值，运行期改 env 不生效（已知限制）。
     # kind=bool（不是 flag）：源码是 `.get(X, "").lower() in ("1","true",...)`，
     # 即"值真才开"，不是"存在即开"。
-    _b("AN_KEEP_ALL_COMPACTIONS", "compact", False,
+    _b("AGENTNODES_COMPACT_KEEP_ALL", "compact", False,
        "紧急开关：强制保留所有压缩记录在历史里"),
 
     # ── 日志与可观测（domain: log）─────────────────────────────
-    _s("AN_LOG_LEVEL", "log", "INFO", "日志级别"),
-    _s("AN_LOG_JSON", "log", "", "日志 JSON 格式（1/true 开启）"),
-    _i("AN_LLM_REQUEST_OFFLOAD_THRESHOLD", "log", 4096,
+    _s("AGENTNODES_LOG_LEVEL", "log", "INFO", "日志级别"),
+    _s("AGENTNODES_LOG_JSON", "log", "", "日志 JSON 格式（1/true 开启）"),
+    _i("AGENTNODES_LLM_REQUEST_OFFLOAD_THRESHOLD", "log", 4096,
        "llm_request 大字段外置阈值（字符）"),
-    _s("AN_EVENT_LOG_READ", "log", "1",
+    _s("AGENTNODES_EVENT_LOG_READ", "log", "1",
        "是否用 event_log 读路径（=0 关闭）"),
 
     # ── API / 服务（domain: api）──────────────────────────────
-    _s("JWT_SECRET", "api", None, "JWT 签名密钥", secret=True),
+    _s("AGENTNODES_JWT_SECRET", "api", None, "JWT 签名密钥", secret=True),
     # 源码两处读取都是 `os.environ.get("CORS_ORIGINS")`（无默认）：
     # 未设置 → None → "不启用 CORS"。空串与 None 在此等价（都 falsy）。
-    _s("CORS_ORIGINS", "api", None, "CORS 允许来源（逗号分隔；未设=不启用）"),
-    _s("AN_ADMIN_TOKEN", "api", "", "管理员 token", secret=True),
-    _s("AN_ADMIN_PASSWORD", "api", "", "初始管理员密码", secret=True),
-    _s("AN_ALLOW_REGISTRATION", "api", "",
+    _s("AGENTNODES_CORS_ORIGINS", "api", None, "CORS 允许来源（逗号分隔；未设=不启用）"),
+    _s("AGENTNODES_ADMIN_TOKEN", "api", "", "管理员 token", secret=True),
+    _s("AGENTNODES_ADMIN_PASSWORD", "api", "", "初始管理员密码", secret=True),
+    _s("AGENTNODES_API_ALLOW_REGISTRATION", "api", "",
        "是否开放注册（1/true 开启）"),
-    _flag("AGENTNODES_ALLOW_DEV_SECRET", "api",
+    _flag("AGENTNODES_API_ALLOW_DEV_SECRET", "api",
           "允许开发环境默认 JWT secret"),
-    _i("AN_CHAT_ATTEMPT_TIMEOUT", "api", 600,
+    _i("AGENTNODES_CHAT_ATTEMPT_TIMEOUT", "api", 600,
        "单次 chat 尝试超时（秒）"),
-    _s("QNODES_CHAT_WAIT_TIMEOUT", "api", "",
+    _s("AGENTNODES_CHAT_WAIT_TIMEOUT", "api", "",
        "chat 等待超时（旧名，秒）"),
-    _s("AN_ENFORCE_STUDY_IDOR", "api", "",
-       "study IDOR 校验（=0 关闭）"),
-    _s("SR_ENFORCE_STUDY_IDOR", "api", "1",
-       "study IDOR 校验（旧名）"),
-    _s("SR_WORKSPACE_PATH", "api", "",
-       "workspace 根（旧名）"),
-    _s("QNODES_PLATFORM_STORE", "api", "",
+    _s("AGENTNODES_ENFORCE_STUDY_IDOR", "api", "",
+       "study IDOR 校验（=0 关闭；新名）"),
+    _s("AGENTNODES_ENFORCE_STUDY_IDOR_LEGACY", "api", "1",
+       "study IDOR 校验（旧名 SR_ENFORCE_STUDY_IDOR，默认 1=开；"
+       "与上一个语义不同，不能合并）"),
+    _s("AGENTNODES_PLATFORM_STORE", "api", "",
        "PlatformStore 开关（0/false 关闭）"),
 
     # ── 编排与 goal（domain: orch）────────────────────────────
-    _s("AN_ORCHESTRATOR_MAX_CONTINUES", "orch", "",
+    _s("AGENTNODES_ORCH_MAX_CONTINUES", "orch", "",
        "编排器最大连续推进次数"),
     _s("AGENTNODES_TEST_CHAT", "orch", None,
        "=1 时走测试 chat 路径"),
 
     # ── CLI（domain: cli）─────────────────────────────────────
-    _s("AGENTNODES_THEME", "cli", "", "CLI 主题覆盖"),
+    _s("AGENTNODES_CLI_THEME", "cli", "", "CLI 主题覆盖"),
 
     # ── LLM 凭据（domain: llm）────────────────────────────────
     # 注意：这里只登记"本项目的读取点"。OPENAI_API_KEY / LLM_API_KEY
@@ -238,6 +257,56 @@ _DECLARED: tuple[Setting, ...] = (
     _s("LLM_API_KEY", "llm", "", "通用 LLM API key（生态通用名）",
        secret=True),
 )
+
+# ── 旧名 -> 规范名（批次 B'）────────────────────────────────────────
+#
+# 改名后旧名仍然是**受支持的输入**：ENV_TABLE 以规范名为 key，
+# 旧名在 `aliases` 里，`resolve_canonical()` 负责归一。
+# 这样 62 处既有调用点（传旧名）与用户环境（可能设旧名）都能工作。
+_LEGACY_NAMES: dict[str, tuple[str, ...]] = {
+    "AGENTNODES_ADMIN_PASSWORD": ("AN_ADMIN_PASSWORD",),
+    "AGENTNODES_ADMIN_TOKEN": ("AN_ADMIN_TOKEN",),
+    "AGENTNODES_API_ALLOW_DEV_SECRET": ("AGENTNODES_ALLOW_DEV_SECRET",),
+    "AGENTNODES_API_ALLOW_REGISTRATION": ("AN_ALLOW_REGISTRATION",),
+    "AGENTNODES_BACKTEST_STALL_TIMEOUT": ("AN_BACKTEST_STALL_TIMEOUT",),
+    "AGENTNODES_CACHE_AVG_TOKENS_FALLBACK": ("AN_CACHE_AVG_TOKENS_FALLBACK",),
+    "AGENTNODES_CACHE_CHARS_PER_TOKEN": ("AN_CACHE_CHARS_PER_TOKEN",),
+    "AGENTNODES_CACHE_COMPACTION_LINKED": ("AN_CACHE_COMPACTION_LINKED",),
+    "AGENTNODES_CACHE_EVICTION": ("AN_CACHE_EVICTION",),
+    "AGENTNODES_CACHE_MAX_ENTRIES": ("AN_CACHE_MAX_ENTRIES",),
+    "AGENTNODES_CACHE_MIN_ENTRIES": ("AN_CACHE_MIN_ENTRIES",),
+    "AGENTNODES_CACHE_MIN_SAMPLES": ("AN_CACHE_MIN_SAMPLES",),
+    "AGENTNODES_CACHE_RE_RESOLVE_SEC": ("AN_CACHE_RE_RESOLVE_SEC",),
+    "AGENTNODES_CACHE_SAFETY_FACTOR": ("AN_CACHE_SAFETY_FACTOR",),
+    "AGENTNODES_CACHE_TTL": ("AN_CACHE_TTL",),
+    "AGENTNODES_CACHE_WINDOW": ("AN_CACHE_WINDOW",),
+    "AGENTNODES_CACHE_WRITE_POLICY": ("AN_CACHE_WRITE_POLICY",),
+    "AGENTNODES_CHAT_ATTEMPT_TIMEOUT": ("AN_CHAT_ATTEMPT_TIMEOUT",),
+    "AGENTNODES_CHAT_WAIT_TIMEOUT": ("QNODES_CHAT_WAIT_TIMEOUT",),
+    "AGENTNODES_CHECKPOINTS_DIR": ("AN_CHECKPOINTS_DIR",),
+    "AGENTNODES_CLI_THEME": ("AGENTNODES_THEME",),
+    "AGENTNODES_COMPACT_INCLUDE_MESSAGES": ("AN_L4_INCLUDE_MESSAGES",),
+    "AGENTNODES_COMPACT_KEEP_ALL": ("AN_KEEP_ALL_COMPACTIONS",),
+    "AGENTNODES_CORS_ORIGINS": ("CORS_ORIGINS",),
+    "AGENTNODES_DATA_DIR": ("AN_DATA_DIR",),
+    "AGENTNODES_ENFORCE_STUDY_IDOR": ("AN_ENFORCE_STUDY_IDOR",),
+    "AGENTNODES_ENFORCE_STUDY_IDOR_LEGACY": ("SR_ENFORCE_STUDY_IDOR",),
+    "AGENTNODES_EVENT_LOG_READ": ("AN_EVENT_LOG_READ",),
+    "AGENTNODES_HYPOTHESES_PATH": ("AN_HYPOTHESES_PATH",),
+    "AGENTNODES_JWT_SECRET": ("JWT_SECRET",),
+    "AGENTNODES_LLM_REQUEST_OFFLOAD_THRESHOLD": ("AN_LLM_REQUEST_OFFLOAD_THRESHOLD",),
+    "AGENTNODES_LOG_JSON": ("AN_LOG_JSON",),
+    "AGENTNODES_LOG_LEVEL": ("AN_LOG_LEVEL",),
+    "AGENTNODES_MODEL_CATALOG_DIR": ("AN_MODEL_CATALOG_DIR",),
+    "AGENTNODES_ORCH_MAX_CONTINUES": ("AN_ORCHESTRATOR_MAX_CONTINUES",),
+    "AGENTNODES_PLATFORM_STORE": ("QNODES_PLATFORM_STORE",),
+    "AGENTNODES_PROFILE": ("AN_DATA_PROFILE",),
+    "AGENTNODES_SESSION_DB": ("AN_SESSIONS_DB",),
+    "AGENTNODES_STATIC_DIR": ("STATIC_DIR",),
+    "AGENTNODES_TOOL_RESULT_MAX_CHARS": ("AN_TOOL_RESULT_MAX_CHARS",),
+    "AGENTNODES_WORKFLOWS_DIR": ("AN_WORKFLOWS_DIR",),
+    "AGENTNODES_WORKSPACE": ("AN_WORKSPACE_PATH", "SR_WORKSPACE_PATH"),
+}
 
 #: **重复登记的显式防线**：dict comprehension 会让后一条静默覆盖前一条
 #: （本模块初版就把 `AGENTNODES_TEST_CHAT` 登记了两次，domain 悄悄变了）。
@@ -252,6 +321,34 @@ if _dupes:
     )
 
 ENV_TABLE: dict[str, Setting] = {s.name: s for s in _DECLARED}
+
+# ── 旧名注入（批次 B'）───────────────────────────────────────────────
+#
+# **为什么在这里而不是手写进每条声明**：41 组旧名手写容易漏/拼错，且
+# `_LEGACY_NAMES` 本身就是要被测试比对的"单一事实源"。注入后用
+# `dataclasses.replace` 生成新实例，frozen 语义不变。
+from dataclasses import replace as _dc_replace  # noqa: E402
+
+for _canonical, _olds in _LEGACY_NAMES.items():
+    _setting = ENV_TABLE.get(_canonical)
+    if _setting is None:
+        raise RuntimeError(
+            f"_LEGACY_NAMES references undeclared canonical name: {_canonical!r}"
+        )
+    ENV_TABLE[_canonical] = _dc_replace(
+        _setting, aliases=tuple(_setting.aliases) + tuple(_olds)
+    )
+
+#: 旧名 -> 规范名 反查索引（读取入口用它归一）。
+_ALIAS_INDEX: dict[str, str] = {}
+for _canonical, _setting in ENV_TABLE.items():
+    for _alias in _setting.aliases:
+        if _alias in ENV_TABLE:
+            raise RuntimeError(
+                f"alias {_alias!r} collides with a canonical declaration — "
+                f"rename one of them"
+            )
+        _ALIAS_INDEX[_alias] = _canonical
 
 #: 外部生态 / 操作系统提供的变量——**不纳入统一管理**。
 #: 它们不属于本项目的配置，改名会破坏互操作性。
@@ -298,7 +395,13 @@ def _coerce(setting: Setting, raw: str) -> Any:
 
 
 def _default_of(name: str, fallback: Any = None) -> Any:
-    setting = ENV_TABLE.get(name)
+    """取声明默认值。
+
+    **必须走别名归一**：批 B' 后 ENV_TABLE 的 key 是规范名，但调用点仍传
+    旧名（如 ``AGENTNODES_THEME``）。不归一就查不到声明，默认值退化成
+    ``fallback``（通常是 None），导致 ``get_str(X).strip()`` 崩在 None 上。
+    """
+    setting = ENV_TABLE.get(_ALIAS_INDEX.get(name, name))
     if setting is None:
         return fallback
     return setting.default if setting.default is not None else fallback
@@ -349,14 +452,20 @@ def unknown_env_vars(environ: dict[str, str] | None = None) -> list[str]:
     """返回进程环境里"看起来像本项目、但没在声明表里"的变量。
 
     判据：前缀是 ``AN_`` / ``AGENTNODES_`` / ``QNODES_`` /
-    ``QUANTNODES_`` / ``SR_``，且不在 ``ENV_TABLE`` 也不在
-    ``EXTERNAL_ENV_VARS``。用于发现"新增了开关但忘了登记"。
+    ``QUANTNODES_`` / ``SR_``，且不在 ``ENV_TABLE``（含 ``aliases``）
+    也不在 ``EXTERNAL_ENV_VARS``。用于发现"新增了开关但忘了登记"。
+
+    **别名也算已知**：改名后旧名仍在用户环境里，它是被支持的输入，
+    不应被当成"未登记"。
     """
     env = environ if environ is not None else os.environ
     prefixes = ("AN_", "AGENTNODES_", "QNODES_", "QUANTNODES_", "SR_")
+    known = set(ENV_TABLE)
+    for s in ENV_TABLE.values():
+        known.update(s.aliases)
     out = []
     for name in env:
-        if name in ENV_TABLE or name in EXTERNAL_ENV_VARS:
+        if name in known or name in EXTERNAL_ENV_VARS:
             continue
         if name.startswith(prefixes):
             out.append(name)
@@ -405,20 +514,22 @@ def _warn_alias(alias: str, canonical: str) -> None:
 def _resolve(name: str) -> tuple[str | None, str | None]:
     """返回 (原始值, 实际命中的变量名)。
 
-    顺序：canonical 名（``os.environ[name]``）-> 声明里的 ``aliases``。
+    **批次 B' 的归一链**（调用点传旧名也能工作）：
 
-    **注意**：``aliases`` 只在 ``name`` 是声明表里的 canonical 名时才有意义。
-    直接读一个 ``aliases`` 里出现的旧名（把它当 name 传）会走 canonical
-    分支，因为旧名也可能被登记为独立条目——这种情况由
-    :func:`resolve_canonical` 处理，不在本函数职责内。
+    1. ``name`` 若为旧名 -> 归一为 canonical（``_ALIAS_INDEX``）
+    2. 查 ``os.environ[canonical]``
+    3. 再按 ``aliases`` 回退（用户设了旧名）+ warn 一次
     """
-    if name in os.environ:
-        return os.environ[name], name
-    setting = ENV_TABLE.get(name)
+    canonical = _ALIAS_INDEX.get(name, name)
+
+    if canonical in os.environ:
+        return os.environ[canonical], canonical
+
+    setting = ENV_TABLE.get(canonical)
     if setting is not None:
         for alias in setting.aliases:
             if alias in os.environ:
-                _warn_alias(alias, name)
+                _warn_alias(alias, canonical)
                 return os.environ[alias], alias
     return None, None
 
@@ -431,9 +542,12 @@ def resolve_canonical(name: str) -> str:
     """
     if name in ENV_TABLE:
         return name
-    for setting in ENV_TABLE.values():
-        if name in setting.aliases:
-            return setting.name
+    return _ALIAS_INDEX.get(name, name)
+
+
+def legacy_names() -> dict[str, tuple[str, ...]]:
+    """返回 规范名 -> 旧名 的映射（供诊断/文档/测试）。"""
+    return {k: tuple(v) for k, v in _LEGACY_NAMES.items()}
     return name
 
 

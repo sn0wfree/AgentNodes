@@ -78,20 +78,29 @@ LEGACY_DIRS: tuple[Path, ...] = (
     Path.home() / ".quantnodes-research",
 )
 
-#: 选择 profile 的环境变量名。
-PROFILE_ENV = "AN_DATA_PROFILE"
+#: 选择 profile 的环境变量名（规范名）。
+PROFILE_ENV = "AGENTNODES_PROFILE"
+#: 旧名（批次 B' 前），仍生效。
+PROFILE_ENV_LEGACY = "AN_DATA_PROFILE"
 
 
 def active_profile(name: str | None = None) -> DataProfile:
     """返回当前生效的 profile。
 
-    优先级：显式 ``name`` > ``AN_DATA_PROFILE`` > :data:`DEFAULT_PROFILE`。
+    优先级：显式 ``name`` > ``AGENTNODES_PROFILE``（旧名
+    ``AN_DATA_PROFILE`` 仍生效）> :data:`DEFAULT_PROFILE`。
 
-    **未知值抛错而不是降级**：用户拼错 ``AN_DATA_PROFILE=quantnode``
+    **未知值抛错而不是降级**：用户拼错 ``AGENTNODES_PROFILE=quantnode``
     时必须立刻知道——静默用默认会让「我以为切到 quantnodes 了」的误解
     一直藏着，直到数据写到错误位置。
     """
-    raw = (name if name is not None else os.environ.get(PROFILE_ENV, "")).strip()
+    if name is not None:
+        raw = name
+    else:
+        raw = (os.environ.get(PROFILE_ENV)
+               or os.environ.get(PROFILE_ENV_LEGACY)
+               or "")
+    raw = raw.strip()
     if not raw:
         return PROFILES[DEFAULT_PROFILE]
     profile = PROFILES.get(raw)
@@ -107,12 +116,17 @@ def active_profile(name: str | None = None) -> DataProfile:
 def data_dir(profile: DataProfile | str | None = None) -> Path:
     """数据根目录。
 
-    优先级：``AN_DATA_DIR`` 环境变量 > profile 的 home 目录名。
+    优先级：``AGENTNODES_DATA_DIR``（旧名 ``AN_DATA_DIR`` 仍生效）> profile 的
+    home 目录名。
 
-    注意 ``AN_DATA_DIR`` 的语义是「整个数据根」，所以设了它就与
-    profile 无关——profile 只决定默认值。
+    注意它是「整个数据根」的覆盖，所以设了它就与 profile 无关——
+    profile 只决定默认值。
+
+    **批次 B'**：capability 名改为规范名；旧名通过 settings 的别名机制回退。
     """
-    override = os.environ.get("AN_DATA_DIR", "").strip()
+    from agentnodes.foundation.settings import get_str as _get_str
+
+    override = (_get_str("AGENTNODES_DATA_DIR") or "").strip()
     if override:
         return Path(override).expanduser()
     prof = profile if isinstance(profile, DataProfile) else active_profile(profile)

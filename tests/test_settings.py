@@ -47,9 +47,20 @@ def _scan_settings_reads() -> set[str]:
     return names
 
 
+#: 允许直接读 env 的文件（读取层自身 + profile 机制）。
+_RAW_READ_EXEMPT = frozenset({
+    "foundation/settings.py",
+    "foundation/paths.py",
+})
+
+
 def _scan_raw_reads() -> list[tuple[str, str, int, str | None]]:
-    """扫描仍然直接读 env 的地方（批 B 后应当只剩外部变量）。"""
-    return _scan_reads()
+    """扫描仍然直接读 env 的地方（批 B 后应当只剩外部变量）。
+
+    **豁免**：``settings.py``（读取层自身）与 ``paths.py``（profile 机制
+    要读 AN_DATA_PROFILE / AN_DATA_DIR，且它是 settings 的下游消费者）。
+    """
+    return [r for r in _scan_reads() if r[1] not in _RAW_READ_EXEMPT]
 
 
 def _scan_reads() -> list[tuple[str, str, int, str | None]]:
@@ -96,13 +107,18 @@ def test_every_read_env_var_is_declared():
     declared = set(settings.ENV_TABLE)
     external = set(settings.EXTERNAL_ENV_VARS)
 
+    # **批 B' 归一**：ENV_TABLE 的 key 是规范名，但调用点仍传旧名
+    # （批 B 的零改动策略）。比对前统一映射到规范名。
+    def _canon(n: str) -> str:
+        return settings.resolve_canonical(n)
+
     raw = _scan_raw_reads()
-    bypassed = sorted({n for n, _, _, _ in raw} - declared - external)
+    bypassed = sorted({_canon(n) for n, _, _, _ in raw} - declared - external)
     assert not bypassed, (
         f"这些 env 变量仍是裸读（绕过 settings），且不在 EXTERNAL_ENV_VARS: {bypassed}"
     )
 
-    via_settings = _scan_settings_reads()
+    via_settings = {_canon(n) for n in _scan_settings_reads()}
     undeclared = sorted(via_settings - declared)
     assert not undeclared, (
         f"这些变量经 settings 读取但未登记进 ENV_TABLE: {undeclared}"
@@ -116,17 +132,18 @@ def test_every_read_env_var_is_declared():
 
 def test_no_phantom_declarations():
     """表里声明的每个名字都必须真的被用到（或是一个已文档化的保留项）。"""
-    used = _scan_settings_reads() | {n for n, _, _, _ in _scan_raw_reads()}
+    used = {settings.resolve_canonical(n) for n in _scan_settings_reads()}
+    used |= {settings.resolve_canonical(n) for n, _, _, _ in _scan_raw_reads()}
     #: 已声明但当前**没有读取点**——即"预留/兼容"项，必须逐个解释。
     RESERVED = {
         # 由 foundation/paths.py 消费（通过 env_override 与
         # PROFILE_ENV 常量间接读，正则扫不到）
-        "AN_DATA_PROFILE",
-        "AN_CHECKPOINTS_DIR",
-        "AN_WORKFLOWS_DIR",
-        "AN_MODEL_CATALOG_DIR",
+        "AGENTNODES_PROFILE",
+        "AGENTNODES_CHECKPOINTS_DIR",
+        "AGENTNODES_WORKFLOWS_DIR",
+        "AGENTNODES_MODEL_CATALOG_DIR",
         # 由 foundation/paths.py 的 PROFILE 机制间接使用
-        "AN_DATA_DIR",
+        "AGENTNODES_DATA_DIR",
     }
     phantom = sorted(set(settings.ENV_TABLE) - used - RESERVED)
     assert not phantom, (
@@ -326,18 +343,18 @@ _MULTI_DEFAULT_ALLOWED: dict[str, set] = {
 
 
 def test_get_str_matches_environ(monkeypatch):
-    monkeypatch.delenv("AN_LOG_LEVEL", raising=False)
-    assert settings.get_str("AN_LOG_LEVEL") == os.environ.get("AN_LOG_LEVEL", "INFO")
+    monkeypatch.delenv("AGENTNODES_LOG_LEVEL", raising=False)
+    assert settings.get_str("AGENTNODES_LOG_LEVEL") == os.environ.get("AGENTNODES_LOG_LEVEL", "INFO")
 
-    monkeypatch.setenv("AN_LOG_LEVEL", "DEBUG")
-    assert settings.get_str("AN_LOG_LEVEL") == "DEBUG"
+    monkeypatch.setenv("AGENTNODES_LOG_LEVEL", "DEBUG")
+    assert settings.get_str("AGENTNODES_LOG_LEVEL") == "DEBUG"
 
 
 def test_get_int_matches_manual_parse(monkeypatch):
-    monkeypatch.delenv("AN_CACHE_MAX_ENTRIES", raising=False)
-    assert settings.get_int("AN_CACHE_MAX_ENTRIES") == 1000
-    monkeypatch.setenv("AN_CACHE_MAX_ENTRIES", "42")
-    assert settings.get_int("AN_CACHE_MAX_ENTRIES") == 42
+    monkeypatch.delenv("AGENTNODES_CACHE_MAX_ENTRIES", raising=False)
+    assert settings.get_int("AGENTNODES_CACHE_MAX_ENTRIES") == 1000
+    monkeypatch.setenv("AGENTNODES_CACHE_MAX_ENTRIES", "42")
+    assert settings.get_int("AGENTNODES_CACHE_MAX_ENTRIES") == 42
 
 
 def test_get_int_falls_back_on_garbage(monkeypatch):
@@ -347,51 +364,51 @@ def test_get_int_falls_back_on_garbage(monkeypatch):
     注意：这条记录的是一个**有意的差异**。批次 B 替换读取点时才生效；
     批 A 不改调用点，所以当前行为未变。
     """
-    monkeypatch.setenv("AN_CACHE_MAX_ENTRIES", "not-a-number")
-    assert settings.get_int("AN_CACHE_MAX_ENTRIES") == 1000
+    monkeypatch.setenv("AGENTNODES_CACHE_MAX_ENTRIES", "not-a-number")
+    assert settings.get_int("AGENTNODES_CACHE_MAX_ENTRIES") == 1000
 
 
 def test_get_bool_truthy_values(monkeypatch):
     for raw in ("1", "true", "TRUE", "yes", "on"):
-        monkeypatch.setenv("AN_LOG_JSON", raw)
-        assert settings.get_bool("AN_LOG_JSON") is True, raw
+        monkeypatch.setenv("AGENTNODES_LOG_JSON", raw)
+        assert settings.get_bool("AGENTNODES_LOG_JSON") is True, raw
     for raw in ("0", "false", "", "no"):
-        monkeypatch.setenv("AN_LOG_JSON", raw)
-        assert settings.get_bool("AN_LOG_JSON") is False, raw
+        monkeypatch.setenv("AGENTNODES_LOG_JSON", raw)
+        assert settings.get_bool("AGENTNODES_LOG_JSON") is False, raw
 
 
 def test_unset_returns_declared_default(monkeypatch):
-    monkeypatch.delenv("AN_LOG_LEVEL", raising=False)
-    assert settings.get("AN_LOG_LEVEL") is None          # 原始读取
-    assert settings.get_str("AN_LOG_LEVEL") == "INFO"    # 走默认
+    monkeypatch.delenv("AGENTNODES_LOG_LEVEL", raising=False)
+    assert settings.get("AGENTNODES_LOG_LEVEL") is None          # 原始读取
+    assert settings.get_str("AGENTNODES_LOG_LEVEL") == "INFO"    # 走默认
 
 
 def test_none_default_is_preserved(monkeypatch):
     """``default=None`` 的项必须让调用方拿到 None（不是空串）。"""
-    monkeypatch.delenv("AN_SESSIONS_DB", raising=False)
-    assert settings.get_str("AN_SESSIONS_DB") is None
+    monkeypatch.delenv("AGENTNODES_SESSION_DB", raising=False)
+    assert settings.get_str("AGENTNODES_SESSION_DB") is None
 
 
 # ── 诊断 ─────────────────────────────────────────────────────────────
 
 
 def test_snapshot_masks_secrets():
-    snap = settings.snapshot({"JWT_SECRET": "super-secret-value-1234",
-                              "AN_LOG_LEVEL": "DEBUG"})
-    assert snap["JWT_SECRET"]["value"] != "super-secret-value-1234"
-    assert "*" in snap["JWT_SECRET"]["value"]
-    assert snap["AN_LOG_LEVEL"]["value"] == "DEBUG"
-    assert snap["AN_LOG_LEVEL"]["source"] == "env"
+    snap = settings.snapshot({"AGENTNODES_JWT_SECRET": "super-secret-value-1234",
+                              "AGENTNODES_LOG_LEVEL": "DEBUG"})
+    assert snap["AGENTNODES_JWT_SECRET"]["value"] != "super-secret-value-1234"
+    assert "*" in snap["AGENTNODES_JWT_SECRET"]["value"]
+    assert snap["AGENTNODES_LOG_LEVEL"]["value"] == "DEBUG"
+    assert snap["AGENTNODES_LOG_LEVEL"]["source"] == "env"
 
 
 def test_snapshot_marks_defaults():
     snap = settings.snapshot({})
-    assert snap["AN_LOG_LEVEL"]["source"] == "default"
-    assert snap["AN_LOG_LEVEL"]["value"] == "INFO"
+    assert snap["AGENTNODES_LOG_LEVEL"]["source"] == "default"
+    assert snap["AGENTNODES_LOG_LEVEL"]["value"] == "INFO"
 
 
 def test_unknown_env_vars_detects_unregistered():
-    fake = {"AN_NEW_THING": "1", "AN_LOG_LEVEL": "INFO", "HOME": "/root"}
+    fake = {"AN_NEW_THING": "1", "AGENTNODES_LOG_LEVEL": "INFO", "HOME": "/root"}
     assert settings.unknown_env_vars(fake) == ["AN_NEW_THING"]
 
 
@@ -403,8 +420,8 @@ def test_external_vars_are_not_flagged():
 def test_known_names_sorted_and_complete():
     names = settings.known_names()
     assert list(names) == sorted(names)
-    assert "AN_DATA_DIR" in names
-    assert "JWT_SECRET" in names
+    assert "AGENTNODES_DATA_DIR" in names
+    assert "AGENTNODES_JWT_SECRET" in names
 
 
 # ── 演练：替换一个真实读取点后行为不变 ───────────────────────────────
@@ -422,14 +439,14 @@ def test_real_read_point_swap_is_equivalent(monkeypatch):
     from agentnodes.foundation.utils import bg_proc  # noqa: F401 — 确保可导入
 
     # 未设置：两者都得到 1000
-    monkeypatch.delenv("AN_CACHE_MAX_ENTRIES", raising=False)
-    old = int(os.environ.get("AN_CACHE_MAX_ENTRIES", "1000"))
-    assert settings.get_int("AN_CACHE_MAX_ENTRIES") == old == 1000
+    monkeypatch.delenv("AGENTNODES_CACHE_MAX_ENTRIES", raising=False)
+    old = int(os.environ.get("AGENTNODES_CACHE_MAX_ENTRIES", "1000"))
+    assert settings.get_int("AGENTNODES_CACHE_MAX_ENTRIES") == old == 1000
 
     # 设置合法值：两者一致
-    monkeypatch.setenv("AN_CACHE_MAX_ENTRIES", "250")
-    old = int(os.environ.get("AN_CACHE_MAX_ENTRIES", "1000"))
-    assert settings.get_int("AN_CACHE_MAX_ENTRIES") == old == 250
+    monkeypatch.setenv("AGENTNODES_CACHE_MAX_ENTRIES", "250")
+    old = int(os.environ.get("AGENTNODES_CACHE_MAX_ENTRIES", "1000"))
+    assert settings.get_int("AGENTNODES_CACHE_MAX_ENTRIES") == old == 250
 
 
 def test_bg_proc_read_point_is_declared_correctly():
@@ -439,12 +456,15 @@ def test_bg_proc_read_point_is_declared_correctly():
     ``_settings.get_int(X)``（或 get_str 后由下游 int()）。
     """
     src = (SRC / "foundation" / "utils" / "bg_proc.py").read_text(encoding="utf-8")
-    assert 'AN_BACKTEST_STALL_TIMEOUT' in src
+    assert 'AN_BACKTEST_STALL_TIMEOUT' in src, "调用点仍用旧名（批 B' 的零改动策略）"
     assert "_settings.get_" in src, "bg_proc 未走 settings 读取层"
-    setting = settings.ENV_TABLE["AN_BACKTEST_STALL_TIMEOUT"]
+    setting = settings.ENV_TABLE["AGENTNODES_BACKTEST_STALL_TIMEOUT"]
     # 源码是 float(os.environ.get(X, "300")) —— 允许小数，故 kind=float。
     assert setting.kind == "float"
     assert setting.default == 300.0
+    # 旧名必须能归一过来（否则调用点读不到）
+    assert settings.resolve_canonical("AN_BACKTEST_STALL_TIMEOUT") == \
+        "AGENTNODES_BACKTEST_STALL_TIMEOUT"
 
 
 def test_engine_switch_reads_are_consistent():
