@@ -123,3 +123,5 @@ tmp/
 # run_test_matrix.py transient argfiles (pytest @file)
 .pytest_args/
 
+# xdist per-worker halt state (conftest.py creates these)
+tests/.halt/

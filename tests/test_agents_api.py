@@ -18,10 +18,19 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
 
 @pytest.fixture
 def client():
+    """TestClient **带 lifespan**。
+
+    **必须用 `with`**：FastAPI 的 lifespan（startup warm-up）只在
+    上下文管理器里触发。旧实现 `return TestClient(app)` 不触发 startup，
+    于是 `test_startup_warmup_populates_cache` 实际是在依赖**别的测试**
+    先把 `_schema_cache` 填好——串行时碰巧成立，xdist 分到不同 worker
+    就暴露（缓存是进程级全局，worker 之间不共享）。
+    """
     from agentnodes.interfaces.api.app import create_app
 
     app = create_app(workspace_path=None)
-    return TestClient(app)
+    with TestClient(app) as c:
+        yield c
 
 
 class TestAgentSchemasAPI:

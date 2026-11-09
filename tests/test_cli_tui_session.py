@@ -270,13 +270,24 @@ async def test_tui_ctrl_d_quits_app():
 
 @pytest.mark.asyncio
 async def test_tui_ctrl_c_trips_halt(monkeypatch):
-    """``Ctrl+C`` (``action_halt``) trips the kill switch via the session."""
+    """``Ctrl+C`` (``action_halt``) trips the kill switch via the session.
+
+    **注意分支**：``action_halt`` 是"智能 Ctrl+C"——有选中文本时复制、
+    否则 trip halt。``run_test()`` 的虚拟终端可能残留选中态，导致测试
+    偶发走到"复制"分支而 is_halted() 为 False（全量顺序下出现过）。
+    这里显式确保无选中，让测试钉住 trip 这条路径。
+    """
     from agentnodes.interfaces.cli.tui.app import ResearchApp
 
     app = ResearchApp(model="m", version="0.4.2", skip_resume=True)
     async with app.run_test() as pilot:
         await pilot.pause()
         app.session = ChatSession(app.ctx, app=app)
+        # 清掉可能残留的选中，确保走 trip 分支
+        try:
+            app.screen.clear_selection()
+        except Exception:  # noqa: BLE001 — 老版本 Textual 无此 API
+            pass
         app.action_halt()
         await pilot.pause()
         assert is_halted() is True

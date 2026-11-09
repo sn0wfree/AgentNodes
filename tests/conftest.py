@@ -18,6 +18,21 @@ _home_sandbox.apply()
 
 import pytest  # noqa: E402
 
+# ── xdist worker 隔离：halt 状态文件（**必须在 import halt 之前**）────
+# **为什么需要**：halt 是**跨进程**设计（一个进程 trip，其它进程靠文件可见）。
+# 这对生产是对的，但 xdist 下多个 worker 共用同一个 `~/.agentnodes/halt.json`：
+#   - worker A 的 clear_halt() 会删掉 worker B 刚写完的文件
+#   - worker B 的 trip 可能被 worker A 的 clear 抹掉
+# 实测 `-n 8` 时出现 2 个 halt 测试偶发失败（串行必过）。
+# 修法：每个 worker 用**自己的** halt 文件（`PYTEST_XDIST_WORKER` 是 xdist
+# 注入的环境变量；串行运行该变量为空，行为不变）。
+if os.environ.get("PYTEST_XDIST_WORKER"):
+    _worker_halt = Path(__file__).parent / ".halt" / (
+        f"halt-{os.environ['PYTEST_XDIST_WORKER']}.json"
+    )
+    _worker_halt.parent.mkdir(parents=True, exist_ok=True)
+    os.environ["AGENTNODES_HALT_PATH"] = str(_worker_halt)
+
 from agentnodes.interfaces.cli.halt import clear_halt  # noqa: E402
 
 
