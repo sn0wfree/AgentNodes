@@ -6,13 +6,15 @@ returns GoalWorkflowConfig instances.
 Supported paths (in order of priority):
   1. Explicit path passed to load_goal_workflow()
   2. core/swarm/presets/goal_{name}.yaml
-  3. ~/.quantnodes-research/workflows/{name}.yaml
+  3. ~/.agentnodes/workflows/{name}.yaml
 """
 from __future__ import annotations
 
 import logging
 from pathlib import Path
 from typing import Any
+
+from agentnodes.foundation import paths as _paths
 
 from .workflow import (
     CompletionConfig,
@@ -27,7 +29,13 @@ logger = logging.getLogger(__name__)
 from agentnodes.apps import swarm_presets as _swarm_presets
 
 _PRESETS_DIR = _swarm_presets.PRESETS_DIR  # batch 8: presets moved to L2
-_USER_WORKFLOWS_DIR = Path.home() / ".quantnodes-research" / "workflows"
+
+#: 用户 workflow 目录（**单一事实源**）。
+#: **2026-11-09 路径统一**：``~/.quantnodes-research/workflows`` 已硬切换为
+#: ``~/.agentnodes/workflows``（随 ``AN_DATA_PROFILE``）。
+#: ``interfaces/cli/commands/slash_goal.py`` 原先复制了一份同样的路径拼法，
+#: 现在改为 import 本常量——避免改一处漏一处。
+_USER_WORKFLOWS_DIR = _paths.data_subdir("workflows", env_var="AN_WORKFLOWS_DIR")
 
 
 def build_autoresearch_workflow_config(

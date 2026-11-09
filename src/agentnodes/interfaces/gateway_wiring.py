@@ -83,12 +83,14 @@ def build_genome_store(workspace: Any | None = None) -> Any | None:
             try:
                 from pathlib import Path
 
+                from agentnodes.foundation import paths as _paths
                 from agentnodes.foundation.storage.genome_store import (
                     GenomeStore,
                 )
 
                 store = GenomeStore(
-                    Path(workspace) / ".quantnodes" / "genome"
+                    Path(workspace) / _paths.active_profile().home_dir_name
+                    / "genome"
                 )
             except Exception as exc:  # noqa: BLE001 —— 落盘不可用则纯内存
                 logger.warning("genome persistence unavailable: %s", exc)

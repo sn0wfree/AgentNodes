@@ -14,12 +14,21 @@ from __future__ import annotations
 import os
 from pathlib import Path
 
+from agentnodes.foundation.paths import active_profile, session_db_filename
+
 #: 统一会话库文件名（点号前缀 → 文件管理器里隐藏）。
 #: 放在工作区目录，EventStore / web_session / SessionStore 读写同一个文件。
-SESSION_DB_FILENAME = ".quantnodes_agentnodes_session.db"
+#:
+#: **2026-11-09 路径统一**：原名 ``.quantnodes_agentnodes_session.db`` 带旧品牌。
+#: 现在随 profile 变化——默认 ``.agentnodes_session.db``；
+#: ``AN_DATA_PROFILE=quantnodes`` 时回到历史名（供 quantnodes 集成）。
+#: 保留模块级常量是为了不打断既有 ``from ... import SESSION_DB_FILENAME``
+#: 的调用方；**新代码请用** :func:`session_db_filename` **或**
+#: :func:`resolve_session_db_path`（后者已按 profile 解析）。
+SESSION_DB_FILENAME = session_db_filename()
 
 #: 向后兼容别名（遗留代码可能引用 DEFAULT_DB_PATH）。
-DEFAULT_DB_PATH = Path.home() / ".agentnodes" / SESSION_DB_FILENAME
+DEFAULT_DB_PATH = Path.home() / active_profile().home_dir_name / SESSION_DB_FILENAME
 
 
 def resolve_session_db_path() -> Path:
@@ -29,13 +38,17 @@ def resolve_session_db_path() -> Path:
       1. ``AN_SESSIONS_DB`` env var (explicit absolute path override)
       2. ``AN_WORKSPACE_PATH`` env var / ``<filename>``
       3. current working dir / ``<filename>``
-      4. ``~/.quantnodes`` / ``<filename>`` (last-resort fallback)
+      4. ``~/.agentnodes`` 回退（profile 决定目录名与文件名）
 
     The parent directory is created if missing. Returns an absolute Path.
 
     This is the SINGLE source of truth for the session DB location —
     both ``EventStore.resolve_db_path`` and ``web_session._get_db_path``
     route through here so they can never diverge.
+
+    **2026-11-09**：文件名改为**每调用解析**（不再读模块级常量），
+    这样 ``AN_DATA_PROFILE`` 在进程启动后设置也能生效，
+    且不会在 import 期因 env 未设而固化默认值。
     """
     # 1. Explicit override
     env_explicit = os.environ.get("AN_SESSIONS_DB")
@@ -44,10 +57,12 @@ def resolve_session_db_path() -> Path:
         p.parent.mkdir(parents=True, exist_ok=True)
         return p
 
+    filename = session_db_filename()
+
     # 2/3. Workspace-relative (AN_WORKSPACE_PATH or cwd)
     workspace_env = os.environ.get("AN_WORKSPACE_PATH")
     workspace = Path(workspace_env) if workspace_env else Path.cwd()
-    p = (workspace / SESSION_DB_FILENAME).resolve()
+    p = (workspace / filename).resolve()
     p.parent.mkdir(parents=True, exist_ok=True)
     return p
 
@@ -57,7 +72,7 @@ def resolve_db_path(override: Path | None = None) -> Path:
 
     Priority: explicit ``override`` arg > ``resolve_session_db_path()``
     (which itself honors ``AN_SESSIONS_DB`` / ``AN_WORKSPACE_PATH`` /
-    cwd / ``~/.quantnodes`` fallback).
+    cwd / ``~/.agentnodes`` fallback).
     """
     if override is not None:
         return Path(override)

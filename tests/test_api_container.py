@@ -61,9 +61,13 @@ class TestBuildContainer(unittest.TestCase):
             container = None
             try:
                 container = build_container()
+                # 2026-11-09 路径统一：会话库文件名随 profile（默认
+                # .agentnodes_session.db）。断言引用真源，不硬编码旧名。
+                from agentnodes.foundation.paths import session_db_filename
+
                 self.assertEqual(
                     container.db_path,
-                    (Path(tmpdir) / ".quantnodes_agentnodes_session.db").resolve(),
+                    (Path(tmpdir) / session_db_filename()).resolve(),
                 )
             finally:
                 if container is not None:

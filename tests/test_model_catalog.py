@@ -2,7 +2,7 @@
 
 Layers:
   L1 Bundled  — package data in core/llm/data/providers/<id>/<model>.toml
-  L2 Cached   — disk cache ~/.quantnodes/model_catalog.json
+  L2 Cached   — disk cache ~/.agentnodes/model_catalog.json
   L3 Default  — _default_fallback.json for unknown providers/models
 """
 
@@ -21,6 +21,17 @@ from agentnodes.foundation.llm.model_catalog import (
     models_dev_id,
     reset_cache_for_tests,
 )
+
+
+def _cache_dir_name() -> str:
+    """缓存目录名（随 profile 变化，默认 ``.agentnodes``）。
+
+    2026-11-09 路径统一：测试不再硬编码 ``.quantnodes``——否则一次
+    profile 切换会静默让这些测试变成「断言旧路径」的死测试。
+    """
+    from agentnodes.foundation.paths import active_profile
+
+    return active_profile().home_dir_name
 
 
 @pytest.fixture(autouse=True)
@@ -131,9 +142,9 @@ def _mock_fetch(monkeypatch, toml_text: str = _CANNED_GPT4O_MINI_TOML) -> None:
 
 
 def test_disk_cache_written_after_refresh(tmp_path, monkeypatch):
-    """refresh_async writes ~/.quantnodes/model_catalog.json on success."""
+    """refresh_async writes ~/.agentnodes/model_catalog.json on success."""
     _mock_fetch(monkeypatch)
-    cache_path = Path(os.environ["HOME"]) / ".quantnodes" / "model_catalog.json"
+    cache_path = Path(os.environ["HOME"]) / _cache_dir_name() / "model_catalog.json"
 
     async def run():
         catalog = ModelCatalog()
@@ -202,7 +213,7 @@ def test_refresh_failure_falls_back_to_bundled(tmp_path, monkeypatch):
 def test_get_info_returns_cached_when_disk_cache_exists_but_no_bundled():
     """Unknown model with disk cache: returns cached (even if stale)."""
     # Write a fake cache entry
-    cache_path = Path(os.environ["HOME"]) / ".quantnodes" / "model_catalog.json"
+    cache_path = Path(os.environ["HOME"]) / _cache_dir_name() / "model_catalog.json"
     cache_path.parent.mkdir(parents=True, exist_ok=True)
     cache_path.write_text(json.dumps({
         "custom-llm/custom-model": {
@@ -291,7 +302,7 @@ def test_user_config_wins_over_disk_cache():
     from agentnodes.foundation.llm.config import LLMConfig
 
     # Write a fresh disk cache entry with a different context value
-    cache_path = Path(os.environ["HOME"]) / ".quantnodes" / "model_catalog.json"
+    cache_path = Path(os.environ["HOME"]) / _cache_dir_name() / "model_catalog.json"
     cache_path.parent.mkdir(parents=True, exist_ok=True)
     cache_path.write_text(json.dumps({
         "minimax-cn-coding-plan/minimax-M3": {

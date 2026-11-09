@@ -2,7 +2,7 @@
 
 Layers (in order):
   L1 Bundled  — package data in core/llm/data/providers/<id>/<model>.toml
-  L2 Cached   — ~/.quantnodes/model_catalog.json (TTL 7 days)
+  L2 Cached   — ~/.agentnodes/model_catalog.json (TTL 7 days)
                 refreshed from models.dev (jsdelivr → raw github)
   L3 Default  — _default_fallback.json for unknown providers/models
 
@@ -28,6 +28,8 @@ from pathlib import Path
 from typing import Any, Literal
 
 import httpx
+
+from agentnodes.foundation import paths as _paths
 
 if sys.version_info >= (3, 11):
     import tomllib  # type: ignore[import-not-found]
@@ -81,12 +83,19 @@ _BUNDLED_INDEX = _DATA_DIR / "_index.json"
 _BUNDLED_FALLBACK = _DATA_DIR / "_default_fallback.json"
 _BUNDLED_PROVIDERS_DIR = _DATA_DIR / "providers"
 
-_USER_CACHE_DIR_NAME = ".quantnodes"
-
-
 def _user_cache_dir() -> Path:
-    """Return the per-user cache directory, respecting $HOME."""
-    return Path(os.environ.get("HOME", str(Path.home()))) / _USER_CACHE_DIR_NAME
+    """Return the per-user cache directory, respecting $HOME.
+
+    **2026-11-09 路径统一**：目录名随 ``AN_DATA_PROFILE``（默认
+    ``.agentnodes``），并支持 ``AN_MODEL_CATALOG_DIR`` 直接覆盖。
+    缓存可再生，所以硬切换——旧的 ``~/.quantnodes/model_catalog.json``
+    不再读取，下次会重新拉取。
+    """
+    override = os.environ.get("AN_MODEL_CATALOG_DIR", "").strip()
+    if override:
+        return Path(override).expanduser()
+    home = Path(os.environ.get("HOME", str(Path.home())))
+    return home / _paths.active_profile().home_dir_name
 
 
 def _user_cache_file() -> Path:

@@ -15,12 +15,15 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
 class TestDbPath(unittest.TestCase):
 
     def test_default_db_path(self):
+        from agentnodes.foundation.paths import session_db_filename
         from agentnodes.interfaces.api.dependencies import _resolve_db_path
 
         old = os.environ.pop("AN_WORKSPACE_PATH", None)
         try:
             path = _resolve_db_path()
-            self.assertTrue(str(path).endswith(".quantnodes_agentnodes_session.db"))
+            # 2026-11-09 路径统一：文件名随 profile（默认 .agentnodes_session.db）。
+            # 断言引用真源而非硬编码旧名，profile 切换时测试自动跟随。
+            self.assertTrue(str(path).endswith(session_db_filename()))
         finally:
             if old is not None:
                 os.environ["AN_WORKSPACE_PATH"] = old

@@ -25,6 +25,7 @@ from rich.console import Console
 from rich.panel import Panel
 from rich.table import Table
 
+from agentnodes.foundation import paths as _paths
 from agentnodes.interfaces.cli.theme import get_console
 
 
@@ -58,25 +59,23 @@ def _store():
 def _user_workflows_dir() -> Path:
     """Return the user-scope workflows directory.
 
-    Defaults to ``~/.quantnodes-research/workflows/``. Exposed for
-    monkeypatching in tests.
+    Defaults to ``~/.agentnodes/workflows/``（随 ``AN_DATA_PROFILE``）。
+    Exposed for monkeypatching in tests.
+
+    **2026-11-09 路径统一**：原先这里独立拼了一遍路径，与
+    ``apps/goal/workflow_config._USER_WORKFLOWS_DIR`` 重复——改一处漏一处的
+    典型来源。现在委托给 ``foundation.paths``，与那边同源。
     """
-    raw = os.environ.get("STRATEGY_RESEARCH_WORKFLOWS_DIR")
-    if raw:
-        return Path(raw).expanduser()
-    return Path.home() / ".quantnodes-research" / "workflows"
+    return _paths.data_subdir("workflows", env_var="AN_WORKFLOWS_DIR")
 
 
 def _checkpoint_base_dir() -> Path:
     """Return the checkpoint base directory.
 
-    Defaults to ``~/.quantnodes-research/checkpoints/``. Exposed for
-    monkeypatching in tests.
+    Defaults to ``~/.agentnodes/checkpoints/``（随 ``AN_DATA_PROFILE``）。
+    Exposed for monkeypatching in tests.
     """
-    raw = os.environ.get("STRATEGY_RESEARCH_CHECKPOINT_DIR")
-    if raw:
-        return Path(raw).expanduser()
-    return Path.home() / ".quantnodes-research" / "checkpoints"
+    return _paths.data_subdir("checkpoints", env_var="AN_CHECKPOINTS_DIR")
 
 
 def cmd_status(*, console: Any = None, session_id: str = "cli") -> int:

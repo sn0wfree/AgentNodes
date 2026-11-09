@@ -25,13 +25,17 @@ from functools import wraps
 from pathlib import Path
 from typing import Any, Callable, Iterator, TypeVar
 
+from agentnodes.foundation import paths as _paths
+
 F = TypeVar("F", bound=Callable)
 
-DEFAULT_DATA_DIR = Path.home() / ".agentnodes"
+DEFAULT_DATA_DIR = _paths.data_dir()
 
 #: 重命名前的数据目录（2026-11-05 批次 9 之前叫 ``~/.quantnodes``）。
 #: 首次访问时由 :func:`ensure_data_dir` 做一次性迁移。
-LEGACY_DATA_DIR = Path.home() / ".quantnodes"
+#: **2026-11-09 路径统一**：改为从 ``foundation.paths.LEGACY_DIRS`` 取第一个
+#: （``~/.quantnodes``），与其它 legacy 目录共享单一事实源。
+LEGACY_DATA_DIR = _paths.LEGACY_DIRS[0]
 
 #: 迁移标记文件——存在即表示已迁移过（避免重复拷贝/覆盖用户新数据）。
 _MIGRATED_MARKER = ".migrated-from-quantnodes"

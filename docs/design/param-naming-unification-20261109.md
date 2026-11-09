@@ -2,6 +2,13 @@
 
 > 用户要求：「完整修改参数名称」——不做别名兼容层，直接把命名收敛成一套。
 > 本文档给出**目标命名规范、全量映射表、执行批次、兼容窗口与回滚方案**。
+>
+> **三条已拍板的边界（2026-11-09）**：
+> 1. **77 个 CLI 参数中，57 个业务参数不动**——只有约 20 个平台配置加 `--an-` 前缀。
+> 2. **构造参数（`AgentLoop` 的 38 个等）不进 settings**——它们不是配置，是运行时对象。
+>    已由 `LoopSpec` 管理，settings 只管**进程级配置**（env / 文件 / 平台 CLI）。
+> 3. 默认数据目录 `.agentnodes`，但保留 `AGENTNODES_PROFILE=quantnodes`
+>    兼容模式（供未来 quantnodes 集成）。
 
 ---
 
@@ -63,15 +70,37 @@
 | `GOAL` | 目标 | `AGENTNODES_GOAL_DB` |
 | `ORCH` | 编排 | `AGENTNODES_ORCH_MAX_CONTINUES` |
 
-### 1.2 CLI 参数：统一 `--an-` 前缀 + kebab-case
+### 1.2 CLI 参数：只给平台配置加 `--an-` 前缀
 
-现状 77 个参数全是裸的（`--workspace`、`--db`、`--goal-db`）。改为：
+现状 77 个参数全是裸的。**只改其中约 20 个平台配置**：
 
 ```
-agentnodes chat --an-workspace ./ws --an-engine skeleton ...
+agentnodes chat --an-workspace ./ws --an-engine skeleton --strategy momentum
+                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^  ^^^^^^^^^^^^^^^^
+                平台配置（加 --an-）                        业务参数（不动）
 ```
 
-**为什么加前缀**：CLI 子命令会与业务参数混在一起（`--strategy`、`--symbol` 是量化业务，不是平台配置）。平台级配置加 `--an-` 前缀，业务参数保持裸名——**这一条边界比"统一加前缀"更重要**。
+**平台配置（加前缀）候选清单**：
+`--workspace`、`--db`、`--sessions-db`、`--goal-db`、`--hypotheses-path`、
+`--static-dir`、`--host`、`--port`、`--reload`、`--transport`、
+`--llm-config`、`--llm-profile`、`--llm-model`、`--llm-base-url`、
+`--llm-temperature`、`--llm-top-p`、`--llm-max-tokens`、`--llm-timeout`、
+`--llm-max-retries`、`--llm-seed`、`--llm-stream` / `--llm-no-stream`、
+`--data-profile`
+
+**业务参数（**不动**，57 个）**：
+`--strategy`、`--symbol`、`--timeframe`、`--metric`、`--method`、`--category`、
+`--objective`、`--criterion`、`--criterion-id`、`--evidence`、`--notes`、
+`--protocol`、`--result`、`--source`、`--summary`、`--text`、`--type`、
+`--recap`、`--confidence`、`--caveat`、`--dataset`、`--only`、`--limit`、
+`--json`、`--out`、`--dry-run`、`--list`、`--show`、`--use`、`--add-key`、
+`--session-id`、`--task`、`--prompt`、`--model`（业务选择）、`--cron`、
+`--interval`、`--hours`、`--recent`、`--tick`、`--max-rounds`、
+`--max-iterations`、`--monitor-interval`、`--benchmark` 等
+
+> **这条边界比「统一加前缀」更重要**：`--strategy` / `--symbol` 是量化业务
+> 语义，它们不该带平台品牌前缀；而 `--workspace` / `--port` 是平台配置，
+> 需要与业务参数区分开。混在一起正是当前 77 个参数难以区分的根因。
 
 ### 1.3 配置文件：`llm.json` → `config.yaml`（带 schema 版本）
 
@@ -226,9 +255,25 @@ CLI 参数 > 环境变量 > 配置文件 > 内置默认
 ## §5 明确不做
 
 - **不改外部生态约定的 env**（`OPENAI_API_KEY` / `NO_COLOR` / `HOME` / `LANGCHAIN_*`）
-- **不改业务参数**（`--strategy` / `--symbol` / `--timeframe` 等，它们不是平台配置）
-- **不把 `AgentLoop` 的 38 个构造参数并进 settings**（运行时对象，已由 `LoopSpec` 管）
+- **不改 57 个业务 CLI 参数**（`--strategy` / `--symbol` / `--timeframe` / `--metric` …）
+  —— 已确认；它们不是平台配置，加品牌前缀反而增加噪音
+- **不把构造参数并进 settings** —— 已确认。`AgentLoop.__init__` 的 38 个参数
+  是运行时对象（registry / memory / hooks / strategy / injectors），不是配置值；
+  它们由 `LoopSpec` 分层管理（见 `batch12`）。settings 的边界是
+  **进程级、可序列化、可从 env/文件/CLI 来的配置**
 - **不引入第三方配置库**（pydantic-settings 等）——需求简单，手写表 + 类型转换足够
+
+### §5.1 边界判定标准（写给后来者）
+
+一个参数该不该进 settings，用这三条判断：
+
+| 判据 | 进 settings | 不进 |
+|---|---|---|
+| 是否可从 env / 文件 / CLI 设置？ | 是 | 否（如 `registry` 实例）|
+| 是否可序列化为 JSON/YAML？ | 是 | 否（如 `asyncio.Queue`、`threading.Event`）|
+| 进程生命周期内是否基本不变？ | 是 | 否（如 `_approval_response`、`_budget_tokens`）|
+
+三条全「是」→ 进 settings；任一「否」→ 留在构造参数 / `LoopSpec` / 实例状态。
 
 ---
 
@@ -249,7 +294,24 @@ CLI 参数 > 环境变量 > 配置文件 > 内置默认
 |---|---|---|---|
 | A | settings.py + 1 门禁 | 别名/快照 15 个 | 0.5 天 |
 | B | 71 个读取点 + 28 条别名 | 28 个 | 0.5 天 |
-| C | ~20 个 CLI 参数 | help 快照 + 别名 | 0.5 天 |
+| C | ~20 个 CLI 参数（**57 个业务参数不动**） | help 快照 + 别名 | 0.3 天 |
 | D | config.yaml + migrate 子命令 | 转换 + 优先级 | 0.5 天 |
 | E | 删兼容 | — | 0.2 天 |
-| **合计** | | | **2.2 天** |
+| **合计** | | | **2.0 天** |
+
+---
+
+## §8 与既有工作的关系
+
+本方案**不是孤立的新工作**，它接在三件已完成的事之后：
+
+| 已完成 | 关系 |
+|---|---|
+| `foundation/paths.py`（数据目录统一） | settings 的**第一个 domain**（`AGENTNODES_DATA_DIR` / `PROFILE` 等）；批 A 直接复用它的 `active_profile` |
+| `LoopSpec`（批次 12 S2） | **反向边界**：`LoopSpec` 管构造参数，settings 管进程配置，两者不重叠（§5.1 的判据）|
+| `check_path_literals`（新增品牌目录规则）| settings 门禁（`check_env_access`）的**同型实现**，可直接参照 |
+
+**顺序建议**：先完成 V1（已 done）→ V2/V3（真实 LLM 验证）→ 再做本方案批 A。
+理由：settings 会改 71 个读取点，在 V2 还没验证完引擎可靠性时动它，
+会让"真实任务失败"的归因变复杂（是引擎问题还是配置接错了？）。
+若希望并行，可只做批 A（建读取层、不改名），它零行为变化。

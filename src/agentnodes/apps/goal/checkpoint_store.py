@@ -4,7 +4,7 @@ Saves workflow state (layer results, agent statuses, progress) to disk
 so execution can resume after a crash or restart.
 
 Storage layout:
-    ~/.quantnodes-research/checkpoints/<session_id>/<goal_id>/
+    ~/.agentnodes/checkpoints/<session_id>/<goal_id>/
         state.json       — GoalWorkflowState snapshot
         layer_results.json — accumulated agent outputs
         evidence.json    — evidence collected so far
@@ -18,10 +18,17 @@ import time
 from pathlib import Path
 from typing import Any
 
+from agentnodes.foundation import paths as _paths
+
 logger = logging.getLogger(__name__)
 
-_DEFAULT_CHECKPOINT_DIR = Path.home() / ".quantnodes-research" / "checkpoints"
+#: **2026-11-09 路径统一**：默认落 ``~/.agentnodes/checkpoints``（随
+#: ``AN_DATA_PROFILE`` 变化）。旧的 ``~/.quantnodes-research`` 已硬切换，
+#: 不再读取——需要旧数据请设 ``AN_DATA_PROFILE=quantnodes``。
+_DEFAULT_CHECKPOINT_DIR = _paths.data_subdir("checkpoints")
+#: 目录覆盖（历史名保留；新增的 ``AN_CHECKPOINTS_DIR`` 优先级更高）。
 _CHECKPOINT_DIR_ENV = "STRATEGY_RESEARCH_CHECKPOINT_BASE_DIR"
+_CHECKPOINT_DIR_ENV_NEW = "AN_CHECKPOINTS_DIR"
 _VERSION = "1.0"
 
 
@@ -30,17 +37,22 @@ class CheckpointStore:
 
     Args:
         base_dir: Root directory for checkpoints.
-                  Default: ``$STRATEGY_RESEARCH_CHECKPOINT_BASE_DIR`` if set,
-                  else ``~/.quantnodes-research/checkpoints/``.
+                  Default: ``$AN_CHECKPOINTS_DIR`` >
+                  ``$STRATEGY_RESEARCH_CHECKPOINT_BASE_DIR`` >
+                  ``~/.agentnodes/checkpoints/``（随 ``AN_DATA_PROFILE``）。
     """
 
     def __init__(self, base_dir: Path | None = None) -> None:
         import os
-        env_dir = os.environ.get(_CHECKPOINT_DIR_ENV)
+        # 优先级：显式 arg > 新 env > 历史 env > profile 默认。
+        new_env = os.environ.get(_CHECKPOINT_DIR_ENV_NEW, "").strip()
+        old_env = os.environ.get(_CHECKPOINT_DIR_ENV, "").strip()
         if base_dir is not None:
             self._base_dir = base_dir
-        elif env_dir:
-            self._base_dir = Path(env_dir)
+        elif new_env:
+            self._base_dir = Path(new_env)
+        elif old_env:
+            self._base_dir = Path(old_env)
         else:
             self._base_dir = _DEFAULT_CHECKPOINT_DIR
 

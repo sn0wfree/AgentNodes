@@ -130,7 +130,11 @@ def _platform_data_dir(workspace: Any) -> Any | None:
     ):
         return None
     try:
-        data_dir = workspace / ".quantnodes" / "platform"
+        from agentnodes.foundation import paths as _paths
+
+        data_dir = (
+            workspace / _paths.active_profile().home_dir_name / "platform"
+        )
         data_dir.mkdir(parents=True, exist_ok=True)
         return data_dir
     except Exception:  # noqa: BLE001 —— 数据面不可用不阻断 chat

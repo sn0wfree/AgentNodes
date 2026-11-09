@@ -43,7 +43,13 @@ def get_db_path(request: Request) -> Path:
         return container.db_path
     workspace = getattr(request.app.state, "workspace_path", None)
     if workspace is not None:
-        return Path(workspace) / ".quantnodes_agentnodes_session.db"
+        # **2026-11-09**：文件名不再硬编码（原先在此重复拼了一遍
+        # ``.quantnodes_agentnodes_session.db``，与 session_paths 的常量分叉）。
+        from agentnodes.foundation.storage.session_paths import (
+            session_db_filename,
+        )
+
+        return Path(workspace) / session_db_filename()
     return _resolve_db_path()
 
 

@@ -46,8 +46,28 @@ PATTERN_PKG_SEG = re.compile(r'"agentnodes"\s*/\s*"(\w+)"')
 VALID_LAYERS = {"apps", "kernel", "foundation", "interfaces", "templates"}
 EXEMPT_MARK = "path-literal: ok"
 
+# 形态 C：品牌数据目录硬编码（2026-11-09 路径统一）
+#   只抓**旧品牌** ``.quantnodes`` / ``.quantnodes-research`` / 旧文件名。
+#   ``.agentnodes`` 是当前默认，散落在各处是正常的（不是本次要禁的）；
+#   要禁的是"旧品牌又长回来"。
+# 唯一合法落点：foundation/paths.py 的 PROFILES / LEGACY_DIRS。
+PATTERN_BRAND_DIR = re.compile(
+    r'["\']\.quantnodes(-research)?["\']'
+    r'|["\']\.quantnodes_[a-z_]*\.db["\']'
+)
+#: 品牌目录的单一事实源 + 迁移脚本（它们操作的就是旧路径）。
+EXEMPT_FILES_C = (
+    "foundation/paths.py",
+    "migrate_to_unified_db.py",
+    "migrate_anonymous_sessions.py",
+)
+
 # 形态 A 的合法豁免：一次性历史迁移脚本自身（它们操作的就是旧路径）
 EXEMPT_FILES_A = ("migrate_layers.py",)
+
+
+def _in_exempt(rel: str, exempt: tuple[str, ...]) -> bool:
+    return any(x in rel for x in exempt)
 
 
 def scan(allow: set[str]) -> list[str]:
@@ -74,6 +94,15 @@ def scan(allow: set[str]) -> list[str]:
                         x in rel for x in EXEMPT_FILES_A
                     ):
                         hit = "core 段拼接（旧结构已删除）"
+                    elif (
+                        PATTERN_BRAND_DIR.search(line)
+                        and rel.startswith("src/")
+                        and not _in_exempt(rel, EXEMPT_FILES_C)
+                    ):
+                        # **只约束 src/**：tests 里写旧名是合理的（它们就是在
+                        # 断言旧名/构造 legacy 场景）；scripts 的迁移脚本同理。
+                        hit = ("旧品牌数据目录硬编码（用 foundation.paths，"
+                               "见 data-dir-unification-20261109）")
                     else:
                         m = PATTERN_PKG_SEG.search(line)
                         if m and m.group(1) not in VALID_LAYERS and m.group(1) not in allow:
