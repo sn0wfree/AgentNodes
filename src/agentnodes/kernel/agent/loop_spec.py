@@ -101,6 +101,11 @@ class ContextSpec:
     strategy_name: str | None = None
     enable_goal_injection: bool = True
     enable_memory_injection: bool = True
+    #: **批次 V3-a**：tier-1 tool_set 裁剪签名（空 = 不裁剪）。
+    #: ``registry.get_definitions_for("")`` 与 ``get_definitions()`` 完全等价
+    #: （``tools.py:881-882``），所以默认路径零变化。
+    #: 这是路径 A 相对路径 B（make_react_node）唯一缺的能力，补齐后能力集一致。
+    task_signature: str = ""
     #: **批次 13 附录 §4**：hypothesis 子系统归档中，capability 未注册，
     #: 该开关永不生效——默认 False 以免谎报。恢复注册后翻回 True。
     enable_hypothesis_auto_create: bool = False
@@ -251,6 +256,8 @@ def _build_legacy_map() -> dict[str, tuple[str, str]]:
         "strategy_name": ("context", "strategy_name"),
         "enable_goal_injection": ("context", "enable_goal_injection"),
         "enable_memory_injection": ("context", "enable_memory_injection"),
+        # 批次 V3-a：tier-1 tool_set 裁剪签名
+        "task_signature": ("context", "task_signature"),
         "enable_hypothesis_auto_create": (
             "context", "enable_hypothesis_auto_create"
         ),

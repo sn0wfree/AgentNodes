@@ -313,6 +313,11 @@ class AgentLoop(
         read_roots: tuple[str, ...] | None = None,
         enable_goal_injection: bool = True,
         enable_memory_injection: bool = True,
+        # ── 批次 V3-a：tier-1 tool_set 裁剪签名 ──────────────────
+        # 空 = 不裁剪（``get_definitions_for("")`` 与 ``get_definitions()``
+        # 完全等价），所以默认路径零变化。非空时按签名裁掉不在该
+        # harness 里的工具——路径 B（make_react_node）已有此能力。
+        task_signature: str = "",
         # **批次 13 附录 §4**：默认改为 False——``hypothesis.auto_creator``
         # capability 随 hypothesis 子系统归档在 testcase/golden/，未注册；
         # 旧默认 True 让这个开关**永不生效**（resolve 抛异常被吞）。
@@ -389,6 +394,7 @@ class AgentLoop(
             "read_roots": read_roots,
             "enable_goal_injection": enable_goal_injection,
             "enable_memory_injection": enable_memory_injection,
+            "task_signature": task_signature,
             "enable_hypothesis_auto_create": enable_hypothesis_auto_create,
             "hooks": hooks,
             "session_manager": session_manager,
@@ -432,6 +438,7 @@ class AgentLoop(
         self.read_roots = _folded.scope.read_roots
         self.enable_goal_injection = _folded.context.enable_goal_injection
         self.enable_memory_injection = _folded.context.enable_memory_injection
+        self._task_signature = _folded.context.task_signature
         self.enable_hypothesis_auto_create = (
             _folded.context.enable_hypothesis_auto_create
         )
@@ -774,9 +781,16 @@ class AgentLoop(
 
         With ``force_final_text`` the final iteration passes
         ``tools=None`` so the model must answer in text.
+
+        **批次 V3-a**：按 ``task_signature`` 做 tier-1 tool_set 裁剪
+        （``get_definitions_for`` 在 signature 为空时与 ``get_definitions()``
+        **完全等价**——``tools.py:881-882``），所以默认路径零变化。
+        这是路径 A 相对路径 B 唯一缺的能力，补齐后两条路径的能力集一致。
         """
         if self._force_final_text and self._is_final_iteration(iteration):
             return None
+        if self._task_signature:
+            return self.registry.get_definitions_for(self._task_signature) or None
         return self.registry.get_definitions() or None
 
     async def _with_iteration_timeout(
