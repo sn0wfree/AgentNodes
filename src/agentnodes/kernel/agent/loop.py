@@ -162,6 +162,39 @@ def _make_strategy_ctx(
     )
 
 
+def _merge_spec(explicit: Any, folded: Any) -> Any:
+    """合并显式传入的 LoopSpec 与旧 kwargs 折叠结果（批次 12 S2）。
+
+    **显式 spec 优先**：旧 kwargs 只在「非默认值」时覆盖——这样
+    ``AgentLoop(config, registry, spec=my_spec)`` 不会被旧参数的
+    默认值（10 iterations / stream_mode=True 等）意外冲掉。
+    """
+    from dataclasses import fields as _fields
+
+    from .loop_spec import LoopSpec as _LoopSpec
+
+    merged = _LoopSpec()
+    defaults = _LoopSpec.fold_legacy_kwargs({})
+
+    for group_name in ("budget", "runtime", "capability", "context",
+                       "permission", "scope"):
+        exp_group = getattr(explicit, group_name)
+        fold_group = getattr(folded, group_name)
+        default_group = getattr(defaults, group_name)
+        cls = type(exp_group)
+        values: dict[str, Any] = {}
+        for f in _fields(exp_group):
+            exp_val = getattr(exp_group, f.name)
+            fold_val = getattr(fold_group, f.name)
+            def_val = getattr(default_group, f.name)
+            # 旧 kwargs 非默认 → 覆盖；否则用显式 spec 的值
+            values[f.name] = fold_val if fold_val != def_val else exp_val
+        object.__setattr__(merged, group_name, cls(**values))
+
+    merged.on_event = folded.on_event if folded.on_event is not None else explicit.on_event
+    return merged
+
+
 def _inject_agent_loop(strategy: Any, agent_loop: Any) -> None:
     """L7 — bind ``agent_loop`` to every step on ``strategy`` that opts in.
 
@@ -316,43 +349,104 @@ class AgentLoop(
         # Final iteration passes tools=None so the model must answer
         # in text instead of issuing more tool calls.
         force_final_text: bool = False,
+        # ── 批次 12 S2: LoopSpec 聚合入口 ──────────────────────────
+        # **不删任何旧参数**（阶段 3 才删）——200+ 调用点零改动的实现是
+        # 本参数缺省时走旧签名，之后 ``spec`` 的显式字段覆盖旧参数。
+        spec: Any | None = None,
     ):
+        # 批次 12 S2：把旧式参数折叠进 LoopSpec（单一事实源
+        # ``loop_spec._LEGACY_MAP``）。显式传 spec 时以其为准，
+        # 旧参数作为**覆盖层**（便于渐进迁移：先传 spec，再逐项删旧参）。
+        from .loop_spec import LoopSpec as _LoopSpec
+
+        _folded = _LoopSpec.fold_legacy_kwargs({
+            # Scope（**workspace 曾漏传 → 工具拿不到 ctx.workspace，
+            # 全部报 "missing workspace context"；批次 12 S2 自测抓出**）
+            "workspace": workspace,
+            # Capability（memory 同理曾漏传）
+            "memory": memory,
+            "max_iterations": max_iterations,
+            "no_progress_window": no_progress_window,
+            "threshold_tokens": threshold_tokens,
+            "heartbeat_interval": heartbeat_interval,
+            "trace_dir": trace_dir,
+            "auto_git_commit": auto_git_commit,
+            "system_prompt": system_prompt,
+            "allowed_tools": allowed_tools,
+            "readonly": readonly,
+            "session_id": session_id,
+            "strategy_name": strategy_name,
+            "strategy_dir": strategy_dir,
+            "runs_dir": runs_dir,
+            "results_tsv": results_tsv,
+            "write_roots": write_roots,
+            "read_roots": read_roots,
+            "enable_goal_injection": enable_goal_injection,
+            "enable_memory_injection": enable_memory_injection,
+            "enable_hypothesis_auto_create": enable_hypothesis_auto_create,
+            "hooks": hooks,
+            "session_manager": session_manager,
+            "on_event": on_event,
+            "stream_mode": stream_mode,
+            "compact_config": compact_config,
+            "event_bus": event_bus,
+            "circuit_breaker": circuit_breaker,
+            "retry_policy": retry_policy,
+            "enable_claim_validation": enable_claim_validation,
+            "strict_claim_validation": strict_claim_validation,
+            "strategy": strategy,
+            "injectors": injectors,
+            "approval_timeout": approval_timeout,
+            "approval_on_timeout": approval_on_timeout,
+            "role": role,
+            "iteration_timeout_s": iteration_timeout_s,
+            "wrap_up_nudge": wrap_up_nudge,
+            "force_final_text": force_final_text,
+        })
+        if spec is not None:
+            # 显式 spec 优先；旧参数作为覆盖层（非默认值才覆盖）
+            _folded = _merge_spec(spec, _folded)
+        self._spec = _folded
+
+        # ── 以下赋值全部改从 spec 读（旧参数已在上面折叠）──────────
         self.config = config
-        self.memory = memory
-        self.workspace = workspace
-        self.max_iterations = max_iterations
-        self.no_progress_window = no_progress_window
-        self.threshold_tokens = threshold_tokens
-        self.heartbeat_interval = heartbeat_interval
-        self.auto_git_commit = auto_git_commit
-        self.session_id = session_id
-        self.strategy_name = strategy_name
-        self.strategy_dir = strategy_dir
-        self.runs_dir = runs_dir
-        self.results_tsv = results_tsv
-        self.write_roots = write_roots
-        self.read_roots = read_roots
-        self.enable_goal_injection = enable_goal_injection
-        self.enable_memory_injection = enable_memory_injection
-        self.enable_hypothesis_auto_create = enable_hypothesis_auto_create
-        self._hooks = hooks
-        self._session_manager = session_manager
-        self._on_event = on_event
-        self._stream_mode = stream_mode
-        self._event_bus = event_bus
-        self._circuit_breaker = circuit_breaker
-        self._retry_policy = retry_policy or RetryPolicy()
+        self.memory = _folded.capability.memory
+        self.workspace = _folded.scope.workspace
+        self.max_iterations = _folded.budget.max_iterations
+        self.no_progress_window = _folded.budget.no_progress_window
+        self.threshold_tokens = _folded.budget.threshold_tokens
+        self.heartbeat_interval = _folded.runtime.heartbeat_interval
+        self.auto_git_commit = _folded.runtime.auto_git_commit
+        self.session_id = _folded.scope.session_id
+        self.strategy_name = _folded.context.strategy_name
+        self.strategy_dir = _folded.scope.strategy_dir
+        self.runs_dir = _folded.scope.runs_dir
+        self.results_tsv = _folded.scope.results_tsv
+        self.write_roots = _folded.scope.write_roots
+        self.read_roots = _folded.scope.read_roots
+        self.enable_goal_injection = _folded.context.enable_goal_injection
+        self.enable_memory_injection = _folded.context.enable_memory_injection
+        self.enable_hypothesis_auto_create = (
+            _folded.context.enable_hypothesis_auto_create
+        )
+        self._hooks = _folded.capability.hooks
+        self._session_manager = _folded.capability.session_manager
+        self._on_event = _folded.on_event
+        self._stream_mode = _folded.runtime.stream_mode
+        self._event_bus = _folded.capability.event_bus
+        self._circuit_breaker = _folded.capability.circuit_breaker
+        self._retry_policy = _folded.capability.retry_policy or RetryPolicy()
         # P1-5: build / resolve the LoopStrategy from the spec.
         # v0.1 stores it on self; ``_run_loop_core`` does not yet
         # consult it (that's L7's job).
         from agentnodes.kernel.agent.strategy.profile_resolver import resolve_loop_strategy
-        self._strategy = resolve_loop_strategy(strategy)
+        self._strategy = resolve_loop_strategy(_folded.context.strategy)
         # L7 v0.2: when the caller passed an explicit strategy, its
         # config drives the loop (max_iterations etc.); otherwise we
         # fall back to the constructor kwargs. This keeps existing
         # ``AgentLoop(max_iterations=2)`` tests working while letting
         # an explicit profile/strategy override the cap.
-        self._strategy_explicit = strategy is not None
+        self._strategy_explicit = _folded.context.strategy is not None
         if self._strategy_explicit:
             cfg = self._strategy.config
             self.no_progress_window = getattr(cfg, "no_progress_window", self.no_progress_window)
@@ -361,13 +455,17 @@ class AgentLoop(
         # in (currently DefaultPreRunStep + DefaultLLMCallStep) can
         # call AgentLoop methods. Custom steps ignore the binding.
         _inject_agent_loop(self._strategy, self)
-        self._enable_claim_validation = enable_claim_validation
-        self._strict_claim_validation = strict_claim_validation
-        self.cc = compact_config or config.compact_config or CompactConfig()
+        self._enable_claim_validation = _folded.context.enable_claim_validation
+        self._strict_claim_validation = _folded.context.strict_claim_validation
+        self.cc = (
+            _folded.capability.compact_config
+            or config.compact_config or CompactConfig()
+        )
         self._previous_summary: str | None = None
         # DSH-inspired: pluggable context injectors (sorted by order).
-        if injectors is not None:
-            self._injectors = sorted(injectors, key=lambda i: getattr(i, "order", 0))
+        _injectors = _folded.capability.injectors
+        if _injectors is not None:
+            self._injectors = sorted(_injectors, key=lambda i: getattr(i, "order", 0))
         else:
             from .context_injector import build_default_injectors
             self._injectors = build_default_injectors()
@@ -386,14 +484,17 @@ class AgentLoop(
         self._inbox: asyncio.Queue = asyncio.Queue()
 
         # Tool filtering: allowed_tools > readonly > all
-        if allowed_tools is not None:
+        # （批次 12 S2：读 spec 而非旧局部变量）
+        _allowed_tools = _folded.context.allowed_tools
+        _readonly = _folded.runtime.readonly
+        if _allowed_tools is not None:
             filtered = ToolRegistry()
-            for name in allowed_tools:
+            for name in _allowed_tools:
                 tool = registry.get(name)
                 if tool is not None:
                     filtered.register(tool)
             self.registry = filtered
-        elif readonly:
+        elif _readonly:
             filtered = ToolRegistry()
             for name, tool in registry._tools.items():
                 if getattr(tool, "is_readonly", True):
@@ -404,19 +505,19 @@ class AgentLoop(
 
         self.context_builder = ContextBuilder(
             config=config, registry=self.registry,
-            memory=memory, workspace=workspace,
-            system_prompt=system_prompt,
+            memory=_folded.capability.memory, workspace=_folded.scope.workspace,
+            system_prompt=_folded.context.system_prompt,
         )
         self.client = OpenAICompatClient(config)
         # Track tool_calls per iteration for no_progress detection
         self._recent_hashes: list[str] = []
         # ── Approval gate state (no-progress interruption) ───────
-        self._approval_timeout = approval_timeout
-        self._approval_on_timeout = approval_on_timeout
-        self._role = role
-        self._iteration_timeout_s = iteration_timeout_s
-        self._wrap_up_nudge = wrap_up_nudge
-        self._force_final_text = force_final_text
+        self._approval_timeout = _folded.budget.approval_timeout
+        self._approval_on_timeout = _folded.budget.approval_on_timeout
+        self._role = _folded.context.role
+        self._iteration_timeout_s = _folded.budget.iteration_timeout_s
+        self._wrap_up_nudge = _folded.budget.wrap_up_nudge
+        self._force_final_text = _folded.budget.force_final_text
         self._approval_event = threading.Event()
         self._approval_response: str | None = None
         self._approval_thread: threading.Thread | None = None
@@ -424,8 +525,8 @@ class AgentLoop(
         self._subagent_count: list[int] = [0]  # mutable ref for SubAgentTool
         # Trace writer (optional)
         self._trace_writer: TraceWriter | None = None
-        if trace_dir is not None:
-            self._trace_writer = TraceWriter(trace_dir)
+        if _folded.runtime.trace_dir is not None:
+            self._trace_writer = TraceWriter(_folded.runtime.trace_dir)
 
     # ── Hook sync adapter ─────────────────────────
 
