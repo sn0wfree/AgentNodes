@@ -64,6 +64,19 @@
 
 **风险**：低。只改测试，不动生产代码。
 
+#### V1 已执行结果（2026-11-09）
+
+| 动作 | 结果 |
+|---|---|
+| `test_capability_smoke.py` 改走 `_execute_tool_call_core` + 参数化 | **19 passed**（原 12 → 19，含 async/sync 双份） |
+| 新增 `test_react_node_capability.py`（路径 B） | **7 passed** |
+| 变异验证：注释 `enforce_permission_sync` | **精确失败 1 个**：`test_hard_deny_blocks_sudo_at_loop_level[sync]`，其余 18 通过 |
+
+变异结果证明三件事：
+1. 新断言**确实**覆盖了 sync 权限闸（去掉就红）
+2. 失败**精准定位**到 sync 分支（async 那份不红，说明不是全局误报）
+3. 路径 B 的 H3 断言独立成立（`cat ~/.ssh/id_rsa` 在 react 节点上也被拦）
+
 ---
 
 ### 阶段 V2 · 真实 LLM 端到端（1 天）
