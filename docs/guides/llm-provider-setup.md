@@ -53,8 +53,8 @@ GEMINI_API_KEY=xxxx
 
 ```bash
 sr llm --use <name>          # 改 llm.json 的 active_profile（registry 内 provider 可用）
-LLM_PROFILE=<name> sr ...    # 环境变量覆盖
-sr llm --use <name>          # 之后可用 --llm-profile 单次覆盖（等价于 LLM_PROFILE）
+AGENTNODES_LLM_PROFILE=<name> sr ...    # 环境变量覆盖
+sr llm --use <name>          # 之后可用 --llm-profile 单次覆盖（等价于 AGENTNODES_LLM_PROFILE）
 ```
 
 其它命令：`sr llm --list`（列 provider + 密钥状态）、`sr llm --show`

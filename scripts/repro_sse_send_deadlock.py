@@ -12,7 +12,7 @@ env = os.environ.copy()
 env.update({
     "AGENTNODES_TEST_CHAT": "1",
     "PYTHONUNBUFFERED": "1",
-    "AN_WORKSPACE_PATH": os.getcwd(),
+    "AGENTNODES_WORKSPACE": os.getcwd(),
 })
 p = subprocess.Popen(
     [sys.executable, "-u", "-m", "uvicorn",

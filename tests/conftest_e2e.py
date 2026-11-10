@@ -77,7 +77,7 @@ def built_frontend() -> Path:
         # shell=True: on Windows `npm` is npm.cmd — bare-list Popen raises
         # WinError 2 (file not found) because CreateProcess doesn't do
         # PATH+PATHEXT resolution for .cmd files.
-        print(f"\n[conftest] Building frontend (VITE_E2E=1) → {AGENTNODES_STATIC_DIR}...")
+        print(f"\n[conftest] Building frontend (VITE_E2E=1) → {STATIC_DIR}...")
         subprocess.run(
             ["npm", "run", "build"],
             cwd=str(REPO_ROOT / "webui" / "frontend"),
@@ -86,8 +86,8 @@ def built_frontend() -> Path:
             env={**os.environ, "VITE_E2E": "1"},
             shell=True,
         )
-    assert STATIC_DIR.exists(), f"Frontend build missing: {AGENTNODES_STATIC_DIR}"
-    assert (STATIC_DIR / "index.html").exists(), f"index.html missing in {AGENTNODES_STATIC_DIR}"
+    assert STATIC_DIR.exists(), f"Frontend build missing: {STATIC_DIR}"
+    assert (STATIC_DIR / "index.html").exists(), f"index.html missing in {STATIC_DIR}"
     assert _has_e2e_hooks(), "Frontend build lacks E2E hooks (VITE_E2E=1)"
     return STATIC_DIR
 

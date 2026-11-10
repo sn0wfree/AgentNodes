@@ -149,29 +149,33 @@ echo "" | agentnodes      → argparse help（无 TTY 不进 TUI）
 | 变量 | 默认 | 说明 |
 |---|---|---|
 | `AN_AGENT_WALLCLOCK_TIMEOUT` | — | 单次 agent 墙钟超时（秒） |
-| `AN_ALLOW_SHELL_TOOLS` | 关闭 | `1` 开启 `run_command`（bash/python）；plan mode 始终禁用 |
-| `AN_ALLOW_REGISTRATION` | 关闭 | `1` 开启 API 注册端点 |
-| `STRATEGY_RESEARCH_ALLOW_DEV_SECRET` | 关闭 | `1` 允许非生产环境用开发密钥 |
+| `AGENTNODES_ALLOW_SHELL_TOOLS` | 关闭 | `1` 开启 `run_command`（bash/python）；plan mode 始终禁用 |
+| `AGENTNODES_API_ALLOW_REGISTRATION` | 关闭 | `1` 开启 API 注册端点 |
+| `AGENTNODES_API_ALLOW_DEV_SECRET` | 关闭 | `1` 允许非生产环境用开发密钥 |
 | `AGENTNODES_GOAL_DB_PATH` | `~/.agentnodes/goals.db` | Ticket/Assignment/调度共用库 |
 
 ### 5.3 日志
 
 | 变量 | 默认 | 说明 |
 |---|---|---|
-| `AN_LOG_LEVEL` | `INFO` | 日志级别 |
-| `AN_LOG_JSON` | 关闭 | `1` 输出 JSON 格式 |
-| `AN_LOG_FILE` | 关闭 | 文件日志路径；不设则不落文件 |
+| `AGENTNODES_LOG_LEVEL` | `INFO` | 日志级别 |
+| `AGENTNODES_LOG_JSON` | 关闭 | `1` 输出 JSON 格式 |
+| `AGENTNODES_LOG_FILE` | 关闭 | 文件日志路径；不设则不落文件 |
 
-> CLI 是**严格开关语义**：只有 `AN_LOG_JSON` 或 `AN_LOG_FILE` 设置了才装配 stderr handler，
+> CLI 是**严格开关语义**：只有 `AGENTNODES_LOG_JSON` 或 `AGENTNODES_LOG_FILE` 设置了才装配 stderr handler，
 > 默认不干扰 TUI/界面输出。
 
 ### 5.4 Web / API
 
 | 变量 | 默认 | 说明 |
 |---|---|---|
-| `JWT_SECRET` | 自动生成并持久化 | JWT 签名密钥；非本地部署必须显式设置 |
-| `CORS_ORIGINS` | `*` | 允许来源，逗号分隔 |
-| `STATIC_DIR` | `webui/static/` | 静态文件目录 |
+| `AGENTNODES_JWT_SECRET` | 自动生成并持久化 | JWT 签名密钥；非本地部署必须显式设置 |
+| `AGENTNODES_CORS_ORIGINS` | `*` | 允许来源，逗号分隔 |
+| `AGENTNODES_STATIC_DIR` | `webui/static/` | 静态文件目录 |
+
+> **批 E-2（2026-11-10）**：旧名（`AN_*` / `JWT_SECRET` / `CORS_ORIGINS` /
+> `STATIC_DIR` 等 49 个）**已不再被读取**。若环境里还留着旧名，
+> 跑 `agentnodes config audit-legacy` 会列出来（并区分"已失效"与"仍生效"）。
 
 ---
 

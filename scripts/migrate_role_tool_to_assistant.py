@@ -41,9 +41,12 @@ logger = logging.getLogger(__name__)
 
 
 def _get_default_db_path() -> Path:
-    import os
-    db_dir = Path(os.environ.get("AN_WORKSPACE_PATH", str(Path.home() / ".quantnodes")))
-    return db_dir / "quantnodes_agentnodes_user.db"
+    """Mirror ``user_db.get_user_db()`` 的默认路径。
+
+    **批 E-2**：原先读 ``os.environ["AN_WORKSPACE_PATH"]``（旧名，已不再被
+    读取）+ 硬编码 ``~/.quantnodes`` 回退——旧名失效后会静默落到旧品牌目录。
+    """
+    return Path.home() / ".agentnodes" / "quantnodes_agentnodes_user.db"
 
 
 def _ensure_message_parts_table(conn: sqlite3.Connection) -> None:

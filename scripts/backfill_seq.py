@@ -42,10 +42,13 @@ from pathlib import Path
 
 
 def _get_default_db_path() -> Path:
-    """Mirror the webui's DB path resolution."""
-    import os
-    db_dir = Path(os.environ.get("AN_WORKSPACE_PATH", str(Path.home() / ".quantnodes")))
-    return db_dir / "quantnodes_agentnodes_user.db"
+    """Mirror ``user_db.get_user_db()`` 的默认路径（user DB，不是 session DB）。
+
+    **批 E-2**：原先读 ``os.environ["AN_WORKSPACE_PATH"]``（旧名，已不再被
+    读取）+ 硬编码 ``~/.quantnodes`` 回退——旧名失效后会静默落到旧品牌目录。
+    现在照抄生产入口的默认（``Path.home()/".agentnodes"``）。
+    """
+    return Path.home() / ".agentnodes" / "quantnodes_agentnodes_user.db"
 
 
 def _ensure_seq_column(conn: sqlite3.Connection) -> None:
@@ -232,7 +235,7 @@ def main() -> int:
         "--db",
         type=Path,
         default=None,
-        help="Path to user DB (default: $AN_WORKSPACE_PATH/quantnodes_agentnodes_user.db)",
+        help="Path to user DB (default: ~/.agentnodes/quantnodes_agentnodes_user.db)",
     )
     parser.add_argument(
         "--apply",

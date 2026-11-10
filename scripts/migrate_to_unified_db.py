@@ -12,7 +12,7 @@ Source DBs (in merge order — earlier sources win on key conflict):
   2. ~/.quantnodes/quantnodes_agentnodes_user.db (older home-dir DB)
 
 Target:
-  resolve_session_db_path()  (AN_SESSIONS_DB > AN_WORKSPACE_PATH > cwd)
+  resolve_session_db_path()  (AGENTNODES_SESSION_DB > AGENTNODES_WORKSPACE > cwd)
 
 Tables migrated (when present in source):
   sessions, messages, message_parts, event_log, attempts
@@ -144,12 +144,14 @@ def main() -> int:
     parser.add_argument(
         "--workspace",
         default=None,
-        help="Workspace dir (sets AN_WORKSPACE_PATH). Defaults to cwd.",
+        help="Workspace dir (sets AGENTNODES_WORKSPACE). Defaults to cwd.",
     )
     args = parser.parse_args()
 
     if args.workspace:
-        os.environ["AN_WORKSPACE_PATH"] = args.workspace
+        # **批 E-2**：写规范名——旧名 AN_WORKSPACE_PATH 已不再被读取，
+        # 写旧名会让 --workspace 静默失效、迁移跑在错误的目录上。
+        os.environ["AGENTNODES_WORKSPACE"] = args.workspace
 
     target = resolve_session_db_path()
     print(f"Target unified DB: {target}\n")
@@ -159,7 +161,7 @@ def main() -> int:
 
     # Sources (merge order: workspace first since it's the most current)
     workspace_dir = (
-        Path(os.environ.get("AN_WORKSPACE_PATH", str(Path.cwd())))
+        Path(os.environ.get("AGENTNODES_WORKSPACE", str(Path.cwd())))
     )
     sources = [
         ("workspace_old", workspace_dir / "quantnodes_agentnodes_user.db"),

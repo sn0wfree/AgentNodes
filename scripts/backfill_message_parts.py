@@ -48,12 +48,24 @@ from pathlib import Path
 
 logger = logging.getLogger(__name__)
 
+#: user DB 文件名（与 ``interfaces/api/user_db.get_user_db`` 一致）。
+#: 注意：user DB ≠ session DB，别混淆。
+USER_DB_FILENAME = "quantnodes_agentnodes_user.db"
+
 
 def _get_default_db_path() -> Path:
-    """Mirror the webui's DB path resolution."""
-    import os
-    db_dir = Path(os.environ.get("AN_WORKSPACE_PATH", str(Path.home() / ".quantnodes")))
-    return db_dir / "quantnodes_agentnodes_user.db"
+    """精确复刻 ``user_db.get_user_db()`` 的默认路径（user DB，不是 session DB）。
+
+    **批 E-2**：原先读 ``os.environ["AN_WORKSPACE_PATH"]``（旧名，已不再被
+    读取）+ 硬编码 ``~/.quantnodes`` 回退——旧名失效后会静默落到旧品牌目录，
+    脚本就对着"一个不存在的库"跑（或更糟：旧目录里残留的库）。
+
+    注意这里是 **user DB**（``quantnodes_agentnodes_user.db``），与 session
+    DB 是两个文件。生产入口 ``get_user_db(None)`` 的默认目录是
+    ``Path.home()/".agentnodes"``（硬编码，不随 profile/data_dir 变），
+    所以这里也照抄同一行——**不改进**、不改语义。
+    """
+    return Path.home() / ".agentnodes" / USER_DB_FILENAME
 
 
 def _ensure_message_parts_table(conn: sqlite3.Connection) -> None:
@@ -220,7 +232,7 @@ def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__.split("\n\n")[0])
     parser.add_argument(
         "--db", type=Path, default=None,
-        help="Path to user DB (default: $AN_WORKSPACE_PATH/quantnodes_agentnodes_user.db)",
+        help="Path to user DB (default: ~/.agentnodes/quantnodes_agentnodes_user.db)",
     )
     parser.add_argument(
         "--apply", action="store_true",
