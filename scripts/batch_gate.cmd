@@ -13,10 +13,11 @@ REM   scripts\batch_gate.cmd --graph          add graphify extract + audit
 REM   scripts\batch_gate.cmd --update-anchor  rewrite the collect anchor
 REM
 REM Two interpreters on purpose - environment reality, not tidiness:
-REM   PYTEST_PI (Python 3.13): has pytest, LACKS playwright. The 5 e2e
-REM       modules therefore always fail collection. That is the tracked
-REM       baseline (errors_expected), so this gate judges the NUMBERS and
-REM       deliberately ignores pytest's exit code.
+REM   PYTEST_PI (Python 3.13): has pytest, LACKS playwright. Since
+REM       2026-11-10 the 5 e2e modules carry pytest.importorskip guards,
+REM       so a missing playwright degrades them to module-level SKIPS and
+REM       collect errors stay at 0 (errors_expected). This gate still
+REM       judges the NUMBERS and deliberately ignores pytest's exit code.
 REM   PROBE_PI (Python 3.12): runs the scripts/arch/* gates (parser deps
 REM       live in this env).
 REM   Both are absolute paths: the two envs once disagreed on the same test.
@@ -139,7 +140,9 @@ REM hypothesis' native DLL (_native). Without these flags pytest dies at
 REM plugin load and prints no summary at all (seen 2026-11-09). Disabling
 REM the plugin does not change collection counts.
 "%PYTEST_PI%" -m pytest tests --collect-only -q -p no:hypothesispytest -p no:hypothesis > "%LOG%" 2>&1
-REM Nonzero exit is EXPECTED here (5 collection errors). Never gate on it.
+REM Nonzero exit here would mean a real collection break (playwright-missing
+REM e2e modules self-skip since 2026-11-10, errors_expected=0). The gate
+REM still judges the parsed numbers, never pytest's exit code.
 set "LINE="
 for /f "delims=" %%L in ('findstr /r /c:"^[0-9][0-9]* tests collected" "%LOG%"') do set "LINE=%%L"
 if not defined LINE (

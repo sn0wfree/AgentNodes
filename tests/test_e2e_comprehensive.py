@@ -16,6 +16,9 @@ import asyncio
 import time
 
 import pytest
+# E2E 是 opt-in 车道：playwright 未安装时整个模块降级为 skip（而非
+# 收集错误——那会让 batch_gate 的 collect 锚点多出 5 个假错误）。
+pytest.importorskip("playwright")
 from playwright.async_api import async_playwright
 
 BASE_URL = "http://127.0.0.1:8783"

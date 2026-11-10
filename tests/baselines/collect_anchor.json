@@ -1,1 +1,1 @@
-{"min_collected": 6157, "errors_expected": 5, "note": "errors 全部为 playwright 缺失（test_e2e_chat / test_e2e_comprehensive / test_e2e_persist / test_webui_catalog / test_webui_visual）。方向性锚：collected 只许涨不许跌。"}
+{"min_collected": 7140, "errors_expected": 0, "note": "errors_expected=0：5 个 e2e 模块已加 playwright importorskip 守卫（未安装时模块级 skip 而非收集错误，2026-11-10）。方向性锚：collected 只许涨不许跌。"}
