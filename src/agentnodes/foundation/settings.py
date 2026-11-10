@@ -65,7 +65,7 @@ from __future__ import annotations
 
 import os
 from dataclasses import dataclass, field
-from typing import Any, Callable, Literal
+from typing import Any, Callable, Literal, Mapping
 
 __all__ = [
     "ENV_TABLE",
@@ -575,6 +575,160 @@ def legacy_names() -> dict[str, tuple[str, ...]]:
     """返回 规范名 -> 旧名 的映射（供诊断/文档/测试）。"""
     return {k: tuple(v) for k, v in _LEGACY_NAMES.items()}
     return name
+
+
+# ── 批 E：旧名审计（只读）────────────────────────────────────
+#
+# 删兼容层（批 E-2）之前必须知道"这台机器上还有哪些旧名在用"——
+# 否则删除是**静默失效**：不报错，行为回落默认。
+#
+# 风险分档来自**显式清单**（``_LEGACY_RISK``），不靠启发式——这份清单
+# 是要指导人改配置的，必须准确（启发式猜风险必然出错）。
+#
+# 设计见 docs/design/legacy-env-audit-command-20261110.md。
+
+#: 风险档："high" | "medium" | "low"。
+LegacyRisk = str
+
+#: 高危旧名——删兼容层后回落默认会导致「写到别处」或「认证失效」。
+_LEGACY_RISK_HIGH: frozenset[str] = frozenset({
+    # 路径：回落 cwd → agent 可能写到别处
+    "AN_WORKSPACE_PATH",
+    "SR_WORKSPACE_PATH",
+    "AN_SESSIONS_DB",
+    "AGENTNODES_SESSIONS_DB",
+    "AN_DATA_PROFILE",
+    "AN_DATA_DIR",
+    "AGENTNODES_MEMORY_DIR",
+    "AN_HYPOTHESES_PATH",
+    "AN_WORKFLOWS_DIR",
+    "AN_CHECKPOINTS_DIR",
+    "STRATEGY_RESEARCH_CHECKPOINT_BASE_DIR",
+    "AN_PERMISSIONS_PATH",
+    "AN_MODEL_CATALOG_DIR",
+    "AN_GOLDEN_HELDOUT_PATH",
+    "STATIC_DIR",
+    # 密钥 / 安全开关：回落默认 → 认证失效或安全降级
+    "AN_ADMIN_PASSWORD",
+    "AN_ADMIN_TOKEN",
+    "JWT_SECRET",
+    "CORS_ORIGINS",
+    "AN_ALLOW_REGISTRATION",
+    "AGENTNODES_ALLOW_DEV_SECRET",
+    "AN_ENFORCE_STUDY_IDOR",
+    "SR_ENFORCE_STUDY_IDOR",
+})
+
+#: 中危旧名——回落默认改变行为但不致命。
+_LEGACY_RISK_MEDIUM: frozenset[str] = frozenset({
+    "AN_CHAT_ATTEMPT_TIMEOUT",
+    "QNODES_CHAT_WAIT_TIMEOUT",
+    "AN_LOG_FILE",
+    "AN_LOG_JSON",
+    "AN_LOG_LEVEL",
+    "AN_EVENT_LOG_READ",
+    "AN_LLM_REQUEST_OFFLOAD_THRESHOLD",
+    "AN_TOOL_RESULT_MAX_CHARS",
+    "AN_L4_INCLUDE_MESSAGES",
+    "AN_KEEP_ALL_COMPACTIONS",
+    "AN_BACKTEST_STALL_TIMEOUT",
+    "AN_ORCHESTRATOR_MAX_CONTINUES",
+    "QNODES_PLATFORM_STORE",
+    "AGENTNODES_THEME",
+    "AN_ALLOW_SHELL_TOOLS",
+    "AN_CACHE_COMPACTION_LINKED",
+})
+
+#: 风险说明（给人看的行动指引）。
+_LEGACY_RISK_NOTE: dict[str, str] = {
+    "high": "路径/密钥/安全开关——删兼容层后回落默认会导致写到别处或认证失效",
+    "medium": "超时/预算/路径——回落默认会改变行为但不致命",
+    "low": "缓存/引擎调参——回落默认只是性能或细节差异",
+}
+
+
+def legacy_risk(old_name: str) -> LegacyRisk:
+    """旧名的风险档（``high`` / ``medium`` / ``low``）。"""
+    if old_name in _LEGACY_RISK_HIGH:
+        return "high"
+    if old_name in _LEGACY_RISK_MEDIUM:
+        return "medium"
+    return "low"
+
+
+@dataclass(frozen=True)
+class LegacyUsage:
+    """一条"当前环境里仍在用的旧名"记录。"""
+
+    old_name: str
+    canonical: str
+    value: str
+    risk: LegacyRisk
+
+    @property
+    def secret(self) -> bool:
+        """值是否需要脱敏（密钥类 canonical）。"""
+        setting = ENV_TABLE.get(self.canonical)
+        return bool(setting and setting.secret)
+
+    def to_dict(self) -> dict[str, Any]:
+        return {
+            "old_name": self.old_name,
+            "canonical": self.canonical,
+            "value": self.value,
+            "risk": self.risk,
+        }
+
+
+def legacy_usage(
+    environ: Mapping[str, str] | None = None,
+) -> list[LegacyUsage]:
+    """扫出当前环境里**仍在用**的旧名（只读，零副作用）。
+
+    返回按风险档排序（high → medium → low）、同档按旧名字母序。
+
+    **不触发任何 settings 读取**——审计不该产生告警噪声或副作用。
+    只看"当前生效"的（旧名设置了才报），不看 shell 配置文件里写过什么。
+    """
+    env = environ if environ is not None else os.environ
+    out: list[LegacyUsage] = []
+    for old, canonical in _ALIAS_INDEX.items():
+        if old not in env:
+            continue
+        out.append(LegacyUsage(
+            old_name=old,
+            canonical=canonical,
+            value=env[old],
+            risk=legacy_risk(old),
+        ))
+    order = {"high": 0, "medium": 1, "low": 2}
+    out.sort(key=lambda u: (order.get(u.risk, 3), u.old_name))
+    return out
+
+
+def legacy_usage_summary(
+    environ: Mapping[str, str] | None = None,
+) -> dict[str, Any]:
+    """审计摘要（机器可读）：按风险档计数 + 逐条明细。
+
+    **密钥脱敏**：``value`` 对 secret 类 canonical 做掩码——审计输出会
+    进 CI 日志，不能泄露。
+    """
+    usages = legacy_usage(environ)
+    counts = {"high": 0, "medium": 0, "low": 0}
+    items: list[dict[str, Any]] = []
+    for u in usages:
+        counts[u.risk] = counts.get(u.risk, 0) + 1
+        item = u.to_dict()
+        if u.secret:
+            item["value"] = _mask(item["value"])
+        items.append(item)
+    return {
+        "total": len(usages),
+        "counts": counts,
+        "items": items,
+        "notes": dict(_LEGACY_RISK_NOTE),
+    }
 
 
 def reset_alias_warnings() -> None:

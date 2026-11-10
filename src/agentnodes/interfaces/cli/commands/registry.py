@@ -186,6 +186,7 @@ _BUILTIN_LOADED: set[str] = set()
 
 #: 内置命令模块（import 即通过 ``@cli_command`` 完成注册）。
 _BUILTIN_MODULES = (
+    "agentnodes.interfaces.cli.commands.config_cmd",
     "agentnodes.interfaces.cli.commands.core_commands",
     "agentnodes.interfaces.cli.commands.llm",
     # W4 批次 2：RSI 驱动入口。注册依赖 import 副作用，必须在这里登记，

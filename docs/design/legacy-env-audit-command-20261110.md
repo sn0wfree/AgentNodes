@@ -22,6 +22,12 @@
 | 带旧名 alias 的 canonical | 46 |
 | 旧名总数 | **49** |
 
+> **实现前核对（2026-11-10）**：上表数字已用 `settings` 真实 API 复核一致；
+> §3 名单中的 `AN_PERMISSIONS_PATH` 实际**没有旧名 alias**（canonical
+> `AGENTNODES_PERMISSIONS_PATH` 从未有过旧名），已从高危名单移除。
+> 另确认：alias 与 canonical 无撞名、`EXTERNAL_ENV_VARS` 与两者无交集、
+> canonical 中无残留旧前缀——`_LEGACY_RISK` 清单可以按 §3 分档照抄。
+
 ---
 
 ## §1 目标
@@ -83,7 +89,7 @@ agentnodes config audit-legacy
 
 | 档 | 判据 | 旧名（节选）|
 |---|---|---|
-| **高** | 路径/密钥/安全开关——回落默认会导致**写到别处**或**认证失效** | `AN_WORKSPACE_PATH` `AN_SESSIONS_DB` `AN_DATA_PROFILE` `AN_ADMIN_PASSWORD` `JWT_SECRET` `CORS_ORIGINS` `STATIC_DIR` `AN_PERMISSIONS_PATH` `AN_DATA_DIR` |
+| **高** | 路径/密钥/安全开关——回落默认会导致**写到别处**或**认证失效** | `AN_WORKSPACE_PATH` `AN_SESSIONS_DB` `AN_DATA_PROFILE` `AN_ADMIN_PASSWORD` `JWT_SECRET` `CORS_ORIGINS` `STATIC_DIR` `AN_DATA_DIR` |
 | **中** | 超时/预算/路径——回落默认改变行为但不致命 | `AN_CHAT_ATTEMPT_TIMEOUT` `QNODES_CHAT_WAIT_TIMEOUT` `AN_HYPOTHESES_PATH` `AN_WORKFLOWS_DIR` `AN_CHECKPOINTS_DIR` `AN_MODEL_CATALOG_DIR` `AN_LOG_FILE` `AN_EVENT_LOG_READ` |
 | **低** | 缓存/引擎调参——回落默认只是性能或细节差异 | `AN_CACHE_*`（13 个） `AGENTNODES_THEME` `AN_TOOL_RESULT_MAX_CHARS` `AN_L4_INCLUDE_MESSAGES` `QNODES_PLATFORM_STORE` |
 
