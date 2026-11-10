@@ -78,8 +78,11 @@ def test_live_three_subagents_parallel_answers(live_client, calc_registry):
     for expected, answer in pairs:
         assert expected in answer, f"期望含 {expected}: {answer!r}"
     # 三个分支各自真实调用过工具
-    tool_starts = [d for k, d in events if k == "tool.started"]
-    assert len(tool_starts) >= 3
+    # **V3-c**:词表 = AgentLoop 的 tool_call(原 react 的 tool.started)。
+    tool_calls = [d for k, d in events if k == "tool_call"]
+    assert len(tool_calls) >= 3
+    # 分支身份随事件回流(branch_sink 注入 run_id)
+    assert all(d.get("run_id", "").startswith("live-fanout:r0:") for d in tool_calls)
 
 
 @requires_live

@@ -20,6 +20,9 @@ class FakeResp:
         self.usage = usage or {"total_tokens": 4, "prompt_tokens": 2,
                                "completion_tokens": 2}
         self.tool_calls = tool_calls or []
+        # **V3-c**：AgentLoop 的 tool_calls 分支读它（缺了 llm_call step
+        # 以异常收场，工具根本不会执行）。
+        self.finish_reason = "stop"
 
     def has_tool_calls(self) -> bool:
         return bool(self.tool_calls)
@@ -42,11 +45,33 @@ class FakeClient:
 
 
 class FakeRegistry:
+    """**V3-c**：AgentLoop 契约（get/all_tools/check_guards）+ 真工具实例——
+    react 时代的 ``execute(name, params)`` 鸭子接口不再被走分支引擎消费。"""
+
+    class _NoopTool:
+        name = "noop"
+        description = "noop"
+        parameters = {}
+        brief = "- noop: no-op tool"
+
+        def execute(self, **kwargs) -> str:
+            return '{"ok": true}'
+
     def __init__(self) -> None:
         self.executed: list[tuple[str, dict]] = []
+        self._tools = {"noop": self._NoopTool()}
+
+    def get(self, name: str):
+        return self._tools.get(name)
 
     def get_definitions(self) -> list[dict]:
         return [{"type": "function", "function": {"name": "noop", "parameters": {}}}]
+
+    def all_tools(self) -> list:
+        return list(self._tools.values())
+
+    def check_guards(self, name: str, arguments: dict):
+        return None
 
     def execute(self, name: str, params: dict) -> str:
         self.executed.append((name, params))
@@ -107,10 +132,13 @@ def test_each_branch_is_an_independent_subagent():
     engine = make_preset(client=client)
     out = engine.run({})
 
-    # 每支一次 LLM 调用（无工具），互不共享消息历史
+    # 每支一次 LLM 调用（无工具），互不共享消息历史。
+    # **V3-c**：分支走 AgentLoop——消息 = [system(默认任务模板), user]。
+    # 收集顺序按完成时间（并发线程），断言内容集合而非顺序。
     assert len(client.calls) == 3
-    for call, payload in zip(client.calls, ["q1", "q2", "q3"]):
-        assert len(call) == 1 and call[0]["content"] == payload
+    contents = sorted(call[-1]["content"] for call in client.calls)
+    assert contents == ["q1", "q2", "q3"]
+    assert all(call[0]["role"] == "system" for call in client.calls)
     assert out["fanout_ok"] is True
 
 
@@ -247,14 +275,17 @@ def test_no_steer_means_no_event_and_messages_unchanged():
 
 
 def test_branch_tool_events_forwarded_from_parent_thread():
-    """分支线程的 tool.started/completed 经队列回流到父线程 sink。"""
+    """分支线程的 tool_call/tool_result 经队列回流到父线程 sink。
+
+    **V3-c**：词表从 react 的 ``tool.started/completed`` 换成 AgentLoop 的
+    ``tool_call/tool_result``（产品词表，与 web chat 同一口径）。"""
     import threading
 
     sink_threads: list[int] = []
     events: list[tuple[str, dict]] = []
 
     def sink(kind: str, data: dict) -> None:
-        if kind.startswith("tool."):
+        if kind in ("tool_call", "tool_result"):
             sink_threads.append(threading.get_ident())
         events.append((kind, data))
 
@@ -265,8 +296,8 @@ def test_branch_tool_events_forwarded_from_parent_thread():
     )
     out = engine.run({})
 
-    tool_events = [d for k, d in events if k.startswith("tool.")]
-    assert len(tool_events) == 2  # started + completed
+    tool_events = [d for k, d in events if k in ("tool_call", "tool_result")]
+    assert len(tool_events) == 2  # tool_call + tool_result
     assert out["fanout_ok"] is True
     # 回流发生在父线程（fanout 完成后的 join 里）
     main_thread = threading.main_thread().ident
@@ -289,6 +320,7 @@ class _ToolState:
 
 
 def test_branch_events_carry_run_id():
+    """**V3-c**：AgentLoop 事件本身不带 run_id——branch_sink 注入分支身份。"""
     events: list[tuple[str, dict]] = []
     client = MultiCallClient(lambda n, msgs: _ToolState(n)(msgs))
     engine = build_fanout_preset(
@@ -296,15 +328,15 @@ def test_branch_events_carry_run_id():
     )
     engine.run({"run_id": "t:r0"})
 
-    tool_started = [d for k, d in events if k == "tool.started"]
-    assert tool_started and tool_started[0]["run_id"] == "t:r0:1"
+    tool_calls = [d for k, d in events if k == "tool_call"]
+    assert tool_calls and tool_calls[0]["run_id"] == "t:r0:1"
 
 
 def test_branch_event_count_reported_in_join():
     client = MultiCallClient(lambda n, msgs: _ToolState(n)(msgs))
     engine = build_fanout_preset(client, FakeRegistry(), split=lambda s: ["p"])
     out = engine.run({})
-    assert out["fanout_branch_events"] >= 2  # tool.started + tool.completed
+    assert out["fanout_branch_events"] >= 2  # tool_call + tool_result
 
 
 # ── 自定义合并与图可组合性 ───────────────────────────────

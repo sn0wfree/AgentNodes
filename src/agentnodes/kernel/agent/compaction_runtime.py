@@ -2,7 +2,7 @@
 
 背景：压缩逻辑原本长在 ``LoopCompactionMixin`` 上（依赖 ``self.cc`` /
 ``self.config`` / ``self.client`` / ``self._persist_compaction_event``）。
-react 节点在 ``core/runtimes/``（平台层），不能 import ``core/agent/``
+消费方（AgentLoop / 图节点适配器）在平台层，不能反向 import 域实现
 （域）——架构门禁会拒绝反向依赖。
 
 所以把核心逻辑抽成**纯函数 + 工厂**：AgentLoop 的 mixin 方法与 react 的

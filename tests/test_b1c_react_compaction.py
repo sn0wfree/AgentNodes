@@ -1,24 +1,36 @@
-"""B1-c: mid-loop compaction in the react node.
+"""B1-c: mid-loop compaction。
 
-AgentLoop compacts once per iteration before the LLM call
-(strategy/steps/compaction.py). The react node must do the same, through
-an injected compactor (platform layer must not import the domain).
+**V3-c**:react 节点已删除(双执行路径收敛到 AgentLoop)。原「react 节点
+压缩时机/失败隔离」测试对象消失,等价语义改写为 AgentLoop 版(压缩走
+``DefaultCompactionStep`` → ``_maybe_compact``,同一 ``make_compactor``
+实现);``make_compactor`` 引擎级与 controller 接线级测试保留原样。
 """
 from __future__ import annotations
 
-import json
 from types import SimpleNamespace
 
-from agentnodes.kernel.agent.tools import BaseTool, ToolRegistry
+
+# ── AgentLoop:压缩时机(原 react 级语义的等价改写)──────────
 
 
-class _NoopTool(BaseTool):
-    name = "noop"
-    description = "noop"
-    parameters = {}
+def _recording_loop(client):
+    from agentnodes.foundation.llm import LLMConfig
+    from agentnodes.kernel.agent.loop import AgentLoop
+    from agentnodes.kernel.agent.tools import ToolRegistry
 
-    def execute(self, **kwargs):
-        return json.dumps({"status": "ok"})
+    reg = ToolRegistry()
+    loop = AgentLoop(
+        config=LLMConfig(api_key=""),
+        registry=reg,
+        enable_goal_injection=False,
+        enable_memory_injection=False,
+        injectors=[],
+        stream_mode=False,
+        on_event=lambda kind, data: None,
+        max_iterations=2,
+    )
+    loop.client = client
+    return loop
 
 
 class _FakeResponse:
@@ -26,6 +38,7 @@ class _FakeResponse:
         self.content = content
         self.tool_calls = tool_calls or []
         self.usage = None
+        self.finish_reason = "stop"
 
     def has_tool_calls(self) -> bool:
         return bool(self.tool_calls)
@@ -38,149 +51,60 @@ class _RecordingClient:
         self.calls: list[list[dict]] = []
 
     def chat(self, messages, tools=None):
-        # Deep-ish snapshot of what the LLM actually saw.
         self.calls.append([dict(m) for m in messages])
         if len(self.calls) == 1:
             tc = SimpleNamespace(id="c1", name="noop", arguments={})
             return _FakeResponse(tool_calls=[tc])
         return _FakeResponse(content="done")
 
-
-def _registry() -> ToolRegistry:
-    reg = ToolRegistry()
-    reg.register(_NoopTool())
-    return reg
-
-
-# ── react 节点：压缩时机与失败隔离 ────────────────────────
+    def parse_response(self, raw):
+        raise AssertionError("non-stream path must not hit parse_response")
 
 
 def test_compactor_runs_before_llm_call():
     """压缩必须发生在 LLM 调用之前——本次调用才放得下。"""
-    from agentnodes.kernel.runtimes.nodes.react import (
-        ReactConfig,
-        make_react_node,
-    )
-
     client = _RecordingClient()
     order: list[str] = []
 
-    def compactor(messages):
+    def spy_compact(messages):
         order.append("compact")
-        return messages, ["llm_summarize(10->2)"]
+        return messages, []
 
     real_chat = client.chat
 
-    def spy_chat(messages, tools=None):
+    def spy_chat(messages, tools=None, **kw):
         order.append("llm")
-        return real_chat(messages, tools)
+        return real_chat(messages, tools=tools)
 
     client.chat = spy_chat  # type: ignore[method-assign]
 
-    node = make_react_node(
-        client, _registry(),
-        config=ReactConfig(max_iterations=2, compactor=compactor),
-    )
-    node({"messages": [{"role": "user", "content": "go"}]})
+    loop = _recording_loop(client)
+    loop._maybe_compact = spy_compact  # type: ignore[method-assign]
+    loop.run("go")
 
-    # 第一次迭代：compact -> llm
+    # 第一次迭代:compact -> llm
     assert order[:2] == ["compact", "llm"]
 
 
 def test_compacted_messages_reach_the_llm():
-    """压缩后的消息列表（不是原始列表）传给 LLM。"""
-    from agentnodes.kernel.runtimes.nodes.react import (
-        ReactConfig,
-        make_react_node,
-    )
-
+    """压缩后的消息列表(不是原始列表)传给 LLM。"""
     client = _RecordingClient()
-    big = [{"role": "user", "content": "x" * 500} for _ in range(10)]
 
-    def compactor(messages):
+    def compact_replacement(messages):
         return [{"role": "system", "content": "SUMMARY"}], ["llm_summarize(10->1)"]
 
-    node = make_react_node(
-        client, _registry(),
-        config=ReactConfig(max_iterations=1, compactor=compactor),
-    )
-    node({"messages": big})
+    loop = _recording_loop(client)
+    loop._maybe_compact = compact_replacement  # type: ignore[method-assign]
+    loop.run("go")
 
     assert client.calls[0][-1]["content"] == "SUMMARY"
 
 
-def test_no_layers_applied_keeps_messages_and_emits_nothing():
-    """未超阈值（applied 为空）：消息不变、不发 compacted 事件。"""
-    from agentnodes.kernel.runtimes.nodes.react import (
-        ReactConfig,
-        make_react_node,
-    )
-
-    events: list[tuple[str, dict]] = []
-    client = _RecordingClient()
-    original = [{"role": "user", "content": "hi"}]
-
-    node = make_react_node(
-        client, _registry(), sink=lambda k, d: events.append((k, d)),
-        config=ReactConfig(
-            max_iterations=1,
-            compactor=lambda m: (m, []),  # 未触发
-        ),
-    )
-    node({"messages": original})
-
-    assert not [e for e in events if e[0] == "context.compacted"]
-    assert client.calls[0][-1]["content"] == "hi"
-
-
-def test_compactor_failure_does_not_break_the_turn():
-    """压缩抛异常：原样继续 + compact_failed 事件，本轮照常完成。"""
-    from agentnodes.kernel.runtimes.nodes.react import (
-        ReactConfig,
-        make_react_node,
-    )
-
-    events: list[tuple[str, dict]] = []
-    client = _RecordingClient()
-
-    def boom(messages):
-        raise RuntimeError("compact exploded")
-
-    node = make_react_node(
-        client, _registry(), sink=lambda k, d: events.append((k, d)),
-        config=ReactConfig(max_iterations=2, compactor=boom),
-    )
-    out = node({"messages": [{"role": "user", "content": "hi"}]})
-
-    assert out["answer"] == "done"
-    failures = [e for e in events if e[0] == "context.compact_failed"]
-    assert failures and "compact exploded" in failures[0][1]["error"]
-
-
-def test_no_compactor_keeps_legacy_behaviour():
-    """无 compactor：行为与迁移前一致（回归保护）。"""
-    from agentnodes.kernel.runtimes.nodes.react import (
-        ReactConfig,
-        make_react_node,
-    )
-
-    events: list[tuple[str, dict]] = []
-    client = _RecordingClient()
-    node = make_react_node(
-        client, _registry(), sink=lambda k, d: events.append((k, d)),
-        config=ReactConfig(max_iterations=2),
-    )
-    out = node({"messages": [{"role": "user", "content": "hi"}]})
-
-    assert out["answer"] == "done"
-    assert not [e for e in events if e[0].startswith("context.")]
-
-
-# ── 共享工厂：语义与 mixin 对齐 ───────────────────────────
+# ── 共享工厂:语义与 mixin 对齐 ───────────────────────────
 
 
 def test_make_compactor_rolls_back_on_failure(monkeypatch):
-    """L4 失败 → 返回原始消息（模型保留完整历史，而非半压缩状态）。"""
+    """L4 失败 → 返回原始消息(模型保留完整历史,而非半压缩状态)。"""
     from agentnodes.kernel.agent import compaction_runtime as cr
 
     def boom(*a, **k):
@@ -229,7 +153,7 @@ def test_make_compactor_returns_compacted_and_layers(monkeypatch):
 
 
 def test_make_compactor_rolls_back_when_persistence_fails(monkeypatch):
-    """持久化失败 → 回滚到原始消息（与 mixin 的 rollback 一致）。"""
+    """持久化失败 → 回滚到原始消息(与 mixin 的 rollback 一致)。"""
     from agentnodes.kernel.agent import compaction_runtime as cr
 
     monkeypatch.setattr(
@@ -260,13 +184,13 @@ def test_make_compactor_rolls_back_when_persistence_fails(monkeypatch):
 
 
 def test_controller_compaction_wiring_goes_through_loop():
-    """**批次 V3-b**：压缩器由 AgentLoop 内部构造（同一 ``make_compactor``
-    实现），controller 只负责把 compact_config 传给 loop。
+    """**批次 V3-b**:压缩器由 AgentLoop 内部构造(同一 ``make_compactor``
+    实现),controller 只负责把 compact_config 传给 loop。
 
-    - 未传 compact_config → loop 回落 ``config.compact_config``（无则
-      ``CompactConfig()`` 默认）——与 chat_loop 的取值序一致；
-    - 显式传入 → loop.cc 就是该对象（空 signature 时 harness 覆盖按
-      ``apply_compaction_overrides`` 契约原样返回同一实例）。
+    - 未传 compact_config → loop 回落 ``config.compact_config``(无则
+      ``CompactConfig()`` 默认)——与 chat_loop 的取值序一致;
+    - 显式传入 → loop.cc 就是该对象(空 signature 时 harness 覆盖按
+      ``apply_compaction_overrides`` 契约原样返回同一实例)。
     """
     from agentnodes.foundation.compact_config import CompactConfig
     from agentnodes.foundation.llm import LLMConfig
@@ -281,7 +205,7 @@ def test_controller_compaction_wiring_goes_through_loop():
             return key
 
     class _FakeRegistry:
-        """AgentLoop 构造期触碰的最小面（_tools/all_tools/get_definitions）。"""
+        """AgentLoop 构造期触碰的最小面(_tools/all_tools/get_definitions)。"""
 
         def __init__(self) -> None:
             self._tools: dict = {}

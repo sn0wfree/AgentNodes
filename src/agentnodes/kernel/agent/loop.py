@@ -316,7 +316,7 @@ class AgentLoop(
         # ── 批次 V3-a：tier-1 tool_set 裁剪签名 ──────────────────
         # 空 = 不裁剪（``get_definitions_for("")`` 与 ``get_definitions()``
         # 完全等价），所以默认路径零变化。非空时按签名裁掉不在该
-        # harness 里的工具——路径 B（make_react_node）已有此能力。
+        # harness 里的工具——原路径 B（make_react_node，V3-c 已删）曾有此能力。
         task_signature: str = "",
         # **批次 13 附录 §4**：默认改为 False——``hypothesis.auto_creator``
         # capability 随 hypothesis 子系统归档在 testcase/golden/，未注册；
@@ -984,7 +984,7 @@ class AgentLoop(
         # **批次 V3-b**：外部注入源合流。``_inbox`` 是进程内 API 的
         # asyncio.Queue（``inject``/``ainject``）；GraphEngine 编排路径的
         # steer 走 mailbox 的 ``SteerInbox``——经构造方挂到本钩子，在同一
-        # 安全点（compaction 后、LLM 前）进入会话。合批形状与 react 节点
+        # 安全点（compaction 后、LLM 前）进入会话。合批形状与原 react 节点
         # 逐字一致（单条 user 消息、``"\\n\\n".join``）；失败不崩轮。
         hook = getattr(self, "_inbox_drain_hook", None)
         if hook is not None:

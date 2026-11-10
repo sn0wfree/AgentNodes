@@ -139,15 +139,20 @@ def _inv_entry_reject_no_side_effects() -> bool:
 def _inv_llm_calls_budgeted() -> bool:
     """INV-9：所有 LLM 调用必须经 RunBudget.plan_call（预算不可绕过）。
 
-    结构验证：runtimes 目录下凡出现 `client.chat(` 的文件必须同时引用
-    plan_call（同一模块内预算入口）。审计门① 正是靠这条发现 llm 节点绕过。
+    结构验证：runtimes/nodes 目录下凡出现 `client.chat(` 的文件必须同时
+    引用 plan_call（同一模块内预算入口）。审计门① 正是靠这条发现 llm
+    节点绕过。
+
+    **V3-c**：react 节点已删（其 RunBudget 语义由 fanout 分支的
+    plan_call + BudgetStopStep 承接）；AgentLoop 不在本目录——它的
+    三维预算走 A1 StopPolicy（kernel/agent/runtime/policy.py），两套
+    预算的分层见 run_budget.py 模块注释。
     """
     import inspect
 
     from agentnodes.kernel.runtimes.nodes import llm as llm_mod
-    from agentnodes.kernel.runtimes.nodes import react as react_mod
 
-    for module in (llm_mod, react_mod):
+    for module in (llm_mod,):
         source = inspect.getsource(module)
         if "client.chat(" in source or "client.astream(" in source:
             if "plan_call()" not in source:

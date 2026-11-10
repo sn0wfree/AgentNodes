@@ -1,6 +1,6 @@
 """共享 ToolContext 构造（B1-d）。
 
-单一事实源：AgentLoop 与 react 节点都必须用同一份 ``ToolContext`` 装配
+单一事实源：所有执行引擎（AgentLoop 及其图节点适配）都必须用同一份 ``ToolContext`` 装配
 逻辑，否则权限语义会漂移——这正是 B1 调查发现的缺口（react 此前根本不
 构造 ctx，三道闸门全部绕过）。
 
@@ -70,7 +70,7 @@ def make_ctx_factory(
 ) -> Callable[[str, dict], Any]:
     """Return a ``(tool_call_id, params) -> ToolContext`` factory.
 
-    This is the shape ``ReactConfig.ctx_factory`` expects (B1-d): the node
+    This is the per-tool-call context shape (B1-d): the execution engine
     asks for a context per tool call without knowing what fields it needs.
     """
 

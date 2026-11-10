@@ -104,7 +104,7 @@ class ContextSpec:
     #: **批次 V3-a**：tier-1 tool_set 裁剪签名（空 = 不裁剪）。
     #: ``registry.get_definitions_for("")`` 与 ``get_definitions()`` 完全等价
     #: （``tools.py:881-882``），所以默认路径零变化。
-    #: 这是路径 A 相对路径 B（make_react_node）唯一缺的能力，补齐后能力集一致。
+    #: 这是原路径 B（make_react_node，V3-c 已删）相对路径 A 唯一多出的能力。
     task_signature: str = ""
     #: **批次 13 附录 §4**：hypothesis 子系统归档中，capability 未注册，
     #: 该开关永不生效——默认 False 以免谎报。恢复注册后翻回 True。

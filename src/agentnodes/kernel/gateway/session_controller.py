@@ -274,7 +274,7 @@ class SessionController:
             "turn_id": turn_id,
             "run_id": run_id,
         }
-        # R2.2：steer 注入通道——react 节点在安全点 drain（只追加）。
+        # R2.2：steer 注入通道——执行引擎在安全点 drain（只追加）。
         mailbox = self._ep.mailbox_for(request.session_key)
         if mailbox is not None:
             state["steer_inbox"] = mailbox.steer_inbox()

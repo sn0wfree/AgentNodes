@@ -303,6 +303,40 @@ def test_controller_history_order_preserved():
     assert contents == ["older", "reply", "current"]
 
 
+def test_tool_events_emitted_in_order():
+    """tool_call 必在 tool_result 之前,且携带工具名。
+
+    **V3-c**:语义迁自原 test_b1f_equivalence 的 react 段——词表换
+    AgentLoop 的 tool_call/tool_result(产品词表)。"""
+
+    class _EchoTool(BaseTool):
+        name = "echo"
+        description = "echo"
+        parameters = {}
+
+        def execute(self, **kwargs):
+            return json.dumps({"status": "ok"})
+
+    reg = ToolRegistry()
+    RecordingTool.executed = []
+    reg.register(_EchoTool())
+    tc = SimpleNamespace(id="c1", name="echo", arguments={})
+    client = ScriptedClient([
+        Resp(tool_calls=[tc]),
+        Resp(content="fin"),
+    ])
+    loop = _loop_for(client, reg)
+    events: list[tuple[str, dict]] = []
+    loop._on_event = lambda kind, data: events.append((kind, data))
+    node = make_agent_loop_node(loop)
+    node({"messages": [{"role": "user", "content": "go"}]})
+
+    tool_events = [(k, d) for k, d in events if k in ("tool_call", "tool_result")]
+    assert [k for k, _ in tool_events] == ["tool_call", "tool_result"]
+    assert tool_events[0][1]["tool"] == "echo"
+    assert tool_events[1][1]["tool"] == "echo"
+
+
 def test_controller_llm_failure_becomes_run_failed():
     class Boom:
         def chat(self, messages, tools=None, **kw):

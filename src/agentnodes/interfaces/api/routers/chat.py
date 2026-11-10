@@ -560,13 +560,8 @@ def _install_chat_event_bridge(
     里兜底注销。
     """
     mapping = {
-        # react 节点词表（V3-b 起默认图已换 AgentLoop；映射保留到 V3-c
-        # 删 react.py 时一并移除——fanout preset 在那之前仍会发它们）
-        "tool.started": "tool_call",
-        "tool.completed": "tool_result",
-        # AgentLoop 词表：直通。payload 形状本就是前端 handlers 消费的
-        # 契约（tool_call{id,name,arguments} / tool_result{id,status,
-        # result}，projection_handlers.py 同一形状）。
+        # **V3-c**:react 词表映射已随 react.py 删除——唯一执行引擎是
+        # AgentLoop,词表直通。
         "tool_call": "tool_call",
         "tool_result": "tool_result",
     }
@@ -642,7 +637,7 @@ def _install_chat_event_bridge(
             # 流式词表直通。AgentLoop 的 3-step 协议（text.started →
             # text_delta{text_id} → text.ended）与 thinking 协议
             # （thinking_start/delta/done/end）前端 handlers 全都注册；
-            # stream.failed 是 react 词表（V3-c 随 react.py 删）。
+            # stream.failed 由 llm 单发节点（nodes/llm.py）继续发出。
             if kind in (
                 "text_delta", "thinking_delta", "thinking_done", "stream.failed",
                 "text.started", "text.ended",

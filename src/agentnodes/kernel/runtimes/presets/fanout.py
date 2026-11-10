@@ -3,15 +3,24 @@
 设计：docs/archive/2026-10/stage-f3-fanout-preset-design-20261027.md。
 
 落位说明：与 research preset（study 域，闭包持 BranchContext）相反，
-fanout 是**纯平台件**——只依赖 GraphEngine / react 节点 / RunBudget，
-不认识 study、不 import 业务模块。任何域都能用它表达「拆分 → N 路并行 → 汇合」。
+fanout 是**纯平台件**——只依赖 GraphEngine / AgentLoop（V3-c 起唯一
+执行引擎）/ RunBudget，不认识 study、不 import 业务模块。任何域都能
+用它表达「拆分 → N 路并行 → 汇合」。
 
 图形态（D1 复合节点，仍是两个普通节点 + 一条边）：
 
     split(fn) →[fanout 复合]→ join(fn)
 
-每条分支是一个**独立子代理**：持自己的预算切片跑一次 react 循环，
+每条分支是一个**独立子代理**：持自己的预算切片跑一次 AgentLoop 循环，
 消息隔离、结果按 ordinal 保序回填到 `fanout_results`。
+
+**V3-c 预算切片映射**（原 react ``RunBudget`` 注入的等价）：
+- 入口：``budget.plan_call()``——0 切片（预标 exhausted）即连坐中断，
+  不浪费一次 LLM 调用（INV-9：任何 LLM 调用前必须过 plan_call）；
+- 运行中：切片 limits 注入 ``BudgetStopStep._limits``（三维
+  tokens/cost/time，reason 格式 ``budget:*`` 与 react 同源）；
+- 收尾：消耗 ``record`` 回切片对象——父线程 ``absorb`` 后回流父账本
+  （settle 语义，与 react「同一实例直接记账」等价）。
 """
 from __future__ import annotations
 
@@ -55,39 +64,88 @@ def build_fanout_preset(
     emit = sink or (lambda kind, data: None)
     branch_events: "queue.Queue[tuple[str, dict]]" = queue.Queue()
 
-    def branch_sink(kind: str, data: dict) -> None:
-        """分支线程只入队；父线程 join 后统一转发（sink 不跨线程）。"""
-        branch_events.put((kind, dict(data)))
-
     def branch_worker(payload: Any, branch_state: dict) -> dict:
-        from agentnodes.kernel.runtimes.nodes.react import (
-            ReactConfig,
-            make_react_node,
-        )
-
         branch = branch_state["branch"]
         budget = branch.get("budget")
-        node = make_react_node(
-            client, registry, sink=branch_sink,
-            config=ReactConfig(
-                max_iterations=max_iterations, system=system, budget=budget,
-            ),
+
+        # INV-9：分支入口过 plan_call——0 切片（预标 exhausted）直接连坐，
+        # 不起 AgentLoop、不发一次 LLM 调用。
+        if budget is not None:
+            allowed, reason = budget.plan_call()
+            if not allowed:
+                raise GraphInterrupt(
+                    "branch_budget_exhausted",
+                    {"branch_id": branch["id"], "reason": reason or "exhausted"},
+                )
+
+        from agentnodes.kernel.agent.loop import AgentLoop
+        from agentnodes.kernel.agent.runtime.sync_bridge import _run_coro_in_sync
+        from agentnodes.foundation.llm.config import LLMConfig
+        from agentnodes.kernel.runtimes.nodes.agent_loop_node import (
+            make_loop_event_sink,
+            wrap_async_capable_client,
         )
-        out = node({
-            "messages": [{"role": "user", "content": str(payload)}],
-            "run_id": branch["id"],
-        })
-        stop_reason = str(out.get("stop_reason", ""))
-        if stop_reason.startswith("budget:"):
-            # 切片耗尽 = 系统档（预算），按 F1 语义连坐整棵 fanout
-            raise GraphInterrupt(
-                "branch_budget_exhausted",
-                {"branch_id": branch["id"], "reason": stop_reason},
-            )
+
+        def branch_sink(kind: str, data: dict) -> None:
+            # AgentLoop 事件不带 run_id（loop 级发射）——分支身份在这里
+            # 注入，join 回流后消费方可按 branch_id 归因。
+            branch_events.put((kind, {"run_id": branch["id"], **dict(data)}))
+
+        base_cfg = getattr(client, "config", None) or LLMConfig(api_key="")
+        loop = AgentLoop(
+            config=base_cfg,
+            registry=registry,
+            system_prompt=system,
+            max_iterations=max_iterations,
+            # 分支是独立子代理：无 goal/memory 注入、无审批闸
+            # （web fanout 没有 loop 级提问通道；无进展按 continue 跑满）。
+            enable_goal_injection=False,
+            enable_memory_injection=False,
+            injectors=[],
+            approval_timeout=30.0,
+            approval_on_timeout="continue",
+            stream_mode=False,
+            on_event=make_loop_event_sink(branch_sink),
+        )
+        loop.client = wrap_async_capable_client(client)
+        # F2 预算切片：三维上限注入 BudgetStopStep（运行中判定）；
+        # 消耗记账在 run 结束后回写切片对象（下方 record）。
+        if budget is not None:
+            stop_step = getattr(loop._strategy, "stop", None)
+            if stop_step is not None:
+                stop_step._limits = budget.limits
+
+        result = _run_coro_in_sync(loop.arun(str(payload)))
+        if result.error:
+            # react 语义：分支业务失败不连坐（error 条目进 fanout_results，
+            # 其余照跑）——恢复异常冒泡形状，GraphEngine 的 run_one 捕获。
+            raise RuntimeError(result.error)
+
+        usage = {
+            "tokens": int(getattr(loop, "_budget_tokens", 0) or 0),
+            "prompt_tokens": int(getattr(loop, "_budget_prompt_tokens", 0) or 0),
+            "completion_tokens": int(getattr(loop, "_budget_completion_tokens", 0) or 0),
+            "cost_usd": float(getattr(loop, "_budget_cost_usd", 0.0) or 0.0),
+            "iterations": result.iterations,
+        }
+        if budget is not None:
+            # settle：消耗记回切片（父线程 absorb 后回流父账本）。
+            budget.record({
+                "total_tokens": usage["tokens"],
+                "prompt_tokens": usage["prompt_tokens"],
+                "completion_tokens": usage["completion_tokens"],
+            })
+            if budget.exhausted:
+                # 切片耗尽 = 系统档（预算），按 F1 语义连坐整棵 fanout
+                raise GraphInterrupt(
+                    "branch_budget_exhausted",
+                    {"branch_id": branch["id"], "reason": budget.reason or "exhausted"},
+                )
+        stop_reason = result.stop_reason or result.finished_reason or "completed"
         return {
-            "answer": out.get("answer", ""),
+            "answer": result.answer,
             "stop_reason": stop_reason,
-            "usage": out.get("usage", {}),
+            "usage": usage,
         }
 
     def split_node(state: dict) -> dict:

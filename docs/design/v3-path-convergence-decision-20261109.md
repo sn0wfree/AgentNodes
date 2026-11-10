@@ -4,9 +4,8 @@
 > **输入**：V2 真实 LLM 端到端结果（`v2-live-llm-e2e-20261109.md`）。
 > **性质**：**决策文档**（含推荐与代价）。本文件不实施，实施见 V4。
 > **计划要求**：「不预设结论，由 V2 数据说话」。
-> **实施状态**：**V3-a 已落地**（`task_signature` 进 `LoopSpec.ContextSpec` +
-> `_effective_tools` 分支 + 6 条测试）；**V3-b 已落地**（默认图换
-> `AgentLoop` 适配器，见 §3 V3-b 的「落地实录」）；V3-c 未开始。
+> **实施状态**：**V3-a / V3-b / V3-c 全部落地**——双执行路径收敛完成，
+> 唯一执行引擎是 AgentLoop（2026-11-10）。
 
 ---
 
@@ -220,6 +219,41 @@ controller 级测试全部在新路径上跑绿；真实模型端到端
 | 同时 | `presets/fanout.py` 也改用 `AgentLoop`（它现在用 `make_react_node`）|
 | 收益 | 消除双实现；能力不再漂移 |
 | 工作量 | 0.5 天 |
+| **状态** | ✅ **已完成**（见下方落地实录）|
+
+#### V3-c 落地实录（2026-11-10）
+
+**删除**：`react.py`（282 行）、`scripts/stage1b_demo.py`（批次 9a 起因旧包名
+`agentnodes.core` 已损坏，实测 ModuleNotFoundError，功能由适配器 live 测试
+覆盖）；react 直测文件 4 个（`test_react_node` / `test_react_node_capability`
+/ `test_p51b_streaming_tools` / `test_run_budget_integration` / `test_react_live`）。
+
+**fanout 迁移**（`branch_worker` → AgentLoop，F2 预算树语义保真）：
+
+| react 机制 | AgentLoop 等价 |
+|---|---|
+| `ReactConfig(budget=slice)` 注入 RunBudget 同一实例记账 | 入口 `budget.plan_call()`（0 切片即连坐，不起 loop）→ 运行中切片 limits 注入 `BudgetStopStep._limits`（三维 reason `budget:tokens/cost/time` 与 react **同源**——都出自 `evaluate_budget`）→ 收尾 `budget.record(usage)` 回写切片，父线程 absorb 回流 |
+| `stop_reason.startswith("budget:")` 连坐判断 | `result.stop_reason or result.finished_reason`（预算耗尽时 = `budget:tokens` 等，天然匹配） |
+| 分支事件带 `run_id` | AgentLoop 事件无 run_id → `branch_sink` 注入 `{"run_id": branch_id, ...}` |
+| `test_branch_budget_slice_actually_used`（父账 12 tokens）| 结束 record → absorb → 父账 12 ✓ |
+| 分支业务失败不连坐 | `result.error` → 重新 raise（GraphEngine run_one 捕获为 error 条目）|
+
+**有意的行为变化**：分支消息 = `[system(默认任务模板), user]`（react 的
+`system=None` 时无 system 消息）——子代理获得工具清单/工作区上下文，
+代价是每分支 prompt 变长。空注册表时模板显示 "(no tools available)"。
+
+**测试处置**：
+- 改写：`test_fanout_preset`（fake 保真：`finish_reason` + registry 完整契约
+  + 真工具实例；事件词表断言 → `tool_call/tool_result`；独立分支断言改
+  内容集合——原顺序断言在并发线程下本就非确定，react 时代碰巧稳定）；
+- 等价改写：`test_b1c_react_compaction` 的压缩时机/消息到达两条 →
+  AgentLoop 版（hook `_maybe_compact`）；`test_b1f` 收敛到 controller 级
+  4 条；`test_agent_loop_node` 补工具事件顺序断言（迁自 b1f react 段）；
+- 删除：react 直测 5 文件（约 60 条）——语义覆盖去向：工具循环/预算 →
+  fanout + node 测试；流式聚合 → loop_stream（V2 真机验证过）；权限接线 →
+  `test_agent_loop_node` + `test_b1d` registry 级保留。
+
+**验证**：V3-c 触碰面 48 条全绿；全量回归 + batch_gate 见提交信息。
 
 ---
 

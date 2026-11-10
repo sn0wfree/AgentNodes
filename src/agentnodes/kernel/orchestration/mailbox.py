@@ -7,7 +7,7 @@
 - INTERRUPT：插队到队首（取消当前 turn 属 A2 准入语义，本骨架只保证排序优先）。
 - STEER（R2.2 真注入）：submit 时按 `is_session_active` 路由——
   有活跃 run → 进 per-session steer 队（cap steer_cap，溢出最旧转主队），
-  由 react 节点在安全点 `drain_steer()` 合批注入（只追加）；无活跃 run →
+  由执行引擎（AgentLoop 适配节点）在安全点 drain 合批注入（只追加）；无活跃 run →
   直接作正常 turn 排队（steer.became_turn）。turn 收尾后仍滞留的 steer
   由 `promote_steer()` 转主队——不丢消息、不静默（INV-6）。
 - COLLECT：contracts.validate 已在入口拒绝，到不了这里。
@@ -186,7 +186,7 @@ class Mailbox:
         return Receipt.ok(resolve_session(request.session_key))
 
     def steer_inbox(self) -> "SteerInbox":
-        """注入通道：controller 放进 engine state，react 节点在安全点 drain。"""
+        """注入通道：controller 放进 engine state，执行引擎在安全点 drain。"""
         return SteerInbox(self)
 
     def drain_steer(self) -> list[str]:

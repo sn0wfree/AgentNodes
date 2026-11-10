@@ -1,7 +1,8 @@
 """预算执行点（A1 运行中门）—— 所有 LLM 调用的唯一预算入口。
 
 A5 不变量 INV-9：**任何 LLM 调用必须经过 plan_call()**。
-- react 节点每迭代调用一次（运行中检查）
+- AgentLoop 每迭代判定一次（BudgetStopStep / BudgetDecider）；
+- fanout 分支在入口过一次 plan_call（0 切片即连坐）
 - llm 节点调用一次（单次调用前检查）
 - 未来任何新节点同样必须调用——这是「预算绕不过去」的结构保证
 

@@ -73,7 +73,7 @@ class TestPhase5CallSitesUseFactory:
 
         旧实现里 ``session.py`` 通过 ``build_chat_agent_loop`` 走统一 prompt
         工厂；现在它只接 Gateway（``_run_via_gateway``），prompt 装配发生在
-        引擎侧（``runtimes/nodes/react.py`` → AgentLoop → 同一 factory）。
+        引擎侧（``kernel/agent/chat_loop.py`` → AgentLoop → 同一 factory）。
         所以这里断言的是**新链路的完整性**，而不是旧的字符串存在。
         """
         from agentnodes.interfaces.cli.tui import session as tui_session

@@ -120,8 +120,8 @@ class Gateway:
             # B1：取消注册表——控制器把每次 run 的 CancelScope 挂上去，
             # interrupt/cancel_session 据此触发取消。
             cancel_registry=self._cancel_scopes,
-            # P5-1b：有 registry 时控制器默认图用 react 节点（无工具调用时
-            # 退化为单次 LLM），否则纯 llm 节点。
+            # V3-c：有 registry 时控制器默认图用 AgentLoop 适配节点（节点名
+            # 沿用 "react"），否则纯 llm 节点。
             registry=registry, stream=stream,
             # **W4**：工具的工作区根（ToolContext.workspace 的来源）。
             workspace=self._workspace,

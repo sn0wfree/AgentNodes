@@ -1,9 +1,9 @@
-"""B1-d: react path must enforce the permission gate.
+"""B1-d: ToolRegistry 执行的权限闸门(negative-path 契约)。
 
-Before this, ``react.py`` called ``registry.execute(name, args)`` with no
-ToolContext at all — so the evaluator ruleset, the ASK handshake and the
-workspace/session plumbing never ran on the react path (in production
-since P5-1b). These are the negative-path tests the design requires.
+**V3-c**:react 节点已删除;其「经 ctx_factory 接线 evaluator」的等价
+覆盖移居 ``tests/test_agent_loop_node.py``(controller 级 deny/allow)。
+本文件保留 registry 层的 deny/allow/ASK fail-closed 语义——与执行引擎
+无关,是工具执行的通用闸门。
 """
 from __future__ import annotations
 
@@ -127,98 +127,3 @@ def test_no_ctx_keeps_legacy_unprotected_behaviour():
     out = json.loads(reg.execute("danger", {}))
     assert out["status"] == "ok"
     assert len(_RecordingTool.executed) == 1
-
-
-# ── react 节点接线 ────────────────────────────────────────
-
-
-class _FakeResponse:
-    """Minimal LLM response with the has_tool_calls() contract."""
-
-    def __init__(self, content: str = "", tool_calls: list | None = None):
-        self.content = content
-        self.tool_calls = tool_calls or []
-        self.usage = None
-
-    def has_tool_calls(self) -> bool:
-        return bool(self.tool_calls)
-
-
-class _FakeClient:
-    """One tool call then a final answer."""
-
-    def __init__(self) -> None:
-        self.calls = 0
-
-    def chat(self, messages, tools=None):
-        self.calls += 1
-        if self.calls == 1:
-            tc = SimpleNamespace(
-                id="call_1", name="danger", arguments={"a": 1},
-            )
-            return _FakeResponse(tool_calls=[tc])
-        return _FakeResponse(content="done")
-
-
-def test_react_node_passes_ctx_to_tools():
-    """react 节点经 ctx_factory 为每次 tool_call 构造 ctx 并交给 registry。"""
-    from agentnodes.kernel.runtimes.nodes.react import (
-        ReactConfig,
-        make_react_node,
-    )
-
-    seen_ids: list[str] = []
-
-    def factory(tool_call_id: str, params: dict):
-        seen_ids.append(tool_call_id)
-        return ToolContext(
-            permission_evaluator=_evaluator("allow"),
-            tool_call_id=tool_call_id,
-            session_id="sess-x",
-        )
-
-    node = make_react_node(
-        _FakeClient(), _registry(),
-        config=ReactConfig(ctx_factory=factory),
-    )
-    out = node({"messages": [{"role": "user", "content": "go"}]})
-
-    assert seen_ids == ["call_1"]
-    assert len(_RecordingTool.executed) == 1
-    assert _RecordingTool.executed[0]["ctx"].session_id == "sess-x"
-    assert out["answer"] == "done"
-
-
-def test_react_node_denied_tool_does_not_execute():
-    """react + DENY：工具不执行，模型看到拒绝原因后继续。"""
-    from agentnodes.kernel.runtimes.nodes.react import (
-        ReactConfig,
-        make_react_node,
-    )
-
-    node = make_react_node(
-        _FakeClient(), _registry(),
-        config=ReactConfig(
-            ctx_factory=lambda tid, p: ToolContext(
-                permission_evaluator=_evaluator("deny"), tool_call_id=tid,
-            ),
-        ),
-    )
-    node({"messages": [{"role": "user", "content": "go"}]})
-
-    assert _RecordingTool.executed == []
-
-
-def test_react_node_without_factory_keeps_legacy_behaviour():
-    """无 ctx_factory：旧行为（无权限检查）——回归保护。"""
-    from agentnodes.kernel.runtimes.nodes.react import (
-        ReactConfig,
-        make_react_node,
-    )
-
-    node = make_react_node(_FakeClient(), _registry(), config=ReactConfig())
-    node({"messages": [{"role": "user", "content": "go"}]})
-
-    assert len(_RecordingTool.executed) == 1
-    # 无 factory → ctx 为 None（无权限检查），与迁移前一致
-    assert _RecordingTool.executed[0].get("ctx") is None
