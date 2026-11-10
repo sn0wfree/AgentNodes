@@ -18,7 +18,7 @@ class TestDbPath(unittest.TestCase):
         from agentnodes.foundation.paths import session_db_filename
         from agentnodes.interfaces.api.dependencies import _resolve_db_path
 
-        old = os.environ.pop("AN_WORKSPACE_PATH", None)
+        old = os.environ.pop("AGENTNODES_WORKSPACE", None)
         try:
             path = _resolve_db_path()
             # 2026-11-09 路径统一：文件名随 profile（默认 .agentnodes_session.db）。
@@ -26,18 +26,18 @@ class TestDbPath(unittest.TestCase):
             self.assertTrue(str(path).endswith(session_db_filename()))
         finally:
             if old is not None:
-                os.environ["AN_WORKSPACE_PATH"] = old
+                os.environ["AGENTNODES_WORKSPACE"] = old
 
     def test_db_path_from_env(self):
         from agentnodes.interfaces.api.dependencies import _resolve_db_path
 
         with TemporaryDirectory() as tmpdir:
-            os.environ["AN_WORKSPACE_PATH"] = tmpdir
+            os.environ["AGENTNODES_WORKSPACE"] = tmpdir
             try:
                 path = _resolve_db_path()
                 self.assertEqual(path.parent, Path(tmpdir))
             finally:
-                del os.environ["AN_WORKSPACE_PATH"]
+                del os.environ["AGENTNODES_WORKSPACE"]
 
     def test_get_db_path_from_workspace(self):
         from agentnodes.interfaces.api.dependencies import get_db_path

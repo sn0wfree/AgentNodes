@@ -30,7 +30,7 @@ from agentnodes.foundation import settings as _settings
 DEFAULT_MAX_CONTINUES = 10
 """Upper bound on automatic continuation attempts for one user message.
 
-Configurable via ``AN_ORCHESTRATOR_MAX_CONTINUES`` (int). Once the bound
+Configurable via ``AGENTNODES_ORCH_MAX_CONTINUES`` (int). Once the bound
 is exhausted the attempt ends normally (the LLM's last answer is kept),
 so a pathological loop can never spin forever.
 """
@@ -101,8 +101,8 @@ def looks_like_question(answer: str) -> bool:
 
 
 def max_continues() -> int:
-    """Resolved continuation bound from env (``AN_ORCHESTRATOR_MAX_CONTINUES``)."""
-    raw = _settings.get_str("AN_ORCHESTRATOR_MAX_CONTINUES").strip()
+    """Resolved continuation bound from env (``AGENTNODES_ORCH_MAX_CONTINUES``)."""
+    raw = _settings.get_str("AGENTNODES_ORCH_MAX_CONTINUES").strip()
     if raw.isdigit():
         return max(0, int(raw))
     return DEFAULT_MAX_CONTINUES

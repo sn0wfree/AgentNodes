@@ -83,8 +83,8 @@ _TOOL_RESULT_MAX = 50_000
 
 # Tool result 入 LLM history 前的统一截断上限（字符）。
 # 超长输出在中间截断，保留头尾并标记 [truncated]。
-# 环境变量 AN_TOOL_RESULT_MAX_CHARS 可覆盖（0 = 不截断）。
-_TOOL_RESULT_HISTORY_MAX = int(_settings.get_str("AN_TOOL_RESULT_MAX_CHARS"))
+# 环境变量 AGENTNODES_TOOL_RESULT_MAX_CHARS 可覆盖（0 = 不截断）。
+_TOOL_RESULT_HISTORY_MAX = int(_settings.get_str("AGENTNODES_TOOL_RESULT_MAX_CHARS"))
 
 
 # ── Cached GoalStore (goal-snapshot injection) ─────────────────────

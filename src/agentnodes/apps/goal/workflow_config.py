@@ -35,7 +35,7 @@ _PRESETS_DIR = _swarm_presets.PRESETS_DIR  # batch 8: presets moved to L2
 #: ``~/.agentnodes/workflows``（随 ``AN_DATA_PROFILE``）。
 #: ``interfaces/cli/commands/slash_goal.py`` 原先复制了一份同样的路径拼法，
 #: 现在改为 import 本常量——避免改一处漏一处。
-_USER_WORKFLOWS_DIR = _paths.data_subdir("workflows", env_var="AN_WORKFLOWS_DIR")
+_USER_WORKFLOWS_DIR = _paths.data_subdir("workflows", env_var="AGENTNODES_WORKFLOWS_DIR")
 
 
 def build_autoresearch_workflow_config(

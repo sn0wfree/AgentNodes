@@ -1,12 +1,17 @@
 """``config`` 命令组 —— 配置诊断（批 E-1）。
 
 **目前只有一个子命令**：``audit-legacy`` —— 扫出当前环境里**仍在用的
-旧名环境变量**，并给出删除兼容层前的行动指引。
+旧名环境变量**，并给出行动指引。
 
 设计见 ``docs/design/legacy-env-audit-command-20261110.md``。
 
-**只读**：不改任何环境变量、不删任何 alias、不动 llm.json。
-退出码 0=无旧名在用（可安全删兼容层）/ 1=有旧名（删前必须先改名）。
+**只读**：不改任何环境变量、不动 llm.json。
+退出码 0=无旧名在用 / 1=有旧名在用（该改名）/ 2=审计失败。
+
+**批 E-2 之后的语义变化**：兼容层已经删掉了，所以旧名分两类——
+- **已失效**：值被**静默忽略**（读规范名时回落默认）→ 必须改名；
+- **仍生效**：:data:`settings.LEGACY_LIVE_ENVS` 里的那几个（指向"用户数据
+  在哪"）→ 仍能用，但已废弃，建议改名。
 """
 from __future__ import annotations
 
@@ -44,7 +49,7 @@ def _audit_legacy_text(environ=None) -> tuple[str, int]:
     counts = summary["counts"]
 
     lines: list[str] = []
-    lines.append("=== 1. 本进程环境中的旧名（正在生效）===")
+    lines.append("=== 1. 本进程环境中的旧名 ===")
     if not items:
         lines.append("  （无）")
     else:
@@ -61,6 +66,16 @@ def _audit_legacy_text(environ=None) -> tuple[str, int]:
             lines.append(
                 f"    风险: {risk} —— {summary['notes'].get(risk, '')}"
             )
+            if it["honored"]:
+                lines.append(
+                    "    状态: 仍生效（已废弃）—— 指向用户数据所在位置，"
+                    "过渡期保留，但建议改名"
+                )
+            else:
+                lines.append(
+                    "    状态: **已失效** —— 兼容层已删除，这个值被忽略"
+                    "（读取时回落默认），必须改名"
+                )
 
     lines.append("")
     lines.append("=== 2. 本进程环境中的 canonical（已改名）===")
@@ -90,7 +105,7 @@ def _audit_legacy_text(environ=None) -> tuple[str, int]:
     total = summary["total"]
     if total == 0:
         lines.append(
-            "  未发现旧名环境变量 —— 可以安全删除兼容层（批 E-2）。"
+            "  未发现旧名环境变量 —— 当前环境与规范名完全一致。"
         )
         code = 0
     else:
@@ -99,8 +114,19 @@ def _audit_legacy_text(environ=None) -> tuple[str, int]:
             f"（高危 {counts.get('high', 0)} / "
             f"中危 {counts.get('medium', 0)} / "
             f"低危 {counts.get('low', 0)}）"
-            " —— 删除兼容层前请先改名。"
         )
+        ignored = summary.get("ignored", 0)
+        honored = summary.get("honored", 0)
+        if ignored:
+            lines.append(
+                f"  其中 {ignored} 个**已经失效**（值被忽略）—— 必须改名，"
+                "否则相关配置会静默回落默认。"
+            )
+        if honored:
+            lines.append(
+                f"  其中 {honored} 个仍生效（已废弃）—— 过渡期保留，"
+                "建议尽快改名。"
+            )
         for it in items:
             lines.append(
                 f"    建议: 把 {it['old_name']} 改为 {it['canonical']}"
@@ -114,8 +140,9 @@ def _audit_legacy_text(environ=None) -> tuple[str, int]:
     help="配置诊断（audit-legacy：扫出仍在用的旧名环境变量）",
     description=(
         "配置诊断工具组。audit-legacy 是**只读**的：扫出当前环境里仍在用"
-        "的旧名环境变量（批 B' 改名时保留的兼容层），并给出删除兼容层"
-        "前的行动指引。退出码 0=无旧名在用，1=有旧名在用。"
+        "的旧名环境变量（批 B' 改名时的兼容层已在批 E-2 删除），标出哪些"
+        "已失效（值被忽略）、哪些仍生效（已废弃），并给出改名指引。"
+        "退出码 0=无旧名在用，1=有旧名在用。"
     ),
     add=lambda p: (
         p.add_argument(

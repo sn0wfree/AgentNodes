@@ -22,8 +22,8 @@ _TOKEN = "test-admin-secret-metrics"
 
 @pytest.fixture
 def admin_client(tmp_path, monkeypatch):
-    monkeypatch.setenv("AN_ADMIN_TOKEN", _TOKEN)
-    monkeypatch.setenv("AN_SESSIONS_DB", str(tmp_path / "sessions.db"))
+    monkeypatch.setenv("AGENTNODES_ADMIN_TOKEN", _TOKEN)
+    monkeypatch.setenv("AGENTNODES_SESSION_DB", str(tmp_path / "sessions.db"))
     monkeypatch.setenv("AGENTNODES_GOAL_DB_PATH", str(tmp_path / "goals.db"))
     monkeypatch.setenv("AGENTNODES_HYPOTHESES_PATH", str(tmp_path / "hyp.json"))
     return TestClient(create_app())
@@ -31,8 +31,8 @@ def admin_client(tmp_path, monkeypatch):
 
 class TestAdminMetricsAuth:
     def test_requires_token(self, tmp_path, monkeypatch):
-        monkeypatch.setenv("AN_ADMIN_TOKEN", "secret")
-        monkeypatch.setenv("AN_SESSIONS_DB", str(tmp_path / "sessions.db"))
+        monkeypatch.setenv("AGENTNODES_ADMIN_TOKEN", "secret")
+        monkeypatch.setenv("AGENTNODES_SESSION_DB", str(tmp_path / "sessions.db"))
         monkeypatch.setenv("AGENTNODES_GOAL_DB_PATH", str(tmp_path / "goals.db"))
         monkeypatch.setenv("AGENTNODES_HYPOTHESES_PATH", str(tmp_path / "hyp.json"))
         c = TestClient(create_app())
@@ -40,7 +40,7 @@ class TestAdminMetricsAuth:
         assert r.status_code == 401
 
     def test_disabled_returns_503(self, monkeypatch):
-        monkeypatch.delenv("AN_ADMIN_TOKEN", raising=False)
+        monkeypatch.delenv("AGENTNODES_ADMIN_TOKEN", raising=False)
         c = TestClient(create_app())
         r = c.get("/api/admin/metrics")
         assert r.status_code == 503

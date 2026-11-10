@@ -131,7 +131,7 @@ def _fresh_gateway(monkeypatch, **kw):
 
     # 注意：不 delenv AGENTNODES_PERMISSION_MODE——env 覆盖测试要先 setenv；
     # monkeypatch 自带生命周期，测试间不泄漏。
-    monkeypatch.delenv("AN_WORKSPACE_PATH", raising=False)
+    monkeypatch.delenv("AGENTNODES_WORKSPACE", raising=False)
     singleton.reset_gateway()
     try:
         return singleton.get_gateway(client=object(), **kw)
@@ -178,7 +178,7 @@ def test_shell_gated_off_by_default(monkeypatch):
     from agentnodes.kernel.gateway import singleton
 
     monkeypatch.delenv("AGENTNODES_ALLOW_SHELL_TOOLS", raising=False)
-    monkeypatch.delenv("AN_ALLOW_SHELL_TOOLS", raising=False)
+    monkeypatch.delenv("AGENTNODES_ALLOW_SHELL_TOOLS", raising=False)
     registry = _registry_with_shell(monkeypatch)
     singleton._gate_shell_tools(registry)
 
@@ -212,9 +212,9 @@ def test_singleton_registry_lacks_shell_by_default(monkeypatch):
         LLMConfig, "load", classmethod(lambda cls: _Cfg()), raising=False,
     )
     monkeypatch.delenv("AGENTNODES_ALLOW_SHELL_TOOLS", raising=False)
-    monkeypatch.delenv("AN_ALLOW_SHELL_TOOLS", raising=False)
+    monkeypatch.delenv("AGENTNODES_ALLOW_SHELL_TOOLS", raising=False)
     monkeypatch.delenv("AGENTNODES_PERMISSION_MODE", raising=False)
-    monkeypatch.delenv("AN_WORKSPACE_PATH", raising=False)
+    monkeypatch.delenv("AGENTNODES_WORKSPACE", raising=False)
     monkeypatch.delenv("AGENTNODES_WORKSPACE", raising=False)
     singleton.reset_gateway()
     try:

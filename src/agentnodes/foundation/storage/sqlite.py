@@ -53,7 +53,7 @@ def ensure_data_dir(base: Path | None = None) -> Path:
 
     迁移规则（保守，不丢数据）：
 
-    1. 目标是 ``~/.agentnodes``（可由 ``AN_DATA_DIR`` 覆盖）。
+    1. 目标是 ``~/.agentnodes``（可由 ``AGENTNODES_DATA_DIR`` 覆盖）。
     2. 若目标已有标记文件 → 直接返回（已迁移过）。
     3. 若目标不存在且旧目录存在 → 整树复制（``copytree``），**旧目录保留**
        作为备份（不删，让用户自己决定）。
@@ -68,7 +68,7 @@ def ensure_data_dir(base: Path | None = None) -> Path:
     由具体 store 在写入时报错，而不是让 import 期崩掉。
     """
     target = base or Path(
-        _settings.get_str("AN_DATA_DIR").strip() or DEFAULT_DATA_DIR
+        _settings.get_str("AGENTNODES_DATA_DIR").strip() or DEFAULT_DATA_DIR
     )
     target = Path(target).expanduser()
 

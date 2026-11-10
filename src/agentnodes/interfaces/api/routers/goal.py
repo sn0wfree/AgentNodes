@@ -15,15 +15,22 @@ def _session_owned(request: Request, session_id: str) -> None:
     """Enforce that ``session_id`` belongs to the requesting user (IDOR).
 
     Reuses web_session's ownership check so goal endpoints scoped to a
-    session can't read/mutate another user's goals. Same opt-out env as
-    study isolation — ``AN_ENFORCE_STUDY_IDOR=0`` (canonical) with the
-    historical ``SR_ENFORCE_STUDY_IDOR`` still honored.
-    """
-    import os as _os
+    session can't read/mutate another user's goals.
 
-    if _settings.get_str("AN_ENFORCE_STUDY_IDOR").strip() == "0":
+    Two opt-out switches, checked in order:
+
+    1. ``AGENTNODES_ENFORCE_STUDY_IDOR=0`` —— canonical（未设 = 强制校验）；
+    2. ``AGENTNODES_ENFORCE_STUDY_IDOR_LEGACY=0`` —— 旧开关的**规范名**
+       （默认 ``1`` = 开）；历史名 ``SR_ENFORCE_STUDY_IDOR`` 仍生效
+       （见 ``settings.LEGACY_LIVE_ENVS``）。
+
+    两者语义不同（默认值不同），所以不能合并成一个。
+    """
+    if _settings.get_str("AGENTNODES_ENFORCE_STUDY_IDOR").strip() == "0":
         return
-    if _settings.get_str("SR_ENFORCE_STUDY_IDOR") == "0":
+    if _settings.get_str("AGENTNODES_ENFORCE_STUDY_IDOR_LEGACY") == "0":
+        return
+    if (_settings.get_legacy("SR_ENFORCE_STUDY_IDOR", "") or "") == "0":
         return
     from .web_session import _fetch_session_owned, _get_db
     user_id = getattr(request.state, "user_id", None) or "anonymous"

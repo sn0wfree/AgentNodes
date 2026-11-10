@@ -323,9 +323,9 @@ def test_settings_call_sites_use_the_declared_getter():
 _MULTI_DEFAULT_ALLOWED: dict[str, set] = {
     # app.py:278 读 None（未设 = 不启用 CORS）；
     # app.py:321 写成 ("",).split(",") if get(...) else None —— 等价于 None。
-    "CORS_ORIGINS": {None, ""},
+    "AGENTNODES_CORS_ORIGINS": {None, ""},
     # workflow.py:355 用 "" 判空，其它读取点用 None。
-    "AN_WORKSPACE_PATH": {None, ""},
+    "AGENTNODES_WORKSPACE": {None, ""},
     # loop.py:872 用 flag 语义（== "0"），:927 是一个**纯消耗的无效读取**
     # （`_ = ...`，仅作文档）。后者建议删除；在此之前允许 "" 形态。
     "AGENTNODES_SKELETON": {None, ""},
@@ -449,13 +449,13 @@ def test_bg_proc_read_point_is_declared_correctly():
     ``_settings.get_int(X)``（或 get_str 后由下游 int()）。
     """
     src = (SRC / "foundation" / "utils" / "bg_proc.py").read_text(encoding="utf-8")
-    assert 'AN_BACKTEST_STALL_TIMEOUT' in src, "调用点仍用旧名（批 B' 的零改动策略）"
+    assert 'AGENTNODES_BACKTEST_STALL_TIMEOUT' in src, "调用点没用规范名"
     assert "_settings.get_" in src, "bg_proc 未走 settings 读取层"
     setting = settings.ENV_TABLE["AGENTNODES_BACKTEST_STALL_TIMEOUT"]
     # 源码是 float(os.environ.get(X, "300")) —— 允许小数，故 kind=float。
     assert setting.kind == "float"
     assert setting.default == 300.0
-    # 旧名必须能归一过来（否则调用点读不到）
+    # **批 E-2**：旧名不再被读取，但**诊断层仍能归一**（审计命令靠它）。
     assert settings.resolve_canonical("AN_BACKTEST_STALL_TIMEOUT") == \
         "AGENTNODES_BACKTEST_STALL_TIMEOUT"
 

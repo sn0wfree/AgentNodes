@@ -28,9 +28,11 @@ def _resolve_db_path() -> Optional[str]:
     """Find the sessions DB path. Returns ``None`` if env unset.
 
     **2026-11-09 修正拼写**：原为 ``AGENTNODES_SESSIONS_DB``（多一个 S），
-    与 settings 声明的 ``AGENTNODES_SESSION_DB`` / ``AN_SESSIONS_DB`` 不一致
-    ——用户按文档设 ``AGENTNODES_SESSION_DB`` 在这里**不生效**。
-    旧拼法保留为 settings 别名，已设旧名的部署不受影响。
+    与 settings 声明的 ``AGENTNODES_SESSION_DB`` 不一致——用户按文档设
+    ``AGENTNODES_SESSION_DB`` 在这里**不生效**。
+
+    **批 E-2**：旧拼法 ``AGENTNODES_SESSIONS_DB`` 与旧名 ``AN_SESSIONS_DB``
+    都已不再被读取（兼容层删除）。
     """
     from agentnodes.foundation.settings import get_str as _get_str
 
@@ -44,7 +46,7 @@ def _resolve_console(console: Any = None) -> Console:
 def cmd_history(*, console: Any = None, limit: int = 10) -> int:
     """``/history`` — list the most recent sessions (B4 Step 3).
 
-    Used to require ``AGENTNODES_SESSIONS_DB`` and read the legacy
+    Used to require ``AGENTNODES_SESSION_DB`` and read the legacy
     stack; it now reads the unified DB like everything else, so it works out
     of the box. (The old path was also broken: it read ``session_id`` /
     ``status`` off a dataclass that had neither.)

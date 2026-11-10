@@ -35,7 +35,7 @@
 - **held-out 门**：候选在**仓库外持有**的 held-out 集上须无显著退化，
   阈值同为 ``HELDOUT_DEGRADATION_THRESHOLD``。held-out 由
   ``agentnodes.evals.golden_sets`` 从 ``~/.agentnodes/eval_heldout/``
-  （或 ``AN_GOLDEN_HELDOUT_PATH``）读，仓库内没有明文副本。
+  （或 ``AGENTNODES_GOLDEN_HELDOUT_PATH``）读，仓库内没有明文副本。
 - **任一门失败 → 拒**；held-in 提了但 held-out 退了 = **分歧 kill-switch**：
   escalate + ``trip_halt``（护栏必须跨进程生效，见
   ``interfaces/cli/halt.py``）+ emit ``genome.heldout_divergence``。

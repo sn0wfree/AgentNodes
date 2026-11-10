@@ -27,9 +27,11 @@ logger = logging.getLogger(__name__)
 #: ``AN_DATA_PROFILE`` 变化）。旧的 ``~/.quantnodes-research`` 已硬切换，
 #: 不再读取——需要旧数据请设 ``AN_DATA_PROFILE=quantnodes``。
 _DEFAULT_CHECKPOINT_DIR = _paths.data_subdir("checkpoints")
-#: 目录覆盖（历史名保留；新增的 ``AN_CHECKPOINTS_DIR`` 优先级更高）。
+#: 目录覆盖（规范名）。
+_CHECKPOINT_DIR_ENV_NEW = "AGENTNODES_CHECKPOINTS_DIR"
+#: 目录覆盖（历史名，**仍然生效**——它指向用户数据在哪，见
+#: ``settings.LEGACY_LIVE_ENVS``）。
 _CHECKPOINT_DIR_ENV = "STRATEGY_RESEARCH_CHECKPOINT_BASE_DIR"
-_CHECKPOINT_DIR_ENV_NEW = "AN_CHECKPOINTS_DIR"
 _VERSION = "1.0"
 
 
@@ -38,16 +40,19 @@ class CheckpointStore:
 
     Args:
         base_dir: Root directory for checkpoints.
-                  Default: ``$AN_CHECKPOINTS_DIR`` >
+                  Default: ``$AGENTNODES_CHECKPOINTS_DIR`` >
                   ``$STRATEGY_RESEARCH_CHECKPOINT_BASE_DIR`` >
                   ``~/.agentnodes/checkpoints/``（随 ``AN_DATA_PROFILE``）。
     """
 
     def __init__(self, base_dir: Path | None = None) -> None:
-        import os
-        # 优先级：显式 arg > 新 env > 历史 env > profile 默认。
-        new_env = _settings.get_str("AGENTNODES_CHECKPOINTS_DIR").strip()
-        old_env = _settings.get_str("AGENTNODES_CHECKPOINTS_DIR").strip()
+        # 优先级：显式 arg > 规范名 env > 历史名 env > profile 默认。
+        #
+        # **批 E-2 修正**：此前两个分支都读 ``AGENTNODES_CHECKPOINTS_DIR``
+        # （改名时把历史名分支也一起改了），历史名分支形同虚设——
+        # 老部署的 checkpoint 目录会被静默忽略。
+        new_env = _settings.get_str(_CHECKPOINT_DIR_ENV_NEW).strip()
+        old_env = _settings.get_legacy(_CHECKPOINT_DIR_ENV, "") or ""
         if base_dir is not None:
             self._base_dir = base_dir
         elif new_env:

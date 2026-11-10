@@ -40,7 +40,7 @@ _QUEUE_LIMIT = 10
 # exceeds this duration is killed (CancelledError → mark_failed). This
 # prevents a single hung tool call / LLM stream from permanently
 # blocking the session's queue. Set to 0 to disable.
-_CHAT_ATTEMPT_TIMEOUT = int(_settings.get_str("AN_CHAT_ATTEMPT_TIMEOUT"))
+_CHAT_ATTEMPT_TIMEOUT = int(_settings.get_str("AGENTNODES_CHAT_ATTEMPT_TIMEOUT"))
 
 
 from .loop_events import (  # noqa: E402,F401
@@ -917,7 +917,7 @@ class SessionService:
 
         # Build AgentLoop (Phase 6: via shared factory)
         workspace_path = Path(
-            _settings.get_str("AN_WORKSPACE_PATH") or str(Path.cwd())
+            _settings.get_str("AGENTNODES_WORKSPACE") or str(Path.cwd())
         )
 
         # Bootstrap workspace if incomplete
@@ -961,7 +961,7 @@ class SessionService:
         # DAG-orchestrator continuation guard: when the LLM ends a turn with
         # a question instead of driving the DAG loop (AgentLoop breaks on any
         # turn without tool calls), inject a "keep going" turn and rerun —
-        # bounded by AN_ORCHESTRATOR_MAX_CONTINUES (default 10) so a
+        # bounded by AGENTNODES_ORCH_MAX_CONTINUES (default 10) so a
         # pathological loop always terminates normally.
         try:
             loop_result, asked_user, retries = await self._run_with_guard(agent, attempt, history)
@@ -987,7 +987,7 @@ class SessionService:
         When the LLM ends a turn with a question instead of driving the DAG
         loop (AgentLoop breaks on any turn without tool calls), inject a
         "keep going" turn and rerun — bounded by
-        ``AN_ORCHESTRATOR_MAX_CONTINUES`` (default 10) so a pathological loop
+        ``AGENTNODES_ORCH_MAX_CONTINUES`` (default 10) so a pathological loop
         always terminates normally.
 
         Returns ``(loop_result, asked_user, retries)`` on success; raises

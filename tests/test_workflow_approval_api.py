@@ -71,8 +71,8 @@ def api_env(tmp_path: Path, monkeypatch):
     Seeds a real session ``s1`` owned by ``tester`` — start-definition
     now enforces session ownership (P5-5③).
     """
-    monkeypatch.setenv("AN_WORKSPACE_PATH", str(tmp_path))
-    monkeypatch.setenv("AN_ADMIN_TOKEN", "test-admin-token")
+    monkeypatch.setenv("AGENTNODES_WORKSPACE", str(tmp_path))
+    monkeypatch.setenv("AGENTNODES_ADMIN_TOKEN", "test-admin-token")
     import agentnodes.interfaces.api.routers.workflow as wf
     wf._run_store = None
     wf._run_registry = None

@@ -57,7 +57,7 @@ async def system_info():
     db = get_user_db()
 
     # Workspace path
-    workspace = _settings.get_str("AN_WORKSPACE_PATH") or str(Path.cwd())
+    workspace = _settings.get_str("AGENTNODES_WORKSPACE") or str(Path.cwd())
 
     # LLM status (legacy dict for frontend compat)
     try:

@@ -16,7 +16,9 @@ import os
 from agentnodes.foundation import settings as _settings
 
 #: 环境变量名（``1`` / ``true`` / ``yes`` 视为开启）。
-ENV_ALLOW_SHELL = "AN_ALLOW_SHELL_TOOLS"
+#:
+#: **批次 E-2（2026-11-10）**：原为 ``AN_ALLOW_SHELL_TOOLS``（旧名）。
+ENV_ALLOW_SHELL = "AGENTNODES_ALLOW_SHELL_TOOLS"
 
 #: 这些模式下永不暴露 shell 工具（analysis-only，且单轮迭代）。
 SHELL_BLOCKED_MODES = frozenset({"plan"})
@@ -25,9 +27,9 @@ SHELL_BLOCKED_MODES = frozenset({"plan"})
 def shell_tools_enabled(mode: str | None = None) -> bool:
     """Whether the ``run_command`` shell tool should be offered to the agent.
 
-    Shell tools are opt-in: set ``AN_ALLOW_SHELL_TOOLS=1`` in the server
-    environment. Plan mode never exposes shell tools (analysis-only, single
-    iteration), regardless of the env var.
+    Shell tools are opt-in: set ``AGENTNODES_ALLOW_SHELL_TOOLS=1`` in the
+    server environment. Plan mode never exposes shell tools (analysis-only,
+    single iteration), regardless of the env var.
 
     :param mode: 当前对话模式（``"plan"`` / ``"build"`` / None）
     """

@@ -136,7 +136,7 @@ def test_unknown_mailbox_key_still_fails_fast(monkeypatch):
 
 def test_singleton_gateway_honours_env(monkeypatch):
     monkeypatch.setenv("QNODES_MAILBOX__CAP", "4")
-    monkeypatch.setenv("QNODES_PLATFORM_STORE", "0")
+    monkeypatch.setenv("AGENTNODES_PLATFORM_STORE", "0")
     reset_gateway()
     try:
         from agentnodes.kernel.gateway import get_gateway

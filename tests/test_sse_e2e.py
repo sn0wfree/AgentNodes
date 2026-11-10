@@ -54,10 +54,10 @@ def sse_server():
     env = os.environ.copy()
     env.update({
         "AGENTNODES_TEST_CHAT": "1",
-        "STATIC_DIR": str(REPO_ROOT / "webui" / "static"),
-        "CORS_ORIGINS": "*",
+        "AGENTNODES_STATIC_DIR": str(REPO_ROOT / "webui" / "static"),
+        "AGENTNODES_CORS_ORIGINS": "*",
         "PYTHONUNBUFFERED": "1",
-        "AN_WORKSPACE_PATH": str(REPO_ROOT),
+        "AGENTNODES_WORKSPACE": str(REPO_ROOT),
     })
 
     cmd = [

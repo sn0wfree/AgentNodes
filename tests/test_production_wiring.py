@@ -38,7 +38,7 @@ class _Client:
 def gateway(tmp_path, monkeypatch):
     """真实构造路径：import interfaces（触发钩子）→ get_gateway()。"""
     monkeypatch.setenv("AGENTNODES_GOAL_DB_PATH", str(tmp_path / "goals.db"))
-    monkeypatch.setenv("QNODES_PLATFORM_STORE", "1")
+    monkeypatch.setenv("AGENTNODES_PLATFORM_STORE", "1")
 
     import agentnodes.interfaces  # noqa: F401 —— 注册接线钩子
     from agentnodes.kernel.gateway.singleton import get_gateway, reset_gateway

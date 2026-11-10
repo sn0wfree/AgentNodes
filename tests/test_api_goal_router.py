@@ -26,7 +26,7 @@ def app(tmp_path, monkeypatch):
     db_path = str(tmp_path / "goals.db")
     session_db = str(tmp_path / "sessions.db")
     # R2: SR_* 是去研究化前的旧前缀；统一会话库入口只认 AN_SESSIONS_DB。
-    monkeypatch.setenv("AN_SESSIONS_DB", session_db)
+    monkeypatch.setenv("AGENTNODES_SESSION_DB", session_db)
     conn = sqlite3.connect(session_db)
     conn.execute(
         "CREATE TABLE IF NOT EXISTS sessions ("

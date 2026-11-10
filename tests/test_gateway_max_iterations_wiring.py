@@ -123,11 +123,11 @@ def test_gateway_passes_workspace_to_controller(tmp_path):
 
 
 def test_gateway_resolves_workspace_when_not_given(monkeypatch):
-    """不传 workspace → 解析（AN_WORKSPACE_PATH 优先）。"""
+    """不传 workspace → 解析（AGENTNODES_WORKSPACE 优先）。"""
     from agentnodes.kernel.gateway import gateway as gw_mod
 
     sentinel = tmp_path = __import__("pathlib").Path(r"D:\w4-probe-ws")
-    monkeypatch.setenv("AN_WORKSPACE_PATH", str(sentinel))
+    monkeypatch.setenv("AGENTNODES_WORKSPACE", str(sentinel))
     gw = gw_mod.Gateway(client=object())
     assert gw.controller._workspace == sentinel
 

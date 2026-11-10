@@ -526,9 +526,9 @@ class MCPServer:
         """Serve via stdin/stdout (blocking).
 
         stdout 只走 MCP 协议帧；configure_logging("mcp") 的 console
-        handler 落 **stderr**，日志（含 AN_LOG_JSON=1 的 JSON）不会混进
-        协议帧——与 Web/CLI 同一开关语义（AN_LOG_LEVEL/AN_LOG_JSON/
-        AN_LOG_FILE 由统一入口解析）。
+        handler 落 **stderr**，日志（含 AGENTNODES_LOG_JSON=1 的 JSON）不会混进
+        协议帧——与 Web/CLI 同一开关语义（AGENTNODES_LOG_LEVEL/AGENTNODES_LOG_JSON/
+        AGENTNODES_LOG_FILE 由统一入口解析）。
         """
         import sys
 

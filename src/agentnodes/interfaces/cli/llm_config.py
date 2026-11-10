@@ -45,14 +45,16 @@ _llm_g.add_argument("--llm-profile", default=None,
 def _cli_overrides_from_args(args: argparse.Namespace | None) -> dict:
     """Extract --llm-* kwargs from argparse Namespace.
 
-    ``--llm-profile`` is handled separately (sets ``LLM_PROFILE`` env so
-    the config's profile resolution picks it up); it is NOT a config key.
+    ``--llm-profile`` is handled separately (sets ``AGENTNODES_LLM_PROFILE``
+    env so the config's profile resolution picks it up); it is NOT a config key.
+
+    **批 E-2**：写的是规范名——旧名 ``LLM_PROFILE`` 已不再被读取。
     """
     if args is None:
         return {}
     profile = getattr(args, "llm_profile", None)
     if profile:
-        os.environ["LLM_PROFILE"] = profile
+        os.environ["AGENTNODES_LLM_PROFILE"] = profile
     out = {}
     for key, value in vars(args).items():
         if key == "llm_profile":

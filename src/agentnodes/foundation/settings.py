@@ -10,36 +10,41 @@
 - 无法集中文档化（新人不知道有哪些开关）
 - 无法做配置快照（出问题时不知道进程实际用了什么）
 
-## 三步演进
+## 四步演进
 
 | 批 | 内容 | 结果 |
 |---|---|---|
 | **A** | 建声明表 + 统一读取 + 快照（**零行为变化**） | 71 个读取点被 56 条声明覆盖 |
 | **B** | 62 处调用点改走 `settings.get_*`（**不改名**） | 门禁从 58 违规→0，转为硬门禁 |
 | **B'** | 声明表 name 改为 `AGENTNODES_*`，旧名进 `aliases` | 零调用点改动（见下） |
+| **E-2** | **删掉 `aliases` 兼容层**（旧名不再被读取） | 读取层只认 canonical；旧名降级为诊断清单 |
 
-## 命名规范（批次 B' 之后）
+## 命名规范（批次 E-2 之后）
 
 - **规范名**：`AGENTNODES_<DOMAIN>_<PARAM>`（domain: paths/engine/cache/
   log/api/orch/cli/compact/llm）
 - **旧名**：`AN_*` / `QNODES_*` / `SR_*` / 无前缀的（`JWT_SECRET` /
-  `CORS_ORIGINS` / `STATIC_DIR`）—— 全部作为 `aliases` 保留，仍可读、仍生效
+  `CORS_ORIGINS` / `STATIC_DIR`）—— **不再被读取**（批 E-2 删掉了兼容层）
 - **外部生态名不改**：`OPENAI_API_KEY` / `LLM_API_KEY` / `HOME` / `NO_COLOR` /
   `LANGCHAIN_*` 等（改它们会破坏互操作性）
 
-## 归一链（为什么零调用点改动）
+## 读取链（批 E-2 之后）
 
 ```
-调用点传旧名 "AN_LOG_LEVEL"
-  ↓ _ALIAS_INDEX 归一
-规范名 "AGENTNODES_LOG_LEVEL"
-  ↓ 查 os.environ[规范名]        ← 用户设了新名 → 命中
-  ↓ 未命中则按 aliases 回退      ← 用户只设了旧名 → 命中 + warn 一次
-  ↓ 仍未命中则用声明 default
+调用点传规范名 "AGENTNODES_LOG_LEVEL"
+  ↓ 查 os.environ[规范名]        ← 用户设了规范名 → 命中
+  ↓ 未命中则用声明 default
 ```
 
-所以**用户设新名或旧名都工作，调用点传新名或旧名也都工作**。
-`resolve_canonical()` / `legacy_names()` 供诊断与迁移使用。
+**旧名不再有回退分支**。删兼容层最怕的是「静默失效」——不报错，只是行为
+回落默认。所以读取层加了一道**显式告警**：读某个规范名时若发现环境里还留着
+它的旧名，就 warn 一次并指出该改成什么（见 :func:`_resolve`）。
+
+旧名本身作为**纯诊断数据**留在本模块（`_LEGACY_NAMES` / `_LEGACY_CATALOG`），
+供 `agentnodes config audit-legacy` 报告「你还在用旧名 X，请改成 Y」。
+**诊断层认旧名，读取层不认**——这是批 E-2 的核心分界。
+
+`resolve_canonical()` / `legacy_names()` / `legacy_usage()` 是诊断入口。
 
 ## 与 `foundation/paths.py` 的分工
 
@@ -64,20 +69,26 @@
 from __future__ import annotations
 
 import os
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from typing import Any, Callable, Literal, Mapping
 
 __all__ = [
     "ENV_TABLE",
+    "LEGACY_LIVE_ENVS",
     "Setting",
     "get",
     "get_bool",
     "get_float",
     "get_int",
+    "get_legacy",
     "get_str",
     "is_set",
     "known_names",
     "legacy_names",
+    "legacy_risk",
+    "legacy_usage",
+    "legacy_usage_summary",
+    "reset_warnings",
     "resolve_canonical",
     "snapshot",
     "unknown_env_vars",
@@ -91,15 +102,17 @@ class Setting:
     """一个环境变量声明的不可变描述。
 
     Attributes:
-        name: 环境变量名（**当前名字**，批次 B 才改名）。
+        name: 环境变量名（**规范名**）。
         kind: 解析类型。``flag`` = 存在即为真（不看值）。
         default: 默认值。``None`` 表示"未设置时不提供默认值"——
             调用方自己处理 ``None``（这与既有代码的 ``os.environ.get(NAME)``
             语义一致，必须保留）。
         domain: 语义域（用于分组展示与未来 CLI 前缀映射）。
         doc: 一句话说明。
-        aliases: 兼容别名（批次 B 用于旧名回退；本批留空或只记录现状）。
         secret: 是否敏感（``snapshot()`` 中脱敏）。
+
+    **批 E-2 起没有 ``aliases`` 字段**：旧名兼容层已删除，声明表只描述
+    规范名。旧名清单在模块级 :data:`_LEGACY_NAMES`（诊断用），不进本表。
     """
 
     name: str
@@ -107,7 +120,6 @@ class Setting:
     default: Any = None
     domain: str = "misc"
     doc: str = ""
-    aliases: tuple[str, ...] = field(default_factory=tuple)
     secret: bool = False
 
 
@@ -240,7 +252,7 @@ _DECLARED: tuple[Setting, ...] = (
 
     # ── API / 服务（domain: api）──────────────────────────────
     _s("AGENTNODES_JWT_SECRET", "api", None, "JWT 签名密钥", secret=True),
-    # 源码两处读取都是 `os.environ.get("CORS_ORIGINS")`（无默认）：
+    # 源码两处读取都是 `os.environ.get("AGENTNODES_CORS_ORIGINS")`（无默认）：
     # 未设置 → None → "不启用 CORS"。空串与 None 在此等价（都 falsy）。
     _s("AGENTNODES_CORS_ORIGINS", "api", None, "CORS 允许来源（逗号分隔；未设=不启用）"),
     _s("AGENTNODES_ADMIN_TOKEN", "api", "", "管理员 token", secret=True),
@@ -279,18 +291,37 @@ _DECLARED: tuple[Setting, ...] = (
        secret=True),
 )
 
-# ── 旧名 -> 规范名（批次 B'）────────────────────────────────────────
+# ── 旧名清单（批 E-2：诊断层，不是读取层）──────────────────────────
 #
-# 改名后旧名仍然是**受支持的输入**：ENV_TABLE 以规范名为 key，
-# 旧名在 `aliases` 里，`resolve_canonical()` 负责归一。
-# 这样 62 处既有调用点（传旧名）与用户环境（可能设旧名）都能工作。
+# 批 B' 改名时把 49 个旧名（AN_* / QNODES_* / SR_* / 无前缀的几个）挂进
+# `aliases`，让旧名继续生效。批 E-2 把兼容层删掉了——**但旧名不能从代码里
+# 消失**，因为审计命令 `agentnodes config audit-legacy` 要靠它告诉用户
+# 「你还在用旧名 X，请改成 Y」。
+#
+# 所以本表从「读取层的别名」**降级为「诊断层的清单」**：
+#
+# | 层 | 认旧名吗 | 谁在用 |
+# |---|---|---|
+# | 读取层（`ENV_TABLE` / `_resolve`）| **不认** | 全部配置读取 |
+# | 诊断层（本表 / `_LEGACY_CATALOG`）| 认 | `audit-legacy` 命令、`resolve_canonical()` |
+#
+# **前提**（批 E-1 的 `agentnodes config audit-legacy`）已确认：本机 0 个
+# 旧名在用。
+#
+# 删之前先做的两件事（否则是静默失效）：
+# 1. **51 处调用点全部改成 canonical**——旧实现大量直接读旧名
+#    （`_settings.get_str("AN_WORKSPACE_PATH")`），alias 一删就回落默认；
+# 2. **审计命令落地**——给"删前必须改名"提供可执行的检查；
+# 3. **读取层加 deprecation 告警**（见 `_resolve`）——万一还有旧名残留，
+#    读的时候明确喊出来，而不是静默回落默认。
 _LEGACY_NAMES: dict[str, tuple[str, ...]] = {
     "AGENTNODES_ALLOW_SHELL_TOOLS": ("AN_ALLOW_SHELL_TOOLS",),
     "AGENTNODES_GOLDEN_HELDOUT_PATH": ("AN_GOLDEN_HELDOUT_PATH",),
     "AGENTNODES_LLM_PROFILE": ("LLM_PROFILE",),
     "AGENTNODES_LOG_FILE": ("AN_LOG_FILE",),
-    "AGENTNODES_CHECKPOINTS_DIR": ("AN_CHECKPOINTS_DIR",
-                                   "STRATEGY_RESEARCH_CHECKPOINT_BASE_DIR"),
+    "AGENTNODES_CHECKPOINTS_DIR": (
+        "AN_CHECKPOINTS_DIR", "STRATEGY_RESEARCH_CHECKPOINT_BASE_DIR",
+    ),
     "AGENTNODES_SESSION_DB": ("AN_SESSIONS_DB", "AGENTNODES_SESSIONS_DB"),
     "AGENTNODES_ADMIN_PASSWORD": ("AN_ADMIN_PASSWORD",),
     "AGENTNODES_ADMIN_TOKEN": ("AN_ADMIN_TOKEN",),
@@ -321,7 +352,9 @@ _LEGACY_NAMES: dict[str, tuple[str, ...]] = {
     "AGENTNODES_EVENT_LOG_READ": ("AN_EVENT_LOG_READ",),
     "AGENTNODES_HYPOTHESES_PATH": ("AN_HYPOTHESES_PATH",),
     "AGENTNODES_JWT_SECRET": ("JWT_SECRET",),
-    "AGENTNODES_LLM_REQUEST_OFFLOAD_THRESHOLD": ("AN_LLM_REQUEST_OFFLOAD_THRESHOLD",),
+    "AGENTNODES_LLM_REQUEST_OFFLOAD_THRESHOLD": (
+        "AN_LLM_REQUEST_OFFLOAD_THRESHOLD",
+    ),
     "AGENTNODES_LOG_JSON": ("AN_LOG_JSON",),
     "AGENTNODES_LOG_LEVEL": ("AN_LOG_LEVEL",),
     "AGENTNODES_MODEL_CATALOG_DIR": ("AN_MODEL_CATALOG_DIR",),
@@ -332,6 +365,36 @@ _LEGACY_NAMES: dict[str, tuple[str, ...]] = {
     "AGENTNODES_TOOL_RESULT_MAX_CHARS": ("AN_TOOL_RESULT_MAX_CHARS",),
     "AGENTNODES_WORKFLOWS_DIR": ("AN_WORKFLOWS_DIR",),
     "AGENTNODES_WORKSPACE": ("AN_WORKSPACE_PATH", "SR_WORKSPACE_PATH"),
+}
+
+#: 旧名 -> 规范名（由 :data:`_LEGACY_NAMES` 反转派生）。
+#:
+#: **诊断层专用**：读取层不查这张表（批 E-2 删掉了 alias 回退）。
+_LEGACY_CATALOG: dict[str, str] = {
+    old: canonical
+    for canonical, olds in _LEGACY_NAMES.items()
+    for old in olds
+}
+
+#: 规范名 -> 旧名（读取层用它判断"环境里是不是还留着旧名"→ 告警）。
+_LEGACY_BY_CANONICAL: dict[str, tuple[str, ...]] = {
+    canonical: olds for canonical, olds in _LEGACY_NAMES.items()
+}
+
+#: **仍然生效**的历史名（数据位置连续性，不是"配置改名兼容"）。
+#:
+#: 这几个不是"改名兼容"——它们指向的是**用户数据在哪**。删掉不会让程序
+#: 报错，只会让用户"找不到自己的数据"，所以它们由各自的模块**显式直读**
+#: （`paths.active_profile` / `workflow._definition_workspace` /
+#: `goal._session_owned` / `checkpoint_store.CheckpointStore`），
+#: 不走本模块的 alias 机制。
+#:
+#: 审计命令会把它们标成"仍生效（已废弃）"而不是"已失效"。
+LEGACY_LIVE_ENVS: dict[str, str] = {
+    "AN_DATA_PROFILE": "AGENTNODES_PROFILE",
+    "SR_WORKSPACE_PATH": "AGENTNODES_WORKSPACE",
+    "SR_ENFORCE_STUDY_IDOR": "AGENTNODES_ENFORCE_STUDY_IDOR_LEGACY",
+    "STRATEGY_RESEARCH_CHECKPOINT_BASE_DIR": "AGENTNODES_CHECKPOINTS_DIR",
 }
 
 #: **重复登记的显式防线**：dict comprehension 会让后一条静默覆盖前一条
@@ -348,33 +411,16 @@ if _dupes:
 
 ENV_TABLE: dict[str, Setting] = {s.name: s for s in _DECLARED}
 
-# ── 旧名注入（批次 B'）───────────────────────────────────────────────
-#
-# **为什么在这里而不是手写进每条声明**：41 组旧名手写容易漏/拼错，且
-# `_LEGACY_NAMES` 本身就是要被测试比对的"单一事实源"。注入后用
-# `dataclasses.replace` 生成新实例，frozen 语义不变。
-from dataclasses import replace as _dc_replace  # noqa: E402
-
-for _canonical, _olds in _LEGACY_NAMES.items():
-    _setting = ENV_TABLE.get(_canonical)
-    if _setting is None:
-        raise RuntimeError(
-            f"_LEGACY_NAMES references undeclared canonical name: {_canonical!r}"
-        )
-    ENV_TABLE[_canonical] = _dc_replace(
-        _setting, aliases=tuple(_setting.aliases) + tuple(_olds)
+#: **旧名不得与规范名撞车**（批 E-2 的显式防线）。
+#:
+#: 旧名一旦变成规范名，读取层就会认它——那等于把兼容层偷偷加回来，
+#: 而且没有任何告警。这里在 import 期就炸。
+_collisions = sorted(set(_LEGACY_CATALOG) & set(ENV_TABLE))
+if _collisions:
+    raise RuntimeError(
+        f"legacy env names collide with canonical declarations: {_collisions} "
+        f"(a legacy name must never become a canonical name)"
     )
-
-#: 旧名 -> 规范名 反查索引（读取入口用它归一）。
-_ALIAS_INDEX: dict[str, str] = {}
-for _canonical, _setting in ENV_TABLE.items():
-    for _alias in _setting.aliases:
-        if _alias in ENV_TABLE:
-            raise RuntimeError(
-                f"alias {_alias!r} collides with a canonical declaration — "
-                f"rename one of them"
-            )
-        _ALIAS_INDEX[_alias] = _canonical
 
 #: 外部生态 / 操作系统提供的变量——**不纳入统一管理**。
 #: 它们不属于本项目的配置，改名会破坏互操作性。
@@ -390,13 +436,13 @@ EXTERNAL_ENV_VARS: frozenset[str] = frozenset({
 
 
 def get(name: str, default: Any = None) -> str | None:
-    """读原始字符串值（解析别名）。
+    """读原始字符串值。
 
     ``default`` 的语义与 ``os.environ.get(name, default)`` 一致：未设置时
     返回 ``default``（可能是 ``None``，表示"调用方自己处理"）。
 
-    **批次 B**：会先查 canonical 名，再按声明表的 ``aliases`` 回退
-    （回退时 warn 一次）。
+    **批 E-2**：只读规范名。旧名不再回退——环境里若还留着旧名，
+    :func:`_resolve` 会 warn 一次并指出该改成什么。
     """
     raw, _ = _resolve(name)
     return default if raw is None else raw
@@ -423,12 +469,13 @@ def _coerce(setting: Setting, raw: str) -> Any:
 def _default_of(name: str, fallback: Any = None) -> Any:
     """取声明默认值。
 
-    **必须走别名归一**：批 B' 后 ENV_TABLE 的 key 是规范名，但调用点仍传
-    旧名（如 ``AGENTNODES_THEME``）。不归一就查不到声明，默认值退化成
-    ``fallback``（通常是 None），导致 ``get_str(X).strip()`` 崩在 None 上。
+    **批 E-2**：名字必须是规范名。传旧名会查不到声明 → 回落 ``fallback``
+    （通常是 None）——这正是删兼容层最怕的「静默回落默认」。
+    所以这里对未登记的名字打一次告警（见 :func:`_warn_unknown`）。
     """
-    setting = ENV_TABLE.get(_ALIAS_INDEX.get(name, name))
+    setting = ENV_TABLE.get(name)
     if setting is None:
+        _warn_unknown(name)
         return fallback
     return setting.default if setting.default is not None else fallback
 
@@ -478,17 +525,15 @@ def unknown_env_vars(environ: dict[str, str] | None = None) -> list[str]:
     """返回进程环境里"看起来像本项目、但没在声明表里"的变量。
 
     判据：前缀是 ``AN_`` / ``AGENTNODES_`` / ``QNODES_`` /
-    ``QUANTNODES_`` / ``SR_``，且不在 ``ENV_TABLE``（含 ``aliases``）
-    也不在 ``EXTERNAL_ENV_VARS``。用于发现"新增了开关但忘了登记"。
+    ``QUANTNODES_`` / ``SR_``，且不在 ``ENV_TABLE`` 也不在
+    ``EXTERNAL_ENV_VARS``。用于发现"新增了开关但忘了登记"。
 
-    **别名也算已知**：改名后旧名仍在用户环境里，它是被支持的输入，
-    不应被当成"未登记"。
+    **批 E-2**：旧名**不再算已知**——它们已经不被读取了，还留在环境里
+    就是"设了但不生效"，正是审计命令要报出来的东西。
     """
     env = environ if environ is not None else os.environ
     prefixes = ("AN_", "AGENTNODES_", "QNODES_", "QUANTNODES_", "SR_")
     known = set(ENV_TABLE)
-    for s in ENV_TABLE.values():
-        known.update(s.aliases)
     out = []
     for name in env:
         if name in known or name in EXTERNAL_ENV_VARS:
@@ -505,15 +550,19 @@ def _mask(value: Any) -> str:
     return s[:2] + "*" * (len(s) - 4) + s[-2:]
 
 
-# ── 别名解析（批次 B）────────────────────────────────────────────────
+# ── 告警（批 E-2）─────────────────────────────────────────────────────
 #
-# **为什么需要**：改名不能一步到位——用户环境里可能还留着旧名。别名让
-# 新名（canonical）优先、旧名（aliases）回退，并在回退时 warn 一次。
+# 删兼容层最怕的是**静默失效**：不报错，只是行为回落默认。所以读取层
+# 在两个地方喊出来：
+#
+# 1. **环境里还留着旧名** → 读对应规范名时 warn，指名该改成什么；
+# 2. **调用点传了未登记的名字** → warn（多半是把旧名改漏了）。
 #
 # **为什么 warn 只一次**：这些读取点都在热路径（每次工具调用/每轮循环），
-# 逐次 warn 会淹没日志。用模块级集合去重，每个进程每个别名一条。
+# 逐次 warn 会淹没日志。用模块级集合去重，每个进程每条一条。
 
-_warned_aliases: set[str] = set()
+_warned_legacy: set[str] = set()
+_warned_unknown: set[str] = set()
 
 _logger = None
 
@@ -527,54 +576,99 @@ def _get_logger():
     return _logger
 
 
-def _warn_alias(alias: str, canonical: str) -> None:
-    if alias in _warned_aliases:
+def _warn_legacy(old: str, canonical: str) -> None:
+    """环境里还留着旧名 → 明确告警（不静默回落默认）。"""
+    if old in _warned_legacy:
         return
-    _warned_aliases.add(alias)
+    _warned_legacy.add(old)
+    if old in LEGACY_LIVE_ENVS:
+        _get_logger().warning(
+            "[deprecated] env %s is still honored but deprecated — "
+            "switch to %s", old, canonical,
+        )
+    else:
+        _get_logger().warning(
+            "[deprecated] env %s is no longer read (it was renamed to %s) — "
+            "this value is IGNORED, update your environment/config",
+            old, canonical,
+        )
+
+
+def _warn_unknown(name: str) -> None:
+    """调用点传了未登记的名字 → 告警（多半是漏改的旧名）。"""
+    if name in _warned_unknown:
+        return
+    _warned_unknown.add(name)
+    hint = ""
+    legacy = _LEGACY_CATALOG.get(name)
+    if legacy:
+        hint = f" (did you mean {legacy}?)"
     _get_logger().warning(
-        "[deprecated] env %s -> %s (old name still honored this release; "
-        "update your environment/config)", alias, canonical,
+        "[settings] env %s is not declared in ENV_TABLE%s — "
+        "the lookup will fall back to the default",
+        name, hint,
     )
 
 
 def _resolve(name: str) -> tuple[str | None, str | None]:
     """返回 (原始值, 实际命中的变量名)。
 
-    **批次 B' 的归一链**（调用点传旧名也能工作）：
+    **批 E-2 之后只认规范名**：
 
-    1. ``name`` 若为旧名 -> 归一为 canonical（``_ALIAS_INDEX``）
-    2. 查 ``os.environ[canonical]``
-    3. 再按 ``aliases`` 回退（用户设了旧名）+ warn 一次
+    1. 查 ``os.environ[name]`` → 命中即返回；
+    2. 未命中：如果环境里还留着它的**旧名**，warn 一次（明确告诉用户
+       旧名已失效/已废弃），但**不**回退到旧值——兼容层已删；
+    3. 仍未命中 → 回落声明默认值（由 :func:`get_str` 等处理）。
     """
-    canonical = _ALIAS_INDEX.get(name, name)
+    if name in os.environ:
+        return os.environ[name], name
 
-    if canonical in os.environ:
-        return os.environ[canonical], canonical
-
-    setting = ENV_TABLE.get(canonical)
-    if setting is not None:
-        for alias in setting.aliases:
-            if alias in os.environ:
-                _warn_alias(alias, canonical)
-                return os.environ[alias], alias
+    for old in _LEGACY_BY_CANONICAL.get(name, ()):
+        if old in os.environ:
+            _warn_legacy(old, name)
+            break
     return None, None
+
+
+def get_legacy(name: str, default: Any = None) -> str | None:
+    """读一个**仍然生效**的历史名（数据位置连续性）。
+
+    只有 :data:`LEGACY_LIVE_ENVS` 里的名字能走这个入口——它们指向的是
+    "**用户的数据在哪**"。删掉不会让程序报错，只会让用户找不到自己的
+    数据，所以由各自的模块**显式**直读它们。
+
+    与读取层的关系：读取层只认规范名；这里是**唯一的例外入口**，
+    且必须显式指明旧名（传别的名字直接抛错）——免得兼容层被无声加回来。
+
+    读到值时会 warn 一次（已废弃，但仍生效）。
+    """
+    if name not in LEGACY_LIVE_ENVS:
+        raise KeyError(
+            f"{name!r} is not a still-honored legacy env name; "
+            f"only {sorted(LEGACY_LIVE_ENVS)} may be read this way"
+        )
+    raw = os.environ.get(name)
+    if raw is not None:
+        _warn_legacy(name, LEGACY_LIVE_ENVS[name])
+    return default if raw is None else raw
 
 
 def resolve_canonical(name: str) -> str:
     """把可能是旧名的标识符映射到 canonical 名（用于诊断/迁移）。
 
-    若 ``name`` 是某个条目的 canonical 名，返回自身；若是某条目的 alias，
-    返回该条目的 canonical 名；否则原样返回。
+    若 ``name`` 是某个条目的 canonical 名，返回自身；若是某个旧名，
+    返回它的 canonical 名；否则原样返回。
+
+    **批 E-2**：这是**诊断入口**——读取层不再用它归一。
     """
     if name in ENV_TABLE:
         return name
-    return _ALIAS_INDEX.get(name, name)
+    return _LEGACY_CATALOG.get(name, name)
 
 
 def legacy_names() -> dict[str, tuple[str, ...]]:
     """返回 规范名 -> 旧名 的映射（供诊断/文档/测试）。"""
     return {k: tuple(v) for k, v in _LEGACY_NAMES.items()}
-    return name
 
 
 # ── 批 E：旧名审计（只读）────────────────────────────────────
@@ -664,6 +758,11 @@ class LegacyUsage:
     canonical: str
     value: str
     risk: LegacyRisk
+    #: 该旧名**是否仍然生效**（``LEGACY_LIVE_ENVS`` 的那几个）。
+    #:
+    #: - ``False`` → 兼容层已删，**这个值被忽略**（设了不生效）；
+    #: - ``True``  → 仍生效（数据位置连续性），但已废弃。
+    honored: bool = False
 
     @property
     def secret(self) -> bool:
@@ -677,6 +776,7 @@ class LegacyUsage:
             "canonical": self.canonical,
             "value": self.value,
             "risk": self.risk,
+            "honored": self.honored,
         }
 
 
@@ -689,10 +789,13 @@ def legacy_usage(
 
     **不触发任何 settings 读取**——审计不该产生告警噪声或副作用。
     只看"当前生效"的（旧名设置了才报），不看 shell 配置文件里写过什么。
+
+    **批 E-2 后**：清单来源是诊断层的 :data:`_LEGACY_CATALOG`
+    （不再是读取层的 alias 索引）——兼容层删了，审计照样能跑。
     """
     env = environ if environ is not None else os.environ
     out: list[LegacyUsage] = []
-    for old, canonical in _ALIAS_INDEX.items():
+    for old, canonical in _LEGACY_CATALOG.items():
         if old not in env:
             continue
         out.append(LegacyUsage(
@@ -700,6 +803,7 @@ def legacy_usage(
             canonical=canonical,
             value=env[old],
             risk=legacy_risk(old),
+            honored=old in LEGACY_LIVE_ENVS,
         ))
     order = {"high": 0, "medium": 1, "low": 2}
     out.sort(key=lambda u: (order.get(u.risk, 3), u.old_name))
@@ -717,23 +821,31 @@ def legacy_usage_summary(
     usages = legacy_usage(environ)
     counts = {"high": 0, "medium": 0, "low": 0}
     items: list[dict[str, Any]] = []
+    ignored = 0
     for u in usages:
         counts[u.risk] = counts.get(u.risk, 0) + 1
         item = u.to_dict()
         if u.secret:
             item["value"] = _mask(item["value"])
+        if not u.honored:
+            ignored += 1
         items.append(item)
     return {
         "total": len(usages),
         "counts": counts,
+        #: **仍然生效**的旧名数（数据位置连续性，只是已废弃）。
+        "honored": sum(1 for u in usages if u.honored),
+        #: **已经失效**的旧名数——这些值被静默忽略，必须改名。
+        "ignored": ignored,
         "items": items,
         "notes": dict(_LEGACY_RISK_NOTE),
     }
 
 
-def reset_alias_warnings() -> None:
-    """清空 warn 去重集合（测试用）。"""
-    _warned_aliases.clear()
+def reset_warnings() -> None:
+    """清空告警去重集合（测试用）。"""
+    _warned_legacy.clear()
+    _warned_unknown.clear()
 
 
 def snapshot(environ: dict[str, str] | None = None) -> dict[str, Any]:
@@ -742,8 +854,9 @@ def snapshot(environ: dict[str, str] | None = None) -> dict[str, Any]:
     只包含**已设置**的项 + 声明了默认值的项——用于日志与
     ``--print-config``。密钥（``secret=True``）脱敏。
 
-    **别名**：canonical 名未设但别名设了时，``source`` 记录为
-    ``"alias:<旧名>"``，让诊断能看出用户还在用旧名。
+    **批 E-2**：``source`` 只有 ``env`` / ``default`` 两种——旧名不再
+    被读取，所以不存在 ``"alias:<旧名>"`` 这一档了。环境里若还留着
+    旧名，用 `agentnodes config audit-legacy` 查。
     """
     env = environ if environ is not None else os.environ
     out: dict[str, Any] = {}
@@ -751,12 +864,6 @@ def snapshot(environ: dict[str, str] | None = None) -> dict[str, Any]:
         setting = ENV_TABLE[name]
         raw = env.get(name)
         source = "env"
-        if raw is None:
-            for alias in setting.aliases:
-                if alias in env:
-                    raw = env[alias]
-                    source = f"alias:{alias}"
-                    break
         if raw is None:
             if setting.default is None:
                 continue

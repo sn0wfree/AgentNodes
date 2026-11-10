@@ -22,7 +22,7 @@ def db(tmp_path) -> UserDB:
 
 def test_random_seed_when_no_env(db: UserDB, monkeypatch) -> None:
     """Production path: random password, never 'admin', persisted once."""
-    monkeypatch.delenv("AN_ADMIN_PASSWORD", raising=False)
+    monkeypatch.delenv("AGENTNODES_ADMIN_PASSWORD", raising=False)
 
     seed_admin_if_empty(db)
 
@@ -38,8 +38,8 @@ def test_random_seed_when_no_env(db: UserDB, monkeypatch) -> None:
 
 
 def test_env_opt_in_seed(db: UserDB, monkeypatch) -> None:
-    """AN_ADMIN_PASSWORD controls the seed explicitly (ops/tests)."""
-    monkeypatch.setenv("AN_ADMIN_PASSWORD", "s3cret-op")
+    """AGENTNODES_ADMIN_PASSWORD controls the seed explicitly (ops/tests)."""
+    monkeypatch.setenv("AGENTNODES_ADMIN_PASSWORD", "s3cret-op")
 
     seed_admin_if_empty(db)
 
@@ -50,12 +50,12 @@ def test_env_opt_in_seed(db: UserDB, monkeypatch) -> None:
 
 def test_seed_is_idempotent(db: UserDB, monkeypatch) -> None:
     """Existing deployments are untouched (count > 0 short-circuits)."""
-    monkeypatch.setenv("AN_ADMIN_PASSWORD", "first")
+    monkeypatch.setenv("AGENTNODES_ADMIN_PASSWORD", "first")
 
     seed_admin_if_empty(db)
     first = db.get_user_by_username("admin")
 
-    monkeypatch.setenv("AN_ADMIN_PASSWORD", "second")
+    monkeypatch.setenv("AGENTNODES_ADMIN_PASSWORD", "second")
     seed_admin_if_empty(db)
 
     again = db.get_user_by_username("admin")

@@ -194,7 +194,7 @@ def _action_show() -> int:
     active = _active_profile()
     print(f"\n# active_profile = {active or '(none)'}")
     if active:
-        print(f"# 来源: llm.json profiles.{active}（env LLM_PROFILE / --llm-profile 可覆盖）")
+        print(f"# 来源: llm.json profiles.{active}（env AGENTNODES_LLM_PROFILE / --llm-profile 可覆盖）")
     return 0
 
 

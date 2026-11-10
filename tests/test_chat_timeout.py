@@ -22,7 +22,7 @@ if TYPE_CHECKING:
 def _env(tmp_path: Path, monkeypatch):
     monkeypatch.setenv("AGENTNODES_GOAL_DB_PATH", str(tmp_path / "goals.db"))
     monkeypatch.setenv("AGENTNODES_HYPOTHESES_PATH", str(tmp_path / "hyp.json"))
-    monkeypatch.setenv("AN_SESSIONS_DB", str(tmp_path / "sessions.db"))
+    monkeypatch.setenv("AGENTNODES_SESSION_DB", str(tmp_path / "sessions.db"))
     yield
 
 
@@ -32,7 +32,7 @@ class TestChatAttemptTimeout:
         assert _CHAT_ATTEMPT_TIMEOUT == 600
 
     def test_timeout_zero_disables(self, monkeypatch):
-        monkeypatch.setenv("AN_CHAT_ATTEMPT_TIMEOUT", "0")
+        monkeypatch.setenv("AGENTNODES_CHAT_ATTEMPT_TIMEOUT", "0")
         # Reimport to pick up env change
         import importlib
 
@@ -40,7 +40,7 @@ class TestChatAttemptTimeout:
         importlib.reload(svc_mod)
         assert svc_mod._CHAT_ATTEMPT_TIMEOUT == 0
         # Restore for other tests
-        monkeypatch.setenv("AN_CHAT_ATTEMPT_TIMEOUT", "600")
+        monkeypatch.setenv("AGENTNODES_CHAT_ATTEMPT_TIMEOUT", "600")
         importlib.reload(svc_mod)
 
 

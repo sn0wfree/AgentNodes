@@ -99,7 +99,7 @@ def isolated(tmp_path: Path, monkeypatch):
     )
     for k in ("OPENAI_API_KEY", "LLM_API_KEY", "MINIMAX_API_KEY",
               "NVIDIA_API_KEY", "OPENAI_MODEL", "OPENAI_BASE_URL",
-              "LLM_PROFILE"):
+              "AGENTNODES_LLM_PROFILE"):
         monkeypatch.delenv(k, raising=False)
     return llm_json, dotenv
 

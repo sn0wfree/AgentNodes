@@ -175,7 +175,7 @@ def _admin_seed_password(monkeypatch):
     as admin/admin would break. Declaring it here keeps that dependency
     explicit and host runs unaffected.
     """
-    monkeypatch.setenv("AN_ADMIN_PASSWORD", "admin")
+    monkeypatch.setenv("AGENTNODES_ADMIN_PASSWORD", "admin")
 
 
 @pytest.fixture(autouse=True)
@@ -238,8 +238,8 @@ def _isolate_workspace_env(tmp_path):
     saved = {
         k: os.environ.get(k)
         for k in (
-            "AN_WORKSPACE_PATH", "AN_SESSIONS_DB", "HYPOTHESIS_USE_SQLITE",
-            "STATIC_DIR", "AGENTNODES_GOAL_DB_PATH",
+            "AGENTNODES_WORKSPACE", "AGENTNODES_SESSION_DB", "HYPOTHESIS_USE_SQLITE",
+            "AGENTNODES_STATIC_DIR", "AGENTNODES_GOAL_DB_PATH",
         )
     }
 
@@ -270,7 +270,7 @@ def _default_session_workspace(tmp_path_factory):
     """
     workspace = tmp_path_factory.mktemp("session_workspace")
     mp = pytest.MonkeyPatch()
-    mp.setenv("AN_WORKSPACE_PATH", str(workspace))
+    mp.setenv("AGENTNODES_WORKSPACE", str(workspace))
     yield
     mp.undo()
 

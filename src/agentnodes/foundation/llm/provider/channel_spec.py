@@ -7,7 +7,7 @@
 
 ## 解析顺序（首次命中即用）
 
-1. 用户覆盖：``<AN_MODEL_CATALOG_DIR>/model_specs/<provider>/<model>.toml``
+1. 用户覆盖：``<AGENTNODES_MODEL_CATALOG_DIR>/model_specs/<provider>/<model>.toml``
    （允许用户在宿主目录覆盖内置行为，无需改包）
 2. 内置：``foundation/llm/data/providers/<provider_id>/<model>.toml``
 3. 缺省：``ChannelSpec()``（空配置 = 旧行为，安全降级）
@@ -52,9 +52,10 @@ _CHANNEL_DEFAULT_NAME = "_channel.toml"
 def _user_specs_dir() -> Path:
     """用户级 provider 配置目录（可选覆盖）。
 
-    走 ``settings`` 读取层（旧名 ``AN_MODEL_CATALOG_DIR`` 由 alias 索引
-    兼容），不裸读 env——见 tests/test_settings.py 的
+    走 ``settings`` 读取层，不裸读 env——见 tests/test_settings.py 的
     ``test_no_undeclared_bare_env_reads`` 守卫。
+
+    **批 E-2**：旧名 ``AN_MODEL_CATALOG_DIR`` 已不再被读取。
     """
     import os
 

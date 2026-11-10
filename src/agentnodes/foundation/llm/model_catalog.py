@@ -87,11 +87,11 @@ def _user_cache_dir() -> Path:
     """Return the per-user cache directory, respecting $HOME.
 
     **2026-11-09 路径统一**：目录名随 ``AN_DATA_PROFILE``（默认
-    ``.agentnodes``），并支持 ``AN_MODEL_CATALOG_DIR`` 直接覆盖。
+    ``.agentnodes``），并支持 ``AGENTNODES_MODEL_CATALOG_DIR`` 直接覆盖。
     缓存可再生，所以硬切换——旧的 ``~/.quantnodes/model_catalog.json``
     不再读取，下次会重新拉取。
     """
-    override = _settings.get_str("AN_MODEL_CATALOG_DIR").strip()
+    override = _settings.get_str("AGENTNODES_MODEL_CATALOG_DIR").strip()
     if override:
         return Path(override).expanduser()
     home = Path(os.environ.get("HOME", str(Path.home())))

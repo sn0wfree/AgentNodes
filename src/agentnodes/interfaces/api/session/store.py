@@ -43,9 +43,9 @@ class SessionStore:
         # B3: read from event_log via projector? Controlled by env var
         # so we can toggle without code changes.
         # Default: enabled (event_log is the source of truth in B3).
-        # Set AN_EVENT_LOG_READ=0 to fall back to direct DB reads.
+        # Set AGENTNODES_EVENT_LOG_READ=0 to fall back to direct DB reads.
         import os
-        self._use_event_log_read = _settings.get_str("AN_EVENT_LOG_READ") != "0"
+        self._use_event_log_read = _settings.get_str("AGENTNODES_EVENT_LOG_READ") != "0"
         # Lazily-built cached Projector (see _get_projector).
         self._projector = None
 
@@ -103,7 +103,7 @@ class SessionStore:
 
         Level 3 / B3: by default, reads from event_log via the projector
         (event_log is the source of truth; messages + message_parts
-        are materialized views). Set AN_EVENT_LOG_READ=0 to fall
+        are materialized views). Set AGENTNODES_EVENT_LOG_READ=0 to fall
         back to direct DB reads.
         """
         if self._use_event_log_read:

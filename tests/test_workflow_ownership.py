@@ -46,8 +46,8 @@ def env(tmp_path: Path, monkeypatch):
     import agentnodes.interfaces.api.routers.workflow as wf
     import agentnodes.interfaces.api.session.web_session_db as wsdb
 
-    monkeypatch.setenv("AN_WORKSPACE_PATH", str(tmp_path))
-    monkeypatch.setenv("AN_ADMIN_TOKEN", "test-admin-token")
+    monkeypatch.setenv("AGENTNODES_WORKSPACE", str(tmp_path))
+    monkeypatch.setenv("AGENTNODES_ADMIN_TOKEN", "test-admin-token")
     monkeypatch.setattr(wsdb, "_get_db_path", lambda: str(tmp_path / "sessions.db"))
     wf._run_store = None
     wf._run_registry = None

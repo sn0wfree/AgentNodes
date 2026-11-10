@@ -95,13 +95,13 @@ def compaction_persister_registered(fn: Any):
 
 
 # ── Emergency kill switch ────────────────────────────────────────────
-# Set AN_KEEP_ALL_COMPACTIONS=1 to globally force
+# Set AGENTNODES_COMPACT_KEEP_ALL=1 to globally force
 # keep_all_compactions_in_history=True without code changes or config edits.
 # Useful for emergency rollback if the new filter causes issues.
 # See docs/design/compaction-history-filter.md.
 # 批次 B：改用 get_bool（声明表 kind=bool），避免 None/False 上调 .lower()。
 _KEEP_ALL_COMPACTIONS_OVERRIDE: bool = _settings.get_bool(
-    "AN_KEEP_ALL_COMPACTIONS"
+    "AGENTNODES_COMPACT_KEEP_ALL"
 )
 
 

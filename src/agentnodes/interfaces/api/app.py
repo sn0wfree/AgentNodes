@@ -38,9 +38,9 @@ def create_app(
         cors_origins: CORS allowed origins (default: `["*"]` for dev).
     """
     # 日志统一入口（docs/guides/logging-unified-entry-design-20261102.md §4.4）：
-    # web 面 console → stderr；AN_LOG_LEVEL / AN_LOG_JSON / AN_LOG_FILE
+    # web 面 console → stderr；AGENTNODES_LOG_LEVEL / AGENTNODES_LOG_JSON / AGENTNODES_LOG_FILE
     # 全部由 configure_logging 统一解析。默认文本格式自带 trace 字段
-    # （trace_id/session_id/study_id/round_num），AN_LOG_JSON=1 切 JSON。
+    # （trace_id/session_id/study_id/round_num），AGENTNODES_LOG_JSON=1 切 JSON。
     # v2 §14.2: hypotheses 默认走 SQLite（旧 JSON 不迁移、不读取）。
     from agentnodes.foundation.observability import configure_logging
     configure_logging("web")
@@ -261,7 +261,7 @@ def _resolve_app_env(
 ) -> tuple:
     """Resolve config values from environment when not explicitly provided."""
     if workspace_path is None:
-        env = _settings.get_str("AN_WORKSPACE_PATH")
+        env = _settings.get_str("AGENTNODES_WORKSPACE")
         workspace_path = Path(env) if env else None
     if goal_db_path is None:
         # A5 (评审 F10): one name for the goal ledger. The helper reads
@@ -272,11 +272,11 @@ def _resolve_app_env(
 
         goal_db_path = goal_db_env_value() or None
     if hypotheses_path is None:
-        hypotheses_path = _settings.get_str("AN_HYPOTHESES_PATH")
+        hypotheses_path = _settings.get_str("AGENTNODES_HYPOTHESES_PATH")
     if static_dir is None:
-        static_dir = _settings.get_str("STATIC_DIR")
+        static_dir = _settings.get_str("AGENTNODES_STATIC_DIR")
     if cors_origins is None:
-        cors_str = _settings.get_str("CORS_ORIGINS")
+        cors_str = _settings.get_str("AGENTNODES_CORS_ORIGINS")
         cors_origins = cors_str.split(",") if cors_str else None
     return workspace_path, goal_db_path, hypotheses_path, static_dir, cors_origins
 
@@ -318,13 +318,13 @@ def _mount_static_files(app: FastAPI, static_path: Path) -> None:
 
 def configure_from_env():
     """Read environment variables and return configuration."""
-    # 批次 B：CORS_ORIGINS 的声明 default 是 None（源码原本两处读取都无默认），
+    # 批次 B：AGENTNODES_CORS_ORIGINS 的声明 default 是 None（源码原本两处读取都无默认），
     # 所以链式 .split() 前必须先兜底成 ""，否则 None.split() 会崩。
-    _cors = _settings.get_str("CORS_ORIGINS") or ""
+    _cors = _settings.get_str("AGENTNODES_CORS_ORIGINS") or ""
     config = {
         "cors_origins": _cors.split(",") if _cors else None,
-        "static_dir": _settings.get_str("STATIC_DIR"),
-        "jwt_secret": _settings.get_str("JWT_SECRET"),
+        "static_dir": _settings.get_str("AGENTNODES_STATIC_DIR"),
+        "jwt_secret": _settings.get_str("AGENTNODES_JWT_SECRET"),
     }
     return config
 

@@ -28,7 +28,7 @@ from typing import Any, Optional, Sequence
 from agentnodes.foundation import settings as _settings
 
 DEFAULT_STALL_TIMEOUT = float(
-    _settings.get_str("AN_BACKTEST_STALL_TIMEOUT")
+    _settings.get_str("AGENTNODES_BACKTEST_STALL_TIMEOUT")
 )
 
 

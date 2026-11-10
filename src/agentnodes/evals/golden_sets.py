@@ -12,7 +12,7 @@ C9 / 理念七「检查信号必须经由被检方不可控的通道产生」）
   训练集，可以留在仓库里（明文可读）。
 - **held-out**（约 30%）：候选在这上面必须**无显著退化**。它是泛化性
   检验集，**不放在仓库里**——只在 ``~/.agentnodes/eval_heldout/``
-  （或 ``AN_GOLDEN_HELDOUT_PATH``）由主进程在评测期读取。agent 的
+  （或 ``AGENTNODES_GOLDEN_HELDOUT_PATH``）由主进程在评测期读取。agent 的
   ``read`` 工具以工作区为根，读不到仓库外的绝对路径；仓库内也没有副本。
 
 **拆分规则（可复现、有依据、非随机）**：``sha256(task_id)`` 的前 8 字节
@@ -26,7 +26,7 @@ C9 / 理念七「检查信号必须经由被检方不可控的通道产生」）
 **只读**：本模块无任何写业务表的调用；导出/拆分只发生在
 ``scripts/arch/split_golden_sets.py`` 与 ``export_heldout.py``。
 
-路径全部复用 ``foundation.storage.sqlite.ensure_data_dir``（``AN_DATA_DIR``
+路径全部复用 ``foundation.storage.sqlite.ensure_data_dir``（``AGENTNODES_DATA_DIR``
 可覆盖），不硬编码 home 路径——与 ``halt.py`` / ``rsi_cli.py`` 同一口径。
 """
 
@@ -69,7 +69,7 @@ MANIFEST_FILENAME = "golden_sets_manifest.json"
 HELDOUT_DIRNAME = "eval_heldout"
 
 #: held-out 路径覆盖（测试 / 多实例隔离 / 运维搬运）。
-HELDOUT_PATH_ENV = "AN_GOLDEN_HELDOUT_PATH"
+HELDOUT_PATH_ENV = "AGENTNODES_GOLDEN_HELDOUT_PATH"
 
 #: held-out 有效任务数下限。低于它视为「不可用」而不是「评估通过」——
 #: 3 条任务的均值没有统计意义，拿它过 ±20% 闸等于掷硬币。
@@ -130,7 +130,7 @@ def compat_golden_path() -> Path:
 
 
 def heldout_dir() -> Path:
-    """held-out 外部目录：``AN_GOLDEN_HELDOUT_PATH`` 的父目录或数据目录。
+    """held-out 外部目录：``AGENTNODES_GOLDEN_HELDOUT_PATH`` 的父目录或数据目录。
 
     ``ensure_data_dir()`` 会做旧目录迁移（``~/.quantnodes`` → ``~/.agentnodes``）
     并建目录；解析失败时退回 ``Path.home()/.agentnodes``（与 ``halt.py``

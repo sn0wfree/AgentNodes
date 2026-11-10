@@ -59,7 +59,7 @@ def _reset_secret_cache(tmp_path, monkeypatch):
     monkeypatch.setenv("HOMEDRIVE", str(tmp_path.drive or "C:"))
     monkeypatch.setenv("HOMEPATH", str(tmp_path)[len(str(tmp_path.drive or "C:")):])
     # Default: do NOT allow the dev secret fallback.
-    monkeypatch.delenv("AGENTNODES_ALLOW_DEV_SECRET", raising=False)
+    monkeypatch.delenv("AGENTNODES_API_ALLOW_DEV_SECRET", raising=False)
     yield
     _current_at()._SECRET_CACHE = None
 
@@ -76,7 +76,7 @@ def _reload():
 
 
 def test_env_secret_wins(tmp_path, monkeypatch):
-    monkeypatch.setenv("JWT_SECRET", "env-secret-value")
+    monkeypatch.setenv("AGENTNODES_JWT_SECRET", "env-secret-value")
     at = _reload()
     secret = at._load_secret()
     assert secret == b"env-secret-value"
@@ -90,7 +90,7 @@ def test_env_secret_wins(tmp_path, monkeypatch):
 def test_persisted_file_round_trip(tmp_path, monkeypatch):
     """Write a fresh secret to a fresh HOME, then a second call returns
     the persisted value (no regeneration)."""
-    monkeypatch.setenv("JWT_SECRET", "")
+    monkeypatch.setenv("AGENTNODES_JWT_SECRET", "")
     at = _reload()
     s1 = at._load_secret()
     assert len(s1) == 32  # secrets.token_bytes(32)
@@ -114,7 +114,7 @@ def test_persisted_secret_is_byte_exact_on_disk(tmp_path, monkeypatch):
     only hits that 1 time in ~8, which is exactly why the bug shipped
     unnoticed (the flake needed both a bad secret and a fresh HOME).
     """
-    monkeypatch.setenv("JWT_SECRET", "")
+    monkeypatch.setenv("AGENTNODES_JWT_SECRET", "")
     at = _reload()
     pinned = bytes(range(10, 42))          # 32 bytes, includes 0x0A at index 0
     monkeypatch.setattr(at.secrets, "token_bytes", lambda n: pinned)
@@ -136,7 +136,7 @@ def test_load_secret_does_not_strip_whitespace_bytes(tmp_path, monkeypatch):
     producing a cache that differed from the stored value. Only an
     entirely-blank file is treated as missing.
     """
-    monkeypatch.setenv("JWT_SECRET", "")
+    monkeypatch.setenv("AGENTNODES_JWT_SECRET", "")
     at = _reload()
     secret_file = Path.home() / ".agentnodes" / "jwt_secret"
     secret_file.parent.mkdir(parents=True, exist_ok=True)
@@ -151,7 +151,7 @@ def test_load_secret_does_not_strip_whitespace_bytes(tmp_path, monkeypatch):
 def test_persisted_file_written_atomically_with_0o600(tmp_path, monkeypatch):
     """A6: the file is created with O_EXCL | 0o600 to avoid the
     brief window where it exists with default umask."""
-    monkeypatch.setenv("JWT_SECRET", "")
+    monkeypatch.setenv("AGENTNODES_JWT_SECRET", "")
     at = _reload()
     at._load_secret()
     secret_file = Path.home() / ".agentnodes" / "jwt_secret"
@@ -183,7 +183,7 @@ def test_corrupt_permission_unreadable_raises(tmp_path, monkeypatch):
     secret_file.chmod(0o000)
 
     at = _reload()
-    with pytest.raises(RuntimeError, match="AGENTNODES_ALLOW_DEV_SECRET"):
+    with pytest.raises(RuntimeError, match="AGENTNODES_API_ALLOW_DEV_SECRET"):
         at._load_secret()
 
 
@@ -198,7 +198,7 @@ def test_corrupt_permission_with_opt_in_flag_uses_dev_secret(
     secret_file.write_bytes(b"valid-secret")
     secret_file.chmod(0o000)
 
-    monkeypatch.setenv("AGENTNODES_ALLOW_DEV_SECRET", "1")
+    monkeypatch.setenv("AGENTNODES_API_ALLOW_DEV_SECRET", "1")
     at = _reload()
     secret = at._load_secret()
     assert secret == b"strategy-research-dev-secret"
@@ -210,7 +210,7 @@ def test_oserror_on_write_raises(tmp_path, monkeypatch):
     rather than silently fall back (parent dir is read-only)."""
     # Make HOME a path under a read-only filesystem mock by pointing
     # the default path at a non-writable location.
-    monkeypatch.setenv("JWT_SECRET", "")
+    monkeypatch.setenv("AGENTNODES_JWT_SECRET", "")
     monkeypatch.setenv("HOME", "/proc/1/secret")  # not writable as a normal user
     at = _reload()
     with pytest.raises(RuntimeError):
@@ -227,7 +227,7 @@ def test_corrupt_permission_opt_in_value_must_be_one(tmp_path, monkeypatch):
     secret_file.chmod(0o000)
 
     for value in ("0", "true", "yes", "on", ""):
-        monkeypatch.setenv("AGENTNODES_ALLOW_DEV_SECRET", value)
+        monkeypatch.setenv("AGENTNODES_API_ALLOW_DEV_SECRET", value)
         at = _reload()
         with pytest.raises(RuntimeError):
             at._load_secret()
@@ -240,7 +240,7 @@ def test_cache_holds_secret_across_calls(tmp_path):
     """The _SECRET_CACHE module global prevents re-reading the file
     on every call (cost-saving + race-resistance)."""
     monkeypatch_helper = pytest.MonkeyPatch()
-    monkeypatch_helper.setenv("JWT_SECRET", "")
+    monkeypatch_helper.setenv("AGENTNODES_JWT_SECRET", "")
     try:
         at = _reload()
         secret_a = at._load_secret()
@@ -258,7 +258,7 @@ def test_cache_holds_secret_across_calls(tmp_path):
 
 
 def test_create_and_verify_round_trip(tmp_path, monkeypatch):
-    monkeypatch.setenv("JWT_SECRET", "")
+    monkeypatch.setenv("AGENTNODES_JWT_SECRET", "")
     at = _reload()
     token = at.create_token("alice")
     # Decode payload.
@@ -271,7 +271,7 @@ def test_create_and_verify_round_trip(tmp_path, monkeypatch):
 
 
 def test_verify_token_returns_none_on_tampered_signature(tmp_path, monkeypatch):
-    monkeypatch.setenv("JWT_SECRET", "k")
+    monkeypatch.setenv("AGENTNODES_JWT_SECRET", "k")
     at = _reload()
     token = at.create_token("alice")
     encoded, sig = token.rsplit(".", 1)
@@ -289,7 +289,7 @@ def test_verify_token_returns_none_on_unknown_user_id_type(tmp_path, monkeypatch
     Implementation currently returns payload.get('sub') as-is; verify
     it round-trips strings but defensively returns None for non-str.
     """
-    monkeypatch.setenv("JWT_SECRET", "k")
+    monkeypatch.setenv("AGENTNODES_JWT_SECRET", "k")
     at = _reload()
 
     # Build a forged-style payload with int sub via direct hmac.

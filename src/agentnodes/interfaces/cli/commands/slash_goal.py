@@ -66,7 +66,7 @@ def _user_workflows_dir() -> Path:
     ``apps/goal/workflow_config._USER_WORKFLOWS_DIR`` 重复——改一处漏一处的
     典型来源。现在委托给 ``foundation.paths``，与那边同源。
     """
-    return _paths.data_subdir("workflows", env_var="AN_WORKFLOWS_DIR")
+    return _paths.data_subdir("workflows", env_var="AGENTNODES_WORKFLOWS_DIR")
 
 
 def _checkpoint_base_dir() -> Path:
@@ -75,7 +75,7 @@ def _checkpoint_base_dir() -> Path:
     Defaults to ``~/.agentnodes/checkpoints/``（随 ``AN_DATA_PROFILE``）。
     Exposed for monkeypatching in tests.
     """
-    return _paths.data_subdir("checkpoints", env_var="AN_CHECKPOINTS_DIR")
+    return _paths.data_subdir("checkpoints", env_var="AGENTNODES_CHECKPOINTS_DIR")
 
 
 def cmd_status(*, console: Any = None, session_id: str = "cli") -> int:

@@ -80,7 +80,8 @@ LEGACY_DIRS: tuple[Path, ...] = (
 
 #: 选择 profile 的环境变量名（规范名）。
 PROFILE_ENV = "AGENTNODES_PROFILE"
-#: 旧名（批次 B' 前），仍生效。
+#: 旧名（批次 B' 前），**仍然生效**——它决定的是"用户数据落在哪"，
+#: 不是"配置改名兼容"。见 ``settings.LEGACY_LIVE_ENVS``。
 PROFILE_ENV_LEGACY = "AN_DATA_PROFILE"
 
 
@@ -97,8 +98,12 @@ def active_profile(name: str | None = None) -> DataProfile:
     if name is not None:
         raw = name
     else:
+        # 惰性 import：paths.py 承诺"零外部依赖"（只 import stdlib），
+        # settings 是同层的 stdlib-only 模块，但这里仍走惰性以免导入期成环。
+        from agentnodes.foundation.settings import get_legacy as _get_legacy
+
         raw = (os.environ.get(PROFILE_ENV)
-               or os.environ.get(PROFILE_ENV_LEGACY)
+               or _get_legacy(PROFILE_ENV_LEGACY, "")
                or "")
     raw = raw.strip()
     if not raw:
@@ -116,13 +121,13 @@ def active_profile(name: str | None = None) -> DataProfile:
 def data_dir(profile: DataProfile | str | None = None) -> Path:
     """数据根目录。
 
-    优先级：``AGENTNODES_DATA_DIR``（旧名 ``AN_DATA_DIR`` 仍生效）> profile 的
-    home 目录名。
+    优先级：``AGENTNODES_DATA_DIR`` > profile 的 home 目录名。
 
     注意它是「整个数据根」的覆盖，所以设了它就与 profile 无关——
     profile 只决定默认值。
 
-    **批次 B'**：capability 名改为规范名；旧名通过 settings 的别名机制回退。
+    **批 E-2**：旧名 ``AGENTNODES_DATA_DIR`` **不再被读取**（兼容层已删）。
+    设了它会被忽略——用 ``agentnodes config audit-legacy`` 可查。
     """
     from agentnodes.foundation.settings import get_str as _get_str
 
@@ -143,7 +148,7 @@ def data_subdir(
 
     :param name: 子目录名（如 ``"checkpoints"``）。
     :param profile: 可选 profile 覆盖（默认取 :func:`active_profile`）。
-    :param env_var: 该子目录专属的环境变量名（如 ``AN_CHECKPOINTS_DIR``）。
+    :param env_var: 该子目录专属的环境变量名（如 ``AGENTNODES_CHECKPOINTS_DIR``）。
         给了且非空时**直接返回它**（绝对路径覆盖，忽略 data_dir）。
     """
     if env_var:

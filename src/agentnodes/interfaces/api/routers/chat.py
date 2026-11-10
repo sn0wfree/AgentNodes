@@ -259,7 +259,7 @@ async def send_async(body: ChatMessage, request: Request):
         _max_iter = _cfg.max_iterations
     except (OSError, ValueError, KeyError):
         _max_iter = 50
-    # Shell tools are opt-in (AN_ALLOW_SHELL_TOOLS=1); plan mode never
+    # Shell tools are opt-in (AGENTNODES_ALLOW_SHELL_TOOLS=1); plan mode never
     # exposes them (analysis-only, single iteration).
     _mode = body.mode or "build"
     _max_iter_eff = 1 if _mode == "plan" else _max_iter
@@ -558,7 +558,7 @@ def _push_sse(kind: str, data: dict, session_id: str) -> None:
 
 def _chat_wait_timeout() -> float:
     """wait=true 的等待上限（秒）。turn 可能很长，默认 300s。"""
-    raw = _settings.get_str("QNODES_CHAT_WAIT_TIMEOUT").strip()
+    raw = _settings.get_str("AGENTNODES_CHAT_WAIT_TIMEOUT").strip()
     try:
         return float(raw) if raw else 300.0
     except ValueError:

@@ -94,13 +94,13 @@ def real_server():
     (home / ".agentnodes").mkdir(parents=True, exist_ok=True)
 
     env.update({
-        "STATIC_DIR": str(REPO_ROOT / "webui" / "static"),
-        "CORS_ORIGINS": "*",
+        "AGENTNODES_STATIC_DIR": str(REPO_ROOT / "webui" / "static"),
+        "AGENTNODES_CORS_ORIGINS": "*",
         "PYTHONUNBUFFERED": "1",
-        "AN_WORKSPACE_PATH": str(REPO_ROOT),
+        "AGENTNODES_WORKSPACE": str(REPO_ROOT),
         # 密码交给被测进程生成后写到临时 HOME；下面的 _admin_password
         # 会先查 AN_ADMIN_PASSWORD，所以我们直接钉死一个已知值更稳。
-        "AN_ADMIN_PASSWORD": "real-llm-test-pw",
+        "AGENTNODES_ADMIN_PASSWORD": "real-llm-test-pw",
     })
 
     # 把宿主 .env **整份**注入子进程 env。
@@ -469,10 +469,10 @@ class TestRealLLMChat:
         env["PYTHONUSERBASE"] = str(Path.home() / ".local")
         env.pop("AGENTNODES_LLM_CONFIG", None)
         env.update({
-            "STATIC_DIR": str(REPO_ROOT / "webui" / "static"),
-            "CORS_ORIGINS": "*",
+            "AGENTNODES_STATIC_DIR": str(REPO_ROOT / "webui" / "static"),
+            "AGENTNODES_CORS_ORIGINS": "*",
             "PYTHONUNBUFFERED": "1",
-            "AN_WORKSPACE_PATH": str(REPO_ROOT),
+            "AGENTNODES_WORKSPACE": str(REPO_ROOT),
         })
         cmd = [
             sys.executable, "-u", "-m", "uvicorn",

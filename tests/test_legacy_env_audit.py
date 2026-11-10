@@ -1,9 +1,19 @@
-"""批 E-1 · 旧名环境变量审计（只读，零行为变更）。
+"""批 E · 旧名环境变量审计（只读，零行为变更）。
 
 设计：docs/design/legacy-env-audit-command-20261110.md §5。
 
-核心不变量：**审计命令不改变任何东西**——不改环境变量、不删 alias、
-不动 llm.json。它只是"看一眼这台机器上还有哪些旧名在用"。
+核心不变量：**审计命令不改变任何东西**——不改环境变量、不动 llm.json。
+它只是"看一眼这台机器上还有哪些旧名在用"。
+
+**批 E-2 之后的语义变化**：旧名兼容层已删除，所以审计报告要区分两类：
+
+- **已失效**（``honored=False``）：值被**静默忽略**——读取层只认规范名，
+  设了旧名等于没设。必须改名。
+- **仍生效**（``honored=True``）：:data:`settings.LEGACY_LIVE_ENVS` 里的
+  那几个——它们指向"用户数据在哪"，过渡期保留，但已废弃。
+
+清单来源也从"读取层的 alias 索引"换成了"诊断层的 ``_LEGACY_CATALOG``"
+——兼容层删了，审计照样能跑。
 """
 from __future__ import annotations
 
@@ -99,10 +109,93 @@ def test_audit_does_not_emit_alias_warnings():
     """审计不该产生 settings 的弃用告警噪声。"""
     import logging
 
-    S.reset_alias_warnings()
+    S.reset_warnings()
     with caplog_at("agentnodes.foundation.settings") as cap:
         S.legacy_usage({"AN_WORKSPACE_PATH": "/w"})
     assert not [r for r in cap.records if "deprecated" in r.getMessage()]
+
+
+# ── 批 E-2：兼容层已删除，审计清单仍在 ────────────────────────
+
+
+def test_legacy_catalog_covers_every_old_name():
+    """诊断清单必须完整（46 组 / 49 个旧名）——审计报告的完整性靠它。"""
+    assert len(S._LEGACY_CATALOG) == 49
+    assert len(S._LEGACY_NAMES) == 46
+    for canonical, olds in S._LEGACY_NAMES.items():
+        assert canonical in S.ENV_TABLE, canonical
+        for old in olds:
+            assert S._LEGACY_CATALOG[old] == canonical
+
+
+def test_legacy_names_never_collide_with_canonical():
+    """旧名不得同时是规范名——否则兼容层被偷偷加回来且无告警。"""
+    assert not (set(S._LEGACY_CATALOG) & set(S.ENV_TABLE))
+
+
+def test_audit_still_works_after_compat_layer_removed():
+    """**审计命令不能随兼容层一起死**——它是删兼容层的安全网。"""
+    usages = S.legacy_usage({"AN_ADMIN_TOKEN": "tok"})
+    assert len(usages) == 1
+    assert usages[0].canonical == "AGENTNODES_ADMIN_TOKEN"
+
+
+# ── 批 E-2：读取层只认规范名 ─────────────────────────────────
+
+
+def test_old_name_is_not_read_by_the_settings_layer(monkeypatch):
+    """**硬切换**：旧名设了也不生效——读取层只认规范名。"""
+    monkeypatch.setenv("AN_WORKSPACE_PATH", "/data/proj")
+    monkeypatch.delenv("AGENTNODES_WORKSPACE", raising=False)
+    assert S.get_str("AGENTNODES_WORKSPACE") is None
+
+
+def test_canonical_wins_over_old_name(monkeypatch):
+    monkeypatch.setenv("AN_WORKSPACE_PATH", "/old")
+    monkeypatch.setenv("AGENTNODES_WORKSPACE", "/new")
+    assert S.get_str("AGENTNODES_WORKSPACE") == "/new"
+
+
+def test_reading_canonical_warns_when_old_name_lurks(monkeypatch):
+    """**不留静默失效**：环境里还留着旧名时，读规范名要明确喊出来。"""
+    monkeypatch.setenv("AN_WORKSPACE_PATH", "/data/proj")
+    monkeypatch.delenv("AGENTNODES_WORKSPACE", raising=False)
+    S.reset_warnings()
+    with caplog_at("agentnodes.foundation.settings") as cap:
+        S.get_str("AGENTNODES_WORKSPACE")
+    msgs = [r.getMessage() for r in cap.records]
+    assert any("AN_WORKSPACE_PATH" in m for m in msgs), msgs
+    assert any("no longer read" in m for m in msgs), msgs
+
+
+def test_live_legacy_env_is_still_honored(monkeypatch):
+    """``LEGACY_LIVE_ENVS`` 里的旧名仍生效（指向用户数据在哪）。"""
+    monkeypatch.setenv("SR_WORKSPACE_PATH", "/legacy/ws")
+    assert S.get_legacy("SR_WORKSPACE_PATH") == "/legacy/ws"
+
+
+def test_get_legacy_rejects_names_that_are_not_live():
+    """只有显式登记的"仍然生效"旧名能走这个入口——防止兼容层回流。"""
+    with pytest.raises(KeyError):
+        S.get_legacy("AN_WORKSPACE_PATH")
+
+
+def test_live_legacy_env_is_flagged_as_honored():
+    usages = S.legacy_usage({"SR_WORKSPACE_PATH": "/legacy/ws"})
+    assert len(usages) == 1
+    assert usages[0].honored is True
+    ignored = S.legacy_usage({"AN_WORKSPACE_PATH": "/w"})
+    assert ignored[0].honored is False
+
+
+def test_summary_separates_honored_from_ignored():
+    summary = S.legacy_usage_summary({
+        "SR_WORKSPACE_PATH": "/legacy/ws",
+        "AN_WORKSPACE_PATH": "/w",
+    })
+    assert summary["total"] == 2
+    assert summary["honored"] == 1
+    assert summary["ignored"] == 1
 
 
 class caplog_at:
@@ -141,7 +234,7 @@ def _run_cli(monkeypatch, env: dict, argv: list[str]) -> tuple[int, str]:
 
     for k in list(S.ENV_TABLE):
         monkeypatch.delenv(k, raising=False)
-    for old in S._ALIAS_INDEX:
+    for old in S._LEGACY_CATALOG:
         monkeypatch.delenv(old, raising=False)
     for k, v in env.items():
         monkeypatch.setenv(k, v)
@@ -159,7 +252,7 @@ def _run_cli(monkeypatch, env: dict, argv: list[str]) -> tuple[int, str]:
 def test_cli_exit_0_when_no_legacy(monkeypatch):
     code, out = _run_cli(monkeypatch, {}, ["audit-legacy"])
     assert code == 0
-    assert "可以安全删除" in out
+    assert "未发现旧名环境变量" in out
 
 
 def test_cli_exit_1_when_legacy_present(monkeypatch):
@@ -180,6 +273,22 @@ def test_cli_lists_all_sections(monkeypatch):
     assert "=== 结论 ===" in out
 
 
+def test_cli_marks_ignored_legacy_as_failed(monkeypatch):
+    """已失效的旧名必须标出来——它设了但不生效。"""
+    _code, out = _run_cli(
+        monkeypatch, {"AN_WORKSPACE_PATH": "/w"}, ["audit-legacy"])
+    assert "已失效" in out
+    assert "必须改名" in out
+
+
+def test_cli_marks_live_legacy_as_deprecated(monkeypatch):
+    """仍生效的旧名标成"已废弃"，不是"已失效"。"""
+    _code, out = _run_cli(
+        monkeypatch, {"SR_WORKSPACE_PATH": "/w"}, ["audit-legacy"])
+    assert "仍生效" in out
+    assert "已废弃" in out
+
+
 def test_cli_masks_secret_values(monkeypatch):
     _code, out = _run_cli(
         monkeypatch, {"AN_ADMIN_PASSWORD": "top-secret-value"}, ["audit-legacy"])
@@ -196,7 +305,7 @@ def test_cli_json_output(monkeypatch):
 
     for k in list(S.ENV_TABLE):
         monkeypatch.delenv(k, raising=False)
-    for old in S._ALIAS_INDEX:
+    for old in S._LEGACY_CATALOG:
         monkeypatch.delenv(old, raising=False)
     monkeypatch.setenv("AN_WORKSPACE_PATH", "/data/proj")
 
@@ -210,13 +319,14 @@ def test_cli_json_output(monkeypatch):
     assert payload["items"][0]["old_name"] == "AN_WORKSPACE_PATH"
     assert payload["items"][0]["risk"] == "high"
     assert payload["counts"]["high"] == 1
+    assert payload["ignored"] == 1
 
 
 def test_cli_audit_is_read_only(monkeypatch):
     """跑完命令，环境**不新增任何键**（审计只读）。
 
     **不断言整个 env 逐字节相等**：同文件的 session 级 autouse fixture
-    （``_default_session_workspace``）已 setenv ``AN_WORKSPACE_PATH``，
+    （``_default_session_workspace``）已 setenv ``AGENTNODES_WORKSPACE``，
     ``_run_cli`` 的 monkeypatch 也会 setenv 它——两者都在断言时仍生效
     （teardown 才 undo）。所以先把 monkeypatch 的 setenv 做掉、拍下
     快照，再断言"审计调用本身不新增键"。

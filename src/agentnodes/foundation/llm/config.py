@@ -59,12 +59,18 @@ ENV_MODEL = "OPENAI_MODEL"
 ENV_CONFIG_PATH = "AGENTNODES_LLM_CONFIG"
 # Selects an active provider profile from llm.json["llm"]["profiles"].
 # Beats the file's "active_profile" field; CLI --llm-profile beats both.
-ENV_PROFILE_ACTIVE = "LLM_PROFILE"
+#
+# **批次 E-2（2026-11-10）**：原为 ``LLM_PROFILE``（旧名，靠 settings 的
+# alias 索引解析）——兼容层删除后旧名失效，统一为 canonical。
+ENV_PROFILE_ACTIVE = "AGENTNODES_LLM_PROFILE"
 
 # Wizard writes this into ~/.quantnodes/.env; we accept
 # it as a credential source so users with the new wizard don't need to
 # also export OPENAI_API_KEY (which would defeat the point of putting
 # the secret in the local .env). Precedence still prefers OPENAI_API_KEY.
+#
+# **不是 settings 配置**——是凭据名（与 OPENAI_API_KEY 同级），不受
+# 批 E-2 的 alias 删除影响。
 ENV_LLM_API_KEY = "LLM_API_KEY"
 
 # ── Back-compat aliases (legacy yaml/profile knobs kept for tests + 3rd-party) ──
@@ -325,7 +331,7 @@ def _try_load_dotenv() -> None:
         _ld()  # find_dotenv from the caller frame (best-effort)
         # Explicitly load cwd's .env: bare load_dotenv() searches from the
         # library file's location, not the process cwd, so a workspace
-        # .env (e.g. qn-research/.env with AN_ALLOW_SHELL_TOOLS) would
+        # .env (e.g. qn-research/.env with AGENTNODES_ALLOW_SHELL_TOOLS) would
         # otherwise never be picked up in the serve process.
         cwd_env = Path.cwd() / ".env"
         if cwd_env.exists():

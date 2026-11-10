@@ -62,7 +62,8 @@ def cmd_webui_serve(args) -> int:
     from agentnodes.interfaces.api.app import configure_from_env, create_app
     from agentnodes.interfaces.cli.llm_config_check import check_llm_config
 
-    # Read env config (CORS_ORIGINS, JWT_SECRET, STATIC_DIR)
+    # Read env config (AGENTNODES_CORS_ORIGINS, AGENTNODES_JWT_SECRET,
+    # AGENTNODES_STATIC_DIR)
     env_config = configure_from_env()
 
     workspace = Path(args.workspace)
@@ -100,12 +101,14 @@ def cmd_webui_serve(args) -> int:
     if getattr(args, "goal_db", None):
         os.environ["AGENTNODES_GOAL_DB_PATH"] = args.goal_db
     if getattr(args, "reload", False):
-        # Push CLI args into env so create_app() picks them up on each reload
-        os.environ["AN_WORKSPACE_PATH"] = str(workspace.resolve())
+        # Push CLI args into env so create_app() picks them up on each reload.
+        # **批 E-2**：写规范名——读取层只认 canonical（写旧名会被静默忽略，
+        # `--workspace` 就成了摆设）。
+        os.environ["AGENTNODES_WORKSPACE"] = str(workspace.resolve())
         if getattr(args, "hypotheses_path", None):
-            os.environ["AN_HYPOTHESES_PATH"] = args.hypotheses_path
+            os.environ["AGENTNODES_HYPOTHESES_PATH"] = args.hypotheses_path
         if static_dir:
-            os.environ["STATIC_DIR"] = str(Path(static_dir).resolve())
+            os.environ["AGENTNODES_STATIC_DIR"] = str(Path(static_dir).resolve())
 
         uvicorn.run(
             "agentnodes.interfaces.api.app:create_app",
@@ -151,9 +154,9 @@ def cmd_api_serve(args) -> int:
     if getattr(args, "goal_db", None):
         os.environ["AGENTNODES_GOAL_DB_PATH"] = args.goal_db
     if getattr(args, "reload", False):
-        os.environ["AN_WORKSPACE_PATH"] = str(workspace.resolve())
+        os.environ["AGENTNODES_WORKSPACE"] = str(workspace.resolve())
         if getattr(args, "hypotheses_path", None):
-            os.environ["AN_HYPOTHESES_PATH"] = args.hypotheses_path
+            os.environ["AGENTNODES_HYPOTHESES_PATH"] = args.hypotheses_path
 
         uvicorn.run(
             "agentnodes.interfaces.api.app:create_app",

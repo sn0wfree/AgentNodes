@@ -86,40 +86,40 @@ class CacheConfig:
         """Build config from AN_CACHE_* env vars, then validate."""
         config = cls(
             write_policy=WritePolicy(
-                _settings.get_str("AN_CACHE_WRITE_POLICY")
+                _settings.get_str("AGENTNODES_CACHE_WRITE_POLICY")
             ),
             eviction_policy=EvictionPolicy(
-                _settings.get_str("AN_CACHE_EVICTION")
+                _settings.get_str("AGENTNODES_CACHE_EVICTION")
             ),
-            min_entries=int(_settings.get_str("AN_CACHE_MIN_ENTRIES")),
-            max_entries=int(_settings.get_str("AN_CACHE_MAX_ENTRIES")),
+            min_entries=int(_settings.get_str("AGENTNODES_CACHE_MIN_ENTRIES")),
+            max_entries=int(_settings.get_str("AGENTNODES_CACHE_MAX_ENTRIES")),
             avg_tokens_per_message=int(
-                _settings.get_str("AN_CACHE_AVG_TOKENS_FALLBACK")
+                _settings.get_str("AGENTNODES_CACHE_AVG_TOKENS_FALLBACK")
             ),
             avg_tokens_estimation_window=int(
-                _settings.get_str("AN_CACHE_WINDOW")
+                _settings.get_str("AGENTNODES_CACHE_WINDOW")
             ),
             avg_tokens_safety_factor=float(
-                _settings.get_str("AN_CACHE_SAFETY_FACTOR")
+                _settings.get_str("AGENTNODES_CACHE_SAFETY_FACTOR")
             ),
             avg_tokens_min_samples=int(
-                _settings.get_str("AN_CACHE_MIN_SAMPLES")
+                _settings.get_str("AGENTNODES_CACHE_MIN_SAMPLES")
             ),
             chars_per_token=float(
-                _settings.get_str("AN_CACHE_CHARS_PER_TOKEN")
+                _settings.get_str("AGENTNODES_CACHE_CHARS_PER_TOKEN")
             ),
             # 批次 B：声明 kind=bool/default=True，但**原语义只认字面 "true"**
             # （`os.environ.get(X, "true").lower() == "true"`），不认 1/yes/on。
             # 用 `get`（原始读取，不注入声明默认）而非 get_str：get_str 在
             # 未设置时返回声明表里的 bool True，会导致 True.lower() 崩溃。
             compaction_linked=(
-                (_settings.get("AN_CACHE_COMPACTION_LINKED", "true") or "true").lower()
+                (_settings.get("AGENTNODES_CACHE_COMPACTION_LINKED", "true") or "true").lower()
                 == "true"
             ),
             re_resolve_interval_seconds=float(
-                _settings.get_str("AN_CACHE_RE_RESOLVE_SEC")
+                _settings.get_str("AGENTNODES_CACHE_RE_RESOLVE_SEC")
             ),
-            ttl_seconds=float(_settings.get_str("AN_CACHE_TTL")),
+            ttl_seconds=float(_settings.get_str("AGENTNODES_CACHE_TTL")),
         )
         return ConfigValidator.validate(config)
 

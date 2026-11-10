@@ -353,6 +353,25 @@ CLI 参数 > 环境变量 > 配置文件 > 内置默认
 
 删 `aliases`、删 hidden CLI 参数、删 `llm.json` 支持。
 
+#### 批 E-2 已执行结果（2026-11-10）
+
+> 完整实施记录见 `docs/design/legacy-env-audit-command-20261110.md` §8。
+
+| 产出 | 说明 |
+|---|---|
+| `Setting.aliases` 字段 | **删除**——声明表只描述规范名 |
+| `_ALIAS_INDEX` | **删除**——读取层不再归一旧名 |
+| `_LEGACY_NAMES` → `_LEGACY_CATALOG` | **保留**（46 组 / 49 个旧名），但降级为**诊断层**：审计命令靠它 |
+| `LEGACY_LIVE_ENVS` | 4 个**仍然生效**的历史名（指向"用户数据在哪"），各模块显式直读 |
+| 读取时 deprecation 告警 | 环境里还留着旧名 → 读规范名时 warn 一次，指名该改成什么 |
+| 未登记名告警 | 调用点传了 `ENV_TABLE` 里没有的名字 → warn 一次 |
+| 调用点改名 | src 31 文件 / tests 48 文件 |
+| 顺带修掉的静默失效 | 5 处（详见 E-1 文档 §8.3）|
+
+**分界一句话**：**旧名从"可执行的输入"降级为"可诊断的事实"**——
+读取层不认，诊断层认。审计命令不能随兼容层一起死（它是删兼容层的
+安全网），所以旧名清单必须留在代码里。
+
 ---
 
 ## §4 兼容窗口与回滚
@@ -362,13 +381,19 @@ CLI 参数 > 环境变量 > 配置文件 > 内置默认
 | 批 A | 完全不变 | 无风险 |
 | 批 B–C | 旧名可读 + warn | 单 commit revert |
 | 批 D | `llm.json` 仍可读 | 单 commit revert |
-| 批 E | 旧名删除 | 需 revert 批 E |
+| 批 E | 旧名删除（读取层硬切换；诊断层仍认） | 需 revert 批 E |
 
 **warn 的实现**：读旧名时 `logger.warning` 一次（每个进程每个名字一次），
 消息里给出新名与迁移命令：
 ```
 [deprecated] AN_WORKSPACE_PATH → AGENTNODES_WORKSPACE (still honored this release)
 ```
+
+> **批 E-2 之后消息变了**：旧名不再"still honored"，改成明确说它被忽略：
+> ```
+> [deprecated] env AN_WORKSPACE_PATH is no longer read (it was renamed to
+> AGENTNODES_WORKSPACE) — this value is IGNORED, update your environment/config
+> ```
 
 ---
 

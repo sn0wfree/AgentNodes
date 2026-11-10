@@ -134,7 +134,7 @@ def get_gateway(
             context_hub=context_hub,
             context_policy=_build_context_policy(),
             # R4：PlatformStore + artifact 通道（P-3 登记）。
-            # QNODES_PLATFORM_STORE=0 可关闭（灰度回退位）；构造失败降级 None。
+            # AGENTNODES_PLATFORM_STORE=0 可关闭（灰度回退位）；构造失败降级 None。
             data_dir=_platform_data_dir(ws),
             workspace=ws,
             # **W4**（V3 §8.2）：/send 此前恒为 controller 默认 1 轮——
@@ -156,11 +156,11 @@ def get_gateway(
 
 
 def _resolve_workspace() -> Any:
-    """workspace 根（AN_WORKSPACE_PATH 或 cwd）——与 gateway._resolve_workspace 同源。"""
+    """workspace 根（AGENTNODES_WORKSPACE 或 cwd）——与 gateway._resolve_workspace 同源。"""
     import os
     from pathlib import Path
 
-    env = _settings.get_str("AN_WORKSPACE_PATH")
+    env = _settings.get_str("AGENTNODES_WORKSPACE")
     return Path(env) if env else Path.cwd()
 
 
@@ -186,8 +186,9 @@ _SHELL_GATED_TOOLS = ("shell", "run_bg_command")
 def _gate_shell_tools(registry: Any) -> None:
     """按 ``AGENTNODES_ALLOW_SHELL_TOOLS`` 剔除 shell / run_bg_command。
 
-    与 ``apps/chat/policy.shell_tools_enabled`` 同一判据（canonical 名，
-    旧名 AN_ALLOW_SHELL_TOOLS 经 alias 索引兼容）。plan 模式的恒禁在
+    与 ``apps/chat/policy.shell_tools_enabled`` 同一判据（canonical 名）。
+    **批 E-2**：旧名 ``AN_ALLOW_SHELL_TOOLS`` 已不再被读取。
+    plan 模式的恒禁在
     gateway 路径由 evaluator 兜底（task/shell 的 ASK→deny）——这里只做
     **注册表级**的全局 opt-in（gateway 是进程级单例，没有 per-request
     注册表）。
@@ -207,12 +208,12 @@ def _gate_shell_tools(registry: Any) -> None:
 def _platform_data_dir(workspace: Any) -> Any | None:
     """P-3/P-1 持久化目录；None = 纯内存（现行为）。
 
-    关闭开关：``QNODES_PLATFORM_STORE=0``（测试/排障）。目录创建失败也只
+    关闭开关：``AGENTNODES_PLATFORM_STORE=0``（测试/排障）。目录创建失败也只
     降级 None——chat 不因数据面不可用而中断。
     """
     import os
 
-    if _settings.get_str("QNODES_PLATFORM_STORE").strip().lower() in (
+    if _settings.get_str("AGENTNODES_PLATFORM_STORE").strip().lower() in (
         "0", "false", "no", "off",
     ):
         return None

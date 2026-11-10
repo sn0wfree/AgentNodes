@@ -4,7 +4,7 @@ r"""统一日志入口 — configure_logging(surface) + dual_log。
 
 所有进程入口（web/cli/mcp/script）经由 :func:`configure_logging` 装配
 日志：策略表决定 console 流定向，级别与 JSON 统一读环境变量，
-文件日志由 ``AN_LOG_FILE`` 显式开启（默认关闭，不创建任何文件）。
+文件日志由 ``AGENTNODES_LOG_FILE`` 显式开启（默认关闭，不创建任何文件）。
 
 "双写"在 handler 层完成（借鉴 CodersWheel ``QuickTool/logger.py`` 的
 LoggerHelper：FileHandler + StreamHandler 同挂一个 logger，调用点只调
@@ -43,7 +43,7 @@ DEFAULT_TEXT_FORMAT = (
 )
 DEFAULT_DATEFMT = "%H:%M:%S"
 
-LOG_DIR_ENV = "AN_LOG_FILE"
+LOG_DIR_ENV = "AGENTNODES_LOG_FILE"
 LOG_DIR = DEFAULT_DATA_DIR / "logs"
 _ROTATE_MAX_BYTES = 10 * 1024 * 1024
 _ROTATE_BACKUP_COUNT = 5
@@ -67,9 +67,9 @@ _dual_logger = logging.getLogger(__name__)
 
 
 def resolve_level(level: int | str | None = None) -> int:
-    """级别解析：显式参数 > ``AN_LOG_LEVEL`` > INFO（非法名回落 INFO）。"""
+    """级别解析：显式参数 > ``AGENTNODES_LOG_LEVEL`` > INFO（非法名回落 INFO）。"""
     if level is None:
-        level = _settings.get_str("AN_LOG_LEVEL")
+        level = _settings.get_str("AGENTNODES_LOG_LEVEL")
     if isinstance(level, str):
         return getattr(logging, level.strip().upper(), logging.INFO)
     return int(level)
@@ -78,11 +78,11 @@ def resolve_level(level: int | str | None = None) -> int:
 def _json_requested(json_output: bool | None) -> bool:
     if json_output is not None:
         return json_output
-    return _settings.get_str("AN_LOG_JSON").strip().lower() in ("1", "true")
+    return _settings.get_str("AGENTNODES_LOG_JSON").strip().lower() in ("1", "true")
 
 
 def _resolve_log_file(log_file: str | Path | None) -> Path | None:
-    """文件日志路径：显式参数 > ``AN_LOG_FILE`` > 关闭。
+    """文件日志路径：显式参数 > ``AGENTNODES_LOG_FILE`` > 关闭。
 
     绝对路径原样使用；相对路径/裸文件名落到 ``<数据根>/logs/`` 下。
     返回 ``None`` 表示不启用文件日志（默认）。
@@ -145,9 +145,9 @@ def configure_logging(
 
     Args:
         surface: ``web`` / ``cli`` / ``mcp`` / ``script``（策略表见模块头）。
-        level: 显式级别（int 或名字）；缺省读 ``AN_LOG_LEVEL``，再缺 INFO。
-        json_output: 显式 JSON 开关；缺省读 ``AN_LOG_JSON``。
-        log_file: 显式文件路径；缺省读 ``AN_LOG_FILE``；均未设 = 不落文件。
+        level: 显式级别（int 或名字）；缺省读 ``AGENTNODES_LOG_LEVEL``，再缺 INFO。
+        json_output: 显式 JSON 开关；缺省读 ``AGENTNODES_LOG_JSON``。
+        log_file: 显式文件路径；缺省读 ``AGENTNODES_LOG_FILE``；均未设 = 不落文件。
         force: cli 严格模式下强制装配（默认：未设任何开关则不动，
             保持 TUI 输出与现状逐字节一致）。
         stream: 覆写 console 流（测试用）；缺省按策略表取 sys.stdout/stderr。
@@ -160,7 +160,7 @@ def configure_logging(
     want_json = _json_requested(json_output)
     file_path = _resolve_log_file(log_file)
 
-    # cli 严格开关语义：未设 AN_LOG_JSON / AN_LOG_FILE 且未显式 force ——
+    # cli 严格开关语义：未设 AGENTNODES_LOG_JSON / AGENTNODES_LOG_FILE 且未显式 force ——
     # 完全不装配（523 处 logger.info 不得刷穿 TUI）。
     if surface == "cli" and not force and not want_json and file_path is None:
         return

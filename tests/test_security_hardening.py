@@ -98,18 +98,30 @@ class TestTokenForgery:
         )
         token = resp.json()["access_token"]
         payload, sig = token.rsplit(".", 1)
-        # **只翻转最后一位**，保持长度与 base64 字符集不变。
+        # **翻中间一位**——不是最后一位。
         #
-        # 旧实现是 `("A" if sig[-1] != "A" else "B") + sig[1:]` —— 它丢掉了
-        # 签名的第一个字符，使长度少 1 位，base64 不再合法。于是 FastAPI 的
-        # 请求校验先返回 **422（格式错误）** 而不是 401（鉴权失败），
-        # 断言 `== 401` 偶发失败（依赖签名长度，故只在大顺序下出现）。
-        flipped = "A" if sig[-1] != "A" else "B"
-        bad_sig = sig[:-1] + flipped
+        # **为什么不是最后一位**（2026-11-10 实测定位）：签名是 32 字节的
+        # HMAC-SHA256，base64url 无填充 = 43 字符 = 258 bit，而 32 字节只有
+        # 256 bit ——**末位的低 2 bit 是填充位，解码时被丢弃**。所以翻转最后
+        # 一个字符，有约 **1/16（6.25%）** 的概率解出**完全相同的字节**：
+        # 签名没被真正篡改 → 中间件放行 → 请求落到路由 → 因为缺 `session_id`
+        # 而返回 **422** 而不是 401。实测 4000 次采样命中 266 次（6.7%）。
+        #
+        # 旧实现丢的是**第一个**字符（长度少 1 位 → base64 非法 → 422），
+        # 改成翻末位后长度对了，但填充位的问题还在——这个测试一直在
+        # "偶发失败"，只是没人把概率量出来。
+        #
+        # 中间位置（第 5 位）6 bit 全部有效，翻转必然改变字节 —— 实测
+        # 2000 次采样 0 次碰撞。
+        idx = 5
+        alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_"
+        ch = sig[idx]
+        bad_sig = sig[:idx] + alphabet[(alphabet.index(ch) + 1) % 64] + sig[idx + 1:]
         resp2 = client.get("/api/goal/status", headers={
             "Authorization": f"Bearer {payload}.{bad_sig}",
         })
-        assert resp2.status_code == 401
+        assert resp2.status_code == 401, resp2.text
+        assert "token" in resp2.text.lower()
 
     def test_expired_token_rejected(self, client):
 

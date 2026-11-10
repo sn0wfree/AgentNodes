@@ -347,15 +347,17 @@ _run_store = None
 def _definition_workspace() -> _Path:
     """Workspace root for definitions / workflows.db / drafts.
 
-    ``AN_WORKSPACE_PATH`` is canonical (same name the CLI and session DB
-    resolver use); ``SR_WORKSPACE_PATH`` is the pre-rename fallback so
-    existing deployments keep their definitions directory.
+    ``AGENTNODES_WORKSPACE`` is canonical (same name the CLI and session DB
+    resolver use).
+
+    ``SR_WORKSPACE_PATH`` is the pre-rename fallback so existing deployments
+    keep their definitions directory — it still points at **where the user's
+    data lives**, so it stays honored (see ``settings.LEGACY_LIVE_ENVS``).
     """
-    import os
-    # 批次 B：AN_WORKSPACE_PATH 的声明 default 是 None，先兜底成 "" 再 .strip()。
+    # 声明的 default 是 None，先兜底成 "" 再 .strip()。
     raw = (
-        (_settings.get_str("AN_WORKSPACE_PATH") or "").strip()
-        or _settings.get_str("SR_WORKSPACE_PATH").strip()
+        (_settings.get_str("AGENTNODES_WORKSPACE") or "").strip()
+        or (_settings.get_legacy("SR_WORKSPACE_PATH", "") or "").strip()
         or str(_Path.cwd())
     )
     return _Path(raw)

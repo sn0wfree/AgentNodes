@@ -3,7 +3,7 @@
 Previously tokens were bare base64 payloads — anyone could forge a
 token for any user. Tokens are now ``base64url(payload) + "." +
 base64url(hmac_sha256(secret, payload))`` with the secret taken from
-``JWT_SECRET`` env or a persisted random secret at
+``AGENTNODES_JWT_SECRET`` env or a persisted random secret at
 ``~/.quantnodes/jwt_secret`` (0600, created on first use).
 
 Legacy unsigned tokens are rejected: existing sessions must re-login.
@@ -12,7 +12,7 @@ A6/A7 hardening (low-risk mode):
 - An existing secret file that is empty is treated as "no secret" and
   a fresh random one is written (preserves pre-fix behaviour).
 - An OSError on read/write falls back to the dev secret ONLY when
-  ``AGENTNODES_ALLOW_DEV_SECRET=1`` is set in the environment;
+  ``AGENTNODES_API_ALLOW_DEV_SECRET=1`` is set in the environment;
   otherwise we raise RuntimeError. This prevents the previous silent
   fallback to a forgeable default. Existing deployments that rely on
   the fallback can opt back in via the env var.
@@ -37,7 +37,7 @@ TOKEN_TTL_SECONDS = 86400  # 24h
 logger = logging.getLogger(__name__)
 
 # Last-resort public constant. Public to anyone who reads the source.
-# The fallback path is opt-in via AGENTNODES_ALLOW_DEV_SECRET=1.
+# The fallback path is opt-in via AGENTNODES_API_ALLOW_DEV_SECRET=1.
 _DEV_SECRET = b"strategy-research-dev-secret"
 
 
@@ -48,17 +48,17 @@ def _allow_dev_secret() -> bool:
     """Whether the OSError-fallback to the dev secret is permitted.
 
     Defaults to False: deployments that can't persist their secret
-    must configure JWT_SECRET explicitly. The fallback is kept as an
+    must configure AGENTNODES_JWT_SECRET explicitly. The fallback is kept as an
     opt-in escape hatch for read-only filesystems / local dev.
     """
-    return _settings.get_str("AGENTNODES_ALLOW_DEV_SECRET") == "1"
+    return _settings.get_str("AGENTNODES_API_ALLOW_DEV_SECRET") == "1"
 
 
 def _load_secret() -> bytes:
-    """Resolve the signing secret: env JWT_SECRET > persisted file > dev fallback.
+    """Resolve the signing secret: env AGENTNODES_JWT_SECRET > persisted file > dev fallback.
 
     The dev fallback (public constant) is a last resort for read-only
-    filesystems and is gated behind ``AGENTNODES_ALLOW_DEV_SECRET=1``.
+    filesystems and is gated behind ``AGENTNODES_API_ALLOW_DEV_SECRET=1``.
     When the env var is not set and the filesystem is unavailable,
     RuntimeError is raised so production deployments fail loudly
     instead of accepting forgeable tokens (A6/A7).
@@ -67,7 +67,7 @@ def _load_secret() -> bytes:
     if _SECRET_CACHE is not None:
         return _SECRET_CACHE
 
-    env_secret = _settings.get_str("JWT_SECRET")
+    env_secret = _settings.get_str("AGENTNODES_JWT_SECRET")
     if env_secret:
         _SECRET_CACHE = env_secret.encode()
         return _SECRET_CACHE
@@ -118,16 +118,18 @@ def _load_secret() -> bytes:
         if _allow_dev_secret():
             logger.error(
                 "auth_tokens: cannot persist JWT secret to %s — falling "
-                "back to the forgeable dev secret (AGENTNODES_ALLOW_DEV_SECRET=1). "
-                "Set JWT_SECRET in the environment for any non-local deployment.",
+                "back to the forgeable dev secret (AGENTNODES_API_ALLOW_DEV_SECRET=1). "
+                "Set AGENTNODES_JWT_SECRET in the environment for any "
+                "non-local deployment.",
                 path,
             )
             _SECRET_CACHE = _DEV_SECRET
             return _SECRET_CACHE
         raise RuntimeError(
             f"auth_tokens: cannot persist JWT secret to {path} and "
-            f"AGENTNODES_ALLOW_DEV_SECRET is not set "
-            f"({exc}). Set JWT_SECRET or AGENTNODES_ALLOW_DEV_SECRET=1."
+            f"AGENTNODES_API_ALLOW_DEV_SECRET is not set "
+            f"({exc}). Set AGENTNODES_JWT_SECRET or "
+            f"AGENTNODES_API_ALLOW_DEV_SECRET=1."
         ) from exc
 
 

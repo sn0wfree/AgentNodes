@@ -36,8 +36,8 @@ def resolve_session_db_path() -> Path:
     """Resolve the unified session DB path.
 
     Priority:
-      1. ``AN_SESSIONS_DB`` env var (explicit absolute path override)
-      2. ``AN_WORKSPACE_PATH`` env var / ``<filename>``
+      1. ``AGENTNODES_SESSION_DB`` env var (explicit absolute path override)
+      2. ``AGENTNODES_WORKSPACE`` env var / ``<filename>``
       3. current working dir / ``<filename>``
       4. ``~/.agentnodes`` 回退（profile 决定目录名与文件名）
 
@@ -52,7 +52,7 @@ def resolve_session_db_path() -> Path:
     且不会在 import 期因 env 未设而固化默认值。
     """
     # 1. Explicit override
-    env_explicit = _settings.get_str("AN_SESSIONS_DB")
+    env_explicit = _settings.get_str("AGENTNODES_SESSION_DB")
     if env_explicit:
         p = Path(env_explicit)
         p.parent.mkdir(parents=True, exist_ok=True)
@@ -60,8 +60,8 @@ def resolve_session_db_path() -> Path:
 
     filename = session_db_filename()
 
-    # 2/3. Workspace-relative (AN_WORKSPACE_PATH or cwd)
-    workspace_env = _settings.get_str("AN_WORKSPACE_PATH")
+    # 2/3. Workspace-relative (AGENTNODES_WORKSPACE or cwd)
+    workspace_env = _settings.get_str("AGENTNODES_WORKSPACE")
     workspace = Path(workspace_env) if workspace_env else Path.cwd()
     p = (workspace / filename).resolve()
     p.parent.mkdir(parents=True, exist_ok=True)
@@ -72,7 +72,7 @@ def resolve_db_path(override: Path | None = None) -> Path:
     """Resolve the session DB path (used by EventStore / MemoryManager).
 
     Priority: explicit ``override`` arg > ``resolve_session_db_path()``
-    (which itself honors ``AN_SESSIONS_DB`` / ``AN_WORKSPACE_PATH`` /
+    (which itself honors ``AGENTNODES_SESSION_DB`` / ``AGENTNODES_WORKSPACE`` /
     cwd / ``~/.agentnodes`` fallback).
     """
     if override is not None:

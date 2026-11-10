@@ -23,12 +23,20 @@ from agentnodes.foundation.storage import session_paths
 
 @pytest.fixture
 def clean_env(monkeypatch):
-    """清掉所有路径相关环境变量，避免宿主环境影响断言。"""
+    """清掉所有路径相关环境变量，避免宿主环境影响断言。
+
+    **批 E-2**：旧名不再被读取（只有 4 个"仍然生效"的历史名例外），
+    所以清单里要清的是**规范名** + 仍然生效的历史名。
+    """
     for var in (
-        "AN_DATA_PROFILE", "AN_DATA_DIR", "AN_SESSIONS_DB",
-        "AN_WORKSPACE_PATH", "AN_CHECKPOINTS_DIR", "AN_WORKFLOWS_DIR",
-        "AN_MODEL_CATALOG_DIR",
+        # 规范名
+        "AGENTNODES_PROFILE", "AGENTNODES_DATA_DIR", "AGENTNODES_SESSION_DB",
+        "AGENTNODES_WORKSPACE", "AGENTNODES_CHECKPOINTS_DIR", "AGENTNODES_WORKFLOWS_DIR",
+        "AGENTNODES_MODEL_CATALOG_DIR",
+        # 仍然生效的历史名（settings.LEGACY_LIVE_ENVS）
+        "AN_DATA_PROFILE",
         "STRATEGY_RESEARCH_CHECKPOINT_BASE_DIR",
+        # 历史遗留的 checkpoint / workflows 目录名
         "STRATEGY_RESEARCH_CHECKPOINT_DIR",
         "STRATEGY_RESEARCH_WORKFLOWS_DIR",
     ):
@@ -84,38 +92,38 @@ def test_explicit_profile_arg_overrides_env(clean_env, monkeypatch):
 # ── 环境变量覆盖（"除非启动参数中有另外设定"）────────────────────────
 
 
-def test_an_data_dir_overrides_profile(clean_env, monkeypatch, tmp_path):
-    monkeypatch.setenv("AN_DATA_DIR", str(tmp_path))
+def test_data_dir_env_overrides_profile(clean_env, monkeypatch, tmp_path):
+    monkeypatch.setenv("AGENTNODES_DATA_DIR", str(tmp_path))
     assert paths.data_dir() == tmp_path
 
 
 def test_subdir_env_override(clean_env, monkeypatch, tmp_path):
-    monkeypatch.setenv("AN_CHECKPOINTS_DIR", str(tmp_path / "ckpt"))
-    got = paths.data_subdir("checkpoints", env_var="AN_CHECKPOINTS_DIR")
+    monkeypatch.setenv("AGENTNODES_CHECKPOINTS_DIR", str(tmp_path / "ckpt"))
+    got = paths.data_subdir("checkpoints", env_var="AGENTNODES_CHECKPOINTS_DIR")
     assert got == tmp_path / "ckpt"
 
 
 def test_subdir_falls_back_to_data_dir(clean_env, monkeypatch):
-    got = paths.data_subdir("workflows", env_var="AN_WORKFLOWS_DIR")
+    got = paths.data_subdir("workflows", env_var="AGENTNODES_WORKFLOWS_DIR")
     assert got == Path.home() / ".agentnodes" / "workflows"
 
 
 def test_sessions_db_env_override(clean_env, monkeypatch, tmp_path):
     target = tmp_path / "custom.db"
-    monkeypatch.setenv("AN_SESSIONS_DB", str(target))
+    monkeypatch.setenv("AGENTNODES_SESSION_DB", str(target))
     assert session_paths.resolve_session_db_path() == target
 
 
 def test_workspace_session_db_uses_profile_name(clean_env, monkeypatch, tmp_path):
     """会话库落在 workspace，文件名必须随 profile。"""
-    monkeypatch.setenv("AN_WORKSPACE_PATH", str(tmp_path))
+    monkeypatch.setenv("AGENTNODES_WORKSPACE", str(tmp_path))
     got = session_paths.resolve_session_db_path()
     assert got.name == ".agentnodes_session.db", got
     assert got.parent == tmp_path.resolve()
 
 
 def test_workspace_session_db_quantnodes_profile(clean_env, monkeypatch, tmp_path):
-    monkeypatch.setenv("AN_WORKSPACE_PATH", str(tmp_path))
+    monkeypatch.setenv("AGENTNODES_WORKSPACE", str(tmp_path))
     monkeypatch.setenv("AN_DATA_PROFILE", "quantnodes")
     got = session_paths.resolve_session_db_path()
     assert got.name == ".quantnodes_agentnodes_session.db", got

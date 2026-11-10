@@ -153,7 +153,7 @@ def main(
     raw_argv = list(sys.argv[1:] if argv is None else argv)
 
     # 日志统一入口（docs/guides/logging-unified-entry-design-20261102.md §4.1）：
-    # CLI 是严格开关语义——AN_LOG_JSON / AN_LOG_FILE 任一设置才装配
+    # CLI 是严格开关语义——AGENTNODES_LOG_JSON / AGENTNODES_LOG_FILE 任一设置才装配
     # stderr handler（trace 过滤 + 对应格式）；默认（未设）完全不装配，
     # 与 TUI/界面输出（print/rich 走 stdout）互不干扰，逐字节同从前。
     try:

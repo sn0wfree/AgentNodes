@@ -307,7 +307,7 @@ def main() -> None:
     )
     parser.add_argument(
         "--db-path", type=str, default=None,
-        help="Path to SQLite DB (default: AN_WORKSPACE_PATH/user.db)",
+        help="Path to SQLite DB (default: AGENTNODES_WORKSPACE/user.db)",
     )
     parser.add_argument(
         "--session", type=str, default=None,
@@ -337,7 +337,7 @@ def main() -> None:
     else:
         import os
         workspace = Path(
-            _settings.get_str("AN_WORKSPACE_PATH") or str(Path.home() / ".agentnodes")
+            _settings.get_str("AGENTNODES_WORKSPACE") or str(Path.home() / ".agentnodes")
         )
         db_path = workspace / "quantnodes_agentnodes_user.db"
 

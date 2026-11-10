@@ -97,7 +97,7 @@ def _peek_path() -> Path:
     import 期要读一次磁盘态，而 ``ensure_data_dir()`` 会建目录（首次还会
     搬旧目录）。"import 本模块"不该有这种副作用——测试与工具链都可能
     只是 import 一下却不希望任何写盘。所以读侧直接复刻它的**解析**规则
-    （``AN_DATA_DIR`` → ``~/.agentnodes``），不做任何 IO；实际写入时
+    （``AGENTNODES_DATA_DIR`` → ``~/.agentnodes``），不做任何 IO；实际写入时
     （``trip_halt``）才走 ``halt_path()`` 的全量解析。
     """
     override = _settings.get_str("AGENTNODES_HALT_PATH").strip()
@@ -107,7 +107,7 @@ def _peek_path() -> Path:
         from agentnodes.foundation.storage.sqlite import DEFAULT_DATA_DIR
 
         base = (
-            _settings.get_str("AN_DATA_DIR").strip() or str(DEFAULT_DATA_DIR)
+            _settings.get_str("AGENTNODES_DATA_DIR").strip() or str(DEFAULT_DATA_DIR)
         )
         return Path(base).expanduser() / _HALT_FILENAME
     except Exception:  # noqa: BLE001
