@@ -68,6 +68,10 @@ class Gateway:
         # 路径的既有行为）；singleton 装配生产 Gateway 时注入默认
         # evaluator（与 /send_async 的 chat_loop 同构选型）。
         permission_evaluator: Any | None = None,
+        # **W5**：审批通道（ASK 判定需要它把请求递给用户）。None = 无通道
+        # （ASK fail-closed 拒绝）；web 路由注入带 SSE 推送钩子的进程级实例
+        # （与 /api/chat/permission/respond 端点共用同一个）。
+        permission_gateway: Any | None = None,
     ) -> None:
         self._events: list[tuple[str, dict]] = []
         # 阶段一 §2.8：Worker Slot 管理器——订阅 assignment.report 管理
@@ -127,6 +131,8 @@ class Gateway:
             workspace=self._workspace,
             # **W5**：Tier 1 权限闸门（None = 不设防，直构测试路径）。
             permission_evaluator=permission_evaluator,
+            # **W5**：审批通道（ASK 判定需要它把请求递给用户）。
+            permission_gateway=permission_gateway,
             # B5 R-1（选项 A）：组装根构造 ContextHub 并注入。None = 无上下
             # 文注入——直构 controller 的测试路径行为不变。
             context_hub=context_hub,

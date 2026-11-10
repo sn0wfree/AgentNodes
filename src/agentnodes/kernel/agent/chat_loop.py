@@ -23,6 +23,9 @@ from agentnodes.foundation import settings as _settings
 
 logger = logging.getLogger(__name__)
 
+#: **W5**：默认审批通道的进程级单例（审批是跨请求交互，必须全局唯一）。
+_DEFAULT_PERMISSION_GATEWAY: Any | None = None
+
 
 def build_default_permission_evaluator() -> Any:
     """构造 chat 场景的**默认**权限 evaluator（W5 提取，两路共享）。
@@ -53,6 +56,26 @@ def build_default_permission_evaluator() -> Any:
         ruleset=list(MODE_PRESETS[mode.value]),
         interactive=True,
     )
+
+
+def build_default_permission_gateway() -> Any:
+    """构造 chat 场景的**默认**审批通道（W5）。
+
+    **进程级单例**：审批是"一次请求 → 用户在 UI 上点 → 另一个请求回
+    答"的跨请求交互——gateway 必须全局唯一，否则 ``tool_call_id`` 对不上
+    挂起的 future（web 的 ``/api/chat/permission/respond`` 也按 id 查）。
+
+    **无 SSE 钩子**：默认形态用于 CLI/TUI 等无审批 UI 的路径——此时 ASK
+    仍 fail-closed（``tools.py`` 找不到 on_request 就等超时后拒绝），
+    但通道本身在位，接上 UI 即可用。web 路由会传入自己那个带
+    ``on_request`` 钩子的实例（``routers/chat._get_permission_gateway``）。
+    """
+    from agentnodes.kernel.permission import PermissionGateway
+
+    global _DEFAULT_PERMISSION_GATEWAY
+    if _DEFAULT_PERMISSION_GATEWAY is None:
+        _DEFAULT_PERMISSION_GATEWAY = PermissionGateway()
+    return _DEFAULT_PERMISSION_GATEWAY
 
 
 def build_chat_agent_loop(
@@ -193,6 +216,18 @@ def build_chat_agent_loop(
         # **W5 提取**：默认选型逻辑原内联于此——现在与 gateway /send 路径
         # 共享同一实现（两路同构，漂移即测试失败）。
         permission_evaluator = build_default_permission_evaluator()
+        # **W5（2026-11-10）**：同时装配**审批通道**。
+        #
+        # 此前只有 evaluator、没有 gateway —— 于是任何 ASK 规则的工具在
+        # 两条 chat 路径上都被 fail-closed 拒绝（tools.py:684 的
+        # "no approval channel is wired on this path"），而
+        # ``/api/chat/permission/respond`` 端点的 gateway 从没被工具执行
+        # 用到过——审批 UI 是接上了、闸门那头却没插上。
+        #
+        # 这里装默认 gateway（无 on_request 钩子时 ASK 仍走 fail-closed，
+        # 但**有**通道可用）；web 路由会传入带 SSE 推送钩子的进程级
+        # gateway（``routers/chat._get_permission_gateway``）。
+        permission_gateway = build_default_permission_gateway()
     # 防御式挂载：测试/子类可能传入不接受任意属性的 loop 替身。
     for _attr, _val in (
         ("_permission_evaluator", permission_evaluator),
@@ -210,4 +245,8 @@ def build_chat_agent_loop(
     return loop
 
 
-__all__ = ["build_chat_agent_loop", "build_default_permission_evaluator"]
+__all__ = [
+    "build_chat_agent_loop",
+    "build_default_permission_evaluator",
+    "build_default_permission_gateway",
+]

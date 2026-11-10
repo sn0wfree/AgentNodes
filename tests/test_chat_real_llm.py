@@ -32,6 +32,15 @@ REPO_ROOT = Path(__file__).resolve().parent.parent
 pytestmark = [
     pytest.mark.live_llm,
     pytest.mark.xdist_group("chat_real_llm"),
+    # **2026-11-10 补 opt-in 门禁**：本文件此前**没有** QNODES_LIVE_LLM
+    # 门禁，是唯一在默认全量回归里偷跑真 LLM 的 live 文件——实测拖慢
+    # 全量回归到 1h20m（每条用例起真实 uvicorn + 真实 API 调用 ~90s），
+    # 且 8 个 xdist worker 并发打 MiniMax 会互相限流 → 随机失败。
+    # 与 test_llm_live / test_fanout_live / test_p51b_live 同一判据。
+    pytest.mark.skipif(
+        os.environ.get("QNODES_LIVE_LLM") != "1",
+        reason="live LLM tests are opt-in: set QNODES_LIVE_LLM=1",
+    ),
 ]
 
 

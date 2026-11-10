@@ -95,7 +95,16 @@ def get_session_service(request: Request) -> "SessionService":
 
     svc = getattr(request.app.state, _STATE_KEY_SESSION_SERVICE, None)
     if svc is None:
-        svc = SessionService(store=get_session_store(request), event_bus=get_event_store(request))
+        from .routers.chat import _get_permission_gateway
+
+        svc = SessionService(
+            store=get_session_store(request),
+            event_bus=get_event_store(request),
+            # **W5**：注入带 SSE 推送钩子的进程级审批通道——与
+            # ``/api/chat/permission/respond`` 端点共用同一个实例，
+            # 于是用户点的审批能真正递到正在等它的工具调用上。
+            permission_gateway=_get_permission_gateway(),
+        )
         setattr(request.app.state, _STATE_KEY_SESSION_SERVICE, svc)
     return svc
 

@@ -55,6 +55,7 @@ def get_gateway(
     # 安全的；此前默认 False 让 gateway /send 从不打流式 delta。
     stream: bool = True,
     permission_evaluator: Any | None = None,
+    permission_gateway: Any | None = None,
 ) -> Any:
     """返回进程内唯一 Gateway（首次调用时构造并自检不变量）。
 
@@ -110,6 +111,18 @@ def get_gateway(
             except Exception:  # noqa: BLE001 —— evaluator 不可用不拒启
                 # （registry 已被 _gate_shell_tools 收紧，降级安全）
                 pass
+        if permission_gateway is None:
+            try:
+                from agentnodes.kernel.agent.chat_loop import (
+                    build_default_permission_gateway,
+                )
+
+                # **W5**：进程级默认审批通道（kernel 不 import L1 的
+                # routers/chat——那是接口层；L1 装配根会把自己那个带 SSE
+                # 钩子的实例传进来覆盖它）。
+                permission_gateway = build_default_permission_gateway()
+            except Exception:  # noqa: BLE001 —— 无通道时 ASK fail-closed
+                pass
         # B5 R-1（选项 A）：组装 ContextHub 并注入 Gateway。此前生产 chat
         # 的 controller._context_hub 恒为 None——B1-b 的上下文注入只在旧
         # /send_async 路径活着。失败降级 None（与 registry 降级同款）。
@@ -130,6 +143,8 @@ def get_gateway(
             max_iterations=_resolve_max_iterations(),
             # **W5**：Tier 1 权限闸门（默认 = chat 默认 evaluator）。
             permission_evaluator=permission_evaluator,
+            # **W5**：审批通道（ASK 判定需要它）。
+            permission_gateway=permission_gateway,
         )
         # 阶段一/二/三：L1 组装根的后置接线（Ticket/Assignment、容量闸、
         # 基因组版本链）。**在 verify_invariants 之前**——自检要看到已接线

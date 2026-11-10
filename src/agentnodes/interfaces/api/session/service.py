@@ -65,9 +65,15 @@ class SessionService:
         self,
         store: SessionStore,
         event_bus: EventStore,
+        permission_gateway: Any | None = None,
     ) -> None:
         self.store = store
         self.event_bus = event_bus
+        # **W5**：审批通道（ASK 判定需要它把请求递给用户）。
+        # None = 无通道（ASK fail-closed 拒绝）；web 路由注入带 SSE 推送
+        # 钩子的进程级实例（``routers/chat._get_permission_gateway``），
+        # 与 ``/api/chat/permission/respond`` 端点共用同一个。
+        self.permission_gateway = permission_gateway
         self._active_loops: dict[str, "asyncio.Task"] = {}
         # Per-session FIFO message queue (see docs/design/chat-message-queue-design.md)
         self._session_queues: dict[str, asyncio.Queue] = {}
@@ -943,6 +949,12 @@ class SessionService:
             allow_shell_tools=allow_shell_tools,
             allowed_tools=allowed_tools,  # Plan mode: read-only tools
             enable_goal_injection=True,  # long-horizon: continue until goal criteria met
+            # **W5**：审批通道 —— ASK 判定需要它（否则 fail-closed 拒绝，
+            # 用户在 UI 上点的审批无处可递）。
+            #
+            # 用 getattr 防御：部分测试用 ``object.__new__(SessionService)``
+            # 绕过 ``__init__``（不跑属性初始化），直接读属性会 AttributeError。
+            permission_gateway=getattr(self, "permission_gateway", None),
         )
 
         # Run synchronously inside the asyncio loop (AgentLoop.arun is async).
