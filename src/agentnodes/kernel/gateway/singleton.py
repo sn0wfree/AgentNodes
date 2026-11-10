@@ -49,7 +49,11 @@ def get_gateway(
     system: str | None = None,
     sink: Callable[[str, dict], None] | None = None,
     registry: Any | None = None,
-    stream: bool = False,
+    # **W3**：默认 True——生产服务在启动时经 ``_start_gateway_consumer``
+    # 构造单例，此后 chat 入口的 stream 参数是无效调用（单例已存在）。
+    # 适配器对不支持流式的 client（测试假件）自动降级非流式，默认开是
+    # 安全的；此前默认 False 让 gateway /send 从不打流式 delta。
+    stream: bool = True,
     permission_evaluator: Any | None = None,
 ) -> Any:
     """返回进程内唯一 Gateway（首次调用时构造并自检不变量）。

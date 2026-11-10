@@ -356,10 +356,15 @@ async def queue_resume(body: QueueResumeRequest, request: Request):
 
 
 def _get_gateway():
-    """进程内唯一 Gateway（见 core/gateway/singleton.py 的串行域说明）。"""
+    """进程内唯一 Gateway（见 core/gateway/singleton.py 的串行域说明）。
+
+    **W3**：``stream=True``——/send 的打字机流式。AgentLoop 适配器在
+    client 无 ``stream``/``astream`` 时自动降级为非流式（测试假件不受
+    影响）；生产 client（OpenAICompatClient）四件套齐全。
+    """
     from agentnodes.kernel.gateway import get_gateway
 
-    return get_gateway()
+    return get_gateway(stream=True)
 
 
 async def _send_via_gateway(
@@ -417,6 +422,28 @@ async def _send_via_gateway(
     user_mid = str(_uuid.uuid4())
     assistant_mid_holder: dict[str, str] = {}
 
+    # **W3**：桥在 submit **之前**安装——work.enqueued 会在 submit 内唤醒
+    # 消费者，晚装可能错过 run.started（占位 seed 与 message_id 注入全落
+    # 空）。receipt 路径（persist=True）带 seed_user：run.started 时补推
+    # assistant 占位 seed；sync/wait 路径不带（保持「失败不落任何行」的
+    # 既有不变量）。
+    turn_persist = gw.consumer_running() and not wait
+    _unsub = _install_chat_event_bridge(
+        gw, session_id, assistant_mid_holder,
+        service=service, persist=turn_persist,
+        seed_user=(
+            {
+                "message_id": user_mid,
+                "user_message_id": user_mid,
+                "role": "user",
+                "content": content,
+                "created_at": _time.time(),
+            }
+            if turn_persist
+            else None
+        ),
+    )
+
     turn_max_iter = 1 if (mode or "").strip().lower() == "plan" else None
     receipt = gw.entry.submit(
         api_chat_request(
@@ -425,6 +452,8 @@ async def _send_via_gateway(
         )
     )
     if not receipt.accepted:
+        # 未受理：桥立即撤（无 turn 可挂）
+        _unsub()
         raise HTTPException(
             status_code=400,
             detail={"error": "entry_rejected", "reason": str(receipt.reason)},
@@ -433,11 +462,9 @@ async def _send_via_gateway(
     # ── ②-b receipt 路径（R2.1c，E1=C）────────────────────────
     # 消费者在跑且未要求 wait：用户消息此刻落库，答案经 run.answer 由
     # persist 桥落库并补 agent_done；HTTP 立即返回两态回执。
-    if gw.consumer_running() and not wait:
-        _unsub = _install_chat_event_bridge(
-            gw, session_id, assistant_mid_holder,
-            service=service, persist=True,
-        )
+    # **注意**：这里 return 不注销桥——turn 交给消费者异步执行，run.answer
+    # 的落库与 seed/流式转发都靠它；桥在收尾事件时自注销（R7）。
+    if turn_persist:
         try:
             service.event_bus.emit(session_id, "message_received", {
                 "message_id": user_mid,
@@ -455,7 +482,6 @@ async def _send_via_gateway(
         }
 
     # ── ③ 执行（同步路径：kind 过滤；wait=true 时只等不驱动）────
-    _unsub = _install_chat_event_bridge(gw, session_id, assistant_mid_holder)
     try:
         if gw.consumer_running() and wait:
             run = await asyncio.get_running_loop().run_in_executor(
@@ -542,6 +568,7 @@ def _chat_wait_timeout() -> float:
 def _install_chat_event_bridge(
     gw: Any, session_id: str, message_id_holder: dict[str, str],
     *, service: Any = None, persist: bool = False,
+    seed_user: dict | None = None,
 ) -> Any:
     """把引擎的平台事件翻译成前端词表并推 SSE（P5-1b）。
 
@@ -593,13 +620,30 @@ def _install_chat_event_bridge(
     def _bridge_body(kind: str, data: dict) -> None:
         # **批次 V3-b**：run_id 就是 assistant message id（run.answer 落库
         # 时用它作 message_id）。在 run.started 就把 holder 置上——此后的
-        # 流式事件（text_delta/thinking_delta/tool_call）经 setdefault 拿到
+        # 流式事件（text_delta / thinking_delta / tool_call）经 setdefault 拿到
         # message_id，前端按 text_id/think_id 路由的 handlers 才能落件。
         # 此前 holder 到 run.answer 才置，整个流式阶段的 chunk 全部无主。
         if kind == "run.started" and not message_id_holder.get("id"):
             mid = str(data.get("run_id") or "")
             if mid:
                 message_id_holder["id"] = mid
+                # **W3**：占位 seed——前端 `messageReceived` 只有在事件带
+                # `assistant_message_id` 时才创建 assistant 占位消息（而
+                # 提交时 run_id 尚不存在，receipt 的 emit 带不了），缺了
+                # 它 `updateMessage` 对不存在的消息是 no-op，流式 chunk
+                # 全部落空。这里以完整 message_received 形状补推（含
+                # user_mid）：projector 首事件胜出（真实 user 事件已在
+                # 途，同 id 去重，零副作用）；前端幂等覆盖 user + 新建
+                # assistant 占位并进入流式态。
+                if seed_user is not None:
+                    try:
+                        _push_sse("message_received", {
+                            **seed_user,
+                            "assistant_message_id": mid,
+                            "status": "processing",
+                        }, session_id)
+                    except Exception:  # noqa: BLE001 —— seed 失败不阻断
+                        logger.debug("assistant seed push failed", exc_info=True)
         if persist:
             if kind == "run.answer":
                 mid = str(data.get("run_id") or "")

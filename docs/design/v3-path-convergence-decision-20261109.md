@@ -348,16 +348,32 @@ plan 模式 1 轮。迁移到 `AgentLoop` 后必须**保持同一套取值逻辑
 V3-b 的适配器把 controller 的 `max_iterations` 透传给 AgentLoop 构造
 参数，语义保持 ✅（已落地）。
 
-**W3 · assistant 占位消息 seed**（V3-b 落地时新发现）
+**W3 · assistant 占位消息 seed**（V3-b 落地时新发现）——**已修复（2026-11-10）**
 
-前端只有在 `message_received` 事件带 `assistant_message_id` 时才 seed
-assistant 占位消息（`queueHandlers.messageReceived`），而
-`_send_via_gateway` 的 emit 不带该字段；`updateMessage` 对不存在的
-消息是 no-op → 流式 chunk（即使已有 message_id）落不进消息，只能靠
-legacy 全局缓冲 + `assistant_message` 终态兜底。这个问题 react 时代
-就存在（且 react 的 text_delta 连 text_id 都没有，比现在更糟）。
-修复要动 SSE 语义（run.started 时补推 seed 或 emit 带 assistant
-id），归入前端接线批，不阻塞 V3-c。
+前端只有在 `message_received` 事件带 `assistant_message_id` 时才创建
+assistant 占位消息（`queueHandlers.messageReceived`），而提交时 run_id
+尚不存在，receipt 的 emit 带不了；`updateMessage` 对不存在的消息是
+no-op → 流式 chunk（即使 V3-b 后已带 message_id）落不进任何消息。
+
+**修复（三件套）**：
+1. **桥在 run.started 补推 seed**：完整 message_received 形状（含
+   user_mid + content + `assistant_message_id=run_id` + status）——
+   projector 首事件胜出（真实 user 事件已在途，同 id 去重）零副作用；
+   前端幂等（user 覆盖同内容 + 新建占位进入流式态）。sync/wait 路径
+   **不带** seed——保持「引擎失败不落任何行」的既有不变量
+   （`test_engine_failure_writes_nothing`）。
+2. **桥安装时序**：先装桥后 submit——`work.enqueued` 在 submit 内
+   唤醒消费者，晚装会错过 run.started（seed 与 message_id 注入全落空）。
+   receipt 路径 return 时**不**注销桥（turn 交给消费者，run.answer
+   落库靠它；收尾事件自注销）。
+3. **流式打开**：`singleton.get_gateway` 默认 `stream=True`——生产服务
+   在启动时构造单例，chat 入口的 stream 参数是无效调用（真机复验第一
+   轮抓到：seed 到了但 delta 为 0，根因即此）。适配器对无
+   stream/astream 的 client（测试假件）自动降级非流式，默认开安全。
+
+**真机复验**：seed 先于首个 delta 到达（占位先落）；text_delta ×16
+打字机跑通且全带 message_id；text/thinking 3-step 协议直通；终答正确。
+测试：`tests/test_w3_sse_seed.py` 9 条。
 
 ---
 

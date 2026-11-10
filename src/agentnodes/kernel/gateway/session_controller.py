@@ -440,13 +440,20 @@ class SessionController:
                     compact_config, getattr(self, "_task_signature", "") or "",
                 )
 
+            # **W3**：流式自适应——调用方要流式但 client 不支持（测试假件
+            # 只有 ``chat``）时降级为非流式，而非在 LLM 调用时炸出
+            # AttributeError。生产 client（OpenAICompatClient）四件套齐全。
+            _can_stream = hasattr(self._client, "astream") or hasattr(
+                self._client, "stream"
+            )
+
             loop = AgentLoop(
                 config=config,
                 registry=self._registry,
                 workspace=self._workspace,
                 session_id=self._current_session_id or None,
                 system_prompt=system,
-                stream_mode=self._stream,
+                stream_mode=self._stream and _can_stream,
                 # **W4**：per-turn 覆盖优先（plan 模式 = 1），否则构造值
                 # （singleton 按 LLMConfig.max_iterations 装配，默认 50）。
                 max_iterations=self._turn_max_iterations or self._max_iterations,
