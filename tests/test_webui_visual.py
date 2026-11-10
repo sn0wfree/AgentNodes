@@ -230,6 +230,16 @@ class TestMessageBubble:
             )
             # 等 Markdown 渲染稳定
             page.wait_for_timeout(500)
+            # **视觉测试隔离（2026-11-10）**：侧栏会话列表的条目数/标题随
+            # 运行历史变化（前面模块建过会话就多一条），而本类断言的是
+            # **消息气泡**视觉。截图前经真实 UI 按钮收起侧栏，让基线只表达
+            # 被测对象——否则同一份代码会因测试执行顺序假失败（实测：
+            # 单跑通过、五模块连跑失败，diff 红块全在侧栏会话列表）。
+            try:
+                page.click('button[title="收起侧边栏"]', timeout=3_000)
+                page.wait_for_timeout(300)
+            except Exception:  # noqa: BLE001 —— 按钮缺失不阻断（布局变了）
+                pass
 
             yield page
         finally:

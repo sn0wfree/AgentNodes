@@ -485,6 +485,13 @@ _LANE_E2E_FILES = frozenset({
     "test_e2e_comprehensive.py",    # live uvicorn
     "test_webui_e2e.py",            # live uvicorn
     "test_webui_e2e_playwright.py", # browser-driven
+    # 2026-11-10：playwright 装进 PYTEST_PI 后这 3 个才真正开始执行
+    # （此前一直是收集错误）。都驱动 live uvicorn + 真浏览器，且
+    # test_e2e_persist 的 backend_server 会触发前端 npm build —— PR 门
+    # 不能承受（3min+/次）。
+    "test_e2e_persist.py",          # live uvicorn + browser
+    "test_webui_catalog.py",        # browser (visual baseline)
+    "test_webui_visual.py",         # browser (visual baseline)
 })
 
 _LANE_SLOW_FILES = frozenset({

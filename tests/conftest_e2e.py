@@ -74,6 +74,9 @@ def built_frontend() -> Path:
 
     if not _has_e2e_hooks():
         # Auto-build if missing or stale — saves a manual step in CI.
+        # shell=True: on Windows `npm` is npm.cmd — bare-list Popen raises
+        # WinError 2 (file not found) because CreateProcess doesn't do
+        # PATH+PATHEXT resolution for .cmd files.
         print(f"\n[conftest] Building frontend (VITE_E2E=1) → {STATIC_DIR}...")
         subprocess.run(
             ["npm", "run", "build"],
@@ -81,6 +84,7 @@ def built_frontend() -> Path:
             check=True,
             capture_output=True,
             env={**os.environ, "VITE_E2E": "1"},
+            shell=True,
         )
     assert STATIC_DIR.exists(), f"Frontend build missing: {STATIC_DIR}"
     assert (STATIC_DIR / "index.html").exists(), f"index.html missing in {STATIC_DIR}"
@@ -88,9 +92,16 @@ def built_frontend() -> Path:
     return STATIC_DIR
 
 
-@pytest.fixture(scope="session")
+@pytest.fixture(scope="module")
 def backend_server(built_frontend: Path) -> Iterator[dict]:
     """启动一个真实的 uvicorn 后端进程 (TEST_MODE=1)。
+
+    **scope=module**（2026-11-10 修）：原 session 作用域让 5 个 e2e 模块
+    共用一个后端 + 一个临时 workspace/DB——前面模块创建的会话会残留在
+    后续模块的侧栏里，整页截图类的视觉测试因此随**模块执行顺序**变化
+    （实测：单跑 catalog+visual 全绿，五模块连跑 message_bubble 失败，
+    差异红块全在侧栏会话列表）。模块级隔离 = 每个 e2e 套件一份干净 DB，
+    代价是每个模块多一次启动（~5s，opt-in 车道可接受）。
 
     Returns dict with:
       - base_url: e.g. http://127.0.0.1:18765

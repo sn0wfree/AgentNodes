@@ -1,11 +1,20 @@
 """E2E test: send multiple messages and verify none disappear."""
 import asyncio
+import os
 
 import pytest
 # E2E 是 opt-in 车道：playwright 未安装时整个模块降级为 skip（而非
 # 收集错误——那会让 batch_gate 的 collect 锚点多出 5 个假错误）。
 pytest.importorskip("playwright")
 from playwright.async_api import async_playwright
+
+# Browser E2E is opt-in (e2e.yml / AN_RUN_BROWSER_TESTS=1) — 与
+# test_webui_catalog / test_webui_visual 同一门禁：本模块驱动真浏览器 +
+# 前端 npm build，不该在 PR 门里跑。
+pytestmark = pytest.mark.skipif(
+    os.environ.get("AN_RUN_BROWSER_TESTS", "0") != "1",
+    reason="Browser E2E; set AN_RUN_BROWSER_TESTS=1 (or run via e2e.yml)",
+)
 
 BASE_URL = "http://127.0.0.1:8783"
 
