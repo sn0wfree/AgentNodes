@@ -96,7 +96,9 @@ class TestProviderDefaults:
         defaults = get_provider_defaults("minimax")
         assert defaults["base_url"] == "https://api.minimaxi.com/v1"
         assert defaults["model"] == "minimax-M3"
-        assert defaults["max_tokens"] == 32000
+        # 2026-11-10 实测：M3.1-Flash 输出上限 524288（524289 报 400）；
+        # 旧值 32000 把输出窗口砍到 6%，长思考会被 finish_reason=length 截断。
+        assert defaults["max_tokens"] == 524_288
 
     def test_qwen_defaults(self):
         defaults = get_provider_defaults("qwen")
@@ -239,7 +241,9 @@ class TestThinkingExtraction:
         assert adapter.extract_thinking_from_delta(delta) is None
 
     def test_qwen_thinking_from_delta(self):
-        adapter = QwenAdapter()
+        # **V5**：Qwen 改配置驱动后，思考字段来自 toml 的 [channel] 段，
+        # 需先 attach_model 装载（生产由 get_provider(name, model) 自动做）。
+        adapter = QwenAdapter().attach_model("qwen-plus")
         delta = {"reasoning_content": "thinking"}
         assert adapter.extract_thinking_from_delta(delta) == "thinking"
 
@@ -342,7 +346,13 @@ class TestStreamOptions:
         assert MiniMaxAdapter().custom_stream_options() == {"include_usage": True}
 
     def test_other_providers_no_stream_options(self):
+        # **V5**：Qwen 的 stream_options 现在由 toml [channel] 驱动，
+        # 空 spec（未 attach_model）时确实为 None；attach 后为 include_usage。
         assert QwenAdapter().custom_stream_options() is None
+        assert (
+            QwenAdapter().attach_model("qwen-plus").custom_stream_options()
+            == {"include_usage": True}
+        )
         assert KimiAdapter().custom_stream_options() is None
         assert FallbackAdapter().custom_stream_options() is None
 
@@ -738,8 +748,11 @@ class TestOpenAIReasoningFieldAdapter:
         assert issubclass(DeepSeekAdapter, OpenAIReasoningFieldAdapter)
 
     def test_qwen_inherits(self):
-        """QwenAdapter should be a subclass of OpenAIReasoningFieldAdapter."""
-        from agentnodes.foundation.llm.provider._reasoning_field import (
-            OpenAIReasoningFieldAdapter,
-        )
-        assert issubclass(QwenAdapter, OpenAIReasoningFieldAdapter)
+        """**V5**：QwenAdapter 继承 ChannelAdapter（行为由 toml [channel] 驱动）。
+
+        改造前继承 OpenAIReasoningFieldAdapter（思考字段名硬编码在基类），
+        现在语义来自 ``data/providers/alibaba/qwen-plus.toml``。
+        """
+        from agentnodes.foundation.llm.provider.channel import ChannelAdapter
+
+        assert issubclass(QwenAdapter, ChannelAdapter)

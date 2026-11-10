@@ -4,7 +4,7 @@
   "providers": {
     "minimax": {
       "models_dev_id": "minimax-cn-coding-plan",
-      "bundled_models": ["minimax-M3"]
+      "bundled_models": ["MiniMax-M3.1-Flash", "minimax-M3"]
     },
     "openai": {
       "models_dev_id": "openai",

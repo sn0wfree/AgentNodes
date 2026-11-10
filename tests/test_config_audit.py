@@ -179,7 +179,8 @@ class TestDetectIssues:
         assert c6.severity == "info"
         assert c6.fixable is True
         assert "1024" in c6.description
-        assert "32000" in c6.description  # minimax recommendation
+        # 2026-11-10 实测：M3.1-Flash 输出上限 524288（旧值 32000 是错的）
+        assert "524288" in c6.description  # minimax recommendation
 
     def test_c6_not_fired_when_meets_recommendation(self, tmp_path):
         """C6 should not fire when user sets a sufficient max_tokens."""

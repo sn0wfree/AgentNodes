@@ -1,0 +1,58 @@
+name = "MiniMax-M3.1-Flash"
+description = "MiniMax M3.1 Flash — 1M-context agent model with mandatory adaptive thinking"
+family = "minimax"
+release_date = "2026-11-01"
+last_updated = "2026-11-10"
+attachment = true
+reasoning = true
+temperature = true
+tool_call = true
+open_weights = true
+
+# 显式继承渠道默认（_channel.toml 里的 base 行为 + 通用错误规则）
+extends = "minimax"
+
+# 实测（2026-11-10，api.minimaxi.com）：
+#   - thinking 无法关闭：thinking.type="disabled" → HTTP 400
+#     "requires adaptive thinking; thinking.type=disabled (including
+#      reasoning.effort=none) is not supported"
+#   - reasoning.effort=none 表面 200，但思考照常发生（静默忽略）
+#   - effort low/medium/high/xhigh/max 均被接受，但对 reasoning 长度
+#     无统计显著影响（各跑 2 次：low 432/637 vs max 618/819）
+#   - temperature / top_p 均接受（官方建议用默认值）
+[[reasoning_options]]
+type = "toggle"
+
+[cost]
+input = 1.00
+output = 4.00
+cache_read = 0.10
+
+[[cost.tiers]]
+tier = { size = 512_000 }
+input = 2.00
+output = 8.00
+cache_read = 0.20
+
+[limit]
+# 输出上限经实测确认：524288 接受、524289 报 400
+#   "does not support max tokens > 524288 (2013)"
+context = 1_000_000
+output = 524_288
+
+[modalities]
+input = ["text", "image", "video"]
+output = ["text"]
+
+# ── 渠道行为（该模型专属，覆盖 _channel.toml 的同名项）──────────────
+[channel]
+# M3.1 的思考走 OpenAI 风格独立字段，content 全程为 None。
+# **这一行就是 2026-11-10 那次"思考全丢"事故的根因记录**：
+# 旧 adapter 只看 content 里的 <think> 标签，于是 5/8 个 SSE 帧被丢弃。
+thinking_fields = ["reasoning_content"]
+# M3.1 不用内嵌标签（与 M3 的关键差异）
+thinking_tags = []
+stream_buffered_tags = false
+# max_tokens 预算**包含**思考 token：预算过小 → finish_reason=length
+# 且 content 为空（官方文档明确，实测复现）
+max_tokens_includes_thinking = true

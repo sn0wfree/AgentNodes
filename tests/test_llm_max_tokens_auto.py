@@ -32,7 +32,7 @@ class TestAutoWhenUnset:
 
     def test_thinking_provider_gets_full_ceiling(self):
         v = resolve_max_tokens(_cfg(), None, adapter=MiniMaxAdapter())
-        assert v == 32000
+        assert v == 524_288  # 2026-11-10 实测：M3.1-Flash 输出上限
 
     def test_deepseek_thinking_floor(self):
         v = resolve_max_tokens(_cfg(), None, adapter=DeepSeekAdapter())
@@ -45,7 +45,7 @@ class TestAutoWhenUnset:
 
     def test_zero_treated_as_unset(self):
         v = resolve_max_tokens(_cfg(), 0, adapter=MiniMaxAdapter())
-        assert v == 32000
+        assert v == 524_288  # 2026-11-10 实测：M3.1-Flash 输出上限
 
     def test_negative_treated_as_unset(self):
         v = resolve_max_tokens(_cfg(), -5, adapter=OpenAIAdapter())
@@ -53,7 +53,7 @@ class TestAutoWhenUnset:
 
     def test_non_int_treated_as_unset(self):
         v = resolve_max_tokens(_cfg(), "auto", adapter=MiniMaxAdapter())
-        assert v == 32000
+        assert v == 524_288  # 2026-11-10 实测：M3.1-Flash 输出上限
 
 
 class TestExplicitRequested:
@@ -76,7 +76,7 @@ class TestExplicitRequested:
 
     def test_oversize_clamped_to_adapter_default(self):
         v = resolve_max_tokens(_cfg(), 999999, adapter=MiniMaxAdapter())
-        assert v == 32000
+        assert v == 524_288  # 2026-11-10 实测：M3.1-Flash 输出上限
 
     def test_non_int_requested_is_auto(self):
         v = resolve_max_tokens(_cfg(), "oops", adapter=OpenAIAdapter())

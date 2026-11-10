@@ -1,16 +1,22 @@
-"""Qwen (Aliyun DashScope) provider adapter.
+"""Qwen (Aliyun DashScope) provider adapter（批次 14 · V5：配置驱动）。
 
-Uses OpenAI-compatible mode. Thinking tokens come via `reasoning_content`
-when enable_thinking is set on the model, inherited from
-OpenAIReasoningFieldAdapter.
+本文件**只剩渠道身份**（name / base_url / default_model）——所有行为
+（思考字段 ``reasoning_content``、``stream_options``）来自
+``data/providers/alibaba/qwen-plus.toml`` 的 ``[channel]`` 段，由
+``ChannelAdapter`` 统一实现。
+
+改前 24 行，继承 ``OpenAIReasoningFieldAdapter``（字段名硬编码在基类）；
+改后行为按模型写在 toml 里，换模型/加模型都不必改 Python。
 """
 
 from __future__ import annotations
 
-from ._reasoning_field import OpenAIReasoningFieldAdapter
+from .channel import ChannelAdapter
 
 
-class QwenAdapter(OpenAIReasoningFieldAdapter):
+class QwenAdapter(ChannelAdapter):
+    """DashScope OpenAI 兼容模式；思考字段见 toml ``[channel]``。"""
+
     @property
     def name(self) -> str:
         return "qwen"

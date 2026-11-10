@@ -471,8 +471,6 @@ def _apply_provider_defaults(out: dict[str, Any]) -> None:
         out["base_url"] = defaults["base_url"]
     if not out.get("model") and defaults.get("model"):
         out["model"] = defaults["model"]
-    if out.get("max_tokens") is None and defaults.get("max_tokens"):
-        out["max_tokens"] = defaults["max_tokens"]
     # Context/output window fallback chain (profile → catalog → adapter default).
     if out.get("model_context_tokens") is None:
         ctx = _catalog_window(p, out.get("model") or defaults.get("model"))
@@ -486,6 +484,21 @@ def _apply_provider_defaults(out: dict[str, Any]) -> None:
         )
         if out_ctx:
             out["model_max_output_tokens"] = out_ctx
+
+    # ``max_tokens`` 的取值链（2026-11-10 修）：
+    #   显式 max_tokens > 用户写的 model_max_output_tokens > adapter 默认。
+    #
+    # **此前 model_max_output_tokens 只用于 compaction 的阈值推算，
+    # 从不影响实际请求的 max_tokens** —— 用户在 llm.json 里写
+    # ``"model_max_output_tokens": 32000`` 以为限制了输出，实际请求仍用
+    # adapter 默认值（静默失效）。实测发现（test_llm_profiles 报
+    # cfg.max_tokens=524288 而 profile 写的是 32000）。
+    if out.get("max_tokens") is None:
+        user_output = out.get("model_max_output_tokens")
+        if isinstance(user_output, int) and user_output > 0:
+            out["max_tokens"] = user_output
+        elif defaults.get("max_tokens"):
+            out["max_tokens"] = defaults["max_tokens"]
 
 
 def _catalog_window(

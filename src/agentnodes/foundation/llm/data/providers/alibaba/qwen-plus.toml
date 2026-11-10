@@ -28,3 +28,10 @@ output = 32_768
 [modalities]
 input = ["text"]
 output = ["text"]
+
+# ── 渠道行为 ────────────────────────────────────────────────────────
+# Qwen（DashScope 兼容模式）的思考走 OpenAI 风格独立字段
+# ``reasoning_content``；不用 content 内嵌标签。
+[channel]
+thinking_fields = ["reasoning_content"]
+stream_options = { include_usage = true }

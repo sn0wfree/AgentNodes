@@ -21,6 +21,19 @@ import requests
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
 
+# **必须打 live_llm 标记**（2026-11-10 修）：conftest 的 ``_purge_llm_env``
+# autouse fixture 会清掉所有 *_API_KEY 并禁用 ``_try_load_dotenv``——本模块
+# 需要真实 key（api_key 是 ``env:MINIMAX_API_KEY`` 引用），被清后子进程读到
+# 空串，报 "API key not configured"。
+#
+# **xdist_group**：本模块起真实 uvicorn 子进程 + 真实 LLM 调用，并行跑时
+# 多个 worker 抢端口/临时 HOME 会互相污染（实测 -n 8 下 2 个失败、单跑
+# 5/5 全过）。loadgroup 分布器会把同组测试固定在同一个 worker 上串行执行。
+pytestmark = [
+    pytest.mark.live_llm,
+    pytest.mark.xdist_group("chat_real_llm"),
+]
+
 
 def _find_free_port() -> int:
     with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
@@ -81,22 +94,66 @@ def real_server():
         "AN_ADMIN_PASSWORD": "real-llm-test-pw",
     })
 
-    # Load API key from dotenv into env.
-    # 2026-11-10：路径统一到 ~/.agentnodes（旧的 ~/.quantnodes 作兼容回退）。
+    # 把宿主 .env **整份**注入子进程 env。
+    #
+    # 两个必须点（2026-11-10 实测）：
+    # 1. **整份注入**而非挑几个变量名：llm.json 的 api_key 是
+    #    ``env:MINIMAX_API_KEY`` 引用，配置层会 ``os.environ.get(...)``；
+    #    只注入 LLM_API_KEY 时引用解析成空串 → "API key not configured"。
+    # 2. **用 REAL_HOME** 而非 ``Path.home()``：conftest 的 ``_home_sandbox``
+    #    已把 HOME/USERPROFILE 指向沙箱，``Path.home()`` 拿不到宿主目录。
     try:
-        from dotenv import load_dotenv as _ld
+        from dotenv import dotenv_values
 
-        for cand in (Path.home() / ".agentnodes" / ".env",
-                     Path.home() / ".quantnodes" / ".env"):
-            if cand.exists():
-                _ld(cand, override=True)
+        # 取 ``_home_sandbox`` 的 REAL_HOME。
+        #
+        # **不要 ``from tests.conftest import _home_sandbox``**：pytest 在
+        # rootdir 模式下不一定把 tests/ 注册成包，xdist worker 里那条
+        # import 可能失败（异常被下面的 except 吞掉 → key 没注入 →
+        # "API key not configured"）。
+        # 从 sys.modules 里找已加载的 sandbox 模块最稳；找不到再退回
+        # ``_home_sandbox`` 直接导入（rootdir 会把 tests/ 放进 sys.path）。
+        real_home = None
+        for mod_name in ("conftest", "_home_sandbox"):
+            mod = sys.modules.get(mod_name)
+            sandbox = getattr(mod, "_home_sandbox", None) or (
+                mod if getattr(mod, "REAL_HOME", None) else None
+            )
+            if sandbox is not None:
+                real_home = sandbox.REAL_HOME
                 break
-        for var in ("LLM_API_KEY", "OPENAI_API_KEY", "MINIMAX_API_KEY"):
-            val = os.environ.get(var)
-            if val:
-                env[var] = val
-    except Exception:
-        pass
+        if real_home is None:
+            import _home_sandbox  # type: ignore[import-not-found]
+
+            real_home = _home_sandbox.REAL_HOME
+        _loaded = []
+        for cand in (real_home / ".agentnodes" / ".env",
+                     real_home / ".quantnodes" / ".env"):
+            if cand.exists():
+                for k, v in dotenv_values(cand).items():
+                    if v:
+                        env[k] = v
+                _loaded.append(f"env={cand}")
+                break
+        # 子进程的 HOME 被指到临时目录，找不到宿主 llm.json —— 显式指定。
+        for lj in (real_home / ".agentnodes" / "llm.json",
+                   real_home / ".quantnodes" / "llm.json"):
+            if lj.exists():
+                env["AGENTNODES_LLM_CONFIG"] = str(lj)
+                _loaded.append(f"llm={lj}")
+                break
+        # 缺凭据时**直接失败**（fail fast）。此前是静默 pass，导致真实原因
+        # 报在远端（"API key not configured"），排查要跨两个进程。
+        if not env.get("MINIMAX_API_KEY") and not env.get("LLM_API_KEY"):
+            raise RuntimeError(
+                f"no API key injected: REAL_HOME={real_home} "
+                f"(exists={real_home.is_dir()}), loaded={_loaded}, "
+                f"env_keys={sorted(k for k in env if k.endswith('_API_KEY'))}"
+            )
+    except RuntimeError:
+        raise
+    except Exception as exc:  # noqa: BLE001 —— 缺 key 时让测试报"api_key 未配置"
+        raise RuntimeError(f"creds setup failed: {exc!r}") from exc
 
     cmd = [
         sys.executable, "-u", "-m", "uvicorn",
@@ -229,7 +286,12 @@ class TestRealLLMChat:
                                 if evt_type == "text_delta":
                                     full_text += data.get("text", "")
                                 elif evt_type == "error":
-                                    error_msg = data.get("error", "unknown")
+                                    error_msg = (
+                                        data.get("error")
+                                        or data.get("message")
+                                        or json.dumps(data, ensure_ascii=False)[:300]
+                                        or "unknown"
+                                    )
                                 elif evt_type == "agent_done":
                                     done.set()
                                     return
@@ -263,7 +325,10 @@ class TestRealLLMChat:
             # 显示绿色，掩盖这类故障。
             pytest.fail(f"LLM call failed: {error_msg}")
 
-        assert len(full_text) > 5, f"Response too short: {full_text!r}"
+        # 提示词是 "say ok"，真实回答往往就是 "ok"（2 字符）——旧阈值
+        # ``> 5`` 会把正常回答判成失败（2026-11-10 实测：后端日志显示
+        # 回答正确、只是太短）。这里断言"有非空回答"即可。
+        assert full_text.strip(), f"Response empty: {full_text!r}"
 
     def test_multi_turn_history(self, auth_info):
         """Two messages → second references first."""

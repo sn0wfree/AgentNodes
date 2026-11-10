@@ -2,12 +2,14 @@ name = "MiniMax-M3"
 description = "MiniMax multimodal model for long-context coding, perception, and agent planning"
 family = "minimax"
 release_date = "2026-06-01"
-last_updated = "2026-06-25"
+last_updated = "2026-11-10"
 attachment = true
 reasoning = true
 temperature = true
 tool_call = true
 open_weights = true
+
+extends = "minimax"
 
 [[reasoning_options]]
 type = "toggle"
@@ -30,3 +32,12 @@ output = 128_000
 [modalities]
 input = ["text", "image", "video"]
 output = ["text"]
+
+# ── 渠道行为（与 M3.1-Flash 的关键差异所在）──────────────────────
+[channel]
+# M3 的思考**内嵌在 content 的 <think>…</think> 标签里**（不是独立字段）。
+# 与 M3.1-Flash 对比即见：thinking_fields 空、thinking_tags 有值。
+thinking_fields = []
+thinking_tags = ["<think>", "</think>"]
+# SSE 按 BPE token 切开，标签会被拆到多个 chunk → 需跨 chunk 缓冲
+stream_buffered_tags = true

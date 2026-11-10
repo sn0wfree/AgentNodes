@@ -19,7 +19,33 @@ import os
 from pathlib import Path
 
 # 真实主目录：必须在重定向之前记录。
-REAL_HOME = Path(os.environ.get("USERPROFILE") or os.environ.get("HOME") or Path.home())
+#
+# **xdist 陷阱（2026-11-10 实测）**：``REAL_HOME`` 是模块级常量，在 import
+# 时求值。串行跑没问题（conftest 先 import 再 apply），但 xdist 下主进程
+# conftest 已经 ``apply()`` 过——``USERPROFILE``/``HOME`` 都指向沙箱，worker
+# 进程继承这套 env 后再 import 本模块，``REAL_HOME`` 就被冻成**沙箱路径**。
+# 于是 live 测试在 ``-n 8`` 下拿不到宿主 key（报 "API key not configured"），
+# 单跑却是好的。
+#
+# 修法：真实 home 在 intt 时就写进一个专用 env var（``_REAL_HOME_ENV``），
+# 该值随进程继承传下去；后来者优先读它。
+_REAL_HOME_ENV = "AGENTNODES_TEST_REAL_HOME"
+
+
+def _resolve_real_home() -> Path:
+    """真实 home：优先用已记录的 env（跨 xdist worker 传递），否则推断。"""
+    recorded = os.environ.get(_REAL_HOME_ENV)
+    if recorded:
+        return Path(recorded)
+    inferred = Path(
+        os.environ.get("USERPROFILE") or os.environ.get("HOME") or Path.home()
+    )
+    # 首次推断时记下来，供后续进程/worker 使用。
+    os.environ[_REAL_HOME_ENV] = str(inferred)
+    return inferred
+
+
+REAL_HOME = _resolve_real_home()
 
 SANDBOX_HOME = Path(__file__).resolve().parent / "_user_home_sandbox"
 

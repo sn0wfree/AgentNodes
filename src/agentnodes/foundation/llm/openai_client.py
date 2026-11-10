@@ -279,6 +279,22 @@ class OpenAICompatClient:
             print(chunk.delta_content, end="")
     """
 
+    # ── Provider adapter（批次 14 · V5：带模型名，装载 [channel] 配置）──
+
+    def _adapter(self) -> Any:
+        """按当前 config 解析 adapter，并装载该**模型**的渠道行为配置。
+
+        与直接调 ``get_provider(name)`` 的差别：多传 ``config.model``，
+        于是 ``ChannelAdapter`` 子类会读
+        ``data/providers/<id>/<model>.toml`` 的 ``[channel]`` 段
+        （思考字段/标签/错误映射按模型生效）。
+
+        每次调用新建实例（adapter 含请求内状态，如跨 chunk 缓冲器）——
+        与改造前语义一致。
+        """
+        return get_provider(self.config.provider, self.config.model)
+
+
     def __init__(
         self,
         config: LLMConfig,
@@ -300,7 +316,7 @@ class OpenAICompatClient:
         """
         from .parser import parse_chat_response
 
-        return parse_chat_response(raw, adapter=get_provider(self.config.provider))
+        return parse_chat_response(raw, adapter=self._adapter())
 
     def chat(
         self,
@@ -311,7 +327,7 @@ class OpenAICompatClient:
         **overrides: Any,
     ) -> LLMResponse:
         """Synchronous chat completion with retry."""
-        adapter = get_provider(self.config.provider)
+        adapter = self._adapter()
         payload = _build_payload(self.config, messages, tools, tool_choice, overrides, adapter)
         payload["stream"] = False
 
@@ -333,7 +349,7 @@ class OpenAICompatClient:
         **overrides: Any,
     ) -> LLMResponse:
         """Async chat completion with retry."""
-        adapter = get_provider(self.config.provider)
+        adapter = self._adapter()
         payload = _build_payload(self.config, messages, tools, tool_choice, overrides, adapter)
         payload["stream"] = False
 
@@ -366,7 +382,7 @@ class OpenAICompatClient:
         extract_thinking) run on the same instance for every chunk, so
         reserved cross-chunk state is naturally per-request isolated.
         """  # noqa: C901
-        adapter = get_provider(self.config.provider)
+        adapter = self._adapter()
         payload = _build_payload(self.config, messages, tools, tool_choice, overrides, adapter)
         payload["stream"] = True
         # stream_options moved to ProviderAdapter.custom_stream_options()
@@ -466,7 +482,7 @@ class OpenAICompatClient:
 
         Same per-request adapter semantics as :meth:`stream`.
         """  # noqa: C901
-        adapter = get_provider(self.config.provider)
+        adapter = self._adapter()
         payload = _build_payload(self.config, messages, tools, tool_choice, overrides, adapter)
         payload["stream"] = True
         payload["stream_options"] = {"include_usage": True}

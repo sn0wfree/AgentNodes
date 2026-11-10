@@ -1,0 +1,39 @@
+# MiniMax 渠道默认行为（所有 MiniMax 模型共享）
+#
+# 模型 toml 写 ``extends = "minimax"`` 即可继承本文件的 [channel] 段，
+# 再用自己的 [channel] 覆盖差异项。
+#
+# **刻意显式**：不写 extends 的模型完全自足，不做隐式合并——避免
+# "不知道还继承了别处什么"的调试困境。
+
+[channel]
+# MiniMax 全系：流式尾部要 usage 快照（A1 预算记账依赖它）
+stream_options = { include_usage = true }
+
+# 全系通用的错误语义（2026-11-10 实测）
+[[channel.error_rules]]
+status = [400]
+contains = ["2013", "chat content is empty"]
+kind = "config"
+message = "MiniMax: empty chat content — 通常表示会话历史被过度压缩，请开新会话"
+
+[[channel.error_rules]]
+status = [401]
+kind = "auth"
+
+[[channel.error_rules]]
+status = [403]
+contains = ["quota", "billing"]
+kind = "quota"
+message = "MiniMax 配额已用完（5 小时滚动限额）"
+
+[[channel.error_rules]]
+status = [429]
+contains = ["quota", "billing"]
+kind = "quota"
+message = "MiniMax 配额已用完（5 小时滚动限额）"
+
+[[channel.error_rules]]
+status = [429]
+kind = "rate"
+message = "MiniMax 请求过于频繁"

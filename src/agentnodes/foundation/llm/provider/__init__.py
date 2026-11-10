@@ -64,15 +64,24 @@ def models_dev_id(provider: str) -> str:
     return MODELS_DEV_ID.get(provider, provider.lower())
 
 
-def get_provider(name: str | None) -> ProviderAdapter:
+def get_provider(name: str | None, model: str | None = None) -> ProviderAdapter:
     """Get provider adapter by name. Unknown providers get fallback.
 
     The 'auto' / None / empty name resolves to FallbackAdapter.
+
+    :param model: **可选**模型名。给出时，若该 adapter 支持配置驱动
+        （即 ``ChannelAdapter`` 子类），会按 ``data/providers/<id>/<model>.toml``
+        的 ``[channel]`` 段装载该模型的行为（思考字段/标签/错误映射）。
+        不给出时用空 spec = 该渠道的基类默认行为。
     """
     if not name or name == "auto":
         return FallbackAdapter()
     cls = _REGISTRY.get(name, FallbackAdapter)
-    return cls()
+    adapter = cls()
+    attach = getattr(adapter, "attach_model", None)
+    if model and callable(attach):
+        attach(model)
+    return adapter
 
 
 def register_provider(name: str, cls: type[ProviderAdapter]) -> None:

@@ -64,7 +64,18 @@ class MiniMaxAdapter(ProviderAdapter):
 
     @property
     def default_max_tokens(self) -> int:
-        return 32000
+        """模型输出上限（实测值，2026-11-10）。
+
+        M3.1-Flash 的硬上限是 **524,288**：524288 接受、524289 返回
+        ``400 does not support max tokens > 524288 (2013)``。
+        旧值 32,000 把输出窗口人为砍到 6%，长文/长思考会被截断
+        （``finish_reason=length`` 且 content 为空——M3.1 的
+        max_tokens **包含**思考 token，所以预算过小会直接饿死正文）。
+
+        该值是**上限而非目标**：provider 按实际用量计费，不按 cap。
+        ``resolve_max_tokens`` 在未显式指定时就取此值。
+        """
+        return 524_288
 
     @property
     def min_output_tokens(self) -> int:
