@@ -118,6 +118,7 @@
 |---|---|
 | [`system-one-survey-20261109.md`](design/system-one-survey-20261109.md) | System One 调研（Kev 接口事实 + 决策点普查） |
 | [`system-one-decision-layer-design-20261109.md`](design/system-one-decision-layer-design-20261109.md) | System One 决策层接入（讨论稿，8 个开放问题） |
+| [`typesafe-langchain-integration-survey-20261110.md`](design/typesafe-langchain-integration-survey-20261110.md) | LangChain TypeSafe 集成包调研（0.0.2 产物实测 + 与本项目交叉） |
 | [`plug-in-contract-design.md`](design/plug-in-contract-design.md) | 插件契约 |
 | [`truthfulness-common-rules-design.md`](design/truthfulness-common-rules-design.md) | 真实性通用规则 |
 | [`phase3-dual-factory-design.md`](design/phase3-dual-factory-design.md) | 双工厂 |
