@@ -11,11 +11,18 @@
 
 from __future__ import annotations
 
-from .channel import ChannelAdapter
+from .channel import ChannelAdapter, ChannelSpec
 
 
 class QwenAdapter(ChannelAdapter):
     """DashScope OpenAI 兼容模式；思考字段见 toml ``[channel]``。"""
+
+    #: 渠道默认（未绑定模型时的旧行为）。
+    fallback_spec = ChannelSpec(
+        thinking_fields=("reasoning_content",),
+        stream_options={"include_usage": True},
+        configured=True,
+    )
 
     @property
     def name(self) -> str:

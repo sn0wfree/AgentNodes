@@ -81,25 +81,34 @@ def _read_toml(path: Path) -> dict[str, Any] | None:
 
 
 def _find_model_toml(provider: str, model: str) -> dict[str, Any] | None:
-    """按 用户覆盖 → 内置 的顺序找一个模型的 toml。"""
+    """按 用户覆盖 → 内置 的顺序找一个模型的 toml。
+
+    **文件名匹配**：模型名可能含 ``/``（如 ``z-ai/glm-5.2``），文件名
+    里用 ``_`` 代替（``z-ai_glm-5.2.toml``）——models.dev 的风格。
+    """
     dev_id = _MODELS_DEV_ID.get(provider, provider)
+    safe_model = model.replace("/", "_")
     candidates = (
         (_user_specs_dir() / provider / f"{model}.toml"),
+        (_user_specs_dir() / provider / f"{safe_model}.toml"),
         (_user_specs_dir() / dev_id / f"{model}.toml"),
+        (_user_specs_dir() / dev_id / f"{safe_model}.toml"),
         (_BUNDLED_DIR / dev_id / f"{model}.toml"),
+        (_BUNDLED_DIR / dev_id / f"{safe_model}.toml"),
         (_BUNDLED_DIR / provider / f"{model}.toml"),
+        (_BUNDLED_DIR / provider / f"{safe_model}.toml"),
     )
     for cand in candidates:
         data = _read_toml(cand)
         if data is not None:
             return data
     # 大小写不敏感回退（models.dev 文件名风格不一：MiniMax-M3 vs gpt-4o-mini）
+    targets = {f"{model}.toml".lower(), f"{safe_model}.toml".lower()}
     for base in (_BUNDLED_DIR / dev_id, _BUNDLED_DIR / provider):
         if not base.is_dir():
             continue
-        target = f"{model}.toml".lower()
         for entry in base.iterdir():
-            if entry.name.lower() == target:
+            if entry.name.lower() in targets:
                 return _read_toml(entry)
     return None
 
@@ -173,3 +182,30 @@ def load_channel_spec(provider: str, model: str | None) -> ChannelSpec:
 def load_error_rules(provider: str, model: str | None) -> tuple[ErrorRule, ...]:
     """便捷入口：只取错误规则（供 adapter 组装 ``handle_error``）。"""
     return load_channel_spec(provider, model).error_rules
+
+
+def load_model_limit(provider: str, model: str | None, key: str) -> int | None:
+    """读模型 toml 的 ``[limit].<key>``（context / output）。
+
+    批次 14 · V5 第 4 步：adapter 的 ``default_max_tokens`` /
+    ``default_context_tokens`` 改为从这里读——**toml 是元数据唯一事实源**，
+    消除"adapter 硬编码 / toml / 用户 llm.json"三处不一致。
+
+    :param key: ``"context"`` 或 ``"output"``。
+    :return: 数值；文件缺失或键不存在时返回 None（调用方回退默认值）。
+    """
+    if not model:
+        return None
+    try:
+        data = _find_model_toml(provider, model)
+        if data is None:
+            return None
+        limit = data.get("limit")
+        if not isinstance(limit, dict):
+            return None
+        value = limit.get(key)
+        if isinstance(value, bool) or not isinstance(value, (int, float)):
+            return None
+        return int(value)
+    except Exception:  # noqa: BLE001 —— 配置问题回落默认
+        return None

@@ -29,3 +29,11 @@ output = 262_144
 [modalities]
 input = ["text", "image", "video"]
 output = ["text"]
+
+# ── 渠道行为 ────────────────────────────────────────────────────────
+# K2.5 的思考走独立字段 reasoning_content（同 [interleaved].field）。
+# **注意**：改造前 kimi.py 硬编码"无原生思考支持"（两个 return None），
+# 与本文件的 [interleaved].field 自相矛盾——配置驱动的第一件事就是把
+# 这种漂移暴露出来。
+[channel]
+thinking_fields = ["reasoning_content"]

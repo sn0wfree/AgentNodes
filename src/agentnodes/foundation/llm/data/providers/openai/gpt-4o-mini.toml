@@ -23,3 +23,10 @@ output = 16_384
 [modalities]
 input = ["text", "image", "pdf"]
 output = ["text"]
+
+# ── 渠道行为 ────────────────────────────────────────────────────────
+# OpenAI 的推理模型（o1/o3）走独立字段 ``reasoning``（不是
+# ``reasoning_content``——那是 DeepSeek 系的叫法）。
+[channel]
+thinking_fields = ["reasoning"]
+stream_options = { include_usage = true }

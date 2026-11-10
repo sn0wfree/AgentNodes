@@ -72,15 +72,17 @@ def get_provider(name: str | None, model: str | None = None) -> ProviderAdapter:
     :param model: **可选**模型名。给出时，若该 adapter 支持配置驱动
         （即 ``ChannelAdapter`` 子类），会按 ``data/providers/<id>/<model>.toml``
         的 ``[channel]`` 段装载该模型的行为（思考字段/标签/错误映射）。
-        不给出时用空 spec = 该渠道的基类默认行为。
+        不给出时用**该渠道的默认模型**去装载（这样
+        ``get_provider("nvidia").default_context_tokens`` 能从 toml 读到
+        真实窗口，而不是退化成 8192）；toml 也没有时用渠道 fallback_spec。
     """
     if not name or name == "auto":
         return FallbackAdapter()
     cls = _REGISTRY.get(name, FallbackAdapter)
     adapter = cls()
     attach = getattr(adapter, "attach_model", None)
-    if model and callable(attach):
-        attach(model)
+    if callable(attach):
+        attach(model or getattr(adapter, "default_model", None))
     return adapter
 
 
@@ -100,8 +102,19 @@ def get_provider_defaults(name: str | None) -> dict[str, Any]:
     Falls back to empty dict if the provider is unknown. ``context_tokens``
     is the model's context window (input + output), used by config.py as
     the ``model_context_tokens`` fallback when a profile omits it.
+
+    **不绑定模型**（V5）：这里问的是**渠道级**默认（未指定模型时该用
+    什么），所以取 adapter 的 fallback 值而非某个具体模型的 toml——
+    否则渠道默认会随"该渠道默认模型的 toml"漂移（实测：minimax 默认
+    模型 M3 的 output=128000，而渠道实际支持 524288）。
+
+    指定了模型时用 ``get_provider(name, model)``（读该模型的 toml）。
     """
     adapter = get_provider(name)
+    # 解绑：渠道默认 = fallback（不跟默认模型的 toml 走）。
+    detach = getattr(adapter, "detach_model", None)
+    if callable(detach):
+        detach()
     return {
         "base_url": adapter.default_base_url,
         "model": adapter.default_model,

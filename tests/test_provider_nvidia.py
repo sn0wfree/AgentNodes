@@ -22,7 +22,11 @@ class TestMetadata:
         assert adapter.name == "nvidia"
         assert "nvidia" in adapter.default_base_url
         assert adapter.default_model
-        assert adapter.default_context_tokens == 131072
+        # **V5**：窗口从 bundled toml 读（data/providers/nvidia/glm-5.2.toml
+        # 的 [limit].context = 131072），未绑定模型时回退基类保守值。
+        assert adapter.default_context_tokens == 8192
+        bound = adapter.attach_model(adapter.default_model)
+        assert bound.default_context_tokens == 131072
 
 
 class TestDualReasoningFields:

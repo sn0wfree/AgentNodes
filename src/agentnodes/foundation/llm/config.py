@@ -656,7 +656,9 @@ def resolve_max_tokens(
         try:
             from .provider import get_provider  # noqa: PLC2701
 
-            adapter = get_provider(config.provider)
+            # **绑定当前模型**（V5）：adapter 的窗口/下限随模型而变
+            # （读该模型 toml 的 [limit]），不绑就是渠道默认值。
+            adapter = get_provider(config.provider, config.model)
         except Exception:
             adapter = None
 

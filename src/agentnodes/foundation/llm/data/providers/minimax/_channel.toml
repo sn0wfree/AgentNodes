@@ -33,7 +33,5 @@ contains = ["quota", "billing"]
 kind = "quota"
 message = "MiniMax 配额已用完（5 小时滚动限额）"
 
-[[channel.error_rules]]
-status = [429]
-kind = "rate"
-message = "MiniMax 请求过于频繁"
+# 刻意**不**设 "429 -> rate" 规则：契约要求 429 且无 quota/billing 时
+# 返回 None（交给默认映射 → LLMRateLimitError）。

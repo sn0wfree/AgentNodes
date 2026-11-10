@@ -1,25 +1,40 @@
-"""NVIDIA NIM provider adapter.
+"""NVIDIA NIM provider adapter（批次 14 · V5：配置驱动）。
 
-NVIDIA NIM (https://integrate.api.nvidia.com) exposes an OpenAI
-Chat Completions-compatible API, so this adapter subclasses
-OpenAIAdapter and only overrides provider metadata, thinking-field
-extraction (some NIM reasoning models use ``reasoning_content``
-instead of ``reasoning``), and error mapping.
+NVIDIA NIM（https://integrate.api.nvidia.com）暴露 OpenAI Chat
+Completions 兼容 API。**只剩渠道身份**——行为全部来自
+``data/providers/nvidia/glm-5.2.toml`` 的 ``[channel]`` 段：
 
-Thinking tokens: GLM-style models on NIM may surface reasoning via
-either the standard ``reasoning`` field or DeepSeek-style
-``reasoning_content``; we accept both.
+- 思考字段：``reasoning``（OpenAI 系）与 ``reasoning_content``
+  （DeepSeek 系）都认，按序尝试；
+- 错误映射：402/403 表示配额耗尽（NIM 特有，不是 OpenAI 的 429）；
+- 窗口：context 131072 / output 16384。
+
+改前 72 行（字段名与错误映射硬编码在 Python 里）。
 """
 
 from __future__ import annotations
 
-from typing import Any
-
-from ..errors import LLMQuotaError
-from .openai import OpenAIAdapter
+from .channel import ChannelAdapter, ChannelSpec, ErrorRule
 
 
-class NvidiaAdapter(OpenAIAdapter):
+class NvidiaAdapter(ChannelAdapter):
+    """NIM；思考字段与配额错误映射见 toml ``[channel]``。"""
+
+    #: 渠道默认（未绑定模型时的旧行为）。
+    fallback_spec = ChannelSpec(
+        thinking_fields=("reasoning", "reasoning_content"),
+        error_rules=(
+            ErrorRule(status=(402,), kind="quota",
+                      message="NVIDIA NIM 配额不足"),
+            ErrorRule(status=(403,), contains=("quota", "billing"),
+                      kind="quota", message="NVIDIA NIM 配额不足"),
+            ErrorRule(status=(429,), contains=("quota", "billing"),
+                      kind="quota", message="NVIDIA NIM 配额不足"),
+            # 刻意不设 "429 -> rate"：无 quota/billing 时交给默认映射。
+        ),
+        configured=True,
+    )
+
     @property
     def name(self) -> str:
         return "nvidia"
@@ -32,41 +47,8 @@ class NvidiaAdapter(OpenAIAdapter):
     def default_model(self) -> str:
         return "z-ai/glm-5.2"
 
-    @property
-    def default_max_tokens(self) -> int:
-        return 16384
-
-    @property
-    def default_context_tokens(self) -> int:
-        return 131072
-
-    def _extract_reasoning(self, data: dict[str, Any]) -> str | None:
-        for field in ("reasoning", "reasoning_content"):
-            content = data.get(field)
-            if content and isinstance(content, str):
-                return self.normalize_thinking(content)
-        return None
-
-    def extract_thinking_from_delta(self, delta: dict[str, Any]) -> str | None:
-        content = self._extract_reasoning(delta)
-        if content is not None:
-            return content
-        return super().extract_thinking_from_delta(delta)
-
-    def extract_thinking_from_message(self, message: dict[str, Any]) -> str | None:
-        content = self._extract_reasoning(message)
-        if content is not None:
-            return content
-        return super().extract_thinking_from_message(message)
-
-    def handle_error(self, status: int, body: Any) -> Exception | None:
-        # NIM signals quota/billing exhaustion with 402/403 (and 429 can
-        # be either rate limit or quota).
-        if status in (401, 402, 403, 429):
-            error_code = self.extract_error_code(body)
-            if status == 402 or "quota" in error_code or "billing" in error_code:
-                return LLMQuotaError(f"quota exceeded ({status}): {body}")
-        return None
+    #: 模型 toml 缺失时的渠道级默认。
+    fallback_max_tokens = 16384
 
     def quota_error_message(self) -> str:
         return "NVIDIA NIM 配额不足"

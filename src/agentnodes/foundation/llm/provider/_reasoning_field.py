@@ -13,6 +13,11 @@ Concrete subclasses (DeepSeek, Qwen, GLM, …) only need to provide:
 
 If a provider ever needs different extraction semantics, override
 ``extract_thinking_from_delta`` / ``extract_thinking_from_message`` directly.
+
+**V5（批次 14）**：本基类保留（它是 ``ChannelAdapter`` 的功能等价物，
+且有独立单测），但**不再被渠道 adapter 继承**——那些已改继承
+``ChannelAdapter``（思考字段由 toml ``[channel]`` 驱动，见
+``provider/channel.py``）。本基类仅作参考实现与测试靶子。
 """
 
 from __future__ import annotations

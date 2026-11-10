@@ -1,25 +1,77 @@
-"""MiniMax provider adapter.
+"""MiniMax provider adapter（批次 14 · V5：配置驱动 + 保留状态机）。
 
-Special handling:
-- Thinking tokens emitted as <think> tags in delta.content
-- Uses 403 to signal quota exhaustion (5-hour rolling limit)
-- Uses 429 to signal either quota or per-minute rate limit
+**渠道专属的 Python 部分只有一处**：``<think>`` 标签的**跨 chunk 缓冲**
+（``ThinkBlockBuffer``）——SSE 按 BPE token 切分，标签会被拆到多个
+chunk，单 chunk 正则永远匹配不上。这是真正的行为，必须留在 Python。
+
+其余全部配置化（见 ``data/providers/minimax/*.toml`` 的 ``[channel]``）：
+
+- 思考字段：M3.1-Flash 用独立字段 ``reasoning_content``；老 M3 用
+  content 内嵌 ``<think>`` 标签 —— **两个模型的差异现在可 diff**；
+- 错误映射：2013（空 chat content）→ 配置错误；403/429 → 配额；
+- 窗口：context 1M / output 524288（M3.1-Flash 实测上限）。
+
+**事故记录**（2026-11-10）：旧实现只查 content 里的 ``<think>`` 标签，
+不查 ``reasoning_content`` —— M3.1-Flash 的思考被整体丢弃（8 个 SSE 帧
+里 5 帧思考消失）。现在两个通道都由 toml 声明，adapter 通用实现认两者。
 """
 
 from __future__ import annotations
 
-import re
 from typing import Any
 
-from ..errors import LLMConfigError, LLMQuotaError
 from ._think_stream import ThinkBlockBuffer
-from .base import ProviderAdapter
+from .channel import ChannelAdapter, ChannelSpec, ErrorRule
 
 
-class MiniMaxAdapter(ProviderAdapter):
-    THINK_PATTERN = re.compile(r"<think>([\s\S]*?)<\/think>")
-    THINK_OPEN = "<think>"
-    THINK_CLOSE = "</think>"
+class MiniMaxAdapter(ChannelAdapter):
+    """MiniMax；思考通道/错误映射见 toml ``[channel]``，标签缓冲见下。"""
+
+    #: 渠道默认（未绑定模型时的旧行为）。
+    #:
+    #: 旧实现只认 content 内嵌的 ``<think>`` 标签；这里**同时**认
+    #: ``reasoning_content``（M3.1-Flash 的实际通道）——这是 2026-11-10
+    #: 修复的"思考全丢"事故的兜底（即使模型 toml 缺失也不丢）。
+    #:
+    #: 错误规则与 ``data/providers/minimax/_channel.toml`` 保持一致
+    #: （2013 → 配置错误；403/429 含 quota/billing → 配额；否则 429 → 限流）。
+    fallback_spec = ChannelSpec(
+        thinking_fields=("reasoning_content",),
+        thinking_tags=("<think>", "</think>"),
+        stream_options={"include_usage": True},
+        # 思考 token 先于正文，且 max_tokens **包含**思考（M3.1 官方文档
+        # 明确）——预算下限要给两者都留余量，否则正文为空。
+        min_output_tokens=4096,
+        error_rules=(
+            ErrorRule(status=(400,), contains=("2013", "chat content is empty"),
+                      kind="config",
+                      message="MiniMax: empty chat content — 通常表示会话历史"
+                              "被过度压缩，请开新会话"),
+            ErrorRule(status=(401,), kind="auth"),
+            ErrorRule(status=(403,), contains=("quota", "billing"),
+                      kind="quota", message="MiniMax 配额已用完（5 小时滚动限额）"),
+            ErrorRule(status=(429,), contains=("quota", "billing"),
+                      kind="quota", message="MiniMax 配额已用完（5 小时滚动限额）"),
+            # **不设"429 → rate"规则**：契约要求 429 且无 quota 关键字时
+            # 返回 None（交给默认映射 → LLMRateLimitError）。
+        ),
+        configured=True,
+    )
+
+    @property
+    def name(self) -> str:
+        return "minimax"
+
+    @property
+    def default_base_url(self) -> str:
+        return "https://api.minimaxi.com/v1"
+
+    @property
+    def default_model(self) -> str:
+        return "minimax-M3"
+
+    #: 模型 toml 缺失时的渠道级默认（M3.1-Flash 实测上限 524288）。
+    fallback_max_tokens = 524_288
 
     def __init__(self) -> None:
         super().__init__()
@@ -42,6 +94,10 @@ class MiniMaxAdapter(ProviderAdapter):
         ``sanitize_delta``）用的都是**单 chunk 正则** THINK_PATTERN，所以这里
         必须保证交出的每个 chunk 中的标签是完整的——否则思考内容漏进 UI 且
         ``delta_thinking`` 为空（实测 chunk[1] = ``'<think>We need answe'``）。
+
+        **只对配了 thinking_tags 的模型生效**：M3.1-Flash 走独立字段
+        ``reasoning_content``（无标签），它的 reasoning_content 不需要
+        缓冲——但仍走同一缓冲器以防万一（无标签时缓冲器是恒等变换）。
         """
         out = dict(delta)
         for field_name in ("content", "reasoning_content"):
@@ -49,125 +105,6 @@ class MiniMaxAdapter(ProviderAdapter):
             if isinstance(value, str) and value:
                 out[field_name] = self._buffer_for(field_name).fix(value)
         return out
-
-    @property
-    def name(self) -> str:
-        return "minimax"
-
-    @property
-    def default_base_url(self) -> str:
-        return "https://api.minimaxi.com/v1"
-
-    @property
-    def default_model(self) -> str:
-        return "minimax-M3"
-
-    @property
-    def default_max_tokens(self) -> int:
-        """模型输出上限（实测值，2026-11-10）。
-
-        M3.1-Flash 的硬上限是 **524,288**：524288 接受、524289 返回
-        ``400 does not support max tokens > 524288 (2013)``。
-        旧值 32,000 把输出窗口人为砍到 6%，长文/长思考会被截断
-        （``finish_reason=length`` 且 content 为空——M3.1 的
-        max_tokens **包含**思考 token，所以预算过小会直接饿死正文）。
-
-        该值是**上限而非目标**：provider 按实际用量计费，不按 cap。
-        ``resolve_max_tokens`` 在未显式指定时就取此值。
-        """
-        return 524_288
-
-    @property
-    def min_output_tokens(self) -> int:
-        # MiniMax-M3 emits <think>…</think> before the answer; tiny budgets yield empty content.
-        return 4096
-
-    def custom_stream_options(self) -> dict[str, Any] | None:
-        # Ask the server for the final usage snapshot (A1 budget accounting).
-        return {"include_usage": True}
-
-    def extract_thinking_from_delta(self, delta: dict[str, Any]) -> str | None:
-        """提取思考内容——**两种形态都要认**（2026-11-10 实测修正）。
-
-        MiniMax 有两代思考通道：
-        - 旧模型：``delta.content`` 内嵌 ``<think>…</think>`` 标签；
-        - MiniMax-M3.1-Flash（本次实测）：OpenAI 风格独立字段
-          ``delta.reasoning_content``，**content 全程为 None**。
-
-        旧实现只查 ``content``，于是 M3.1-Flash 的思考 chunk 被整体丢弃
-        （实测：8 个 SSE 帧里 5 帧 reasoning_content、1 帧 content，
-        客户端只聚出 1 个 content chunk、thinking 为 0；live 测试
-        ``test_h_streaming_yields_incremental_chunks`` 因此断言"流式未分块"）。
-        """
-        # 1) OpenAI 风格独立字段优先（新模型）
-        reasoning = delta.get("reasoning_content")
-        if reasoning:
-            return self.normalize_thinking(reasoning, strip_edges=False)
-        # 2) 旧式 content 内嵌 <think> 标签
-        content = delta.get("content", "")
-        match = self.THINK_PATTERN.search(content)
-        if match:
-            # BPE chunk boundary: keep leading spaces inside the tags.
-            return self.normalize_thinking(match.group(1), strip_edges=False)
-        return None
-
-    def extract_thinking_from_message(self, message: dict[str, Any]) -> str | None:
-        reasoning = message.get("reasoning_content")
-        if reasoning:
-            return self.normalize_thinking(reasoning)
-        content = message.get("content", "")
-        match = self.THINK_PATTERN.search(content)
-        if match:
-            return self.normalize_thinking(match.group(1))
-        return None
-
-    def sanitize_delta(self, delta: dict[str, Any]) -> dict[str, Any]:
-        # reasoning_content 是独立字段，不会污染 content → 无需清洗；
-        # 只有旧式内嵌标签要从 content 里剥掉。
-        content = delta.get("content") or ""
-        if self.THINK_PATTERN.search(content):
-            out = dict(delta)
-            out["content"] = self.THINK_PATTERN.sub("", content)
-            return out
-        return dict(delta)
-
-    def sanitize_message(self, message: dict[str, Any]) -> dict[str, Any]:
-        content = message.get("content") or ""
-        if self.THINK_PATTERN.search(content):
-            out = dict(message)
-            out["content"] = self.THINK_PATTERN.sub("", content).strip()
-            return out
-        return dict(message)
-
-    def handle_error(self, status: int, body: Any) -> Exception | None:
-        # MiniMax uses 403 for quota exhaustion, and 429 can be either
-        # quota or per-minute rate limit.
-        if status in (401, 403):
-            error_code = self.extract_error_code(body)
-            if "quota" in error_code or "billing" in error_code:
-                return LLMQuotaError(f"quota exceeded ({status}): {body}")
-        if status == 429:
-            error_code = self.extract_error_code(body)
-            if "quota" in error_code or "billing" in error_code:
-                return LLMQuotaError(f"quota exceeded (429): {body}")
-        # MiniMax-specific: 400 with code 2013 means "chat content is empty"
-        # This usually happens when over-compression leaves an empty context.
-        # Map to LLMConfigError so:
-        # 1. _is_stream_required_error returns True (no stream→achat fallback)
-        #    — retrying via non-streaming won't help.
-        # 2. The error is propagated as a user-visible configuration error
-        #    with a clear "send new message or create new session" message.
-        if status == 400:
-            body_str = str(body)
-            error_code = self.extract_error_code(body)
-            if "2013" in body_str or "chat content is empty" in body_str.lower() \
-                    or "2013" in error_code:
-                return LLMConfigError(
-                    f"empty chat content (MiniMax 2013): {body}. "
-                    f"This usually means the conversation history was over-compressed. "
-                    f"Please send a new message or create a new session."
-                )
-        return None
 
     def quota_error_message(self) -> str:
         return "MiniMax 配额已用完（5小时限额）"

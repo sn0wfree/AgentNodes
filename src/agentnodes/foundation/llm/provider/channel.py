@@ -106,12 +106,17 @@ class ChannelSpec:
     stream_options: dict[str, Any] | None = None
     #: ``max_tokens`` 是否包含思考 token（影响 ``min_output_tokens`` 取值）。
     max_tokens_includes_thinking: bool = False
+    #: 输出预算下限（思考模型需给 CoT 留余量；0/None = 用渠道默认）。
+    min_output_tokens: int = 0
     #: 额外请求头。
     headers: dict[str, str] = field(default_factory=dict)
     #: 额外请求体字段（浅合并，调用方显式传入的优先）。
     payload: dict[str, Any] = field(default_factory=dict)
     #: 错误映射规则（按序首个命中生效）。
     error_rules: tuple[ErrorRule, ...] = ()
+    #: 该 spec 是否来自**真实的配置**（vs 默认构造）。
+    #: 装载器用它判断"toml 里没有 [channel] 段"→ 此时用渠道 fallback_spec。
+    configured: bool = False
 
     @classmethod
     def from_dict(cls, raw: dict[str, Any] | None) -> "ChannelSpec":
@@ -160,9 +165,11 @@ class ChannelSpec:
             max_tokens_includes_thinking=bool(
                 raw.get("max_tokens_includes_thinking", False)
             ),
+            min_output_tokens=int(raw.get("min_output_tokens") or 0),
             headers={str(k): str(v) for k, v in _dict("headers").items()},
             payload=_dict("payload"),
             error_rules=tuple(rules),
+            configured=True,
         )
 
 
@@ -197,21 +204,30 @@ class ChannelAdapter(ProviderAdapter):
     """
 
     def __init__(self, spec: ChannelSpec | None = None) -> None:
-        self.spec = spec or ChannelSpec()
+        self.spec = spec or self.fallback_spec
         #: 当前绑定的模型名（``attach_model`` 写入，供诊断/日志）
         self.bound_model: str | None = None
+    #: 渠道级默认行为（模型 toml 缺失时用）。
+    #:
+    #: **为什么需要**：直接构造 adapter（不绑定模型）时，行为应当与改造前
+    #: 一致——否则"渠道默认"就无处安放，测试与脚本都得先造一个模型名。
+    #: 绑定了模型时，以 toml 的 ``[channel]`` 为准（它可覆盖本项）。
+    fallback_spec: ChannelSpec | None = None
 
     def attach_model(self, model: str | None) -> "ChannelAdapter":
         """按模型名装载 ``[channel]`` 配置（幂等，返回 self 便于链式调用）。
 
-        装载失败不抛异常（回落空 spec = 旧行为），配置问题绝不该打断对话。
+        装载失败不抛异常（回落 ``fallback_spec`` = 旧行为），配置问题
+        绝不该打断对话。
         """
         if not model:
             return self
         try:
             from .channel_spec import load_channel_spec
 
-            self.spec = load_channel_spec(self.name, model)
+            spec = load_channel_spec(self.name, model)
+            # toml 没有 [channel] 段 → 用渠道默认（保留旧行为）。
+            self.spec = spec if spec.configured else self.fallback_spec
             self.bound_model = model
         except Exception:  # noqa: BLE001 —— 配置缺失回落默认行为
             logger.debug(
@@ -219,6 +235,78 @@ class ChannelAdapter(ProviderAdapter):
                 exc_info=True,
             )
         return self
+
+    def detach_model(self) -> "ChannelAdapter":
+        """解除模型绑定，回到**渠道级**默认（V5）。
+
+        ``get_provider_defaults`` 用它——渠道默认不应随"该渠道默认
+        模型的 toml"漂移（实测：minimax 默认模型 M3 的 output=128000，
+        而渠道实际支持 524288）。
+        """
+        self.bound_model = None
+        self.spec = self.fallback_spec
+        return self
+
+    # ── 元数据（批次 14 · V5 第 4 步：从 toml [limit] 读）──────────
+
+    @property
+    def default_max_tokens(self) -> int:
+        """模型输出上限——**从绑定模型的 toml ``[limit].output`` 读**。
+
+        改造前每个 adapter 硬编码一个数（minimax 32_000 / openai 16_384
+        / siliconflow 16_384…），而 toml 里另有一份（可能还不一致）。
+        2026-11-10 实测：MiniMax 三处元数据互相矛盾（adapter 32_000 /
+        toml 128_000 / 真实 524_288）。
+
+        现在：**toml 是唯一事实源**。未绑定模型时回退子类声明的
+        ``fallback_max_tokens``（渠道级保守默认）。
+
+        **注意**：绑定的是**具体模型**，读的是那个模型的窗口——渠道级
+        默认（如 ``get_provider_defaults("minimax")``）因此会随该渠道
+        默认模型的 toml 而变（M3=128000 / M3.1-Flash=524288）。
+        """
+        if self.bound_model:
+            limit = self._model_limit("output")
+            if limit:
+                return limit
+        return self.fallback_max_tokens
+
+    @property
+    def default_context_tokens(self) -> int:
+        """上下文窗口——同样从 toml ``[limit].context`` 读（见上）。
+
+        **刻意不提供渠道级硬编码**：窗口必须来自模型规格（bundled TOML
+        或 catalog 三层回退）——硬编码会掩盖"规格缺失"这一事实。
+        未绑定模型且 toml 缺失时回退基类的保守值 8192。
+        """
+        if self.bound_model:
+            limit = self._model_limit("context")
+            if limit:
+                return limit
+        return super().default_context_tokens
+
+    #: 渠道级保守默认（**仅** max_tokens 用；context 不设——见上）。
+    fallback_max_tokens: int = 8192
+
+    @property
+    def min_output_tokens(self) -> int:
+        """输出预算下限——从 ``[channel].min_output_tokens`` 读。
+
+        思考模型在正文之前就要烧掉一大块输出预算（推理 token），预算太小
+        → 正文为空（MiniMax 的 2013 就是这么来的）。未配置时用基类的 256。
+        """
+        if self.spec.min_output_tokens > 0:
+            return self.spec.min_output_tokens
+        return super().min_output_tokens
+
+    def _model_limit(self, key: str) -> int | None:
+        """读绑定模型 toml 的 ``[limit].<key>``（失败返回 None）。"""
+        try:
+            from .channel_spec import load_model_limit
+
+            return load_model_limit(self.name, self.bound_model, key)
+        except Exception:  # noqa: BLE001 —— 配置缺失回落默认
+            return None
 
     # ── 思考提取（配置驱动）─────────────────────────────────────
 

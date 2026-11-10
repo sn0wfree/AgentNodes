@@ -1,17 +1,27 @@
-"""OpenAI provider adapter.
+"""OpenAI provider adapter（批次 14 · V5：配置驱动）。
 
-Standard OpenAI Chat Completions API. Supports reasoning tokens via
-the `reasoning` field for o1/o3 models.
+标准 OpenAI Chat Completions API。**只剩渠道身份**——行为（推理字段
+``reasoning``、``include_usage``）来自
+``data/providers/openai/gpt-4o-mini.toml`` 的 ``[channel]`` 段。
+
+改前 44 行（硬编码 ``reasoning`` 字段 + include_usage + max_tokens）。
 """
 
 from __future__ import annotations
 
-from typing import Any
-
-from .base import ProviderAdapter
+from .channel import ChannelAdapter, ChannelSpec
 
 
-class OpenAIAdapter(ProviderAdapter):
+class OpenAIAdapter(ChannelAdapter):
+    """OpenAI 官方；推理字段与流式选项见 toml ``[channel]``。"""
+
+    #: 渠道默认（未绑定模型时的旧行为；绑定后以 toml 为准）。
+    fallback_spec = ChannelSpec(
+        thinking_fields=("reasoning",),
+        stream_options={"include_usage": True},
+        configured=True,
+    )
+
     @property
     def name(self) -> str:
         return "openai"
@@ -24,21 +34,5 @@ class OpenAIAdapter(ProviderAdapter):
     def default_model(self) -> str:
         return "gpt-4o-mini"
 
-    @property
-    def default_max_tokens(self) -> int:
-        return 16384
-
-    def extract_thinking_from_delta(self, delta: dict[str, Any]) -> str | None:
-        content = delta.get("reasoning")
-        if content and isinstance(content, str):
-            return self.normalize_thinking(content)
-        return None
-
-    def extract_thinking_from_message(self, message: dict[str, Any]) -> str | None:
-        content = message.get("reasoning")
-        if content and isinstance(content, str):
-            return self.normalize_thinking(content)
-        return None
-
-    def custom_stream_options(self) -> dict[str, Any] | None:
-        return {"include_usage": True}
+    #: 模型 toml 缺失时的渠道级默认（gpt-4o-mini 的窗口）。
+    fallback_max_tokens = 16384

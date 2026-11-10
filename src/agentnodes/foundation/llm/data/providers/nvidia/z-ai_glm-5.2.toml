@@ -1,0 +1,50 @@
+name = "GLM-5.2 (NVIDIA NIM)"
+description = "GLM-5.2 served on NVIDIA NIM — OpenAI-compatible endpoint"
+family = "glm"
+release_date = "2026-01-01"
+last_updated = "2026-11-10"
+attachment = false
+reasoning = true
+temperature = true
+tool_call = true
+structured_output = true
+open_weights = false
+
+[cost]
+input = 0.60
+output = 2.40
+
+[limit]
+context = 131_072
+output = 16_384
+
+[modalities]
+input = ["text"]
+output = ["text"]
+
+# ── 渠道行为 ────────────────────────────────────────────────────────
+# NIM 上的推理模型可能用 ``reasoning``（OpenAI 系）也可用
+# ``reasoning_content``（DeepSeek 系）——两个都认，按序尝试。
+[channel]
+thinking_fields = ["reasoning", "reasoning_content"]
+
+# NIM 用 402/403 表示配额/计费耗尽（不是 OpenAI 的 429）。
+[[channel.error_rules]]
+status = [402]
+kind = "quota"
+message = "NVIDIA NIM 配额不足"
+
+[[channel.error_rules]]
+status = [403]
+contains = ["quota", "billing"]
+kind = "quota"
+message = "NVIDIA NIM 配额不足"
+
+[[channel.error_rules]]
+status = [429]
+contains = ["quota", "billing"]
+kind = "quota"
+message = "NVIDIA NIM 配额不足"
+
+# 刻意**不**设 "429 -> rate"：无 quota/billing 关键字时交给默认映射
+# （→ LLMRateLimitError）。

@@ -22,3 +22,11 @@ output = 384_000
 [modalities]
 input = ["text"]
 output = ["text"]
+
+# ── 渠道行为 ────────────────────────────────────────────────────────
+# DeepSeek 系的思考走独立字段 reasoning_content（不是 content 内嵌标签）。
+[channel]
+thinking_fields = ["reasoning_content"]
+stream_options = { include_usage = true }
+# 思考 token 先于正文，max_tokens 预算需给两者都留余量
+min_output_tokens = 4096

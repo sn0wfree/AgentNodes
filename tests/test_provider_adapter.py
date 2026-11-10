@@ -162,13 +162,13 @@ class TestDefaultContextTokens:
 
         assert Stub().default_context_tokens == 8192
 
-    def test_concrete_providers_do_not_override_default_context_tokens(self):
-        """Concrete providers must rely on bundled TOML, not class defaults.
+    def test_concrete_providers_read_context_from_toml(self):
+        """**V5**：provider 的窗口**从 bundled TOML 读**（不再硬编码）。
 
-        Having a hardcoded ``default_context_tokens`` on the provider
-        would silently take effect when the bundled TOML is missing,
-        effectively hiding the default fallback. The catalog's 3-layer
-        fallback chain handles this correctly without an override.
+        改造前这个测试断言"provider 不该有 ``default_context_tokens``
+        覆盖"（因为那时窗口硬编码在各 adapter 里，会掩盖规格缺失）。
+        V5 之后方向反过来：adapter 从 toml ``[limit].context`` 读，
+        **未绑定模型时**回退基类的保守值 8192（不是渠道硬编码）。
         """
         from agentnodes.foundation.llm.provider.deepseek import DeepSeekAdapter
         from agentnodes.foundation.llm.provider.kimi import KimiAdapter
@@ -183,13 +183,11 @@ class TestDefaultContextTokens:
             QwenAdapter,
             KimiAdapter,
         ):
-            # Should NOT have an override
-            assert (
-                adapter_cls.default_context_tokens
-                is adapter_cls.__base__.default_context_tokens
-            )
-            # And that default is 8192
+            # 未绑定模型 → 基类保守默认（不硬编码渠道值）
             assert adapter_cls().default_context_tokens == 8192
+            # 绑定模型后 → toml 的真实窗口
+            adapter = adapter_cls().attach_model(adapter_cls().default_model)
+            assert adapter.default_context_tokens >= 8192
 
 
 # ── Thinking Token Extraction Tests ─────────────────────────────
@@ -346,9 +344,10 @@ class TestStreamOptions:
         assert MiniMaxAdapter().custom_stream_options() == {"include_usage": True}
 
     def test_other_providers_no_stream_options(self):
-        # **V5**：Qwen 的 stream_options 现在由 toml [channel] 驱动，
-        # 空 spec（未 attach_model）时确实为 None；attach 后为 include_usage。
-        assert QwenAdapter().custom_stream_options() is None
+        # **V5**：stream_options 改由 toml [channel] 驱动。Qwen 的渠道默认
+        # （fallback_spec）与模型 toml 都带 include_usage；Kimi 无（K2.5
+        # 的 toml 也未配 stream_options）。
+        assert QwenAdapter().custom_stream_options() == {"include_usage": True}
         assert (
             QwenAdapter().attach_model("qwen-plus").custom_stream_options()
             == {"include_usage": True}
@@ -741,11 +740,15 @@ class TestOpenAIReasoningFieldAdapter:
         assert "**" not in result
 
     def test_deepseek_inherits(self):
-        """DeepSeekAdapter should be a subclass of OpenAIReasoningFieldAdapter."""
-        from agentnodes.foundation.llm.provider._reasoning_field import (
-            OpenAIReasoningFieldAdapter,
-        )
-        assert issubclass(DeepSeekAdapter, OpenAIReasoningFieldAdapter)
+        """**V5**：DeepSeekAdapter 继承 ChannelAdapter（字段由 toml 驱动）。
+
+        改造前继承 OpenAIReasoningFieldAdapter（思考字段名硬编码在基类），
+        现在语义来自 ``data/providers/deepseek/deepseek-chat.toml``；
+        DSML 跨 chunk 过滤器仍是 Python（真正的行为）。
+        """
+        from agentnodes.foundation.llm.provider.channel import ChannelAdapter
+
+        assert issubclass(DeepSeekAdapter, ChannelAdapter)
 
     def test_qwen_inherits(self):
         """**V5**：QwenAdapter 继承 ChannelAdapter（行为由 toml [channel] 驱动）。
