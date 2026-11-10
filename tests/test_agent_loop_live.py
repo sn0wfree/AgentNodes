@@ -232,10 +232,14 @@ async def test_live_write_and_execute_code(tmp_path: Path):
         "请在当前工作区创建 hello.py，内容是打印 HELLO_LIVE 这个词。"
         "然后用 shell 运行它，告诉我 stdout 是什么。",
     )
-    assert (tmp_path / "hello.py").exists(), (
+    # 写入工具的路径白名单只允许 strategies/ templates/ memory/ logs/，
+    # 所以模型会把文件放在其中一个子目录下（实测：strategies/hello.py）。
+    # 断言「工作区内存在且内容正确」，而非「在根目录」。
+    found = sorted(tmp_path.rglob("hello.py"))
+    assert found, (
         f"文件未创建。answer={r.answer!r} iterations={r.iterations}"
     )
-    content = (tmp_path / "hello.py").read_text(encoding="utf-8", errors="replace")
+    content = found[0].read_text(encoding="utf-8", errors="replace")
     assert "HELLO_LIVE" in content, f"文件内容不含目标词: {content[:200]!r}"
     assert "HELLO_LIVE" in (r.answer or ""), (
         f"回答未体现执行结果: {r.answer!r}"

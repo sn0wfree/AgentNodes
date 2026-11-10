@@ -83,7 +83,7 @@ def test_live_streaming_emits_deltas(live_client):
 
 @requires_live
 def test_live_tool_call_executes(live_client, calc_registry):
-    """真工具循环：react 节点流式下能发起工具调用并得到正确答案。"""
+    """真 AgentLoop 工具循环：发起工具调用并得到正确答案。"""
     from agentnodes.kernel.gateway import Gateway, api_chat_request
 
     events: list[tuple[str, dict]] = []
@@ -92,6 +92,10 @@ def test_live_tool_call_executes(live_client, calc_registry):
         registry=calc_registry,
         stream=True,
         sink=lambda k, d: events.append((k, d)),
+        # **W4**：直构 Gateway 的 controller 默认 1 轮——工具调用后就没有
+        # 第二轮把结果变成答复了（生产经 singleton 装配时已按
+        # LLMConfig.max_iterations 传入）。本测试要验证工具循环，必须显式给。
+        max_iterations=5,
     )
     gw.verify_invariants()
     gw.entry.submit(api_chat_request(
@@ -101,8 +105,9 @@ def test_live_tool_call_executes(live_client, calc_registry):
     assert runs and runs[0].ok, runs[0].error if runs else "no run"
 
     kinds = [k for k, _ in events]
-    assert "tool.started" in kinds, f"未触发工具调用: {set(kinds)}"
-    tools = [d.get("tool") for k, d in events if k == "tool.started"]
+    # **V3-c**：词表 = AgentLoop 的 tool_call（原 react 的 tool.started）。
+    assert "tool_call" in kinds, f"未触发工具调用: {set(kinds)}"
+    tools = [d.get("tool") for k, d in events if k == "tool_call"]
     assert "calculator" in tools
     assert "491" in runs[0].answer, f"答案应含 491: {runs[0].answer}"
 

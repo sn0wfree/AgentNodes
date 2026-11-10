@@ -57,18 +57,41 @@ def real_server():
     # Real-LLM tests must use the host's actual llm.json instead, so the
     # subprocess cannot inherit that env var.
     env.pop("AGENTNODES_LLM_CONFIG", None)
+
+    # **用户库隔离（2026-11-10）**：不设隔离时子进程用宿主真实的
+    # ``~/.agentnodes/quantnodes_agentnodes_user.db``——与同一机器上正在
+    # 运行的服务/其他测试共享 admin 账号，密码随时可能被改写，导致
+    # ``Invalid credentials`` 随机失败（实测：单跑 3 passed、五套件合跑
+    # 4 个 error）。这里给一个临时 HOME，让 seed_admin_if_empty 自己生成
+    # 随机密码并落盘到该目录，测试再从同一个文件读回。
+    import tempfile
+
+    home = Path(tempfile.mkdtemp(prefix="real_llm_home_"))
+    env["USERPROFILE"] = str(home)
+    env["HOME"] = str(home)
+    (home / ".agentnodes").mkdir(parents=True, exist_ok=True)
+
     env.update({
         "STATIC_DIR": str(REPO_ROOT / "webui" / "static"),
         "CORS_ORIGINS": "*",
         "PYTHONUNBUFFERED": "1",
         "AN_WORKSPACE_PATH": str(REPO_ROOT),
+        # 密码交给被测进程生成后写到临时 HOME；下面的 _admin_password
+        # 会先查 AN_ADMIN_PASSWORD，所以我们直接钉死一个已知值更稳。
+        "AN_ADMIN_PASSWORD": "real-llm-test-pw",
     })
 
-    # Load API key from dotenv into env
+    # Load API key from dotenv into env.
+    # 2026-11-10：路径统一到 ~/.agentnodes（旧的 ~/.quantnodes 作兼容回退）。
     try:
         from dotenv import load_dotenv as _ld
-        _ld(Path.home() / ".quantnodes" / ".env", override=True)
-        for var in ("LLM_API_KEY", "OPENAI_API_KEY"):
+
+        for cand in (Path.home() / ".agentnodes" / ".env",
+                     Path.home() / ".quantnodes" / ".env"):
+            if cand.exists():
+                _ld(cand, override=True)
+                break
+        for var in ("LLM_API_KEY", "OPENAI_API_KEY", "MINIMAX_API_KEY"):
             val = os.environ.get(var)
             if val:
                 env[var] = val
@@ -100,11 +123,24 @@ def real_server():
         log_file.close()
 
 
+#: real_server fixture 钉死的 admin 密码（同时通过 env 传给子进程，
+#: 避免依赖宿主 ``admin_password.txt`` 或被其他测试/服务改写）。
+_ADMIN_PW = "real-llm-test-pw"
+
+
+def _admin_password() -> str:
+    """返回本测试钉死的 admin 密码（SEC-4 之后 seed 密码不再是常量）。"""
+    return _ADMIN_PW
+
+
 @pytest.fixture
 def auth_info(real_server):
     """Login and return (base_url, headers, session_id, token)."""
     base_url = real_server["base_url"]
-    r = requests.post(f"{base_url}/api/auth/login", json={"username": "admin", "password": "admin"})
+    r = requests.post(
+        f"{base_url}/api/auth/login",
+        json={"username": "admin", "password": _admin_password()},
+    )
     assert r.status_code == 200, f"Login failed: {r.text}"
     token = r.json()["access_token"]
     headers = {"Authorization": f"Bearer {token}"}
@@ -222,7 +258,10 @@ class TestRealLLMChat:
         done.wait(timeout=120)
 
         if error_msg and not full_text:
-            pytest.skip(f"LLM call failed: {error_msg}")
+            # **不用 skip 掩盖**：运行了 live LLM 却拿不到任何输出，就是
+            # 真失败（key 无效 / 配额耗尽 / provider 故障）。skip 会让 CI
+            # 显示绿色，掩盖这类故障。
+            pytest.fail(f"LLM call failed: {error_msg}")
 
         assert len(full_text) > 5, f"Response too short: {full_text!r}"
 
@@ -282,13 +321,13 @@ class TestRealLLMChat:
         # Message 1
         text1, err1 = _send_and_read("记住这个数字: 42")
         if err1 and not text1:
-            pytest.skip(f"First message failed: {err1}")
+            pytest.fail(f"First message failed: {err1}")  # 不用 skip 掩盖
         assert len(text1) > 0, "First message got no response"
 
         # Message 2
         text2, err2 = _send_and_read("我刚才让你记住的数字是什么？只回答数字")
         if err2 and not text2:
-            pytest.skip(f"Second message failed: {err2}")
+            pytest.fail(f"Second message failed: {err2}")  # 不用 skip 掩盖
 
         assert "42" in text2, f"LLM didn't remember. Response: {text2[:200]}"
 

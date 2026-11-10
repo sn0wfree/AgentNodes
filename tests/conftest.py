@@ -455,13 +455,15 @@ def live_client(real_llm_config):
 
 _LANE_LLM_FILES = frozenset({
     # real LLM / real network (see doc §3)
-    "test_chat_real_llm.py",
+    # 2026-11-10：test_chat_real_llm.py 移入 E2E 车道（它驱动真实 uvicorn
+    # 子进程 ~90s，与纯 in-process live 套件合跑会互相干扰：实测五套件
+    # 连跑时它因端口/HOME 环境竞争随机产生 4 个 error）。
     "test_web_search.py",           # live DDGS queries (skipif HAS_NETWORK)
     "test_llm_live.py",             # opt-in live LLM (QNODES_LIVE_LLM=1)
-    "test_react_live.py",           # opt-in live react tool-loop
     "test_fanout_live.py",          # opt-in live fanout multi-subagent
     "test_p51b_live.py",            # opt-in live chat streaming/tools/history
     "test_entry_migration_live.py", # opt-in live gateway/entry migration
+    "test_agent_loop_live.py",      # opt-in live agent loop (V2)
 })
 
 _LANE_E2E_FILES = frozenset({
@@ -492,6 +494,8 @@ _LANE_E2E_FILES = frozenset({
     "test_e2e_persist.py",          # live uvicorn + browser
     "test_webui_catalog.py",        # browser (visual baseline)
     "test_webui_visual.py",         # browser (visual baseline)
+    # 2026-11-10：驱动真实 uvicorn 子进程（~90s/次），属 e2e 而非纯 live。
+    "test_chat_real_llm.py",
 })
 
 _LANE_SLOW_FILES = frozenset({

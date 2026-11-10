@@ -146,16 +146,36 @@ def test_g_tool_call_is_emitted(live_client):
 
 @requires_live
 def test_h_streaming_yields_incremental_chunks(live_client):
-    chunks: list[str] = []
+    """流式必须真的分多帧——但**不假设分块发生在 content 上**。
+
+    2026-11-10 实测修正：MiniMax-M3.1-Flash 的思考走独立字段
+    ``reasoning_content``（分 3–5 帧），而最终 content 常常**整块一帧**
+    发出。旧断言 ``len(content_chunks) > 1`` 因此随机失败（3 次实测：
+    content=1/2/2）。正确的契约是「流式产生多帧且内容完整」——
+    thinking 与 content 合并计分。
+    """
+    content_chunks: list[str] = []
+    thinking_chunks: list[str] = []
+    total_frames = 0
     finish = None
-    for chunk in live_client.stream([{"role": "user", "content": "从 1 数到 5，用逗号分隔。"}]):
+    for chunk in live_client.stream(
+        [{"role": "user", "content": "从 1 数到 5，用逗号分隔。"}]
+    ):
+        total_frames += 1
         if getattr(chunk, "delta_content", None):
-            chunks.append(chunk.delta_content)
+            content_chunks.append(chunk.delta_content)
+        if getattr(chunk, "delta_thinking", None):
+            thinking_chunks.append(chunk.delta_thinking)
         if getattr(chunk, "finish_reason", None):
             finish = chunk.finish_reason
-    joined = "".join(chunks)
-    assert len(chunks) > 1, "流式未分块"
-    assert joined.strip()
+
+    joined = "".join(content_chunks)
+    assert total_frames > 1, "流式未分帧"
+    assert len(content_chunks) + len(thinking_chunks) > 1, (
+        f"流式未分块: content={len(content_chunks)} "
+        f"thinking={len(thinking_chunks)}"
+    )
+    assert joined.strip(), "content 为空"
     assert finish == "stop"
 
 

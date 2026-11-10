@@ -218,37 +218,30 @@ def _coerce_like_declared(raw, setting: settings.Setting):
     return raw
 
 
-@pytest.mark.parametrize("name,rel,lineno,default_expr", _scan_reads())
-def test_declared_default_matches_source(name, rel, lineno, default_expr):
-    """**仍裸读**的变量，其默认值必须与声明表一致。
+def test_no_undeclared_bare_env_reads():
+    """**裸读必须清零**（原 ``test_declared_default_matches_source``）。
 
-    批 B 后大多数读取点已改走 settings（见下一条测试），所以这里只覆盖
-    剩余的裸读点。它们的默认值仍必须与声明表一致——否则
-    ``settings.snapshot()`` 展示的默认值会与实际行为不符。
+    批 B 把所有调用点迁到 settings 后，全仓已无「读 ENV_TABLE 声明的变量
+    却绕过 settings」的裸读点——这条测试从"逐点比对默认值"退化为一个
+    更强的守卫：**任何新增的裸读都会让它失败**。
+
+    历史：旧实现对每个扫描到的变量做参数化，其中大部分是外部变量
+    （HOME / NO_COLOR / MINIMAX_MODEL …），只能靠 skip 表达"不归本表管"
+    ——那会虚高 skip 计数并掩盖真 skip。现在改为在收集期过滤，并断言
+    过滤后必须为空。
+
+    **为什么不是单纯删掉**：删了就没有防线了。有人再写
+    ``os.environ.get("AGENTNODES_XXX")`` 会一路绿灯到生产。
     """
-    setting = settings.ENV_TABLE.get(name)
-    if setting is None:
-        pytest.skip(f"{name} 属外部变量（不归本表管）")
-
-    src_default = _normalize_default(default_expr)
-    if src_default == "<COMPLEX>":
-        pytest.skip(f"{name} 的默认值是复杂表达式，无法静态比较")
-
-    if src_default == "<NO-DEFAULT>":
-        assert setting.default is None, (
-            f"{rel}:{lineno} 读 {name} 时没有默认值（未设置返回 None），"
-            f"但声明表给了 default={setting.default!r}"
-        )
-        return
-
-    src_value = _coerce_like_declared(src_default, setting)
-    if src_value != setting.default:
-        allowed = _MULTI_DEFAULT_ALLOWED.get(name, set())
-        assert src_value in allowed, (
-            f"{rel}:{lineno} {name} 的源码默认值 {src_value!r} 与声明表 "
-            f"{setting.default!r} 不一致。"
-            f"若这是有意的多形态读取，请加进 _MULTI_DEFAULT_ALLOWED。"
-        )
+    bare = [
+        (name, rel, lineno)
+        for name, rel, lineno, _ in _scan_reads()
+        if name in settings.ENV_TABLE and rel not in _RAW_READ_EXEMPT
+    ]
+    assert not bare, (
+        "发现绕过 settings 的裸读（应改用 _settings.get_*）：\n"
+        + "\n".join(f"  {rel}:{lineno} -> {name}" for name, rel, lineno in bare)
+    )
 
 
 def test_settings_call_sites_use_the_declared_getter():

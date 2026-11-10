@@ -76,6 +76,23 @@ class MiniMaxAdapter(ProviderAdapter):
         return {"include_usage": True}
 
     def extract_thinking_from_delta(self, delta: dict[str, Any]) -> str | None:
+        """提取思考内容——**两种形态都要认**（2026-11-10 实测修正）。
+
+        MiniMax 有两代思考通道：
+        - 旧模型：``delta.content`` 内嵌 ``<think>…</think>`` 标签；
+        - MiniMax-M3.1-Flash（本次实测）：OpenAI 风格独立字段
+          ``delta.reasoning_content``，**content 全程为 None**。
+
+        旧实现只查 ``content``，于是 M3.1-Flash 的思考 chunk 被整体丢弃
+        （实测：8 个 SSE 帧里 5 帧 reasoning_content、1 帧 content，
+        客户端只聚出 1 个 content chunk、thinking 为 0；live 测试
+        ``test_h_streaming_yields_incremental_chunks`` 因此断言"流式未分块"）。
+        """
+        # 1) OpenAI 风格独立字段优先（新模型）
+        reasoning = delta.get("reasoning_content")
+        if reasoning:
+            return self.normalize_thinking(reasoning, strip_edges=False)
+        # 2) 旧式 content 内嵌 <think> 标签
         content = delta.get("content", "")
         match = self.THINK_PATTERN.search(content)
         if match:
@@ -84,6 +101,9 @@ class MiniMaxAdapter(ProviderAdapter):
         return None
 
     def extract_thinking_from_message(self, message: dict[str, Any]) -> str | None:
+        reasoning = message.get("reasoning_content")
+        if reasoning:
+            return self.normalize_thinking(reasoning)
         content = message.get("content", "")
         match = self.THINK_PATTERN.search(content)
         if match:
@@ -91,20 +111,20 @@ class MiniMaxAdapter(ProviderAdapter):
         return None
 
     def sanitize_delta(self, delta: dict[str, Any]) -> dict[str, Any]:
-        content = delta.get("content", "")
+        # reasoning_content 是独立字段，不会污染 content → 无需清洗；
+        # 只有旧式内嵌标签要从 content 里剥掉。
+        content = delta.get("content") or ""
         if self.THINK_PATTERN.search(content):
-            cleaned = self.THINK_PATTERN.sub("", content)
             out = dict(delta)
-            out["content"] = cleaned
+            out["content"] = self.THINK_PATTERN.sub("", content)
             return out
         return dict(delta)
 
     def sanitize_message(self, message: dict[str, Any]) -> dict[str, Any]:
-        content = message.get("content", "")
+        content = message.get("content") or ""
         if self.THINK_PATTERN.search(content):
-            cleaned = self.THINK_PATTERN.sub("", content).strip()
             out = dict(message)
-            out["content"] = cleaned
+            out["content"] = self.THINK_PATTERN.sub("", content).strip()
             return out
         return dict(message)
 

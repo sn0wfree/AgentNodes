@@ -104,12 +104,6 @@ class TestEstimateTokens:
 # See docs/archive/undated/compaction-phase-a-simplification.md for details.
 
 
-
-
-
-
-
-
 class TestFixToolPairs:
     def test_no_orphans(self):
         msgs = [
@@ -293,22 +287,6 @@ class TestCompactMessages:
         cfg = CompactConfig(enabled=False)
         result, layers, _, _ = compact_messages(msgs, cfg, threshold_tokens=100)
         assert layers == []
-
-    def test_microcompact_only(self):
-        """DEPRECATED: L1 layer removed in Phase A. Test skipped.
-        Replaced by test_compact_opencode_style.py::test_l4_only_no_l1.
-        """
-        pytest.skip("L1 layer removed in Phase A; see test_compact_opencode_style.py")
-
-    def test_hard_truncate(self):
-        """DEPRECATED: L3 layer removed in Phase A. Test skipped."""
-        pytest.skip("L3 layer removed in Phase A; see test_compact_opencode_style.py")
-
-    def test_force_all_threshold_zero_runs_all_layers(self):
-        """DEPRECATED: L1/L3 removed in Phase A. force_all now only forces L4.
-        See test_compact_opencode_style.py::test_force_all_runs_l4_only.
-        """
-        pytest.skip("L1/L3 removed in Phase A; see test_compact_opencode_style.py")
 
     def test_force_all_threshold_zero_runs_llm_summarize(self):
         """opencode-aligned: the summary is NOT injected as an inline

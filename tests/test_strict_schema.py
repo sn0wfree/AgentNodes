@@ -185,19 +185,6 @@ class TestRealToolsStrictCompat:
             "spot", "strike", "rate", "volatility", "time_to_expiry", "option_type",
         }
 
-    def test_import_data_not_strict_due_to_dict_shape(self):
-        """import_data has dict-shape `data` field → cannot be strict."""
-        registry = build_default_registry()
-        tool = registry.get("import_data")
-        # 批次 5：import_data 已随 apps/data_import 移除。
-        # 保留这条测试的意图（记录「dict-shape data 字段无法 strict」
-        # 这个历史约束），但工具不在时直接跳过断言。
-        if tool is None:
-            pytest.skip("import_data removed in batch 5")
-        assert tool.strict is False
-        # Even if forced to strict, the dict-shape would be dropped
-        # (we don't enable strict; this documents why)
-
     def test_tools_with_optional_fields_not_strict(self):
         """Tools with optional params aren't strict (would force all to required)."""
         registry = build_default_registry()

@@ -8,15 +8,22 @@ import pytest
 
 
 def _network_available() -> bool:
-    """Check if network is available for live tests."""
-    try:
-        import warnings
+    """Check if the project's own web-search stack can reach a backend.
 
-        from duckduckgo_search import DDGS
-        warnings.filterwarnings("ignore")
-        with DDGS() as ddgs:
-            results = list(ddgs.text("test", max_results=1))
-        return len(results) > 0
+    **2026-11-10 修正**：旧实现只探测 DuckDuckGo（``duckduckgo_search``
+    包），而 DDG 的 bing 中转在部分地区返回 None → 判据恒 False → 11 条
+    真实搜索测试全部 skip。但项目自己的 ``web_search`` 是**多后端**的
+    （MiniMax 优先、DDG 兜底），用 DDG 代表全部后端是错的判据。
+
+    改为询问 ``web_search`` 本体：它能返回非 error 结果就算网络可用。
+    """
+    try:
+        import json as _json
+
+        from agentnodes.foundation.web.search import web_search
+
+        out = _json.loads(web_search("test", max_results=1))
+        return out.get("status") != "error"
     except Exception:
         return False
 
