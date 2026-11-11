@@ -4,19 +4,30 @@ Layers (high priority overrides low):
     1. CLI overrides      (argparse namespace dict; ``llm_*`` keys)
     2. Environment vars   (OPENAI_API_KEY / OPENAI_BASE_URL / OPENAI_MODEL /
                            LLM_API_KEY for credentials)
-    3. Bridge layer       (``~/.quantnodes/llm.json`` via quantnodes_bridge,
-                           which internally reads the canonical QuantNodes
-                           config and also applies AGENTNODES__LLM__* env
-                           overrides). Translator turns the bridge output
-                           into the keys this dataclass uses.
+    3. Bridge layer       (path chain via quantnodes_bridge, which also
+                           applies AGENTNODES__LLM__* env overrides).
+                           Translator turns the bridge output into the keys
+                           this dataclass uses.
     4. Code defaults      (dataclass field defaults)
 
 Bridge layer sources of truth (lazy-read by the QuantNodes reader):
-    - ``~/.quantnodes/llm.json`` (canonical; honoured via
-      ``AGENTNODES_LLM_CONFIG`` override for tests).
-    - ``AGENTNODES__LLM__*`` env vars (applied inside the bridge).
-    - Wizard writes the same JSON file at "~/.quantnodes/llm.json" via
-      ``cli/onboard.py`` after init.
+
+**批 D（2026-11-11）起是路径链**（按序，第一个存在的赢）：
+
+    1. ``~/.agentnodes/config.yaml``    —— agentnodes 新格式（优先）
+    2. ``~/.agentnodes/llm.json``       —— agentnodes 老位置（写入目标）
+    3. ``~/.quantnodes/llm.json``       —— **quantnodes 契约**（它只写这份）
+
+``AGENTNODES_LLM_CONFIG`` 是**单文件覆盖**：设了就只用它，不建链
+（测试/工具大量依赖这个语义）。
+
+> 修复记录：2026-11-05 的"数据目录统一"（bd3f6009）把 ``CONFIG_PATH``
+> 从 ``~/.quantnodes`` 改到 ``~/.agentnodes``，但 ``CONFIG_PATHS`` 仍是
+> 单元素——那份 docstring 一直宣称的"quantnodes 兼容回退"实际不存在。
+> 批 D 把三元素链补回。
+
+- ``AGENTNODES__LLM__*`` env vars (applied inside the bridge).
+- Wizard writes ``~/.agentnodes/llm.json`` via ``cli/onboard.py`` after init.
 
 Design notes:
     - frozen=True: every override returns a NEW instance (no mutation).
@@ -39,6 +50,9 @@ from agentnodes.foundation.compact_config import CompactConfig
 from agentnodes.foundation import settings as _settings
 from .quantnodes_bridge import (
     CONFIG_PATH as QUANTNODES_LLM_JSON,
+)
+from .quantnodes_bridge import (
+    CONFIG_PATHS,
 )
 from .quantnodes_bridge import (
     load_quantnodes_llm_config,
@@ -307,15 +321,24 @@ class LLMConfig:
 
 
 def _resolve_bridge_path(env: Mapping[str, str]) -> Path:
-    """Resolve the bridge (llm.json) path.
+    """Resolve the bridge config path.
 
-    Precedence:
-      1. ``AGENTNODES_LLM_CONFIG`` env var (legacy override kept for tests/tooling).
-      2. ``~/.quantnodes/llm.json`` (canonical QuantNodes location).
+    批 D（2026-11-11）起这是**路径链的解析**，不再是"唯一文件"：
+
+    1. ``AGENTNODES_LLM_CONFIG`` env —— **单文件覆盖**，命中即只用它
+       （不建链；用户拍板的语义，测试/工具大量依赖）。
+    2. 否则按 :data:`CONFIG_PATHS` 顺序找**第一个存在的**文件：
+       ``~/.agentnodes/config.yaml`` → ``~/.agentnodes/llm.json``
+       → ``~/.quantnodes/llm.json``（末项是 quantnodes 契约，本批修复）。
+    3. 都不存在时返回写入目标 ``CONFIG_PATH``（``~/.agentnodes/llm.json``）
+       ——给诊断用，读取会得到空配置并 warn。
     """
     p = env.get(ENV_CONFIG_PATH)
     if p:
         return Path(p).expanduser()
+    for candidate in CONFIG_PATHS:
+        if candidate.exists():
+            return candidate
     return QUANTNODES_LLM_JSON
 
 

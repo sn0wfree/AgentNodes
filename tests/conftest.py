@@ -407,16 +407,19 @@ def real_llm_config():
     豁免主目录沙箱：显式读**真实**宿主配置——live 测试是唯一合法触碰
     宿主配置的场景（``_home_sandbox.restore_real``）。
 
-    **2026-11-09 路径统一**：默认位置是 ``~/.agentnodes/llm.json``；
-    ``~/.quantnodes/llm.json`` 只作为**兼容回退**（用户可能还没迁移）。
-    顺序：新位置优先 → 旧位置回退。
+    **批 D（2026-11-11）**：候选列表与生产链
+    （``quantnodes_bridge.CONFIG_PATHS``）保持一致——
+    ``config.yaml`` → ``.agentnodes/llm.json`` → ``.quantnodes/llm.json``。
+    此前这里只列了两个 llm.json（漏掉 config.yaml 用户），而生产链本身
+    又只读第一个（`.quantnodes` 那份根本读不到）——两处都修了。
     """
     if os.environ.get("QNODES_LIVE_LLM") != "1":
         pytest.skip("live LLM is opt-in: set QNODES_LIVE_LLM=1")
 
     candidates = (
-        _home_sandbox.REAL_HOME / ".agentnodes" / "llm.json",   # 默认
-        _home_sandbox.REAL_HOME / ".quantnodes" / "llm.json",   # 兼容回退
+        _home_sandbox.REAL_HOME / ".agentnodes" / "config.yaml",  # 新格式优先
+        _home_sandbox.REAL_HOME / ".agentnodes" / "llm.json",     # agentnodes
+        _home_sandbox.REAL_HOME / ".quantnodes" / "llm.json",     # quantnodes
     )
     real_json = next((p for p in candidates if p.exists()), None)
     if real_json is None:
