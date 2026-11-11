@@ -15,6 +15,14 @@ from agentnodes.kernel.runtimes.executor_bridge import (
     JobSpec,
 )
 
+# Pin all tests in this file to the same xdist worker.
+# 本模块每个测试都自建 spawn 子进程池（size=2）。CPU 满载时（实测 -n 12）
+# 主进程 clear() 跨进程 Event 的可见性延迟会超过 dispatch→worker 取任务的时间，
+# worker 仍看到 cancel 标志 → 返回 "cancelled before start" →
+# test_cancel_with_no_in_flight_keeps_pool_alive 稳定失败（-n 8 不失败）。
+# loadgroup 分布器把同组测试固定在同一 worker，代价是本文件不再跨 worker 并行。
+pytestmark = pytest.mark.xdist_group("executor_bridge")
+
 
 # ── 模块级任务（spawn 可 pickle） ────────────────────────
 

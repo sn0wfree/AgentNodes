@@ -114,11 +114,26 @@ AGENTNODES_LLM_CONFIG（单文件覆盖，命中即不建链）
 :: 受影响文件（改完一处就跑）
 C:\Users\1\AppData\Local\Programs\Python\Python313\python.exe -m pytest tests\test_xxx.py -q -p no:hypothesispytest -p no:hypothesis
 
-:: 全量
+:: 全量（**默认并行**，12 worker）
+C:\Users\1\AppData\Local\Programs\Python\Python313\python.exe -m pytest tests -q -p no:hypothesispytest -p no:hypothesis -n 12 --dist loadgroup
+
+:: 全量串行（只在需要精确判断隔离问题时用）
 C:\Users\1\AppData\Local\Programs\Python\Python313\python.exe -m pytest tests -q -p no:hypothesispytest -p no:hypothesis
 ```
 
 **`-p no:hypothesispytest -p no:hypothesis` 不是可选的**：本机 Application Control 策略拦 hypothesis 的原生 DLL（`_native`），不加这两个参数 pytest 在插件加载阶段就死，**不打印任何 summary**。
+
+**`-n 12 --dist loadgroup` 是本仓默认**（2026-11-11 实测，本机 12 逻辑核）：
+
+| 方式 | 耗时 | 结果 |
+|---|---|---|
+| 串行 | **651.5s（10m51s）** | 7154 passed / 114 skipped / 0 failed |
+| `-n 8 --dist loadgroup` | **96.9s（1m37s）** | 7154 passed / 114 skipped / 0 failed |
+| `-n 12 --dist loadgroup` | **77.8s（1m18s）** | 7154 passed / 114 skipped / 0 failed |
+
+加速 **8.4×**，结果**逐项一致**（passed/skipped 与串行完全相同）。`--dist loadgroup` 是必需的——没有它，同组测试会被拆到不同 worker（见 §3.7 的 `xdist_group` 用法）。
+
+> `-n 12` 此前在 `test_executor_bridge.py` 上稳定失败；给该文件打 `xdist_group("executor_bridge")` 后转绿（见 §3.7）。**不要超过 12**——超过逻辑核数后 spawn 进程池的 IPC 延迟会盖过并行收益。
 
 ### 2.2 batch_gate（提交前）
 
@@ -156,7 +171,7 @@ D:\tools\python312\python.exe scripts\arch\sync_architecture_diagram.py --write 
 ### 2.4 提交前清单
 
 1. `git status` / `git log --oneline -5` —— 确认不覆盖他人改动；
-2. 全量 pytest 0 failed；
+2. 全量 pytest 0 failed（**带 `-n 12 --dist loadgroup`**）；
 3. `scripts\batch_gate.cmd` ALL GREEN；
 4. 架构图一致（若动了 `src/`）；
 5. 相关设计文档同步更新（见 §4）。
@@ -233,6 +248,23 @@ D:\tools\python312\python.exe scripts\arch\sync_architecture_diagram.py --write 
 | 常量间接（2026-11 已补）| `os.environ.get(_CONST)` |
 
 **结论**：门禁绿 ≠ 没有直读。
+
+### 3.7 并行不安全的测试用 `xdist_group` 钉住
+
+**R-017. 并行下失败的测试先判「隔离」还是「真实缺陷」** · MUST
+
+- **触发**：`-n 12` 下出现串行不失败的测试。
+- **做法**：① 先单跑该文件（若通过 → 隔离问题）；② 再单文件 `-n 12 --dist loadgroup` 跑；③ 若确认是共享资源/进程池/IPC 时序 → 给该文件打 `pytestmark = pytest.mark.xdist_group("<name>")`，**并在注释里写清为什么**（实测条件和失败症状）；④ 若是实现真的有问题 → 走 R-014 出方案，别用 marker 掩盖。
+- **失败**：不加 marker 就降 worker 数，等于用一个慢档位掩盖隔离缺陷；或者反过来，用 marker 掩盖真实竞态。
+- **来源**：L2 2026-11-11（`test_executor_bridge.py` 在 `-n 12` 下稳定失败，根因是 spawn 子进程池的跨进程 Event 可见性延迟）。
+
+现有 `xdist_group`（同组测试落在同一 worker，组外仍并行）：
+
+| 组名 | 文件 | 原因 |
+|---|---|---|
+| `workflow` | `test_workflow_{compiler_branches,graph_shadow,resume_from_store,segment_loop}.py` | workflow 模块的 import 路径 + JSON 模板读取（tech-debt ⑥）|
+| `chat_real_llm` | `test_chat_real_llm.py` | 真 uvicorn 子进程 + 真 LLM，抢端口/临时 HOME |
+| `executor_bridge` | `test_executor_bridge.py` | 自建 spawn 进程池，`-n 12` 满载下 IPC 时序不稳 |
 
 ---
 
