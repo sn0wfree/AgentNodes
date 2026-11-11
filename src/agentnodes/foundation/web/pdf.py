@@ -29,11 +29,32 @@ def read_document(
 
     Returns:
         JSON string with extracted text.
+
+    **错误优先级（批 C 修正）**：先校验**调用方给的东西**（path 是否存在、
+    是否普通文件），再校验**环境**（PyMuPDF 是否可用）。
+
+    原实现把 `_check_fitz()` 放在路径校验之前——在"环境缺依赖"的机器上，
+    `read_document("/nonexistent.pdf")` 会返回"PyMuPDF not installed"，
+    把"你的路径写错了"这个**真正可修的原因**掩盖掉。用户按提示装了
+    PyMuPDF，错误就变成"not found"——多一轮无谓排查。
     """
     if not path or not path.strip():
         return json.dumps({
             "status": "error",
             "error": "path is required",
+        }, ensure_ascii=False)
+
+    # 先查"你给的路径对不对"——这类错误不经依赖就能判定。
+    file_path = Path(path).expanduser()
+    if not file_path.exists():
+        return json.dumps({
+            "status": "error",
+            "error": f"file not found: {path}",
+        }, ensure_ascii=False)
+    if not file_path.is_file():
+        return json.dumps({
+            "status": "error",
+            "error": f"not a regular file: {path}",
         }, ensure_ascii=False)
 
     if not _check_fitz():
@@ -42,7 +63,7 @@ def read_document(
             "error": "PyMuPDF not installed. Install with: pip install PyMuPDF",
         }, ensure_ascii=False)
 
-    file_path = Path(path).expanduser().resolve()
+    file_path = file_path.resolve()
     if not file_path.exists():
         return json.dumps({
             "status": "error",

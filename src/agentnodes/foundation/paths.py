@@ -14,8 +14,13 @@ quantnodes 使用」。所以 brand 必须是可切换的：
 - ``agentnodes``（默认）→ ``~/.agentnodes`` + ``.agentnodes_session.db``
 - ``quantnodes``（显式指定）→ ``~/.quantnodes`` + 历史文件名
 
-切换：``AN_DATA_PROFILE=quantnodes``（或 CLI ``--data-profile``）。
-**默认永远是 agentnodes**——满足「默认使用 .agentnodes」。
+切换：``AN_DATA_PROFILE=quantnodes``（历史名，仍生效——见
+``settings.LEGACY_LIVE_ENVS``）。**默认永远是 agentnodes**——满足
+「默认使用 .agentnodes」。
+
+**批 C（2026-11-11）勘误**：本 docstring 曾写"或 CLI ``--data-profile``"，
+但 CLI 里从来没有这个 flag（实测 0 处）——删掉不存在的提法。
+真要加 profile flag 是新功能，另立批。
 
 **HTTP 无关、零外部依赖**：只 import stdlib，任何层都能用。
 """

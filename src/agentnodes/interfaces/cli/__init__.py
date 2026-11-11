@@ -279,6 +279,59 @@ def cmd_reproduce(args: argparse.Namespace) -> int:
 
 # ============================================================
 
+#: hidden alias 的进程级告警去重（每个旧 flag 只喊一次）。
+_ALIAS_WARNED: set[str] = set()
+
+
+class _DeprecatedAliasAction(argparse.Action):
+    """hidden alias 的 action：命中时 stderr 告警一次，再写 dest。
+
+    与批 E-2 的 env 告警同风格——旧名**继续工作**但**明确喊出来**，
+    不留静默生效。
+    """
+
+    def __init__(self, option_strings, dest, canonical_flag: str = "",
+                 **kwargs) -> None:
+        super().__init__(option_strings, dest, **kwargs)
+        self._canonical_flag = canonical_flag
+
+    def __call__(self, parser, namespace, values, option_string=None) -> None:
+        flag = option_string or ",".join(self.option_strings)
+        if flag not in _ALIAS_WARNED:
+            _ALIAS_WARNED.add(flag)
+            print(
+                f"[deprecated] CLI {flag} 已改名（本期仍生效）："
+                f"请改用 {self._canonical_flag}",
+                file=sys.stderr,
+            )
+        setattr(namespace, self.dest, values)
+
+
+def _platform_arg(parser, canonical: str, alias: str, *, dest: str,
+                  default=None, help_text: str = "",
+                  short: str | None = None, **kwargs) -> None:
+    """批 C：平台配置参数——``--an-*`` 为主名（进 help），旧名 hidden alias。
+
+    设计见 docs/design/cli-an-prefix-20261111.md：
+
+    - alias 用 ``help=argparse.SUPPRESS``（help 里不可见但可解析）+
+      ``default=argparse.SUPPRESS``（未提供时不写 namespace——否则两个
+      action 的默认值互相覆盖，canonical 的默认值会丢）；
+    - 两个都给时，**argv 里后出现者赢**（与单 flag 多次出现同语义）；
+    - **canonical 别设 required=True**：argparse 的 required 检查按 action
+      是否被"见过"计，只给旧名会误报缺参（实测，设计文档 §3.1）。
+      必需性由调用方显式校验（如 ``_dispatch_swarm``）。
+    """
+    option_strings = [canonical] + ([short] if short else [])
+    parser.add_argument(*option_strings, dest=dest, default=default,
+                        help=help_text, **kwargs)
+    parser.add_argument(
+        alias, dest=dest, required=False,
+        default=argparse.SUPPRESS, help=argparse.SUPPRESS,
+        action=_DeprecatedAliasAction, canonical_flag=canonical, **kwargs,
+    )
+
+
 def _build_parser() -> tuple[argparse.ArgumentParser, dict[str, argparse.ArgumentParser]]:
     """Build the top-level CLI argument parser."""
     parser = argparse.ArgumentParser(
@@ -353,7 +406,10 @@ def _build_parser() -> tuple[argparse.ArgumentParser, dict[str, argparse.Argumen
 
     swarm_run_parser = swarm_subparsers.add_parser("run", help="执行 swarm preset")
     swarm_run_parser.add_argument("name", help="preset 名称")
-    swarm_run_parser.add_argument("--workspace", "-w", required=True, help="工作区路径")
+    # 批 C：workspace 缺参校验移到 _dispatch_swarm（required=True 会弄坏
+    # hidden alias，见设计文档 §3.1）。
+    _platform_arg(swarm_run_parser, "--an-workspace", "--workspace",
+                  dest="workspace", short="-w", help_text="工作区路径")
     swarm_run_parser.add_argument("--task", "-t", default="", help="任务描述")
 
     swarm_cancel_parser = swarm_subparsers.add_parser("cancel", help="取消运行中的 swarm")
@@ -387,9 +443,12 @@ def _build_parser() -> tuple[argparse.ArgumentParser, dict[str, argparse.Argumen
     api_serve_parser.add_argument("--host", default="127.0.0.1", help="监听地址 (默认 127.0.0.1)")
     api_serve_parser.add_argument("--port", type=int, default=8765, help="监听端口 (默认 8765)")
     api_serve_parser.add_argument("--reload", action="store_true", help="热重载 (开发模式)")
-    api_serve_parser.add_argument("--workspace", "-w", default=".", help="工作区路径")
-    api_serve_parser.add_argument("--goal-db", help="Goal DB 路径 (可选)")
-    api_serve_parser.add_argument("--hypotheses-path", help="Hypotheses JSON 路径 (可选)")
+    _platform_arg(api_serve_parser, "--an-workspace", "--workspace",
+                  dest="workspace", short="-w", default=".", help_text="工作区路径")
+    _platform_arg(api_serve_parser, "--an-goal-db", "--goal-db",
+                  dest="goal_db", help_text="Goal DB 路径 (可选)")
+    _platform_arg(api_serve_parser, "--an-hypotheses-path", "--hypotheses-path",
+                  dest="hypotheses_path", help_text="Hypotheses JSON 路径 (可选)")
 
     # webui serve
     webui_parser = subparsers.add_parser("webui", help="Web UI 仪表盘")
@@ -398,9 +457,12 @@ def _build_parser() -> tuple[argparse.ArgumentParser, dict[str, argparse.Argumen
     webui_serve_parser.add_argument("--host", default="127.0.0.1", help="监听地址 (默认 127.0.0.1)")
     webui_serve_parser.add_argument("--port", type=int, default=8766, help="监听端口 (默认 8766)")
     webui_serve_parser.add_argument("--reload", action="store_true", help="热重载 (开发模式)")
-    webui_serve_parser.add_argument("--workspace", "-w", default=".", help="工作区路径")
-    webui_serve_parser.add_argument("--goal-db", help="Goal DB 路径 (可选)")
-    webui_serve_parser.add_argument("--hypotheses-path", help="Hypotheses JSON 路径 (可选)")
+    _platform_arg(webui_serve_parser, "--an-workspace", "--workspace",
+                  dest="workspace", short="-w", default=".", help_text="工作区路径")
+    _platform_arg(webui_serve_parser, "--an-goal-db", "--goal-db",
+                  dest="goal_db", help_text="Goal DB 路径 (可选)")
+    _platform_arg(webui_serve_parser, "--an-hypotheses-path", "--hypotheses-path",
+                  dest="hypotheses_path", help_text="Hypotheses JSON 路径 (可选)")
 
     # serve (merged W2) — Web UI + API; --api-only for API server only
     serve_parser = subparsers.add_parser(
@@ -410,10 +472,14 @@ def _build_parser() -> tuple[argparse.ArgumentParser, dict[str, argparse.Argumen
     serve_parser.add_argument("--host", default="127.0.0.1", help="监听地址 (默认 127.0.0.1)")
     serve_parser.add_argument("--port", type=int, default=8766, help="监听端口 (默认 8766)")
     serve_parser.add_argument("--reload", action="store_true", help="热重载 (开发模式)")
-    serve_parser.add_argument("--workspace", "-w", default=".", help="工作区路径")
-    serve_parser.add_argument("--goal-db", help="Goal DB 路径 (可选)")
-    serve_parser.add_argument("--hypotheses-path", help="Hypotheses JSON 路径 (可选)")
-    serve_parser.add_argument("--static-dir", help="前端静态文件目录 (默认 webui/static)")
+    _platform_arg(serve_parser, "--an-workspace", "--workspace",
+                  dest="workspace", short="-w", default=".", help_text="工作区路径")
+    _platform_arg(serve_parser, "--an-goal-db", "--goal-db",
+                  dest="goal_db", help_text="Goal DB 路径 (可选)")
+    _platform_arg(serve_parser, "--an-hypotheses-path", "--hypotheses-path",
+                  dest="hypotheses_path", help_text="Hypotheses JSON 路径 (可选)")
+    _platform_arg(serve_parser, "--an-static-dir", "--static-dir",
+                  dest="static_dir", help_text="前端静态文件目录 (默认 webui/static)")
     serve_parser.add_argument(
         "--api-only",
         action="store_true",
@@ -563,6 +629,16 @@ def _dispatch_swarm(args, parsers) -> int:
     elif args.swarm_command == "inspect":
         return cmd_swarm_inspect(args)
     elif args.swarm_command == "run":
+        # 批 C：workspace 的必需性在这里校验（原 required=True 会弄坏
+        # hidden alias——argparse 的 required 检查按 action 是否被"见过"计，
+        # 只给旧名 --workspace 会误报缺参）。返回码 2 = argparse 用法错误。
+        if getattr(args, "workspace", None) is None:
+            print(
+                "swarm run: 缺少必需参数 --an-workspace"
+                "（旧名 --workspace 本期仍可用）",
+                file=sys.stderr,
+            )
+            return 2
         return cmd_swarm_run(args)
     elif args.swarm_command == "cancel":
         return cmd_swarm_cancel(args)
