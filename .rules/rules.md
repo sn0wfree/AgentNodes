@@ -268,6 +268,41 @@ D:\tools\python312\python.exe scripts\arch\sync_architecture_diagram.py --write 
 
 ---
 
+### 3.8 安全测试必须用**真实调用形态**
+
+**R-018. 安全断言要覆盖真实入口形态，不能只测"构造出来的漂亮输入"** · MUST
+
+- **触发**：写权限 / 鉴权 / 沙箱 / 路径校验类测试。
+- **做法**：① 测试输入必须来自**真实调用链**（工具名取 registry 里的名字，路径取模型最可能
+  写出的形态，包括裸相对路径、`.` 开头、绝对路径）；② 断言前先确认**规则真的能匹配上**这个
+  输入（打印 `_glob_match`/匹配结果，别假设）；③ 覆盖"枚举名 vs 实际名"的差异。
+- **失败**：2026-11-11 实测——`kernel/permission/` 的 64 条测试全绿，但存在 3 个可达绕过：
+  - `hard_deny` 规则 `**/.env` 对**裸相对路径 `.env`** 不匹配（`_glob_match` 返回 False）→
+    `read .env` 直接读出密钥；
+  - `Permission.WEB_FETCH.value` 是 `"web_fetch"`，但 registry 里的真实工具名是 `"webfetch"`
+    → 云 metadata 的 hard_deny 对真实工具名不生效；
+  - `run_bg_command` **不在 `Permission` 枚举里** → `_extract_target` 拿不到命令串，
+    `sudo` 规则完全失效。
+  - 测试为什么没抓到：断言用的 target 全是 `/abs/path/.env` 或 `config/.env`，
+    **没有一条测裸 `.env`**；也没有一条用 registry 里的真实工具名。
+- **来源**：L2 2026-11-11（`docs/design/asset-value-review-20261111.md` §1）。
+
+### 3.9 门禁有效性要**注入违规**验证，不能只看 0 违规
+
+**R-019. 门禁的价值 = 注入违规后会不会红，不是"当前 0 违规"** · MUST
+
+- **触发**：新增门禁 / 评估门禁 / 怀疑门禁盲区。
+- **做法**：对每个门禁，按其**真实职责**注入一条违规（改一个文件 → 跑门禁 → 恢复），
+  确认 rc≠0 且报出位置。只在必要时用 `--selftest`。
+- **失败**：2026-11-11 实测 8 道门禁，7 道真拦，1 道有盲区——
+  `check_path_literals` 的 `PATTERN_BRAND_DIR` 要求字符串**恰好**是 `.quantnodes`，
+  于是 `".quantnodes/probe"`（拼路径的常见写法）**完全放行**。
+- **注**：注入前先确认该文件**不在 `EXEMPT_FILES` 里**（`settings.py` 是 env 门禁的豁免文件，
+  往那里注入当然不报——这是探针设计错误，不是门禁盲区）。
+- **来源**：L2 2026-11-11（同文档 §2）。
+
+---
+
 ## 4. 文档纪律（Doc First）
 
 **R-014. Loop 结构变更前必须先给方案** · MUST

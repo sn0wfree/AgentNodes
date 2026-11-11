@@ -15,6 +15,7 @@
 > | 审计命令是安全网 | R-004（§1.3）|
 > | 双引擎对偶的弱点 | R-009（§3.3）|
 > | 并行下的隔离 vs 真实缺陷 | R-017（§3.7）|
+> | 安全测试要测真实调用形态 | R-018（§3.8）|
 
 ---
 
@@ -253,3 +254,97 @@ dispatch(): _cancel_evt.clear()   # ② 清标志
 - 不要用「降 worker 数」代替定位——那会把真实竞态藏起来。
 
 ---
+
+---
+
+## 2026-11-11 · 权限系统 64 条测试全绿，但有 3 个可达绕过
+
+**已升 L1**：R-018（`rules.md` §3.8）。
+
+**背景**：评估「权限系统 / 架构门禁 / 骨架-decider」三者价值时，用**真实调用链**
+（带 workspace 的 `ToolContext` + registry 里的真实工具名）实测，发现
+`kernel/permission/` 的 1086 行实现有 3 个绕过。文档：
+`docs/design/asset-value-review-20261111.md` §1。
+
+**三个绕过（都实测复现）**：
+
+1. **`read .env` 读出密钥**（P0）
+   `hard_deny` 规则是 `**/.env`，但 `_glob_match("**/.env", ".env") == False`
+   ——`**/` 要求目录前缀。实测：
+
+   ```
+   path='.env'        -> allow  ← 执行了，泄漏=True
+   path='./.env'      -> deny
+   path='sub/.env'    -> deny
+   path='/abs/.env'   -> deny
+   ```
+
+   同样的洞在 `**/.ssh/**` vs `.ssh/id_rsa`。
+   **而 `read .env` 是模型最自然的写法——恰好是唯一被放过的形态。**
+
+2. **`webfetch` vs `web_fetch`**
+   `Permission.WEB_FETCH.value = "web_fetch"`，registry 里的真实工具名是 `"webfetch"`。
+   云 metadata 的 hard_deny 对真实工具名不生效（落到 ASK）。
+
+3. **`run_bg_command` 不在 `Permission` 枚举里**
+   registry 18 个工具，12 个不在枚举。`_extract_target("run_bg_command", {...command})`
+   返回的是工具名不是命令串 → `sudo` 规则完全失效。
+
+**根因（与本台账 V4 那条同构）**：
+
+64 条测试全绿，但断言用的 target 全是 `/abs/path/.env` 或 `config/.env`，
+**没有一条测裸相对路径 `.env`**；也没有一条用 registry 里的真实工具名。
+**测试照「假设的调用形态」写，不照「真实的调用形态」写。**
+
+**防法**：
+
+- 安全测试的输入必须来自真实调用链（工具名取 registry，路径取模型真会写的形态）；
+- 断言前先确认规则**真的能匹配上**这个输入（打印匹配结果，别假设）；
+- 覆盖「枚举名 vs 实际名」的差异。
+
+**当前状态：缺陷未修。** 缺陷 1 是 P0，动手前按 R-014 先给方案。
+
+---
+
+## 2026-11-11 · 门禁看「0 违规」不够，要看「注入违规会不会红」
+
+**已升 L1**：R-019（`rules.md` §3.9）。
+
+**背景**：同一轮评估。方法从「跑一遍看有没有报错」改成「**注入一条违规** →
+跑门禁 → 恢复 → 看 rc」。
+
+**结果（8 道门禁）**：
+
+| 门禁 | 注入 | 结果 |
+|---|---|---|
+| `check_env_access` | kernel 层 `os.environ.get("AGENTNODES_X")` | rc=1 ✅ |
+| `check_kernel_nouns` | `"run_backtest_probe"` | rc=1 ✅ |
+| `check_dangling_imports --layers` | L2 反向 import L4 | rc=1 ✅ |
+| `check_path_literals` | `parent / "core" / "x"` | rc=1 ✅ |
+| `check_path_literals` | `"src" / "agentnodes" / "api"` | rc=1 ✅ |
+| `check_path_literals` | `".quantnodes"`（精确） | rc=1 ✅ |
+| `check_path_literals` | **`".quantnodes/probe"`** | rc=0 ❌ |
+| `check_path_literals` | **`".quantnodes/research/x.db"`** | rc=0 ❌ |
+
+**盲区根因**：
+
+```python
+PATTERN_BRAND_DIR = re.compile(
+    r'["\']\.quantnodes(-research)?["\']'   # 要求字符串恰好是 .quantnodes
+    r'|["\']\.quantnodes_[a-z_]*\.db["\']'
+)
+```
+
+`".quantnodes/probe"` 后面还有 `/probe` → 不匹配。而**拼路径的常见写法正是这种**。
+`src/` 里 `.quantnodes/` 共 56 处命中（18 处非注释非 docstring）。
+
+**探针自身的错误（也要记）**：第一版把 env 违规注入 `settings.py`，门禁没报——
+我一度以为门禁有盲区，实际是 `settings.py` 在 `EXEMPT_FILES` 里。
+**注入前必须确认目标文件不在豁免列表**，否则测的是豁免逻辑不是检测逻辑。
+
+**防法**：
+
+- 门禁评估用注入法，不用「当前 0 违规」；
+- 注入点必须避开 `EXEMPT_FILES`；
+- 盲区发现后先看正则覆盖的是「精确形态」还是「实际写法」——
+  前者几乎总会被后者的变体绕过。
