@@ -34,7 +34,7 @@ from pathlib import Path
 # Ensure we can import the package when run from the repo root.
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "src"))
 
-from agentnodes.core.agent.memory_manager import resolve_session_db_path  # noqa: E402
+from agentnodes.foundation.storage.session_paths import resolve_session_db_path  # noqa: E402
 
 MIGRATE_TABLES = ["sessions", "messages", "message_parts", "event_log", "attempts"]
 

@@ -75,6 +75,7 @@ from typing import Any, Callable, Literal, Mapping
 __all__ = [
     "ENV_TABLE",
     "LEGACY_LIVE_ENVS",
+    "TEST_INFRA_ENV_VARS",
     "Setting",
     "get",
     "get_bool",
@@ -178,6 +179,17 @@ _DECLARED: tuple[Setting, ...] = (
     # 声明表只记录 None（= 由 rules_io 自己拼默认路径）。
     _s("AGENTNODES_PERMISSIONS_PATH", "paths", None,
        "permissions.yaml 路径覆盖"),
+    # goals.db 唯一覆盖名（A5/F10 统一）。读取点在
+    # foundation/storage/sqlite.py 的 resolve_db_path / goal_db_env_value
+    # ——经函数参数流（形态 ③）直读 os.environ，扫描器看不见，故这里
+    # 声明 + RESERVED 登记（tests/test_settings.py）。3 个历史名仍被
+    # 兜底读取（见 LEGACY_LIVE_ENVS）。
+    _s("AGENTNODES_GOAL_DB_PATH", "paths", None,
+       "goals.db（goal 台账）路径覆盖"),
+
+    # ── 存储保留（domain: storage）─────────────────────────────
+    _i("AGENTNODES_BLOB_TTL_DAYS", "storage", 365,
+       "blob 清理 TTL（天，财务合规保留期）；消费者 scripts/cleanup_blobs.py"),
 
     # ── 引擎与 agent（domain: engine）──────────────────────────
     _s("AGENTNODES_ENGINE", "engine", "",
@@ -231,6 +243,16 @@ _DECLARED: tuple[Setting, ...] = (
        "held-out 评测集目录覆盖"),
     _s("AGENTNODES_LLM_PROFILE", "llm", "",
        "LLM profile 覆盖（llm.json 的 active_profile）"),
+    # llm.json 路径覆盖。读取点在 llm/config.py 的 _resolve_bridge_path
+    # ——经 load(env=...) 的映射参数（形态 ①）读取，扫描器看不见，
+    # RESERVED 登记。参数化是测试注入设计，读取点不改。
+    _s("AGENTNODES_LLM_CONFIG", "llm", None,
+       "llm.json 配置路径覆盖"),
+    # 单次 LLM 请求的墙钟上限（秒）。原 AN_AGENT_WALLCLOCK_TIMEOUT
+    # （批 E-3 改名，旧名已失效）；读取点在 llm/config.py 的
+    # _env_to_overrides（映射参数，形态 ①），RESERVED 登记。
+    _f("AGENTNODES_LLM_WALLCLOCK_TIMEOUT", "llm", 1800.0,
+       "单次 LLM 请求墙钟上限（秒，0/None 不禁用时默认 1800）"),
     _s("AGENTNODES_LOG_FILE", "log", "",
        "日志文件路径覆盖"),
     _s("AGENTNODES_RSI_STATE_PATH", "paths", "",
@@ -298,6 +320,9 @@ _DECLARED: tuple[Setting, ...] = (
 # 消失**，因为审计命令 `agentnodes config audit-legacy` 要靠它告诉用户
 # 「你还在用旧名 X，请改成 Y」。
 #
+# 批 E-3 又补录 3 组（goal-db 3 个历史名 + wallclock/blob 两个改名），
+# 现在 **49 组 / 54 个旧名**。
+#
 # 所以本表从「读取层的别名」**降级为「诊断层的清单」**：
 #
 # | 层 | 认旧名吗 | 谁在用 |
@@ -319,6 +344,18 @@ _LEGACY_NAMES: dict[str, tuple[str, ...]] = {
     "AGENTNODES_GOLDEN_HELDOUT_PATH": ("AN_GOLDEN_HELDOUT_PATH",),
     "AGENTNODES_LLM_PROFILE": ("LLM_PROFILE",),
     "AGENTNODES_LOG_FILE": ("AN_LOG_FILE",),
+    # ── 批 E-3 补录（2026-11-11）─────────────────────────────
+    # goal-db 的 3 个历史名：sqlite.GOAL_DB_LEGACY_ENVS 仍在兜底读取
+    # （数据位置连续性），但从未进过批 B' 清单/本表——审计命令看不见
+    # 它们。入册 + LEGACY_LIVE_ENVS。
+    "AGENTNODES_GOAL_DB_PATH": (
+        "AN_GOAL_DB_PATH",
+        "QUANTNODES_RESEARCH_GOAL_DB_PATH",
+        "STRATEGY_RESEARCH_GOAL_DB",
+    ),
+    # 两个非规范前缀的生产开关（批 E-3 改名，旧名已失效）：
+    "AGENTNODES_LLM_WALLCLOCK_TIMEOUT": ("AN_AGENT_WALLCLOCK_TIMEOUT",),
+    "AGENTNODES_BLOB_TTL_DAYS": ("AN_BLOB_TTL_DAYS",),
     "AGENTNODES_CHECKPOINTS_DIR": (
         "AN_CHECKPOINTS_DIR", "STRATEGY_RESEARCH_CHECKPOINT_BASE_DIR",
     ),
@@ -386,7 +423,8 @@ _LEGACY_BY_CANONICAL: dict[str, tuple[str, ...]] = {
 #: 这几个不是"改名兼容"——它们指向的是**用户数据在哪**。删掉不会让程序
 #: 报错，只会让用户"找不到自己的数据"，所以它们由各自的模块**显式直读**
 #: （`paths.active_profile` / `workflow._definition_workspace` /
-#: `goal._session_owned` / `checkpoint_store.CheckpointStore`），
+#: `goal._session_owned` / `checkpoint_store.CheckpointStore` /
+#: `storage.sqlite.resolve_db_path` 的 goal-db 兜底链），
 #: 不走本模块的 alias 机制。
 #:
 #: 审计命令会把它们标成"仍生效（已废弃）"而不是"已失效"。
@@ -395,7 +433,28 @@ LEGACY_LIVE_ENVS: dict[str, str] = {
     "SR_WORKSPACE_PATH": "AGENTNODES_WORKSPACE",
     "SR_ENFORCE_STUDY_IDOR": "AGENTNODES_ENFORCE_STUDY_IDOR_LEGACY",
     "STRATEGY_RESEARCH_CHECKPOINT_BASE_DIR": "AGENTNODES_CHECKPOINTS_DIR",
+    # ── 批 E-3 补录：goal-db 的 3 个历史名 ──────────────────────
+    # 读取机制在 sqlite.GOAL_DB_LEGACY_ENVS（不经 get_legacy()），
+    # 这里登记的是**诊断分类**：审计命令据它报"仍生效"。
+    "AN_GOAL_DB_PATH": "AGENTNODES_GOAL_DB_PATH",
+    "QUANTNODES_RESEARCH_GOAL_DB_PATH": "AGENTNODES_GOAL_DB_PATH",
+    "STRATEGY_RESEARCH_GOAL_DB": "AGENTNODES_GOAL_DB_PATH",
 }
+
+#: **测试基础设施开关**（不进 ENV_TABLE，但也不算"未登记"）。
+#:
+#: 这些是开发/CI 工作流契约，不是部署配置：
+#: - `QNODES_LIVE_LLM` — live-LLM 测试 opt-in（7 个测试文件 + skip 文案）
+#: - `AN_E2E_REAL_LLM` — Playwright 真 LLM E2E opt-in
+#: - `AN_RUN_BROWSER_TESTS` — 浏览器 E2E opt-in（**.github/workflows/e2e.yml
+#:   在用**——改名必须连 CI 一起改，单独微批）
+#: - `AN_DOTENV_*` 三个 — dotenv 行为测试写入临时 .env 的变量名
+#:
+#: `unknown_env_vars()` 豁免它们：名册上承认，声明表外保留。
+TEST_INFRA_ENV_VARS: frozenset[str] = frozenset({
+    "QNODES_LIVE_LLM", "AN_E2E_REAL_LLM", "AN_RUN_BROWSER_TESTS",
+    "AN_DOTENV_CWD_ONLY", "AN_DOTENV_QUANTNODES", "AN_DOTENV_BOTH",
+})
 
 #: **重复登记的显式防线**：dict comprehension 会让后一条静默覆盖前一条
 #: （本模块初版就把 `AGENTNODES_TEST_CHAT` 登记了两次，domain 悄悄变了）。
@@ -536,7 +595,8 @@ def unknown_env_vars(environ: dict[str, str] | None = None) -> list[str]:
     known = set(ENV_TABLE)
     out = []
     for name in env:
-        if name in known or name in EXTERNAL_ENV_VARS:
+        if name in known or name in EXTERNAL_ENV_VARS \
+                or name in TEST_INFRA_ENV_VARS:
             continue
         if name.startswith(prefixes):
             out.append(name)
@@ -702,6 +762,10 @@ _LEGACY_RISK_HIGH: frozenset[str] = frozenset({
     "AN_MODEL_CATALOG_DIR",
     "AN_GOLDEN_HELDOUT_PATH",
     "STATIC_DIR",
+    # ── 批 E-3 补录：goal-db 路径（回落默认 → goals.db 找不到）──
+    "AN_GOAL_DB_PATH",
+    "QUANTNODES_RESEARCH_GOAL_DB_PATH",
+    "STRATEGY_RESEARCH_GOAL_DB",
     # 密钥 / 安全开关：回落默认 → 认证失效或安全降级
     "AN_ADMIN_PASSWORD",
     "AN_ADMIN_TOKEN",
@@ -731,6 +795,8 @@ _LEGACY_RISK_MEDIUM: frozenset[str] = frozenset({
     "AGENTNODES_THEME",
     "AN_ALLOW_SHELL_TOOLS",
     "AN_CACHE_COMPACTION_LINKED",
+    # ── 批 E-3 补录 ──────────────────────────────────────────
+    "AN_BLOB_TTL_DAYS",   # 回落 365 天默认 → 清理行为变化但不致命
 })
 
 #: 风险说明（给人看的行动指引）。

@@ -140,6 +140,8 @@ echo "" | agentnodes      → argparse help（无 TTY 不进 TUI）
 | `OPENAI_API_KEY` | API 密钥（必填，至少一个 provider） |
 | `OPENAI_BASE_URL` | 兼容端点，默认 `https://api.openai.com/v1` |
 | `OPENAI_MODEL` | 默认模型 |
+| `AGENTNODES_LLM_CONFIG` | `llm.json` 配置路径覆盖 |
+| `AGENTNODES_LLM_WALLCLOCK_TIMEOUT` | 单次 LLM 请求墙钟上限（秒，默认 1800；0 禁用） |
 | `DEEPSEEK_API_KEY` / `KIMI_API_KEY` / `QWEN_API_KEY` / `ANTHROPIC_API_KEY` | 其他 provider |
 | `QUANTNODES_LLM_JSON` | `llm.json` 配置路径覆盖 |
 | `AGENTNODES__LLM__*` | 嵌套配置覆盖（与环境变量同名映射） |
@@ -148,11 +150,11 @@ echo "" | agentnodes      → argparse help（无 TTY 不进 TUI）
 
 | 变量 | 默认 | 说明 |
 |---|---|---|
-| `AN_AGENT_WALLCLOCK_TIMEOUT` | — | 单次 agent 墙钟超时（秒） |
 | `AGENTNODES_ALLOW_SHELL_TOOLS` | 关闭 | `1` 开启 `run_command`（bash/python）；plan mode 始终禁用 |
 | `AGENTNODES_API_ALLOW_REGISTRATION` | 关闭 | `1` 开启 API 注册端点 |
 | `AGENTNODES_API_ALLOW_DEV_SECRET` | 关闭 | `1` 允许非生产环境用开发密钥 |
 | `AGENTNODES_GOAL_DB_PATH` | `~/.agentnodes/goals.db` | Ticket/Assignment/调度共用库 |
+| `AGENTNODES_BLOB_TTL_DAYS` | `365` | blob 清理 TTL（天，财务合规保留期；消费者 `scripts/cleanup_blobs.py`） |
 
 ### 5.3 日志
 

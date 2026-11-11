@@ -25,7 +25,9 @@ __all__ = [
 
 # Reference-count + last-access tracker for sidecar blobs.
 # Stale-bucket candidates are rows whose last_access is older than
-# ``AN_BLOB_TTL_DAYS`` (default 365 — financial compliance).
+# ``AGENTNODES_BLOB_TTL_DAYS`` (default 365 — financial compliance).
+# **批 E-3（2026-11-11）**：原 ``AN_BLOB_TTL_DAYS``（非规范前缀）已改名，
+# 旧名进 settings 诊断清单；消费者 ``scripts/cleanup_blobs.py``。
 BLOB_REFS_DDL = """
 CREATE TABLE IF NOT EXISTS blob_refs (
     blob_path TEXT PRIMARY KEY,

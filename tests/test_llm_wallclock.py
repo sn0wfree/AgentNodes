@@ -1,4 +1,7 @@
-"""Tests for the LLM wall-clock ceiling (AN_AGENT_WALLCLOCK_TIMEOUT).
+"""Tests for the LLM wall-clock ceiling (AGENTNODES_LLM_WALLCLOCK_TIMEOUT).
+
+**批 E-3（2026-11-11）**：原 ``AN_AGENT_WALLCLOCK_TIMEOUT``（从未登记过的
+非规范名）已改名，旧名进 settings 诊断清单、不再被读取。
 
 Guards against "slow-trickle" streams: the server keeps emitting lines
 (more often than httpx's per-read timeout) but never finishes — without
@@ -94,7 +97,7 @@ def test_wallclock_expired_before_retry_raises():
 
 
 def test_env_var_injects_wallclock():
-    cfg = LLMConfig.load(env={"AN_AGENT_WALLCLOCK_TIMEOUT": "42"})
+    cfg = LLMConfig.load(env={"AGENTNODES_LLM_WALLCLOCK_TIMEOUT": "42"})
     assert cfg.wallclock_timeout_s == 42.0
 
 

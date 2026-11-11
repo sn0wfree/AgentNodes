@@ -144,6 +144,19 @@ def test_no_phantom_declarations():
         "AGENTNODES_MODEL_CATALOG_DIR",
         # 由 foundation/paths.py 的 PROFILE 机制间接使用
         "AGENTNODES_DATA_DIR",
+        # ── 批 E-3（2026-11-11）：读取点在扫描器盲区里，见
+        # docs/design/settings-declaration-hygiene-20261111.md §2.1 ──
+        # goal-db 覆盖名：经 sqlite.resolve_db_path 的**函数参数流**
+        # 直读 os.environ（形态 ③）
+        "AGENTNODES_GOAL_DB_PATH",
+        # llm.json 路径覆盖：经 LLMConfig.load(env=...) 的**映射参数**
+        # 读取（形态 ①，参数化是测试注入设计，读取点不改）
+        "AGENTNODES_LLM_CONFIG",
+        # LLM 墙钟上限：同上（形态 ①）
+        "AGENTNODES_LLM_WALLCLOCK_TIMEOUT",
+        # blob 清理 TTL：读取点在 scripts/cleanup_blobs.py（scripts/
+        # 不在本测试的扫描范围内）
+        "AGENTNODES_BLOB_TTL_DAYS",
     }
     phantom = sorted(set(settings.ENV_TABLE) - used - RESERVED)
     assert not phantom, (

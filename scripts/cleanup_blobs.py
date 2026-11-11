@@ -1,7 +1,7 @@
 """P0-1 C3 — manual sidecar blob cleanup (TTL = 365 days).
 
 Lists blobs whose ``last_access`` in ``blob_refs`` is older than
-``AN_BLOB_TTL_DAYS`` (default 365 — financial compliance), writes an
+``AGENTNODES_BLOB_TTL_DAYS`` (default 365 — financial compliance), writes an
 audit row, then unlinks the blob file + DELETE the metadata row.
 
 Default is ``--dry-run`` (report only). Pass ``--apply`` to actually
@@ -29,7 +29,9 @@ logger = logging.getLogger("cleanup_blobs")
 def _resolve_db_path(override: str | None) -> Path:
     if override:
         return Path(override).expanduser()
-    from agentnodes.core.agent.memory_manager import resolve_db_path
+    # **批 E-3**：原 import 路径 ``agentnodes.core.agent.memory_manager``
+    # 已随分层重组删除（ModuleNotFoundError），指向单一事实源 session_paths。
+    from agentnodes.foundation.storage.session_paths import resolve_db_path
     return resolve_db_path()
 
 
@@ -45,7 +47,7 @@ def main() -> int:
     )
     parser.add_argument(
         "--ttl-days", type=int, default=None,
-        help="Override TTL days (default: AN_BLOB_TTL_DAYS or 365)",
+        help="Override TTL days (default: AGENTNODES_BLOB_TTL_DAYS or 365)",
     )
     parser.add_argument(
         "--limit", type=int, default=1000,
@@ -62,12 +64,12 @@ def main() -> int:
     ttl_days = args.ttl_days
     if ttl_days is None:
         import os
-        env_val = os.environ.get("AN_BLOB_TTL_DAYS", "365")
+        env_val = os.environ.get("AGENTNODES_BLOB_TTL_DAYS", "365")
         try:
             ttl_days = int(env_val)
         except ValueError:
             logger.warning(
-                "AN_BLOB_TTL_DAYS=%r is not an int; falling back to 365",
+                "AGENTNODES_BLOB_TTL_DAYS=%r is not an int; falling back to 365",
                 env_val,
             )
             ttl_days = 365

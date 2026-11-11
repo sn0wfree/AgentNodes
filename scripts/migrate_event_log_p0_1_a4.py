@@ -27,7 +27,8 @@ logger = logging.getLogger("migrate_event_log_p0_1_a4")
 def _resolve_db_path(override: str | None) -> Path:
     if override:
         return Path(override).expanduser()
-    from agentnodes.core.agent.memory_manager import resolve_db_path
+    # **批 E-3**：原路径 agentnodes.core.agent.memory_manager 已删除。
+    from agentnodes.foundation.storage.session_paths import resolve_db_path
     return resolve_db_path()
 
 

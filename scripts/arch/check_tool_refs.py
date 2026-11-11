@@ -108,6 +108,9 @@ class Report:
     installed: set[str] = field(default_factory=set)
     refs: dict[str, set[str]] = field(default_factory=dict)   # 面 → 引用的工具
     violations: list[Violation] = field(default_factory=list)
+    #: 本探测环境"依赖被 gate 掉"的工具（实现存在、注册不上）——
+    #: 显示侧用它把这类缺失标成〔环境〕而不是"悬空"。
+    env_gated: set[str] = field(default_factory=set)
 
     @property
     def ok(self) -> bool:
@@ -129,6 +132,47 @@ def installed_tools() -> set[str]:
     from agentnodes.kernel.agent.builtin_tools import build_default_registry
 
     return {t.name for t in build_default_registry().all_tools()}
+
+
+def env_gated_tools() -> set[str]:
+    """**类存在、但 ``check_available()`` 在本探测环境为 False** 的工具名。
+
+    这些不是"未实现"——实现就在源码里，只是依赖（PyMuPDF）或开关
+    （``AGENTNODES_ALLOW_SHELL_TOOLS``）在**当前探测解释器**里不可用。
+    典型场景（2026-11-11）：本机应用程序控制策略拦截 PyMuPDF 的原生
+    DLL（与 hypothesis 的 DLL 同类，见 ``batch_gate.cmd`` 头注）——
+    3.12 探测环境装了包也 import 不进来，``read_document`` 便注册不上，
+    门禁误报"未实现"。3.13 下同一份源码全部注册。
+
+    **不是豁免清单**：名字从**导入真实工具类**得到。类若从源码里消失，
+    就不在本集合 → 照旧判违规。真回归不会被这条掩盖。
+    """
+    import inspect
+
+    _ensure_src_on_path()
+    from agentnodes.kernel.agent.builtin_tools import (
+        bg_tools,
+        display_tools,
+        shell_tools,
+        web_tools,
+    )
+
+    gated: set[str] = set()
+    for mod in (web_tools, display_tools, shell_tools, bg_tools):
+        for attr in vars(mod).values():
+            if not inspect.isclass(attr):
+                continue
+            check = getattr(attr, "check_available", None)
+            name = getattr(attr, "name", None)
+            if not callable(check) or not isinstance(name, str):
+                continue
+            try:
+                ok = bool(check())
+            except Exception:
+                ok = False
+            if not ok:
+                gated.add(name)
+    return gated
 
 
 def installed_executors() -> tuple[set[str], set[str]]:
@@ -254,6 +298,8 @@ def check(
     pending_executors: dict[str, set[str]] | None = None,
 ) -> Report:
     """跑全部检查。参数可注入，供 selftest 用。"""
+    #: selftest 注入参数时不做环境探测（否则 selftest 的假集合受真实环境干扰）
+    injected = installed is not None
     installed = installed if installed is not None else installed_tools()
     toolsets = toolsets if toolsets is not None else collect_toolsets()
     plugins = plugins if plugins is not None else collect_plugin_refs()
@@ -262,9 +308,11 @@ def check(
     executors = executors if executors is not None else installed_executors()
     if pending_executors is None:
         pending_executors = collect_pending_executors()
+    #: 本探测环境里"依赖被 gate 掉"的工具（实现存在、注册不上）。
+    gated = set() if injected else env_gated_tools()
 
     py_exec, evaluators = executors
-    rep = Report(installed=installed)
+    rep = Report(installed=installed, env_gated=gated)
     pending_fn: set[str] = set()
     for names in pending_executors.values():
         pending_fn |= names
@@ -272,7 +320,10 @@ def check(
     # ① TOOLSETS
     for name, tools in sorted(toolsets.items()):
         rep.refs[f"TOOLSETS[{name}]"] = tools
-        missing = sorted(t for t in tools if t not in installed)
+        missing = sorted(
+            t for t in tools
+            if t not in installed and t not in gated
+        )
         if missing:
             rep.violations.append(Violation(
                 surface="TOOLSETS",
@@ -293,7 +344,7 @@ def check(
 
     for plugin_id, tools, fn in plugins:
         rep.refs[f"plugin:{plugin_id}"] = set(tools)
-        missing = sorted(t for t in tools if t not in installed)
+        missing = sorted(t for t in tools if t not in installed and t not in gated)
         unregistered = [t for t in missing if t not in pending_all]
         if unregistered:
             rep.violations.append(Violation(
@@ -323,7 +374,7 @@ def check(
     # ③ 模板
     for tpl_name, tools in sorted(templates.items()):
         rep.refs[f"template:{tpl_name}"] = tools
-        missing = sorted(t for t in tools if t not in installed)
+        missing = sorted(t for t in tools if t not in installed and t not in gated)
         if missing:
             rep.violations.append(Violation(
                 surface="templates",
@@ -385,15 +436,20 @@ def print_report(rep: Report) -> None:
         real_bad = sorted(
             t for t in refs
             if t not in rep.installed and t not in pending_all
+            and t not in rep.env_gated
         )
+        env_bad = sorted(t for t in refs if t in rep.env_gated)
         pending_bad = sorted(
             t for t in refs
             if t not in rep.installed and t in pending_all
+            and t not in rep.env_gated
         )
         mark = "OK " if not real_bad else "X  "
         extra = ""
         if real_bad:
             extra += f"  悬空: {real_bad}"
+        if env_bad:
+            extra += f"  〔环境缺失: {len(env_bad)}〕"
         if pending_bad:
             extra += f"  [待恢复: {len(pending_bad)}]"
         print(f"  {mark} {surface:42s} {len(refs):2d} refs{extra}")

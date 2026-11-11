@@ -119,9 +119,9 @@ def test_audit_does_not_emit_alias_warnings():
 
 
 def test_legacy_catalog_covers_every_old_name():
-    """诊断清单必须完整（46 组 / 49 个旧名）——审计报告的完整性靠它。"""
-    assert len(S._LEGACY_CATALOG) == 49
-    assert len(S._LEGACY_NAMES) == 46
+    """诊断清单必须完整（批 E-3 后 49 组 / 54 个旧名）。"""
+    assert len(S._LEGACY_CATALOG) == 54
+    assert len(S._LEGACY_NAMES) == 49
     for canonical, olds in S._LEGACY_NAMES.items():
         assert canonical in S.ENV_TABLE, canonical
         for old in olds:

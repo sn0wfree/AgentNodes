@@ -56,6 +56,9 @@ DEFAULT_LLM_CONFIG_PATH = QUANTNODES_LLM_JSON
 ENV_API_KEY = "OPENAI_API_KEY"
 ENV_BASE_URL = "OPENAI_BASE_URL"
 ENV_MODEL = "OPENAI_MODEL"
+# **批 E-3（2026-11-11）**：已登记进 settings.ENV_TABLE（llm/path/None）。
+# 读取仍走本模块的映射参数（load(env=...) 测试注入设计），不经
+# _settings —— 所以 test_settings 的 RESERVED 里有它的登记位。
 ENV_CONFIG_PATH = "AGENTNODES_LLM_CONFIG"
 # Selects an active provider profile from llm.json["llm"]["profiles"].
 # Beats the file's "active_profile" field; CLI --llm-profile beats both.
@@ -141,8 +144,9 @@ class LLMConfig:
     # Wall-clock ceiling for a single LLM request (streaming included).
     # Guards against "slow-trickle" streams that keep httpx's per-read
     # timeout from ever firing while producing no finish_reason. 0/None
-    # disables. Configurable via env AN_AGENT_WALLCLOCK_TIMEOUT (seconds,
-    # default 1800 = 30min).
+    # disables. Configurable via env AGENTNODES_LLM_WALLCLOCK_TIMEOUT
+    # (seconds, default 1800 = 30min)——**批 E-3 改名**，原
+    # AN_AGENT_WALLCLOCK_TIMEOUT 已失效（旧名进 settings 诊断清单）。
     wallclock_timeout_s: float = 1800.0
     max_retries: int = 3                            # total attempts (default 3)
     retry_backoff_s: float = 1.0
@@ -575,13 +579,18 @@ def _env_to_overrides(env: Mapping[str, str]) -> dict[str, Any]:
     Handles only the direct env vars (OPENAI_*). AGENTNODES__LLM__* is
     applied inside the bridge layer; AGENTNODES_LLM_PROFILE is
     retired (no profile concept anymore).
+
+    **批 E-3**：wallclock 变量改为规范名
+    ``AGENTNODES_LLM_WALLCLOCK_TIMEOUT``（原 ``AN_AGENT_WALLCLOCK_TIMEOUT``
+    从未登记过 alias，改名即失效——设了旧名的环境请改新名，
+    `agentnodes config audit-legacy` 能报出来）。
     """
     overrides: dict[str, Any] = {}
     if ENV_BASE_URL in env and env[ENV_BASE_URL]:
         overrides["base_url"] = env[ENV_BASE_URL]
     if ENV_MODEL in env and env[ENV_MODEL]:
         overrides["model"] = env[ENV_MODEL]
-    wc_raw = env.get("AN_AGENT_WALLCLOCK_TIMEOUT", "").strip()
+    wc_raw = env.get("AGENTNODES_LLM_WALLCLOCK_TIMEOUT", "").strip()
     if wc_raw:
         try:
             overrides["wallclock_timeout_s"] = float(wc_raw)

@@ -30,7 +30,8 @@ def _resolve_db_path(db_path: str | None) -> Path:
         p = Path(db_path)
         p.parent.mkdir(parents=True, exist_ok=True)
         return p
-    from agentnodes.core.agent.memory_manager import resolve_session_db_path
+    # **批 E-3**：原路径 agentnodes.core.agent.memory_manager 已删除。
+    from agentnodes.foundation.storage.session_paths import resolve_session_db_path
     return resolve_session_db_path()
 
 
