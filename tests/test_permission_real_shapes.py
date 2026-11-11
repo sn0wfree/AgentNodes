@@ -72,10 +72,6 @@ def test_webfetch_enum_name_metadata_denied(evaluator):
 # ── 缺陷 1（P0）：hard_deny 不匹配裸相对路径 ────────────────────────────
 
 
-@pytest.mark.xfail(
-    strict=True, raises=AssertionError,
-    reason="缺陷 1（asset-value-review §1.2）：`**/.env` 不匹配裸 .env",
-)
 def test_bare_env_denied(evaluator):
     """`read .env`——模型最自然的写法，修复前恰好是唯一被放过的形态。"""
     # 前提（同一 evaluator 实例）：深度形态能拦
@@ -85,10 +81,6 @@ def test_bare_env_denied(evaluator):
     assert getattr(d, "hard", False), "read .env 未走 hard_deny"
 
 
-@pytest.mark.xfail(
-    strict=True, raises=AssertionError,
-    reason="缺陷 1（asset-value-review §1.2）：`**/.env.*` 不匹配裸 .env.local",
-)
 def test_bare_env_local_denied(evaluator):
     d = evaluator.evaluate("read", {"path": ".env.local"})
     assert d.action.value == "deny", f"read .env.local -> {d.action.value}"
@@ -106,10 +98,6 @@ def test_bare_ssh_key_denied_control(evaluator):
     assert getattr(d, "hard", False)
 
 
-@pytest.mark.xfail(
-    strict=True, raises=AssertionError,
-    reason="缺陷 1 同根（asset-value-review §1.2）：`**/.aws/**` 不匹配裸 .aws/credentials",
-)
 def test_bare_aws_credentials_denied(evaluator):
     """与 .env 同根：.ssh 当年手工补了裸规则，.aws/.kube 没补。"""
     d = evaluator.evaluate("read", {"path": ".aws/credentials"})
@@ -120,10 +108,6 @@ def test_bare_aws_credentials_denied(evaluator):
 # ── 缺陷 2：registry 真实工具名 `webfetch` vs 枚举值 `web_fetch` ────────
 
 
-@pytest.mark.xfail(
-    strict=True, raises=AssertionError,
-    reason="缺陷 2（asset-value-review §1.2）：真实工具名 webfetch 不触发 hard_deny",
-)
 def test_webfetch_real_name_metadata_denied(evaluator):
     """registry 里的真实名字是 `webfetch`（见 build_default_registry）。"""
     from agentnodes.kernel.agent.builtin_tools import build_default_registry
@@ -140,10 +124,6 @@ def test_webfetch_real_name_metadata_denied(evaluator):
 # ── 缺陷 3：run_bg_command 不在 Permission 枚举 ─────────────────────────
 
 
-@pytest.mark.xfail(
-    strict=True, raises=AssertionError,
-    reason="缺陷 3（asset-value-review §1.2）：run_bg_command 提权命令不触发 hard_deny",
-)
 def test_run_bg_command_sudo_denied(evaluator):
     """run_bg_command 能起后台进程——恰是最该拦 sudo 的工具。"""
     d = evaluator.evaluate("run_bg_command", {"command": "sudo rm -rf /", "action": "start"})
@@ -153,10 +133,6 @@ def test_run_bg_command_sudo_denied(evaluator):
     assert getattr(d, "hard", False)
 
 
-@pytest.mark.xfail(
-    strict=True, raises=AssertionError,
-    reason="缺陷 3（asset-value-review §1.2）：run_bg_command 读凭据不触发 hard_deny",
-)
 def test_run_bg_command_ssh_key_denied(evaluator):
     d = evaluator.evaluate(
         "run_bg_command", {"command": "cat ~/.ssh/id_rsa", "action": "start"}
@@ -177,10 +153,6 @@ def _make_ctx(tmp_path: Path):
     )
 
 
-@pytest.mark.xfail(
-    strict=True, raises=AssertionError,
-    reason="缺陷 1 E2E（asset-value-review §1.2）：read .env 在真实工具链上被执行",
-)
 def test_e2e_read_bare_env_denied(tmp_path):
     """走 tool.ainvoke（生产调用链）：read .env 必须被拒，不能读出内容。"""
     (tmp_path / ".env").write_text(

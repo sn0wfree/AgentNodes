@@ -286,6 +286,10 @@ D:\tools\python312\python.exe scripts\arch\sync_architecture_diagram.py --write 
   - 测试为什么没抓到：断言用的 target 全是 `/abs/path/.env` 或 `config/.env`，
     **没有一条测裸 `.env`**；也没有一条用 registry 里的真实工具名。
 - **来源**：L2 2026-11-11（`docs/design/asset-value-review-20261111.md` §1）。
+- **修复记录**（2026-11-11）：三个绕过当日已修（`_glob_match` 裸形态回退 +
+  `_TOOL_ALIASES` 归一 + `RUN_BG_COMMAND` 入枚举并镜像 H2 规则），网 =
+  `tests/test_permission_real_shapes.py`（13 条）。R-018 本身不随之退休——
+  它管的是「下次写安全测试怎么做」。
 
 ### 3.9 门禁有效性要**注入违规**验证，不能只看 0 违规
 

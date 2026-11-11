@@ -302,7 +302,14 @@ dispatch(): _cancel_evt.clear()   # ② 清标志
 - 断言前先确认规则**真的能匹配上**这个输入（打印匹配结果，别假设）；
 - 覆盖「枚举名 vs 实际名」的差异。
 
-**当前状态：缺陷未修。** 缺陷 1 是 P0，动手前按 R-014 先给方案。
+**当前状态：已修复（2026-11-11 当日）。** 流程按 R-010：先落
+`tests/test_permission_real_shapes.py`（7 条 strict xfail 钉红）→ 修实现
+→ XPASS 强制摘 marker → 13 passed 全绿，全量 7167 passed / 0 failed。
+修法与一处评估错误（`.ssh` 其实当年已手补裸规则 `schema.py:112`，
+逐条手补补不完——通用修法在 `_glob_match`）的更正见
+`docs/design/asset-value-review-20261111.md` §7。
+相邻未修（记录）：shell 整串 target 对无斜杠裸命令（`cat .env`）仍不拦；
+`run_bg_command` 在 L2 预设仍 ASK（shell 是 ALLOW）。
 
 ---
 

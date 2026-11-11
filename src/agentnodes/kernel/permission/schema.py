@@ -53,6 +53,10 @@ class Permission(str, Enum):
 
     # ── R3 execute side-effects (ask every call default) ──────
     RUN_COMMAND = "shell"
+    # 后台任务管理（bg_tools.py）：action=start 时执行长命令——与 shell
+    # 同属 R3 执行面。2026-11-11 前不在枚举里，_extract_target 拿不到
+    # 命令串，H2 提权规则对它完全失效（asset-value-review §1.2 缺陷 3）。
+    RUN_BG_COMMAND = "run_bg_command"
 
     # ── R4 destructive (deny by default) ───────────────────────
     DELETE_FILE = "delete_file"
@@ -101,12 +105,16 @@ DEFAULT_HARD_DENY: tuple[HardDenyRule, ...] = (
     HardDenyRule("*", ".git/hooks/**", "git hooks are agent-writable code paths"),
     HardDenyRule("*", ".mcp.json", "MCP config is agent-writable code paths"),
     # ── H2 · 禁止提权 ────────────────────────────────────────────────
+    # （run_bg_command 与 shell 同属执行面，提权规则必须镜像——缺陷 3：
+    #   旧实现 H2 只对 "shell" 生效，run_bg_command 起后台 sudo 畅通。）
     HardDenyRule("shell", "sudo", "privilege escalation"),
     HardDenyRule("shell", "sudo *", "privilege escalation"),
     HardDenyRule("shell", "su", "privilege escalation"),
     HardDenyRule("shell", "su *", "privilege escalation"),
     HardDenyRule("shell", "doas*", "privilege escalation"),
     HardDenyRule("shell", "pkexec*", "privilege escalation"),
+    *(HardDenyRule(Permission.RUN_BG_COMMAND.value, p, "privilege escalation")
+      for p in ("sudo", "sudo *", "su", "su *", "doas*", "pkexec*")),
     # ── H3 · 凭据与云 metadata ───────────────────────────────────────
     HardDenyRule("*", "**/.ssh/**", "credential paths"),
     HardDenyRule("*", ".ssh/**", "credential paths"),

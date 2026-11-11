@@ -36,6 +36,14 @@ from .schema import (
 
 logger = logging.getLogger(__name__)
 
+#: registry 真实工具名 -> 枚举规范名（缺陷 2，2026-11-11）。
+#: 事实源：``build_default_registry()`` 的工具名 vs ``Permission`` 枚举值。
+#: 目前只有 web_fetch 一处分歧；新增工具时**两边名字必须对齐**，
+#: 分歧就登记到这里（R-018：安全判定必须认真实调用形态）。
+_TOOL_ALIASES: dict[str, str] = {
+    "webfetch": Permission.WEB_FETCH.value,
+}
+
 
 class PermissionDeniedError(Exception):
     """Raised when the evaluator returns ``action == DENY`` or the
@@ -161,6 +169,11 @@ class PermissionEvaluator:
         ``args`` may be empty when the caller only knows the tool
         name (e.g. UI preflight before a user submits).
         """
+        # registry 真实工具名 -> 枚举规范名（2026-11-11，缺陷 2）：
+        # Permission.WEB_FETCH.value 是 "web_fetch"，registry 里的真实名字
+        # 是 "webfetch"——不归一则云 metadata 的 hard_deny 对真实名不生效。
+        # 枚举里只有这一个拼法分歧（WEB_SEARCH = "websearch" 恰好一致）。
+        tool_name = _TOOL_ALIASES.get(tool_name, tool_name)
         args = args or {}
         target = self._extract_target(tool_name, args)
 
@@ -313,7 +326,11 @@ class PermissionEvaluator:
             Permission.READ_FILE.value,
         }:
             return str(args.get("path") or args.get("file_path") or "") or tool_name
-        if tool_name == Permission.RUN_COMMAND.value:
+        if tool_name in (Permission.RUN_COMMAND.value, Permission.RUN_BG_COMMAND.value):
+            # run_bg_command 与 shell 同为执行面（缺陷 3）：旧实现不认识它，
+            # target 落回工具名——H3 的 `*` 路径规则与 H2 提权规则全部失效。
+            # command 仅 action=start 时有意义；status/wait/log/kill 无命令，
+            # target 落回工具名（无命令 = 无路径/提权可判）。
             cmd = str(args.get("command") or "").strip()
             return cmd or tool_name
         # web_fetch：target = URL（批次 6）——H3 的云 metadata hard deny
@@ -346,6 +363,12 @@ def _glob_match(pattern: str, target: str) -> bool:
     segment including slashes. ``fnmatch`` already treats ``*`` as
     any-non-slash run, so we only need to translate ``**`` into
     ``*`` after collapsing separators.
+
+    **裸相对形态必须同被匹配**（2026-11-11，缺陷 1）：``**/.env`` 替换后
+    成为 ``*/.env``，仍要求一个 ``/``——于是 ``read .env``（模型最自然的
+    写法）恰好是唯一被放过的形态，实测读出密钥。这里在主匹配失败时回退
+    匹配「去掉 ``*/`` 前缀」的形态。只影响 hard_deny 与规则的 ``**/``
+    模式（MODE_PRESETS 全是 ``"*"``），方向是拒得更宽 = fail-closed。
     """
     if not pattern:
         return True
@@ -353,4 +376,9 @@ def _glob_match(pattern: str, target: str) -> bool:
     # For the modest rules our users actually write we don't need
     # full globstar; keep it simple.
     p = pattern.replace("**", "*")
-    return fnmatch.fnmatchcase(target or "", p)
+    t = target or ""
+    if fnmatch.fnmatchcase(t, p):
+        return True
+    if p.startswith("*/") and fnmatch.fnmatchcase(t, p[2:]):
+        return True
+    return False

@@ -231,3 +231,36 @@ PATTERN_BRAND_DIR = re.compile(
 
 3. **代码量与收益要对照**：1150 行 vs 246 行是个必须回答的问题。
    如果答案是「为了可测试性」，那要说清测出了什么 246 行版本测不出的东西。
+
+---
+
+## §7 修复记录（2026-11-11 当日回填）
+
+§1.2 的三个缺陷 + `.aws/.kube` 同根问题**已全部修复**。流程按 R-010：
+先落 `tests/test_permission_real_shapes.py`（13 条，7 条 strict xfail 钉红），
+再修实现，XPASS 强制摘 marker。
+
+| 缺陷 | 修法 | 落点 |
+|---|---|---|
+| 1（P0）裸相对路径 | `_glob_match` 主匹配失败且模式以 `*/` 开头时，回退匹配去前缀形态 | `evaluator.py` |
+| 1 同根 | `.aws/credentials` / `.kube/config` 裸形态随之修复（通用修，非逐条手补） | 同上 |
+| 2 `webfetch` 名字 | `evaluate()` 入口 `_TOOL_ALIASES = {"webfetch": "web_fetch"}` 归一 | `evaluator.py` |
+| 3 `run_bg_command` | ① 枚举加 `RUN_BG_COMMAND`；② `_extract_target` 命令分支纳入；③ H2 提权 6 条规则为 `run_bg_command` 镜像 | `schema.py` + `evaluator.py` |
+
+**修正一处评估错误**：§1.2 原文说 `**/.ssh/**` 对裸 `.ssh/id_rsa` 也有洞——**不准确**。
+`schema.py:112` 早有裸形态规则 `.ssh/**`（当年手工补的），ssh 一直是拦的。
+这条恰好证明逐条手补补不完（.ssh 补了，.env/.aws/.kube 漏了），通用修法在 `_glob_match`。
+
+**修复后实测**：
+
+- 新测试文件：**13 passed / 0 failed**（4 条前提 + 7 条原 xfail 转正 + 2 条 E2E 回归网）
+- 全量：**7167 passed / 114 skipped / 0 failed**（94.8s，`-n 12`；净增 13 条）
+- batch_gate：**ALL GREEN**（7281 collected ≥ anchor 7178）
+- 架构图：kernel 40.3k → 40.4k（+36 行），`sync_architecture_diagram.py --write` 已回写
+
+**未修的相邻问题（记录，不在本批）**：
+
+- `shell` 整串 target 对无斜杠的裸命令（`cat .env`）仍不拦——需要子串/分词语义，
+  是另一个设计决策（H2 的 `sudo *` 形态已覆盖首词提权）；
+- `run_bg_command` 在 L2 预设里仍走 ASK（shell 是 ALLOW）——预设行为变更，超出安全修复范围；
+- `check_path_literals` 的 `.quantnodes/probe` 盲区（§2.3）——待补正则。
