@@ -2,21 +2,42 @@
 
 > **性质**：**讨论稿**，含待拍板的开放问题与备选方案。非实施规格。
 > **上位调研**：`system-one-survey-20261109.md`（事实层：Kev 接口、
-> 本项目决策点普查、四个结构性缺口）。
+> 本项目决策点普查、**触达面实测、token 实测、成本盈亏平衡实测**）。
 > **约束来源**：`framework-and-principles-20261105.md`（理念四/五/七）、
 > `layered-skeleton-design-20261103.md`（L1–L4 归属与方向规则）。
 > **关联**：`unified-loop-adoption-eval-20261107.md`（decider 协议来源）、
 > `context-hub-discussion.md`（投影器可能复用其仲裁阶段）。
 
+> ⚠️ **v2 修订（2026-11-10）**：初版有三处判断被实测推翻，已在本文更正：
+> ① 成本论据不成立（§0.1）；② 8k 不是普遍障碍（§5.1）；
+> ③ 多个「槽位」实际零触达（§4 重排）。**立项理由已改写。**
+
 ---
 
 ## §0 一句话结论
 
-**不要把 Kev 当「更便宜的 LLM」接，把它当一个新层接。**
+**不要把 Kev 当「更便宜的 LLM」接，把它当「补齐概率化决策能力」的层接。**
 
 先补「模型分层」这根轴（`roles` 配置 + 独立客户端家族 + batch-first 端口），
-再在两个低风险槽位做影子校准，用「错误预算下可自动化比例」证明自己，
+再在**真实有触达**的槽位做影子校准，用「错误预算下可自动化比例」证明自己，
 最后才推开。任何跳过「影子 + 校准曲线」直接采纳的做法都应否决。
+
+### 0.1 立项理由的更正（重要）
+
+| 初版理由 | 实测结论 | 处置 |
+|---|---|---|
+| 降本（文章称 444×） | 单次决策仅省 **$0.00115**；专用 GPU 盈亏平衡需 **11,599 次/天**；真实触达面远低于此 | ❌ **删除该论据** |
+| 8k 上下文是硬墙 | evaluator 实际输入仅 **1–4k token**（`_summary_truncate` 默认 300 字符/节点）；唯一真超的是 guardrails 扫 30k 工具结果 | ⚠️ 降级为防御性措施 |
+| critic / study_reviewer 是热点 | **37 个 preset 零编排**；只有 prompt 文件与插件声明 | ❌ 移出范围 |
+| 低延迟 | 真实（单次前向 vs 3 轮 ReAct），但决策不在用户等待路径上 | ⚠️ 次要收益 |
+
+**站得住的理由只有一条，但足够硬**：现有 LLM 路径**拿不到概率**
+（`logprobs` / `response_format` 在 `src/` 全仓零实现）。没有概率就无法做
+「置信度不足 → 转人工 / 转大模型」，这是**能力缺口，不是成本优化**。
+
+附带价值：让 `critic` / `risk_controller` / `study_reviewer` 那些
+**声明了却无人消费**的 verdict 第一次真正可被消费（调研 §3.1.1）。
+
 
 ---
 
@@ -154,29 +175,33 @@ class DecisionClient(Protocol):
 
 ---
 
-## §4 槽位选择（按收益 ÷ 风险排序）
+## §4 槽位选择（按「真实触达 × 能力缺口 ÷ 风险」排序）
 
-只列**值得做**的。不适用槽位见调研 §5。
+**v2 重排**：初版把「代码里存在」当成「运行时在用」，排序偏乐观。
+下表新增**触达面**列，依据调研 §3.1.1 的逐项核实。
 
-| 优先级 | 位置 | 原语 | 收益 | 风险 | 备注 |
-|---|---|---|---|---|---|
-| **P0** | `kernel/workflow/orchestrate_guard.py:81` `looks_like_question` | `noul` | 现在是正则尾匹配；判错 → `service.py:969` 重跑一整轮 LLM（贵） | **极低** | 正则保留为 fallback；纯判断，无副作用 |
-| **P0** | `kernel/evolution/holdout.py:216` `classify_intent` | `choice`(5) | 关键词表 → 语义分类 | **极低**（技术上） | 离线批处理，错也只影响抽样权重。**但见 R4**：签名含 intent，换分类器会让历史签名对不上 → **实际排期推迟到签名升版**（Q6） |
-| **P1** | `kernel/workflow/node_types.py:432` `_dispatch_evaluator` | `choice`(3) + `score` | **最大单点收益**：把 6 轮 ReAct 压成一次前向 | **中** | Kev 不能读文件 → 证据收集仍走工具，只把「判断」下沉；输入用 `_upstream_summary(ctx)`（:298） |
-| **P1** | `templates/.prompts/{critic,risk_controller,backtest_diagnostics,study_reviewer}.md` 的枚举字段 | `choice` / `score` | 现在靠 prompt 写「必须返回纯 JSON」+ 事后枚举校验；但 critic / study_reviewer 的 verdict **代码里根本没读回方**，risk_controller 更是 **prompt 产出 `risk_passed` 而校验器校验 `verdict`**（`quant_validators.py:60` 恒 no-op） | **低** | 原语化后字段即契约，不可能漂移；同时暴露「声明了但没人用」的字段 |
-| **P2** | `apps/goal/context.py:83` 判据覆盖 | N × `noul` **批量** | 一次请求问 N 个「这条证据是否满足判据 X」 | **中** | **batch 设计的最佳兑现点**；不得作为完成门（C1） |
-| **P2** | `kernel/agent/guardrails.py:99` 注入检测 | `noul`（仅升级） | 抓正则漏掉的改写 | **中** | **只能 escalate，不能 allow**（C3） |
+| 优先级 | 位置 | 原语 | 真实触达 | 收益类型 | 风险 | 备注 |
+|---|---|---|---|---|---|---|
+| **P0** | `kernel/workflow/orchestrate_guard.py:81` `looks_like_question` | `noul` | **每次 DAG session 收尾**（`service.py:999-1003`） | 概率 + 减少误重跑 | **极低** | 正则保留为 fallback；纯判断无副作用；输入 ≤6.7k token（实测） |
+| **P1** | `kernel/workflow/node_types.py:432` `_dispatch_evaluator` | `choice`(3) + `score` | **窄**：仅 2 个内置 plan-execute 模板，只经 API 路由 | 概率 + 消灭 3 轮 ReAct | **中** | 输入实测 1–4k token（**不撞 8k**）；Kev 不能读文件 → 证据仍走工具，只下沉「判断」 |
+| **P1** | `templates/.prompts/risk_controller.md:60-64` | `choice` + `score` | **广但无反馈**：13/37 preset 使用，但**零 preset 配置 `condition`** | **让 verdict 第一次可被消费** | **低** | 先修 `quant_validators.py:64` 的字段漂移，再谈原语化 |
+| **P2** | `apps/goal/context.py:83` 判据覆盖 | N × `noul` **批量** | goal 续跑路径（`context_injector.py:234`） | 概率 + batch 兑现 | **中** | 实测 40 判据 + 40 证据 = 4.7k token，**宽裕**；不得作为完成门（C1） |
+| **P2** | `kernel/agent/guardrails.py:99` 注入检测 | `noul`（仅升级） | 每次用户输入 + 每个工具结果 | 抓正则漏掉的改写 | **中** | **唯一真会超 8k 的槽位**（30k 工具结果 = 10k token）→ 只扫首尾窗口；只能 escalate（C3） |
+| **❌ 移出** | `critic` / `study_reviewer` | — | **零编排**（37 preset 零出现） | — | — | 接进去也没有输入。先回答「要不要这个角色」 |
+| **❌ 推迟** | `kernel/evolution/holdout.py:216` `classify_intent` | `choice`(5) | 离线 | 语义分类 | — | 签名含 intent（`holdout.py:233`），换分类器让历史签名失效 → 需先升 `TASK_SIGNATURE_VERSION`（R4/Q6） |
 
-### 4.1 为什么 P0 选 `looks_like_question`
+### 4.1 为什么 P0 仍是 `looks_like_question`
 
-它是教科书式的 System One 槽位：
+它是唯一同时满足「真实高频触达 + 输入天然小 + 有廉价可观测的后果」的槽位：
 
-- 输入是一小段文本（`final_answer` 的尾部），**天然在 8k 以内**；
+- 每次 DAG session 收尾都过（`service.py:999-1003`），**不是罕见路径**；
+- 输入是最终答复，实测 20k 字符 = 6.7k token，**在 8k 内**；
 - 输出是布尔，不需要任何生成；
-- 判定错误有**明确、廉价、可观测的后果**（多跑一轮 LLM），所以
-  A/B 对比容易量化；
+- 判错 → 多跑一整轮 LLM，代价明确且可度量；
 - 现有实现是正则（`_QUESTION_CLOSE` / `_WORD_TAIL` / `_WH_TAIL`，
-  `orchestrate_guard.py:60-71`），保留为 fallback 后**风险接近零**。
+  `orchestrate_guard.py:46-71`），保留为 fallback 后**风险接近零**；
+- 已有 26 条参数化测试（`tests/test_orchestrate_guard.py:18-48`）可直接
+  当作**现成的标注集**用于影子期冷启动——这是它额外的优势。
 
 ### 4.2 为什么 P1 的 evaluator 不能一步到位
 
@@ -194,7 +219,7 @@ class DecisionClient(Protocol):
 
 ## §5 三个硬约束的应对
 
-### 5.1 上下文长度（最可能撞墙）
+### 5.1 上下文长度（**v2 更正：不是普遍障碍**）
 
 | 事实 | 应对 |
 |---|---|
@@ -202,7 +227,17 @@ class DecisionClient(Protocol):
 | 超出 server 上限 **422 拒绝**（不静默截断） | 同上；**禁止**依赖 `KEV_TRUNCATE_STATES=1`（静默截断会让判断基于残缺输入） |
 | 27B 到 65,536 | 若未来上 27B，预算可放宽，但仍是有限值 |
 
-**投影器设计（待评审）**：
+**实测（调研 §5）推翻了「普遍撞墙」的判断**：
+
+| 槽位 | 实测 token | 结论 |
+|---|---|---|
+| evaluator（默认截断，5 节点） | 1,137 | 宽裕 |
+| evaluator（默认截断，20 节点） | 3,772 | 宽裕 |
+| `looks_like_question`（20k 字符答复） | 6,666 | 够 |
+| goal 判据批量（40 判据 + 40 证据） | 4,766 | 宽裕 |
+| **guardrails（30k 工具结果）** | **10,000** | **唯一真超** |
+
+**投影器从「必需」降级为「防御性」**：
 
 ```python
 class StateProjector(Protocol):
@@ -211,9 +246,12 @@ class StateProjector(Protocol):
 
 - 实现放在 L3 `kernel/agent/decision/projectors/`，**每槽位一个**——
   投影是「这个判断需要看到什么」的业务语义，不能做成通用压缩。
+- **不是批次 B 的前置依赖**——首批槽位输入本来就装得下。
 - 投影结果必须**可解释**：落 `decision.requested` 事件时带
   `projected_tokens` / `dropped_sections`，否则出问题无法归因。
 - token 估算复用现有 `foundation/utils/token_utils.py`，不引新依赖。
+  **注意它是 3 chars/token 的粗略估算**（`token_utils.py:12`），中文场景
+  实际 token 数会更高，硬校验要留安全余量（建议按 6k 而非 8k 设阈）。
 
 ### 5.2 frozen `LLMConfig` 的 per-call 覆盖 bug
 
@@ -241,29 +279,40 @@ if cfg and model:
 
 | # | 风险 | 影响 | 缓解 |
 |---|---|---|---|
-| **R1** | 8k 上限导致真实负载大面积 422 | 采纳率远低于预期 | 投影器 + 硬校验 + 影子期先测「超限比例」这个指标 |
+| **R1** | ~~8k 上限导致大面积 422~~ | **实测不成立**（调研 §5）：除 guardrails 扫 30k 工具结果外，各槽位输入 1–5k | 保留硬校验作防御；guardrails 只扫首尾窗口 |
 | **R2** | 判断错误被静默吞掉 | 错误动作无法归因 | 每次 `decision.resolved` 落盘：state 摘要、问题、分布、采纳/降级、最终结果 |
 | **R3** | 置信度被误当准确率 | 阈值设错 | 文档与事件字段都明确标注「confidence 是分布形状函数，不是实测准确率」（README 原文口径）；阈值必须在本项目数据上校准 |
-| **R4** | `classify_intent` 改动破坏 task_signature 稳定性 | RSI 的历史签名对不上，holdout 抽样错乱 | **这是本方案最隐蔽的风险**。`holdout.py:233` 的签名含 intent；换分类器会让同一任务算出新签名。应对：签名版本号 `TASK_SIGNATURE_VERSION` 升版 + 双写过渡期 |
-| **R5** | 多一个常驻服务 | 部署复杂度上升 | 未配置不构造；文档明确「可选加速层，非必需依赖」 |
+| **R4** | `classify_intent` 改动破坏 task_signature 稳定性 | RSI 的历史签名对不上，holdout 抽样错乱 | **本方案最隐蔽的风险**。`holdout.py:233` 的签名含 intent；换分类器会让同一任务算出新签名。应对：`TASK_SIGNATURE_VERSION` 升版 + 双写过渡期 |
+| **R5** | 多一个常驻服务 | 部署复杂度上升 | 未配置不构造；文档明确「可选能力层，非必需依赖」 |
 | **R6** | 27B 才 65k，小模型 8k | 误以为「换个模型就能吃长上下文」 | 容量规划以 model card 的 validated context 为准，不用文章数字 |
 | **R7** | 微调数据来自运行期决策日志 | 数据回流污染 / 自我强化偏差 | 微调（批次 G）**推迟**，且训练集必须含「Tier 2 反驳 Tier 1」的负例 |
+| **R8** | **成本论据不成立**（调研 §6） | 若以「降本」立项，评审阶段就会被算术否掉 | 立项理由改为「补齐概率化决策能力」。**不要在方案里写 ROI** |
+| **R9** | **影子期工作量被低估**（调研 §4.1） | 无比较器 / 无决策事件 / 无分桶，四件套全要新建 | 单独设为批次 B，不与其他批次混做 |
+| **R10** | **token 估算偏乐观** | `token_utils` 是 3 chars/token，中文实际更高 | 硬校验按 **6k** 设阈而非 8k |
 
 ---
 
-## §7 落地批次
+## §7 落地批次（v2 重排）
 
 沿用「每批独立可回滚、零行为变化优先」的既有写法。
 
 | 批次 | 内容 | 行为变化 | 回滚方式 |
 |---|---|---|---|
-| **A** | L4 `decision/` 端口 + `systemone.py` + `DecisionHub` + 事件 `decision.requested` / `decision.resolved` / `decision.fallback` | **零**（未配置不构造） | 删目录 + 回退 `layer_matrix.py` 登记 |
-| **B** | 影子模式：`looks_like_question` 双跑，只记录 agreement，不采纳 | 零（只多事件） | 关配置开关 |
-| **C** | 校准 + 首个真采纳：`looks_like_question` → `noul`，阈值 + 正则 fallback | 有 | 开关回正则 |
-| **D** | evaluator verdict → `choice` + `score`，AgentLoop 降级为 fallback | 有，收益最大 | 开关回 AgentLoop |
-| **E** | 角色输出原语化（critic / risk_controller / study_reviewer / backtest_diagnostics） | 有 | 逐角色开关 |
-| **F** | goal 判据批量 `noul` | 有 | 开关 |
-| **G**（推迟） | decision log → 微调 Kev adapter | — | 不部署即无影响 |
+| **A** | L4 `decision/` 端口 + `systemone.py` + `DecisionHub` | **零**（未配置不构造） | 删目录 + 回退 `layer_matrix.py` 登记 |
+| **B** | **影子基础设施**（独立批次，R9）：决策事件 schema + 双跑包装 + 比较器 + 落盘 | 零（只多事件） | 关开关 |
+| **C** | 影子期：`looks_like_question` 双跑，只记录 agreement | 零 | 关开关 |
+| **D** | 校准 + 首个真采纳：`looks_like_question` → `noul`，阈值 + 正则 fallback | 有 | 开关回正则 |
+| **E** | evaluator verdict → `choice` + `score`，AgentLoop 降级为 fallback | 有 | 开关回 AgentLoop |
+| **F** | `risk_controller` 字段漂移修复 + 原语化 | 有 | 逐角色开关 |
+| **G** | goal 判据批量 `noul` | 有 | 开关 |
+| **H**（推迟） | decision log → 微调 Kev adapter | — | 不部署即无影响 |
+
+**关键变化**：
+- **影子基础设施单独成批（B）**——它不是「加个开关」，要新建决策事件
+  schema、双跑包装、比较器、落盘四件套。混在别批里会无法归因。
+- **`risk_controller` 从 E 拆出来单独一批（F）**，因为它需要**先修 bug**
+  （`quant_validators.py:64` 校验了 prompt 从不产出的字段）。
+- **critic / study_reviewer 移出**——37 preset 零编排，接进去没有输入。
 
 ### 7.1 批次 A 的最小验收
 
@@ -272,7 +321,7 @@ if cfg and model:
 - `scripts/arch/layer_matrix.py` 新增条目，门禁通过；
 - **不引入 torch / mlx 依赖**（`pyproject.toml` 的 `dependencies` 不变）。
 
-### 7.2 批次 B/C 的验收门（整套方案的关键，不能省）
+### 7.2 批次 C/D 的验收门（整套方案的关键，不能省）
 
 影子期把每条 `decision.resolved` 事件落盘，回放成标注集，计算：
 
@@ -283,14 +332,22 @@ if cfg and model:
 这是 Kev README 用的同一条曲线（Jev 0.70 / Kev-4B 0.52–0.69，新来源数据），
 但**必须在本项目自己的分布上重算**。
 
+**冷启动标注集已经有了**：`tests/test_orchestrate_guard.py:18-48` 的
+26 条参数化用例（16 正 + 10 负）可直接当作初始标注集，
+正则实现即为初始 baseline 的预测器。
+
 | 结果 | 决策 |
 |---|---|
-| 采纳率 ≥ 目标 且 错误率 ≤ 预算 | 进批次 C 真采纳 |
+| 采纳率 ≥ 目标 且 错误率 ≤ 预算 | 进批次 D 真采纳 |
 | 采纳率低于目标 | **只保留影子**，不上线采纳 |
 | 超限（422）比例过高 | 先补投影器，重跑影子 |
 
 > 这条门的意义：它回答「能替掉多少判断」，而不是「准确率多少」。
 > 后者在类别不均衡时会给出误导性的乐观数字。
+>
+> **同时必须记录成本**：即使采纳率高，也要用调研 §6 的模型复核
+> 「省的 LLM 调用费 vs 新增的运维成本」，避免出现「技术上成功、
+> 经济上荒谬」的结论。
 
 ---
 
@@ -318,7 +375,7 @@ if cfg and model:
 
 ---
 
-## §10 待拍板的开放问题（汇总）
+## §10 待拍板的开放问题（汇总 · v2）
 
 | # | 问题 | 选项 | 建议 |
 |---|---|---|---|
@@ -326,7 +383,22 @@ if cfg and model:
 | Q2 | 阈值粒度 | 全局 / 每槽位 | **每槽位** |
 | Q3 | 未配置行为 | 不构造 / 构造但恒降级 | **不构造** |
 | Q4 | 是否允许远程 Kev | 允许 / 仅 localhost | **允许但需显式 opt-in** |
-| Q5 | P1 evaluator 是否同期做 | 与 P0 同批 / 单独一批 | **单独一批**（收益最大但风险也最大，不要和 P0 混） |
+| Q5 | evaluator 是否同期做 | 与 P0 同批 / 单独一批 | **单独一批**（批次 E，不与 P0 混） |
 | Q6 | `classify_intent` 是否纳入 | 纳入 / 推迟到签名升版后 | **推迟**——R4 的连锁影响需要单独设计 |
-| Q7 | 事件命名 | `decision.*` / `systemone.*` | **`decision.*`**（不绑厂商；将来换模型不用改事件名） |
-| Q8 | 是否现在就定模型档位 | 0.8B / 4B / 9B / 27B | **影子期用 4B**（README 推荐的起步档）；按影子数据再决定 |
+| Q7 | 事件命名 | `decision.*` / `systemone.*` | **`decision.*`**（不绑厂商） |
+| Q8 | 模型档位 | 0.8B / 4B / 9B / 27B | **影子期用 4B**（README 推荐起步档） |
+| **Q9** | **本方案是否值得做**（v2 新增，最重要） | 全做 / 只做 A+B 探路 / 不做 | **只做 A+B 探路**。理由：成本论据已否（§0.1），唯一硬理由是「补齐概率能力」，而这需要先有影子数据才能证明价值。**A+B 是低成本探路，C 之后再按数据决定是否继续** |
+| **Q10** | **`risk_controller` 的字段漂移怎么修**（v2 新增） | 改校验器 / 改 prompt / 两者都改 | **改校验器**（`quant_validators.py:64` 校验 `risk_passed`），因为 13 个 preset 依赖现有 prompt 输出；但这属于**独立 bug fix**，不应混在本方案里 |
+| **Q11** | **critic / study_reviewer 要不要留**（v2 新增） | 保留 / 删除 / 待定 | **待定，但不阻塞本方案**。它们零编排、零消费者——这是「减法」议题，不是 System One 议题 |
+| **Q12** | **是否需要分桶放量**（v2 新增） | 需要 / 不需要 | **不需要**。真实触达量低（远低于 1.16 万次/天），全量开关即可；百分比放量是给高流量场景用的 |
+
+### 10.1 如果只能回答一个问题
+
+**Q9**。v2 调研的两条实测（成本不成立、8k 不是墙）已经削弱了本方案
+的大部分「优化」色彩。它现在是一个**能力补齐型提案**，而非效率提案。
+
+因此建议的默认答案是：**做 A + B（端口 + 影子基础设施），
+然后停下来看数据**。这两批的行为变化为零、可完全回滚，
+且产出的决策日志无论后续是否采纳 Kev 都有独立价值
+（它是本项目第一个「带概率的决策日志」）。
+
