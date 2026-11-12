@@ -98,6 +98,7 @@ class ReActSkeleton:
         finalize: Callable[[Any, Any], Any] | None = None,
         prepare: Callable[[SkeletonRunSpec], tuple[Any, Any]] | None = None,
         on_iteration_start: Callable[[Any, int], None] | None = None,
+        event_source: Callable[[Any], tuple[Any, Any]] | None = None,
     ) -> None:
         """
         :param reasoner: ``StepHandler``——REASON 位（compaction + LLM 调用）；
@@ -112,6 +113,11 @@ class ReActSkeleton:
         :param prepare: 运行准备，收 spec，返回 ``(state, result)``；
             None = 骨架自建空 state + SimpleResult
         :param on_iteration_start: 每轮开头动作（wrap-up nudge 等）
+        :param event_source: 可选 ``() -> loop``——统一引擎 U3 的
+            **双通道流式**：run_stream 开始时经它取 loop，把 loop 侧
+            ``_emit`` 的事件（text_delta / thinking_delta 等）压进本
+            生成器的 pending 队列，步骤间隙 drain 并 yield。None = 不
+            转发（旧行为）。适配见 ``AgentLoop._make_event_bridge``。
         """
         self._reasoner = reasoner
         self._actor = actor
@@ -120,7 +126,46 @@ class ReActSkeleton:
         self._finalize = finalize
         self._prepare = prepare
         self._on_iteration_start = on_iteration_start
+        self._event_source = event_source
         self._last_result: Any = None
+
+    # ── 双通道流式（U3）：loop 侧事件 → run_stream ─────────────────
+
+    def _attach_event_source(self, state: Any) -> None:
+        """调 event_source(loop) 拿 pending 队列，挂到 state 上。
+
+        ``event_source(loop) -> (pending: list[dict], detach: callable)``
+        ——适配器把 loop 的 ``_on_event`` 临时包一层（原回调照常执行），
+        事件同时压进 pending；run_stream 在步骤间隙 drain 并 yield。
+        纯内存、无锁：单事件循环内生产（步骤内同步回调）与消费
+        （步骤间 await 点）交替，无并发写。
+        """
+        if self._event_source is None:
+            return
+        try:
+            loop = self._event_source()  # 零参：适配器闭包持有 loop
+            pending, detach = loop._make_event_bridge()
+            state._event_pending = pending
+            state._event_detach = detach
+        except Exception:  # noqa: BLE001 — 转发是增强，失败不阻断循环
+            logger.debug("event_source attach failed", exc_info=True)
+
+    def _detach_event_source(self, state: Any) -> None:
+        detach = getattr(state, "_event_detach", None)
+        if detach is not None:
+            try:
+                detach()
+            except Exception:  # noqa: BLE001
+                logger.debug("event_source detach failed", exc_info=True)
+            state._event_detach = None
+
+    def _drain_pending(self, state: Any) -> list[dict[str, Any]]:
+        pending = getattr(state, "_event_pending", None)
+        if not pending:
+            return []
+        out = list(pending)
+        pending.clear()
+        return out
 
     # ── 闸位判定 ─────────────────────────────────────────────────────
 
@@ -154,6 +199,7 @@ class ReActSkeleton:
         self, spec: SkeletonRunSpec
     ) -> AsyncIterator[dict[str, Any]]:
         state, result = self._prepare_state(spec)
+        self._attach_event_source(state)
         await self._fire("before_run", state)
 
         try:
@@ -166,6 +212,8 @@ class ReActSkeleton:
 
                 # ── PRECHECK（上限/预算/熔断等进入 ACT 前的闸）──
                 decision, reason = await self._run_gate("precheck", state)
+                for ev in self._drain_pending(state):
+                    yield ev
                 if decision is Decision.STOP:
                     state.stop_reason = reason or "precheck"
                     result.stop_reason = state.stop_reason
@@ -180,6 +228,8 @@ class ReActSkeleton:
 
                 # ── REASON（compaction + inbox + LLM 调用）──
                 r = await self._maybe_handle(self._reasoner, spec, state)
+                for ev in self._drain_pending(state):
+                    yield ev
                 if not r.success:
                     result.error = r.error
                     state.stop_reason = "error"
@@ -251,6 +301,8 @@ class ReActSkeleton:
                 decision, reason = await self._run_gate(
                     "after_act", state, payload=r.output
                 )
+                for ev in self._drain_pending(state):
+                    yield ev
                 if decision is Decision.EXIT:
                     # **不覆盖 finished_reason**（批次 12 S1）：approval gate
                     # 已写好精确语义（user_rejected / approval_timeout_rejected）；
@@ -293,12 +345,17 @@ class ReActSkeleton:
             yield {"type": "error", "message": str(exc)}
 
         # ── FINALIZE ──
+        for ev in self._drain_pending(state):
+            yield ev
         if self._finalize is not None:
             rv = self._finalize(state, result)
             if hasattr(rv, "__await__"):
                 await rv
+        for ev in self._drain_pending(state):
+            yield ev
         self._last_result = result
 
+        self._detach_event_source(state)
         await self._fire("after_run", state, result)
         yield {
             "type": "done",

@@ -951,6 +951,8 @@ class AgentLoop(
             # 批次 13 S3-a：wrap_up_nudge 原内联在 legacy 循环体，
             # 翻默认后丢失——收进骨架的 on_iteration_start 钩子。
             on_iteration_start=LoopIterationStart(self),
+            # 统一引擎 U3：双通道流式——loop 侧事件桥进 run_stream
+            event_source=lambda: self,
         )
         spec = SkeletonRunSpec(
             task=task,
@@ -1336,6 +1338,32 @@ class AgentLoop(
         批次 13 S3-b1：实现搬到 ``agent_telemetry.trace``（全仓 32 处按
         方法名引用，故名字保留在此）。"""
         _tel.trace(self, entry)
+
+    def _make_event_bridge(self) -> tuple[list[dict[str, Any]], Callable[[], None]]:
+        """统一引擎 U3：事件桥——把 ``_emit`` 的事件同时压进一个列表。
+
+        骨架 ``run_stream`` 经 ``event_source`` 拿到 ``(pending, detach)``：
+        桥接期间 loop 侧所有 ``_emit``（text_delta / thinking_delta /
+        llm_usage 等）**原回调照常执行**（chat SSE 不受影响），同时把
+        ``(type, payload)`` 压进 pending；骨架在步骤间隙 drain 并 yield。
+        detach 恢复原回调。零锁：单事件循环内生产（同步回调）与消费
+        （骨架 await 点）交替。
+        """
+        pending: list[dict[str, Any]] = []
+        original = self._on_event
+
+        def _bridge(kind: str, payload: dict | None = None, *a: Any, **kw: Any) -> Any:
+            pending.append({"type": kind, "payload": payload or {}})
+            if original is not None:
+                return original(kind, payload, *a, **kw)
+            return None
+
+        self._on_event = _bridge
+
+        def _detach() -> None:
+            self._on_event = original
+
+        return pending, _detach
 
     def _trace_llm_request(
         self,

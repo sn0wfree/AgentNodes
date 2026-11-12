@@ -157,7 +157,7 @@ E3（发射所有权迁进 FINALIZE）**U6 前不可行**（闸与 legacy 共享
 |---|---|---|---|---|
 | **U1** | 出口网（§3.2 矩阵 9 出口 × 6 断言：`trace_path` 非空 / trace 已关 / `loop_end`·`iter_end`·`after_run` 各恰一次 / done 语义正确）+ after_act EXIT→break + `_ending_emitted` 幂等 + precheck EXIT 分支删除 + 对偶测试转绝对值 | **已完成（2026-11-12）**：网 5/5 绿（先红 xfail → 修后 XPASS → 摘 marker）；全量 7172 passed / 0 failed | revert 单 commit（break 改动还原为 return；标记为纯增量）| — |
 | **U2** | `budget_exhausted` 补发 + no-progress 事件序列网（compare_exit 固化） | **已完成（2026-11-12）**：红网（2 xfail）→ LoopFinalize 补发（budget 分支，载荷与 legacy 同形）→ XPASS 摘 marker 4/4 绿；序列网 skeleton 绝对值 + legacy 对照 2/2 绿；全量 7178 passed / 0 failed | revert | U1 |
-| **U3** | run_stream 转发 `text_delta/thinking_delta` | `stream_mode=True` 下 done 前出现 delta 事件（今天 0）；`stream_mode=False` 下不出现 | revert | U1 |
+| **U3** | run_stream 转发 `text_delta/thinking_delta` | **已完成（2026-11-12）**：红网（流式场景 run_stream 只 yield done）→ 事件桥（`AgentLoop._make_event_bridge` + 骨架 `event_source` + 步骤间隙 drain）→ 4/4 绿（正向 2 / 负向 1 / 工具共存 1）；全量 7181 passed / 0 failed | revert | U1 |
 | **U4** | deciders `and_/or_` + ExternalTerminationDecider + after_observe 空闸 + precheck EXIT 分支删除 | **运行时行为零变化**（事件序列/结果字段）；闸位集合断言（`test_deciders.py:233` 三闸）按四闸更新——预期中的测试文本变更，非行为漂移；新能力单测绿；halt 命中 → EXIT 且走 FINALIZE | revert | 无（可与 U1 并行，但两批都动 skeleton.py，实际串行执行）|
 | **H1** | `ctx.pause/resume` 原语（§3.5）| e2e：pause 事件可见 → resume 值进循环 → **无副作用重放**；超时走既有 approval_timeout 语义 | revert（纯增量）| U1 |
 | **U5** | `run()` 切统一引擎（§3.6）| 表 G 核验完 + D8 迁移完 + parity/出口网全绿 + 全量 `-n 12` 绿 | revert 一处 dispatch（legacy 路径仍在）| U1-U3 |
