@@ -201,21 +201,22 @@ def _migrate_to_yaml(*, dry_run: bool = False, force: bool = False,
 
 @cli_command(
     "config",
-    help="配置诊断与迁移（audit-legacy / migrate）",
+    help="配置诊断与迁移（audit-legacy / audit-legacy-engine / migrate）",
     description=(
         "配置诊断工具组。\n"
-        "  audit-legacy  只读：扫出仍在用的旧名环境变量\n"
-        "  migrate       把 llm.json 转成 config.yaml（不删源文件）"
+        "  audit-legacy         只读：扫出仍在用的旧名环境变量\n"
+        "  audit-legacy-engine  只读：扫出仍依赖 legacy loop 引擎的地方\n"
+        "  migrate              把 llm.json 转成 config.yaml（不删源文件）"
     ),
     add=lambda p: (
         p.add_argument(
             "action", nargs="?", default="audit-legacy",
-            choices=["audit-legacy", "migrate"],
+            choices=["audit-legacy", "audit-legacy-engine", "migrate"],
             help="要执行的动作（默认 audit-legacy）",
         ),
         p.add_argument(
             "--json", action="store_true",
-            help="输出 JSON（机器可读，给 CI/脚本用；仅 audit-legacy）",
+            help="输出 JSON（机器可读，给 CI/脚本用；仅 audit-*）",
         ),
         p.add_argument(
             "--dry-run", action="store_true",
@@ -247,6 +248,24 @@ def cmd_config(args: argparse.Namespace) -> int:
             )
         except Exception as exc:  # noqa: BLE001
             print(f"迁移失败：{exc}", file=sys.stderr)
+            return 2
+
+    if args.action == "audit-legacy-engine":
+        try:
+            from agentnodes.kernel.agent.legacy_audit import (
+                audit_legacy_engine,
+                audit_legacy_engine_text,
+            )
+
+            if args.json:
+                result = audit_legacy_engine()
+                print(json.dumps(result.to_dict(), ensure_ascii=False, indent=2))
+                return 1 if result.blocking else (2 if result.error else 0)
+            text, code = audit_legacy_engine_text()
+            print(text)
+            return code
+        except Exception as exc:  # noqa: BLE001 —— 审计失败要能被 CI 看见
+            print(f"审计失败: {exc}", file=sys.stderr)
             return 2
 
     if args.action != "audit-legacy":
