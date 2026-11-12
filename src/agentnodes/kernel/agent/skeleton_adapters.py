@@ -338,6 +338,22 @@ class LoopFinalize:
         iteration = getattr(result, "iterations", 0) or 0
         if not getattr(ctx, "_ending_emitted", False):
             try:
+                # **budget_exhausted 补发**（统一引擎 U2）：legacy 在预算
+                # 停机 break 前发射（loop.py:1119），skeleton 走
+                # BudgetDecider → STOP → 本收尾，此前无发射点——「因预算
+                # 停止」在生产主路径上零信号（inventory §6 差异 #2）。
+                # 载荷形状与 legacy 一致。
+                if finish == "budget":
+                    loop._trace_and_emit("budget_exhausted", {
+                        "reason": result.stop_reason or finish,
+                        "tokens_used": getattr(ctx, "tokens_used", 0) or 0,
+                        "cost_usd": round(
+                            getattr(ctx, "cost_usd", 0.0) or 0.0, 6),
+                        "elapsed": round(
+                            getattr(ctx, "t0", 0.0) and
+                            (__import__("time").perf_counter() -
+                             getattr(ctx, "t0", 0.0)) or 0.0, 3),
+                    })
                 loop._trace_and_emit("loop_end", {
                     "reason": finish, "iteration": iteration,
                 })
