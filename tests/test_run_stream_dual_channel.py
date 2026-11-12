@@ -111,36 +111,12 @@ def _build(ws: Path, mock: StreamingMockLLM, *, stream_mode: bool):
 
 
 def _collect_run_stream(loop: AgentLoop) -> list[dict]:
-    """直接 drain 骨架 run_stream（经 AgentLoop._run_via_skeleton 的装配）。
+    """drain ``AgentLoop.run_stream``（U5.5 后的公开流式入口）。
 
-    AgentLoop 没有公开 run_stream 入口（生产走 run_to_completion），
-    这里复用 ``_run_via_skeleton`` 的装配逻辑但改走生成器——通过
-    monkeypatch ``run_to_completion`` 不可行，直接构造骨架装配。
+    **U5.5 之前**这里手工搭 6 个 adapter —— 与生产装配重复，那正是
+    「装配逻辑散落在测试里」的证据。现在直接用公开入口（生产同源）。
     """
-    from agentnodes.kernel.agent.modes import deciders_for
-    from agentnodes.kernel.agent.skeleton import ReActSkeleton, SkeletonRunSpec
-    from agentnodes.kernel.agent.skeleton_adapters import (
-        LoopActor, LoopFinalize, LoopHooks, LoopIterationStart,
-        LoopPrepare, LoopReasoner,
-    )
-
-    strategy = loop._strategy
-    max_iter = loop._effective_max_iterations()
-    deciders = deciders_for(strategy, loop, max_iterations=max_iter)
-    skeleton = ReActSkeleton(
-        reasoner=LoopReasoner(loop),
-        actor=LoopActor(loop),
-        deciders=deciders,
-        hooks=LoopHooks(loop),
-        finalize=LoopFinalize(loop),
-        prepare=LoopPrepare(loop),
-        on_iteration_start=LoopIterationStart(loop),
-        # 与生产装配（loop.py _run_via_skeleton）一致：双通道流式
-        event_source=lambda: loop,
-    )
-    spec = SkeletonRunSpec(task="测试任务", context=None, history=None,
-                           max_iterations=max_iter, session_id="")
-    return asyncio.run(_drain(skeleton.run_stream(spec)))
+    return asyncio.run(_drain(loop.run_stream("测试任务")))
 
 
 async def _drain(gen) -> list[dict]:

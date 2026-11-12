@@ -423,6 +423,57 @@ sequenceDiagram
 
 ---
 
+## §2C 入口契约（U5.5 已落地 · 2026-11-12）
+
+> 终态三条入口已就位。本节记录**实际形状**与**有意非对称**。
+
+### 入口金字塔（现状）
+
+```mermaid
+flowchart TD
+    A["**AgentLoop.run_stream(task, *, context, history)**<br/>唯一流式入口 · async 生成器"] -->|"drain + 取 result"| B["**AgentLoop.arun(task, *, context, history, engine=None)**<br/>返回 LoopResult"]
+    B -->|"_run_coro_in_sync"| C["**AgentLoop.run(...)**<br/>同步包装 · 签名零变化"]
+    A -->|"逐事件"| D["流消费者<br/>（SSE / TUI / 测试）"]
+
+    A -.->|"委托"| E["_run_stream_skeleton<br/>装配骨架 → skeleton.run_stream"]
+    E -.-> F["_build_skeleton()<br/>6 个 adapter + deciders"]
+    E -.-> G["_build_skeleton_spec()<br/>SkeletonRunSpec"]
+```
+
+### 三条不变 + 一处非对称
+
+| 项 | 内容 |
+|---|---|
+| `run()` 签名零变化 | 4 个生产调用方 + 175 处测试不动 |
+| `arun()` 保留 `engine` | U6-2 滞后期间 legacy 仍需可达（遗产网依赖）|
+| `run_stream()` **不接受 `engine`** | **有意非对称**——legacy 没有流式入口（事件走 `_emit` 副作用，不进生成器），暴露只会拿到残缺流，是 API 陷阱 |
+| 一次运行消费一次 | `AgentLoop` 持有 `_strategy` / `_skeleton_ctx` 等可变状态，同实例重复 run 未定义 |
+
+### 提取的三个方法（纯重构，零行为变化）
+
+| 方法 | 职责 |
+|---|---|
+| `_build_skeleton()` | 构造 `ReActSkeleton` + 6 个 adapter + `deciders_for(halt_check=…)`；结果存 `self._skeleton` |
+| `_build_skeleton_spec(task, context, history)` | 构造 `SkeletonRunSpec` |
+| `_run_stream_skeleton(task, context, history)` | 装配 + 驱动骨架 `run_stream`（`run_stream` 与 `_run_via_skeleton` 的共同委托目标）|
+
+`_run_via_skeleton` 退化为**薄包装**（`drain(_run_stream_skeleton)` + `_skeleton_result()`），
+不再直接构造骨架——装配逻辑单点。
+
+### 收益（U5.5 解决了什么）
+
+| 之前 | 之后 |
+|---|---|
+| 想流消费必须绕过 AgentLoop **手工搭 6 个 adapter**（`test_run_stream_dual_channel` 原写法）| 直接用 `AgentLoop.run_stream`（**生产同源**）|
+| 装配逻辑散落在 loop 私有方法与测试里各一份 | 单点（`_build_skeleton`）|
+| `arun` 与「流式」是两条实现 | 同源（`arun` = drain `run_stream`）|
+
+**验证网**：`tests/test_entry_unification.py`（6 条）——run_stream 存在/可迭代·
+done 恰一次·**无 engine 参数**（非对称钉住）·arun 走 run_stream（spy）·
+run/arun 结果一致·装配方法已提取。
+
+---
+
 ## §3 数据流（数据对象 · 生产者 · 消费者）
 
 ### 3.1 数据对象

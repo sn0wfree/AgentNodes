@@ -38,7 +38,7 @@ import time
 import uuid
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Any, Callable
+from typing import Any, AsyncIterator, Callable
 
 from agentnodes.foundation.git import git_commit
 from agentnodes.foundation import settings as _settings
@@ -922,11 +922,65 @@ class AgentLoop(
 
         handlers（LoopReasoner/LoopActor/LoopPrepare/LoopHooks/LoopFinalize）
         绑定 self，复用全部既有能力——骨架本体不知道预算怎么算、工具怎么执行。
-        """
-        import os
 
+        **U5.5**：装配逻辑已提取为 :meth:`_build_skeleton` /
+        :meth:`_build_skeleton_spec`；本方法只是「drain 到底」的薄包装，
+        与公开入口 :meth:`run_stream` 同源（一次运行两种消费方式）。
+        """
+        async for _event in self._run_stream_skeleton(task, context, history):
+            pass
+        return self._skeleton_result()
+
+    async def run_stream(
+        self,
+        task: str,
+        *,
+        context: str | None = None,
+        history: list[dict[str, Any]] | None = None,
+    ) -> AsyncIterator[dict[str, Any]]:
+        """**统一引擎的唯一流式入口**（U5.5）。
+
+        逐事件产出：``text_delta`` / ``thinking_*`` / 生命周期事件 /
+        ``pause`` / ``error`` / ``done``（恰一次）。
+
+        **为什么不接受 ``engine`` 参数**（有意非对称）：legacy 引擎没有流式
+        入口——它的事件走 ``_emit`` 回调副作用，不进生成器。暴露
+        ``engine="legacy"`` 只会拿到 error/done 的残缺流，是 API 陷阱。
+        要 legacy 行为请用 ``arun(engine="legacy")``（U6 删除前仍可达）。
+
+        **一次运行只能消费一次**：`AgentLoop` 实例持有 ``_strategy`` /
+        ``_skeleton_ctx`` 等可变状态，同一实例重复 run 未定义。
+        """
+        async for ev in self._run_stream_skeleton(task, context, history):
+            yield ev
+
+    async def _run_stream_skeleton(
+        self,
+        task: str,
+        context: str | None,
+        history: list[dict[str, Any]] | None,
+    ) -> AsyncIterator[dict[str, Any]]:
+        """装配骨架并驱动其 ``run_stream``（内部实现，公开入口的委托目标）。"""
+        skeleton = self._build_skeleton()
+        spec = self._build_skeleton_spec(task, context, history)
+        async for ev in skeleton.run_stream(spec):
+            yield ev
+
+    def _skeleton_result(self) -> LoopResult:
+        """取最近一次骨架运行的结果（``run_to_completion`` 等价物）。"""
+        skeleton = getattr(self, "_skeleton", None)
+        if skeleton is None:
+            raise RuntimeError("no skeleton run yet")
+        return skeleton._last_result
+
+    def _build_skeleton(self) -> Any:
+        """构造骨架及其全部 adapter（U5.5 从 ``_run_via_skeleton`` 提取）。
+
+        handlers 绑定 self，复用全部既有能力——骨架本体不知道预算怎么算、
+        工具怎么执行。
+        """
         from .modes import deciders_for
-        from .skeleton import ReActSkeleton, SkeletonRunSpec
+        from .skeleton import ReActSkeleton
         from .skeleton_adapters import (
             LoopActor,
             LoopFinalize,
@@ -959,14 +1013,25 @@ class AgentLoop(
             # 统一引擎 U3：双通道流式——loop 侧事件桥进 run_stream
             event_source=lambda: self,
         )
-        spec = SkeletonRunSpec(
+        self._skeleton = skeleton  # _skeleton_result() 用它取 result
+        return skeleton
+
+    def _build_skeleton_spec(
+        self,
+        task: str,
+        context: str | None,
+        history: list[dict[str, Any]] | None,
+    ) -> Any:
+        """构造一次运行的 spec（U5.5 从 ``_run_via_skeleton`` 提取）。"""
+        from .skeleton import SkeletonRunSpec
+
+        return SkeletonRunSpec(
             task=task,
             context=context,
             history=history,
-            max_iterations=max_iter,
+            max_iterations=self._effective_max_iterations(),
             session_id=self.session_id or "",
         )
-        return await skeleton.run_to_completion(spec)
 
     # ── DSH-inspired: steering inbox ──────────────────────────────
 
