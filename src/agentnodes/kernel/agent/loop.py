@@ -895,6 +895,7 @@ class AgentLoop(
         Returns:
             LoopResult with answer, iterations, tool_calls_made, finished_reason.
         """
+        self._ensure_trace_context()
         if engine is None:
             import os
 
@@ -911,6 +912,29 @@ class AgentLoop(
         if engine == "skeleton":
             return await self._run_via_skeleton(task, context, history)
         return await self._run_loop_core(task, context, history, async_mode=True)
+
+    def _ensure_trace_context(self) -> None:
+        """确保本次运行有 trace_id / session_id（ContextVar 兜底）。
+
+        **为什么在入口而不是循环体**：原兜底在 ``_run_loop_core``（legacy
+        引擎）内部——统一引擎（``LoopEngine``）走不到，于是**生产主路径的
+        日志与事件没有 request 级标识**（``event_store.py:167`` 注入时拿到
+        None）。走 API 的路径由 ``session/service.py:601`` 先设了
+        ``attempt_id``，所以此前没被发现；直接用 ``AgentLoop`` 的调用则缺失。
+
+        U5.5 之后 ``run()``/``arun()`` 是唯一入口，兜底放这里两条路径都覆盖。
+        与 legacy 的旧行为一致：**只在未设置时补**（不覆盖调用方已设的值——
+        API 层设的 attempt_id 优先）。
+        """
+        from agentnodes.foundation.observability.trace import (
+            _session_id,
+            _trace_id,
+        )
+
+        if not _trace_id.get():
+            _trace_id.set(uuid.uuid4().hex[:12])
+        if self.session_id and not _session_id.get():
+            _session_id.set(self.session_id)
 
     async def _run_via_skeleton(
         self,
@@ -1089,13 +1113,11 @@ class AgentLoop(
         gather/afire_hooks) vs the synchronous equivalents (chat/stream/
         invoke/ThreadPoolExecutor/fire_hooks). Both paths share the same
         iteration/hook/compact/stop/no-progress semantics.
-        """
-        from agentnodes.foundation.observability.trace import _session_id, _trace_id
 
-        if not _trace_id.get():
-            _trace_id.set(uuid.uuid4().hex[:12])
-        if self.session_id and not _session_id.get():
-            _session_id.set(self.session_id)
+        **trace_id / session_id 兜底已移到入口**（``_ensure_trace_context``，
+        U5.5 统一入口后两条路径都覆盖）——原先只在 legacy 体内，导致统一
+        引擎路径的日志/事件缺 request 级标识。
+        """
         full_task, result, messages, t0 = self._prepare_run(task, context, history)
         response = None  # L7 v0.4: set by LLMCallStep each iteration
         self._subagent_count[0] = 0  # reset per-turn delegation counter
