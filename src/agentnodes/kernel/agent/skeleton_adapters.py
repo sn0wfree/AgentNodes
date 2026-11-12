@@ -330,20 +330,26 @@ class LoopFinalize:
             )
 
         # ── 收尾事件（legacy _handle_stop / _handle_max_iter 的等价）──
+        # **幂等**（统一引擎 U1）：after_act EXIT 走 FINALIZE 漏斗后，审批闸
+        # （loop_progress.py:227-252）已发过三件套——skeleton 在该出口置
+        # ``ctx._ending_emitted``，这里见标记则跳过三件套，但仍跑
+        # finalization step + git commit + trace close（出口收尾是超集，
+        # design doc §3.2；幂等模式沿本文件 ``_after_run_fired`` 先例）。
         iteration = getattr(result, "iterations", 0) or 0
-        try:
-            loop._trace_and_emit("loop_end", {
-                "reason": finish, "iteration": iteration,
-            })
-            if getattr(result, "answer", ""):
-                loop._emit("assistant_message", {"content": result.answer})
-            loop._emit("iter_end", {
-                "iteration": iteration,
-                "finish_reason": finish,
-                "tool_calls_made": getattr(result, "tool_calls_made", 0),
-            })
-        except Exception:  # noqa: BLE001 — 事件发射不阻断收尾
-            logger.debug("skeleton finalize events failed", exc_info=True)
+        if not getattr(ctx, "_ending_emitted", False):
+            try:
+                loop._trace_and_emit("loop_end", {
+                    "reason": finish, "iteration": iteration,
+                })
+                if getattr(result, "answer", ""):
+                    loop._emit("assistant_message", {"content": result.answer})
+                loop._emit("iter_end", {
+                    "iteration": iteration,
+                    "finish_reason": finish,
+                    "tool_calls_made": getattr(result, "tool_calls_made", 0),
+                })
+            except Exception:  # noqa: BLE001 — 事件发射不阻断收尾
+                logger.debug("skeleton finalize events failed", exc_info=True)
 
         fin_ctx = _make_strategy_ctx(loop,
             ctx.messages, None, result, result.iterations,

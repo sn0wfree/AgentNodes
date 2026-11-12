@@ -173,12 +173,10 @@ class ReActSkeleton:
                     if "budget" in (reason or ""):
                         result.finished_reason = "budget"
                     break
-                if decision is Decision.EXIT:
-                    result.finished_reason = "exit"
-                    result.stop_reason = reason
-                    self._last_result = result  # run_to_completion 需要
-                    await self._fire("after_run", state, result)
-                    return
+                # precheck 无 EXIT：8 个默认 decider 中只有 NoProgressDecider
+                #（after_act）返回 EXIT（deciders.py AST 实测 2026-11-11）。
+                # 旧分支（L176-181）不可达，统一批 U1 删除——若未来某 decider
+                # 需要 precheck EXIT，必须同步恢复本分支并走 FINALIZE 漏斗。
 
                 # ── REASON（compaction + inbox + LLM 调用）──
                 r = await self._maybe_handle(self._reasoner, spec, state)
@@ -260,9 +258,18 @@ class ReActSkeleton:
                     if getattr(result, "finished_reason", "stop") == "stop":
                         result.finished_reason = "exit"
                     result.stop_reason = reason
-                    self._last_result = result  # run_to_completion 需要
-                    await self._fire("after_run", state, result)
-                    return
+                    # 审批闸（loop_progress.py:227-252）已发过 loop_end /
+                    # assistant_message / iter_end 三件套——置标记让
+                    # LoopFinalize 跳过三件套但仍跑 finalization + trace
+                    # close（统一引擎 U1：一切出口必经 FINALIZE 漏斗；
+                    # 幂等模式沿 _after_run_fired 先例，adapters:272）。
+                    try:
+                        state._ending_emitted = True
+                    except Exception:  # noqa: BLE001 — 冻结对象则让 Finalize 自己发
+                        pass
+                    # 改 break 而非 return（U1）：旧实现提前 return 绕过
+                    # LoopFinalize —— trace 不关、trace_path=None、无 done。
+                    break
                 if decision is Decision.STOP:
                     state.stop_reason = reason or "after_act"
                     result.stop_reason = state.stop_reason

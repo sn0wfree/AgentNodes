@@ -155,7 +155,7 @@ E3（发射所有权迁进 FINALIZE）**U6 前不可行**（闸与 legacy 共享
 
 | 批 | 内容 | 验收断言（红→绿 / 零→有）| 回滚方式 | 依赖 |
 |---|---|---|---|---|
-| **U1** | 出口网（§3.2 矩阵 9 出口 × 6 断言：`trace_path` 非空 / trace 已关 / `loop_end`·`iter_end`·`after_run` 各恰一次 / done 语义正确）+ EXIT→break + `_ending_emitted` 幂等 + 对偶测试转绝对值 | 今天红：#2/#6 出口；改后全绿 | revert 单 commit（break 改动还原为 return；标记为纯增量）| — |
+| **U1** | 出口网（§3.2 矩阵 9 出口 × 6 断言：`trace_path` 非空 / trace 已关 / `loop_end`·`iter_end`·`after_run` 各恰一次 / done 语义正确）+ after_act EXIT→break + `_ending_emitted` 幂等 + precheck EXIT 分支删除 + 对偶测试转绝对值 | **已完成（2026-11-12）**：网 5/5 绿（先红 xfail → 修后 XPASS → 摘 marker）；全量 7172 passed / 0 failed | revert 单 commit（break 改动还原为 return；标记为纯增量）| — |
 | **U2** | `budget_exhausted` 补发 + compare_exit 场景固化为事件序列测试 | 预算停机场景 `budget_exhausted` 发 1 次（今天 0 次）；no-progress 场景 15 事件逐条钉住 | revert | U1 |
 | **U3** | run_stream 转发 `text_delta/thinking_delta` | `stream_mode=True` 下 done 前出现 delta 事件（今天 0）；`stream_mode=False` 下不出现 | revert | U1 |
 | **U4** | deciders `and_/or_` + ExternalTerminationDecider + after_observe 空闸 + precheck EXIT 分支删除 | **运行时行为零变化**（事件序列/结果字段）；闸位集合断言（`test_deciders.py:233` 三闸）按四闸更新——预期中的测试文本变更，非行为漂移；新能力单测绿；halt 命中 → EXIT 且走 FINALIZE | revert | 无（可与 U1 并行，但两批都动 skeleton.py，实际串行执行）|
@@ -169,6 +169,19 @@ E3（发射所有权迁进 FINALIZE）**U6 前不可行**（闸与 legacy 共享
 `test_skeleton_capabilities.py`（能力绝对值断言 + subprocess 模式）、`test_engine_capabilities.py`、
 `tests/llm_client_mock.py`（chat/achat 双入口替身，V4-2 教训的实现）都在存档上，V4 的测试资产中
 **网的部分是好的**（lessons.md 判其"照模板写"的是 LoopProtocol 契约测试，不是能力网）。
+
+### 5.1 U1 执行记录（2026-11-12）
+
+| 步骤 | 结果 |
+|---|---|
+| 网：`tests/test_loop_exit_net.py`（5 场景 × 6 断言）| 先 4 绿 + 1 **xfail 钉住 EXIT 洞**（红网就位）|
+| 修：after_act EXIT `return`→`break` + precheck EXIT 分支删除 + `_ending_emitted` 幂等 | XPASS(strict) → 摘 marker → **5/5 绿** |
+| 修中发现：幂等标记必须**两处配合**（skeleton EXIT 分支置位 + LoopFinalize 读标记跳三件套）——首版只置位不读，全量事件重复（loop_end×2）被网当场抓住 | **网的有效性实证** |
+| 对偶转绝对值（D8）：`test_skeleton_equivalence.py` repetitive 场景改精确语义 + 勘误注释（"skeleton 落 stop"是过时记载，批次 12 S1 已收编审批闸）| 7 passed |
+| 附带修复 1：`llm_client_mock.py` 从存档恢复 + 新增 `patch_llm_client_full`（4 入口，R-008 修正）| — |
+| 附带修复 2：`ExecutorBridge` 跨进程取消竞态（`dispatch_epoch` 信封取代裸 Event 判定）+ collect timeout 3→10s（满载下 spawn 冷启动假超时）| 单跑 10 passed；探针 20 次 0 失败；混合负载 6 连绿 |
+| 场景构造踩坑（写进网注释）| ① `no_progress_window`/`max_iterations` 必须经 strategy config 传（react preset 自带 max_iterations=10 会静默覆盖构造参数）；② shell/echo 在 Windows 沙箱下会 error——用 list_history 构造多轮场景 |
+| 全量 | **7172 passed / 114 skipped / 0 failed**（`-n 12`，105s）；batch_gate ALL GREEN（7286 ≥ 7178）|
 
 ---
 

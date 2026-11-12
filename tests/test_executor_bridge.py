@@ -103,11 +103,18 @@ def test_unpicklable_payload_is_rejected_not_silent(bridge):
 
 
 def test_cancel_with_no_in_flight_keeps_pool_alive(bridge):
-    """无在飞任务时 cancel 只设标志，不得杀池（旧实现的真 bug）。"""
+    """无在飞任务时 cancel 只设标志，不得杀池（旧实现的真 bug）。
+    bridge.cancel()
+    assert all(p.is_alive() for p in bridge._workers)
+    # 后续任务仍可执行（dispatch 会清标志）。
+    # timeout=10（U1 期间实测）：-n 12 满载下同 worker 前面的 async 测试
+    # 刚压完 CPU，spawn worker 冷启动 + 队列调度可 >3s——3s 假超时把
+    # 本缺陷测试变成间歇性失败（collect timeout 模式，非 cancel 竞态）。
+    """
     bridge.cancel()
     assert all(p.is_alive() for p in bridge._workers)
     # 后续任务仍可执行（dispatch 会清标志）
-    result = bridge.run(JobSpec(job_id="c1", fn=add, args=(1, 1), timeout=3.0))
+    result = bridge.run(JobSpec(job_id="c1", fn=add, args=(1, 1), timeout=10.0))
     assert result.ok and result.value == 2
 
 

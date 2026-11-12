@@ -168,31 +168,38 @@ class TestEquivalence:
             )
 
     def test_repetitive_tool_calls_converge(self):
-        """重复 tool_call：两引擎都收敛（不是跑满 5 轮）。
+        """重复 tool_call：**单引擎绝对值**断言（U1 转正，R-009 反对偶）。
 
-        **阶段 1 已知差异（设计文档 §「已知差异」）**：
+        原对偶形式（legacy == skeleton）在 U6 删 legacy 后会变成
+        "自己跟自己比"。按统一设计 §4/§6：行为断言转为对 skeleton 的
+        绝对值，legacy 对照值改为**显式 engine="legacy" 钉住**（遗产网
+        形态，U6 时随 legacy 一起删）。
 
-        - legacy：no-progress 触发后走 **approval gate**（子进程
-          approval_timeout=1 → reject），finished_reason 落
-          ``approval_timeout_rejected``
-        - skeleton：NoProgressDecider 直接 EXIT，finished_reason 落 ``stop``
-
-        **两者都收敛**（核心一致性），措辞差异来自骨架尚未收编 approval
-        gate（B3 阶段 2 的工作，届时统一）。本测试断言**收敛**这一本质，
-        不锁具体措辞——锁措辞会把阶段 1 的已知收窄变成回归噪音。
+        历史注释勘误：本文件曾记载"skeleton 直接 EXIT 落 stop"——批次 12
+        S1 已把 approval gate 收编进 NoProgressDecider，两引擎现在**都**
+        走审批闸、都落 ``approval_timeout_rejected``（子进程无用户 → 1s
+        超时 reject）。exit-net（test_loop_exit_net.py）比事件序列，
+        这里比结果字段，两层互补。
         """
         responses = [
             {"content": "", "tool_calls": [{"id": f"c{i}", "name": "list_history", "arguments": {}}], "finish_reason": "tool_calls"}
             for i in range(5)
         ]
         legacy, skeleton = _run_scenario(responses, "repetitive")
-        # 都收敛（非跑满 max_iterations=5）
-        assert legacy["iterations"] < 5, f"legacy ran to max: {legacy}"
+        # skeleton（统一后的唯一引擎）：收敛 + 精确语义
         assert skeleton["iterations"] < 5, f"skeleton ran to max: {skeleton}"
-        # 都产生了终止信号（非 error、非空）
-        assert legacy["finished_reason"] and skeleton["finished_reason"]
+        assert skeleton["finished_reason"] == "approval_timeout_rejected", (
+            f"skeleton 语义漂移: {skeleton}"
+        )
+        # legacy 对照值（遗产网形态：engine 显式钉住；两引擎经同一审批闸，
+        # 该字段应一致——若分叉，说明闸的行为改了，必须查）
+        assert legacy["finished_reason"] == skeleton["finished_reason"], (
+            f"approval gate 语义分叉: legacy={legacy['finished_reason']} "
+            f"skeleton={skeleton['finished_reason']}"
+        )
+
     def test_skeleton_final_text(self):
-        """骨架单独冒烟：纯文本 → answer 非空 + success。"""
+        """骨架单独冒烟：纯文本 → answer 非空 + success（绝对值，不依赖 legacy）。"""
         legacy, skeleton = _run_scenario(
             [{"content": "答案", "tool_calls": [], "finish_reason": "stop"}],
             "smoke",

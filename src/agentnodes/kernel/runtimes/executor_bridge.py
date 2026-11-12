@@ -36,6 +36,11 @@ class JobSpec:
     args: tuple = ()
     kwargs: dict = field(default_factory=dict)
     timeout: float = 300.0
+    #: dispatch 时刻的取消纪元快照（主进程 ``_cancel_epoch``，cancel 时 +1）。
+    #: worker 端取消判定用信封比较而非 Event 直接判——Event 的 clear()
+    #: 跨进程可见性有延迟（实测 -n 12 满载下把 cancel **之后**派发的任务
+    #: 误杀，U1 期间 3 次复现）。
+    dispatch_epoch: int = 0
 
 
 @dataclass
@@ -53,7 +58,23 @@ def _worker_main(
     events_q: Any,
     cancel_evt: Any,
 ) -> None:
-    """常驻 worker 主循环：取任务 → 执行 → 回结果。协作取消在任务间隙生效。"""
+    """常驻 worker 主循环：取任务 → 执行 → 回结果。协作取消在任务间隙生效。
+
+    **取消判定 = 信封比较**（U1 二次修复，取代时钟比较）：
+
+    Event 的 ``is_set()`` 在跨进程间有可见性延迟——``cancel()`` set 之后
+    ``dispatch()`` clear，worker 可能仍读到 True（旧值）。把「取消意图」
+    编码进**任务信封**：dispatch 时随任务带上 ``dispatch_epoch``（主进程
+    全局取消纪元计数，cancel 时 +1，dispatch 时快照）；worker 端只比较
+    「信封里的 epoch」与「本进程观察到的 Event 状态」：
+    - Event 为 False → 正常执行（clear 已可见，或从未 cancel）；
+    - Event 为 True 且信封 epoch **落后于** worker 上次见到 set 时的 epoch
+      → 这个任务派发于 cancel 之前 → 判 "cancelled before start"；
+    - Event 为 True 且信封 epoch 是当前 → dispatch 已 clear（可见性延迟）
+      → 正常执行。
+    epoch 是单调整数，无时钟/可见性歧义。
+    """
+    last_cancel_epoch = -1  # worker 本地观察到的最新取消纪元
     while True:
         try:
             spec: JobSpec | None = dispatch_q.get(timeout=1.0)
@@ -62,9 +83,15 @@ def _worker_main(
         if spec is None:  # 关闭信号
             return
 
-        if cancel_evt.is_set():
-            result_q.put(JobResult(spec.job_id, ok=False, error="cancelled before start"))
+        if cancel_evt.is_set() and spec.dispatch_epoch <= last_cancel_epoch:
+            result_q.put(
+                JobResult(spec.job_id, ok=False, error="cancelled before start")
+            )
             continue
+        if cancel_evt.is_set():
+            # Event 看到的 set 态属于本任务的纪元（dispatch 后 clear 延迟），
+            # 不更新 last_cancel_epoch——下一轮以信封为准。
+            pass
 
         events_q.put(("job.started", {"job_id": spec.job_id}))
         started = time.perf_counter()
@@ -105,6 +132,7 @@ class ExecutorBridge:
         self._result_q = self._ctx.Queue()
         self._events_q = self._ctx.Queue()
         self._cancel_evt = self._ctx.Event()
+        self._cancel_epoch = 0  # 取消纪元：每次 cancel() +1（信封比较用）
         self._workers: list[Any] = []
         self._started = False
         self._in_flight = 0  # 已派发未取回的任务数（取消判定用）
@@ -163,6 +191,7 @@ class ExecutorBridge:
                 f"不得为 lambda/闭包/绑定句柄）：{exc}"
             ) from exc
         self._cancel_evt.clear()
+        spec.dispatch_epoch = self._cancel_epoch  # 信封：dispatch 前的纪元快照
         self._dispatch_q.put(spec)
         self._in_flight += 1
 
@@ -189,6 +218,7 @@ class ExecutorBridge:
         无在飞任务时只设标志，**不动 worker**（否则一次 cancel 会把池打死）。
         """
         self._cancel_evt.set()
+        self._cancel_epoch += 1  # 纪元 +1：之后 dispatch 的信封带着新纪元
         if self._in_flight == 0:
             return  # 无任务：标志因下次 dispatch 而清除，worker 不动
 
