@@ -22,6 +22,7 @@ from __future__ import annotations
 
 import asyncio
 import hashlib
+import json
 import logging
 from typing import Any
 
@@ -32,6 +33,8 @@ logger = logging.getLogger(__name__)
 
 __all__ = [
     "afire_hooks",
+    "compose_ctx_hash_id",
+    "compute_c_digest",
     "emit",
     "emit_tool_progress",
     "fire_hooks",
@@ -39,6 +42,71 @@ __all__ = [
     "trace_and_emit",
     "trace_llm_request",
 ]
+
+
+# ── 上下文指纹（统一引擎 U6 / ctx_hash_id）────────────────────────────
+#
+# ctx_hash_id = f"{trace_id}_{system_hash}_{tools_hash}_{c_digest}"
+#
+# **为什么是复合 id 而不是单一哈希**：单哈希不可分解——看到一个 id 无法
+# 判断「哪部分变了」。复合形式下差异来源一眼可辨（实测）：
+#
+#   system 变了        → 第 1 段变
+#   tools 变了         → 第 2 段变
+#   messages 变了      → 第 3 段变
+#
+# **段的职责正交**：trace_id = 哪次 run（ContextVar，request/turn 级）；
+# system/tools = 静态身份；c_digest = 本轮对话历史的内容级指纹。
+
+
+def compute_c_digest(messages: list[dict[str, Any]]) -> str:
+    """本轮对话历史的**内容级**指纹（16 字符 hex）。
+
+    **不含 messages[0]（system）**：system 已被独立分量覆盖，再哈希是冗余；
+    且含了会让 system 段与 c 段同时变——差异定位时看不出是 system 变了还是
+    历史变了。三段职责必须正交。
+
+    **为什么逐条哈希而不是整体 dumps**：全量 JSON 化在长对话下成本随消息量
+    增长；逐条 sha256 是 O(n) 次小哈希，实测 1.5 μs/条（1000 条 = 1.5ms，
+    相对一次 LLM 请求 0.49%）。
+
+    **为什么不做增量**：compaction 会**替换** messages 列表（不是追加），
+    增量缓存会失效。
+
+    **为什么是内容级而不是长度级**：既有的 ``history_hash`` 用
+    ``role:len(content)`` 指纹——实测 content 从 'AAAA' 改成 'BBBB'（等长）
+    时 hash **完全不变**，不足以当身份用。
+    """
+    parts: list[str] = []
+    for m in messages[1:]:  # skip system prompt（独立分量已覆盖）
+        tc = m.get("tool_calls")
+        parts.append(
+            hashlib.sha256(
+                f"{m.get('role', '')}\0{m.get('content', '') or ''}\0"
+                f"{json.dumps(tc, sort_keys=True, default=str)}".encode("utf-8")
+            ).hexdigest()[:16]
+        )
+    return hashlib.sha256("|".join(parts).encode("utf-8")).hexdigest()[:16]
+
+
+def compose_ctx_hash_id(
+    trace_id: str | None,
+    system_hash: str,
+    tools_hash: str,
+    c_digest: str,
+) -> str:
+    """组合上下文指纹：``trace_id_system_hash_tools_hash_c_digest``。
+
+    **分隔符用 ``_``**：四段全是 hex（无 '_' 混入）→ ``split("_")`` 可无损
+    反解出四段，差异来源可精确定位。
+
+    **trace_id 段缺失时**：用空串占位会让 id 变成 ``_sys_tools_c``（前导
+    下划线）——形态不统一。统一引擎路径的 trace_id 兜底已在
+    ``AgentLoop._ensure_trace_context``（入口）补上，理论上不会为空；
+    万一为空（外部未设且走了别的构造路径），退化为 ``"-"`` 占位以保持
+    四段形态。
+    """
+    return f"{trace_id or '-'}_{system_hash}_{tools_hash}_{c_digest}"
 
 
 # ── 事件出口 ─────────────────────────────────────────────────────────
@@ -68,12 +136,25 @@ def _trace(loop: Any, entry: dict[str, Any]) -> None:
 
 
 def emit(loop: Any, event_type: str, data: dict | None = None) -> None:
-    """Emit an event to the on_event callback (if set)."""
+    """Emit an event to the on_event callback (if set).
+
+    **统一附加 ``ctx_hash_id``**（统一引擎 U6）：这里是**所有事件的最终
+    出口**（``loop._emit`` → 本函数），所以一处附加即可让每个事件都带上
+    当前状态的上下文指纹——不必逐个调用点改。
+
+    载荷已自带（如 ``llm_request``）时不覆盖。实测开销可忽略
+    （每事件一次 getattr + 字典赋值；63 字符的序列化成本 1.72 μs）。
+    """
     on_event = getattr(loop, "_on_event", None)
     if on_event is None:
         return
+    payload = data or {}
+    if "ctx_hash_id" not in payload:
+        _cid = getattr(loop, "_current_ctx_hash_id", "") or ""
+        if _cid:
+            payload = {**payload, "ctx_hash_id": _cid}
     try:
-        on_event(event_type, data or {})
+        on_event(event_type, payload)
     except Exception:  # noqa: BLE001
         logger.warning("on_event callback failed for %s", event_type, exc_info=True)
 
@@ -206,6 +287,22 @@ def trace_llm_request(
         )
         history_hash = hashlib.sha256(history_fingerprint.encode()).hexdigest()[:16]
 
+        # 上下文指纹（统一引擎 U6）：trace_id + system + tools + 内容级历史。
+        # 挂在 loop 上——它是**当前状态**（每轮更新），ctx / result / 事件
+        # 都从这里派生。
+        from agentnodes.foundation.observability.trace import _trace_id
+
+        ctx_hash_id = compose_ctx_hash_id(
+            _trace_id.get(),
+            system_prompt_hash,
+            tools_hash,
+            compute_c_digest(messages),
+        )
+        try:
+            loop._current_ctx_hash_id = ctx_hash_id
+        except Exception:  # noqa: BLE001 — 不可写的 loop 不阻断
+            pass
+
         entry: dict[str, Any] = {
             "type": "llm_request",
             "iteration": iteration,
@@ -219,6 +316,7 @@ def trace_llm_request(
             "system_prompt_hash": system_prompt_hash,
             "tools_hash": tools_hash,
             "history_hash": history_hash,
+            "ctx_hash_id": ctx_hash_id,
             "estimated_tokens": estimate_tokens(messages),
         }
 

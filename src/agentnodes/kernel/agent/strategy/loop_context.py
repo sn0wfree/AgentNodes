@@ -72,6 +72,13 @@ class LoopContext:
     #: 恢复时注入的值（挂起点读取）。
     resume_value: Any = None
 
+    # ── 上下文指纹（统一引擎 U6）────────────────────────────────────
+    #
+    #: ``trace_id_system_hash_tools_hash_c_digest``——**当前状态**的上下文
+    #: 指纹（每轮更新）。回答「模型这一轮看到了什么」。
+    #: 详见 docs/design/ctx-hash-id-design-20261112.md。
+    ctx_hash_id: str = ""
+
     # Free-form bag for step-specific payloads (no per-step field
     # explosion; v0.1 keeps it minimal).
     metadata: dict[str, Any] = field(default_factory=dict)

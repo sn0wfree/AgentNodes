@@ -321,6 +321,8 @@ id 必须逐轮变。
 | 7 | 与 `history_hash` 的关系 | **保留 `history_hash`**（长度级 diff 用途，与内容级 id 互补）；`ctx_hash_id` **不复用**它的值 |
 | 8 | 形态 | **`trace_id + system_hash + tools_hash + c_digest`（`_` 分隔）**——复合 id 自包含：拿到一个字符串就知道「哪次 run」+「这轮什么上下文」|
 | 9 | **A. trace_id 兜底** | **✅ 已做**（2026-11-12）：`AgentLoop._ensure_trace_context()` + 5 条网；顺带修好「统一引擎路径日志/事件无 request 级标识」的现存缺陷 |
+| 10 | **B. 事件载荷长度** | **完整 63 字符**（实测：序列化 +1.72 μs/事件；字节 +83.7%，但与既有的 `raw` 字段同量级——不是新负担级别）。所有事件统一带，不做 text_delta 特例 |
+| 11 | **C. `result.ctx_hash_id` 取值** | **永远是当前状态的 ctx_hash_id**（每轮更新，不是结束时挑一轮）。无任何 LLM 请求（无上下文证据）时保持空串，不伪造 |
 
 ### 待定（继续讨论）
 
@@ -337,14 +339,14 @@ id 必须逐轮变。
 | # | 落点 | 改动 | 文件 |
 |---|---|---|---|
 | 0 | **补 trace_id 兜底** | ✅ **已完成**：`AgentLoop._ensure_trace_context()`（入口调用；legacy 旧兜底已删）+ 5 条网 | `loop.py` + `tests/test_trace_context_fallback.py` |
-| 1 | 计算函数 | 新增 `compute_c_digest(messages)` | `agent_telemetry.py`（与现成三 hash 同处）|
-| 2 | 组合 | 新增 `compose_ctx_hash_id(trace_id, system_hash, tools_hash, c_digest)` | `agent_telemetry.py` |
-| 3 | LoopContext | 加字段 `ctx_hash_id: str = ""` | `strategy/loop_context.py` |
-| 4 | LoopResult | 加字段 `ctx_hash_id: str = ""` | `loop.py` |
-| 5 | 每轮计算 | `_trace_llm_request` 处算 + 挂 ctx/result | `agent_telemetry.py` |
-| 6 | trace 记录 | `llm_request` entry 加 `ctx_hash_id` | `agent_telemetry.py` |
-| 7 | 其他事件 | 统一附加（`AgentLoop._current_ctx_hash_id`）| `agent_telemetry.py` |
-| 8 | 网 | 8 条（见 §8）| 新测试文件 |
+| 1 | 计算函数 | ✅ 新增 `compute_c_digest(messages)` | `agent_telemetry.py`（与现成三 hash 同处）|
+| 2 | 组合 | ✅ 新增 `compose_ctx_hash_id(trace_id, system_hash, tools_hash, c_digest)` | `agent_telemetry.py` |
+| 3 | LoopContext | ✅ 加字段 `ctx_hash_id: str = ""` | `strategy/loop_context.py` |
+| 4 | LoopResult | ✅ 加字段 `ctx_hash_id: str = ""`（**当前状态**语义）| `loop.py` |
+| 5 | 每轮计算 | ✅ `trace_llm_request` 内算 + 挂 `loop._current_ctx_hash_id`；llm_call step 同步到 ctx 与 ctx.result（**一处覆盖两条引擎路径**）| `agent_telemetry.py` + `strategy/steps/llm_call.py` |
+| 6 | trace 记录 | ✅ `llm_request` entry 加 `ctx_hash_id` | `agent_telemetry.py` |
+| 7 | 其他事件 | ✅ `agent_telemetry.emit`（**所有事件的最终出口**）统一附加 | `agent_telemetry.py` |
+| 8 | 网 | ✅ `tests/test_ctx_hash_id.py` **13 条** | 新测试文件 |
 
 ---
 
@@ -361,6 +363,21 @@ id 必须逐轮变。
 | 7 | trace 记录里 `llm_request` 带 `ctx_hash_id` |
 | 8 | **统一引擎路径 trace_id 不再是 None**（顺带修 §1.3 的缺陷）|
 | 9 | 性能：1000 条消息 c_digest < 5ms |
+
+**实施结果（2026-11-12）**：13 条网全绿；全量 **7244 passed / 114 skipped / 0 failed**；
+batch_gate ALL GREEN（7358 ≥ 7178）。
+
+**实施中踩到的三个坑（都是测试自身的错，记录备查）**：
+
+1. **段下标写错**——段序是 `0=trace_id 1=system 2=tools 3=c_digest`，
+   我最初用 `b[1]` 指 system（实际是 tools 位）。
+2. **helper 没把 system 传进去**——测「system 变了」时 helper 始终用固定的
+   `SYS` 算 system_hash → id 完全不变 → 断言「system 段应变」失败。
+3. **跨进程用例两边消息不同**——c_digest 跳过 `messages[0]`，子进程用
+   `[user, assistant]`、主进程用 `[system, user, assistant]`，跳过的不是同一条。
+
+**这三条的共同点**：测试没从**实现的实际契约**导出，而是照着自己脑里的
+契约写——与 V4 教训同构（R-009/R-018）。
 
 ---
 

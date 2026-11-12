@@ -71,6 +71,17 @@ class DefaultLLMCallStep:
         ctx.response = response
         ctx.response_was_tool_call = bool(getattr(response, "tool_calls", None))
         ctx.response_content = getattr(response, "content", "") or ""
+        # 上下文指纹（统一引擎 U6）：`_get_response` 内部已算好并挂在
+        # loop._current_ctx_hash_id（每轮更新）——同步到 ctx 与 result，
+        # 使二者始终反映**当前状态**。
+        _ctx_hash_id = getattr(loop, "_current_ctx_hash_id", "") or ""
+        if _ctx_hash_id:
+            ctx.ctx_hash_id = _ctx_hash_id
+            if ctx.result is not None:
+                try:
+                    ctx.result.ctx_hash_id = _ctx_hash_id
+                except Exception:  # noqa: BLE001 — 冻结 result 不阻断
+                    pass
         # Mirror _append_assistant_msg so messages carry the response.
         loop._append_assistant_msg(
             response, ctx.messages, ctx.result, ctx.iteration,

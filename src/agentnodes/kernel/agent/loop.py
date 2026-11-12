@@ -235,6 +235,10 @@ class LoopResult:
     metrics: dict[str, Any] = field(default_factory=dict)
     compression_applied: list[str] = field(default_factory=list)
     trace_path: str | None = None
+    #: 当前状态的上下文指纹（统一引擎 U6）：每轮更新，反映「模型最近一次
+    #: 调用看到的上下文」。格式 ``trace_id_system_hash_tools_hash_c_digest``。
+    #: 详见 docs/design/ctx-hash-id-design-20261112.md。
+    ctx_hash_id: str = ""
 
     @property
     def success(self) -> bool:
