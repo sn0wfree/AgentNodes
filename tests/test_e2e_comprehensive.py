@@ -81,7 +81,20 @@ async def _send_message(page, text):
 
 
 async def _wait_for_response(page, timeout_s=60):
-    """Wait for assistant response to complete."""
+    """Wait for assistant response to complete.
+
+    **返回 False = 超时**（调用方**必须**检查——R-017：并行下失败的测试先
+    判「隔离」还是「真实缺陷」，而「超时未被检查」会让断言在别处炸出，
+    看起来像业务缺陷）。
+
+    **超时基线**：单跑本文件 `test_full_session_history` 约 19s（3 轮消息
+    + 响应，每轮响应 ~5-6s），60s 超时单跑绰绰有余。但**全量并行**
+    （`-n 12`，12 个 worker 抢 12 核）时真实 LLM 调用会显著变慢——2026-11-12
+    实测该测试在此条件下约 1/4 概率超时，导致「期望 ≥3 条 user 消息，实得
+    2 条」的**假失败**（消息尚未持久化就 reload 了）。
+
+    因此：默认超时**按并行场景**取值，并允许调用方覆盖。
+    """
     deadline = asyncio.get_event_loop().time() + timeout_s
     while asyncio.get_event_loop().time() < deadline:
         body = await page.inner_text("body")
@@ -96,7 +109,25 @@ async def _wait_for_response(page, timeout_s=60):
                 await page.wait_for_timeout(3000)
                 return True
         await page.wait_for_timeout(500)
+    print(
+        f"   [WARN] _wait_for_response 超时（{timeout_s}s）——"
+        f"并发下 LLM 变慢属环境因素，断言消息条数前应视为「未完成」"
+    )
     return False
+
+
+async def _wait_for_response_or_fail(page, timeout_s:60, *, what: str = "响应"):
+    """等待响应；超时**显式失败**（带可诊断信息）。
+
+    用于「后续断言依赖这次响应已完成」的场景——超时时继续走会让断言在
+    别处炸出（如「实得 2 条消息」），把环境问题伪装成业务缺陷。
+    """
+    responded = await _wait_for_response(page, timeout_s=timeout_s)
+    assert responded, (
+        f"等待{what}超时（{timeout_s}s）——并发下 LLM 变慢属环境因素；"
+        f"请单独重跑该测试确认是 flaky 而非回归"
+    )
+    return responded
 
 
 async def _take_screenshot(page, name):
@@ -264,7 +295,7 @@ async def test_cancel_functionality():
             print(f"Cancel button visible during streaming: {is_visible}")
 
             # 5. Wait for response
-            await _wait_for_response(page, timeout_s=30)
+            await _wait_for_response_or_fail(page, timeout_s=60, what="取消测试的响应")
 
             await _take_screenshot(page, "cancel_test")
             print("✅ Cancel functionality test completed!")
@@ -294,19 +325,19 @@ async def test_full_session_history():
             # 3. Message 1: Greeting
             print("3. Sending greeting...")
             await _send_message(page, "你好，我想研究A股的动量因子")
-            await _wait_for_response(page, timeout_s=30)
+            await _wait_for_response_or_fail(page, timeout_s=120, what="第 1 条响应")
             await _take_screenshot(page, "full_01_greeting")
 
             # 4. Message 2: Factor analysis
             print("4. Requesting factor analysis...")
             await _send_message(page, "帮我分析20日动量因子在A股的IC表现")
-            await _wait_for_response(page, timeout_s=60)
+            await _wait_for_response_or_fail(page, timeout_s=120, what="第 2 条响应")
             await _take_screenshot(page, "full_02_analysis")
 
             # 5. Message 3: Strategy creation
             print("5. Requesting strategy creation...")
             await _send_message(page, "基于这个因子创建一个策略配置")
-            await _wait_for_response(page, timeout_s=60)
+            await _wait_for_response_or_fail(page, timeout_s=120, what="第 3 条响应")
             await _take_screenshot(page, "full_03_strategy")
 
             # 6. Verify all messages are displayed
@@ -316,15 +347,26 @@ async def test_full_session_history():
             # persisted messages (live rendering only keeps a window)
             await page.reload()
             await page.wait_for_load_state("domcontentloaded")
-            await page.wait_for_timeout(3000)
-
-            await page.inner_text("body")
 
             # Check multiple user messages (gradient bubble)
             user_msgs = page.locator('div.rounded-br-md.bg-gradient-to-br')
-            user_count = await user_msgs.count()
+
+            # **轮询等消息渲染完**（不再固定 sleep 3s）：并发下后端持久化 +
+            # 前端虚拟列表渲染都更慢，固定等待会读到「还没渲染完」的中间态
+            # → 误报「实得 2 条」（2026-11-12 实测的 flaky 根因之一）。
+            # 超时后**不直接失败**——下面的 count 断言会给出更具体的信息。
+            deadline = asyncio.get_event_loop().time() + 30
+            user_count = 0
+            while asyncio.get_event_loop().time() < deadline:
+                user_count = await user_msgs.count()
+                if user_count >= 3:
+                    break
+                await page.wait_for_timeout(500)
             print(f"   Total user messages: {user_count}")
-            assert user_count >= 3, f"Expected ≥3 user messages, got {user_count}"
+            assert user_count >= 3, (
+                f"Expected ≥3 user messages, got {user_count}（已轮询等待 30s；"
+                f"若单跑通过则为并发下的环境时序问题）"
+            )
 
             # Check multiple assistant messages
             agent_labels = page.locator('text="Agent"')
@@ -369,7 +411,7 @@ async def test_tool_call_display():
             # 3. Send message that triggers tool calls
             print("Sending message that triggers tool calls...")
             await _send_message(page, "列出可用的数据源")
-            await _wait_for_response(page, timeout_s=30)
+            await _wait_for_response_or_fail(page, timeout_s=120, what="工具调用响应")
 
             # 4. Check for tool call display
             tool_blocks = page.locator('[class*="tool"], [class*="ToolCall"]')
