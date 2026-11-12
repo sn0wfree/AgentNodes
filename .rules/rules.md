@@ -443,7 +443,7 @@ stream    sync  流式        astream   async 流式   ← stream_mode=True（�
 |---|---|---|
 | hypothesis 原生 DLL 被策略拦 | pytest 在插件加载阶段死，无 summary | 永远带 `-p no:hypothesispytest -p no:hypothesis` |
 | PyMuPDF `_mupdf` DLL 被拦 | `read_document` 工具不可用 | `check_tool_refs.py` 用 `env_gated_tools()` 区分"环境缺失"与"未实现" |
-| playwright chromium rev 1254 被拦 | `BrowserType.launch: spawn UNKNOWN`；rev 1234 正常 | 环境事件，非代码问题。用 stash 对照排除自身改动 |
+| playwright chromium rev 1254曾被拦 | 2026-11-10：`BrowserType.launch: spawn UNKNOWN`；**2026-11-13 实测 rev 1254 已可正常 launch（chromium 与 msedge channel 双验）**——环境策略放行 | 环境事件，非代码问题。再现 spawn UNKNOWN 时先实测 launch，再查策略；用 stash 对照排除自身改动 |
 | base64 填充位伪随机 | 篡改签名的测试偶发通过（43 字符 = 258 bit vs 256 bit）| 别改最后一个字符；改中间的（如 index 5）|
 | `WindowsPath` vs `PosixPath` | 断言路径相等在 Windows 上失败 | 用 `Path(...)` 规范化或比较 `str()` |
 | 中文输出乱码 | 控制台 GBK | 脚本里 `sys.stdout.reconfigure(encoding="utf-8")`；`findstr` 而非 `grep` |

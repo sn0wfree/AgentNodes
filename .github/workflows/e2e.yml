@@ -25,8 +25,9 @@ jobs:
 
     env:
       PYTHONUNBUFFERED: "1"
-      # 后端脚本化 SSE 模式 — 不需要真实 LLM
-      STRATEGY_RESEARCH_TEST_CHAT: "1"
+      # 后端脚本化 SSE 模式 — 不需要真实 LLM（service.py:895 读此开关；
+      # 旧名 STRATEGY_RESEARCH_TEST_CHAT 全仓零消费者，2026-11-13 修正）
+      AGENTNODES_TEST_CHAT: "1"
 
     steps:
       - uses: actions/checkout@v4
@@ -147,7 +148,7 @@ jobs:
 
       - name: Update baselines
         run: |
-          UPDATE_SNAPSHOTS=1 STRATEGY_RESEARCH_TEST_CHAT=1 \
+          UPDATE_SNAPSHOTS=1 AGENTNODES_TEST_CHAT=1 \
             python -m pytest tests/test_webui_visual.py -v --tb=short
 
       - name: Commit updated baselines

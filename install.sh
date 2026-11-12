@@ -214,22 +214,23 @@ run_e2e_tests() {
 
     cd "$PROJECT_ROOT"
 
-    log "pytest tests/test_webui_e2e_playwright.py tests/test_webui_visual.py -v"
+    log "pytest tests/test_webui_catalog.py tests/test_webui_visual.py -v"
     log "(脚本化 SSE 模式 — 不需要真实 LLM)"
     log "视觉回归需要 tests/baselines/ 存在 (首次: ./install.sh --record-baselines)"
     log " "
 
     # 禁用 LLMBridge autouse fixture 干扰（conftest.py 有 _isolate_llm_bridge）
-    # E2E 用 TEST_MODE=1 替代
-    if STRATEGY_RESEARCH_TEST_CHAT=1 "$PYTHON_BIN" -m pytest \
-        tests/test_webui_e2e_playwright.py \
+    # E2E 用 AGENTNODES_TEST_CHAT=1 替代（service.py:895 读此开关；
+    # 旧名 STRATEGY_RESEARCH_TEST_CHAT 全仓零消费者，2026-11-13 修正）
+    if AGENTNODES_TEST_CHAT=1 "$PYTHON_BIN" -m pytest \
+        tests/test_webui_catalog.py \
         tests/test_webui_visual.py \
         -v --tb=short; then
         log "E2E + 视觉回归测试通过 ✓"
         return 0
     else
         err "测试失败"
-        err "调试: STRATEGY_RESEARCH_TEST_CHAT=1 $PYTHON_BIN -m pytest tests/test_webui_e2e_playwright.py tests/test_webui_visual.py -v --tb=long"
+        err "调试: AGENTNODES_TEST_CHAT=1 $PYTHON_BIN -m pytest tests/test_webui_catalog.py tests/test_webui_visual.py -v --tb=long"
         err "视觉回归失败时，diff 图保存到 tests/diffs/"
         return 1
     fi
@@ -250,7 +251,7 @@ record_visual_baselines() {
     log "(截图保存为基线，跳过断言)"
     log " "
 
-    if UPDATE_SNAPSHOTS=1 STRATEGY_RESEARCH_TEST_CHAT=1 "$PYTHON_BIN" -m pytest \
+    if UPDATE_SNAPSHOTS=1 AGENTNODES_TEST_CHAT=1 "$PYTHON_BIN" -m pytest \
         tests/test_webui_visual.py -v --tb=short; then
         log "基线录制完成 ✓ → tests/baselines/"
         return 0

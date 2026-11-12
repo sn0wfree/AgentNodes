@@ -405,6 +405,85 @@ class TestRealLLMChat:
 
         assert "42" in text2, f"LLM didn't remember. Response: {text2[:200]}"
 
+    def test_tool_use_round(self, auth_info):
+        """「作为一个 agent 能正常运行」的最小闭环证明（2026-11-13）。
+
+        模型发起 read 工具调用 → 工具结果回流 → 最终答案引用工具输出。
+        断言三段：SSE 出现 ``tool_call`` / ``tool_result`` 事件（chat.py:592
+        的翻译层转发）、答案包含 pyproject 的 ``name = "agentnodes"``。
+        选 ``read`` 而非 ``shell``：readonly 在任何权限 preset 下自动放行，
+        不依赖 ASK 通道（chat_loop.py:57 interactive=True 是 fail-closed）。
+        """
+        base_url, headers, sid, token = auth_info
+        sse_url = f"{base_url}/api/chat/events?session_id={sid}&token={token}"
+        full_text = ""
+        kinds: list[str] = []
+        error_msg = None
+        done = threading.Event()
+
+        def listen_sse():
+            nonlocal full_text, error_msg
+            evt_type = ""
+            data_lines = []
+            try:
+                with requests.get(sse_url, stream=True, timeout=180) as resp:
+                    for line in resp.iter_lines(decode_unicode=True):
+                        if line is None:
+                            continue
+                        if line == "":
+                            if data_lines:
+                                data_str = "\n".join(data_lines)
+                                try:
+                                    data = json.loads(data_str)
+                                except Exception:
+                                    data = {}
+                                if evt_type == "text_delta":
+                                    full_text += data.get("text", "")
+                                elif evt_type == "error":
+                                    error_msg = (
+                                        data.get("error")
+                                        or data.get("message")
+                                        or json.dumps(data, ensure_ascii=False)[:300]
+                                    )
+                                if evt_type:
+                                    kinds.append(evt_type)
+                                if evt_type == "agent_done":
+                                    done.set()
+                                    return
+                            data_lines = []
+                            evt_type = ""
+                            continue
+                        if line.startswith("event: "):
+                            evt_type = line[7:].strip()
+                        elif line.startswith("data: "):
+                            data_lines.append(line[6:])
+            except Exception as e:
+                error_msg = f"SSE error: {e}"
+                done.set()
+
+        t = threading.Thread(target=listen_sse, daemon=True)
+        t.start()
+        time.sleep(0.5)
+
+        r = requests.post(f"{base_url}/api/chat/send_async", headers=headers, json={
+            "session_id": sid,
+            "content": (
+                "请使用 read 工具读取 pyproject.toml，然后告诉我 "
+                "[project] 段的 name 字段的值。必须真的调用工具，不要凭记忆回答。"
+            ),
+        })
+        assert r.status_code == 200
+
+        assert done.wait(timeout=180), "agent_done 超时（180s，含一次工具往返）"
+
+        if error_msg and not full_text:
+            pytest.fail(f"LLM call failed: {error_msg}")
+        assert "tool_call" in kinds, f"未见工具调用事件: {sorted(set(kinds))}"
+        assert "tool_result" in kinds, f"未见工具结果事件: {sorted(set(kinds))}"
+        assert "agentnodes" in full_text.lower(), (
+            f"答案未引用工具输出: {full_text[:300]!r}"
+        )
+
     def test_send_async_returns_message_id(self, auth_info):
         """send_async returns valid response."""
         base_url, headers, sid, _ = auth_info

@@ -193,8 +193,8 @@ def check_static_build(project_root: Path) -> None:
 def run_e2e_tests(project_root: Path) -> int:
     """跑 Playwright E2E 测试 + 视觉回归测试。
 
-    使用 ``STRATEGY_RESEARCH_TEST_CHAT=1`` 触发后端脚本化 SSE 模式
-    （不需要真实 LLM）。返回 pytest 退出码。
+    使用 ``AGENTNODES_TEST_CHAT=1`` 触发后端脚本化 SSE 模式
+    （不需要真实 LLM；service.py:895 读此开关）。返回 pytest 退出码。
     """
     header("运行 E2E 测试")
 
@@ -202,11 +202,11 @@ def run_e2e_tests(project_root: Path) -> int:
 
     cmd = [
         sys.executable, "-m", "pytest",
-        "tests/test_webui_e2e_playwright.py",
+        "tests/test_webui_catalog.py",
         "tests/test_webui_visual.py",
         "-v", "--tb=short",
     ]
-    env = {**__import__("os").environ, "STRATEGY_RESEARCH_TEST_CHAT": "1"}
+    env = {**__import__("os").environ, "AGENTNODES_TEST_CHAT": "1"}
 
     log("$ " + " ".join(cmd))
     log("(脚本化 SSE 模式 — 不需要真实 LLM)")
@@ -217,7 +217,7 @@ def run_e2e_tests(project_root: Path) -> int:
         log("E2E 测试通过 ✓")
     else:
         err("E2E 测试失败")
-        err("调试: STRATEGY_RESEARCH_TEST_CHAT=1 python -m pytest tests/test_webui_e2e_playwright.py tests/test_webui_visual.py -v --tb=long")
+        err("调试: AGENTNODES_TEST_CHAT=1 python -m pytest tests/test_webui_catalog.py tests/test_webui_visual.py -v --tb=long")
         err("视觉回归失败时，diff 图保存到 tests/diffs/")
     return result.returncode
 
@@ -235,7 +235,7 @@ def record_visual_baselines(project_root: Path) -> int:
     ]
     env = {
         **__import__("os").environ,
-        "STRATEGY_RESEARCH_TEST_CHAT": "1",
+        "AGENTNODES_TEST_CHAT": "1",
         "UPDATE_SNAPSHOTS": "1",
     }
     log("$ " + " ".join(cmd))
