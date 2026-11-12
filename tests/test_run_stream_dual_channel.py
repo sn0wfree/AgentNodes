@@ -19,6 +19,7 @@ delta/生命周期事件压队；run_stream 每个步骤间隙 drain 并 yield�
 （与 legacy 一致）——两条负向断言钉住。
 """
 from __future__ import annotations
+from llm_client_mock import patch_llm_client
 
 import asyncio
 from collections import Counter
@@ -102,7 +103,7 @@ def _build(ws: Path, mock: StreamingMockLLM, *, stream_mode: bool):
         trace_dir=ws / "traces",
         strategy={"name": "react", "config": {"max_iterations": 3}},
     )
-    loop.client.chat = mock.chat
+    patch_llm_client(loop, mock.chat)
     loop.client.achat = mock.achat
     loop.client.stream = mock.stream
     loop.client.astream = mock.astream

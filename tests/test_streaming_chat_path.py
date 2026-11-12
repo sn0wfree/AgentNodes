@@ -7,6 +7,7 @@ Verifies that:
 4. Token-by-token accumulation works end-to-end.
 """
 from __future__ import annotations
+from llm_client_mock import patch_llm_client
 
 import asyncio
 import tempfile
@@ -291,7 +292,7 @@ class TestRunSyncAlsoHasFallback:
             return LLMResponse(content="sync fallback", tool_calls=[], finish_reason="stop")
 
         loop._stream_chat = fake_stream
-        loop.client.chat = fake_chat
+        patch_llm_client(loop, fake_chat)
 
         result = loop.run("sync test")
         assert result.answer == "sync fallback"
@@ -314,7 +315,7 @@ class TestRunSyncAlsoHasFallback:
             raise AssertionError("should not reach")
 
         loop._stream_chat = fake_stream
-        loop.client.chat = fake_chat
+        patch_llm_client(loop, fake_chat)
 
         result = loop.run("test")
         assert result.finished_reason == "error"

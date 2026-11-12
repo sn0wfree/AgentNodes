@@ -9,6 +9,7 @@ Covers the three capabilities absorbed from SwarmWorker:
 All defaults keep the pre-existing behavior (backward compat).
 """
 from __future__ import annotations
+from llm_client_mock import patch_llm_client
 
 import asyncio
 import time
@@ -111,7 +112,7 @@ class TestWrapUpNudge:
             workspace, max_iterations=5, wrap_up_nudge=True,
             no_progress_window=99,
         )
-        loop.client.chat = mock.chat
+        patch_llm_client(loop, mock.chat)
         r = loop.run("task")
         assert r.finished_reason == "stop"
 
@@ -143,7 +144,7 @@ class TestWrapUpNudge:
         loop = make_loop(
             workspace, max_iterations=5, no_progress_window=99,
         )
-        loop.client.chat = mock.chat
+        patch_llm_client(loop, mock.chat)
         r = loop.run("task")
         assert r.finished_reason == "stop"
         for msgs, _kw in mock.calls:
@@ -157,7 +158,7 @@ class TestWrapUpNudge:
         # the only LLM call; must not crash and must inject exactly once).
         mock = RecordingMockLLM([text_resp("quick")])
         loop = make_loop(workspace, max_iterations=1, wrap_up_nudge=True)
-        loop.client.chat = mock.chat
+        patch_llm_client(loop, mock.chat)
         r = loop.run("task")
         assert r.finished_reason == "stop"
         assert any(
@@ -172,7 +173,7 @@ class TestForceFinalText:
     def test_final_call_has_no_tools(self, workspace):
         mock = RecordingMockLLM([tool_resp("t1"), tool_resp("t2"), text_resp("done")])
         loop = make_loop(workspace, max_iterations=3, force_final_text=True)
-        loop.client.chat = mock.chat
+        patch_llm_client(loop, mock.chat)
         r = loop.run("task")
         assert r.finished_reason == "stop"
         tools_per_call = [kw.get("tools") for _m, kw in mock.calls]
@@ -183,7 +184,7 @@ class TestForceFinalText:
     def test_tools_present_by_default(self, workspace):
         mock = RecordingMockLLM([tool_resp("t1"), tool_resp("t2"), text_resp("done")])
         loop = make_loop(workspace, max_iterations=3)
-        loop.client.chat = mock.chat
+        patch_llm_client(loop, mock.chat)
         r = loop.run("task")
         assert r.finished_reason == "stop"
         for _m, kw in mock.calls:
@@ -193,7 +194,7 @@ class TestForceFinalText:
         # stop on iteration 1 → all calls carry tools.
         mock = RecordingMockLLM([text_resp("immediate")])
         loop = make_loop(workspace, max_iterations=3, force_final_text=True)
-        loop.client.chat = mock.chat
+        patch_llm_client(loop, mock.chat)
         r = loop.run("task")
         assert r.finished_reason == "stop"
         assert mock.calls[0][1].get("tools") is not None
@@ -203,10 +204,22 @@ class TestForceFinalText:
 
 
 class TestIterationTimeout:
-    def test_sync_timeout_post_call_check(self, workspace):
-        mock = RecordingMockLLM([text_resp("slow")], sleep_s=0.2)
+    def test_timeout_reported(self, workspace):
+        """超时 → finished_reason="timeout"（引擎无关的断言目标）。
+
+        **统一引擎 U5**：``run()`` 现在走 ``arun()``（async）→ 超时由
+        ``asyncio.wait_for`` **主动取消**（``_with_iteration_timeout``）；
+        legacy 的同步路径是**事后测量**（``_with_iteration_timeout_sync``
+        ——同步阻塞无法安全取消，见 loop.py:816-820 的注释）。
+
+        两者对调用方的**可见结论一致**（timeout / error 含 "exceeded" /
+        not success），差别只在**机制**。本测试断言可见结论，用 **async
+        替身**（``SlowAsyncMockLLM``）——同步 ``time.sleep`` 的替身在
+        async 路径上不可取消，会挂住而不是超时（实测）。
+        """
         loop = make_loop(workspace, iteration_timeout_s=0.05)
-        loop.client.chat = mock.chat
+        slow = SlowAsyncMockLLM(sleep_s=0.5)
+        patch_llm_client(loop, slow.achat)
         r = loop.run("task")
         assert r.finished_reason == "timeout"
         assert "exceeded" in (r.error or "")
@@ -215,7 +228,7 @@ class TestIterationTimeout:
     def test_sync_no_timeout_when_fast(self, workspace):
         mock = RecordingMockLLM([text_resp("fast")])
         loop = make_loop(workspace, iteration_timeout_s=5.0)
-        loop.client.chat = mock.chat
+        patch_llm_client(loop, mock.chat)
         r = loop.run("task")
         assert r.finished_reason == "stop"
         assert r.success
@@ -267,7 +280,7 @@ class TestEffectiveMaxIterations:
             strategy={"name": "react", "config": {"max_iterations": 2}},
             force_final_text=True,
         )
-        loop.client.chat = mock.chat
+        patch_llm_client(loop, mock.chat)
         r = loop.run("task")
         assert r.iterations == 2
         assert mock.calls[0][1].get("tools") is not None
@@ -281,7 +294,7 @@ class TestBackwardCompat:
     def test_defaults_keep_legacy_behavior(self, workspace):
         mock = RecordingMockLLM([tool_resp("t1"), text_resp("done")])
         loop = make_loop(workspace, max_iterations=5)
-        loop.client.chat = mock.chat
+        patch_llm_client(loop, mock.chat)
         r = loop.run("task")
         # No nudge, tools on every call, no timeout, normal stop.
         assert r.finished_reason == "stop"

@@ -15,6 +15,7 @@
 （U1 后收尾齐全）。
 """
 from __future__ import annotations
+from llm_client_mock import patch_llm_client
 
 import asyncio
 from pathlib import Path
@@ -55,7 +56,7 @@ def _build(ws: Path, responses, engine: str | None = None):
     )
     loop = AgentLoop(**kw)
     mock = MockLLM(list(responses))
-    loop.client.chat = mock.chat
+    patch_llm_client(loop, mock.chat)
     loop.client.achat = mock.achat
     return loop
 

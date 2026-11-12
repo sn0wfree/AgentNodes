@@ -182,16 +182,28 @@ D:\tools\python312\python.exe scripts\arch\sync_architecture_diagram.py --write 
 
 ### 3.1 测试替身必须挂满所有入口
 
-**R-008. LLM 替身要挂 chat + achat 两个入口** · MUST
+**R-008. LLM 替身要挂满全部 4 个入口** · MUST
 
 - **触发**：任何给 `AgentLoop` 挂 LLM 测试替身的测试。
-- **做法**：用 `tests/llm_client_mock.py::patch_llm_client(loop, mock.chat)`；流式用 `as_async_gen()`；异步替身必须 `await asyncio.sleep(...)` 而不是 `time.sleep(...)`。
+- **做法**：用 `tests/llm_client_mock.py::patch_llm_client(loop, mock.chat)`（**默认挂满 4 个入口**）；自定义 client 对象用 `patch_client_achat(client, mock.chat)`；要断言 chunk 级行为用 `patch_llm_client_full(loop, chat_impl=…, stream_impl=…)`。异步替身必须 `await asyncio.sleep(...)` 而不是 `time.sleep(...)`。
 - **失败**：未挂的入口**打到真实 HTTP**（带重试）——症状是"答案变空"或整条用例挂住，不是干脆的失败。
-- **来源**：L2 2026-11-11（V4-2：14 个文件 / 57 处挂载点全中招）。
+- **来源**：L2 2026-11-11（V4-2：14 个文件 / 57 处挂载点全中招）· L2 2026-11-12（U5：16 文件 / 175 处 `run()` 调用全中招，**第三次**修正这条规则）。
 
-`AgentLoop` 的 LLM 客户端有 **`chat` / `achat` 两个入口**（流式另有 `stream` / `astream`）。只 mock `chat` 会让 async 路径走真客户端。
+`AgentLoop` 的 LLM 客户端有 **4 个入口**（`openai_client.py:321/343/365/470`）：
+
+```
+chat      sync  非流式      achat     async 非流式
+stream    sync  流式        astream   async 流式   ← stream_mode=True（默认）走这个
+```
+
+只挂 `chat` 会让 **async 路径走真客户端**——2026-11-12 U5 实测：切统一引擎后
+16 个测试文件全部命中，症状是 `ConnectError` 与耗时暴涨 100 倍。
 
 **异步替身要真异步**：`achat` 里用 `time.sleep` 会阻塞事件循环，取消信号送不进去，`asyncio.wait_for` 就不抛 `TimeoutError`——超时用例测不到东西。
+
+**流式 chunk 必须是 `StreamChunk` 对象**（不是 dict）——消费侧按属性访问
+（`chunk.delta_content`），用 dict 会走 error 路径，症状是「事件序列不对」
+而非「mock 挂了」，极难定位。
 
 ### 3.2 引擎是 async-first，pytest 里要 subprocess
 
@@ -238,6 +250,22 @@ D:\tools\python312\python.exe scripts\arch\sync_architecture_diagram.py --write 
 - **做法**：替换后做**确定性上下文比对**（改前 vs 改后逐文件的非预期变更），不靠 grep 找残留。
 - **失败**：grep 匹配的是**文本**，替换改的是**语义位置**。当同一字符串既是环境变量名又是局部变量名时，文本层面无法区分——批 E-2 实测把 `STATIC_DIR` 误改成 `AGENTNODES_STATIC_DIR`，而那段是死代码路径，**测试全绿**。
 - **来源**：L2 2026-11-11（E-2 扫尾）。
+
+**机械替换测试代码的加强（2026-11-12 U5 实测，代价 3 类错）**：
+
+- **别用脚本批量改测试**——本仓的测试代码形态高度不统一（多行表达式、
+  subprocess 模板、自定义 client 对象）。U5 批 73 处替换出了 3 类错，
+  其中 2 类的症状是**假绿**（不是假红）：
+  - subprocess 模板（`_INNER = r'''...'''`）里的代码**属于子进程**，
+    `sys.path` 只有 `src` → 改了会 `ImportError`（形态像环境问题）；
+  - 多行表达式 `loop.client.chat = MockLLM([...]).chat` 被单行正则
+    破坏 → **SyntaxError，整个文件不被收集**（「测试通过」是假的）；
+  - helper 的参数对象错位（`loop` vs `loop.client`）→ **静默不生效**。
+- **替换后必须做的 3 件事**：① 逐文件 `git diff` 看非预期变更；
+  ② `python -m pytest --collect-only -q` 确认**收集数没有意外下降**
+  （本仓有 collect 锚点，但锚点只查下限，语法错误会体现为 error）；
+  ③ 跑该文件**看耗时**——命中真网络时耗时会暴涨 10 倍以上。
+
 
 `check_env_access.py` 只认三种形态：字面量直读、常量间接、常量经函数参数流转。以下会**逃过扫描**：
 

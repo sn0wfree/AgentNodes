@@ -1,6 +1,7 @@
 """Tests for AgentLoop (mock LLM)."""
 
 from __future__ import annotations
+from llm_client_mock import patch_llm_client
 
 import json
 from pathlib import Path
@@ -64,7 +65,7 @@ class TestBasicLoop:
             workspace=workspace,
             max_iterations=5,
         )
-        loop.client.chat = mock.chat
+        patch_llm_client(loop, mock.chat)
         r = loop.run("hello")
         assert r.iterations == 1
         assert r.answer == "the answer"
@@ -83,7 +84,7 @@ class TestBasicLoop:
             registry=build_default_registry(),
             workspace=workspace,
         )
-        loop.client.chat = mock.chat
+        patch_llm_client(loop, mock.chat)
         r = loop.run("improve")
         assert r.iterations == 2
         assert r.tool_calls_made == 1
@@ -104,7 +105,7 @@ class TestBasicLoop:
             registry=build_default_registry(),
             workspace=workspace,
         )
-        loop.client.chat = mock.chat
+        patch_llm_client(loop, mock.chat)
         r = loop.run("multi")
         assert r.tool_calls_made == 2
         assert r.answer == "got both"
@@ -129,7 +130,7 @@ class TestMaxIterations:
             max_iterations=3,
             no_progress_window=10,  # disable no_progress for this test
         )
-        loop.client.chat = mock.chat
+        patch_llm_client(loop, mock.chat)
         r = loop.run("endless")
         assert r.iterations == 3
         assert r.finished_reason == "max_iter"
@@ -159,7 +160,7 @@ class TestNoProgress:
             approval_timeout=0.1,
             approval_on_timeout="reject",
         )
-        loop.client.chat = mock.chat
+        patch_llm_client(loop, mock.chat)
         r = loop.run("loop")
         assert r.finished_reason == "approval_timeout_rejected"
         assert "no-progress approval timed out" in r.answer
@@ -179,7 +180,7 @@ class TestNoProgress:
             max_iterations=10,
             no_progress_window=3,
         )
-        loop.client.chat = mock.chat
+        patch_llm_client(loop, mock.chat)
         r = loop.run("varied")
         assert r.finished_reason == "stop"
         assert r.iterations == 6
@@ -201,7 +202,7 @@ class TestNoProgress:
             approval_timeout=0.1,
             approval_on_timeout="reject",
         )
-        loop.client.chat = mock.chat
+        patch_llm_client(loop, mock.chat)
         r = loop.run("window")
         assert r.finished_reason == "approval_timeout_rejected"
 
@@ -230,7 +231,7 @@ class TestErrorHandling:
                 raise LLMAuthError("auth failed")
             return mock.responses.pop(0)
 
-        loop.client.chat = side_effect
+        patch_llm_client(loop, side_effect)
         r = loop.run("err")
         assert r.finished_reason == "error"
         assert "LLMAuthError" in r.error
@@ -248,7 +249,7 @@ class TestErrorHandling:
             registry=build_default_registry(),
             workspace=workspace,
         )
-        loop.client.chat = mock.chat
+        patch_llm_client(loop, mock.chat)
         r = loop.run("missing file")
         # Tool error should be reported in tool_result msg, loop continues
         assert r.iterations == 2
@@ -266,7 +267,7 @@ class TestErrorHandling:
             registry=build_default_registry(),
             workspace=workspace,
         )
-        loop.client.chat = mock.chat
+        patch_llm_client(loop, mock.chat)
         r = loop.run("bad tool")
         assert r.iterations == 2
 
@@ -302,7 +303,7 @@ class TestWorkspaceInjection:
             registry=reg,
             workspace=workspace,
         )
-        loop.client.chat = mock.chat
+        patch_llm_client(loop, mock.chat)
         loop.run('inject')
         assert "workspace" in captured_kwargs[0]
         assert captured_kwargs[0]["workspace"] == workspace
@@ -321,7 +322,7 @@ class TestMessagesHistory:
             registry=build_default_registry(),
             workspace=workspace,
         )
-        loop.client.chat = mock.chat
+        patch_llm_client(loop, mock.chat)
         r = loop.run("test")
         # 2 messages initially (system + user), then 1 assistant
         assert len(r.messages) == 3
@@ -340,7 +341,7 @@ class TestMessagesHistory:
             registry=build_default_registry(),
             workspace=workspace,
         )
-        loop.client.chat = mock.chat
+        patch_llm_client(loop, mock.chat)
         r = loop.run("tooling")
         # system + user + assistant(tool_call) + tool + assistant(final)
         assert len(r.messages) == 5
@@ -424,7 +425,7 @@ class TestIntegration:
             registry=build_default_registry(),
             workspace=workspace,
         )
-        loop.client.chat = mock.chat
+        patch_llm_client(loop, mock.chat)
         r = loop.run("update momentum strategy")
         assert r.iterations == 3
         assert r.tool_calls_made == 2
@@ -449,7 +450,7 @@ class TestIntegration:
             approval_timeout=0.1,
             approval_on_timeout="reject",
         )
-        loop.client.chat = mock.chat
+        patch_llm_client(loop, mock.chat)
         r = loop.run("loopy")
         assert r.finished_reason == "approval_timeout_rejected"
         assert r.iterations == 3  # stopped at window=3
@@ -598,7 +599,7 @@ class TestRunWithContext:
             registry=build_default_registry(),
             workspace=workspace,
         )
-        loop.client.chat = mock.chat
+        patch_llm_client(loop, mock.chat)
         r = loop.run("improve", context="## 当前状态\ncalmar=0.42")
         user_msg = r.messages[1]["content"]
         assert "calmar=0.42" in user_msg
@@ -613,7 +614,7 @@ class TestRunWithContext:
             registry=build_default_registry(),
             workspace=workspace,
         )
-        loop.client.chat = mock.chat
+        patch_llm_client(loop, mock.chat)
         r = loop.run("hello")
         assert r.answer == "done"
         assert r.finished_reason == "stop"
@@ -634,7 +635,7 @@ class TestCustomSystemPrompt:
             workspace=workspace,
             system_prompt=custom,
         )
-        loop.client.chat = mock.chat
+        patch_llm_client(loop, mock.chat)
         r = loop.run("check risk")
         # system message 应该包含自定义 prompt
         sys_msg = r.messages[0]["content"]

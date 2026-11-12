@@ -355,3 +355,74 @@ PATTERN_BRAND_DIR = re.compile(
 - 注入点必须避开 `EXEMPT_FILES`；
 - 盲区发现后先看正则覆盖的是「精确形态」还是「实际写法」——
   前者几乎总会被后者的变体绕过。
+
+---
+
+## 2026-11-12 · U5 切引擎：LLM 客户端有 4 个入口，只挂 2 个会打到真网络
+
+**已升 L1**：R-008（`rules.md` §3.1，4 入口）+ R-011 加强（§3.6，机械替换测试代码）。
+
+**背景**：U5 把 ``run()``（sync）从 legacy 切到统一引擎（skeleton）。切之前
+**一切正常**——切之后 16 个测试文件、175 处 ``run()`` 调用里，**只挂
+``client.chat`` 的 mock 全部落到真网络**（``ConnectError: All connection
+attempts failed``；单文件耗时从 2s 变 384s）。
+
+**根因**：``AgentLoop`` 的 LLM 客户端有 **4 个入口**，不是 2 个：
+
+```
+openai_client.py:321  chat      (sync, 非流式)
+openai_client.py:343  achat     (async, 非流式)
+openai_client.py:365  stream    (sync, 流式)
+openai_client.py:470  astream   (async, 流式)   ← stream_mode=True 默认走这个
+```
+
+legacy 的 sync 路径调 ``client.chat`` → mock 命中；统一引擎走 async →
+调 ``client.achat``/``client.astream`` → **真客户端**。
+
+**这是 R-008 的第三次修正**（前两次：V4-2 的 chat/achat、U1 的
+"4 个入口"记录）。本批把它做成了**机制**而非文字：
+
+- ``patch_llm_client`` 升级为**默认挂满 4 个入口**（流式入口用单个完整
+  响应包装成生成器）；
+- 新增 ``patch_client_achat``（自定义 client 对象场景——测试自建 client
+  再挂到 loop，绕过了 ``patch_llm_client``）；
+- ``as_async``/``as_async_gen`` 自动识别**已经是 async 的**可调用/生成器
+  （否则把 async 方法当同步包装 → ``coroutine object has no attribute
+  'content'``）。
+
+**防法**：
+
+- 任何「挂 mock 到 LLM 客户端」的地方，一律用 ``patch_llm_client``；
+  自定义 client 用 ``patch_client_achat``；
+- **流式 chunk 必须是 ``StreamChunk`` 对象**（不是 dict）——消费侧按属性
+  访问，用 dict 会走 error 路径，症状是「事件序列不对」而非「mock 挂了」。
+
+---
+
+## 2026-11-12 · 机械批量替换测试代码：3 类错，2 类症状是「假绿」
+
+**已升 L1**：R-011 加强（`rules.md` §3.6）。
+
+**背景**：U5 需要把 73 处 ``loop.client.chat = X`` 改成
+``patch_llm_client(loop, X)``。用脚本批量替换。
+
+**三类错**：
+
+| # | 错 | 症状 | 为什么难发现 |
+|---|---|---|---|
+| 1 | 改了 subprocess 模板（``_INNER = r'''...'''``）里的代码 | ``ImportError: DLL load failed`` | 形态像环境问题；子进程 ``sys.path`` 只有 ``src``，没有 ``llm_client_mock`` |
+| 2 | 多行表达式被单行正则破坏（``loop.client.chat = MockLLM([...]).chat``）| **SyntaxError → 整个文件不被收集** | 「测试通过」是**假的**——文件根本没跑 |
+| 3 | helper 参数对象错位（``patch_client_achat(loop, ...)`` 而非 ``(loop.client, ...)``）| 静默不生效 → 打到真网络 | 无报错，只是慢 100 倍 |
+
+**根因**：本仓测试代码形态高度不统一（多行表达式 / subprocess 模板 /
+自定义 client 对象）。脚本按「单行 + 固定前缀」匹配，漏掉了这些形态。
+
+**防法**（R-011 加强）：
+
+1. 逐文件 ``git diff`` 复核非预期变更；
+2. ``pytest --collect-only -q`` 确认**收集数没意外下降**（锚点只查下限，
+   语法错误表现为 error 而非下降）；
+3. 跑该文件**看耗时**——命中真网络时耗时暴涨 10 倍以上。
+
+**元教训**：批量替换**测试代码**的风险高于收益——症状多为「假绿」，
+而假绿比假红危险（假红会拦住你）。

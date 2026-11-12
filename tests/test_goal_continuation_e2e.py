@@ -10,6 +10,7 @@
 两个引擎都必须跑到 ``max_iter``（因为判据永远不被覆盖 = 永远需要续跑）。
 """
 from __future__ import annotations
+from llm_client_mock import patch_llm_client
 
 import subprocess
 import sys

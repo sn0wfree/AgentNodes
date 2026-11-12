@@ -16,6 +16,7 @@
 本文件用**确定性方式**复现（不靠 sleep 竞速）：直接模拟「决策先到」。
 """
 from __future__ import annotations
+from llm_client_mock import patch_llm_client
 
 import threading
 import time
@@ -63,7 +64,7 @@ def _loop(workspace, *, timeout: float = 5.0) -> AgentLoop:
         approval_timeout=timeout,
         approval_on_timeout="reject",
     )
-    loop.client.chat = mock.chat
+    patch_llm_client(loop, mock.chat)
     return loop
 
 
@@ -112,7 +113,7 @@ def test_stale_decision_does_not_leak_into_next_gate(workspace):
         approval_timeout=0.3,
         approval_on_timeout="reject",
     )
-    loop.client.chat = mock.chat
+    patch_llm_client(loop, mock.chat)
     loop.approve_loop("approved")     # 只够第一轮
 
     r = loop.run("loop")

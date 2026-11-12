@@ -7,6 +7,7 @@ the stored event lean (metadata + sidecar refs).
 """
 
 from __future__ import annotations
+from llm_client_mock import patch_llm_client
 
 from typing import Any
 from unittest import mock
@@ -54,7 +55,7 @@ def _stub_chat(loop: AgentLoop, *, content: str = "answer") -> None:
     resp.has_tool_calls = lambda: False  # noqa: E731
     resp.tool_calls = []
     loop.client = mock.MagicMock()
-    loop.client.chat = mock.MagicMock(return_value=resp)
+    patch_llm_client(loop, mock.MagicMock(return_value=resp))
 
 
 # ── AgentLoop emits llm_request ──────────────────────────────────

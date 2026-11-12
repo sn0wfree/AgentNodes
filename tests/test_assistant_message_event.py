@@ -9,6 +9,7 @@ Verifies that:
    (the "Done.×2" bug fix).
 """
 from __future__ import annotations
+from llm_client_mock import patch_client_achat
 
 import asyncio
 import tempfile
@@ -73,6 +74,8 @@ class TestAssistantMessageEmission:
         loop.client.chat = MockLLM([
             LLMResponse(content="策略名称: A股动量策略", tool_calls=[], finish_reason="stop"),
         ]).chat
+        # 统一引擎 U5：run() 走 async 路径 → 补 async 入口
+        patch_client_achat(loop.client, loop.client.chat)
         result = loop.run("分析A股")
         types = sink.types()
         assert "assistant_message" in types, f"missing assistant_message; got {types}"
@@ -94,6 +97,7 @@ class TestAssistantMessageEmission:
                 ToolCall(id="c2", name="read", arguments={"path": "y"}),
             ], finish_reason="tool_calls"),
         ]).chat
+        patch_client_achat(loop.client, loop.client.chat)
         result = loop.run("endless")
         types = sink.types()
         assert "assistant_message" in types
@@ -121,6 +125,7 @@ class TestAssistantMessageEmission:
             ], finish_reason="tool_calls")
             for i in range(10)
         ]).chat
+        patch_client_achat(loop.client, loop.client.chat)
         result = loop.run("loop")
         types = sink.types()
         assert "assistant_message" in types
@@ -137,6 +142,7 @@ class TestAssistantMessageEmission:
         loop.client.chat = MockLLM([
             LLMResponse(content="done", tool_calls=[], finish_reason="stop"),
         ]).chat
+        patch_client_achat(loop.client, loop.client.chat)
         loop.run("once")
         am_events = sink.of_type("assistant_message")
         assert len(am_events) == 1, f"expected 1 assistant_message, got {len(am_events)}"

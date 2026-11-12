@@ -27,6 +27,7 @@ trace 关闭状态从 ``loop._trace_writer`` 读——EXIT 改 break 后该对�
 在 ``run_to_completion`` 返回时应已 closed（现在没有 → U1 前本网红）。
 """
 from __future__ import annotations
+from llm_client_mock import patch_llm_client
 
 import asyncio
 import json
@@ -91,7 +92,7 @@ def _build(ws: Path, responses, *, approval_timeout: float | None = None,
     kw["strategy"] = {"name": "react", "config": cfg}
     loop = AgentLoop(**kw)
     mock = MockLLM(list(responses))
-    loop.client.chat = mock.chat
+    patch_llm_client(loop, mock.chat)
     loop.client.achat = mock.achat
     return loop, mock, ws / "traces"
 

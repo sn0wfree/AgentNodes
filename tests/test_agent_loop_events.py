@@ -5,6 +5,7 @@ the vibe-trading-inspired expansion. Each test captures all events
 emitted during a single run and asserts on their structure.
 """
 from __future__ import annotations
+from llm_client_mock import patch_llm_client, patch_llm_client_full
 
 import json
 from pathlib import Path
@@ -100,7 +101,7 @@ class TestIterLifecycle:
             return _text_resp("answer")
 
         loop.client = mock.MagicMock()
-        loop.client.chat = fake_chat
+        patch_llm_client(loop, fake_chat)
         loop.run('hello')
 
         iter_starts = [d for et, d in sink.events if et == "iter_start"]
@@ -129,7 +130,7 @@ class TestToolEventPayload:
             _text_resp("ok"),
         ]
         loop.client = mock.MagicMock()
-        loop.client.chat = mock.MagicMock(side_effect=lambda *a, **kw: responses.pop(0))
+        patch_llm_client(loop, mock.MagicMock(side_effect=lambda *a, **kw: responses.pop(0)))
         loop.run("do something")
 
         tool_calls = [d for et, d in sink.events if et == "tool_call"]
@@ -155,7 +156,7 @@ class TestToolEventPayload:
             _text_resp("ok"),
         ]
         loop.client = mock.MagicMock()
-        loop.client.chat = mock.MagicMock(side_effect=lambda *a, **kw: responses.pop(0))
+        patch_llm_client(loop, mock.MagicMock(side_effect=lambda *a, **kw: responses.pop(0)))
         loop.run("do something")
 
         results = [d for et, d in sink.events if et == "tool_result"]
@@ -177,7 +178,7 @@ class TestToolEventPayload:
             _text_resp("ok"),
         ]
         loop.client = mock.MagicMock()
-        loop.client.chat = mock.MagicMock(side_effect=lambda *a, **kw: responses.pop(0))
+        patch_llm_client(loop, mock.MagicMock(side_effect=lambda *a, **kw: responses.pop(0)))
         loop.run("do something")
 
         results = [d for et, d in sink.events if et == "tool_result"]
@@ -188,20 +189,31 @@ class TestToolEventPayload:
 
 class TestThinkingDone:
     def test_thinking_done_fires_before_first_text(self):
-        """thinking_done emits between first text_delta."""
+        """thinking_done emits between first text_delta.
+
+        **统一引擎 U5**：`run()` 走 `arun()`（async）→ 流式入口是
+        `client.astream`（**不是** `client.stream`——那是 legacy 同步路径
+        的入口）。两个路径都发 `thinking_done`（loop_stream.py:74 同步 /
+        :200 异步），行为一致；此处按**公开入口**挂 async 流式替身
+        （D8：实现细节耦合不算引擎行为）。
+        """
         sink = EventSink()
         loop = _make_loop(sink)
 
-        # Stub streaming path
+        # Stub streaming path（async 入口——统一引擎实际使用的那个）
         from agentnodes.foundation.llm.parser import StreamChunk
 
-        def fake_stream(messages, tools=None):
+        async def fake_astream(messages, tools=None):
             yield StreamChunk(delta_content="hel")
             yield StreamChunk(delta_content="lo", finish_reason="stop")
 
         loop._stream_mode = True
         loop.client = mock.MagicMock()
-        loop.client.stream = fake_stream
+        patch_llm_client_full(
+            loop,
+            chat_impl=mock.MagicMock(return_value=_text_resp("hello")),
+            stream_impl=fake_astream,
+        )
 
         loop.run("hi")
 
@@ -230,7 +242,7 @@ class TestCompactEvent:
         )
 
         loop.client = mock.MagicMock()
-        loop.client.chat = mock.MagicMock(return_value=_text_resp("ok"))
+        patch_llm_client(loop, mock.MagicMock(return_value=_text_resp("ok")))
 
         loop.run("hi")
 
@@ -272,7 +284,7 @@ class TestErrorEvent:
         from agentnodes.foundation.llm.errors import LLMRateLimitError
 
         loop.client = mock.MagicMock()
-        loop.client.chat = mock.MagicMock(side_effect=LLMRateLimitError("rate"))
+        patch_llm_client(loop, mock.MagicMock(side_effect=LLMRateLimitError("rate")))
 
         loop.run("hi")
 
@@ -295,7 +307,7 @@ class TestBackwardCompat:
             _text_resp("ok"),
         ]
         loop.client = mock.MagicMock()
-        loop.client.chat = mock.MagicMock(side_effect=lambda *a, **kw: responses.pop(0))
+        patch_llm_client(loop, mock.MagicMock(side_effect=lambda *a, **kw: responses.pop(0)))
         loop.run("hi")
 
         tc_payload = sink.of_type("tool_call")[0]
@@ -314,7 +326,7 @@ class TestBackwardCompat:
             _text_resp("ok"),
         ]
         loop.client = mock.MagicMock()
-        loop.client.chat = mock.MagicMock(side_effect=lambda *a, **kw: responses.pop(0))
+        patch_llm_client(loop, mock.MagicMock(side_effect=lambda *a, **kw: responses.pop(0)))
         loop.run("hi")
 
         result_payload = sink.of_type("tool_result")[0]

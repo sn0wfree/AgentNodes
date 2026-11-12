@@ -16,6 +16,7 @@ Covers three P0 bugs found in the study-subsystem audit:
 """
 
 from __future__ import annotations
+from llm_client_mock import patch_llm_client
 
 import asyncio
 import threading
@@ -82,7 +83,7 @@ class TestNoProgressApprovedContinuation:
             approval_timeout=5.0,
             approval_on_timeout="reject",
         )
-        loop.client.chat = mock.chat
+        patch_llm_client(loop, mock.chat)
 
         def _approve_later():
             time.sleep(0.2)
@@ -115,7 +116,7 @@ class TestNoProgressApprovedContinuation:
             approval_timeout=5.0,
             approval_on_timeout="reject",
         )
-        loop.client.chat = mock.chat
+        patch_llm_client(loop, mock.chat)
 
         threading.Thread(
             target=lambda: (time.sleep(0.2), loop.approve_loop("reject")),

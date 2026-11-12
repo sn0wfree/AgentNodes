@@ -1,5 +1,6 @@
 """Tests for AgentExecutor + exec_registry (unified engine, Phase 3)."""
 from __future__ import annotations
+from llm_client_mock import patch_client_achat
 
 from pathlib import Path
 
@@ -151,6 +152,8 @@ class TestLLMExec:
             _patch_captured["max_iterations"] = kw.get("max_iterations")
             if chat_fn is not None:
                 self.client.chat = chat_fn
+                # 统一引擎 U5：run() 走 async 路径 → 需 async 入口
+                patch_client_achat(self.client, chat_fn)
         loop_mod.AgentLoop.__init__ = patched
         return orig, _patch_captured
 

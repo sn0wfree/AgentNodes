@@ -860,7 +860,7 @@ class AgentLoop(
             logger.info("[AGENT] compaction_in_history=%d", compaction_count)
 
         return _run_coro_in_sync(
-            self._run_loop_core(task, context, history, async_mode=False)
+            self.arun(task, context=context, history=history)
         )
 
     # ── Async public API ──────────────────────────

@@ -3,6 +3,7 @@
 See docs/archive/undated/claim-validation-badge-design.md §7.2.
 """
 from __future__ import annotations
+from llm_client_mock import patch_llm_client
 
 from pathlib import Path
 
@@ -68,7 +69,7 @@ class TestClaimValidationEnabled:
     def test_enabled_writes_metrics(self, workspace):
         mock = MockLLM([text_resp("回测完成，sharpe 是 1.42")])
         loop = _build_loop(workspace, enable_claim_validation=True)
-        loop.client.chat = mock.chat
+        patch_llm_client(loop, mock.chat)
         r = loop.run("跑回测")
         assert "claim_validation" in r.metrics
         cv = r.metrics["claim_validation"]
@@ -88,7 +89,7 @@ class TestClaimValidationEnabled:
             text_resp("sharpe 是 9.99"),
         ])
         loop = _build_loop(workspace, enable_claim_validation=True)
-        loop.client.chat = mock.chat
+        patch_llm_client(loop, mock.chat)
         r = loop.run("回测")
         cv = r.metrics["claim_validation"]
         assert not cv["ok"]
@@ -98,7 +99,7 @@ class TestClaimValidationEnabled:
         """默认关闭 → 无 claim_validation 键（向后兼容）。"""
         mock = MockLLM([text_resp("sharpe 是 1.5")])
         loop = _build_loop(workspace)  # 不传 enable_claim_validation
-        loop.client.chat = mock.chat
+        patch_llm_client(loop, mock.chat)
         r = loop.run("hello")
         assert "claim_validation" not in r.metrics
 
@@ -111,7 +112,7 @@ class TestStrictMode:
             enable_claim_validation=True,
             strict_claim_validation=True,
         )
-        loop.client.chat = mock.chat
+        patch_llm_client(loop, mock.chat)
         r = loop.run("hello")
         assert "数据真实性警告" in r.answer
         assert "sharpe=2.5" in r.answer
@@ -149,7 +150,7 @@ class TestStrictMode:
             enable_claim_validation=True,
             strict_claim_validation=True,
         )
-        loop.client.chat = mock.chat
+        patch_llm_client(loop, mock.chat)
         r = loop.run("跑回测")
         cv = r.metrics["claim_validation"]
         assert cv["ok"], f"claims should verify, got {cv}"

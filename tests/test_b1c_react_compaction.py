@@ -6,6 +6,7 @@
 实现);``make_compactor`` 引擎级与 controller 接线级测试保留原样。
 """
 from __future__ import annotations
+from llm_client_mock import patch_client_achat
 
 from types import SimpleNamespace
 
@@ -30,6 +31,9 @@ def _recording_loop(client):
         max_iterations=2,
     )
     loop.client = client
+    # 统一引擎 U5：``run()`` 走 async 路径 → 自定义 client 必须有 async 入口
+    # （否则 LLM 调用落到真客户端，``calls`` 为空 → IndexError）。
+    patch_client_achat(client, client.chat)
     return loop
 
 
@@ -77,6 +81,8 @@ def test_compactor_runs_before_llm_call():
         return real_chat(messages, tools=tools)
 
     client.chat = spy_chat  # type: ignore[method-assign]
+    # 统一引擎 U5：``run()`` 走 async 路径 → 需 async 入口（否则落到真网络）
+    patch_client_achat(client, spy_chat)
 
     loop = _recording_loop(client)
     loop._maybe_compact = spy_compact  # type: ignore[method-assign]

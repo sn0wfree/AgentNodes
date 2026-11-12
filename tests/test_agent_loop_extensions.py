@@ -1,6 +1,7 @@
 """Tests for PR6-c3 extensions: compression + heartbeat + trace + git commit."""
 
 from __future__ import annotations
+from llm_client_mock import patch_llm_client
 
 import json
 import tempfile
@@ -67,7 +68,7 @@ class TestMicrocompact:
                 threshold_tokens=100,
                 no_progress_window=10,
             )
-            loop.client.chat = mock.chat
+            patch_llm_client(loop, mock.chat)
             r = loop.run("x")
             # Just verify no crash
             assert r.iterations >= 1
@@ -115,7 +116,7 @@ class TestHeartbeat:
                 heartbeat_interval=0.1,  # very fast heartbeat
                 trace_dir=trace_dir,
             )
-            loop.client.chat = mock.chat
+            patch_llm_client(loop, mock.chat)
             r = loop.run("x")
             # Should complete without error
             assert r.finished_reason == "stop"
@@ -146,7 +147,7 @@ class TestTrace:
                 threshold_tokens=10000,
                 trace_dir=trace_dir,
             )
-            loop.client.chat = mock.chat
+            patch_llm_client(loop, mock.chat)
             r = loop.run("task")
             assert r.trace_path is not None
             trace_file = Path(r.trace_path)
@@ -168,7 +169,7 @@ class TestTrace:
                 workspace=ws,
                 threshold_tokens=10000,
             )
-            loop.client.chat = mock.chat
+            patch_llm_client(loop, mock.chat)
             r = loop.run("task")
             assert r.trace_path is None
 
@@ -192,7 +193,7 @@ class TestTrace:
                 no_progress_window=10,
                 trace_dir=trace_dir,
             )
-            loop.client.chat = mock.chat
+            patch_llm_client(loop, mock.chat)
             r = loop.run("x")
             lines = Path(r.trace_path).read_text(encoding="utf-8").splitlines()
             events = [json.loads(l) for l in lines if l.strip()]
@@ -220,7 +221,7 @@ class TestGitCommit:
                 threshold_tokens=10000,
                 auto_git_commit=True,
             )
-            loop.client.chat = mock.chat
+            patch_llm_client(loop, mock.chat)
             with patch("agentnodes.kernel.agent.loop.git_commit", return_value=True) as mock_commit:
                 loop.run("task")
                 mock_commit.assert_called_once()
@@ -242,7 +243,7 @@ class TestGitCommit:
                 threshold_tokens=10000,
                 auto_git_commit=False,
             )
-            loop.client.chat = mock.chat
+            patch_llm_client(loop, mock.chat)
             with patch("agentnodes.kernel.agent.loop.git_commit") as mock_commit:
                 loop.run("task")
                 mock_commit.assert_not_called()
@@ -278,7 +279,7 @@ class TestThresholdEdgeCases:
                 workspace=ws,
                 threshold_tokens=999999,  # very high → no compression
             )
-            loop.client.chat = mock.chat
+            patch_llm_client(loop, mock.chat)
             r = loop.run("hi")
             assert r.compression_applied == []
 
@@ -321,7 +322,7 @@ class TestIntegration:
             trace_dir=trace_dir,
             auto_git_commit=False,  # no real git
         )
-        loop.client.chat = mock.chat
+        patch_llm_client(loop, mock.chat)
         r = loop.run("update strategy")
 
         assert r.iterations == 2

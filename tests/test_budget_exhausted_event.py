@@ -16,6 +16,7 @@ decider 拿到的 ctx 没有 result（载荷字段在 result 上），且 FINALI
 真触发（finished_reason == "budget"）。
 """
 from __future__ import annotations
+from llm_client_mock import patch_llm_client
 
 import asyncio
 from collections import Counter
@@ -53,7 +54,7 @@ def _build(ws: Path, responses, extra_cfg):
         strategy={"name": "react", "config": dict(extra_cfg)},
     )
     mock = MockLLM(list(responses))
-    loop.client.chat = mock.chat
+    patch_llm_client(loop, mock.chat)
     loop.client.achat = mock.achat
     return loop, mock
 

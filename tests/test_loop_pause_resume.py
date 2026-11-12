@@ -16,6 +16,7 @@
 拿到 resume 值后按值决定 CONTINUE / STOP。
 """
 from __future__ import annotations
+from llm_client_mock import patch_llm_client
 
 import asyncio
 import threading
@@ -109,7 +110,7 @@ def _build(ws: Path, responses, judge: HumanJudgeDecider, *,
                                               "no_progress_window": 99}},
     )
     mock = MockLLM(list(responses))
-    loop.client.chat = mock.chat
+    patch_llm_client(loop, mock.chat)
     loop.client.achat = mock.achat
     return loop, mock
 

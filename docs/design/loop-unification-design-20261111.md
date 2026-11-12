@@ -209,6 +209,35 @@ if value is CANCELLED:        # 挂起被取消
   （answer 必须合法 JSON）、`run_evals_llm.py:93`（scorecard 字段）、
   `workflow/executors.py:23`；**最大工作量在 `test_agent_loop*.py` 的期望值迁移**（D8 规则处置）。
 
+**U5 实施细节（2026-11-12 盘查后钉定）**：
+
+**盘查实测**：
+
+| 项 | 数量 | 位置 |
+|---|---|---|
+| 生产 sync 调用方 | **4** | `run_evals_llm.py:93`、`executor.py:428`、`role_factory.py:273`、`workflow/executors.py:23`（签名零变化）|
+| 测试里 `run()` 调用 | **175 处 / 16 文件** | 最大：`test_agent_loop.py` 36、`test_workflow_executors.py` 22、`test_agent_loop_swarm_parity.py` 20、`test_agent_loop_events.py` 18、`test_agent_loop_extensions.py` 18 |
+| **白盒直调 legacy 内部** | **1 处真调用** | `test_dual_path_permission.py:109/112`（P0 权限回归测试，直接调 `loop._run_loop_core(..., async_mode=…)`）；其余 6 处命中都是**注释** |
+
+**期望值漂移处置（D8 的具体化）**：
+
+| 类别 | 判定 | 处置 |
+|---|---|---|
+| **引擎无关**（answer / success / iterations / 事件序列）| 两引擎都该满足 | **原地保留**，不改 |
+| **legacy 特有**（异常出口不发 `loop_end`/`iter_end`、`budget_exhausted` 仅 legacy 发、`stop_reason` 措辞）| 统一引擎**故意**不同（D7：统一是超集）| 迁入 **legacy 遗产网**（`engine="legacy"` 显式钉住），U6 时随 legacy 删 |
+| **实现细节**（白盒直调 `_run_loop_core`）| 与引擎绑定 | 改为走公开入口（`run()` / `arun()`）；若断言的是 legacy 特有行为 → 遗产网 |
+
+**legacy 遗产网形态**：`tests/test_legacy_engine_net.py`——把 legacy 特有断言
+显式改走 `arun(engine="legacy")`。生存期 U5 → U6。
+
+**一次性切换（D4）**：不引入环境开关。理由：① 灰度开关本身有审计与漂移成本
+（批 E-2 教训）；② parity 网 + 五张网已是安全网；③ 引擎选择器退役时
+按 D9 走批 E 先例（读取层删、诊断层留）。
+
+**U6 前 legacy 仍可达**：`arun(engine="legacy")` 与 `run()` 的 legacy 路径
+保持可用（`run()` 切统一引擎后，legacy 仍可经 `arun(engine="legacy")` 触达——
+遗产网靠它）。
+
 ---
 
 ## §4 组件去向清单
@@ -243,7 +272,7 @@ if value is CANCELLED:        # 挂起被取消
 | **U3** | run_stream 转发 `text_delta/thinking_delta` | **已完成（2026-11-12）**：红网（流式场景 run_stream 只 yield done）→ 事件桥（`AgentLoop._make_event_bridge` + 骨架 `event_source` + 步骤间隙 drain）→ 4/4 绿（正向 2 / 负向 1 / 工具共存 1）；全量 7181 passed / 0 failed | revert | U1 |
 | **U4** | deciders `and_/or_` + ExternalTerminationDecider + after_observe 空闸 | **已完成（2026-11-12）**：组合子 6 条 + 外部终止 5 条 + 分层纪律 1 条单测；闸位断言按四闸更新（`test_deciders.py` 三闸→四闸 + `after_observe == []`）；**运行时零变化**（既有 loop 网 29 条全绿）；全量 7195 passed / 0 failed。**执行中发现真实分层违规**（见 §3.4 与 §5.2）| revert | 无（实际串行）|
 | **H1** | `ctx.pause/resume` 原语（§3.5）| **已完成（2026-11-12）**：7 条 e2e 绿（挂起可见 / 恢复值进循环 / **无副作用重放** / 取消 / 超时 / 单次挂起 / 挂起期间事件循环不阻塞）；全量 7202 passed / 0 failed | revert（纯增量）| U1 |
-| **U5** | `run()` 切统一引擎（§3.6）| 表 G 核验完 + D8 迁移完 + parity/出口网全绿 + 全量 `-n 12` 绿 | revert 一处 dispatch（legacy 路径仍在）| U1-U3 |
+| **U5** | `run()` 切统一引擎（§3.6）| **已完成（2026-11-12）**：全量 **7207 passed / 114 skipped / 0 failed**（并行 81s + 串行 507s，逐项一致）；batch_gate ALL GREEN（7321 ≥ 7178）；legacy 遗产网 5/5 绿 | revert 一处 dispatch（legacy 路径仍在）| U1-U3 |
 | **U6** | 删 `_run_loop_core` + legacy 遗产网 + 引擎开关（D9）；E3 所有权迁移（可选）| 只读 audit 命令独立报 legacy 残留（R-004）；collected 锚点更新；全量绿 | revert（内容在 git 历史）| U5 + 网全绿 |
 
 **顺序原则**：先网后删（R-016）；U4 与 U1 都动 `skeleton.py`，实际串行执行；U5 前 U1-U3 必须全绿（D4）。
@@ -384,3 +413,31 @@ U4 还暴露了「直读跨层实现」的惯性：halt 就在 `interfaces/cli`�
 3. **`CONTINUE` 语义 = 一直继续到上限**——恢复后 CONTINUE 会持续跑到
    `max_iterations`（不是「再跑一轮」）。「无副作用重放」的断言因此是
    **LLM 调用数 == 轮数**（若恢复被实现成回退重跑，调用数会 > 轮数）。
+
+### 5.4 U5 执行记录（2026-11-12）
+
+| 步骤 | 结果 |
+|---|---|
+| 盘查 | 生产 sync 调用方 **4 个**（签名零变化）；测试里 `run()` **175 处 / 16 文件**；白盒直调 legacy 内部 **1 处**（`test_dual_path_permission.py`）|
+| **legacy 遗产网**（D8 形态）| `tests/test_legacy_engine_net.py` **5/5 绿**——钉住「legacy 特有」行为（异常收尾不发 end 事件 / stop_reason 措辞）+ 反向标记「已消解的差异」（budget_exhausted U2 后已一致）+ 「引擎无关」对照组（防遗产网退化成差异收藏）|
+| `run()` 切统一引擎 | `_run_loop_core(async_mode=False)` → `_run_coro_in_sync(self.arun(...))`。**一次性切换，无灰度开关**（D4）|
+| 测试适配（真实工作量）| **73 处 mock 适配**——LLM 客户端有 **4 个入口**（chat/achat/stream/astream），切引擎后 sync 路径走 async 入口，只挂 `chat` 的 mock 会**打到真网络**（实测 `ConnectError` / 120s 挂起）。`patch_llm_client` 升级为默认挂满 4 入口；新增 `patch_client_achat`（自定义 client 场景）|
+| 期望值漂移处置 | 2 处按 D8 处置：`thinking_done`（改走 async 公开入口——**实现细节耦合**，非行为差异）、iteration timeout（改用 async 替身——同步 `time.sleep` 在 async 路径不可取消）|
+| 全量 | **7207 passed / 114 skipped / 0 failed**（并行 81s / 串行 507s，**逐项一致**）；batch_gate ALL GREEN（7321 ≥ 7178）|
+
+**执行中的三个坑（都是脚本化改动的代价，如实记录）**：
+
+1. **subprocess 模板被误改**——批量替换脚本把 `_INNER` 子进程模板里的
+   `loop.client.chat = X` 也改了，但子进程的 `sys.path` 只有 `src`，
+   没有 `llm_client_mock` 模块 → `ImportError: DLL load failed`（8 个 e2e
+   setup error，形态极具误导性）。修法：模板内还原，**只改主进程代码**。
+2. **多行表达式被脚本破坏**——`loop.client.chat = MockLLM([...]).chat`
+   是多行的，单行正则替换产生括号错位 → **SyntaxError，整个文件不被收集**
+   （表现为「测试通过」其实是没跑）。修法：手工改这 4 处。
+3. **`patch_client_achat` 参数错位**——写成 `patch_client_achat(loop, ...)`
+   时设置的是 `loop.achat` 而非 `loop.client.achat` → 静默不生效，
+   表现为「打到真网络 / ConnectError」。
+
+**教训**：**机械批量替换测试代码的风险高于收益**——本批 73 处替换里出了
+3 类错，且其中 2 类（模板误改 / 多行破坏）的症状是「假绿」而非「假红」。
+R-011（批量替换后必须做上下文复核）在这里是**硬要求**，不是建议。

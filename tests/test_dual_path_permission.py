@@ -22,6 +22,7 @@
 工具调用，然后断言工具**没有真正执行**。
 """
 from __future__ import annotations
+from llm_client_mock import patch_llm_client
 
 import asyncio
 import json
