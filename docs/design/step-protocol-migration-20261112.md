@@ -618,7 +618,7 @@ max_iter 才停（§2C 案例 3 反证）。所以本批只删 catch 那一份�
    + legacy 4 处内联随 U6-2 消失。退役路径 = U6-2 之后的"decider 直连批"。
 3. **批次 10 映射表测试**钉住 slot→gate 映射，动它要重跑映射验收。
 
-**记账的两笔槽位债务**（保留形态下同样可修，与剔除决策正交；本批不动）：
+**记账的判定层债务（三笔）**（保留形态下同样可修，与剔除决策正交；本批不动）：
 
 1. `BudgetStopStep.evaluate` 的 `ctx.should_stop` 写 = **死副作用**：
    legacy 读返回值且 ctx 是 `_make_strategy_ctx` 的瞬态对象（写完即弃）；
@@ -628,6 +628,16 @@ max_iter 才停（§2C 案例 3 反证）。所以本批只删 catch 那一份�
 2. `NoProgressDecider.record` 第二入口：要么修订 decider 契约措辞承认它
    （推荐——变异已透传回 step，decider 对象本身无状态），要么把窗口挪回
    step 由引擎直调 step。
+3. **隔离粒度不对称**（2026-11-13「decider 也是 step」追问发现）：step 崩溃经
+   `_call_step` **逐个**隔离成 `fail`——调用方可以吞掉继续（§2C 案例 5）；
+   decider 崩溃**无逐个隔离**——闸位 runner 不 catch（`_run_gate_once`
+   loop_engine.py:231-246 无 try），直接穿透引擎级兜底（`run_stream` except
+   → error 事件 + `finished_reason="error"`），整轮必断。两个自含 decider 对
+   **注入依赖**自行 try/except（ExternalTerminationDecider deciders.py:158-160、
+   NoProgressDecider 的 gate deciders.py:353-356），但 `decide` 本体没有。
+   两者最终都经 FINALIZE 漏斗，差别是**可恢复性**（step fail 可被吞、decider
+   崩必断）。处置二选一：契约明确「decider 崩溃 = 引擎级 error 出口」（推荐，
+   零代码变化只补措辞），或给闸位 runner 加逐个隔离（行为变更，单独决策）。
 
 ### 5.1 追问：剔除 Decider 是否功能完整（2026-11-12）
 
