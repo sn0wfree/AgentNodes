@@ -69,6 +69,16 @@ class Decider(StepHandler):
     hash 窗口维护、事件发射）仍属现有步骤/循环，B3 随引擎收编。
     """
 
+    #: 崩溃 fail-safe 方向（B2-①b）：闸位 runner 对 decider 本体异常逐个隔离，
+    #: 按本属性合成保守裁决 ``StepResult.ok((crash_policy, f"decider_{name}"))``。
+    #: - 守护型（默认 ``STOP``）：守护崩了还放行 = 失控比中断危险
+    #:   （预算不封顶、熔断失效、no-progress 失灵）。
+    #: - 放行型（续跑类覆盖 ``PROCEED``）：裁判崩了还 CONTINUE = 无限续跑；
+    #:   放行由 TextFinal 终答 / max_iter 兜底（有界）。
+    #: 注入依赖的降级方向是各子类既有语义（halt 失败 → PROCEED、
+    #: approval gate 失败 → EXIT），与本属性正交——它们管依赖，本属性管本体。
+    crash_policy: Decision = Decision.STOP
+
     @property
     def name(self) -> str:  # pragma: no cover - 子类覆盖
         return type(self).__name__
@@ -244,6 +254,10 @@ class GoalContinuationDecider(Decider):
     True = goal 有未覆盖判据 → 注入续跑提示、跳过本轮剩余步骤。
     """
 
+    #: 放行型（B2-①b）：裁判崩了还 CONTINUE = 无限续跑；
+    #: 放行由 TextFinal 终答 / max_iter 兜底（有界）。
+    crash_policy = Decision.PROCEED
+
     def __init__(self, continuation_step: Any) -> None:
         self._step = continuation_step
 
@@ -269,6 +283,9 @@ class InjectorContinuationDecider(Decider):
     ``ctx.metadata``——「谁问 injector」与「谁按结论分派」分离，符合
     decider 只读的契约。
     """
+
+    #: 放行型（B2-①b）：读 metadata 的判定崩了放行，由 TextFinal / 上限兜底。
+    crash_policy = Decision.PROCEED
 
     @property
     def name(self) -> str:

@@ -234,16 +234,49 @@ class LoopEngine:
         state: Any,
         payload: Any = None,
     ) -> tuple[Decision, str | None]:
-        """跑一遍闸位的 deciders，首个非 PROCEED 生效。"""
+        """跑一遍闸位的 deciders，首个非 PROCEED 生效。
+
+        **逐个隔离（B2-①b）**：decider 本体抛异常不再穿透引擎级兜底
+        （旧行为：整轮 error 出口、归因只剩 "error"），按
+        ``crash_policy`` 合成保守裁决——守护型 STOP / 放行型 PROCEED
+        （放行由 TextFinal 终答 / max_iter 兜底，有界）。崩溃经
+        ``_emit_decider_error`` 落 trace + 事件总线。
+        """
         for decider in self._deciders.get(gate, ()):
-            r = decider.handle(payload, state)
-            if not isinstance(r, StepResult):
-                r = await r
+            try:
+                r = decider.handle(payload, state)
+                if not isinstance(r, StepResult):
+                    r = await r
+            except Exception as exc:  # noqa: BLE001 — 逐 decider 隔离
+                dname = getattr(decider, "name", type(decider).__name__)
+                logger.warning("decider %s crashed at gate %s: %s", dname, gate, exc)
+                self._emit_decider_error(gate, decider, exc)
+                policy = getattr(decider, "crash_policy", Decision.STOP)
+                r = StepResult.ok((policy, f"decider_{dname}"))
             decision, reason = r.output
             if decision is not Decision.PROCEED:
                 logger.debug("gate %s: %s (%s)", gate, decision, reason)
                 return decision, reason
         return Decision.PROCEED, None
+
+    def _emit_decider_error(self, gate: str, decider: Any, exc: Exception) -> None:
+        """decider 崩溃可观测：trace + 事件总线（与 _emit_pause 同款取 loop）。"""
+        loop = None
+        if self._event_source is not None:
+            try:
+                loop = self._event_source()
+            except Exception:  # noqa: BLE001
+                loop = None
+        if loop is None:
+            return
+        try:
+            loop._trace_and_emit("decider_error", {
+                "decider": getattr(decider, "name", type(decider).__name__),
+                "gate": gate,
+                "error": str(exc),
+            })
+        except Exception:  # noqa: BLE001 — 可观测失败不阻断闸位
+            logger.debug("decider_error emit failed", exc_info=True)
 
     async def _await_resume(self, handle: Any) -> Any:
         """await 挂起恢复（不阻塞事件循环）。
@@ -317,7 +350,9 @@ class LoopEngine:
                     state.stop_reason = reason or "precheck"
                     result.stop_reason = state.stop_reason
                     # legacy 口径映射：budget → "budget"，超时 → "timeout"
-                    if "budget" in (reason or ""):
+                    # decider_* 前缀 = 裁判本体崩溃（B2-①b），不是预算超支——
+                    # "decider_budget" 会命中子串，必须排除。
+                    if "budget" in (reason or "") and not (reason or "").startswith("decider_"):
                         result.finished_reason = "budget"
                     break
                 # precheck 无 EXIT：8 个默认 decider 中只有 NoProgressDecider
@@ -347,7 +382,8 @@ class LoopEngine:
                     # 预算类 stop 的 finished_reason 口径与 legacy 一致
                     # （loop.py:1059 → "budget"）；不做这层映射会落成
                     # "max_iter"（for-else 兜底），调用方分不清是跑满还是超支。
-                    if "budget" in (reason or ""):
+                    # decider_* 前缀 = 裁判本体崩溃（B2-①b），不是预算超支。
+                    if "budget" in (reason or "") and not (reason or "").startswith("decider_"):
                         result.finished_reason = "budget"
                         state.stop_reason = reason
                         result.stop_reason = reason
@@ -393,9 +429,21 @@ class LoopEngine:
                 tool_hashes = (r.output or {}).get("tool_hashes") or []
                 for decider in self._deciders.get("after_act", ()):
                     record_fn = getattr(decider, "record", None)
-                    if record_fn is not None:
-                        for h in tool_hashes:
+                    if record_fn is None:
+                        continue
+                    for h in tool_hashes:
+                        # 逐个防护（B2-①b）：喂窗失败只降级 no-progress 保护
+                        # （窗口缺 hash，可观测），不阻断循环——旧行为穿透
+                        # 引擎级兜底整轮必断。
+                        try:
                             record_fn(state, h)
+                        except Exception as exc:  # noqa: BLE001
+                            logger.warning(
+                                "decider %s record failed: %s",
+                                getattr(decider, "name", type(decider).__name__),
+                                exc,
+                            )
+                            self._emit_decider_error("after_act.record", decider, exc)
 
                 decision, reason = await self._run_gate(
                     "after_act", state, payload=r.output
