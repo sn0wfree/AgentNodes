@@ -58,9 +58,9 @@ class LoopReasoner(StepHandler):
         comp_ctx = _make_strategy_ctx(loop,
             ctx.messages, None, ctx.result, ctx.iteration, ctx.hook_ctx,
         )
-        comp_ctx = await loop._call_step(
-            loop._strategy.compaction, comp_ctx, async_mode=True,
-        )
+        # B2-① T1：旧形状 step 已原地变异 comp_ctx，读本地引用。
+        # 失败吞没 = 现状语义（本站不读 should_stop）。
+        await loop._call_step(loop._strategy.compaction, comp_ctx)
         ctx.messages = comp_ctx.messages
 
         # inbox drain + per-iteration injectors（order==0）
@@ -76,9 +76,12 @@ class LoopReasoner(StepHandler):
         llm_ctx = _make_strategy_ctx(loop,
             ctx.messages, None, ctx.result, ctx.iteration, ctx.hook_ctx,
         )
-        llm_ctx = await loop._call_step(
-            loop._strategy.llm_call, llm_ctx, async_mode=True,
-        )
+        step_r = await loop._call_step(loop._strategy.llm_call, llm_ctx)
+        if not step_r.success:
+            # 崩溃信号回填旧通道（B2-① T1）：_call_step 不再写 ctx；
+            # 业务写（"error"/"llm_none"）优先，崩溃文本与旧 catch 一致。
+            llm_ctx.should_stop = True
+            llm_ctx.stop_reason = llm_ctx.stop_reason or "step_llm_call"
 
         # 状态回写（引擎的 ctx 就是 LoopContext，steps 已变异它）
         ctx.response = llm_ctx.response
@@ -141,9 +144,12 @@ class LoopActor(StepHandler):
         tool_ctx = _make_strategy_ctx(loop,
             ctx.messages, input, ctx.result, ctx.iteration, ctx.hook_ctx,
         )
-        tool_ctx = await loop._call_step(
-            loop._strategy.tool_execution, tool_ctx, async_mode=True,
-        )
+        step_r = await loop._call_step(loop._strategy.tool_execution, tool_ctx)
+        if not step_r.success:
+            # 崩溃信号回填旧通道（B2-① T1）——tool_execution 自身不写
+            # should_stop，文本与旧 catch 一致。
+            tool_ctx.should_stop = True
+            tool_ctx.stop_reason = tool_ctx.stop_reason or "step_tool_execution"
         ctx.messages = tool_ctx.messages
         if tool_ctx.should_stop:
             ctx.should_stop = True
@@ -379,9 +385,9 @@ class LoopFinalize:
             getattr(ctx, "hook_ctx", None),
         )
         fin_ctx.t0 = getattr(ctx, "t0", 0.0)
-        await loop._call_step(
-            loop._strategy.finalization, fin_ctx, async_mode=True,
-        )
+        # B2-① T1：失败吞没（现状语义——无人读 fin_ctx.should_stop）；
+        # 崩溃时 _call_step 内部已 warning。
+        await loop._call_step(loop._strategy.finalization, fin_ctx)
         # ``DefaultFinalizationStep`` 内部已发过一次 after_run（它直接调
         # ``loop._afire_hooks``，绕过 LoopHooks）——在这里打标记，让引擎
         # 末尾那次 ``_fire("after_run")`` 跳过。EXIT 路径不走 finalization

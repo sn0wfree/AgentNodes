@@ -48,6 +48,7 @@ from agentnodes.foundation.llm import LLMConfig, LLMResponse, OpenAICompatClient
 from agentnodes.foundation.llm.errors import LLMError
 from agentnodes.kernel.memory.persistent import PersistentMemory
 from agentnodes.foundation.utils.ids import SessionId
+from ._core_types import StepResult, maybe_await
 from .circuit_breaker import RetryPolicy, ToolLoopCircuitBreaker
 from .compact import CompactConfig
 from . import agent_telemetry as _tel
@@ -646,25 +647,31 @@ class AgentLoop(
 
     # ── L7 v0.2: step execution with uniform error isolation ──────
 
-    async def _call_step(self, step: Any, ctx: Any, *, async_mode: bool) -> Any:
-        """Execute a strategy Step with try/except isolation.
+    async def _call_step(self, step: Any, ctx: Any) -> StepResult:
+        """Execute a strategy Step（B2-① T1 过渡壳）.
 
-        A failing Step must not crash the agent loop: we log the error,
-        set ``ctx.should_stop`` so the caller can break safely, and
-        return the (possibly partially-mutated) context. Sync steps
-        (evaluate / is_no_progress / is_open) are handled transparently
-        via ``inspect.isawaitable``.
+        Duck-type 分派：新形状（``handle(input, ctx) → StepResult``）直接走
+        :func:`maybe_await`；旧形状（``execute(ctx, *, async_mode)`` 变异 ctx）
+        仍走 execute 并包成 ``StepResult.ok(ctx)``——output 即旧契约的 ctx。
+        T2+ 逐 step 切片迁移后，T11 删除旧形状分支（R-020：删除在最后）。
+
+        错误隔离：异常 → ``StepResult.fail(f"{step.name}: {exc}")``。
+        **不再写 ``ctx.should_stop``**——旧 catch 的这个副作用改由读 stop
+        通道的 4 个调用点显式回填（compaction/finalization 的 4 个调用点本就
+        不读，吞没语义显式化）。见 step-protocol-migration-20261112.md §4。
         """
         try:
-            result = step.execute(ctx, async_mode=async_mode)
+            handle = getattr(step, "handle", None)
+            if handle is not None:
+                return await maybe_await(handle(None, ctx))
+            result = step.execute(ctx, async_mode=True)  # 旧形状过渡壳（T11 删）
             if inspect.isawaitable(result):
-                return await result
-            return result
+                result = await result
+            return StepResult.ok(result)
         except Exception as exc:  # noqa: BLE001 — isolated per-step
-            logger.warning("step %s failed: %s", step.name, exc)
-            ctx.should_stop = True
-            ctx.stop_reason = f"step_{step.name}"
-            return ctx
+            sname = getattr(step, "name", type(step).__name__)
+            logger.warning("step %s failed: %s", sname, exc)
+            return StepResult.fail(f"{sname}: {exc}")
 
     # ── Shared logic (sync-safe: pure logic + trace + emit, no I/O) ──
 
@@ -1174,9 +1181,10 @@ class AgentLoop(
             comp_ctx = _make_strategy_ctx(
                 self, messages, None, result, iteration, hook_ctx,
             )
-            comp_ctx = await self._call_step(
-                self._strategy.compaction, comp_ctx, async_mode=async_mode,
-            )
+            # B2-① T1：返回 StepResult；旧形状 step 已原地变异 comp_ctx，
+            # 读本地引用即可（T2 切片迁移后改读 step_r.output["messages"]）。
+            # 失败吞没 = 现状语义（本站不读 should_stop）。
+            await self._call_step(self._strategy.compaction, comp_ctx)
             messages = comp_ctx.messages
 
             # DSH-inspired: drain steering inbox (mid-loop message injection)
@@ -1197,9 +1205,12 @@ class AgentLoop(
             llm_ctx = _make_strategy_ctx(
                 self, messages, None, result, iteration, hook_ctx,
             )
-            llm_ctx = await self._call_step(
-                self._strategy.llm_call, llm_ctx, async_mode=async_mode,
-            )
+            step_r = await self._call_step(self._strategy.llm_call, llm_ctx)
+            if not step_r.success:
+                # 崩溃信号回填旧通道（B2-① T1）：_call_step 不再写 ctx；
+                # 业务写（"error"/"llm_none"）优先，崩溃文本与旧 catch 一致。
+                llm_ctx.should_stop = True
+                llm_ctx.stop_reason = llm_ctx.stop_reason or "step_llm_call"
             if llm_ctx.should_stop:
                 break
             response = llm_ctx.response
@@ -1276,9 +1287,14 @@ class AgentLoop(
             tool_ctx = _make_strategy_ctx(
                 self, messages, response, result, iteration, hook_ctx
             )
-            tool_ctx = await self._call_step(
-                self._strategy.tool_execution, tool_ctx, async_mode=async_mode,
+            step_r = await self._call_step(
+                self._strategy.tool_execution, tool_ctx
             )
+            if not step_r.success:
+                # 崩溃信号回填旧通道（B2-① T1）——tool_execution 自身不写
+                # should_stop，文本与旧 catch 一致。
+                tool_ctx.should_stop = True
+                tool_ctx.stop_reason = tool_ctx.stop_reason or "step_tool_execution"
             if tool_ctx.should_stop:
                 await _fire("after_iteration", hook_ctx)
                 break
@@ -1334,9 +1350,9 @@ class AgentLoop(
             self, messages, response, result, result.iterations, hook_ctx,
         )
         fin_ctx.t0 = t0
-        fin_ctx = await self._call_step(
-            self._strategy.finalization, fin_ctx, async_mode=async_mode,
-        )
+        # B2-① T1：失败吞没（现状语义——无人读 fin_ctx.should_stop）；
+        # 崩溃时 _call_step 内部已 warning。
+        await self._call_step(self._strategy.finalization, fin_ctx)
         if async_mode:
             await asyncio.to_thread(self._git_commit, full_task, result)
         else:
