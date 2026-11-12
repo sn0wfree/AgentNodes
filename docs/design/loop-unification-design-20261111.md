@@ -108,6 +108,31 @@ E3（发射所有权迁进 FINALIZE）**U6 前不可行**（闸与 legacy 共享
 | 安全网惯例 | max 计数与语义条件**必须组合**使用 | AutoGen 官方 pitfall #5869 |
 | after_observe | 空闸登记进 `modes.deciders_for`（默认 `[]`）| D2 |
 
+**U4 实施细节（2026-11-12 盘查后钉定）**：
+
+- **组合子语义**：`and_()` = 两个 decide 都 PROCEED 才 PROCEED，否则取**第一个非
+  PROCEED** 的结果（与闸内"首个非 PROCEED 生效"一致）；`or_()` = 第一个非 PROCEED
+  即返回，都 PROCEED 才 PROCEED。组合子返回包装对象，`name` = `"(a and b)"` 形态。
+- **ExternalTerminationDecider 用注入，不用直读**（R-001 分层纪律）：halt 实现在
+  `interfaces/cli/halt.py`（L4），kernel（L2）**不得 import 它**——首版实现直读
+  `is_halted()`，被 `check_dangling_imports --layers` 的 `L3>L1` 违规提示暴露
+  （U4 实测，见下）。改为构造注入 `halt_check: Callable[[], bool] | None`：
+  - `None`（默认）= 无外部终止源，恒 `PROCEED`（**运行时零变化**，满足本批约束）；
+  - 装配层（L3/L4 或测试）传入 `is_halted` 即启用。
+  这与仓库既有模式一致：`_make_approval_gate`（`modes.py:61`）也是闭包注入而非
+  kernel 直读 interfaces。
+- **节流边界**：`is_halted()` 有跨进程 mtime 节流（0.5s）——同一进程内 trip 后
+  0.5s 内立读可能 False。生产语义正确（跨进程 trip 靠文件可见性）；单测注入替身
+  （不实测节流窗口）。conftest 的 `_reset_halt`（autouse）保证测试间无污染。
+- **闸位**：ExternalTerminationDecider 挂 **precheck**（每轮开头 + for-else 兜底前的
+  最后检查点；halt 是全局信号，不该等 REASON/ACT 浪费一轮 LLM 调用）。
+- **EXIT 语义 vs STOP**：halt 命中返回 **EXIT**——与 no-progress 拒绝同型（用户/外部
+  明确要求终止整个 run），经 U1 漏斗走 FINALIZE（finished_reason 落 "exit"）。
+  注意 Decision.EXIT 注释（deciders.py:56）"跳过主 finalize" 已被 U1 改写
+  （EXIT 也走 FINALIZE），实施时同步修正该注释。
+- **测试更新清单**：`test_deciders.py:233` 三闸断言 → 四闸（+`after_observe` 为空列表）；
+  `test_deciders.py:17` 的 EXIT 注释同步。
+
 ### 3.5 HITL 挂点（H1）
 
 - 形状：gate/decider 可调 `ctx.pause(reason) -> resume_value`；
@@ -158,7 +183,7 @@ E3（发射所有权迁进 FINALIZE）**U6 前不可行**（闸与 legacy 共享
 | **U1** | 出口网（§3.2 矩阵 9 出口 × 6 断言：`trace_path` 非空 / trace 已关 / `loop_end`·`iter_end`·`after_run` 各恰一次 / done 语义正确）+ after_act EXIT→break + `_ending_emitted` 幂等 + precheck EXIT 分支删除 + 对偶测试转绝对值 | **已完成（2026-11-12）**：网 5/5 绿（先红 xfail → 修后 XPASS → 摘 marker）；全量 7172 passed / 0 failed | revert 单 commit（break 改动还原为 return；标记为纯增量）| — |
 | **U2** | `budget_exhausted` 补发 + no-progress 事件序列网（compare_exit 固化） | **已完成（2026-11-12）**：红网（2 xfail）→ LoopFinalize 补发（budget 分支，载荷与 legacy 同形）→ XPASS 摘 marker 4/4 绿；序列网 skeleton 绝对值 + legacy 对照 2/2 绿；全量 7178 passed / 0 failed | revert | U1 |
 | **U3** | run_stream 转发 `text_delta/thinking_delta` | **已完成（2026-11-12）**：红网（流式场景 run_stream 只 yield done）→ 事件桥（`AgentLoop._make_event_bridge` + 骨架 `event_source` + 步骤间隙 drain）→ 4/4 绿（正向 2 / 负向 1 / 工具共存 1）；全量 7181 passed / 0 failed | revert | U1 |
-| **U4** | deciders `and_/or_` + ExternalTerminationDecider + after_observe 空闸 + precheck EXIT 分支删除 | **运行时行为零变化**（事件序列/结果字段）；闸位集合断言（`test_deciders.py:233` 三闸）按四闸更新——预期中的测试文本变更，非行为漂移；新能力单测绿；halt 命中 → EXIT 且走 FINALIZE | revert | 无（可与 U1 并行，但两批都动 skeleton.py，实际串行执行）|
+| **U4** | deciders `and_/or_` + ExternalTerminationDecider + after_observe 空闸 | **已完成（2026-11-12）**：组合子 6 条 + 外部终止 5 条 + 分层纪律 1 条单测；闸位断言按四闸更新（`test_deciders.py` 三闸→四闸 + `after_observe == []`）；**运行时零变化**（既有 loop 网 29 条全绿）；全量 7195 passed / 0 failed。**执行中发现真实分层违规**（见 §3.4 与 §5.2）| revert | 无（实际串行）|
 | **H1** | `ctx.pause/resume` 原语（§3.5）| e2e：pause 事件可见 → resume 值进循环 → **无副作用重放**；超时走既有 approval_timeout 语义 | revert（纯增量）| U1 |
 | **U5** | `run()` 切统一引擎（§3.6）| 表 G 核验完 + D8 迁移完 + parity/出口网全绿 + 全量 `-n 12` 绿 | revert 一处 dispatch（legacy 路径仍在）| U1-U3 |
 | **U6** | 删 `_run_loop_core` + legacy 遗产网 + 引擎开关（D9）；E3 所有权迁移（可选）| 只读 audit 命令独立报 legacy 残留（R-004）；collected 锚点更新；全量绿 | revert（内容在 git 历史）| U5 + 网全绿 |
@@ -259,3 +284,21 @@ D:\tools\python312\python.exe scripts\arch\sync_architecture_diagram.py --write
 | HITL 形状 | survey §2 LangGraph/pydantic-ai 行 + double-execution 坑；库内 `loop_progress.py:212-219` 三步序 |
 | 出口矩阵 9 项 | 2026-11-11 AST 枚举 + `compare_exit.py` 实测 |
 | `_check_budget` 在用 | loop.py:1115（2026-11-11 核验，纠正前次"死代码"误记）|
+
+### 5.2 U4 执行记录（2026-11-12）
+
+| 步骤 | 结果 |
+|---|---|
+| `Decider.and_()` / `.or_()` 组合子 | 6 条单测（短路语义 / 双 PROCEED / name 可读）|
+| `ExternalTerminationDecider` | 5 条单测（halt→EXIT / 未 halt→PROCEED / 无源→PROCEED / 故障 fail-open / 经 modes 注入生效）|
+| `after_observe` 第四闸 | `modes.deciders_for` 登记空列表；`skeleton.run_stream` OBSERVE 后调闸（空列表 → 直接 PROCEED）＝运行时零变化 |
+| 闸位断言更新 | `test_deciders.py` 三闸 → 四闸 + `after_observe == []`（预期中的文本变更，非行为漂移）|
+| **执行中发现的真实缺陷** | **首版 `ExternalTerminationDecider` 直读 `interfaces/cli/halt.is_halted`（L4）→ `check_dangling_imports --layers` 报 `L3>L1: 1`**。根因是 kernel（L2）反向依赖 interfaces（L4），违反 R-001。改为**构造注入 `halt_check`**（None = 无源 = 恒 PROCEED），`deciders_for(halt_check=...)` 由装配层传入——与仓库既有 `_make_approval_gate` 闭包注入同模式。修复后门禁 `L3>L1: 0` |
+| 回归钉 | 新增单测 `test_deciders_module_does_not_import_interfaces`（读源码断言无 `interfaces.cli` / `from agentnodes.interfaces`），防回归 |
+| 运行时零变化验证 | 既有 loop 网 29 条（出口/预算/事件序列/双通道/parity/对偶）全绿 |
+| 全量 | **7195 passed / 114 skipped / 0 failed**（`-n 12`，100s）；batch_gate ALL GREEN（7309 ≥ 7178）|
+
+**流程教训**：U4 的验收标准原写「纯增量，既有断言零改动」——实测必改
+（闸位集合断言）。已在 §5 表格修正为「运行时零变化 + 闸位断言按四闸更新」。
+U4 还暴露了「直读跨层实现」的惯性：halt 就在 `interfaces/cli`，但 kernel
+不得 import——门禁当场抓住。这是 gate 有效的又一实证（R-019 的正面案例）。

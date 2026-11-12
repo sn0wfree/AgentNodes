@@ -329,6 +329,18 @@ class ReActSkeleton:
 
                 # ── OBSERVE（下一轮）──
                 await self._fire("after_iteration", state, iteration)
+                # 统一引擎 U4 / D2：第四闸 after_observe——**空位预留**，
+                # 默认零 decider（_run_gate 遇空列表直接 PROCEED，运行时
+                # 零变化）。恢复 llmwikify 原版检查点，判定搬迁留给后续
+                # 独立语义批（搬迁会改变判定时点 = 行为变更）。
+                decision, reason = await self._run_gate("after_observe", state)
+                if decision is not Decision.PROCEED:
+                    state.stop_reason = reason or "after_observe"
+                    result.stop_reason = state.stop_reason
+                    if decision is Decision.EXIT:
+                        if getattr(result, "finished_reason", "stop") == "stop":
+                            result.finished_reason = "exit"
+                    break
 
             else:
                 # for 耗尽 = 上限（PRECHECK 每轮先判，这里兜底）

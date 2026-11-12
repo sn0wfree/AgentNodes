@@ -938,7 +938,12 @@ class AgentLoop(
 
         strategy = self._strategy
         max_iter = self._effective_max_iterations()
-        deciders = deciders_for(strategy, self, max_iterations=max_iter)
+        # U4：halt_check 由装配层注入（R-001：kernel 不 import interfaces/cli）。
+        # 默认 None = 无外部终止源（运行时零变化）。
+        deciders = deciders_for(
+            strategy, self, max_iterations=max_iter,
+            halt_check=getattr(self, "_halt_check", None),
+        )
         # 骨架需要 strategy 槽位被绑定（deciders_for 已做），再补
         # skeleton 自身的 hooks。
         skeleton = ReActSkeleton(

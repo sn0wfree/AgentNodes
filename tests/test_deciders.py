@@ -222,7 +222,8 @@ class TestRegistry:
         assert get_mode_config("test_mode_x") is cfg
         assert get_mode_config("no_such") is None
 
-    def test_deciders_for_assembles_three_gates(self):
+    def test_deciders_for_assembles_four_gates(self):
+        """统一引擎 U4 / D2：四闸（after_observe 为空位预留）。"""
         from agentnodes.kernel.agent.modes import deciders_for
         from agentnodes.kernel.agent.strategy.factory import create_strategy
 
@@ -230,14 +231,20 @@ class TestRegistry:
         gates = deciders_for(
             strategy, loop=None, max_iterations=8
         )
-        assert set(gates) == {"precheck", "after_reason", "after_act"}
+        assert set(gates) == {
+            "precheck", "after_reason", "after_act", "after_observe",
+        }
         names = {gate: [d.name for d in ds] for gate, ds in gates.items()}
         assert "max_iterations" in names["precheck"]
         assert "budget" in names["precheck"]
         assert "circuit_breaker" in names["precheck"]
+        # U4：外部终止挂 precheck（AutoGen ExternalTermination 等价物）
+        assert "external_termination" in names["precheck"]
         assert "text_final" in names["after_reason"]
         assert "goal_continuation" in names["after_reason"]
         assert "no_progress" in names["after_act"]
+        # D2：after_observe 默认**空**——闸位预留，判定不搬迁
+        assert names["after_observe"] == []
 
     def test_deciders_for_binds_progress_window(self):
         """组装器负责 bind_agent_loop——ProgressStep 降级路径需要它。"""

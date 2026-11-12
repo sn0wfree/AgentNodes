@@ -38,6 +38,7 @@ __all__ = [
     "CircuitBreakerDecider",
     "Decision",
     "Decider",
+    "ExternalTerminationDecider",
     "GoalContinuationDecider",
     "InjectorContinuationDecider",
     "MaxIterationsDecider",
@@ -53,7 +54,8 @@ class Decision(str, Enum):
     PROCEED = "proceed"    # 进入下一步骤（ACT 或 OBSERVE）
     CONTINUE = "continue"  # 跳过剩余步骤，直接下一轮迭代
     STOP = "stop"          # 结束循环，走 finalize
-    EXIT = "exit"          # 结束整个 run（自带 after_run，跳过主 finalize）
+    EXIT = "exit"          # 结束整个 run（U1 后也走 FINALIZE 漏斗；
+                           # 旧注释"跳过主 finalize"已过时）
 
 
 class Decider(StepHandler):
@@ -79,6 +81,86 @@ class Decider(StepHandler):
         self, input: Any, ctx: Any
     ) -> tuple[Decision, str | None]:  # pragma: no cover - 子类覆盖
         raise NotImplementedError
+
+    # ── 组合子（统一引擎 U4）─────────────────────────────────────────
+    #
+    # AutoGen 的终止条件支持 `&`/`|` 组合、Vercel AI SDK 的 stopWhen 是
+    # 条件数组——业界把「循环控制」当**可组合条件**而不是固定检查点。
+    # 这里提供显式方法（不用运算符重载：`&`/`|` 与位运算习惯冲突且在
+    # `StepHandler` 协议上语义不清）。
+
+    def and_(self, other: "Decider") -> "Decider":
+        """两者都 PROCEED 才 PROCEED；否则取**第一个非 PROCEED** 的结论。
+
+        与闸内「按序判定，首个非 PROCEED 生效」短路语义一致——
+        ``d1.and_(d2)`` 在闸里等价于 ``[d1, d2]`` 相邻放置。
+        """
+        return _CombinationDecider(self, other, op="and")
+
+    def or_(self, other: "Decider") -> "Decider":
+        """第一个非 PROCEED 即返回；都 PROCEED 才 PROCEED。"""
+        return _CombinationDecider(self, other, op="or")
+
+
+class _CombinationDecider(Decider):
+    """组合器：纯转发，两个子 decider 的 decide 结果按 op 合成。"""
+
+    def __init__(self, first: Decider, second: Decider, *, op: str) -> None:
+        self._first = first
+        self._second = second
+        self._op = op
+
+    @property
+    def name(self) -> str:
+        op = " and " if self._op == "and" else " or "
+        return f"({self._first.name}{op}{self._second.name})"
+
+    def decide(self, input: Any, ctx: Any) -> tuple[Decision, str | None]:
+        d1, r1 = self._first.decide(input, ctx)
+        if self._op == "or":
+            if d1 is not Decision.PROCEED:
+                return d1, r1
+            return self._second.decide(input, ctx)
+        # and：第一个非 PROCEED 即短路；否则看第二个
+        if d1 is not Decision.PROCEED:
+            return d1, r1
+        return self._second.decide(input, ctx)
+
+
+class ExternalTerminationDecider(Decider):
+    """外部终止信号：全局 halt（跨进程 kill-switch）。
+
+    对标 AutoGen ``ExternalTermination``。halt 是**用户/外部明确要求终止
+    整个 run** 的信号 → 返回 **EXIT**（与 no-progress 拒绝同型）——经 U1
+    的 FINALIZE 漏斗收尾（finished_reason 落 "exit"）。
+
+    挂 **precheck** 闸：halt 是全局信号，命中时不该再烧一轮 LLM 调用。
+
+    **分层纪律（R-001）**：halt 的实现在 ``interfaces/cli/halt.py``（L4），
+    kernel（L2）**不得 import 它**。这里只接受注入的 ``halt_check``
+    callable——装配层（``modes.deciders_for`` 由 L2 内部调用，但实际注入
+    发生在 L3/L4 的装配点，或由 L2 侧传 ``None`` 降级为"永不终止"）。
+    与仓库既有模式一致（``_make_approval_gate`` 也是闭包注入）。
+    """
+
+    def __init__(self, halt_check: Any | None = None) -> None:
+        #: ``() -> bool``；None = 无外部终止源（恒 PROCEED，零行为变化）
+        self._halt_check = halt_check
+
+    @property
+    def name(self) -> str:
+        return "external_termination"
+
+    def decide(self, input: Any, ctx: LoopContext) -> tuple[Decision, str | None]:
+        if self._halt_check is None:
+            return Decision.PROCEED, None
+        try:
+            halted = bool(self._halt_check())
+        except Exception:  # noqa: BLE001 — 外部信号故障不阻断循环
+            return Decision.PROCEED, None
+        if halted:
+            return Decision.EXIT, "halt"
+        return Decision.PROCEED, None
 
 
 class StopSignalDecider(Decider):

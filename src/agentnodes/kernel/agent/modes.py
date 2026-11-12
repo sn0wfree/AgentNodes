@@ -16,6 +16,7 @@ from .deciders import (
     BudgetDecider,
     CircuitBreakerDecider,
     Decider,
+    ExternalTerminationDecider,
     GoalContinuationDecider,
     InjectorContinuationDecider,
     MaxIterationsDecider,
@@ -94,7 +95,13 @@ def _make_approval_gate(loop: Any, strategy: Any) -> Any | None:
     return _gate
 
 
-def deciders_for(strategy: Any, loop: Any, *, max_iterations: int) -> dict[str, list[Decider]]:
+def deciders_for(
+    strategy: Any,
+    loop: Any,
+    *,
+    max_iterations: int,
+    halt_check: Any | None = None,
+) -> dict[str, list[Decider]]:
     """从 ``LoopStrategy`` 槽位组装**默认** deciders。
 
     槽位 → 闸位映射（批次 10 设计 §3，以现有循环的闸位实测为准）：
@@ -124,6 +131,9 @@ def deciders_for(strategy: Any, loop: Any, *, max_iterations: int) -> dict[str, 
     :param loop: AgentLoop（steps 的 ``bind_agent_loop`` 对象——
         ProgressStep/ResilienceStep 的降级路径需要它）
     :param max_iterations: 迭代上限
+    :param halt_check: 可选 ``() -> bool`` 外部终止源（U4）。None = 无
+        （恒 PROCEED）。**不在 kernel 内 import** ``interfaces/cli/halt``
+        ——R-001 分层纪律，装配层注入。
     """
     # 确保槽位 step 拿到 loop（现有 bind 协议；重复绑定幂等）。
     binder = getattr(strategy, "bind_agent_loop", None)
@@ -140,6 +150,11 @@ def deciders_for(strategy: Any, loop: Any, *, max_iterations: int) -> dict[str, 
             MaxIterationsDecider(max_iterations),
             BudgetDecider(strategy.stop),
             CircuitBreakerDecider(strategy.resilience),
+            # 统一引擎 U4：外部终止（全局 halt，AutoGen ExternalTermination）
+            # 挂 precheck——命中即 EXIT，不再烧一轮 LLM 调用。
+            # **halt_check 用注入**（R-001：kernel 不得 import interfaces/cli；
+            # None = 无外部终止源，恒 PROCEED = 运行时零变化）。
+            ExternalTerminationDecider(halt_check),
         ],
         # 顺序敏感：续跑判定（goal / injector）必须在文本终答之前——
         # 否则模型第一次给出文本就会结束整个 run。
@@ -156,4 +171,9 @@ def deciders_for(strategy: Any, loop: Any, *, max_iterations: int) -> dict[str, 
         "after_act": [
             NoProgressDecider(strategy.progress, approval_gate=_make_approval_gate(loop, strategy)),
         ],
+        # 统一引擎 U4 / D2：第四闸**空位预留**。闸位存在（结构性打通），
+        # 默认零 decider——恢复 llmwikify 原版的 after_observe 检查点，但
+        # **不搬迁** GoalContinuation / Injector（搬迁会改变判定时点 =
+        # 行为变更，违反本批"运行时零变化"；留给统一后的独立语义批）。
+        "after_observe": [],
     }
