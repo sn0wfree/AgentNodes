@@ -160,11 +160,16 @@ class ReActSkeleton:
             state._event_detach = None
 
     def _drain_pending(self, state: Any) -> list[dict[str, Any]]:
+        out: list[dict[str, Any]] = []
         pending = getattr(state, "_event_pending", None)
-        if not pending:
-            return []
-        out = list(pending)
-        pending.clear()
+        if pending:
+            out.extend(list(pending))
+            pending.clear()
+        # pause 事件（骨架侧产生，U3 事件桥的同形扩展）
+        pauses = getattr(self, "_pause_events", None)
+        if pauses:
+            out.extend(list(pauses))
+            pauses.clear()
         return out
 
     # ── 闸位判定 ─────────────────────────────────────────────────────
@@ -175,7 +180,61 @@ class ReActSkeleton:
         state: Any,
         payload: Any = None,
     ) -> tuple[Decision, str | None]:
-        """按序跑一个闸位的 deciders，首个非 PROCEED 生效。"""
+        """按序跑一个闸位的 deciders，首个非 PROCEED 生效。
+
+        **挂起处理（H1）**：decider 调 ``ctx.pause(...)`` 只是**创建挂起点**
+        （不阻塞，见 pause.py 的 attach_pause）——本方法在闸位跑完后检查
+        ``state._pause_handle``，有则 yield pause 事件 → await 恢复 →
+        把恢复值写进 ``ctx.resume_value`` → **重跑该闸位**（decider 读到
+        resume_value 决定后续）。恢复值因此进循环，且**不重放**闸位之前的
+        副作用（不变量 1：挂起点在闸位判定处，继续而非回退）。
+        """
+        decision, reason = await self._run_gate_once(gate, state, payload)
+        handle = getattr(state, "_pause_handle", None)
+        if handle is None:
+            return decision, reason
+
+        # 1. 消费挂起点（单次挂起：重跑时工厂会因 resume_value 非空而返回 None）
+        try:
+            state._pause_handle = None
+        except Exception:  # noqa: BLE001
+            pass
+
+        # 2. 通知外部（事件总线 + run_stream 事件）
+        ev = {
+            "type": "pause",
+            "reason": getattr(handle, "reason", ""),
+            "payload": getattr(handle, "payload", {}) or {},
+        }
+        self._emit_pause(ev)
+        # 挂起点在 await 期间保持可见（外部观察者据此 resume）——
+        # 与 ``_pause_handle``（一次性消费）区分。
+        try:
+            state._pause_active = handle
+        except Exception:  # noqa: BLE001
+            pass
+
+        # 3. await 恢复（async 等待，不阻塞事件循环）
+        value = await self._await_resume(handle)
+        try:
+            state._pause_active = None
+        except Exception:  # noqa: BLE001
+            pass
+        try:
+            state.resume_value = value
+        except Exception:  # noqa: BLE001
+            pass
+
+        # 4. 重跑该闸位——decider 读到 ctx.resume_value 决定后续
+        return await self._run_gate_once(gate, state, payload)
+
+    async def _run_gate_once(
+        self,
+        gate: str,
+        state: Any,
+        payload: Any = None,
+    ) -> tuple[Decision, str | None]:
+        """跑一遍闸位的 deciders，首个非 PROCEED 生效。"""
         for decider in self._deciders.get(gate, ()):
             r = decider.handle(payload, state)
             if not isinstance(r, StepResult):
@@ -185,6 +244,46 @@ class ReActSkeleton:
                 logger.debug("gate %s: %s (%s)", gate, decision, reason)
                 return decision, reason
         return Decision.PROCEED, None
+
+    async def _await_resume(self, handle: Any) -> Any:
+        """await 挂起恢复（不阻塞事件循环）。
+
+        ``PauseHandle.wait`` 是同步阻塞（threading.Event）——放线程里跑，
+        主事件循环继续处理其它请求（这正是「循环级 HITL」的意义：
+        挂起期间 agent 仍能响应别的请求）。
+        """
+        import asyncio as _aio
+
+        timeout = getattr(handle, "timeout_s", None)
+        try:
+            return await _aio.to_thread(handle.wait, timeout)
+        except Exception:  # noqa: BLE001 — 等待失败按取消处理
+            logger.debug("pause resume failed", exc_info=True)
+            return None
+
+    def _emit_pause(self, ev: dict[str, Any]) -> None:
+        """把 pause 事件发到 loop 事件总线（外部可观察挂起态）。
+
+        同时压进 pending 队列——``run_stream`` 的 drain 点会 yield 它
+        （U3 的事件桥形状：骨架侧事件 → 生成器输出）。
+        """
+        loop = None
+        if self._event_source is not None:
+            try:
+                loop = self._event_source()
+            except Exception:  # noqa: BLE001
+                loop = None
+        if loop is not None:
+            try:
+                loop._emit("agent_paused", dict(ev))
+            except Exception:  # noqa: BLE001
+                logger.debug("pause event emit failed", exc_info=True)
+        # 骨架侧 pending（由 _drain_pending 消费 → run_stream yield）
+        pending = getattr(self, "_pause_events", None)
+        if pending is None:
+            pending = []
+            self._pause_events = pending
+        pending.append(dict(ev))
 
     # ── hooks 转发 ───────────────────────────────────────────────────
 

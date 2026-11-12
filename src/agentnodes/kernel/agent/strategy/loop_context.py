@@ -63,6 +63,15 @@ class LoopContext:
     result: Any | None = None
     hook_ctx: Any | None = None
 
+    # ── 挂起/恢复（统一引擎 H1）────────────────────────────────────
+    #
+    #: ``pause(reason, payload, timeout_s) -> resume_value``——循环级
+    #: HITL 原语（design doc §3.5）。由**装配层**注入（谁创建 ctx 谁提供
+    #: 工厂）；None = 本次运行不支持挂起（decider 侧据此降级）。
+    pause: Any | None = None
+    #: 恢复时注入的值（挂起点读取）。
+    resume_value: Any = None
+
     # Free-form bag for step-specific payloads (no per-step field
     # explosion; v0.1 keeps it minimal).
     metadata: dict[str, Any] = field(default_factory=dict)

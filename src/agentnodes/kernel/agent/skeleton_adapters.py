@@ -180,6 +180,13 @@ class LoopPrepare:
         )
         ctx.result = result
         ctx.hook_ctx = hook_ctx
+        # 统一引擎 H1：装上挂起/恢复原语的工厂（循环级 HITL）。
+        # decider 侧 ``ctx.pause(reason=..., payload=...)`` 创建挂起点
+        # （**不阻塞**），骨架据此 yield pause 事件 → await 恢复 → 重跑该闸位。
+        # 详见 design doc §3.5 与 kernel/agent/pause.py。
+        from .pause import attach_pause
+
+        attach_pause(ctx)
         # 批次 13 S3-a：保留用户原始 task（``full_task`` 已被 pre-run
         # 上下文前缀污染，guardrail 必须扫原文）。
         ctx.metadata["raw_task"] = spec.task

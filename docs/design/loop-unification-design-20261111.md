@@ -143,6 +143,64 @@ E3（发射所有权迁进 FINALIZE）**U6 前不可行**（闸与 legacy 共享
   检索证据见 survey §2 LangGraph 行）。
 - 现有工具级 ASK 通道（permission gateway）**保留不动**；审批逻辑迁移是 U6 后可选。
 
+**H1 实施细节（2026-11-12 盘查后钉定）**：
+
+**现状盘查**——仓库里已有三套「人工介入」，都是**一问一答**（无恢复注入）：
+
+| 机制 | 粒度 | 通道 | 恢复语义 |
+|---|---|---|---|
+| `approve_loop`（`loop_progress.py:270`）| 循环内一个闸位 | `threading.Event` + **同步阻塞** | 无（approved/reject 二选一）|
+| `PermissionGateway`（工具级）| 单次工具调用 | `asyncio.Future` + SSE | 无（allow/deny 二选一）|
+| `halt`（全局 kill-switch）| 进程 | 文件 + mtime | 无 |
+
+**共同缺口**：都能「挂起」，但不能「恢复并注入数据」。H1 补的就是这一段。
+
+**API 形状**（挂在 `LoopContext` 上，decider/gate 经 ctx 拿得到）：
+
+```
+# LoopContext 新增两个字段
+pause: Any | None = None       # PauseHandle（有则说明当前处于挂起态）
+resume_value: Any = None       # 恢复时注入的值
+
+# PauseHandle（新增）
+class PauseHandle:
+    reason: str                # 挂起原因（供事件负载）
+    payload: dict              # 结构化上下文（供前端渲染）
+    def resume(self, value)    # 注入恢复值并唤醒等待者
+    def cancel(self, reason)   # 取消挂起（走取消分支）
+```
+
+**运行时装配**：`ctx.pause` 由**装配层**注入（谁创建 ctx 谁提供 handle 工厂），
+decider 侧调用形态：
+
+```
+value = ctx.pause(reason="需要人工判断", payload={...})
+if value is CANCELLED:        # 挂起被取消
+    ...
+# value 即 resume 注入的数据，继续走
+```
+
+**三条不变量（H1 的验收红线）**：
+
+1. **不隐式重放**：resume 之后从挂起点**继续**，不重新执行挂起前已完成的
+   步骤（LangGraph double-execution 坑——它重放导致副作用重复）。
+   实现上：挂起发生在**闸位判定点**，恢复后该闸位**重新判定**（decider 拿到
+   resume 值），但**工具执行等副作用不回滚**。
+2. **超时语义显式**：`pause` 带 `timeout_s`；超时按既有 `approval_timeout`
+   语义处理（continue/reject 由调用方决定，缺省 = 取消挂起）。
+3. **单次挂起**：同一 ctx 同时最多一个挂起点（不做嵌套挂起——那需要栈语义，
+   超出本批范围）。
+
+**与既有审批闸的关系**：H1 **不迁移** `approve_loop` / `PermissionGateway`
+（那是 U6 后的可选优化）。H1 只提供**原语 + 挂起点**：
+现有 no-progress 闸若要接 pause/resume，是它自己的迁移批。
+
+**验收网**（e2e，3 条）：
+1. 挂起可见：pause 产生 `{"type": "pause"}` 事件，外部能观察到挂起态；
+2. 恢复值进循环：resume 注入的值被挂起方读到并影响后续判定；
+3. **无副作用重放**：挂起前已执行的副作用（如工具调用计数）在恢复后**不重复**
+   （断言计数不变）。
+
 ### 3.6 sync 同引擎（U5）
 
 - `run()` 内部改为 `_run_coro_in_sync(self.arun(task, context=context, history=history))`；
@@ -184,7 +242,7 @@ E3（发射所有权迁进 FINALIZE）**U6 前不可行**（闸与 legacy 共享
 | **U2** | `budget_exhausted` 补发 + no-progress 事件序列网（compare_exit 固化） | **已完成（2026-11-12）**：红网（2 xfail）→ LoopFinalize 补发（budget 分支，载荷与 legacy 同形）→ XPASS 摘 marker 4/4 绿；序列网 skeleton 绝对值 + legacy 对照 2/2 绿；全量 7178 passed / 0 failed | revert | U1 |
 | **U3** | run_stream 转发 `text_delta/thinking_delta` | **已完成（2026-11-12）**：红网（流式场景 run_stream 只 yield done）→ 事件桥（`AgentLoop._make_event_bridge` + 骨架 `event_source` + 步骤间隙 drain）→ 4/4 绿（正向 2 / 负向 1 / 工具共存 1）；全量 7181 passed / 0 failed | revert | U1 |
 | **U4** | deciders `and_/or_` + ExternalTerminationDecider + after_observe 空闸 | **已完成（2026-11-12）**：组合子 6 条 + 外部终止 5 条 + 分层纪律 1 条单测；闸位断言按四闸更新（`test_deciders.py` 三闸→四闸 + `after_observe == []`）；**运行时零变化**（既有 loop 网 29 条全绿）；全量 7195 passed / 0 failed。**执行中发现真实分层违规**（见 §3.4 与 §5.2）| revert | 无（实际串行）|
-| **H1** | `ctx.pause/resume` 原语（§3.5）| e2e：pause 事件可见 → resume 值进循环 → **无副作用重放**；超时走既有 approval_timeout 语义 | revert（纯增量）| U1 |
+| **H1** | `ctx.pause/resume` 原语（§3.5）| **已完成（2026-11-12）**：7 条 e2e 绿（挂起可见 / 恢复值进循环 / **无副作用重放** / 取消 / 超时 / 单次挂起 / 挂起期间事件循环不阻塞）；全量 7202 passed / 0 failed | revert（纯增量）| U1 |
 | **U5** | `run()` 切统一引擎（§3.6）| 表 G 核验完 + D8 迁移完 + parity/出口网全绿 + 全量 `-n 12` 绿 | revert 一处 dispatch（legacy 路径仍在）| U1-U3 |
 | **U6** | 删 `_run_loop_core` + legacy 遗产网 + 引擎开关（D9）；E3 所有权迁移（可选）| 只读 audit 命令独立报 legacy 残留（R-004）；collected 锚点更新；全量绿 | revert（内容在 git 历史）| U5 + 网全绿 |
 
@@ -302,3 +360,27 @@ D:\tools\python312\python.exe scripts\arch\sync_architecture_diagram.py --write
 （闸位集合断言）。已在 §5 表格修正为「运行时零变化 + 闸位断言按四闸更新」。
 U4 还暴露了「直读跨层实现」的惯性：halt 就在 `interfaces/cli`，但 kernel
 不得 import——门禁当场抓住。这是 gate 有效的又一实证（R-019 的正面案例）。
+
+### 5.3 H1 执行记录（2026-11-12）
+
+| 步骤 | 结果 |
+|---|---|
+| `kernel/agent/pause.py`（新）| `PauseHandle`（reason/payload/timeout_s + resume/cancel/wait）+ `CANCELLED` 哨兵 + `attach_pause(ctx)` 工厂 |
+| `LoopContext` | 新增 `pause`（工厂，由装配层注入）+ `resume_value`（恢复值） |
+| `LoopPrepare` | 装配 `attach_pause(ctx)`——**decider 侧 `ctx.pause(...)` 只创建挂起点，不阻塞** |
+| 骨架 `_run_gate` | 闸位后检测 `_pause_handle`：emit pause 事件 → **await** 恢复（`asyncio.to_thread`，不阻塞事件循环）→ 写 `ctx.resume_value` → **重跑该闸位** |
+| 协议不变 | **Decision 仍是四值**（无 PAUSE）；decider 协议 `decide(input, ctx)` 不变；挂起是 ctx 上的能力而非新决策值 |
+| e2e 网（7 条）| 挂起可见（`agent_paused` 事件）/ 恢复值进循环 / **无副作用重放**（LLM 调用数 == 轮数）/ 取消 / 超时 / 单次挂起（不变量 3）/ **挂起期间事件循环仍响应**（await 而非同步 wait）|
+| 全量 | **7202 passed / 114 skipped / 0 failed**（`-n 12`，80s）；batch_gate ALL GREEN（7316 ≥ 7178，含新增 pause.py 的层级检查）|
+
+**实现中的三个发现**：
+
+1. **decider 是同步的**——若在 decider 内阻塞等待会卡死事件循环。因此形状定为
+   「decider 创建挂起点（不阻塞）→ 骨架 await → 重跑该闸位」。好处：**Decision
+   四值不变、decider 协议不变**（不引入 PAUSE 决策值）。
+2. **挂起点是内部状态，事件是外部契约**——骨架在 await 前会消费 `_pause_handle`，
+   外部观察者看不到它，只能看到 `agent_paused` 事件。这是有意的分工（测试第一版
+   想直接读 `_pause_handle`，读不到——**测试必须从外部契约出发**，R-018 的推广）。
+3. **`CONTINUE` 语义 = 一直继续到上限**——恢复后 CONTINUE 会持续跑到
+   `max_iterations`（不是「再跑一轮」）。「无副作用重放」的断言因此是
+   **LLM 调用数 == 轮数**（若恢复被实现成回退重跑，调用数会 > 轮数）。
