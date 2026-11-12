@@ -20,7 +20,7 @@ AgentNodes 的大量存量步骤是同步的，强制 async 会逼出无意义�
 （``execute(ctx, *, async_mode)`` 变异 ctx）是**当前在跑的职责划分**，
 本模块是 B2/B3 的目标底座；桥接见 ``step_adapters.py``。
 ``maybe_await`` 与 ``runtime/sync_bridge.py``、``loop._call_step`` 的
-``inspect.isawaitable`` 手法是三处同型实现，B3 骨架隔离时收口为一处。
+``inspect.isawaitable`` 手法是三处同型实现，B3 引擎隔离时收口为一处。
 """
 
 from __future__ import annotations
@@ -146,7 +146,7 @@ async def maybe_await(
     """``StepResult | Awaitable[StepResult]`` 统一为 ``StepResult``。
 
     与 ``loop._call_step``（loop.py:507）、``runtime/sync_bridge.py``
-    同型——三处同型实现，B3 骨架隔离时收口为一处。
+    同型——三处同型实现，B3 引擎隔离时收口为一处。
     """
     if inspect.isawaitable(value):
         return await value

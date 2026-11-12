@@ -1,10 +1,10 @@
-# 三项资产价值评估：权限系统 / 架构门禁 / 骨架-decider（2026-11-11）
+# 三项资产价值评估：权限系统 / 架构门禁 / 引擎-decider（2026-11-11）
 
 > **性质**：调研（实测评估，不改代码）
-> **触发**：用户要求「权限系统 + 架构门禁 8 道 + 骨架/decider 架构 这三者评估一下是否有价值」
+> **触发**：用户要求「权限系统 + 架构门禁 8 道 + 引擎/decider 架构 这三者评估一下是否有价值」
 > **方法**：所有结论都来自**注入违规**或**真实调用链**的实测，不采信「测试全绿」「代码存在」
 > **结论摘要**：权限系统有价值但有 3 个实测可达的绕过（1 个 P0）｜门禁 7/8 真拦，1 处可验证盲区｜
-> 骨架/decider **价值存疑**（规模倒挂，收益不可度量）
+> 引擎/decider **价值存疑**（规模倒挂，收益不可度量）
 
 ---
 
@@ -14,9 +14,9 @@
 |---|---|---|---|
 | 权限系统 | `kernel/permission/` 4 文件 **1086 行** | 2026-11-07 ~ 11-10（5 个 commit）| `enforce_permission_sync` 在 `loop_tools.py:170`、`tools.py:909` 真实调用 |
 | 架构门禁 | `scripts/arch/` **13 个脚本**，batch_gate 串 8 步 | 持续演进 | `scripts/batch_gate.cmd` |
-| 骨架/decider | `skeleton.py` 339 + `skeleton_adapters.py` 371 + `deciders.py` 281 + `modes.py` 159 = **1150 行** | 批次 9–13（2026-11-07 ~ 11-09）| `arun()` 默认走骨架；`src/` 有 4 处 `.arun(` |
+| 引擎/decider | `loop_engine.py` 339 + `loop_engine_adapters.py` 371 + `deciders.py` 281 + `modes.py` 159 = **1150 行** | 批次 9–13（2026-11-07 ~ 11-09）| `arun()` 默认走引擎；`src/` 有 4 处 `.arun(` |
 
-作为对照：被骨架取代的 legacy 引擎 `_run_loop_core` 是 **246 行**（`loop.py:1006-1251`，AST 实测）。
+作为对照：被引擎取代的 legacy 引擎 `_run_loop_core` 是 **246 行**（`loop.py:1006-1251`，AST 实测）。
 
 ---
 
@@ -154,31 +154,31 @@ PATTERN_BRAND_DIR = re.compile(
 
 ---
 
-## §3 骨架 / decider
+## §3 引擎 / decider
 
 ### 3.1 支持它的证据
 
-1. `arun()` 默认走骨架（`loop.py:944-962`），`src/` 有 4 处 `.arun(` 调用，
+1. `arun()` 默认走引擎（`loop.py:944-962`），`src/` 有 4 处 `.arun(` 调用，
    其中 `interfaces/api/session/service.py:1008` 是生产主路径。
 2. `deciders_for` 的闸位映射表（`modes.py:100-113`）来自**实测**（批次 10 §3），
    7 个槽位 → 3 个闸位，与 legacy 一一对齐。
-3. `tests/test_engine_parity.py` + `test_skeleton_equivalence.py` + `test_agent_loop.py`
+3. `tests/test_engine_parity.py` + `test_loop_engine_equivalence.py` + `test_agent_loop.py`
    共 **56 passed**。
 
 ### 3.2 反对它的证据
 
 1. **规模倒挂**：四件套 **1150 行**，它替代的 legacy 引擎 **246 行**。多写 **904 行**。
 
-2. **收敛从未完成**：`run()`（sync）走 legacy、`arun()`（async）走骨架，两条路径并存至今。
+2. **收敛从未完成**：`run()`（sync）走 legacy、`arun()`（async）走引擎，两条路径并存至今。
    V4 想删 legacy，整体回退。**现状是两套引擎都在，都要维护。**
 
-3. **`skeleton_adapters.py` 371 行**几乎全是对 `AgentLoop` 方法的转发。
-   骨架不知道业务，这不是抽象而是**接线层**——它意味着骨架没有真正「接管」循环，
+3. **`loop_engine_adapters.py` 371 行**几乎全是对 `AgentLoop` 方法的转发。
+   引擎不知道业务，这不是抽象而是**接线层**——它意味着引擎没有真正「接管」循环，
    只是把循环体搬进了适配器。
 
 4. **`LoopSpec` 284 行 + `to_legacy_kwargs` 零调用**——这条抽象线上有死代码。
 
-5. **`_finalize` 语义「两处都不能删」**（`skeleton_adapters.py:356-359` 注释自己承认）
+5. **`_finalize` 语义「两处都不能删」**（`loop_engine_adapters.py:356-359` 注释自己承认）
    ——抽象的成本落在「记住哪里不能删」上。
 
 ### 3.3 判词
@@ -203,7 +203,7 @@ PATTERN_BRAND_DIR = re.compile(
 |---|---|---|---|
 | 权限系统 | **是，但有 3 个绕过** | 强（实测读到密钥）| 保留 + 立即修缺陷 1（P0）|
 | 架构门禁 | **是** | 强（注入测试 7/8 拦住）| 保留 + 补 `check_path_literals` 正则 |
-| 骨架/decider | **存疑** | 弱（无量化收益，规模倒挂）| **不动**，记录「未收敛」状态 |
+| 引擎/decider | **存疑** | 弱（无量化收益，规模倒挂）| **不动**，记录「未收敛」状态 |
 
 ---
 
@@ -217,7 +217,7 @@ PATTERN_BRAND_DIR = re.compile(
 | P1 | `run_bg_command` 不在枚举 + `_extract_target` 无分支（缺陷 3）| 安全修复 | 同上 |
 | P1 | `web_fetch` / `webfetch` 名字归一（缺陷 2）| 安全修复 | 同上 |
 | P2 | `check_path_literals` 补 `\.quantnodes/` 形态 | 门禁补强 | 同上 |
-| — | 骨架/decider 收敛与否 | 架构决策 | **R-014 + R-015**（需先定「删哪条」，且接线+测试齐备）|
+| — | 引擎/decider 收敛与否 | 架构决策 | **R-014 + R-015**（需先定「删哪条」，且接线+测试齐备）|
 
 ---
 

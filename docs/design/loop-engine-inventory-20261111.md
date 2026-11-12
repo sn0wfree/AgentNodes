@@ -80,17 +80,17 @@ arun() (async) ──► engine == "skeleton" → _run_via_skeleton()           
 
 ---
 
-## §3 引擎二：ReActSkeleton
+## §3 引擎二：LoopEngine
 
 ### 3.1 基本特性
 
 | 特性 | 实测内容 |
 |---|---|
-| 体量 | `skeleton.py` 339（本体）+ `skeleton_adapters.py` 371（6 个 adapter）+ `deciders.py` 281（8 个 decider）+ `modes.py` 159（闸位映射）= **1150 行** |
+| 体量 | `loop_engine.py` 339（本体）+ `loop_engine_adapters.py` 371（6 个 adapter）+ `deciders.py` 281（8 个 decider）+ `modes.py` 159（闸位映射）= **1150 行** |
 | 并发模型 | async-only；`run_stream()` 是 async 事件生成器，`run_to_completion()` drain 它 |
 | 循环结构 | 显式状态机：PRECHECK → REASON → DECIDE①(after_reason) → ACT → DECIDE②(after_act) → OBSERVE |
 | 闸门 | `Decision` 四值枚举（CONTINUE/STOP/EXIT/PROCEED）× 3 闸位 × 8 decider |
-| adapter | 6 个：Prepare / Reasoner / Actor / Hooks / Finalize / IterationStart——骨架不拥有任何业务，全部转发回 `AgentLoop` |
+| adapter | 6 个：Prepare / Reasoner / Actor / Hooks / Finalize / IterationStart——引擎不拥有任何业务，全部转发回 `AgentLoop` |
 | 流式 | LLM token 流与 legacy **同层**（经 LoopReasoner）；但 `run_stream` 只 yield 4 处：error ×3（L189/236/286）+ done ×1（L296），**无 token 增量事件** |
 
 ### 3.2 闸位 → decider 映射（`modes.deciders_for`，:139-159）
@@ -102,7 +102,7 @@ arun() (async) ──► engine == "skeleton" → _run_via_skeleton()           
 | `after_act` | NoProgressDecider（+审批 gate = `loop._check_no_progress`）| progress |
 
 **EXIT 只有 `NoProgressDecider` 能产生**（8 个 decider 的 `decide()` 返回值 AST 扫描，
-2026-11-11）——skeleton 的 precheck EXIT 分支（`skeleton.py:176-181`）当前是**不可达死代码**。
+2026-11-11）——skeleton 的 precheck EXIT 分支（`loop_engine.py:176-181`）当前是**不可达死代码**。
 
 ### 3.3 出口与收尾
 
@@ -117,7 +117,7 @@ arun() (async) ──► engine == "skeleton" → _run_via_skeleton()           
 | 优（每条有依据）| 劣（每条有依据）|
 |---|---|
 | 闸位可测可插拔：8 个 decider 独立类，映射表一页可读 | **规模倒挂**：1150 行 vs 被替代的 246 行（4.7×）|
-| async-first，生产主路径默认走它 | 6 个 adapter 全是转发——骨架没有"接管"循环，只是把循环体搬进接线层 |
+| async-first，生产主路径默认走它 | 6 个 adapter 全是转发——引擎没有"接管"循环，只是把循环体搬进接线层 |
 | 换闸/换策略 = 注入，不动大文件 | **EXIT 出口不收尾**（trace 不关、`trace_path=None`）|
 | 异常出口事件齐全（经 LoopFinalize）| `run()`（sync）不可用；`budget_exhausted` 不发（V4-1b 随 V4 回退撤销）|
 | | `_finalize`「两处都不能删」——抽象成本落在记忆上（adapters :356-359 注释自认）|
@@ -173,7 +173,7 @@ arun() (async) ──► engine == "skeleton" → _run_via_skeleton()           
 
 | 网 | 形式 | 强度（R-009 判据）|
 |---|---|---|
-| `test_skeleton_equivalence.py`（5 场景）| `legacy == skeleton` 对偶（比 LoopResult 5 字段）| **弱**：两边同错同过；这正是「空集合不是通过」的重演案例 |
+| `test_loop_engine_equivalence.py`（5 场景）| `legacy == skeleton` 对偶（比 LoopResult 5 字段）| **弱**：两边同错同过；这正是「空集合不是通过」的重演案例 |
 | `test_engine_parity.py`（批次 13 S3-a）| 6 项能力**绝对值**断言：预算记账 / wrap_up_nudge / guardrail / max_iter 文案 / hook 计数 / injector+goal 续跑顺序 | 较强：单侧退化即红 |
 | `test_agent_loop*.py` | legacy 单侧功能测试（sync 为主）| legacy 侧厚、skeleton 侧薄 |
 | 出口收尾网 | **不存在** | R-016 点名的洞（V4 教训的直接残留）|

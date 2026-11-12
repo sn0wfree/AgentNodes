@@ -17,7 +17,7 @@ strategy step 的引用，`handle` 调用其 `evaluate`/`is_open`/
 - `EXIT`——结束整个 run，自带 after_run（no-progress 拒绝 :996
   的 ``return result``）
 
-## 与骨架的关系
+## 与引擎的关系
 
 B3 的 skeleton 在三个闸位（precheck / after_reason / after_act）按序
 调用 deciders，任一非 `PROCEED` 即按 `Decision` 分派。当前旧循环体
@@ -66,7 +66,7 @@ class Decider(StepHandler):
     ``StepResult{output=(Decision, reason)}``。
 
     **子类契约**：只读判定，不得变异 ``ctx``——副作用（预算记账、
-    hash 窗口维护、事件发射）仍属现有步骤/循环，B3 随骨架收编。
+    hash 窗口维护、事件发射）仍属现有步骤/循环，B3 随引擎收编。
     """
 
     @property
@@ -262,7 +262,7 @@ class InjectorContinuationDecider(Decider):
     """post-response injector 请求续跑（``ctx.metadata["injector_continued"]``）。
 
     **批次 13（S3-a）新增**。legacy 在 ``_run_loop_core:1075-1086`` 直接
-    问 injector 的返回值并 ``continue``；骨架把它表达成 CONTINUE 决策，
+    问 injector 的返回值并 ``continue``；引擎把它表达成 CONTINUE 决策，
     使顺序与 legacy 一致：continuation → injector → stop。
 
     ``LoopReasoner`` 负责调用 ``inject_post_response`` 并把结论写进

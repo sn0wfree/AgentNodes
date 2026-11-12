@@ -162,10 +162,10 @@ def attach_pause(ctx: Any) -> Any:
 
         handle = ctx.pause(reason="需要人工判断", payload={...})
         if handle is not None:
-            state._pause_handle = handle      # 骨架据此挂起
+            state._pause_handle = handle      # 引擎据此挂起
         return Decision.PROCEED, None
 
-    骨架在闸位判定后看到 ``_pause_handle``：yield pause 事件 → async 等恢复 →
+    引擎在闸位判定后看到 ``_pause_handle``：yield pause 事件 → async 等恢复 →
     把恢复值写入 ``ctx.resume_value`` → **重跑该闸位**（decider 读到
     ``ctx.resume_value`` 决定后续）。恢复值因此能进循环。
 

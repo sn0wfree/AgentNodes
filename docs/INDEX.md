@@ -13,7 +13,7 @@
 | 了解项目是什么、快速跑起来 | [`../README.md`](../README.md) |
 | 查命令 / MCP 工具 / swarm preset / 环境变量 | [`REFERENCE.md`](REFERENCE.md) |
 | 看架构长什么样（含实测数字） | [`architecture-diagram.html`](architecture-diagram.html) |
-| 理解四层骨架为什么这样分 | [`design/layered-skeleton-design-20261103.md`](design/layered-skeleton-design-20261103.md) |
+| 理解四层引擎为什么这样分 | [`design/layered-skeleton-design-20261103.md`](design/layered-skeleton-design-20261103.md) |
 | 知道现在拆到哪一步、接下来删什么 | [`design/subtraction-roadmap-v2-20261105.md`](design/subtraction-roadmap-v2-20261105.md) |
 | 跑测试 / 门禁 / 分片 | [`guides/test-marker-lanes-design.md`](guides/test-marker-lanes-design.md) |
 | 改代码前确认没有已知坑 | [`guides/known-test-defects-20261104.md`](guides/known-test-defects-20261104.md) |
@@ -50,7 +50,7 @@
 
 | 文档 | 内容 |
 |---|---|
-| [`layered-skeleton-design-20261103.md`](design/layered-skeleton-design-20261103.md) | 四层骨架契约（层归属表、方向规则、机器门禁） |
+| [`layered-skeleton-design-20261103.md`](design/layered-skeleton-design-20261103.md) | 四层引擎契约（层归属表、方向规则、机器门禁） |
 | [`physical-layer-migration-plan-20261103.md`](design/physical-layer-migration-plan-20261103.md) | `core/` → 四层目录的迁移协议 |
 | [`structure-review-graphify-20261104.md`](design/structure-review-graphify-20261104.md) | 结构评审（graphify 第二种量纲） |
 | [`structure-fix-w10-design-20261104.md`](design/structure-fix-w10-design-20261104.md) | W10 结构修复 |

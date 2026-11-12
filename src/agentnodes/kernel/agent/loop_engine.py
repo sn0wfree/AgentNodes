@@ -1,4 +1,4 @@
-"""ReActSkeleton — 配置驱动的循环骨架（批次 11 · B3 阶段 1）。
+"""LoopEngine — 配置驱动的循环引擎（批次 11 · B3 阶段 1）。
 
 状态机（llmwikify UnifiedAgentLoop 的 AgentNodes 形态）::
 
@@ -7,13 +7,13 @@
 与 ``AgentLoop._run_loop_core`` 的关系：**影子引擎**。默认路径
 （legacy）不经过本模块任何一行；``engine="skeleton"`` 或
 ``AGENTNODES_SKELETON=1`` 显式启用。等价性由
-``tests/test_skeleton_equivalence.py`` 的双引擎对照测试钉住。
+``tests/test_loop_engine_equivalence.py`` 的双引擎对照测试钉住。
 
 ## 消费协议（全部沿用既有对象，无新抽象）
 
 - **state**：鸭子类型——``iteration`` / ``messages`` / ``stop_reason``
   属性即可（AgentNodes 用 ``LoopContext``，llmwikify 用 ``UnifiedContext``，
-  骨架不关心）。handlers 负责按需变异。
+  引擎不关心）。handlers 负责按需变异。
 - **deciders**（批次 10）：三个闸位 ``precheck`` / ``after_reason`` /
   ``after_act``，各为 ``list[Decider]``，按序判定，首个非 ``PROCEED``
   按 ``Decision`` 分派（CONTINUE→下一轮 / STOP→finalize / EXIT→return）
@@ -28,7 +28,7 @@
 - **no-progress 交互**：触发 EXIT；``_check_no_progress`` 的用户询问
   收编在阶段 2（handlers 可注入覆盖）
 - **steering inbox / injectors**：REASON handler 内部处理（绑定 loop
-  即复用），骨架本体不感知
+  即复用），引擎本体不感知
 """
 
 from __future__ import annotations
@@ -49,8 +49,8 @@ logger = logging.getLogger(__name__)
 
 
 @dataclass
-class SkeletonRunSpec:
-    """一次骨架运行的输入（B3 阶段 2 由 LoopSpec 取代/收拢）。"""
+class LoopEngineSpec:
+    """一次引擎运行的输入（B3 阶段 2 由 LoopSpec 取代/收拢）。"""
 
     task: str
     context: str | None = None
@@ -63,10 +63,10 @@ class SkeletonRunSpec:
 
 @dataclass
 class SkeletonState:
-    """骨架内部最小状态（**鸭子协议**——adapters 可换成 LoopContext）。
+    """引擎内部最小状态（**鸭子协议**——adapters 可换成 LoopContext）。
 
-    骨架只读写字段：``iteration / stop_reason / error / t0``。
-    ``messages`` / ``response`` 由 handlers 管理（骨架不触碰）。
+    引擎只读写字段：``iteration / stop_reason / error / t0``。
+    ``messages`` / ``response`` 由 handlers 管理（引擎不触碰）。
     """
 
     iteration: int = 0
@@ -77,14 +77,14 @@ class SkeletonState:
     extra: dict[str, Any] = field(default_factory=dict)
 
 
-# ── 骨架 ─────────────────────────────────────────────────────────────
+# ── 引擎 ─────────────────────────────────────────────────────────────
 
 
-class ReActSkeleton:
-    """配置驱动的循环骨架——**只做控制流，不做策略**。
+class LoopEngine:
+    """配置驱动的循环引擎——**只做控制流，不做策略**。
 
     REASON/ACT 是注入的 handler；停止判定是注入的 deciders；
-    生命周期事件是注入的 hooks。骨架不知道预算怎么算、工具怎么执行、
+    生命周期事件是注入的 hooks。引擎不知道预算怎么算、工具怎么执行、
     goal 怎么注入——那些全在 handler/decider/hook 里。
     """
 
@@ -96,7 +96,7 @@ class ReActSkeleton:
         deciders: dict[str, list[Any]],
         hooks: Any | None = None,
         finalize: Callable[[Any, Any], Any] | None = None,
-        prepare: Callable[[SkeletonRunSpec], tuple[Any, Any]] | None = None,
+        prepare: Callable[[LoopEngineSpec], tuple[Any, Any]] | None = None,
         on_iteration_start: Callable[[Any, int], None] | None = None,
         event_source: Callable[[Any], tuple[Any, Any]] | None = None,
     ) -> None:
@@ -111,7 +111,7 @@ class ReActSkeleton:
             after_run/on_error``（duck-typed，全部可缺省）
         :param finalize: 终局处理 ``(state, result)``——metrics/git/trace
         :param prepare: 运行准备，收 spec，返回 ``(state, result)``；
-            None = 骨架自建空 state + SimpleResult
+            None = 引擎自建空 state + SimpleResult
         :param on_iteration_start: 每轮开头动作（wrap-up nudge 等）
         :param event_source: 可选 ``() -> loop``——统一引擎 U3 的
             **双通道流式**：run_stream 开始时经它取 loop，把 loop 侧
@@ -165,7 +165,7 @@ class ReActSkeleton:
         if pending:
             out.extend(list(pending))
             pending.clear()
-        # pause 事件（骨架侧产生，U3 事件桥的同形扩展）
+        # pause 事件（引擎侧产生，U3 事件桥的同形扩展）
         pauses = getattr(self, "_pause_events", None)
         if pauses:
             out.extend(list(pauses))
@@ -265,7 +265,7 @@ class ReActSkeleton:
         """把 pause 事件发到 loop 事件总线（外部可观察挂起态）。
 
         同时压进 pending 队列——``run_stream`` 的 drain 点会 yield 它
-        （U3 的事件桥形状：骨架侧事件 → 生成器输出）。
+        （U3 的事件桥形状：引擎侧事件 → 生成器输出）。
         """
         loop = None
         if self._event_source is not None:
@@ -278,7 +278,7 @@ class ReActSkeleton:
                 loop._emit("agent_paused", dict(ev))
             except Exception:  # noqa: BLE001
                 logger.debug("pause event emit failed", exc_info=True)
-        # 骨架侧 pending（由 _drain_pending 消费 → run_stream yield）
+        # 引擎侧 pending（由 _drain_pending 消费 → run_stream yield）
         pending = getattr(self, "_pause_events", None)
         if pending is None:
             pending = []
@@ -295,7 +295,7 @@ class ReActSkeleton:
     # ── 状态机 ───────────────────────────────────────────────────────
 
     async def run_stream(
-        self, spec: SkeletonRunSpec
+        self, spec: LoopEngineSpec
     ) -> AsyncIterator[dict[str, Any]]:
         state, result = self._prepare_state(spec)
         self._attach_event_source(state)
@@ -352,7 +352,7 @@ class ReActSkeleton:
                         state.stop_reason = reason
                         result.stop_reason = reason
                     # Legacy 在文本终答前也发 after_iteration
-                    # （_run_loop_core:1097）；批次 13 S3-a 实测骨架缺这一次
+                    # （_run_loop_core:1097）；批次 13 S3-a 实测引擎缺这一次
                     # （legacy 3 次 vs skeleton 2 次）。
                     await self._fire("after_iteration", state, iteration)
                     # LoopResult 用 answer 而非 final_content
@@ -387,8 +387,8 @@ class ReActSkeleton:
                 #
                 # **record 先行**（批次 11 修）：NoProgressDecider 的窗口
                 # 需要本轮 tool hashes 入窗后才能判——legacy 由
-                # ``_check_no_progress`` 内部 extend 完成，骨架必须显式调用
-                # decider 的 ``record``（首轮实测：漏了这步导致骨架永远
+                # ``_check_no_progress`` 内部 extend 完成，引擎必须显式调用
+                # decider 的 ``record``（首轮实测：漏了这步导致引擎永远
                 # 判不出 no-progress，一路跑到 max_iterations）。
                 tool_hashes = (r.output or {}).get("tool_hashes") or []
                 for decider in self._deciders.get("after_act", ()):
@@ -448,7 +448,7 @@ class ReActSkeleton:
                 result.stop_reason = result.stop_reason or state.stop_reason
                 result.finished_reason = "max_iter"
 
-        except Exception as exc:  # noqa: BLE001 — 骨架级兜底
+        except Exception as exc:  # noqa: BLE001 — 引擎级兜底
             result.error = str(exc)
             state.stop_reason = "error"
             logger.exception("skeleton run failed")
@@ -476,7 +476,7 @@ class ReActSkeleton:
             "iterations": state.iteration,
         }
 
-    async def run_to_completion(self, spec: SkeletonRunSpec) -> Any:
+    async def run_to_completion(self, spec: LoopEngineSpec) -> Any:
         """drain run_stream，返回 prepare 提供的 result 对象。"""
         self._last_result = None
         async for event in self.run_stream(spec):
@@ -494,7 +494,7 @@ class ReActSkeleton:
         return await r
 
     def _prepare_state(
-        self, spec: SkeletonRunSpec
+        self, spec: LoopEngineSpec
     ) -> tuple[Any, Any]:
         if self._prepare is not None:
             return self._prepare(spec)
@@ -502,7 +502,7 @@ class ReActSkeleton:
 
 
 class SimpleResult:
-    """prepare 未注入时的最小 result（骨架自测用）。"""
+    """prepare 未注入时的最小 result（引擎自测用）。"""
 
     def __init__(self) -> None:
         self.final_content = ""
@@ -511,4 +511,4 @@ class SimpleResult:
         self.iterations = 0
 
 
-__all__ = ["ReActSkeleton", "SimpleResult", "SkeletonRunSpec", "SkeletonState"]
+__all__ = ["LoopEngine", "SimpleResult", "LoopEngineSpec", "SkeletonState"]

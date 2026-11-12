@@ -65,12 +65,12 @@ Pipeline(*steps) 串行组合：上一 output = 下一 input，events 累积，f
 
 **LLMCall 是唯一的流式步骤**——这是数据与信号的交汇点（§6）。
 
-### 1.3 骨架（驱动器 + 分发器 + 漏斗）
+### 1.3 引擎（驱动器 + 分发器 + 漏斗）
 
 | 组件 | 职责 |
 |---|---|
 | `run_stream` | 状态机驱动（§3 逻辑流）|
-| **分发器（Distributor）** | 唯一事件出口：步骤产出的事件 → **三写**（run_stream / on_event 总线 / trace 账本）；骨架自身事件（pause/error/done）同路 |
+| **分发器（Distributor）** | 唯一事件出口：步骤产出的事件 → **三写**（run_stream / on_event 总线 / trace 账本）；引擎自身事件（pause/error/done）同路 |
 | `FINALIZE 漏斗` | 一切出口的收尾（幂等，§8）|
 | `pause 装配` | `attach_pause(ctx)` 工厂 + await 恢复 + 闸位重跑 |
 
@@ -104,7 +104,7 @@ ATTACH      事件分发器接管（bus + run_stream 双写）；pause 工厂装
 │   │    Compaction 失败 → 原样回退（不阻断）
 │   │    LLMCall: iter_start → llm_request → deltas → llm_usage → response
 │   │    流中断/LLMError ──► error 事件 ──► FINALIZE(finished=error)
-│   │    超时(骨架对流的 wait_for) ─────────► FINALIZE(finished=timeout)
+│   │    超时(引擎对流的 wait_for) ─────────► FINALIZE(finished=timeout)
 │   │
 │   ├─【DECIDE① after_reason 闸】Budget → GoalCont → Injector → StopSignal → TextFinal
 │   │    TextFinal(STOP) ──► answer=response.content ──► FINALIZE(finished=stop)
@@ -322,7 +322,7 @@ flowchart LR
     subgraph 生产者
         S1["Step 产出<br/>StepResult.events"]
         S2["Step yield<br/>（LLMCall 流式）"]
-        S3["骨架自身事件<br/>pause / error / done"]
+        S3["引擎自身事件<br/>pause / error / done"]
     end
 
     S1 --> D["**分发器 Distributor**<br/>唯一事件出口"]
@@ -435,9 +435,9 @@ flowchart TD
     B -->|"_run_coro_in_sync"| C["**AgentLoop.run(...)**<br/>同步包装 · 签名零变化"]
     A -->|"逐事件"| D["流消费者<br/>（SSE / TUI / 测试）"]
 
-    A -.->|"委托"| E["_run_stream_skeleton<br/>装配骨架 → skeleton.run_stream"]
-    E -.-> F["_build_skeleton()<br/>6 个 adapter + deciders"]
-    E -.-> G["_build_skeleton_spec()<br/>SkeletonRunSpec"]
+    A -.->|"委托"| E["_run_stream_skeleton<br/>装配引擎 → skeleton.run_stream"]
+    E -.-> F["_build_engine()<br/>6 个 adapter + deciders"]
+    E -.-> G["_build_engine_spec()<br/>LoopEngineSpec"]
 ```
 
 ### 三条不变 + 一处非对称
@@ -453,19 +453,19 @@ flowchart TD
 
 | 方法 | 职责 |
 |---|---|
-| `_build_skeleton()` | 构造 `ReActSkeleton` + 6 个 adapter + `deciders_for(halt_check=…)`；结果存 `self._skeleton` |
-| `_build_skeleton_spec(task, context, history)` | 构造 `SkeletonRunSpec` |
-| `_run_stream_skeleton(task, context, history)` | 装配 + 驱动骨架 `run_stream`（`run_stream` 与 `_run_via_skeleton` 的共同委托目标）|
+| `_build_engine()` | 构造 `LoopEngine` + 6 个 adapter + `deciders_for(halt_check=…)`；结果存 `self._skeleton` |
+| `_build_engine_spec(task, context, history)` | 构造 `LoopEngineSpec` |
+| `_run_stream_skeleton(task, context, history)` | 装配 + 驱动引擎 `run_stream`（`run_stream` 与 `_run_via_skeleton` 的共同委托目标）|
 
 `_run_via_skeleton` 退化为**薄包装**（`drain(_run_stream_skeleton)` + `_skeleton_result()`），
-不再直接构造骨架——装配逻辑单点。
+不再直接构造引擎——装配逻辑单点。
 
 ### 收益（U5.5 解决了什么）
 
 | 之前 | 之后 |
 |---|---|
 | 想流消费必须绕过 AgentLoop **手工搭 6 个 adapter**（`test_run_stream_dual_channel` 原写法）| 直接用 `AgentLoop.run_stream`（**生产同源**）|
-| 装配逻辑散落在 loop 私有方法与测试里各一份 | 单点（`_build_skeleton`）|
+| 装配逻辑散落在 loop 私有方法与测试里各一份 | 单点（`_build_engine`）|
 | `arun` 与「流式」是两条实现 | 同源（`arun` = drain `run_stream`）|
 
 **验证网**：`tests/test_entry_unification.py`（6 条）——run_stream 存在/可迭代·
@@ -484,7 +484,7 @@ run/arun 结果一致·装配方法已提取。
 | **response** | `LLMResponse{content, tool_calls, usage, finish_reason}` | LLMCall 产出 → 判定族/ACT/Finalize 消费 → 随轮次被下一轮覆盖 |
 | **LoopResult** | `{answer, stop_reason, finished_reason, iterations, tool_calls_made, success, usage_*, metrics, trace_path, error, messages}` | Prepare 创建 → 各步骤/闸位填写 → FINALIZE 定稿 → 调用方 |
 | **LoopContext** | 共享可变容器（上表字段 + 预算 + pause/resume_value + metadata）| Prepare 创建 → 穿线全部步骤/闸位 → run 结束即弃 |
-| **StepResult** | `{output, events[], success, error}` | 每步骤产出 → 骨架消费（事件 → 分发器；output → 下一环节）|
+| **StepResult** | `{output, events[], success, error}` | 每步骤产出 → 引擎消费（事件 → 分发器；output → 下一环节）|
 | **trace.jsonl** | 事件账本（含 raw 字段）| TraceWriter 逐条写 → FINALIZE 关闭 → trace_path 交调用方 |
 
 ### 3.2 Who-Write-Who-Read（LoopContext 字段级数据流）
@@ -492,12 +492,12 @@ run/arun 结果一致·装配方法已提取。
 | 字段 | 写者 | 读者 |
 |---|---|---|
 | `messages` | Prepare(初值) · Compaction(折叠) · wrap-up nudge(插 system) · LLMCall(追加 assistant) · ToolExec(追加 tool 结果) | Compaction / LLMCall / ToolExec / hooks |
-| `iteration` | 骨架 | 全部闸位 / hooks / Finalize |
+| `iteration` | 引擎 | 全部闸位 / hooks / Finalize |
 | `response` | LLMCall | TextFinal / GoalCont / Injector 判定、ToolExec |
 | `should_stop` / `stop_reason` | StopSignal(错误置位) · BudgetStopStep(超支置位) | StopSignalDecider / BudgetStopStep |
 | `tokens_used` / `cost_usd` | LLMCall(记账) | BudgetDecider / BudgetStopStep / Finalize(metrics) |
 | `recent_hashes`（窗口）| ToolExec(record) / NoProgress(清理) | NoProgressDecider |
-| `resume_value` | 骨架(await 恢复后写入) | 重跑的 decider |
+| `resume_value` | 引擎(await 恢复后写入) | 重跑的 decider |
 | `result` | Prepare(创建) · 审批闸(finished_reason) · TextFinal(answer) · Finalize(metrics/trace_path) | 全部 |
 
 ### 3.3 数据不变量
@@ -513,7 +513,7 @@ run/arun 结果一致·装配方法已提取。
 
 ### 4.1 出向通道（分发器三写 + run_stream）
 
-**分发器（Distributor）是唯一事件出口**：步骤产出的每个事件、骨架自身的每个事件，
+**分发器（Distributor）是唯一事件出口**：步骤产出的每个事件、引擎自身的每个事件，
 都经分发器**三写**：
 
 ```
@@ -545,7 +545,7 @@ run/arun 结果一致·装配方法已提取。
 | Compaction | `compression` / `compact` |
 | 审批闸 / guardrail | `agent_approval_requested` · `agent_approval_responded` · `guardrail.finding` |
 | FINALIZE | `budget_exhausted` · `loop_end` · `assistant_message` · `iter_end` · `loop_final` |
-| 骨架 | `pause` · `agent_paused` · `error` · `done` |
+| 引擎 | `pause` · `agent_paused` · `error` · `done` |
 
 ### 4.2 入向信号（外部 → 循环）
 
@@ -583,7 +583,7 @@ LLMCallHandler.stream(messages, ctx):
     yield StepResult.ok(output=response)           ← 终止信号（数据）
 ```
 
-**骨架的 drain 契约**：逐个 yield 转发分发器（三写）；遇 `StepResult` 收束；
+**引擎的 drain 契约**：逐个 yield 转发分发器（三写）；遇 `StepResult` 收束；
 `asyncio.wait_for` 包整个 drain（超时 → `StepResult.fail("timeout")` → FINALIZE）。
 **流式回退**（provider 不支持 SSE → chat）是 handler 内部实现细节，契约不变。
 
@@ -614,7 +614,7 @@ approve / prompt / select 三型设计（lobehub 参照）。跨进程/跨会话
 | 拒绝 | `user_rejected` / `approval_timeout_rejected` | NoProgress 审批闸 | 审批是即答型 |
 | 外部终止 | `exit`（stop_reason=halt）| ExternalTerminationDecider | — |
 | 挂起取消 | 走取消分支（decider 决定 stop/continue）| pause CANCELLED | — |
-| 错误 | `error` | LLM / 工具 / 骨架异常 | — |
+| 错误 | `error` | LLM / 工具 / 引擎异常 | — |
 
 **收尾保证**（六项，出口网钉住）：`trace_path` 非空 · trace 已关 ·
 `loop_end`/`iter_end`/`after_run` 各恰一次 · `done` 恰一次。

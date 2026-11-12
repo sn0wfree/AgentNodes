@@ -265,7 +265,7 @@ def _build_legacy_map() -> dict[str, tuple[str, str]]:
         "strict_claim_validation": ("context", "strict_claim_validation"),
         "role": ("context", "role"),
         # Permission（**不经 __init__ 参数**：chat_loop 用 setattr 挂载，
-        # 见 skeleton_adapters/loop_tools 的 getattr 消费——因此不在此表，
+        # 见 loop_engine_adapters/loop_tools 的 getattr 消费——因此不在此表，
         # 但 PermissionSpec 仍保留供显式 spec 传参）
         # Scope
         "workspace": ("scope", "workspace"),

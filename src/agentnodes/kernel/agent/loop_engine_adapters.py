@@ -1,12 +1,12 @@
-"""骨架与 AgentLoop 的绑定层（批次 11 · B3 阶段 1）。
+"""引擎与 AgentLoop 的绑定层（批次 11 · B3 阶段 1）。
 
 把 AgentLoop 的既有能力（strategy steps / 预算 / trace / git）包装成
-骨架消费的 handler/hook——**沿用 ``bind_agent_loop`` 既有协议**，
+引擎消费的 handler/hook——**沿用 ``bind_agent_loop`` 既有协议**，
 不复制任何逻辑。
 
 **async-first**：handlers 是 ``async def handle``（StepHandler 协议允许
 返回 Awaitable），内部直接 ``await loop._call_step``——与生产路径的
-``arun`` 一致。等价性证明见 ``tests/test_skeleton_equivalence.py``。
+``arun`` 一致。等价性证明见 ``tests/test_loop_engine_equivalence.py``。
 """
 
 from __future__ import annotations
@@ -35,7 +35,7 @@ class LoopReasoner(StepHandler):
 
     复用 ``strategy.compaction`` 与 ``strategy.llm_call`` 两个 step
     （经 ``_call_step`` 的既有隔离）。产出 = LLM response
-    （``None`` = 终止信号，交给 StopSignalDecider / 骨架）。
+    （``None`` = 终止信号，交给 StopSignalDecider / 引擎）。
 
     **批次 13（S3-a）**：injectors 的两个 order 分支与预算记账都收在这里
     ——翻默认后实测漏掉它们（见 ``docs/design/batch13-*.md`` §1.1/§1.6）：
@@ -80,7 +80,7 @@ class LoopReasoner(StepHandler):
             loop._strategy.llm_call, llm_ctx, async_mode=True,
         )
 
-        # 状态回写（骨架的 ctx 就是 LoopContext，steps 已变异它）
+        # 状态回写（引擎的 ctx 就是 LoopContext，steps 已变异它）
         ctx.response = llm_ctx.response
         # **批次 V2 修：必须回写 messages**。
         # ``_make_strategy_ctx`` 做 ``messages=list(messages)``（浅拷贝），
@@ -104,7 +104,7 @@ class LoopReasoner(StepHandler):
         # 记账必须在 after_reason 闸位之前完成，否则 BudgetDecider 读到的
         # tokens_used 恒为 0（这正是翻默认后预算失效的根因）。
         loop._record_budget_usage(llm_ctx.response, ctx.t0 or 0.0)
-        # 同步进骨架的 ctx——after_reason 的 BudgetDecider 读的是
+        # 同步进引擎的 ctx——after_reason 的 BudgetDecider 读的是
         # ``ctx.tokens_used``（BudgetStopStep._resolve），它不会自己去看
         # loop 的私有字段。
         ctx.tokens_used = int(getattr(loop, "_budget_tokens", 0) or 0)
@@ -182,7 +182,7 @@ class LoopPrepare:
         ctx.hook_ctx = hook_ctx
         # 统一引擎 H1：装上挂起/恢复原语的工厂（循环级 HITL）。
         # decider 侧 ``ctx.pause(reason=..., payload=...)`` 创建挂起点
-        # （**不阻塞**），骨架据此 yield pause 事件 → await 恢复 → 重跑该闸位。
+        # （**不阻塞**），引擎据此 yield pause 事件 → await 恢复 → 重跑该闸位。
         # 详见 design doc §3.5 与 kernel/agent/pause.py。
         from .pause import attach_pause
 
@@ -200,8 +200,8 @@ class LoopPrepare:
 class LoopIterationStart:
     """每轮开头动作：``wrap_up_nudge``（legacy ``_run_loop_core:1002-1009``）。
 
-    **批次 13（S3-a）新增**：注入逻辑原先内联在 legacy 循环体里，骨架
-    ``ReActSkeleton`` 预留了 ``on_iteration_start`` 钩子但从未收到实现，
+    **批次 13（S3-a）新增**：注入逻辑原先内联在 legacy 循环体里，引擎
+    ``LoopEngine`` 预留了 ``on_iteration_start`` 钩子但从未收到实现，
     于是 ``wrap_up_nudge=True`` 在默认引擎是空操作。
     """
 
@@ -227,7 +227,7 @@ class LoopIterationStart:
 
 
 class LoopHooks:
-    """生命周期事件转发到 ``_afire_hooks``（签名对齐骨架的 _fire）。"""
+    """生命周期事件转发到 ``_afire_hooks``（签名对齐引擎的 _fire）。"""
 
     def __init__(self, loop: Any) -> None:
         self._loop = loop
@@ -235,12 +235,12 @@ class LoopHooks:
     async def before_run(self, ctx: Any) -> None:
         """legacy :809 在 prepare 后发一次 before_run（hook_ctx 形态）。
 
-        骨架传入的是 LoopContext（prepare 产出），这里取它的 hook_ctx。
+        引擎传入的是 LoopContext（prepare 产出），这里取它的 hook_ctx。
         批次 12 S1 补：原为空实现，翻默认后 ``test_arun_hooks_are_awaited``
         暴露缺失（hooks 只有 after_run）。
 
         **批次 13（S3-a）**：用户输入的 guardrail 扫描也在这一步——legacy
-        在 ``_run_loop_core:980-989`` 于 before_run 之后立刻扫描，骨架
+        在 ``_run_loop_core:980-989`` 于 before_run 之后立刻扫描，引擎
         完全没有对应点（翻默认后 ``scan_user_input`` 永不执行）。
         """
         loop = self._loop
@@ -279,10 +279,10 @@ class LoopHooks:
         """``after_run`` 只发一次（批次 13 S3-a）。
 
         两个调用方都会到这一步：``DefaultFinalizationStep.execute``
-        （finalization step 内部）与骨架 ``run_stream`` 末尾。两者都在
-        骨架路径上，实测 legacy 发 1 次、skeleton 发 2 次。
+        （finalization step 内部）与引擎 ``run_stream`` 末尾。两者都在
+        引擎路径上，实测 legacy 发 1 次、skeleton 发 2 次。
         用 ctx 上的标记做幂等——比删任一方更稳（删 step 里那次会破坏
-        「Step 自触发 hook」的既有协议；删骨架末尾那次会漏掉 EXIT 路径，
+        「Step 自触发 hook」的既有协议；删引擎末尾那次会漏掉 EXIT 路径，
         它不走 finalization step）。
         """
         if getattr(ctx, "_after_run_fired", False):
@@ -308,15 +308,15 @@ class LoopFinalize:
     批次 12 S1 补：翻默认后 ``test_arun_emits_iter_start_and_end`` 暴露
     ``iter_end`` / ``assistant_message`` / ``loop_end`` 一条未发——
     legacy 这三个事件由 ``_handle_stop`` / ``_handle_max_iter`` 发
-    （loop_lifecycle.py:41-68），骨架没调那两个方法。
+    （loop_lifecycle.py:41-68），引擎没调那两个方法。
 
     **批次 13（S3-a）**：
 
     - ``max_iter`` 终答文案（legacy ``_handle_max_iter`` 补
-      "Reached max_iterations=N without a final answer."；骨架原先留空，
+      "Reached max_iterations=N without a final answer."；引擎原先留空，
       导致 ``LoopResult.success`` 由 True 变 False）
     - ``after_run`` 只在这里发一次（原先 ``DefaultFinalizationStep`` 发
-      一次、骨架末尾再发一次 → 实测 2 次 vs legacy 1 次）
+      一次、引擎末尾再发一次 → 实测 2 次 vs legacy 1 次）
     """
 
     def __init__(self, loop: Any) -> None:
@@ -383,7 +383,7 @@ class LoopFinalize:
             loop._strategy.finalization, fin_ctx, async_mode=True,
         )
         # ``DefaultFinalizationStep`` 内部已发过一次 after_run（它直接调
-        # ``loop._afire_hooks``，绕过 LoopHooks）——在这里打标记，让骨架
+        # ``loop._afire_hooks``，绕过 LoopHooks）——在这里打标记，让引擎
         # 末尾那次 ``_fire("after_run")`` 跳过。EXIT 路径不走 finalization
         # step，标记未置位，末尾那次正常发（所以两处都不能删）。
         try:

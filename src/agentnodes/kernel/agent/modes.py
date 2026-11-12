@@ -32,7 +32,7 @@ __all__ = ["AgentModeConfig", "deciders_for", "get_mode_config", "list_modes", "
 class AgentModeConfig:
     """一个 mode 的检查点配置。
 
-    ``deciders`` 的键 = 骨架闸位（B3 定形）：``precheck``（上限/预算/
+    ``deciders`` 的键 = 引擎闸位（B3 定形）：``precheck``（上限/预算/
     熔断等进入 ACT 前的闸）、``after_reason``（REASON 后）、
     ``after_act``（ACT 后）。同闸位多个 decider 按序判定，
     首个非 ``PROCEED`` 生效。
@@ -79,7 +79,7 @@ def _make_approval_gate(loop: Any, strategy: Any) -> Any | None:
         return None
 
     def _gate(tool_hashes: list[str]) -> bool:
-        # decider 的 decide 拿到的 ctx 是骨架 state（LoopContext）
+        # decider 的 decide 拿到的 ctx 是引擎 state（LoopContext）
         # 但 gate 是闭包——需要当前 ctx。用 loop 上暂存的最近 ctx。
         ctx = getattr(loop, "_skeleton_ctx", None)
         if ctx is None:

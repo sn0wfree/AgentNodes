@@ -146,13 +146,13 @@ def test_run_and_arun_agree(tmp_path: Path):
 
 def test_skeleton_builders_are_separate():
     """装配逻辑已从 _run_via_skeleton 提取为可复用方法（U5.5 纯重构）。"""
-    assert hasattr(AgentLoop, "_build_skeleton")
-    assert hasattr(AgentLoop, "_build_skeleton_spec")
+    assert hasattr(AgentLoop, "_build_engine")
+    assert hasattr(AgentLoop, "_build_engine_spec")
     # _run_via_skeleton 仍是薄包装（不再重复装配）
     src = inspect.getsource(AgentLoop._run_via_skeleton)
     assert "_stream_skeleton" in src or "run_stream" in src, (
         "_run_via_skeleton 应是薄包装，不再重复装配逻辑"
     )
-    assert "ReActSkeleton(" not in src, (
-        "_run_via_skeleton 不应再直接构造 ReActSkeleton（已提取到 _build_skeleton）"
+    assert "LoopEngine(" not in src, (
+        "_run_via_skeleton 不应再直接构造 LoopEngine（已提取到 _build_engine）"
     )

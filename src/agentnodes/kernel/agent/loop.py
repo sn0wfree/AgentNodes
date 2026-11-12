@@ -889,8 +889,8 @@ class AgentLoop(
             engine: ``"skeleton"``（默认，批次 12 S1 翻转）/ ``"legacy"``。
                 ``AGENTNODES_ENGINE=legacy`` 环境变量可回退到旧循环体；
                 ``AGENTNODES_SKELETON=0`` 保留为兼容别名（等价于 legacy）。
-                骨架：``ReActSkeleton`` 消费 deciders 的状态机，等价性由
-                ``tests/test_skeleton_equivalence.py``（5 场景）钉住。
+                引擎：``LoopEngine`` 消费 deciders 的状态机，等价性由
+                ``tests/test_loop_engine_equivalence.py``（5 场景）钉住。
 
         Returns:
             LoopResult with answer, iterations, tool_calls_made, finished_reason.
@@ -918,13 +918,13 @@ class AgentLoop(
         context: str | None,
         history: list[dict[str, Any]] | None,
     ) -> LoopResult:
-        """B3 阶段 1 影子路径：ReActSkeleton 消费 deciders 的状态机。
+        """B3 阶段 1 影子路径：LoopEngine 消费 deciders 的状态机。
 
         handlers（LoopReasoner/LoopActor/LoopPrepare/LoopHooks/LoopFinalize）
-        绑定 self，复用全部既有能力——骨架本体不知道预算怎么算、工具怎么执行。
+        绑定 self，复用全部既有能力——引擎本体不知道预算怎么算、工具怎么执行。
 
-        **U5.5**：装配逻辑已提取为 :meth:`_build_skeleton` /
-        :meth:`_build_skeleton_spec`；本方法只是「drain 到底」的薄包装，
+        **U5.5**：装配逻辑已提取为 :meth:`_build_engine` /
+        :meth:`_build_engine_spec`；本方法只是「drain 到底」的薄包装，
         与公开入口 :meth:`run_stream` 同源（一次运行两种消费方式）。
         """
         async for _event in self._run_stream_skeleton(task, context, history):
@@ -960,28 +960,28 @@ class AgentLoop(
         context: str | None,
         history: list[dict[str, Any]] | None,
     ) -> AsyncIterator[dict[str, Any]]:
-        """装配骨架并驱动其 ``run_stream``（内部实现，公开入口的委托目标）。"""
-        skeleton = self._build_skeleton()
-        spec = self._build_skeleton_spec(task, context, history)
+        """装配引擎并驱动其 ``run_stream``（内部实现，公开入口的委托目标）。"""
+        skeleton = self._build_engine()
+        spec = self._build_engine_spec(task, context, history)
         async for ev in skeleton.run_stream(spec):
             yield ev
 
     def _skeleton_result(self) -> LoopResult:
-        """取最近一次骨架运行的结果（``run_to_completion`` 等价物）。"""
+        """取最近一次引擎运行的结果（``run_to_completion`` 等价物）。"""
         skeleton = getattr(self, "_skeleton", None)
         if skeleton is None:
             raise RuntimeError("no skeleton run yet")
         return skeleton._last_result
 
-    def _build_skeleton(self) -> Any:
-        """构造骨架及其全部 adapter（U5.5 从 ``_run_via_skeleton`` 提取）。
+    def _build_engine(self) -> Any:
+        """构造引擎及其全部 adapter（U5.5 从 ``_run_via_skeleton`` 提取）。
 
-        handlers 绑定 self，复用全部既有能力——骨架本体不知道预算怎么算、
+        handlers 绑定 self，复用全部既有能力——引擎本体不知道预算怎么算、
         工具怎么执行。
         """
         from .modes import deciders_for
-        from .skeleton import ReActSkeleton
-        from .skeleton_adapters import (
+        from .loop_engine import LoopEngine
+        from .loop_engine_adapters import (
             LoopActor,
             LoopFinalize,
             LoopHooks,
@@ -998,9 +998,9 @@ class AgentLoop(
             strategy, self, max_iterations=max_iter,
             halt_check=getattr(self, "_halt_check", None),
         )
-        # 骨架需要 strategy 槽位被绑定（deciders_for 已做），再补
+        # 引擎需要 strategy 槽位被绑定（deciders_for 已做），再补
         # skeleton 自身的 hooks。
-        skeleton = ReActSkeleton(
+        skeleton = LoopEngine(
             reasoner=LoopReasoner(self),
             actor=LoopActor(self),
             deciders=deciders,
@@ -1008,7 +1008,7 @@ class AgentLoop(
             finalize=LoopFinalize(self),
             prepare=LoopPrepare(self),
             # 批次 13 S3-a：wrap_up_nudge 原内联在 legacy 循环体，
-            # 翻默认后丢失——收进骨架的 on_iteration_start 钩子。
+            # 翻默认后丢失——收进引擎的 on_iteration_start 钩子。
             on_iteration_start=LoopIterationStart(self),
             # 统一引擎 U3：双通道流式——loop 侧事件桥进 run_stream
             event_source=lambda: self,
@@ -1016,16 +1016,16 @@ class AgentLoop(
         self._skeleton = skeleton  # _skeleton_result() 用它取 result
         return skeleton
 
-    def _build_skeleton_spec(
+    def _build_engine_spec(
         self,
         task: str,
         context: str | None,
         history: list[dict[str, Any]] | None,
     ) -> Any:
         """构造一次运行的 spec（U5.5 从 ``_run_via_skeleton`` 提取）。"""
-        from .skeleton import SkeletonRunSpec
+        from .loop_engine import LoopEngineSpec
 
-        return SkeletonRunSpec(
+        return LoopEngineSpec(
             task=task,
             context=context,
             history=history,
@@ -1412,12 +1412,12 @@ class AgentLoop(
     def _make_event_bridge(self) -> tuple[list[dict[str, Any]], Callable[[], None]]:
         """统一引擎 U3：事件桥——把 ``_emit`` 的事件同时压进一个列表。
 
-        骨架 ``run_stream`` 经 ``event_source`` 拿到 ``(pending, detach)``：
+        引擎 ``run_stream`` 经 ``event_source`` 拿到 ``(pending, detach)``：
         桥接期间 loop 侧所有 ``_emit``（text_delta / thinking_delta /
         llm_usage 等）**原回调照常执行**（chat SSE 不受影响），同时把
-        ``(type, payload)`` 压进 pending；骨架在步骤间隙 drain 并 yield。
+        ``(type, payload)`` 压进 pending；引擎在步骤间隙 drain 并 yield。
         detach 恢复原回调。零锁：单事件循环内生产（同步回调）与消费
-        （骨架 await 点）交替。
+        （引擎 await 点）交替。
         """
         pending: list[dict[str, Any]] = []
         original = self._on_event

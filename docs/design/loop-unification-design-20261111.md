@@ -5,7 +5,7 @@
 > `loop-engine-industry-survey-20261111.md`（业界证据）
 > **纪律依据**：R-014（先方案后动手 + 验收断言写清）· R-015（删接线对象四条件）·
 > R-016（先有覆盖所有出口的网再删）· R-013（一批准一 commit，独立可回滚）
-> **一句话**：统一引擎 = **skeleton 的骨架与四闸** + **legacy 的四件遗产**
+> **一句话**：统一引擎 = **skeleton 的引擎与四闸** + **legacy 的四件遗产**
 > （出口漏斗 / `budget_exhausted` / token 流 / sync 同引擎）+ **deciders 可组合**
 > （AutoGen/Vercel 形状）+ **循环级 HITL 挂点**（LangGraph 形状的库里最小实现）。
 > 7 个批次（U1-U6 + H1），先网后删，每批独立可回滚。
@@ -14,7 +14,7 @@
 
 ## §0 目标与非目标
 
-**目标**：`ReActSkeleton` 成为 `AgentLoop` 唯一循环体；`_run_loop_core`（legacy，
+**目标**：`LoopEngine` 成为 `AgentLoop` 唯一循环体；`_run_loop_core`（legacy，
 246 行）退役；消解双引擎漂移面（现状 3 条已知行为差异中 2 条无网）。
 
 **非目标**（明确不做，见 §9）：kernel 循环图化、内建 checkpoint/durable、CodeAct、
@@ -42,14 +42,14 @@ LoopSpec 死代码清理（决策 5）、审批逻辑向 pause/resume 的迁移�
 
 | 契约位 | 形状 | 落点批次 |
 |---|---|---|
-| 循环体 | `ReActSkeleton.run_stream(spec)`（唯一）；`run_to_completion` 保持 drain 语义 | 现状 |
+| 循环体 | `LoopEngine.run_stream(spec)`（唯一）；`run_to_completion` 保持 drain 语义 | 现状 |
 | 闸位 | `precheck / after_reason / after_act / after_observe` 四闸（after_observe 空闸预留）| U4 |
 | decider 协议 | `decide(input, ctx) -> (Decision, reason)` 不变；新增 `and_/or_` 组合子 + `ExternalTerminationDecider`（接 halt）| U4 |
 | 终态 | **一切出口 → LoopFinalize（幂等）**；EXIT 分支 `return` 改 `break` | U1 |
 | 事件 | run_stream = `text_delta/thinking_delta`（转发）+ `error` + `pause`（H1 预留）+ `done`；**零新词表**——delta 事件名已存在（`loop_stream.py` 对每 chunk 发）| U3 |
 | HITL | `ctx.pause(reason) -> resume_value` 挂点（Future 形状，复用 approval_event 模式）；审批逻辑迁移不在 H1 | H1 |
 | sync | `run() = _run_coro_in_sync(arun())`，签名零变化 | U5 |
-| spec | `SkeletonRunSpec` 不变；`LoopSpec` 保留（D5）| — |
+| spec | `LoopEngineSpec` 不变；`LoopSpec` 保留（D5）| — |
 
 ---
 
@@ -86,7 +86,7 @@ skeleton 全部 9 个出口 → 统一漏斗到 LoopFinalize：
 **幂等坑与解法**：after_act EXIT 改 break 后，审批闸（`_check_no_progress`，
 loop_progress.py:227-233）已发过 `loop_end`/`assistant_message`/`iter_end` 三件套，
 LoopFinalize 再发 = **重复事件**。解法沿仓库已有先例
-（`_after_run_fired` 标记，skeleton_adapters.py:272-286）：`NoProgressDecider.decide`
+（`_after_run_fired` 标记，loop_engine_adapters.py:272-286）：`NoProgressDecider.decide`
 在 gate 返回 True 时置 `ctx._ending_emitted = True`（decider 拿得到 ctx），LoopFinalize
 见标记跳过三件套、**仍执行** finalization step + git + trace close（D7：统一出口收尾是
 legacy 超集）。附带效果（已查证可接受）：EXIT 路径将出现 `done` 事件——`run_stream`
@@ -252,12 +252,12 @@ if value is CANCELLED:        # 挂起被取消
 | `loop_progress.py` | 280 | **保留**；审批闸为 H1 pause/resume 的第一消费者候选 | H1 后评估 |
 | `loop_tools.py` | 414 | **保留不动** | — |
 | `loop_spec.py` | 284 | 保留；`to_legacy_kwargs` **不动**（D5）| — |
-| `skeleton.py` | 339 | 保留 + EXIT 改 break + 四闸 | U1/U4 |
-| `skeleton_adapters.py` | 371 | 保留 + Reasoner delta 转发 | U3 |
+| `loop_engine.py` | 339 | 保留 + EXIT 改 break + 四闸 | U1/U4 |
+| `loop_engine_adapters.py` | 371 | 保留 + Reasoner delta 转发 | U3 |
 | `deciders.py` | 281 | 保留 + 组合子 + ExternalTermination | U4 |
 | `modes.py` | 159 | 保留 + after_observe 空闸登记 | U4 |
 | `AGENTNODES_ENGINE/SKELETON` | — | U5 起仅诊断；U6 走 D9 退役 | U6 |
-| `test_skeleton_equivalence.py`（对偶）| 201 | **U1 转绝对值断言**（R-009 反对偶；V4-4a 先例）| U1 |
+| `test_loop_engine_equivalence.py`（对偶）| 201 | **U1 转绝对值断言**（R-009 反对偶；V4-4a 先例）| U1 |
 | `test_engine_parity.py`（绝对值 6 项）| 422 | **保留并扩展**为单引擎能力网 | — |
 | `_check_budget` | — | **在用**（loop.py:1115，2026-11-11 核验），保留至 U6 | — |
 
@@ -269,13 +269,13 @@ if value is CANCELLED:        # 挂起被取消
 |---|---|---|---|---|
 | **U1** | 出口网（§3.2 矩阵 9 出口 × 6 断言：`trace_path` 非空 / trace 已关 / `loop_end`·`iter_end`·`after_run` 各恰一次 / done 语义正确）+ after_act EXIT→break + `_ending_emitted` 幂等 + precheck EXIT 分支删除 + 对偶测试转绝对值 | **已完成（2026-11-12）**：网 5/5 绿（先红 xfail → 修后 XPASS → 摘 marker）；全量 7172 passed / 0 failed | revert 单 commit（break 改动还原为 return；标记为纯增量）| — |
 | **U2** | `budget_exhausted` 补发 + no-progress 事件序列网（compare_exit 固化） | **已完成（2026-11-12）**：红网（2 xfail）→ LoopFinalize 补发（budget 分支，载荷与 legacy 同形）→ XPASS 摘 marker 4/4 绿；序列网 skeleton 绝对值 + legacy 对照 2/2 绿；全量 7178 passed / 0 failed | revert | U1 |
-| **U3** | run_stream 转发 `text_delta/thinking_delta` | **已完成（2026-11-12）**：红网（流式场景 run_stream 只 yield done）→ 事件桥（`AgentLoop._make_event_bridge` + 骨架 `event_source` + 步骤间隙 drain）→ 4/4 绿（正向 2 / 负向 1 / 工具共存 1）；全量 7181 passed / 0 failed | revert | U1 |
+| **U3** | run_stream 转发 `text_delta/thinking_delta` | **已完成（2026-11-12）**：红网（流式场景 run_stream 只 yield done）→ 事件桥（`AgentLoop._make_event_bridge` + 引擎 `event_source` + 步骤间隙 drain）→ 4/4 绿（正向 2 / 负向 1 / 工具共存 1）；全量 7181 passed / 0 failed | revert | U1 |
 | **U4** | deciders `and_/or_` + ExternalTerminationDecider + after_observe 空闸 | **已完成（2026-11-12）**：组合子 6 条 + 外部终止 5 条 + 分层纪律 1 条单测；闸位断言按四闸更新（`test_deciders.py` 三闸→四闸 + `after_observe == []`）；**运行时零变化**（既有 loop 网 29 条全绿）；全量 7195 passed / 0 failed。**执行中发现真实分层违规**（见 §3.4 与 §5.2）| revert | 无（实际串行）|
 | **H1** | `ctx.pause/resume` 原语（§3.5）| **已完成（2026-11-12）**：7 条 e2e 绿（挂起可见 / 恢复值进循环 / **无副作用重放** / 取消 / 超时 / 单次挂起 / 挂起期间事件循环不阻塞）；全量 7202 passed / 0 failed | revert（纯增量）| U1 |
 | **U5** | `run()` 切统一引擎（§3.6）| **已完成（2026-11-12）**：全量 **7207 passed / 114 skipped / 0 failed**（并行 81s + 串行 507s，逐项一致）；batch_gate ALL GREEN（7321 ≥ 7178）；legacy 遗产网 5/5 绿 | revert 一处 dispatch（legacy 路径仍在）| U1-U3 |
 | **U6** | 删 `_run_loop_core` + legacy 遗产网 + 引擎开关（D9）；E3 所有权迁移（可选）| 只读 audit 命令独立报 legacy 残留（R-004）；collected 锚点更新；全量绿 | revert（内容在 git 历史）| U5 + 网全绿 |
 
-**顺序原则**：先网后删（R-016）；U4 与 U1 都动 `skeleton.py`，实际串行执行；U5 前 U1-U3 必须全绿（D4）。
+**顺序原则**：先网后删（R-016）；U4 与 U1 都动 `loop_engine.py`，实际串行执行；U5 前 U1-U3 必须全绿（D4）。
 
 **存档分支复用**（2026-11-11 评估补）：U1 的网**从 `archive/loop-unify-20261111` 改编而非重写**——
 `test_skeleton_capabilities.py`（能力绝对值断言 + subprocess 模式）、`test_engine_capabilities.py`、
@@ -289,7 +289,7 @@ if value is CANCELLED:        # 挂起被取消
 | 网：`tests/test_loop_exit_net.py`（5 场景 × 6 断言）| 先 4 绿 + 1 **xfail 钉住 EXIT 洞**（红网就位）|
 | 修：after_act EXIT `return`→`break` + precheck EXIT 分支删除 + `_ending_emitted` 幂等 | XPASS(strict) → 摘 marker → **5/5 绿** |
 | 修中发现：幂等标记必须**两处配合**（skeleton EXIT 分支置位 + LoopFinalize 读标记跳三件套）——首版只置位不读，全量事件重复（loop_end×2）被网当场抓住 | **网的有效性实证** |
-| 对偶转绝对值（D8）：`test_skeleton_equivalence.py` repetitive 场景改精确语义 + 勘误注释（"skeleton 落 stop"是过时记载，批次 12 S1 已收编审批闸）| 7 passed |
+| 对偶转绝对值（D8）：`test_loop_engine_equivalence.py` repetitive 场景改精确语义 + 勘误注释（"skeleton 落 stop"是过时记载，批次 12 S1 已收编审批闸）| 7 passed |
 | 附带修复 1：`llm_client_mock.py` 从存档恢复 + 新增 `patch_llm_client_full`（4 入口，R-008 修正）| — |
 | 附带修复 2：`ExecutorBridge` 跨进程取消竞态（`dispatch_epoch` 信封取代裸 Event 判定）+ collect timeout 3→10s（满载下 spawn 冷启动假超时）| 单跑 10 passed；探针 20 次 0 失败；混合负载 6 连绿 |
 | 场景构造踩坑（写进网注释）| ① `no_progress_window`/`max_iterations` 必须经 strategy config 传（react preset 自带 max_iterations=10 会静默覆盖构造参数）；② shell/echo 在 Windows 沙箱下会 error——用 list_history 构造多轮场景 |
@@ -365,7 +365,7 @@ D:\tools\python312\python.exe scripts\arch\sync_architecture_diagram.py --write
 |---|---|
 | 路线 A 方向 | survey §1 模式 A（OpenAI/Anthropic/AWS 生产形态）|
 | 出口漏斗 | inventory §3.3（EXIT 实测）+ survey 建议 2（LangGraph END 漏斗）|
-| 幂等标记 | `skeleton_adapters.py:272-286`（`_after_run_fired` 先例及其理由注释）|
+| 幂等标记 | `loop_engine_adapters.py:272-286`（`_after_run_fired` 先例及其理由注释）|
 | token 流零新词表 | `src/agentnodes/foundation/observability/event_vocab.py` 模块注释（delta 事件已存在）|
 | deciders 组合 | survey §2 AutoGen/Vercel 行 + pitfall #5869 |
 | HITL 形状 | survey §2 LangGraph/pydantic-ai 行 + double-execution 坑；库内 `loop_progress.py:212-219` 三步序 |
@@ -397,7 +397,7 @@ U4 还暴露了「直读跨层实现」的惯性：halt 就在 `interfaces/cli`�
 | `kernel/agent/pause.py`（新）| `PauseHandle`（reason/payload/timeout_s + resume/cancel/wait）+ `CANCELLED` 哨兵 + `attach_pause(ctx)` 工厂 |
 | `LoopContext` | 新增 `pause`（工厂，由装配层注入）+ `resume_value`（恢复值） |
 | `LoopPrepare` | 装配 `attach_pause(ctx)`——**decider 侧 `ctx.pause(...)` 只创建挂起点，不阻塞** |
-| 骨架 `_run_gate` | 闸位后检测 `_pause_handle`：emit pause 事件 → **await** 恢复（`asyncio.to_thread`，不阻塞事件循环）→ 写 `ctx.resume_value` → **重跑该闸位** |
+| 引擎 `_run_gate` | 闸位后检测 `_pause_handle`：emit pause 事件 → **await** 恢复（`asyncio.to_thread`，不阻塞事件循环）→ 写 `ctx.resume_value` → **重跑该闸位** |
 | 协议不变 | **Decision 仍是四值**（无 PAUSE）；decider 协议 `decide(input, ctx)` 不变；挂起是 ctx 上的能力而非新决策值 |
 | e2e 网（7 条）| 挂起可见（`agent_paused` 事件）/ 恢复值进循环 / **无副作用重放**（LLM 调用数 == 轮数）/ 取消 / 超时 / 单次挂起（不变量 3）/ **挂起期间事件循环仍响应**（await 而非同步 wait）|
 | 全量 | **7202 passed / 114 skipped / 0 failed**（`-n 12`，80s）；batch_gate ALL GREEN（7316 ≥ 7178，含新增 pause.py 的层级检查）|
@@ -405,9 +405,9 @@ U4 还暴露了「直读跨层实现」的惯性：halt 就在 `interfaces/cli`�
 **实现中的三个发现**：
 
 1. **decider 是同步的**——若在 decider 内阻塞等待会卡死事件循环。因此形状定为
-   「decider 创建挂起点（不阻塞）→ 骨架 await → 重跑该闸位」。好处：**Decision
+   「decider 创建挂起点（不阻塞）→ 引擎 await → 重跑该闸位」。好处：**Decision
    四值不变、decider 协议不变**（不引入 PAUSE 决策值）。
-2. **挂起点是内部状态，事件是外部契约**——骨架在 await 前会消费 `_pause_handle`，
+2. **挂起点是内部状态，事件是外部契约**——引擎在 await 前会消费 `_pause_handle`，
    外部观察者看不到它，只能看到 `agent_paused` 事件。这是有意的分工（测试第一版
    想直接读 `_pause_handle`，读不到——**测试必须从外部契约出发**，R-018 的推广）。
 3. **`CONTINUE` 语义 = 一直继续到上限**——恢复后 CONTINUE 会持续跑到

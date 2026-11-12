@@ -143,7 +143,7 @@ def _code_line_numbers(source: str) -> set[int]:
     用 tokenize 精确区分：注释（COMMENT）与字符串字面量（STRING）不计入。
     这样 subprocess 模板里的 docstring 不会被误判成依赖，而模板里的
     **代码行**（模板字符串内部的 Python 代码）仍会被计入——那正是
-    我们要抓的（``test_skeleton_equivalence.py`` 的模板里就有
+    我们要抓的（``test_loop_engine_equivalence.py`` 的模板里就有
     ``engine="legacy"``）。
 
     tokenize 失败（语法错误）时退化为「全部行都算代码」——宁可多算
@@ -350,7 +350,7 @@ def _scan_file(path: Path, root: Path, result: LegacyAuditResult) -> None:
     #
     # **为什么还需要文本层**：subprocess 模板（``_INNER = r'''...'''``）
     # 里的代码是**字符串**，AST 看不到——但那里也可能有真实的
-    # ``engine="legacy"`` 调用（实测 test_skeleton_equivalence.py:91
+    # ``engine="legacy"`` 调用（实测 test_loop_engine_equivalence.py:91
     # 就在模板里）。
     #
     # **模板内代码怎么算「代码行」**：模板字符串整体是一个 STRING token，

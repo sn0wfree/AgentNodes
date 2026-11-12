@@ -178,7 +178,7 @@ a single implementation serve the browser, the server, and a device"）。
 
 | 维度 | AgentNodes（kernel/agent） | lobehub（agent-runtime + server） |
 |---|---|---|
-| **循环体** | `ReActSkeleton`：PRECHECK→REASON→①→ACT→②→OBSERVE→③ 四闸状态机（in-process） | `runAgentLoop` 薄 while + `AgentRuntime.step()` instruction VM |
+| **循环体** | `LoopEngine`：PRECHECK→REASON→①→ACT→②→OBSERVE→③ 四闸状态机（in-process） | `runAgentLoop` 薄 while + `AgentRuntime.step()` instruction VM |
 | **决策点** | `deciders.decide(input,ctx)→Decision`（STOP/EXIT/CONTINUE/PROCEED）+ `and_/or_` + ExternalTermination | `resolveStop` 可替换回调 + runtime status 机 + `shouldContinueExecution` |
 | **退出漏斗** | 9 出口 → `LoopFinalize` 幂等（`_ending_emitted`） | finish 指令/终态 status → Coordinator `hasEnteredStreamEndState` 恰一次 `agent_runtime_end` |
 | **事件流** | `run_stream` 双通道（事件桥 drain）+ `on_event` 回调 | events 数组累积 + StreamEventManager Redis pub + gateway 推送 + uiMessages SoT 快照 |

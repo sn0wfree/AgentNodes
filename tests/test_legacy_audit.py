@@ -67,7 +67,7 @@ def test_audit_does_not_import_legacy():
     src = (ROOT / "src/agentnodes/kernel/agent/legacy_audit.py").read_text(
         encoding="utf-8")
     # 只允许 import 标准库 + 本模块需要的 ast/io/os/re/tokenize
-    forbidden = ("from .loop import", "import loop", "from .skeleton import")
+    forbidden = ("from .loop import", "import loop", "from .loop_engine import")
     for f in forbidden:
         assert f not in src, f"审计器 import 了被审计对象：{f}"
 

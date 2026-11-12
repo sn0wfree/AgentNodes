@@ -1,11 +1,11 @@
 # Loop 引擎业界调研：实现方式与功能清单（2026-11-11）
 
-> **性质**：调研（为「在 ReActSkeleton 基础上统一双引擎」提供业界证据）
+> **性质**：调研（为「在 LoopEngine 基础上统一双引擎」提供业界证据）
 > **方法**：内部存货盘点（`unified-agent-engine-design.md` / `unified-loop-adoption-eval-20261107.md`
 > / 库内参考实现 `reference/llmwikify/kernel-agent/`）+ 2026-11 当日 Web 检索
 > （OpenAI Agents SDK / Claude Agent SDK / LangGraph / smolagents / pydantic-ai /
 > AutoGen / Strands / OpenHands / Vercel AI SDK）。
-> **一句话结论**：单循环 + 可插拔检查点（ReActSkeleton 所属形态）是业界生产系统的
+> **一句话结论**：单循环 + 可插拔检查点（LoopEngine 所属形态）是业界生产系统的
 > 主流形态（OpenAI / Anthropic / AWS 全部是这个形状）；统一方向成立。业界比我们强的
 > 四处：**终止条件可组合、HITL 是循环级原语、双通道流式契约、检查点/持久化**。
 > 我们比业界强的两处：权限分层（hard_deny + L0-L4）与上下文压缩。
@@ -18,7 +18,7 @@
 
 | 存货 | 与本次的关系 |
 |---|---|
-| `reference/llmwikify/kernel-agent/`（loop.py 301 行 + _core_types + hook + spec + steps）| **ReActSkeleton 的直系祖先**——`unified-loop-adoption-eval-20261107.md` 的 B1（协议统一）/ B2（deciders）/ B3（骨架隔离）三批的移植来源 |
+| `reference/llmwikify/kernel-agent/`（loop.py 301 行 + _core_types + hook + spec + steps）| **LoopEngine 的直系祖先**——`unified-loop-adoption-eval-20261107.md` 的 B1（协议统一）/ B2（deciders）/ B3（引擎隔离）三批的移植来源 |
 | `unified-loop-adoption-eval-20261107.md` | 已做过一次「借鉴评估」：逐概念对照 llmwikify，裁决 = 换底座不换职责 |
 | `unified-agent-engine-design.md`（2026-08-18）| 更早的「单一执行引擎」设计（AgentLoop 吸收 SwarmWorker），当时尺度是 kill SwarmWorker，不是统一双 loop 引擎 |
 | `industry-survey-knowledge-base-20261106.md` | 主题是 RSI/observability/feature-flag，与 loop 引擎无关（本次未复用）|
@@ -35,13 +35,13 @@ OpenHands SDK · Vercel AI SDK。另加库内 llmwikify 作第 10 个对照。
 
 | 模式 | 形状 | 代表 | 对 AgentNodes 的意义 |
 |---|---|---|---|
-| **A · 单循环 + 可插拔检查点** | 一个显式 while/for 循环；终止、审批、hook 是循环上的挂点 | **OpenAI Agents SDK（Runner）**、**Claude Agent SDK**、**Strands**、llmwikify/**ReActSkeleton** | **我们所属的家族，也是业界生产主流**——统一方向被三个一线厂商背书 |
+| **A · 单循环 + 可插拔检查点** | 一个显式 while/for 循环；终止、审批、hook 是循环上的挂点 | **OpenAI Agents SDK（Runner）**、**Claude Agent SDK**、**Strands**、llmwikify/**LoopEngine** | **我们所属的家族，也是业界生产主流**——统一方向被三个一线厂商背书 |
 | **B · 状态图/状态机** | loop = 图；节点 = 步骤；checkpoint 每超步持久化；interrupt/resume 是图原语 | **LangGraph**、Google ADK（Sequential/Loop/ParallelAgent）、pydantic-ai（内部也是图，可出 mermaid）| 持久化/恢复最强；代价是把「循环」升格成「图」——AgentNodes 现有 workflow 层已承担编排，kernel 循环不需要图 |
 | **C · 终止条件作为一等可组合原语** | 循环控制 = 条件对象列表，支持 AND/OR 组合 | **AutoGen**（`MaxMessageTermination & TextMentionTermination`）、**Vercel AI SDK**（`stopWhen: [stepCountIs(n), …]`）| 最值得抄的一点：**deciders 应支持组合**（见 §4.1）|
 | **D · 事件溯源循环** | 事件流**就是**状态：Action/Observation 都是可回放事件，状态是事件流的投影 | **OpenHands SDK**（closed action vocabulary + LLMConvertibleEvent）| 远期方向。我们的 event_vocab + trace.jsonl 已有雏形，但事件是**副作用发射**，不是状态事实源 |
 | **E · 代码即动作** | 动作空间 = 可执行代码（Python）而非 tool-call JSON | smolagents `CodeAgent`、OpenHands `CodeActAgent` | 与 loop 引擎正交（是 reasoner/actor 的形态选择），不影响统一 |
 
-**关键判断**：ReActSkeleton 的 PRECHECK→REASON→DEC①→ACT→DEC②→OBSERVE→FINALIZE
+**关键判断**：LoopEngine 的 PRECHECK→REASON→DEC①→ACT→DEC②→OBSERVE→FINALIZE
 结构与 OpenAI Runner / Strands loop 同构（模式 A），且比它们多了**显式闸位分位**
 （precheck/after_reason/after_act 三闸，llmwikify 原版还有 DEC③/after_observe，
 移植时被裁掉——见 §4.1 缺口 1）。
@@ -91,7 +91,7 @@ OpenHands SDK · Vercel AI SDK。另加库内 llmwikify 作第 10 个对照。
 
 ---
 
-## §4 对「在 ReActSkeleton 上统一双引擎」的证据型建议
+## §4 对「在 LoopEngine 上统一双引擎」的证据型建议
 
 ### 建议 1 · deciders 升级为可组合原语（抄 AutoGen/Vercel）
 
@@ -149,7 +149,7 @@ OpenHands 证明事件流可以**就是**状态。我们的 event_vocab 已有�
 
 ## §5 与库内参考实现的关系（必须写清，防止「重新发明」）
 
-ReActSkeleton ← llmwikify UnifiedAgentLoop 的移植（adoption-eval §3 B3）。
+LoopEngine ← llmwikify UnifiedAgentLoop 的移植（adoption-eval §3 B3）。
 本次调研对照发现的两处**移植时丢失**的东西，应在统一时捡回：
 
 | llmwikify 有 | 现状 | 处置 |
