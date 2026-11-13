@@ -17,16 +17,13 @@ from agentnodes.kernel.agent._core_types import StepHandler
 from agentnodes.kernel.agent.strategy import (
     ContinuationStep,
     CustomStrategy,
-    FinalizationStep,
     LoopConfig,
     LoopContext,
-    PreRunStep,
     ProgressStep,
     ReActStrategyFactory,
     ResilienceStep,
     StopStep,
     StrategyFactory,
-    ToolExecutionStep,
     create_strategy,
 )
 from agentnodes.kernel.agent.strategy.steps import (
@@ -234,12 +231,19 @@ class TestCustomStrategy:
 class TestExports:
     def test_module_top_level_exports(self):
         from agentnodes.kernel.agent import strategy
+        # B2-① T7：执行型 6 枚 Protocol 并入 StepHandler（7 个生产 step 类
+        # 全部改 handle 后它们失去存在理由）；判定型 4 枚保留。
         names = {
             "LoopContext", "LoopStrategy", "LoopConfig",
             "StrategyFactory", "create_strategy", "register_strategy",
             "CustomStrategy", "ReActStrategyFactory",
-            "Step", "PreRunStep", "LLMCallStep", "CompactionStep",
+            "StepHandler",
             "StopStep", "ContinuationStep", "ProgressStep",
-            "ResilienceStep", "ToolExecutionStep", "FinalizationStep",
+            "ResilienceStep",
         }
         assert names.issubset(set(strategy.__all__))
+        gone = {
+            "Step", "PreRunStep", "LLMCallStep", "CompactionStep",
+            "ToolExecutionStep", "FinalizationStep",
+        }
+        assert not (gone & set(strategy.__all__)), "执行型 Protocol 已并入 StepHandler"

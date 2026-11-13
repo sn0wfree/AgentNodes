@@ -13,17 +13,13 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 
+from .._core_types import StepHandler
 from .loop_context import LoopContext
 from .protocol import (
-    CompactionStep,
     ContinuationStep,
-    FinalizationStep,
-    LLMCallStep,
-    PreRunStep,
     ProgressStep,
     ResilienceStep,
     StopStep,
-    ToolExecutionStep,
 )
 
 
@@ -53,24 +49,33 @@ class LoopConfig:
 
 @dataclass
 class LoopStrategy:
-    """Composition of 9 step Protocols + a config bag.
+    """Composition of 9 step slots + a config bag.
 
     The AgentLoop consults ``should_continue`` to decide whether to keep
     iterating; per-step execution is delegated to the matching slot.
+
+    **槽位两型**（B2-① T7）：
+
+    - **执行型 5 槽**（``pre_run`` / ``llm_call`` / ``compaction`` /
+      ``tool_execution`` / ``finalization``）= ``StepHandler``
+      （``handle(input, ctx) → StepResult``，``kernel/agent/_core_types.py``）；
+    - **判定型 4 槽**（``stop`` / ``continuation`` / ``progress`` /
+      ``resilience``）= ``protocol.py`` 的四枚 Protocol——它们是 decider
+      家族的降级适配面，形状是 ``evaluate(ctx) -> (bool, reason)`` 等。
     """
 
     name: str
     description: str
 
-    pre_run: PreRunStep
-    llm_call: LLMCallStep
-    compaction: CompactionStep
+    pre_run: StepHandler
+    llm_call: StepHandler
+    compaction: StepHandler
     stop: StopStep
     continuation: ContinuationStep
     progress: ProgressStep
     resilience: ResilienceStep
-    tool_execution: ToolExecutionStep
-    finalization: FinalizationStep
+    tool_execution: StepHandler
+    finalization: StepHandler
 
     config: LoopConfig = field(default_factory=LoopConfig)
 

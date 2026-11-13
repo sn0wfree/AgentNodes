@@ -1,9 +1,15 @@
-"""LoopStrategy subpackage (P1-1 + P1-2/3/4).
+"""LoopStrategy subpackage (P1-1 + P1-2/3/4 + B2-① T7).
 
 Re-exports the core abstractions: ``LoopContext``, ``LoopStrategy``,
 ``LoopConfig``, ``StrategyFactory`` / ``create_strategy`` /
 ``register_strategy``, ``CustomStrategy``, ``ReActStrategyFactory``,
-and the 9 step Protocols from ``protocol``.
+``StepHandler``（执行型槽位的统一底座）与判定型的 4 枚 Protocol。
+
+**B2-① T7**：执行型 6 枚 Protocol（``PreRunStep`` / ``LLMCallStep`` /
+``CompactionStep`` / ``ToolExecutionStep`` / ``FinalizationStep`` /
+``Step``）已并入 ``kernel/agent/_core_types.py::StepHandler``——7 个
+生产 step 类全部改 ``handle(input, ctx) → StepResult`` 后，它们失去存在
+理由。本包只导出判定型 4 枚（decider 家族的降级适配面）。
 
 P1-2/3/4 add three built-in strategies on top of ReAct:
 
@@ -16,12 +22,9 @@ P1-2/3/4 add three built-in strategies on top of ReAct:
 
 All three register themselves in the factory at import time (see
 the bottom of this module).
-
-v0.1 ships the *infrastructure* (types + factory + step overrides);
-the actual AgentLoop._run_loop_core rewrite onto LoopStrategy
-happens in a follow-up patch.
 """
 
+from .._core_types import StepHandler
 from .custom_steps import (
     ClaimValidationFinalizationStep,
     NoOpToolExecutionStep,
@@ -39,16 +42,10 @@ from .loop_strategy import LoopConfig, LoopStrategy
 from .minimal import MinimalStrategy, MinimalStrategyFactory
 from .profile_resolver import resolve_loop_strategy
 from .protocol import (
-    CompactionStep,
     ContinuationStep,
-    FinalizationStep,
-    LLMCallStep,
-    PreRunStep,
     ProgressStep,
     ResilienceStep,
-    Step,
     StopStep,
-    ToolExecutionStep,
 )
 from .steps import (
     DefaultCompactionStep,
@@ -65,7 +62,6 @@ from .validator import ValidatorStrategy, ValidatorStrategyFactory
 
 __all__ = [
     "ClaimValidationFinalizationStep",
-    "CompactionStep",
     "ContinuationStep",
     "CustomStrategy",
     "DefaultCompactionStep",
@@ -79,27 +75,23 @@ __all__ = [
     "DefaultToolExecutionStep",
     "ExplorerStrategy",
     "ExplorerStrategyFactory",
-    "FinalizationStep",
-    "LLMCallStep",
     "LoopConfig",
     "LoopContext",
     "LoopStrategy",
     "MinimalStrategy",
     "MinimalStrategyFactory",
     "NoOpToolExecutionStep",
-    "resolve_loop_strategy",
-    "PreRunStep",
     "ProgressStep",
     "ReActStrategyFactory",
     "ResilienceStep",
-    "Step",
+    "StepHandler",
     "StopStep",
     "StrategyFactory",
-    "ToolExecutionStep",
     "ValidatorStrategy",
     "ValidatorStrategyFactory",
     "create_strategy",
     "register_strategy",
+    "resolve_loop_strategy",
 ]
 
 

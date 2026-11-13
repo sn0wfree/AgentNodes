@@ -1,92 +1,45 @@
-"""Step Protocol + concrete step protocols (P1-1).
+"""判定型 Step Protocol（批次 10 起的 9 槽位中，执行型已收敛）。
 
-A ``Step`` is a single decision point inside the ReAct-style loop:
+**B2-① T7 收敛**：本文件原 10 个 Protocol（``Step`` + 6 个执行型 + 4 个判定型）。
+执行型全部并入 ``kernel/agent/_core_types.py::StepHandler``——那是 B1 就备好的
+统一底座（``handle(input, ctx) → StepResult``）。本文件只留**判定型**四枚：
 
-- ``PreRunStep`` — hypothesis / goal / context injection (runs once)
-- ``LLMCallStep`` — chat/stream call (per iteration)
-- ``CompactionStep`` — context compression (per iteration, optional)
-- ``StopStep`` — when to break (per iteration, after LLM call)
-- ``ContinuationStep`` — when to keep iterating despite a text-only
-  response (e.g. goal still has uncovered criteria)
-- ``ProgressStep`` — repeated-hash detection (per iteration, after tools)
-- ``ResilienceStep`` — circuit breaker / per-tool failures (per iteration)
-- ``ToolExecutionStep`` — run the assistant's tool calls (per iteration)
-- ``FinalizationStep`` — metrics, claim validation, git commit (after loop)
+- ``StopStep`` — 预算 / 外部停止判定（``evaluate(ctx) -> (bool, reason)``）
+- ``ContinuationStep`` — 续跑判定（goal 未覆盖 → 续跑注入）
+- ``ProgressStep`` — 重复 hash 检测（``record_hash`` / ``is_no_progress``）
+- ``ResilienceStep`` — 熔断（``is_open``）
 
-Each Step Protocol is a ``runtime_checkable`` ``Protocol`` so that
-``isinstance(step, PreRunStep)`` works at the boundary. The same
-shape — ``should_run(ctx)`` + ``execute(ctx, *, async_mode)`` — applies
-to every step so composition stays uniform.
+**为什么判定型不并入 StepHandler**：它们不是"变形点"而是**判定点**——
+decider 家族（``deciders.py`` 的 ``class Decider(StepHandler)``）包装它们，
+把 ``(bool, reason)`` 翻译成 ``Decision`` 四值。形状不同是**职责不同**
+的如实反映，不是待收敛的技术债。详见
+``docs/design/step-protocol-migration-20261112.md`` §5。
 
-**批次 9（B1）**：本文件是**当前在跑的职责划分**，运行时行为不变。
-目标底座已落地：``kernel/agent/_core_types.py`` 的
-``StepHandler`` / ``StreamingHandler`` / ``StepResult`` / ``Pipeline``——
-停止判定（Stop/Continuation/Progress/Resilience）在 B2 变为
-**deciders dict**（三检查点显式配置），事件副作用（``_fire``）在
-B2/B3 收编进 ``StepResult.events``。旧步骤经
-``kernel/agent/step_adapters.py::LegacyStepAdapter`` 即可进新底座。
+**消费面（AST 实测）**：4 枚判定型只被 ``loop_strategy.py`` 的槽位注解引用
++ ``strategy/__init__.py`` 导出；执行型 Protocol 的引用已在 T7 全部消除。
+
+**历史**：本文件初版（P1-1）定义 9 个执行型 Protocol（``execute(ctx, *,
+async_mode)`` 变异 ctx），是 B2 之前的在跑形状。B2-① 逐切片迁移后
+（compaction / llm_call / tool_execution / finalization / pre_run +
+2 个 custom step 全部改 ``handle``），执行型 Protocol 失去存在理由。
 """
 
 from __future__ import annotations
 
-from typing import Awaitable, Protocol, runtime_checkable
+from typing import Protocol, runtime_checkable
 
 from .loop_context import LoopContext
 
 
-@runtime_checkable
-class Step(Protocol):
-    """Common Step surface — name + should_run + execute."""
-
-    @property
-    def name(self) -> str:
-        ...
-
-    def should_run(self, ctx: LoopContext) -> bool:
-        ...
-
-    def execute(self, ctx: LoopContext, *, async_mode: bool) -> LoopContext | Awaitable[LoopContext]:
-        ...
-
-
-# ── Per-step Protocol contracts ──────────────────────────────
-
-
-@runtime_checkable
-class PreRunStep(Protocol):
-    """Run once before the iteration loop starts."""
-
-    def execute(self, ctx: LoopContext, *, async_mode: bool) -> LoopContext | Awaitable[LoopContext]:
-        ...
-
-
-@runtime_checkable
-class LLMCallStep(Protocol):
-    """Fetch the assistant's response for ``ctx.iteration``.
-
-    Returns the updated context (with ``response`` populated). A return
-    value of ``None`` (or a context with ``response is None``) signals
-    the loop to break (e.g. fatal LLM error).
-    """
-
-    def execute(self, ctx: LoopContext, *, async_mode: bool) -> LoopContext | Awaitable[LoopContext]:
-        ...
-
-
-@runtime_checkable
-class CompactionStep(Protocol):
-    """Compress context when over threshold. No-op by default."""
-
-    def execute(self, ctx: LoopContext, *, async_mode: bool) -> LoopContext | Awaitable[LoopContext]:
-        ...
+# ── 判定型 Protocol（decider 家族的降级适配面）────────────────────
 
 
 @runtime_checkable
 class StopStep(Protocol):
     """Decide whether to break the loop after the LLM call.
 
-    Returns ``(should_stop, reason)``; the loop also consults
-    ``ctx.should_stop`` set by other steps (Resilience, Continuation).
+    Returns ``(should_stop, reason)``；循环体也读 ``ctx.should_stop``
+    （其它判定方置位）。
     """
 
     def evaluate(self, ctx: LoopContext) -> tuple[bool, str | None]:
@@ -131,31 +84,9 @@ class ResilienceStep(Protocol):
         ...
 
 
-@runtime_checkable
-class ToolExecutionStep(Protocol):
-    """Run the assistant's tool calls; update ctx.messages."""
-
-    def execute(self, ctx: LoopContext, *, async_mode: bool) -> LoopContext | Awaitable[LoopContext]:
-        ...
-
-
-@runtime_checkable
-class FinalizationStep(Protocol):
-    """Run after the loop exits — metrics, claim validation, git."""
-
-    def execute(self, ctx: LoopContext, *, async_mode: bool) -> LoopContext | Awaitable[LoopContext]:
-        ...
-
-
 __all__ = [
-    "CompactionStep",
     "ContinuationStep",
-    "FinalizationStep",
-    "LLMCallStep",
-    "PreRunStep",
     "ProgressStep",
     "ResilienceStep",
-    "Step",
     "StopStep",
-    "ToolExecutionStep",
 ]
