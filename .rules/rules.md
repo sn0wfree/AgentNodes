@@ -135,10 +135,10 @@ C:\Users\1\AppData\Local\Programs\Python\Python313\python.exe -m pytest tests -q
 
 > `-n 12` 此前在 `test_executor_bridge.py` 上稳定失败；给该文件打 `xdist_group("executor_bridge")` 后转绿（见 §3.7）。**不要超过 12**——超过逻辑核数后 spawn 进程池的 IPC 延迟会盖过并行收益。
 
-#### `-n` 选取：按空闲内存定，不写死（2026-11-13）
+#### `-n` 选取：按**可用内存**定，不写死（2026-11-13，判据同日修正）
 
 **默认仍是 `-n 12`**；但 `-n` 是**环境相关**的，不能把它写死成常量
-——下面三个信号一出现，先查空闲内存、再按表降档，**不要当成代码回归去改实现**：
+——下面三个信号一出现，先查可用内存、再按表降档，**不要当成代码回归去改实现**：
 
 | 信号 | 实测根因 |
 |---|---|
@@ -151,10 +151,28 @@ C:\Users\1\AppData\Local\Programs\Python\Python313\python.exe -m pytest tests -q
 全量 7266 passed / 0 failed / 3m10s；同日 `-n 12` 启动失败 ×2、`-n 8` 在 99%
 处 worker 崩溃并挂死。
 
+**查哪个指标（2026-11-13 修正，重要）**：用 **`AvailableMBytes`**，
+**不要用 `FreePhysicalMemory`**。
+
+```powershell
+# 正确：AvailableMBytes 含可回收缓存（Standby），PagesPerSec=0 表示无换页压力
+powershell -NoProfile -Command "$m=Get-CimInstance Win32_PerfFormattedData_PerfOS_Memory; Write-Output ('available_MB=' + $m.AvailableMBytes + ' pagesPerSec=' + $m.PagesPersec)"
+```
+
+| 指标 | 语义 | 能否当判据 |
+|---|---|---|
+| `FreePhysicalMemory` | **完全空闲**的物理页 | ❌ **实测踩坑**：同一台机器在 4.4GB ↔ 9GB 之间剧烈波动（Windows 把空闲页拿去做文件缓存），会给出自相矛盾的判断 |
+| `AvailableMBytes` | 空闲 + **可随时回收的缓存** | ✅ 反映真实可用 |
+| `StandbyCacheNormalPriorityBytes` | 文件缓存（可回收）| 仅诊断用——它的存在正是 `FreePhysicalMemory` 虚低的原因 |
+| `PagesPersec` | 换页速率 | ✅ **持续 > 0 才说明真吃紧**；实测 0 = 无压力 |
+
+实测对照（同一时点，2026-11-13）：`FreePhysicalMemory=4450MB` 但
+`AvailableMBytes=7830MB`、`StandbyCache=4377MB`、`PagesPersec=0`
+——**真实可用 7.8GB、零换页压力**，判据应按 7.8GB 算。
+
 **经验参考**（非硬阈值，以实际试跑为准）：本机 32GB 总量，`-n 12` 需要
-空闲物理内存 **≳12GB**——12 个 worker 同时 import numpy/pymupdf/playwright
-的峰值远超单 worker 内存。查法：`Get-CimInstance Win32_OperatingSystem`
-看 `FreePhysicalMemory`。
+**`AvailableMBytes` ≳ 12GB**——12 个 worker 同时 import
+numpy/pymupdf/playwright 的峰值远超单 worker 内存。
 
 **挂死时的处置**：按 PID 精确终止（`taskkill /PID <master> /T /F`，
 先 `Stop-Process` 查 master 再杀子进程），**禁 `pkill -f`/模糊匹配**；
