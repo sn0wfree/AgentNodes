@@ -164,31 +164,45 @@ class LoopActor(StepHandler):
 
 
 class LoopPrepare:
-    """运行准备：``_prepare_run`` + 首个 LoopContext + hook_ctx。"""
+    """运行准备：``strategy.pre_run`` 槽位 + 首个 LoopContext + hook_ctx。
+
+    **B2-① T6 接线**：此前直调 ``loop._prepare_run``（绕过 strategy
+    槽位——``pre_run`` step 是死代码位）。现改为委托
+    ``strategy.pre_run.handle``：**custom strategy 的 pre_run 从「静默
+    忽略」变为「真的跑」**（唯一显式行为例外，§3.6）。
+
+    **不走 ``_call_step``**：prepare 在引擎 ``try:`` 之外（loop_engine.py
+    300 vs 304），失败契约 = **崩溃**（异常向上抛给调用方）——
+    ``_call_step`` 的 catch 会把异常变成 fail-result，那是循环体内步骤的
+    语义，prepare 没有 result 对象可降级。
+
+    副作用顺序与接线前逐字一致：pre_run → subagent 计数重置 → hook_ctx →
+    ctx 组装 → attach_pause → raw_task → _skeleton_ctx。
+    """
 
     def __init__(self, loop: Any) -> None:
         self._loop = loop
 
     def __call__(self, spec: Any) -> tuple[LoopContext, Any]:
         loop = self._loop
-        full_task, result, messages, t0 = loop._prepare_run(
-            spec.task, spec.context, spec.history,
+        # ctx 先建：pre_run step 要读 ctx.task/context/history 跑注入器
+        # 与 ContextHub 检索。
+        ctx = LoopContext(
+            task=spec.task,
+            context=spec.context,
+            history=spec.history,
         )
+        # ★ 接线点：strategy.pre_run 槽位（原 loop._prepare_run 直调已删）
+        r = loop._strategy.pre_run.handle(None, ctx)
+        if not r.success:
+            raise RuntimeError(f"pre_run failed: {r.error}")
         # 批次 12 S1：每轮 run 重置委派计数（legacy 在 _run_loop_core:799
         # 做同一件事；漏了会让 subagent 的 per-turn 上限跨调用累积）
         try:
             loop._subagent_count[0] = 0
         except Exception:  # noqa: BLE001
             pass
-        hook_ctx = loop._build_hook_context(0, messages)
-        ctx = LoopContext(
-            task=full_task,
-            context=spec.context,
-            history=spec.history,
-            messages=messages,
-            t0=t0,
-        )
-        ctx.result = result
+        hook_ctx = loop._build_hook_context(0, ctx.messages)
         ctx.hook_ctx = hook_ctx
         # 统一引擎 H1：装上挂起/恢复原语的工厂（循环级 HITL）。
         # decider 侧 ``ctx.pause(reason=..., payload=...)`` 创建挂起点
@@ -204,7 +218,7 @@ class LoopPrepare:
         # approval gate 是闭包（decider 不持有 loop），需要它取
         # response/result/iteration 喂 `_check_no_progress`
         loop._skeleton_ctx = ctx
-        return ctx, result
+        return ctx, ctx.result
 
 
 class LoopIterationStart:

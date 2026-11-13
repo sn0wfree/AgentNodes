@@ -74,7 +74,7 @@ class TestStepProtocols:
         终态形状）；未迁移的仍对旧 Protocol。T11 全部收敛为 StepHandler。
         """
         pairs = [
-            (DefaultPreRunStep(), PreRunStep),
+            (DefaultPreRunStep(), StepHandler),  # B2-① T6 已迁 handle + 接线
             (DefaultLLMCallStep(), StepHandler),  # B2-① T3 已迁 handle
             (DefaultCompactionStep(), StepHandler),  # B2-① T2 已迁 handle
             (DefaultStopStep(), StopStep),

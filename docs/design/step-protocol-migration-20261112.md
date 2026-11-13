@@ -731,7 +731,7 @@ max_iter 才停（§2C 案例 3 反证）。所以本批只删 catch 那一份�
 | 10 | 9 个出口 × 6 断言全绿 | `tests/test_loop_exit_net.py` |
 | 11 | `finished_reason` 的 **8** 种字面量一个不减（实测：`approval_timeout_rejected` / `budget` / `error` / `exit` / `max_iter` / `stop` / `timeout` / `user_rejected`）| 全量套件（~40 条断言在钉它）+ `git grep -E 'finished_reason\s*=\s*"[a-z_]+"'` |
 | 12 | `scripts\batch_gate.cmd` 8 步全绿 | 批末 |
-| 13 | **pre_run 接线双跑网**：`_prepare_run(`（带括号 = 代码调用，docstring 的 `` `_prepare_run` `` 无括号天然排除）恰 **3** 处 = `loop.py` 2（def:671 + legacy 内联:1125）+ `pre_run.py` 1（step 委托:41）；`loop_engine_adapters.py` = **0**。基线 4 处（adapters:164 接线时删） | `git grep -n "_prepare_run(" -- src/agentnodes/kernel/agent` + 源码注入测试（§3.6 测试 2）|
+| 13 | **pre_run 接线双跑网**：`_prepare_run` 的 **AST Call 节点**恰 **2** 处 = `loop.py` legacy 内联 + `pre_run.py` step 委托；`loop_engine_adapters.py` 恰 **0**。**判据必须用 AST**——原写法「带括号 = 代码调用」不成立（docstring 里也可能带括号，`pre_run.py` 的模块 docstring 就写了 `_prepare_run(`）| AST 网（`tests/test_pre_run_wired.py::test_adapters_no_direct_prepare_run` 查 `Call(func=Attribute(attr="_prepare_run"))`）+ §7.1 基线 |
 
 **第 1 条是硬指标**：如果迁移完 `async_mode` 还剩 40 处，说明只是换了层皮。
 
@@ -753,8 +753,9 @@ max_iter 才停（§2C 案例 3 反证）。所以本批只删 catch 那一份�
 【11】finished_reason 8 种：approval_timeout_rejected / budget / error /
      exit / max_iter / stop / timeout / user_rejected
 【12】scripts/batch_gate.cmd 存在
-【13-基线】`_prepare_run(` 代码调用 4 处：loop.py 2（def:671 + legacy 内联:1125）
-     + adapters:164 + pre_run.py:41；接线后 = 3（adapters 归零）
+【13-基线】`_prepare_run` 的 **AST Call 节点** = 2 处（`loop.py` legacy 内联
+     + `pre_run.py` step 委托）；`def` 1 处 + docstring 2 处（**判据必须用
+     AST——字符串匹配会被 docstring 里的括号误伤**，实测踩过）
 ```
 
 复现脚本：`tmp/probe/assertion_baseline2.py`（临时目录，不入库）。
