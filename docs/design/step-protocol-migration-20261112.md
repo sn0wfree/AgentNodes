@@ -719,19 +719,19 @@ max_iter 才停（§2C 案例 3 反证）。所以本批只删 catch 那一份�
 
 | # | 断言 | 检查方式 |
 |---|---|---|
-| 1 | `src/` 里 `async_mode` 恰好 **18** 处 = `loop.py`(8) + `loop_tools.py`(10)，别处为 0 | `git grep -c async_mode -- src` |
-| 2 | 7 个 step 类 + `step_adapters.py` 里 `async_mode` = **0** | `git grep -n async_mode -- src/agentnodes/kernel/agent/strategy src/agentnodes/kernel/agent/step_adapters.py` → 空 |
-| 3 | `_call_step` 签名无 `async_mode` | `git grep -n "async def _call_step"` |
-| 4 | `strategy/` 下 `def execute(` = **0**（基线 13 = 7 实现 + 6 Protocol 声明）；7 个 step 类各有 `handle` | `git grep -n "def execute\|def handle" -- src/.../strategy` |
-| 5 | `protocol.py` 里 `(Protocol)` 恰好 **4** 个 | `git grep -c "(Protocol):" -- .../protocol.py` |
-| 6 | `def should_run` = **0** | `git grep -n "def should_run" -- src` |
-| 7 | `should_stop` 的**唯一删除点** = `_call_step` 体内的 catch 写（基线 loop.py:665）。4 个读 stop 通道的调用点（llm ×2 / tool ×2）新增回填（`should_stop=True` + `stop_reason = stop_reason or f"step_{name}"`）；compaction / finalization 4 个调用点显式不读；**逐字保留**：下游条件（loop.py:1203/1282、adapters:94/148）、传播写（adapters:95/96/98/99/149/150）、llm_call 业务写（llm_call.py:63/67-68）——StopSignalDecider 通道零变化 | 源码断言：`_call_step` 函数体内 `should_stop` = **0**（基线 1）；`grep -c 'stop_reason or f"step_'` 恰 **4**（回填）；`git grep -n should_stop -- .../steps/llm_call.py` 恰 **2**（业务写保留）|
-| 8 | `LegacyStepAdapter` = **0** | `git grep -n LegacyStepAdapter -- src` |
-| 9 | 两引擎等价性 7 条全绿 | `tests/test_loop_engine_equivalence.py` |
-| 10 | 9 个出口 × 6 断言全绿 | `tests/test_loop_exit_net.py` |
-| 11 | `finished_reason` 的 **8** 种字面量一个不减（实测：`approval_timeout_rejected` / `budget` / `error` / `exit` / `max_iter` / `stop` / `timeout` / `user_rejected`）| 全量套件（~40 条断言在钉它）+ `git grep -E 'finished_reason\s*=\s*"[a-z_]+"'` |
-| 12 | `scripts\batch_gate.cmd` 8 步全绿 | 批末 |
-| 13 | **pre_run 接线双跑网**：`_prepare_run` 的 **AST Call 节点**恰 **2** 处 = `loop.py` legacy 内联 + `pre_run.py` step 委托；`loop_engine_adapters.py` 恰 **0**。**判据必须用 AST**——原写法「带括号 = 代码调用」不成立（docstring 里也可能带括号，`pre_run.py` 的模块 docstring 就写了 `_prepare_run(`）| AST 网（`tests/test_pre_run_wired.py::test_adapters_no_direct_prepare_run` 查 `Call(func=Attribute(attr="_prepare_run"))`）+ §7.1 基线 |
+| 1 | `src/` 里 `async_mode` 的**代码引用**（AST 判定，排除 docstring/注释）= **0**；字符串计数当前 **33** → T11 后 **24**（`loop.py` 8→6 + `loop_tools.py` 10 + `strategy/` 8 docstring）| `tests/test_step_contract.py::test_strategy_layer_has_zero_async_mode_code_refs`（AST）|
+| 2 | 7 个 step 类 + `step_adapters.py` 里 `async_mode` 的**代码引用** = 0（`strategy/` 已达成；`step_adapters.py` T11 达成 → strict xfail）| `tests/test_step_contract.py`（AST）|
+| 3 | `_call_step` 签名无 `async_mode`，8 个调用点不传 `async_mode=` | `tests/test_step_contract.py::test_call_step_signature_has_no_async_mode` + `::test_call_sites_pass_no_async_mode_kwarg` |
+| 4 | `strategy/` 下 `def execute(` = **0**（基线 13 = 7 实现 + 6 Protocol 声明）；7 个 step 类各有 `handle` | `tests/test_step_contract.py::test_strategy_layer_has_zero_execute_defs` + `::test_all_seven_step_classes_expose_handle` |
+| 5 | `protocol.py` 里判定型 Protocol 恰好 **4** 枚 | `tests/test_step_contract.py::test_protocol_py_has_exactly_four_decision_protocols` |
+| 6 | `def should_run` = **0**（T11 达成 → strict xfail）| `tests/test_step_contract.py::test_should_run_removed_from_src` |
+| 7 | 4 处崩溃回填（`stop_reason = ctx.stop_reason or "step_<name>"`）恰 4 处；业务写优先 | `tests/test_step_contract.py::test_crash_backfill_count_is_four` |
+| 8 | `LegacyStepAdapter` = **0**（T11 达成 → strict xfail）| `tests/test_step_contract.py::test_legacy_step_adapter_removed_from_src` |
+| 9 | 两引擎等价性 7 条全绿 | `tests/test_loop_engine_equivalence.py`（既有） |
+| 10 | 9 个出口 × 6 断言全绿 | `tests/test_loop_exit_net.py`（既有） |
+| 11 | `finished_reason` 的 **8** 种字面量一个不减（实测：`approval_timeout_rejected` / `budget` / `error` / `exit` / `max_iter` / `stop` / `timeout` / `user_rejected`）| `tests/test_step_contract.py::test_finished_reason_has_eight_literals` |
+| 12 | `scripts\batch_gate.cmd` 8 步全绿 | 批末（外部命令，不在网内）|
+| 13 | **pre_run 接线双跑网**：`_prepare_run` 的 **AST Call 节点**恰 **2** 处 = `loop.py` legacy 内联 + `pre_run.py` step 委托；`loop_engine_adapters.py` 恰 **0**。**判据必须用 AST**——原写法「带括号 = 代码调用」不成立（docstring 里也可能带括号，`pre_run.py` 的模块 docstring 就写了 `_prepare_run(`）| AST 网（`tests/test_pre_run_wired.py::test_adapters_no_direct_prepare_run` 查 `Call(func=Attribute(attr="_prepare_run"))`）|
 
 **第 1 条是硬指标**：如果迁移完 `async_mode` 还剩 40 处，说明只是换了层皮。
 
@@ -753,10 +753,30 @@ max_iter 才停（§2C 案例 3 反证）。所以本批只删 catch 那一份�
 【11】finished_reason 8 种：approval_timeout_rejected / budget / error /
      exit / max_iter / stop / timeout / user_rejected
 【12】scripts/batch_gate.cmd 存在
-【13-基线】`_prepare_run` 的 **AST Call 节点** = 2 处（`loop.py` legacy 内联
+【13-基线】_prepare_run 的 **AST Call 节点** = 2 处（`loop.py` legacy 内联
      + `pre_run.py` step 委托）；`def` 1 处 + docstring 2 处（**判据必须用
      AST——字符串匹配会被 docstring 里的括号误伤**，实测踩过）
 ```
+
+### 7.2 T8 落地后的实测值（2026-11-13，`a455efe3` 之后）
+
+```
+src async_mode 字符串计数 = 33（T7 删 6 枚 Protocol 后；终态 T11 后 24）
+  loop.py 10 · loop_tools.py 10 · step_adapters.py 4 · strategy/ 8（全 docstring）
+  _core_types.py 1（docstring）
+**代码引用**（AST）= strategy/ 0 · step_adapters.py 1（T11 目标）
+strategy/ def execute = 0
+protocol.py 判定型 Protocol = 4
+def should_run = 3（T11 目标 0）
+LegacyStepAdapter = 3（T11 目标 0）
+崩溃回填 = 4（loop.py 2 + adapters 2）
+finished_reason 字面量 = 8
+```
+
+**契约网**：`tests/test_step_contract.py` —— **9 绿 + 4 strict xfail**
+（xfail 组钉 T11 目标态：should_run 归零 / LegacyStepAdapter 归零 /
+step_adapters 的 async_mode 归零 / `_call_step` 旧 execute 分支退役）。
+R-010 合规：不提交红测试，T11 达成后 XPASS 强制移除 marker。
 
 复现脚本：`tmp/probe/assertion_baseline2.py`（临时目录，不入库）。
 
