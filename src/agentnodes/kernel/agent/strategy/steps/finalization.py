@@ -1,4 +1,4 @@
-"""Default FinalizationStep (L7 v0.4).
+"""Default FinalizationStep（B2-① T5 已迁 handle 协议）.
 
 Actually drives the finalization work + fires ``after_run``:
 
@@ -9,16 +9,24 @@ Actually drives the finalization work + fires ``after_run``:
 Note: the no-progress early-return path in ``_run_loop_core`` fires
 ``after_run`` itself (it returns before reaching FinalizationStep) —
 that call stays in the skeleton so the hook isn't lost.
+
+**B2-① 变化**（step-protocol-migration-20261112.md）：
+
+- ``execute(ctx, *, async_mode)`` → ``handle(input, ctx) → StepResult``
+- **纯副作用步骤**（metrics / claim validation / after_run hook）→ ``output=None``
+- 调用点吞没失败（现状语义：本站不读 should_stop）——崩溃由 ``_call_step``
+  记 warning，不阻断收尾
 """
 
 from __future__ import annotations
 
 from typing import Any
 
+from ..._core_types import StepHandler, StepResult
 from ..loop_context import LoopContext
 
 
-class DefaultFinalizationStep:
+class DefaultFinalizationStep(StepHandler):
     """FinalizationStep that runs metrics + claim validation + after_run."""
 
     def __init__(self) -> None:
@@ -31,10 +39,10 @@ class DefaultFinalizationStep:
     def name(self) -> str:
         return "finalization"
 
-    async def execute(self, ctx: LoopContext, *, async_mode: bool) -> LoopContext:
+    async def handle(self, input: Any, ctx: LoopContext) -> StepResult:
         loop = self._loop
         if loop is None:
-            return ctx
+            return StepResult.ok(None)
 
         loop._finalize_metrics(ctx.result, ctx.messages, ctx.t0)
         loop._run_claim_validation(ctx.result, ctx.messages)
@@ -46,7 +54,7 @@ class DefaultFinalizationStep:
                 ctx.iteration, ctx.messages,
             )
         await loop._afire_hooks("after_run", hook_ctx, ctx.result)
-        return ctx
+        return StepResult.ok(None)
 
 
 __all__ = ["DefaultFinalizationStep"]

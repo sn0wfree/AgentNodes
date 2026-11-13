@@ -135,14 +135,19 @@ class TestCustomSteps:
         step = ClaimValidationFinalizationStep()
         ctx = LoopContext(task="t")
         assert "claim_validation_ran" not in ctx.metadata
-        step.execute(ctx, async_mode=False)
+        r = step.handle(None, ctx)
+        assert r.success is True
+        assert r.output is None
         assert ctx.metadata.get("claim_validation_ran") is True
 
     def test_noop_tool_execution_passes_context(self):
         step = NoOpToolExecutionStep()
         ctx = LoopContext(task="t")
-        result = step.execute(ctx, async_mode=False)
-        assert result is ctx
+        r = step.handle(None, ctx)
+        assert r.success is True
+        # output 与 DefaultToolExecutionStep 同形（引擎 after_act 闸读
+        # r.output["tool_hashes"]）
+        assert r.output == {"tool_hashes": [], "tool_result_msgs": []}
         assert "tool_execution_skipped" not in ctx.metadata
 
     def test_noop_tool_execution_records_skip_with_tool_calls(self):
@@ -153,7 +158,8 @@ class TestCustomSteps:
             tool_calls = [{"name": "x"}]
 
         ctx = LoopContext(task="t", response=FakeResp())
-        step.execute(ctx, async_mode=False)
+        r = step.handle(ctx.response, ctx)
+        assert r.success is True
         assert ctx.metadata.get("tool_execution_skipped") is True
 
 

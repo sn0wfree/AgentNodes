@@ -82,7 +82,7 @@ class TestStepProtocols:
             (DefaultProgressStep(), ProgressStep),
             (DefaultResilienceStep(), ResilienceStep),
             (DefaultToolExecutionStep(), StepHandler),  # B2-① T4 已迁 handle
-            (DefaultFinalizationStep(), FinalizationStep),
+            (DefaultFinalizationStep(), StepHandler),  # B2-① T5 已迁 handle
         ]
         for step, proto in pairs:
             assert isinstance(step, proto), f"{type(step).__name__} should satisfy {proto.__name__}"

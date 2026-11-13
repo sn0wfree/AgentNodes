@@ -178,9 +178,9 @@ class TestFinalizationStep:
             task="t", iteration=3, messages=[], result=result, t0=1.0,
             hook_ctx=object(),
         )
-        import asyncio
-
-        asyncio.run(step.execute(ctx, async_mode=False))
+        r = asyncio.run(step.handle(None, ctx))
+        assert r.success is True
+        assert r.output is None, "纯副作用步骤无产物"
         assert len(loop.metrics_calls) == 1
         assert loop.metrics_calls[0][2] == 1.0  # t0 passed
         assert len(loop.claim_calls) == 1
@@ -190,7 +190,6 @@ class TestFinalizationStep:
     def test_noop_when_no_loop(self):
         step = DefaultFinalizationStep()
         ctx = LoopContext(task="t", result=MagicMock(), messages=[], t0=0.0)
-        import asyncio
-
-        out = asyncio.run(step.execute(ctx, async_mode=False))
-        assert out is ctx
+        r = asyncio.run(step.handle(None, ctx))
+        assert r.success is True
+        assert r.output is None
