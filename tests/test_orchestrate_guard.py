@@ -1,14 +1,19 @@
-"""Unit tests for the DAG-orchestrator continuation guard.
+"""Unit tests for the continuation guard（chat 通用，2026-11-13 下沉）.
 
 Covers ``looks_like_question`` heuristics and the continuation bound
 resolver (``max_continues``). The guard's integration point lives in
-``api/session/service.py::_run_with_agent``.
+``api/session/service.py::_run_with_guard``.
+
+**归属变更**：模块原在 ``kernel/workflow/orchestrate_guard.py``，已下沉到
+``kernel/agent/text_guard.py``（切断 langgraph 隐式依赖，见
+docs/design/langgraph-implicit-dep-fix-20261113.md）。**本文件所有断言
+零改动**——它们钉的是行为契约，与模块位置无关。
 """
 import os
 
 import pytest
 
-from agentnodes.kernel.workflow.orchestrate_guard import (
+from agentnodes.kernel.agent.text_guard import (
     DEFAULT_MAX_CONTINUES,
     continue_instruction,
     looks_like_question,
@@ -94,3 +99,71 @@ def test_continue_instruction_mentions_tool_and_done_marker() -> None:
     instr = continue_instruction()
     assert "submit_dag_step" in instr
     assert "DAG_DONE" in instr
+
+
+# ── 依赖链切断（本批核心断言，设计文档 §4 第 1/3 条）──────────────
+
+
+def test_import_does_not_load_heavy_framework_modules() -> None:
+    """import text_guard 不得拉起 langgraph / swarm / runtimes / langchain。
+
+    **为什么这是核心断言**：模块原在 ``kernel/workflow/`` 包里，从包内
+    import 会触发 ``workflow/__init__`` → ``types`` → ``swarm`` →
+    ``runtimes`` → ``graph_engine.py:30`` 硬 import ``langgraph``（可选
+    extra）。实测后果（WSL e2e）：按文档装 ``[api]`` 的用户在 chat 第一条
+    消息就炸 ``ModuleNotFoundError``；修前该测试挂 127s（拉整条链），
+    修后 7s。
+
+    用**子进程**验证——当前进程可能因其它测试已加载这些模块，污染判定。
+    """
+    import subprocess
+    import sys
+    from pathlib import Path
+
+    root = Path(__file__).resolve().parents[1]
+    code = (
+        "import sys\n"
+        "import agentnodes.kernel.agent.text_guard as tg\n"
+        "heavy = [m for m in ('langgraph', 'langchain_core',\n"
+        "                     'agentnodes.kernel.swarm',\n"
+        "                     'agentnodes.kernel.runtimes') if m in sys.modules]\n"
+        "print('HEAVY=' + (','.join(heavy) if heavy else ''))\n"
+        "print('OK=' + str(tg.looks_like_question('需要我继续吗')))\n"
+    )
+    r = subprocess.run([sys.executable, "-c", code], capture_output=True,
+                       text=True, encoding="utf-8", errors="replace",
+                       cwd=str(root), timeout=180)
+    assert r.returncode == 0, r.stderr[-800:]
+    assert "HEAVY=\n" in r.stdout, (
+        f"import text_guard 拉起了重依赖: {r.stdout!r}（应为空）"
+    )
+    assert "OK=True" in r.stdout, "功能失效——looks_like_question 行为变了"
+
+
+def test_legacy_path_import_is_also_light() -> None:
+    """旧路径（``kernel.workflow.orchestrate_guard``）同样零重依赖。
+
+    靠 ``workflow/__init__.py`` 的 PEP 562 懒加载实现——包导入不再有副作用。
+    """
+    import subprocess
+    import sys
+    from pathlib import Path
+
+    root = Path(__file__).resolve().parents[1]
+    code = (
+        "import sys\n"
+        "import agentnodes.kernel.workflow.orchestrate_guard as g\n"
+        "heavy = [m for m in ('langgraph', 'langchain_core',\n"
+        "                     'agentnodes.kernel.swarm',\n"
+        "                     'agentnodes.kernel.runtimes') if m in sys.modules]\n"
+        "print('HEAVY=' + (','.join(heavy) if heavy else ''))\n"
+        "print('OK=' + str(g.looks_like_question('需要我继续吗')))\n"
+    )
+    r = subprocess.run([sys.executable, "-c", code], capture_output=True,
+                       text=True, encoding="utf-8", errors="replace",
+                       cwd=str(root), timeout=180)
+    assert r.returncode == 0, r.stderr[-800:]
+    assert "HEAVY=\n" in r.stdout, (
+        f"旧路径仍拉起重依赖: {r.stdout!r}（workflow/__init__ 的 types 懒加载失效）"
+    )
+    assert "OK=True" in r.stdout
