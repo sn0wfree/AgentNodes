@@ -81,7 +81,7 @@ class TestStepProtocols:
             (DefaultContinuationStep(), ContinuationStep),
             (DefaultProgressStep(), ProgressStep),
             (DefaultResilienceStep(), ResilienceStep),
-            (DefaultToolExecutionStep(), ToolExecutionStep),
+            (DefaultToolExecutionStep(), StepHandler),  # B2-① T4 已迁 handle
             (DefaultFinalizationStep(), FinalizationStep),
         ]
         for step, proto in pairs:

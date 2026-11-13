@@ -1300,7 +1300,10 @@ class AgentLoop(
                 await _fire("after_iteration", hook_ctx)
                 break
             tool_result_msgs = tool_ctx.metadata.get("tool_result_msgs") or []
-            tool_hashes = tool_ctx.metadata.get("tool_hashes") or []
+            # B2-① T4：hashes 走 output（权威通道）；metadata 双写仍在。
+            tool_hashes = step_r.output.get("tool_hashes", []) if step_r.output else []
+            tool_result_msgs = step_r.output.get(
+                "tool_result_msgs", tool_result_msgs) if step_r.output else tool_result_msgs
             # The step already appended tool results into ctx.messages
             # via _append_tool_results; messages = tool_ctx.messages to
             # pick them up.

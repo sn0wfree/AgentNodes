@@ -156,9 +156,11 @@ class LoopActor(StepHandler):
         if tool_ctx.should_stop:
             ctx.should_stop = True
             ctx.stop_reason = tool_ctx.stop_reason
-        return StepResult.ok({
-            "tool_hashes": tool_ctx.metadata.get("tool_hashes") or [],
-        })
+        # B2-① T4：直接转发 step 的 output（引擎 after_act 闸读
+        # ``r.output["tool_hashes"]``——loop_engine.py:429，形状不变）。
+        if step_r.output:
+            return StepResult.ok(step_r.output)
+        return StepResult.ok({"tool_hashes": [], "tool_result_msgs": []})
 
 
 class LoopPrepare:
