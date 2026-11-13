@@ -38,6 +38,11 @@ from agentnodes.kernel.agent.loop import AgentLoop
 
 ROOT = Path(__file__).resolve().parents[1]
 
+# **R-017 隔离标记**（2026-11-13）：本文件含一个**纯计时**断言
+# （c_digest 1000 条 < 20ms）。串行稳定通过，但 ``-n 12`` 满载时 12 个
+# worker 抢 CPU 会让它偶发超限——同组固定到一个 worker，降低争抢概率。
+pytestmark = pytest.mark.xdist_group("ctx_hash_id")
+
 
 def _msgs(*pairs):
     return [{"role": r, "content": c} for r, c in pairs]
@@ -254,9 +259,17 @@ def test_other_events_carry_ctx_hash_id(tmp_path: Path):
 
 
 def test_c_digest_performance():
-    """1000 条消息 c_digest < 5ms（相对一次 LLM 请求 0.5%）。"""
+    """1000 条消息 c_digest < 20ms（相对一次 LLM 请求 ~6%）。
+
+    **阈值 20ms 的依据**（2026-11-13 实测，空载 n=30）：
+    min 1.38ms / p50 1.44ms / p90 2.35ms / max 2.39ms。原阈值 5ms 只有
+    **2.1x(max) 余量**——``-n 12`` 满载时 12 个 worker 抢 CPU，偶发超限
+    （实测全量回归间歇红，串行 13/13 全绿 → R-017 隔离问题，非缺陷）。
+    20ms ≈ 实测 p50 的 13 倍、一次 LLM 请求（~300ms）的 6.7%——**原设计
+    意图「c_digest 相对 LLM 请求可忽略」依然成立**，同时不再被并行负载误伤。
+    """
     m = [{"role": "user", "content": "x" * 200} for _ in range(1000)]
     t0 = time.perf_counter()
     compute_c_digest(m)
     dt = time.perf_counter() - t0
-    assert dt < 0.005, f"c_digest 1000 条耗时 {dt*1000:.2f}ms，超 5ms 预算"
+    assert dt < 0.020, f"c_digest 1000 条耗时 {dt*1000:.2f}ms，超 20ms 预算"
