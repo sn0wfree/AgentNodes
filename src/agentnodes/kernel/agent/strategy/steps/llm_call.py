@@ -1,27 +1,36 @@
-"""Default LLMCallStep (L7 v0.4).
+"""Default LLMCallStep（B2-① T3 已迁 handle 协议）.
 
 Actually drives the LLM call and fires the LLM-lifecycle hooks itself:
 
 - ``before_iteration`` fires before calling ``_get_response``.
 - ``on_error`` fires after ``_handle_llm_error`` on failure.
 
-The legacy ``_run_loop_core`` previously fired these; v0.4 moves them
-into this Step (the "Step self-triggers hooks" pattern), so a custom
-LLMCallStep can vary when/if they fire.
+**B2-① 变化**（step-protocol-migration-20261112.md §3.2）：
 
-``_get_response`` is ``async def`` — ``execute`` is now ``async`` and
-awaits it. ``_call_step`` (the loop's executor) already handles
-awaitables, so no caller change is needed.
+- ``execute(ctx, *, async_mode)`` → ``handle(input, ctx) → StepResult``
+- ``_get_response`` 改传字面量 ``True``——U5.5 后 ``async_mode=False``
+  生产不可达（§1.3）；``_get_response`` 的形参保留至 U6-2 随 legacy 删除
+- 产物走 ``StepResult.output = LLMResponse | None``（None = 空响应，
+  **非失败**）；LLM 业务异常 → ``StepResult.fail("error")`` 且**仍调**
+  ``_handle_llm_error`` + ``on_error`` hook——result 记账是既有可观测契约
+- ctx 写入保留（追加态留 ctx，§2.1 公理）：response / response_content /
+  response_was_tool_call / ctx_hash_id 同步 + ``_append_assistant_msg``
+- 业务停止信号保留在 ctx（``should_stop``/``stop_reason`` =
+  ``"error"``/``"llm_none"``）——StopSignalDecider 通道，B2-② 才收编
 """
 
 from __future__ import annotations
 
+import logging
 from typing import Any
 
+from ..._core_types import StepHandler, StepResult
 from ..loop_context import LoopContext
 
+logger = logging.getLogger(__name__)
 
-class DefaultLLMCallStep:
+
+class DefaultLLMCallStep(StepHandler):
     """LLMCallStep that delegates to ``agent_loop._get_response``."""
 
     def __init__(self) -> None:
@@ -35,12 +44,13 @@ class DefaultLLMCallStep:
         return "llm_call"
 
     def should_run(self, ctx: LoopContext) -> bool:
+        # T11 随 should_run 契约一并删除（零生产调用者）。
         return True
 
-    async def execute(self, ctx: LoopContext, *, async_mode: bool) -> LoopContext:
+    async def handle(self, input: Any, ctx: LoopContext) -> StepResult:
         loop = self._loop
         if loop is None:
-            return ctx
+            return StepResult.ok(None)
 
         # Ensure hook_ctx is available (fall back to building one).
         hook_ctx = ctx.hook_ctx
@@ -51,8 +61,9 @@ class DefaultLLMCallStep:
         await loop._afire_hooks("before_iteration", hook_ctx)
 
         try:
+            # async_mode 字面量 True——U5.5 后 False 生产不可达（§1.3）
             response = await loop._get_response(
-                ctx.messages, ctx.iteration, async_mode, hook_ctx, ctx.result,
+                ctx.messages, ctx.iteration, True, hook_ctx, ctx.result,
             )
         except Exception as exc:  # noqa: BLE001 — LLMError included
             # Preserve the legacy error-handling path: record error on
@@ -62,11 +73,11 @@ class DefaultLLMCallStep:
             await loop._afire_hooks("on_error", hook_ctx, exc)
             ctx.should_stop = True
             ctx.stop_reason = "error"
-            return ctx
+            return StepResult.fail("error")
         if response is None:
             ctx.should_stop = True
             ctx.stop_reason = "llm_none"
-            return ctx
+            return StepResult.ok(None)
 
         ctx.response = response
         ctx.response_was_tool_call = bool(getattr(response, "tool_calls", None))
@@ -83,10 +94,28 @@ class DefaultLLMCallStep:
                 except Exception:  # noqa: BLE001 — 冻结 result 不阻断
                     pass
         # Mirror _append_assistant_msg so messages carry the response.
-        loop._append_assistant_msg(
-            response, ctx.messages, ctx.result, ctx.iteration,
-        )
-        return ctx
+        #
+        # **产物有效 ≠ 成功**（B2-① T3 实测）：_append_assistant_msg 在
+        # 构造 assistant msg 时访问 ``response.finish_reason``——替身响应
+        # 缺该字段时抛 AttributeError。此时 **LLM 调用已成功**（response
+        # 有效），崩的只是"消息记录"这一步。旧实现让异常冒到 _call_step，
+        # 而 response 早已写进 ctx——调用点从 ctx 读到有效响应，TextFinal
+        # 判终答，答案保住。
+        #
+        # 新协议下 output 是权威通道：若 fail 时不带 output，产物就丢了
+        # （引擎拿到 None → "无响应" → 答案消失）。故此处**带产物 fail**：
+        # output=response（有效），success=False（收尾失败）。
+        try:
+            loop._append_assistant_msg(
+                response, ctx.messages, ctx.result, ctx.iteration,
+            )
+        except Exception as exc:  # noqa: BLE001 — 记录失败但保住产物
+            logger.warning("llm_call: append assistant message failed: %s", exc)
+            return StepResult(
+                output=response, success=False,
+                error=f"step_llm_call: {exc}",
+            )
+        return StepResult.ok(response)
 
 
 __all__ = ["DefaultLLMCallStep"]

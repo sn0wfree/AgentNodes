@@ -18,7 +18,6 @@ from agentnodes.kernel.agent.strategy import (
     ContinuationStep,
     CustomStrategy,
     FinalizationStep,
-    LLMCallStep,
     LoopConfig,
     LoopContext,
     PreRunStep,
@@ -76,7 +75,7 @@ class TestStepProtocols:
         """
         pairs = [
             (DefaultPreRunStep(), PreRunStep),
-            (DefaultLLMCallStep(), LLMCallStep),
+            (DefaultLLMCallStep(), StepHandler),  # B2-① T3 已迁 handle
             (DefaultCompactionStep(), StepHandler),  # B2-① T2 已迁 handle
             (DefaultStopStep(), StopStep),
             (DefaultContinuationStep(), ContinuationStep),

@@ -80,12 +80,13 @@ class LoopReasoner(StepHandler):
         step_r = await loop._call_step(loop._strategy.llm_call, llm_ctx)
         if not step_r.success:
             # 崩溃信号回填旧通道（B2-① T1）：_call_step 不再写 ctx；
-            # 业务写（"error"/"llm_none"）优先，崩溃文本与旧 catch 一致。
+            # 业务写（"error"）优先，崩溃文本与旧 catch 一致。
+            # 空响应走 ok(None)（非失败），不进本分支。
             llm_ctx.should_stop = True
             llm_ctx.stop_reason = llm_ctx.stop_reason or "step_llm_call"
 
         # 状态回写（引擎的 ctx 就是 LoopContext，steps 已变异它）
-        ctx.response = llm_ctx.response
+        ctx.response = step_r.output
         # **批次 V2 修：必须回写 messages**。
         # ``_make_strategy_ctx`` 做 ``messages=list(messages)``（浅拷贝），
         # 而 ``DefaultLLMCallStep`` 往**那个副本**里 append assistant 消息。
@@ -98,10 +99,10 @@ class LoopReasoner(StepHandler):
         if llm_ctx.should_stop:
             ctx.should_stop = True
             ctx.stop_reason = llm_ctx.stop_reason
-        if llm_ctx.response is None:
+        if step_r.output is None:
             ctx.should_stop = True
             ctx.stop_reason = ctx.stop_reason or "llm_no_response"
-            return StepResult.ok(llm_ctx.response)
+            return StepResult.ok(step_r.output)
 
         # ── 预算记账（批次 13 S3-a）────────────────────────────────
         # 顺序与 legacy 一致：记账 → 判预算（legacy: 1050-1064）。

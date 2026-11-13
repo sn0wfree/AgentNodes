@@ -1208,12 +1208,13 @@ class AgentLoop(
             step_r = await self._call_step(self._strategy.llm_call, llm_ctx)
             if not step_r.success:
                 # 崩溃信号回填旧通道（B2-① T1）：_call_step 不再写 ctx；
-                # 业务写（"error"/"llm_none"）优先，崩溃文本与旧 catch 一致。
+                # 业务写（"error"）优先，崩溃文本与旧 catch 一致。
+                # 空响应走 ok(None)（非失败），不进本分支。
                 llm_ctx.should_stop = True
                 llm_ctx.stop_reason = llm_ctx.stop_reason or "step_llm_call"
             if llm_ctx.should_stop:
                 break
-            response = llm_ctx.response
+            response = step_r.output
             if response is None:
                 break
             messages = llm_ctx.messages
