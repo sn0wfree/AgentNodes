@@ -1,23 +1,26 @@
-"""L7 v0.5 — CompactionStep execution migration tests.
+"""B2-① T2 — CompactionStep 迁移到 handle 协议。
 
-Covers:
+Covers（docs/design/step-protocol-migration-20261112.md §3.1）:
 
-1. DefaultCompactionStep runs _maybe_compact / _amaybe_compact based
-   on async_mode.
-2. It fires _emit_compaction when compaction is applied.
-3. It fires _emit_iter_start always.
-4. Step error isolation still works.
-5. should_run returns True (compaction threshold checked internally).
-6. _inject_todos_snapshot is NOT called (handled by ContextInjector chain).
+1. handle 恒走 ``_amaybe_compact``（async 孪生）。**原
+   ``test_sync_path_calls_maybe_compact`` 已随同步分支删除**——U5.5 后
+   ``async_mode=False`` 生产不可达（§1.3），该用例断言的分支不复存在。
+2. 压缩发生时 fire ``_emit_compaction``。
+3. 恒 fire ``_emit_iter_start``。
+4. ``_inject_todos_snapshot`` 不在此步（ContextInjector 链负责）。
+5. 产物走 ``StepResult.output = {"messages", "applied"}``——替换态**不写**
+   ``ctx.messages``（由调用方写回）；``metadata["compaction_applied"]``
+   双写保留。
+6. R-019 注入网：step 源码不得引用同步孪生——有人加回分支此网必红。
 """
 
 from __future__ import annotations
 
+import asyncio
+import inspect
 import sys
 from pathlib import Path
-from unittest.mock import AsyncMock, MagicMock
-
-import pytest
+from unittest.mock import MagicMock
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
 
@@ -28,18 +31,16 @@ from agentnodes.kernel.agent.strategy.steps import DefaultCompactionStep
 class _FakeLoop:
     """AgentLoop stand-in for compaction step testing."""
 
-    def __init__(self, applied=None, async_applied=None):
+    def __init__(self, applied=None):
         self.applied = applied or []
-        self.async_applied = async_applied
         self.emit_compaction_calls = []
         self.emit_iter_start_calls = []
         self.inject_todos_calls = []
-
-    def _maybe_compact(self, messages):
-        return list(messages), self.applied
+        self.amaybe_compact_calls = 0
 
     async def _amaybe_compact(self, messages):
-        return list(messages), (self.async_applied if self.async_applied is not None else self.applied)
+        self.amaybe_compact_calls += 1
+        return list(messages), self.applied
 
     def _emit_compaction(self, applied, iteration, result):
         self.emit_compaction_calls.append((applied, iteration))
@@ -52,47 +53,39 @@ class _FakeLoop:
 
 
 class TestCompactionStep:
-    def test_sync_path_calls_maybe_compact(self):
+    def test_compaction_roundtrip(self):
         loop = _FakeLoop(applied=["comp1"])
         step = DefaultCompactionStep()
         step.bind_agent_loop(loop)
         ctx = LoopContext(task="t", iteration=2, messages=[{"m": 1}], result=MagicMock())
-        import asyncio
-
-        out = asyncio.run(step.execute(ctx, async_mode=False))
-        assert out.messages == [{"m": 1}]
-        assert out.metadata["compaction_applied"] == ["comp1"]
-        assert len(loop.emit_compaction_calls) == 1
-        assert loop.emit_compaction_calls[0] == (["comp1"], 2)
-
-    def test_async_path_calls_amaybe_compact(self):
-        loop = _FakeLoop(async_applied=["comp_async"])
-        step = DefaultCompactionStep()
-        step.bind_agent_loop(loop)
-        ctx = LoopContext(task="t", iteration=3, messages=[], result=MagicMock())
-        import asyncio
-
-        out = asyncio.run(step.execute(ctx, async_mode=True))
-        assert out.metadata["compaction_applied"] == ["comp_async"]
+        r = asyncio.run(step.handle(None, ctx))
+        assert loop.amaybe_compact_calls == 1
+        assert r.success is True
+        assert r.output["messages"] == [{"m": 1}]
+        assert r.output["applied"] == ["comp1"]
+        # 替换态不入 ctx.messages（调用方负责写回）；metadata 双写保留
+        assert ctx.messages == [{"m": 1}]
+        assert ctx.metadata["compaction_applied"] == ["comp1"]
+        assert loop.emit_compaction_calls == [(["comp1"], 2)]
+        assert len(loop.emit_iter_start_calls) == 1
+        assert loop.emit_iter_start_calls[0][0] == 2
 
     def test_no_compaction_skips_emit(self):
         loop = _FakeLoop(applied=[])
         step = DefaultCompactionStep()
         step.bind_agent_loop(loop)
         ctx = LoopContext(task="t", iteration=1, messages=[], result=MagicMock())
-        import asyncio
-
-        asyncio.run(step.execute(ctx, async_mode=False))
+        r = asyncio.run(step.handle(None, ctx))
         assert len(loop.emit_compaction_calls) == 0
+        assert r.output["applied"] == []
+        assert ctx.metadata["compaction_applied"] == []
 
     def test_emit_iter_start_always_fires(self):
         loop = _FakeLoop()
         step = DefaultCompactionStep()
         step.bind_agent_loop(loop)
         ctx = LoopContext(task="t", iteration=5, messages=[], result=MagicMock())
-        import asyncio
-
-        asyncio.run(step.execute(ctx, async_mode=False))
+        asyncio.run(step.handle(None, ctx))
         assert len(loop.emit_iter_start_calls) == 1
         assert loop.emit_iter_start_calls[0][0] == 5
 
@@ -102,18 +95,27 @@ class TestCompactionStep:
         step = DefaultCompactionStep()
         step.bind_agent_loop(loop)
         ctx = LoopContext(task="t", iteration=1, messages=[], result=MagicMock())
-        import asyncio
-
-        asyncio.run(step.execute(ctx, async_mode=False))
+        asyncio.run(step.handle(None, ctx))
         assert len(loop.inject_todos_calls) == 0
-
-    def test_should_run_returns_true(self):
-        assert DefaultCompactionStep().should_run(LoopContext(task="t")) is True
 
     def test_noop_when_no_loop(self):
         step = DefaultCompactionStep()
-        ctx = LoopContext(task="t", iteration=1, messages=[], result=MagicMock())
-        import asyncio
+        ctx = LoopContext(task="t", iteration=1, messages=[{"m": 1}], result=MagicMock())
+        r = asyncio.run(step.handle(None, ctx))
+        assert r.success is True
+        assert r.output["messages"] == [{"m": 1}]
+        assert r.output["applied"] == []
+        assert "compaction_applied" not in ctx.metadata
 
-        out = asyncio.run(step.execute(ctx, async_mode=False))
-        assert out is ctx
+    def test_should_run_returns_true(self):
+        # T11 随 should_run 契约一并删除（零生产调用者）；本批仅迁移形状。
+        assert DefaultCompactionStep().should_run(LoopContext(task="t")) is True
+
+    def test_sync_twin_not_referenced(self):
+        """R-019 注入网：step 源码不得引用同步孪生——有人加回分支此网红。
+
+        U5.5 后同步分支生产不可达（§1.3）。注意字面量：本测试与类 docstring
+        都不得出现同步孪生的名字本身。
+        """
+        src = inspect.getsource(DefaultCompactionStep)
+        assert "_maybe_compact" not in src, "同步孪生引用回流（应恒走 async 孪生）"

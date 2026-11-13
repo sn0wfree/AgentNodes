@@ -13,8 +13,8 @@ import pytest
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
 
+from agentnodes.kernel.agent._core_types import StepHandler
 from agentnodes.kernel.agent.strategy import (
-    CompactionStep,
     ContinuationStep,
     CustomStrategy,
     FinalizationStep,
@@ -69,11 +69,15 @@ class TestLoopContext:
 
 class TestStepProtocols:
     def test_default_steps_satisfy_protocols(self):
-        """Each default implementation must pass its matching Protocol."""
+        """Each default implementation must pass its matching Protocol.
+
+        B2-① 逐切片迁移：已迁 handle 的 step 改判 ``StepHandler``（类继承，
+        终态形状）；未迁移的仍对旧 Protocol。T11 全部收敛为 StepHandler。
+        """
         pairs = [
             (DefaultPreRunStep(), PreRunStep),
             (DefaultLLMCallStep(), LLMCallStep),
-            (DefaultCompactionStep(), CompactionStep),
+            (DefaultCompactionStep(), StepHandler),  # B2-① T2 已迁 handle
             (DefaultStopStep(), StopStep),
             (DefaultContinuationStep(), ContinuationStep),
             (DefaultProgressStep(), ProgressStep),

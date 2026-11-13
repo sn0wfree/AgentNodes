@@ -58,10 +58,11 @@ class LoopReasoner(StepHandler):
         comp_ctx = _make_strategy_ctx(loop,
             ctx.messages, None, ctx.result, ctx.iteration, ctx.hook_ctx,
         )
-        # B2-① T1：旧形状 step 已原地变异 comp_ctx，读本地引用。
-        # 失败吞没 = 现状语义（本站不读 should_stop）。
-        await loop._call_step(loop._strategy.compaction, comp_ctx)
-        ctx.messages = comp_ctx.messages
+        # B2-① T2：compaction 迁新形状——产物走 output（替换态不入 ctx）。
+        # 失败吞没（现状语义）：ctx.messages 保持原值，继续 llm_call。
+        comp_r = await loop._call_step(loop._strategy.compaction, comp_ctx)
+        if comp_r.success:
+            ctx.messages = comp_r.output["messages"]
 
         # inbox drain + per-iteration injectors（order==0）
         loop._drain_inbox(ctx.messages)

@@ -1181,11 +1181,11 @@ class AgentLoop(
             comp_ctx = _make_strategy_ctx(
                 self, messages, None, result, iteration, hook_ctx,
             )
-            # B2-① T1：返回 StepResult；旧形状 step 已原地变异 comp_ctx，
-            # 读本地引用即可（T2 切片迁移后改读 step_r.output["messages"]）。
-            # 失败吞没 = 现状语义（本站不读 should_stop）。
-            await self._call_step(self._strategy.compaction, comp_ctx)
-            messages = comp_ctx.messages
+            # B2-① T2：compaction 迁新形状——产物走 output（替换态不入 ctx）。
+            # 失败吞没（现状语义）：messages 保持原值继续跑，本站不回填 stop。
+            comp_r = await self._call_step(self._strategy.compaction, comp_ctx)
+            if comp_r.success:
+                messages = comp_r.output["messages"]
 
             # DSH-inspired: drain steering inbox (mid-loop message injection)
             self._drain_inbox(messages)
