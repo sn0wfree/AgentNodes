@@ -16,6 +16,7 @@
 > | 双引擎对偶的弱点 | R-009（§3.3）|
 > | 并行下的隔离 vs 真实缺陷 | R-017（§3.7）|
 > | 安全测试要测真实调用形态 | R-018（§3.8）|
+> | worker 崩溃/挂死 = 内存态，先降档再判代码 | R-007 §2.1「`-n` 选取：按空闲内存定」|
 
 ---
 
@@ -426,3 +427,76 @@ legacy 的 sync 路径调 ``client.chat`` → mock 命中；统一引擎走 asyn
 
 **元教训**：批量替换**测试代码**的风险高于收益——症状多为「假绿」，
 而假绿比假红危险（假红会拦住你）。
+
+---
+
+## 2026-11-13 · workflow 测试 SQLite DB 锁（既有 flake，未修 · 独立账）
+
+**状态：未修，独立批待办。** HEAD（`8e405bb6`，B2-① T6 后）可复现，
+与 T7 改动无关——stash 掉 T7 仍失败，因果判定明确。
+
+**现象**（`-n 12 --dist loadgroup` 全量跑）：
+`tests/test_workflow_segment_loop.py::TestAutoFlow` 下不同用例轮流红：
+`test_max_segments_hard_limit`、`test_evaluator_replan_loops_to_planner`。
+失败点：`store.py:183 sqlite3.OperationalError: database is locked`。
+
+**判定过程**（两次都先证伪"本批引入"）：
+
+| 跑法 | 结果 |
+|---|---|
+| 单跑该用例（串行）| 1 passed |
+| 该文件内 `-n 4` / `-n 12` | 18 passed / 2 skipped |
+| 全量 `-n 4` | 偶发 1 failed |
+| **HEAD（stash 掉 T7 改动）** | **同样 failed** → 与本批无关 |
+
+**根因**：workflow 测试共享 SQLite 文件（组内用例共用同一 DB 路径）。
+该文件已有 `xdist_group("workflow")`——marker 只保证**同组同 worker**
+（R-017），挡不住**同一 worker 内串行用例之间**的 DB 文件锁竞争残留
+（前一用例的连接未关/未释放，或子进程写锁跨用例存活）。
+
+**与"隔离 vs 真实缺陷"的区别**：R-017 判的是「并行下失败、串行通过」
+→ 给 marker。这里 **marker 已经存在**，问题在 marker 的粒度上限之内
+——需要的是**用例级 DB 隔离**（临时 workspace/DB 路径 per test），不是
+再加 marker。
+
+**防法（待办，未执行）**：给 `test_workflow_segment_loop.py` 的用例注入
+独立 `tmp_path` DB 路径（`AGENTNODES_WORKSPACE` 或 store 的 db_path），
+使组内用例不再共享文件锁。执行前先按 R-014 落方案。
+
+---
+
+## 2026-11-13 · xdist worker 崩溃后 master 挂死 = 内存态（已升 L1）
+
+**已升 L1**：R-007 §2.1「`-n` 选取：按空闲内存定，不写死」。
+
+**背景**：B2-① T9 收尾时，R-007 标准命令 `-n 12 --dist loadgroup` 三连败，
+但代码在 T8 已全绿（同日 `-n 4` 两次 7266 passed / 0 failed）。
+
+**三种症状**（都是内存态，不是代码）：
+
+| # | 症状 | 实测证据 |
+|---|---|---|
+| 1 | `no tests ran`（exit 5）+ `bringing up nodes...` 打两次 | 全量 `-n 12` 复现 ×2；同命令 `-n 12` 跑**单文件**正常（9 passed）→ xdist 本身没问题，是 12 worker 同时 import 重依赖的累积压力 |
+| 2 | `[gw6] node down: Not properly terminated` 后 master **10 分钟零输出** | 全量 `-n 8`：跑到 99% 崩 worker，`ut8.txt` 文件大小 25s/180s/240s 三次采样**恒定 15010 字节**——不是慢，是挂死 |
+| 3 | 残留 worker 抢文件锁 | 第一次挂死的 master（PID 9676）被工具超时中断后仍在跑，第二次跑报 `另一个程序正在使用此文件`——**先杀干净再跑**，否则报错会被误读成"新故障" |
+
+**环境证据**：32GB 总内存，空闲仅 **7.2–7.5GB**；12 worker 同时 import
+numpy/pymupdf/playwright 峰值远超单 worker 内存。
+
+**处置**（进了 L1，防复发）：
+1. 先判环境态（三信号见 R-007 §2.1）→ 查 `FreePhysicalMemory` → 降档
+   `12→8→4`，每档要出 summary；
+2. **挂死的处置**：按 PID 精确终止（`taskkill /PID <master> /T /F` 或
+   `Stop-Process`），**禁 `pkill -f`/模糊匹配**；杀完确认 python 进程数
+   归零再重跑；
+3. **不许**把规则里的 `-n` 永久改小当"修复"——worker 数是环境参数，
+   写死小值 = 用慢档位掩盖环境问题（同 R-017 的反例）。
+
+**元教训**：本会话 `-n 12` 早些时候**连续多次成功**，同命令同代码后来
+连败——**同日同机的"绿"不能外推**。规则里写死的 worker 数必须配一个
+"什么时候它不算数"的判定条款，否则遇到环境态时会去查代码（浪费轮次）。
+
+**附带踩坑（非本主题，但同批记录）**：本机 shell 是 cmd，**`&&` 是
+分隔符、`;` 不是**。用 `;` 串命令时 powershell 参数被吞给 pytest →
+`unrecognized arguments: -NoProfile -Command`（exit 4）——这是**假故障**，
+我因此误判过一次"收集错误"。凡连串命令一律用 `&&`。

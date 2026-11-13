@@ -105,8 +105,8 @@ AGENTNODES_LLM_CONFIG（单文件覆盖，命中即不建链）
 
 - **触发**：任何 `src/` 或 `tests/` 改动，提交前。
 - **做法**：见 §2.1–§2.3；顺序是先全量（慢但全），再 batch_gate（快但只查结构），最后架构图。
-- **失败**：`tests/test_scripts_arch.py::test_architecture_diagram_matches_code` 会在全量里红；门禁违规会让 CI 红。
-- **来源**：L2 2026-11-11（每批都因架构图漂移红过一次）。
+- **失败**：`tests/test_scripts_arch.py::test_architecture_diagram_matches_code` 会在全量里红；门禁违规会让 CI 红。**全量本身失败时先判环境态**：`no tests ran` / `node down` + 挂死 = worker 数与空闲内存不匹配，按 §2.1 的降档路径处理，别改实现。
+- **来源**：L2 2026-11-11（每批都因架构图漂移红过一次）；2026-11-13 补 worker 数判定。
 
 ### 2.1 单文件→全量
 
@@ -134,6 +134,34 @@ C:\Users\1\AppData\Local\Programs\Python\Python313\python.exe -m pytest tests -q
 加速 **8.4×**，结果**逐项一致**（passed/skipped 与串行完全相同）。`--dist loadgroup` 是必需的——没有它，同组测试会被拆到不同 worker（见 §3.7 的 `xdist_group` 用法）。
 
 > `-n 12` 此前在 `test_executor_bridge.py` 上稳定失败；给该文件打 `xdist_group("executor_bridge")` 后转绿（见 §3.7）。**不要超过 12**——超过逻辑核数后 spawn 进程池的 IPC 延迟会盖过并行收益。
+
+#### `-n` 选取：按空闲内存定，不写死（2026-11-13）
+
+**默认仍是 `-n 12`**；但 `-n` 是**环境相关**的，不能把它写死成常量
+——下面三个信号一出现，先查空闲内存、再按表降档，**不要当成代码回归去改实现**：
+
+| 信号 | 实测根因 |
+|---|---|
+| `no tests ran`（exit 5）+ `bringing up nodes...` 出现两次 | worker 启动期就死（内存不足，import 重依赖即崩）|
+| `[gwx] node down: Not properly terminated` 后 master **长期无输出**（挂死，不出 summary）| worker 中途崩，master 卡在回收/重派发 |
+| 单文件 `-n N` 正常、全量 `-n N` 失败 | 排除 xdist 本身——就是全量并行导入的**累积内存压力** |
+
+**降档路径**（每档都要出 summary 才算判定完成）：
+`-n 12` → `-n 8` → `-n 4` → 串行。**`-n 4` 是实测底线**：2026-11-13 实测
+全量 7266 passed / 0 failed / 3m10s；同日 `-n 12` 启动失败 ×2、`-n 8` 在 99%
+处 worker 崩溃并挂死。
+
+**经验参考**（非硬阈值，以实际试跑为准）：本机 32GB 总量，`-n 12` 需要
+空闲物理内存 **≳12GB**——12 个 worker 同时 import numpy/pymupdf/playwright
+的峰值远超单 worker 内存。查法：`Get-CimInstance Win32_OperatingSystem`
+看 `FreePhysicalMemory`。
+
+**挂死时的处置**：按 PID 精确终止（`taskkill /PID <master> /T /F`，
+先 `Stop-Process` 查 master 再杀子进程），**禁 `pkill -f`/模糊匹配**；
+杀完确认 python 进程数归零再重跑——残留 worker 会与新跑抢文件锁。
+
+**不许**的做法：把规则里的 `-n` 永久改小当"修复"。worker 数是环境参数，
+写死小值等于用慢档位掩盖环境问题（同 R-017 的反例）。
 
 ### 2.2 batch_gate（提交前）
 
