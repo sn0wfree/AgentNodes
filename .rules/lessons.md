@@ -500,3 +500,52 @@ numpy/pymupdf/playwright 峰值远超单 worker 内存。
 分隔符、`;` 不是**。用 `;` 串命令时 powershell 参数被吞给 pytest →
 `unrecognized arguments: -NoProfile -Command`（exit 4）——这是**假故障**，
 我因此误判过一次"收集错误"。凡连串命令一律用 `&&`。
+
+---
+
+## 2026-11-13 · 跨平台测试：Windows 绿 ≠ 代码对（3 个坑）
+
+**背景**：修 chat 主路径的 langgraph 隐式依赖（Windows 全绿、WSL 3 failed），
+需要在 Linux 上验证。踩了三个坑，都不是代码问题但都会让人误判。
+
+### 坑 1：Windows 的"绿"是环境债
+
+Windows 环境恰好装过 `langgraph`，掩盖了「chat 第一条消息就炸
+``ModuleNotFoundError``」——langgraph 在 ``pyproject`` 里是**独立 extra**，
+按文档装 ``[api]`` 的用户根本拿不到它。
+
+**判据**：依赖是否**真的**被需要，只有在「没装它的环境」里测才知道。
+Windows 装全了 → 缺陷隐形。
+
+### 坑 2：``/mnt/d`` 上跑测试会污染工作树
+
+在 WSL 里直接跑 ``/mnt/d/Github/AgentNodes``（Windows 盘）→ ``git status``
+显示 **2482 个文件"改动"、484670 行进出**——全是 **CRLF/LF 行尾差异**
+（Windows 工作树是 CRLF，Linux 检出是 LF，无 ``.gitattributes`` 兜底）。
+
+**防法**（MS 文档明确：Linux 命令行工作应把文件放 WSL 文件系统，
+``/mnt/*`` 是跨 OS 慢路径）：**clone 到 WSL 原生盘再跑**——
+``git clone --no-hardlinks /mnt/d/Github/AgentNodes ~/agentnodes-test``。
+实测工作树 0 改动、LF 行尾、import 指向新克隆。
+
+### 坑 3：未跟踪文件在 clone 后必然缺
+
+``templates/`` 整个目录 **git 跟踪文件数 = 0**（Windows 本地有、git 里没有）
+→ WSL 克隆缺它 → 12 条测试失败（``FileNotFoundError: templates/prepare.py``）。
+
+**判据**：clone 后的失败要先查「该文件是否在 git 里」，而不是直接改代码。
+
+### 附带：WSL 侧的其它平台差异（已归因，非回归）
+
+- ``python`` 命令不存在（Linux 只有 ``python3``）→ 需建软链
+- ``/ws`` 这类硬编码假路径在 Linux 真的不存在（Windows 上解析为当前盘根，存在）
+- 家目录结构不同（``/home/ll`` vs ``C:\Users\1``）→ ``test_sandbox_home_is_outside_real_home`` 断言不成立
+
+### 元教训
+
+**A/B 对照是跨平台改动的唯一硬证据**：在**同一环境**下对比「有改动」与
+「还原改动」的两组结果——逐条一致即证明非回归。本次靠它排除了
+「Windows 129 failed 是我引入的」这个误判（实际是 ``uuid_utils`` 原生 DLL
+被 Application Control 策略拦，HEAD 同样失败）。
+
+**同一环境**是关键：跨环境对比会把平台差异与代码差异混在一起。

@@ -128,3 +128,53 @@ Windows 上 langgraph 已装，只能用 `sys.modules` 副作用检查（间接�
 ## §5 回滚
 
 单 commit revert。移动 + 引用改动，无数据/配置迁移。
+
+---
+
+## §6 实施结果（2026-11-13，已入库 `6053cf68`）
+
+### 6.1 跨平台验证（Linux 无 DLL 拦截 → 唯一可信的验证环境）
+
+| 验证项 | 结果 |
+|---|---|
+| 依赖链探针：新路径 / 旧路径 / 包入口 | 三者重依赖均 **(none)** ✅ |
+| A/B 对照：`scheduled_executor`（`/ws` 假路径平台差异）| 有改动 8 failed / 还原改动 **8 failed —— 逐条一致** ✅ 非回归 |
+| A/B 对照：workflow 域（改动触及的域）| **97 passed** ✅ |
+| **真实 chat e2e** | 修前 **3 failed / 3 passed（20.6s）** → 修后 **6/6 passed（14.8s）** ✅ |
+| **A/B 关键对照**：`multi_turn` 单跑 | 修前 **挂死 127s**（拉整条链）→ 修后 **7.3s 通过** ✅ |
+| WSL 全量 | **7265 passed / 9 failed**（8 条 `/ws` 平台差异 + 1 条 SQLite flake）|
+| Windows 全量 | **被环境阻塞**：`uuid_utils` 原生 DLL 被 Application Control 拦（HEAD 同样失败 → 非本改动引入）|
+
+**最强的单一证据**：A/B 对照显示 `multi_turn` 从「挂死 127s」变成「7.3s 通过」——
+修复不仅修了正确性，还让 chat 主路径**快 17 倍**（不再加载用不到的 langgraph /
+langchain_core / uuid_utils 整条链）。
+
+### 6.2 Windows 侧的环境阻塞（非本改动引入）
+
+`uuid_utils/_uuid_utils.pyd`（374KB，文件在）被 **Application Control 策略**拒绝
+加载 → `ImportError: DLL load failed`。影响面：所有走
+`workflow.types → swarm → runtimes → langgraph → langchain_core → uuid_utils`
+链的测试（Windows 上 **129 failed / 127 errors**）。
+
+判定依据（两条独立证据）：
+1. `git stash` 回到 HEAD 后**同样失败**——不是本改动引入；
+2. 同一代码在 WSL（Linux，无该策略）**全绿**。
+
+这是 rules §6 记载的陷阱（当时记为「偶发」），**现已持续**。处置见 §6.4。
+
+### 6.3 WSL 侧跑测试的三个坑（已解决，方法可复用）
+
+| 坑 | 现象 | 解法 |
+|---|---|---|
+| **CRLF 污染** | 在 `/mnt/d` 直接跑 → `git status` 显示 **2482 个文件"改动"**（484670 行进出，全是行尾）| clone 到 WSL 原生盘 `~/`（MS 文档明确：Linux 命令行工作应把文件放 WSL 文件系统，`/mnt/*` 是跨 OS 慢路径）|
+| **`templates/` 不在 git** | 实测 **0 个跟踪文件**——Windows 本地有、git 里没有 → WSL 克隆必然缺 → 12 条测试失败 | 从 Windows 侧 `cp -r` 过去（这是未跟踪内容，不是仓库缺陷）|
+| **平台差异** | `python` 命令不存在（Linux 只有 `python3`）/ `/ws` 假路径不存在 / 家目录结构不同 | 建 `~/.local/bin/python` 软链；`/ws` 需 root（未解决，但已归因为平台差异）|
+
+### 6.4 待办（本批不修，另开）
+
+| # | 项 | 性质 |
+|---|---|---|
+| 1 | `uuid_utils` DLL 被 Application Control 拦（Windows 持续）| 环境：需放行该 .pyd 或让 langchain_core 回退标准库 uuid |
+| 2 | `templates/` 整个目录不在 git 跟踪内 | 仓库问题：要么纳入版本控制，要么明确它是本地生成物 |
+| 3 | `scheduled_executor` 的 `/ws` 假路径在 Linux 必失败 | 测试的跨平台缺陷：用 `tmp_path` 代替硬编码路径 |
+| 4 | `test_sandbox_home_is_outside_real_home` 断言 Linux 家目录结构 | 同上 |
