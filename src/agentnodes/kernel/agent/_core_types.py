@@ -16,9 +16,10 @@
 AgentNodes 的大量存量步骤是同步的，强制 async 会逼出无意义的
 ``asyncio.to_thread``。
 
-**与既有代码的关系**：``strategy/protocol.py`` 的 9 个 Step Protocol
-（``execute(ctx, *, async_mode)`` 变异 ctx）是**当前在跑的职责划分**，
-本模块是 B2/B3 的目标底座；桥接见 ``step_adapters.py``。
+**与既有代码的关系**：``strategy/protocol.py`` 的旧 Step Protocol
+（``execute(ctx, *, async_mode)`` 变异 ctx）已随 B2-① 全量迁移为
+``handle`` 协议（T11 后适配桥 ``step_adapters.py`` 一并退役）——
+本模块即唯一底座。
 ``maybe_await`` 与 ``runtime/sync_bridge.py``、``loop._call_step`` 的
 ``inspect.isawaitable`` 手法是三处同型实现，B3 引擎隔离时收口为一处。
 """
@@ -113,9 +114,7 @@ class Pipeline(StepHandler):
     上一个 step 的 ``output`` 作为下一个 step 的 ``input``。
     任一 step 失败 → 整体失败（fail-fast）。events 累积。
 
-    **mix-in 兼容**：接受新式 ``StepHandler``，也接受
-    :class:`~agentnodes.kernel.agent.step_adapters.LegacyStepAdapter`
-    包装的存量步骤——"换底座不换职责"的互操作点。
+    全部成员为 ``StepHandler``（T11 后旧形状适配桥已退役，无 mix-in）。
     """
 
     def __init__(self, *steps: StepHandler) -> None:

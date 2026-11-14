@@ -197,14 +197,10 @@ def test_step_result_events_still_empty():
 
 
 # ══════════════════════════════════════════════════════════════════
-# xfail 组：T11 删除工序的目标态
+# T11 目标态断言（2026-11-14 达成，strict xfail 已转正常绿断言）
 # ══════════════════════════════════════════════════════════════════
 
 
-@pytest.mark.xfail(
-    strict=True, raises=AssertionError,
-    reason="T11 删除工序后达成（should_run 零生产调用者 → 随契约删除）",
-)
 def test_should_run_removed_from_src():
     """§7 断言 6：``def should_run`` = 0（T11 达成）。"""
     hits = []
@@ -213,10 +209,6 @@ def test_should_run_removed_from_src():
     assert not hits, f"should_run 残留: {hits}"
 
 
-@pytest.mark.xfail(
-    strict=True, raises=AssertionError,
-    reason="T11 删除工序后达成（LegacyStepAdapter 无可适配对象）",
-)
 def test_legacy_step_adapter_removed_from_src():
     """§7 断言 8：``LegacyStepAdapter`` = 0（T11 达成）。"""
     r = subprocess.run(
@@ -227,20 +219,11 @@ def test_legacy_step_adapter_removed_from_src():
     assert not r.stdout.strip(), "LegacyStepAdapter 残留"
 
 
-@pytest.mark.xfail(
-    strict=True, raises=AssertionError,
-    reason="T11 删除工序后达成（旧形状适配器随之退役）",
-)
 def test_step_adapters_has_zero_async_mode_refs():
-    """§7 断言 2（续）：``step_adapters.py`` 零 ``async_mode`` 代码引用。"""
-    refs = _async_mode_refs(SRC / "step_adapters.py")
-    assert not refs, f"step_adapters 仍有 async_mode 引用: {refs}"
+    """§7 断言 2（续）：``step_adapters.py`` 文件已退役（T11 删除）。"""
+    assert not (SRC / "step_adapters.py").exists(), "step_adapters.py 残留"
 
 
-@pytest.mark.xfail(
-    strict=True, raises=AssertionError,
-    reason="T11 删除工序后达成（旧形状分支随之退役）",
-)
 def test_call_step_has_no_legacy_execute_branch():
     """T11：``_call_step`` 的旧形状 ``step.execute(...)`` 分支删除。"""
     tree = ast.parse((SRC / "loop.py").read_text(encoding="utf-8"))

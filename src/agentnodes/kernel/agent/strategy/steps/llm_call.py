@@ -43,10 +43,6 @@ class DefaultLLMCallStep(StepHandler):
     def name(self) -> str:
         return "llm_call"
 
-    def should_run(self, ctx: LoopContext) -> bool:
-        # T11 随 should_run 契约一并删除（零生产调用者）。
-        return True
-
     async def handle(self, input: Any, ctx: LoopContext) -> StepResult:
         loop = self._loop
         if loop is None:

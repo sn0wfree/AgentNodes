@@ -648,26 +648,17 @@ class AgentLoop(
     # ── L7 v0.2: step execution with uniform error isolation ──────
 
     async def _call_step(self, step: Any, ctx: Any) -> StepResult:
-        """Execute a strategy Step（B2-① T1 过渡壳）.
+        """Execute a strategy Step（handle 协议唯一通道，B2-① T11 定稿）.
 
-        Duck-type 分派：新形状（``handle(input, ctx) → StepResult``）直接走
-        :func:`maybe_await`；旧形状（``execute(ctx, *, async_mode)`` 变异 ctx）
-        仍走 execute 并包成 ``StepResult.ok(ctx)``——output 即旧契约的 ctx。
-        T2+ 逐 step 切片迁移后，T11 删除旧形状分支（R-020：删除在最后）。
+        全部 step 已迁 ``handle(input, ctx) → StepResult``；缺 handle 的
+        传入对象按 AttributeError 走错误隔离（不静默兜底旧形状）。
 
         错误隔离：异常 → ``StepResult.fail(f"{step.name}: {exc}")``。
-        **不再写 ``ctx.should_stop``**——旧 catch 的这个副作用改由读 stop
-        通道的 4 个调用点显式回填（compaction/finalization 的 4 个调用点本就
-        不读，吞没语义显式化）。见 step-protocol-migration-20261112.md §4。
+        **不写 ``ctx.should_stop``**——停止语义由读 stop 通道的调用点
+        显式回填。见 step-protocol-migration-20261112.md §4。
         """
         try:
-            handle = getattr(step, "handle", None)
-            if handle is not None:
-                return await maybe_await(handle(None, ctx))
-            result = step.execute(ctx, async_mode=True)  # 旧形状过渡壳（T11 删）
-            if inspect.isawaitable(result):
-                result = await result
-            return StepResult.ok(result)
+            return await maybe_await(step.handle(None, ctx))
         except Exception as exc:  # noqa: BLE001 — isolated per-step
             sname = getattr(step, "name", type(step).__name__)
             logger.warning("step %s failed: %s", sname, exc)

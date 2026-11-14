@@ -1,15 +1,14 @@
-"""批次 9 · B1 核心抽象类型测试（StepResult / StepHandler / StreamingHandler / Pipeline / 适配器）。
+"""批次 9 · B1 核心抽象类型测试（StepResult / StepHandler / StreamingHandler / Pipeline）。
 
-验收核心：**互操作证明**——旧形状步骤（``execute(ctx, *, async_mode)`` 变异
-ctx）经 ``LegacyStepAdapter`` 与新式 handler 同 Pipeline 串联。B2-① 后仓内
-生产步骤已陆续迁 handle，旧形状标本由本文件合成提供（真实 step 的
-handle 直进 Pipeline 见各迁移测试）。
+T11（2026-11-14）后适配桥 ``step_adapters.py`` 退役：``FnStreamingHandler``
+内联为本文件私有测试工具，``LegacyStepAdapter`` 及其互操作测试随桥删除——
+handle 协议是唯一形状，互操作证明的对象已不存在。
 """
 from __future__ import annotations
 
 import asyncio
-
-import pytest
+from collections.abc import AsyncIterator
+from typing import Any, Callable
 
 from agentnodes.kernel.agent._core_types import (
     Pipeline,
@@ -18,11 +17,30 @@ from agentnodes.kernel.agent._core_types import (
     StreamingHandler,
     maybe_await,
 )
-from agentnodes.kernel.agent.step_adapters import (
-    FnStreamingHandler,
-    LegacyStepAdapter,
-)
-from agentnodes.kernel.agent.strategy.loop_context import LoopContext
+
+
+class FnStreamingHandler(StreamingHandler):
+    """（自 step_adapters.py 内联）把 async 生成器函数包成 StreamingHandler。
+
+    loop 的流式方法是 bound async-gen，本类把它委托出来，事件透传、
+    ``StepResult`` 透传——契约（最后一个 yield 是 StepResult）由被包装方保证。
+    """
+
+    def __init__(
+        self,
+        fn: Callable[..., AsyncIterator[Any]],
+        *,
+        name: str = "fn_streaming",
+    ) -> None:
+        self._fn = fn
+        self._name = name
+
+    @property
+    def name(self) -> str:
+        return self._name
+
+    def stream(self, input: Any, ctx: Any) -> AsyncIterator[Any]:
+        return self._fn(input, ctx)
 
 
 # ── StepResult ────────────────────────────────────────────────────────
@@ -170,70 +188,6 @@ class TestStreaming:
         out = asyncio.run(consume())
         assert out[0] == {"type": "one"}
         assert isinstance(out[-1], StepResult) and out[-1].output == "done"
-
-
-# ── 互操作：真实 legacy step 经适配器进 Pipeline ─────────────────────
-
-
-class TestLegacyInterop:
-    def test_real_legacy_step_through_adapter(self):
-        """旧形状标本经适配器：execute 变异 ctx → StepResult.ok(ctx)。
-
-        B2-① 后仓内生产 step 陆续迁 handle，旧形状标本由本文件合成——
-        适配器的 legacy 路径契约（execute 调用 + output=变异后 ctx）仍被钉住。
-        """
-
-        class _LegacyStep:
-            name = "legacy_stub"
-
-            def execute(self, ctx, *, async_mode):
-                ctx.metadata["legacy_ran"] = True
-                return ctx
-
-        ctx = LoopContext(task="e2e")
-        adapter = LegacyStepAdapter(_LegacyStep())
-        assert adapter.name == "legacy_stub"
-
-        r = asyncio.run(adapter.handle(None, ctx))
-        assert r.success is True
-        assert r.output is ctx  # legacy 契约：返回变异后的 ctx
-        assert ctx.metadata["legacy_ran"] is True
-
-    def test_legacy_adapter_maps_exception_to_fail(self):
-        class _Broken:
-            name = "broken"
-
-            def execute(self, ctx, *, async_mode):
-                raise RuntimeError("legacy blew up")
-
-        r = asyncio.run(LegacyStepAdapter(_Broken()).handle(None, None))
-        assert r.success is False
-        assert "legacy blew up" in r.error
-
-    def test_interop_pipeline_legacy_plus_new(self):
-        """验收核心：旧形状 step 经适配器与新式 handler 同管道串联。"""
-
-        class _LegacyStep:
-            name = "legacy_stub"
-
-            def execute(self, ctx, *, async_mode):
-                ctx.metadata["legacy_ran"] = True
-                return ctx
-
-        class _Mark(StepHandler):
-            def handle(self, input, ctx):
-                input.marked = True  # type: ignore[attr-defined]
-                return StepResult.ok(input)
-
-        ctx = LoopContext(task="e2e")
-        pipeline = Pipeline(
-            LegacyStepAdapter(_LegacyStep()),
-            _Mark(),
-        )
-        r = asyncio.run(pipeline.handle(None, ctx))
-        assert r.success is True
-        assert r.output.marked is True
-        assert r.output is ctx
 
     def test_pipeline_is_stephandler(self):
         """Pipeline 自身可再嵌套（组合性）。"""
