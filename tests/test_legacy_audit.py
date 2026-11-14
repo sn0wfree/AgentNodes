@@ -80,24 +80,29 @@ def test_audit_does_not_read_env():
         assert pat not in src, f"审计器读了环境变量：{pat}"
 
 
-# ── 2. 能发现当前仓库的残留（不空转）──
+# ── 2. 当前仓库必须干净（U6-2 后零容忍，anti-resurrection）──
 
 
-def test_audit_finds_current_residue():
-    """当前仓有 legacy 残留 → 必须报出来，且退出码为 1。"""
+def test_current_tree_has_no_legacy_residue():
+    """U6-2 删除 legacy 后：当前仓必须零阻塞残留，退出码 0。
+
+    （原 test_audit_finds_current_residue 的镜像翻转——删除前审计
+    「必须发现」，删除后审计「必须绝迹」。）
+    """
     result = audit_legacy_engine(ROOT)
     assert result.error is None
-
-    # 定义 + 真调用（loop.py 里只剩 arun(engine="legacy") 那一条真调用）
-    assert result.by_kind("definition"), "未发现 _run_loop_core 定义"
-    assert result.by_kind("call"), "未发现 _run_loop_core 调用"
-
-    # 开关读取
-    assert result.by_kind("env_read"), "未发现引擎开关读取"
+    assert not result.by_kind("definition"), (
+        f"_run_loop_core 定义残留: {[f.path for f in result.by_kind('definition')]}"
+    )
+    assert not result.by_kind("call"), (
+        f"_run_loop_core 调用残留: {[(f.path, f.line) for f in result.by_kind('call')]}"
+    )
+    assert not result.by_kind("env_read"), "引擎开关读取残留"
+    assert not result.by_kind("test_legacy"), "测试显式 legacy 依赖残留"
 
     text, code = audit_legacy_engine_text(result)
-    assert code == 1, f"有残留时退出码应为 1，实得 {code}"
-    assert "尚不可删除 legacy" in text
+    assert code == 0, f"干净树退出码应为 0，实得 {code}"
+    assert "干净" in text
 
 
 # ── 3. 注入违规会红（R-019 判据）──

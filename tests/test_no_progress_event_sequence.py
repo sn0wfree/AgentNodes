@@ -3,12 +3,10 @@
 **为什么存在**（R-009"比事件序列，不只比结果字段"）：inventory §5 的
 双引擎同场景对照当时是一次性实测；本文件把它固化为常驻网——
 
-1. **skeleton 事件序列绝对值**：no-progress 拒绝场景的完整事件序列
-   （含 loop_end/assistant_message/iter_end 的发射**时机**）被钉住，
-   任何收尾顺序漂移即红；
-2. **legacy 对照值**（遗产网形态，D8）：同一场景 `engine="legacy"`
-   钉住——两引擎经**同一个审批闸**（loop_progress._check_no_progress），
-   该场景的核心事件序列必须一致；分叉 = 闸行为改了，必须查。
+**skeleton 事件序列绝对值**：no-progress 拒绝场景的完整事件序列
+（含 loop_end/assistant_message/iter_end 的发射**时机**）被钉住，
+任何收尾顺序漂移即红。
+（U6-2：legacy 对照值随引擎退役删除。）
 
 场景构造（inventory §5 同款）：重复相同 tool_call → no-progress 窗口
 命中 → approval 1s 超时 reject → after_act EXIT → FINALIZE 漏斗
@@ -114,16 +112,3 @@ def test_skeleton_no_progress_reject_event_sequence(tmp_path: Path):
         "审批请求应先于 loop_end"
     )
 
-
-# ── legacy 对照值（遗产网形态：D8；U6 时随 legacy 删）──
-
-
-def test_legacy_no_progress_reject_event_sequence(tmp_path: Path):
-    events, r = _collect(tmp_path, engine="legacy")
-    assert r.finished_reason == "approval_timeout_rejected", (
-        f"前提失败：finished={r.finished_reason}"
-    )
-    for kind in ("loop_end", "assistant_message", "iter_end"):
-        assert events.count(kind) == 1, (
-            f"legacy {kind} = {events.count(kind)}：{events}"
-        )

@@ -192,10 +192,8 @@ _DECLARED: tuple[Setting, ...] = (
        "blob 清理 TTL（天，财务合规保留期）；消费者 scripts/cleanup_blobs.py"),
 
     # ── 引擎与 agent（domain: engine）──────────────────────────
-    _s("AGENTNODES_ENGINE", "engine", "",
-       "执行引擎：skeleton（默认）/ legacy"),
-    Setting("AGENTNODES_SKELETON", "flag", None, "engine",
-            "旧回退开关：=0 等价 AGENTNODES_ENGINE=legacy"),
+    # U6-2（2026-11-14）：AGENTNODES_ENGINE / AGENTNODES_SKELETON 已随
+    # legacy 循环体退役——skeleton 是唯一引擎，env 不再注册（设了无效）。
     _i("AGENTNODES_TOOL_RESULT_MAX_CHARS", "engine", 30000,
        "工具结果入 LLM history 的截断上限（字符）"),
     _s("AGENTNODES_COMPACT_INCLUDE_MESSAGES", "engine", "",

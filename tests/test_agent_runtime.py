@@ -1,68 +1,17 @@
-"""Unit tests for A5 agent runtime seams (policy / model_io / telemetry)."""
+"""Unit tests for A5 agent runtime seams (model_io / telemetry).
+
+U6-2（2026-11-14）：``policy.py``（StopPolicy/StopDecision/limits_from_config）
+随 legacy 循环体退役，其 10 条测试随删——预算语义由 ``BudgetDecider``
+（deciders）承担并由引擎语义网（test_engine_semantics）钉住。
+"""
 from __future__ import annotations
 
-import time
 from types import SimpleNamespace
 
 from agentnodes.kernel.agent.runtime import (
     ModelIO,
-    StopDecision,
-    StopPolicy,
     Telemetry,
-    limits_from_config,
 )
-from agentnodes.kernel.agent.strategy.budget import BudgetLimits
-from agentnodes.kernel.agent.strategy.loop_strategy import LoopConfig
-
-
-class TestLimitsFromConfig:
-    def test_none_cfg(self):
-        assert limits_from_config(None) == BudgetLimits()
-
-    def test_reads_loop_config(self):
-        cfg = LoopConfig(budget_max_tokens=100, budget_max_cost_usd=1.5, budget_max_seconds=9)
-        lim = limits_from_config(cfg)
-        assert lim.max_tokens == 100
-        assert lim.max_cost_usd == 1.5
-        assert lim.max_seconds == 9
-
-    def test_prices(self):
-        cfg = LoopConfig(price_per_mtok_input=0.1, price_per_mtok_output=0.2)
-        lim = limits_from_config(cfg)
-        assert lim.price_per_mtok_input == 0.1
-
-
-class TestStopPolicy:
-    def test_no_limits_keeps_going(self):
-        d = StopPolicy().decide(tokens=10**9, iteration=100)
-        assert d.should_stop is False
-
-    def test_external_stop(self):
-        d = StopPolicy().decide(external_stop=True, external_reason="user")
-        assert d.should_stop and d.reason == "user" and d.kind == "external"
-
-    def test_budget_tokens(self):
-        d = StopPolicy(BudgetLimits(max_tokens=10)).decide(tokens=10)
-        assert d.should_stop and d.kind == "budget" and d.reason == "budget:tokens"
-
-    def test_budget_time(self):
-        d = StopPolicy(BudgetLimits(max_seconds=0.01)).decide(
-            started_at=time.perf_counter() - 1
-        )
-        assert d.should_stop and d.reason == "budget:time"
-
-    def test_max_iterations(self):
-        d = StopPolicy(max_iterations=3).decide(iteration=3)
-        assert d.should_stop and d.reason == "max_iter"
-
-    def test_iteration_under_cap(self):
-        d = StopPolicy(max_iterations=5).decide(iteration=2)
-        assert d.should_stop is False
-
-    def test_decision_shape(self):
-        d = StopPolicy().decide()
-        assert isinstance(d, StopDecision)
-        assert d.kind is None
 
 
 class TestModelIO:

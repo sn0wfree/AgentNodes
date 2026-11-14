@@ -281,7 +281,7 @@ def test_agentloop_capability_premise_holds():
     assert "_TOOL_MAX_RETRIES" in loop_tools, "瞬时工具重试"
     assert "_TOOL_RESULT_HISTORY_MAX" in loop_tools, "30k 工具结果截断"
     assert "check_guards" in loop_tools, "单调 deny guard"
-    assert "_execute_tool_batch" in loop_tools, "只读工具并行"
+    assert "_aexecute_tool_batch" in loop_tools, "只读工具并行（U6-2 后 async 唯一）"
 
 
 # ── 门退役契约（阶段 4）──────────────────────────────

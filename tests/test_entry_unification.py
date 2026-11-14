@@ -96,17 +96,17 @@ def test_run_stream_yields_done_exactly_once(tmp_path: Path):
 
 
 def test_run_stream_signature_has_no_engine():
-    """**有意非对称**：run_stream 不接受 engine 参数。
+    """三个公开入口都不接受 engine 参数（U6-2 后引擎唯一）。
 
-    legacy 引擎没有流式入口（事件走 _emit 副作用），暴露 engine 只会
-    拿到残缺流——是 API 陷阱。
+    原为**有意非对称**（run_stream 无 engine、arun 有——legacy 无流式
+    入口，暴露 engine 只会拿到残缺流，是 API 陷阱）。U6-2 删除 legacy
+    后陷阱失去载体：两个入口都必须无 engine，有人加回即红。
     """
-    sig = inspect.signature(AgentLoop.run_stream)
-    assert "engine" not in sig.parameters, (
-        "run_stream 不该有 engine 参数（legacy 无流式入口）"
-    )
-    # 但 arun 必须有（U6 删除前 legacy 仍需可达）
-    assert "engine" in inspect.signature(AgentLoop.arun).parameters
+    for name in ("run_stream", "arun"):
+        sig = inspect.signature(getattr(AgentLoop, name))
+        assert "engine" not in sig.parameters, (
+            f"{name} 不该有 engine 参数（引擎已唯一）"
+        )
 
 
 # ── 2. arun 与 run_stream 同源 ──

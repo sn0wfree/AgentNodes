@@ -158,19 +158,18 @@ def test_all_seven_step_classes_expose_handle():
     assert not missing, f"缺 handle 的 step 类: {missing}"
 
 
-def test_crash_backfill_count_is_four():
-    """§7 断言 7：4 个读 stop 通道的调用点显式回填崩溃信号。
+def test_crash_backfill_count_is_two():
+    """§7 断言 7（U6-2 后）：引擎适配器 2 处显式回填崩溃信号。
 
+    legacy 循环体退役后，读 stop 通道的调用点只剩引擎侧 2 处。
     形状：``stop_reason = <ctx>.stop_reason or "step_<name>"``——
     业务写优先（"error"/"llm_none"），崩溃才落 step_<name>。
     """
     pattern = re.compile(r'stop_reason\s*=\s*\w+\.stop_reason\s+or\s+"step_')
-    total = 0
-    for p in (SRC / "loop.py", SRC / "loop_engine_adapters.py"):
-        hits = pattern.findall(p.read_text(encoding="utf-8"))
-        assert len(hits) == 2, f"{p.name} 回填处应恰 2 处，实际 {len(hits)}"
-        total += len(hits)
-    assert total == 4, f"回填总数应 4，实际 {total}"
+    hits = pattern.findall((SRC / "loop_engine_adapters.py").read_text(encoding="utf-8"))
+    assert len(hits) == 2, f"适配器回填处应恰 2 处，实际 {len(hits)}"
+    legacy_hits = pattern.findall((SRC / "loop.py").read_text(encoding="utf-8"))
+    assert not legacy_hits, f"loop.py 不应再有回填（legacy 已退役）: {legacy_hits}"
 
 
 def test_finished_reason_has_eight_literals():

@@ -57,9 +57,8 @@ class DefaultLLMCallStep(StepHandler):
         await loop._afire_hooks("before_iteration", hook_ctx)
 
         try:
-            # async_mode 字面量 True——U5.5 后 False 生产不可达（§1.3）
             response = await loop._get_response(
-                ctx.messages, ctx.iteration, True, hook_ctx, ctx.result,
+                ctx.messages, ctx.iteration, hook_ctx, ctx.result,
             )
         except Exception as exc:  # noqa: BLE001 — LLMError included
             # Preserve the legacy error-handling path: record error on

@@ -1,10 +1,10 @@
 """统一引擎路径的 trace_id / session_id 兜底（U5.5 之后）。
 
-**背景**：兜底原在 ``_run_loop_core``（legacy 引擎）内部——统一引擎
-（``LoopEngine``）走不到，于是**生产主路径的日志与事件没有 request 级
-标识**（``event_store.py:167`` 注入时拿到 None）。走 API 的路径由
-``session/service.py:601`` 先设了 ``attempt_id``，所以此前没被发现；
-直接用 ``AgentLoop`` 的调用则缺失。
+**背景**：兜底原在 legacy 循环体内部——统一引擎（``LoopEngine``）走不到，
+于是**生产主路径的日志与事件没有 request 级标识**（``event_store.py:167``
+注入时拿到 None）。走 API 的路径由 ``session/service.py:601`` 先设了
+``attempt_id``，所以此前没被发现；直接用 ``AgentLoop`` 的调用则缺失。
+（U6-2：legacy 循环体已退役，兜底在 ``arun`` 入口覆盖唯一路径。）
 
 **修法**：兜底移到 ``AgentLoop.arun`` 入口（U5.5 统一为唯一入口，
 ``run()`` 经 ``arun`` 走同一路径）。
@@ -122,9 +122,3 @@ def test_run_sync_path_also_sets_trace_id(tmp_path: Path):
     loop.run("测试")
     assert seen.get("trace_id") is not None, "sync 路径未设置 trace_id"
 
-
-def test_legacy_path_still_gets_trace_id(tmp_path: Path):
-    """legacy 路径（arun(engine='legacy')）也覆盖——兜底在入口，两条路径共用。"""
-    loop = _make_loop(tmp_path)
-    seen = _run_and_capture(loop, engine="legacy")
-    assert seen.get("trace_id") is not None, "legacy 路径未设置 trace_id"

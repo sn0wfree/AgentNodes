@@ -339,9 +339,7 @@ _MULTI_DEFAULT_ALLOWED: dict[str, set] = {
     "AGENTNODES_CORS_ORIGINS": {None, ""},
     # workflow.py:355 用 "" 判空，其它读取点用 None。
     "AGENTNODES_WORKSPACE": {None, ""},
-    # loop.py:872 用 flag 语义（== "0"），:927 是一个**纯消耗的无效读取**
-    # （`_ = ...`，仅作文档）。后者建议删除；在此之前允许 "" 形态。
-    "AGENTNODES_SKELETON": {None, ""},
+    # U6-2：AGENTNODES_SKELETON 注册已删（引擎唯一），不再在表内。
 }
 
 
@@ -473,13 +471,5 @@ def test_bg_proc_read_point_is_declared_correctly():
         "AGENTNODES_BACKTEST_STALL_TIMEOUT"
 
 
-def test_engine_switch_reads_are_consistent():
-    """引擎选择的两个开关都在表里，且语义已文档化。
-
-    ``AGENTNODES_ENGINE``（主）与 ``AGENTNODES_SKELETON``（旧回退别名）——
-    批次 B 会合并，本批只保证两者都被登记、便于后续切换。
-    """
-    assert "AGENTNODES_ENGINE" in settings.ENV_TABLE
-    assert "AGENTNODES_SKELETON" in settings.ENV_TABLE
-    assert settings.ENV_TABLE["AGENTNODES_ENGINE"].kind == "str"
-    assert settings.ENV_TABLE["AGENTNODES_SKELETON"].kind == "flag"
+# U6-2（2026-11-14）：test_engine_switch_reads_are_consistent 随
+# AGENTNODES_ENGINE/AGENTNODES_SKELETON 注册删除而退役——skeleton 是唯一引擎。

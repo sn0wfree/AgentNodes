@@ -184,7 +184,7 @@ def _build_loop(workspace: Path, *, max_iterations: int = _MAX_ITER,
 
 async def _run(loop, task: str):
     """跑一轮真实任务（skeleton 引擎）。"""
-    return await loop.arun(task, engine="skeleton")
+    return await loop.arun(task)
 
 
 def _tool_names(loop) -> set[str]:
@@ -209,7 +209,7 @@ async def test_live_chat_multi_turn_memory(tmp_path: Path):
         {"role": "user", "content": "我刚才让你记的数字是多少？只回答数字。"}
     ]
     r2 = await loop.arun("我刚才让你记的数字是多少？只回答数字。",
-                         history=r1.messages, engine="skeleton")
+                         history=r1.messages)
     assert "7391" in (r2.answer or ""), (
         f"多轮记忆失败：answer={r2.answer!r}\n"
         f"history_len={len(history)} iterations={r2.iterations}"

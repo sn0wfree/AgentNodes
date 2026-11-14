@@ -1,8 +1,9 @@
-"""legacy 引擎依赖审计（统一引擎 U6 准备 · R-015 条件 ④）。
+"""legacy 引擎残留审计（U6-2 后的永久 anti-resurrection 门）。
 
-**为什么需要**：删 legacy 引擎之前，必须先有**独立于 legacy 本身**的
-观测手段——否则删完就没有办法回答「还有谁在依赖它」（批 E 的教训：
-「删掉 X」和「删掉能发现 X 的机制」是两件事）。
+**职责演进**：U6-2 之前它是「删 legacy 前的依赖清点」（R-015 条件 ④）；
+legacy 已于 U6-2（2026-11-14）退役，本审计器翻转为**绝迹断言**——
+四类残留（定义 / 真调用 / 开关读取 / 测试显式依赖）在 src+tests 必须
+恒零，命中即阻塞（退出码 1）。检测逻辑不变（注入测试仍验证其有效性）。
 
 **三条设计约束**：
 
@@ -15,12 +16,12 @@
 
 **审计范围**：
 
-| 类别 | 判定 | 是否阻塞删除 |
+| 类别 | 判定 | 是否阻塞 |
 |---|---|---|
 | legacy 引擎真调用（AST）| ``_run_loop_core(...)`` 的 Call 节点 | **是** |
-| legacy 引擎定义 | ``def _run_loop_core`` | **是**（删之前应移除）|
+| legacy 引擎定义 | ``def _run_loop_core`` | **是** |
 | 引擎选择开关读取 | ``AGENTNODES_ENGINE`` / ``AGENTNODES_SKELETON`` 的读取 | **是** |
-| 测试显式依赖 legacy | ``engine="legacy"`` / ``engine='legacy'`` | **是**（遗产网等要一并处理）|
+| 测试显式依赖 legacy | ``engine="legacy"`` / ``engine='legacy'`` | **是** |
 | 注释 / 文档提及 | 文本命中但非代码 | 否（仅计数）|
 """
 from __future__ import annotations
@@ -246,11 +247,12 @@ def _code_lines_in_templates(source: str) -> set[int]:
 def _iter_source_files(root: Path):
     """遍历待审计的 .py 文件。
 
-    **跳过审计器自身**（``legacy_audit.py``）——否则它的常量与文档
-    会成为自指的噪音（实测：审计器自身的 ``LEGACY_ENGINE_SYMBOL``
-    与表格里的 ``engine="legacy"`` 都会被命中）。
+    **跳过审计机器自身**（``legacy_audit.py`` 及其测试 ``test_legacy_audit.py``）
+    ——否则常量、文档与**注入夹具**（测试模板里合法存在的
+    ``engine="legacy"`` / env 字面量，正是验证检测器的手段）会成为
+    自指的噪音（实测：U6-2 翻转后两者都会命中）。
     """
-    self_name = "legacy_audit.py"
+    skip = {"legacy_audit.py", "test_legacy_audit.py"}
     for sub in _SCAN_ROOTS:
         base = root / sub
         if not base.is_dir():
@@ -258,7 +260,7 @@ def _iter_source_files(root: Path):
         for dp, dn, fn in os.walk(base):
             dn[:] = [d for d in dn if d not in _SKIP_DIRS]
             for f in sorted(fn):
-                if f.endswith(".py") and f != self_name:
+                if f.endswith(".py") and f not in skip:
                     yield Path(dp) / f
 
 
@@ -517,9 +519,10 @@ def audit_legacy_engine_text(result: LegacyAuditResult | None = None) -> tuple[s
     )
     if result.blocking:
         lines.append(
-            "→ **尚不可删除 legacy**：先清掉上述阻塞项（调用 / 定义 / 开关 / 测试依赖）"
+            "→ **发现 legacy 残留**（U6-2 后零容忍）：清掉上述阻塞项"
+            "（调用 / 定义 / 开关 / 测试依赖）"
         )
     else:
-        lines.append("→ **legacy 已无残留依赖**，可以进入删除流程")
+        lines.append("→ **干净：无 legacy 残留**（anti-resurrection 门通过）")
 
     return "\n".join(lines), (1 if result.blocking else 0)

@@ -31,10 +31,6 @@ class LoopLifecycleMixin:
         """Finalize the result for a per-iteration timeout."""
         _end.handle_iteration_timeout(self, result, iteration)
 
-    def _handle_max_iter(self, result) -> None:
-        """Populate max_iter result fields, emit trace + event."""
-        _end.handle_max_iter(self, result)
-
     def _handle_stop(self, response, result, iteration: int) -> None:
         """Populate stop result fields, emit trace + event."""
         _end.handle_stop(self, response, result, iteration)

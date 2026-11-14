@@ -727,24 +727,6 @@ class AgentLoop(
             cost += (completion / 1_000_000.0) * float(price_out)
         self._budget_cost_usd = cost
 
-    def _check_budget(self, t0: float) -> tuple[bool, str | None]:
-        """Return (exceeded, reason) against LoopConfig budget limits (A5)."""
-        from agentnodes.kernel.agent.runtime.policy import StopPolicy, limits_from_config
-
-        cfg = getattr(self._strategy, "config", None)
-        if cfg is None:
-            return False, None
-        policy = getattr(self, "_stop_policy", None)
-        if policy is None or policy.limits != limits_from_config(cfg):
-            policy = StopPolicy(limits_from_config(cfg))
-            self._stop_policy = policy
-        decision = policy.decide(
-            tokens=getattr(self, "_budget_tokens", 0),
-            cost_usd=getattr(self, "_budget_cost_usd", 0.0),
-            started_at=t0,
-        )
-        return decision.should_stop, decision.reason
-
     def _emit_compaction(
         self, applied: list[str], iteration: int, result: LoopResult,
     ) -> None:
@@ -812,24 +794,6 @@ class AgentLoop(
             self._handle_iteration_timeout(result, iteration)
             return None
 
-    def _with_iteration_timeout_sync(
-        self, fn: Callable[[], Any], iteration: int, result: LoopResult,
-    ) -> Any:
-        """Blocking variant: post-call elapsed check (SwarmWorker parity).
-
-        A blocking ``client.chat`` cannot be cancelled safely from the
-        same thread; like SwarmWorker we measure the wall clock after
-        the call returns and terminate when it exceeded the budget.
-        """
-        t0 = time.perf_counter()
-        out = fn()
-        if (
-            self._iteration_timeout_s is not None
-            and (time.perf_counter() - t0) > self._iteration_timeout_s
-        ):
-            self._handle_iteration_timeout(result, iteration)
-            return None
-        return out
 
     def run(
         self,
@@ -873,7 +837,6 @@ class AgentLoop(
         *,
         context: str | None = None,
         history: list[dict[str, Any]] | None = None,
-        engine: str | None = None,
     ) -> LoopResult:
         """Async version of run() - all I/O points use await.
 
@@ -888,32 +851,12 @@ class AgentLoop(
                 ``{"role": ..., "content": ...}`` format. Inserted between
                 the system prompt and the current user message so the LLM
                 has full conversation context.
-            engine: ``"skeleton"``（默认，批次 12 S1 翻转）/ ``"legacy"``。
-                ``AGENTNODES_ENGINE=legacy`` 环境变量可回退到旧循环体；
-                ``AGENTNODES_SKELETON=0`` 保留为兼容别名（等价于 legacy）。
-                引擎：``LoopEngine`` 消费 deciders 的状态机，等价性由
-                ``tests/test_loop_engine_equivalence.py``（5 场景）钉住。
 
         Returns:
             LoopResult with answer, iterations, tool_calls_made, finished_reason.
         """
         self._ensure_trace_context()
-        if engine is None:
-            import os
-
-            # 批次 12 S1：默认翻到 skeleton。回退链：
-            #   AGENTNODES_ENGINE=legacy  → 旧循环体（显式回退）
-            #   AGENTNODES_SKELETON=0     → 同上（兼容别名）
-            env_engine = _settings.get_str("AGENTNODES_ENGINE").strip().lower()
-            if env_engine in ("legacy", "skeleton"):
-                engine = env_engine
-            elif _settings.get_str("AGENTNODES_SKELETON") == "0":
-                engine = "legacy"
-            else:
-                engine = "skeleton"
-        if engine == "skeleton":
-            return await self._run_via_skeleton(task, context, history)
-        return await self._run_loop_core(task, context, history, async_mode=True)
+        return await self._run_via_skeleton(task, context, history)
 
     def _ensure_trace_context(self) -> None:
         """确保本次运行有 trace_id / session_id（ContextVar 兜底）。
@@ -1101,273 +1044,15 @@ class AgentLoop(
             except asyncio.QueueEmpty:
                 break
 
-    async def _run_loop_core(  # noqa: C901
-        self,
-        task: str,
-        context: str | None,
-        history: list[dict[str, Any]] | None,
-        *,
-        async_mode: bool,
-    ) -> LoopResult:
-        """Shared run-loop core (single source for ``run``/``arun``).
-
-        ``async_mode`` selects the await-based I/O (achat/astream/ainvoke/
-        gather/afire_hooks) vs the synchronous equivalents (chat/stream/
-        invoke/ThreadPoolExecutor/fire_hooks). Both paths share the same
-        iteration/hook/compact/stop/no-progress semantics.
-
-        **trace_id / session_id 兜底已移到入口**（``_ensure_trace_context``，
-        U5.5 统一入口后两条路径都覆盖）——原先只在 legacy 体内，导致统一
-        引擎路径的日志/事件缺 request 级标识。
-        """
-        full_task, result, messages, t0 = self._prepare_run(task, context, history)
-        response = None  # L7 v0.4: set by LLMCallStep each iteration
-        self._subagent_count[0] = 0  # reset per-turn delegation counter
-        hook_ctx = self._build_hook_context(0, messages)
-
-        async def _fire(name: str, ctx: Any, *args: Any) -> None:
-            # Both modes await hook coroutines on the current loop: the
-            # sync adapter (_fire_hooks) runs them on a throwaway loop,
-            # which raises in 3.10 when the coroutine was created inside
-            # a running loop (the sync `run` bridge thread).
-            await self._afire_hooks(name, ctx, *args)
-
-        await _fire("before_run", hook_ctx)
-
-        # Phase 5-guardrails v1: observe injection signatures in the user
-        # task (docs/design/phase5-guardrails-design.md §2.3). Emits only — never
-        # alters the message path; see extension-points.md hooks red line.
-        try:
-            from .guardrails import scan_user_input
-
-            for finding in scan_user_input(task, source_id=self.session_id or ""):
-                self._emit("guardrail.finding", finding.to_dict())
-                await _fire("on_guardrail_finding", hook_ctx, finding)
-        except Exception:  # noqa: BLE001 — guardrails never break the loop
-            logger.debug("guardrail scan failed (user input)", exc_info=True)
-
-        # L7 v0.2: iteration cap — an explicit strategy config drives
-        # it (a profile said max_iterations=N); otherwise fall back to
-        # the constructor ``self.max_iterations`` so existing tests /
-        # callers that pass max_iterations=2 keep working unchanged.
-        max_iter = self._effective_max_iterations()
-        for iteration in range(1, max_iter + 1):
-            result.iterations = iteration
-            hook_ctx = self._build_hook_context(iteration, messages)
-
-            # SwarmWorker parity: one-shot wrap-up nudge at configurable
-            # ratio (default 0.8) to push the model toward a final text answer.
-            if (
-                self._wrap_up_nudge
-                and iteration == max(1, int(max_iter * getattr(self, "_wrap_up_ratio", WRAP_UP_RATIO)))
-            ):
-                messages.append({
-                    "role": "system",
-                    "content": WRAP_UP_NUDGE_TEXT,
-                })
-
-            # L7 v0.5: compaction + per-iteration observability delegated
-            # to the strategy's CompactionStep. The step runs the
-            # compaction engine, emits _emit_compaction, _emit_iter_start.
-            comp_ctx = _make_strategy_ctx(
-                self, messages, None, result, iteration, hook_ctx,
-            )
-            # B2-① T2：compaction 迁新形状——产物走 output（替换态不入 ctx）。
-            # 失败吞没（现状语义）：messages 保持原值继续跑，本站不回填 stop。
-            comp_r = await self._call_step(self._strategy.compaction, comp_ctx)
-            if comp_r.success:
-                messages = comp_r.output["messages"]
-
-            # DSH-inspired: drain steering inbox (mid-loop message injection)
-            self._drain_inbox(messages)
-
-            # DSH-inspired: run per-iteration injectors (order=0, e.g. TodosInjector)
-            for injector in self._injectors:
-                if getattr(injector, "order", 0) == 0:
-                    try:
-                        injector.inject_per_iteration(self, messages)
-                    except Exception:  # noqa: BLE001
-                        pass  # injectors must not break the loop
-
-            # L7 v0.4: LLM call + before_iteration + on_error delegated
-            # to the strategy's LLMCallStep. The step fires
-            # before_iteration before _get_response and on_error after
-            # _handle_llm_error.
-            llm_ctx = _make_strategy_ctx(
-                self, messages, None, result, iteration, hook_ctx,
-            )
-            step_r = await self._call_step(self._strategy.llm_call, llm_ctx)
-            if not step_r.success:
-                # 崩溃信号回填旧通道（B2-① T1）：_call_step 不再写 ctx；
-                # 业务写（"error"）优先，崩溃文本与旧 catch 一致。
-                # 空响应走 ok(None)（非失败），不进本分支。
-                llm_ctx.should_stop = True
-                llm_ctx.stop_reason = llm_ctx.stop_reason or "step_llm_call"
-            if llm_ctx.should_stop:
-                break
-            response = step_r.output
-            if response is None:
-                break
-            messages = llm_ctx.messages
-
-            # A1: accumulate LLM usage into the run budget, then stop
-            # if tokens/cost/time are exhausted before doing more work.
-            self._record_budget_usage(response, t0)
-            budget_stop, budget_reason = self._check_budget(t0)
-            if budget_stop:
-                result.finished_reason = "budget"
-                result.stop_reason = budget_reason
-                self._trace_and_emit("budget_exhausted", {
-                    "reason": budget_reason,
-                    "tokens_used": self._budget_tokens,
-                    "cost_usd": round(self._budget_cost_usd, 6),
-                    "elapsed": round(time.perf_counter() - t0, 3),
-                })
-                await _fire("after_iteration", hook_ctx)
-                break
-
-            if not response.has_tool_calls():
-                # L7: consult the strategy's ContinuationStep before
-                # the goal check. DefaultContinuationStep is a no-op
-                # (returns False); the legacy path still runs.
-                should_continue, _ = self._strategy.continuation.evaluate(
-                    _make_strategy_ctx(self, messages, response, result, iteration, hook_ctx)
-                )
-                if should_continue:
-                    continue
-                # DSH-inspired: run post-response injectors (order>=100, e.g. GoalContinuationInjector)
-                injector_continued = False
-                for injector in self._injectors:
-                    if getattr(injector, "order", 0) >= 100:
-                        try:
-                            if injector.inject_post_response(self, response, messages, result, iteration):
-                                injector_continued = True
-                                break
-                        except Exception:  # noqa: BLE001
-                            pass  # injectors must not break the loop
-                if injector_continued:
-                    continue
-                # L7: consult the strategy's StopStep before the legacy
-                # _handle_stop. DefaultStopStep is a no-op; the legacy
-                # path still runs.
-                should_stop, _stop_reason = self._strategy.stop.evaluate(
-                    _make_strategy_ctx(self, messages, response, result, iteration, hook_ctx)
-                )
-                if should_stop:
-                    await _fire("after_iteration", hook_ctx)
-                    break
-                self._handle_stop(response, result, iteration)
-                await _fire("after_iteration", hook_ctx)
-                break
-
-            # L7 v0.2 decision point 3: circuit-breaker gate delegated to
-            # the strategy's ResilienceStep. DefaultResilienceStep reads
-            # ``self._circuit_breaker`` directly, so behaviour is
-            # identical unless a custom strategy overrides is_open().
-            if self._strategy.resilience.is_open(
-                _make_strategy_ctx(self, messages, response, result, iteration, hook_ctx)
-            ):
-                tool_result_msgs = self._breaker_open_messages(response.tool_calls)
-                self._append_tool_results(response.tool_calls, tool_result_msgs, messages, result)
-                await _fire("after_iteration", hook_ctx)
-                continue
-
-            # L7 v0.3: tool execution + tool lifecycle hooks delegated
-            # to the strategy's ToolExecutionStep. The step fires
-            # before_execute_tools / on_tool_error / after_tool_executed
-            # and collects hashes into ctx.metadata["tool_hashes"].
-            tool_ctx = _make_strategy_ctx(
-                self, messages, response, result, iteration, hook_ctx
-            )
-            step_r = await self._call_step(
-                self._strategy.tool_execution, tool_ctx
-            )
-            if not step_r.success:
-                # 崩溃信号回填旧通道（B2-① T1）——tool_execution 自身不写
-                # should_stop，文本与旧 catch 一致。
-                tool_ctx.should_stop = True
-                tool_ctx.stop_reason = tool_ctx.stop_reason or "step_tool_execution"
-            if tool_ctx.should_stop:
-                await _fire("after_iteration", hook_ctx)
-                break
-            tool_result_msgs = tool_ctx.metadata.get("tool_result_msgs") or []
-            # B2-① T4：hashes 走 output（权威通道）；metadata 双写仍在。
-            tool_hashes = step_r.output.get("tool_hashes", []) if step_r.output else []
-            tool_result_msgs = step_r.output.get(
-                "tool_result_msgs", tool_result_msgs) if step_r.output else tool_result_msgs
-            # The step already appended tool results into ctx.messages
-            # via _append_tool_results; messages = tool_ctx.messages to
-            # pick them up.
-            messages = tool_ctx.messages
-            await _fire("after_iteration", hook_ctx)
-
-            # L7 v0.2 decision point 2: no-progress detection delegated
-            # to the strategy's ProgressStep. We record the hashes into
-            # the step's window, then ask it whether the window shows
-            # no progress. DefaultProgressStep mirrors AgentLoop's
-            # legacy _recent_hashes / _detect_no_progress, so behaviour
-            # is identical unless a custom strategy overrides it.
-            progress_ctx = _make_strategy_ctx(
-                self, messages, response, result, iteration, hook_ctx
-            )
-            for h in tool_hashes:
-                self._strategy.progress.record_hash(progress_ctx, h)
-            if self._strategy.progress.is_no_progress(progress_ctx):
-                # Keep the legacy side-effect path (record_event,
-                # circuit_breaker.record_no_progress, emit) intact.
-                # hashes_pre_recorded=True avoids double-counting the
-                # window (record_hash already did the extend above).
-                #
-                # Honour the return value: True = exit (user rejected /
-                # timeout-reject), False = user approved continuation —
-                # fall through to the next iteration instead of leaving.
-                # (Previously the value was discarded, so an approved
-                # continuation still exited — the approval gate was
-                # unreachable.)
-                if self._check_no_progress(
-                    tool_hashes, response, result, iteration,
-                    hashes_pre_recorded=True,
-                ):
-                    await _fire("after_run", hook_ctx, result)
-                    if self._trace_writer is not None:
-                        result.trace_path = str(self._trace_writer.path)
-                        self._trace_writer.close()
-                    return result
-        else:
-            self._handle_max_iter(result)
-
-        # L7 v0.4: finalization (metrics + claim validation) + the
-        # normal-end ``after_run`` hook delegated to the strategy's
-        # FinalizationStep. The no-progress early-return path fires
-        # after_run in the skeleton above (it returns before reaching
-        # this Step) — that call is intentionally kept.
-        fin_ctx = _make_strategy_ctx(
-            self, messages, response, result, result.iterations, hook_ctx,
-        )
-        fin_ctx.t0 = t0
-        # B2-① T1：失败吞没（现状语义——无人读 fin_ctx.should_stop）；
-        # 崩溃时 _call_step 内部已 warning。
-        await self._call_step(self._strategy.finalization, fin_ctx)
-        if async_mode:
-            await asyncio.to_thread(self._git_commit, full_task, result)
-        else:
-            self._git_commit(full_task, result)
-
-        if self._trace_writer is not None:
-            result.trace_path = str(self._trace_writer.path)
-            self._trace_writer.close()
-
-        return result
 
     async def _get_response(
         self,
         messages: list[dict[str, Any]],
         iteration: int,
-        async_mode: bool,
         hook_ctx: Any,
         result: LoopResult,
     ) -> "LLMResponse | None":
-        """Chat/stream call with the non-streaming fallback.
+        """Chat/stream call with the non-streaming fallback（U6-2 后 async 唯一形态）.
 
         Returns the response, or ``None`` when the stream-fallback error
         path already fired ``on_error`` (caller breaks the loop).
@@ -1378,22 +1063,14 @@ class AgentLoop(
             if self._stream_mode:
                 # Trace LLM request envelope before streaming
                 self._trace_llm_request(messages, iteration, tools=None)
-                if async_mode:
-                    return await self._with_iteration_timeout(
-                        self._astream_chat(messages, iteration), iteration, result,
-                    )
-                return self._with_iteration_timeout_sync(
-                    lambda: self._stream_chat(messages, iteration), iteration, result,
+                return await self._with_iteration_timeout(
+                    self._astream_chat(messages, iteration), iteration, result,
                 )
             tools = self._effective_tools(iteration)
             # Trace LLM request envelope before non-streaming call
             self._trace_llm_request(messages, iteration, tools=tools)
-            if async_mode:
-                return await self._with_iteration_timeout(
-                    self.client.achat(messages, tools=tools), iteration, result,
-                )
-            return self._with_iteration_timeout_sync(
-                lambda: self.client.chat(messages, tools=tools), iteration, result,
+            return await self._with_iteration_timeout(
+                self.client.achat(messages, tools=tools), iteration, result,
             )
         except LLMError as exc:
             if not (self._stream_mode and not self._is_stream_required_error(exc)):
@@ -1405,12 +1082,8 @@ class AgentLoop(
                 tools = self._effective_tools(iteration)
                 # Trace fallback LLM request
                 self._trace_llm_request(messages, iteration, tools=tools)
-                if async_mode:
-                    return await self._with_iteration_timeout(
-                        self.client.achat(messages, tools=tools), iteration, result,
-                    )
-                return self._with_iteration_timeout_sync(
-                    lambda: self.client.chat(messages, tools=tools), iteration, result,
+                return await self._with_iteration_timeout(
+                    self.client.achat(messages, tools=tools), iteration, result,
                 )
             except LLMError as exc2:
                 self._handle_llm_error(exc2, iteration, result)

@@ -1,8 +1,6 @@
 """W-split: tool kwargs + batch/heartbeat execution (from AgentLoop)."""
 from __future__ import annotations
 
-from typing import Any
-
 import asyncio
 import json
 import logging
@@ -11,15 +9,12 @@ from typing import TYPE_CHECKING, Any
 
 logger = logging.getLogger(__name__)
 
-from concurrent.futures import ThreadPoolExecutor, as_completed
-
 from .progress import HeartbeatTimer
 from .tools import TRANSIENT_TOOL_ERRORS, ToolContext
 
 _TOOL_MAX_RETRIES = 2
 _TOOL_RETRY_DELAY = 2.0
 _TOOL_RESULT_HISTORY_MAX = 30000
-from agentnodes.kernel.agent.runtime.sync_bridge import _run_coro_in_sync
 
 if TYPE_CHECKING:
     from agentnodes.foundation.llm.parser import ToolCall
@@ -88,15 +83,14 @@ class LoopToolsMixin:
         return kwargs
 
     async def _execute_tool_call_core(
-        self, tc: ToolCall, result: LoopResult, *, async_mode: bool
+        self, tc: ToolCall, result: LoopResult
     ) -> dict[str, Any]:
-        """Shared tool-call core (single source for both modes).
+        """Shared tool-call core（U6-2 后 async 唯一形态）.
 
-        ``async_mode`` selects ``tool.ainvoke`` (permission-gated, awaited
-        on the loop) vs ``tool.invoke`` (direct sync call) and
-        ``asyncio.sleep`` vs ``time.sleep`` for the transient-retry delay.
-        The sync entry runs this core via ``_run_coro_in_sync`` (from a
-        pool thread there is no running loop, so no nested thread).
+        ``tool.ainvoke``（permission-gated, awaited on the loop）执行，
+        transient-retry 延迟用 ``asyncio.sleep``。U6-2 删除 sync 分支：
+        原 sync 路径直调 ``tool.invoke`` 曾绕过权限闸（批次 13 附录 P0），
+        U5.5 后生产不可达，本批随 sync 包装一并退役。
         """
         from agentnodes.kernel.agent.runtime.tool_exec import (
             guard_denied_payload,
@@ -157,21 +151,7 @@ class LoopToolsMixin:
         last_exc = None
         for _attempt in range(max_attempts):
             try:
-                if async_mode:
-                    output = await tool.ainvoke(kwargs, kwargs.get("ctx"))
-                else:
-                    # **批次 13 附录 P0**：sync 路径原先直调 ``tool.invoke``，
-                    # 而权限闸只在 ``ainvoke`` 里 → ``AgentLoop.run()`` 完全
-                    # 绕过权限（实测：evaluator 明确 deny shell，
-                    # sync 仍执行了 ``echo hi``，exit_code=0）。
-                    # ``enforce_permission_sync`` 是既有实现（原只被
-                    # ``ToolRegistry.execute`` 使用），语义与 async 侧的
-                    # 规则判定一致；ASK 在同步路径无提问通道 → fail-closed。
-                    tool.enforce_permission_sync(
-                        dict(tc.arguments) if isinstance(tc.arguments, dict) else {},
-                        kwargs.get("ctx"),
-                    )
-                    output = tool.invoke(kwargs)
+                output = await tool.ainvoke(kwargs, kwargs.get("ctx"))
                 last_exc = None
                 break
             except TRANSIENT_TOOL_ERRORS as exc:
@@ -180,10 +160,7 @@ class LoopToolsMixin:
                                tc.name, type(exc).__name__, _attempt + 1,
                                max_attempts, exc)
                 if _attempt < max_attempts - 1:
-                    if async_mode:
-                        await asyncio.sleep(_TOOL_RETRY_DELAY)
-                    else:
-                        time.sleep(_TOOL_RETRY_DELAY)
+                    await asyncio.sleep(_TOOL_RETRY_DELAY)
             except Exception as exc:                    # noqa: BLE001
                 logger.exception("tool %s raised", tc.name)
                 output = json.dumps(
@@ -244,27 +221,16 @@ class LoopToolsMixin:
             "content": history_output,
         }
 
-    def _execute_tool_call(
-        self, tc: ToolCall, result: LoopResult
-    ) -> dict[str, Any]:
-        """Execute one tool_call via the registry; return tool-result message.
-
-        Sync entry over the shared core (see ``_execute_tool_call_core``).
-        """
-        return _run_coro_in_sync(
-            self._execute_tool_call_core(tc, result, async_mode=False)
-        )
-
     async def _aexecute_tool_call(
         self, tc: ToolCall, result: LoopResult
     ) -> dict[str, Any]:
-        """Async version of _execute_tool_call (permission-gated ainvoke)."""
-        return await self._execute_tool_call_core(tc, result, async_mode=True)
+        """Execute one tool_call（permission-gated ainvoke）；return tool-result message."""
+        return await self._execute_tool_call_core(tc, result)
 
     async def _execute_tool_with_heartbeat_core(
-        self, tc: ToolCall, result: LoopResult, *, async_mode: bool
+        self, tc: ToolCall, result: LoopResult
     ) -> dict[str, Any]:
-        """Shared heartbeat wrapper (single source for both modes)."""
+        """Shared heartbeat wrapper（U6-2 后 async 唯一形态）."""
         def _heartbeat_tick(payload: dict) -> None:
             self._trace({"type": "heartbeat", **payload})
             self._emit("tool_heartbeat", {
@@ -278,83 +244,14 @@ class LoopToolsMixin:
             interval=self.heartbeat_interval,
             emit=_heartbeat_tick,
         ):
-            return await self._execute_tool_call_core(tc, result, async_mode=async_mode)
-
-    def _execute_tool_with_heartbeat(
-        self, tc: ToolCall, result: LoopResult
-    ) -> dict[str, Any]:
-        """Execute tool_call with HeartbeatTimer for long-running tools.
-
-        Sync entry over the shared core (see
-        ``_execute_tool_with_heartbeat_core``).
-        """
-        return _run_coro_in_sync(
-            self._execute_tool_with_heartbeat_core(tc, result, async_mode=False)
-        )
+            return await self._execute_tool_call_core(tc, result)
 
     async def _aexecute_tool_with_heartbeat(
         self, tc: ToolCall, result: LoopResult
     ) -> dict[str, Any]:
-        """Async version of _execute_tool_with_heartbeat."""
-        return await self._execute_tool_with_heartbeat_core(tc, result, async_mode=True)
+        """Execute tool_call with HeartbeatTimer for long-running tools."""
+        return await self._execute_tool_with_heartbeat_core(tc, result)
 
-    def _execute_tool_batch(
-        self, tool_calls: list[ToolCall], result: LoopResult
-    ) -> list[dict[str, Any]]:
-        """Execute tool_calls with read-only parallelism.
-
-        Read-only tools are dispatched in parallel via ThreadPoolExecutor.
-        Write tools (is_readonly=False) run serially to prevent races.
-        Results are returned in the same order as tool_calls.
-        """
-        if not tool_calls:
-            return []
-
-        # Single tool: no batching overhead
-        if len(tool_calls) == 1:
-            return [self._execute_tool_with_heartbeat(tool_calls[0], result)]
-
-        # Classify each tool_call as readonly or write
-        readonly_indices: list[int] = []
-        write_indices: list[int] = []
-        for i, tc in enumerate(tool_calls):
-            tool = self.registry.get(tc.name)
-            if tool is not None and not getattr(tool, "is_readonly", True):
-                write_indices.append(i)
-            else:
-                readonly_indices.append(i)
-
-        # Prepare result slots (preserves order)
-        results: list[dict[str, Any] | None] = [None] * len(tool_calls)
-
-        # Dispatch readonly tools in parallel
-        if readonly_indices:
-            max_workers = min(len(readonly_indices), 4)
-            with ThreadPoolExecutor(max_workers=max_workers) as pool:
-                futures = {
-                    pool.submit(self._execute_tool_with_heartbeat, tool_calls[i], result): i
-                    for i in readonly_indices
-                }
-                for future in as_completed(futures):
-                    idx = futures[future]
-                    try:
-                        results[idx] = future.result()
-                    except Exception as exc:  # noqa: BLE001
-                        logger.exception("parallel tool %s failed", tool_calls[idx].name)
-                        results[idx] = {
-                            "role": "tool",
-                            "tool_call_id": tool_calls[idx].id,
-                            "content": json.dumps(
-                                {"status": "error", "error": f"{type(exc).__name__}: {exc}"},
-                                ensure_ascii=False,
-                            ),
-                        }
-
-        # Dispatch write tools serially
-        for i in write_indices:
-            results[i] = self._execute_tool_with_heartbeat(tool_calls[i], result)
-
-        return [r for r in results if r is not None]
 
     def _detect_no_progress(self) -> bool:
         """Return True if last N tool_calls all have the same hash."""

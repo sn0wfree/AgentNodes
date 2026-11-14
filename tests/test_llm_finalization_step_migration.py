@@ -51,7 +51,7 @@ class _FakeLoop:
     async def _afire_hooks(self, name, hook_ctx, *args, **kwargs):
         self.hook_calls.append((name, hook_ctx, args, kwargs))
 
-    async def _get_response(self, messages, iteration, async_mode, hook_ctx, result):
+    async def _get_response(self, messages, iteration, hook_ctx, result):
         if self.response_error is not None:
             raise self.response_error
         return self.response_obj
