@@ -178,3 +178,10 @@ langchain_core / uuid_utils 整条链）。
 | 2 | `templates/` 整个目录不在 git 跟踪内 | 仓库问题：要么纳入版本控制，要么明确它是本地生成物 |
 | 3 | `scheduled_executor` 的 `/ws` 假路径在 Linux 必失败 | 测试的跨平台缺陷：用 `tmp_path` 代替硬编码路径 |
 | 4 | `test_sandbox_home_is_outside_real_home` 断言 Linux 家目录结构 | 同上 |
+
+> **2026-11-14 状态更新**：① DLL 环境账**自愈关闭**——实测 `import uuid_utils` /
+> `import langgraph` 直接通过、`.pyd` ctypes 加载无错、无 Zone.Identifier；Windows
+> 全量 `-n 8 loadgroup` **7268 passed / 101s**（原 129 failed 全消，L2 记账）。
+> ② `templates/` 问题随 C 方案（`6f3e727c`）**自然消解**——唯一消费者（prepare
+> 无前视测试）已迁 `kernel.algo`，仓库不再有跟踪文件依赖未跟踪模板。
+> ③④ 仍开放（Linux 侧测试平台缺陷，与引擎无关）。

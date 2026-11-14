@@ -573,3 +573,24 @@ git 时尾缀 caret 已被吃掉，实为 `git reset --soft HEAD`（no-op）。b
 **防法**：cmd.exe / PowerShell 一律用 `HEAD~1`（波浪号无特殊义）替代
 `HEAD^`；重置类命令执行后**必须用 `git log --oneline -1` 复核**，
 不得以命令退出码代替状态确认。
+
+
+---
+
+## 2026-11-14 · Windows DLL 环境账自愈关闭（全量恢复 -n 8 绿 · 101s）
+
+**关闭 2026-11-13 的环境账**：当日 `uuid_utils`（langgraph 链）原生 DLL 被
+Application Control 拦，Windows 全量 129 failed / 127 errors（A/B 判定非代码）。
+2026-11-14 实测：`import uuid_utils` / `import langgraph` 直接通过、
+`.pyd` ctypes 加载无错、无 Zone.Identifier——**未做任何本地修复动作**，
+策略/AV 状态自愈。
+
+**全量复跑（`-n 8 --dist loadgroup`，R-007 内存判据 8926MB → 8）**：
+先 1 failed——架构图门抓到 C 方案批漏更新 kernel/algo 体量（网在工作）；
+修图后 **23 passed**。最终 **7268 passed / 115 skipped / 4 xfailed / 101s**。
+一笔跑验三事：DLL 恢复、SQLite 锁修复（原 flake 场景无 database is locked）、
+当日三 commit 零回归。
+
+**防法**：环境类失败（DLL/策略/AV）是**时变状态**，不可当永久账挂起——
+复跑前先做最小探针（import + ctypes 加载 + MOTW 检查）判定现状，
+再决定重建环境还是直接跑。
