@@ -14,6 +14,7 @@
 
 from __future__ import annotations
 
+import warnings
 from pathlib import Path
 from typing import NamedTuple
 
@@ -60,7 +61,15 @@ def compare_images(
         raise FileNotFoundError(f"Actual not found: {actual}")
 
     if not HAS_PIL:
-        # Fallback: file size comparison (very weak but works)
+        # Fallback: file size comparison (very weak but works).
+        # 降级不是静默的（2026-11-14）：文件大小相等 ≠ 视觉一致，这个绿灯
+        # 假阳性曾经掩盖「视觉回归实际在空转」。必须让运行者看到告警。
+        warnings.warn(
+            "visual_diff: Pillow 未安装——降级为文件大小比较 (diff_pixel_count=-1)，"
+            "视觉回归实质空转。请安装 Pillow（pip install '.[webui-api]'）。"
+            f"baseline={baseline}",
+            stacklevel=2,
+        )
         match = baseline.stat().st_size == actual.stat().st_size
         return PixelDiffResult(
             match=match, diff_pixel_count=-1, total_pixels=0, diff_ratio=0.0,

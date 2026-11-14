@@ -72,6 +72,7 @@ webui-api = [
     "pydantic>=2.5",
     "python-jose[cryptography]>=3.3",
     "bcrypt>=4.0",
+    "Pillow>=10.0",                # tests/visual_diff.py 像素级视觉回归；缺了会静默降级为文件大小比较
 ]
 
 [project.scripts]

@@ -74,12 +74,15 @@ def built_frontend() -> Path:
 
     if not _has_e2e_hooks():
         # Auto-build if missing or stale — saves a manual step in CI.
-        # shell=True: on Windows `npm` is npm.cmd — bare-list Popen raises
-        # WinError 2 (file not found) because CreateProcess doesn't do
-        # PATH+PATHEXT resolution for .cmd files.
+        # 必须是字符串 + shell=True，两平台才都正确：
+        # - Windows: `npm` 是 npm.cmd，只有 shell 才做 PATH+PATHEXT 解析
+        #   （裸 list Popen 直接 WinError 2 file not found）；
+        # - POSIX: list+shell=True 会把首元素当 shell 命令、其余元素当 shell
+        #   位置参数（$0/$1…）——"run" "build" 根本到不了 npm，构建不会发生；
+        #   而 check=True 能否兜底取决于 npm 裸跑的退出码（随版本而变，不可依赖）。
         print(f"\n[conftest] Building frontend (VITE_E2E=1) → {STATIC_DIR}...")
         subprocess.run(
-            ["npm", "run", "build"],
+            "npm run build",
             cwd=str(REPO_ROOT / "webui" / "frontend"),
             check=True,
             capture_output=True,

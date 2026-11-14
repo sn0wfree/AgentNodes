@@ -222,7 +222,7 @@ def main() -> int:
     if "browser" in lanes:
         print("\n=== lane browser ===", flush=True)
         rc, elapsed, tail, _out = _run(
-            ["tests/test_webui_e2e_playwright.py"],
+            ["tests/test_webui_catalog.py", "tests/test_webui_visual.py"],
             ["-q", "--tb=short"],
             {"AN_RUN_BROWSER_TESTS": "1"},
         )

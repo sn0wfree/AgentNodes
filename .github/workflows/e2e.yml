@@ -93,7 +93,7 @@ jobs:
         env:
           AN_RUN_BROWSER_TESTS: "1"
         run: |
-          python -m pytest tests/test_webui_e2e_playwright.py tests/test_webui_visual.py \
+          python -m pytest tests/test_webui_catalog.py tests/test_webui_visual.py \
             -v --tb=short \
             --color=yes
 
