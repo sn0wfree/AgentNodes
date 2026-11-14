@@ -3,9 +3,9 @@
   "commit": "4b0f3de0a615142d254df979faf605795934f238",
   "command": "pytest tests -q --tb=no -m 'not llm and not e2e and not slow'",
   "counts": {
-    "failed": 97,
+    "failed": 96,
     "error": 7,
-    "total": 104
+    "total": 103
   },
   "pytest_totals": {
     "failed": 93,
@@ -64,7 +64,6 @@
     "tests/test_phase2_data_integrity.py::TestGetMessagesMostRecent::test_returns_most_recent_n",
     "tests/test_plan_build_mode.py::TestPlanModeTools::test_plan_mode_sets_allowed_tools",
     "tests/test_plan_build_mode.py::TestPlanModeTools::test_plan_readonly_tools_is_set",
-    "tests/test_prepare_no_lookahead.py::test_spike_on_rebalance_day_is_not_earned",
     "tests/test_prompt_auto_discovery.py::TestPromptAutoDiscovery::test_discover_prompts_handles_missing_dir",
     "tests/test_quant_correctness_secondary.py::TestTradesSemantics::test_rf_from_params",
     "tests/test_quant_correctness_secondary.py::TestTradesSemantics::test_turnover_annualized_by_rebalance_periods",
@@ -154,7 +153,6 @@
     "tests/test_file_cache.py": 1,
     "tests/test_hanging_events_comprehensive.py": 1,
     "tests/test_phase2_data_integrity.py": 1,
-    "tests/test_prepare_no_lookahead.py": 1,
     "tests/test_prompt_auto_discovery.py": 1,
     "tests/test_sandbox.py": 1,
     "tests/test_system_llm_api.py": 1,

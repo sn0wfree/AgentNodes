@@ -4,6 +4,7 @@
   控制面 gateway/orchestration/events/session/scheduled_research
   执行面 runtimes/workflow/swarm
   能力面 agent/context/hooks/permission/memory/skills
+  算法面 algo（领域中立数学闭包，如无前视调仓回测）
 
 依赖方向：kernel → foundation（见 tests/test_layer_matrix.py）。
 """

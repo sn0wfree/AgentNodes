@@ -1,4 +1,9 @@
-"""templates/prepare.py evaluate() — 调仓时点回归测试。
+"""kernel.algo.backtest.evaluate() — 调仓时点回归测试。
+
+（自 tests/test_prepare_no_lookahead.py 迁移，2026-11-14：算法随 C 方案
+提取到 kernel/algo（docs/design/prepare-algo-kernel-extract-20261114.md），
+importlib 文件加载 → 正常 import，compute_factors 模块桩 → factor_frames
+参数注入。两条时序断言自模板时代起一字未动。）
 
 钉住"收盘调仓"约定:用第 i 日数据(因子分数基于 close[i])选出的权重
 不得赚取第 i 日收益(close[i]/close[i-1]-1),否则构成 1 根 K 线前视
@@ -10,25 +15,11 @@
 """
 from __future__ import annotations
 
-import importlib.util
-import sys
-from pathlib import Path
-
 import pandas as pd
 
-TEMPLATES = Path(__file__).resolve().parent.parent / "templates"
+from agentnodes.kernel.algo import evaluate
 
 REBALANCE_FREQ = 20
-
-
-def _load_prepare():
-    spec = importlib.util.spec_from_file_location(
-        "prepare_no_lookahead_fixture", TEMPLATES / "prepare.py"
-    )
-    mod = importlib.util.module_from_spec(spec)
-    sys.modules[spec.name] = mod
-    spec.loader.exec_module(mod)
-    return mod
 
 
 def _step_prices(cross_day: int, n_days: int = 80) -> pd.DataFrame:
@@ -44,14 +35,13 @@ def _step_prices(cross_day: int, n_days: int = 80) -> pd.DataFrame:
 
 
 def _evaluate(prices: pd.DataFrame) -> dict:
-    """evaluate() with a stubbed factor that always ranks AAA first."""
-    mod = _load_prepare()
+    """evaluate() with an injected constant factor that always ranks AAA first."""
     factor = pd.DataFrame({"AAA": 1.0, "BBB": 0.0}, index=prices.index)
-    mod.compute_factors = lambda _prices, _exprs: {"const": factor}
 
     params = {"top_n": 1, "max_weight": 1.0, "rebalance_freq": REBALANCE_FREQ}
     exprs = [{"factor_name": "const", "factor_code": "1", "weight": 1.0}]
-    return mod.evaluate(params, exprs, "equal", {"prices": prices})
+    return evaluate(params, exprs, "equal", {"prices": prices},
+                    factor_frames={"const": factor})
 
 
 def test_spike_on_rebalance_day_is_not_earned() -> None:
