@@ -19,7 +19,7 @@ class SpyTool(BaseTool):
         return '{"status": "ok"}'
 
 
-def test_session_and_workspace_injected():
+async def test_session_and_workspace_injected():
     cfg = MagicMock(api_key="k", model="m", temperature=0, max_tokens=100)
     reg = ToolRegistry()
     reg.register(SpyTool())
@@ -37,7 +37,7 @@ def test_session_and_workspace_injected():
     tc.id = "c1"
     tc.arguments = {}
 
-    loop._execute_tool_call(tc, MagicMock())
+    await loop._aexecute_tool_call(tc, MagicMock())
     # 481 用 resolve() 之后的路径比较；Windows 上 Path("/tmp/x") 会变成
     # 盘符相对路径（D:/tmp/x），直接比字面量会失败。
     ws = SpyTool.captured.get("workspace")
@@ -45,7 +45,7 @@ def test_session_and_workspace_injected():
     assert SpyTool.captured.get("session_id") == "sess-probe-1"
 
 
-def test_explicit_session_wins():
+async def test_explicit_session_wins():
     cfg = MagicMock(api_key="k", model="m", temperature=0, max_tokens=100)
     reg = ToolRegistry()
     reg.register(SpyTool())
@@ -62,7 +62,7 @@ def test_explicit_session_wins():
     tc.id = "c1"
     tc.arguments = {"session_id": "explicit-sess", "workspace": "/tmp/other"}
 
-    loop._execute_tool_call(tc, MagicMock())
+    await loop._aexecute_tool_call(tc, MagicMock())
     # LLM-supplied values must NOT be overridden
     assert SpyTool.captured.get("session_id") == "explicit-sess"
     assert SpyTool.captured.get("workspace") == "/tmp/other"

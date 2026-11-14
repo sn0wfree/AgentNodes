@@ -185,7 +185,7 @@ class TestEffectsDerivedReadonly:
 
 
 class TestLoopIntegration:
-    def test_loop_injects_ctx_and_invokes_coercion(self, registry, tmp_path: Path):
+    async def test_loop_injects_ctx_and_invokes_coercion(self, registry, tmp_path: Path):
         loop = AgentLoop(
             stream_mode=False,
             config=LLMConfig(api_key="sk-test"),
@@ -196,7 +196,7 @@ class TestLoopIntegration:
             "codes": '["600519.SH"]',
             "limit": "9",
         })
-        out = loop._execute_tool_call(tc, LoopResult())
+        out = await loop._aexecute_tool_call(tc, LoopResult())
         content = json.loads(out["content"])
         assert content["status"] == "ok"
         assert content["codes"] == ["600519.SH"]

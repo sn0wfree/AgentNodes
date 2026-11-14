@@ -150,7 +150,7 @@ class TestExecuteToolCallGuardIntegration:
         tc.id = "call_1"
         tc.arguments = {}
 
-        msg = asyncio.run(loop._execute_tool_call_core(tc, result, async_mode=False))
+        msg = asyncio.run(loop._aexecute_tool_call(tc, result))
         assert msg["role"] == "tool"
         assert msg["tool_call_id"] == "call_1"
         content = json.loads(msg["content"])
@@ -173,7 +173,7 @@ class TestExecuteToolCallGuardIntegration:
         tc.id = "c1"
         tc.arguments = {}
 
-        asyncio.run(loop._execute_tool_call_core(tc, result, async_mode=False))
+        asyncio.run(loop._aexecute_tool_call(tc, result))
         # tool.invoke should NOT have been called
         tool.invoke.assert_not_called()
 
@@ -195,7 +195,7 @@ class TestExecuteToolCallGuardIntegration:
             emitted.append((event_type, data))
         loop._emit = _capture_emit
 
-        asyncio.run(loop._execute_tool_call_core(tc, result, async_mode=False))
+        asyncio.run(loop._aexecute_tool_call(tc, result))
         # Check that tool_result was emitted with status=denied
         tool_results = [e for e in emitted if e[0] == "tool_result"]
         assert len(tool_results) >= 1
@@ -212,7 +212,7 @@ class TestExecuteToolCallGuardIntegration:
         tc.id = "c1"
         tc.arguments = {}
 
-        msg = asyncio.run(loop._execute_tool_call_core(tc, result, async_mode=False))
+        msg = asyncio.run(loop._aexecute_tool_call(tc, result))
         content = json.loads(msg["content"])
         assert content["status"] == "ok"
 
@@ -226,7 +226,7 @@ class TestExecuteToolCallGuardIntegration:
         tc.id = "c1"
         tc.arguments = {}
 
-        msg = asyncio.run(loop._execute_tool_call_core(tc, result, async_mode=False))
+        msg = asyncio.run(loop._aexecute_tool_call(tc, result))
         content = json.loads(msg["content"])
         assert "error" in content
 

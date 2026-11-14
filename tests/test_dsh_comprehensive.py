@@ -702,7 +702,7 @@ class TestAgentLoopCompleteFlow:
         tc.id = "c1"
         tc.arguments = {}
 
-        msg = asyncio.run(loop._execute_tool_call_core(tc, result, async_mode=False))
+        msg = asyncio.run(loop._aexecute_tool_call(tc, result))
         content = json.loads(msg["content"])
         assert content["status"] == "denied"
 
@@ -729,7 +729,7 @@ class TestAgentLoopCompleteFlow:
         tc.id = "c1"
         tc.arguments = {}
 
-        msg = asyncio.run(loop._execute_tool_call_core(tc, result, async_mode=False))
+        msg = asyncio.run(loop._aexecute_tool_call(tc, result))
         content = json.loads(msg["content"])
         assert content["executed"] is True
 

@@ -60,47 +60,9 @@ def _tc() -> ToolCall:
     return ToolCall(id="c1", name="flaky", arguments={})
 
 
-# ── Sync path (_execute_tool_call) ───────────────────────────────────
-
-
-class TestSyncRetry:
-
-    def test_retries_transient_then_succeeds(self, loop, no_delay):
-        tool = loop.registry.get("flaky")
-        tool.fail_times = 1
-        out = loop._execute_tool_call(_tc(), LoopResult())
-        assert tool.calls == 2
-        # 2026-11-05：content 是 render_history_output() 的**文本视图**
-        # （A3 tool-result-views），不再是原始 JSON。断言语义而非格式。
-        assert not out["content"].startswith("[Tool error]")
-
-    def test_no_retry_on_non_transient(self, loop):
-        tool = loop.registry.get("flaky")
-        tool.exc_cls = RuntimeError
-        out = loop._execute_tool_call(_tc(), LoopResult())
-        assert tool.calls == 1
-        assert out["content"].startswith("[Tool error]")
-        assert "RuntimeError" in out["content"]
-
-    def test_retries_exhausted_returns_hint(self, loop, no_delay):
-        tool = loop.registry.get("flaky")
-        tool.fail_times = 10
-        out = loop._execute_tool_call(_tc(), LoopResult())
-        assert tool.calls == loop_mod._TOOL_MAX_RETRIES
-        # 重试耗尽 → 结构化错误里带 hint；文本视图保留 message 部分。
-        assert out["content"].startswith("[Tool error]")
-
-    def test_no_retry_when_tool_returns_error_json(self, loop, no_delay):
-        """err_actionable 返回 JSON 而非抛异常 → 不重试。"""
-        tool = loop.registry.get("flaky")
-        tool.fail_times = 0
-        tool.execute = lambda **kw: json.dumps({"status": "error", "error": "x"})
-        out = loop._execute_tool_call(_tc(), LoopResult())
-        assert tool.calls == 0  # execute 被替换，直接返回 error JSON
-        assert out["content"].startswith("[Tool error]")
-
-
 # ── Async path (_aexecute_tool_call) ─────────────────────────────────
+# （U6-2：sync 包装 `_execute_tool_call` 已删除——原 TestSyncRetry 四测
+#   与本类逐字重复，语义由本类覆盖。）
 
 
 class TestAsyncRetry:
@@ -126,4 +88,13 @@ class TestAsyncRetry:
         tool.fail_times = 10
         out = await loop._aexecute_tool_call(_tc(), LoopResult())
         assert tool.calls == loop_mod._TOOL_MAX_RETRIES
+        assert out["content"].startswith("[Tool error]")
+
+    async def test_no_retry_when_tool_returns_error_json(self, loop, no_delay):
+        """err_actionable 返回 JSON 而非抛异常 → 不重试。"""
+        tool = loop.registry.get("flaky")
+        tool.fail_times = 0
+        tool.execute = lambda **kw: json.dumps({"status": "error", "error": "x"})
+        out = await loop._aexecute_tool_call(_tc(), LoopResult())
+        assert tool.calls == 0  # execute 被替换，直接返回 error JSON
         assert out["content"].startswith("[Tool error]")

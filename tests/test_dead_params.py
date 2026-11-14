@@ -86,12 +86,9 @@ def test_retry_policy_explicit_changes_attempt_count(tmp_path: Path):
         from agentnodes.foundation.llm import ToolCall
         tc = ToolCall(id="c1", name="flaky_probe", arguments={})
         loop._run_coro_sync = None  # noqa: F841 — 仅确保属性访问不炸
-        # 直接走 sync 核心（避免 LLM mock）
         loop._execute_tool_call_core_sync = None  # noqa: F841
         import asyncio
-        asyncio.run(loop._execute_tool_call_core(
-            tc, LoopResult(), async_mode=True,
-        ))
+        asyncio.run(loop._aexecute_tool_call(tc, LoopResult()))
         return calls["n"]
 
     # 显式 5 次
