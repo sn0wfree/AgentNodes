@@ -112,6 +112,27 @@ class TestStore:
         assert len(store.list_node_outputs(run_id)) >= 4
         assert store.list_events(run_id)
 
+    def test_runner_store_follows_workspace_not_cwd(self, tmp_path: Path, monkeypatch):
+        """R-019 回归网：runner 无显式 store 时 DB 落 workspace，不落 cwd。
+
+        2026-11-13 的全量 flake（database is locked）根因是 runner 默认
+        WorkflowStore() 回落 cwd/workflows.db——全文件用例共享一文件 +
+        approval API 测试跨进程同撞。修复（executor 两处默认改 workspace
+        解析）若被回退，本用例的 workspace 断言立即变红。
+        """
+        isolated_cwd = tmp_path / "isolated_cwd"
+        isolated_cwd.mkdir()
+        monkeypatch.chdir(isolated_cwd)
+        ws = tmp_path / "ws"
+        ws.mkdir()
+
+        runner = make_runner("plan_execute_auto", ws)
+
+        assert runner.store.db_path == ws / "workflows.db"
+        assert runner.store.health_check()  # 触发连接 + 建库文件
+        assert (ws / "workflows.db").exists()
+        assert not (isolated_cwd / "workflows.db").exists()
+
 
 # ── Auto workflow (no approval) ───────────────────────────────
 

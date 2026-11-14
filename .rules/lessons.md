@@ -432,8 +432,14 @@ legacy 的 sync 路径调 ``client.chat`` → mock 命中；统一引擎走 asyn
 
 ## 2026-11-13 · workflow 测试 SQLite DB 锁（既有 flake，未修 · 独立账）
 
-**状态：未修，独立批待办。** HEAD（`8e405bb6`，B2-① T6 后）可复现，
+**状态：已修（2026-11-14）。** HEAD（`8e405bb6`，B2-① T6 后）可复现，
 与 T7 改动无关——stash 掉 T7 仍失败，因果判定明确。
+**修复**：根因深挖一层后修正 runner 语义（`executor.py` 两处 store 默认
+`WorkflowStore()` → `WorkflowStore(db_path=resolve_workflows_db_path(workspace))`）——
+测试传 tmp_path workspace 自以为隔离，DB 却全落 `cwd/workflows.db`（类 docstring
+"one DB per workspace" 的契约被 cwd 回落打破）。方案与真值表见
+`docs/design/workflow-sqlite-lock-fix-20261114.md`；R-019 回归网
+`test_runner_store_follows_workspace_not_cwd` 钉住（回退即红）。
 
 **现象**（`-n 12 --dist loadgroup` 全量跑）：
 `tests/test_workflow_segment_loop.py::TestAutoFlow` 下不同用例轮流红：
@@ -459,9 +465,9 @@ legacy 的 sync 路径调 ``client.chat`` → mock 命中；统一引擎走 asyn
 ——需要的是**用例级 DB 隔离**（临时 workspace/DB 路径 per test），不是
 再加 marker。
 
-**防法（待办，未执行）**：给 `test_workflow_segment_loop.py` 的用例注入
-独立 `tmp_path` DB 路径（`AGENTNODES_WORKSPACE` 或 store 的 db_path），
-使组内用例不再共享文件锁。执行前先按 R-014 落方案。
+**防法（已执行，2026-11-14）**：per-test DB 隔离未走逐用例注入 env 的路，
+而是由 runner 语义修正自动达成（workspace 解析 store）——教训账的「用例级
+DB 隔离」判断正确，落点比预想更靠根因。
 
 ---
 

@@ -34,7 +34,7 @@ from .node_types import (
     dispatch_node,
     register_builtin_tool_executors,
 )
-from .store import WorkflowStore
+from .store import WorkflowStore, resolve_workflows_db_path
 
 logger = logging.getLogger(__name__)
 
@@ -66,7 +66,14 @@ class WorkflowRunner:
         self.definition = definition
         self.workspace = Path(workspace)
         self.objective = objective
-        self.store = store or WorkflowStore()
+        # DB 跟随 workspace（store 类 docstring 的 "one DB per workspace" 契约）。
+        # 2026-11-14 修：此前默认 WorkflowStore() 回落 cwd/workflows.db——测试
+        # 全传 tmp_path workspace 仍共享 cwd 文件，全量 -n 12 跨进程写锁竞争
+        # （tests/test_workflow_segment_loop.py 轮换红），见
+        # docs/design/workflow-sqlite-lock-fix-20261114.md。
+        self.store = store or WorkflowStore(
+            db_path=resolve_workflows_db_path(self.workspace)
+        )
         self.strategy_name = strategy_name or "default"
         self.session_id = session_id
         self.llm_config = llm_config
@@ -144,7 +151,11 @@ class WorkflowRunner:
 
         Returns None when the run does not exist or is already terminal.
         """
-        store = store or WorkflowStore()
+        # 与 __init__ 同规则：默认 store 落 workspace（重启后 cwd 不同也能
+        # 找回 run——R-B2 重启续跑的锚点是 workspace 而非 cwd）。
+        store = store or WorkflowStore(
+            db_path=resolve_workflows_db_path(workspace)
+        )
         run = store.get_run(run_id)
         if run is None or run.get("status") in _TERMINAL_STATUSES:
             return None
