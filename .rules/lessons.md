@@ -555,3 +555,21 @@ Windows 装全了 → 缺陷隐形。
 被 Application Control 策略拦，HEAD 同样失败）。
 
 **同一环境**是关键：跨环境对比会把平台差异与代码差异混在一起。
+
+
+---
+
+## 2026-11-14 · cmd.exe 下 git 引用尾缀 ^ 被静默吞掉（HEAD^ 变 no-op）
+
+**现象**：`git reset --soft HEAD^` 在本会话的 cmd.exe 里**静默 no-op**——
+命令成功返回、无任何报错，但 HEAD 纹丝未动；后续 `git restore --staged`
+与 `git status` 输出全部自洽，极易误判为「重置成功」。`git log` 复查才
+发现 HEAD 未动。
+
+**根因**：cmd.exe 把 `^` 当**转义符**（escape next char），`HEAD^` 传给
+git 时尾缀 caret 已被吃掉，实为 `git reset --soft HEAD`（no-op）。bash
+无此行为，跨 shell 习惯迁移时踩坑。
+
+**防法**：cmd.exe / PowerShell 一律用 `HEAD~1`（波浪号无特殊义）替代
+`HEAD^`；重置类命令执行后**必须用 `git log --oneline -1` 复核**，
+不得以命令退出码代替状态确认。
