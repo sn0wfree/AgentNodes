@@ -445,8 +445,8 @@ flowchart TD
 | 项 | 内容 |
 |---|---|
 | `run()` 签名零变化 | 4 个生产调用方 + 175 处测试不动 |
-| `arun()` 保留 `engine` | U6-2 滞后期间 legacy 仍需可达（遗产网依赖）|
-| `run_stream()` **不接受 `engine`** | **有意非对称**——legacy 没有流式入口（事件走 `_emit` 副作用，不进生成器），暴露只会拿到残缺流，是 API 陷阱 |
+| ~~`arun()` 保留 `engine`~~ | **U6-2 已删**（legacy 退役，三入口均无 engine；契约测试钉住）|
+| ~~`run_stream()` **不接受 `engine`**~~ | 原为有意非对称（legacy 无流式入口，暴露是 API 陷阱）；U6-2 后陷阱失去载体，**双入口均无 engine**，有人加回即红 |
 | 一次运行消费一次 | `AgentLoop` 持有 `_strategy` / `_skeleton_ctx` 等可变状态，同实例重复 run 未定义 |
 
 ### 提取的三个方法（纯重构，零行为变化）
@@ -637,6 +637,13 @@ approve / prompt / select 三型设计（lobehub 参照）。跨进程/跨会话
 
 ## §9 与旧形态的差异速查（评审锚点）
 
+> **U6-2 实施闭环（2026-11-14，分支 `u6-2-terminal-cleanup`，至 `e63b90b9`）**：
+> 下表「终态」列已全部落地——循环体 1 个（legacy 257 行退役）、
+> `StopPolicy` 处置 = **删**（随 legacy 退役，BudgetDecider 一套）、
+> 步骤协议 T11 定稿（过渡壳/step_adapters 退役）。未落地项仅剩
+> 「事件 → 分发器三写」（B2-② 冻结中，事件桥现为引擎活器官）。
+> 详见 `u6-2-terminal-cleanup-design-20261114.md` §10 实施结果。
+
 | 维度 | 旧（切换前）| 终态（本设计）|
 |---|---|---|
 | 循环体 | 2 个（legacy + skeleton）| 1 个（run_stream）|
@@ -647,7 +654,7 @@ approve / prompt / select 三型设计（lobehub 参照）。跨进程/跨会话
 | 外部终止 | 无（halt 在闸外）| ExternalTerminationDecider（precheck 注入）|
 | HITL | 一问一答 ×3 | pause/resume 原语 + 既有两层保留 |
 | 预算 | 停（二值）| 停 + `budget_exhausted` 信号（三策略列为 backlog）|
-| `StopPolicy`（runtime/policy.py）| legacy 内消费 | **U6 处置待定**：删，或保留为 costLimit 三策略内核 |
+| `StopPolicy`（runtime/policy.py）| legacy 内消费 | **已删**（U6-2：唯一消费链在 legacy 体内，随 legacy 退役；引擎预算 = BudgetDecider）|
 
 ---
 
@@ -659,7 +666,7 @@ approve / prompt / select 三型设计（lobehub 参照）。跨进程/跨会话
 | 事件序列网 | no-progress 序列绝对值 |
 | 双通道网 | delta 顺序 / 负向 / 工具共存 |
 | 挂起网 | 三条不变量 + 事件循环响应 |
-| 遗产网 | legacy 特有行为显式钉住（U6 删）|
-| 审计命令 | legacy 残留可独立发现（R-015 ④）|
+| ~~遗产网~~ | 已随 legacy 删除（U6-2）——替代物为 `test_engine_semantics.py` 语义网（parity 拆解）+ `legacy_audit` 绝迹审计 |
+| 审计命令 | legacy 残留可独立发现（R-015 ④）——已翻转为零容忍绝迹门 |
 | 决策单元网 | decider 判定 / 组合 / 注入 |
 

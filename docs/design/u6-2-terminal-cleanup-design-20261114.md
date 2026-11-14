@@ -180,3 +180,51 @@ U6-2 删桥 = 砍掉引擎自己的事件入口。桥的替换（dispatcher 化�
    vs 删除（失去注入防护）。
 5. **execution 顺序**：设计确认后三批连续做（预计单批 30-60 分钟 + 101s 全量），
    还是一批一确认？推荐连续做、每批一 commit，最后汇总报告。
+
+> **§9 五点均已按推荐定案**（维护者 2026-11-14 确认）。
+
+## §10 实施结果（2026-11-14 回填）
+
+### 10.1 交付（分支 `u6-2-terminal-cleanup`，5 commit）
+
+| 批 | commit | 实际内容 | 全量验证 |
+|---|---|---|---|
+| 设计 | `a549612c` | 本文件（R-014） | — |
+| T11 | `e13f0782` | §2.5 全部 + 测试内联/退役 + 4 xfail 转正 | 7268 passed / 92.4s |
+| A 主体 | `5fbcdab6` | `test_engine_semantics.py`（7 场景）+ tool 测试 async 化 | 7266 passed / 90.2s |
+| A 删除 | `548409d8` | §2.1-2.4/2.6/2.7 + 三网退役 + audit 翻转 | **7228 passed / 95.3s，exit 0** |
+| 收尾 | `e63b90b9` | CHANGELOG release note + mention 清理 28→4 | 7228 passed / 96.5s |
+
+净删 1,793 行（A 删除批单批 +142/−1,935，25 文件）。全量走 `-n 8
+--dist loadgroup`（R-007 内存判据），每批后立跑（R-020 工序）。
+
+### 10.2 与方案的偏差（4 处，均无风险升级）
+
+1. **`TestRunLoopCoreTiming` 无需重定向**（§2.4 预估过重）：实测三测是
+   path-agnostic 弱断言（不驱动 legacy 内部，只验证方法存在/injector
+   自身计数）——原样保留，行为钉由语义网承担。
+2. **goal_continuation_e2e 转单引擎而非退役**（§2.4 计划未细列）：它是
+   真实 `GoalContinuationInjector` 的唯一 e2e（parity/语义网都用 mock），
+   保留并 skeleton-only 化。
+3. **audit 跳过清单扩展**：审计器自己的测试文件（注入夹具合法含
+   `engine="legacy"`）列入 skip——与「跳过自身防自指」同原则。
+4. **额外发现并退役**：`test_dual_path_permission.py`（直调 legacy 双路径）
+   与 `TestCallStepIsolation`（stub 钉已退役契约）——侦察的 engine= 面与
+   残留扫描抓出，方案 §2 未列。
+
+### 10.3 验证资产终态
+
+| 网 | 状态 |
+|---|---|
+| `test_engine_semantics.py`（新增） | 7 场景全绿首跑（预算/成本/wrap_up/guardrail/max_iter/hook/续跑） |
+| `legacy_audit` | blocking=0；现状断言=零容忍；注入测试原样保留（R-019 双向） |
+| entry 契约 | 三入口均无 engine，加回即红（原「有意非对称」翻转） |
+| 事件序列网 | no-progress 序列绝对值保留（legacy 对照半删除） |
+| 架构图门 | L3 194 文件/41.6k 行、总计 415/90,360（AST 实测回填） |
+
+### 10.4 终态对照（loop-final-design §9）
+
+维度 6（循环体 1 个）、9（StopPolicy 处置）**达成**；步骤协议 T11 定稿。
+未落地仅剩「事件 → 分发器三写」（B2-② 冻结中）。§8 遗留账两笔已清偿
+（CHANGELOG release note + mention 28→4，见收尾批）。
+
