@@ -275,9 +275,9 @@ class GoalContinuationDecider(Decider):
 class InjectorContinuationDecider(Decider):
     """post-response injector 请求续跑（``ctx.metadata["injector_continued"]``）。
 
-    **批次 13（S3-a）新增**。legacy 在 ``_run_loop_core:1075-1086`` 直接
-    问 injector 的返回值并 ``continue``；引擎把它表达成 CONTINUE 决策，
-    使顺序与 legacy 一致：continuation → injector → stop。
+    **批次 13（S3-a）新增**。legacy 在循环体内直接问 injector 的返回值
+    并 ``continue``；引擎把它表达成 CONTINUE 决策，语义一致：
+    continuation → injector → stop。
 
     ``LoopReasoner`` 负责调用 ``inject_post_response`` 并把结论写进
     ``ctx.metadata``——「谁问 injector」与「谁按结论分派」分离，符合

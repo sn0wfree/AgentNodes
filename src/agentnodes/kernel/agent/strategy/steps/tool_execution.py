@@ -7,10 +7,9 @@ method) and fires the tool lifecycle hooks itself — this is the
 - ``before_execute_tools`` fires before dispatching.
 - ``on_tool_error`` / ``after_tool_executed`` fire per tool result.
 
-The legacy ``_run_loop_core`` retains the ``after_iteration`` hook
-(cross-step, round-level) but removes the tool-specific hooks here —
-they now live in this Step so a custom ToolExecutionStep can vary
-when/if they fire.
+The round-level ``after_iteration`` hook lives outside this Step
+(engine-side, cross-step); the tool-specific hooks live here so a
+custom ToolExecutionStep can vary when/if they fire.
 
 **B2-① 变化**（step-protocol-migration-20261112.md §3.3）：
 

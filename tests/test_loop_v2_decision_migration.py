@@ -130,12 +130,12 @@ class TestMaxIterationsSource:
             {"name": "explorer"}  # explorer = max_iterations 50
         )
         assert strategy.config.max_iterations == 50
-        # We don't run the full loop; just verify the source used by
-        # _run_loop_core is the strategy when explicit.
+        # We don't run the full loop; just verify the resolved strategy
+        # is the explicit one.
         assert strategy.config.max_iterations == 50
 
     def test_default_strategy_keeps_constructor_cap(self):
-        """No explicit strategy → _run_loop_core uses self.max_iterations.
+        """No explicit strategy → engine uses self.max_iterations.
         (constructor default 10)."""
         from agentnodes.kernel.agent.strategy.factory import ReActStrategyFactory
         s = ReActStrategyFactory.create()

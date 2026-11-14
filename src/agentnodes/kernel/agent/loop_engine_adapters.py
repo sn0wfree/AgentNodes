@@ -43,9 +43,8 @@ class LoopReasoner(StepHandler):
     - ``order == 0``：per-iteration（TodosInjector 等）
     - ``order >= 100``：post-response（``GoalContinuationInjector``）——
       返回 True = 追加了续跑提示，须让本轮走 CONTINUE
-    - 预算：``_record_budget_usage`` 原只在 legacy 的 ``_run_loop_core``
-      调用，导致 ``budget_max_tokens`` / ``budget_max_cost_usd`` 在默认引擎
-      完全不生效
+    - 预算：``_record_budget_usage``（批次 13 S3-a 补进引擎路径——
+      此前 ``budget_max_tokens`` / ``budget_max_cost_usd`` 完全不生效）
     """
 
     def __init__(self, loop: Any) -> None:
@@ -196,8 +195,8 @@ class LoopPrepare:
         r = loop._strategy.pre_run.handle(None, ctx)
         if not r.success:
             raise RuntimeError(f"pre_run failed: {r.error}")
-        # 批次 12 S1：每轮 run 重置委派计数（legacy 在 _run_loop_core:799
-        # 做同一件事；漏了会让 subagent 的 per-turn 上限跨调用累积）
+        # 批次 12 S1：每轮 run 重置委派计数（漏了会让 subagent 的
+        # per-turn 上限跨调用累积）
         try:
             loop._subagent_count[0] = 0
         except Exception:  # noqa: BLE001
@@ -222,7 +221,7 @@ class LoopPrepare:
 
 
 class LoopIterationStart:
-    """每轮开头动作：``wrap_up_nudge``（legacy ``_run_loop_core:1002-1009``）。
+    """每轮开头动作：``wrap_up_nudge``（批次 13 S3-a 从 legacy 收编）。
 
     **批次 13（S3-a）新增**：注入逻辑原先内联在 legacy 循环体里，引擎
     ``LoopEngine`` 预留了 ``on_iteration_start`` 钩子但从未收到实现，
@@ -263,9 +262,9 @@ class LoopHooks:
         批次 12 S1 补：原为空实现，翻默认后 ``test_arun_hooks_are_awaited``
         暴露缺失（hooks 只有 after_run）。
 
-        **批次 13（S3-a）**：用户输入的 guardrail 扫描也在这一步——legacy
-        在 ``_run_loop_core:980-989`` 于 before_run 之后立刻扫描，引擎
-        完全没有对应点（翻默认后 ``scan_user_input`` 永不执行）。
+        **批次 13（S3-a）**：用户输入的 guardrail 扫描也在这一步——
+        legacy 于 before_run 之后立刻扫描，引擎当时完全没有对应点
+        （翻默认后 ``scan_user_input`` 永不执行）。
         """
         loop = self._loop
         hook_ctx = getattr(ctx, "hook_ctx", None)

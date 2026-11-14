@@ -4,10 +4,10 @@
 
     PRECHECK → [REASON → DECIDE① → ACT → DECIDE② → OBSERVE] → FINALIZE
 
-与 ``AgentLoop._run_loop_core`` 的关系：**影子引擎**。默认路径
-（legacy）不经过本模块任何一行；``engine="skeleton"`` 或
-``AGENTNODES_SKELETON=1`` 显式启用。等价性由
-``tests/test_loop_engine_equivalence.py`` 的双引擎对照测试钉住。
+**唯一执行引擎**（U6-2，2026-11-14）：legacy 循环体已退役，本模块是
+``AgentLoop.run/arun/run_stream`` 的全部实现路径。行为语义由
+``tests/test_engine_semantics.py``（7 项在产能力）与
+``tests/test_no_progress_event_sequence.py``（事件序列）钉住。
 
 ## 消费协议（全部沿用既有对象，无新抽象）
 
@@ -387,9 +387,8 @@ class LoopEngine:
                         result.finished_reason = "budget"
                         state.stop_reason = reason
                         result.stop_reason = reason
-                    # Legacy 在文本终答前也发 after_iteration
-                    # （_run_loop_core:1097）；批次 13 S3-a 实测引擎缺这一次
-                    # （legacy 3 次 vs skeleton 2 次）。
+                    # 文本终答前也发 after_iteration（批次 13 S3-a 补齐——
+                    # 此前引擎缺这一次）。
                     await self._fire("after_iteration", state, iteration)
                     # LoopResult 用 answer 而非 final_content
                     if hasattr(result, "answer"):

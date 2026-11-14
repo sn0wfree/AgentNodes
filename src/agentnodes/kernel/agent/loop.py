@@ -340,8 +340,7 @@ class AgentLoop(
         strict_claim_validation: bool = False,
         # ── P1-5: LoopStrategy integration ──────────────────────
         # v0.1: accept the strategy spec; build / resolve into a
-        # ``LoopStrategy`` and store on self. The actual rewrite of
-        # ``_run_loop_core`` to drive the strategy lands in L7.
+        # ``LoopStrategy`` and store on self.
         # Accepts: ``LoopStrategy`` / str / dict / None.
         strategy: Any | None = None,
         # ── DSH-inspired: pluggable context injectors ──────────
@@ -459,8 +458,8 @@ class AgentLoop(
         # 覆盖既有的 2 次重试行为）。
         self._retry_policy_explicit = _folded.capability.retry_policy is not None
         # P1-5: build / resolve the LoopStrategy from the spec.
-        # v0.1 stores it on self; ``_run_loop_core`` does not yet
-        # consult it (that's L7's job).
+        # Stored on ``self._strategy``; the engine consumes it via the
+        # Loop* adapters (LoopPrepare/LoopReasoner/LoopActor/…).
         from agentnodes.kernel.agent.strategy.profile_resolver import resolve_loop_strategy
         self._strategy = resolve_loop_strategy(_folded.context.strategy)
         # L7 v0.2: when the caller passed an explicit strategy, its
@@ -641,8 +640,7 @@ class AgentLoop(
     def get_strategy(self):
         """Return the ``LoopStrategy`` resolved from the ``strategy=``
         constructor arg (or the default ReAct strategy when none was
-        supplied). v0.1 stores the strategy on ``self._strategy`` but
-        ``_run_loop_core`` does not yet consult it (L7 work)."""
+        supplied)."""
         return self._strategy
 
     # ── L7 v0.2: step execution with uniform error isolation ──────

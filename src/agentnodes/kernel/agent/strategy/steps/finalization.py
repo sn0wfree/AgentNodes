@@ -6,9 +6,9 @@ Actually drives the finalization work + fires ``after_run``:
 - ``_run_claim_validation(result, messages)``
 - ``after_run`` hook (normal-end path)
 
-Note: the no-progress early-return path in ``_run_loop_core`` fires
-``after_run`` itself (it returns before reaching FinalizationStep) —
-that call stays in the skeleton so the hook isn't lost.
+Note: the no-progress early-return path fires ``after_run`` itself
+(it returns before reaching FinalizationStep) — that call stays in the
+skeleton so the hook isn't lost.
 
 **B2-① 变化**（step-protocol-migration-20261112.md）：
 

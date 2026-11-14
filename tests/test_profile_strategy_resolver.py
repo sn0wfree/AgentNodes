@@ -6,8 +6,8 @@ Covers:
 - AgentLoop.__init__ stores the resolved strategy on self._strategy
   via get_strategy().
 - max_iterations on the strategy.config overrides AgentLoop's default
-  when supplied via dict spec (does NOT yet drive _run_loop_core —
-  that's L7, but we verify the field is reachable).
+  when supplied via dict spec (the engine consumes it via the strategy —
+  we verify the field is reachable).
 - Existing AgentLoop call sites (strategy=None) keep working with
   ReAct default.
 """

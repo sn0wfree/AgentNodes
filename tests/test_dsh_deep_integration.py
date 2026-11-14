@@ -1,4 +1,4 @@
-"""Deep integration: AgentLoop DSH features (_prepare_run, _execute_tool_call_core, _run_loop_core)."""
+"""Deep integration: AgentLoop DSH features (_prepare_run, _execute_tool_call_core, inbox/injector timing)."""
 
 from __future__ import annotations
 
@@ -231,7 +231,7 @@ class TestExecuteToolCallGuardIntegration:
         assert "error" in content
 
 
-# ── _run_loop_core inbox drain + injector timing ─────────────────
+# ── inbox drain + injector timing（loop 内部安全点语义）──────────
 
 
 class TestRunLoopCoreTiming:
@@ -256,8 +256,7 @@ class TestRunLoopCoreTiming:
 
         loop._drain_inbox = _tracked_drain
 
-        # We can't easily run _run_loop_core without a full mock setup,
-        # but we can verify the method exists and is callable
+        # 方法级验证：drain 是引擎每轮安全点的可覆写注入点
         assert callable(loop._drain_inbox)
 
     def test_per_iteration_injectors_called(self):

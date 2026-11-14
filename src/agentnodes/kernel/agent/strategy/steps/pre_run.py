@@ -8,12 +8,11 @@ as the legacy hard-coded pre-run block.
 
 本 step 此前是**死代码位**——``LoopPrepare`` 直调 ``loop._prepare_run``，
 从不走 strategy 槽位。现在 ``LoopPrepare`` 改为委托本 step：
+``LoopPrepare`` → ``strategy.pre_run.handle`` → ``_prepare_run``
+（U6-2 后 legacy 内联路径已随引擎退役删除，本 step 是唯一入口）。
 
-- 引擎路径：``LoopPrepare`` → ``strategy.pre_run.handle`` → ``_prepare_run``
-- legacy 路径：``_run_loop_core`` 内联 ``_prepare_run``（U6-2 随 legacy 删除）
-
-两条路径各自单跑、互斥（**不会双跑**）——原 docstring 的 ⚠ 互斥约定
-按路径成立，见 §3.6 的 grep 网（``_prepare_run(`` 代码调用恰 3 处：
+单跑不双跑（**不会双跑**）——原 docstring 的 ⚠ 互斥约定已随路径合一
+自然成立，见 §3.6 的 grep 网（``_prepare_run(`` 代码调用恰 3 处：
 ``loop.py`` 2 + 本文件 1；``adapters`` 归零）。
 
 - **失败契约：保持崩溃**。``_prepare_run`` 异常经 handle 直接向上抛，

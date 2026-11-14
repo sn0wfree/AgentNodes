@@ -173,8 +173,8 @@ class TodosInjector:
 class GoalContinuationInjector:
     """Injects continuation prompt when goal needs more work.
 
-    Replaces the hardcoded ``_check_goal_continuation()`` call in
-    ``_run_loop_core()``.
+    Replaces the goal-continuation branch that used to live inline in
+    the legacy run loop（U6-2 后该分支由本 injector + 引擎 CONTINUE 决策承担）.
     """
 
     @property

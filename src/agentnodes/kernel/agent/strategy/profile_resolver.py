@@ -21,9 +21,8 @@ client — only the strategy registry and the ``LoopConfig`` dataclass.
 This keeps the unit-test surface small and avoids any implicit
 singleton state.
 
-P1-5 v0.1 scope: helper + integration with ``AgentLoop.__init__``.
-The actual rewrite of ``AgentLoop._run_loop_core`` to drive the
-strategy is L7 (post v0.1).
+P1-5 v0.1 scope: helper + integration with ``AgentLoop.__init__``;
+the engine drives the resolved strategy via the Loop* adapters.
 """
 
 from __future__ import annotations

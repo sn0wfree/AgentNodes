@@ -5,6 +5,41 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased] — U6-2 终局清理（2026-11-14）
+
+### ⚠️ Breaking — 引擎选择环境变量退役
+
+**`AGENTNODES_ENGINE` 与 `AGENTNODES_SKELETON` 已失效。**
+legacy 循环体（`AgentLoop._run_loop_core`）已在 U6-2 终局清理中删除，
+`LoopEngine`（skeleton）成为**唯一**执行引擎，两个环境变量不再注册——
+设置它们不会报错，但也**不再有任何效果**（静默回默认，即唯一引擎）。
+部署环境如仍保留这两个变量，请从启动配置中移除。
+防复活机制：`config audit-legacy-engine`（legacy_audit）已翻转为
+**绝迹审计**——四类残留（定义/真调用/开关读取/测试显式依赖）命中即退出码 1。
+
+### Removed
+
+- legacy 循环体 `_run_loop_core`（257 行）及仅它消费的
+  `_with_iteration_timeout_sync` / `_handle_max_iter` / `_check_budget`
+- `runtime/policy.py`（StopPolicy/StopDecision/limits_from_config）——
+  预算由引擎侧 `BudgetDecider` 独立承担（两套预算账合一）
+- loop_tools 的 sync 孪生（`_execute_tool_call` /
+  `_execute_tool_with_heartbeat` / `_execute_tool_batch`）与执行 core 的
+  `async_mode` 参数——工具执行仅 async 形态（`ainvoke` 权限闸唯一路径）
+- `_call_step` 的旧形状过渡壳与 `step_adapters.py`（LegacyStepAdapter/
+  FnStreamingHandler）——`handle(input, ctx) → StepResult` 为唯一步骤协议
+- 三个双引擎对照网（test_engine_parity / test_loop_engine_equivalence /
+  test_legacy_engine_net）与 legacy 专用 test_dual_path_permission——
+  其 skeleton 侧行为断言已移植为常驻语义网 `test_engine_semantics.py`
+  （预算/成本/wrap-up/guardrail/max_iter/hook 序列/goal 续跑 7 项）
+- 4 个读 stop 通道的崩溃回填点收敛为引擎侧 2 个（契约网同步 4→2）
+
+### Changed
+
+- `AgentLoop.arun()` 删除 `engine` 形参（三个公开入口 run/arun/run_stream
+  均无 engine——契约测试钉住，加回即红）
+- legacy_audit 语义翻转：从「删除前依赖清点」到「删除后绝迹审计」
+
 ## [0.8.0] — 2026-11-05
 
 ### 架构 — 全层上行违规归零

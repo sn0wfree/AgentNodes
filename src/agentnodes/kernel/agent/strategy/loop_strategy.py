@@ -1,8 +1,8 @@
 """LoopConfig + LoopStrategy (P1-1 L4).
 
 A ``LoopStrategy`` is a composition of the 9 step Protocols from
-``protocol.py``. v0.1 ships one built-in strategy (``ReActStrategy``)
-that mirrors the current ``AgentLoop._run_loop_core`` behaviour.
+``protocol.py``. The built-in strategy (``ReActStrategy``) carries the
+behaviour the engine drives via the Loop* adapters.
 
 ``LoopConfig`` holds the numbers the AgentLoop currently keeps as
 constructor kwargs (max_iterations, no_progress_window, etc.) so

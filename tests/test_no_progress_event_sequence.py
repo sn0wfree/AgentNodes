@@ -40,7 +40,7 @@ class MockLLM:
         return self.chat(messages, **kwargs)
 
 
-def _build(ws: Path, responses, engine: str | None = None):
+def _build(ws: Path, responses):
     """inventory §5 同款装配：approval 1s 超时 reject + trace_dir。"""
     kw = dict(
         stream_mode=False,
@@ -68,8 +68,8 @@ def _resp() -> LLMResponse:
     )
 
 
-def _collect(ws: Path, engine: str | None) -> tuple[list[str], object]:
-    loop = _build(ws, [_resp() for _ in range(5)], engine)
+def _collect(ws: Path) -> tuple[list[str], object]:
+    loop = _build(ws, [_resp() for _ in range(5)])
     events: list[str] = []
     original = loop._on_event
 
@@ -80,16 +80,15 @@ def _collect(ws: Path, engine: str | None) -> tuple[list[str], object]:
         return None
 
     loop._on_event = _on_event
-    r = asyncio.run(loop.arun("测试任务", engine=engine) if engine
-                    else loop.arun("测试任务"))
+    r = asyncio.run(loop.arun("测试任务"))
     return events, r
 
 
-# ── skeleton（统一引擎）事件序列绝对值 ──
+# ── 事件序列绝对值（唯一引擎）──
 
 
 def test_skeleton_no_progress_reject_event_sequence(tmp_path: Path):
-    events, r = _collect(tmp_path, engine=None)
+    events, r = _collect(tmp_path)
     # 前提：确实走了 no-progress EXIT（审批闸 reject 语义）
     assert r.finished_reason == "approval_timeout_rejected", (
         f"前提失败：finished={r.finished_reason}"
