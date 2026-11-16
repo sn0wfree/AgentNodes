@@ -604,8 +604,11 @@ class SessionService:
         attempt.mark_running()
 
         # Build LLM config early — needed for compaction filter setting
-        from ..routers.chat import _build_llm_config
-        cfg = _build_llm_config()
+        # （2026-11-16 收敛）唯一构造入口 = LLMConfig.load()；不再经 HTTP 路由层，
+        # 消除 session → routers 的反向依赖（会话迁移批次 B 的 R1 前置）。
+        from agentnodes.foundation.llm.config import LLMConfig
+
+        cfg = LLMConfig.load()
         logger.debug("[DIAG] cfg.model=%s cfg.provider=%s cfg.max_tokens=%s",
                      cfg.model if cfg else "N/A",
                      cfg.provider if cfg else "N/A",
@@ -1230,7 +1233,7 @@ class SessionService:
         (auto from agent loop + manual /compact) on the same session.
         """
         from agentnodes.kernel.agent.compact import _compact_locks
-        from ..routers.chat import _build_llm_config
+        from agentnodes.foundation.llm.config import LLMConfig
 
         async with await _compact_locks.get(session_id):
             messages = self.store.get_messages(session_id, limit=10000)
@@ -1246,7 +1249,7 @@ class SessionService:
             if not history:
                 return {"layers": [], "before_tokens": 0, "after_tokens": 0, "summary": ""}
 
-            cfg = _build_llm_config()
+            cfg = LLMConfig.load()
             llm_client = None
             model_context_tokens = None
             if cfg:

@@ -186,19 +186,28 @@ def _get_session_service() -> SessionService:
 
 
 def _build_llm_config():
-    """Build LLMConfig from env/settings. Same logic as TUI's __main__.py."""
-    try:
-        from pathlib import Path
+    """Build LLMConfig. 唯一构造入口是 ``LLMConfig.load()``。
 
-        from dotenv import load_dotenv
-        load_dotenv(Path.home() / ".agentnodes" / ".env", override=True)
-    except Exception:
-        pass
+    **2026-11-16 收敛**：此处原有一层 ``load_dotenv(override=True)``，已删除。理由：
+
+    1. **冗余** —— ``LLMConfig.load()`` 内部的 ``_try_load_dotenv()`` 已经加载
+       cwd/.env 与 ``~/.agentnodes/.env``（config.py:345-370），实测「只调 load()
+       就能拿到 api_key」。
+    2. **有害** —— ``override=True`` 会**覆盖进程里显式 export 的 API key**。
+       实测：进程有值时 override=True 用文件值、override=False 保留用户值。
+       按 R-006「显式 > 文件」的精神，用户显式设置应当赢。
+
+    那层是早年从 TUI 启动代码（``cli/__main__.py``）复制来的 —— CLI 启动场景
+    需要先载入密钥，语义与 web 服务不同。
+
+    保留本函数（而非让调用方各自 ``LLMConfig.load()``）是为了保留这里
+    「load 失败 → 返回 None，不抛异常」的兜底语义。
+    """
     try:
         from agentnodes.foundation.llm.config import LLMConfig
-        cfg = LLMConfig.load()
-        return cfg
-    except Exception as exc:
+
+        return LLMConfig.load()
+    except Exception as exc:  # noqa: BLE001
         logger.warning("Failed to load LLMConfig: %s", exc)
         return None
 

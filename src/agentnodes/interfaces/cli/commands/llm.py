@@ -25,7 +25,11 @@ from pathlib import Path
 from agentnodes.interfaces.cli.commands.registry import cli_command
 from agentnodes.foundation.llm.config import _try_load_dotenv as _load_dotenv
 
-_load_dotenv()
+# **2026-11-16**：原先这里有一句模块级 ``_load_dotenv()``。它的唯一作用点是
+# ``_key_is_set()``（直接读 os.environ 判断 provider 的 key 是否可用）。
+# 模块导入副作用不可见，已改为在 ``_key_is_set()`` 内部显式调用
+# （``_try_load_dotenv`` 幂等 + override=False，重复调用安全）。
+# 其它走 ``LLMConfig.load()`` 的路径不需要外部 dotenv —— ``load()`` 内部会做。
 
 QUANTNODES_DIR = Path.home() / ".agentnodes"
 LLM_JSON_PATH = QUANTNODES_DIR / "llm.json"
@@ -76,6 +80,15 @@ def _key_var_for(name: str) -> str:
 
 
 def _key_is_set(name: str) -> bool:
+    """该 provider 的 API key 是否可用（进程 env 或 .env 里任一有值）。
+
+    **2026-11-16**：这里**直接读 os.environ**，所以必须保证 dotenv 已载入，
+    否则「已写进 ``~/.agentnodes/.env`` 的 key」会被显示成未配置。
+    原实现靠模块级 ``_load_dotenv()`` 隐式保证；改为此处显式确保
+    （``_try_load_dotenv`` 幂等且 override=False，重复调用安全）。
+    这样依赖关系在调用点可见，而不是藏在模块导入副作用里。
+    """
+    _load_dotenv()  # 幂等；保证 .env 里的 key 对下面的 os.environ 可见
     return bool(os.environ.get(_key_var_for(name)))
 
 
