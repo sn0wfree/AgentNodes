@@ -64,6 +64,17 @@ LAYER_MEMBERSHIP: dict[str, str] = {
     "agentnodes.kernel": "L3",  # 物理层目录
     "agentnodes.kernel.seq_generator": "L3",  # 待退役（归 event_log 权威 seq）
     # evals —— 金标准评测集，RSI 的信号源（2026-11-05 从仓库根收编进包）
+    #
+    # **登记在 L3 是「让它不报违规」的记账位，不是「它属于 L3」的语义判定。**
+    # 实测它的真实形态是**旁挂评估带**：按设计就要跨层读取被测对象——
+    #   golden_sets.py:449      -> kernel/evolution/golden_eval   (L3)
+    #   run_evals_llm.py:54-57  -> kernel/agent/*                  (L3 ×4)
+    #   golden_sets.py:44,143 + run_evals_llm.py:53 -> foundation   (L4 ×3)
+    # 它还在进程内构造 AgentLoop 并真实调用 loop.run()（run_evals_llm.py:71-93），
+    # 因此不能下沉 L4（下沉会让那 5 条变成上行违规），
+    # 也不能按「基础设施」定位（它是理念四的「循环外评估器」本体）。
+    # 语义归属见 docs/design/framework-and-principles-v1.2.md §2.2 与
+    # docs/architecture-layered.html 的「旁挂评估带」泳道。
     "agentnodes.evals": "L3",
     # L4 foundation
     "agentnodes.foundation.llm": "L4",

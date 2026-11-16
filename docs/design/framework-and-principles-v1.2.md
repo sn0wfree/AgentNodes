@@ -48,6 +48,41 @@ v1.2 追加一句：**执行面已收敛为单引擎（LoopEngine）**，结构�
 
 > `.rules/rules.md` §1.1 的编号已记为待修项（进度评估 §5 遗留 #12）。
 
+### 2.0.1 旁挂评估带：`evals/` 不属于四层
+
+四层之外还有一处**不属于任何层**的构件：`src/agentnodes/evals/`。这不是疏漏，是**结构事实**。
+
+**为什么不能按层归属**（2026-11-16 评估，三条判据两条不成立）：
+
+| 判据 | 结果 | 实测 |
+|---|---|---|
+| 概念 | ❌ | `foundation` 的定位是「零业务依赖的基础设施」；evals 是**自进化的 P 层信号源**，不是基础设施 |
+| 结构 | ❌ | evals 有 **5 条 L3 依赖**（`run_evals_llm.py:54-57` ×4 指向 `kernel/agent/*`、`golden_sets.py:449` 指向 `kernel/evolution/golden_eval`）——下沉 L4 会全部变成上行违规 |
+| 职责 | ❌ | `run_evals_llm.py:71-93` **在进程内构造 `AgentLoop` 并真实调用 `loop.run()`** —— 它的职责就是驱动被测对象 |
+
+**它现在的形态**：跨层读取（L3 ×5 + L4 ×3），零入边（没有任何生产代码 import evals），只被 `agentnodes` 顶层 re-export 触及。
+
+**记账处理**：`layer_matrix.py` 把它登记为 L3 是**「不报违规」的记账位，不是语义判定**（见该文件 L66-77 的注释）。语义上它是**旁挂评估带**：
+
+```
+        L1 interfaces
+             ↓
+        L2 apps
+             ↓
+        L3 kernel   ←─────┐
+             ↓            │  evals（旁挂带）
+        L4 foundation ←───┘   跨层读取被测对象，零入边
+```
+
+**为什么这恰恰是对的**：理念四要求「评估器在循环外」。给它一个层级归属，等于把观察者塞进被观察的结构里 —— 要么违反 DAG，要么假装同层。**「不属于任何层」是它的正确位置**，架构图里以独立泳道呈现（`docs/architecture-layered.html`）。
+
+**已评估但未采纳的替代路线**（记录以备未来重估）：
+
+| 路线 | 内容 | 否决理由 |
+|---|---|---|
+| B 协议下沉 | 把 `GoldenTask`/`RunRecord` 协议搬到 L4 | 不解决层级问题（evals 仍要 import kernel 才能跑）|
+| C evals 拆分 | `scorecard.py`（280 行、零 kernel 依赖）下沉 L4，`run_evals*.py` 留原处 | 收益仅「scorecard 在 L4」，代价是 `evals/` 作为包消失、报告与 CI 要多看一处 |
+
 ---
 
 ## §0.5 概念对照：Loop Engineering × Graph Engineering（v1.2 新增）
@@ -204,7 +239,7 @@ v1.2 追加一句：**执行面已收敛为单引擎（LoopEngine）**，结构�
 | E | 选择性转录 | `kernel/evolution/skill_memory.py` + `agent/harness_resolver.py` | L3 | ✅ 已有 | ✅ 已有 |
 | E | 隔离回放 + 回滚锚点 | `kernel/evolution/isolated_replay.py` + `rsi_wiring` | L1/L3 | ✅ 已有 | ✅ 已有 |
 | E | **循环驱动（第 0 步）** | `run.settled` 钩子 + `interfaces/rsi_cli.py` | L1/L3 | ❌ W4 | ⚠️ **部分**（CLI + 事件有，cron 兜底无）|
-| P | 冻结基准 + scorecard | `evals/`（70 条 golden）| L3 | ✅ 已有（缺指纹）| ✅ 已有 **+ 指纹已补** |
+| P | 冻结基准 + scorecard | `evals/`（70 条 golden）| **旁挂带** | ✅ 已有（缺指纹）| ✅ 已有 **+ 指纹已补** |
 | P | 执行轨迹（append-only）| `kernel/events` + `foundation/storage` | L3/L4 | ✅ 已有 | ✅ 已有（hash chain 仍 P2）|
 | P | 任务级判据证据 | `apps/goal/` journal（经端口）| L2 | ⚠ 待恢复 | ✅ **R1 已恢复** / ❌ **R3 端口未接** |
 | 屏障 | Tier 0 三重冻结 | `proposals` / `validation_gate` / `skill_memory` | L3 | ✅ 已有 | ✅ 已有 |

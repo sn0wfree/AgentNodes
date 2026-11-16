@@ -560,6 +560,21 @@
       （batch_gate 第 9 步 + CI job + 2 条 pytest 断言）。
     </div>
 
+    <div class="bridge" style="margin-top:14px;border-color:rgba(245,158,11,0.45);background:rgba(245,158,11,0.04);">
+      <span class="bt" style="color:var(--layer-p-2);background:rgba(245,158,11,0.16);">旁挂评估带 · evals/</span>
+      <span class="bd">
+        <b style="color:var(--fg)">不属于四层中的任何一层</b>。<code class="mono">run_evals_llm.py:71-93</code> 在进程内构造
+        <code class="mono">AgentLoop</code> 并真实调用 <code class="mono">loop.run()</code> —— 它的职责就是<b style="color:var(--fg)">驱动被测对象</b>，
+        因此有 5 条 L3 依赖（下沉 L4 会全部变成上行违规）。给它层级归属，等于把观察者塞进被观察的结构里；
+        <b style="color:var(--fg)">「不属于任何层」正是理念四要求的「评估器在循环外」</b>。
+        <code class="mono">layer_matrix.py</code> 里的 L3 登记是「不报违规」的记账位，不是语义判定。
+      </span>
+      <span class="tier-chips">
+        <span class="tier-chip t1">跨层读取 L3 ×5 + L4 ×3</span>
+        <span class="tier-chip t2">零入边</span>
+      </span>
+    </div>
+
   </div>
 
   <!-- ==================== 03 七条理念 ==================== -->
@@ -677,7 +692,7 @@
         <tr><td><span class="pill pill-e">E</span></td><td>选择性转录（tier1 → harness）</td><td class="mono">kernel/evolution/skill_memory.py + agent/harness_resolver.py</td><td>L3</td><td class="delta-ok">✅ 已有</td></tr>
         <tr><td><span class="pill pill-e">E</span></td><td>隔离回放 + 回滚锚点</td><td class="mono">kernel/evolution/isolated_replay.py + rsi_wiring</td><td>L1/L3</td><td class="delta-ok">✅ 已有</td></tr>
         <tr><td><span class="pill pill-e">E</span></td><td><b>循环驱动（第 0 步）</b></td><td class="mono">run.settled 钩子 + interfaces/rsi_cli.py</td><td>L1/L3</td><td class="st-warn">⚠ 部分（CLI + 事件有，cron 兜底无）</td></tr>
-        <tr><td><span class="pill pill-p">P</span></td><td>冻结基准 + scorecard</td><td class="mono">evals/（70 条 golden 任务）</td><td>L3</td><td class="delta-ok">✅ 已有 <b>+ 指纹已补</b></td></tr>
+        <tr><td><span class="pill pill-p">P</span></td><td>冻结基准 + scorecard</td><td class="mono">evals/（70 条 golden 任务）</td><td><b style="color:var(--layer-p-2)">旁挂带</b></td><td class="delta-ok">✅ 已有 <b>+ 指纹已补</b></td></tr>
         <tr><td><span class="pill pill-p">P</span></td><td>执行轨迹（append-only）</td><td class="mono">kernel/events + foundation/storage</td><td>L3/L4</td><td class="delta-ok">✅ 已有（hash chain 仍 P2）</td></tr>
         <tr><td><span class="pill pill-p">P</span></td><td>任务级判据证据</td><td class="mono">apps/goal/ journal（经端口）</td><td>L2</td><td><b class="delta-ok">✅ R1 已恢复</b> / <b class="delta-bad">❌ R3 端口未接</b></td></tr>
         <tr><td><span class="pill pill-b">屏障</span></td><td>Tier 0 三重冻结</td><td class="mono">proposals / validation_gate / skill_memory</td><td>L3</td><td class="delta-ok">✅ 已有</td></tr>

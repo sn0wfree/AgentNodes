@@ -1,0 +1,1238 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>AgentNodes 分层架构</title>
+<style>
+:root{
+  --background:#ffffff; --foreground:#0f172a; --card:#ffffff; --card-foreground:#0f172a;
+  --popover:#0f172a; --popover-foreground:#f8fafc; --primary:#0f172a; --primary-foreground:#f8fafc;
+  --secondary:#f1f5f9; --secondary-foreground:#0f172a; --muted:#f1f5f9; --muted-foreground:#64748b;
+  --accent:#e2e8f0; --accent-foreground:#0f172a; --destructive:#dc2626; --border:#e2e8f0;
+  --input:#e2e8f0; --ring:#3b82f6;
+  --viz-series-1:#3b82f6; --viz-series-2:#22c55e; --viz-series-3:#f59e0b;
+  --viz-series-4:#8b5cf6; --viz-series-5:#ef4444; --viz-series-6:#06b6d4;
+  --font-size-base:14px;
+}
+@media (prefers-color-scheme: dark){
+  :root{
+    --background:#0b1220; --foreground:#e2e8f0; --card:#111827; --card-foreground:#e2e8f0;
+    --popover:#1e293b; --popover-foreground:#e2e8f0; --primary:#e2e8f0; --primary-foreground:#0b1220;
+    --secondary:#1e293b; --secondary-foreground:#e2e8f0; --muted:#1e293b; --muted-foreground:#94a3b8;
+    --accent:#334155; --accent-foreground:#e2e8f0; --border:#1f2937; --input:#334155; --ring:#60a5fa;
+    --viz-series-1:#60a5fa; --viz-series-2:#4ade80; --viz-series-3:#fbbf24;
+    --viz-series-4:#a78bfa; --viz-series-5:#f87171; --viz-series-6:#22d3ee;
+  }
+}
+body{margin:0;padding:20px;background:var(--background);color:var(--foreground);
+  font-family:system-ui,-apple-system,"Segoe UI","Microsoft YaHei",sans-serif;}
+.wrap{max-width:1240px;margin:0 auto;}
+footer{margin-top:14px;color:var(--muted-foreground);font-size:12px;line-height:1.7;}
+footer code{background:var(--muted);padding:1px 5px;border-radius:4px;}
+</style>
+</head>
+<body>
+<div class="wrap">
+<div id="an-arch">
+  <style>
+    #an-arch { font-size: var(--font-size-base); color: var(--foreground); }
+    #an-arch .arch-head { display:flex; justify-content:space-between; align-items:flex-end; gap:1rem; flex-wrap:wrap; margin-bottom:.7rem; }
+    #an-arch .arch-title { font-size:1.3rem; font-weight:500; margin:0; }
+    #an-arch .arch-sub { color:var(--muted-foreground); font-size:.82rem; margin:.2rem 0 0; }
+    #an-arch .arch-legend { display:flex; gap:.8rem; flex-wrap:wrap; font-size:.74rem; color:var(--muted-foreground); align-items:center; }
+    #an-arch .lg { display:inline-flex; align-items:center; gap:.3rem; }
+    #an-arch .sw { width:10px; height:10px; border-radius:3px; display:inline-block; }
+    #an-arch .arch-stage { position:relative; width:100%; }
+    #an-arch svg { width:100%; height:auto; display:block; overflow:visible; }
+    #an-arch .lane { fill:var(--muted); opacity:.45; }
+    #an-arch .lane-label { fill:var(--foreground); font-size:11px; font-weight:500; }
+    #an-arch .lane-note { fill:var(--muted-foreground); font-size:10px; font-weight:400; }
+    #an-arch .node { cursor:default; }
+    #an-arch .node rect { stroke:none; }
+    #an-arch .node text.n-label { fill:var(--foreground); font-size:11.5px; }
+    #an-arch .node text.n-sub { fill:var(--muted-foreground); font-size:9.5px; }
+    #an-arch .node.dim { opacity:.2; }
+    #an-arch .node.flow rect { stroke:var(--viz-series-1); stroke-width:1.5; }
+    #an-arch .node.iso rect { stroke:var(--viz-series-3); stroke-width:1.2; stroke-dasharray:3 2; }
+    #an-arch .edge { fill:none; stroke:var(--border); stroke-width:1.1; }
+    #an-arch .edge:not(.hot):not(.flow):not(.eval) { opacity:.55; }
+    #an-arch .edge.hot { stroke:var(--viz-series-1); stroke-width:2; }
+    #an-arch .edge.flow { stroke:var(--viz-series-1); stroke-width:1.8; stroke-dasharray:5 3; }
+    #an-arch .edge.eval { stroke:var(--viz-series-4); stroke-dasharray:2 4; opacity:.45; }
+    #an-arch .edge.faded { opacity:.1; }
+    #an-arch .edge.up { stroke:var(--destructive); stroke-dasharray:2 3; opacity:.8; }
+    #an-arch .lane.ev { opacity:.28; }
+    #an-arch .hint { color:var(--muted-foreground); font-size:.77rem; margin:.55rem 0 0; }
+    #an-arch .tip {
+      position:absolute; pointer-events:none; background:var(--popover); color:var(--popover-foreground);
+      border:1px solid var(--border); border-radius:8px; padding:.55rem .65rem; font-size:.77rem;
+      max-width:290px; opacity:0; transition:opacity .12s; z-index:20; box-shadow:0 6px 20px rgba(0,0,0,.16);
+      line-height:1.6;
+    }
+    #an-arch .tip b { font-weight:500; }
+    #an-arch .tip .r { display:flex; justify-content:space-between; gap:1rem; margin-top:.25rem; }
+    #an-arch .tip .r span:last-child { color:var(--muted-foreground); font-variant-numeric:tabular-nums; }
+  </style>
+
+  <div class="arch-head">
+    <div>
+      <h2 class="arch-title">AgentNodes 分层架构</h2>
+      <p class="arch-sub">AST 实测 36 个包 / 1977 个生产符号 / 137 条包间依赖
+        · 方块宽度 ∝ 生产符号数 · 悬停查看职责与依赖</p>
+    </div>
+    <div class="arch-legend" id="an-legend"></div>
+  </div>
+
+  <div class="arch-stage" id="an-stage">
+    <svg id="an-svg" role="img" aria-label="AgentNodes 四层架构图：L1 交付界面、L2 业务能力、L3 平台机制、L4 基础原语，外加一条不属于四层的 evals 旁挂评估带；虚线蓝边为一次 chat 请求的主链路"></svg>
+    <div class="tip" id="an-tip" role="tooltip"></div>
+  </div>
+  <p class="hint">
+    方块宽度 ∝ 生产代码符号数（顶层 class + func）；连线为实测包间 import 次数（≥3 绘制，更细的横切连线按阈值省略）；
+    虚线蓝边为一次 <code>POST /api/chat/send</code> 的主链路；<span style="color:var(--viz-series-4)">紫色点线</span>为 evals 旁挂评估带读取被测对象；
+    <span style="color:var(--viz-series-3)">橙色虚线框</span>为零依赖包（既无人依赖、也不依赖他人）。
+  </p>
+  <p class="hint" style="margin-top:.35rem;">
+    <b>evals 不属于四层</b>：它在进程内构造 <code>AgentLoop</code> 并真实调用 <code>loop.run()</code>（
+    <code>run_evals_llm.py:71-93</code>），职责就是驱动被测对象，因此有 5 条 L3 依赖 —— 下沉 L4 会全部变成上行违规。
+    给它层级归属等于把观察者塞进被观察的结构里；「不属于任何层」正是理念四「评估器在循环外」的直接体现。
+  </p>
+
+<script>
+(function () {
+  var root   = document.getElementById('an-arch');
+  var svg    = document.getElementById('an-svg');
+  var stage  = document.getElementById('an-stage');
+  var tip    = document.getElementById('an-tip');
+  var legend = document.getElementById('an-legend');
+
+  var LAYERS = [
+ {
+  "key": "L1",
+  "name": "L1 interfaces · 交付界面",
+  "note": "渠道层 · 组装根",
+  "seq": 0,
+  "pkgs": [
+   {
+    "id": "interfaces/api",
+    "files": 39,
+    "lines": 12114,
+    "classes": 91,
+    "funcs": 242,
+    "n": 333,
+    "label": "interfaces/api",
+    "sub": "REST + SSE 入口",
+    "role": "FastAPI 路由装配：chat / workflow / goal / admin / permission / session 投影；SSE 事件分发",
+    "layer": "L1"
+   },
+   {
+    "id": "interfaces/cli",
+    "files": 46,
+    "lines": 8893,
+    "classes": 13,
+    "funcs": 277,
+    "n": 290,
+    "label": "interfaces/cli",
+    "sub": "CLI 命令",
+    "role": "slash 命令族（goal / rsi / config / session）+ slash_router + onboard",
+    "layer": "L1"
+   },
+   {
+    "id": "interfaces",
+    "files": 6,
+    "lines": 1806,
+    "classes": 3,
+    "funcs": 54,
+    "n": 57,
+    "label": "interfaces",
+    "sub": "组装根",
+    "role": "gateway_wiring / rsi_wiring / tier0_snapshot：唯一允许知道 apps 的位置",
+    "layer": "L1"
+   },
+   {
+    "id": "interfaces/cli/tui",
+    "files": 25,
+    "lines": 3949,
+    "classes": 26,
+    "funcs": 21,
+    "n": 47,
+    "label": "interfaces/cli/tui",
+    "sub": "TUI",
+    "role": "Textual 终端界面：app / widgets / workers（DAG 视图、工作流 worker）",
+    "layer": "L1"
+   },
+   {
+    "id": "interfaces/mcp",
+    "files": 2,
+    "lines": 575,
+    "classes": 2,
+    "funcs": 4,
+    "n": 6,
+    "label": "interfaces/mcp",
+    "sub": "MCP 服务",
+    "role": "Model Context Protocol 工具桥接",
+    "layer": "L1"
+   }
+  ]
+ },
+ {
+  "key": "L2",
+  "name": "L2 apps · 业务能力",
+  "note": "业务插件",
+  "seq": 1,
+  "pkgs": [
+   {
+    "id": "apps/goal",
+    "files": 18,
+    "lines": 5975,
+    "classes": 39,
+    "funcs": 39,
+    "n": 78,
+    "label": "apps/goal",
+    "sub": "长程任务",
+    "role": "判据 / 台账 / DAG 工作流 / journal / scoreboard（R1 恢复）",
+    "layer": "L2"
+   },
+   {
+    "id": "apps/scheduled_research",
+    "files": 6,
+    "lines": 1180,
+    "classes": 5,
+    "funcs": 16,
+    "n": 21,
+    "label": "apps/scheduled_research",
+    "sub": "定时研究",
+    "role": "cron 式研究调度（批次 8 自 kernel 迁入）",
+    "layer": "L2"
+   },
+   {
+    "id": "apps/agent_plugins",
+    "files": 5,
+    "lines": 708,
+    "classes": 0,
+    "funcs": 19,
+    "n": 19,
+    "label": "apps/agent_plugins",
+    "sub": "量化插件",
+    "role": "quant 角色定义 + 输出校验器 + 展示层 + 提示词",
+    "layer": "L2"
+   },
+   {
+    "id": "apps",
+    "files": 4,
+    "lines": 627,
+    "classes": 1,
+    "funcs": 11,
+    "n": 12,
+    "label": "apps",
+    "sub": "能力注册",
+    "role": "capabilities.py：kind 注册 + requires 声明（ADR-003 端口化）",
+    "layer": "L2"
+   },
+   {
+    "id": "apps/algo",
+    "files": 2,
+    "lines": 326,
+    "classes": 0,
+    "funcs": 10,
+    "n": 10,
+    "label": "apps/algo",
+    "sub": "回测算法",
+    "role": "无前视调仓回测（2026-11-16 自 kernel/algo 迁入，业务名词归业务层）",
+    "layer": "L2"
+   },
+   {
+    "id": "apps/builtin_tools",
+    "files": 2,
+    "lines": 593,
+    "classes": 5,
+    "funcs": 4,
+    "n": 9,
+    "label": "apps/builtin_tools",
+    "sub": "业务工具",
+    "role": "goal 等业务侧工具实现",
+    "layer": "L2"
+   },
+   {
+    "id": "apps/chat",
+    "files": 4,
+    "lines": 225,
+    "classes": 0,
+    "funcs": 7,
+    "n": 7,
+    "label": "apps/chat",
+    "sub": "产品策略",
+    "role": "会话侧业务策略",
+    "layer": "L2"
+   },
+   {
+    "id": "apps/swarm_presets",
+    "files": 1,
+    "lines": 26,
+    "classes": 0,
+    "funcs": 1,
+    "n": 1,
+    "label": "apps/swarm_presets",
+    "sub": "拓扑 preset",
+    "role": "SwarmPreset YAML（37 个）",
+    "layer": "L2"
+   }
+  ]
+ },
+ {
+  "key": "L3",
+  "name": "L3 kernel · 平台机制",
+  "note": "框架内核",
+  "seq": 2,
+  "pkgs": [
+   {
+    "id": "kernel/agent",
+    "files": 101,
+    "lines": 22598,
+    "classes": 183,
+    "funcs": 249,
+    "n": 432,
+    "label": "kernel/agent",
+    "sub": "Agent 引擎",
+    "role": "LoopEngine / LoopSpec / loop_assembly / guardrails / deciders / 工具注册 / 压缩 / 遥测（最大包）",
+    "layer": "L3"
+   },
+   {
+    "id": "kernel/workflow",
+    "files": 15,
+    "lines": 3488,
+    "classes": 27,
+    "funcs": 48,
+    "n": 75,
+    "label": "kernel/workflow",
+    "sub": "工作流引擎",
+    "role": "definition / graph_compiler / executor / node_types / contract（B1 产物契约）",
+    "layer": "L3"
+   },
+   {
+    "id": "kernel/evolution",
+    "files": 12,
+    "lines": 3453,
+    "classes": 28,
+    "funcs": 34,
+    "n": 62,
+    "label": "kernel/evolution",
+    "sub": "自进化",
+    "role": "GEP-RSI：genome_proposals / validation_gate / holdout / isolated_replay / evolution_agent",
+    "layer": "L3"
+   },
+   {
+    "id": "kernel/orchestration",
+    "files": 10,
+    "lines": 2541,
+    "classes": 27,
+    "funcs": 18,
+    "n": 45,
+    "label": "kernel/orchestration",
+    "sub": "编排",
+    "role": "genome_version / budget_gate / 判定层",
+    "layer": "L3"
+   },
+   {
+    "id": "kernel/gateway",
+    "files": 9,
+    "lines": 2327,
+    "classes": 13,
+    "funcs": 30,
+    "n": 43,
+    "label": "kernel/gateway",
+    "sub": "会话网关",
+    "role": "session_controller / capacity：多轮会话与容量闸",
+    "layer": "L3"
+   },
+   {
+    "id": "kernel/permission",
+    "files": 5,
+    "lines": 1174,
+    "classes": 10,
+    "funcs": 12,
+    "n": 22,
+    "label": "kernel/permission",
+    "sub": "权限",
+    "role": "规则引擎 / hard_deny / evaluator / schema（L0–L4）",
+    "layer": "L3"
+   },
+   {
+    "id": "kernel/runtimes",
+    "files": 10,
+    "lines": 1649,
+    "classes": 11,
+    "funcs": 9,
+    "n": 20,
+    "label": "kernel/runtimes",
+    "sub": "运行时",
+    "role": "执行器抽象与策略",
+    "layer": "L3"
+   },
+   {
+    "id": "kernel/swarm",
+    "files": 6,
+    "lines": 1488,
+    "classes": 9,
+    "funcs": 7,
+    "n": 16,
+    "label": "kernel/swarm",
+    "sub": "Swarm",
+    "role": "preset 加载 / 表达式求值 / 层图编译器",
+    "layer": "L3"
+   },
+   {
+    "id": "kernel/context",
+    "files": 4,
+    "lines": 407,
+    "classes": 6,
+    "funcs": 3,
+    "n": 9,
+    "label": "kernel/context",
+    "sub": "上下文",
+    "role": "context_injector / providers",
+    "layer": "L3"
+   },
+   {
+    "id": "kernel/memory",
+    "files": 3,
+    "lines": 604,
+    "classes": 3,
+    "funcs": 4,
+    "n": 7,
+    "label": "kernel/memory",
+    "sub": "记忆",
+    "role": "持久化记忆",
+    "layer": "L3"
+   },
+   {
+    "id": "kernel/session",
+    "files": 2,
+    "lines": 229,
+    "classes": 0,
+    "funcs": 6,
+    "n": 6,
+    "label": "kernel/session",
+    "sub": "会话",
+    "role": "会话状态",
+    "layer": "L3"
+   },
+   {
+    "id": "kernel/events",
+    "files": 2,
+    "lines": 465,
+    "classes": 2,
+    "funcs": 3,
+    "n": 5,
+    "label": "kernel/events",
+    "sub": "事件",
+    "role": "event_v2 协议 / event_store",
+    "layer": "L3"
+   },
+   {
+    "id": "kernel/hooks",
+    "files": 4,
+    "lines": 260,
+    "classes": 4,
+    "funcs": 1,
+    "n": 5,
+    "label": "kernel/hooks",
+    "sub": "钩子",
+    "role": "composite hook 组合",
+    "layer": "L3"
+   },
+   {
+    "id": "kernel/skills",
+    "files": 4,
+    "lines": 238,
+    "classes": 2,
+    "funcs": 3,
+    "n": 5,
+    "label": "kernel/skills",
+    "sub": "技能",
+    "role": "skill 模型与加载",
+    "layer": "L3"
+   },
+   {
+    "id": "kernel",
+    "files": 2,
+    "lines": 108,
+    "classes": 1,
+    "funcs": 1,
+    "n": 2,
+    "label": "kernel",
+    "sub": "内核门面",
+    "role": "子带声明",
+    "layer": "L3"
+   }
+  ]
+ },
+ {
+  "key": "L4",
+  "name": "L4 foundation · 基础原语",
+  "note": "零业务依赖",
+  "seq": 3,
+  "pkgs": [
+   {
+    "id": "foundation/llm",
+    "files": 24,
+    "lines": 5508,
+    "classes": 35,
+    "funcs": 95,
+    "n": 130,
+    "label": "foundation/llm",
+    "sub": "LLM 客户端",
+    "role": "openai_client / model_catalog / config（三路径链）/ 多供应商适配",
+    "layer": "L4"
+   },
+   {
+    "id": "foundation",
+    "files": 10,
+    "lines": 2086,
+    "classes": 17,
+    "funcs": 44,
+    "n": 61,
+    "label": "foundation",
+    "sub": "基础原语",
+    "role": "paths / settings（ENV_TABLE 唯一入口）/ 错误类型 / git",
+    "layer": "L4"
+   },
+   {
+    "id": "foundation/storage",
+    "files": 13,
+    "lines": 2495,
+    "classes": 11,
+    "funcs": 35,
+    "n": 46,
+    "label": "foundation/storage",
+    "sub": "存储",
+    "role": "data_store / 持久化后端",
+    "layer": "L4"
+   },
+   {
+    "id": "foundation/utils",
+    "files": 5,
+    "lines": 484,
+    "classes": 1,
+    "funcs": 21,
+    "n": 22,
+    "label": "foundation/utils",
+    "sub": "工具函数",
+    "role": "通用工具",
+    "layer": "L4"
+   },
+   {
+    "id": "foundation/observability",
+    "files": 5,
+    "lines": 867,
+    "classes": 4,
+    "funcs": 14,
+    "n": 18,
+    "label": "foundation/observability",
+    "sub": "可观测",
+    "role": "日志 / trace / spans",
+    "layer": "L4"
+   },
+   {
+    "id": "foundation/web",
+    "files": 6,
+    "lines": 637,
+    "classes": 1,
+    "funcs": 9,
+    "n": 10,
+    "label": "foundation/web",
+    "sub": "Web 基础",
+    "role": "静态资源 / web 工具",
+    "layer": "L4"
+   }
+  ]
+ },
+ {
+  "key": "EV",
+  "name": "evals · 旁挂评估带",
+  "note": "不属于四层（跨层读取被测对象）",
+  "seq": null,
+  "pkgs": [
+   {
+    "id": "evals",
+    "files": 6,
+    "lines": 1237,
+    "classes": 7,
+    "funcs": 37,
+    "n": 44,
+    "label": "evals",
+    "sub": "冻结基准",
+    "role": "golden 任务集 + scorecard + 完整性指纹",
+    "layer": "EV"
+   },
+   {
+    "id": "scripts",
+    "files": 1,
+    "lines": 104,
+    "classes": 0,
+    "funcs": 2,
+    "n": 2,
+    "label": "scripts",
+    "sub": "脚本",
+    "role": "历史遗留单文件",
+    "layer": "EV"
+   }
+  ]
+ }
+];
+
+  var EDGES = [
+ [
+  "interfaces/api",
+  "kernel/agent",
+  28
+ ],
+ [
+  "interfaces/cli",
+  "apps/goal",
+  19
+ ],
+ [
+  "interfaces/cli",
+  "foundation/llm",
+  18
+ ],
+ [
+  "interfaces/api",
+  "apps/goal",
+  14
+ ],
+ [
+  "interfaces/api",
+  "foundation",
+  13
+ ],
+ [
+  "interfaces/api",
+  "foundation/llm",
+  13
+ ],
+ [
+  "interfaces/api",
+  "kernel/workflow",
+  13
+ ],
+ [
+  "interfaces/cli/tui",
+  "interfaces/cli",
+  13
+ ],
+ [
+  "interfaces",
+  "kernel/evolution",
+  13
+ ],
+ [
+  "interfaces/api",
+  "apps/scheduled_research",
+  12
+ ],
+ [
+  "kernel/agent",
+  "foundation/llm",
+  11
+ ],
+ [
+  "foundation/llm",
+  "foundation",
+  10
+ ],
+ [
+  "kernel/agent",
+  "foundation/utils",
+  10
+ ],
+ [
+  "kernel/agent",
+  "foundation",
+  10
+ ],
+ [
+  "kernel/gateway",
+  "kernel/orchestration",
+  10
+ ],
+ [
+  "apps/agent_plugins",
+  "kernel/agent",
+  9
+ ],
+ [
+  "interfaces/cli",
+  "foundation",
+  9
+ ],
+ [
+  "interfaces/api",
+  "foundation/storage",
+  8
+ ],
+ [
+  "kernel/agent",
+  "foundation/observability",
+  8
+ ],
+ [
+  "foundation/storage",
+  "foundation",
+  7
+ ],
+ [
+  "interfaces/api",
+  "interfaces/cli",
+  7
+ ],
+ [
+  "kernel/gateway",
+  "kernel/agent",
+  7
+ ],
+ [
+  "kernel/workflow",
+  "kernel/swarm",
+  7
+ ],
+ [
+  "apps/builtin_tools",
+  "kernel/agent",
+  6
+ ],
+ [
+  "apps/goal",
+  "kernel/workflow",
+  6
+ ],
+ [
+  "apps/goal",
+  "kernel/swarm",
+  6
+ ],
+ [
+  "interfaces/cli",
+  "kernel/session",
+  6
+ ],
+ [
+  "kernel/agent",
+  "kernel/permission",
+  6
+ ],
+ [
+  "kernel/workflow",
+  "kernel/agent",
+  6
+ ],
+ [
+  "interfaces/api",
+  "foundation/observability",
+  5
+ ],
+ [
+  "interfaces/mcp",
+  "kernel/agent",
+  5
+ ],
+ [
+  "interfaces/mcp",
+  "kernel/swarm",
+  5
+ ],
+ [
+  "kernel/agent",
+  "foundation/storage",
+  5
+ ],
+ [
+  "kernel/gateway",
+  "kernel/runtimes",
+  5
+ ],
+ [
+  "apps",
+  "kernel/agent",
+  4
+ ],
+ [
+  "evals",
+  "kernel/agent",
+  4
+ ],
+ [
+  "interfaces/api",
+  "kernel/events",
+  4
+ ],
+ [
+  "interfaces/cli",
+  "kernel/skills",
+  4
+ ],
+ [
+  "interfaces/cli",
+  "kernel/swarm",
+  4
+ ],
+ [
+  "interfaces",
+  "kernel/orchestration",
+  4
+ ],
+ [
+  "interfaces",
+  "evals",
+  4
+ ],
+ [
+  "kernel/agent",
+  "foundation/web",
+  4
+ ],
+ [
+  "kernel/evolution",
+  "evals",
+  4
+ ],
+ [
+  "kernel/runtimes",
+  "kernel/agent",
+  4
+ ],
+ [
+  "kernel/swarm",
+  "kernel/agent",
+  4
+ ],
+ [
+  "apps",
+  "apps/goal",
+  3
+ ],
+ [
+  "apps/goal",
+  "foundation",
+  3
+ ],
+ [
+  "apps/goal",
+  "foundation/storage",
+  3
+ ],
+ [
+  "foundation/llm",
+  "foundation/utils",
+  3
+ ],
+ [
+  "interfaces/api",
+  "kernel/permission",
+  3
+ ],
+ [
+  "interfaces/api",
+  "apps/chat",
+  3
+ ],
+ [
+  "interfaces/cli",
+  "interfaces/cli/tui",
+  3
+ ],
+ [
+  "interfaces/cli",
+  "foundation/storage",
+  3
+ ],
+ [
+  "interfaces/cli",
+  "foundation/utils",
+  3
+ ],
+ [
+  "interfaces/cli",
+  "interfaces",
+  3
+ ],
+ [
+  "interfaces",
+  "kernel/gateway",
+  3
+ ],
+ [
+  "interfaces",
+  "kernel/agent",
+  3
+ ],
+ [
+  "kernel/agent",
+  "kernel/skills",
+  3
+ ],
+ [
+  "kernel/agent",
+  "kernel/memory",
+  3
+ ],
+ [
+  "kernel/agent",
+  "kernel/context",
+  3
+ ],
+ [
+  "kernel/gateway",
+  "foundation",
+  3
+ ],
+ [
+  "kernel/gateway",
+  "foundation/llm",
+  3
+ ],
+ [
+  "kernel/gateway",
+  "kernel/context",
+  3
+ ]
+];
+  var IO    = {
+ "interfaces/api": {
+  "i": 1,
+  "o": 16
+ },
+ "kernel/agent": {
+  "i": 18,
+  "o": 14
+ },
+ "interfaces/cli": {
+  "i": 3,
+  "o": 19
+ },
+ "apps/goal": {
+  "i": 4,
+  "o": 8
+ },
+ "foundation/llm": {
+  "i": 7,
+  "o": 3
+ },
+ "foundation": {
+  "i": 16,
+  "o": 0
+ },
+ "kernel/workflow": {
+  "i": 6,
+  "o": 5
+ },
+ "interfaces/cli/tui": {
+  "i": 1,
+  "o": 8
+ },
+ "interfaces": {
+  "i": 1,
+  "o": 10
+ },
+ "kernel/evolution": {
+  "i": 4,
+  "o": 4
+ },
+ "apps/scheduled_research": {
+  "i": 2,
+  "o": 1
+ },
+ "foundation/utils": {
+  "i": 6,
+  "o": 1
+ },
+ "kernel/gateway": {
+  "i": 4,
+  "o": 7
+ },
+ "kernel/orchestration": {
+  "i": 6,
+  "o": 4
+ },
+ "apps/agent_plugins": {
+  "i": 0,
+  "o": 3
+ },
+ "foundation/storage": {
+  "i": 12,
+  "o": 1
+ },
+ "foundation/observability": {
+  "i": 8,
+  "o": 2
+ },
+ "kernel/swarm": {
+  "i": 4,
+  "o": 4
+ },
+ "apps/builtin_tools": {
+  "i": 1,
+  "o": 1
+ },
+ "kernel/session": {
+  "i": 3,
+  "o": 1
+ },
+ "kernel/permission": {
+  "i": 2,
+  "o": 1
+ },
+ "interfaces/mcp": {
+  "i": 1,
+  "o": 7
+ },
+ "kernel/runtimes": {
+  "i": 3,
+  "o": 3
+ },
+ "apps": {
+  "i": 6,
+  "o": 4
+ },
+ "evals": {
+  "i": 2,
+  "o": 5
+ },
+ "kernel/events": {
+  "i": 2,
+  "o": 1
+ },
+ "kernel/skills": {
+  "i": 3,
+  "o": 0
+ },
+ "foundation/web": {
+  "i": 2,
+  "o": 0
+ },
+ "apps/chat": {
+  "i": 1,
+  "o": 1
+ },
+ "kernel/memory": {
+  "i": 3,
+  "o": 1
+ },
+ "kernel/context": {
+  "i": 3,
+  "o": 1
+ },
+ "kernel/hooks": {
+  "i": 1,
+  "o": 1
+ },
+ "kernel": {
+  "i": 1,
+  "o": 0
+ }
+};
+  var FLOW  = ["interfaces/api", "kernel/gateway", "kernel/agent", "foundation/llm"];
+
+  var PKG = {};
+  LAYERS.forEach(function (L) { L.pkgs.forEach(function (p) { PKG[p.id] = p; }); });
+  var FLOW_SET = {};
+  FLOW.forEach(function (id) { FLOW_SET[id] = 1; });
+
+  // 层序：evals 的 seq 为 null → 不参与上行/下行判定（旁挂评估带）
+  var SEQ = {}, EVAL_KEY = null;
+  LAYERS.forEach(function (L) {
+    SEQ[L.key] = (L.seq === undefined ? null : L.seq);
+    if (L.seq === null) EVAL_KEY = L.key;
+  });
+  function layerKey(id) { return PKG[id] ? PKG[id].layer : null; }
+  function seqOf(id) { var k = layerKey(id); return k ? SEQ[k] : null; }
+  function inEvalBand(id) { return layerKey(id) === EVAL_KEY; }
+
+  var ISOLATED = {};
+  ["apps/algo", "scripts", "apps/swarm_presets"].forEach(function (id) { ISOLATED[id] = 1; });
+
+  // ---- layout：层纵向堆叠，包在泳道内换行居中 ----
+  var W = 1180, PADL = 132, PADR = 20, PADT = 8, PADB = 8, GAPY = 12, GAPX = 10, ROWH = 46;
+  var PER_ROW = 5;
+  var MAXN = 432;
+  function nodeW(p) { return 132 + Math.round(p.n * 118 / MAXN); }
+
+  var pos = {}, ly = PADT, laneH = [];
+  LAYERS.forEach(function (L) {
+    var rows = Math.ceil(L.pkgs.length / PER_ROW);
+    var h = rows * ROWH + (rows - 1) * GAPX + 12;
+    laneH.push(h);
+    var avail = W - PADL - PADR - 16;
+    for (var r = 0; r < rows; r++) {
+      var rowPkgs = L.pkgs.slice(r * PER_ROW, (r + 1) * PER_ROW);
+      var rowW = rowPkgs.reduce(function (s, p) { return s + nodeW(p); }, 0) + (rowPkgs.length - 1) * GAPX;
+      var x = PADL + 8 + Math.max(0, (avail - rowW) / 2);
+      rowPkgs.forEach(function (p) {
+        pos[p.id] = { x: x, y: ly + 6 + r * (ROWH + GAPX), w: nodeW(p), h: ROWH - 10 };
+        x += nodeW(p) + GAPX;
+      });
+    }
+    ly += h + GAPY;
+  });
+  var H = ly + PADB;
+
+  var NS = 'http://www.w3.org/2000/svg';
+  function el(tag, attrs, parent) {
+    var e = document.createElementNS(NS, tag);
+    for (var k in attrs) e.setAttribute(k, attrs[k]);
+    (parent || svg).appendChild(e);
+    return e;
+  }
+  svg.setAttribute('viewBox', '0 0 ' + W + ' ' + H);
+  svg.setAttribute('preserveAspectRatio', 'xMidYMin meet');
+
+  // lanes
+  ly = PADT;
+  LAYERS.forEach(function (L, li) {
+    el('rect', { x: 0, y: ly, width: W, height: laneH[li], rx: 9,
+                 class: 'lane' + (L.seq === null ? ' ev' : '') });
+    var t = el('text', { x: PADL - 12, y: ly + 20, class: 'lane-label', 'text-anchor': 'end' });
+    t.textContent = L.name;
+    var t2 = el('text', { x: PADL - 12, y: ly + 34, class: 'lane-note', 'text-anchor': 'end' });
+    t2.textContent = L.note;
+    ly += laneH[li] + GAPY;
+  });
+
+  // edges
+  var edgeEls = [];
+  function edgeClass(a, b) {
+    var ia = FLOW.indexOf(a), ib = FLOW.indexOf(b);
+    var isFlow = FLOW_SET[a] && FLOW_SET[b] && (ib - ia === 1);
+    var sa = seqOf(a), sb = seqOf(b);
+    var isUp = (sa !== null && sb !== null && sa > sb);
+    var isEvalEdge = inEvalBand(a) || inEvalBand(b);
+    return 'edge' + (isFlow ? ' flow' : '') + (isUp ? ' up' : '')
+                 + (!isFlow && !isUp && isEvalEdge ? ' eval' : '');
+  }
+  EDGES.forEach(function (e) {
+    var a = pos[e[0]], b = pos[e[1]];
+    if (!a || !b) return;
+    var cls = edgeClass(e[0], e[1]);
+    var x1 = a.x + a.w / 2, y1 = a.y + a.h;
+    var x2 = b.x + b.w / 2, y2 = b.y;
+    var p;
+    if (y2 <= y1 + 2) {
+      // 同层 / 上行：侧向曲线
+      var sx = a.x + a.w, sy = a.y + a.h / 2;
+      var tx = b.x,       ty = b.y + b.h / 2;
+      var d2 = 'M' + sx + ',' + sy + ' C' + (sx + 30) + ',' + sy + ' ' + (tx - 30) + ',' + ty + ' ' + tx + ',' + ty;
+      p = el('path', { d: d2, class: cls });
+    } else {
+      var my = (y1 + y2) / 2;
+      var d = 'M' + x1 + ',' + y1 + ' C' + x1 + ',' + my + ' ' + x2 + ',' + my + ' ' + x2 + ',' + y2;
+      p = el('path', { d: d, class: cls });
+    }
+    p.setAttribute('data-from', e[0]);
+    p.setAttribute('data-to', e[1]);
+    edgeEls.push(p);
+  });
+
+  // nodes
+  var nodeEls = [];
+  LAYERS.forEach(function (L) {
+    L.pkgs.forEach(function (p) {
+      var q = pos[p.id];
+      var g = el('g', { class: 'node' });
+      g.setAttribute('data-id', p.id);
+      el('rect', { x: q.x, y: q.y, width: q.w, height: q.h, rx: 7, fill: 'var(--muted)' }, g);
+      var lab = el('text', { x: q.x + 9, y: q.y + 18, class: 'n-label' }, g);
+      lab.textContent = p.label;
+      var sub = el('text', { x: q.x + 9, y: q.y + 32, class: 'n-sub' }, g);
+      sub.textContent = p.sub + ' · ' + p.n;
+      nodeEls.push(g);
+    });
+  });
+  // 初始态：套用 baseCls（主链路蓝框 / 孤立包橙框）
+  nodeEls.forEach(function (g) { g.setAttribute('class', baseCls(g)); });
+
+  // legend
+  legend.innerHTML =
+    '<span class="lg"><span class="sw" style="background:var(--viz-series-1)"></span>主请求链路</span>' +
+    '<span class="lg"><span class="sw" style="background:var(--viz-series-4)"></span>评估带读取</span>' +
+    '<span class="lg"><span class="sw" style="background:var(--muted)"></span>包（宽度 ∝ 符号数）</span>' +
+    '<span class="lg"><span class="sw" style="background:var(--viz-series-3);border:1px dashed var(--viz-series-3)"></span>零依赖包</span>';
+
+  // ---- 交互 ----
+  function baseCls(g) {
+    var id = g.getAttribute('data-id');
+    return 'node' + (FLOW_SET[id] ? ' flow' : '') + (ISOLATED[id] ? ' iso' : '');
+  }
+  function clearAll() {
+    edgeEls.forEach(function (p) {
+      p.setAttribute('class', edgeClass(p.getAttribute('data-from'), p.getAttribute('data-to')));
+    });
+    nodeEls.forEach(function (g) { g.setAttribute('class', baseCls(g)); });
+  }
+  function focus(id) {
+    clearAll();
+    var seen = {};
+    edgeEls.forEach(function (p) {
+      var f = p.getAttribute('data-from'), t = p.getAttribute('data-to');
+      if (f === id || t === id) {
+        p.setAttribute('class', 'edge hot');
+        seen[f === id ? t : f] = 1;
+      } else {
+        p.setAttribute('class', 'edge faded');
+      }
+    });
+    nodeEls.forEach(function (g) {
+      var gid = g.getAttribute('data-id');
+      if (gid === id || seen[gid]) g.setAttribute('class', baseCls(g));
+      else g.setAttribute('class', 'node dim');
+    });
+  }
+  nodeEls.forEach(function (g) {
+    var id = g.getAttribute('data-id');
+    var p = PKG[id];
+    g.addEventListener('mouseenter', function () {
+      focus(id);
+      var io = IO[id] || { i: 0, o: 0 };
+      var iso = ISOLATED[id]
+        ? '<div class="r" style="color:var(--viz-series-3)"><span>⚠ 零依赖</span><span>无入边 / 无出边</span></div>'
+        : '';
+      tip.innerHTML = '<b>' + p.label + '</b>' +
+        '<div style="margin-top:.25rem;color:var(--muted-foreground)">' + p.sub + '</div>' +
+        '<div style="margin-top:.3rem">' + (p.role || '') + '</div>' +
+        '<div class="r"><span>生产符号</span><span>' + p.n + '</span></div>' +
+        '<div class="r"><span>文件 / 行数</span><span>' + p.files + ' / ' + p.lines.toLocaleString() + '</span></div>' +
+        '<div class="r"><span>被依赖 / 依赖（包）</span><span>' + io.i + ' / ' + io.o + '</span></div>' +
+        iso;
+      tip.style.opacity = '1';
+      var r = g.getBoundingClientRect(), sr = stage.getBoundingClientRect();
+      var tw = 290, th = tip.offsetHeight;
+      // 优先放在节点右侧（不遮挡下方的依赖连线）；右侧放不下则翻到左侧；
+      // 竖直方向夹在画布内。
+      var left = r.left - sr.left + r.width + 10;
+      if (left + tw > sr.width) left = r.left - sr.left - tw - 10;
+      if (left < 0) left = Math.max(0, sr.width - tw);
+      tip.style.left = left + 'px';
+      var top = r.top - sr.top;
+      if (top + th > sr.height) top = Math.max(0, sr.height - th - 4);
+      if (top < 0) top = 0;
+      tip.style.top = top + 'px';
+    });
+    g.addEventListener('mouseleave', function () { tip.style.opacity = '0'; clearAll(); });
+  });
+  svg.addEventListener('mouseleave', function () { tip.style.opacity = '0'; clearAll(); });
+})();
+</script>
+</div>
+
+<footer>
+本页由 AST 扫描实测生成（<code>tmp/probe/scan_arch.py</code> → <code>build_payload.py</code> → <code>gen_arch_html.py</code>）：
+36 个包 / 1977 个生产符号（顶层 class + func）/ 137 条包间依赖，绘制阈值 ≥3。<br>
+分层口径与门禁一致（<code>scripts/arch/layer_matrix.py</code>）：L1 interfaces · L2 apps · L3 kernel · L4 foundation。
+跨层依赖 <b>85 条下行 / 0 条上行违规</b>，同层 45 条；另有 <b>7 条</b>属 evals 评估带跨层读取被测对象（设计内，不计违规）。<br>
+<b>零依赖包 3 个</b>：apps/algo · apps/swarm_presets · scripts —— 既无入边也无出边，是死代码候选（apps/algo 仍被 2 条测试直接引用）。<br>
+本页零外部依赖（无 CDN / 无字体 / 无框架），随代码变化重新运行生成脚本即可。
+</footer>
+</div>
+</body>
+</html>
