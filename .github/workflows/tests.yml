@@ -154,3 +154,6 @@ jobs:
 
       - name: Architecture diagram drift
         run: python scripts/arch/sync_architecture_diagram.py
+
+      - name: Framework doc numbers (v1.2)
+        run: python scripts/arch/check_framework_numbers.py

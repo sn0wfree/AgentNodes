@@ -436,6 +436,35 @@ def test_kernel_nouns_scan_detects_injected_violation(tmp_path):
     assert any(h.noun == "backtest" for h in hits)
 
 
+# ── check_framework_numbers ──────────────────────────────────────────
+#
+# 为什么需要：docs/框架与理念 · v1.1.html 里 4 处体量快照（L1 108 / L2 15 /
+# L3 189 / L4 59 文件）在 3 周内全部被现实推翻，而**没有任何脚本或 CI 校验
+# 它** —— 没人发现。这个门禁把 v1.2 的体量数字钉在代码上。
+
+
+def test_framework_numbers_real_repo_consistent():
+    """框架文档（v1.2）的层体量数字必须与代码实测一致。
+
+    失败时不要改数字凑绿——先判断是「代码真的变了」还是「文档写错了」，
+    然后两者对齐（`check_framework_numbers.py` 会打印两列供对照）。
+    """
+    mod = _load("check_framework_numbers")
+    assert mod.DOC.exists(), f"缺少框架文档 {mod.DOC}"
+    assert mod.main() == 0
+
+
+def test_framework_numbers_parses_layer_rows():
+    """解析器本身要能读出 4 层 + 合计（否则上一条会退化成空断言）。"""
+    mod = _load("check_framework_numbers")
+    text = mod.DOC.read_text(encoding="utf-8", errors="replace")
+    rows = mod._doc_rows(text)
+    assert rows is not None, "解析不出层体量表"
+    assert set(rows) == {"L1", "L2", "L3", "L4"}, f"层不全: {sorted(rows)}"
+    for layer, (files, lines) in rows.items():
+        assert files > 0 and lines > 0, f"{layer} 读到了 0：{files}/{lines}"
+
+
 # ── graph_layer_audit ────────────────────────────────────────────────
 
 

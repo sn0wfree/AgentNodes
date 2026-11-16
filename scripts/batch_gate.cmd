@@ -103,9 +103,13 @@ echo [8/9] env access ^(settings read layer^)
 call :step_env_access
 if errorlevel 1 set "FAILED=1"
 
+echo [9/10] framework doc numbers ^(v1.2^)
+call :step_framework_numbers
+if errorlevel 1 set "FAILED=1"
+
 REM --- step 9/9: graphify symbolic audit (optional, second dimension) ------
 echo.
-echo [9/9] graphify symbolic audit ^(optional^)
+echo [10/10] graphify symbolic audit ^(optional^)
 if "%WANT_GRAPH%"=="1" (
     call :step_graph
     if errorlevel 1 set "FAILED=1"
@@ -316,7 +320,6 @@ exit /b 0
 
 
 :step_env_access
-REM settings.ENV_TABLE is the single source for config reads.
 REM Batch B migrated all call sites, so this is now a HARD gate:
 REM any direct os.environ.get of a project-prefixed var fails the batch.
 if not exist "scripts\arch\check_env_access.py" (
@@ -331,6 +334,26 @@ if errorlevel 1 (
     exit /b 1
 )
 echo   [OK] env access: all config reads via settings
+exit /b 0
+
+
+:step_framework_numbers
+REM Framework doc layer totals must match the code (check_framework_numbers.py).
+REM Why this step: v1.1 HTML carried 4 hardcoded size snapshots that were all
+REM overturned within 3 weeks, with no script checking them. Those numbers now
+REM live in docs/design/framework-and-principles-v1.2.md and are pinned here.
+if not exist "scripts\arch\check_framework_numbers.py" (
+    echo   [SKIP] check_framework_numbers.py not present
+    exit /b 0
+)
+set "LOG=%TEMP%\batch_gate_step9.log"
+"%PROBE_PI%" scripts\arch\check_framework_numbers.py > "%LOG%" 2>&1
+if errorlevel 1 (
+    echo   [X] check_framework_numbers.py: framework doc numbers drifted
+    call :tail "%LOG%" 30
+    exit /b 1
+)
+echo   [OK] framework doc numbers: consistent
 exit /b 0
 
 
