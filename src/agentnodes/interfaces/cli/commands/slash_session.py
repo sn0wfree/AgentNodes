@@ -53,7 +53,7 @@ def cmd_history(*, console: Any = None, limit: int = 10) -> int:
     """
     console = _resolve_console(console)
     try:
-        from agentnodes.kernel.session.unified import list_sessions
+        from agentnodes.kernel.session.reader import list_sessions
         sessions = list_sessions(limit=limit)
     except Exception as exc:  # noqa: BLE001
         console.print(f"[red]/history failed:[/red] {exc}")
@@ -84,7 +84,7 @@ def cmd_search(query: str, *, console: Any = None, limit: int = 10) -> int:
         console.print("[red]Usage:[/red] /search <query>")
         return 1
     try:
-        from agentnodes.kernel.session.unified import search_messages
+        from agentnodes.kernel.session.reader import search_messages
         matches = search_messages(query, limit=limit)
     except Exception as exc:  # noqa: BLE001
         console.print(f"[red]/search failed:[/red] {exc}")

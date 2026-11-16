@@ -1,4 +1,7 @@
-"""Unified-DB session listing (B4 D5).
+"""Read-only session browsing for non-web channels (B4 D5).
+
+**改名（2026-11-16 批次 C2'）**：``unified`` → ``reader``（方案 §3.2——
+「unified」无信息量；本模块的职责就是**只读浏览**，web 通道不走这里）。
 
 Why this exists: five consumers need "list sessions" — CLI ``session list``,
 REPL ``/history``, TUI resume, MCP ``list_sessions``, and the admin views.

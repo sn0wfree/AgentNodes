@@ -12,7 +12,8 @@ CLI / MCP / TUI / web 四通道共用同一套会话能力。
   · **批次 B2**：`db`（← `interfaces/api/session/web_session_db.py`）——
     schema / 迁移 / 连接 / 行映射。HTTP 鉴权部分 `_fetch_session_owned`
     留在 L1 路由层，本包因此**零 web 框架依赖**
-  · `unified` 仍是只读浏览门面（直连 SQLite，批次 D 改为走 store）
+  · `reader`（← `unified`，2026-11-16 C2' 改名）仍是只读浏览门面
+    （直连 SQLite，批次 D 评估改走 store）
   · 行为层（`service` / `store` / `projector`）**尚未迁移**，仍在 L1（批次 B3）
 
 **旧路径仍然可用**：`interfaces/api/session/*.py` 是 re-export 垫片，
@@ -65,7 +66,7 @@ from .service import (
 )
 from .store import SessionStore, _row_to_attempt
 from .trace_projection import TraceProjection
-from .unified import (
+from .reader import (
     delete_session,
     get_messages,
     get_session,
@@ -110,7 +111,7 @@ __all__ = [
     "SessionStore",
     "Projector",
     "auto_title_session",
-    # 只读浏览门面（批次 D 前仍是直连 DB）
+    # 只读浏览门面 reader（← unified，C2' 改名；批次 D 前仍是直连 DB）
     "delete_session",
     "get_messages",
     "get_session",

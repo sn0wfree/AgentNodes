@@ -226,7 +226,7 @@ class ResearchApp(App):
         returned "(untitled)".
         """
         try:
-            from agentnodes.kernel.session.unified import list_sessions
+            from agentnodes.kernel.session.reader import list_sessions
             sessions = list_sessions(limit=1)
         except Exception:
             return None
@@ -257,7 +257,7 @@ class ResearchApp(App):
         early. The unified row has a real ``id``, so resume now functions.
         """
         try:
-            from agentnodes.kernel.session.unified import (
+            from agentnodes.kernel.session.reader import (
                 get_messages,
                 list_sessions,
             )
