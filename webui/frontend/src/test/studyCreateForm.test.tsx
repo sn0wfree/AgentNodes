@@ -138,13 +138,16 @@ describe('StudyCreateForm', () => {
     render(<StudyCreateForm sessionId="sess-1" workspacePath="/tmp" />)
     fillRequired()
     fireEvent.submit(screen.getByRole('button', { name: /启动 study/ }).closest('form')!)
-    await waitFor(() => expect(onCreatedCheck()))
-    function onCreatedCheck() {
-      return mockStart.mock.calls.length === 1
-    }
-    expect(
-      (screen.getByPlaceholderText(/研究 A 股动量因子/) as HTMLInputElement).value,
-    ).toBe('')
+    // Wait for the reset to reach the DOM. The API call landing only
+    // proves the request fired — under coverage instrumentation the
+    // call and React's commit of the cleared inputs can land in
+    // different batches, so an immediate value assertion races.
+    await waitFor(() =>
+      expect(
+        (screen.getByPlaceholderText(/研究 A 股动量因子/) as HTMLInputElement).value,
+      ).toBe('')
+    )
     expect((screen.getByTestId('strategy-name') as HTMLInputElement).value).toBe('')
+    expect(mockStart).toHaveBeenCalledTimes(1)
   })
 })

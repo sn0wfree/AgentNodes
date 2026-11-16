@@ -281,6 +281,19 @@ beforeEach(() => {
   vi.mocked(api.workflow.status).mockClear()
 })
 
+// Zustand stores are module-level singletons: RTL cleanup() unmounts the
+// DOM but leaves store state behind, so a goal opened by the playback
+// test can survive into the next test and suppress the editor. Reset the
+// stores this page touches before each test.
+beforeEach(() => {
+  useSessionStore.setState({
+    currentSessionId: 'sess-1',
+    sessions: [],
+    openSessionIds: [],
+    searchOpen: false,
+  } as never)
+})
+
 describe('DefinitionWorkflowPage (Dify-style info bar)', () => {
   it('shows empty state with the workflow dropdown listing definitions', async () => {
     render(<MemoryRouter><DefinitionWorkflowPage /></MemoryRouter>)
@@ -305,6 +318,12 @@ describe('DefinitionWorkflowPage (Dify-style info bar)', () => {
     render(<MemoryRouter><DefinitionWorkflowPage /></MemoryRouter>)
     await waitFor(() => expect(screen.getByText('选择或新建工作流')).toBeTruthy())
     fireEvent.change(screen.getByTitle('切换工作流定义'), { target: { value: 'my_flow' } })
+    // 二级锚点：先确认 select 已切到目标定义（setEditingName 生效），
+    // 再等编辑器信息栏出现——避免只盯链条末端的「保存」而在
+    // coverage 插桩下踩到轮询边界。
+    await waitFor(() =>
+      expect((screen.getByTitle('切换工作流定义') as HTMLSelectElement).value).toBe('my_flow')
+    )
     await waitFor(() => expect(screen.getByText('保存')).toBeTruthy())
     fireEvent.click(screen.getByText('保存'))
     await waitFor(() => expect(api.definitions.save).toHaveBeenCalled())
@@ -329,6 +348,12 @@ describe('DefinitionWorkflowPage (Dify-style info bar)', () => {
     render(<MemoryRouter><DefinitionWorkflowPage /></MemoryRouter>)
     await waitFor(() => expect(screen.getByText('选择或新建工作流')).toBeTruthy())
     fireEvent.change(screen.getByTitle('切换工作流定义'), { target: { value: 'my_flow' } })
+    // 二级锚点：先确认 select 已切到目标定义（setEditingName 生效），
+    // 再等编辑器信息栏出现——避免只盯链条末端的「保存」而在
+    // coverage 插桩下踩到轮询边界。
+    await waitFor(() =>
+      expect((screen.getByTitle('切换工作流定义') as HTMLSelectElement).value).toBe('my_flow')
+    )
     await waitFor(() => expect(screen.getByText('保存')).toBeTruthy())
     expect(screen.getByText('空画布')).toBeTruthy()
     fireEvent.click(screen.getByText('生成计划'))
@@ -339,6 +364,12 @@ describe('DefinitionWorkflowPage (Dify-style info bar)', () => {
     render(<MemoryRouter><DefinitionWorkflowPage /></MemoryRouter>)
     await waitFor(() => expect(screen.getByText('选择或新建工作流')).toBeTruthy())
     fireEvent.change(screen.getByTitle('切换工作流定义'), { target: { value: 'my_flow' } })
+    // 二级锚点：先确认 select 已切到目标定义（setEditingName 生效），
+    // 再等编辑器信息栏出现——避免只盯链条末端的「保存」而在
+    // coverage 插桩下踩到轮询边界。
+    await waitFor(() =>
+      expect((screen.getByTitle('切换工作流定义') as HTMLSelectElement).value).toBe('my_flow')
+    )
     await waitFor(() => expect(screen.getByText('保存')).toBeTruthy())
     fireEvent.change(screen.getByPlaceholderText('搜索节点…'), { target: { value: '生成计划' } })
     expect(screen.getByText('生成计划')).toBeTruthy()
@@ -349,6 +380,12 @@ describe('DefinitionWorkflowPage (Dify-style info bar)', () => {
     render(<MemoryRouter><DefinitionWorkflowPage /></MemoryRouter>)
     await waitFor(() => expect(screen.getByText('选择或新建工作流')).toBeTruthy())
     fireEvent.change(screen.getByTitle('切换工作流定义'), { target: { value: 'plan_execute_auto' } })
+    // 二级锚点：先确认 select 已切到目标定义（setEditingName 生效），
+    // 再等编辑器信息栏出现——避免只盯链条末端的「保存」而在
+    // coverage 插桩下踩到轮询边界。
+    await waitFor(() =>
+      expect((screen.getByTitle('切换工作流定义') as HTMLSelectElement).value).toBe('plan_execute_auto')
+    )
     await waitFor(() => expect(screen.getByText('保存')).toBeTruthy())
     fireEvent.click(screen.getByText('运行'))
     await waitFor(() => expect(screen.getByText('启动运行')).toBeTruthy())
@@ -370,6 +407,12 @@ describe('Run history playback', () => {
     await waitFor(() => expect(screen.getByText('选择或新建工作流')).toBeTruthy())
     // enter edit mode first so the editor exists beneath playback
     fireEvent.change(screen.getByTitle('切换工作流定义'), { target: { value: 'my_flow' } })
+    // 二级锚点：先确认 select 已切到目标定义（setEditingName 生效），
+    // 再等编辑器信息栏出现——避免只盯链条末端的「保存」而在
+    // coverage 插桩下踩到轮询边界。
+    await waitFor(() =>
+      expect((screen.getByTitle('切换工作流定义') as HTMLSelectElement).value).toBe('my_flow')
+    )
     await waitFor(() => expect(screen.getByText('保存')).toBeTruthy())
     fireEvent.click(screen.getByText('运行'))
     await waitFor(() => expect(screen.getByText('启动运行')).toBeTruthy())
