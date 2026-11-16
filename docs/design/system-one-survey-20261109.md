@@ -9,6 +9,11 @@
 > 采集方式：微信直链对默认 UA 返回「环境异常」验证页；带浏览器 UA 抓取
 > HTML 后抽取 `#js_content` 正文。Kev 事实以
 > <https://github.com/jaredpalmer/kev> 的 README 为准。
+>
+> **v3 复核（2026-11-16）**：v2 之后又落了 45 个提交（统一引擎 U1–U6、
+> B2-① Step 协议迁移、权限真实形态修复）。全部承重事实已对 HEAD 逐条
+> 重验：核心论据仍成立，一处发现已被修复（`run()` 切统一引擎），
+> 漂移处就地更正——复核记录见 §9。
 
 ---
 
@@ -124,11 +129,11 @@ SLA 承诺都必须回到 README 与 model card，不能用文章数字。
 
 | 位置 | 判定 | 机制 |
 |---|---|---|
-| `kernel/agent/deciders.py:84-281` | 停止/继续/熔断/no-progress | 包装既有 step，读 `ctx` 标志 |
+| `kernel/agent/deciders.py:84-380` | 停止/继续/熔断/no-progress/外部终止 | 包装既有 step，读 `ctx` 标志；U4 新增 `ExternalTerminationDecider`（:140）与可组合 `_CombinationDecider`，四值 `Decision` 不变 |
 | `kernel/agent/strategy/steps/continuation.py:13` | 是否续跑 | 当前恒返回 `False` |
 | `kernel/agent/guardrails.py:99,104` | 注入/风险检测 | **正则表**（`GUARDRAIL_PATTERNS:20`） |
 | `kernel/permission/evaluator.py:154` | allow/ask/deny | 规则 + fnmatch + hard-deny |
-| `kernel/workflow/orchestrate_guard.py:81` `looks_like_question` | 「模型是不是反问用户」 | 正则尾匹配；消费者 `interfaces/api/session/service.py:969` 据此重跑一轮 LLM |
+| `kernel/agent/text_guard.py:97` `looks_like_question` | 「模型是不是反问用户」 | 正则尾匹配（四张正则表随 `6053cf68` 于 2026-11-13 自 orchestrate_guard 迁入；orchestrate_guard.py:27 仅转出口）；消费者 `interfaces/api/session/service.py:1003,1021` 据此重跑一轮 LLM |
 | `apps/goal/context.py:83` `goal_needs_continuation` | goal 是否还需推进 | 计数未覆盖判据；消费者 `kernel/agent/context_injector.py:234` |
 | `kernel/agent/runtime/tool_exec.py:71` | 工具是否失败 | 字符串前缀 |
 
@@ -159,7 +164,7 @@ SLA 承诺都必须回到 README 与 model card，不能用文章数字。
 | 5 | **prompt 声明与校验器 schema 漂移** | `risk_controller.md:60-64` 产出 `risk_passed: bool`，而 `quant_validators.py:64-67` 校验 `verdict ∈ {pass,fail,warn}` → 恒 no-op；`critic` / `study_reviewer` 的 verdict 字段**全仓无读者** |
 | 6 | **拿不到概率** | `logprobs` 与 `response_format` 在 `src/` 中**均零命中**（`findstr /i` 全仓）。现有 LLM 路径只有文本，**没有 token 级概率**——因此「用 logprobs 模拟 Kev」这条路在现有客户端上不成立，除非改 `openai_client.py` 的 payload 与解析 |
 
-补充：`interfaces/api/session/service.py:897` 的 `cfg.model = model` 在给
+补充：`interfaces/api/session/service.py:905` 的 `cfg.model = model` 在给
 frozen dataclass 赋值，**会抛 `FrozenInstanceError`**。任何 per-call
 模型选择一落地就会踩到它，是前置修复项。
 
@@ -169,7 +174,7 @@ frozen dataclass 赋值，**会抛 `FrozenInstanceError`**。任何 per-call
 
 | 需要 | 现状 |
 |---|---|
-| 把路径开/关 | 有：进程级 env（`foundation/settings.py:183-186`）、内存 flag（`capacity.py:138`） |
+| 把路径开/关 | 有：进程级 env（`foundation/settings.py:195-198`，`AGENTNODES_ENGINE` / `AGENTNODES_SKELETON`）；U5 后 `run()` 委托 `arun()`（`loop.py:843→879`），开关覆盖全路径；legacy `_run_loop_core` 仍在（11 文件，U6 步 1 只读审计已建，删除未执行）。内存 flag（`capacity.py:138`） |
 | 同一输入跑两条路径 | **仅测试里**（`tests/test_engine_parity.py` 顺序跑两个引擎比 dict；`tests/test_skeleton_equivalence.py` 子进程比 JSON） |
 | 可复用的比较器 | **无**——都是内联 assert |
 | 记录分歧 | **无** |
@@ -283,8 +288,8 @@ frozen dataclass 赋值，**会抛 `FrozenInstanceError`**。任何 per-call
 | **工具路由** | 默认工具集 18 个（`build_default_registry()` 实测），技术上 ≤255 可做 `choice`，但原生 function-calling 带完整 JSON Schema 语义且已被验证；换掉是净亏 |
 | **compaction 摘要 / planner 生成 / 代码生成** | 生成任务，System Two 本职 |
 | **permission 的 allow 决策** | 安全判定不能由概率模型放行（见 `framework-and-principles-20261105.md` 理念七） |
-| **进程内加载 torch/MLX 权重** | 会把 L4 变成 GPU 依赖，`pip install agentnodes` 直接崩 |
-| **`provider: "kev"` 写进 llm.json** | `model_hub.py:54` 会拒绝；语义上也是错配（非 OpenAI 协议） |
+| **进程内加载 torch/MLX 权重** | 会把 foundation 层变成 GPU 依赖，`pip install agentnodes` 直接崩 |
+| **`provider: "kev"` 写进配置文件** | `model_hub.py:54` 会拒绝（无论 llm.json 还是 config.yaml）；语义上也是错配（非 OpenAI 协议） |
 | **critic / study_reviewer 角色** | 不是「不接」，是**先确认要不要这个角色**——37 个 preset 零编排，接进去也没有输入 |
 
 ---
@@ -300,4 +305,18 @@ frozen dataclass 赋值，**会抛 `FrozenInstanceError`**。任何 per-call
 4. **成本不是理由**（§6 实测）——单次决策仅省 $0.00115，盈亏平衡需
    1.16 万次/天，而真实触达面远低于此。立项理由应改为
    **「补齐概率化决策能力」**。
+
+---
+
+## §9 v3 复核记录（2026-11-16 · 45 个新提交后）
+
+v2 之后仓库落了统一引擎（U1–U6）、B2-① Step 协议迁移、权限真实形态
+修复等 45 个提交。对 HEAD 逐条重验的结果：
+
+| 结论 | 项 |
+|---|---|
+| **仍成立（方案核心）** | `logprobs` / `response_format` 全仓仍**零实现**（git grep 实测 0 文件）——「现有路径拿不到概率」这一立项根基未变；presets 触达面逐项一致（critic=0 / study_reviewer=0 / risk_controller=13 / `condition:`=0）；`quant_validators.py:64` 字段漂移**未修**；`_dispatch_evaluator` / `_upstream_summary` / `_summary_truncate` / `classify_intent` / `signature_for_intent` 行号全部未动；token 实测逻辑未变；deepseek 价仍 **$0.14/M**；`register_evaluator` 仍无调用方 |
+| **已失效（从缺口改记为已修复）** | 「`run()` 直连 legacy」——U5（`9c0c0c25`）后 `run()` 委托 `arun()`（`loop.py:843→879`），引擎开关覆盖全路径。此条原为调研 §4.1 的附带发现，现关闭 |
+| **已漂移（就地更正）** | `looks_like_question` 迁 `kernel/agent/text_guard.py:97`（`6053cf68`，2026-11-13）；deciders.py 281→380 行（U4 新增外部终止 + 组合）；frozen-bug 行号 897→905；guard fixtures 26→29（16 正 + 13 负）；`AGENTNODES_ENGINE` 声明位 settings.py:195-198 |
+| **新发现的仓库级矛盾（非本方案范围，提请裁决）** | **层号口径冲突**：`.rules/rules.md` R-001 写 foundation(L1)←kernel(L2)←apps(L3)←interfaces(L4)，而门禁 `scripts/arch/layer_matrix.py:5` 仍按 2026-11-03 拍板写 L1 interfaces / L2 apps / L3 kernel / L4 foundation。两份 System One 文档已改用**目录名**指层规避；但规则层与门禁脚本必须二选一收敛，否则 R-001 的「在 layer_matrix 登记层级」这条做法会自相矛盾 |
 
