@@ -478,7 +478,9 @@ class APIClient {
     list: () => this.get<WorkflowListResponse>('/goal/workflow/list'),
 
     graph: (name: string) =>
-      this.get<WorkflowGraphResponse>(`/goal/workflow/${name}/graph`),
+      this.get<WorkflowGraphResponse>(
+        `/goal/workflow/${encodeURIComponent(name)}/graph`,
+      ),
 
     start: (sessionId: string, workflowName: string, objective: string) =>
       this.post<WorkflowStartResponse>('/goal/workflow/start', {
