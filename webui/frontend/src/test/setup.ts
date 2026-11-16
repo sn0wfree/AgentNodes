@@ -1,10 +1,19 @@
 import '@testing-library/jest-dom'
 import { enableMapSet } from 'immer'
-import { vi } from 'vitest'
+import { afterEach, vi } from 'vitest'
 import { createElement } from 'react'
+import { cleanup } from '@testing-library/react'
 
 // Enable Map/Set support for Immer
 enableMapSet()
+
+// Unmount every rendered tree between tests. A still-mounted tree keeps
+// its async continuations alive, so a pending promise from the previous
+// test can resolve into the NEXT test's DOM (definitionWorkflowPage's
+// startEdit chain made its 保存 assertions flaky this way).
+afterEach(() => {
+  cleanup()
+})
 
 // Mock the heavy syntax highlighter globally (refractor is ESM-only, can't load in CJS test env)
 // Used by MarkdownRenderer via react-syntax-highlighter.
