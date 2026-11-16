@@ -46,7 +46,7 @@ SUNK_MODULES = {
     ],
     # ── 批次 B2：会话库（2026-11-16，带改名）──
     "db": [
-        "_get_db_path", "_ensure_schema", "_run_schema_migrations",
+        "_get_db_path", "_get_db_at", "_ensure_schema", "_run_schema_migrations",
         "_ensure_fts_table", "_ensure_fts_table_impl", "_add_column", "_has_column",
         "_validate_identifier", "_drop_column", "_migrate_text_part_ids",
         "_migrate_message_types", "_db_thread_local", "_get_db",

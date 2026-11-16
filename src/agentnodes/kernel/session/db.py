@@ -586,7 +586,19 @@ _db_thread_local = threading.local()
 
 
 def _get_db() -> sqlite3.Connection:
-    """Return the per-thread SQLite connection. Ensures schema is up to date.
+    """Return the per-thread SQLite connection at the resolved session DB path.
+
+    连接生命周期见 :func:`_get_db_at`。本函数只做「解析路径」这一步——
+    **tests 通过 monkeypatch 本模块的 ``_get_db_path`` 重定向 DB**，
+    所以解析必须发生在本模块的全局名上（不能内联进 `_get_db_at`）。
+    """
+    return _get_db_at(_get_db_path())
+
+
+def _get_db_at(db_path: Path | str) -> sqlite3.Connection:
+    """Return the per-thread SQLite connection for an explicit path.
+
+    Ensures schema is up to date.
 
     - One connection per worker thread (FastAPI serves requests on a
       thread pool): endpoints that used to open a fresh connection per
@@ -603,8 +615,12 @@ def _get_db() -> sqlite3.Connection:
       lost because persist_message swallows exceptions).
     - One-time schema migrations run inside _ensure_schema (guarded by
       PRAGMA user_version), not per connection.
+
+    **2026-11-16 批次 D1**：reader（只读浏览门面）改走本函数——四通道
+    从此共用同一套连接生命周期（此前 reader 每次调用裸 connect + close，
+    是 WinError-32 flake 家族的另一处来源）。
     """
-    db_path = str(_get_db_path())
+    db_path = str(db_path)
     cache = getattr(_db_thread_local, "conns", None)
     if cache is None:
         cache = {}

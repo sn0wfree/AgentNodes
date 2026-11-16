@@ -3,6 +3,18 @@
 **改名（2026-11-16 批次 C2'）**：``unified`` → ``reader``（方案 §3.2——
 「unified」无信息量；本模块的职责就是**只读浏览**，web 通道不走这里）。
 
+**D1（2026-11-16）**：连接获取从裸 ``sqlite3.connect`` 改为共享的
+``db._get_db_at``——四通道从此共用同一套连接生命周期（WAL / busy_timeout /
+schema ensure / 线程内复用），不再每次调用开新句柄。两个不变式：
+
+1. **exists() 前置守卫保留**——查询一个不存在的库必须返回空而不**创建**
+   空库文件（``_get_db_at`` 会经 ``_ensure_schema`` 建库，所以守卫必须在
+   取连接之前）；
+2. **共享连接不再 close**——句柄由 db 层的线程缓存持有（tests 由 conftest
+   的 ``_close_session_services`` 统一回收）。显式 ``db_path`` 参数继续有效
+   （测试传 tmp 路径依赖它），这正是走 ``_get_db_at(path)`` 而非 ``_get_db()``
+   的原因。
+
 Why this exists: five consumers need "list sessions" — CLI ``session list``,
 REPL ``/history``, TUI resume, MCP ``list_sessions``, and the admin views.
 B4's investigation found no reusable function among them:
@@ -20,7 +32,6 @@ query shared by all of them, pointed at the unified DB (the same file
 """
 from __future__ import annotations
 
-import sqlite3
 from pathlib import Path
 from typing import Any
 
@@ -36,18 +47,17 @@ def list_sessions(
     rather than a dataclass: the consumers disagree on shape and a dataclass
     would only be re-adapted by each of them.
     """
+    from .db import _get_db_at
+
     path = _resolve(db_path)
     if not path.exists():
         return []
-    conn = sqlite3.connect(str(path), timeout=5.0)
-    try:
-        rows = conn.execute(
-            "SELECT id, title, created_at, updated_at FROM sessions "
-            "ORDER BY updated_at DESC LIMIT ?",
-            (max(1, int(limit)),),
-        ).fetchall()
-    finally:
-        conn.close()
+    conn = _get_db_at(path)
+    rows = conn.execute(
+        "SELECT id, title, created_at, updated_at FROM sessions "
+        "ORDER BY updated_at DESC LIMIT ?",
+        (max(1, int(limit)),),
+    ).fetchall()
     return [
         {
             "id": r[0],
@@ -68,18 +78,17 @@ def get_session(session_id: str, db_path: Path | None = None) -> dict[str, Any] 
     AttributeError or silently got None. Reading the unified table directly
     returns the columns that actually exist.
     """
+    from .db import _get_db_at
+
     path = _resolve(db_path)
     if not path.exists():
         return None
-    conn = sqlite3.connect(str(path), timeout=5.0)
-    try:
-        row = conn.execute(
-            "SELECT id, user_id, title, created_at, updated_at, starred, "
-            "tags_json, message_count, archived FROM sessions WHERE id = ?",
-            (session_id,),
-        ).fetchone()
-    finally:
-        conn.close()
+    conn = _get_db_at(path)
+    row = conn.execute(
+        "SELECT id, user_id, title, created_at, updated_at, starred, "
+        "tags_json, message_count, archived FROM sessions WHERE id = ?",
+        (session_id,),
+    ).fetchone()
     if row is None:
         return None
     return {
@@ -105,19 +114,18 @@ def get_messages(
 
     ``created_at`` (not the legacy ``timestamp``) is the column that exists.
     """
+    from .db import _get_db_at
+
     path = _resolve(db_path)
     if not path.exists():
         return []
-    conn = sqlite3.connect(str(path), timeout=5.0)
-    try:
-        rows = conn.execute(
-            "SELECT id, role, content, created_at, message_type, metadata_json "
-            "FROM messages WHERE session_id = ? "
-            "ORDER BY seq, created_at LIMIT ?",
-            (session_id, max(1, int(limit))),
-        ).fetchall()
-    finally:
-        conn.close()
+    conn = _get_db_at(path)
+    rows = conn.execute(
+        "SELECT id, role, content, created_at, message_type, metadata_json "
+        "FROM messages WHERE session_id = ? "
+        "ORDER BY seq, created_at LIMIT ?",
+        (session_id, max(1, int(limit))),
+    ).fetchall()
     return [
         {
             "id": r[0],
@@ -144,18 +152,17 @@ def search_messages(
     because of tokenizer behaviour), so this matches the live semantics
     instead of re-introducing a second index.
     """
+    from .db import _get_db_at
+
     path = _resolve(db_path)
     if not path.exists() or not query.strip():
         return []
-    conn = sqlite3.connect(str(path), timeout=5.0)
-    try:
-        rows = conn.execute(
-            "SELECT id, session_id, role, content, created_at FROM messages "
-            "WHERE content LIKE ? ORDER BY created_at DESC LIMIT ?",
-            (f"%{query}%", max(1, int(limit))),
-        ).fetchall()
-    finally:
-        conn.close()
+    conn = _get_db_at(path)
+    rows = conn.execute(
+        "SELECT id, session_id, role, content, created_at FROM messages "
+        "WHERE content LIKE ? ORDER BY created_at DESC LIMIT ?",
+        (f"%{query}%", max(1, int(limit))),
+    ).fetchall()
     return [
         {
             "id": r[0],
@@ -174,22 +181,24 @@ def delete_session(session_id: str, db_path: Path | None = None) -> bool:
     Returns True when a session row existed and was removed. Messages go with
     it via the FK cascade; the explicit DELETE keeps behaviour identical when
     foreign_keys is off on a fresh connection.
+
+    **D2 注**：这是 CLI 通道的**硬删**语义（与 web 的软删相反）——统一删除
+    语义是迁移方案 E 批的事（被 3 处矛盾测试断言阻塞，§3.5），本模块不改。
     """
+    from .db import _get_db_at
+
     path = _resolve(db_path)
     if not path.exists():
         return False
-    conn = sqlite3.connect(str(path), timeout=5.0)
-    try:
-        existed = conn.execute(
-            "SELECT 1 FROM sessions WHERE id = ?", (session_id,),
-        ).fetchone()
-        if existed is None:
-            return False
-        conn.execute("DELETE FROM messages WHERE session_id = ?", (session_id,))
-        conn.execute("DELETE FROM sessions WHERE id = ?", (session_id,))
-        conn.commit()
-    finally:
-        conn.close()
+    conn = _get_db_at(path)
+    existed = conn.execute(
+        "SELECT 1 FROM sessions WHERE id = ?", (session_id,),
+    ).fetchone()
+    if existed is None:
+        return False
+    conn.execute("DELETE FROM messages WHERE session_id = ?", (session_id,))
+    conn.execute("DELETE FROM sessions WHERE id = ?", (session_id,))
+    conn.commit()
     return True
 
 

@@ -441,7 +441,18 @@ display 工具 9 个 + 通用残名 5 个）。allowlist 死名对可见工具�
 **D1 的 db_path 参数约束（实施前必读）**：`unified.*` 五函数接受显式
 `db_path`，tests 大量传 tmp 路径。`db._get_db()` 按解析路径缓存连接，
 **无法**尊显式路径 ⇒ D1 不能把函数体无脑换成 `_get_db()`。
-（是否引入 `_get_db_at(path)`、还是仅生产路径走共享连接，D1 实施时定。）
+
+> **2026-11-16 D1 实施记录**：采用 `_get_db_at(path)`——把 `_get_db` 的
+> 连接体拆为按显式路径取缓存的 `_get_db_at(db_path)`，`_get_db()` 变为
+> 「解析路径 + 委托」的薄壳（**解析必须留在模块全局名上**，tests 靠
+> monkeypatch `_get_db_path` 重定向）。reader 五函数改走 `_get_db_at`，
+> 两个不变式：
+> 1. `exists()` 前置守卫保留在取连接**之前**——否则 `_ensure_schema`
+>    会把「查询不存在的库」变成「创建空库文件」（`test_missing_db_returns_empty`
+>    钉住）；
+> 2. 共享连接**不再 close**——句柄由 db 层线程缓存持有，tests 由 conftest
+>    `_close_session_services`（B2 复活的那段）统一回收。
+> 契约测试当场抓到 `_get_db_at` 未进垫片（防漂移网正常工作），已补。
 
 **每步一个 commit**，任一步红就回滚那一步。
 
