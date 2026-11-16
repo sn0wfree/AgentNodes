@@ -110,6 +110,12 @@ pyright-report.json
 # test-generated strategy workspaces (not source)
 /strategies/
 
+# user-authored workflow definitions written by the UI into the default
+# workspace (kernel/workflow/builtin.py: user_dir(workspace) = <ws>/workflows).
+# Shipped templates live in templates/workflows/ — this directory is runtime
+# user data, same class as /strategies/ above.
+/workflows/
+
 # per-session user-home sandbox for tests (runtime artifact)
 tests/_user_home_sandbox/
 
