@@ -111,6 +111,10 @@
 | [`tui-redesign-plan.md`](design/tui-redesign-plan.md) | TUI 重设计 |
 | [`tui-display-philosophy.md`](design/tui-display-philosophy.md) | TUI 显示哲学 |
 | [`right-panel-agent-driven.md`](design/right-panel-agent-driven.md) | 右侧面板 agent 驱动 |
+| [`ui-workbench-design-20261115.md`](design/ui-workbench-design-20261115.md) | **UI 轨道主文档**：变迁链 + 8 条设计精髓 + 三表面蓝图 + §11 Grok Bot 对照（待 §6 确认） |
+| [`ui-a-token-system-design-20261114.md`](design/ui-a-token-system-design-20261114.md) | U-A 令牌体系：中性化转向 + L1/L2/L3 + alpha 表/specular/刻度表 |
+| [`../ui-zcode-source-research-20261114.md`](../ui-zcode-source-research-20261114.md) | ZCode UI 源码级逆向（§1-§10，U-A/U-B/U-D/U-E 依据） |
+| [`../ui-grok-bot-source-research-20261116.md`](../ui-grok-bot-source-research-20261116.md) | Grok Bot UI 源码级逆向（双 alpha 表/玻璃可关层/刻度/gradient 三条件判定） |
 
 ### 2.6 其他契约
 
@@ -119,6 +123,8 @@
 | [`system-one-survey-20261109.md`](design/system-one-survey-20261109.md) | System One 调研（Kev 接口事实 + 决策点普查） |
 | [`system-one-decision-layer-design-20261109.md`](design/system-one-decision-layer-design-20261109.md) | System One 决策层接入（讨论稿，8 个开放问题） |
 | [`typesafe-langchain-integration-survey-20261110.md`](design/typesafe-langchain-integration-survey-20261110.md) | LangChain TypeSafe 集成包调研（0.0.2 产物实测 + 与本项目交叉） |
+| [`crewai-survey-20261116.md`](design/crewai-survey-20261116.md) | crewAI 调研（60k Star 微信文核查 + Crews/Flows 事实 + 与本项目对照） |
+| [`crewai-design-borrow-20261116.md`](design/crewai-design-borrow-20261116.md) | crewAI 可借鉴项取舍（P0 节点产物契约；7 个开放问题） |
 | [`plug-in-contract-design.md`](design/plug-in-contract-design.md) | 插件契约 |
 | [`truthfulness-common-rules-design.md`](design/truthfulness-common-rules-design.md) | 真实性通用规则 |
 | [`phase3-dual-factory-design.md`](design/phase3-dual-factory-design.md) | 双工厂 |
