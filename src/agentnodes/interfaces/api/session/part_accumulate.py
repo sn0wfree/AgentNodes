@@ -14,6 +14,7 @@ from agentnodes.kernel.session.part_accumulate import (  # noqa: F401
     _accumulate_thinking_delta,
     _accumulate_tool_result,
     _build_tool_call_part,
+    logger,
 )
 
 __all__ = [
@@ -24,4 +25,5 @@ __all__ = [
     "_accumulate_thinking_delta",
     "_accumulate_tool_result",
     "_build_tool_call_part",
+    "logger",
 ]

@@ -138,8 +138,10 @@ class TestHistoryCompactionFilter:
             _make_message("user", "current"),
         ]
         with caplog.at_level(
-            logging.DEBUG, logger="agentnodes.interfaces.api.session.history_convert"
+            logging.DEBUG, logger="agentnodes.kernel.session.history_convert"
         ):
+            # logger 名随批次 B1 变化（history_convert 已下沉到 kernel/session）——
+            # 断言的是「隐藏计数日志被发出」，不是模块路径。
             SessionService._convert_messages_to_history(messages)
         # Check that the hidden count log was emitted
         hidden_logs = [r for r in caplog.records

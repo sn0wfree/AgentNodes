@@ -76,10 +76,21 @@
 
 | # | 约束 | 实测 | 处置 |
 |---|---|---|---|
-| **K1** | **`service.py` / `store.py` 反向依赖 routers** | `service.py:99,176,607,1233` → `routers.chat` / `routers.web_session`；`store.py:120` → `routers.web_session`（共 **5 处**）| 迁入 kernel 后必须改 —— L3 不能 import L1。依赖的 `_get_db` / `_row_to_message` / `_invalidate_projection` 随 `web_session_db.py` 一起下沉（§3.2）|
+| **K1** | **`service.py` / `store.py` 反向依赖 routers** | `service.py:99,176` → `routers.web_session`（`_get_db` / `auto_title_session`）；`store.py:120` → `routers.web_session`（`_get_db` / `_row_to_message`）。**`service.py` 的 `routers.chat` 两处已随 LLM 收敛批消除**（`56bce1b0`），剩余 **4 处**，全部指向 `routers.web_session` | 迁入 kernel 后必须改 —— L3 不能 import L1。`_get_db` / `_row_to_message` 随 `web_session_db.py` 一起下沉到 `kernel/session/db.py`（§3.2、§3.3 B3）|
 | **K2** | **L3 → L1 是门禁禁止的方向** | `layer_matrix.ORDER = [L1,L2,L3,L4]`，`L3→L1` 判违规 | ⇒ **`kernel/session` 不能反向 import L1**。「双入口同源」只能**反向做**：实现下沉到 kernel，L1 留 re-export 垫片（L1→L3 合法）。见 §3.1 修订 |
 | **K3** | **待迁文件对 kernel 内部的依赖共 17 处** | `service.py`→`kernel.agent.{compact,event_store,chat_loop,text_guard}`（8）· `history_convert`→`compact`（2）· `projector`/`projection_handlers`→`events.event_v2`（3）· `trace_projection`→`event_store`+`event_v2`（2）· `web_session_db`→`memory_manager`（1）· `loop_events`→`prompt_builder`（1）| **全部 L3→L3，迁入后仍合法** ✅ 不构成障碍 |
 | **K4** | **SQLite 连接管理的 WinError-32 flake 家族** | `web_session_db.py:7`「must close explicitly」· `store.py:57-60`「Historically this returned a raw sqlite3.connect handle」· `projection_store.py:5`「close() is explicit」 | 连接生命周期代码**必须随文件一起搬**，不得重写（§3.4）|
+
+> **2026-11-16 状态更新**（LLM 配置收敛批 `56bce1b0` 之后）：
+>
+> - ✅ **R1（`_build_llm_config` 归属）已解** —— 收敛批把 `service.py` 的 2 处
+>   `from ..routers.chat import _build_llm_config` 改为直接 `LLMConfig.load()`，
+>   `service.py` 对 `routers` 的反向依赖由 **4 处减到 2 处**（只余 `routers.web_session`）。
+> - ✅ **R2（`_invalidate_projection` 依赖 FastAPI Request）不存在** ——
+>   实测全仓只有 `routers/web_session.py` 自身定义并调用它（web 的 DELETE 端点内部用），
+>   **没有任何待迁文件 import 它**。方案 §6 缺口 4/5 的原估计偏保守。
+> - ⇒ **剩余反向依赖只有 4 处**（`service.py` 2 + `store.py` 2），全部指向
+>   `routers.web_session` 的 `_get_db` / `auto_title_session` / `_row_to_message`。
 
 ### 1.3.1 零依赖文件（批次 A 的实际范围）
 
@@ -258,17 +269,77 @@ interfaces/api/session/                L1 · 薄适配层
 
 ---
 
-### 批次 B · 主体迁移（`git mv` + import 改写）
+### 批次 B · 主体迁移 —— 按**依赖簇**拆成三个子批
+
+> **2026-11-16 重排**：原计划「一次搬 14 个文件」不可行，实测发现三个硬约束：
+>
+> 1. **包内相对 import 形成一个簇**：`service → store → projector → {projection_store,
+>    projection_handlers}`、`loop_events → service`、`service → {history_convert}`。
+>    搬任何文件都会让留在 L1 的消费方 `from .X import` 断链 —— **除非**给 L1 留垫片
+>    （A 批已验证该模式可行）。相对簇根是 `service`（1,471 行），它是最后搬的。
+> 2. **`web_session_db.py` 导入 `fastapi`**（L19 + L622/L624 两处 `HTTPException`）——
+>    而 **kernel / foundation 对 fastapi 的导入是 0 个文件**（实测）。
+>    直接搬 = 内核首次引入 web 框架。**必须先重构**，见 B2 前置。
+> 3. 6 个叶子的消费方共 **27 处**（含 18 处在 tests/），全部靠 L1 垫片保持零改动。
+
+#### B1 · 叶子下沉（5 文件 / 2,001 行 · 同 A 模式）
+
+**搬**：`history_convert.py`(358) · `projection_handlers.py`(791) · `projection_store.py`(354) ·
+`trace_projection.py`(126) · `backfill_event_log.py`(372) —— 5 个**无出向相对依赖**的叶子。
+
+**不搬**：`web_session_db.py`（fastapi，见 B2）· `web_session_state.py`（前端 DTO，留 L1，§3.2）·
+`{service, store, projector, loop_events}`（相对依赖簇，见 B3）。
 
 | 步 | 动作 | 验收判据 |
 |---|---|---|
-| B1 | `git mv` 14 个文件到 `kernel/session/`（保留历史）| `git log --follow` 仍能追到原文件 |
-| B2 | 改写所有 import：`agentnodes.interfaces.api.session.*` → `agentnodes.kernel.session.*` | `grep -rn "interfaces.api.session" src/` **零命中**（除 adapters 内有意保留）|
-| B3 | 消除 K1：`store.py` 改 import `.db` | `check_dangling_imports.py --layers` 上行违规仍 **0** |
-| B4 | `kernel/agent/*` 改 import 新路径（K2/K3）| 全量 pytest 0 failed |
-| B5 | 同步 `scripts/arch/layer_matrix.py`（`kernel/session` 已是 L3，**无需登记** —— `agentnodes.kernel` 兜底）| 门禁绿 |
+| B1.1 | `git mv` 5 个文件到 `kernel/session/` | `git log --follow` 仍能追到原文件 |
+| B1.2 | 每个文件在 L1 放 **re-export 垫片**（显式列符号，同 A）| 27 处消费方**零改动**；`from ...session.X import Y` 与 `from ...kernel.session.X import Y` 是同一对象 |
+| B1.3 | 扩展 `tests/test_session_kernel_migration.py` 的 `SUNK_MODULES` | 契约测试覆盖 5 个新模块（`is` 相等 + `__module__` 指向 kernel）|
+| B1.4 | 这 5 个文件搬到 kernel 后，它们的 `from .projection_models import` 等**解析到 kernel/session 的真身**（A 批已迁）| 无需改写 —— 同包相对引用自动对齐 |
 
-**B 批是风险最高的一批**：一次搬 5,774 行。建议 B1–B3 一个 commit，B4–B5 一个。
+> **B1 与 A 的关键差异**：A 搬的是「被消费方」，B1 搬的是「消费者」。
+> A 搬完后 L1 的相对 import 指向垫片（L1→L3 合法）；B1 搬完后**它们的相对 import
+> 指向 kernel 内的真身** —— 同样合法，因为 `projection_models` 等已在 kernel。
+
+#### B2 · `web_session_db` → `kernel/session/db.py`（**需先重构**）
+
+**前置设计（本批不做，先出方案）**：`_fetch_session_owned` 里的两处 `raise HTTPException`
+（404 Session not found / 403 Forbidden）是 web 语义，属 L1。下沉前要先定：
+
+| 选项 | 做法 |
+|---|---|
+| **2a** | 抛领域错误 `SessionNotFound` / `SessionForbidden`（放 `kernel/session/`），由 L1 的路由层 catch 并转成 `HTTPException` |
+| **2b** | `_fetch_session_owned` **留在 L1**，只把 schema/migration/row-mapper 部分下沉（`web_session_db.py` 770 行里只有 3 处 fastapi）|
+
+> 2a 更彻底（消除 fastapi 依赖），但要动 `routers/web_session.py` 的错误处理；
+> 2b 只下沉无框架部分，改动最小。**需拍板**（§6 缺口）。
+>
+> ⚠️ 无论哪种，**B1 不含 `web_session_db`** —— 内核当前对 fastapi 导入数为 0，
+> 这个先例不能由本批打破。
+
+#### B3 · 相对依赖簇（4 文件 / 2,456 行 · 必须整簇一起搬）
+
+**簇成员**：`service.py`(1,471) · `store.py`(353) · `projector.py`(312) · `loop_events.py`(278)
+
+```
+service ──→ store ──→ projector ──→ {projection_store, projection_handlers}  (已在 B1 → kernel)
+   │                   │
+   └→ loop_events       └→ .projection_models  (已在 A → kernel)
+   └→ history_convert  (已在 B1 → kernel)
+```
+
+| 步 | 动作 | 验收判据 |
+|---|---|---|
+| B3.1 | `git mv` 4 文件（**同 commit**，缺一即断链）| `git log --follow` |
+| B3.2 | L1 垫片（4 个）| web 路由 / container / dependencies 的 `from ..session.service import` 等 **27+ 消费方零改动**|
+| B3.3 | 消除 K1：`service.py:99,176`、`store.py:120` 对 `routers.web_session` 的依赖改指向 B2 下沉的 `db.py` | `check_dangling_imports.py --layers` 上行违规仍 **0** |
+| B3.4 | 契约测试覆盖 4 个新模块 | `is` 相等 + `__module__` 指向 kernel |
+
+> **B3.3 依赖 B2**：`_get_db` / `_row_to_message` / `auto_title_session` 住在
+> `web_session_db.py` / `routers/web_session.py`。若 B2 未完成，K1 无法彻底消除。
+> ⇒ **B3 的前置 = B2**（或 §6 缺口里另有临时解）。
+
+---
 
 ### 批次 C · 通道切换（四通道逐一）
 
@@ -331,8 +402,10 @@ interfaces/api/session/                L1 · 薄适配层
 | 4 | **未评估 `interfaces/api/session/web_session_db.py` 的 FTS 索引迁移** | 该文件有 `_ensure_fts_table` / `_add_column` / `_run_schema_migrations`（370+ 行）—— 搬文件不搬 schema，理论上安全，但需在 B 批后核对 FTS 表仍工作 |
 | 5 | ~~未量化四个通道的回归测试覆盖~~ **已核查**：web 52 文件 / CLI 27 / TUI 39 / MCP 18 —— **四通道全覆盖充分** | C 批每步都有对应测试，无需先补 |
 | 6 | **`kernel/session/unified.py` 被 2 个测试文件直接 import**（`test_session_list_helper.py` 9 处 / `test_memory_dataplane_hotfix.py`）| D1 批次改 `reader.py` 实现后，这 2 个测试文件的 import 路径也要改（`unified` → `reader`）|
-| 7 | **FTS 表由 `web_session_db.py` 独家维护**（`_ensure_fts_table` / `_add_column`）| 迁到 kernel 后由 `kernel/session/db.py` 维护 —— 需确认没有 L1 侧的代码直接调它（`grep -rn "ensure_fts\|_ensure_schema" src/`）|
-
+| 7 | **FTS 表由 `web_session_db.py` 独家维护**
+| 8 | **R1（`_build_llm_config` 归属）已解** —— LLM 收敛批 `56bce1b0` 消除了 `service.py` 对 `routers.chat` 的 2 处依赖 | ✅ 关闭。`service.py` 对 routers 的反向依赖 4 → 2 处 |
+| 9 | **R2（`_invalidate_projection` 依赖 FastAPI Request）不存在** | ✅ 关闭（方案原估计偏保守）。实测只有 `routers/web_session.py` 自身用它，无待迁文件引用 |
+| 10 | **`web_session_db.py` 导入 `fastapi`（L19 + L622/L624 两处 `HTTPException`）**，而 kernel/foundation 对 fastapi 导入数 = **0** | 🔴 **B2 阻塞项，需拍板** —— 搬它就是内核首次引入 web 框架。方案 §4-B2 给了 2a（抛领域错误，路由层转换）/ 2b（只下沉无框架部分）两个选项 |
 ---
 
 ## §7 验收判据总表（什么会从红变绿 / 从绿变红）
