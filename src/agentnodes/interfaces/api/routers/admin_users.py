@@ -209,7 +209,7 @@ async def user_data(user_id: str, admin: str = Depends(require_admin)):
     _target_user(user_id, admin)
     import sqlite3
 
-    from agentnodes.interfaces.api.session.web_session_db import _get_db_path
+    from agentnodes.kernel.session.db import _get_db_path
     from agentnodes.kernel.orchestration.ticket_store import (
         default_db_path as _ticket_db_path,
     )

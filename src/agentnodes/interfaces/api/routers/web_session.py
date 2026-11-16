@@ -49,7 +49,10 @@ class SearchRequest(BaseModel):
 # ─────────────────────────────────────────────────────────────────────────────
 
 
-from ..session.web_session_db import (  # noqa: E402,F401  (re-exports for old import paths)
+# C1（2026-11-16）：本 router 是 web 适配层，DB helper 直接取 kernel 真身
+# （不再经过 L1 垫片）。re-export 保留：chat/goal/permission/schedule/workflow
+# 五个路由与 tests 都从这里取这些名字。
+from agentnodes.kernel.session.db import (  # noqa: E402,F401  (re-exports for old import paths)
     _add_column,
     _drop_column,
     _ensure_fts_table,

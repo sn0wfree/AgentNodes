@@ -424,12 +424,24 @@ display 工具 9 个 + 通用残名 5 个）。allowlist 死名对可见工具�
 
 ### 批次 C · 通道切换（四通道逐一）
 
+> **2026-11-16 B3 后修订**：原 C2/C3/C4 的前提已消解。方案成文时
+> `service/store/projector` 还在 L1，「CLI/TUI/MCP 改走服务层」意味着改通道代码；
+> B3 之后实现已全在 kernel，而 CLI/TUI/MCP 调用的 `kernel.session.unified`
+> **本来就是 L3**——依赖方向已合法。「不再直查 DB」的实质工作收缩为：
+> **D1（reader 内部改走共享连接）+ §3.2 改名（unified → reader）**，
+> 四通道调用点零改动。修订后的 C 批 = C1（web import 翻转）+ 改名；
+> D1 保持独立 commit（K4 敏感）。
+
 | 步 | 动作 | 验收判据 |
 |---|---|---|
-| C1 | **web**：路由/容器/依赖改 import 新路径，**调用点不变** | `tests/test_api_*.py` 全绿 |
-| C2 | **CLI**：`commands/session.py` + `slash_session.py` 改走服务层（不再用 `reader.py` 直查 DB）| CLI 会话测试全绿；**输出形状不变**（回归断言）|
-| C3 | **TUI**：`cli/tui/app.py` 改走服务层 | TUI 测试全绿 |
-| C4 | **MCP**：`mcp/server.py` 改走服务层（注意它是**函数内 import**）| MCP 测试全绿 |
+| C1 | **web**：container / dependencies / chat / admin_users 的 import 从垫片翻到 kernel 真身，**调用点不变** | `tests/test_api_*.py` 全绿；垫片只剩测试兼容职责 |
+| C2' | **改名**：`kernel/session/unified.py` → `reader.py`（§3.2：unified 无信息量）；CLI/TUI/MCP/tests 的 10 处 import 同步 | 全量绿；`grep "session.unified" src/` = 0 |
+| ~~C2~C4~~ | ~~CLI/TUI/MCP 改走服务层~~ | 被 D1 + C2' 取代（通道已指向 kernel）|
+
+**D1 的 db_path 参数约束（实施前必读）**：`unified.*` 五函数接受显式
+`db_path`，tests 大量传 tmp 路径。`db._get_db()` 按解析路径缓存连接，
+**无法**尊显式路径 ⇒ D1 不能把函数体无脑换成 `_get_db()`。
+（是否引入 `_get_db_at(path)`、还是仅生产路径走共享连接，D1 实施时定。）
 
 **每步一个 commit**，任一步红就回滚那一步。
 

@@ -19,8 +19,8 @@ from fastapi import Request
 
 if TYPE_CHECKING:
     from agentnodes.kernel.agent.event_store import EventStore
-    from .session.service import SessionService
-    from .session.store import SessionStore
+    from agentnodes.kernel.session.service import SessionService
+    from agentnodes.kernel.session.store import SessionStore
 
 # ── Cache keys on app.state (fallback when no container is attached) ─
 
@@ -58,7 +58,7 @@ def get_session_store(request: Request) -> "SessionStore":
     container = getattr(request.app.state, "_container", None)
     if container is not None:
         return container.session_store
-    from .session.store import SessionStore
+    from agentnodes.kernel.session.store import SessionStore
 
     store = getattr(request.app.state, _STATE_KEY_SESSION_STORE, None)
     if store is None:
@@ -91,7 +91,7 @@ def get_session_service(request: Request) -> "SessionService":
     container = getattr(request.app.state, "_container", None)
     if container is not None:
         return container.session_service
-    from .session.service import SessionService
+    from agentnodes.kernel.session.service import SessionService
 
     svc = getattr(request.app.state, _STATE_KEY_SESSION_SERVICE, None)
     if svc is None:

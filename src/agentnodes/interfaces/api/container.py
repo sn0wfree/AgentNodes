@@ -27,8 +27,8 @@ from fastapi import Request
 
 if TYPE_CHECKING:
     from agentnodes.kernel.agent.event_store import EventStore
-    from .session.service import SessionService
-    from .session.store import SessionStore
+    from agentnodes.kernel.session.service import SessionService
+    from agentnodes.kernel.session.store import SessionStore
 
 logger = logging.getLogger(__name__)
 
@@ -82,9 +82,9 @@ def build_container(
     """
     from agentnodes.kernel.agent.event_store import EventStore
     from agentnodes.kernel.agent.memory_manager import resolve_session_db_path
-    from .session.projector import Projector
-    from .session.service import SessionService
-    from .session.store import SessionStore
+    from agentnodes.kernel.session.projector import Projector
+    from agentnodes.kernel.session.service import SessionService
+    from agentnodes.kernel.session.store import SessionStore
 
     if db_path is None:
         db_path = resolve_session_db_path()

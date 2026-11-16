@@ -29,8 +29,8 @@ from ..schemas.chat import (
 from ..schemas.chat import (
     ChatMessageRequest as ChatMessage,
 )
-from ..session.models import AttemptId, SessionId
-from ..session.service import SessionService
+from agentnodes.kernel.session.models import AttemptId, SessionId
+from agentnodes.kernel.session.service import SessionService
 from .slash_common import (
     _handle_clear_command,
     _handle_compact_command,
@@ -767,9 +767,7 @@ async def chat_events(
         # even after the session row was deleted or never created.
         if exc.status_code == 404 and session_id.startswith("study_"):
             try:
-                from agentnodes.interfaces.api.session.web_session_db import (
-                    ensure_session_row,
-                )
+                from agentnodes.kernel.session.db import ensure_session_row
 
                 ensure_session_row(
                     _get_db_path(), session_id,
@@ -884,7 +882,7 @@ async def get_session_trace(
     caller could read ANY session's trace. 404/403 per _fetch_session_owned.
     """
     from agentnodes.kernel.agent.trace import TraceWriter
-    from ..session.trace_projection import TraceProjection
+    from agentnodes.kernel.session.trace_projection import TraceProjection
     from .web_session import _fetch_session_owned, _get_db
     user_id = getattr(request.state, "user_id", "anonymous")
     _fetch_session_owned(_get_db(), session_id, user_id)
