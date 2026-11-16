@@ -121,5 +121,63 @@ describe('useKeyboardShortcuts', () => {
     pressKey('t', { metaKey: true })
     expect(mocks.createNewSession).toHaveBeenCalledWith('新会话')
     expect(mocks.navigate).toHaveBeenCalledWith('/chat')
+    expect(mocks.toggleSidebar).toHaveBeenCalledTimes(1)
+  })
+
+  // ── T1.5 additions: remaining inline bindings + input guards ──
+
+  it('Cmd+W navigates to /dag', () => {
+    renderHook(() => useKeyboardShortcuts())
+    pressKey('w', { metaKey: true })
+    expect(mocks.navigate).toHaveBeenCalledWith('/dag')
+    expect(mocks.closeSession).not.toHaveBeenCalled()
+  })
+
+  it('Cmd+Shift+W closes the active session (and does not navigate)', () => {
+    renderHook(() => useKeyboardShortcuts())
+    pressKey('W', { metaKey: true, shiftKey: true })
+    expect(mocks.closeSession).toHaveBeenCalledWith('s-active')
+    expect(mocks.navigate).not.toHaveBeenCalled()
+  })
+
+  it.each([
+    ['1', 's-active'],
+    ['2', 's-other'],
+  ])('Cmd+%s switches to the matching open tab', (key, expected) => {
+    renderHook(() => useKeyboardShortcuts())
+    pressKey(key, { metaKey: true })
+    expect(mocks.switchSession).toHaveBeenCalledWith(expected)
+  })
+
+  it('Cmd+3 (no third open tab) is a no-op, not an error', () => {
+    renderHook(() => useKeyboardShortcuts())
+    pressKey('3', { metaKey: true })
+    expect(mocks.switchSession).not.toHaveBeenCalled()
+  })
+
+  it('Cmd+B inside a TEXTAREA is ignored (input guard)', () => {
+    renderHook(() => useKeyboardShortcuts())
+    const ta = document.createElement('textarea')
+    document.body.appendChild(ta)
+    fireEvent.keyDown(ta, { key: 'b', metaKey: true })
+    expect(mocks.toggleRightPanel).not.toHaveBeenCalled()
+    document.body.removeChild(ta)
+  })
+
+  it('Cmd+K inside a contentEditable is still allowed (allow-list)', () => {
+    renderHook(() => useKeyboardShortcuts())
+    const div = document.createElement('div')
+    div.contentEditable = 'true'
+    document.body.appendChild(div)
+    fireEvent.keyDown(div, { key: 'k', metaKey: true })
+    expect(mocks.setSearchOpen).toHaveBeenCalledWith(true)
+    document.body.removeChild(div)
+  })
+
+  it('unmount removes the keydown listener', () => {
+    const { unmount } = renderHook(() => useKeyboardShortcuts())
+    unmount()
+    pressKey('k', { metaKey: true })
+    expect(mocks.setSearchOpen).not.toHaveBeenCalled()
   })
 })

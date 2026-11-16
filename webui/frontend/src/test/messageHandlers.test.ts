@@ -8,6 +8,11 @@ import {
   toolResult,
   assistantMessage,
   goalUpdatedMessage,
+  fileEdit,
+  table,
+  chart,
+  image,
+  html,
 } from '../hooks/sse/messageHandlers'
 import { useChatStore } from '../stores/chat'
 import type { SSEContext } from '../hooks/sse/types'
@@ -271,5 +276,86 @@ describe('goalUpdatedMessage', () => {
     goalUpdatedMessage({ goal_id: 'g-1' }, ctx())
     goalUpdatedMessage({ message_id: 'goal-x' }, ctx())
     expect(useChatStore.getState().messages.size).toBe(0)
+  })
+})
+
+// ── T1.5: block-part handlers (P6 defense-in-depth registration) ──
+describe('block-part handlers (file_edit / table / chart / image / html)', () => {
+  beforeEach(() => {
+    useChatStore.setState({ messages: new Map() })
+    useChatStore.getState().addMessage({
+      id: 'mid-1',
+      session_id: 'sess-1',
+      role: 'assistant',
+      parts: [],
+      created_at: 1,
+    })
+  })
+
+  const parts = () =>
+    (useChatStore.getState().messages.get('mid-1')!.parts as Array<
+      Record<string, unknown>
+    >)
+
+  it('file_edit attaches a file_edit part with defaults', () => {
+    fileEdit({ message_id: 'mid-1', id: 'fe-1', file_path: 'a.py' }, ctx())
+    expect(parts()).toHaveLength(1)
+    expect(parts()[0]).toMatchObject({
+      type: 'file_edit',
+      id: 'fe-1',
+      file_path: 'a.py',
+      old_content: '',
+      new_content: '',
+    })
+  })
+
+  it('table attaches headers/rows/caption', () => {
+    table(
+      { message_id: 'mid-1', id: 'tb-1', headers: ['h1'], rows: [['v1']], caption: 'cap' },
+      ctx(),
+    )
+    expect(parts()[0]).toMatchObject({
+      type: 'table',
+      headers: ['h1'],
+      rows: [['v1']],
+      caption: 'cap',
+    })
+  })
+
+  it('chart defaults to bar type and empty data', () => {
+    chart({ message_id: 'mid-1', id: 'ch-1' }, ctx())
+    expect(parts()[0]).toMatchObject({ type: 'chart', chart_type: 'bar', data: [] })
+  })
+
+  it('image attaches url/alt', () => {
+    image({ message_id: 'mid-1', id: 'im-1', url: 'u.png', alt: 'pic' }, ctx())
+    expect(parts()[0]).toMatchObject({ type: 'image', url: 'u.png', alt: 'pic' })
+  })
+
+  it('html attaches title/content', () => {
+    html({ message_id: 'mid-1', id: 'ht-1', title: 't', content: '<b>x</b>' }, ctx())
+    expect(parts()[0]).toMatchObject({ type: 'html', title: 't', content: '<b>x</b>' })
+  })
+
+  it('dedups by part id on SSE replay (no duplicate parts)', () => {
+    table({ message_id: 'mid-1', id: 'tb-1', headers: ['h1'] }, ctx())
+    table({ message_id: 'mid-1', id: 'tb-1', headers: ['h2'] }, ctx())
+    expect(parts()).toHaveLength(1)
+    expect(parts()[0]!.headers).toEqual(['h1'])
+  })
+
+  it('falls back to a generated part id when the event omits one', () => {
+    image({ message_id: 'mid-1', url: 'u.png' }, ctx())
+    expect(parts()).toHaveLength(1)
+    expect(String(parts()[0]!.id)).toMatch(/^image_\d+$/)
+  })
+
+  it('every block handler no-ops without message_id', () => {
+    fileEdit({ id: 'x' }, ctx())
+    table({ id: 'x' }, ctx())
+    chart({ id: 'x' }, ctx())
+    image({ id: 'x' }, ctx())
+    html({ id: 'x' }, ctx())
+    expect(parts()).toHaveLength(0)
   })
 })
