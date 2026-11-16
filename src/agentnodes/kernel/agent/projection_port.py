@@ -12,7 +12,8 @@ Architecture 的 Dependency Rule（内层不得点名外层符号），也是本
 写侧声明**自己需要的窄抽象**，实现由组合根注入。事件溯源社区的三条硬
 规则在本文件全部满足：
 
-1. 依赖朝内：本 Protocol 在 kernel，实现（Projector）在 L1，方向 L1→L3。
+1. 依赖朝内：本 Protocol 与实现（Projector）同在 kernel/session（R-014 批次 B3
+   下沉；原先实现住在 L1，方向 L1→L3，同样朝内）。
 2. 事件类型是唯一共享契约：端口只描述「怎么应用投影」，不描述「投影是什么」。
 3. 构造权归组合根：``EventStore`` 只接收实例，绝不自己 ``new``。
 

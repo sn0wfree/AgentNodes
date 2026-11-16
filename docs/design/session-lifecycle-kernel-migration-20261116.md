@@ -491,12 +491,28 @@ display 工具 9 个 + 通用残名 5 个）。allowlist 死名对可见工具�
 
 ### 批次 F · 收尾
 
+> **2026-11-17 F 批决策（实施前落定）**：
+
+**F1 修订：垫片保留**。原目标「`interfaces/api/session/` ≤ 2 文件」基于
+「垫片可删」的假设；实测垫片仍被 **42 个测试文件 / 113 处 import** 依赖——
+删除 = 一次 42 文件的机械改写，零架构收益（垫片已是纯 re-export，
+L1 不再持有任何实现）。修订后目标：**目录保持 14 文件（13 垫片 +
+`web_session_state.py` 前端 DTO），文档定位为「测试兼容层」**；
+垫片删除降级为独立后续项（应与「测试 import 现代化」同批做，一次付清）。
+
+**端口移除评估（结论：两个都保留）**：
+
+| 端口 | 评估 | 结论 |
+|---|---|---|
+| `foundation/storage/schema_port` | B2 后 DDL 已在 L3，方向问题消失 | **保留**——① `test_memory_manager_comprehensive.py:221` 显式走端口注册；② 纯内核场景（未装配 db.py）靠退化 DDL 兜底；③ 移除需连带改测试，R-015 四项不满足 |
+| `kernel/agent/projection_port` | B3 后 Projector 已同层 | **保留**——其 docstring 已预答：端口解决的是**所有权**（组合根构造）不是方向；同层也不该让 EventStore 偷偷 new 带状态的协作者 |
+
 | 步 | 动作 | 验收判据 |
 |---|---|---|
-| F1 | `interfaces/api/session/` 只剩 `api_models.py`（+ 若 `web_state.py` 留此）| 目录 ≤ 2 文件 |
-| F2 | 架构图回写（层体量变了：L1 减 5774 行、L3 增）| `sync_architecture_diagram.py --write` 后 `test_architecture_diagram_matches_code` 绿 |
-| F3 | 能力集 C8 的「实现者」更新（`foundation/storage` → 加 `kernel/session`）| 架构图 tooltip 与 md §4.2 一致 |
-| F4 | 更新 `framework-and-principles-v1.2.md` §4 与架构图 D1/D2 状态 | 文档与代码一致 |
+| F2 | 架构图回写（每批已随做）| `test_architecture_diagram_matches_code` 绿 |
+| F3 | 能力集 C8 实现者更新：md §4.2 行 + 架构图 `CAPS.C8.providers` 加 `kernel/session`；L4 storage 的 tierWhy 注明降为「SQLite 后端」 | tooltip 与 md 一致 |
+| F4 | 架构图 `DEBTS.D1/D2` 状态回写（已处置）+ `SESSION_LIFECYCLE` 八阶段 owner 表全量更新（B/C/E 后 owner 全变）| HTML 与代码一致 |
+| F5 | `projection_port` docstring 的「实现在 L1」更新为 kernel | 文档与代码一致 |
 
 ---
 

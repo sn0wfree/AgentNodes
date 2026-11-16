@@ -227,9 +227,9 @@ v1.2 追加一句：**执行面已收敛为单引擎（LoopEngine）**，结构�
 |---|---|---:|---:|---|
 | L1 | `interfaces/` | 118 | 22,064 | 渠道层 + 组装根（哑适配器 + 唯一知道 apps 的位置）|
 | L2 | `apps/` | 42 | 9,660 | 业务插件层（goal / chat / agent_plugins / swarm_presets / scheduled_research / builtin_tools / **algo**）|
-| L3 | `kernel/` | 208 | 48,194 | 平台机制（agent / workflow / gateway / orchestration / events / session / evolution / swarm / …）|
+| L3 | `kernel/` | 208 | 48,195 | 平台机制（agent / workflow / gateway / orchestration / events / session / evolution / swarm / …）|
 | L4 | `foundation/` | 63 | 12,085 | 零业务原语 |
-| — | **合计** | **431** | **92,003** | 上行违规 **0** |
+| — | **合计** | **431** | **92,004** | 上行违规 **0** |
 
 ### 2.2 构件落位表（语义 × 物理 · 状态已回填）
 
@@ -343,7 +343,7 @@ src/agentnodes/                                      418 文件 / 91,340 行
 | **C5** | 结果解析 | 取文本 / 取增量 | `foundation/llm` · `interfaces/api` |
 | **C6** | 流式回传 | SSE 逐 delta | `interfaces/api` · `kernel/events` |
 | **C7** | 会话标识 | 多轮的载体 | `kernel/gateway` |
-| **C8** | **历史持久化** | 会话落盘 + 取回（重启不丢）| `foundation/storage` |
+| **C8** | **历史持久化** | 会话落盘 + 取回（重启不丢）| `kernel/session` · `foundation/storage`（SQLite 后端） |
 | **C9** | **工具定义与调用** | function calling 协议 | `kernel/agent` · `apps/builtin_tools` |
 | **C10** | **工具执行与回灌** | tool loop：请求→执行→回灌→再请求 | `kernel/agent` |
 | **C11** | **工具权限门** | 哪些工具 / 哪些路径 / 要不要人确认 | `kernel/permission` |
