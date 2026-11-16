@@ -63,6 +63,18 @@ footer code{background:var(--muted);padding:1px 5px;border-radius:4px;}
     #an-arch .edge.faded { opacity:.1; }
     #an-arch .edge.up { stroke:var(--destructive); stroke-dasharray:2 3; opacity:.8; }
     #an-arch .lane.ev { opacity:.28; }
+    /* MVP 三层：绿 ⊃ 黄 ⊃ 红 —— 左缘色条为主，底纹极淡（深色主题下不压线） */
+    #an-arch .node.tier-A rect { fill:rgba(239,68,68,0.07); }
+    #an-arch .node.tier-B rect { fill:rgba(245,158,11,0.06); }
+    #an-arch .node.tier-C rect { fill:rgba(34,197,94,0.05); }
+    #an-arch .node.tier-A .n-label { font-weight:700; }
+    #an-arch .node .tier-bar { opacity:1; }
+    #an-arch .node.dim rect { opacity:.25; }
+    #an-arch .tier-legend { display:flex; gap:.55rem; flex-wrap:wrap; font-size:.74rem;
+      color:var(--muted-foreground); align-items:center; margin:.5rem 0 0; }
+    #an-arch .tier-chip { display:inline-flex; align-items:center; gap:.32rem;
+      padding:.18rem .5rem; border-radius:5px; border:1px solid var(--border); }
+    #an-arch .tier-dot { width:9px; height:9px; border-radius:2px; }
     #an-arch .hint { color:var(--muted-foreground); font-size:.77rem; margin:.55rem 0 0; }
     #an-arch .tip {
       position:absolute; pointer-events:none; background:var(--popover); color:var(--popover-foreground);
@@ -93,10 +105,15 @@ footer code{background:var(--muted);padding:1px 5px;border-radius:4px;}
     虚线蓝边为一次 <code>POST /api/chat/send</code> 的主链路；<span style="color:var(--viz-series-4)">紫色点线</span>为 evals 旁挂评估带读取被测对象；
     <span style="color:var(--viz-series-3)">橙色虚线框</span>为零依赖包（既无人依赖、也不依赖他人）。
   </p>
-  <p class="hint" style="margin-top:.35rem;">
-    <b>evals 不属于四层</b>：它在进程内构造 <code>AgentLoop</code> 并真实调用 <code>loop.run()</code>（
-    <code>run_evals_llm.py:71-93</code>），职责就是驱动被测对象，因此有 5 条 L3 依赖 —— 下沉 L4 会全部变成上行违规。
-    给它层级归属等于把观察者塞进被观察的结构里；「不属于任何层」正是理念四「评估器在循环外」的直接体现。
+
+  <div class="tier-legend" id="an-tier-legend"></div>
+
+  <p class="hint" style="margin-top:.45rem;">
+    <b>MVP 三层怎么定的</b>：<b style="color:#ef4444">红</b>= 一条消息进 → LLM 回一条，删掉就连不上；
+    <b style="color:#f59e0b">黄</b>= 加上工具 / 工作流真的能执行，删掉只能空谈；
+    <b style="color:#22c55e">绿</b>= 加上长程任务 / 自进化 / 评估 / 其它通道。
+    判据是<b style="color:var(--fg)">运行时必要性</b>而非 import 闭包 —— 实测闭包会把 32/36 个包都算进红色
+    （<code>interfaces/api</code> 与 <code>kernel/agent</code> 传递 import 几乎全仓），无法区分层级。
   </p>
 
 <script>
@@ -124,6 +141,8 @@ footer code{background:var(--muted);padding:1px 5px;border-radius:4px;}
     "label": "interfaces/api",
     "sub": "REST + SSE 入口",
     "role": "FastAPI 路由装配：chat / workflow / goal / admin / permission / session 投影；SSE 事件分发",
+    "tier": "A",
+    "tierWhy": "HTTP 入口 + SSE —— 没有它用户连不上、收不到流",
     "layer": "L1"
    },
    {
@@ -136,6 +155,8 @@ footer code{background:var(--muted);padding:1px 5px;border-radius:4px;}
     "label": "interfaces/cli",
     "sub": "CLI 命令",
     "role": "slash 命令族（goal / rsi / config / session）+ slash_router + onboard",
+    "tier": "C",
+    "tierWhy": "CLI 通道（另一条交付面）",
     "layer": "L1"
    },
    {
@@ -148,6 +169,8 @@ footer code{background:var(--muted);padding:1px 5px;border-radius:4px;}
     "label": "interfaces",
     "sub": "组装根",
     "role": "gateway_wiring / rsi_wiring / tier0_snapshot：唯一允许知道 apps 的位置",
+    "tier": "C",
+    "tierWhy": "组装根（wiring）",
     "layer": "L1"
    },
    {
@@ -160,6 +183,8 @@ footer code{background:var(--muted);padding:1px 5px;border-radius:4px;}
     "label": "interfaces/cli/tui",
     "sub": "TUI",
     "role": "Textual 终端界面：app / widgets / workers（DAG 视图、工作流 worker）",
+    "tier": "C",
+    "tierWhy": "TUI 通道",
     "layer": "L1"
    },
    {
@@ -172,6 +197,8 @@ footer code{background:var(--muted);padding:1px 5px;border-radius:4px;}
     "label": "interfaces/mcp",
     "sub": "MCP 服务",
     "role": "Model Context Protocol 工具桥接",
+    "tier": "C",
+    "tierWhy": "MCP 通道",
     "layer": "L1"
    }
   ]
@@ -192,6 +219,8 @@ footer code{background:var(--muted);padding:1px 5px;border-radius:4px;}
     "label": "apps/goal",
     "sub": "长程任务",
     "role": "判据 / 台账 / DAG 工作流 / journal / scoreboard（R1 恢复）",
+    "tier": "C",
+    "tierWhy": "长程任务（判据 / 台账 / DAG 工作流）",
     "layer": "L2"
    },
    {
@@ -204,6 +233,8 @@ footer code{background:var(--muted);padding:1px 5px;border-radius:4px;}
     "label": "apps/scheduled_research",
     "sub": "定时研究",
     "role": "cron 式研究调度（批次 8 自 kernel 迁入）",
+    "tier": "C",
+    "tierWhy": "定时研究调度",
     "layer": "L2"
    },
    {
@@ -216,6 +247,8 @@ footer code{background:var(--muted);padding:1px 5px;border-radius:4px;}
     "label": "apps/agent_plugins",
     "sub": "量化插件",
     "role": "quant 角色定义 + 输出校验器 + 展示层 + 提示词",
+    "tier": "C",
+    "tierWhy": "量化插件（角色 / 校验器 / 展示）",
     "layer": "L2"
    },
    {
@@ -228,6 +261,8 @@ footer code{background:var(--muted);padding:1px 5px;border-radius:4px;}
     "label": "apps",
     "sub": "能力注册",
     "role": "capabilities.py：kind 注册 + requires 声明（ADR-003 端口化）",
+    "tier": "C",
+    "tierWhy": "能力注册门面（capabilities / requires）",
     "layer": "L2"
    },
    {
@@ -240,6 +275,8 @@ footer code{background:var(--muted);padding:1px 5px;border-radius:4px;}
     "label": "apps/algo",
     "sub": "回测算法",
     "role": "无前视调仓回测（2026-11-16 自 kernel/algo 迁入，业务名词归业务层）",
+    "tier": "C",
+    "tierWhy": "无前视回测算法（零依赖，测试直接引用）",
     "layer": "L2"
    },
    {
@@ -252,6 +289,8 @@ footer code{background:var(--muted);padding:1px 5px;border-radius:4px;}
     "label": "apps/builtin_tools",
     "sub": "业务工具",
     "role": "goal 等业务侧工具实现",
+    "tier": "B",
+    "tierWhy": "业务工具实现 —— agent 能动手",
     "layer": "L2"
    },
    {
@@ -264,6 +303,8 @@ footer code{background:var(--muted);padding:1px 5px;border-radius:4px;}
     "label": "apps/chat",
     "sub": "产品策略",
     "role": "会话侧业务策略",
+    "tier": "C",
+    "tierWhy": "产品策略（导出格式 / persona / shell 门禁）",
     "layer": "L2"
    },
    {
@@ -276,6 +317,8 @@ footer code{background:var(--muted);padding:1px 5px;border-radius:4px;}
     "label": "apps/swarm_presets",
     "sub": "拓扑 preset",
     "role": "SwarmPreset YAML（37 个）",
+    "tier": "C",
+    "tierWhy": "37 个拓扑 preset（YAML 数据）",
     "layer": "L2"
    }
   ]
@@ -296,6 +339,8 @@ footer code{background:var(--muted);padding:1px 5px;border-radius:4px;}
     "label": "kernel/agent",
     "sub": "Agent 引擎",
     "role": "LoopEngine / LoopSpec / loop_assembly / guardrails / deciders / 工具注册 / 压缩 / 遥测（最大包）",
+    "tier": "A",
+    "tierWhy": "LoopEngine 主循环 —— 对话推理的执行体",
     "layer": "L3"
    },
    {
@@ -308,6 +353,8 @@ footer code{background:var(--muted);padding:1px 5px;border-radius:4px;}
     "label": "kernel/workflow",
     "sub": "工作流引擎",
     "role": "definition / graph_compiler / executor / node_types / contract（B1 产物契约）",
+    "tier": "B",
+    "tierWhy": "多节点工作流执行（DAG + 节点分发）",
     "layer": "L3"
    },
    {
@@ -320,6 +367,8 @@ footer code{background:var(--muted);padding:1px 5px;border-radius:4px;}
     "label": "kernel/evolution",
     "sub": "自进化",
     "role": "GEP-RSI：genome_proposals / validation_gate / holdout / isolated_replay / evolution_agent",
+    "tier": "C",
+    "tierWhy": "GEP-RSI 自进化（提案 / 验证 / 冻结）",
     "layer": "L3"
    },
    {
@@ -332,6 +381,8 @@ footer code{background:var(--muted);padding:1px 5px;border-radius:4px;}
     "label": "kernel/orchestration",
     "sub": "编排",
     "role": "genome_version / budget_gate / 判定层",
+    "tier": "C",
+    "tierWhy": "genome_version / budget_gate",
     "layer": "L3"
    },
    {
@@ -344,6 +395,8 @@ footer code{background:var(--muted);padding:1px 5px;border-radius:4px;}
     "label": "kernel/gateway",
     "sub": "会话网关",
     "role": "session_controller / capacity：多轮会话与容量闸",
+    "tier": "A",
+    "tierWhy": "session_controller —— 多轮会话与容量闸",
     "layer": "L3"
    },
    {
@@ -356,6 +409,8 @@ footer code{background:var(--muted);padding:1px 5px;border-radius:4px;}
     "label": "kernel/permission",
     "sub": "权限",
     "role": "规则引擎 / hard_deny / evaluator / schema（L0–L4）",
+    "tier": "B",
+    "tierWhy": "工具权限门禁（allow / ask / deny）",
     "layer": "L3"
    },
    {
@@ -368,6 +423,8 @@ footer code{background:var(--muted);padding:1px 5px;border-radius:4px;}
     "label": "kernel/runtimes",
     "sub": "运行时",
     "role": "执行器抽象与策略",
+    "tier": "B",
+    "tierWhy": "执行器抽象 —— 工具真的跑起来",
     "layer": "L3"
    },
    {
@@ -380,6 +437,8 @@ footer code{background:var(--muted);padding:1px 5px;border-radius:4px;}
     "label": "kernel/swarm",
     "sub": "Swarm",
     "role": "preset 加载 / 表达式求值 / 层图编译器",
+    "tier": "C",
+    "tierWhy": "Swarm preset 执行（拓扑化多 agent）",
     "layer": "L3"
    },
    {
@@ -392,6 +451,8 @@ footer code{background:var(--muted);padding:1px 5px;border-radius:4px;}
     "label": "kernel/context",
     "sub": "上下文",
     "role": "context_injector / providers",
+    "tier": "B",
+    "tierWhy": "上下文注入 —— 判据续跑、workspace 上下文",
     "layer": "L3"
    },
    {
@@ -404,6 +465,8 @@ footer code{background:var(--muted);padding:1px 5px;border-radius:4px;}
     "label": "kernel/memory",
     "sub": "记忆",
     "role": "持久化记忆",
+    "tier": "C",
+    "tierWhy": "持久化记忆",
     "layer": "L3"
    },
    {
@@ -416,6 +479,8 @@ footer code{background:var(--muted);padding:1px 5px;border-radius:4px;}
     "label": "kernel/session",
     "sub": "会话",
     "role": "会话状态",
+    "tier": "C",
+    "tierWhy": "会话状态原语",
     "layer": "L3"
    },
    {
@@ -428,6 +493,8 @@ footer code{background:var(--muted);padding:1px 5px;border-radius:4px;}
     "label": "kernel/events",
     "sub": "事件",
     "role": "event_v2 协议 / event_store",
+    "tier": "A",
+    "tierWhy": "event_v2 / event_store —— SSE 事件源",
     "layer": "L3"
    },
    {
@@ -440,6 +507,8 @@ footer code{background:var(--muted);padding:1px 5px;border-radius:4px;}
     "label": "kernel/hooks",
     "sub": "钩子",
     "role": "composite hook 组合",
+    "tier": "B",
+    "tierWhy": "工具前后钩子（守卫 / 审计挂点）",
     "layer": "L3"
    },
    {
@@ -452,6 +521,8 @@ footer code{background:var(--muted);padding:1px 5px;border-radius:4px;}
     "label": "kernel/skills",
     "sub": "技能",
     "role": "skill 模型与加载",
+    "tier": "C",
+    "tierWhy": "技能模型与加载",
     "layer": "L3"
    },
    {
@@ -464,6 +535,8 @@ footer code{background:var(--muted);padding:1px 5px;border-radius:4px;}
     "label": "kernel",
     "sub": "内核门面",
     "role": "子带声明",
+    "tier": "C",
+    "tierWhy": "内核门面",
     "layer": "L3"
    }
   ]
@@ -484,6 +557,8 @@ footer code{background:var(--muted);padding:1px 5px;border-radius:4px;}
     "label": "foundation/llm",
     "sub": "LLM 客户端",
     "role": "openai_client / model_catalog / config（三路径链）/ 多供应商适配",
+    "tier": "A",
+    "tierWhy": "LLM 客户端 —— 唯一出站点",
     "layer": "L4"
    },
    {
@@ -496,6 +571,8 @@ footer code{background:var(--muted);padding:1px 5px;border-radius:4px;}
     "label": "foundation",
     "sub": "基础原语",
     "role": "paths / settings（ENV_TABLE 唯一入口）/ 错误类型 / git",
+    "tier": "A",
+    "tierWhy": "settings(ENV_TABLE) / paths —— 一切的前提",
     "layer": "L4"
    },
    {
@@ -508,6 +585,8 @@ footer code{background:var(--muted);padding:1px 5px;border-radius:4px;}
     "label": "foundation/storage",
     "sub": "存储",
     "role": "data_store / 持久化后端",
+    "tier": "A",
+    "tierWhy": "会话持久化 —— 关了浏览器历史还在",
     "layer": "L4"
    },
    {
@@ -520,6 +599,8 @@ footer code{background:var(--muted);padding:1px 5px;border-radius:4px;}
     "label": "foundation/utils",
     "sub": "工具函数",
     "role": "通用工具",
+    "tier": "B",
+    "tierWhy": "通用工具函数",
     "layer": "L4"
    },
    {
@@ -532,6 +613,8 @@ footer code{background:var(--muted);padding:1px 5px;border-radius:4px;}
     "label": "foundation/observability",
     "sub": "可观测",
     "role": "日志 / trace / spans",
+    "tier": "B",
+    "tierWhy": "日志 / trace —— 出问题能查",
     "layer": "L4"
    },
    {
@@ -544,6 +627,8 @@ footer code{background:var(--muted);padding:1px 5px;border-radius:4px;}
     "label": "foundation/web",
     "sub": "Web 基础",
     "role": "静态资源 / web 工具",
+    "tier": "C",
+    "tierWhy": "Web 基础（静态资源 / web 工具）",
     "layer": "L4"
    }
   ]
@@ -564,6 +649,8 @@ footer code{background:var(--muted);padding:1px 5px;border-radius:4px;}
     "label": "evals",
     "sub": "冻结基准",
     "role": "golden 任务集 + scorecard + 完整性指纹",
+    "tier": "C",
+    "tierWhy": "冻结基准 + scorecard —— 自进化的信号源",
     "layer": "EV"
    },
    {
@@ -576,6 +663,8 @@ footer code{background:var(--muted);padding:1px 5px;border-radius:4px;}
     "label": "scripts",
     "sub": "脚本",
     "role": "历史遗留单文件",
+    "tier": "C",
+    "tierWhy": "历史遗留脚本（零依赖）",
     "layer": "EV"
    }
   ]
@@ -1034,6 +1123,9 @@ footer code{background:var(--muted);padding:1px 5px;border-radius:4px;}
  }
 };
   var FLOW  = ["interfaces/api", "kernel/gateway", "kernel/agent", "foundation/llm"];
+  var TIER_META  = {"A": {"label": "红 · MVP 最小可对话", "desc": "一条消息进 → LLM 回一条"}, "B": {"label": "黄 · MVP 最小可干活", "desc": "A + 工具 / 工作流真的能执行"}, "C": {"label": "绿 · 全能力", "desc": "B + 长程任务 + 自进化 + 评估 + 其它通道"}};
+  var TIER_STATS = {"A": {"pkgs": 7, "symbols": 1050, "label": "红 · MVP 最小可对话", "desc": "一条消息进 → LLM 回一条"}, "B": {"pkgs": 8, "symbols": 180, "label": "黄 · MVP 最小可干活", "desc": "A + 工具 / 工作流真的能执行"}, "C": {"pkgs": 21, "symbols": 747, "label": "绿 · 全能力", "desc": "B + 长程任务 + 自进化 + 评估 + 其它通道"}};
+  var TIER_COLOR = { A: '#ef4444', B: '#f59e0b', C: '#22c55e' };
 
   var PKG = {};
   LAYERS.forEach(function (L) { L.pkgs.forEach(function (p) { PKG[p.id] = p; }); });
@@ -1142,14 +1234,20 @@ footer code{background:var(--muted);padding:1px 5px;border-radius:4px;}
       var g = el('g', { class: 'node' });
       g.setAttribute('data-id', p.id);
       el('rect', { x: q.x, y: q.y, width: q.w, height: q.h, rx: 7, fill: 'var(--muted)' }, g);
-      var lab = el('text', { x: q.x + 9, y: q.y + 18, class: 'n-label' }, g);
+      // MVP 层级左缘色条（红 A / 黄 B / 绿 C）
+      if (p.tier) {
+        var bar = el('rect', { x: q.x, y: q.y, width: 5, height: q.h, rx: 2,
+                               fill: TIER_COLOR[p.tier], class: 'tier-bar' }, g);
+        bar.setAttribute('data-tier', p.tier);
+      }
+      var lab = el('text', { x: q.x + 11, y: q.y + 18, class: 'n-label' }, g);
       lab.textContent = p.label;
-      var sub = el('text', { x: q.x + 9, y: q.y + 32, class: 'n-sub' }, g);
+      var sub = el('text', { x: q.x + 11, y: q.y + 32, class: 'n-sub' }, g);
       sub.textContent = p.sub + ' · ' + p.n;
       nodeEls.push(g);
     });
   });
-  // 初始态：套用 baseCls（主链路蓝框 / 孤立包橙框）
+  // 初始态：套用 baseCls（主链路蓝框 / 孤立包橙框 / MVP 层级底纹）
   nodeEls.forEach(function (g) { g.setAttribute('class', baseCls(g)); });
 
   // legend
@@ -1159,10 +1257,30 @@ footer code{background:var(--muted);padding:1px 5px;border-radius:4px;}
     '<span class="lg"><span class="sw" style="background:var(--muted)"></span>包（宽度 ∝ 符号数）</span>' +
     '<span class="lg"><span class="sw" style="background:var(--viz-series-3);border:1px dashed var(--viz-series-3)"></span>零依赖包</span>';
 
+  // MVP 三层图例（红 ⊂ 黄 ⊂ 绿）
+  var tl = document.getElementById('an-tier-legend');
+  if (tl) {
+    var order = ['C', 'B', 'A'];   // 大集合在前，体现包含关系
+    tl.innerHTML = order.map(function (t) {
+      var s = TIER_STATS[t] || { pkgs: 0, symbols: 0 };
+      var m = TIER_META[t] || {};
+      return '<span class="tier-chip">' +
+        '<span class="tier-dot" style="background:' + TIER_COLOR[t] + '"></span>' +
+        '<b style="color:' + TIER_COLOR[t] + '">' + (m.label || t) + '</b>' +
+        '<span>' + s.pkgs + ' 包 / ' + s.symbols + ' 符号</span>' +
+        '<span style="opacity:.75">' + (m.desc || '') + '</span></span>';
+    }).join('') +
+    '<span style="opacity:.7">（绿色 ⊃ 黄色 ⊃ 红色，三层同时着色；悬停看每包理由）</span>';
+  }
+
   // ---- 交互 ----
   function baseCls(g) {
     var id = g.getAttribute('data-id');
-    return 'node' + (FLOW_SET[id] ? ' flow' : '') + (ISOLATED[id] ? ' iso' : '');
+    var p = PKG[id] || {};
+    return 'node'
+      + (FLOW_SET[id] ? ' flow' : '')
+      + (ISOLATED[id] ? ' iso' : '')
+      + (p.tier ? ' tier-' + p.tier : '');
   }
   function clearAll() {
     edgeEls.forEach(function (p) {
@@ -1197,9 +1315,15 @@ footer code{background:var(--muted);padding:1px 5px;border-radius:4px;}
       var iso = ISOLATED[id]
         ? '<div class="r" style="color:var(--viz-series-3)"><span>⚠ 零依赖</span><span>无入边 / 无出边</span></div>'
         : '';
+      var tierRow = p.tier
+        ? '<div class="r" style="margin-top:.35rem"><span style="color:' + TIER_COLOR[p.tier] + ';font-weight:600">'
+          + (TIER_META[p.tier] ? TIER_META[p.tier].label : p.tier) + '</span></div>'
+          + '<div style="color:var(--muted-foreground);margin-top:.15rem">' + (p.tierWhy || '') + '</div>'
+        : '';
       tip.innerHTML = '<b>' + p.label + '</b>' +
         '<div style="margin-top:.25rem;color:var(--muted-foreground)">' + p.sub + '</div>' +
         '<div style="margin-top:.3rem">' + (p.role || '') + '</div>' +
+        tierRow +
         '<div class="r"><span>生产符号</span><span>' + p.n + '</span></div>' +
         '<div class="r"><span>文件 / 行数</span><span>' + p.files + ' / ' + p.lines.toLocaleString() + '</span></div>' +
         '<div class="r"><span>被依赖 / 依赖（包）</span><span>' + io.i + ' / ' + io.o + '</span></div>' +
