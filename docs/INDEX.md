@@ -42,7 +42,7 @@
 
 ---
 
-## 2. design/ — 仍生效的设计与契约（50 份）
+## 2. design/ — 仍生效的设计与契约（104 份）
 
 **判据**：文档里的决策仍在代码中执行。已被取代的移到 `archive/`。
 
@@ -113,8 +113,9 @@
 | [`right-panel-agent-driven.md`](design/right-panel-agent-driven.md) | 右侧面板 agent 驱动 |
 | [`ui-workbench-design-20261115.md`](design/ui-workbench-design-20261115.md) | **UI 轨道主文档**：变迁链 + 8 条设计精髓 + 三表面蓝图 + §11 Grok Bot 对照（待 §6 确认） |
 | [`ui-a-token-system-design-20261114.md`](design/ui-a-token-system-design-20261114.md) | U-A 令牌体系：中性化转向 + L1/L2/L3 + alpha 表/specular/刻度表 |
-| [`../ui-zcode-source-research-20261114.md`](../ui-zcode-source-research-20261114.md) | ZCode UI 源码级逆向（§1-§10，U-A/U-B/U-D/U-E 依据） |
-| [`../ui-grok-bot-source-research-20261116.md`](../ui-grok-bot-source-research-20261116.md) | Grok Bot UI 源码级逆向（双 alpha 表/玻璃可关层/刻度/gradient 三条件判定） |
+| [`ui-frontend-unit-test-plan-20261116.md`](design/ui-frontend-unit-test-plan-20261116.md) | 前端单元测试计划（R-014）+ §5.5–§5.8 T1–T4 实测回填（122 文件 / 1323 用例 / 89.60%） |
+| [`ui-zcode-source-research-20261114.md`](ui-zcode-source-research-20261114.md) | ZCode UI 源码级逆向（§1-§10，U-A/U-B/U-D/U-E 依据） |
+| [`ui-grok-bot-source-research-20261116.md`](ui-grok-bot-source-research-20261116.md) | Grok Bot UI 源码级逆向（双 alpha 表/玻璃可关层/刻度/gradient 三条件判定） |
 
 ### 2.6 其他契约
 
@@ -130,7 +131,13 @@
 | [`phase3-dual-factory-design.md`](design/phase3-dual-factory-design.md) | 双工厂 |
 | [`phase5-guardrails-design.md`](design/phase5-guardrails-design.md) | 护栏 |
 
-### 2.7 ADR
+### 2.7 项目进度与复盘
+
+| 文档 | 内容 |
+|---|---|
+| [`project-progress-assessment-20261116.md`](design/project-progress-assessment-20261116.md) | **项目进度评估（复盘）**：四条工作线完成度 + 健康度实测 + 11 项遗留清单 + 处置建议（待批准）|
+
+### 2.8 ADR
 
 | 文档 | 决策 |
 |---|---|
@@ -140,7 +147,7 @@
 
 ---
 
-## 3. archive/ — 历史施工记录（264 份）
+## 3. archive/ — 历史施工记录（266 份）
 
 **判据**：已完成批次的执行记录、被取代的设计、一次性调研。**不维护，仅备查**——
 里面的数字与路径反映的是当时状态，不要按它操作。
