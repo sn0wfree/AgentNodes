@@ -24,8 +24,9 @@ import layer_matrix as lm  # noqa: E402
 
 ROOT = Path(__file__).resolve().parents[2]
 DOC = ROOT / "docs" / "design" / "framework-and-principles-v1.2.md"
+HTML = ROOT / "docs" / "框架与理念 · v1.2.html"
 
-#: 层 → (目录名, 文档里该层的表行标识)
+#: 层 → 目录名
 LAYERS: dict[str, str] = {
     "L1": "interfaces",
     "L2": "apps",
@@ -81,6 +82,57 @@ def _doc_rows(text: str) -> dict[str, tuple[int, int]] | None:
     return rows or None
 
 
+def _html_rows(text: str) -> dict[str, tuple[int, int]]:
+    """从 HTML 的 ``data-fw`` 锚点里抽出 (文件, 行数)。
+
+    HTML 侧用 ``<span class="st" data-fw="L1">118 文件 · 27,337 行</span>``
+    这类锚点承载数字 —— 与 md 的表格是同一批数字的两种呈现，两边都要核。
+    """
+    rows: dict[str, tuple[int, int]] = {}
+    pat = re.compile(
+        r'data-fw="(L[1-4]|total)"[^>]*>([\d,]+)\s*文件\s*·\s*([\d,]+)\s*行',
+    )
+    for m in pat.finditer(text):
+        rows[m.group(1)] = (
+            int(m.group(2).replace(",", "")),
+            int(m.group(3).replace(",", "")),
+        )
+    return rows
+
+
+def _check_html(actual: dict[str, dict[str, int]], total_files: int,
+                total_lines: int) -> list[str]:
+    """核对 HTML 的 data-fw 锚点（若 HTML 存在）。"""
+    if not HTML.exists():
+        return []
+    text = HTML.read_text(encoding="utf-8", errors="replace")
+    rows = _html_rows(text)
+    if not rows:
+        return ["HTML 里找不到 data-fw 锚点（期望 `data-fw=\"L1\"` + `N 文件 · M 行`）"]
+
+    problems: list[str] = []
+    expect = {k: (v["files"], v["lines"]) for k, v in actual.items()}
+    expect["total"] = (total_files, total_lines)
+    print()
+    print(f"{'锚点':6s} {'HTML':>20s} {'实测':>20s}")
+    for key in ["L1", "L2", "L3", "L4", "total"]:
+        got = rows.get(key)
+        want = expect[key]
+        if got is None:
+            problems.append(f'HTML 缺 data-fw="{key}" 锚点')
+            print(f"{key:6s} {'(缺失)':>20s} {want[0]:8d} 文件 {want[1]:7,d} 行   [BAD]")
+            continue
+        mark = "OK " if got == want else "BAD"
+        print(f"{key:6s} {got[0]:8d} 文件 {got[1]:7,d} 行 "
+              f"{want[0]:8d} 文件 {want[1]:7,d} 行   [{mark}]")
+        if got != want:
+            problems.append(
+                f'HTML data-fw="{key}"：写 {got[0]} 文件 / {got[1]:,} 行，'
+                f"实测 {want[0]} 文件 / {want[1]:,} 行"
+            )
+    return problems
+
+
 def main() -> int:
     if not DOC.exists():
         print(f"[X] 找不到 {DOC.relative_to(ROOT)}")
@@ -131,16 +183,19 @@ def main() -> int:
     else:
         problems.append("缺少「合计」行（期望 `| — | **合计** | **N** | **M** |`）")
 
+    problems += _check_html(actual, total_files, total_lines)
+
     print()
     if problems:
         print(f"[X] {len(problems)} 处体量数字与代码不一致：")
         for p in problems:
             print(f"    · {p}")
         print()
-        print("→ 更新 docs/design/framework-and-principles-v1.2.md（以及同名 HTML）后重跑")
+        print("→ 更新 docs/design/framework-and-principles-v1.2.md 与 "
+              "docs/框架与理念 · v1.2.html 后重跑")
         return 1
 
-    print("[OK] 框架文档体量数字与代码一致")
+    print("[OK] 框架文档（md + HTML）体量数字与代码一致")
     return 0
 
 

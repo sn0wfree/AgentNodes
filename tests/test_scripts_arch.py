@@ -465,6 +465,19 @@ def test_framework_numbers_parses_layer_rows():
         assert files > 0 and lines > 0, f"{layer} 读到了 0：{files}/{lines}"
 
 
+def test_framework_numbers_html_anchors_present():
+    """HTML 侧必须存在 5 个 data-fw 锚点（md 与 HTML 是同一批数字的两种呈现）。"""
+    mod = _load("check_framework_numbers")
+    assert mod.HTML.exists(), f"缺少 {mod.HTML}"
+    text = mod.HTML.read_text(encoding="utf-8", errors="replace")
+    rows = mod._html_rows(text)
+    assert set(rows) == {"L1", "L2", "L3", "L4", "total"}, (
+        f"HTML 锚点不全: {sorted(rows)}（期望 4 层 + total）"
+    )
+    for key, (files, lines) in rows.items():
+        assert files > 0 and lines > 0, f"HTML {key} 读到了 0：{files}/{lines}"
+
+
 # ── graph_layer_audit ────────────────────────────────────────────────
 
 

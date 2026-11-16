@@ -1,0 +1,922 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>框架与理念 · v1.2</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  /* ============ 设计令牌（v1.2 新增：v1.1 全是硬编码 hex，30 个值散布 83 处） ============ */
+  :root {
+    /* 底色 / 文本 */
+    --bg:            #0a0e1a;
+    --fg:            #e2e8f0;
+    --fg-2:          #dbe3f0;
+    --fg-muted:      #94a3b8;
+    --fg-dim:        #64748b;
+    --fg-dimmer:     #475569;
+
+    /* 语义轴 G / E / P */
+    --layer-g:       #10b981;
+    --layer-g-2:     #34d399;
+    --layer-g-3:     #6ee7b7;
+    --layer-e:       #3b82f6;
+    --layer-e-2:     #60a5fa;
+    --layer-e-3:     #93c5fd;
+    --layer-p:       #f59e0b;
+    --layer-p-2:     #fbbf24;
+    --layer-p-3:     #fcd34d;
+
+    /* 屏障 / 桥接 */
+    --barrier:       #f43f5e;
+    --barrier-2:     #fb7185;
+    --barrier-3:     #fda4af;
+    --bridge:        #6366f1;
+    --bridge-2:      #a78bfa;
+    --bridge-3:      #c4b5fd;
+
+    /* 物理轴 L1–L4 */
+    --phys-l1:       #7dd3fc;
+    --phys-l2:       #a5b4fc;
+    --phys-l3:       #818cf8;
+    --phys-l4:       #6ee7b7;
+
+    /* 状态 */
+    --ok:            #34d399;
+    --warn:          #fbbf24;
+    --bad:           #f43f5e;
+    --accent:        #22d3ee;
+
+    /* 辅助文本 / 线条 */
+    --ink-soft:      #b8c2d4;
+    --ink-mute:      #9db2d8;
+    --ink-green:     #86c5a8;
+    --ink-sand:      #cbb27e;
+    --ink-stone:     #a8a29e;
+    --ink-slate:     #cbd5e1;
+    --ink-yellow:    #facc15;
+    --cream:         #fef3c7;
+
+    /* 表面 */
+    --surface-a:     rgba(99,102,241,0.10);
+    --surface-b:     rgba(99,102,241,0.12);
+    --surface-c:     rgba(16,185,129,0.05);
+    --border-a:      rgba(99,102,241,0.30);
+    --border-b:      rgba(99,102,241,0.35);
+    --border-line:   rgba(255,255,255,0.12);
+  }
+
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC',
+                 'Hiragino Sans GB', 'Microsoft YaHei', sans-serif;
+    background: var(--bg);
+    color: var(--fg);
+    min-height: 100vh;
+    padding: 40px 22px 70px;
+    background-image:
+      radial-gradient(ellipse at 12% 0%, rgba(16,185,129,0.07) 0%, transparent 48%),
+      radial-gradient(ellipse at 88% 10%, rgba(59,130,246,0.07) 0%, transparent 45%),
+      radial-gradient(ellipse at 50% 100%, rgba(99,102,241,0.06) 0%, transparent 50%);
+  }
+
+  .page { max-width: 1400px; margin: 0 auto; }
+
+  /* ============ 标题 ============ */
+  .header { text-align: center; margin-bottom: 44px; }
+  .page-title {
+    font-size: 34px; font-weight: 800; letter-spacing: 3px;
+    background: linear-gradient(90deg, var(--layer-g-2) 0%, var(--layer-e-2) 50%, var(--bridge-2) 100%);
+    -webkit-background-clip: text; background-clip: text;
+    -webkit-text-fill-color: transparent;
+    margin-bottom: 8px;
+  }
+  .page-subtitle { color: var(--fg-dim); font-size: 13px; letter-spacing: 1.4px; margin-bottom: 14px; }
+  .version-badge {
+    display: inline-block; font-size: 11px; font-weight: 700;
+    padding: 4px 16px; border-radius: 100px;
+    background: var(--surface-a);
+    border: 1px solid var(--border-b);
+    color: var(--bridge-3); letter-spacing: 0.8px;
+  }
+
+  /* ============ 分节（v1.2：改为真 h2 + 保留视觉） ============ */
+  .section-label {
+    display: flex; align-items: center; gap: 14px;
+    margin: 52px 0 22px;
+  }
+  .section-label .num {
+    font-size: 11px; font-weight: 800; letter-spacing: 1.5px;
+    color: var(--bridge); padding: 3px 10px; border-radius: 6px;
+    background: var(--surface-b);
+    border: 1px solid rgba(99,102,241,0.3);
+  }
+  .section-label h2 {
+    font-size: 18px; font-weight: 800; color: var(--fg); letter-spacing: 0.5px;
+    display: inline;
+  }
+  .section-label .line {
+    flex: 1; height: 1px;
+    background: linear-gradient(90deg, var(--border-line), transparent);
+  }
+  .section-label:first-of-type { margin-top: 0; }
+
+  /* ============ 一句话 ============ */
+  .onesentence {
+    padding: 30px 34px; border-radius: 18px;
+    background: linear-gradient(135deg, var(--surface-a), var(--surface-c));
+    border: 1px solid var(--border-a);
+    text-align: center;
+  }
+  .onesentence p { font-size: 16.5px; line-height: 2.0; color: var(--fg-2); font-weight: 500; }
+  .onesentence b.k1 { color: var(--layer-e-2); font-weight: 800; }
+  .onesentence b.k2 { color: var(--layer-g-2); font-weight: 800; }
+  .onesentence b.k3 { color: var(--bridge-2); font-weight: 800; }
+  .onesentence b.k4 { color: var(--barrier-2); font-weight: 800; }
+  .onesentence b.k5 { color: var(--warn); font-weight: 800; }
+
+  /* ============ 双轴总图 ============ */
+  .axis-wrap {
+    padding: 26px; border-radius: 18px;
+    background: rgba(15,23,42,0.55);
+    border: 1px solid var(--border-line);
+  }
+  .axis-tag {
+    display: flex; align-items: center; gap: 10px;
+    font-size: 12px; font-weight: 700; letter-spacing: 0.6px;
+    color: var(--ink-soft); margin-bottom: 16px;
+  }
+  .axis-tag .dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
+
+  .sep-row {
+    display: grid; grid-template-columns: 1fr 132px 1fr 132px 1fr;
+    gap: 10px; align-items: stretch;
+  }
+  @media (max-width: 1100px) {
+    .sep-row { grid-template-columns: 1fr; }
+    .harrow { transform: rotate(90deg); }
+    .harrow .lbl { transform: rotate(-90deg); }
+  }
+
+  .sep-box {
+    border-radius: 14px; padding: 18px 18px 16px;
+    border: 1px solid var(--border-line);
+    background: rgba(255,255,255,0.02);
+    display: flex; flex-direction: column; gap: 8px;
+  }
+  .sep-box.g { border-color: rgba(16,185,129,0.4); background: linear-gradient(160deg, rgba(16,185,129,0.07), transparent); }
+  .sep-box.e { border-color: rgba(59,130,246,0.4); background: linear-gradient(160deg, rgba(59,130,246,0.07), transparent); }
+  .sep-box.p { border-color: rgba(245,158,11,0.4); background: linear-gradient(160deg, rgba(245,158,11,0.07), transparent); }
+
+  .sep-badge {
+    font-size: 10.5px; font-weight: 800; letter-spacing: 1px;
+    padding: 3px 9px; border-radius: 5px; align-self: flex-start;
+  }
+  .sep-box.g .sep-badge { color: var(--layer-g-3); background: rgba(16,185,129,0.16); }
+  .sep-box.e .sep-badge { color: var(--layer-e-3); background: rgba(59,130,246,0.16); }
+  .sep-box.p .sep-badge { color: var(--layer-p-3); background: rgba(245,158,11,0.16); }
+
+  .sep-name { font-size: 13.5px; font-weight: 700; color: var(--fg); }
+  .sep-role { font-size: 10.5px; color: var(--fg-muted); letter-spacing: 0.3px; }
+  .sep-items { display: flex; flex-wrap: wrap; gap: 5px; margin: 2px 0; }
+  .sep-item {
+    font-size: 10px; font-family: Consolas, monospace;
+    padding: 2px 7px; border-radius: 4px;
+    background: rgba(255,255,255,0.06); color: var(--ink-slate);
+  }
+  .sep-note { font-size: 10.5px; line-height: 1.65; color: var(--fg-dim); }
+
+  .harrow {
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    gap: 7px; position: relative;
+  }
+  .harrow .line { width: 100%; height: 2px; background: rgba(255,255,255,0.4); position: relative; }
+  .harrow .line::after {
+    content: ''; position: absolute; right: 0; top: -4px;
+    border-top: 5px solid transparent; border-bottom: 5px solid transparent;
+    border-left: 8px solid rgba(255,255,255,0.4);
+  }
+  .harrow .lbl { font-size: 9.5px; color: var(--fg-muted); text-align: center; line-height: 1.5; }
+
+  .feedback-bar {
+    margin-top: 16px; padding: 14px 18px; border-radius: 12px;
+    border: 1.5px dashed rgba(251,191,36,0.45);
+    background: rgba(251,191,36,0.04);
+  }
+  .feedback-bar .t { font-size: 12.5px; font-weight: 700; color: var(--layer-p-2); margin-bottom: 5px; }
+  .feedback-bar .d { font-size: 11px; line-height: 1.7; color: var(--fg-muted); }
+
+  .bridge {
+    margin-top: 16px; padding: 14px 18px; border-radius: 12px;
+    border: 1.5px dashed var(--border-b);
+    background: var(--surface-a);
+    display: flex; flex-wrap: wrap; align-items: center; gap: 10px;
+  }
+  .bridge .bt {
+    font-size: 11px; font-weight: 800; letter-spacing: 0.8px;
+    color: var(--bridge-3); padding: 3px 9px; border-radius: 5px;
+    background: var(--surface-b);
+  }
+  .bridge .bd { font-size: 11px; line-height: 1.7; color: var(--fg-muted); flex: 1; min-width: 260px; }
+  .tier-chips { display: flex; flex-wrap: wrap; gap: 6px; }
+  .tier-chip {
+    font-size: 9.5px; font-family: Consolas, monospace;
+    padding: 3px 8px; border-radius: 4px; white-space: nowrap;
+  }
+  .tier-chip.t0 { color: var(--barrier-3); background: rgba(244,63,94,0.14); }
+  .tier-chip.t1 { color: var(--bridge-3); background: rgba(99,102,241,0.16); }
+  .tier-chip.t2 { color: var(--fg-muted); background: rgba(255,255,255,0.06); }
+
+  .phy-stack { display: flex; flex-direction: column; gap: 6px; margin-top: 16px; }
+  .phy-layer {
+    display: grid; grid-template-columns: 44px 1fr auto;
+    gap: 14px; align-items: center;
+    padding: 12px 16px; border-radius: 10px;
+    border: 1px solid var(--border-line);
+    background: rgba(255,255,255,0.02);
+  }
+  .phy-layer .code { font-size: 13px; font-weight: 800; font-family: Consolas, monospace; }
+  .phy-layer.l1 .code { color: var(--phys-l1); }
+  .phy-layer.l2 .code { color: var(--phys-l2); }
+  .phy-layer.l3 .code { color: var(--phys-l3); }
+  .phy-layer.l4 .code { color: var(--phys-l4); }
+  .phy-layer .nm { font-size: 12.5px; font-weight: 700; color: var(--fg); }
+  .phy-layer .ds { font-size: 10.5px; color: var(--fg-muted); line-height: 1.6; }
+  .phy-layer .st { font-size: 10px; font-family: Consolas, monospace; white-space: nowrap; }
+  .st-ok { color: var(--ok); }
+  .st-warn { color: var(--warn); }
+  .st-bad { color: var(--bad); }
+  .phy-arrow { text-align: center; color: var(--fg-dimmer); font-size: 11px; }
+
+  /* ============ 理念卡 ============ */
+  .idea-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(420px, 1fr)); gap: 16px; }
+  @media (max-width: 900px) { .idea-grid { grid-template-columns: 1fr; } }
+  .idea {
+    border-radius: 14px; padding: 20px 22px;
+    border: 1px solid var(--border-line);
+    background: rgba(255,255,255,0.02);
+    position: relative; overflow: hidden;
+  }
+  .idea::before {
+    content: ''; position: absolute; left: 0; top: 0; right: 0; height: 3px;
+  }
+  .idea.i1::before { background: linear-gradient(90deg, var(--layer-g-2), var(--layer-e-2)); }
+  .idea.i2::before { background: linear-gradient(90deg, var(--layer-e-2), var(--bridge-2)); }
+  .idea.i3::before { background: linear-gradient(90deg, var(--barrier-2), var(--layer-p-2)); }
+  .idea.i4::before { background: linear-gradient(90deg, var(--bridge-2), var(--layer-g-2)); }
+  .idea.i5::before { background: linear-gradient(90deg, var(--layer-p-2), var(--barrier-2)); }
+  .idea-num { font-size: 10px; font-weight: 800; letter-spacing: 1.2px; color: var(--fg-dim); margin-bottom: 6px; }
+  .idea-title { font-size: 14px; font-weight: 800; color: var(--fg); margin-bottom: 12px; line-height: 1.5; }
+  .idea-sec { display: flex; gap: 9px; margin-bottom: 8px; font-size: 11px; line-height: 1.75; }
+  .idea-sec .k {
+    flex-shrink: 0; font-size: 9.5px; font-weight: 700;
+    padding: 1px 7px; border-radius: 4px; height: fit-content;
+  }
+  .k-tension { color: var(--barrier-3); background: rgba(244,63,94,0.14); }
+  .k-rule { color: var(--layer-e-3); background: rgba(59,130,246,0.14); }
+  .k-check { color: var(--layer-g-3); background: rgba(16,185,129,0.14); }
+  .idea-sec .v { color: var(--ink-soft); }
+
+  /* ============ 回路卡 ============ */
+  .loops { display: grid; grid-template-columns: repeat(auto-fit, minmax(340px, 1fr)); gap: 16px; }
+  .loop {
+    border-radius: 14px; padding: 18px 20px;
+    border: 1px solid var(--border-line);
+    background: rgba(255,255,255,0.02);
+  }
+  .loop .scale { font-size: 9.5px; font-weight: 800; letter-spacing: 1px; padding: 3px 8px; border-radius: 4px; display: inline-block; margin-bottom: 9px; }
+  .loop.l1b .scale { color: var(--layer-g-3); background: rgba(16,185,129,0.14); }
+  .loop.l2b .scale { color: var(--layer-e-3); background: rgba(59,130,246,0.14); }
+  .loop.l3b .scale { color: var(--layer-p-3); background: rgba(245,158,11,0.14); }
+  .loop-name { font-size: 13.5px; font-weight: 800; color: var(--fg); margin-bottom: 7px; }
+  .loop-desc { font-size: 11px; line-height: 1.75; color: var(--fg-muted); margin-bottom: 10px; }
+  .loop-status { font-size: 10.5px; line-height: 1.7; color: var(--ink-soft); padding-top: 9px; border-top: 1px dashed var(--border-line); }
+
+  /* ============ 表格 ============ */
+  .table-wrap { overflow-x: auto; border-radius: 12px; border: 1px solid var(--border-line); }
+  table { width: 100%; border-collapse: collapse; font-size: 11px; }
+  thead th {
+    text-align: left; padding: 11px 13px; font-size: 10px; font-weight: 800;
+    letter-spacing: 0.8px; color: var(--fg-muted); text-transform: uppercase;
+    background: rgba(255,255,255,0.035); border-bottom: 1px solid var(--border-line);
+  }
+  tbody td { padding: 10px 13px; border-bottom: 1px solid rgba(255,255,255,0.05); color: var(--ink-soft); line-height: 1.65; vertical-align: top; }
+  tbody tr:last-child td { border-bottom: none; }
+  tbody tr:hover { background: rgba(255,255,255,0.025); }
+  .mono { font-family: Consolas, monospace; font-size: 10px; color: var(--ink-mute); }
+  .pill {
+    display: inline-block; font-size: 9.5px; font-weight: 800;
+    padding: 2px 8px; border-radius: 4px; white-space: nowrap;
+  }
+  .pill-g { color: var(--layer-g-3); background: rgba(16,185,129,0.16); }
+  .pill-e { color: var(--layer-e-3); background: rgba(59,130,246,0.16); }
+  .pill-p { color: var(--layer-p-3); background: rgba(245,158,11,0.16); }
+  .pill-b { color: var(--barrier-3); background: rgba(244,63,94,0.16); }
+  .pill-r { color: var(--bridge-3); background: rgba(99,102,241,0.16); }
+
+  /* ============ 目录树 ============ */
+  .tree {
+    font-family: Consolas, monospace; font-size: 11px; line-height: 1.85;
+    padding: 20px 22px; border-radius: 12px;
+    background: rgba(0,0,0,0.3); border: 1px solid var(--border-line);
+    color: var(--fg-muted); overflow-x: auto; white-space: pre;
+  }
+  .tree .dir { color: var(--layer-e-2); font-weight: 700; }
+  .tree .hi { color: var(--layer-g-3); font-weight: 700; }
+  .tree .cm { color: var(--fg-dimmer); }
+  .tree .warn { color: var(--warn); }
+
+  /* ============ 决策卡 ============ */
+  .dec-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(400px, 1fr)); gap: 14px; }
+  @media (max-width: 900px) { .dec-grid { grid-template-columns: 1fr; } }
+  .dec {
+    border-radius: 12px; padding: 16px 18px;
+    border: 1px solid var(--border-line);
+    background: linear-gradient(160deg, rgba(16,185,129,0.07), rgba(16,185,129,0.015));
+  }
+  .dec-id { font-size: 10px; font-weight: 800; letter-spacing: 0.8px; color: var(--layer-g-3); margin-bottom: 7px; }
+  .dec-q { font-size: 12.5px; font-weight: 700; color: var(--fg); margin-bottom: 7px; }
+  .dec-opts { font-size: 10.5px; color: var(--fg-dim); margin-bottom: 8px; line-height: 1.7; }
+  .dec-rec { font-size: 10.5px; line-height: 1.8; color: var(--ink-soft); }
+
+  /* ============ 变化总账（v1.2 新增） ============ */
+  .delta-note {
+    padding: 14px 18px; border-radius: 10px; margin-bottom: 16px;
+    border-left: 3px solid var(--accent);
+    background: rgba(34,211,238,0.05);
+    font-size: 11px; line-height: 1.8; color: var(--ink-soft);
+  }
+  .delta-bad { color: var(--bad); font-weight: 700; }
+  .delta-ok { color: var(--ok); font-weight: 700; }
+  .arrow-up { color: var(--layer-g-2); font-weight: 700; }
+  .arrow-down { color: var(--layer-p-2); font-weight: 700; }
+
+  /* ============ 图例 / 关联 ============ */
+  .legend {
+    display: flex; flex-wrap: wrap; gap: 18px; justify-content: center;
+    margin-top: 46px; padding-top: 22px;
+    border-top: 1px solid var(--border-line);
+  }
+  .legend-item { display: flex; align-items: center; gap: 7px; font-size: 10.5px; color: var(--fg-muted); }
+  .legend-dot { width: 11px; height: 11px; border-radius: 3px; flex-shrink: 0; }
+
+  .related {
+    margin-top: 28px; padding: 16px 20px; border-radius: 10px;
+    background: rgba(255,255,255,0.02); border: 1px solid var(--border-line);
+    font-size: 10.5px; line-height: 2.0;
+  }
+  .related .rt { font-size: 10px; font-weight: 800; letter-spacing: 1px; color: var(--fg-dim); margin-bottom: 6px; }
+  .related a { color: var(--layer-e-2); text-decoration: none; }
+  .related a:hover { text-decoration: underline; }
+</style>
+</head>
+<body>
+<div class="page">
+
+  <!-- ==================== 标题 ==================== -->
+  <div class="header">
+    <h1 class="page-title">框架与理念</h1>
+    <p class="page-subtitle">AgentNodes · 自我进化研究 Agent 平台 · 双轴架构</p>
+    <span class="version-badge">v1.2 · 2026-11-16 · 主体已随 v1.1 结论落地（W1–W3 / R1–R2 完成，红线归零）</span>
+  </div>
+
+  <!-- ==================== 00 一句话 ==================== -->
+  <div class="section-label">
+    <span class="num">00</span>
+    <h2>一句话</h2>
+    <span class="line"></span>
+  </div>
+
+  <div class="onesentence">
+    <p>
+      <b class="k1">物理轴（L1–L4）</b>管「谁可以 import 谁」，<b class="k2">语义轴（G/E/P）</b>管「谁可以改变谁」；<br>
+      两轴在 <b class="k5">Tier 0/1/2</b> 相交；<b class="k3">三条反馈回路</b>按分钟 / 小时 / 天分时标运行；<br>
+      <b class="k4">评估器与变异白名单的守护在进程外</b>。
+    </p>
+    <p style="margin-top:14px;font-size:13px;color:var(--fg-muted);line-height:1.9;">
+      v1.2 追加：执行面已收敛为<b style="color:var(--fg)">单引擎（LoopEngine）</b>，
+      结构门禁从「手动跑」变为 <b style="color:var(--fg)">pytest + CI 双闸</b>，
+      <b style="color:var(--fg)">kernel/ 业务名词归零</b>已由自动化守住。
+    </p>
+  </div>
+
+  <!-- ==================== 01 概念对照 ==================== -->
+  <div class="section-label">
+    <span class="num">01</span>
+    <h2>概念对照 · Loop Engineering × Graph Engineering</h2>
+    <span class="line"></span>
+  </div>
+
+  <div class="delta-note">
+    <b>本节是 v1.2 新增，也是 v1.2 存在的主要理由</b>：v1.1 的 md 底稿在 2026-11-06 之后又更新了 3 个 commit
+    （§0.5 概念对照 <span class="mono">442b6ab5</span> · 三条合法信道 <span class="mono">1a9050f2</span> ·
+    §3.5 执行面裁决 <span class="mono">6239bb27</span>），但这些内容
+    <b class="delta-bad">在 v1.1 的 HTML 里 0 命中</b> —— HTML 落后它自己的底稿。
+  </div>
+
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th style="width:180px">概念</th><th>本仓库实例</th><th style="width:210px">v1.2 状态</th></tr></thead>
+      <tbody>
+        <tr><td><span class="pill pill-e">Loop 执行内循环</span></td><td>AgentLoop 迭代 + 回路 1 goal continuation（分钟）</td><td class="delta-ok">✅ 活着</td></tr>
+        <tr><td><span class="pill pill-e">Loop 任务级改进</span></td><td>回路 2 goal journal（小时）</td><td class="st-warn">⚠️ 台账有、端口未接</td></tr>
+        <tr><td><span class="pill pill-e">Loop 自我改进</span></td><td>回路 3 RSI cycle（天）</td><td class="st-warn">⚠️ 零件齐、驱动半通</td></tr>
+        <tr><td><span class="pill pill-g">Graph 执行图</span></td><td>GraphEngine + SwarmRuntime + WorkflowGraphCompiler</td><td class="delta-ok">✅ 在</td></tr>
+        <tr><td><span class="pill pill-b">Graph 监管图</span></td><td>Tier 0/1 白名单 · ValidationGate · held-in/out 双集 · 评估指纹 · 原则七 · 终止层级</td><td class="delta-ok">✅ 8 道门禁 + CI job + 28 条 pytest 断言</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="bridge" style="margin-top:16px;">
+    <span class="bt">三条合法信道</span>
+    <span class="bd">除以下三条外，Loop 与 Graph 之间不存在任何其他读写。任何新增的读写，要么封掉，要么改设计成三条之一。</span>
+    <span class="tier-chips">
+      <span class="tier-chip t0">① 执行 · Loop 在图上跑 · ✅</span>
+      <span class="tier-chip t0">② 闸控写 · set_tier2 零调用 · ❌ 信道未接线</span>
+      <span class="tier-chip t0">③ 裁决 · held-out 包外持有 · ✅</span>
+    </span>
+  </div>
+
+  <!-- ==================== 02 双轴总图 ==================== -->
+  <div class="section-label">
+    <span class="num">02</span>
+    <h2>双轴正交总图</h2>
+    <span class="line"></span>
+  </div>
+
+  <div class="axis-wrap">
+
+    <div class="axis-tag">
+      <span class="dot" style="background:linear-gradient(135deg,var(--layer-g),var(--layer-p))"></span>
+      语义轴（GEP-RSI）· 谁可以改变谁 —— 变异面 ⊂ 表达面 ⊂ 表型面
+    </div>
+
+    <div class="sep-row">
+      <div class="sep-box g">
+        <span class="sep-badge">G 层 · 基因组</span>
+        <div class="sep-name">变异发生地</div>
+        <div class="sep-role">Tier 0 冻结 · Tier 1 白名单 · Tier 2 产物</div>
+        <div class="sep-items">
+          <span class="sep-item">GenomeProposal</span>
+          <span class="sep-item">版本链 + 游标</span>
+          <span class="sep-item">default_policy</span>
+        </div>
+        <div class="sep-note">提案构造期即拒绝 Tier 0；变更只有「提案 → 验证 → 留痕」一条路</div>
+      </div>
+      <div class="harrow">
+        <div class="line"></div>
+        <div class="lbl">选择性转录<br>+ 编译</div>
+      </div>
+      <div class="sep-box e">
+        <span class="sep-badge">E 层 · 表达</span>
+        <div class="sep-name">选择执行地</div>
+        <div class="sep-role">harness 组装 · 隔离回放 · 驱动</div>
+        <div class="sep-items">
+          <span class="sep-item">skill_memory</span>
+          <span class="sep-item">harness_resolver</span>
+          <span class="sep-item">isolated_replay</span>
+        </div>
+        <div class="sep-note">从 tier1_active 组装本轮执行面；回滚锚点先记后用</div>
+      </div>
+      <div class="harrow">
+        <div class="line"></div>
+        <div class="lbl">执行轨迹<br>+ 证据包</div>
+      </div>
+      <div class="sep-box p">
+        <span class="sep-badge">P 层 · 表型</span>
+        <div class="sep-name">选择裁决地</div>
+        <div class="sep-role">冻结基准 · 判据证据 · 事件流</div>
+        <div class="sep-items">
+          <span class="sep-item">evals / scorecard</span>
+          <span class="sep-item">goal journal</span>
+          <span class="sep-item">event_log</span>
+        </div>
+        <div class="sep-note">测量代码属屏障层、不参与自我评分</div>
+      </div>
+    </div>
+
+    <div class="feedback-bar">
+      <div class="t">⟲ 选择信号（经验证 · 过屏障）—— 从 P 写回 G 的唯一通道</div>
+      <div class="d">ValidationGate：隔离回放 + 基线对比 + ±20% 双侧阈值 + 3 连败回滚。绕过它的一切变更都不存在。</div>
+    </div>
+
+    <div class="bridge">
+      <span class="bt">桥接 · Tier 0/1/2</span>
+      <span class="bd">每个可变基因同时有一个<b style="color:var(--fg)">物理地址</b>（住在哪层）和一个<b style="color:var(--fg)">变异权限</b>（能不能被提案）—— 两轴在此相交，互不推导。</span>
+      <span class="tier-chips">
+        <span class="tier-chip t0">Tier 0 冻结 · budget / stop_policy / state_machine / methodology</span>
+        <span class="tier-chip t1">Tier 1 可提 · prompt / skill / graph_shape / tool_set / compaction</span>
+        <span class="tier-chip t2">Tier 2 产物 · 只留痕不验证</span>
+      </span>
+    </div>
+
+    <div class="axis-tag" style="margin-top:22px;">
+      <span class="dot" style="background:linear-gradient(135deg,var(--phys-l1),var(--phys-l4))"></span>
+      物理轴（四层骨架）· 谁可以 import 谁 —— 上行违规 = 0（棘轮锁定）
+    </div>
+
+    <div class="phy-stack">
+      <div class="phy-layer l1">
+        <span class="code">L1</span>
+        <div>
+          <div class="nm">interfaces · 渠道层</div>
+          <div class="ds">chat / api / mcp / 组装根（gateway_wiring · rsi_wiring · tier0_snapshot）—— 哑适配器 + 唯一知道 apps 的位置</div>
+        </div>
+        <span class="st st-ok" data-fw="L1">118 文件 · 27,337 行</span>
+      </div>
+      <div class="phy-arrow">▼</div>
+      <div class="phy-layer l2">
+        <span class="code">L2</span>
+        <div>
+          <div class="nm">apps · 业务插件层</div>
+          <div class="ds">goal / chat / agent_plugins / swarm_presets / scheduled_research / builtin_tools / algo</div>
+        </div>
+        <span class="st st-ok" data-fw="L2">42 文件 · 9,660 行</span>
+      </div>
+      <div class="phy-arrow">▼</div>
+      <div class="phy-layer l3">
+        <span class="code">L3</span>
+        <div>
+          <div class="nm">kernel · 平台机制层</div>
+          <div class="ds">agent（LoopEngine / LoopSpec / loop_assembly / guardrails）/ workflow（contract）/ evolution / gateway / orchestration / events / session / swarm</div>
+        </div>
+        <span class="st st-ok" data-fw="L3">195 文件 · 42,266 行</span>
+      </div>
+      <div class="phy-arrow">▼</div>
+      <div class="phy-layer l4">
+        <span class="code">L4</span>
+        <div>
+          <div class="nm">foundation · 零业务原语</div>
+          <div class="ds">paths / settings / llm 客户端 / 存储</div>
+        </div>
+        <span class="st st-ok" data-fw="L4">63 文件 · 12,077 行</span>
+      </div>
+    </div>
+
+    <div class="delta-note" style="margin-top:16px;margin-bottom:0;">
+      合计 <b data-fw="total">418 文件 · 91,340 行</b> · 跨层边：L1→L2 59 · L1→L3 121 · L1→L4 83 ·
+      L2→L3 33 · L2→L4 11 · L3→L4 71 · <b class="delta-ok">上行违规 0</b>。
+      这些数字由 <span class="mono">scripts/arch/check_framework_numbers.py</span> 钉在代码上
+      （batch_gate 第 9 步 + CI job + 2 条 pytest 断言）。
+    </div>
+
+  </div>
+
+  <!-- ==================== 03 七条理念 ==================== -->
+  <div class="section-label">
+    <span class="num">03</span>
+    <h2>七条理念 · 张力 + 规则 + 检查（检查栏已回填 v1.2 实测）</h2>
+    <span class="line"></span>
+  </div>
+
+  <div class="idea-grid">
+
+    <div class="idea i1">
+      <div class="idea-num">理念 01</div>
+      <div class="idea-title">双轴正交：物理轴管依赖，语义轴管变异</div>
+      <div class="idea-sec"><span class="k k-tension">张力</span><span class="v">GEP-RSI 的全部缺口在 import 图上<b>恒为 0</b>——物理门禁全绿 ≠ 架构对</span></div>
+      <div class="idea-sec"><span class="k k-rule">规则</span><span class="v">两轴不互相推导也不合并；桥接点是 Tier 0/1/2</span></div>
+      <div class="idea-sec"><span class="k k-check">检查</span><span class="v"><b>8 道结构门禁齐备</b>（scripts/arch 14 文件），已接 pytest（26→28 用例）+ CI（architecture-gates job）。语义轴 Tier 0 三重冻结在 proposals/validation_gate/skill_memory ✅</span></div>
+    </div>
+
+    <div class="idea i2">
+      <div class="idea-num">理念 02</div>
+      <div class="idea-title">变更三关口：提案 → 验证 → 留痕</div>
+      <div class="idea-sec"><span class="k k-tension">张力</span><span class="v">能直接改配置的 agent 总能把指标调好看</span></div>
+      <div class="idea-sec"><span class="k k-rule">规则</span><span class="v">GenomeProposal 唯一入口（构造期拒 Tier 0）→ ValidationGate 唯一生效入口 → 事件 + 版本链 append-only</span></div>
+      <div class="idea-sec"><span class="k k-check">检查</span><span class="v">三道已成立 ✅。残差：<b>set_tier2 生产调用 0 处</b>（Tier 2 设计了没接线，D6 拍了板未落地）</span></div>
+    </div>
+
+    <div class="idea i3">
+      <div class="idea-num">理念 03</div>
+      <div class="idea-title">注册即可运行，或不可见</div>
+      <div class="idea-sec"><span class="k k-tension">张力</span><span class="v">业务工具注册成功、调用必败（CapabilityNotFound）——端口化把失败从编译期推到运行期</span></div>
+      <div class="idea-sec"><span class="k k-rule">规则</span><span class="v">kind 注册的前提 = 全部依赖 kind 可解析；不满足 → 整组不注册 + WARN，绝不注册必然失败的壳</span></div>
+      <div class="idea-sec"><span class="k k-check">检查</span><span class="v"><b>✅ 已落地</b>：requires 声明 95 处；apps/capabilities.py 注册带 requires；check_capability_requires consistent</span></div>
+    </div>
+
+    <div class="idea i4">
+      <div class="idea-num">理念 04</div>
+      <div class="idea-title">评估器在循环外，终止层级在进程外</div>
+      <div class="idea-sec"><span class="k k-tension">张力</span><span class="v">评估器可被循环改写 = 自进化退化为自欺骗；「永远不可变」又不可实现</span></div>
+      <div class="idea-sec"><span class="k k-rule">规则</span><span class="v">评估器不在 Tier 1 白名单（闭合集合）；修改唯一路径 = PR + 人审 + 包外门禁；终止层级 = scripts/arch + 测试 + 人</span></div>
+      <div class="idea-sec"><span class="k k-check">检查</span><span class="v">评估完整性指纹<b>已落地</b>（evals/golden_sets 相关 114 处）；终止层级 = 8 道门禁 + 28 条 pytest 断言 + CI job ✅</span></div>
+    </div>
+
+    <div class="idea i5">
+      <div class="idea-num">理念 05</div>
+      <div class="idea-title">两条反馈回路不合并，goal 是桥</div>
+      <div class="idea-sec"><span class="k k-tension">张力</span><span class="v">合并会把两种噪声混在一起，并让「把判据写松」成为指标攻击面</span></div>
+      <div class="idea-sec"><span class="k k-rule">规则</span><span class="v">能力反馈（golden eval，冻结基准）喂第 5 步双门；任务反馈（goal journal）喂第 1 步诊断；端口方向恒为 L2 → L3</span></div>
+      <div class="idea-sec"><span class="k k-check">检查</span><span class="v"><b>⚠️ 端口未接</b>：JournalSource/ScoreboardSource 协议已声明，但 apps/goal/journal_source.py 与 scoreboard_source.py 不存在；<b>interfaces/rsi_wiring.py:219 四源仍同指</b> EventStoreReportSource。R3 未做</span></div>
+    </div>
+
+    <div class="idea i5">
+      <div class="idea-num">理念 06</div>
+      <div class="idea-title">没有驱动的循环不存在</div>
+      <div class="idea-sec"><span class="k k-tension">张力</span><span class="v">五个零件各有测试，build_rsi_loop() 生产零调用——七步之外缺第 0 步：谁拉起一轮</span></div>
+      <div class="idea-sec"><span class="k k-rule">规则</span><span class="v">主驱动 run.settled 收尾钩子 + cron 兜底 + 每 session 至多 1 cycle（复用容量闸）；阶段 2 前置 = 判据强度门 + 事件写入方鉴别</span></div>
+      <div class="idea-sec"><span class="k k-check">检查</span><span class="v"><b>⚠️ 部分</b>：build_rsi_loop 12 处引用、rsi.cycle_started/cycle_skipped 12 处已有；<b>cron 兜底 0 处</b>（阶段 1 只落了一半）</span></div>
+    </div>
+
+    <div class="idea i1" style="border-color:rgba(52,211,153,0.4)">
+      <div class="idea-num">理念 07 · v1.1 新增</div>
+      <div class="idea-title">检查信号必须经由被检方不可控的通道产生</div>
+      <div class="idea-sec"><span class="k k-tension">张力</span><span class="v">全部「检查」的通过信号都由被检查方自己产出——自报 requires / 自报事件 / 自写 evidence（实测 evaluate("true")==True）/ 同进程可投毒的 golden eval。不是四个 bug，是缺一条原则</span></div>
+      <div class="idea-sec"><span class="k k-rule">规则</span><span class="v">检查信号通道三选一：kernel 侧计算 / 进程外持有（held-out 由包外脚本持有）/ 不可伪造源（append-only + 未来 hash chain）</span></div>
+      <div class="idea-sec"><span class="k k-check">检查</span><span class="v">held-out 包外持有 ✅（469 处）；append-only 10 处 ✅；<b>hash chain 0 处</b>（D5 拍板延到 P2）。残差诚实声明：evaluate("true")==True 的恒真判据形态仍是已知攻击面（interfaces/goal_settled_consumer.py:18,34 有注释记录）</span></div>
+    </div>
+
+  </div>
+
+  <!-- ==================== 04 三条反馈回路 ==================== -->
+  <div class="section-label">
+    <span class="num">04</span>
+    <h2>三条反馈回路 · 时标分层</h2>
+    <span class="line"></span>
+  </div>
+
+  <div class="loops">
+    <div class="loop l1b">
+      <span class="scale">回路 1 · 分钟 · 会话内</span>
+      <div class="loop-name">Goal Continuation</div>
+      <div class="loop-desc">判据未满足 → 注入续跑提示，直到 run.settled 或判据达成。改的是「这一轮任务做完没」。</div>
+      <div class="loop-status"><b class="delta-ok">✅ 活着</b> —— GoalContinuationInjector 在默认注入链（order 100），chat / API 全路径生效</div>
+    </div>
+    <div class="loop l2b">
+      <span class="scale">回路 2 · 小时 · 任务级</span>
+      <div class="loop-name">Goal Journal → 表型诊断</div>
+      <div class="loop-desc">判据达成 / 未达成 + 证据 → GEP-RSI 第 1 步「表型诊断」的细粒度原料。改的是「这类任务难在哪」。</div>
+      <div class="loop-status"><b class="st-warn">⚠ 半通</b> —— goal 台账已恢复（R1 ✅，18 文件 / 5,975 行），但端口未接（R3 ❌，四源同指）</div>
+    </div>
+    <div class="loop l3b">
+      <span class="scale">回路 3 · 天 · 能力级</span>
+      <div class="loop-name">RSI Cycle</div>
+      <div class="loop-desc">holdout 诊断 → 提案 → 隔离回放 → 双门评估 → activate / rollback。改的是「系统会不会」。</div>
+      <div class="loop-status"><b class="st-warn">⚠ 零件齐、驱动半通</b> —— CLI + 事件已有；缺 cron 兜底（W4 部分）、缺假基因清理（W5 未做）</div>
+    </div>
+  </div>
+
+  <!-- ==================== 05 构件落位 ==================== -->
+  <div class="section-label">
+    <span class="num">05</span>
+    <h2>构件落位 · 语义轴 × 物理轴</h2>
+    <span class="line"></span>
+  </div>
+
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr><th style="width:80px">语义层</th><th>构件</th><th style="width:330px">物理落点</th><th style="width:70px">层</th><th style="width:250px">v1.2 状态</th></tr>
+      </thead>
+      <tbody>
+        <tr><td><span class="pill pill-b">屏障</span></td><td>Tier 0 冻结快照</td><td class="mono">interfaces/tier0_snapshot.py</td><td>L1</td><td class="delta-ok">✅ 已有</td></tr>
+        <tr><td><span class="pill pill-g">G</span></td><td>基因组版本链（frozen + 游标）</td><td class="mono">kernel/orchestration/genome_version.py</td><td>L3</td><td class="delta-ok">✅ 已有（deactivate 仍零生产调用）</td></tr>
+        <tr><td><span class="pill pill-g">G</span></td><td>提案语法 + Tier 白名单</td><td class="mono">kernel/evolution/genome_proposals.py</td><td>L3</td><td class="delta-ok">✅ 已有</td></tr>
+        <tr><td><span class="pill pill-g">G</span></td><td>提案生成（确定性 policy）</td><td class="mono">kernel/evolution/default_policy.py</td><td>L3</td><td class="delta-ok">✅ 已有</td></tr>
+        <tr><td><span class="pill pill-e">E</span></td><td>选择性转录（tier1 → harness）</td><td class="mono">kernel/evolution/skill_memory.py + agent/harness_resolver.py</td><td>L3</td><td class="delta-ok">✅ 已有</td></tr>
+        <tr><td><span class="pill pill-e">E</span></td><td>隔离回放 + 回滚锚点</td><td class="mono">kernel/evolution/isolated_replay.py + rsi_wiring</td><td>L1/L3</td><td class="delta-ok">✅ 已有</td></tr>
+        <tr><td><span class="pill pill-e">E</span></td><td><b>循环驱动（第 0 步）</b></td><td class="mono">run.settled 钩子 + interfaces/rsi_cli.py</td><td>L1/L3</td><td class="st-warn">⚠ 部分（CLI + 事件有，cron 兜底无）</td></tr>
+        <tr><td><span class="pill pill-p">P</span></td><td>冻结基准 + scorecard</td><td class="mono">evals/（70 条 golden 任务）</td><td>L3</td><td class="delta-ok">✅ 已有 <b>+ 指纹已补</b></td></tr>
+        <tr><td><span class="pill pill-p">P</span></td><td>执行轨迹（append-only）</td><td class="mono">kernel/events + foundation/storage</td><td>L3/L4</td><td class="delta-ok">✅ 已有（hash chain 仍 P2）</td></tr>
+        <tr><td><span class="pill pill-p">P</span></td><td>任务级判据证据</td><td class="mono">apps/goal/ journal（经端口）</td><td>L2</td><td><b class="delta-ok">✅ R1 已恢复</b> / <b class="delta-bad">❌ R3 端口未接</b></td></tr>
+        <tr><td><span class="pill pill-b">屏障</span></td><td>Tier 0 三重冻结</td><td class="mono">proposals / validation_gate / skill_memory</td><td>L3</td><td class="delta-ok">✅ 已有</td></tr>
+        <tr><td><span class="pill pill-b">屏障</span></td><td>物理门禁 + 评估指纹</td><td class="mono">scripts/arch/（进程外）</td><td>—</td><td class="delta-ok">✅ <b>门禁 8 步 + CI job · 指纹已补</b></td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- ==================== 06 目录形态 ==================== -->
+  <div class="section-label">
+    <span class="num">06</span>
+    <h2>目录形态（v1.2 现状）</h2>
+    <span class="line"></span>
+  </div>
+
+  <div class="tree">src/agentnodes/                                     <span class="cm"># 418 文件 / 91,340 行 · 上行违规 0</span>
+├── <span class="dir">interfaces/</span>          <span class="cm"># L1 渠道 + 组装根（rsi_wiring / gateway_wiring / tier0_snapshot）</span>
+├── <span class="dir">apps/</span>                <span class="cm"># L2 业务插件 · 42 文件</span>
+│   ├── <span class="hi">goal/</span>             <span class="cm"># 18 文件 / 5,975 行（R1 已恢复：判据 / 台账 / DAG 工作流）</span>
+│   ├── chat/             <span class="cm"># 产品策略</span>
+│   ├── agent_plugins/    <span class="cm"># 量化插件（quant / quant_validators / quant_display）</span>
+│   ├── swarm_presets/    <span class="cm"># 37 个拓扑 preset</span>
+│   ├── scheduled_research/  <span class="cm"># 定时研究（批次 8 自 kernel 迁入）</span>
+│   ├── builtin_tools/    <span class="cm"># 业务工具</span>
+│   └── <span class="hi">algo/</span>            <span class="cm"># 无前视调仓回测（2026-11-16 自 kernel/algo 迁入）</span>
+├── <span class="dir">kernel/</span>              <span class="cm"># L3 平台机制 · 195 文件</span>
+│   ├── agent/            <span class="cm"># LoopEngine / LoopSpec / loop_assembly / guardrails / deciders</span>
+│   ├── workflow/         <span class="cm"># contract.py（B1 节点产物契约）+ 编译器 / 执行器</span>
+│   ├── evolution/        <span class="cm"># G/E/P 循环机制（holdout / validation_gate / evolution_agent）</span>
+│   └── gateway/ orchestration/ events/ session/ swarm/ permission/ memory/ skills/
+├── <span class="dir">foundation/</span>          <span class="cm"># L4 零业务原语 · 63 文件</span>
+├── <span class="dir">evals/</span>               <span class="cm"># 冻结基准（含完整性指纹）</span>
+└── <span class="dir">templates/</span>           <span class="cm"># 资产（.prompts 17 / .skills 26 —— <span class="warn">归属另议，已延期第三步</span>）</span>
+  </div>
+
+  <!-- ==================== 07 工作项 ==================== -->
+  <div class="section-label">
+    <span class="num">07</span>
+    <h2>工作项总表 · 完成度回填</h2>
+    <span class="line"></span>
+  </div>
+
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr><th style="width:70px">项</th><th>内容</th><th style="width:230px">v1.1 状态</th><th style="width:230px">v1.2 实测</th></tr>
+      </thead>
+      <tbody>
+        <tr><td><span class="pill pill-g">W1</span></td><td>装配期能力自检（requires + 拓扑解析）</td><td>待开工</td><td class="delta-ok">✅ 完成（requires 95 处）</td></tr>
+        <tr><td><span class="pill pill-p">W2</span></td><td>P 层成本/延迟维度 + 双闸</td><td>待开工</td><td class="delta-ok">✅ 完成（cost 43 处 / latency 5 处）</td></tr>
+        <tr><td><span class="pill pill-p">W3</span></td><td>held-in / held-out 双集双门</td><td>待开工</td><td class="delta-ok">✅ 完成（holdout 313 处）</td></tr>
+        <tr><td><span class="pill pill-e">W4</span></td><td>完整性指纹 + 循环驱动链</td><td>待开工</td><td class="st-warn">⚠️ 部分（指纹 114 处 ✅ / cron 兜底 0 处 ❌）</td></tr>
+        <tr><td><span class="pill pill-g">W5</span></td><td>假基因清理</td><td>待开工</td><td class="delta-bad">❌ 未做（deactivate 生产 0 调用）</td></tr>
+        <tr><td><span class="pill pill-b">W6</span></td><td>事件 hash chain</td><td>P2（可选）</td><td class="delta-bad">❌ 未做（hash chain 0 处，符合 D5 拍板）</td></tr>
+        <tr><td><span class="pill pill-r">R1</span></td><td>恢复 apps/goal + goal.* kind</td><td>待恢复</td><td class="delta-ok">✅ 完成（18 文件 · goal.* 67 处 · goal.settled 14 处）</td></tr>
+        <tr><td><span class="pill pill-r">R2</span></td><td>chat 接线（slash / GoalPanel / SSE / API）</td><td>待接线</td><td class="delta-ok">✅ 完成（slash 32 · GoalPanel 74 · SSE 48）</td></tr>
+        <tr><td><span class="pill pill-r">R3</span></td><td>journal/scoreboard 端口 + preset 化</td><td>待接线</td><td class="delta-bad">❌ 未做（journal_source/scoreboard_source 0 处 · 四源同指）</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- ==================== 08 决策点 ==================== -->
+  <div class="section-label">
+    <span class="num">08</span>
+    <h2>六个决策点 · 全部已拍板（2026-11-05）+ 后续落点</h2>
+    <span class="line"></span>
+  </div>
+
+  <div class="dec-grid">
+    <div class="dec">
+      <div class="dec-id">D1 · ✅ 已拍板 · 决定框架走向</div>
+      <div class="dec-q">L2 的定位是什么？</div>
+      <div class="dec-opts">(a) 恢复 goal 重新充实 / (b) 取消 L2 / (c) 插件槽 + 注册自检</div>
+      <div class="dec-rec"><b>拍板：(c) + R1</b><br><b class="delta-ok">v1.2 落点：</b>✅ R1 完成；L2 = 42 文件 / 9,660 行（7 个子包）</div>
+    </div>
+    <div class="dec">
+      <div class="dec-id">D2 · ✅ 随 D1 采纳理念三默认</div>
+      <div class="dec-q">缺依赖的工具怎么处置？</div>
+      <div class="dec-opts">整组不注册 + WARN / 注册但标 degraded</div>
+      <div class="dec-rec"><b>拍板：不注册 + WARN</b><br><b class="delta-ok">v1.2 落点：</b>✅ check_capability_requires 门禁化</div>
+    </div>
+    <div class="dec">
+      <div class="dec-id">D3 · ✅ 已拍板 · P 层表型向量</div>
+      <div class="dec-q">成本 / 延迟怎么进表型？</div>
+      <div class="dec-opts">A 进总分加权 / B 并列维度 + 双闸 / A0 门槛收紧</div>
+      <div class="dec-rec"><b>拍板：B 并列维度 + 双闸</b><br><b class="delta-ok">v1.2 落点：</b>✅ W2 完成</div>
+    </div>
+    <div class="dec">
+      <div class="dec-id">D4 · ✅ 已拍板 · 循环第 0 步</div>
+      <div class="dec-q">RSI 循环由谁驱动？</div>
+      <div class="dec-opts">A run.settled / B cron / C 手动 CLI / D goal.settled / E 分层混合</div>
+      <div class="dec-rec"><b>拍板：E 分层混合，分两阶段</b><br><b class="st-warn">v1.2 落点：</b>⚠️ 阶段 1 只落一半（CLI ✅ / cron 兜底 ❌）</div>
+    </div>
+    <div class="dec">
+      <div class="dec-id">D5 · ✅ 已拍板 · 屏障强度</div>
+      <div class="dec-q">hash chain 现在做吗？</div>
+      <div class="dec-opts">现在做 / 推到 P2</div>
+      <div class="dec-rec"><b>拍板：P2</b><br><b class="delta-bad">v1.2 落点：</b>❌ 未做（符合拍板）</div>
+    </div>
+    <div class="dec">
+      <div class="dec-id">D6 · ✅ 已拍板 · Tier 2 接线</div>
+      <div class="dec-q">研究产物现在进版本链吗？</div>
+      <div class="dec-opts">R1 时接 / 以后</div>
+      <div class="dec-rec"><b>拍板：R1 时接</b><br><b class="delta-bad">v1.2 落点：</b>❌ <b>未接</b>（set_tier2 生产 0 调用）—— 信道②从未接线</div>
+    </div>
+  </div>
+
+  <!-- ==================== 09 v1.0 执行序 ==================== -->
+  <div class="section-label">
+    <span class="num">09</span>
+    <h2>v1.0 执行序 · 四条泳道（实际执行结果）</h2>
+    <span class="line"></span>
+  </div>
+
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr><th style="width:70px">批次</th><th>泳道 A · 能力恢复</th><th>泳道 B · P 层与屏障</th><th style="width:120px">实际结果</th></tr>
+      </thead>
+      <tbody>
+        <tr><td><span class="pill pill-r">1</span></td><td><b>W1</b> 能力自检（幽灵工具清零）</td><td>—</td><td class="delta-ok">✅ 已完成</td></tr>
+        <tr><td><span class="pill pill-r">2</span></td><td><b>R1</b> goal 恢复 + goal.settled + set_tier2</td><td><b>W4 阶段 1</b> CLI + cron + 指纹</td><td class="st-warn">R1 ✅ / W4 ⚠️（set_tier2 未接、cron 未落）</td></tr>
+        <tr><td><span class="pill pill-r">3</span></td><td><b>R2</b> chat 接线</td><td><b>W2</b> cost/duration + 双闸</td><td class="delta-ok">✅ 均完成</td></tr>
+        <tr><td><span class="pill pill-r">4</span></td><td><b>R3</b> journal/scoreboard 端口 + preset 化</td><td><b>W3</b> 双集双门 ∥ <b>W5</b> 假基因清理</td><td class="delta-bad">R3 ❌ / W3 ✅ / W5 ❌</td></tr>
+        <tr><td><span class="pill pill-b">P2</span></td><td>—</td><td><b>W6</b> 事件 hash chain</td><td class="delta-bad">❌ 未做（符合 D5）</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- ==================== 10 变化总账 ==================== -->
+  <div class="section-label">
+    <span class="num">10</span>
+    <h2>v1.1 → v1.2 架构变化总账</h2>
+    <span class="line"></span>
+  </div>
+
+  <div class="delta-note">
+    <b>本节是 v1.2 的核心</b>：v1.1（2026-11-06）到 v1.2（2026-11-16）之间发生的一切结构性变化，逐行可核。
+    所有数字由 <span class="mono">check_framework_numbers.py</span> 或 <span class="mono">git ls-tree</span> 实测。
+  </div>
+
+  <div class="table-wrap" style="margin-bottom:16px;">
+    <table>
+      <thead><tr><th style="width:170px">项</th><th style="width:230px">v1.1（2026-11-06）</th><th style="width:250px">v1.2（2026-11-16）</th><th>判读</th></tr></thead>
+      <tbody>
+        <tr><td><b>L1 interfaces</b></td><td class="mono">109 文件</td><td class="mono" data-fw="L1">118 文件</td><td><span class="arrow-up">+9</span></td></tr>
+        <tr><td><b>L2 apps</b></td><td class="mono">15 文件</td><td class="mono" data-fw="L2">42 文件</td><td><span class="arrow-up">+27</span> —— 业务内容自 kernel 迁入</td></tr>
+        <tr><td><b>L3 kernel</b></td><td class="mono">221 文件</td><td class="mono" data-fw="L3">195 文件</td><td><span class="arrow-down">−26</span> —— 业务名词迁出</td></tr>
+        <tr><td><b>L4 foundation</b></td><td class="mono">66 文件</td><td class="mono" data-fw="L4">63 文件</td><td><span class="arrow-down">−3</span></td></tr>
+        <tr><td><b>src/ 合计</b></td><td class="mono">473 文件</td><td class="mono" data-fw="total">418 文件</td><td>注：v1.2 的 418 是 <b>按层可归属</b> 的 .py；525 是含未归属文件的 src 总数</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="table-wrap" style="margin-bottom:16px;">
+    <table>
+      <thead><tr><th style="width:120px">变化</th><th style="width:150px">子包</th><th>说明</th></tr></thead>
+      <tbody>
+        <tr><td><span class="pill pill-g">kernel ➕</span></td><td class="mono">algo/</td><td>6f3e727c 引入 —— <b class="delta-bad">但它是红线来源，2026-11-16 已迁出</b></td></tr>
+        <tr><td><span class="pill pill-b">kernel ➖</span></td><td class="mono">scheduled_research/</td><td>批次 8（93fc98e4）迁 apps</td></tr>
+        <tr><td><span class="pill pill-b">kernel ➖</span></td><td class="mono">algo/</td><td>2026-11-16 迁 apps/algo（业务名词破 nouns 门禁）</td></tr>
+        <tr><td><span class="pill pill-e">apps ➕</span></td><td class="mono">agent_plugins/ · goal/ · scheduled_research/ · swarm_presets/ · algo/</td><td>全部是 v1.1 时代<b>不存在</b>的</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="table-wrap" style="margin-bottom:16px;">
+    <table>
+      <thead><tr><th style="width:250px">新增架构级构件</th><th style="width:330px">路径</th><th style="width:80px">行数</th><th>引入</th></tr></thead>
+      <tbody>
+        <tr><td>B1 节点产物契约</td><td class="mono">kernel/workflow/contract.py</td><td class="mono">317</td><td>a15280b0</td></tr>
+        <tr><td>LoopEngine 统一引擎</td><td class="mono">kernel/agent/loop_engine.py</td><td class="mono">562</td><td>批次 11/12</td></tr>
+        <tr><td>LoopSpec 聚合</td><td class="mono">kernel/agent/loop_spec.py</td><td class="mono">284</td><td>批次 12</td></tr>
+        <tr><td>loop_assembly 双工厂收口</td><td class="mono">kernel/agent/loop_assembly.py</td><td class="mono">89</td><td>phase3</td></tr>
+        <tr><td>guardrails 护栏</td><td class="mono">kernel/agent/guardrails.py</td><td class="mono">114</td><td>phase5</td></tr>
+        <tr><td>StepHandler 协议</td><td class="mono">kernel/agent/_core_types.py</td><td class="mono">—</td><td>批次 9（B1 协议统一）</td></tr>
+        <tr><td>ctx_hash_id 上下文指纹</td><td class="mono">kernel/agent/agent_telemetry.py</td><td class="mono">—</td><td>7e68ac77</td></tr>
+        <tr><td>架构门禁全套</td><td class="mono">scripts/arch/（14 文件）</td><td class="mono">—</td><td>批次 4d / 8</td></tr>
+        <tr><td>层级矩阵唯一事实源</td><td class="mono">scripts/arch/layer_matrix.py</td><td class="mono">207</td><td>layered-skeleton-design</td></tr>
+        <tr><td>架构图同步器</td><td class="mono">scripts/arch/sync_architecture_diagram.py</td><td class="mono">390</td><td>批次 4d</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="table-wrap" style="margin-bottom:16px;">
+    <table>
+      <thead><tr><th style="width:210px">门禁体系</th><th style="width:330px">v1.1</th><th>v1.2</th></tr></thead>
+      <tbody>
+        <tr><td>结构门禁</td><td>「物理轴：AST 门禁（已有）」</td><td class="delta-ok"><b>8 道</b>（dangling+layers / path / capability / semantic / tool_refs / nouns / env / diagram）</td></tr>
+        <tr><td>pytest 覆盖</td><td>无 arch 门禁用例</td><td class="delta-ok"><b>test_scripts_arch.py 28 用例</b>（含 nouns 3 条 + framework 2 条 + R-019 反向检验）</td></tr>
+        <tr><td>CI</td><td>只跑 ruff / pyright / pytest</td><td class="delta-ok">➕ <b>architecture-gates job（9 步）</b></td></tr>
+        <tr><td>红线状态</td><td>—</td><td class="delta-ok">✅ <b>batch_gate ALL GREEN</b>（2026-11-16 修；此前 nouns 51 处红潜伏 2 天）</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="table-wrap" style="margin-bottom:16px;">
+    <table>
+      <thead><tr><th style="width:210px">引擎形态</th><th style="width:330px">v1.1</th><th>v1.2</th></tr></thead>
+      <tbody>
+        <tr><td>执行面</td><td>三套并存（AgentLoop 22.5k / GraphEngine+workflow 4.8k / SwarmRuntime 1.5k）</td><td class="st-warn"><b>双路径收敛中</b>：统一引擎（LoopEngine + Decider + Step）已是 run() 默认；legacy 循环体仍在（u6-2-terminal-cleanup 分支 5 commit <b>未合并</b>）</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th style="width:210px">文档一致性</th><th style="width:330px">v1.1</th><th>v1.2</th></tr></thead>
+      <tbody>
+        <tr><td>CSS 变量</td><td><b class="delta-bad">0 个</b>（30 个 hex 硬编码，83 处引用）</td><td class="delta-ok"><b>35 个</b>（层色 / 屏障 / 桥接 / 物理轴 / 状态 / 表面）</td></tr>
+        <tr><td>真 heading</td><td>h1 ×1、<b class="delta-bad">h2 ×0</b>（分节是 div 伪装）</td><td class="delta-ok"><b>h2 ×11</b>（可锚点跳转 / 浏览器大纲 / 无障碍）</td></tr>
+        <tr><td>关联文档链接</td><td><b class="delta-bad">4 条中 3 条失效</b></td><td class="delta-ok">全部可解析</td></tr>
+        <tr><td>体量数字</td><td><b class="delta-bad">硬编码快照</b>（4 处已被推翻，无人发现）</td><td class="delta-ok"><b>由 check_framework_numbers.py 钉在代码上</b></td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- ==================== 图例 + 关联 ==================== -->
+  <div class="legend">
+    <div class="legend-item"><span class="legend-dot" style="background:linear-gradient(135deg,var(--layer-g),#14b8a6)"></span>G 层 · 基因组（变异）</div>
+    <div class="legend-item"><span class="legend-dot" style="background:linear-gradient(135deg,var(--layer-e),var(--bridge))"></span>E 层 · 表达（执行）</div>
+    <div class="legend-item"><span class="legend-dot" style="background:linear-gradient(135deg,var(--layer-p),#f97316)"></span>P 层 · 表型（裁决）</div>
+    <div class="legend-item"><span class="legend-dot" style="background:linear-gradient(135deg,var(--barrier),#e11d48)"></span>屏障 · 不可变治理</div>
+    <div class="legend-item"><span class="legend-dot" style="background:linear-gradient(135deg,var(--bridge),#8b5cf6)"></span>桥接 · Tier 0/1/2</div>
+    <div class="legend-item"><span class="legend-dot" style="background:linear-gradient(135deg,#38bdf8,var(--accent))"></span>物理轴 · L1–L4</div>
+    <div class="legend-item"><span class="legend-dot" style="background:linear-gradient(135deg,var(--ok),var(--bad))"></span>状态 · ✅ / ⚠️ / ❌</div>
+  </div>
+
+  <div class="related">
+    <div class="rt">关联文档</div>
+    <a href="design/framework-and-principles-v1.2.md">框架与理念 v1.2（本文的 md 底稿 · 上位源）</a> ·
+    <a href="design/framework-and-principles-20261105.md">框架与理念 v1.1（历史版，保留对照）</a> ·
+    <a href="architecture-diagram.html">架构图 v10.2（代码地图 · AST 实测）</a> ·
+    <a href="design/project-progress-assessment-20261116.md">项目进度评估（复盘）</a> ·
+    <a href="design/merge-main-and-framework-v12-plan-20261116.md">合并 main + v1.2 方案</a> ·
+    <a href="design/goal-capability-merge-design-20261105.md">goal 能力族重建方案（R1–R3）</a> ·
+    <a href="GEP-RSI 架构说明图 · v1.1 校准版.html">GEP-RSI v1.1（语义轴的设计语言）</a>
+  </div>
+
+</div>
+</body>
+</html>
