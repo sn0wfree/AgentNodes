@@ -24,6 +24,7 @@ import { ChatLayoutSection } from '../components/settings/ChatLayoutSection'
 import { WorkspaceSection } from '../components/settings/WorkspaceSection'
 import { LLMSection } from '../components/settings/LLMSection'
 import type { LLMConfig, SystemInfo } from '../components/settings/types'
+import { useThemeStore, applyTheme } from '../stores/theme'
 import { Cpu } from 'lucide-react'
 
 beforeEach(() => {
@@ -102,13 +103,40 @@ describe('WorkspaceSection', () => {
 })
 
 describe('AppearanceSection', () => {
-  it('renders the theme and font-size choices with their active states', () => {
+  beforeEach(() => {
+    // The section now reads the real theme store.
+    useThemeStore.setState({ theme: 'dark' })
+    applyTheme('dark')
+  })
+
+  it('reflects the active theme from the store', () => {
     render(<AppearanceSection />)
     expect(screen.getByText('外观设置')).toBeInTheDocument()
-    expect(screen.getByText('暗色')).toBeInTheDocument()
-    expect(screen.getByText('亮色')).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: '暗色' })).toHaveAttribute('aria-pressed', 'true')
+    expect(screen.getByRole('button', { name: '亮色' })).toHaveAttribute('aria-pressed', 'false')
+  })
+
+  it('switches the theme through the store (and applies it to <html>)', () => {
+    render(<AppearanceSection />)
+    fireEvent.click(screen.getByRole('button', { name: '亮色' }))
+
+    expect(useThemeStore.getState().theme).toBe('light')
+    expect(document.documentElement.dataset.theme).toBe('light')
+    expect(screen.getByRole('button', { name: '亮色' })).toHaveAttribute('aria-pressed', 'true')
+  })
+
+  it('persists the chosen theme', () => {
+    render(<AppearanceSection />)
+    fireEvent.click(screen.getByRole('button', { name: '亮色' }))
+    expect(localStorage.getItem('sr-theme')).toBe('light')
+  })
+
+  it('renders font-size choices as explicitly unavailable', () => {
+    render(<AppearanceSection />)
+    // No font-size store exists yet, so the buttons must not pretend.
+    expect(screen.getByText('即将支持')).toBeInTheDocument()
     for (const label of ['小', '中', '大']) {
-      expect(screen.getByText(label)).toBeInTheDocument()
+      expect(screen.getByRole('button', { name: label })).toBeDisabled()
     }
   })
 })

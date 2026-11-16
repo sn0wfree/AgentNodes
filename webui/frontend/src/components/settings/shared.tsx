@@ -54,9 +54,20 @@ export function PasswordInput({
   )
 }
 
-export function ThemeBtn({ label, active }: { label: string; active?: boolean }) {
+export function ThemeBtn({
+  label,
+  active,
+  onClick,
+}: {
+  label: string
+  active?: boolean
+  onClick?: () => void
+}) {
   return (
     <button
+      type="button"
+      onClick={onClick}
+      aria-pressed={active}
       className={`rounded-lg px-4 py-1.5 text-sm transition-colors ${
         active ? 'bg-primary-600 text-white' : 'bg-slate-700 text-slate-300 hover:bg-slate-600'
       }`}
@@ -66,12 +77,26 @@ export function ThemeBtn({ label, active }: { label: string; active?: boolean })
   )
 }
 
-export function SizeBtn({ label, active }: { label: string; active?: boolean }) {
+export function SizeBtn({
+  label,
+  active,
+  onClick,
+  disabled,
+}: {
+  label: string
+  active?: boolean
+  onClick?: () => void
+  disabled?: boolean
+}) {
   return (
     <button
+      type="button"
+      onClick={onClick}
+      disabled={disabled}
+      aria-pressed={active}
       className={`rounded-lg px-4 py-1.5 text-sm transition-colors ${
         active ? 'bg-primary-600 text-white' : 'bg-slate-700 text-slate-300 hover:bg-slate-600'
-      }`}
+      } ${disabled ? 'cursor-not-allowed opacity-50' : ''}`}
     >
       {label}
     </button>
