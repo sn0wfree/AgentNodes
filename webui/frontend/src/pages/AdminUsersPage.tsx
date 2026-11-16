@@ -110,7 +110,12 @@ export function AdminUsersPage() {
   const viewData = async (u: AdminUser) => {
     try {
       const d = await api.adminUsers.data(u.id)
-      setDataCounts(d)
+      // Defensive: a proxy/gateway may return an envelope or null. Never
+      // assign undefined into state that the render path dereferences.
+      setDataCounts({
+        sessions: d?.sessions ?? null,
+        studies: d?.studies ?? null,
+      })
       setDataFor(u)
     } catch (e: any) {
       setError(e.message || '查询失败')
