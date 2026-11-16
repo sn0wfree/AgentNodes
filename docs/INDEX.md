@@ -42,7 +42,7 @@
 
 ---
 
-## 2. design/ — 仍生效的设计与契约（104 份）
+## 2. design/ — 仍生效的设计与契约（105 份）
 
 **判据**：文档里的决策仍在代码中执行。已被取代的移到 `archive/`。
 
@@ -135,7 +135,8 @@
 
 | 文档 | 内容 |
 |---|---|
-| [`project-progress-assessment-20261116.md`](design/project-progress-assessment-20261116.md) | **项目进度评估（复盘）**：四条工作线完成度 + 健康度实测 + 11 项遗留清单 + 处置建议（待批准）|
+| [`project-progress-assessment-20261116.md`](design/project-progress-assessment-20261116.md) | **项目进度评估（复盘）**：四条工作线完成度 + 健康度实测 + 13 项遗留清单 + 处置建议（待批准）|
+| [`merge-main-and-framework-v12-plan-20261116.md`](design/merge-main-and-framework-v12-plan-20261116.md) | **合并 main + 框架与理念 v1.2 方案（R-014）**：FF 合并可行性 + 架构变化盘点 + v1.2 十一节设计与验收判据（待批准）|
 
 ### 2.8 ADR
 
