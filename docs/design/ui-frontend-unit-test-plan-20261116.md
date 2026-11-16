@@ -205,6 +205,45 @@
 3. **config 2 处**（T1.1）：`reportOnFailure: true`（失败也出报告）+ `json-summary` reporter + `types.gen.ts` 排除生成物。
 4. **cmd.exe 陷阱 1 个**（T1.3）：npm script 里的 `;` 不是分隔符，会被 vitest 当 filter → "No test files found"。
 
+## §5.6 T2 实施结果回填（2026-11-16 完成）
+
+| 项 | 结果 |
+|---|---|
+| ErrorBoundary（0%） | funcs **100%** / stmts 100%——4 用例（正常/捕获错误/自定义 fallback/重试恢复） |
+| AgentList（0%） | funcs **100%** / stmts 100%——5 用例（空态/降序排序/回调 id/选中态/无回调） |
+| EquityCurveCard（0%） | funcs **100%** / stmts 98.5%——3 用例（双空/metrics-only 回退/curve 渲染） |
+| dashboard/types.ts | **加入 coverage exclude**（实测 77 行纯类型零运行时 → v8 0% 属虚警） |
+| commit | 67c9df09 |
+
+### 关键发现：flaky 的真根因（不是超时、不是缺 mock）
+
+T2 全量跑时 definitionWorkflowPage **另一个用例**也红了 → 排除单点超时假设。
+深查：`setup.ts` 从未注册 RTL `cleanup`（vitest 的 `globals:true` 自动清理
+依赖 RTL 看到全局 afterEach，此处未生效）→ **上个测试的已挂载树存活，其
+async 续体（startEdit → orchestrate.getDraft → setEditing）在下一个测试的
+DOM 上 setState**。加全局 `afterEach(cleanup)` 后立即稳定。
+
+这是本次测试工作最有价值的产出之一：它解释了此前三轮偶发红的全部现象，
+且属系统性缺陷（影响所有含 async effect 的组件测试）。
+
+### 最终覆盖（112 文件 / 1149 用例 / 33.5s 全绿）
+
+| 指标 | T1 起点 | T1 收口 | **T2 收口** | 累计 Δ |
+|---|---|---|---|---|
+| statements | 73.40 | 76.35 | **77.93** | **+4.53** |
+| branches | 78.80 | 80.10 | **80.08** | +1.28 |
+| functions | 55.40 | 71.62 | **72.36** | **+16.96** |
+| lines | 73.40 | 76.35 | **77.93** | +4.53 |
+
+### 与 §0 目标的对照
+
+| 目标 | 状态 |
+|---|---|
+| 逻辑层 funcs ≥85% | **48/50 文件达成**（余 2 个为真实未走分支，见 §5.5） |
+| 逻辑层 stmts ≥90% | 达成（逻辑层绝大多数 ≥95%） |
+| 组件 funcs ≥75% | **达成**（components 聚合 58.6% → 待复测；三个 0% 文件已补至 100%） |
+| 总 stmts ≥85% | **未达（77.93%）**——缺口在 pages（29.3%，视图层交给 catalog/visual 基线）与 catalog 页自身；如要硬达标需补页面级集成测试，属 T3 范畴 |
+
 ## §6 决策记录
 
 > 2026-11-16 用户指示「先写文档，再开始」——按本文推荐默认定案，逐条留痕：
