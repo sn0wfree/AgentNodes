@@ -32,7 +32,7 @@ def client(tmp_path, monkeypatch):
     tests in this file share the canonical harness.
     """
     import agentnodes.interfaces.api.routers.web_session as ws
-    import agentnodes.interfaces.api.session.web_session_db as _wsdb
+    import agentnodes.kernel.session.db as _wsdb  # B2: patch 实现模块，不是垫片
     monkeypatch.setattr(_wsdb, "_get_db_path", lambda: str(tmp_path / "sr.db"))
     monkeypatch.setattr(ws, "_get_db_path", lambda: str(tmp_path / "sr.db"))
     return TestClient(create_app())

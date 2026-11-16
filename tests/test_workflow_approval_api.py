@@ -77,7 +77,7 @@ def api_env(tmp_path: Path, monkeypatch):
     wf._run_store = None
     wf._run_registry = None
     # Session DB under tmp + seed session s1 owned by tester
-    import agentnodes.interfaces.api.session.web_session_db as wsdb
+    import agentnodes.kernel.session.db as wsdb  # B2: patch 实现模块，不是垫片
     monkeypatch.setattr(wsdb, "_get_db_path", lambda: str(tmp_path / "sessions.db"))
     import asyncio as _asyncio
     from types import SimpleNamespace as _NS

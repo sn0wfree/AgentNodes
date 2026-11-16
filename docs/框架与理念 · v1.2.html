@@ -522,7 +522,7 @@
           <div class="nm">interfaces · 渠道层</div>
           <div class="ds">chat / api / mcp / 组装根（gateway_wiring · rsi_wiring · tier0_snapshot）—— 哑适配器 + 唯一知道 apps 的位置</div>
         </div>
-        <span class="st st-ok" data-fw="L1">118 文件 · 25,040 行</span>
+        <span class="st st-ok" data-fw="L1">118 文件 · 24,349 行</span>
       </div>
       <div class="phy-arrow">▼</div>
       <div class="phy-layer l2">
@@ -540,7 +540,7 @@
           <div class="nm">kernel · 平台机制层</div>
           <div class="ds">agent（LoopEngine / LoopSpec / loop_assembly / guardrails）/ workflow（contract）/ evolution / gateway / orchestration / events / session / swarm</div>
         </div>
-        <span class="st st-ok" data-fw="L3">203 文件 · 44,894 行</span>
+        <span class="st st-ok" data-fw="L3">204 文件 · 45,669 行</span>
       </div>
       <div class="phy-arrow">▼</div>
       <div class="phy-layer l4">
@@ -554,7 +554,7 @@
     </div>
 
     <div class="delta-note" style="margin-top:16px;margin-bottom:0;">
-      合计 <b data-fw="total">426 文件 · 91,671 行</b> · 跨层边：L1→L2 59 · L1→L3 123 · L1→L4 82 ·
+      合计 <b data-fw="total">427 文件 · 91,755 行</b> · 跨层边：L1→L2 59 · L1→L3 123 · L1→L4 79 ·
       L2→L3 33 · L2→L4 11 · L3→L4 71 · <b class="delta-ok">上行违规 0</b>。
       这些数字由 <span class="mono">scripts/arch/check_framework_numbers.py</span> 钉在代码上
       （batch_gate 第 9 步 + CI job + 2 条 pytest 断言）。
@@ -708,7 +708,7 @@
     <span class="line"></span>
   </div>
 
-  <div class="tree">src/agentnodes/                                     <span class="cm"># 426 文件 / 91,671 行 · 上行违规 0</span>
+  <div class="tree">src/agentnodes/                                     <span class="cm"># 427 文件 / 91,755 行 · 上行违规 0</span>
 ├── <span class="dir">interfaces/</span>          <span class="cm"># L1 渠道 + 组装根（rsi_wiring / gateway_wiring / tier0_snapshot）</span>
 ├── <span class="dir">apps/</span>                <span class="cm"># L2 业务插件 · 42 文件</span>
 │   ├── <span class="hi">goal/</span>             <span class="cm"># 18 文件 / 5,975 行（R1 已恢复：判据 / 台账 / DAG 工作流）</span>
@@ -718,7 +718,7 @@
 │   ├── scheduled_research/  <span class="cm"># 定时研究（批次 8 自 kernel 迁入）</span>
 │   ├── builtin_tools/    <span class="cm"># 业务工具</span>
 │   └── <span class="hi">algo/</span>            <span class="cm"># 无前视调仓回测（2026-11-16 自 kernel/algo 迁入）</span>
-├── <span class="dir">kernel/</span>              <span class="cm"># L3 平台机制 · 203 文件</span>
+├── <span class="dir">kernel/</span>              <span class="cm"># L3 平台机制 · 204 文件</span>
 │   ├── agent/            <span class="cm"># LoopEngine / LoopSpec / loop_assembly / guardrails / deciders</span>
 │   ├── workflow/         <span class="cm"># contract.py（B1 节点产物契约）+ 编译器 / 执行器</span>
 │   ├── evolution/        <span class="cm"># G/E/P 循环机制（holdout / validation_gate / evolution_agent）</span>
@@ -840,9 +840,9 @@
       <tbody>
         <tr><td><b>L1 interfaces</b></td><td class="mono">109 文件</td><td class="mono" data-fw="L1">118 文件</td><td><span class="arrow-up">+9</span></td></tr>
         <tr><td><b>L2 apps</b></td><td class="mono">15 文件</td><td class="mono" data-fw="L2">42 文件</td><td><span class="arrow-up">+27</span> —— 业务内容自 kernel 迁入</td></tr>
-        <tr><td><b>L3 kernel</b></td><td class="mono">221 文件</td><td class="mono" data-fw="L3">203 文件</td><td><span class="arrow-down">−18</span> —— 业务名词迁出</td></tr>
+        <tr><td><b>L3 kernel</b></td><td class="mono">221 文件</td><td class="mono" data-fw="L3">204 文件</td><td><span class="arrow-down">−17</span> —— 业务名词迁出</td></tr>
         <tr><td><b>L4 foundation</b></td><td class="mono">66 文件</td><td class="mono" data-fw="L4">63 文件</td><td><span class="arrow-down">−3</span></td></tr>
-        <tr><td><b>src/ 合计</b></td><td class="mono">473 文件</td><td class="mono" data-fw="total">426 文件</td><td>注：v1.2 的 426 是 <b>按层可归属</b> 的 .py；525 是含未归属文件的 src 总数</td></tr>
+        <tr><td><b>src/ 合计</b></td><td class="mono">473 文件</td><td class="mono" data-fw="total">427 文件</td><td>注：v1.2 的 427 是 <b>按层可归属</b> 的 .py；525 是含未归属文件的 src 总数</td></tr>
       </tbody>
     </table>
   </div>

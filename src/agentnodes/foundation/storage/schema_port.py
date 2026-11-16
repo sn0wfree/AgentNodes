@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-"""Schema 初始化端口（L4 声明，L1 实现）— 消除 L3→L1 反向依赖。
+"""Schema 初始化端口（L4 声明，上层实现）— 消除内核反向依赖。
 
 **背景**：``kernel/agent/memory_manager.SQLiteStore._init_schema`` 原先
 ``from agentnodes.interfaces.api.session.web_session_db import _ensure_schema``
@@ -14,10 +14,16 @@
 
 **采用端口注册**（与 ProjectionSink 同思路）：
 - L4 声明「怎么初始化 schema」的契约与本模块级注册表
-- L1 的 ``web_session_db`` 在 import 时把自己注册进来
+- 实现方在 import 时把自己注册进来
 - L3 的 ``memory_manager`` 调用端口，不认识实现
 
-依赖方向因此变成：L1 → L4 注册；L3 → L4 消费。两者都朝内。
+依赖方向因此变成：实现方 → L4 注册；L3 → L4 消费。两者都朝内。
+
+**2026-11-16 批次 B2**：``web_session_db`` 已下沉为 L3 的
+``kernel/session/db.py``（迁移方案 R-014），注册方随之变为它
+（L3→L4，仍朝内）。本端口保留：``test_memory_manager_comprehensive.py``
+仍显式走端口注册；纯内核场景（未装配 db.py）继续走退化 DDL。
+移除端口是迁移方案 F 批的事。
 """
 from __future__ import annotations
 
@@ -31,7 +37,7 @@ _initializer: SchemaInitializer | None = None
 
 
 def register_schema_initializer(fn: SchemaInitializer) -> None:
-    """注册唯一的 schema 初始化器（由 L1 的 web_session_db 在 import 时调用）。
+    """注册唯一的 schema 初始化器（由实现在 import 时调用；B2 起是 L3 的 db.py）。
 
     幂等：后注册者覆盖先注册者——装配顺序由组合根决定，这里不做仲裁。
     """
@@ -42,9 +48,9 @@ def register_schema_initializer(fn: SchemaInitializer) -> None:
 def ensure_schema(conn: sqlite3.Connection) -> None:
     """调用已注册的初始化器；未注册时退化为兼容 DDL。
 
-    退化分支在「没有任何 L1 装配」时走到：纯内核单元测试、嵌入式使用、
+    退化分支在「没有任何实现装配」时走到：纯内核单元测试、嵌入式使用、
     **以及 pytest-xdist 并行 worker 里的先到者**（每个 worker 是独立进程，
-    注册顺序不一致，某个 worker 可能先建库再 import L1）。
+    注册顺序不一致，某个 worker 可能先建库再 import 实现模块）。
 
     **为什么退化 DDL 必须列全**：历史上这里是「最小可用」列集，结果并行
     跑时先到者建出窄表，后到的 `_ensure_schema` 用 ``CREATE TABLE IF NOT
@@ -52,9 +58,9 @@ def ensure_schema(conn: sqlite3.Connection) -> None:
     ``no such column: seq`` / ``table sessions has no column named archived``。
     表结构一旦被窄版本占位就无法自愈。
 
-    因此这里与 L1 的 ``_ensure_schema`` **保持列级兼容**（不必字节相同，
+    因此这里与注册实现的 ``_ensure_schema`` **保持列级兼容**（不必字节相同，
     但每张表的核心列必须齐全，且都带 ``IF NOT EXISTS``）。完整的 FTS 触发器、
-    ``message_parts`` 索引等仍由 L1 的注册实现补齐。
+    ``message_parts`` 索引等仍由注册实现补齐。
     """
     if _initializer is not None:
         _initializer(conn)

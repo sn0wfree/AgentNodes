@@ -9,6 +9,9 @@ CLI / MCP / TUI / web 四通道共用同一套会话能力。
     （数据模型与纯计算，无项目内依赖）
   · **批次 B1**：叶子 `projection_handlers` / `projection_store` / `history_convert` /
     `trace_projection` / `backfill_event_log`（无出向相对依赖）
+  · **批次 B2**：`db`（← `interfaces/api/session/web_session_db.py`）——
+    schema / 迁移 / 连接 / 行映射。HTTP 鉴权部分 `_fetch_session_owned`
+    留在 L1 路由层，本包因此**零 web 框架依赖**
   · `unified` 仍是只读浏览门面（直连 SQLite，批次 D 改为走 store）
   · 行为层（`service` / `store` / `projector`）**尚未迁移**，仍在 L1（批次 B3）
 
@@ -18,6 +21,7 @@ CLI / MCP / TUI / web 四通道共用同一套会话能力。
 from __future__ import annotations
 
 from .backfill_event_log import backfill_event_log
+from .db import ensure_session_row
 from .history_convert import MAX_HISTORY_CHARS
 from .models import (
     Attempt,
@@ -81,6 +85,8 @@ __all__ = [
     "ProjectionStore",
     "TraceProjection",
     "backfill_event_log",
+    # 批次 B2：会话库（schema / 迁移 / 连接 / 行映射）
+    "ensure_session_row",
     # 只读浏览门面（批次 D 前仍是直连 DB）
     "delete_session",
     "get_messages",

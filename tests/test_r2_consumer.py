@@ -262,7 +262,7 @@ def test_receipt_contract_and_async_persistence(tmp_path, monkeypatch):
     monkeypatch.setenv("AGENTNODES_WORKSPACE", str(tmp_path))
     
     import agentnodes.interfaces.api.routers.web_session as ws
-    import agentnodes.interfaces.api.session.web_session_db as wsdb
+    import agentnodes.kernel.session.db as wsdb  # B2: patch 实现模块，不是垫片
 
     monkeypatch.setattr(ws, "_get_db_path", lambda: db_path)
     monkeypatch.setattr(wsdb, "_get_db_path", lambda: db_path)
@@ -317,7 +317,7 @@ def test_sync_fallback_when_no_consumer(tmp_path, monkeypatch):
     monkeypatch.setenv("AGENTNODES_WORKSPACE", str(tmp_path))
     
     import agentnodes.interfaces.api.routers.web_session as ws
-    import agentnodes.interfaces.api.session.web_session_db as wsdb
+    import agentnodes.kernel.session.db as wsdb  # B2: patch 实现模块，不是垫片
 
     monkeypatch.setattr(ws, "_get_db_path", lambda: db_path)
     monkeypatch.setattr(wsdb, "_get_db_path", lambda: db_path)

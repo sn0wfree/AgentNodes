@@ -44,13 +44,33 @@ SUNK_MODULES = {
         # `main` 是 argparse CLI 入口，不进包级公共 API（垫片仍转出它）
         "backfill_event_log", "_generate_events_for_session",
     ],
+    # ── 批次 B2：会话库（2026-11-16，带改名）──
+    "db": [
+        "_get_db_path", "_ensure_schema", "_run_schema_migrations",
+        "_ensure_fts_table", "_ensure_fts_table_impl", "_add_column", "_has_column",
+        "_validate_identifier", "_drop_column", "_migrate_text_part_ids",
+        "_migrate_message_types", "_db_thread_local", "_get_db",
+        "_row_to_session", "_row_to_message", "ensure_session_row",
+        # 注意：`_fetch_session_owned` **不在**这里 —— 它是 HTTP 鉴权语义，
+        # 批次 B2 决策 2b 已把它上移到 routers/web_session.py。
+    ],
+}
+
+#: kernel 模块名 → L1 垫片模块名（默认同名；B2 的 db 是改名下沉）
+SHIM_ALIASES = {
+    "db": "web_session_db",
 }
 
 
 def _pair(module: str):
-    """返回 (kernel 路径模块, L1 垫片模块)。"""
+    """返回 (kernel 路径模块, L1 垫片模块)。
+
+    ``SHIM_ALIASES`` 处理改名下沉（B2 的 ``db`` ← ``web_session_db``）。
+    """
     new = importlib.import_module(f"agentnodes.kernel.session.{module}")
-    old = importlib.import_module(f"agentnodes.interfaces.api.session.{module}")
+    old = importlib.import_module(
+        f"agentnodes.interfaces.api.session.{SHIM_ALIASES.get(module, module)}"
+    )
     return new, old
 
 
@@ -160,4 +180,59 @@ def test_every_top_level_name_is_reexported(module: str):
             missing.append(f"{name}(非同一对象)")
     assert not missing, (
         f"{module} 的顶层符号未被垫片完整转出: {sorted(missing)}"
+    )
+
+
+def _fastapi_importers(root) -> list[str]:
+    """扫描目录下所有 .py，返回真的 import 了 fastapi 的文件相对路径。
+
+    用 AST 而非字符串匹配：注释里写「原先是 fastapi」不算导入
+    （本仓有过把注释误判成 import 的教训，见方案 §1.3 的修正）。
+    """
+    import ast
+    from pathlib import Path
+
+    hits = []
+    for p in Path(root).rglob("*.py"):
+        if "__pycache__" in p.parts:
+            continue
+        try:
+            tree = ast.parse(p.read_text(encoding="utf-8", errors="replace"))
+        except SyntaxError:
+            continue
+        for n in ast.walk(tree):
+            mods = []
+            if isinstance(n, ast.ImportFrom) and n.module:
+                mods.append(n.module)
+            elif isinstance(n, ast.Import):
+                mods.extend(a.name for a in n.names)
+            for m in mods:
+                if m == "fastapi" or m.startswith("fastapi."):
+                    hits.append(str(p))
+                    break
+            else:
+                continue
+            break
+    return hits
+
+
+@pytest.mark.parametrize("layer", ["kernel", "foundation"])
+def test_kernel_and_foundation_never_import_fastapi(layer: str):
+    """L3/L4 对 fastapi 的导入数必须恒为 **0**。
+
+    这是批次 B2 决策 2b 的立足点：``web_session_db.py`` 曾有 3 行 fastapi 依赖
+    （L19 + 两处 ``HTTPException``），全部在 ``_fetch_session_owned`` 里。那 11 行
+    是 HTTP 鉴权语义，留在了 L1 路由层 —— 内核因此零 web 框架依赖。
+
+    若哪天有人又把 ``HTTPException`` 引进 kernel，会话库就会把 web 框架拖进
+    每一个纯内核场景（CLI / TUI / MCP / 嵌入式 / 单元测试）。
+    """
+    from pathlib import Path
+
+    root = Path(__file__).resolve().parents[1] / "src" / "agentnodes" / layer
+    hits = _fastapi_importers(root)
+    assert not hits, (
+        f"{layer}/ 层出现 fastapi 导入（必须为 0）：\n  "
+        + "\n  ".join(hits)
+        + "\nHTTP 语义（状态码/Request/Response）应留在 L1 接口层。"
     )

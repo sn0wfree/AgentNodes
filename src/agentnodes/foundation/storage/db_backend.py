@@ -48,9 +48,11 @@ class SQLiteBackend:
     子类负责 schema 与 CRUD；本类只管「怎么安全地拿到一个连接」。
 
     **schema 初始化走端口**：``_init_schema`` 调用
-    ``foundation.storage.schema_port.ensure_schema``——由上层
-    （L1 的 ``web_session_db``）在 import 时注册真实 DDL，本层不认识
-    具体表结构。这避免了 L3/L4 反向依赖接口层。
+    ``foundation.storage.schema_port.ensure_schema``——由上层在 import 时
+    注册真实 DDL，本层不认识具体表结构。这避免了 L3/L4 反向依赖上层。
+    （2026-11-16 批次 B2 前，注册方是 L1 的 ``web_session_db``；
+    该实现下沉到 L3 的 ``kernel/session/db.py`` 后，注册方随之变为它，
+    但端口机制不变——纯内核场景仍走退化 DDL。）
     """
 
     def __init__(self, db_path: Path):

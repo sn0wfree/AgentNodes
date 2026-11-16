@@ -23,10 +23,12 @@ sys.path.insert(0, str(SRC_PATH))
 def temp_db(tmp_path, monkeypatch):
     db_path = tmp_path / "test.db"
     monkeypatch.setenv("AGENTNODES_WORKSPACE", str(tmp_path))
-    # 路径解析发生在 web_session_db 模块内（router 的同名重导出只影响
-    # router 自身的名字，不会改变 web_session_db 里的解析），两个模块都要 patch。
+    # 路径解析发生在**实现模块**内部；router 与 L1 垫片都只是 re-export，
+    # 对它们的属性赋值不会回写实现模块 —— 所以必须 patch 实现模块。
+    # **2026-11-16 批次 B2**：实现已下沉到 kernel/session/db.py。
+    # router 侧的同名重导出仍然保留，故两个都 patch（覆盖两条路径）。
     import agentnodes.interfaces.api.routers.web_session as ws
-    import agentnodes.interfaces.api.session.web_session_db as _wsdb
+    import agentnodes.kernel.session.db as _wsdb
     monkeypatch.setattr(_wsdb, "_get_db_path", lambda: db_path)
     monkeypatch.setattr(ws, "_get_db_path", lambda: db_path)
     yield db_path

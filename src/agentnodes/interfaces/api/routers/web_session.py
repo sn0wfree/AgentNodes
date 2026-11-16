@@ -14,6 +14,7 @@ from __future__ import annotations
 
 import json
 import logging
+import sqlite3
 import time
 import uuid
 from typing import Any, Optional
@@ -54,7 +55,6 @@ from ..session.web_session_db import (  # noqa: E402,F401  (re-exports for old i
     _ensure_fts_table,
     _ensure_fts_table_impl,
     _ensure_schema,
-    _fetch_session_owned,
     _get_db,
     _get_db_path,  # noqa: F401  (re-export: tests patch this name)
     _has_column,
@@ -65,6 +65,28 @@ from ..session.web_session_db import (  # noqa: E402,F401  (re-exports for old i
     _run_schema_migrations,
     _validate_identifier,
 )
+
+
+def _fetch_session_owned(
+    conn: sqlite3.Connection, session_id: str, user_id: str
+) -> sqlite3.Row:
+    """Fetch a session row, enforcing ownership (IDOR protection).
+
+    Returns the row, or raises 404 (not found) / 403 (other user's).
+
+    **位置（2026-11-16 批次 B2）**：本函数原住 ``session/web_session_db.py``
+    （DB 层）。它抛的是 ``HTTPException`` —— 那是 **HTTP 鉴权语义**（状态码 +
+    归属校验），不是会话存储。下沉 DB 层到 ``kernel/session/db.py`` 时把它留在
+    L1 这里，内核因此保持零 web 框架依赖（方案 §4-B2 决策 2b）。
+
+    全仓 15 处调用方都经由 ``routers.web_session`` 取它，故上移零改动。
+    """
+    row = conn.execute("SELECT * FROM sessions WHERE id = ?", (session_id,)).fetchone()
+    if not row:
+        raise HTTPException(status_code=404, detail="Session not found")
+    if row["user_id"] != user_id:
+        raise HTTPException(status_code=403, detail="Forbidden")
+    return row
 
 
 def persist_message(

@@ -8,7 +8,7 @@ The read path is unchanged in this commit. Commit 5 will switch it.
 """
 from __future__ import annotations
 
-import agentnodes.interfaces.api.session.web_session_db as _wsdb
+import agentnodes.kernel.session.db as _wsdb  # B2: patch 实现模块，不是垫片
 
 import json
 import sqlite3

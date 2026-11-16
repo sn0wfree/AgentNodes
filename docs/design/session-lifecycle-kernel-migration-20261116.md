@@ -301,21 +301,63 @@ interfaces/api/session/                L1 · 薄适配层
 > A 搬完后 L1 的相对 import 指向垫片（L1→L3 合法）；B1 搬完后**它们的相对 import
 > 指向 kernel 内的真身** —— 同样合法，因为 `projection_models` 等已在 kernel。
 
-#### B2 · `web_session_db` → `kernel/session/db.py`（**需先重构**）
+#### B2 · `web_session_db` → `kernel/session/db.py`（**已拍板 2b**）
 
-**前置设计（本批不做，先出方案）**：`_fetch_session_owned` 里的两处 `raise HTTPException`
-（404 Session not found / 403 Forbidden）是 web 语义，属 L1。下沉前要先定：
+> **2026-11-16 拍板：选项 2b**（用户确认）。
 
-| 选项 | 做法 |
+**决策依据（实测）**：`web_session_db.py` 770 行里只有 **3 行**与 fastapi 相关：
+
+| 行 | 内容 |
 |---|---|
-| **2a** | 抛领域错误 `SessionNotFound` / `SessionForbidden`（放 `kernel/session/`），由 L1 的路由层 catch 并转成 `HTTPException` |
-| **2b** | `_fetch_session_owned` **留在 L1**，只把 schema/migration/row-mapper 部分下沉（`web_session_db.py` 770 行里只有 3 处 fastapi）|
+| L19 | `from fastapi import HTTPException` |
+| L622 | `raise HTTPException(status_code=404, detail="Session not found")` |
+| L624 | `raise HTTPException(status_code=403, detail="Forbidden")` |
 
-> 2a 更彻底（消除 fastapi 依赖），但要动 `routers/web_session.py` 的错误处理；
-> 2b 只下沉无框架部分，改动最小。**需拍板**（§6 缺口）。
->
-> ⚠️ 无论哪种，**B1 不含 `web_session_db`** —— 内核当前对 fastapi 导入数为 0，
-> 这个先例不能由本批打破。
+这三行全部在 `_fetch_session_owned`（L615-625，**11 行**）内 —— 其余 **15 个函数 / 759 行零框架依赖**。
+
+**为什么选 2b 而不是 2a**：`_fetch_session_owned` 做的是**HTTP 鉴权语义**
+（404/403 状态码 + IDOR 保护），不是会话存储。把它上移到路由层比在 kernel 里
+发明一套领域错误 + 在 L1 catch 更短、更对位。2a 要新建两个异常类 + 改 5 个错误处理
+分支，收益只是「错误类型更抽象」，而它本来就不该在存储层。
+
+**零调用点改动的证据**：`_fetch_session_owned` 全仓 15 处跨文件引用**全部**写成
+`from .web_session import _fetch_session_owned`（chat / goal / permission / schedule /
+workflow 五个路由），web_session.py 自身的 5 处调用在同一文件内。**没有任何地方**
+从 `session.web_session_db` 直接 import 它 ⇒ 上移后调用点全部不变。
+
+| 步 | 动作 | 验收判据 |
+|---|---|---|
+| B2.1 | `_fetch_session_owned`（11 行）移入 `routers/web_session.py`；该文件补 `import sqlite3` | `test_iteration_budget_wiring.py:76` 对 `routers.web_session._fetch_session_owned` 的 patch 仍生效 |
+| B2.2 | `git mv web_session_db.py → kernel/session/db.py`（改名 `db`，理由见 §3.2）；删 `from fastapi import HTTPException` | kernel 侧 fastapi 导入数仍为 **0**（新增断言）|
+| B2.3 | L1 原路径 `web_session_db.py` 改为 **re-export 垫片**（17 个符号，**不含** `_fetch_session_owned`）| 29 处老 import 零改动；`is` 相等 |
+| B2.4 | 契约测试加 `RENAMED = {"db": "web_session_db"}`（kernel 名与垫片名不同）| `test_shim_reexports_same_objects["db"]` 绿 |
+| B2.5 | **8 个测试文件的 patch 点改指向实现模块**（见下方「隐患」）| 全量 pytest 绿 |
+
+> **为什么垫片不转出 `_fetch_session_owned`**：它已住在 `routers/web_session.py`，
+> 垫片若要转出就得 `session/web_session_db.py → routers/web_session.py`，
+> 而后者正 import 前者 —— **循环 import**。它也不再属于「DB 层」的导出面。
+
+**⚠️ 隐患（B2 的真实成本，不是搬文件）**：8 个测试文件用
+`monkeypatch.setattr(_wsdb, "_get_db_path", lambda: db_path)` 重定向 DB 路径
+（`test_backfill_message_parts` / `test_chat_send_sync_run_traversal` /
+`test_chat_slash_commands` / `test_compact_unpack` / `test_message_parts_dual_write` /
+`test_message_parts_read_path` / `test_trace_ownership` / `test_event_log_schema`）。
+
+垫片是 **re-export**：对垫片属性赋值**只在该模块上新建一个名字**，不会改变
+kernel 模块的全局名 —— 而 `_get_db()` 是在 kernel 模块里解析 `_get_db_path` 的。
+⇒ 这些 patch 会**静默失效**（测试仍绿，但写进了真实用户库）。
+修法：这 8 个文件的 `_wsdb` 改指 `agentnodes.kernel.session.db`（各 1 行）。
+`test_message_parts_read_path.py:26-31` 的注释已经预告了这件事。
+
+**顺带修正一处死代码**：`tests/conftest.py:357-359` 的 thread-local 连接清理块
+当前**从未生效** —— 它 `getattr(_ws_mod, "_db_thread_local", None)`，而 router
+的 re-export 清单里从来没包含 `_db_thread_local`（恒为 `None`）。B2 顺势让它指向
+`kernel.session.db._db_thread_local`。这不是顺手重构：K4 明令连接必须显式关闭，
+清理失效正是 WinError-32 flake 的来源。
+
+**不搬**：`schema_port` 注册逻辑保留（`kernel/session/db.py` import 时注册
+`_ensure_schema`）。B2 后 L3 已可直接 import 它，端口退化为可选层 —— 但移除端口是
+F 批的事，本批不动（`test_memory_manager_comprehensive.py:221` 还依赖它）。
 
 #### B3 · 相对依赖簇（4 文件 / 2,456 行 · 必须整簇一起搬）
 
@@ -405,7 +447,9 @@ service ──→ store ──→ projector ──→ {projection_store, project
 | 7 | **FTS 表由 `web_session_db.py` 独家维护**
 | 8 | **R1（`_build_llm_config` 归属）已解** —— LLM 收敛批 `56bce1b0` 消除了 `service.py` 对 `routers.chat` 的 2 处依赖 | ✅ 关闭。`service.py` 对 routers 的反向依赖 4 → 2 处 |
 | 9 | **R2（`_invalidate_projection` 依赖 FastAPI Request）不存在** | ✅ 关闭（方案原估计偏保守）。实测只有 `routers/web_session.py` 自身用它，无待迁文件引用 |
-| 10 | **`web_session_db.py` 导入 `fastapi`（L19 + L622/L624 两处 `HTTPException`）**，而 kernel/foundation 对 fastapi 导入数 = **0** | 🔴 **B2 阻塞项，需拍板** —— 搬它就是内核首次引入 web 框架。方案 §4-B2 给了 2a（抛领域错误，路由层转换）/ 2b（只下沉无框架部分）两个选项 |
+| 10 | **`web_session_db.py` 导入 `fastapi`（L19 + L622/L624 两处 `HTTPException`）**，而 kernel/foundation 对 fastapi 导入数 = **0** | ✅ **已关闭（2026-11-16）** —— 拍板 **2b**：11 行 `_fetch_session_owned` 上移 `routers/web_session.py`，其余 759 行下沉 `kernel/session/db.py`。详见 §4-B2 |
+| 11 | **8 个测试文件用 `monkeypatch.setattr(_wsdb, "_get_db_path", ...)` patch 实现模块全局名** —— 改垫片后这些 patch 静默失效（re-export 不回写源模块），测试仍绿但写进真实库 | B2.5 一并改指向 `kernel.session.db`（8 文件各 1 行）。见 §4-B2「隐患」 |
+| 12 | **`tests/conftest.py:357-359` 的 thread-local 清理恒不生效** —— `getattr(_ws_mod, "_db_thread_local", None)` 恒 `None`，因为 router 的 re-export 清单从未包含它 | B2 顺势指向 `kernel.session.db._db_thread_local`。K4 明令连接显式关闭，失效的清理是 WinError-32 flake 来源 |
 ---
 
 ## §7 验收判据总表（什么会从红变绿 / 从绿变红）

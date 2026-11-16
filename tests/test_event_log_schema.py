@@ -22,7 +22,7 @@ import tempfile
 import time
 import unittest
 from pathlib import Path
-import agentnodes.interfaces.api.session.web_session_db as _wsdb
+import agentnodes.kernel.session.db as _wsdb  # B2: patch 实现模块，不是垫片
 
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))

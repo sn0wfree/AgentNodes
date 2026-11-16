@@ -8,7 +8,7 @@ import time
 from pathlib import Path
 
 import pytest
-import agentnodes.interfaces.api.session.web_session_db as _wsdb
+import agentnodes.kernel.session.db as _wsdb  # B2: patch 实现模块，不是垫片
 
 ROOT_PATH = Path(__file__).resolve().parents[1]
 SRC_PATH = ROOT_PATH / "src"

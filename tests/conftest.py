@@ -353,10 +353,15 @@ def _close_session_services():
     except Exception:
         pass
 
-    # Drop thread-local web_session connections on the main thread.
-    import agentnodes.interfaces.api.routers.web_session as _ws_mod
+    # Drop thread-local session DB connections on the main thread.
+    # **2026-11-16 批次 B2**：连接缓存原住 L1 的 web_session_db，现在实现下沉到
+    # kernel/session/db.py。此前这里读的是 router 模块的 `_db_thread_local` ——
+    # 而 router 的 re-export 清单从未包含它，所以 `getattr` 恒为 None，
+    # **这段清理一直不生效**（K4 明令连接必须显式关闭；失效的清理正是
+    # WinError-32 flake 的来源）。改指实现模块后它才真正开始工作。
+    import agentnodes.kernel.session.db as _db_mod
 
-    tl = getattr(_ws_mod, "_db_thread_local", None)
+    tl = getattr(_db_mod, "_db_thread_local", None)
     if tl is not None:
         conns = getattr(tl, "conns", None)
         if conns:

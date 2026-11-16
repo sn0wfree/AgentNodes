@@ -16,7 +16,7 @@ import pytest
 def db(tmp_path, monkeypatch):
     """Point the web_session DB helpers at a temp file and bootstrap schema."""
     import agentnodes.interfaces.api.routers.web_session as ws
-    import agentnodes.interfaces.api.session.web_session_db as wsdb
+    import agentnodes.kernel.session.db as wsdb  # B2: patch 实现模块，不是垫片
 
     db_path = tmp_path / "s3.db"
     monkeypatch.setattr(ws, "_get_db_path", lambda: db_path)

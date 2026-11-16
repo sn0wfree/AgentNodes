@@ -10,7 +10,7 @@ from __future__ import annotations
 import pytest
 from fastapi.testclient import TestClient
 
-import agentnodes.interfaces.api.session.web_session_db as _wsdb
+import agentnodes.kernel.session.db as _wsdb  # B2: patch 实现模块，不是垫片
 from agentnodes.interfaces.api.app import create_app
 from agentnodes.interfaces.api.auth_tokens import create_token
 

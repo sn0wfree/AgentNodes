@@ -44,7 +44,7 @@ def _client(app, user: str = "tester"):
 def env(tmp_path: Path, monkeypatch):
     """App + seeded sessions: s1→tester, s2→alice; runners reset."""
     import agentnodes.interfaces.api.routers.workflow as wf
-    import agentnodes.interfaces.api.session.web_session_db as wsdb
+    import agentnodes.kernel.session.db as wsdb  # B2: patch 实现模块，不是垫片
 
     monkeypatch.setenv("AGENTNODES_WORKSPACE", str(tmp_path))
     monkeypatch.setenv("AGENTNODES_ADMIN_TOKEN", "test-admin-token")
