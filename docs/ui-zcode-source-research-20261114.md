@@ -236,10 +236,81 @@ L3 特性命名空间 highspeed-*（48 个）/ wf-*（13 个）/ zcode-*（4 个
 | 验证 = catalog + visual 基线 | 不变 + 新增密度旋钮检查 | AgentNodes 反超项保持 |
 | （新增） | --ui-font-size 旋钮 + 成对行高 | 高密度页与 9/10/11px 任意值的根治 |
 
-## §9 信息局限
+## §9 信息局限（第二轮后更新）
 
-- bundle 为 minified 产物：组件树结构、props 契约、交互细节（如审批卡片的
-  精确文案与流）不可恢复，本文以「词汇计数 + token 值 + CSS 行为」为证据面。
-- `.theme-zai-light/dark` 双集的逐变量差异未逐条比对（152/151 变量）——
-  对借鉴结论无影响（主题=换装机制已确认）。
-- Gen-UI 沙箱的协议面（MCP ext-apps 如何驱动 UI）只有包名证据，未逆向协议。
+- 组件树/props 契约仍不可恢复（minified），但第二轮已把**协议面、审批粒度、
+  Gen-UI 载体、令牌寄生**四块补到实现级（§10）。
+- ~~Gen-UI 沙箱协议未逆向~~ → 已逆向（§10.1）。
+- `.theme-zai-light/dark` 逐变量 diff 未完成（CSS 产出把大选择器切散成多块，
+  逐块归组不可靠）——换装机制结论维持 round-1，不再深挖。
+
+## §10 第二轮补查（同日；renderer 全量 JS 抽取 2,776 文件 / 42MB 后逐面扫描）
+
+### §10.1 Gen-UI 双载体（协议级确认，U-E 的直接实现模板）
+
+| 载体 | 机制（实测） |
+|---|---|
+| **inline** | 消息流内嵌 `__INLINE_VISUALIZATION_FRAGMENT__` 标记片段：Agent 输出**带声明式契约的纯 HTML**（`data-tooltip` / `data-tooltip-placement` / `.nav[role=tablist]` / `.viz-carousel[data-variant]`），宿主注入行为升级脚本（tooltip/tabs/carousel 三件套，全键盘 + 触屏 + aria-live），依赖 floating-ui + lucide（unpkg CDN，沙箱内有 vendored fallback） |
+| **sandbox** | MCP Apps（ext-apps 2.0）完整方法面：`ui/initialize`（appInfo 握手）/ `ui/message`（role:user）/ `ui/open-link` / `ui/request-display-mode`（**「host decides border」**——宿主管框）/ `ui/download` / `ui/update` / `ui/resource` / `ui/state` / `callTool` / `sampling.tools` / `hostContext`；zod schema 全量校验 + postMessage JSON-RPC |
+
+**宿主令牌寄生（调研 §8.4 的实现级参照）**：`visualize.css`（30KB）引用宿主
+变量 **94 个**、自定义 79 个——自带 fallback 默认（`--font-sans/--font-size-base/
+--border-radius-*` 等），运行时被宿主 token 覆盖；**0 渐变 / 0 玻璃 /
+0 prefers-color-scheme**——主题完全由宿主注入，片段自身无主题逻辑。
+
+### §10.2 renderer↔host 协议面（zcode-protocol-v4 + host/index.js 实测）
+
+| 域 | 方法/事件 |
+|---|---|
+| sessions（18+） | read/write/readSession/readRows/listSessions/listProjects/createSession/openSession/sendToSession/interruptSession/renameSession/**forkSession**/setSessionArchived/setSessionPinned/**setPermissionMode**/resolveInteraction/waitSessions + 订阅 onDidChangeConversation/Rows/Interactions/List |
+| turn | started/completed/failed/terminal + **steerQueued / steerDrained**（转向队列语义显式成协议事件） |
+| permission | request/requested/respond/resolved/lifecycle + **approve / rejectOnce / rejectAlways / allowOnce / allowAlways（四档审批粒度）** |
+| fork/checkpoint | forkSession / forkAssistant / forkCreated / forkNotice / **forkToWorktree / forkToWorktreeNow** / checkpointRestored / forkedFromTaskId |
+| task/workspace | upserted/removed CRUD delta 事件 + set/list |
+| model | set/provider.set/list/streaming/request.status/request.metrics |
+| gen-UI 桥 | pluginUi.resourceUpdated / resourceListChanged / instanceClosed / **appToolCall** |
+
+**subagentsStore 状态形状**：taskUiByTaskId / optimisticTaskListByTaskId（乐观
+更新）/ taskRuntimeByTaskId / taskUnreadByTaskId（未读）/ **boardsById（看板）**/
+elicitationFormDraftsByRequestId（MCP elicitation 表单）/ modelSwitchRequestId /
+operatingAgentId——子代理 = 任务看板 + 乐观 UI + 未读计数的一等状态域。
+
+### §10.3 回合控制 UI 词汇（U-D 直接证据）
+
+undo×491 / timeline×359 / fork×241 / rewind×211 / checkpoint×93 /
+turnNavigator×51 / steer×35——**rewind/fork/steer/timeline 全套 UI 存在**，
+对应 §8.1「状态可从事件日志推导，否则 rewind/fork/resume 都是谎言」的 UI 配套。
+
+### §10.4 组件词汇细化（修正 round-1 的 data-slot 认知）
+
+- data-slot 全 renderer 仅 7 个（在主 bundle）——shadcn 约定只零星直接使用，
+  多数组件为**自研 + radix 裸用**，不是整包 shadcn。
+- CSS 自定义类 1,552 个；功能聚类：**wf-\*×66**（最大，workflow canvas：
+  face/pill/tile/line/lamp/mark）、**highspeed-\*×49**、composer(thought-slider)×8、
+  prose×10、zcode-\*×5、terminal×1——自定义类几乎全部锁在命名空间内。
+- chunk 地图 2,178 模块：`subagentsStore`（59KB 独立状态域）/ `zcode-protocol-v4`
+  （**协议版本化**，v4 后缀即版本）/ `chart`（261KB recharts 封装）/ lottie /
+  Office 预览四件套（xlsx/docx/pptx/legacy）/ mermaid 按图型分 chunk
+  （architecture/sequence/gantt/block/c4/flow/venn/xychart）/ shiki 按
+  语言+主题分 chunk（everforest、catppuccin×4、tokyo-night…）——重资产
+  全部懒加载，入口保持小。
+- index.html ~230 个 modulepreload：**每个 lucide 图标一个 chunk**；
+  图标词汇即功能地图（goal/git-graph/shield/square-terminal/layout-dashboard/
+  history/list-todo/brain/bot/route/sparkles…）。
+
+### §10.5 CUA 权限面板（独立面，两类授权分离）
+
+`cua-permission-panel.html`：系统级授权 UX（拖拽 tile 进 macOS 系统权限列表）
+——nudge 上浮动箭头动画、reduced-motion 停动画保指示、prefers-color-scheme
+独立适配、13px 系统字体。**系统授权（app 权限）与 Agent 动作审批是两类面，
+物理分开**；中文修复注释文化同主应用。
+
+### §10.6 对 U-B/U-D/U-E 的影响
+
+- **U-B（审批一等表面）**：直接采用四档粒度（allow/reject × once/always）+
+  permission.request/respond 事件形状 + setPermissionMode 模式开关。
+- **U-D（会话日志投影）**：steer 队列（steerQueued/steerDrained）是「排队消息
+  不打断运行回合」的协议级答案；fork/checkpoint 词汇表 + protocol 版本化
+  （v4）是事件日志演进的前例。
+- **U-E（Gen-UI）**：双载体 = inline 契约 HTML + sandbox MCP Apps；
+  宿主令牌寄生的实现模板已拿到（自带 fallback + var(宿主) 覆盖 + 零主题内嵌）。
