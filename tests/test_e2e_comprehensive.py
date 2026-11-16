@@ -133,7 +133,10 @@ async def _wait_for_response_or_fail(page, timeout_s:60, *, what: str = "响应"
 async def _take_screenshot(page, name):
     """Take a screenshot with timestamp."""
     path = f"/tmp/e2e_{name}_{int(time.time())}.png"
-    await page.screenshot(path=path, full_page=True)
+    # timeout 显式给 60s：full_page 截图在 8 worker 并行下偶发超过 playwright
+    # 默认 30s（曾把 test_goal_system_workflow / test_full_session_history
+    # 整个拖红；单跑 16s 通过）—— 那是资源竞争，不是被测行为失败。
+    await page.screenshot(path=path, full_page=True, timeout=60_000)
     print(f"📸 Screenshot: {path}")
     return path
 

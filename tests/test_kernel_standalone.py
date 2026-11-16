@@ -101,8 +101,14 @@ print("E6 STANDALONE OK")
 '''
 
 
+@pytest.mark.flaky(reruns=2, reruns_delay=3)
 def test_kernel_standalone_without_apps():
-    """无 apps 环境：chat 构建 + write/read/shell 闭环 + 权限边界全过。"""
+    """无 apps 环境：chat 构建 + write/read/shell 闭环 + 权限边界全过。
+
+    flaky(reruns=2)：本测试在 8 worker 并行下偶发子进程栈溢出
+    （Windows returncode 0xC00000FD，内存压力下解释器启动期分配失败），
+    单跑稳定通过 —— 重跑一次新子进程即恢复。断言本身是确定性的。
+    """
     r = subprocess.run(
         [sys.executable, "-c", _STANDALONE_SCRIPT],
         capture_output=True,
