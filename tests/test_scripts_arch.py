@@ -24,6 +24,10 @@ def _load(name: str):
     spec = importlib.util.spec_from_file_location(
         name, SCRIPTS / "arch" / f"{name}.py")
     mod = importlib.util.module_from_spec(spec)
+    # 必须先登记 sys.modules 再 exec_module：模块级 @dataclass 在装饰期会
+    # 通过 sys.modules[cls.__module__] 反查模块命名空间，未登记时取到 None，
+    # 报 `AttributeError: 'NoneType' object has no attribute '__dict__'`。
+    sys.modules.setdefault(name, mod)
     spec.loader.exec_module(mod)
     return mod
 
@@ -382,6 +386,54 @@ def test_literals_allow_flag(literals_mod, tmp_path):
 def test_literals_real_repo_clean():
     mod = _load("check_path_literals")
     assert mod.scan(set()) == []
+
+
+# ── check_kernel_nouns ───────────────────────────────────────────────
+#
+# 为什么必须在这里也钉一道：该门禁原来只在 scripts/batch_gate.cmd 里跑，
+# 而 batch_gate 是**手动**的、CI 也不调用它。2026-11-14 的 6f3e727c 把
+# 量化算法放进 kernel/algo（51 处业务名词），红线潜伏 2 天无人发现——
+# 全量 pytest 一直全绿，因为没有任何用例扫过 kernel 名词。
+# 这组用例补的就是那条防线的②（R-019：门禁的价值 = 违反时会不会红）。
+
+
+def test_kernel_nouns_selftest_passes():
+    """门禁自带的 5 条自检必须过（含驼峰切词 / 注释豁免 / 字面量命中）。"""
+    mod = _load("check_kernel_nouns")
+    assert mod._selftest() == 0
+
+
+def test_kernel_nouns_real_repo_clean():
+    """真实仓库的 kernel/ **必须**零业务名词命中。
+
+    失败意味着有人往 kernel 里加入了量化域名词（factor / backtest /
+    sharpe / calmar / drawdown / portfolio / ohlcv / ticker ...）。
+    正确处置是把它迁到 apps/（业务层），而不是往 EXEMPT_FILES 里加豁免。
+    """
+    mod = _load("check_kernel_nouns")
+    hits = mod.scan_tree(mod.KERNEL, mod.BUSINESS_NOUNS,
+                         exempt_files=mod.EXEMPT_FILES,
+                         exempt_lines=mod.EXEMPT_LINES)
+    detail = "\n".join(str(h) for h in hits[:20])
+    assert hits == [], (
+        f"kernel/ 出现 {len(hits)} 处业务名词（门禁红）：\n{detail}\n"
+        f"→ 迁到 apps/，不要加豁免"
+    )
+
+
+def test_kernel_nouns_scan_detects_injected_violation(tmp_path):
+    """R-019 反向检验：注入一条违规，门禁**必须**命中。
+
+    没有这条，`test_kernel_nouns_real_repo_clean` 可能因为扫描器静默失效
+    而变成恒真的空断言（R-009「禁止空集合通过」）。
+    """
+    mod = _load("check_kernel_nouns")
+    (tmp_path / "bad_module.py").write_text(
+        "def _validate_backtest(x):\n    return x\n", encoding="utf-8")
+    hits = mod.scan_tree(tmp_path, mod.BUSINESS_NOUNS,
+                         exempt_files={}, exempt_lines={})
+    assert hits, "注入 backtest 后门禁未命中——扫描器已失效"
+    assert any(h.noun == "backtest" for h in hits)
 
 
 # ── graph_layer_audit ────────────────────────────────────────────────
