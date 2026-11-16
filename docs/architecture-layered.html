@@ -63,12 +63,12 @@ footer code{background:var(--muted);padding:1px 5px;border-radius:4px;}
     #an-arch .edge.faded { opacity:.1; }
     #an-arch .edge.up { stroke:var(--destructive); stroke-dasharray:2 3; opacity:.8; }
     #an-arch .lane.ev { opacity:.28; }
-    /* MVP 三层：绿 ⊃ 黄 ⊃ 红 —— 左缘色条为主，底纹极淡（深色主题下不压线） */
-    #an-arch .node.tier-A rect { fill:rgba(239,68,68,0.07); }
-    #an-arch .node.tier-B rect { fill:rgba(245,158,11,0.06); }
-    #an-arch .node.tier-C rect { fill:rgba(34,197,94,0.05); }
-    #an-arch .node.tier-A .n-label { font-weight:700; }
-    #an-arch .node .tier-bar { opacity:1; }
+    /* MVP 三层：绿 ⊃ 黄 ⊃ 红 —— 左缘色条 + 醒目底纹 */
+    #an-arch .node.tier-A rect { fill:rgba(239,68,68,0.22); }
+    #an-arch .node.tier-B rect { fill:rgba(245,158,11,0.18); }
+    #an-arch .node.tier-C rect { fill:rgba(34,197,94,0.14); }
+    #an-arch .node.tier-A .n-label { font-weight:600; }
+    #an-arch .node .tier-bar { opacity:.95; }
     #an-arch .node.dim rect { opacity:.25; }
     #an-arch .tier-legend { display:flex; gap:.55rem; flex-wrap:wrap; font-size:.74rem;
       color:var(--muted-foreground); align-items:center; margin:.5rem 0 0; }
@@ -1236,7 +1236,7 @@ footer code{background:var(--muted);padding:1px 5px;border-radius:4px;}
       el('rect', { x: q.x, y: q.y, width: q.w, height: q.h, rx: 7, fill: 'var(--muted)' }, g);
       // MVP 层级左缘色条（红 A / 黄 B / 绿 C）
       if (p.tier) {
-        var bar = el('rect', { x: q.x, y: q.y, width: 5, height: q.h, rx: 2,
+        var bar = el('rect', { x: q.x, y: q.y, width: 4, height: q.h, rx: 2,
                                fill: TIER_COLOR[p.tier], class: 'tier-bar' }, g);
         bar.setAttribute('data-tier', p.tier);
       }
