@@ -13,6 +13,7 @@
 | 了解项目是什么、快速跑起来 | [`../README.md`](../README.md) |
 | 查命令 / MCP 工具 / swarm preset / 环境变量 | [`REFERENCE.md`](REFERENCE.md) |
 | 看架构长什么样（含实测数字） | [`architecture-diagram.html`](architecture-diagram.html) |
+| **理解框架理念与当前状态** | [`框架与理念 · v1.2.html`](框架与理念 · v1.2.html)（可读版）· [`design/framework-and-principles-v1.2.md`](design/framework-and-principles-v1.2.md)（md 底稿）|
 | 理解四层引擎为什么这样分 | [`design/layered-skeleton-design-20261103.md`](design/layered-skeleton-design-20261103.md) |
 | 知道现在拆到哪一步、接下来删什么 | [`design/subtraction-roadmap-v2-20261105.md`](design/subtraction-roadmap-v2-20261105.md) |
 | 跑测试 / 门禁 / 分片 | [`guides/test-marker-lanes-design.md`](guides/test-marker-lanes-design.md) |
