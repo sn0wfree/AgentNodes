@@ -3,11 +3,25 @@
 // goal history playback.
 
 import { describe, it, expect, beforeEach, vi } from 'vitest'
-import { render, screen, waitFor, fireEvent } from '@testing-library/react'
+import {
+  render,
+  screen,
+  waitFor as rtlWaitFor,
+  fireEvent,
+} from '@testing-library/react'
 import { MemoryRouter } from 'react-router-dom'
 import { DefinitionWorkflowPage } from '../components/workflow/DefinitionWorkflowPage'
 import { ApprovalDialog } from '../components/workflow/ApprovalDialog'
 import type { DefinitionRunSnapshot } from '../api/client'
+
+// Switch-the-definition flows chain two async loads (definitions.list →
+// definitions.get) behind a fireEvent.change. Under coverage
+// instrumentation the default 1000ms waitFor budget is occasionally
+// exceeded — the suite flaked in CI runs with --coverage while passing
+// without it. A 3s budget keeps the same assertions but removes the
+// timing sensitivity.
+const waitFor: typeof rtlWaitFor = ((cb: () => unknown, opts?: { timeout?: number }) =>
+  rtlWaitFor(cb, { timeout: 3000, ...opts })) as typeof rtlWaitFor
 
 vi.mock('../api/client', async () => {
   return {
@@ -47,6 +61,16 @@ vi.mock('../api/client', async () => {
         status: vi.fn(async () => ({ status: 'ok', run_id: 'wf_test1', run: {} })),
         detail: vi.fn(async () => ({ status: 'ok', run: {}, segments: [], node_outputs: [], approvals: [] })),
         remove: vi.fn(async () => ({ status: 'ok', deleted: 'wf_test1' })),
+      },
+      // startEdit() restores the auto-saved orchestrator draft after the
+      // definitions.get() load. Without this mock the call throws a
+      // TypeError inside the (best-effort) restore branch, which in some
+      // runs leaves the editor un-rendered and the 保存 assertion flaky.
+      orchestrate: {
+        getDraft: vi.fn(async () => ({ dag: null })),
+        saveDraft: vi.fn(async () => ({ status: 'ok' })),
+        clearDraft: vi.fn(async () => ({ status: 'ok', cleared: 'x' })),
+        session: vi.fn(async () => ({ status: 'ok', session_id: 'sess-1' })),
       },
       goal: {
         list: vi.fn(async () => ({
