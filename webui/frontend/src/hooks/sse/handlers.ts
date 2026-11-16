@@ -76,10 +76,15 @@ import { permissionRequest, permissionResult } from './permissionHandlers'
 /**
  * Dispatch table mapping every registered SSE event type to its handler.
  *
- * Event types absent from this table (file_edit / table / chart / image)
- * are registered in EventSource but intentionally have no handler — see
- * the TODO in types.ts EVENT_TYPES comment. The dispatcher in useSSE
- * drops them silently, preserving the original inline-switch behavior.
+ * Contract (pinned by src/test/handlers.test.ts): the keys here are
+ * exactly the runtime EVENT_TYPES list — every declared runtime event
+ * has a handler, no orphan registrations. file_edit / table / chart /
+ * image are registered (Tier B P6) ahead of backend emission; when the
+ * AgentLoop starts emitting them the parts land in the assistant
+ * message automatically. Four types exist only in the SSEEventType
+ * union (agent_text_started / agent_text_ended / agent_llm_usage /
+ * agent_llm_response), not in the runtime EVENT_TYPES list — they are
+ * dropped before dispatch ever sees them.
  */
 export const HANDLERS: Partial<Record<SSEEventType, SSEHandler>> = {
   'text.started': textStarted,
