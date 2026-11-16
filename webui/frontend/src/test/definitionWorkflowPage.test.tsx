@@ -8,6 +8,7 @@ import {
   screen,
   waitFor as rtlWaitFor,
   fireEvent,
+  within,
 } from '@testing-library/react'
 import { MemoryRouter } from 'react-router-dom'
 import { DefinitionWorkflowPage } from '../components/workflow/DefinitionWorkflowPage'
@@ -307,6 +308,13 @@ describe('DefinitionWorkflowPage (Dify-style info bar)', () => {
   it('switches workflow via the dropdown and enters edit mode', async () => {
     render(<MemoryRouter><DefinitionWorkflowPage /></MemoryRouter>)
     await waitFor(() => expect(screen.getByText('选择或新建工作流')).toBeTruthy())
+    // 等下拉真正填充出目标选项再切换（选项来自并行的
+    // definitions.list；提前 change 会落在不存在的 option 上）
+    await waitFor(() =>
+      expect(
+        within(screen.getByTitle('切换工作流定义')).getByText('my_flow')
+      ).toBeInTheDocument()
+    )
     fireEvent.change(screen.getByTitle('切换工作流定义'), { target: { value: 'my_flow' } })
     await waitFor(() => expect(api.definitions.get).toHaveBeenCalledWith('my_flow'))
     await waitFor(() => expect(screen.getByText('保存')).toBeTruthy())
@@ -317,6 +325,13 @@ describe('DefinitionWorkflowPage (Dify-style info bar)', () => {
   it('saves via the info-bar 保存 button and stays in edit mode', async () => {
     render(<MemoryRouter><DefinitionWorkflowPage /></MemoryRouter>)
     await waitFor(() => expect(screen.getByText('选择或新建工作流')).toBeTruthy())
+    // 等下拉真正填充出目标选项再切换（选项来自并行的
+    // definitions.list；提前 change 会落在不存在的 option 上）
+    await waitFor(() =>
+      expect(
+        within(screen.getByTitle('切换工作流定义')).getByText('my_flow')
+      ).toBeInTheDocument()
+    )
     fireEvent.change(screen.getByTitle('切换工作流定义'), { target: { value: 'my_flow' } })
     // 二级锚点：先确认 select 已切到目标定义（setEditingName 生效），
     // 再等编辑器信息栏出现——避免只盯链条末端的「保存」而在
@@ -347,6 +362,13 @@ describe('DefinitionWorkflowPage (Dify-style info bar)', () => {
   it('adds a node from the palette and clears the empty canvas hint', async () => {
     render(<MemoryRouter><DefinitionWorkflowPage /></MemoryRouter>)
     await waitFor(() => expect(screen.getByText('选择或新建工作流')).toBeTruthy())
+    // 等下拉真正填充出目标选项再切换（选项来自并行的
+    // definitions.list；提前 change 会落在不存在的 option 上）
+    await waitFor(() =>
+      expect(
+        within(screen.getByTitle('切换工作流定义')).getByText('my_flow')
+      ).toBeInTheDocument()
+    )
     fireEvent.change(screen.getByTitle('切换工作流定义'), { target: { value: 'my_flow' } })
     // 二级锚点：先确认 select 已切到目标定义（setEditingName 生效），
     // 再等编辑器信息栏出现——避免只盯链条末端的「保存」而在
@@ -363,6 +385,13 @@ describe('DefinitionWorkflowPage (Dify-style info bar)', () => {
   it('filters the palette by search', async () => {
     render(<MemoryRouter><DefinitionWorkflowPage /></MemoryRouter>)
     await waitFor(() => expect(screen.getByText('选择或新建工作流')).toBeTruthy())
+    // 等下拉真正填充出目标选项再切换（选项来自并行的
+    // definitions.list；提前 change 会落在不存在的 option 上）
+    await waitFor(() =>
+      expect(
+        within(screen.getByTitle('切换工作流定义')).getByText('my_flow')
+      ).toBeInTheDocument()
+    )
     fireEvent.change(screen.getByTitle('切换工作流定义'), { target: { value: 'my_flow' } })
     // 二级锚点：先确认 select 已切到目标定义（setEditingName 生效），
     // 再等编辑器信息栏出现——避免只盯链条末端的「保存」而在
@@ -379,6 +408,13 @@ describe('DefinitionWorkflowPage (Dify-style info bar)', () => {
   it('starts a run from the run drawer', async () => {
     render(<MemoryRouter><DefinitionWorkflowPage /></MemoryRouter>)
     await waitFor(() => expect(screen.getByText('选择或新建工作流')).toBeTruthy())
+    // 等下拉真正填充出目标选项再切换（选项来自并行的
+    // definitions.list；提前 change 会落在不存在的 option 上）
+    await waitFor(() =>
+      expect(
+        within(screen.getByTitle('切换工作流定义')).getByText('plan_execute_auto')
+      ).toBeInTheDocument()
+    )
     fireEvent.change(screen.getByTitle('切换工作流定义'), { target: { value: 'plan_execute_auto' } })
     // 二级锚点：先确认 select 已切到目标定义（setEditingName 生效），
     // 再等编辑器信息栏出现——避免只盯链条末端的「保存」而在
@@ -406,6 +442,13 @@ describe('Run history playback', () => {
     render(<MemoryRouter><DefinitionWorkflowPage /></MemoryRouter>)
     await waitFor(() => expect(screen.getByText('选择或新建工作流')).toBeTruthy())
     // enter edit mode first so the editor exists beneath playback
+    // 等下拉真正填充出目标选项再切换（选项来自并行的
+    // definitions.list；提前 change 会落在不存在的 option 上）
+    await waitFor(() =>
+      expect(
+        within(screen.getByTitle('切换工作流定义')).getByText('my_flow')
+      ).toBeInTheDocument()
+    )
     fireEvent.change(screen.getByTitle('切换工作流定义'), { target: { value: 'my_flow' } })
     // 二级锚点：先确认 select 已切到目标定义（setEditingName 生效），
     // 再等编辑器信息栏出现——避免只盯链条末端的「保存」而在
