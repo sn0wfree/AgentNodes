@@ -1,11 +1,14 @@
 """Kernel layer (L3) - platform mechanisms (gateway/orchestration/events/session...).
 
-四个子带（仅呈现维度，import 规则不变：同层自由、只许向下）：
-  控制面 gateway/orchestration/events/session/scheduled_research
+三个子带（仅呈现维度，import 规则不变：同层自由、只许向下）：
+  控制面 gateway/orchestration/events/session
   执行面 runtimes/workflow/swarm
   能力面 agent/context/hooks/permission/memory/skills
-  算法面 algo（领域中立数学闭包，如无前视调仓回测）
 
 依赖方向：kernel → foundation（见 tests/test_layer_matrix.py）。
+
+注：``scheduled_research`` 已迁 ``apps/``（批次 8）；原先的 ``algo`` 子包
+（量化评估算法）承载业务名词 ``factor``/``backtest``/``sharpe``，与「kernel
+零业务名词」红线（``check_kernel_nouns.py``）冲突，已迁 ``apps/algo/``。
 """
 

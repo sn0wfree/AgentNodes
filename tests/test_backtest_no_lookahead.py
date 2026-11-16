@@ -1,9 +1,11 @@
-"""kernel.algo.backtest.evaluate() — 调仓时点回归测试。
+"""apps.algo.backtest.evaluate() — 调仓时点回归测试。
 
 （自 tests/test_prepare_no_lookahead.py 迁移，2026-11-14：算法随 C 方案
-提取到 kernel/algo（docs/design/prepare-algo-kernel-extract-20261114.md），
+提取为独立模块（docs/design/prepare-algo-kernel-extract-20261114.md），
 importlib 文件加载 → 正常 import，compute_factors 模块桩 → factor_frames
-参数注入。两条时序断言自模板时代起一字未动。）
+参数注入。两条时序断言自模板时代起一字未动。
+2026-11-16：该模块自 ``kernel/algo`` 迁到 ``apps/algo``——它含业务名词，
+住 kernel 会破「kernel 零业务名词」门禁；import 随之改。）
 
 钉住"收盘调仓"约定:用第 i 日数据(因子分数基于 close[i])选出的权重
 不得赚取第 i 日收益(close[i]/close[i-1]-1),否则构成 1 根 K 线前视
@@ -17,7 +19,7 @@ from __future__ import annotations
 
 import pandas as pd
 
-from agentnodes.kernel.algo import evaluate
+from agentnodes.apps.algo import evaluate
 
 REBALANCE_FREQ = 20
 

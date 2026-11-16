@@ -318,13 +318,31 @@ def _simulate_backtest(
     rebalance_freq: int,
     factor_weight_method: str,
 ) -> tuple[list[float], list[float]]:
-    """Simulate periodic rebalancing; returns (nav, weight_changes)."""
+    """Simulate periodic rebalancing; returns (nav, weight_changes).
+
+    **时序约定（无前视，2026-11-16 修复回填）**：第 i 日的收益用**调仓前已
+    持有的权重**结算，调仓发生在其后——即 close[i] 决定的权重最早在 i+1 日
+    才计收。原实现把调仓放在循环体开头、随即用新权重乘 ``returns.iloc[i]``，
+    等于用 close[i] 的信息赚取 close[i] 当天的收益（1 根 K 线前视偏差）。
+
+    同一性质由 ``tests/test_backtest_no_lookahead.py`` 钉在
+    ``apps/algo/backtest.py`` 上；本模板副本此前未随修复更新，实测仍带该
+    偏差（见 docs/design/project-progress-assessment-20261116.md §4.4）。
+    """
     nav = [1.0]
     prev_weights = {}
     weight_changes = []
 
     for i in range(rebalance_freq, len(prices)):
-        # 调仓日: 选股 + 计算权重
+        # ① 先结算当日收益：用**上一次调仓决定、此刻仍持有**的权重。
+        daily_ret = 0.0
+        for asset, w in prev_weights.items():
+            if asset in returns.columns:
+                r = returns.iloc[i][asset]
+                if pd.notna(r):
+                    daily_ret += w * r
+
+        # ② 再执行调仓（新权重自下一根 K 线起才计收）。
         if (i - rebalance_freq) % rebalance_freq == 0:
             day_scores = scores.iloc[i].dropna()
             if len(day_scores) < top_n:
@@ -356,14 +374,6 @@ def _simulate_backtest(
             weight_changes.append(change)
 
             prev_weights = new_weights
-
-        # 计算日收益
-        daily_ret = 0.0
-        for asset, w in prev_weights.items():
-            if asset in returns.columns:
-                r = returns.iloc[i][asset]
-                if pd.notna(r):
-                    daily_ret += w * r
 
         nav.append(nav[-1] * (1 + daily_ret))
 

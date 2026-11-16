@@ -2,6 +2,12 @@
 
 依赖方向：apps → kernel → foundation（见 tests/test_layer_matrix.py）。
 
+**子包**：``goal``（长程任务台账/工作流）· ``chat``（产品策略）·
+``agent_plugins``（量化插件：角色/校验器/展示）· ``swarm_presets``（37 个
+拓扑 preset）· ``scheduled_research``（定时研究）· ``builtin_tools``（业务
+工具）· ``algo``（领域中立数学闭包：无前视调仓回测；原住 ``kernel/algo``，
+因业务名词与「kernel 零业务名词」红线冲突而迁此）。
+
 **能力注册（ADR-003 端口化）**：apps 是被 kernel 依赖的一侧，因此由
 **apps 主动注册**进 kernel 的 CapabilityRegistry——import 方向仍是
 apps → kernel，H1 不受影响。

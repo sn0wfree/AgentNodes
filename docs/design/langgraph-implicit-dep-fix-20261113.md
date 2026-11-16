@@ -183,5 +183,6 @@ langchain_core / uuid_utils 整条链）。
 > `import langgraph` 直接通过、`.pyd` ctypes 加载无错、无 Zone.Identifier；Windows
 > 全量 `-n 8 loadgroup` **7268 passed / 101s**（原 129 failed 全消，L2 记账）。
 > ② `templates/` 问题随 C 方案（`6f3e727c`）**自然消解**——唯一消费者（prepare
-> 无前视测试）已迁 `kernel.algo`，仓库不再有跟踪文件依赖未跟踪模板。
+> 无前视测试）已迁独立模块，仓库不再有跟踪文件依赖未跟踪模板。（该模块 2026-11-16
+> 从 `kernel.algo` 迁到 `apps.algo`——它含量化域名词，住 kernel 会破 nouns 门禁。）
 > ③④ 仍开放（Linux 侧测试平台缺陷，与引擎无关）。

@@ -1,11 +1,19 @@
 # prepare.py 评估算法提取到 kernel（方案，R-014）
 
 > 2026-11-14 · 维护者拍板 C 方案（提取到 kernel）· 上游会话：B2-① / e2e 车道修复（dd3b652b）
+>
+> ⚠️ **后续修订（2026-11-16）**：本方案把算法落到 `kernel/algo`，但该目录含
+> `factor`/`backtest`/`sharpe`/`calmar`/`drawdown`/`portfolio` 等量化域名词，
+> 直接打破「kernel 零业务名词」红线（`check_kernel_nouns.py` 实测 51 处命中），
+> `batch_gate` 因此转红并潜伏 2 天。**该目录已迁至 `apps/algo/`**，见
+> `docs/design/project-progress-assessment-20261116.md` §4 + 本仓 commit 记录。
+> 下文路径 `kernel/algo` 一律读作「当时的落点」，现状为 `apps/algo`。
 
 ## §0 结论
 
 1. **提取对象**：`templates/prepare.py`（本地未跟踪副本）里的**评估算法闭包**
-   → `src/agentnodes/kernel/algo/backtest.py`（新子包，领域中立算法带）。
+   → `src/agentnodes/apps/algo/backtest.py`（业务层子包；原定 `kernel/algo`，
+   2026-11-16 因业务名词红线迁出）。
 2. **唯一幸存副本**：tracked 版（根 `templates/`）已随 W1 `9140f6c3` 从 git 移除；
    `src/agentnodes/templates/` 只有 `.prompts/.skills/workflows`，从无 prepare.py。
    本地副本相对最后 tracked 祖先漂移 +164/−125 行——**漂移里含 2026-11-05

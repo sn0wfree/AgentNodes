@@ -1,10 +1,14 @@
-"""无前视调仓回测模拟与组合指标（领域中立算法）。
+"""无前视调仓回测模拟与组合指标（量化域算法）。
 
-从 ``templates/prepare.py``（2026-11-05 无前视修复版）提取的评估算法闭包，
-随 C 方案成为 kernel 正式代码（方案见
-``docs/design/prepare-algo-kernel-extract-20261114.md``）。模板副本已随 W1
-``9140f6c3`` 从 git 移除，本地未跟踪副本是含修复的唯一版本——本模块使其
-不再依附于一个 gitignore 的漂移文件。
+从 ``templates/prepare.py``（2026-11-05 无前视修复版）提取的评估算法闭包
+（方案见 ``docs/design/prepare-algo-kernel-extract-20261114.md``）。模板副本
+已随 W1 ``9140f6c3`` 从 git 移除，本地未跟踪副本是含修复的唯一版本——本模块
+使其不再依附于一个 gitignore 的漂移文件。
+
+**驻留位置**：``apps/algo``（业务层）。2026-11-14 的 C 方案曾把它放进
+``kernel/algo``，但它含 ``factor``/``backtest``/``sharpe``/``calmar``/
+``drawdown``/``portfolio`` 等量化域名词，直接破「kernel 零业务名词」红线
+（``scripts/arch/check_kernel_nouns.py``，实测 51 处命中）。2026-11-16 迁此。
 
 **时序约定（被测性质，``tests/test_backtest_no_lookahead.py`` 钉住）**：
 用第 i 日数据（因子分数基于 close[i]）选出的权重不得赚取第 i 日收益，
@@ -14,7 +18,7 @@
   - 只提算法闭包（evaluate + 打分/模拟/指标）；数据加载、apps 因子路径、
     metrics_raw.json 落盘（死契约零读者）不提取。
   - 因子来源注入化：``factor_frames=None`` 时退回 ``compute_simple_factors``。
-  - kernel 无 I/O：因子失败信息不写文件，放进返回 dict。
+  - 无 I/O：因子失败信息不写文件，放进返回 dict。
 """
 from __future__ import annotations
 
