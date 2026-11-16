@@ -138,7 +138,8 @@
 |---|---|
 | [`project-progress-assessment-20261116.md`](design/project-progress-assessment-20261116.md) | **项目进度评估（复盘）**：四条工作线完成度 + 健康度实测 + 13 项遗留清单 + 处置建议（待批准）|
 | [`merge-main-and-framework-v12-plan-20261116.md`](design/merge-main-and-framework-v12-plan-20261116.md) | **合并 main + 框架与理念 v1.2 方案（R-014）**：FF 合并可行性 + 架构变化盘点 + v1.2 十一节设计与验收判据（待批准）|
-| [`framework-and-principles-v1.2.md`](design/framework-and-principles-v1.2.md) | **框架与理念 v1.2（现行）**：七理念检查栏回填 + 双轴总图 + W/R 完成度 + **§5 v1.1→v1.2 变化总账**；体量数字由 `check_framework_numbers.py` 钉住 |
+| [`framework-and-principles-v1.2.md`](design/framework-and-principles-v1.2.md) | **框架与理念 v1.2（现行）**：七理念检查栏回填 + 双轴总图 + **§4 MVP 三层能力集（C1–C28）** + W/R 完成度 + §6 变化总账；体量数字由 `check_framework_numbers.py` 钉住 |
+| [`session-lifecycle-kernel-migration-20261116.md`](design/session-lifecycle-kernel-migration-20261116.md) | **会话生命周期下沉 kernel（方案，R-014 · 未实施）**：14 文件 / 5,774 行迁移，六批次 A–F + 回滚方式 + 验收判据；含 K1–K4 四道硬约束 |
 | [`framework-and-principles-20261105.md`](design/framework-and-principles-20261105.md) | 框架与理念 v1.1（历史版，保留对照）——**已被 v1.2 取代** |
 
 ### 2.8 ADR
