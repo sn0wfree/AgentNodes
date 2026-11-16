@@ -244,6 +244,58 @@ DOM 上 setState**。加全局 `afterEach(cleanup)` 后立即稳定。
 | 组件 funcs ≥75% | **达成**（components 聚合 58.6% → 待复测；三个 0% 文件已补至 100%） |
 | 总 stmts ≥85% | **未达（77.93%）**——缺口在 pages（29.3%，视图层交给 catalog/visual 基线）与 catalog 页自身；如要硬达标需补页面级集成测试，属 T3 范畴 |
 
+## §5.7 T3 实施结果回填（2026-11-16 完成）
+
+### 交付（4 commit）
+
+| # | commit | 内容 | 覆盖变化 |
+|---|---|---|---|
+| T3.1 | b14c2eb6 | AdminUsersPage 集成（15 用例）+ **数据面板防御修复** | 2.7% → **97.3%** / funcs 94.7 |
+| T3.2 | 429d79ea | StrategyLibraryPage 集成（12 用例）+ 两处 flaky 根治 | 9.5% → **97.0%** / funcs 100 |
+| T3.3 | db96c7dd | MonitorPage 集成（10 用例）+ FactorLibrary/DAGPage（7 用例） | 53→**98.2** / 6.3→**100** / 6.9→**84.4** |
+
+### pages 层前后对比（stmts）
+
+| 页面 | T1 起点 | **T3 收口** |
+|---|---|---|
+| AdminUsersPage | 2.7% | **97.3%** |
+| StrategyLibraryPage | 9.5% | **97.0%** |
+| MonitorPage | 53.0% | **98.2%** |
+| FactorLibraryPage | 6.3% | **100%** |
+| DAGPage | 6.9% | **84.4%** |
+| StudyPage | 97.4% | 97.4% |
+| **pages 层平均** | **29.3%** | **≈95.7%** |
+
+### 最终总覆盖（116 文件 / 1193 用例 / 37s 全绿）
+
+| 指标 | T1 起点 | T1 收口 | T2 收口 | **T3 收口** | 累计 Δ |
+|---|---|---|---|---|---|
+| statements | 73.40 | 76.35 | 77.93 | **81.47** | **+8.07** |
+| branches | 78.80 | 80.10 | 80.08 | **80.61** | +1.81 |
+| functions | 55.40 | 71.62 | 72.36 | **74.14** | **+18.74** |
+| lines | 73.40 | 76.35 | 77.93 | **81.47** | +8.07 |
+
+### §0 目标终审
+
+| 目标 | 状态 |
+|---|---|
+| 逻辑层 funcs ≥85% | ✅ 48/50 文件（余 2 个真实未走分支，见 §5.5） |
+| 逻辑层 stmts ≥90% | ✅ |
+| 组件 funcs ≥75% | ✅ |
+| **总 stmts ≥85%** | ⚠️ **81.47%**——距目标 3.5 个百分点。缺口构成：catalog 页自身（stories.tsx 680 行，纯渲染描述符）+ components 中约 30 个纯展示件（catalog/visual 基线覆盖外观）。**若强行达标需给纯展示组件写渲染断言**，价值低于成本，建议接受 81.5% 并把此类覆盖率交给基线网 |
+
+### 期间发现（T3 累计）
+
+1. **产品缺陷 2 个**：
+   - AdminUsersPage `viewData` 无防御（后端返回 null 会整页白屏）——已修
+   - （T1.2 已记）workflow.graph 未 URL 编码
+2. **flaky 根因 3 层**（逐层深入）：
+   - ① `setup.ts` 缺 RTL `cleanup`（T2）→ 已修
+   - ② zustand store 是模块级单例，`cleanup` 不重置 store（T3.2）→ 该文件 beforeEach 补全
+   - ③ 断言早于 React 提交（studyCreateForm reset）→ 改为 waitFor 包裹
+3. **测试纪律收获**：`mockResolvedValueOnce` 残留、fake timers 与 waitFor 互斥、
+   `getByText` 在多处同名时必须用 `getAllBy`、文件内 36 处 waitFor 应加二级锚点。
+
 ## §6 决策记录
 
 > 2026-11-16 用户指示「先写文档，再开始」——按本文推荐默认定案，逐条留痕：
