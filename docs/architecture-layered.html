@@ -73,7 +73,10 @@ footer code{background:var(--muted);padding:1px 5px;border-radius:4px;}
     #an-arch .tier-legend { display:flex; gap:.55rem; flex-wrap:wrap; font-size:.74rem;
       color:var(--muted-foreground); align-items:center; margin:.5rem 0 0; }
     #an-arch .tier-chip { display:inline-flex; align-items:center; gap:.32rem;
-      padding:.18rem .5rem; border-radius:5px; border:1px solid var(--border); }
+      padding:.18rem .5rem; border-radius:5px; border:1px solid var(--border);
+      cursor:pointer; user-select:none; }
+    #an-arch .tier-chip:hover { border-color:var(--foreground); }
+    #an-arch .tier-chip.off { opacity:.5; text-decoration:line-through; }
     #an-arch .tier-dot { width:9px; height:9px; border-radius:2px; }
     #an-arch .hint { color:var(--muted-foreground); font-size:.77rem; margin:.55rem 0 0; }
     #an-arch .tip {
@@ -1126,6 +1129,9 @@ footer code{background:var(--muted);padding:1px 5px;border-radius:4px;}
   var TIER_META  = {"A": {"label": "红 · MVP 最小可对话", "desc": "一条消息进 → LLM 回一条"}, "B": {"label": "黄 · MVP 最小可干活", "desc": "A + 工具 / 工作流真的能执行"}, "C": {"label": "绿 · 全能力", "desc": "B + 长程任务 + 自进化 + 评估 + 其它通道"}};
   var TIER_STATS = {"A": {"pkgs": 7, "symbols": 1050, "label": "红 · MVP 最小可对话", "desc": "一条消息进 → LLM 回一条"}, "B": {"pkgs": 8, "symbols": 180, "label": "黄 · MVP 最小可干活", "desc": "A + 工具 / 工作流真的能执行"}, "C": {"pkgs": 21, "symbols": 747, "label": "绿 · 全能力", "desc": "B + 长程任务 + 自进化 + 评估 + 其它通道"}};
   var TIER_COLOR = { A: '#ef4444', B: '#f59e0b', C: '#22c55e' };
+  // 图例虚化开关：必须在任何 paint()/baseCls() 调用之前赋值
+  // （上一版把 TIER_ON 放在首次使用点之后 -> 读到 undefined -> IIFE 抛错 -> 配色全丢）
+  var TIER_OFF = { A: false, B: false, C: false };
 
   var PKG = {};
   LAYERS.forEach(function (L) { L.pkgs.forEach(function (p) { PKG[p.id] = p; }); });
@@ -1264,16 +1270,20 @@ footer code{background:var(--muted);padding:1px 5px;border-radius:4px;}
     tl.innerHTML = order.map(function (t) {
       var s = TIER_STATS[t] || { pkgs: 0, symbols: 0 };
       var m = TIER_META[t] || {};
-      return '<span class="tier-chip">' +
+      return '<span class="tier-chip" data-tier="' + t + '" role="button" tabindex="0"' +
+        ' aria-pressed="true" title="点击虚化 / 恢复该层">' +
         '<span class="tier-dot" style="background:' + TIER_COLOR[t] + '"></span>' +
         '<b style="color:' + TIER_COLOR[t] + '">' + (m.label || t) + '</b>' +
         '<span>' + s.pkgs + ' 包 / ' + s.symbols + ' 符号</span>' +
         '<span style="opacity:.75">' + (m.desc || '') + '</span></span>';
     }).join('') +
-    '<span style="opacity:.7">（绿色 ⊃ 黄色 ⊃ 红色，三层同时着色；悬停看每包理由）</span>';
+    '<span style="opacity:.7">（绿色 ⊃ 黄色 ⊃ 红色；<b>点击色块可虚化该层</b>，悬停看每包理由）</span>';
   }
 
   // ---- 交互 ----
+  // 单一渲染入口：悬停聚焦 + 图例虚化合成一套状态机。
+  // 虚影一律用**悬停已有的** 'node dim' / 'edge faded'，不另造样式。
+  // 规则：被图例点灭的层**优先**于悬停 —— 点灭后悬停它也不会重新点亮。
   function baseCls(g) {
     var id = g.getAttribute('data-id');
     var p = PKG[id] || {};
@@ -1282,30 +1292,36 @@ footer code{background:var(--muted);padding:1px 5px;border-radius:4px;}
       + (ISOLATED[id] ? ' iso' : '')
       + (p.tier ? ' tier-' + p.tier : '');
   }
-  function clearAll() {
-    edgeEls.forEach(function (p) {
-      p.setAttribute('class', edgeClass(p.getAttribute('data-from'), p.getAttribute('data-to')));
-    });
-    nodeEls.forEach(function (g) { g.setAttribute('class', baseCls(g)); });
+  function tierOff(id) {
+    var p = PKG[id] || {};
+    return p.tier ? TIER_OFF[p.tier] : false;
   }
-  function focus(id) {
-    clearAll();
+  function paint(focusId) {
     var seen = {};
-    edgeEls.forEach(function (p) {
-      var f = p.getAttribute('data-from'), t = p.getAttribute('data-to');
-      if (f === id || t === id) {
-        p.setAttribute('class', 'edge hot');
-        seen[f === id ? t : f] = 1;
-      } else {
-        p.setAttribute('class', 'edge faded');
-      }
-    });
+    if (focusId) {
+      edgeEls.forEach(function (p) {
+        var f = p.getAttribute('data-from'), t = p.getAttribute('data-to');
+        if (f === focusId || t === focusId) seen[f === focusId ? t : f] = 1;
+      });
+    }
+    // 节点
     nodeEls.forEach(function (g) {
-      var gid = g.getAttribute('data-id');
-      if (gid === id || seen[gid]) g.setAttribute('class', baseCls(g));
+      var id = g.getAttribute('data-id');
+      if (tierOff(id)) { g.setAttribute('class', 'node dim'); return; }
+      if (!focusId || id === focusId || seen[id]) g.setAttribute('class', baseCls(g));
       else g.setAttribute('class', 'node dim');
     });
+    // 边
+    edgeEls.forEach(function (p) {
+      var f = p.getAttribute('data-from'), t = p.getAttribute('data-to');
+      if (tierOff(f) || tierOff(t)) { p.setAttribute('class', 'edge faded'); return; }
+      if (!focusId) { p.setAttribute('class', edgeClass(f, t)); return; }
+      if (f === focusId || t === focusId) p.setAttribute('class', 'edge hot');
+      else p.setAttribute('class', 'edge faded');
+    });
   }
+  function focus(id) { paint(id); }
+  function clearAll() { paint(null); }
   nodeEls.forEach(function (g) {
     var id = g.getAttribute('data-id');
     var p = PKG[id];
@@ -1345,6 +1361,24 @@ footer code{background:var(--muted);padding:1px 5px;border-radius:4px;}
     g.addEventListener('mouseleave', function () { tip.style.opacity = '0'; clearAll(); });
   });
   svg.addEventListener('mouseleave', function () { tip.style.opacity = '0'; clearAll(); });
+
+  // ---- 图例虚化开关 ----
+  // 点击色块：该层整体转虚影（复用悬停的 node dim / edge faded）；再点恢复。
+  if (tl) {
+    tl.querySelectorAll('.tier-chip').forEach(function (chip) {
+      function toggle() {
+        var t = chip.getAttribute('data-tier');
+        TIER_OFF[t] = !TIER_OFF[t];
+        chip.classList.toggle('off', TIER_OFF[t]);
+        chip.setAttribute('aria-pressed', TIER_OFF[t] ? 'false' : 'true');
+        paint(null);
+      }
+      chip.addEventListener('click', toggle);
+      chip.addEventListener('keydown', function (ev) {
+        if (ev.key === 'Enter' || ev.key === ' ') { ev.preventDefault(); toggle(); }
+      });
+    });
+  }
 })();
 </script>
 </div>
