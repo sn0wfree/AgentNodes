@@ -231,14 +231,33 @@ interfaces/api/session/                L1 · 薄适配层
 > | `test_delete_session_keeps_session_row` | `tests/test_memory_dataplane_hotfix.py:98`（**语义相反**：这里断言「删消息但留会话行」）|
 > | `test_delete_session_clears_messages` | `tests/test_memory_manager_comprehensive.py:178` |
 >
-> ⇒ **E1 批次不能直接改软删** —— 会撞上至少 3 处断言，且其中两处**期望的语义互不相同**
-> （`test_session_list_helper` 期望整行删、`test_memory_dataplane_hotfix` 期望留行）。
-> **E1 的正确做法**：
-> 1. 先把这 3 处断言**读清楚各自在测什么**（三个不同的 `delete_session`：unified 门面 / memory_manager / dataplane）；
-> 2. 若它们测的是**不同对象**（不是同一个 delete_session），则 CLI 的硬删改软删只影响其中一处 → 改那处断言 + 补一条「CLI 删除后仍可 GET」的断言；
-> 3. 若它们测的是**同一个函数的不同预期**，说明当前语义本身就不一致 —— 这正是 D2 的证据，**先统一语义再迁**。
+> ✅ **人工判断完成（2026-11-16，E 批前置）**：**4 处断言锁的是 3 个不同函数，
+> 相互零矛盾**——
 >
-> **这一步必须人工判断，不能机械改。** E1 批次在 §6 缺口 3 关闭前不得动手。
+> | 函数 | 测试 | 语义 | 判定 |
+> |---|---|---|---|
+> | `reader.delete_session`（CLI/MCP/TUI 门面）| list_helper ×2 | 硬删（行+消息）| **唯一要改的**——E1 把它改为软删 |
+> | `SQLiteStore.delete_session`（memory_manager 后端）| dataplane_hotfix ×2 | 清消息**保锚行** | **不动**——这是 `/clear` 的路径（D7 修复：锚行是 FK 锚，删行会让 /clear 后投影 flush 撞 FK），与「删除会话」是两回事 |
+> | `InMemoryStore.delete_session`（降级后端）| comprehensive:178 | 清 messages | **不动**——降级后端没有 sessions 行概念 |
+>
+> ⇒ §3.5 列的两种可能性属于第一种：「测的是不同对象」。**真正的语义分歧只有一个**
+> ——web `DELETE /{id}` 软删 vs CLI `session delete` 硬删（这正是 D2 债本身）。
+> E1 可以动手。
+
+### E1 的对齐目标（web 侧现状，实测）
+
+| 操作 | web 现状 | reader（CLI/MCP/TUI）现状 | E1 后 |
+|---|---|---|---|
+| 删除 | `UPDATE archived=1`（保消息+event_log，投影/SSE 继续可用）| `DELETE` 行+消息 | 同 web：`archived=1` |
+| list | `AND archived=0`（`include_archived` 开关）| 无 archived 过滤 | `WHERE archived=0` |
+| search | `AND s.archived=0`（L582，JOIN 过滤）| messages LIKE 无过滤 | JOIN sessions 过滤 archived |
+| GET 单会话 / 消息 | 不过滤（删后仍可读）| 不过滤 | 不变 |
+| `/clear`（memory_manager）| 保锚行清消息（D7）| — | 不动 |
+
+> 测试改写：`test_delete_session_removes_row_and_messages` →
+> `test_delete_session_archives_row`（archived=1 / get_session 仍返回 /
+> get_messages 仍可读 / list 不含）；`test_delete_missing_session_returns_false`
+> 保留；新增 list 过滤与 search 过滤断言。E2（`--purge` 真硬删）另行。
 
 ---
 
@@ -502,7 +521,7 @@ display 工具 9 个 + 通用残名 5 个）。allowlist 死名对可见工具�
 |---|---|---|
 | 1 | **§3.1 目标树把 `web_state.py` 放进了 kernel，但 §3.2 又说它该留在 L1** —— 自相矛盾 | 实施时以 §3.2 为准：**留在 L1**。§3.1 目标树需相应修正 |
 | 2 | **`kernel/session/` 已存在**（`unified.py` + `__init__.py`）| 迁移时 `unified.py` → `reader.py` 是改名，`__init__.py` 需合并导出面 |
-| 3 | ~~未核查 `tests/` 里对硬删/软删的断言~~ **已核查（§3.5）**：3 处断言，且**期望语义互不相同** | **E1 批次阻塞**，需人工判断三个 `delete_session` 各自在测什么 |
+| 3 | ~~未核查 `tests/` 里对硬删/软删的断言~~ **已核查（§3.5）**：4 处断言锁 **3 个不同函数**（reader 门面 / SQLiteStore=/clear 路径 / InMemoryStore 降级后端），**相互零矛盾**；唯一语义分歧 = web 软删 vs CLI 硬删 | ✅ **关闭（2026-11-16）**。E1 解除阻塞，方案见 §3.5「E1 的对齐目标」 |
 | 4 | **未评估 `interfaces/api/session/web_session_db.py` 的 FTS 索引迁移** | 该文件有 `_ensure_fts_table` / `_add_column` / `_run_schema_migrations`（370+ 行）—— 搬文件不搬 schema，理论上安全，但需在 B 批后核对 FTS 表仍工作 |
 | 5 | ~~未量化四个通道的回归测试覆盖~~ **已核查**：web 52 文件 / CLI 27 / TUI 39 / MCP 18 —— **四通道全覆盖充分** | C 批每步都有对应测试，无需先补 |
 | 6 | **`kernel/session/unified.py` 被 2 个测试文件直接 import**（`test_session_list_helper.py` 9 处 / `test_memory_dataplane_hotfix.py`）| D1 批次改 `reader.py` 实现后，这 2 个测试文件的 import 路径也要改（`unified` → `reader`）|

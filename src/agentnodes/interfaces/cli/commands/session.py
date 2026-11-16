@@ -103,7 +103,7 @@ def cmd_session_search(args) -> int:
 
 
 def cmd_session_delete(args) -> int:
-    """删除会话（统一库，B4 Step 3）。"""
+    """删除会话（E1 起软删，与 web 一致：archived=1，消息与 event_log 保留）。"""
     from agentnodes.kernel.session.reader import delete_session, get_session
 
     if not get_session(args.session_id):
@@ -112,7 +112,7 @@ def cmd_session_delete(args) -> int:
 
     ok = delete_session(args.session_id)
     if ok:
-        print(f"已删除会话 {args.session_id}")
+        print(f"已删除会话 {args.session_id}（软删：数据保留，列表/搜索不再显示）")
     else:
         print(f"删除会话 {args.session_id} 失败")
         return 1

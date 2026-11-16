@@ -152,18 +152,37 @@ def test_search_messages_blank_query_returns_empty(tmp_path: Path):
     assert search_messages("   ", db_path=db) == []
 
 
-def test_delete_session_removes_row_and_messages(tmp_path: Path):
+def test_delete_session_archives_row_e1(tmp_path: Path):
+    """E1：CLI 删除 = 软删（archived=1），与 web DELETE 对齐（D2 债解决）。
+
+    旧断言是硬删（行+消息消失）；改软删后：
+    - get_session 仍返回该行（archived=True）——数据可读
+    - get_messages 仍可读——投影器/SSE 依赖消息与 event_log 继续可用
+    - list_sessions 不再含它（archived=0 过滤）
+    - search_messages 不再命中（JOIN 过滤 archived）
+    - 重复删除幂等返回 True；不存在返回 False
+    """
     from agentnodes.kernel.session.reader import (
         delete_session,
         get_messages,
         get_session,
+        list_sessions,
+        search_messages,
     )
 
     db = tmp_path / "s.db"
     _seed_with_messages(db)
     assert delete_session("s1", db) is True
-    assert get_session("s1", db) is None
-    assert get_messages("s1", db_path=db) == []
+    row = get_session("s1", db)
+    assert row is not None, "软删后 GET 仍可读（web 语义）"
+    assert row["archived"] is True
+    assert len(get_messages("s1", db_path=db)) == 3, "消息保留（投影/SSE 依赖）"
+    assert all(r["id"] != "s1" for r in list_sessions(db)), "列表过滤 archived"
+    assert search_messages("momentum", db_path=db) == [], "搜索过滤 archived"
+
+    # 幂等：重复删除仍 True（行存在）；不存在 False
+    assert delete_session("s1", db) is True
+    assert delete_session("nope", db) is False
 
 
 def test_delete_missing_session_returns_false(tmp_path: Path):
@@ -172,3 +191,13 @@ def test_delete_missing_session_returns_false(tmp_path: Path):
     db = tmp_path / "s.db"
     _seed_with_messages(db)
     assert delete_session("nope", db) is False
+
+
+def test_list_sessions_excludes_archived(tmp_path: Path):
+    """E1：archived=1 的会话不出现在 CLI 列表（对齐 web list 的默认过滤）。"""
+    from agentnodes.kernel.session.reader import delete_session, list_sessions
+
+    db = tmp_path / "s.db"
+    _make_db(db, [("s1", "keep", 1.0, 3.0), ("s2", "gone", 2.0, 2.0)])
+    assert delete_session("s2", db) is True
+    assert [r["id"] for r in list_sessions(db)] == ["s1"]

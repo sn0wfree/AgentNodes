@@ -55,6 +55,7 @@ def list_sessions(
     conn = _get_db_at(path)
     rows = conn.execute(
         "SELECT id, title, created_at, updated_at FROM sessions "
+        "WHERE archived = 0 "
         "ORDER BY updated_at DESC LIMIT ?",
         (max(1, int(limit)),),
     ).fetchall()
@@ -159,8 +160,10 @@ def search_messages(
         return []
     conn = _get_db_at(path)
     rows = conn.execute(
-        "SELECT id, session_id, role, content, created_at FROM messages "
-        "WHERE content LIKE ? ORDER BY created_at DESC LIMIT ?",
+        "SELECT m.id, m.session_id, m.role, m.content, m.created_at FROM messages m "
+        "JOIN sessions s ON s.id = m.session_id "
+        "WHERE s.archived = 0 AND m.content LIKE ? "
+        "ORDER BY m.created_at DESC LIMIT ?",
         (f"%{query}%", max(1, int(limit))),
     ).fetchall()
     return [
@@ -176,14 +179,20 @@ def search_messages(
 
 
 def delete_session(session_id: str, db_path: Path | None = None) -> bool:
-    """Delete a session and its messages (B4 Step 3).
+    """Soft-delete a session (mark ``archived=1``) — unified with web (E1).
 
-    Returns True when a session row existed and was removed. Messages go with
-    it via the FK cascade; the explicit DELETE keeps behaviour identical when
-    foreign_keys is off on a fresh connection.
+    Returns True when the session row existed, False otherwise.
 
-    **D2 注**：这是 CLI 通道的**硬删**语义（与 web 的软删相反）——统一删除
-    语义是迁移方案 E 批的事（被 3 处矛盾测试断言阻塞，§3.5），本模块不改。
+    **2026-11-16 批次 E1**：语义从**硬删**改为**软删**，与 web
+    ``DELETE /session/{id}`` 一致（方案 §3.5 / D2 债的解决）。消息与
+    event_log 保留：投影器/SSE 依赖它们继续可用，``GET`` 仍可读；
+    ``list_sessions`` / ``search_messages`` 过滤 ``archived=0``，
+    被删会话从列表与搜索中消失。
+
+    真·硬删（连行带消息）CLI 另设显式 ``--purge``（E2，未实施）。
+
+    **不要与 ``memory_manager.SQLiteStore.delete_session`` 混淆**——那是
+    ``/clear`` 的后端路径（清消息**保锚行**，D7 修复），语义不同、用途不同。
     """
     from .db import _get_db_at
 
@@ -191,15 +200,13 @@ def delete_session(session_id: str, db_path: Path | None = None) -> bool:
     if not path.exists():
         return False
     conn = _get_db_at(path)
-    existed = conn.execute(
-        "SELECT 1 FROM sessions WHERE id = ?", (session_id,),
-    ).fetchone()
-    if existed is None:
-        return False
-    conn.execute("DELETE FROM messages WHERE session_id = ?", (session_id,))
-    conn.execute("DELETE FROM sessions WHERE id = ?", (session_id,))
+    # rowcount 在 SQLite 里计 WHERE 匹配行（值未变也计）⇒ >0 ⟺ 行存在。
+    # 重复删除幂等返回 True（会话确实处于已删状态）。
+    cur = conn.execute(
+        "UPDATE sessions SET archived = 1 WHERE id = ?", (session_id,),
+    )
     conn.commit()
-    return True
+    return cur.rowcount > 0
 
 
 def _resolve(db_path: Path | None) -> Path:
