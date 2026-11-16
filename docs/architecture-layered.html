@@ -106,6 +106,20 @@ footer code{background:var(--muted);padding:1px 5px;border-radius:4px;}
     #an-arch .debt-item .ddetail { color:var(--muted-foreground); font-size:.72rem;
       line-height:1.7; margin-top:.2rem; }
     #an-arch .debt-item .devid { color:var(--fg-dimmer); font-size:.68rem; margin-top:.15rem; }
+    #an-arch .debt-item .ddir { color:var(--fg-dimmer); font-size:.68rem; margin-top:.25rem;
+      padding-top:.2rem; border-top:1px dashed var(--border); }
+    /* 会话生命周期专节 */
+    #an-arch .sess-block { margin-top:.7rem; border-radius:12px; border:1px solid var(--border);
+      border-left:3px solid var(--viz-series-6); overflow:hidden; }
+    #an-arch .sess-head { display:flex; align-items:baseline; gap:.6rem; flex-wrap:wrap;
+      padding:.55rem .8rem; font-size:.82rem; }
+    #an-arch .sess-list { width:100%; border-collapse:collapse; font-size:.72rem; }
+    #an-arch .sess-list td { padding:.28rem .8rem; border-top:1px solid var(--border);
+      color:var(--muted-foreground); vertical-align:top; }
+    #an-arch .sess-list td.st { color:var(--foreground); font-weight:600; white-space:nowrap; }
+    #an-arch .sess-list td.so { font-family:Consolas,monospace; white-space:nowrap; }
+    #an-arch .sess-list td.sl { font-family:Consolas,monospace; font-size:.68rem; }
+    #an-arch .sess-list td.gap { color:var(--viz-series-5); font-weight:700; }
     #an-arch .hint { color:var(--muted-foreground); font-size:.77rem; margin:.55rem 0 0; }
     #an-arch .tip {
       position:absolute; pointer-events:none; background:var(--popover); color:var(--popover-foreground);
@@ -155,6 +169,14 @@ footer code{background:var(--muted);padding:1px 5px;border-radius:4px;}
     <div class="debt-list" id="an-debt-list"></div>
   </div>
 
+  <div class="sess-block" id="an-sess-block">
+    <div class="sess-head">
+      <b style="color:var(--viz-series-6)">会话生命周期 · 归属实测</b>
+      <span style="color:var(--muted-foreground)">八阶段逐条核实 —— owner 集中在 L1 接口层，kernel 只能直查 DB</span>
+    </div>
+    <table class="sess-list"><tbody id="an-sess-list"></tbody></table>
+  </div>
+
   <p class="hint" style="margin-top:.45rem;">
     <b>MVP 三层怎么定的</b>：<b style="color:#ef4444">红</b>= 最小可对话（C1–C12：接一句话 → agent 调工具 → 流式回复，历史可存）；
     <b style="color:#f59e0b">黄</b>= 最小可干活（C13–C15：多节点工作流 + 产物契约 + 上下文注入）；
@@ -195,6 +217,7 @@ footer code{background:var(--muted);padding:1px 5px;border-radius:4px;}
      "C5",
      "C6"
     ],
+    "sessionRole": "HTTP 层：会话创建/删除路由 + SSE 流式",
     "layer": "L1"
    },
    {
@@ -212,6 +235,7 @@ footer code{background:var(--muted);padding:1px 5px;border-radius:4px;}
     "caps": [
      "C26"
     ],
+    "sessionRole": "",
     "layer": "L1"
    },
    {
@@ -227,6 +251,7 @@ footer code{background:var(--muted);padding:1px 5px;border-radius:4px;}
     "tier": "C",
     "tierWhy": "组装根（wiring）",
     "caps": [],
+    "sessionRole": "",
     "layer": "L1"
    },
    {
@@ -244,6 +269,7 @@ footer code{background:var(--muted);padding:1px 5px;border-radius:4px;}
     "caps": [
      "C27"
     ],
+    "sessionRole": "",
     "layer": "L1"
    },
    {
@@ -261,6 +287,7 @@ footer code{background:var(--muted);padding:1px 5px;border-radius:4px;}
     "caps": [
      "C28"
     ],
+    "sessionRole": "",
     "layer": "L1"
    }
   ]
@@ -286,6 +313,7 @@ footer code{background:var(--muted);padding:1px 5px;border-radius:4px;}
     "caps": [
      "C16"
     ],
+    "sessionRole": "",
     "layer": "L2"
    },
    {
@@ -303,6 +331,7 @@ footer code{background:var(--muted);padding:1px 5px;border-radius:4px;}
     "caps": [
      "C21"
     ],
+    "sessionRole": "",
     "layer": "L2"
    },
    {
@@ -320,6 +349,7 @@ footer code{background:var(--muted);padding:1px 5px;border-radius:4px;}
     "caps": [
      "C20"
     ],
+    "sessionRole": "",
     "layer": "L2"
    },
    {
@@ -335,6 +365,7 @@ footer code{background:var(--muted);padding:1px 5px;border-radius:4px;}
     "tier": "C",
     "tierWhy": "能力注册门面（capabilities / requires）",
     "caps": [],
+    "sessionRole": "",
     "layer": "L2"
    },
    {
@@ -350,6 +381,7 @@ footer code{background:var(--muted);padding:1px 5px;border-radius:4px;}
     "tier": "C",
     "tierWhy": "无前视回测算法（零依赖，测试直接引用）",
     "caps": [],
+    "sessionRole": "",
     "layer": "L2"
    },
    {
@@ -367,6 +399,7 @@ footer code{background:var(--muted);padding:1px 5px;border-radius:4px;}
     "caps": [
      "C9"
     ],
+    "sessionRole": "",
     "layer": "L2"
    },
    {
@@ -382,6 +415,7 @@ footer code{background:var(--muted);padding:1px 5px;border-radius:4px;}
     "tier": "C",
     "tierWhy": "产品策略（导出格式 / persona / shell 门禁）",
     "caps": [],
+    "sessionRole": "",
     "layer": "L2"
    },
    {
@@ -399,6 +433,7 @@ footer code{background:var(--muted);padding:1px 5px;border-radius:4px;}
     "caps": [
      "C19"
     ],
+    "sessionRole": "",
     "layer": "L2"
    }
   ]
@@ -428,6 +463,7 @@ footer code{background:var(--muted);padding:1px 5px;border-radius:4px;}
      "C10",
      "C12"
     ],
+    "sessionRole": "",
     "layer": "L3"
    },
    {
@@ -446,6 +482,7 @@ footer code{background:var(--muted);padding:1px 5px;border-radius:4px;}
      "C13",
      "C14"
     ],
+    "sessionRole": "",
     "layer": "L3"
    },
    {
@@ -463,6 +500,7 @@ footer code{background:var(--muted);padding:1px 5px;border-radius:4px;}
     "caps": [
      "C17"
     ],
+    "sessionRole": "",
     "layer": "L3"
    },
    {
@@ -480,6 +518,7 @@ footer code{background:var(--muted);padding:1px 5px;border-radius:4px;}
     "caps": [
      "C22"
     ],
+    "sessionRole": "",
     "layer": "L3"
    },
    {
@@ -497,6 +536,7 @@ footer code{background:var(--muted);padding:1px 5px;border-radius:4px;}
     "caps": [
      "C7"
     ],
+    "sessionRole": "run 调度器：准入 + 容量闸 + 身份签发 + 驱动引擎（<b>不是</b>会话生命周期）",
     "layer": "L3"
    },
    {
@@ -514,6 +554,7 @@ footer code{background:var(--muted);padding:1px 5px;border-radius:4px;}
     "caps": [
      "C11"
     ],
+    "sessionRole": "",
     "layer": "L3"
    },
    {
@@ -529,6 +570,7 @@ footer code{background:var(--muted);padding:1px 5px;border-radius:4px;}
     "tier": "B",
     "tierWhy": "执行器抽象 —— 工具真的跑起来",
     "caps": [],
+    "sessionRole": "",
     "layer": "L3"
    },
    {
@@ -546,6 +588,7 @@ footer code{background:var(--muted);padding:1px 5px;border-radius:4px;}
     "caps": [
      "C19"
     ],
+    "sessionRole": "",
     "layer": "L3"
    },
    {
@@ -563,6 +606,7 @@ footer code{background:var(--muted);padding:1px 5px;border-radius:4px;}
     "caps": [
      "C15"
     ],
+    "sessionRole": "",
     "layer": "L3"
    },
    {
@@ -580,6 +624,7 @@ footer code{background:var(--muted);padding:1px 5px;border-radius:4px;}
     "caps": [
      "C24"
     ],
+    "sessionRole": "",
     "layer": "L3"
    },
    {
@@ -595,6 +640,7 @@ footer code{background:var(--muted);padding:1px 5px;border-radius:4px;}
     "tier": "C",
     "tierWhy": "CLI / MCP / TUI 的会话浏览门面（列·搜·删）—— 只读查询，不在对话链路上",
     "caps": [],
+    "sessionRole": "只读浏览门面：列 / 搜 / 删会话（直连 SQLite，绕过服务层）",
     "layer": "L3"
    },
    {
@@ -613,6 +659,7 @@ footer code{background:var(--muted);padding:1px 5px;border-radius:4px;}
      "C6",
      "C23"
     ],
+    "sessionRole": "事件源（append-only），投影器的输入",
     "layer": "L3"
    },
    {
@@ -628,6 +675,7 @@ footer code{background:var(--muted);padding:1px 5px;border-radius:4px;}
     "tier": "C",
     "tierWhy": "工具前后钩子（守卫 / 审计挂点）",
     "caps": [],
+    "sessionRole": "",
     "layer": "L3"
    },
    {
@@ -645,6 +693,7 @@ footer code{background:var(--muted);padding:1px 5px;border-radius:4px;}
     "caps": [
      "C25"
     ],
+    "sessionRole": "",
     "layer": "L3"
    },
    {
@@ -660,6 +709,7 @@ footer code{background:var(--muted);padding:1px 5px;border-radius:4px;}
     "tier": "C",
     "tierWhy": "内核门面",
     "caps": [],
+    "sessionRole": "",
     "layer": "L3"
    }
   ]
@@ -686,6 +736,7 @@ footer code{background:var(--muted);padding:1px 5px;border-radius:4px;}
      "C4",
      "C5"
     ],
+    "sessionRole": "",
     "layer": "L4"
    },
    {
@@ -701,6 +752,7 @@ footer code{background:var(--muted);padding:1px 5px;border-radius:4px;}
     "tier": "A",
     "tierWhy": "配置可达（api key / model / base url）",
     "caps": [],
+    "sessionRole": "",
     "layer": "L4"
    },
    {
@@ -718,6 +770,7 @@ footer code{background:var(--muted);padding:1px 5px;border-radius:4px;}
     "caps": [
      "C8"
     ],
+    "sessionRole": "会话存储底座（SQLite 后端）",
     "layer": "L4"
    },
    {
@@ -733,6 +786,7 @@ footer code{background:var(--muted);padding:1px 5px;border-radius:4px;}
     "tier": "C",
     "tierWhy": "通用工具函数",
     "caps": [],
+    "sessionRole": "",
     "layer": "L4"
    },
    {
@@ -748,6 +802,7 @@ footer code{background:var(--muted);padding:1px 5px;border-radius:4px;}
     "tier": "C",
     "tierWhy": "日志 / trace —— 出问题能查",
     "caps": [],
+    "sessionRole": "",
     "layer": "L4"
    },
    {
@@ -763,6 +818,7 @@ footer code{background:var(--muted);padding:1px 5px;border-radius:4px;}
     "tier": "C",
     "tierWhy": "Web 基础（静态资源 / web 工具）",
     "caps": [],
+    "sessionRole": "",
     "layer": "L4"
    }
   ]
@@ -788,6 +844,7 @@ footer code{background:var(--muted);padding:1px 5px;border-radius:4px;}
     "caps": [
      "C18"
     ],
+    "sessionRole": "",
     "layer": "EV"
    },
    {
@@ -803,6 +860,7 @@ footer code{background:var(--muted);padding:1px 5px;border-radius:4px;}
     "tier": "C",
     "tierWhy": "历史遗留脚本（零依赖）",
     "caps": [],
+    "sessionRole": "",
     "layer": "EV"
    }
   ]
@@ -1404,7 +1462,8 @@ footer code{background:var(--muted);padding:1px 5px;border-radius:4px;}
   var TIER_META  = {"A": {"label": "红 · 最小可对话", "desc": "C1–C12：接一句话 → agent 调工具 → 流式回复，历史可存"}, "B": {"label": "黄 · 最小可干活", "desc": "C13–C15：多节点工作流 + 产物契约 + 上下文注入"}, "C": {"label": "绿 · 全能力", "desc": "C16–C28：长程任务 + 自进化 + 评估 + 其它通道"}};
   var TIER_STATS = {"A": {"pkgs": 9, "symbols": 1081, "caps": 12, "capList": ["C1", "C2", "C3", "C4", "C5", "C6", "C7", "C8", "C9", "C10", "C11", "C12"], "label": "红 · 最小可对话", "desc": "C1–C12：接一句话 → agent 调工具 → 流式回复，历史可存"}, "B": {"pkgs": 3, "symbols": 104, "caps": 3, "capList": ["C13", "C14", "C15"], "label": "黄 · 最小可干活", "desc": "C13–C15：多节点工作流 + 产物契约 + 上下文注入"}, "C": {"pkgs": 24, "symbols": 792, "caps": 13, "capList": ["C16", "C17", "C18", "C19", "C20", "C21", "C22", "C23", "C24", "C25", "C26", "C27", "C28"], "label": "绿 · 全能力", "desc": "C16–C28：长程任务 + 自进化 + 评估 + 其它通道"}};
   var CAPS       = [{"id": "C1", "title": "交互接入", "desc": "HTTP 端点收一条消息（+ 可选 session_id）", "providers": ["interfaces/api"], "tier": "A"}, {"id": "C2", "title": "人格设定", "desc": "system prompt —— agent 的角色", "providers": ["kernel/agent"], "tier": "A"}, {"id": "C3", "title": "请求组装", "desc": "system + 历史 + 本轮消息", "providers": ["kernel/agent"], "tier": "A"}, {"id": "C4", "title": "模型出站", "desc": "兼容协议 + 认证 + 超时", "providers": ["foundation/llm"], "tier": "A"}, {"id": "C5", "title": "结果解析", "desc": "取文本 / 取增量", "providers": ["foundation/llm", "interfaces/api"], "tier": "A"}, {"id": "C6", "title": "流式回传", "desc": "SSE 逐 delta", "providers": ["interfaces/api", "kernel/events"], "tier": "A"}, {"id": "C7", "title": "会话标识", "desc": "多轮的载体", "providers": ["kernel/gateway"], "tier": "A"}, {"id": "C8", "title": "历史持久化", "desc": "会话落盘 + 取回（重启不丢）", "providers": ["foundation/storage"], "tier": "A"}, {"id": "C9", "title": "工具定义与调用", "desc": "function calling 协议", "providers": ["kernel/agent", "apps/builtin_tools"], "tier": "A"}, {"id": "C10", "title": "工具执行与回灌", "desc": "tool loop：请求→执行→回灌→再请求", "providers": ["kernel/agent"], "tier": "A"}, {"id": "C11", "title": "工具权限门", "desc": "哪些工具 / 哪些路径 / 要不要人确认", "providers": ["kernel/permission"], "tier": "A"}, {"id": "C12", "title": "停止条件", "desc": "最大轮数 / token 预算 / 时间预算", "providers": ["kernel/agent"], "tier": "A"}, {"id": "C13", "title": "多节点工作流", "desc": "DAG 编排", "providers": ["kernel/workflow"], "tier": "B"}, {"id": "C14", "title": "节点产物契约", "desc": "结构化校验", "providers": ["kernel/workflow"], "tier": "B"}, {"id": "C15", "title": "任务级上下文注入", "desc": "判据续跑 / workspace", "providers": ["kernel/context"], "tier": "B"}, {"id": "C16", "title": "长程任务", "desc": "判据 / 台账 / journal", "providers": ["apps/goal"], "tier": "C"}, {"id": "C17", "title": "自进化", "desc": "提案 → 验证 → 激活", "providers": ["kernel/evolution"], "tier": "C"}, {"id": "C18", "title": "评估基准与打分", "desc": "冻结基准 + scorecard", "providers": ["evals"], "tier": "C"}, {"id": "C19", "title": "Swarm 拓扑执行", "desc": "多 agent 拓扑", "providers": ["kernel/swarm", "apps/swarm_presets"], "tier": "C"}, {"id": "C20", "title": "量化插件", "desc": "角色 / 校验器 / 展示", "providers": ["apps/agent_plugins"], "tier": "C"}, {"id": "C21", "title": "定时研究", "desc": "cron 式调度", "providers": ["apps/scheduled_research"], "tier": "C"}, {"id": "C22", "title": "编排与预算闸", "desc": "genome_version / budget_gate", "providers": ["kernel/orchestration"], "tier": "C"}, {"id": "C23", "title": "事件溯源与轨迹", "desc": "append-only 事件 + 投影", "providers": ["kernel/events"], "tier": "C"}, {"id": "C24", "title": "记忆", "desc": "持久化记忆", "providers": ["kernel/memory"], "tier": "C"}, {"id": "C25", "title": "技能", "desc": "skill 模型与加载", "providers": ["kernel/skills"], "tier": "C"}, {"id": "C26", "title": "CLI 通道", "desc": "另一条交付面", "providers": ["interfaces/cli"], "tier": "C"}, {"id": "C27", "title": "TUI 通道", "desc": "终端界面", "providers": ["interfaces/cli/tui"], "tier": "C"}, {"id": "C28", "title": "MCP 通道", "desc": "Model Context Protocol", "providers": ["interfaces/mcp"], "tier": "C"}];
-  var DEBTS      = [{"id": "D1", "title": "会话存储有两条并行实现路径", "detail": "kernel/session/unified.py（205 行，列·搜·删会话，只读门面，仅 CLI / MCP / TUI 使用）与 interfaces/api/session/（SessionService / SessionStore / Projector / web_session_db，web 全部路由使用）并存，且各自操作会话存储。", "evidence": "kernel/session 出边仅 1 条（→ kernel/agent/memory_manager.resolve_session_db_path，只为找 DB 路径）；入边 3 条（cli 6 次 / cli-tui 2 次 / mcp 2 次）—— web 侧零引用。", "related": "kernel/agent/projection_port.py:20 已记录同层「谁构造」问题"}];
+  var DEBTS      = [{"id": "D1", "title": "会话生命周期归属分裂：owner 在 L1 接口层，kernel 只能直查 DB", "detail": "会话的创建 / 存储 / 投影 / 归档 / 删除都在 interfaces/api/session/（L1 接口层）；kernel 侧只有 kernel/session/unified.py 一个「只读浏览门面」（列·搜·删），直连 SQLite 绕过服务层。", "evidence": "kernel/session 出边仅 1 条（→ kernel/agent/memory_manager.resolve_session_db_path，只为找 DB 路径）；入边 3 条（cli 6 次 / cli-tui 2 次 / mcp 2 次）—— web 侧零引用。", "related": "kernel/agent/projection_port.py:20 已记录同层「谁构造」问题", "direction": "处置方向（2026-11-16 拍板）：选项 1 —— 会话生命周期下沉到 kernel（L3），interfaces/api/session 退化为薄适配层；kernel/session 直查 DB 的部分被 SessionStore 取代，CLI/MCP/TUI 改走服务层。<b>未实施</b>（大重构，按 R-014 需先出迁移方案）"}, {"id": "D2", "title": "「删除」在两条路径上语义相反：web 软删（archived=1）vs CLI 硬删（DELETE FROM）", "detail": "web 路由 web_session.py:302 把 archived 置 1，<b>保留</b> messages 与 event_log（让投影器继续 flush、SSE 不中断）；CLI 走 kernel/session/unified.py:168，<b>DELETE FROM messages + DELETE FROM sessions</b> 硬删。同一用户可见操作，两条通道结果不同。", "evidence": "web_session.py:313 `UPDATE sessions SET archived = 1`；kernel/session/unified.py:185-186 `DELETE FROM messages/sessions`", "related": "随 D1 一并处置（下沉时统一语义）", "direction": "处置方向：随 D1 一并解决 —— 底层只有一份会话存储与一套删除语义。"}, {"id": "D3", "title": "会话没有过期 / 淘汰机制，只增不减", "detail": "全仓搜「会话过期 / TTL / 上限 / 保留期」零命中；唯一的容量控制是 kernel/agent/cache.py 的<b>消息 LRU 缓存</b>（SessionCache，per-session），不是会话本身。会话只能靠手工删除（且两路径语义不同，见 D2）。", "evidence": "过期/淘汰/保留期/会话数上限 四组关键词全仓零命中；cache.py:444 只是消息追加触发 LRU", "related": "最小可对话能力集 C8「历史持久化」的隐含前提", "direction": "待定：最小可对话要不要带会话保留期？若要，需一并设计。"}];
+  var SESSION_LIFECYCLE = [{"stage": "创建", "owner": "SessionService", "loc": "interfaces/api/session/service.py:89", "note": "create_session(session_id, title, user_id)"}, {"stage": "运行调度", "owner": "SessionController", "loc": "kernel/gateway/session_controller.py", "note": "准入 + 容量闸 + 身份签发 + 驱动引擎 —— <b>管 run 不管会话</b>"}, {"stage": "消息存储", "owner": "SessionStore", "loc": "interfaces/api/session/store.py", "note": "SQLite 持久化 Session / Message / Attempt"}, {"stage": "状态投影", "owner": "Projector + projection_handlers", "loc": "interfaces/api/session/projector.py · projection_handlers.py", "note": "从 event_log 派生状态（791 行，纯更新零 IO）"}, {"stage": "归档", "owner": "web_session 路由", "loc": "interfaces/api/routers/web_session.py:313", "note": "archived=1 软删，消息与 event_log 保留"}, {"stage": "删除", "owner": "<b>两条路径语义相反</b>", "loc": "web_session.py:302（软）· kernel/session/unified.py:168（硬）", "note": "web=archived=1；CLI=DELETE FROM messages/sessions —— 见 D2"}, {"stage": "过期 / 淘汰", "owner": "<b>无</b>", "loc": "—", "note": "全仓零命中；只有消息 LRU 缓存，不是会话 —— 见 D3"}, {"stage": "只读浏览", "owner": "kernel/session/unified.py", "loc": "kernel/session/unified.py", "note": "列 / 搜会话；CLI·MCP·TUI 用，web 零引用"}];
   var TIER_COLOR = { A: '#ef4444', B: '#f59e0b', C: '#22c55e' };
   // 图例虚化开关：必须在任何 paint()/baseCls() 调用之前赋值
   // （上一版把 TIER_ON 放在首次使用点之后 -> 读到 undefined -> IIFE 抛错 -> 配色全丢）
@@ -1577,7 +1636,23 @@ footer code{background:var(--muted);padding:1px 5px;border-radius:4px;}
         '<span class="did">' + d.id + '</span><span class="dtitle">' + d.title + '</span>' +
         '<div class="ddetail">' + d.detail + '</div>' +
         '<div class="devid">实测：' + d.evidence + '</div>' +
-        '<div class="devid">相关：' + d.related + '</div></div>';
+        '<div class="devid">相关：' + d.related + '</div>' +
+        (d.direction ? '<div class="ddir">' + d.direction + '</div>' : '') +
+        '</div>';
+    }).join('');
+  }
+
+  // ---- 会话生命周期归属 ----
+  var sl = document.getElementById('an-sess-list');
+  if (sl) {
+    sl.innerHTML = SESSION_LIFECYCLE.map(function (r) {
+      // 缺口标记：owner 是「无 / —」或被加粗（语义相反/缺失）
+      var gap = (r.owner.indexOf('<b>') >= 0 || r.owner === '—' || r.owner === '无');
+      return '<tr>' +
+        '<td class="st">' + r.stage + '</td>' +
+        '<td class="so' + (gap ? ' gap' : '') + '">' + r.owner + '</td>' +
+        '<td class="sl">' + r.loc + '</td>' +
+        '<td>' + r.note + '</td></tr>';
     }).join('');
   }
 
@@ -1641,11 +1716,15 @@ footer code{background:var(--muted);padding:1px 5px;border-radius:4px;}
         ? '<div class="r" style="margin-top:.3rem"><span>贡献能力</span><span style="font-family:Consolas,monospace">'
           + p.caps.join(' ') + '</span></div>'
         : '';
+      var sessRow = p.sessionRole
+        ? '<div style="margin-top:.3rem;color:var(--viz-series-6)">会话角色：' + p.sessionRole + '</div>'
+        : '';
       tip.innerHTML = '<b>' + p.label + '</b>' +
         '<div style="margin-top:.25rem;color:var(--muted-foreground)">' + p.sub + '</div>' +
         '<div style="margin-top:.3rem">' + (p.role || '') + '</div>' +
         tierRow +
         capRow +
+        sessRow +
         '<div class="r"><span>生产符号</span><span>' + p.n + '</span></div>' +
         '<div class="r"><span>文件 / 行数</span><span>' + p.files + ' / ' + p.lines.toLocaleString() + '</span></div>' +
         '<div class="r"><span>被依赖 / 依赖（包）</span><span>' + io.i + ' / ' + io.o + '</span></div>' +
