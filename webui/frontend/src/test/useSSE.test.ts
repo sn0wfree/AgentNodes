@@ -884,4 +884,98 @@ describe('useSSE', () => {
       expect(useChatStore.getState().tokensUsed.get('sess-1')).toBe(30000)
     })
   })
+
+  // ── T1.6b: reconnect / backoff / give-up / trace_id ──
+  describe('reconnect + failure cap', () => {
+    beforeEach(() => {
+      renderHook(() => useSSE('sess-1'))
+    })
+
+    it('reconnect on open clears stale streaming state', () => {
+      act(() => {
+        getCurrentES().onopen && getCurrentES().onopen()
+      })
+      act(() => {
+        useChatStore.getState().setStreamingMessage('mid-stale')
+        useChatStore.getState().setActiveAttempt('att-1')
+      })
+      // Second open = reconnect → stale streaming cleared.
+      act(() => {
+        const cur = getCurrentES()
+        cur.onopen && cur.onopen()
+      })
+      expect(useChatStore.getState().streamingMessageId).toBeNull()
+    })
+
+    it('onerror with CLOSED schedules a 1s reconnect', () => {
+      vi.useFakeTimers()
+      const before = MockEventSource.instances.length
+      act(() => {
+        const cur = getCurrentES()
+        cur.readyState = 2
+        cur.onerror && cur.onerror({ currentTarget: cur })
+      })
+      vi.advanceTimersByTime(1000)
+      vi.useRealTimers()
+      expect(MockEventSource.instances.length).toBeGreaterThan(before)
+    })
+
+    it('gives up after 3 consecutive CLOSED errors', () => {
+      vi.useFakeTimers()
+      for (let i = 0; i < 3; i++) {
+        act(() => {
+          const cur = getCurrentES()
+          cur.readyState = 2
+          cur.onerror && cur.onerror({ currentTarget: cur })
+        })
+        vi.advanceTimersByTime(1000)
+      }
+      const countAfterGiveUp = MockEventSource.instances.length
+      vi.advanceTimersByTime(5000)
+      expect(MockEventSource.instances.length).toBe(countAfterGiveUp)
+      expect(useSSEStore.getState().status).toBe('disconnected')
+      vi.useRealTimers()
+    })
+
+    it('status goes disconnected on a non-CLOSED error', () => {
+      act(() => {
+        const cur = getCurrentES()
+        cur.readyState = 0 // CONNECTING — browser retries natively
+        cur.onerror && cur.onerror({ currentTarget: cur })
+      })
+      expect(useSSEStore.getState().status).toBe('disconnected')
+    })
+
+    it('heartbeat re-marks the connection alive', () => {
+      act(() => {
+        useSSEStore.getState().setStatus('disconnected')
+      })
+      act(() => {
+        getCurrentES().emit('heartbeat', {})
+      })
+      expect(useSSEStore.getState().status).toBe('connected')
+    })
+
+    it('trace_id from any event is stored for log correlation', () => {
+      act(() => {
+        getCurrentES().emit('text_delta', {
+          session_id: 'sess-1',
+          message_id: 'mid-1',
+          text_id: 't1',
+          delta: 'x',
+          trace_id: 'trace-abc',
+        })
+      })
+      expect(useChatStore.getState().traceId).toBe('trace-abc')
+    })
+
+    it('malformed JSON payload is dropped without throwing', () => {
+      expect(() => {
+        act(() => {
+          const fn = getCurrentES().listeners.get('text_delta')
+          fn && fn({ type: 'text_delta', data: '{not json' })
+        })
+      }).not.toThrow()
+    })
+  })
 })
