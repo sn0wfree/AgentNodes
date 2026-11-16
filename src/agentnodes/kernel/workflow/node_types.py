@@ -19,6 +19,7 @@ from typing import Any, Callable
 
 from agentnodes.foundation.structured_output import get_parser
 from agentnodes.kernel.swarm.types import AgentResult, AgentStatus
+from agentnodes.kernel.workflow.contract import enforce_contract
 
 logger = logging.getLogger(__name__)
 
@@ -172,6 +173,11 @@ def default_loop_factory():
 def dispatch_node(node: Any, ctx: NodeContext) -> AgentResult:
     """Execute a single node, returning the unified envelope.
 
+    Node output contracts (``config["contract"]``) are enforced here, the one
+    place every dispatcher funnels through — see
+    ``docs/design/crewai-design-borrow-20261116.md`` §3. Nodes without a
+    contract pass through unchanged.
+
     Raises NodeDispatchError for unrecoverable configuration errors
     (unknown type / missing executor / planner parse exhaustion).
     """
@@ -186,7 +192,7 @@ def dispatch_node(node: Any, ctx: NodeContext) -> AgentResult:
     handler = handlers.get(node.type)
     if handler is None:
         raise NodeDispatchError(f"node '{node.id}': unsupported type '{node.type}'")
-    return handler(node, ctx, t0)
+    return enforce_contract(node, ctx, lambda ctx_: handler(node, ctx_, t0))
 
 
 class NodeDispatchError(RuntimeError):
