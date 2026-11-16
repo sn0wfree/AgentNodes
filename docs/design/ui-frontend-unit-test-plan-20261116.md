@@ -164,6 +164,47 @@
 - thresholds 硬门——暂不设（避免绑架组件测试）；T1 完成后再议是否对逻辑层
   设独立 glob 阈值。
 
+## §5.5 T1 实施结果回填（2026-11-16 完成）
+
+### 交付（8 commit）
+
+| # | commit | 内容 | 关键数字 |
+|---|---|---|---|
+| T1.1 | 9a22b450 | handlers 注册表契约（12 用例） | handlers funcs 0→**100** |
+| T1.2 | 8d2fbe5c | client 直测（104 用例）+ **workflow.graph 编码 bug 修复** | client funcs 11.3→**100** |
+| T1.3 | bcfab7a2 | studyHandlers 契约（39 用例） | studyHandlers funcs 35.1→**100** |
+| T1.4 | d5f2fe42 | 偏好 store ×4 分支（28 用例） | 四 store funcs →**100** |
+| T1.5 | 346dfb4b | block-part 处理器 + 快捷键（16 用例） | messageHandlers funcs 45.5→**100** |
+| T1.6 | 53c3d190 | auth/persona store + useSSE 重连（23 用例） | auth/personas funcs →**100**；useSSE 56.2→62.5 |
+| 收口 | ae40f708 | definitionWorkflowPage flaky 根治 | **全量首绿** |
+
+### 最终覆盖（全量 111 文件 / 1137 用例 / 24.5s）
+
+| 指标 | T1 前 | T1 后 | Δ |
+|---|---|---|---|
+| statements | 73.4% | **76.4%** | +3.0 |
+| branches | 78.8% | **80.1%** | +1.3 |
+| functions | 55.4% | **71.6%** | **+16.2** |
+| lines | 73.4% | **76.4%** | +3.0 |
+
+### 逻辑层达标情况（50 文件）
+
+**48/50 已 funcs ≥85%**。余 2 个均属「真实未走分支」而非缺测：
+
+| 文件 | funcs | 原因 |
+|---|---|---|
+| useKeyboardShortcuts.ts | 57.1% | ⌘2-⌘9 共 8 个绑定箭头中仅 2 个被触达（无 8 个 tab 的会话） |
+| useSSE.ts | 62.5% | ctx 构造中的内联箭头（setActiveAttempt/setAskedUser/setLastCompaction/setExecutionProgress/setGoal/patchSessionMeta/setPendingPermission/clearPendingPermission）只有被具体 handler 调用时才计入 |
+
+结论：**T1 目标（逻辑层 funcs ≥85% / stmts ≥90%）在文件粒度上达成 48/50**；剩余 2 个需在 T2（组件/集成层）用真实多 tab 场景与权限流程覆盖，或接受为具名豁免。
+
+### 期间发现（extra value）
+
+1. **真 bug 1 个**（T1.2）：`workflow.graph` 未 URL 编码工作流名——带空格/中文名打坏 URL。已修 + 测试钉住。
+2. **flaky 根因 1 个**（收口）：definitionWorkflowPage 缺 orchestrate mock，`startEdit` 的草稿恢复分支抛 TypeError 打断渲染；非超时问题。修 mock + 3s 预算后全绿。
+3. **config 2 处**（T1.1）：`reportOnFailure: true`（失败也出报告）+ `json-summary` reporter + `types.gen.ts` 排除生成物。
+4. **cmd.exe 陷阱 1 个**（T1.3）：npm script 里的 `;` 不是分隔符，会被 vitest 当 filter → "No test files found"。
+
 ## §6 决策记录
 
 > 2026-11-16 用户指示「先写文档，再开始」——按本文推荐默认定案，逐条留痕：
