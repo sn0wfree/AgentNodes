@@ -245,8 +245,11 @@ class TestGetMessagesMostRecent(unittest.TestCase):
 
             conn = sqlite3.connect(str(db))
             conn.row_factory = sqlite3.Row
+            # **2026-11-16 批次 B3**：`store.get_messages` 的 `_get_db` 改从
+            # kernel/session/db.py 取（K1 消除）—— patch 必须打在**实现模块**，
+            # router 的同名 re-export 不再被查找。
             with patch(
-                "agentnodes.interfaces.api.routers.web_session._get_db",
+                "agentnodes.kernel.session.db._get_db",
                 return_value=conn,
             ):
                 msgs = store.get_messages("s0", limit=100)

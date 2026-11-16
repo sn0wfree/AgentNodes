@@ -194,34 +194,10 @@ def persist_message(
     return msg_id
 
 
-def auto_title_session(session_id: str, content: str, max_len: int = 30) -> Optional[str]:
-    """Set session title from first user message if title is still default.
-
-    Returns the new title if changed, None otherwise.
-    """
-    if not content or not content.strip():
-        return None
-    title = content.strip().replace("\n", " ")
-    if len(title) > max_len:
-        title = title[:max_len].rstrip() + "…"
-    try:
-        conn = _get_db()
-        row = conn.execute(
-            "SELECT title, message_count FROM sessions WHERE id = ?", (session_id,)
-        ).fetchone()
-        if not row:
-            return None
-        if row["title"] != "新会话":
-            return None
-        conn.execute(
-            "UPDATE sessions SET title = ?, updated_at = ? WHERE id = ?",
-            (title, time.time(), session_id),
-        )
-        conn.commit()
-        return title
-    except Exception as exc:
-        logger.error("auto_title_session failed: %s", exc)
-        return None
+# auto_title_session（2026-11-16 批次 B3）：实现已下沉 kernel/session/service.py
+# —— router 自身从不调用它，唯一生产调用方是 SessionService.send_message。
+# 此处 re-export（L1→L3 合法）保持 test_webui_api.py 等 3 处 import 不变。
+from agentnodes.kernel.session.service import auto_title_session  # noqa: E402,F401
 
 
 # ─────────────────────────────────────────────────────────────────────────────

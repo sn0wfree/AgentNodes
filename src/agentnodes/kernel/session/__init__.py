@@ -23,6 +23,15 @@ from __future__ import annotations
 from .backfill_event_log import backfill_event_log
 from .db import ensure_session_row
 from .history_convert import MAX_HISTORY_CHARS
+from .loop_events import (
+    _bootstrap_workspace,
+    _build_attempt_metrics,
+    _LoopEventForwarder,
+    _PLAN_READONLY_TOOLS,
+    _plan_mode_allowed_tools,
+    _resolve_loop_prompt,
+    _thinking_instructions,
+)
 from .models import (
     Attempt,
     AttemptId,
@@ -46,6 +55,15 @@ from .part_accumulate import (
 from .projection_handlers import HANDLERS, apply_event
 from .projection_models import ProjectedMessage, ProjectedPart, ProjectedSession
 from .projection_store import ProjectionStore
+from .projector import Projector
+from .service import (
+    SessionService,
+    _CHAT_ATTEMPT_TIMEOUT,
+    _QUEUE_LIMIT,
+    _friendly_error_text,
+    auto_title_session,
+)
+from .store import SessionStore, _row_to_attempt
 from .trace_projection import TraceProjection
 from .unified import (
     delete_session,
@@ -87,6 +105,11 @@ __all__ = [
     "backfill_event_log",
     # 批次 B2：会话库（schema / 迁移 / 连接 / 行映射）
     "ensure_session_row",
+    # 批次 B3：行为簇（service / store / projector / loop_events）
+    "SessionService",
+    "SessionStore",
+    "Projector",
+    "auto_title_session",
     # 只读浏览门面（批次 D 前仍是直连 DB）
     "delete_session",
     "get_messages",

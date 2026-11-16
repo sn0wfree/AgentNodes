@@ -62,7 +62,9 @@ class TestPhase5CallSitesUseFactory:
         )
 
     def test_service_py_routes_through_factory(self):
-        from agentnodes.interfaces.api.session import service
+        # **2026-11-16 批次 B3**：实现已下沉 kernel/session/service.py；
+        # L1 路径是纯 re-export 垫片（不含实现文本），扫描必须指向实现模块。
+        from agentnodes.kernel.session import service
 
         src = open(service.__file__, encoding="utf-8").read()
         self._assert_routed(src, "service.py")

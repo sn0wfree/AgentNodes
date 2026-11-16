@@ -54,6 +54,29 @@ SUNK_MODULES = {
         # 注意：`_fetch_session_owned` **不在**这里 —— 它是 HTTP 鉴权语义，
         # 批次 B2 决策 2b 已把它上移到 routers/web_session.py。
     ],
+    # ── 批次 B3：相对依赖簇（2026-11-16，同 commit 整簇搬）──
+    "service": [
+        # 顶层定义
+        "SessionService", "_QUEUE_LIMIT", "_CHAT_ATTEMPT_TIMEOUT",
+        "_friendly_error_text", "_utc_now_iso", "MAX_HISTORY_CHARS",
+        # W-split 门面 re-export（消费方从 service 旧路径取 loop_events /
+        # history_convert / part_accumulate 的名字，垫片必须继续转出）
+        "_bootstrap_workspace", "_build_attempt_metrics", "_LoopEventForwarder",
+        "_plan_mode_allowed_tools", "_resolve_loop_prompt", "_thinking_instructions",
+        "_accumulate_part",
+    ],
+    "store": ["SessionStore", "_row_to_attempt", "_utc_now_iso"],
+    "projector": [
+        "Projector",
+        # test_display_tools / test_goal_events / test_projector_snapshot
+        # 从 projector 路径取 projection_models 的名字
+        "ProjectedMessage", "ProjectedPart", "ProjectedSession",
+    ],
+    "loop_events": [
+        "_build_attempt_metrics", "_LoopEventForwarder", "_bootstrap_workspace",
+        "_PLAN_READONLY_TOOLS", "_plan_mode_allowed_tools", "_thinking_instructions",
+        "_resolve_loop_prompt",
+    ],
 }
 
 #: kernel 模块名 → L1 垫片模块名（默认同名；B2 的 db 是改名下沉）
@@ -156,11 +179,46 @@ def test_kernel_session_package_exports_public_names():
         "agentnodes.interfaces.api.session.store",
         "agentnodes.interfaces.api.session.service",
         "agentnodes.interfaces.api.session.projector",
+        # B3 后 L1 只剩垫片 + 词汇表；真实实现全在 kernel
+        "agentnodes.kernel.session.store",
+        "agentnodes.kernel.session.service",
+        "agentnodes.kernel.session.projector",
+        "agentnodes.kernel.session.loop_events",
+        # K1 已消除：kernel/session 里对 routers 的真实 import = 0（注释除外）
     ],
 )
 def test_l1_consumers_still_import(consumer: str):
     """依赖旧路径的 L1 行为模块仍能 import（迁移期间不能断链）。"""
     importlib.import_module(consumer)
+
+
+def test_kernel_session_has_no_routers_import():
+    """K1 终态断言：kernel/session 里对 ``routers`` 的 import 必须为 0。
+
+    方案 K1：``service.py``/``store.py`` 曾反向 import ``routers.web_session``
+    （`_get_db` / `_row_to_message` / `auto_title_session`）。B2 把前两者下沉
+    ``db.py``，B3 把 ``auto_title_session`` 下沉 ``service.py`` —— 全部变为
+    同包引用。用 AST 判定（注释里的旧代码字样不算 import）。
+    """
+    import ast
+    from pathlib import Path
+
+    root = Path(__file__).resolve().parents[1] / "src" / "agentnodes" / "kernel" / "session"
+    hits = []
+    for p in root.glob("*.py"):
+        try:
+            tree = ast.parse(p.read_text(encoding="utf-8", errors="replace"))
+        except SyntaxError:
+            continue
+        for n in ast.walk(tree):
+            mods = []
+            if isinstance(n, ast.ImportFrom) and n.module:
+                mods.append("." * n.level + n.module)
+            elif isinstance(n, ast.Import):
+                mods.extend(a.name for a in n.names)
+            if any("routers" in m for m in mods):
+                hits.append(f"{p.name}:{n.lineno}")
+    assert not hits, f"kernel/session 仍 import routers（K1 破裂）: {hits}"
 
 
 @pytest.mark.parametrize("module", sorted(SUNK_MODULES))

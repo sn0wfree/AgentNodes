@@ -33,15 +33,26 @@ class TestChatAttemptTimeout:
 
     def test_timeout_zero_disables(self, monkeypatch):
         monkeypatch.setenv("AGENTNODES_CHAT_ATTEMPT_TIMEOUT", "0")
-        # Reimport to pick up env change
+        # Reimport to pick up env change.
+        # **2026-11-16 批次 B3**：实现已下沉 kernel/session/service.py。
+        # reload 必须打在**实现模块**上 —— reload 垫片只会重跑垫片的 import
+        # 语句（从 sys.modules 取已加载的 kernel 模块，不重执行其顶层），
+        # env 驱动的模块级常量不会重新解析。
+        #
+        # 同时必须**跟随 reload 垫片**：reload(kernel) 原地重建模块属性，
+        # L1 垫片仍握着旧对象 —— 同 worker 里后跑的
+        # test_session_kernel_migration（`is` 相等检查）会因此破裂。
         import importlib
 
-        import agentnodes.interfaces.api.session.service as svc_mod
+        import agentnodes.interfaces.api.session.service as svc_shim
+        import agentnodes.kernel.session.service as svc_mod
         importlib.reload(svc_mod)
+        importlib.reload(svc_shim)
         assert svc_mod._CHAT_ATTEMPT_TIMEOUT == 0
         # Restore for other tests
         monkeypatch.setenv("AGENTNODES_CHAT_ATTEMPT_TIMEOUT", "600")
         importlib.reload(svc_mod)
+        importlib.reload(svc_shim)
 
 
 class TestListActiveAttemptsIncludesFailed:

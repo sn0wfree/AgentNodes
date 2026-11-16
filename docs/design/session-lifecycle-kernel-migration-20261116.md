@@ -359,27 +359,66 @@ kernel 模块的全局名 —— 而 `_get_db()` 是在 kernel 模块里解析 `
 `_ensure_schema`）。B2 后 L3 已可直接 import 它，端口退化为可选层 —— 但移除端口是
 F 批的事，本批不动（`test_memory_manager_comprehensive.py:221` 还依赖它）。
 
-#### B3 · 相对依赖簇（4 文件 / 2,456 行 · 必须整簇一起搬）
+#### B3 · 相对依赖簇（4 文件 / 2,414 行 · 必须整簇一起搬）
+
+> **2026-11-16 B2 后复测更新**：`_get_db` / `_row_to_message` 已就位
+> `kernel/session/db.py`，K1 的消除条件成熟。簇实际行数 2,414（service 1,471 +
+> store 353 + projector 312 + loop_events 278）。
 
 **簇成员**：`service.py`(1,471) · `store.py`(353) · `projector.py`(312) · `loop_events.py`(278)
 
 ```
-service ──→ store ──→ projector ──→ {projection_store, projection_handlers}  (已在 B1 → kernel)
+service ──→ store ──→ projector ──→ {projection_store, projection_handlers}  (B1 → kernel)
    │                   │
-   └→ loop_events       └→ .projection_models  (已在 A → kernel)
-   └→ history_convert  (已在 B1 → kernel)
+   ├→ loop_events       └→ .projection_models  (A → kernel)
+   ├→ history_convert  (B1 → kernel)
+   └→ part_accumulate  (A → kernel)
+
+loop_events ──(TYPE_CHECKING)──→ service   ← 运行时无环（L11-13 在 if TYPE_CHECKING）
 ```
 
 | 步 | 动作 | 验收判据 |
 |---|---|---|
 | B3.1 | `git mv` 4 文件（**同 commit**，缺一即断链）| `git log --follow` |
-| B3.2 | L1 垫片（4 个）| web 路由 / container / dependencies 的 `from ..session.service import` 等 **27+ 消费方零改动**|
-| B3.3 | 消除 K1：`service.py:99,176`、`store.py:120` 对 `routers.web_session` 的依赖改指向 B2 下沉的 `db.py` | `check_dangling_imports.py --layers` 上行违规仍 **0** |
+| B3.2 | L1 垫片（4 个）+ `auto_title_session` 在 router 留 re-export | container / dependencies / chat + ~40 测试文件的 import **零改动** |
+| B3.3 | **消除 K1（3 处）**：`service.py:99` 与 `store.py:120` 的 `_get_db` / `_row_to_message` 改 `from .db import`；`auto_title_session`（28 行）随簇下沉 `kernel/session/service.py` | L1 簇文件对 `routers.web_session` 的 import = **0**；`grep routers src/agentnodes/kernel/session/` = 0 |
 | B3.4 | 契约测试覆盖 4 个新模块 | `is` 相等 + `__module__` 指向 kernel |
 
-> **B3.3 依赖 B2**：`_get_db` / `_row_to_message` / `auto_title_session` 住在
-> `web_session_db.py` / `routers/web_session.py`。若 B2 未完成，K1 无法彻底消除。
-> ⇒ **B3 的前置 = B2**（或 §6 缺口里另有临时解）。
+**`auto_title_session` 的归属（B2 后实测）**：定义在 router（L175-202）但
+**router 自身零调用**——唯一生产调用方是 `service.py:176`（send_message 首条
+用户消息自动起标题），3 处测试从 router import。它是**会话域逻辑**（不是 HTTP
+形状），随簇下沉。router 留一行 re-export（L1→L3 合法），测试零改动。
+
+**patch/reload 点清单（B2 教训的 B3 版）**：
+
+| 点 | 性质 | 处置 |
+|---|---|---|
+| `test_iteration_budget_wiring.py:125` | `patch.object(SessionService, "_run_test_script")` —— **类级** patch | 无需改：垫片 re-export 同一个类对象，patch 类属性直达真身 |
+| `test_phase2_data_integrity.py:275` | `patch.object(SessionService, "_convert_messages_to_history")` —— 同上 | 无需改 |
+| `test_chat_timeout.py:39-44` | `importlib.reload(svc_mod)` + 读模块级 `_CHAT_ATTEMPT_TIMEOUT` —— **模块级 reload** | **必须改**指 `kernel.session.service`：reload 垫片只会重跑垫片的 import 语句（从 sys.modules 取已加载的 kernel 模块，不重执行顶层），env 驱动的常量不会重新解析 |
+
+**垫片符号清单**（顶层定义 + service 尾部的 W-split re-export）：
+
+| 模块 | 顶层定义 | 另需转出（文件内 re-export，AST 推导不含 import，须显式列）|
+|---|---|---|
+| service | `SessionService`, `_QUEUE_LIMIT`, `_CHAT_ATTEMPT_TIMEOUT`, `_friendly_error_text`, `_utc_now_iso`, `logger` | `MAX_HISTORY_CHARS` + history_convert 9 名 + part_accumulate 7 名（L1420-1440）|
+| store | `SessionStore`, `_row_to_attempt`, `_utc_now_iso`, `logger` | — |
+| projector | `Projector`, `logger` | — |
+| loop_events | `_build_attempt_metrics`, `_LoopEventForwarder`, `_bootstrap_workspace`, `_PLAN_READONLY_TOOLS`, `_plan_mode_allowed_tools`, `_thinking_instructions`, `_resolve_loop_prompt`, `logger` | — |
+
+> **K4 提醒**：store 的连接生命周期（`store.py:57-60` 注释所述 raw-handle 历史）
+> 逐字搬运，不重写。
+
+**⚠️ B3 实施中触发的名词门禁清理（预期外的真问题，非顺手修）**：
+`loop_events.py` 下沉 kernel 后，`_PLAN_READONLY_TOOLS` 首次进入
+`check_kernel_nouns` 扫描范围 —— 7 处业务名词命中（factor_* ×5 / quintile /
+drawdown），batch_gate 转 RED。运行时核对（`build_default_registry()`，
+18 工具）证明清单 24 名中 **14 个是死名**（永不注册：strategy 研究时代的
+display 工具 9 个 + 通用残名 5 个）。allowlist 死名对可见工具集零效果
+（过滤取注册表交集），删除**行为中性**；该 frozenset 本有同款清理惯例
+（L226 旧注释：goal 工具已随批次 2 移除）。已删 14 死名，留 10 活名；
+`test_plan_build_mode` 23 用例全绿。这是文件易位**暴露**的问题，
+不是迁移引入的问题。
 
 ---
 
