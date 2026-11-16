@@ -93,6 +93,19 @@ footer code{background:var(--muted);padding:1px 5px;border-radius:4px;}
     #an-arch .cap-list tr.tier-A td.cid { color:#ef4444; }
     #an-arch .cap-list tr.tier-B td.cid { color:#f59e0b; }
     #an-arch .cap-list tr.tier-C td.cid { color:#22c55e; }
+    /* 架构债块 */
+    #an-arch .debt-block { margin-top:.7rem; border-radius:12px; border:1px solid var(--border);
+      border-left:3px solid var(--viz-series-5); overflow:hidden; }
+    #an-arch .debt-head { display:flex; align-items:baseline; gap:.6rem; flex-wrap:wrap;
+      padding:.55rem .8rem; font-size:.82rem; }
+    #an-arch .debt-list { padding:0 .8rem .55rem; }
+    #an-arch .debt-item { padding:.4rem 0; border-top:1px solid var(--border); }
+    #an-arch .debt-item .did { font-family:Consolas,monospace; font-weight:700; color:var(--viz-series-5);
+      margin-right:.4rem; }
+    #an-arch .debt-item .dtitle { color:var(--foreground); font-weight:600; }
+    #an-arch .debt-item .ddetail { color:var(--muted-foreground); font-size:.72rem;
+      line-height:1.7; margin-top:.2rem; }
+    #an-arch .debt-item .devid { color:var(--fg-dimmer); font-size:.68rem; margin-top:.15rem; }
     #an-arch .hint { color:var(--muted-foreground); font-size:.77rem; margin:.55rem 0 0; }
     #an-arch .tip {
       position:absolute; pointer-events:none; background:var(--popover); color:var(--popover-foreground);
@@ -119,7 +132,7 @@ footer code{background:var(--muted);padding:1px 5px;border-radius:4px;}
     <div class="tip" id="an-tip" role="tooltip"></div>
   </div>
   <p class="hint">
-    方块宽度 ∝ 生产代码符号数（顶层 class + func）；连线为实测包间 import 次数（≥3 绘制，更细的横切连线按阈值省略）；
+    方块宽度 ∝ 生产代码符号数（顶层 class + func）；连线为实测包间 import 次数（≥2 绘制，更细的横切连线按阈值省略）；
     虚线蓝边为一次 <code>POST /api/chat/send</code> 的主链路；<span style="color:var(--viz-series-4)">紫色点线</span>为 evals 旁挂评估带读取被测对象；
     <span style="color:var(--viz-series-3)">橙色虚线框</span>为零依赖包（既无人依赖、也不依赖他人）。
   </p>
@@ -134,10 +147,18 @@ footer code{background:var(--muted);padding:1px 5px;border-radius:4px;}
     <table class="cap-list"><tbody id="an-cap-list"></tbody></table>
   </div>
 
+  <div class="debt-block" id="an-debt-block">
+    <div class="debt-head">
+      <b style="color:var(--viz-series-5)">已知架构债</b>
+      <span style="color:var(--muted-foreground)">本次核查实测发现，随图一同展示</span>
+    </div>
+    <div class="debt-list" id="an-debt-list"></div>
+  </div>
+
   <p class="hint" style="margin-top:.45rem;">
-    <b>MVP 三层怎么定的</b>：<b style="color:#ef4444">红</b>= 一条消息进 → LLM 回一条，删掉就连不上；
-    <b style="color:#f59e0b">黄</b>= 加上工具 / 工作流真的能执行，删掉只能空谈；
-    <b style="color:#22c55e">绿</b>= 加上长程任务 / 自进化 / 评估 / 其它通道。
+    <b>MVP 三层怎么定的</b>：<b style="color:#ef4444">红</b>= 最小可对话（C1–C12：接一句话 → agent 调工具 → 流式回复，历史可存）；
+    <b style="color:#f59e0b">黄</b>= 最小可干活（C13–C15：多节点工作流 + 产物契约 + 上下文注入）；
+    <b style="color:#22c55e">绿</b>= 全能力（C16–C28：长程任务 + 自进化 + 评估 + 其它通道）。
     判据是<b style="color:var(--fg)">运行时必要性</b>而非 import 闭包 —— 实测闭包会把 32/36 个包都算进红色
     （<code>interfaces/api</code> 与 <code>kernel/agent</code> 传递 import 几乎全仓），无法区分层级。
   </p>
@@ -572,7 +593,7 @@ footer code{background:var(--muted);padding:1px 5px;border-radius:4px;}
     "sub": "会话",
     "role": "会话状态",
     "tier": "C",
-    "tierWhy": "会话状态原语",
+    "tierWhy": "CLI / MCP / TUI 的会话浏览门面（列·搜·删）—— 只读查询，不在对话链路上",
     "caps": [],
     "layer": "L3"
    },
@@ -1103,6 +1124,146 @@ footer code{background:var(--muted);padding:1px 5px;border-radius:4px;}
   "kernel/gateway",
   "kernel/context",
   3
+ ],
+ [
+  "foundation/llm",
+  "foundation/observability",
+  2
+ ],
+ [
+  "foundation/observability",
+  "foundation/storage",
+  2
+ ],
+ [
+  "foundation/observability",
+  "foundation",
+  2
+ ],
+ [
+  "interfaces/api",
+  "apps",
+  2
+ ],
+ [
+  "interfaces/api",
+  "kernel/orchestration",
+  2
+ ],
+ [
+  "interfaces/api",
+  "kernel/gateway",
+  2
+ ],
+ [
+  "interfaces/cli",
+  "apps/scheduled_research",
+  2
+ ],
+ [
+  "interfaces/cli",
+  "foundation/observability",
+  2
+ ],
+ [
+  "interfaces/cli",
+  "apps",
+  2
+ ],
+ [
+  "interfaces/cli",
+  "kernel/agent",
+  2
+ ],
+ [
+  "interfaces/cli",
+  "interfaces/api",
+  2
+ ],
+ [
+  "interfaces/cli",
+  "interfaces/mcp",
+  2
+ ],
+ [
+  "interfaces/cli/tui",
+  "foundation/llm",
+  2
+ ],
+ [
+  "interfaces/cli/tui",
+  "kernel/session",
+  2
+ ],
+ [
+  "interfaces/cli/tui",
+  "kernel/agent",
+  2
+ ],
+ [
+  "interfaces/cli/tui",
+  "apps/goal",
+  2
+ ],
+ [
+  "interfaces",
+  "foundation",
+  2
+ ],
+ [
+  "interfaces",
+  "foundation/storage",
+  2
+ ],
+ [
+  "interfaces/mcp",
+  "apps",
+  2
+ ],
+ [
+  "interfaces/mcp",
+  "kernel/skills",
+  2
+ ],
+ [
+  "interfaces/mcp",
+  "kernel/session",
+  2
+ ],
+ [
+  "interfaces/mcp",
+  "kernel/memory",
+  2
+ ],
+ [
+  "interfaces",
+  "interfaces/cli",
+  2
+ ],
+ [
+  "kernel/agent",
+  "kernel/workflow",
+  2
+ ],
+ [
+  "kernel/agent",
+  "kernel/hooks",
+  2
+ ],
+ [
+  "kernel/evolution",
+  "foundation/storage",
+  2
+ ],
+ [
+  "kernel/gateway",
+  "foundation/storage",
+  2
+ ],
+ [
+  "kernel/orchestration",
+  "foundation",
+  2
  ]
 ];
   var IO    = {
@@ -1243,6 +1404,7 @@ footer code{background:var(--muted);padding:1px 5px;border-radius:4px;}
   var TIER_META  = {"A": {"label": "红 · 最小可对话", "desc": "C1–C12：接一句话 → agent 调工具 → 流式回复，历史可存"}, "B": {"label": "黄 · 最小可干活", "desc": "C13–C15：多节点工作流 + 产物契约 + 上下文注入"}, "C": {"label": "绿 · 全能力", "desc": "C16–C28：长程任务 + 自进化 + 评估 + 其它通道"}};
   var TIER_STATS = {"A": {"pkgs": 9, "symbols": 1081, "caps": 12, "capList": ["C1", "C2", "C3", "C4", "C5", "C6", "C7", "C8", "C9", "C10", "C11", "C12"], "label": "红 · 最小可对话", "desc": "C1–C12：接一句话 → agent 调工具 → 流式回复，历史可存"}, "B": {"pkgs": 3, "symbols": 104, "caps": 3, "capList": ["C13", "C14", "C15"], "label": "黄 · 最小可干活", "desc": "C13–C15：多节点工作流 + 产物契约 + 上下文注入"}, "C": {"pkgs": 24, "symbols": 792, "caps": 13, "capList": ["C16", "C17", "C18", "C19", "C20", "C21", "C22", "C23", "C24", "C25", "C26", "C27", "C28"], "label": "绿 · 全能力", "desc": "C16–C28：长程任务 + 自进化 + 评估 + 其它通道"}};
   var CAPS       = [{"id": "C1", "title": "交互接入", "desc": "HTTP 端点收一条消息（+ 可选 session_id）", "providers": ["interfaces/api"], "tier": "A"}, {"id": "C2", "title": "人格设定", "desc": "system prompt —— agent 的角色", "providers": ["kernel/agent"], "tier": "A"}, {"id": "C3", "title": "请求组装", "desc": "system + 历史 + 本轮消息", "providers": ["kernel/agent"], "tier": "A"}, {"id": "C4", "title": "模型出站", "desc": "兼容协议 + 认证 + 超时", "providers": ["foundation/llm"], "tier": "A"}, {"id": "C5", "title": "结果解析", "desc": "取文本 / 取增量", "providers": ["foundation/llm", "interfaces/api"], "tier": "A"}, {"id": "C6", "title": "流式回传", "desc": "SSE 逐 delta", "providers": ["interfaces/api", "kernel/events"], "tier": "A"}, {"id": "C7", "title": "会话标识", "desc": "多轮的载体", "providers": ["kernel/gateway"], "tier": "A"}, {"id": "C8", "title": "历史持久化", "desc": "会话落盘 + 取回（重启不丢）", "providers": ["foundation/storage"], "tier": "A"}, {"id": "C9", "title": "工具定义与调用", "desc": "function calling 协议", "providers": ["kernel/agent", "apps/builtin_tools"], "tier": "A"}, {"id": "C10", "title": "工具执行与回灌", "desc": "tool loop：请求→执行→回灌→再请求", "providers": ["kernel/agent"], "tier": "A"}, {"id": "C11", "title": "工具权限门", "desc": "哪些工具 / 哪些路径 / 要不要人确认", "providers": ["kernel/permission"], "tier": "A"}, {"id": "C12", "title": "停止条件", "desc": "最大轮数 / token 预算 / 时间预算", "providers": ["kernel/agent"], "tier": "A"}, {"id": "C13", "title": "多节点工作流", "desc": "DAG 编排", "providers": ["kernel/workflow"], "tier": "B"}, {"id": "C14", "title": "节点产物契约", "desc": "结构化校验", "providers": ["kernel/workflow"], "tier": "B"}, {"id": "C15", "title": "任务级上下文注入", "desc": "判据续跑 / workspace", "providers": ["kernel/context"], "tier": "B"}, {"id": "C16", "title": "长程任务", "desc": "判据 / 台账 / journal", "providers": ["apps/goal"], "tier": "C"}, {"id": "C17", "title": "自进化", "desc": "提案 → 验证 → 激活", "providers": ["kernel/evolution"], "tier": "C"}, {"id": "C18", "title": "评估基准与打分", "desc": "冻结基准 + scorecard", "providers": ["evals"], "tier": "C"}, {"id": "C19", "title": "Swarm 拓扑执行", "desc": "多 agent 拓扑", "providers": ["kernel/swarm", "apps/swarm_presets"], "tier": "C"}, {"id": "C20", "title": "量化插件", "desc": "角色 / 校验器 / 展示", "providers": ["apps/agent_plugins"], "tier": "C"}, {"id": "C21", "title": "定时研究", "desc": "cron 式调度", "providers": ["apps/scheduled_research"], "tier": "C"}, {"id": "C22", "title": "编排与预算闸", "desc": "genome_version / budget_gate", "providers": ["kernel/orchestration"], "tier": "C"}, {"id": "C23", "title": "事件溯源与轨迹", "desc": "append-only 事件 + 投影", "providers": ["kernel/events"], "tier": "C"}, {"id": "C24", "title": "记忆", "desc": "持久化记忆", "providers": ["kernel/memory"], "tier": "C"}, {"id": "C25", "title": "技能", "desc": "skill 模型与加载", "providers": ["kernel/skills"], "tier": "C"}, {"id": "C26", "title": "CLI 通道", "desc": "另一条交付面", "providers": ["interfaces/cli"], "tier": "C"}, {"id": "C27", "title": "TUI 通道", "desc": "终端界面", "providers": ["interfaces/cli/tui"], "tier": "C"}, {"id": "C28", "title": "MCP 通道", "desc": "Model Context Protocol", "providers": ["interfaces/mcp"], "tier": "C"}];
+  var DEBTS      = [{"id": "D1", "title": "会话存储有两条并行实现路径", "detail": "kernel/session/unified.py（205 行，列·搜·删会话，只读门面，仅 CLI / MCP / TUI 使用）与 interfaces/api/session/（SessionService / SessionStore / Projector / web_session_db，web 全部路由使用）并存，且各自操作会话存储。", "evidence": "kernel/session 出边仅 1 条（→ kernel/agent/memory_manager.resolve_session_db_path，只为找 DB 路径）；入边 3 条（cli 6 次 / cli-tui 2 次 / mcp 2 次）—— web 侧零引用。", "related": "kernel/agent/projection_port.py:20 已记录同层「谁构造」问题"}];
   var TIER_COLOR = { A: '#ef4444', B: '#f59e0b', C: '#22c55e' };
   // 图例虚化开关：必须在任何 paint()/baseCls() 调用之前赋值
   // （上一版把 TIER_ON 放在首次使用点之后 -> 读到 undefined -> IIFE 抛错 -> 配色全丢）
@@ -1407,6 +1569,18 @@ footer code{background:var(--muted);padding:1px 5px;border-radius:4px;}
     }).join('');
   }
 
+  // ---- 架构债清单 ----
+  var dl = document.getElementById('an-debt-list');
+  if (dl) {
+    dl.innerHTML = DEBTS.map(function (d) {
+      return '<div class="debt-item">' +
+        '<span class="did">' + d.id + '</span><span class="dtitle">' + d.title + '</span>' +
+        '<div class="ddetail">' + d.detail + '</div>' +
+        '<div class="devid">实测：' + d.evidence + '</div>' +
+        '<div class="devid">相关：' + d.related + '</div></div>';
+    }).join('');
+  }
+
   // ---- 交互 ----
   // 单一渲染入口：悬停聚焦 + 图例虚化合成一套状态机。
   // 虚影一律用**悬停已有的** 'node dim' / 'edge faded'，不另造样式。
@@ -1517,7 +1691,7 @@ footer code{background:var(--muted);padding:1px 5px;border-radius:4px;}
 
 <footer>
 本页由 AST 扫描实测生成（<code>tmp/probe/scan_arch.py</code> → <code>build_payload.py</code> → <code>gen_arch_html.py</code>）：
-36 个包 / 1977 个生产符号（顶层 class + func）/ 137 条包间依赖，绘制阈值 ≥3。<br>
+36 个包 / 1977 个生产符号（顶层 class + func）/ 137 条包间依赖，绘制阈值 ≥2。<br>
 分层口径与门禁一致（<code>scripts/arch/layer_matrix.py</code>）：L1 interfaces · L2 apps · L3 kernel · L4 foundation。
 跨层依赖 <b>85 条下行 / 0 条上行违规</b>，同层 45 条；另有 <b>7 条</b>属 evals 评估带跨层读取被测对象（设计内，不计违规）。<br>
 <b>零依赖包 3 个</b>：apps/algo · apps/swarm_presets · scripts —— 既无入边也无出边，是死代码候选（apps/algo 仍被 2 条测试直接引用）。<br>
