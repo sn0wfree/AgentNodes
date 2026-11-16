@@ -66,12 +66,47 @@
 
 ### 1.3 硬约束（本方案必须绕过的四道坎）
 
+> ⚠️ **2026-11-16 修正**：本节初版曾写「`kernel/agent/*` 已反向依赖 `interfaces/api/session`」——
+> **该判断错误**。那几处命中（`chat_loop.py:7`、`memory_manager.py:112`、`event_store.py:45`）
+> 全是**注释里的文字**，不是 import。`event_store.py:62` 的注释本身写着
+> 「lazy import 接口层的 Projector —— 那是 L3→L1 上行违规」，说明**代码有意避免了它**。
+> AST 复核结论：**kernel 层对 `interfaces.api.session` 的真实 import = 0 处**，
+> 门禁 `L3→L1 = 0` 印证。
+> ⇒ **迁移难度显著低于初版估计** —— 没有已成型的循环要打断。
+
 | # | 约束 | 实测 | 处置 |
 |---|---|---|---|
-| **K1** | **`store.py:120` 反向依赖 routers** | `from ..routers.web_session import _get_db, _row_to_message` | 迁入 kernel 后这条必须改 —— L3 不能 import L1。`_get_db` / `_row_to_message` 随 `web_session_db.py` 一起下沉（§3.2）|
-| **K2** | **`kernel/agent/*` 已反向依赖 `interfaces/api/session`** | `chat_loop.py:7`、`memory_manager.py:112,517`、`event_store.py:45,62,221,252` | 迁入后 `kernel/agent` 改为 import `kernel/session` —— **同层自由**，K1–R-001 允许（§3.3）|
-| **K3** | **`text_guard` / `event_v2` 反向依赖 session** | Q3 实测两项命中 | 同 K2：迁入后同层引用，无循环 |
+| **K1** | **`service.py` / `store.py` 反向依赖 routers** | `service.py:99,176,607,1233` → `routers.chat` / `routers.web_session`；`store.py:120` → `routers.web_session`（共 **5 处**）| 迁入 kernel 后必须改 —— L3 不能 import L1。依赖的 `_get_db` / `_row_to_message` / `_invalidate_projection` 随 `web_session_db.py` 一起下沉（§3.2）|
+| **K2** | **L3 → L1 是门禁禁止的方向** | `layer_matrix.ORDER = [L1,L2,L3,L4]`，`L3→L1` 判违规 | ⇒ **`kernel/session` 不能反向 import L1**。「双入口同源」只能**反向做**：实现下沉到 kernel，L1 留 re-export 垫片（L1→L3 合法）。见 §3.1 修订 |
+| **K3** | **待迁文件对 kernel 内部的依赖共 17 处** | `service.py`→`kernel.agent.{compact,event_store,chat_loop,text_guard}`（8）· `history_convert`→`compact`（2）· `projector`/`projection_handlers`→`events.event_v2`（3）· `trace_projection`→`event_store`+`event_v2`（2）· `web_session_db`→`memory_manager`（1）· `loop_events`→`prompt_builder`（1）| **全部 L3→L3，迁入后仍合法** ✅ 不构成障碍 |
 | **K4** | **SQLite 连接管理的 WinError-32 flake 家族** | `web_session_db.py:7`「must close explicitly」· `store.py:57-60`「Historically this returned a raw sqlite3.connect handle」· `projection_store.py:5`「close() is explicit」 | 连接生命周期代码**必须随文件一起搬**，不得重写（§3.4）|
+
+### 1.3.1 零依赖文件（批次 A 的实际范围）
+
+AST 筛选：**无任何项目内 import**（只依赖 stdlib）的文件有 4 个 —— 它们可以**零改写**先下沉：
+
+| 文件 | 行 | 依赖 | 说明 |
+|---|---:|---|---|
+| `models.py` | 226 | 仅 stdlib（dataclasses/datetime/enum/typing/uuid）| 会话数据模型（Session/Message/Attempt）|
+| `projection_models.py` | 206 | 仅 stdlib | 投影数据模型（ProjectedSession/…）|
+| `part_accumulate.py` | 129 | 仅 stdlib | assistant part 累积 |
+| `web_session_state.py` | 31 | 仅 stdlib | 前端状态 shaping |
+
+> 这 4 个是「协议/数据」层 —— **会话领域的词汇表**。把它们先放进 kernel，
+> 后续批次搬「行为」（service/store/projector）时词汇表已在正确位置。
+
+### 1.3.2 真实 import 依赖全景（AST 判定，修正后）
+
+| 方向 | 真实 import |
+|---|---|
+| 谁 import `interfaces.api.session` | **仅 2 处**（都在 L1 内）：`interfaces/api/routers/admin_users.py:212`、`interfaces/api/routers/chat.py:761` → `...session.web_session_db` |
+| 谁 import `kernel.session` | **10 处**（全在 L1）：`mcp/server.py:350,358` · `cli/commands/session.py:25,51,87,107` · `cli/commands/slash_session.py:56,87` · `cli/tui/app.py:229,260` |
+| 待迁文件 → interfaces | **5 处**（K1）|
+| 待迁文件 → kernel 内部 | **17 处**（K3，全 L3→L3）|
+
+> ⇒ **L1 是唯一需要「改调用点」的层**，且只有 2 处 import 需要改。
+> CLI/MCP/TUI 那 10 处 import 指向的是 `kernel.session.unified`（已经是 L3）——
+> **它们不需要改 import 路径**，只需在批次 D 改「直查 DB」为「走服务层」。
 
 ### 1.4 四通道的依赖形状
 
@@ -96,29 +131,46 @@
 
 ## §3 迁移设计
 
-### 3.1 目标形态
+### 3.1 目标形态（**双入口的方向已修正**）
+
+> **修正（2026-11-16）**：初版写「`kernel/session/__init__.py` 从 L1 旧路径转发」——
+> **不可行**：`kernel`(L3) import `interfaces`(L1) 是门禁禁止的上行方向（K2）。
+> **正确做法是反过来**：实现先下沉到 kernel，**L1 留 re-export 垫片**
+> （L1→L3 是合法方向）。这样：
+> - 老调用点 `from agentnodes.interfaces.api.session.models import Attempt` **完全不改**（垫片转发）
+> - 新调用点 `from agentnodes.kernel.session.models import Attempt` 也能用
+> - **两者返回同一个类对象**（垫片是 re-export，不是复制）
 
 ```
-kernel/session/                        L3 · 会话领域内核（新增 owner）
-├── models.py              ← interfaces/api/session/models.py
-├── store.py               ← interfaces/api/session/store.py       （消除 K1）
-├── db.py                  ← interfaces/api/session/web_session_db.py
-├── service.py             ← interfaces/api/session/service.py
-├── projector.py           ← interfaces/api/session/projector.py
-├── projection_models.py   ← interfaces/api/session/projection_models.py
-├── projection_handlers.py ← interfaces/api/session/projection_handlers.py
-├── projection_store.py    ← interfaces/api/session/projection_store.py
-├── history_convert.py     ← interfaces/api/session/history_convert.py
-├── loop_events.py         ← interfaces/api/session/loop_events.py
-├── part_accumulate.py     ← interfaces/api/session/part_accumulate.py
-├── trace_projection.py    ← interfaces/api/session/trace_projection.py
-├── backfill_event_log.py  ← interfaces/api/session/backfill_event_log.py
-├── web_state.py           ← interfaces/api/session/web_session_state.py
-└── reader.py              ← kernel/session/unified.py（改写：走 store，不再直连 DB）
+kernel/session/                        L3 · 会话领域内核（owner）
+├── models.py              ← interfaces/api/session/models.py            [批次 A]
+├── projection_models.py   ← interfaces/api/session/projection_models.py [批次 A]
+├── part_accumulate.py     ← interfaces/api/session/part_accumulate.py  [批次 A]
+├── db.py                  ← interfaces/api/session/web_session_db.py   [批次 B]
+├── store.py               ← interfaces/api/session/store.py           [批次 B]
+├── service.py             ← interfaces/api/session/service.py         [批次 B]
+├── projector.py           ← interfaces/api/session/projector.py       [批次 B]
+├── projection_handlers.py ← interfaces/api/session/projection_handlers.py [批次 B]
+├── projection_store.py    ← interfaces/api/session/projection_store.py [批次 B]
+├── history_convert.py     ← interfaces/api/session/history_convert.py  [批次 B]
+├── loop_events.py         ← interfaces/api/session/loop_events.py      [批次 B]
+├── trace_projection.py    ← interfaces/api/session/trace_projection.py [批次 B]
+├── backfill_event_log.py  ← interfaces/api/session/backfill_event_log.py [批次 B]
+├── reader.py              ← kernel/session/unified.py（改写：走 store，不再直连 DB）[批次 D]
+└── web_state.py           ← interfaces/api/session/web_session_state.py [留在 L1，见下]
 
-interfaces/api/session/                L1 · 薄适配层（只剩 HTTP 形状）
-└── api_models.py          ← 新增：HTTP 请求/响应 DTO
+interfaces/api/session/                L1 · 薄适配层
+├── __init__.py            ← 新增：统一 re-export 面
+├── models.py              ← 垫片：re-export kernel.session.models      [批次 A]
+├── projection_models.py   ← 垫片：re-export kernel.session.projection_models [批次 A]
+├── part_accumulate.py     ← 垫片：re-export kernel.session.part_accumulate [批次 A]
+├── api_models.py          ← 新增：HTTP DTO（批次 A）
+└── web_session_state.py   ← 留在 L1（前端形状，L2 语义不适用）—— **不下沉**
 ```
+
+> **`web_session_state.py` 留在 L1**：31 行 `_shape_agents_for_frontend`，是**前端 DTO shaping**，
+> 下沉到 kernel 会让 L3 知道前端形状（方向反了）。初版目标树把它放进 kernel 是错的，
+> 已修正（§6 缺口 1）。
 
 ### 3.2 三个改名/改写的理由
 
@@ -184,14 +236,27 @@ interfaces/api/session/                L1 · 薄适配层（只剩 HTTP 形状�
 > **R-020**：删除类动作排最后；主体与删除分两个 commit。
 > **R-015**：删任何接线对象前须满足四项（规范已定 / 接线完成 / 完整测试 / 审计能力）。
 
-### 批次 A · 协议先行（不动行为）
+### 批次 A · 协议先行（零依赖文件下沉 + 双入口同源）
+
+> **A 批范围已按实测收窄**：只下沉 **4 个零项目内依赖的文件**（§1.3.1），它们是会话领域的
+> **词汇表**（数据模型 / part 累积），不含任何行为。这样 A 批能做**真正的双入口**：
+> 实现下沉到 kernel，**L1 留 re-export 垫片**（L1→L3 合法，K2），老调用点零改动。
 
 | 步 | 动作 | 验收判据 |
 |---|---|---|
-| A1 | 新建 `kernel/session/` 骨架 + `__init__.py` 导出面（**空的 re-export**，从旧路径转发）| `from agentnodes.kernel.session import SessionService` 与旧路径 `from agentnodes.interfaces.api.session.service import SessionService` **返回同一个类对象**（`is` 相等）|
-| A2 | 新增 `interfaces/api/session/api_models.py`（HTTP DTO）| 纯新增，无行为变化 |
+| A1 | `git mv` 4 个零依赖文件 → `kernel/session/`（保留历史）| `git log --follow` 仍能追到原文件 |
+| A2 | L1 原路径放**垫片**（re-export，不是复制）| `from agentnodes.interfaces.api.session.models import Attempt` 与 `from agentnodes.kernel.session.models import Attempt` **是同一个对象**（`is` 相等）|
+| A3 | `kernel/session/__init__.py` 扩展导出面 | `from agentnodes.kernel.session import Attempt` 可用 |
+| A4 | 新增 `interfaces/api/session/__init__.py` 统一 re-export 面 | 从统一面能取到全部会话公开名 |
+| A5 | 新增 `interfaces/api/session/api_models.py`（HTTP DTO）| 纯新增，无行为变化 |
+| A6 | 加「双入口同源」契约测试 | 老路径与新路径的**类对象身份一致**（逐个符号断言）|
 
-**A 批不改任何调用点** —— 只建立「新旧路径同源」的双入口，让后续批次可以逐个切换。
+**A 批不做**：不碰 `service.py` / `store.py` / `projector.py`（有依赖，B 批再说）。
+
+> **垫片的形态**：只写 `from ... import *` 会丢 `__all__` 控制 —— 应显式列出符号，
+> 或用 `from ... import X as X` 逐个转出（保留 `__module__` 与类型检查器可见性）。
+
+---
 
 ### 批次 B · 主体迁移（`git mv` + import 改写）
 
