@@ -16,7 +16,7 @@ from agentnodes.apps.goal_tools import (
     ListGoalsTool,
     register_goal_tools,
 )
-from agentnodes.kernel.agent.tools import ToolContext, ToolRegistry
+from agentnodes.kernel.agent.tools.core import ToolContext, ToolRegistry
 from agentnodes.apps.goal import EvidenceInput, GoalStore
 
 # ── Goal Tool Unit Tests ────────────────────────────────────────────

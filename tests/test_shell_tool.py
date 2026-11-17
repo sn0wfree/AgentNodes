@@ -17,7 +17,7 @@ import sys
 
 import pytest
 
-from agentnodes.kernel.agent.tools import ToolContext
+from agentnodes.kernel.agent.tools.core import ToolContext
 
 # 2026-11-17：原实现把这些套件整体 skipif(win32)——8 个测试在 Windows 上
 # 永远不跑。改为**跨平台命令表**：语义不变（echo / 当前目录 / 列目录 /
@@ -201,7 +201,7 @@ class TestShellToolRegistration:
         from agentnodes.kernel.agent.builtin_tools.shell_tools import (
             register_shell_tools,
         )
-        from agentnodes.kernel.agent.tools import ToolRegistry
+        from agentnodes.kernel.agent.tools.core import ToolRegistry
         r = ToolRegistry()
         register_shell_tools(r)
         assert "shell" in r

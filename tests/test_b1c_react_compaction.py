@@ -17,7 +17,7 @@ from types import SimpleNamespace
 def _recording_loop(client):
     from agentnodes.foundation.llm import LLMConfig
     from agentnodes.kernel.agent.loop import AgentLoop
-    from agentnodes.kernel.agent.tools import ToolRegistry
+    from agentnodes.kernel.agent.tools.core import ToolRegistry
 
     reg = ToolRegistry()
     loop = AgentLoop(

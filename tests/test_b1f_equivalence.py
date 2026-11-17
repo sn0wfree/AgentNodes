@@ -60,7 +60,7 @@ def _chat(text: str, history=None) -> WorkRequest:
 def _registry():
     """**V3-c**:AgentLoop 契约的最小真注册表(空工具集即可——本文件的
     client 全部直接回文本,不发起工具调用)。"""
-    from agentnodes.kernel.agent.tools import ToolRegistry
+    from agentnodes.kernel.agent.tools.core import ToolRegistry
 
     return ToolRegistry()
 

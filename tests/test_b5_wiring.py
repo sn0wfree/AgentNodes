@@ -156,7 +156,7 @@ class _RealRegistry:
     本来就是 ToolRegistry，方法齐全）。"""
 
     def __init__(self) -> None:
-        from agentnodes.kernel.agent.tools import ToolRegistry
+        from agentnodes.kernel.agent.tools.core import ToolRegistry
 
         self._reg = ToolRegistry()
         self._reg.register(TodoWriteTool())

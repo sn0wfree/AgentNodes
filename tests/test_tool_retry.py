@@ -13,7 +13,7 @@ import pytest
 
 from agentnodes.kernel.agent import loop as loop_mod
 from agentnodes.kernel.agent.loop import AgentLoop, LoopResult
-from agentnodes.kernel.agent.tools import BaseTool, ToolRegistry
+from agentnodes.kernel.agent.tools.core import BaseTool, ToolRegistry
 from agentnodes.foundation.llm import LLMConfig, ToolCall
 
 

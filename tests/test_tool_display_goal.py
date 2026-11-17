@@ -17,7 +17,7 @@ from agentnodes.apps.goal_tools import (
     GetGoalStatusTool,
     ListGoalsTool,
 )
-from agentnodes.kernel.agent.tools import ToolContext
+from agentnodes.kernel.agent.tools.core import ToolContext
 
 
 @pytest.fixture()

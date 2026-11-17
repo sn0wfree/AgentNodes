@@ -33,7 +33,7 @@ class _FakeRegistry:
     """Duck-typed registry: assemble_loop_parts reads ``_tools``."""
 
     def __init__(self) -> None:
-        from agentnodes.kernel.agent.tools import BaseTool
+        from agentnodes.kernel.agent.tools.core import BaseTool
 
         class _T(BaseTool):
             name = "demo_tool"

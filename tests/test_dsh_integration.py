@@ -20,7 +20,7 @@ from agentnodes.kernel.agent.context.injector import (
     build_default_injectors,
 )
 from agentnodes.kernel.agent.loop import AgentLoop
-from agentnodes.kernel.agent.tools import ToolRegistry, BaseTool
+from agentnodes.kernel.agent.tools.core import ToolRegistry, BaseTool
 
 
 class _FakeConfig:

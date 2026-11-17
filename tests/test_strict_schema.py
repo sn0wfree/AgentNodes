@@ -10,7 +10,7 @@ from __future__ import annotations
 import pytest
 
 from agentnodes.kernel.agent.builtin_tools import build_default_registry
-from agentnodes.kernel.agent.tools import BaseTool, make_strict_schema
+from agentnodes.kernel.agent.tools.core import BaseTool, make_strict_schema
 
 # ── make_strict_schema: pure schema rewriting ────────────────
 

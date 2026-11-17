@@ -11,7 +11,7 @@ from agentnodes.kernel.agent.context.core import (
     ContextBuilder,
     estimate_tokens,
 )
-from agentnodes.kernel.agent.tools import ToolRegistry
+from agentnodes.kernel.agent.tools.core import ToolRegistry
 from agentnodes.foundation.llm import LLMConfig
 from agentnodes.kernel.memory.persistent import PersistentMemory
 

@@ -11,8 +11,8 @@ import json
 import logging
 from typing import Any, Iterable
 
-from agentnodes.kernel.agent.tools import ToolRegistry
-from agentnodes.kernel.agent.toolsets import apply_toolset, resolve_toolset
+from agentnodes.kernel.agent.tools.core import ToolRegistry
+from agentnodes.kernel.agent.tools.toolsets import apply_toolset, resolve_toolset
 
 logger = logging.getLogger(__name__)
 

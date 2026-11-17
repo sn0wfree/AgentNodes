@@ -31,7 +31,7 @@ import pytest
 
 from agentnodes.kernel.agent.builtin_tools import build_default_registry
 from agentnodes.kernel.agent.chat_loop import build_default_permission_evaluator
-from agentnodes.kernel.agent.tool_context import build_tool_context
+from agentnodes.kernel.agent.tools.context import build_tool_context
 from agentnodes.kernel.permission import PermissionDeniedError
 
 

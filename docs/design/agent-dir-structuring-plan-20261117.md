@@ -332,3 +332,81 @@ next(p for p in Path(__file__).parents if p.name == "agentnodes") / "templates" 
 - 幂等验证：改写脚本第二遍 **0 文件 0 处**
 - 两图 JS `node --check` 通过；framework 文档数字同步（L3 211 文件 / 合计 433）
 - `kernel/agent`：104 文件 / 22614 行 / **符号 431 不变、包数 36 不变**（零漂移原理持续成立）
+
+---
+
+## 10 · 阶段 3 实测（2026-11-17，tools 簇）
+
+### 10.1 落地
+
+| 原路径 | 新路径 |
+|---|---|
+| `kernel/agent/tools.py` | `kernel/agent/tools/core.py` |
+| `kernel/agent/tool_result.py` | `kernel/agent/tools/result.py` |
+| `kernel/agent/tool_context.py` | `kernel/agent/tools/context.py` |
+| `kernel/agent/tools_capability.py` | `kernel/agent/tools/capability.py` |
+| `kernel/agent/toolsets.py` | `kernel/agent/tools/toolsets.py` |
+| — | `kernel/agent/tools/__init__.py`（新增，零 re-export） |
+
+引用改写 **101 处 / 81 文件**（B=99 模块路径 · C=2 文件路径；三批里影响面最大）。
+
+### 10.2 坑 1：幂等前瞻**过度泛化**（阶段 2 教训的错误泛化）
+
+阶段 2 为防「规则 B 命中规则 A 的输出」，给短前缀加了 `(?![\s]+import)`。
+阶段 3 直接沿用 → **把本该改写的 101 处里的主力形态一起排掉**：
+
+```
+from agentnodes.kernel.agent.tools import ToolRegistry   ← 模块路径 + 直接 import 符号
+     ^^^^^^^^ tools 后是「 import」，前瞻 (?![\s]+import) 成立 → 被排除 → 没改
+```
+
+结果只改了 27/99 处，而 `agentnodes.kernel.agent.tools` 已变成包 →
+`from ...agent.tools import ToolRegistry` 会 ImportError。
+
+**修正**：前瞻只排「import 的**是本包子模块名**」这一种形态：
+
+```python
+agentnodes\.kernel\.agent\.tools\b
+(?!\.(?:core|result|context|capability|toolsets))        # 已生成子模块形态
+(?!\s+import\s+(?:core|result|context|capability|toolsets)\b)  # 规则 A 的输出形态
+```
+
+> **通用规则修正（覆盖阶段 1/2 的表述）**：幂等前瞻要**精确排除「其他规则的输出形态」**，
+> 不能笼统排除某种**语法片段**（` import`）—— 同一片段既可能是别的规则的输出，
+> 也可能是本规则**该处理的输入**。判据是「排除的是不是**具体那个形态**」。
+> 验证仍是：跑两遍，第二遍 0 改动（阶段 3 第二遍 0 文件 0 处 ✓）。
+
+### 10.3 坑 2：合成树夹具必须保持原样
+
+`tests/test_scripts_arch.py` 与 `tests/test_scripts_migration.py` 用
+`src/agentnodes/kernel/agent/tools.py` 作**假路径**测相对导入解析器
+（在自己的 tmp 树里造文件，与真文件位置无关）。规则 C 若把这两处也改成
+`tools/core.py`，则 `from ..agent.tools import ok` 的目标从**模块**变成**目录**
+→ 解析器判定改变 → 两个门禁测试红。
+
+**处置**：规则 C 改完后**还原**这两处夹具路径（验证脚本第 2 项断言夹具保持 2 处）。
+
+### 10.4 tools 簇没有 `__file__` 路径计算（阶段 2 的隐藏破坏源不在）
+
+5 个文件均无 `__file__` / `parents[` / `.parent` 用法 → 无阶段 2 那种「静默兜底」风险。
+（其余两批：compact 无、prompt/context 有 3 处 → 已修）
+
+### 10.5 与前两批对比
+
+| 项 | 阶段 1（compact） | 阶段 2（prompt+context） | 阶段 3（tools） |
+|---|---|---|---|
+| 引用改写 | 81 处 / 30 文件 | 79 处 / 38 文件 | **101 处 / 81 文件** |
+| 包级 import 形态 | 20 处 | 3 处 | **0 处** |
+| monkeypatch | 9 处 | 2 处 | **0 处** |
+| importlib.reload | 8 处 | 0 处 | 0 处 |
+| `__file__` 路径破坏 | 无 | **3 处 / 10 测试红** | 无 |
+| 幂等坑 | 规则 B 自身不幂等 | 规则 B 命中规则 A 输出 | **前瞻过度泛化（漏改 72 处）** |
+
+### 10.6 验证
+
+- 全量 **7596 passed / 106 skipped / 0 failed**（rc=0）
+- `batch_gate` **ALL GREEN**（11 步，含 check_tool_refs 工具引用门禁）
+- tools 相关 **154 passed**
+- 幂等：第二遍 **0 文件 0 处**
+- 旧形态残留 0 / 二次替换污染 0 / 合成树夹具保持 2 处
+- `kernel/agent`：105 文件 / 22636 行 / **符号 431 不变、包数 36 不变**

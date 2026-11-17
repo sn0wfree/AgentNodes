@@ -15,7 +15,7 @@ from typing import Any
 
 import pytest
 
-from agentnodes.kernel.agent.tools import BaseTool
+from agentnodes.kernel.agent.tools.core import BaseTool
 from agentnodes.kernel.permission import (
     PermissionAction,
     PermissionGateway,

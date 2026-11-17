@@ -12,7 +12,7 @@ from types import SimpleNamespace
 
 import pytest
 
-from agentnodes.kernel.agent.tools import BaseTool, ToolContext, ToolRegistry
+from agentnodes.kernel.agent.tools.core import BaseTool, ToolContext, ToolRegistry
 
 
 class _RecordingTool(BaseTool):

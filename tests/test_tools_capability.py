@@ -17,8 +17,8 @@ from agentnodes.kernel.agent.sandbox import (
     ExecutionSandbox,
     StaticSandbox,
 )
-from agentnodes.kernel.agent.tools import ToolContext
-from agentnodes.kernel.agent.tools_capability import (
+from agentnodes.kernel.agent.tools.core import ToolContext
+from agentnodes.kernel.agent.tools.capability import (
     ToolCapabilityError,
     get_data_store,
     get_sandbox,

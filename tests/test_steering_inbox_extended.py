@@ -11,7 +11,7 @@ import pytest
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
 
 from agentnodes.kernel.agent.loop import AgentLoop
-from agentnodes.kernel.agent.tools import ToolRegistry
+from agentnodes.kernel.agent.tools.core import ToolRegistry
 
 
 class _FakeConfig:

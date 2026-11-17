@@ -21,7 +21,7 @@ from types import SimpleNamespace
 
 import pytest
 
-from agentnodes.kernel.agent.tools import BaseTool, ToolRegistry
+from agentnodes.kernel.agent.tools.core import BaseTool, ToolRegistry
 from agentnodes.kernel.gateway.session_controller import SessionController
 from agentnodes.kernel.orchestration import (
     EntryPoint,
@@ -426,7 +426,7 @@ def test_live_controller_default_graph_tool_loop(live_client):
     与 ``test_react_live`` 的 calculator 场景同构——真实 LLM 发起工具调用，
     registry 执行，答案回填。这是换引擎后生产 web chat 路径的真身。
     """
-    from agentnodes.kernel.agent.tools import ToolRegistry as _TR
+    from agentnodes.kernel.agent.tools.core import ToolRegistry as _TR
 
     class CalculatorTool(BaseTool):
         name = "calculator"

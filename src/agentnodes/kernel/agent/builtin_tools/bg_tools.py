@@ -36,7 +36,7 @@ from agentnodes.foundation.utils.bg_proc import (
     set_task_result,
     unregister_task,
 )
-from agentnodes.kernel.agent.tools import EFFECT_FS, EFFECT_NET, BaseTool, ToolContext, ToolRegistry
+from agentnodes.kernel.agent.tools.core import EFFECT_FS, EFFECT_NET, BaseTool, ToolContext, ToolRegistry
 from agentnodes.kernel.agent.builtin_tools.shell_tools import _BLOCKED_COMMANDS
 
 logger = logging.getLogger(__name__)

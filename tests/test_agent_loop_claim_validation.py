@@ -120,7 +120,7 @@ class TestStrictMode:
     def test_strict_does_not_rewrite_when_verified(self, workspace):
         """strict 模式 + 数字可追溯 → 不追加警告."""
         # Custom tool that returns a sharpe the model then references.
-        from agentnodes.kernel.agent.tools import BaseTool, ToolContext
+        from agentnodes.kernel.agent.tools.core import BaseTool, ToolContext
 
         class FakeBacktest(BaseTool):
             name = "fake_backtest"

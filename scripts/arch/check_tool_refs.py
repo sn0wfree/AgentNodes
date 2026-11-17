@@ -21,7 +21,7 @@ registry 的注册路径，``CapabilityRegistry.requires`` 机制结构性看不
 
 **四个配置面**：
 
-1. ``kernel/agent/toolsets.py::TOOLSETS`` — 角色 → 工具白名单
+1. ``kernel/agent/tools/toolsets.py::TOOLSETS`` — 角色 → 工具白名单
 2. ``apps/agent_plugins/*.py`` 插件的 ``tools`` / ``python_function`` / ``prompt_file``
 3. ``templates/workflows/*.json`` — 工作流模板的 ``config.tools`` / ``config.tool``
 4. ``PENDING_TOOLS``（各插件模块）— **反向**检查：列在待恢复清单里的
@@ -192,7 +192,7 @@ def installed_executors() -> tuple[set[str], set[str]]:
 def collect_toolsets() -> dict[str, set[str]]:
     """配置面 1：``TOOLSETS``。返回 ``{toolset 名: 工具名集合}``。"""
     _ensure_src_on_path()
-    from agentnodes.kernel.agent.toolsets import TOOLSETS
+    from agentnodes.kernel.agent.tools.toolsets import TOOLSETS
 
     return {name: set(tools) for name, tools in TOOLSETS.items()}
 
@@ -327,7 +327,7 @@ def check(
         if missing:
             rep.violations.append(Violation(
                 surface="TOOLSETS",
-                where=f"kernel/agent/toolsets.py::TOOLSETS[{name!r}]",
+                where=f"kernel/agent/tools/toolsets.py::TOOLSETS[{name!r}]",
                 detail=f"{len(missing)} 个工具未实现",
                 missing=missing,
             ))

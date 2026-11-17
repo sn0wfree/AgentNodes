@@ -16,7 +16,7 @@ from agentnodes.kernel.agent.builtin_tools.bg_tools import (
     active_tasks,
     unregister_task,
 )
-from agentnodes.kernel.agent.tools import ToolContext
+from agentnodes.kernel.agent.tools.core import ToolContext
 
 
 def _ctx(workspace: Path) -> ToolContext:

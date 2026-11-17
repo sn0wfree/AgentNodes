@@ -19,7 +19,7 @@ class TestTraceLlmRequestHashes:
     def _make_loop(self):
         """Create a minimal AgentLoop-like object for testing."""
         from agentnodes.kernel.agent.loop import AgentLoop
-        from agentnodes.kernel.agent.tools import ToolRegistry
+        from agentnodes.kernel.agent.tools.core import ToolRegistry
 
         loop = object.__new__(AgentLoop)
         loop.session_id = "test_session"

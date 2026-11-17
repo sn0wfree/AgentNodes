@@ -44,7 +44,7 @@ from pathlib import Path
 
 from agentnodes.foundation.llm import LLMConfig
 from agentnodes.kernel.agent.chat_loop import build_chat_agent_loop
-from agentnodes.kernel.agent.tool_context import build_tool_context
+from agentnodes.kernel.agent.tools.context import build_tool_context
 
 ws = Path(tempfile.mkdtemp())
 loop = build_chat_agent_loop(

@@ -10,7 +10,7 @@ import pytest
 
 from agentnodes.kernel.agent.builtin_tools import build_default_registry
 from agentnodes.kernel.agent.loop import AgentLoop, LoopResult, _tool_call_hash
-from agentnodes.kernel.agent.tools import ToolRegistry
+from agentnodes.kernel.agent.tools.core import ToolRegistry
 from agentnodes.foundation.llm import LLMConfig, LLMResponse, ToolCall
 from agentnodes.foundation.llm.errors import LLMAuthError
 
@@ -278,7 +278,7 @@ class TestErrorHandling:
 class TestWorkspaceInjection:
     def test_workspace_injected_into_tool_call(self, workspace):
         # Tool call without workspace kwarg → should be auto-injected
-        from agentnodes.kernel.agent.tools import BaseTool
+        from agentnodes.kernel.agent.tools.core import BaseTool
         captured_kwargs = []
 
         class FakeTool(BaseTool):

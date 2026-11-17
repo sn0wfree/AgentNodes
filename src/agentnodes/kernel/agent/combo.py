@@ -16,7 +16,7 @@ import logging
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 
-from agentnodes.kernel.agent.tools import BaseTool, ToolContext, ToolRegistry
+from agentnodes.kernel.agent.tools.core import BaseTool, ToolContext, ToolRegistry
 
 logger = logging.getLogger(__name__)
 

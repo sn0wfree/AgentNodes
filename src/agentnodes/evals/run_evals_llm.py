@@ -54,7 +54,7 @@ def _run_one(task: GoldenTask, *, workspace: Path, max_iterations: int = 6) -> R
     from agentnodes.kernel.agent.builtin_tools import build_default_registry
     from agentnodes.kernel.agent.loop import AgentLoop
     from agentnodes.kernel.agent.strategy.loop_strategy import LoopConfig
-    from agentnodes.kernel.agent.toolsets import apply_toolset, resolve_toolset
+    from agentnodes.kernel.agent.tools.toolsets import apply_toolset, resolve_toolset
 
     cfg = LLMConfig.load()
     registry = build_default_registry(workspace)

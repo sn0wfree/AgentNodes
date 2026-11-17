@@ -19,8 +19,8 @@ import pytest
 from agentnodes.kernel.agent.builtin_tools.file_tools import ReadFileTool
 from agentnodes.kernel.agent.combo import CompositeTool
 from agentnodes.kernel.agent.context.core import ContextBuilder
-from agentnodes.kernel.agent.tool_result import ToolResult, from_any, render_for_llm
-from agentnodes.kernel.agent.tools import ToolContext, ToolRegistry
+from agentnodes.kernel.agent.tools.result import ToolResult, from_any, render_for_llm
+from agentnodes.kernel.agent.tools.core import ToolContext, ToolRegistry
 from agentnodes.foundation.llm import LLMConfig
 
 
@@ -42,7 +42,7 @@ def test_render_for_llm_empty_table():
 
 def test_json_preview_unserializable_falls_back_to_str():
     """循环引用让 json.dumps 抛 ValueError → str(data) 兜底。"""
-    from agentnodes.kernel.agent.tool_result import _json_preview
+    from agentnodes.kernel.agent.tools.result import _json_preview
 
     d: dict = {}
     d["self"] = d
@@ -51,7 +51,7 @@ def test_json_preview_unserializable_falls_back_to_str():
 
 
 def test_json_preview_truncates_large_payload():
-    from agentnodes.kernel.agent.tool_result import _json_preview
+    from agentnodes.kernel.agent.tools.result import _json_preview
 
     big = {"k": "x" * 5000}
     s = _json_preview(big)

@@ -82,7 +82,7 @@ class TestToolWhitelist:
     def test_unknown_role_minimal_default(self):
         """未知 role 退到 minimal 最小集 (fail-safe)."""
         from agentnodes.kernel.agent.role_factory import _get_tool_whitelist
-        from agentnodes.kernel.agent.toolsets import TOOLSETS
+        from agentnodes.kernel.agent.tools.toolsets import TOOLSETS
         assert _get_tool_whitelist("foo_bar_baz") == TOOLSETS["minimal"]
 
 

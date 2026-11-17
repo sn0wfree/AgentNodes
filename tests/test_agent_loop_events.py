@@ -15,7 +15,7 @@ from unittest import mock
 import pytest
 
 from agentnodes.kernel.agent.loop import AgentLoop
-from agentnodes.kernel.agent.tools import BaseTool, ToolRegistry
+from agentnodes.kernel.agent.tools.core import BaseTool, ToolRegistry
 from agentnodes.foundation.llm import LLMConfig, LLMResponse, ToolCall
 
 

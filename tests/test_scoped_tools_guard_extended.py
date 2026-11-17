@@ -10,7 +10,7 @@ import pytest
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
 
-from agentnodes.kernel.agent.tools import ToolGuard, ToolRegistry, BaseTool
+from agentnodes.kernel.agent.tools.core import ToolGuard, ToolRegistry, BaseTool
 
 
 # ── Test tools ────────────────────────────────────────────────────

@@ -12,7 +12,7 @@ import subprocess
 import pytest
 
 from agentnodes.foundation import git as gitmod
-from agentnodes.kernel.agent.tools import ToolContext
+from agentnodes.kernel.agent.tools.core import ToolContext
 
 
 def _git(*args, cwd):

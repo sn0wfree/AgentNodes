@@ -28,7 +28,7 @@ from __future__ import annotations
 import logging
 from pathlib import Path
 
-from agentnodes.kernel.agent.tools import ToolRegistry
+from agentnodes.kernel.agent.tools.core import ToolRegistry
 from agentnodes.kernel.agent.builtin_tools.file_tools import ListFilesTool, ReadFileTool, WriteFileTool
 from agentnodes.kernel.agent.builtin_tools.help_tools import ToolHelpTool
 from agentnodes.kernel.agent.builtin_tools.options_tools import OptionsPricingTool

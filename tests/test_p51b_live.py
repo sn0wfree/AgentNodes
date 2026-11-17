@@ -17,7 +17,7 @@ pytestmark = pytest.mark.llm
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
 
-from agentnodes.kernel.agent.tools import BaseTool, ToolRegistry  # noqa: E402
+from agentnodes.kernel.agent.tools.core import BaseTool, ToolRegistry  # noqa: E402
 
 requires_live = pytest.mark.skipif(
     os.environ.get("QNODES_LIVE_LLM") != "1",

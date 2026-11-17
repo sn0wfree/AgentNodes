@@ -54,7 +54,7 @@ def test_retry_policy_explicit_changes_attempt_count(tmp_path: Path):
 
     用一个总是抛瞬态错误的自定义工具数调用次数。
     """
-    from agentnodes.kernel.agent.tools import (
+    from agentnodes.kernel.agent.tools.core import (
         TRANSIENT_TOOL_ERRORS, BaseTool, ToolRegistry,
     )
 

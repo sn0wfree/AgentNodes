@@ -161,7 +161,7 @@ def build_chat_agent_loop(
         if registry is not None:
             registry._tools.clear()
         else:
-            from agentnodes.kernel.agent.tools import ToolRegistry
+            from agentnodes.kernel.agent.tools.core import ToolRegistry
             registry = ToolRegistry()
         registry.register(SubmitDagStepTool())
         if allowed_tools is None:

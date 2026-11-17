@@ -6,7 +6,7 @@ import logging
 import subprocess
 from pathlib import Path
 
-from agentnodes.kernel.agent.tools import (
+from agentnodes.kernel.agent.tools.core import (
     BaseTool,
     ToolContext,
 )

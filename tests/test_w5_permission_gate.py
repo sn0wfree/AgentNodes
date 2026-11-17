@@ -24,7 +24,7 @@ from dataclasses import dataclass, field
 
 import pytest
 
-from agentnodes.kernel.agent.tools import BaseTool, ToolRegistry
+from agentnodes.kernel.agent.tools.core import BaseTool, ToolRegistry
 from agentnodes.kernel.gateway import api_chat_request
 from agentnodes.kernel.gateway.gateway import Gateway
 from agentnodes.kernel.permission import PermissionEvaluator, PermissionGateway

@@ -3,7 +3,7 @@ from __future__ import annotations
 
 import sys
 
-from agentnodes.kernel.agent.toolsets import TOOLSETS
+from agentnodes.kernel.agent.tools.toolsets import TOOLSETS
 from agentnodes.foundation.utils.bg_proc import shell_command
 
 

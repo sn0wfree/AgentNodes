@@ -54,7 +54,7 @@ from agentnodes.kernel.agent import agent_telemetry as _tel
 from agentnodes.kernel.agent.context.core import ContextBuilder, estimate_tokens
 from agentnodes.kernel.agent.runtime.sync_bridge import _get_hook_loop as _get_hook_loop  # noqa: F401
 from agentnodes.kernel.agent.runtime.sync_bridge import _run_coro_in_sync
-from agentnodes.kernel.agent.tools import ToolRegistry
+from agentnodes.kernel.agent.tools.core import ToolRegistry
 from agentnodes.kernel.agent.trace import TraceWriter
 
 logger = logging.getLogger(__name__)

@@ -5,7 +5,7 @@ from pathlib import Path
 from unittest.mock import MagicMock
 
 from agentnodes.kernel.agent.loop import AgentLoop
-from agentnodes.kernel.agent.tools import BaseTool, ToolRegistry
+from agentnodes.kernel.agent.tools.core import BaseTool, ToolRegistry
 
 
 class SpyTool(BaseTool):

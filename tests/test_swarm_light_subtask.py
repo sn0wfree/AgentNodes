@@ -3,7 +3,7 @@ from __future__ import annotations
 
 from agentnodes.kernel.agent.builtin_tools.subagent_tool import SubAgentTool
 from agentnodes.kernel.agent.dag_config import AgentNodeConfig
-from agentnodes.kernel.agent.toolsets import TOOLSETS
+from agentnodes.kernel.agent.tools.toolsets import TOOLSETS
 
 
 class TestAgentNodeConfigA6:
@@ -44,7 +44,7 @@ class TestSubAgentToolParams:
     def test_toolset_resolves_named_allowlist(self):
         # resolve via toolsets then apply whitelist
         SubAgentTool()
-        from agentnodes.kernel.agent.toolsets import resolve_toolset
+        from agentnodes.kernel.agent.tools.toolsets import resolve_toolset
 
         wl = resolve_toolset("minimal")
         assert wl == TOOLSETS["minimal"]

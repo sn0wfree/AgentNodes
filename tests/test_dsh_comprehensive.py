@@ -23,7 +23,7 @@ from agentnodes.kernel.agent.context.injector import (
     build_default_injectors,
 )
 from agentnodes.kernel.agent.loop import AgentLoop, LoopResult
-from agentnodes.kernel.agent.tools import ToolGuard, ToolRegistry, BaseTool
+from agentnodes.kernel.agent.tools.core import ToolGuard, ToolRegistry, BaseTool
 from agentnodes.foundation.registry import Registry
 
 

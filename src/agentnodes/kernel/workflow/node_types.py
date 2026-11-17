@@ -125,7 +125,7 @@ def _make_tool_wrapper(tool: Any, name: str) -> Callable[..., Any]:
     """Wrap a BaseTool so node dispatch can invoke it with a ctx."""
 
     def _wrapper(**kwargs: Any) -> dict[str, Any]:
-        from agentnodes.kernel.agent.tools import ToolContext
+        from agentnodes.kernel.agent.tools.core import ToolContext
 
         params = dict(kwargs.get("params") or {})
         workspace = kwargs.get("workspace_path")

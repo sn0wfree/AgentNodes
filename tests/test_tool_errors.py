@@ -13,7 +13,7 @@ import json
 
 import pytest
 
-from agentnodes.kernel.agent.tools import (
+from agentnodes.kernel.agent.tools.core import (
     BaseTool,
     ToolContext,
     ToolError,

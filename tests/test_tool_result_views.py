@@ -3,7 +3,7 @@ from __future__ import annotations
 
 import json
 
-from agentnodes.kernel.agent.tool_result import (
+from agentnodes.kernel.agent.tools.result import (
     ToolResult,
     error,
     from_any,

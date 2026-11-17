@@ -25,7 +25,7 @@ from agentnodes.kernel.agent.builtin_tools.display_tools import (
     _generate_report,
     _svg_curve,
 )
-from agentnodes.kernel.agent.tools import ToolContext
+from agentnodes.kernel.agent.tools.core import ToolContext
 
 
 class _Ctx(ToolContext):

@@ -11,7 +11,7 @@ import pytest
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
 
 from agentnodes.kernel.agent.builtin_tools import _discover_tool_plugins
-from agentnodes.kernel.agent.tools import ToolRegistry, BaseTool
+from agentnodes.kernel.agent.tools.core import ToolRegistry, BaseTool
 
 
 class _TestTool(BaseTool):

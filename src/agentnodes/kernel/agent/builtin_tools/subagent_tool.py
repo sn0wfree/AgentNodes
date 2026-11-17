@@ -18,7 +18,7 @@ from pathlib import Path
 from typing import Any
 
 from agentnodes.foundation.llm.config import LLMConfig
-from agentnodes.kernel.agent.tools import EFFECT_FS, BaseTool, ToolRegistry
+from agentnodes.kernel.agent.tools.core import EFFECT_FS, BaseTool, ToolRegistry
 
 logger = logging.getLogger(__name__)
 
@@ -147,7 +147,7 @@ class SubAgentTool(BaseTool):
         Excludes ``delegate_to_agent`` (no nested delegation) and applies
         the optional whitelist on top.
         """
-        from agentnodes.kernel.agent.tools import ToolRegistry as TR
+        from agentnodes.kernel.agent.tools.core import ToolRegistry as TR
 
         filtered = TR()
         if parent_registry is not None:
@@ -176,7 +176,7 @@ class SubAgentTool(BaseTool):
         tools_whitelist: list[str] | None = kwargs.get("tools")
         toolset_name: str | None = kwargs.get("toolset")
         if tools_whitelist is None and toolset_name:
-            from agentnodes.kernel.agent.toolsets import resolve_toolset
+            from agentnodes.kernel.agent.tools.toolsets import resolve_toolset
 
             tools_whitelist = resolve_toolset(toolset_name)
         max_iterations = min(kwargs.get("max_iterations", 10), 20)

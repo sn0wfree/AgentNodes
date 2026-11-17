@@ -18,7 +18,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
-    from agentnodes.kernel.agent.tools import ToolContext
+    from agentnodes.kernel.agent.tools.core import ToolContext
 
 
 class ToolCapabilityError(RuntimeError):

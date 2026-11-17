@@ -19,7 +19,7 @@ from pathlib import Path
 from typing import Any, Callable
 
 from agentnodes.kernel.agent.builtin_tools.utils import tool_err
-from agentnodes.kernel.agent.tools import BaseTool, ToolContext, _schema_from_signature
+from agentnodes.kernel.agent.tools.core import BaseTool, ToolContext, _schema_from_signature
 from agentnodes.apps import swarm_presets as _swarm_presets
 
 logger = logging.getLogger(__name__)

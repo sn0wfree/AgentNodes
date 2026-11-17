@@ -49,8 +49,8 @@ _ROLE_PROMPT_FILES = {
 
 # Role → tool whitelist now lives in core.agent.toolsets (A2).
 # Kept as a thin alias for backwards compatibility.
-from agentnodes.kernel.agent.toolsets import TOOLSETS as _ROLE_TOOL_WHITELIST
-from agentnodes.kernel.agent.toolsets import resolve_toolset as _resolve_toolset
+from agentnodes.kernel.agent.tools.toolsets import TOOLSETS as _ROLE_TOOL_WHITELIST
+from agentnodes.kernel.agent.tools.toolsets import resolve_toolset as _resolve_toolset
 
 
 def _get_tool_whitelist(role: str) -> list[str]:

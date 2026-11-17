@@ -26,7 +26,7 @@ import uuid
 from pathlib import Path
 from typing import Any, Optional
 
-from agentnodes.kernel.agent.tools import BaseTool, ToolContext, ToolError
+from agentnodes.kernel.agent.tools.core import BaseTool, ToolContext, ToolError
 from agentnodes.kernel.agent.builtin_tools.utils import err_actionable, tool_ok
 
 logger = logging.getLogger(__name__)

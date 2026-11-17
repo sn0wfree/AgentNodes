@@ -28,7 +28,7 @@ from agentnodes.kernel.agent.prompt.builder import (
     PromptBuilderFactory,
     StaticFilePromptBuilder,
 )
-from agentnodes.kernel.agent.tools import BaseTool, ToolContext, ToolRegistry
+from agentnodes.kernel.agent.tools.core import BaseTool, ToolContext, ToolRegistry
 
 
 # ── 用注入的 harness 配置替换真实 RSI 来源 ───────────────────────────

@@ -14,7 +14,7 @@ import pytest
 
 from agentnodes.foundation.llm import LLMConfig
 from agentnodes.kernel.agent.chat_loop import build_chat_agent_loop
-from agentnodes.kernel.agent.tool_context import build_tool_context
+from agentnodes.kernel.agent.tools.context import build_tool_context
 
 
 @pytest.fixture
@@ -96,7 +96,7 @@ def _run_registry(loop, tmp_path: Path, name: str, **params) -> dict:
 
     与 ``_run`` 分开保留——两条生产路径都要有覆盖，不能只测一条。
     """
-    from agentnodes.kernel.agent.tool_context import build_tool_context
+    from agentnodes.kernel.agent.tools.context import build_tool_context
 
     ctx = build_tool_context(
         tool_call_id="e2e",
@@ -237,7 +237,7 @@ class TestE3E4Coding:
         from agentnodes.kernel.agent.builtin_tools import (
             build_default_registry,
         )
-        from agentnodes.kernel.agent.tool_context import build_tool_context
+        from agentnodes.kernel.agent.tools.context import build_tool_context
 
         reg = build_default_registry()
         ctx = build_tool_context(
@@ -259,7 +259,7 @@ class TestE3E4Coding:
         from agentnodes.kernel.agent.builtin_tools import (
             build_default_registry,
         )
-        from agentnodes.kernel.agent.tool_context import build_tool_context
+        from agentnodes.kernel.agent.tools.context import build_tool_context
         from agentnodes.kernel.permission import PermissionEvaluator
         from agentnodes.kernel.permission.schema import (
             MODE_PRESETS,

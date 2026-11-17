@@ -14,7 +14,7 @@ from unittest.mock import MagicMock, patch
 import pytest
 
 from agentnodes.kernel.agent.loop import AgentLoop
-from agentnodes.kernel.agent.tools import ToolRegistry
+from agentnodes.kernel.agent.tools.core import ToolRegistry
 from agentnodes.kernel.hooks.composite import AgentHook, CompositeHook
 from agentnodes.kernel.hooks.context import AgentHookContext
 from agentnodes.foundation.llm.config import LLMConfig

@@ -23,7 +23,7 @@ from agentnodes.kernel.agent.builtin_tools.todo_tools import (
     _normalize_todos,
 )
 from agentnodes.kernel.agent.loop import AgentLoop
-from agentnodes.kernel.agent.tools import ToolContext
+from agentnodes.kernel.agent.tools.core import ToolContext
 from agentnodes.foundation.llm import LLMConfig, LLMResponse, ToolCall
 
 

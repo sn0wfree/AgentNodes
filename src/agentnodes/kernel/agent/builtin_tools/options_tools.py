@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import logging
 
-from agentnodes.kernel.agent.tools import (
+from agentnodes.kernel.agent.tools.core import (
     BaseTool,
     ToolContext,
 )

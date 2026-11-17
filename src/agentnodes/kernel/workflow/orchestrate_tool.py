@@ -22,7 +22,7 @@ from __future__ import annotations
 import json
 from typing import Any
 
-from agentnodes.kernel.agent.tools import BaseTool, ToolContext
+from agentnodes.kernel.agent.tools.core import BaseTool, ToolContext
 
 MAX_NODES = 50
 

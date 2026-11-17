@@ -13,7 +13,7 @@ from pathlib import Path
 import pytest
 
 from agentnodes.kernel.agent.loop import AgentLoop, LoopResult
-from agentnodes.kernel.agent.tools import (
+from agentnodes.kernel.agent.tools.core import (
     EFFECT_DB,
     EFFECT_NET,
     BaseTool,

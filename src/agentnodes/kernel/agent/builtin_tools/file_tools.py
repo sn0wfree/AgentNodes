@@ -9,7 +9,7 @@ from agentnodes.kernel.agent.sandbox import (
     PathWhitelist,
     validate_python_source,
 )
-from agentnodes.kernel.agent.tools import (
+from agentnodes.kernel.agent.tools.core import (
     EFFECT_FS,
     BaseTool,
     ToolContext,
