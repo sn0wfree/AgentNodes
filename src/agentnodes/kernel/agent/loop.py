@@ -29,7 +29,6 @@ from __future__ import annotations
 
 import asyncio
 import hashlib
-import inspect
 import json
 import logging
 import os
@@ -648,12 +647,12 @@ class AgentLoop(
     # ── L7 v0.2: step execution with uniform error isolation ──────
 
     async def _call_step(self, step: Any, ctx: Any) -> StepResult:
-        """Execute a strategy Step（B2-① T1 过渡壳）.
+        """Execute a strategy Step（T11 后只剩新形状契约）.
 
-        Duck-type 分派：新形状（``handle(input, ctx) → StepResult``）直接走
-        :func:`maybe_await`；旧形状（``execute(ctx, *, async_mode)`` 变异 ctx）
-        仍走 execute 并包成 ``StepResult.ok(ctx)``——output 即旧契约的 ctx。
-        T2+ 逐 step 切片迁移后，T11 删除旧形状分支（R-020：删除在最后）。
+        契约：``handle(input, ctx) → StepResult``，经 :func:`maybe_await`
+        统一处理 awaitable / 裸返回。T11（2026-11-17）删除了旧形状
+        ``execute(ctx, *, async_mode)`` 分支与旧形状适配器——
+        无 handle 的 step 视为契约违反，走错误隔离通道。
 
         错误隔离：异常 → ``StepResult.fail(f"{step.name}: {exc}")``。
         **不再写 ``ctx.should_stop``**——旧 catch 的这个副作用改由读 stop
@@ -662,12 +661,12 @@ class AgentLoop(
         """
         try:
             handle = getattr(step, "handle", None)
-            if handle is not None:
-                return await maybe_await(handle(None, ctx))
-            result = step.execute(ctx, async_mode=True)  # 旧形状过渡壳（T11 删）
-            if inspect.isawaitable(result):
-                result = await result
-            return StepResult.ok(result)
+            if handle is None:
+                raise TypeError(
+                    f"{type(step).__name__} 没有 handle()（T11 后旧形状 "
+                    "execute 契约已删除；step 必须实现 handle(input, ctx)）"
+                )
+            return await maybe_await(handle(None, ctx))
         except Exception as exc:  # noqa: BLE001 — isolated per-step
             sname = getattr(step, "name", type(step).__name__)
             logger.warning("step %s failed: %s", sname, exc)

@@ -19,15 +19,33 @@ import pytest
 
 from agentnodes.kernel.agent.tools import ToolContext
 
-# A1 (2026-10-28): these suites drive POSIX commands (pwd/ls/sh/sleep/
-# python3) through the shell tool. On Windows there is no POSIX shell, so
-# they fail for environmental reasons, not product defects. The
-# platform-independent suites (Safety / Parameters / Registration /
-# Schema) keep running everywhere.
-_posix_shell_only = pytest.mark.skipif(
-    sys.platform == "win32",
-    reason="POSIX shell commands (pwd/ls/sh/sleep) unavailable on Windows",
-)
+# 2026-11-17：原实现把这些套件整体 skipif(win32)——8 个测试在 Windows 上
+# 永远不跑。改为**跨平台命令表**：语义不变（echo / 当前目录 / 列目录 /
+# python / 非零退出 / stderr / 慢命令 / 大输出），命令按平台选择。
+# Windows 下 subprocess.run(shell=True) 走 cmd.exe。
+IS_WIN = sys.platform == "win32"
+
+if IS_WIN:
+    CMD_ECHO = "echo hello"
+    CMD_PWD = "cd"                     # cmd.exe 的 cd 打印当前目录
+    CMD_LS = "dir /b"                  # 裸文件名
+    CMD_PY_67 = 'python -c "print(6*7)"'
+    CMD_EXIT7 = "exit /b 7"
+    CMD_STDERR = (
+        'python -c "import sys; sys.stderr.write(\'to_stderr\\n\'); '
+        'print(\'to_stdout\')"'
+    )
+    CMD_SLOW = 'python -c "import time; time.sleep(5)"'
+    CMD_BIGOUT = "python -c \"print('x' * 60000)\""
+else:
+    CMD_ECHO = "echo hello"
+    CMD_PWD = "pwd"
+    CMD_LS = "ls"
+    CMD_PY_67 = "python3 -c 'print(6*7)'"
+    CMD_EXIT7 = "exit 7"
+    CMD_STDERR = "sh -c 'echo to_stdout; echo to_stderr 1>&2'"
+    CMD_SLOW = "sleep 5"
+    CMD_BIGOUT = "python3 -c \"print('x' * 60000)\""
 
 # ── Test fixtures ──────────────────────────────────────────────────
 
@@ -49,18 +67,17 @@ def tmp_workspace(tmp_path):
 # ── Basic execution ────────────────────────────────────────────────
 
 
-@_posix_shell_only
 class TestShellExecBasic:
     def test_echo_returns_stdout(self, tool, tmp_workspace):
-        result = json.loads(tool.execute(ctx=ToolContext(workspace=str(tmp_workspace)), command="echo hello"))
+        result = json.loads(tool.execute(ctx=ToolContext(workspace=str(tmp_workspace)), command=CMD_ECHO))
         assert result["status"] == "ok"
         assert result["stdout"].strip() == "hello"
         assert result["exit_code"] == 0
         assert "elapsed_seconds" in result
-        assert result["command"] == "echo hello"
+        assert result["command"] == CMD_ECHO
 
     def test_pwd_runs_in_workspace(self, tool, tmp_workspace):
-        result = json.loads(tool.execute(ctx=ToolContext(workspace=str(tmp_workspace)), command="pwd"))
+        result = json.loads(tool.execute(ctx=ToolContext(workspace=str(tmp_workspace)), command=CMD_PWD))
         assert result["status"] == "ok"
         # pwd should be the workspace directory
         assert tmp_workspace.name in result["stdout"] or str(tmp_workspace) in result["stdout"]
@@ -68,7 +85,7 @@ class TestShellExecBasic:
     def test_ls_lists_workspace(self, tool, tmp_workspace):
         (tmp_workspace / "file1.txt").write_text("a")
         (tmp_workspace / "file2.txt").write_text("b")
-        result = json.loads(tool.execute(ctx=ToolContext(workspace=str(tmp_workspace)), command="ls"))
+        result = json.loads(tool.execute(ctx=ToolContext(workspace=str(tmp_workspace)), command=CMD_LS))
         assert result["status"] == "ok"
         assert "file1.txt" in result["stdout"]
         assert "file2.txt" in result["stdout"]
@@ -77,7 +94,7 @@ class TestShellExecBasic:
         """Python invocation through run_command (the chat fix scenario)."""
         result = json.loads(tool.execute(
             ctx=ToolContext(workspace=str(tmp_workspace)),
-            command="python3 -c 'print(6*7)'",
+            command=CMD_PY_67,
         ))
         assert result["status"] == "ok"
         assert result["stdout"].strip() == "42"
@@ -87,17 +104,16 @@ class TestShellExecBasic:
 # ── Exit codes ─────────────────────────────────────────────────────
 
 
-@_posix_shell_only
 class TestShellExecExitCodes:
     def test_nonzero_exit_code_reported(self, tool, tmp_workspace):
-        result = json.loads(tool.execute(ctx=ToolContext(workspace=str(tmp_workspace)), command="exit 7"))
+        result = json.loads(tool.execute(ctx=ToolContext(workspace=str(tmp_workspace)), command=CMD_EXIT7))
         assert result["status"] == "ok"  # status reflects execution, not exit code
         assert result["exit_code"] == 7
 
     def test_stderr_captured(self, tool, tmp_workspace):
         result = json.loads(tool.execute(
             ctx=ToolContext(workspace=str(tmp_workspace)),
-            command="sh -c 'echo to_stdout; echo to_stderr 1>&2'",
+            command=CMD_STDERR,
         ))
         assert result["status"] == "ok"
         assert "to_stdout" in result["stdout"]
@@ -107,12 +123,11 @@ class TestShellExecExitCodes:
 # ── Timeout ────────────────────────────────────────────────────────
 
 
-@_posix_shell_only
 class TestShellExecTimeout:
     def test_timeout_returns_error(self, tool, tmp_workspace):
         result = json.loads(tool.execute(
             ctx=ToolContext(workspace=str(tmp_workspace)),
-            command="sleep 5",
+            command=CMD_SLOW,
             timeout=1,
         ))
         assert result["status"] == "error"
@@ -122,11 +137,11 @@ class TestShellExecTimeout:
     def test_custom_timeout_respected(self, tool, tmp_workspace):
         result = json.loads(tool.execute(
             ctx=ToolContext(workspace=str(tmp_workspace)),
-            command="echo done",
+            command=CMD_ECHO,
             timeout=10,
         ))
         assert result["status"] == "ok"
-        assert result["stdout"].strip() == "done"
+        assert result["stdout"].strip() == "hello"
 
 
 # ── Blocked commands ───────────────────────────────────────────────
@@ -167,13 +182,12 @@ class TestShellExecParameters:
 # ── Output truncation ──────────────────────────────────────────────
 
 
-@_posix_shell_only
 class TestShellExecTruncation:
     def test_large_stdout_truncated(self, tool, tmp_workspace):
         # 60KB of output, limit is 50_000
         result = json.loads(tool.execute(
             ctx=ToolContext(workspace=str(tmp_workspace)),
-            command="python3 -c \"print('x' * 60000)\"",
+            command=CMD_BIGOUT,
         ))
         assert result["status"] == "ok"
         assert "truncated" in result["stdout"]

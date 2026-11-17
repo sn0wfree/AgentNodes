@@ -1,15 +1,13 @@
-"""批次 9 · B1 核心抽象类型测试（StepResult / StepHandler / StreamingHandler / Pipeline / 适配器）。
+"""核心抽象类型测试（StepResult / StepHandler / StreamingHandler / Pipeline）。
 
-验收核心：**互操作证明**——旧形状步骤（``execute(ctx, *, async_mode)`` 变异
-ctx）经 ``LegacyStepAdapter`` 与新式 handler 同 Pipeline 串联。B2-① 后仓内
-生产步骤已陆续迁 handle，旧形状标本由本文件合成提供（真实 step 的
-handle 直进 Pipeline 见各迁移测试）。
+**T11（2026-11-17）后**：旧形状互操作桥 ``LegacyStepAdapter`` 已删除——
+全部 step 都是新式 ``handle(input, ctx) → StepResult`` 契约；
+``AgentLoop._call_step`` 对无 handle 的 step 走错误隔离通道（见
+``TestCallStepRejectsLegacyShape``）。
 """
 from __future__ import annotations
 
 import asyncio
-
-import pytest
 
 from agentnodes.kernel.agent._core_types import (
     Pipeline,
@@ -18,11 +16,7 @@ from agentnodes.kernel.agent._core_types import (
     StreamingHandler,
     maybe_await,
 )
-from agentnodes.kernel.agent.step_adapters import (
-    FnStreamingHandler,
-    LegacyStepAdapter,
-)
-from agentnodes.kernel.agent.strategy.loop_context import LoopContext
+from agentnodes.kernel.agent.step_adapters import FnStreamingHandler
 
 
 # ── StepResult ────────────────────────────────────────────────────────
@@ -124,6 +118,13 @@ class TestPipeline:
     def test_repr(self):
         assert "AddOne" in repr(Pipeline(_AddOne()))
 
+    def test_pipeline_is_stephandler(self):
+        """Pipeline 自身可再嵌套（组合性）。"""
+        inner = Pipeline(_AddOne(), _AddOne())
+        outer = Pipeline(inner, _AddOne())
+        r = asyncio.run(outer.handle(0, None))
+        assert r.output == 3
+
 
 # ── StreamingHandler 契约 ─────────────────────────────────────────────
 
@@ -172,72 +173,36 @@ class TestStreaming:
         assert isinstance(out[-1], StepResult) and out[-1].output == "done"
 
 
-# ── 互操作：真实 legacy step 经适配器进 Pipeline ─────────────────────
+# ── _call_step 对旧形状 step 的拒绝（T11 新分支覆盖）──────────────────
 
 
-class TestLegacyInterop:
-    def test_real_legacy_step_through_adapter(self):
-        """旧形状标本经适配器：execute 变异 ctx → StepResult.ok(ctx)。
+class TestCallStepRejectsLegacyShape:
+    def test_handle_less_step_is_isolated_as_fail(self):
+        """T11 后：无 handle 的 step（旧形状 execute 残留）→ StepResult.fail，
+        异常被错误隔离吞掉而不是炸整个 loop。"""
 
-        B2-① 后仓内生产 step 陆续迁 handle，旧形状标本由本文件合成——
-        适配器的 legacy 路径契约（execute 调用 + output=变异后 ctx）仍被钉住。
-        """
-
-        class _LegacyStep:
+        class _LegacyShape:
             name = "legacy_stub"
 
-            def execute(self, ctx, *, async_mode):
-                ctx.metadata["legacy_ran"] = True
-                return ctx
+            def execute(self, ctx, *, async_mode):  # 旧形状：无 handle
+                raise AssertionError("execute 不应被调用")
 
-        ctx = LoopContext(task="e2e")
-        adapter = LegacyStepAdapter(_LegacyStep())
-        assert adapter.name == "legacy_stub"
+        from agentnodes.kernel.agent.loop import AgentLoop
 
-        r = asyncio.run(adapter.handle(None, ctx))
-        assert r.success is True
-        assert r.output is ctx  # legacy 契约：返回变异后的 ctx
-        assert ctx.metadata["legacy_ran"] is True
-
-    def test_legacy_adapter_maps_exception_to_fail(self):
-        class _Broken:
-            name = "broken"
-
-            def execute(self, ctx, *, async_mode):
-                raise RuntimeError("legacy blew up")
-
-        r = asyncio.run(LegacyStepAdapter(_Broken()).handle(None, None))
+        r = asyncio.run(AgentLoop._call_step(object(), _LegacyShape(), None))
         assert r.success is False
-        assert "legacy blew up" in r.error
+        assert "没有 handle" in r.error
 
-    def test_interop_pipeline_legacy_plus_new(self):
-        """验收核心：旧形状 step 经适配器与新式 handler 同管道串联。"""
+    def test_handle_step_normal_path(self):
+        """新形状 step 经 _call_step 正常执行（改动后的回归对照）。"""
 
-        class _LegacyStep:
-            name = "legacy_stub"
+        class _Ok:
+            name = "ok_step"
 
-            def execute(self, ctx, *, async_mode):
-                ctx.metadata["legacy_ran"] = True
-                return ctx
+            async def handle(self, input, ctx):
+                return StepResult.ok("ran")
 
-        class _Mark(StepHandler):
-            def handle(self, input, ctx):
-                input.marked = True  # type: ignore[attr-defined]
-                return StepResult.ok(input)
+        from agentnodes.kernel.agent.loop import AgentLoop
 
-        ctx = LoopContext(task="e2e")
-        pipeline = Pipeline(
-            LegacyStepAdapter(_LegacyStep()),
-            _Mark(),
-        )
-        r = asyncio.run(pipeline.handle(None, ctx))
-        assert r.success is True
-        assert r.output.marked is True
-        assert r.output is ctx
-
-    def test_pipeline_is_stephandler(self):
-        """Pipeline 自身可再嵌套（组合性）。"""
-        inner = Pipeline(_AddOne(), _AddOne())
-        outer = Pipeline(inner, _AddOne())
-        r = asyncio.run(outer.handle(0, None))
-        assert r.output == 3
+        r = asyncio.run(AgentLoop._call_step(object(), _Ok(), None))
+        assert r.success is True and r.output == "ran"

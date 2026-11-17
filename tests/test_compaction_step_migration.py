@@ -107,10 +107,6 @@ class TestCompactionStep:
         assert r.output["applied"] == []
         assert "compaction_applied" not in ctx.metadata
 
-    def test_should_run_returns_true(self):
-        # T11 随 should_run 契约一并删除（零生产调用者）；本批仅迁移形状。
-        assert DefaultCompactionStep().should_run(LoopContext(task="t")) is True
-
     def test_sync_twin_not_referenced(self):
         """R-019 注入网：step 源码不得引用同步孪生——有人加回分支此网红。
 

@@ -43,10 +43,16 @@ def git_reset(workspace_path: Path) -> bool:
 
 
 def git_get_hash(workspace_path: Path, short: bool = True) -> str:
-    """获取当前 commit hash。"""
+    """获取当前 commit hash。
+
+    **修复（2026-11-17，测试抓到）**：原实现 ``["git", "rev-parse",
+    "--short"]`` 漏了 rev 参数——``rev-parse`` 需要 rev，该调用恒失败
+    返回 ``""``（short 路径从未能用过）。
+    """
+    args = ["git", "rev-parse", *(["--short", "HEAD"] if short else ["HEAD"])]
     try:
         result = subprocess.run(
-            ["git", "rev-parse", "--short" if short else "HEAD"],
+            args,
             cwd=str(workspace_path),
             capture_output=True,
             text=True,

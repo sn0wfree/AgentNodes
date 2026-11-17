@@ -11,8 +11,9 @@ AST 只认**代码节点**：形参 / 名字 / 属性 / 关键字实参。
 **分组**：
 
 - **绿组**：迁移后已达成的契约（当前就该成立）
-- **xfail 组**：T11 删除工序的目标态——用 ``strict=True`` 钉住，
-  T11 达成后变 XPASS **强制**移除 marker（R-010：不提交红测试）
+- **T11 目标态组**（原 xfail 组）：2026-11-17 删除工序完成，
+  ``should_run`` / ``LegacyStepAdapter`` / 旧形状分支已从 src 消除，
+  4 条断言转正为常规绿测试（strict=True 的 XPASS 义务履行完毕）
 """
 
 from __future__ import annotations
@@ -197,14 +198,10 @@ def test_step_result_events_still_empty():
 
 
 # ══════════════════════════════════════════════════════════════════
-# xfail 组：T11 删除工序的目标态
+# T11 目标态 —— 2026-11-17 达成（删除工序完成，xfail 转正）
 # ══════════════════════════════════════════════════════════════════
 
 
-@pytest.mark.xfail(
-    strict=True, raises=AssertionError,
-    reason="T11 删除工序后达成（should_run 零生产调用者 → 随契约删除）",
-)
 def test_should_run_removed_from_src():
     """§7 断言 6：``def should_run`` = 0（T11 达成）。"""
     hits = []
@@ -213,10 +210,6 @@ def test_should_run_removed_from_src():
     assert not hits, f"should_run 残留: {hits}"
 
 
-@pytest.mark.xfail(
-    strict=True, raises=AssertionError,
-    reason="T11 删除工序后达成（LegacyStepAdapter 无可适配对象）",
-)
 def test_legacy_step_adapter_removed_from_src():
     """§7 断言 8：``LegacyStepAdapter`` = 0（T11 达成）。"""
     r = subprocess.run(
@@ -227,20 +220,12 @@ def test_legacy_step_adapter_removed_from_src():
     assert not r.stdout.strip(), "LegacyStepAdapter 残留"
 
 
-@pytest.mark.xfail(
-    strict=True, raises=AssertionError,
-    reason="T11 删除工序后达成（旧形状适配器随之退役）",
-)
 def test_step_adapters_has_zero_async_mode_refs():
     """§7 断言 2（续）：``step_adapters.py`` 零 ``async_mode`` 代码引用。"""
     refs = _async_mode_refs(SRC / "step_adapters.py")
     assert not refs, f"step_adapters 仍有 async_mode 引用: {refs}"
 
 
-@pytest.mark.xfail(
-    strict=True, raises=AssertionError,
-    reason="T11 删除工序后达成（旧形状分支随之退役）",
-)
 def test_call_step_has_no_legacy_execute_branch():
     """T11：``_call_step`` 的旧形状 ``step.execute(...)`` 分支删除。"""
     tree = ast.parse((SRC / "loop.py").read_text(encoding="utf-8"))

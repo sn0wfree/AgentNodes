@@ -113,9 +113,8 @@ class Pipeline(StepHandler):
     上一个 step 的 ``output`` 作为下一个 step 的 ``input``。
     任一 step 失败 → 整体失败（fail-fast）。events 累积。
 
-    **mix-in 兼容**：接受新式 ``StepHandler``，也接受
-    :class:`~agentnodes.kernel.agent.step_adapters.LegacyStepAdapter`
-    包装的存量步骤——"换底座不换职责"的互操作点。
+    **T11（2026-11-17）**：旧形状互操作桥已随旧契约删除——全部 step
+    现在都是新式 ``StepHandler``（``handle(input, ctx) → StepResult``）。
     """
 
     def __init__(self, *steps: StepHandler) -> None:

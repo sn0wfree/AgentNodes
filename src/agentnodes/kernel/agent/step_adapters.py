@@ -1,63 +1,19 @@
-"""新旧步骤接口的适配器（批次 9 · B1 互操作桥）。
+"""流式 handler 适配器（批次 9 引入；T11 后只剩 ``FnStreamingHandler``）。
 
-**换底座不换职责**：现有 9 个 ``strategy/steps/`` 实现用
-``execute(ctx, *, async_mode)`` 变异 ctx 的旧形态，且正在生产路径上跑。
-本模块让它们**不做任何修改**就能进新底座（Pipeline / 未来的 skeleton）；
-新式代码从此只面向 ``StepHandler`` / ``StreamingHandler``。
-
-B2 把 ``ctx.should_stop`` 副作用收编为 ``StepResult`` 返回值之后，
-适配器可逐步退役——它是桥，不是终点。
+**T11（2026-11-17）**：旧形状 ``execute(ctx, *, async_mode)`` 适配器已按
+契约删除（零生产调用者），``loop._call_step`` 的旧形状分支同步退役
+（见 ``test_step_contract`` 的 4 条断言转正）。新式代码只面向
+``StreamingHandler``。
 """
 
 from __future__ import annotations
 
-import inspect
-from collections.abc import AsyncIterator, Awaitable, Callable
+from collections.abc import AsyncIterator, Callable
 from typing import Any
 
-from ._core_types import StepHandler, StepResult, StreamingHandler
+from ._core_types import StreamingHandler
 
-__all__ = ["FnStreamingHandler", "LegacyStepAdapter"]
-
-
-class LegacyStepAdapter(StepHandler):
-    """把旧式 step（``execute(ctx, *, async_mode)`` 变异 ctx）包成
-    :class:`StepHandler`。
-
-    语义映射（**诚实标注**）：
-
-    - ``output`` = 步骤返回的 ctx（legacy 契约就是变异后返回它）
-    - ``success`` = 未抛异常；**legacy 步骤用 ``ctx.should_stop`` 副作用
-      表达停止/失败**——本适配器只映射异常，``should_stop`` 的读取归
-      B2 的 deciders（那正是 B2 收编副作用的原因）
-    - ``events`` = 空（legacy 步骤的事件经 ``_fire`` 回调副作用走，
-      B2/B3 才收编进 StepResult）
-    - ``async_mode`` 恒传 ``True``：legacy 步骤按 awaitable 优先，
-      同步实现返回裸 ctx，``inspect.isawaitable`` 兜底——与
-      ``loop._call_step`` 的分派手法一致
-    """
-
-    def __init__(self, step: Any, *, name: str | None = None) -> None:
-        self._step = step
-        self._name = name or getattr(step, "name", type(step).__name__)
-
-    @property
-    def name(self) -> str:
-        return self._name
-
-    @property
-    def legacy_step(self) -> Any:
-        """被包装的原始 step（测试/调试用）。"""
-        return self._step
-
-    async def handle(self, input: Any, ctx: Any) -> StepResult:
-        try:
-            result = self._step.execute(ctx, async_mode=True)
-            if inspect.isawaitable(result):
-                result = await result
-            return StepResult.ok(result)
-        except Exception as exc:  # noqa: BLE001 — 与 _call_step 同口径隔离
-            return StepResult.fail(f"{self._name}: {exc}")
+__all__ = ["FnStreamingHandler"]
 
 
 class FnStreamingHandler(StreamingHandler):

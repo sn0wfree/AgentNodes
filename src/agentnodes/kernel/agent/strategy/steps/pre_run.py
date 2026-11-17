@@ -45,10 +45,6 @@ class DefaultPreRunStep(StepHandler):
     def name(self) -> str:
         return "pre_run"
 
-    def should_run(self, ctx: LoopContext) -> bool:
-        # T11 随 should_run 契约一并删除（零生产调用者）。
-        return True
-
     def handle(self, input: Any, ctx: LoopContext) -> StepResult:
         """同步实现——``_prepare_run`` 是同步的，异常直接向上抛。
 

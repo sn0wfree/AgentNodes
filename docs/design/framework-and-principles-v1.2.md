@@ -227,9 +227,9 @@ v1.2 追加一句：**执行面已收敛为单引擎（LoopEngine）**，结构�
 |---|---|---:|---:|---|
 | L1 | `interfaces/` | 118 | 22,064 | 渠道层 + 组装根（哑适配器 + 唯一知道 apps 的位置）|
 | L2 | `apps/` | 42 | 9,660 | 业务插件层（goal / chat / agent_plugins / swarm_presets / scheduled_research / builtin_tools / **algo**）|
-| L3 | `kernel/` | 208 | 48,195 | 平台机制（agent / workflow / gateway / orchestration / events / session / evolution / swarm / …）|
-| L4 | `foundation/` | 63 | 12,085 | 零业务原语 |
-| — | **合计** | **431** | **92,004** | 上行违规 **0** |
+| L3 | `kernel/` | 208 | 48,136 | 平台机制（agent / workflow / gateway / orchestration / events / session / evolution / swarm / …）|
+| L4 | `foundation/` | 63 | 12,091 | 零业务原语 |
+| — | **合计** | **431** | **91,951** | 上行违规 **0** |
 
 ### 2.2 构件落位表（语义 × 物理 · 状态已回填）
 
