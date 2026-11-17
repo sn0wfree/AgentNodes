@@ -175,7 +175,7 @@ class ProjectedSession:
         """
         from datetime import datetime, timezone
 
-        from .models import Message
+        from agentnodes.kernel.session.models import Message
 
         out: List[Message] = []
         for m in self.messages_in_order():

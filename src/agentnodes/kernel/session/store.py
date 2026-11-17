@@ -19,7 +19,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Optional, Sequence
 
-from .models import Attempt, AttemptStatus, Message
+from agentnodes.kernel.session.models import Attempt, AttemptStatus, Message
 from agentnodes.foundation import settings as _settings
 
 logger = logging.getLogger(__name__)
@@ -119,7 +119,7 @@ class SessionStore:
         logger.debug("[STORE] get_messages (db) session=%s limit=%d", session_id, limit)
         # B3：原 `from ..routers.web_session import _get_db, _row_to_message`
         # （L3→L1 上行违规）→ 两者自 B2 起住同包 db.py。
-        from .db import _get_db, _row_to_message
+        from agentnodes.kernel.session.db import _get_db, _row_to_message
 
         with _get_db() as conn:
             conn.row_factory = sqlite3.Row
@@ -207,7 +207,7 @@ class SessionStore:
         its incremental cache and forces a full event_log replay every
         time get_messages is hit."""
         if self._projector is None:
-            from .projector import Projector
+            from agentnodes.kernel.session.projector import Projector
             self._projector = Projector(self.db_path)
         return self._projector
 

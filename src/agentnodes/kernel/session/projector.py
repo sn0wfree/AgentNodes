@@ -17,12 +17,12 @@ from pathlib import Path
 from typing import Any, Dict, List, Optional, Set, Tuple
 
 from agentnodes.kernel.events.event_v2 import EventType, EventV2
-from .projection_models import (  # noqa: F401  (re-exports)
+from agentnodes.kernel.session.projection_models import (  # noqa: F401  (re-exports)
     ProjectedMessage,
     ProjectedPart,
     ProjectedSession,
 )
-from .projection_store import ProjectionStore
+from agentnodes.kernel.session.projection_store import ProjectionStore
 
 logger = logging.getLogger(__name__)
 
@@ -257,7 +257,7 @@ class Projector:
         this name: project_incremental and the projector tests call
         ``_apply`` directly.
         """
-        from .projection_handlers import apply_event
+        from agentnodes.kernel.session.projection_handlers import apply_event
 
         apply_event(event, state)
 

@@ -26,7 +26,7 @@ from __future__ import annotations
 import logging
 from typing import Any
 
-from .genome_proposals import GenomeProposal
+from agentnodes.kernel.evolution.genome_proposals import GenomeProposal
 
 logger = logging.getLogger(__name__)
 

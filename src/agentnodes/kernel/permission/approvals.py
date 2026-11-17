@@ -24,9 +24,9 @@ import time
 from pathlib import Path
 from typing import Any, Callable
 
-from .evaluator import PermissionEvaluator
-from .rules_io import DEFAULT_RULES_PATH, load_rules, save_rule
-from .schema import (
+from agentnodes.kernel.permission.evaluator import PermissionEvaluator
+from agentnodes.kernel.permission.rules_io import DEFAULT_RULES_PATH, load_rules, save_rule
+from agentnodes.kernel.permission.schema import (
     MODE_PRESETS,
     PermissionAction,
     PermissionDecision,

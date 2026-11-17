@@ -27,7 +27,7 @@ from agentnodes.kernel.workflow.dag import topological_layers
 # at module top level). Keeping them in this 945-line engine made workflow
 # depend on the engine instead of the contract. Re-exported here so every
 # existing ``from ...swarm.runtime import AgentResult`` keeps working.
-from .types import (
+from agentnodes.kernel.swarm.types import (
     AgentCall,
     AgentResult,
     AgentStatus,
@@ -793,7 +793,7 @@ class SwarmRuntime:
         # 分支条件求值器原走 CapabilityRegistry（kind=goal.expression）；
         # goal 包移除后它已迁入 kernel/swarm（通用 DSL，无业务依赖），
         # 直接 import 即可——不再需要端口解析。
-        from .expression_evaluator import evaluate_condition
+        from agentnodes.kernel.swarm.expression_evaluator import evaluate_condition
 
         skipped: list[str] = []
         retried: list[str] = []

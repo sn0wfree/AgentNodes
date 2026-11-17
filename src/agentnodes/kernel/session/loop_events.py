@@ -9,11 +9,11 @@ from pathlib import Path
 from typing import TYPE_CHECKING, Any, Optional
 
 if TYPE_CHECKING:
-    from .models import Attempt
-    from .service import SessionService
+    from agentnodes.kernel.session.models import Attempt
+    from agentnodes.kernel.session.service import SessionService
 
 from agentnodes.foundation.llm.config import LLMConfig
-from .part_accumulate import _accumulate_part
+from agentnodes.kernel.session.part_accumulate import _accumulate_part
 from agentnodes.foundation import settings as _settings
 
 logger = logging.getLogger(__name__)

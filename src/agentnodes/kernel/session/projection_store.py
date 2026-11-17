@@ -16,7 +16,7 @@ import threading
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Set
 
-from .projection_models import ProjectedMessage, ProjectedSession
+from agentnodes.kernel.session.projection_models import ProjectedMessage, ProjectedSession
 
 logger = logging.getLogger(__name__)
 

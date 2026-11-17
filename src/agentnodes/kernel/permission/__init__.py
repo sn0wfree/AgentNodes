@@ -18,10 +18,10 @@ Persistence: user-curated rules live at
 new rule; reject-always appends a deny rule.
 """
 
-from .approvals import PermissionGateway
-from .evaluator import PermissionDeniedError, PermissionEvaluator
-from .rules_io import DEFAULT_RULES_PATH, load_rules, save_rule
-from .schema import (
+from agentnodes.kernel.permission.approvals import PermissionGateway
+from agentnodes.kernel.permission.evaluator import PermissionDeniedError, PermissionEvaluator
+from agentnodes.kernel.permission.rules_io import DEFAULT_RULES_PATH, load_rules, save_rule
+from agentnodes.kernel.permission.schema import (
     DEFAULT_HARD_DENY,
     MODE_PRESETS,
     HardDenyRule,

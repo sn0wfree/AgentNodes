@@ -21,10 +21,10 @@ CLI / MCP / TUI / web 四通道共用同一套会话能力。
 """
 from __future__ import annotations
 
-from .backfill_event_log import backfill_event_log
-from .db import ensure_session_row
-from .history_convert import MAX_HISTORY_CHARS
-from .loop_events import (
+from agentnodes.kernel.session.backfill_event_log import backfill_event_log
+from agentnodes.kernel.session.db import ensure_session_row
+from agentnodes.kernel.session.history_convert import MAX_HISTORY_CHARS
+from agentnodes.kernel.session.loop_events import (
     _bootstrap_workspace,
     _build_attempt_metrics,
     _LoopEventForwarder,
@@ -33,7 +33,7 @@ from .loop_events import (
     _resolve_loop_prompt,
     _thinking_instructions,
 )
-from .models import (
+from agentnodes.kernel.session.models import (
     Attempt,
     AttemptId,
     AttemptStatus,
@@ -44,7 +44,7 @@ from .models import (
     SessionStatus,
     _utc_now_iso,
 )
-from .part_accumulate import (
+from agentnodes.kernel.session.part_accumulate import (
     _accumulate_part,
     _accumulate_text_delta,
     _accumulate_text_ended,
@@ -53,20 +53,20 @@ from .part_accumulate import (
     _accumulate_tool_result,
     _build_tool_call_part,
 )
-from .projection_handlers import HANDLERS, apply_event
-from .projection_models import ProjectedMessage, ProjectedPart, ProjectedSession
-from .projection_store import ProjectionStore
-from .projector import Projector
-from .service import (
+from agentnodes.kernel.session.projection_handlers import HANDLERS, apply_event
+from agentnodes.kernel.session.projection_models import ProjectedMessage, ProjectedPart, ProjectedSession
+from agentnodes.kernel.session.projection_store import ProjectionStore
+from agentnodes.kernel.session.projector import Projector
+from agentnodes.kernel.session.service import (
     SessionService,
     _CHAT_ATTEMPT_TIMEOUT,
     _QUEUE_LIMIT,
     _friendly_error_text,
     auto_title_session,
 )
-from .store import SessionStore, _row_to_attempt
-from .trace_projection import TraceProjection
-from .reader import (
+from agentnodes.kernel.session.store import SessionStore, _row_to_attempt
+from agentnodes.kernel.session.trace_projection import TraceProjection
+from agentnodes.kernel.session.reader import (
     delete_session,
     get_messages,
     get_session,

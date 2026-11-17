@@ -25,8 +25,8 @@ from agentnodes.kernel.agent.compact import CompactConfig, compact_messages
 from agentnodes.kernel.agent.event_store import EventStore
 from agentnodes.foundation.llm import LLMConfig
 
-from .models import Attempt, AttemptId, AttemptStatus, Message, MessageId, SessionId
-from .store import SessionStore
+from agentnodes.kernel.session.models import Attempt, AttemptId, AttemptStatus, Message, MessageId, SessionId
+from agentnodes.kernel.session.store import SessionStore
 
 logger = logging.getLogger(__name__)
 
@@ -43,7 +43,7 @@ _QUEUE_LIMIT = 10
 _CHAT_ATTEMPT_TIMEOUT = int(_settings.get_str("AGENTNODES_CHAT_ATTEMPT_TIMEOUT"))
 
 
-from .loop_events import (  # noqa: E402,F401
+from agentnodes.kernel.session.loop_events import (  # noqa: E402,F401
     _bootstrap_workspace,
     _build_attempt_metrics,
     _LoopEventForwarder,
@@ -96,7 +96,7 @@ class SessionService:
         """
         import time
 
-        from .db import _get_db  # B3：原 ..routers.web_session（L3→L1 违规）→ 同包 db
+        from agentnodes.kernel.session.db import _get_db  # B3：原 ..routers.web_session（L3→L1 违规）→ 同包 db
 
         now = time.time()
         with _get_db() as conn:
@@ -176,7 +176,7 @@ class SessionService:
             # 2026-11-16 批次 B3：原 `from ..routers.web_session import
             # _get_db, auto_title_session`（L3→L1 上行违规）。B2 后 `_get_db`
             # 住同包 `db.py`；`auto_title_session` 随簇下沉为本模块函数。
-            from .db import _get_db
+            from agentnodes.kernel.session.db import _get_db
 
             new_title = auto_title_session(session_id, content)
             if new_title:
@@ -1428,7 +1428,7 @@ class SessionService:
 
 
 # ── W-split re-exports (history conversion + part accumulation) ──
-from .history_convert import (  # noqa: E402,F401
+from agentnodes.kernel.session.history_convert import (  # noqa: E402,F401
     _build_tool_indexes,
     _convert_one_history_message,
     _decide_kept_compactions,
@@ -1439,7 +1439,7 @@ from .history_convert import (  # noqa: E402,F401
     _HistoryConvertContext,
     _trim_history_groups,
 )
-from .part_accumulate import (  # noqa: E402,F401
+from agentnodes.kernel.session.part_accumulate import (  # noqa: E402,F401
     _accumulate_part,
     _accumulate_text_delta,
     _accumulate_text_ended,
@@ -1467,7 +1467,7 @@ def auto_title_session(session_id: str, content: str, max_len: int = 30) -> Opti
     """
     import time
 
-    from .db import _get_db
+    from agentnodes.kernel.session.db import _get_db
 
     if not content or not content.strip():
         return None

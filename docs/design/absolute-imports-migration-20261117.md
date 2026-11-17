@@ -82,3 +82,27 @@ ImportFrom 必须 = 0（AST 扫描，豁免：无）；R-019 注入自检；接 
 - 全量 pytest 0 failed；`batch_gate` ALL GREEN；`check_dangling_imports --layers` 上行违规 0；
 - collect 锚点不变；架构图零漂移（或 --write 后一致）；
 - 本文档 §8 回填各批实测数字。
+
+## 8 · 执行结果（2026-11-17 实测）
+
+| 批 | 范围 | 实测处数 | commit |
+|---|---|---|---|
+| 0 试金石 | foundation(除 llm) + kernel/context·hooks·skills·events | 30 / 16 文件 | `8cf22b07` |
+| 1 | kernel/agent（含 `..` 15 / `...` 5） | 165 / 63 文件 | `c58e72c8` |
+| 2 | foundation/llm + interfaces/cli·tui·mcp | 70 / 23 文件 | `22f4732c` |
+| 3 | interfaces/api + interfaces 根 | 50 / 13 文件 | `bf25ae20` |
+| 4 | apps + kernel/workflow·runtimes·gateway·orchestration | 110 / 33 文件 | `f5bc4e8f` |
+| 5 收尾 | kernel/session·evolution·permission·swarm·memory + 门禁 | 69 / 21 文件（+memory 2） | 本批 |
+| — | **合计** | **~498 处 / 172 文件** | **src 残留 = 0** |
+
+**转换器改进（批 4 证据驱动）**：原「目标不存在 → 放弃整文件」策略过粗 ——
+`apps/goal/{store,workflow}.py` 含**故意的 dangling 导入**（探测已归档模块，
+带 `# dangling-import: ok`），整文件放弃会漏掉同文件 6/19 处正常相对导入。
+改为**逐语句跳过**后两文件补齐 25 处，残留归零。
+
+**验证**：每批全量 pytest；末批 7594 passed / 106 skipped；2 failed 均为并行会话
+（builtin_tools 摊平）未提交改动引起的文档数字漂移（L2 42→41、总计 431→430），
+与本迁移零关联（本迁移行数守恒，逐文件 numstat 验证）。
+
+**新门禁**：`scripts/arch/check_no_relative_imports.py`（batch_gate 第 11 步，
+R-019 注入自检 + 6 条单测）—— 保证相对导入不回流。

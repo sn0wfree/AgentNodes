@@ -47,7 +47,7 @@ def list_sessions(
     rather than a dataclass: the consumers disagree on shape and a dataclass
     would only be re-adapted by each of them.
     """
-    from .db import _get_db_at
+    from agentnodes.kernel.session.db import _get_db_at
 
     path = _resolve(db_path)
     if not path.exists():
@@ -79,7 +79,7 @@ def get_session(session_id: str, db_path: Path | None = None) -> dict[str, Any] 
     AttributeError or silently got None. Reading the unified table directly
     returns the columns that actually exist.
     """
-    from .db import _get_db_at
+    from agentnodes.kernel.session.db import _get_db_at
 
     path = _resolve(db_path)
     if not path.exists():
@@ -115,7 +115,7 @@ def get_messages(
 
     ``created_at`` (not the legacy ``timestamp``) is the column that exists.
     """
-    from .db import _get_db_at
+    from agentnodes.kernel.session.db import _get_db_at
 
     path = _resolve(db_path)
     if not path.exists():
@@ -153,7 +153,7 @@ def search_messages(
     because of tokenizer behaviour), so this matches the live semantics
     instead of re-introducing a second index.
     """
-    from .db import _get_db_at
+    from agentnodes.kernel.session.db import _get_db_at
 
     path = _resolve(db_path)
     if not path.exists() or not query.strip():
@@ -194,7 +194,7 @@ def delete_session(session_id: str, db_path: Path | None = None) -> bool:
     **不要与 ``memory_manager.SQLiteStore.delete_session`` 混淆**——那是
     ``/clear`` 的后端路径（清消息**保锚行**，D7 修复），语义不同、用途不同。
     """
-    from .db import _get_db_at
+    from agentnodes.kernel.session.db import _get_db_at
 
     path = _resolve(db_path)
     if not path.exists():

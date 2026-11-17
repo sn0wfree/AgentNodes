@@ -107,8 +107,12 @@ echo [9/10] framework doc numbers ^(v1.2^)
 call :step_framework_numbers
 if errorlevel 1 set "FAILED=1"
 
-echo [10/10] logging assembly ^(discipline^)
+echo [10/11] logging assembly ^(discipline^)
 call :step_logging_entry
+if errorlevel 1 set "FAILED=1"
+
+echo [11/11] no relative imports
+call :step_no_relative_imports
 if errorlevel 1 set "FAILED=1"
 
 REM --- step 10/10: graphify symbolic audit (optional, second dimension) ------
@@ -362,7 +366,6 @@ exit /b 0
 
 
 :step_logging_entry
-REM Logging assembly discipline (unified logging hub, final form).
 REM Why this step: module loggers are zero-config handles; ALL configuration
 REM lives in one configure_logging (foundation/observability). This gate pins
 REM two invariants: (1) no assembly calls (basicConfig/addHandler/setLevel/...)
@@ -379,6 +382,26 @@ if errorlevel 1 (
     exit /b 1
 )
 echo   [OK] logging assembly: discipline holds
+exit /b 0
+
+
+:step_no_relative_imports
+REM Relative imports are banned in src/agentnodes (2026-11-17 migration,
+REM 498 sites -> 0 across 6 batches). Why: `from .x import y` requires the
+REM reader to know the file's package, degrades move-refactor error messages,
+REM and blocks symbol->module search. No exemptions.
+if not exist "scripts\arch\check_no_relative_imports.py" (
+    echo   [SKIP] check_no_relative_imports.py not present
+    exit /b 0
+)
+set "LOG=%TEMP%\batch_gate_step11.log"
+"%PROBE_PI%" scripts\arch\check_no_relative_imports.py > "%LOG%" 2>&1
+if errorlevel 1 (
+    echo   [X] check_no_relative_imports.py: relative imports found
+    call :tail "%LOG%" 30
+    exit /b 1
+)
+echo   [OK] relative imports: 0
 exit /b 0
 
 

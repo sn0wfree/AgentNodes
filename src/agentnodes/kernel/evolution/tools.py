@@ -16,8 +16,8 @@ from __future__ import annotations
 
 from typing import Any
 
-from .genome_proposals import GenomeProposal
-from .holdout import HoldoutSet, compute_task_signature, sample
+from agentnodes.kernel.evolution.genome_proposals import GenomeProposal
+from agentnodes.kernel.evolution.holdout import HoldoutSet, compute_task_signature, sample
 
 
 # ── 只读工具 ─────────────────────────────────────────────────────────

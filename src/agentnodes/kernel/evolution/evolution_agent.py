@@ -22,8 +22,8 @@ import logging
 from dataclasses import dataclass, field
 from typing import Any, Callable, Protocol
 
-from .genome_proposals import GenomeProposal, TierViolation
-from .holdout import HoldoutSet, Trajectory, compute_task_signature, sample
+from agentnodes.kernel.evolution.genome_proposals import GenomeProposal, TierViolation
+from agentnodes.kernel.evolution.holdout import HoldoutSet, Trajectory, compute_task_signature, sample
 
 logger = logging.getLogger(__name__)
 

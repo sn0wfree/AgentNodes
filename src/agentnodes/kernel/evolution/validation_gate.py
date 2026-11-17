@@ -64,13 +64,13 @@ import logging
 from dataclasses import dataclass, field
 from typing import Any, Callable, Protocol
 
-from .genome_proposals import (
+from agentnodes.kernel.evolution.genome_proposals import (
     TIER0_COMPONENTS,
     GenomeProposal,
     ProposalStatus,
     TierViolation,
 )
-from .holdout import HoldoutSet
+from agentnodes.kernel.evolution.holdout import HoldoutSet
 
 logger = logging.getLogger(__name__)
 
@@ -408,7 +408,7 @@ class ValidationGate:
             # slot 拿不到属于"无法验证"，必须 escalate 而不是静默算作
             # 普通失败：普通失败会累积到回滚计数，那会让资源不足误触发
             # 回滚（把系统状态与基础设施状态混为一谈）。
-            from .isolated_replay import SlotUnavailable
+            from agentnodes.kernel.evolution.isolated_replay import SlotUnavailable
 
             if isinstance(exc, SlotUnavailable):
                 logger.warning(

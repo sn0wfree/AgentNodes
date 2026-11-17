@@ -19,24 +19,24 @@
 
 from __future__ import annotations
 
-from .evolution_agent import EVOLUTION_TOOLS, EvolutionAgent, EvolutionContext
-from .genome_proposals import (
+from agentnodes.kernel.evolution.evolution_agent import EVOLUTION_TOOLS, EvolutionAgent, EvolutionContext
+from agentnodes.kernel.evolution.genome_proposals import (
     TIER0_COMPONENTS,
     TIER1_COMPONENTS,
     GenomeProposal,
     ProposalStatus,
     TierViolation,
 )
-from .holdout import (
+from agentnodes.kernel.evolution.holdout import (
     HOLDOUT_STATUSES,
     HoldoutSet,
     Trajectory,
     compute_task_signature,
     sample,
 )
-from .isolated_replay import IsolatedSlotReplay, SlotUnavailable
-from .skill_memory import EffectiveHarnessConfig, resolve as resolve_harness
-from .validation_gate import (
+from agentnodes.kernel.evolution.isolated_replay import IsolatedSlotReplay, SlotUnavailable
+from agentnodes.kernel.evolution.skill_memory import EffectiveHarnessConfig, resolve as resolve_harness
+from agentnodes.kernel.evolution.validation_gate import (
     COST_DEGRADATION_THRESHOLD,
     COST_TRADE_ESCALATION_THRESHOLD,
     DEGRADATION_THRESHOLD,

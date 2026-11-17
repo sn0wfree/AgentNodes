@@ -23,7 +23,7 @@ import logging
 import os
 from typing import Any, Callable
 
-from .schema import (
+from agentnodes.kernel.permission.schema import (
     DEFAULT_HARD_DENY,
     MODE_PRESETS,
     HardDenyRule,

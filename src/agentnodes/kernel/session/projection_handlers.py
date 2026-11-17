@@ -12,7 +12,7 @@ import uuid
 from typing import Any, Callable, Dict, Optional
 
 from agentnodes.kernel.events.event_v2 import EventType, EventV2, is_known_event_type
-from .projection_models import ProjectedMessage, ProjectedPart, ProjectedSession
+from agentnodes.kernel.session.projection_models import ProjectedMessage, ProjectedPart, ProjectedSession
 
 logger = logging.getLogger(__name__)
 
