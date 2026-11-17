@@ -49,8 +49,17 @@ def svc(tmp_path, monkeypatch):
     ``_process_session_queue`` 替身长挂——既让 ``_processing_sessions`` 保持
     真实语义（消费者真跑会立刻退出并 discard），又不真跑 attempt 链路。
     """
-    monkeypatch.setenv("AGENTNODES_SESSION_DB", str(tmp_path / "sessions.db"))
-    store = SessionStore(str(tmp_path / "sessions.db"))
+    # **同一文件 + schema 由 db 层建**：
+    # store 用构造参数建库，db 层用 env 解析路径 —— 两者必须同源；
+    # 且 ``SessionStore`` **不建表**（它假设 schema 已由 db 层 ensure 过），
+    # 所以先走一次 ``db._get_db_at`` 让 db 层建全量 schema
+    # （sessions/messages/message_parts/attempts/…），store 再复用同一文件。
+    db_path = str(tmp_path / "sessions.db")
+    monkeypatch.setenv("AGENTNODES_SESSION_DB", db_path)
+    from agentnodes.kernel.session.db import _get_db_at
+
+    _get_db_at(db_path)  # db 层建 schema
+    store = SessionStore(db_path)
     bus = EventCollector()
     service = SessionService(store=store, event_bus=bus)
     service.events = bus  # type: ignore[attr-defined]  # 便于断言
