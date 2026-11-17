@@ -107,7 +107,7 @@ echo [9/10] framework doc numbers ^(v1.2^)
 call :step_framework_numbers
 if errorlevel 1 set "FAILED=1"
 
-echo [10/10] logging entry ^(ratchet^)
+echo [10/10] logging assembly ^(discipline^)
 call :step_logging_entry
 if errorlevel 1 set "FAILED=1"
 
@@ -362,22 +362,23 @@ exit /b 0
 
 
 :step_logging_entry
-REM Bare logging.getLogger ratchet (unified logging hub, batch 1).
-REM Why this step: get_logger (agentnodes.foundation.logger) is the only
-REM acquisition entry; bare getLogger bypasses the facade cache and drifts
-REM back without a gate. Ratchet: only decrease allowed.
-if not exist "scripts\arch\check_logging_entry.py" (
-    echo   [SKIP] check_logging_entry.py not present
+REM Logging assembly discipline (unified logging hub, final form).
+REM Why this step: module loggers are zero-config handles; ALL configuration
+REM lives in one configure_logging (foundation/observability). This gate pins
+REM two invariants: (1) no assembly calls (basicConfig/addHandler/setLevel/...)
+REM outside the observability package; (2) no bare getLogger() (root) outside it.
+if not exist "scripts\arch\check_logging_assembly.py" (
+    echo   [SKIP] check_logging_assembly.py not present
     exit /b 0
 )
 set "LOG=%TEMP%\batch_gate_step10.log"
-"%PROBE_PI%" scripts\arch\check_logging_entry.py > "%LOG%" 2>&1
+"%PROBE_PI%" scripts\arch\check_logging_assembly.py > "%LOG%" 2>&1
 if errorlevel 1 (
-    echo   [X] check_logging_entry.py: bare getLogger ratchet regressed
+    echo   [X] check_logging_assembly.py: assembly discipline violated
     call :tail "%LOG%" 30
     exit /b 1
 )
-echo   [OK] logging entry: ratchet holds
+echo   [OK] logging assembly: discipline holds
 exit /b 0
 
 

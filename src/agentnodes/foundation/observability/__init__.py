@@ -10,6 +10,7 @@ from .logging_setup import (
     configure_logging,
     dual_log,
     resolve_level,
+    timed_deco,
 )
 from .trace import (
     JsonFormatter,
@@ -34,4 +35,5 @@ __all__ = [
     "resolve_level",
     "setup_trace_logging",
     "strip_llm_request_fields",
+    "timed_deco",
 ]

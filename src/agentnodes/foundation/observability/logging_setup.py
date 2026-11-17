@@ -1,4 +1,4 @@
-r"""统一日志入口 — configure_logging(surface) + dual_log。
+r"""统一日志入口 — configure_logging(surface) + dual_log + timed_deco。
 
 设计契约：docs/guides/logging-unified-entry-design-20261102.md §4。
 
@@ -23,9 +23,11 @@ script     stdout      子进程输出被 run_bg 重定向进 run.log（喂 log_
 
 from __future__ import annotations
 
+import functools
 import logging
 import os
 import sys
+import time
 from logging.handlers import RotatingFileHandler
 from pathlib import Path
 from typing import Any
@@ -214,3 +216,64 @@ def dual_log(module: str, msg: str, *args) -> None:
     _dual_logger.info("[%s] %s", tag, text)
     if not logging.getLogger().handlers:
         print(f"[{tag}] {text}", flush=True)  # noqa: T201
+
+
+# ── call-site 计时装饰器（吸收自统一中枢批 1 的 deco；源自 CodersWheel LoggerHelper.deco）──
+
+#: ``timed_deco(level=...)`` 白名单 —— 防止 getattr 意外取到非日志方法（如 timed_deco 自身）。
+_DECO_LEVELS = ("debug", "info", "warning", "warn", "error", "critical", "exception")
+
+
+def timed_deco(logger, *, level: str = "info", timer: bool = True, extra_name: str = ""):
+    """函数计时装饰器：成功按 ``level`` 输出、失败 warning + 异常栈，都带耗时。
+
+    与参考实现（CodersWheel ``LoggerHelper.deco`` / pf_analysis ``logger.py``）的差异：
+    原实现异常时计时起点泄漏且无异常日志；这里 ``try/except`` 保证异常路径也记
+    耗时 + ``exc_info=True``，然后原样 re-raise（不吞异常）。logger 由调用方显式
+    传入（自己的模块 logger），不做 frame 魔法。
+
+    用法::
+
+        logger = logging.getLogger(__name__)
+
+        @timed_deco(logger, extra_name="convert.")
+        def convert(msg): ...
+
+    Args:
+        logger: stdlib logger（惯例传模块级 ``logging.getLogger(__name__)``）。
+        level: 成功路径的输出级别（debug/info/warning/...）。
+        timer: True 时额外打 start 行与耗时；False 只打 executed 行。
+        extra_name: 前缀（自动补 ``.``），如 ``"convert."``。
+    """
+    if level not in _DECO_LEVELS:
+        raise ValueError(
+            f"timed_deco(level={level!r}) 不在白名单 {_DECO_LEVELS}；"
+            "避免 getattr 取到非日志方法"
+        )
+    if extra_name and not extra_name.endswith("."):
+        extra_name += "."
+    log_fn = getattr(logger, level)
+
+    def _deco(func):
+        @functools.wraps(func)
+        def wrapper(*args, **kwargs):
+            label = f"{extra_name}{func.__name__}"
+            start = time.perf_counter()
+            if timer:
+                log_fn(f"start to execute {label}!")
+            try:
+                result = func(*args, **kwargs)
+            except Exception:
+                spend = time.perf_counter() - start
+                logger.warning(f"{label} failed! spend: {spend:.3f}s", exc_info=True)
+                raise
+            if timer:
+                spend = time.perf_counter() - start
+                log_fn(f"{label} executed! spend: {spend:.3f}s")
+            else:
+                log_fn(f"{label} executed!")
+            return result
+
+        return wrapper
+
+    return _deco

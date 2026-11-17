@@ -1,4 +1,0 @@
-{
- "max_bare": 159,
- "note": "统一日志中枢批 1 基线：src/ 内裸 getLogger 总数（豁免 observability 包与 foundation/logger.py 自身）；只许减不许增。收编批次落地后用 --update 下调。"
-}
