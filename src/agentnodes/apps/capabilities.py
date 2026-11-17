@@ -127,7 +127,8 @@ def _goal_context(registry: "CapabilityRegistry") -> Any:
 # ── 业务内置工具（批次 6 归位 L2）─────────────────────────────────────
 #
 # 这 6 个模块原住 ``kernel/agent/builtin_tools/``（L3），但调用的全是业务
-# 能力，属「L3 里的 L2」。批次 6 起住在 ``apps/builtin_tools/``，由本文件
+# 能力，属「L3 里的 L2」。批次 6 起住在 ``apps/builtin_tools/``（2026-11-17
+# 批次 α 平铺：唯一幸存的 goal_tools 现住 ``apps/goal_tools.py``），由本文件
 # 注册成 ``tool.*`` kind，kernel 的 ``_register_business_tools`` 从 registry 拉。
 #
 # **契约**：每个工厂返回 ``list[BaseTool]``（一个模块可产多个工具）。
@@ -154,7 +155,7 @@ def _goal_context(registry: "CapabilityRegistry") -> Any:
 
 
 def _tool_goal(registry: "CapabilityRegistry") -> Any:
-    from agentnodes.apps.builtin_tools.goal_tools import (
+    from agentnodes.apps.goal_tools import (
         AddEvidenceTool,
         CompleteGoalTool,
         CreateGoalTool,

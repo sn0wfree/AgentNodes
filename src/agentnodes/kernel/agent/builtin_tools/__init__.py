@@ -8,8 +8,10 @@
 
 **业务工具已归位 L2（2026-11-05 批次 6）**：原本住在本目录的六个业务工具
 模块（调用的全是业务能力 factor.compute / db.* / backtest.*，属「L3 里的 L2」）
-已 git mv 到 ``apps/builtin_tools/``，由 ``apps/capabilities.py`` 注册成
+已 git mv 到 L2，由 ``apps/capabilities.py`` 注册成
 ``tool.*`` kind，本中枢通过 :func:`_register_business_tools` 从 registry 拉取。
+唯一幸存的 ``goal_tools`` 现住 ``apps/goal_tools.py``（2026-11-17 批次 α
+自 ``apps/builtin_tools/`` 平铺）。
 
 **2026-11-06 批次 1 收尾**：其中 5 个模块（factor_tools / data_tools /
 backtest_tools / backtest_analysis_tools / data_clean_tools）已删除——它们
@@ -27,10 +29,10 @@ import logging
 from pathlib import Path
 
 from agentnodes.kernel.agent.tools import ToolRegistry
-from .file_tools import ListFilesTool, ReadFileTool, WriteFileTool
-from .help_tools import ToolHelpTool
-from .options_tools import OptionsPricingTool
-from .workspace_tools import GitDiffTool, ListHistoryTool, ListSkillsTool, LoadSkillTool
+from agentnodes.kernel.agent.builtin_tools.file_tools import ListFilesTool, ReadFileTool, WriteFileTool
+from agentnodes.kernel.agent.builtin_tools.help_tools import ToolHelpTool
+from agentnodes.kernel.agent.builtin_tools.options_tools import OptionsPricingTool
+from agentnodes.kernel.agent.builtin_tools.workspace_tools import GitDiffTool, ListHistoryTool, ListSkillsTool, LoadSkillTool
 
 logger = logging.getLogger(__name__)
 
@@ -38,7 +40,7 @@ logger = logging.getLogger(__name__)
 #: 业务工具 kind → 在 ToolRegistry 里的注册方式。
 #:
 #: 每个 kind 的工厂返回 ``list[BaseTool]``（一个模块可以产多个工具）。
-#: 实现住在 ``apps/builtin_tools/``，由 apps 侧注册。
+#: 实现住在 ``apps/goal_tools.py``（L2），由 apps 侧注册。
 #:
 #: **2026-11-06 批次 1 收尾**：只剩 ``tool.goal``。其余五组（factor / data /
 #: backtest / backtest_analysis / data_clean）的实现模块已删除——依赖的
@@ -112,35 +114,35 @@ def build_default_registry(workspace: Path | None = None) -> ToolRegistry:
     _register_business_tools(r)
     # Phase 2: Web I/O tools (conditional on dependencies)
     try:
-        from .web_tools import register_web_tools
+        from agentnodes.kernel.agent.builtin_tools.web_tools import register_web_tools
         register_web_tools(r)
     except Exception:
         pass
     # Display tools (agent-driven right panel: show_chart / show_report)
     try:
-        from .display_tools import register_display_tools
+        from agentnodes.kernel.agent.builtin_tools.display_tools import register_display_tools
         register_display_tools(r)
     except Exception:
         pass
     # Shell tools (opt-in, gated by allow_shell_tools)
     try:
-        from .shell_tools import register_shell_tools
+        from agentnodes.kernel.agent.builtin_tools.shell_tools import register_shell_tools
         register_shell_tools(r)
     except Exception:
         pass
     # Background-command tools (opt-in, same gate; long-task nohup mode)
     try:
-        from .bg_tools import register_bg_tools
+        from agentnodes.kernel.agent.builtin_tools.bg_tools import register_bg_tools
         register_bg_tools(r)
     except Exception:
         pass
     # Tool documentation (self-referential; registered last)
     r.register(ToolHelpTool(r))
     # Sub-agent delegation
-    from .subagent_tool import SubAgentTool
+    from agentnodes.kernel.agent.builtin_tools.subagent_tool import SubAgentTool
     r.register(SubAgentTool())
     # Todo / task tracking
-    from .todo_tools import TodoWriteTool
+    from agentnodes.kernel.agent.builtin_tools.todo_tools import TodoWriteTool
     r.register(TodoWriteTool())
 
     # Paradigm v2 分层注册: 组合库加载器 (workspace tools/combo/*.yml)

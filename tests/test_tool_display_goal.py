@@ -13,7 +13,7 @@ from agentnodes.kernel.agent.builtin_tools.display_tools import (
     ShowChartTool,
     ShowReportTool,
 )
-from agentnodes.apps.builtin_tools.goal_tools import (
+from agentnodes.apps.goal_tools import (
     GetGoalStatusTool,
     ListGoalsTool,
 )

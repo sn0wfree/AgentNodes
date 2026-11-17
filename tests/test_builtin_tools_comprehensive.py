@@ -48,6 +48,16 @@ class TestDataCleanToolRemoved:
         with pytest.raises(ModuleNotFoundError):
             importlib.import_module("agentnodes.apps.builtin_tools.data_clean_tools")
 
+    def test_package_flattened(self):
+        """批次 α（2026-11-17）：apps/builtin_tools 包已平铺，goal_tools 住 apps/goal_tools.py。"""
+        import importlib
+
+        # 旧包整体消失：goal_tools 不可再经旧路径导入
+        with pytest.raises(ModuleNotFoundError):
+            importlib.import_module("agentnodes.apps.builtin_tools.goal_tools")
+        mod = importlib.import_module("agentnodes.apps.goal_tools")
+        assert hasattr(mod, "register_goal_tools")
+
 
 # ── Help Tool ─────────────────────────────────────────────────────
 

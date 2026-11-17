@@ -35,12 +35,13 @@ LAYER_MEMBERSHIP: dict[str, str] = {
     "agentnodes.interfaces.mcp": "L1",
     # ── L2 apps ───────────────────────────────────────────────────────
     # 2026-11-05 批次 8 后只剩业务插件面（回测/因子/数据/研究模板都已移除）：
-    #   builtin_tools  6 个业务工具模块（批次 6 从 L3 归位）
+    #   goal_tools     业务工具工厂（批次 6 从 L3 归位 apps/builtin_tools/；
+    #                  2026-11-17 批次 α 平铺为 apps/goal_tools.py，路径落
+    #                  agentnodes.apps 前缀，无需单独条目）
     #   capabilities   注册门面（tool.* kind）
     #   data_store_registry / workspace_setup  两个小件
     "agentnodes.apps": "L2",  # 物理层目录
     "agentnodes.apps.capabilities": "L2",
-    "agentnodes.apps.builtin_tools": "L2",
     "agentnodes.apps.data_store_registry": "L2",
     "agentnodes.apps.workspace_setup": "L2",
     "agentnodes.templates": "L2",

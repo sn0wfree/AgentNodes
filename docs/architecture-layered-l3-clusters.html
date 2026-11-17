@@ -133,7 +133,7 @@ footer code{background:rgba(148,163,184,.10);padding:1px 6px;border-radius:5px;c
     <div>
       <h2 class="arch-title">AgentNodes 分层架构 · L3 聚合</h2>
       <p class="arch-sub">样式 v2 · Glassmorphism / 正交布线（原版见 <code>architecture-layered.html</code>，数据层已同步重跑、tier 判定同批修订）
-        · 数据 2026-11-17 工作区 AST 复测（R-014 批次 A–F 后）：36 包 / 1978 符号 / 143 边 · L3 十五模块聚为四领域容器</p>
+        · 数据 2026-11-17 工作区 AST 复测 + 批次 α 平移：35 包 / 1978 符号 / 140 边 · L3 十五模块聚为四领域容器</p>
     </div>
     <div class="bar" id="an-legend"></div>
   </div>
@@ -158,7 +158,7 @@ footer code{background:rgba(148,163,184,.10);padding:1px 6px;border-radius:5px;c
     <b style="color:var(--tierB)">黄</b>= 最小可干活 C13–C15 · <b style="color:var(--tierC)">绿</b>= 全能力 C16–C28。
     <b>红层是「能力归属标注」，不是可裁剪部署单元</b>（红→非红实测 118 次 import）—— 别把红色读成「可删」。
     2026-11-17 修订：<code>kernel/session</code> 由绿改红 —— R-014 下沉后它是会话域真身，承载 C8 历史持久化，
-    红层主链路 <code>api→session</code> 29 次 import。原版图数据层已同步重跑（36 包 / 1978 符号 / 143 边）。<br>
+    红层主链路 <code>api→session</code> 29 次 import。原版图数据层已同步重跑（35 包 / 1978 符号 / 140 边，批次 α 后）。<br>
     连线权重只计 <b>≥2 次</b>的 import（与原版图 <code>DRAW_MIN=2</code> 同口径），1 次的横切边未画。
   </p>
 
@@ -181,9 +181,8 @@ footer code{background:rgba(148,163,184,.10);padding:1px 6px;border-radius:5px;c
     'apps/goal':                {n:78, files:18, lines:5975, sub:'长程任务', role:'判据 / 台账 / DAG 工作流 / journal / scoreboard（R1 恢复）', tier:'C', caps:['C16']},
     'apps/scheduled_research':  {n:21, files:6,  lines:1180, sub:'定时研究', role:'cron 式研究调度（批次 8 自 kernel 迁入）', tier:'C', caps:['C21']},
     'apps/agent_plugins':       {n:19, files:5,  lines:708,  sub:'量化插件', role:'quant 角色定义 + 输出校验器 + 展示层 + 提示词', tier:'C', caps:['C20']},
-    'apps':                     {n:12, files:4,  lines:627,  sub:'能力注册', role:'capabilities.py：kind 注册 + requires 声明（ADR-003 端口化）', tier:'C', caps:[]},
+    'apps':                     {n:21, files:5,  lines:1214, sub:'能力注册', role:'capabilities.py：kind 注册 + requires 声明（ADR-003 端口化）+ goal_tools.py（业务工具工厂，批次 α 平铺）', tier:'C', caps:['C9']},
     'apps/algo':                {n:10, files:2,  lines:326,  sub:'回测算法', role:'无前视调仓回测（2026-11-16 自 kernel/algo 迁入）', tier:'C', caps:[], iso:true},
-    'apps/builtin_tools':       {n:9,  files:2,  lines:593,  sub:'业务工具', role:'goal 等业务侧工具实现', tier:'A', caps:['C9']},
     'apps/chat':                {n:7,  files:4,  lines:225,  sub:'产品策略', role:'会话侧业务策略', tier:'C', caps:[]},
     'apps/swarm_presets':       {n:1,  files:1,  lines:26,   sub:'拓扑 preset', role:'SwarmPreset YAML（37 个）', tier:'C', caps:['C19'], iso:true},
     'kernel/agent':         {n:431, files:101, lines:22540, sub:'Agent 引擎', role:'LoopEngine / LoopSpec / loop_assembly / guardrails / deciders / 工具注册 / 压缩 / 遥测（最大包）', tier:'A', caps:['C2','C3','C9','C10','C12'], cl:'C1'},
@@ -236,7 +235,7 @@ footer code{background:rgba(148,163,184,.10);padding:1px 6px;border-radius:5px;c
 
   var LANES = [
     {key:'L1', name:'L1 interfaces · 交付界面', note:'渠道层 · 组装根', rows:[['interfaces/cli','interfaces/api','interfaces','interfaces/cli/tui','interfaces/mcp']]},
-    {key:'L2', name:'L2 apps · 业务能力', note:'业务插件', rows:[['apps/goal','apps/scheduled_research','apps/agent_plugins','apps'],['apps/algo','apps/builtin_tools','apps/chat','apps/swarm_presets']]},
+    {key:'L2', name:'L2 apps · 业务能力', note:'业务插件', rows:[['apps/goal','apps/scheduled_research','apps/agent_plugins','apps'],['apps/algo','apps/chat','apps/swarm_presets']]},
     {key:'L3', name:'L3 kernel · 平台机制', note:'4 领域容器 · 可折叠'},
     {key:'L4', name:'L4 foundation · 基础原语', note:'零业务依赖', rows:[['foundation/llm','foundation','foundation/storage','foundation/utils','foundation/observability','foundation/web']]},
     {key:'EV', name:'evals · 旁挂评估带', note:'跨层读取被测对象', rows:[['evals','scripts']]}
@@ -247,7 +246,7 @@ footer code{background:rgba(148,163,184,.10);padding:1px 6px;border-radius:5px;c
     {id:'L1>C1', cls:'', w:56, br:'api→agent 16 · api→workflow 13 · interfaces→orchestration 4 · mcp→agent 5 · mcp→swarm 5 · cli→swarm 4 · interfaces→agent 3 · api→orchestration 2 · cli→agent 2 · tui→agent 2'},
     {id:'L1>C2', cls:'', w:54, br:'api→session 29 · interfaces→evolution 13 · cli→session 6 · tui→session 2 · mcp→session 2 · mcp→memory 2'},
     {id:'L1>C4', cls:'', w:9,  br:'cli→skills 4 · api→permission 3 · mcp→skills 2'},
-    {id:'L2>C1', cls:'', w:31, br:'agent_plugins→agent 9 · builtin_tools→agent 6 · goal→workflow 6 · goal→swarm 6 · apps→agent 4'},
+    {id:'L2>C1', cls:'', w:31, br:'agent_plugins→agent 9 · apps→agent 10（含 goal_tools 6，批次 α 后并入 apps）· goal→workflow 6 · goal→swarm 6'},
     {id:'C1>L4', cls:'', w:50, br:'agent→llm 11 · agent→utils 10 · agent→foundation 10 · agent→obs 8 · agent→storage 5 · agent→web 4 · orchestration→foundation 2'},
     {id:'C2>L4', cls:'', w:19, br:'session→llm 5 · session→storage 5 · session→foundation 4 · session→obs 3 · evolution→storage 2'},
     {id:'C3>L4', cls:'', w:8,  br:'gateway→foundation 3 · gateway→llm 3 · gateway→storage 2'},
@@ -762,7 +761,7 @@ footer code{background:rgba(148,163,184,.10);padding:1px 6px;border-radius:5px;c
 
 <footer>
 样式 v2（Glassmorphism / 正交圆角布线）· 与 <code>architecture-layered.html</code> 同源：数据层同口径，tier 判定同步（2026-11-17 修订 <code>kernel/session</code> 绿→红）。
-数据 2026-11-17 工作区 AST 复测（<code>tmp/probe/scan_arch.py</code> 口径）：36 包 / 1978 符号 / 143 条包间依赖 —— 与重跑后的原版图一致。<br>
+数据 2026-11-17 工作区 AST 复测（<code>tmp/probe/scan_arch.py</code> 口径）：35 包 / 1978 符号 / 140 条包间依赖（批次 α：apps/builtin_tools 并入 apps）—— 与重跑后的原版图一致。<br>
 聚合规则：L3 十五包 → 4 容器（执行与编排 5 包 587 符号 · 上下文与状态 4 包 167 · 通信与基础设施 3 包 53 · 安全与扩展 3 包 29）。
 容器内连线省略（仅 C1 有 5 条域内边，≥2 次口径）；跨容器 7 条正交直连；跨层依赖按容器聚合 9 条（悬停看逐包明细）；
 主链路 <code>api→gateway→agent→llm</code> 节点级流动虚线（①–④）。全图正交布线零交叉；穿越玻璃容器的线段以低亮度透出，作为深度线索。<br>
