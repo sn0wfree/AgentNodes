@@ -504,3 +504,53 @@ agentnodes\.kernel\.agent\.tools\b
 `scripts/` 下 51 处一次性探针脚本（`agent_probe*.py` / `g2_gap.py` / `inventory.py` 等）仍引用
 `core/agent/loop.py` 这类**早已不存在的旧包名路径**（`core/agent/` 在 agentnodes 时代就没了）——
 这些脚本本来就失效，与本次移动无关，按「发现无关死代码 → 提，不删」处理。
+
+---
+
+## 12 · 剩余 28 个顶层文件的分组规划（2026-11-17 实测后定稿）
+
+### 12.1 现状实测（分组依据）
+
+| 维度 | 数据 |
+|---|---|
+| 簇内依赖（这 28 个之间） | `event_store→cache/memory_manager/projection_port` · `memory_manager→cache` · `dag_config→plugin/registry` · `registry→plugin` · `executor→dag_config/plugin/registry` · `deciders→_core_types` · `modes→deciders` · `step_adapters→_core_types` |
+| 影响面（外部引用次数） | chat_loop 31 · event_store 29 · memory_manager 25 · _core_types 18 · role_factory 17 · plugin 16 · cache 15 · executor 14 · 其余 ≤8 |
+| `__file__` 层数敏感 | **3 个**：`redaction.py:105`（parents[2]）· `trace.py:281,283`（parents[2]）· `legacy_audit.py:125`（parents[3]）；`harness_resolver.py:171` 用 `import agentnodes as _sr` → **不受移动影响** |
+| 状态簇的环 | `event_store`（顶层）→ `memory_manager`（顶层）→ `event_store`（**函数内**）→ **无模块级初始化环** ✓ |
+
+### 12.2 分组定稿（9 组，28 文件全覆盖）
+
+| 组 | 文件 | 语义 | 簇内依赖 | 影响面 |
+|---|---|---|---|---|
+| **`state/`** | cache, event_store, memory_manager, projection_port | 持久化与状态投影 | 有环（无顶层环） | 70 |
+| **`factory/`** | chat_loop, role_factory, harness_resolver, frontmatter | agent 构造与装配期解析 | role_factory→loop/assembly/toolsets | 56 |
+| **`plugins/`** | plugin, registry, dag_config, executor, combo | agent 定义 / 注册 / DAG 编排 / 执行 | 无环 | 48 |
+| **`guards/`** | guardrails, text_guard, circuit_breaker, redaction | 守卫与安全 | 无 | 16 |
+| **`policy/`** | deciders, modes, step_adapters | 停止/继续判定与模式注册 | deciders→_core_types | 14 |
+| **`telemetry/`** | agent_telemetry, trace, legacy_audit | 遥测 / trace 落盘 / 引擎审计 | 无 | 7 |
+| **`signals/`** | pause, progress | 挂起恢复 / 进展发射（运行时信号） | 无 | 4 |
+| **`tools/`**（阶段 3 已建） | 追加 gateway, exec_registry | 工具网关 / 执行注册表 | 无 | 3 |
+| **顶层保留** | `_core_types` | loop 核心抽象类型（11 个簇外依赖方，跨簇共享协议） | — | 18 |
+
+### 12.3 阶段划分（低风险先行，每阶段一个 commit）
+
+| 阶段 | 内容 | 文件 | 影响面 | 特殊事项 |
+|---|---|---|---|---|
+| **5** | signals(2) + tools 追加(2) + policy(3) | 7 | 21 | 最小批，快速验证方法论 |
+| **6** | guards(4) + telemetry(3) | 7 | 23 | **修 3 处 `__file__` 层数敏感**（redaction / trace / legacy_audit → 改包根定位） |
+| **7** | plugins(5) + factory(4) | 9 | 104 | factory 内 chat_loop 影响面最大（31） |
+| **8** | state(4) | 4 | 70 | 唯一有内部环的一组（顶层/函数内分层已验证无初始化环） |
+
+### 12.4 每阶段固定动作（前四轮已验证的方法论，§11.5）
+
+1. **移动前** grep `__file__` / `parents[` / `.parent` → 层数敏感的**先改成按 `agentnodes` 包根定位**；
+2. **移动后** grep 四类引用形态：import 语句 / 字符串路径 / **Path 拼接路径** / f-string 拼接；
+3. 替换脚本**幂等**（跑两遍，第二遍 0 改动）+ 前瞻精确排除「其他规则的输出形态」+ 合成树夹具还原；
+4. 逐文件 `git diff` 审计（变更行必须全是 `from` 行）→ collect 锚点 → 全量 pytest → `batch_gate` → 架构图同步；
+5. 本文档回填实测数字。
+
+### 12.5 明确不做
+
+- `_core_types` 留在顶层（11 个簇外依赖方，跨簇共享协议类型；下沉会制造「协议类型藏在某簇里」的耦合）。
+- 不改 `guards`/`policy` 等簇内的模块间 import 形态（保持拓扑不变）。
+- 不合并 `state` 的环（缓存/事件/记忆三者互相引用是**设计**，非偶然；强行拆开会引入额外抽象）。
