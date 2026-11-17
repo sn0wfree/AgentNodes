@@ -27,7 +27,7 @@ import pytest
 from agentnodes.foundation.llm import LLMConfig, LLMResponse
 from agentnodes.foundation.observability.trace import _session_id, _trace_id
 from agentnodes.kernel.agent.builtin_tools import build_default_registry
-from agentnodes.kernel.agent.loop import AgentLoop
+from agentnodes.kernel.agent.loop.core import AgentLoop
 
 
 class _Mock:

@@ -489,7 +489,7 @@ class TestNodeOverrides:
         )
         captured = {}
 
-        from agentnodes.kernel.agent import loop as loop_mod
+        from agentnodes.kernel.agent.loop import core as loop_mod
         orig_init = loop_mod.AgentLoop.__init__
 
         def patched_init(self, *a, **kw):

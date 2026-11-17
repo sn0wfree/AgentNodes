@@ -45,10 +45,10 @@ def _run(code: str) -> subprocess.CompletedProcess[str]:
 @pytest.mark.parametrize(
     "first,second",
     [
-        ("compact.loop_compaction", "loop"),
-        ("loop", "compact.loop_compaction"),
+        ("compact.loop_compaction", "loop.core"),
+        ("loop.core", "compact.loop_compaction"),
         ("compact.core", "compact.loop_compaction"),
-        ("compact.loop_compaction", "loop_lifecycle"),
+        ("compact.loop_compaction", "loop.lifecycle"),
     ],
 )
 def test_import_order_does_not_matter(first: str, second: str) -> None:
@@ -79,8 +79,8 @@ def test_registration_is_shared_across_modules() -> None:
     code = f"""
 import {AGENT}.compact.loop_compaction  # noqa: F401  (ensures the reader module is loaded)
 import {AGENT}.compact.core as compact_mod
-from {AGENT}.loop import (register_compaction_persister,
-                          compaction_persister_registered)
+from {AGENT}.loop.core import (register_compaction_persister,
+                                 compaction_persister_registered)
 
 def fake(**kwargs):
     return "persisted"
@@ -113,7 +113,7 @@ def test_loop_reexports_legacy_names() -> None:
     from agentnodes.kernel.agent.compact import core as compact
 
     # Names are importable from ``loop`` (back-compat surface).
-    from agentnodes.kernel.agent import loop
+    from agentnodes.kernel.agent.loop import core as loop
 
     # Names are importable from ``loop`` (back-compat surface).
     for name in (

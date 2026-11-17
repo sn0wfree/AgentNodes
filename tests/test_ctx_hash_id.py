@@ -34,7 +34,7 @@ from agentnodes.kernel.agent.agent_telemetry import (
     compute_c_digest,
 )
 from agentnodes.kernel.agent.builtin_tools import build_default_registry
-from agentnodes.kernel.agent.loop import AgentLoop
+from agentnodes.kernel.agent.loop.core import AgentLoop
 
 ROOT = Path(__file__).resolve().parents[1]
 

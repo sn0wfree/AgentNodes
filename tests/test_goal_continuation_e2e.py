@@ -37,7 +37,7 @@ import agentnodes.apps.capabilities  # noqa: F401  (注册 goal.* capabilities)
 from agentnodes.kernel.agent.capability import resolve
 from agentnodes.foundation.llm import LLMConfig, LLMResponse
 from agentnodes.kernel.agent.builtin_tools import build_default_registry
-from agentnodes.kernel.agent.loop import AgentLoop
+from agentnodes.kernel.agent.loop.core import AgentLoop
 
 
 def _text(t):

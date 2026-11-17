@@ -63,7 +63,7 @@ class _FakeRegistry:
 
 def test_system_prompt_matches_assemble_loop_parts(tmp_path):
     """SessionController 的 system prompt == assemble_loop_parts 的输出。"""
-    from agentnodes.kernel.agent.loop_assembly import assemble_loop_parts
+    from agentnodes.kernel.agent.loop.assembly import assemble_loop_parts
 
     registry = _FakeRegistry()
     ctrl = _controller(
@@ -87,7 +87,7 @@ def test_explicit_system_overrides_assembly(tmp_path):
 
 def test_assembly_failure_degrades_to_none(tmp_path, monkeypatch):
     """渲染失败不阻断 chat：降级为 None 并发出事件。"""
-    import agentnodes.kernel.agent.loop_assembly as la
+    import agentnodes.kernel.agent.loop.assembly as la
 
     def boom(**kwargs):
         raise RuntimeError("prompt exploded")

@@ -10,7 +10,7 @@ from typing import TYPE_CHECKING, Any
 if TYPE_CHECKING:
     from agentnodes.foundation.llm.errors import LLMError
     from agentnodes.foundation.llm.parser import LLMResponse, ToolCall
-    from agentnodes.kernel.agent.loop import LoopResult
+    from agentnodes.kernel.agent.loop.core import LoopResult
 
 logger = logging.getLogger(__name__)
 

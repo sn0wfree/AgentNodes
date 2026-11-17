@@ -410,3 +410,97 @@ agentnodes\.kernel\.agent\.tools\b
 - 幂等：第二遍 **0 文件 0 处**
 - 旧形态残留 0 / 二次替换污染 0 / 合成树夹具保持 2 处
 - `kernel/agent`：105 文件 / 22636 行 / **符号 431 不变、包数 36 不变**
+
+---
+
+## 11 · 阶段 4 实测（2026-11-17，loop 簇 · 方案 A 全去重前缀）
+
+### 11.1 落地（11 文件 → loop/ 子包）
+
+| 原路径 | 新路径 |
+|---|---|
+| `loop.py` | `loop/core.py` |
+| `loop_assembly.py` | `loop/assembly.py` |
+| `loop_endings.py` | `loop/endings.py` |
+| `loop_engine.py` | `loop/engine.py` |
+| `loop_engine_adapters.py` | `loop/engine_adapters.py` |
+| `loop_lifecycle.py` | `loop/lifecycle.py` |
+| `loop_progress.py` | `loop/progress.py` |
+| `loop_spec.py` | `loop/spec.py` |
+| `loop_stream.py` | `loop/stream.py` |
+| `loop_telemetry.py` | `loop/telemetry.py` |
+| `loop_tools.py` | `loop/tools.py` ⚠️ 与 `agent.tools`（阶段 3）视觉相近，路径唯一 |
+| — | `loop/__init__.py`（新增，零 re-export） |
+
+引用改写 **123 处 / 77 文件**（B=116 · A=5 · C=2）。
+
+### 11.2 新坑：**源码路径断言的 Path 拼接形态**
+
+本仓有一类**结构契约测试**会**读源码文件内容做 AST 分析**（`test_step_contract.py`、
+`test_architecture_gates.py`）。它们引用源码路径有**两种形态**：
+
+| 形态 | 例 | 规则 C 覆盖 |
+|---|---|---|
+| A 字符串 | `"kernel/agent/loop.py"` | ✅ |
+| **B Path 拼接** | `SRC / "loop.py"` | ❌ **覆盖不到** → 5 个测试红（FileNotFoundError） |
+
+**处置**：补规则 —— 移动文件后必须 grep **两种形态**：
+`/\s*"<文件名>\.py"`（Path 拼接）与 `"[^"]*<文件名>\.py"`（字符串）。
+
+**通用规则（本次固化）**：移动文件后，除了 import 引用，还要 grep
+**「按路径读源码」的所有引用形态** —— 字符串 / Path 拼接 / f-string 拼接 / 参数元组，
+四类都要查（前四轮分别踩了其中三类）。
+
+### 11.3 阶段 1/3 的坑在阶段 4 重现（均已按既定规则处理）
+
+| 坑 | 阶段 4 表现 | 处置 |
+|---|---|---|
+| f-string 模板（阶段 1） | `test_no_loop_compaction_cycle.py` 的 4 组参数元组 `"loop"` + `{AGENT}.loop import` | 手工改 5 处（`"loop"` → `"loop.core"`）——「import 包 ≠ import 模块」，不改则语义变 |
+| 合成树夹具（阶段 3） | `test_scripts_arch.py` 5 处 `src/agentnodes/kernel/agent/loop.py` 假路径 | 规则 C 改完**还原**（验证断言「夹具保持 5 处」） |
+
+### 11.4 loop 簇的正面结论（与预想不同）
+
+| 风险项 | 实测 |
+|---|---|
+| **包内顶层 import 环** | **0 个** ✓（仅 `engine_adapters → core` 单向） |
+| **`__file__` 路径计算** | **0 处** ✓（无阶段 2 那种静默兜底风险） |
+| monkeypatch | 2 处（`loop.git_commit`）→ 规则 B 自动改到 `loop.core.git_commit` ✓ |
+
+### 11.5 四轮总表（可复用的迁移方法论）
+
+| 项 | 阶段1 compact | 阶段2 prompt+context | 阶段3 tools | 阶段4 loop |
+|---|---|---|---|---|
+| 引用改写 | 81 处 / 30 文件 | 79 处 / 38 文件 | 101 处 / 81 文件 | **123 处 / 77 文件** |
+| 包级 import 形态 | 20 | 3 | 0 | 5 |
+| monkeypatch | 9 | 2 | 0 | 2 |
+| `importlib.reload` | 8 | 0 | 0 | 0 |
+| `__file__` 路径破坏 | 无 | **3 处 / 10 测试红** | 无 | 无 |
+| 源码路径断言(Path 拼接) | — | — | — | **5 测试红** |
+| f-string 模板 | 4 组 | 0 | 0 | 5 处 |
+| 合成树夹具 | — | — | **2 处** | **5 处** |
+| 幂等坑 | 规则B自身 | 规则B命中规则A输出 | **前瞻过度泛化** | 无（规则已成熟） |
+| 验证 | 全量绿 | 全量绿 | 全量绿 | 全量绿 |
+
+**沉淀的通用规则（每轮都有新坑，规则持续加固）**：
+1. 移动前 grep `__file__` / `parents[` / `.parent` —— 层数敏感路径是**头号隐藏破坏面**
+   （症状是静默兜底而非报错）；
+2. 移动后 grep 四类引用形态：import 语句 / 字符串路径 / **Path 拼接路径** / f-string 拼接；
+3. 替换脚本必须**幂等**（跑两遍，第二遍 0 改动），且前瞻要**精确排除「其他规则的输出形态」**，
+   不能笼统排除语法片段；
+4. 合成树夹具（自足测试的假路径）必须还原 —— 它们与真文件位置无关；
+5. 每批：逐文件 diff 审计 + collect 锚点 + 全量 pytest + batch_gate + 架构图同步。
+
+### 11.6 验证
+
+- 全量 **7596 passed / 106 skipped / 0 failed**（rc=0）
+- `batch_gate` **ALL GREEN**（11 步）
+- loop 相关 **160 passed**；契约测试（step_contract + architecture_gates）29 passed
+- 幂等：第二遍 **0 文件 0 处**
+- 旧形态残留 0 / 二次替换污染 0 / 夹具保持 5 处
+- `kernel/agent`：106 文件 / 22665 行 / **符号 431 不变、包数 36 不变**
+
+### 11.7 遗留（报告不擅改）
+
+`scripts/` 下 51 处一次性探针脚本（`agent_probe*.py` / `g2_gap.py` / `inventory.py` 等）仍引用
+`core/agent/loop.py` 这类**早已不存在的旧包名路径**（`core/agent/` 在 agentnodes 时代就没了）——
+这些脚本本来就失效，与本次移动无关，按「发现无关死代码 → 提，不删」处理。

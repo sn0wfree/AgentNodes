@@ -57,7 +57,7 @@ def _run(loop, tmp_path: Path, name: str, *, async_mode: bool = True,
     import asyncio
 
     from agentnodes.foundation.llm import ToolCall
-    from agentnodes.kernel.agent.loop import LoopResult
+    from agentnodes.kernel.agent.loop.core import LoopResult
 
     tc = ToolCall(id="e2e", name=name, arguments=params)
     result = LoopResult()

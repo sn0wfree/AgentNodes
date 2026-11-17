@@ -26,8 +26,8 @@ import pytest
 
 from agentnodes.foundation.llm import LLMConfig, LLMResponse
 from agentnodes.kernel.agent.builtin_tools import build_default_registry
-from agentnodes.kernel.agent.loop import AgentLoop
-from agentnodes.kernel.agent.loop_engine_adapters import LoopPrepare
+from agentnodes.kernel.agent.loop.core import AgentLoop
+from agentnodes.kernel.agent.loop.engine_adapters import LoopPrepare
 from agentnodes.kernel.agent.strategy import LoopContext
 from agentnodes.kernel.agent.strategy.steps import DefaultPreRunStep
 

@@ -10,13 +10,13 @@ from agentnodes.kernel.agent.compact.core import CompactConfig, compact_messages
 
 def _register_mock_persister(mock):
     """Register a mock compaction persister and return cleanup."""
-    from agentnodes.kernel.agent.loop import register_compaction_persister
+    from agentnodes.kernel.agent.loop.core import register_compaction_persister
     register_compaction_persister(mock)
     return mock
 
 
 def _reset_persister():
-    from agentnodes.kernel.agent.loop import register_compaction_persister
+    from agentnodes.kernel.agent.loop.core import register_compaction_persister
     register_compaction_persister(None)
 
 
@@ -31,7 +31,7 @@ class TestCompactionMessageFormat:
 
     def test_persist_compaction_event_creates_correct_format(self):
         """_persist_compaction_event creates a user-role compaction message."""
-        from agentnodes.kernel.agent.loop import AgentLoop
+        from agentnodes.kernel.agent.loop.core import AgentLoop
         cfg = CompactConfig()
         config = MagicMock()
         config.model_context_tokens = 1_000_000
@@ -59,7 +59,7 @@ class TestCompactionMessageFormat:
         assert call_kwargs["message_type"] == "compaction"
 
     def test_persist_compaction_event_empty_summary_skips(self):
-        from agentnodes.kernel.agent.loop import AgentLoop
+        from agentnodes.kernel.agent.loop.core import AgentLoop
         cfg = CompactConfig()
         config = MagicMock()
         config.model_context_tokens = 1_000_000
@@ -83,7 +83,7 @@ class TestCompactionMessageFormat:
         mock_persist.assert_not_called()
 
     def test_persist_compaction_event_no_session_skips(self):
-        from agentnodes.kernel.agent.loop import AgentLoop
+        from agentnodes.kernel.agent.loop.core import AgentLoop
         cfg = CompactConfig()
         config = MagicMock()
         config.model_context_tokens = 1_000_000
@@ -111,7 +111,7 @@ class TestAsyncMaybeCompact:
     """Tests for _amaybe_compact async path."""
 
     def _make_loop(self, messages=None):
-        from agentnodes.kernel.agent.loop import AgentLoop
+        from agentnodes.kernel.agent.loop.core import AgentLoop
         cfg = CompactConfig()
         config = MagicMock()
         config.model_context_tokens = 1_000_000
@@ -218,7 +218,7 @@ class TestSyncMaybeCompact:
     """Tests for _maybe_compact sync path."""
 
     def _make_loop(self):
-        from agentnodes.kernel.agent.loop import AgentLoop
+        from agentnodes.kernel.agent.loop.core import AgentLoop
         cfg = CompactConfig()
         config = MagicMock()
         config.model_context_tokens = 1_000_000

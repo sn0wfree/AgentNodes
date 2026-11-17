@@ -12,7 +12,7 @@ from llm_client_mock import patch_llm_client
 from typing import Any
 from unittest import mock
 
-from agentnodes.kernel.agent.loop import AgentLoop
+from agentnodes.kernel.agent.loop.core import AgentLoop
 
 
 class EventSink:

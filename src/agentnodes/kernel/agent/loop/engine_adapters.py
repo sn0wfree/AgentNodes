@@ -15,7 +15,7 @@ import logging
 from typing import Any
 
 from agentnodes.kernel.agent._core_types import StepHandler, StepResult
-from agentnodes.kernel.agent.loop import _make_strategy_ctx
+from agentnodes.kernel.agent.loop.core import _make_strategy_ctx
 from agentnodes.kernel.agent.strategy.loop_context import LoopContext
 
 logger = logging.getLogger(__name__)
@@ -238,7 +238,7 @@ class LoopIterationStart:
         loop = self._loop
         if not getattr(loop, "_wrap_up_nudge", False):
             return
-        from agentnodes.kernel.agent.loop import WRAP_UP_RATIO, WRAP_UP_NUDGE_TEXT
+        from agentnodes.kernel.agent.loop.core import WRAP_UP_RATIO, WRAP_UP_NUDGE_TEXT
 
         max_iter = loop._effective_max_iterations()
         ratio = getattr(loop, "_wrap_up_ratio", WRAP_UP_RATIO)

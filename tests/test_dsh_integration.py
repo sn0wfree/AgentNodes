@@ -19,7 +19,7 @@ from agentnodes.kernel.agent.context.injector import (
     GoalContinuationInjector,
     build_default_injectors,
 )
-from agentnodes.kernel.agent.loop import AgentLoop
+from agentnodes.kernel.agent.loop.core import AgentLoop
 from agentnodes.kernel.agent.tools.core import ToolRegistry, BaseTool
 
 

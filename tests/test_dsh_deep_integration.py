@@ -11,7 +11,7 @@ from unittest.mock import MagicMock
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
 
-from agentnodes.kernel.agent.loop import AgentLoop, LoopResult
+from agentnodes.kernel.agent.loop.core import AgentLoop, LoopResult
 from agentnodes.kernel.agent.tools.core import BaseTool, ToolRegistry
 
 

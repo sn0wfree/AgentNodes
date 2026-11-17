@@ -277,7 +277,7 @@ def test_agentloop_capability_premise_holds():
 
     见 docs/archive/2026-10/stage-c1-wp-agent-node-design-20261028.md §1.1。
     """
-    loop_tools = (SRC / "kernel" / "agent" / "loop_tools.py").read_text(encoding="utf-8")
+    loop_tools = (SRC / "kernel" / "agent" / "loop" / "tools.py").read_text(encoding="utf-8")
     assert "_TOOL_MAX_RETRIES" in loop_tools, "瞬时工具重试"
     assert "_TOOL_RESULT_HISTORY_MAX" in loop_tools, "30k 工具结果截断"
     assert "check_guards" in loop_tools, "单调 deny guard"

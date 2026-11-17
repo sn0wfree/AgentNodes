@@ -147,7 +147,7 @@ def _build_loop(workspace: Path, *, max_iterations: int = _MAX_ITER,
     fail-closed 拒绝）。所以本测试**显式**接闸，模拟生产 chat 的形态。
     """
     from agentnodes.kernel.agent.builtin_tools import build_default_registry
-    from agentnodes.kernel.agent.loop import AgentLoop
+    from agentnodes.kernel.agent.loop.core import AgentLoop
 
     cfg = _load_real_llm_config()
     strategy = {

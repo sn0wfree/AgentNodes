@@ -18,7 +18,7 @@ from pathlib import Path
 import pytest
 
 from agentnodes.kernel.agent.builtin_tools import build_default_registry
-from agentnodes.kernel.agent.loop import (
+from agentnodes.kernel.agent.loop.core import (
     WRAP_UP_NUDGE_TEXT,
     WRAP_UP_RATIO,
     AgentLoop,

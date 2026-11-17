@@ -24,7 +24,7 @@ import logging
 from typing import TYPE_CHECKING, Any, Protocol, Sequence, cast, runtime_checkable
 
 if TYPE_CHECKING:
-    from agentnodes.kernel.agent.loop import AgentLoop, LoopResult
+    from agentnodes.kernel.agent.loop.core import AgentLoop, LoopResult
 
 logger = logging.getLogger(__name__)
 
@@ -255,7 +255,7 @@ def _get_goal_snapshot(loop: AgentLoop) -> dict[str, Any] | None:
         return None
     try:
         # Import _get_goal_store from loop module (avoids circular import)
-        from agentnodes.kernel.agent import loop as _loop_mod
+        from agentnodes.kernel.agent.loop import core as _loop_mod
         get_goal_store = getattr(_loop_mod, "_get_goal_store", None)
         if get_goal_store is None:
             return None

@@ -27,7 +27,7 @@ import httpx
 import pytest
 
 from agentnodes.kernel.agent.builtin_tools import build_default_registry
-from agentnodes.kernel.agent.loop import AgentLoop, _run_coro_in_sync
+from agentnodes.kernel.agent.loop.core import AgentLoop, _run_coro_in_sync
 from agentnodes.foundation.llm import LLMConfig, LLMResponse, ToolCall
 from agentnodes.foundation.llm.errors import LLMAuthError, LLMRateLimitError
 from agentnodes.foundation.llm.openai_client import _raise_for_status

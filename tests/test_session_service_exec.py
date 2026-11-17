@@ -246,7 +246,7 @@ class TestGuardContinuation:
         **语义细节**：``asked_user`` 是**最后一轮**的判定，不是「曾经问过」——
         重试后拿到非问句答案时 asked_user=False。「问过」由 ``retries > 0`` 表达。
         """
-        from agentnodes.kernel.agent.loop import LoopResult
+        from agentnodes.kernel.agent.loop.core import LoopResult
 
         calls: list[int] = []
 
@@ -280,7 +280,7 @@ class TestGuardContinuation:
 
     async def test_guard_does_not_retry_for_non_dag_session(self, svc, monkeypatch):
         """非 DAG 会话 → guard_cap=0 → 不重试（asked_user=False）。"""
-        from agentnodes.kernel.agent.loop import LoopResult
+        from agentnodes.kernel.agent.loop.core import LoopResult
 
         calls: list[int] = []
 
@@ -306,7 +306,7 @@ class TestGuardContinuation:
 
     async def test_guard_returns_first_result_without_continuation(self, svc, monkeypatch):
         """正常结束（非问句）→ 不重试，retries=0。"""
-        from agentnodes.kernel.agent.loop import LoopResult
+        from agentnodes.kernel.agent.loop.core import LoopResult
 
         calls: list[int] = []
 

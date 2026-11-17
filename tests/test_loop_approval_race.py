@@ -24,7 +24,7 @@ import time
 import pytest
 
 from agentnodes.kernel.agent.builtin_tools import build_default_registry
-from agentnodes.kernel.agent.loop import AgentLoop
+from agentnodes.kernel.agent.loop.core import AgentLoop
 from agentnodes.foundation.llm import LLMConfig, LLMResponse, ToolCall
 
 

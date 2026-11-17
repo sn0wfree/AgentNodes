@@ -16,7 +16,7 @@ from agentnodes.kernel.agent.compact.core import (
     _resolve_threshold_tokens,
     compact_messages,
 )
-from agentnodes.kernel.agent.loop import (
+from agentnodes.kernel.agent.loop.core import (
     AgentLoop,
     compaction_persister_registered,
 )

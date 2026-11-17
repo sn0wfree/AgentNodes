@@ -58,7 +58,7 @@ class TestTypedIds:
         assert param.annotation is not None
 
     def test_agent_loop_uses_session_id(self):
-        from agentnodes.kernel.agent.loop import AgentLoop
+        from agentnodes.kernel.agent.loop.core import AgentLoop
         import inspect
 
         sig = inspect.signature(AgentLoop.__init__)

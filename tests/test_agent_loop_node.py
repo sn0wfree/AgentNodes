@@ -110,7 +110,7 @@ def _request(text: str, history=None) -> WorkRequest:
 
 def _loop_for(client, registry, **kw):
     from agentnodes.foundation.llm import LLMConfig
-    from agentnodes.kernel.agent.loop import AgentLoop
+    from agentnodes.kernel.agent.loop.core import AgentLoop
 
     loop = AgentLoop(
         config=LLMConfig(api_key=""),

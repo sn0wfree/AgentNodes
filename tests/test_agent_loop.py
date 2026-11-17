@@ -9,7 +9,7 @@ from pathlib import Path
 import pytest
 
 from agentnodes.kernel.agent.builtin_tools import build_default_registry
-from agentnodes.kernel.agent.loop import AgentLoop, LoopResult, _tool_call_hash
+from agentnodes.kernel.agent.loop.core import AgentLoop, LoopResult, _tool_call_hash
 from agentnodes.kernel.agent.tools.core import ToolRegistry
 from agentnodes.foundation.llm import LLMConfig, LLMResponse, ToolCall
 from agentnodes.foundation.llm.errors import LLMAuthError

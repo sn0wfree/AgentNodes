@@ -52,7 +52,7 @@ def _elapsed_ms(metrics: dict) -> int:
 def _run_one(task: GoldenTask, *, workspace: Path, max_iterations: int = 6) -> RunRecord:
     from agentnodes.foundation.llm.config import LLMConfig
     from agentnodes.kernel.agent.builtin_tools import build_default_registry
-    from agentnodes.kernel.agent.loop import AgentLoop
+    from agentnodes.kernel.agent.loop.core import AgentLoop
     from agentnodes.kernel.agent.strategy.loop_strategy import LoopConfig
     from agentnodes.kernel.agent.tools.toolsets import apply_toolset, resolve_toolset
 
@@ -123,7 +123,7 @@ def _run_one(task: GoldenTask, *, workspace: Path, max_iterations: int = 6) -> R
             tool_sequence=list(tools_used),
             # Latency **passthrough** (D3 / W2): the agent loop already
             # records ``elapsed_s`` in ``result.metrics`` (see
-            # ``kernel/agent/loop_lifecycle.py::_finalize_metrics``). evals
+            # ``kernel/agent/loop/lifecycle.py::_finalize_metrics``). evals
             # adds no second clock — it only converts s → ms for the record.
             duration_ms=_elapsed_ms(metrics),
         )

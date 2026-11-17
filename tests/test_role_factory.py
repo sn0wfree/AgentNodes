@@ -121,7 +121,7 @@ class TestBuildAgentLoop:
     """build_agent_loop() 构造 AgentLoop 实例."""
 
     def test_returns_agent_loop_with_prompt(self, tmp_path):
-        from agentnodes.kernel.agent.loop import AgentLoop
+        from agentnodes.kernel.agent.loop.core import AgentLoop
         from agentnodes.kernel.agent.role_factory import build_agent_loop
 
         loop = build_agent_loop(
@@ -193,7 +193,7 @@ class TestRunAgentViaLlm:
         不是回退事故。
         """
         from agentnodes.kernel.agent import role_factory as factory
-        from agentnodes.kernel.agent.loop import LoopResult
+        from agentnodes.kernel.agent.loop.core import LoopResult
 
         mock_loop = MagicMock()
         mock_loop.run.return_value = LoopResult(
@@ -223,7 +223,7 @@ class TestRunAgentViaLlm:
     def test_known_role_with_loop_error_returns_error_json(self, tmp_path):
         """AgentLoop.run() 返回 error → 应序列化成 JSON error."""
         from agentnodes.kernel.agent import role_factory as factory
-        from agentnodes.kernel.agent.loop import LoopResult
+        from agentnodes.kernel.agent.loop.core import LoopResult
 
         mock_loop = MagicMock()
         mock_loop.run.return_value = LoopResult(

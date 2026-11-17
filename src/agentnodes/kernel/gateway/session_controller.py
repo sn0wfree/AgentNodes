@@ -420,7 +420,7 @@ class SessionController:
             from agentnodes.kernel.agent.harness_resolver import (
                 apply_compaction_overrides,
             )
-            from agentnodes.kernel.agent.loop import AgentLoop
+            from agentnodes.kernel.agent.loop.core import AgentLoop
             from agentnodes.kernel.runtimes.nodes.agent_loop_node import (
                 make_agent_loop_node,
                 make_loop_event_sink,
@@ -544,7 +544,7 @@ class SessionController:
         if self._registry is None:
             return None
         try:
-            from agentnodes.kernel.agent.loop_assembly import (
+            from agentnodes.kernel.agent.loop.assembly import (
                 assemble_loop_parts,
             )
 

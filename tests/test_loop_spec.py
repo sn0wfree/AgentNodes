@@ -12,8 +12,8 @@ from pathlib import Path
 
 import pytest
 
-from agentnodes.kernel.agent.loop import AgentLoop
-from agentnodes.kernel.agent.loop_spec import (
+from agentnodes.kernel.agent.loop.core import AgentLoop
+from agentnodes.kernel.agent.loop.spec import (
     BudgetSpec,
     CapabilitySpec,
     ContextSpec,

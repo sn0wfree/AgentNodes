@@ -19,7 +19,7 @@ import pytest
 
 from agentnodes.foundation.llm import LLMConfig
 from agentnodes.kernel.agent.builtin_tools import build_default_registry
-from agentnodes.kernel.agent.loop import AgentLoop
+from agentnodes.kernel.agent.loop.core import AgentLoop
 
 
 def _loop(tmp_path: Path, **kw) -> AgentLoop:

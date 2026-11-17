@@ -78,7 +78,7 @@ def build_fanout_preset(
                     {"branch_id": branch["id"], "reason": reason or "exhausted"},
                 )
 
-        from agentnodes.kernel.agent.loop import AgentLoop
+        from agentnodes.kernel.agent.loop.core import AgentLoop
         from agentnodes.kernel.agent.runtime.sync_bridge import _run_coro_in_sync
         from agentnodes.foundation.llm.config import LLMConfig
         from agentnodes.kernel.runtimes.nodes.agent_loop_node import (

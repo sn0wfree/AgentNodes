@@ -182,7 +182,7 @@ def test_ask_with_gateway_waits_for_approval():
     gw = _gateway(evaluator=_ask_evaluator(interactive=True), gateway=gateway)
 
     async def _drive():
-        from agentnodes.kernel.agent.loop import AgentLoop
+        from agentnodes.kernel.agent.loop.core import AgentLoop
 
         loop = AgentLoop(
             config=_Cfg(),

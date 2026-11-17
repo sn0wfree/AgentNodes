@@ -23,7 +23,7 @@ from agentnodes.kernel.agent.runtime.sync_bridge import _run_coro_in_sync
 
 if TYPE_CHECKING:
     from agentnodes.foundation.llm.parser import ToolCall
-    from agentnodes.kernel.agent.loop import LoopResult
+    from agentnodes.kernel.agent.loop.core import LoopResult
 
 class LoopToolsMixin:
 # ── Host surface (provided by AgentLoop / AutoresearchRunner) ──

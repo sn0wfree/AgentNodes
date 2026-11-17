@@ -59,7 +59,7 @@ class RunRecord:
     tool_calls_made: int = 0
     tool_sequence: list[str] = field(default_factory=list)  # ordered, repeats kept
     #: Wall-clock latency for this run. **Passthrough only** — the kernel
-    #: already measures ``elapsed_s`` (``kernel/agent/loop_lifecycle.py`` /
+    #: already measures ``elapsed_s`` (``kernel/agent/loop/lifecycle.py`` /
     #: ``executor.py`` metrics); evals must not invent a second clock.
     duration_ms: int = 0
 

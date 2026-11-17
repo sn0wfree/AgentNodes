@@ -18,7 +18,7 @@ from pathlib import Path
 from agentnodes.foundation.llm import LLMConfig
 from agentnodes.kernel.agent.builtin_tools import build_default_registry
 from agentnodes.kernel.agent.circuit_breaker import RetryPolicy
-from agentnodes.kernel.agent.loop import AgentLoop
+from agentnodes.kernel.agent.loop.core import AgentLoop
 
 
 def _make_loop(**kw):
@@ -82,7 +82,7 @@ def test_retry_policy_explicit_changes_attempt_count(tmp_path: Path):
             workspace=ws, max_iterations=1,
             retry_policy=retry_policy,
         )
-        from agentnodes.kernel.agent.loop import LoopResult
+        from agentnodes.kernel.agent.loop.core import LoopResult
         from agentnodes.foundation.llm import ToolCall
         tc = ToolCall(id="c1", name="flaky_probe", arguments={})
         loop._run_coro_sync = None  # noqa: F841 — 仅确保属性访问不炸

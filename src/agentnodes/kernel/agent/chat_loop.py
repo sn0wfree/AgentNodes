@@ -18,7 +18,7 @@ import logging
 from pathlib import Path
 from typing import Any, Callable
 
-from agentnodes.kernel.agent.loop import AgentLoop
+from agentnodes.kernel.agent.loop.core import AgentLoop
 from agentnodes.foundation import settings as _settings
 
 logger = logging.getLogger(__name__)
@@ -136,7 +136,7 @@ def build_chat_agent_loop(
         sees what tools are available even without a workspace).
     """
     from agentnodes.kernel.agent.builtin_tools import build_default_registry
-    from agentnodes.kernel.agent.loop_assembly import assemble_loop_parts
+    from agentnodes.kernel.agent.loop.assembly import assemble_loop_parts
 
     # Tool registry (default: all built-in tools)
     if registry is None:

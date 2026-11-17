@@ -11,8 +11,8 @@ from pathlib import Path
 
 import pytest
 
-from agentnodes.kernel.agent import loop as loop_mod
-from agentnodes.kernel.agent.loop import AgentLoop, LoopResult
+from agentnodes.kernel.agent.loop import core as loop_mod
+from agentnodes.kernel.agent.loop.core import AgentLoop, LoopResult
 from agentnodes.kernel.agent.tools.core import BaseTool, ToolRegistry
 from agentnodes.foundation.llm import LLMConfig, ToolCall
 

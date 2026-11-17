@@ -14,7 +14,7 @@ from unittest.mock import MagicMock, patch
 import pytest
 
 from agentnodes.kernel.agent.compact.core import CompactConfig
-from agentnodes.kernel.agent.loop import AgentLoop
+from agentnodes.kernel.agent.loop.core import AgentLoop
 from agentnodes.foundation.llm.config import LLMConfig
 
 # ── _persist_compaction_event propagates errors ──────────────
@@ -46,7 +46,7 @@ class TestPersistPropagatesErrors:
 
         # Register a persister that raises, so the legacy path actually
         # invokes persist_message and we can verify error propagation.
-        from agentnodes.kernel.agent.loop import (
+        from agentnodes.kernel.agent.loop.core import (
             compaction_persister_registered,
         )
 
@@ -62,7 +62,7 @@ class TestPersistPropagatesErrors:
         """logger.exception is called (includes traceback)."""
         loop = self._make_loop()
 
-        from agentnodes.kernel.agent.loop import (
+        from agentnodes.kernel.agent.loop.core import (
             compaction_persister_registered,
         )
 

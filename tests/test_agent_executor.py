@@ -14,7 +14,7 @@ from agentnodes.kernel.agent.executor import (
     first_two_sentences,
 )
 from agentnodes.kernel.agent.registry import AgentPluginRegistry
-from agentnodes.kernel.agent.loop import AgentLoop
+from agentnodes.kernel.agent.loop.core import AgentLoop
 from agentnodes.foundation.llm import LLMConfig, LLMResponse
 
 PLUGINS = {p.id: p for p in BUILTIN_PLUGINS}
@@ -142,7 +142,7 @@ class TestEvaluator:
 class TestLLMExec:
     def _patch_loop(self, chat_fn=None):
         """Patch AgentLoop.__init__ to use a mock chat and skip streaming."""
-        import agentnodes.kernel.agent.loop as loop_mod
+        import agentnodes.kernel.agent.loop.core as loop_mod
         orig = loop_mod.AgentLoop.__init__
         _patch_captured: dict = {}
         def patched(self, *a, **kw):
@@ -158,7 +158,7 @@ class TestLLMExec:
         return orig, _patch_captured
 
     def _unpatch_loop(self, orig):
-        import agentnodes.kernel.agent.loop as loop_mod
+        import agentnodes.kernel.agent.loop.core as loop_mod
         loop_mod.AgentLoop.__init__ = orig
 
     def test_llm_success_and_summary(self, workspace, executor):

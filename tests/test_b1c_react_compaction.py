@@ -16,7 +16,7 @@ from types import SimpleNamespace
 
 def _recording_loop(client):
     from agentnodes.foundation.llm import LLMConfig
-    from agentnodes.kernel.agent.loop import AgentLoop
+    from agentnodes.kernel.agent.loop.core import AgentLoop
     from agentnodes.kernel.agent.tools.core import ToolRegistry
 
     reg = ToolRegistry()
@@ -200,7 +200,7 @@ def test_controller_compaction_wiring_goes_through_loop():
     """
     from agentnodes.foundation.compact_config import CompactConfig
     from agentnodes.foundation.llm import LLMConfig
-    from agentnodes.kernel.agent.loop import AgentLoop
+    from agentnodes.kernel.agent.loop.core import AgentLoop
     from agentnodes.kernel.gateway.session_controller import SessionController
 
     class _EP:

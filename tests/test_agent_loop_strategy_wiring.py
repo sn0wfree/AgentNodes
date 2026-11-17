@@ -19,7 +19,7 @@ from unittest.mock import MagicMock
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
 
-from agentnodes.kernel.agent.loop import (
+from agentnodes.kernel.agent.loop.core import (
     _inject_agent_loop,
     _make_strategy_ctx,
 )

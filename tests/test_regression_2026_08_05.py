@@ -55,13 +55,13 @@ class TestAmaybeCompactStructural:
     """Static structural checks on the rewritten _amaybe_compact."""
 
     def test_no_inner_achat_adapter_class(self):
-        from agentnodes.kernel.agent.loop import AgentLoop
+        from agentnodes.kernel.agent.loop.core import AgentLoop
         src = _strip_docstring(inspect.getsource(AgentLoop._amaybe_compact))
         assert "class _AchatAdapter" not in src
 
     def test_no_nested_asyncio_run(self):
         """asyncio.run() cannot be called from a running event loop."""
-        from agentnodes.kernel.agent.loop import AgentLoop
+        from agentnodes.kernel.agent.loop.core import AgentLoop
         src = _strip_docstring(inspect.getsource(AgentLoop._amaybe_compact))
         assert "asyncio.run(" not in src
 
@@ -74,7 +74,7 @@ class TestAmaybeCompactStructural:
         更新——**核心性质不变**：``await asyncio.to_thread(...)`` 包裹的
         是同步压缩入口，且引擎调用仍传 sync 客户端（无 adapter）。
         """
-        from agentnodes.kernel.agent.loop import AgentLoop
+        from agentnodes.kernel.agent.loop.core import AgentLoop
 
         src = _strip_docstring(inspect.getsource(AgentLoop._amaybe_compact))
         assert "await asyncio.to_thread(" in src
@@ -95,7 +95,7 @@ class TestAmaybeCompactRuntime:
     """Runtime checks: the offloaded call actually runs without warnings."""
 
     def _make_loop(self):
-        from agentnodes.kernel.agent.loop import AgentLoop
+        from agentnodes.kernel.agent.loop.core import AgentLoop
         cfg = CompactConfig()
         config = MagicMock()
         config.model_context_tokens = 1_000_000

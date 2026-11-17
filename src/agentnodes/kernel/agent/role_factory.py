@@ -19,7 +19,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
-    from agentnodes.kernel.agent.loop import AgentLoop
+    from agentnodes.kernel.agent.loop.core import AgentLoop
 
 import json
 import os
@@ -133,8 +133,8 @@ def build_agent_loop(
         AgentLoop 实例. 如果系统提示词为空, 返回 None (调用方走 stub fallback).
     """
     from agentnodes.kernel.agent.builtin_tools import build_default_registry
-    from agentnodes.kernel.agent.loop import AgentLoop
-    from agentnodes.kernel.agent.loop_assembly import assemble_loop_parts
+    from agentnodes.kernel.agent.loop.core import AgentLoop
+    from agentnodes.kernel.agent.loop.assembly import assemble_loop_parts
     from agentnodes.kernel.agent.strategy.profile_resolver import resolve_loop_strategy
     from agentnodes.foundation.llm import LLMConfig
 

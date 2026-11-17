@@ -173,7 +173,7 @@ def _merge_spec(explicit: Any, folded: Any) -> Any:
     """
     from dataclasses import fields as _fields
 
-    from agentnodes.kernel.agent.loop_spec import LoopSpec as _LoopSpec
+    from agentnodes.kernel.agent.loop.spec import LoopSpec as _LoopSpec
 
     merged = _LoopSpec()
     defaults = _LoopSpec.fold_legacy_kwargs({})
@@ -269,11 +269,11 @@ def _tool_call_hash(tc: ToolCall) -> str:
 
 
 from agentnodes.kernel.agent.compact.loop_compaction import LoopCompactionMixin
-from agentnodes.kernel.agent.loop_lifecycle import LoopLifecycleMixin
-from agentnodes.kernel.agent.loop_progress import LoopProgressMixin
-from agentnodes.kernel.agent.loop_stream import LoopStreamMixin
-from agentnodes.kernel.agent.loop_telemetry import LoopTelemetryMixin
-from agentnodes.kernel.agent.loop_tools import LoopToolsMixin
+from agentnodes.kernel.agent.loop.lifecycle import LoopLifecycleMixin
+from agentnodes.kernel.agent.loop.progress import LoopProgressMixin
+from agentnodes.kernel.agent.loop.stream import LoopStreamMixin
+from agentnodes.kernel.agent.loop.telemetry import LoopTelemetryMixin
+from agentnodes.kernel.agent.loop.tools import LoopToolsMixin
 
 
 class AgentLoop(
@@ -372,7 +372,7 @@ class AgentLoop(
         # 批次 12 S2：把旧式参数折叠进 LoopSpec（单一事实源
         # ``loop_spec._LEGACY_MAP``）。显式传 spec 时以其为准，
         # 旧参数作为**覆盖层**（便于渐进迁移：先传 spec，再逐项删旧参）。
-        from agentnodes.kernel.agent.loop_spec import LoopSpec as _LoopSpec
+        from agentnodes.kernel.agent.loop.spec import LoopSpec as _LoopSpec
 
         _folded = _LoopSpec.fold_legacy_kwargs({
             # Scope（**workspace 曾漏传 → 工具拿不到 ctx.workspace，
@@ -1014,8 +1014,8 @@ class AgentLoop(
         工具怎么执行。
         """
         from agentnodes.kernel.agent.modes import deciders_for
-        from agentnodes.kernel.agent.loop_engine import LoopEngine
-        from agentnodes.kernel.agent.loop_engine_adapters import (
+        from agentnodes.kernel.agent.loop.engine import LoopEngine
+        from agentnodes.kernel.agent.loop.engine_adapters import (
             LoopActor,
             LoopFinalize,
             LoopHooks,
@@ -1057,7 +1057,7 @@ class AgentLoop(
         history: list[dict[str, Any]] | None,
     ) -> Any:
         """构造一次运行的 spec（U5.5 从 ``_run_via_skeleton`` 提取）。"""
-        from agentnodes.kernel.agent.loop_engine import LoopEngineSpec
+        from agentnodes.kernel.agent.loop.engine import LoopEngineSpec
 
         return LoopEngineSpec(
             task=task,

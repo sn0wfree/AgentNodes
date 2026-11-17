@@ -22,7 +22,7 @@ from agentnodes.kernel.agent.context.injector import (
     TodosInjector,
     build_default_injectors,
 )
-from agentnodes.kernel.agent.loop import AgentLoop, LoopResult
+from agentnodes.kernel.agent.loop.core import AgentLoop, LoopResult
 from agentnodes.kernel.agent.tools.core import ToolGuard, ToolRegistry, BaseTool
 from agentnodes.foundation.registry import Registry
 
@@ -158,7 +158,7 @@ class TestContextInjectorAdvanced:
 
 class TestRequestEnvelopeHashAdvanced:
     def _make_loop(self):
-        from agentnodes.kernel.agent.loop import AgentLoop
+        from agentnodes.kernel.agent.loop.core import AgentLoop
         loop = object.__new__(AgentLoop)
         loop.session_id = "test"
         loop._emit = MagicMock()

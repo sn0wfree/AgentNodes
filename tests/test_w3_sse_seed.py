@@ -22,7 +22,7 @@ from types import SimpleNamespace
 import pytest
 
 from agentnodes.foundation.llm import LLMConfig
-from agentnodes.kernel.agent.loop import AgentLoop
+from agentnodes.kernel.agent.loop.core import AgentLoop
 from agentnodes.kernel.gateway.session_controller import SessionController
 
 

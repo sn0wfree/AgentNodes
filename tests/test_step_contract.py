@@ -111,7 +111,7 @@ def test_protocol_py_has_exactly_four_decision_protocols():
 
 def test_call_step_signature_has_no_async_mode():
     """§7 断言 3：``_call_step`` 签名无 ``async_mode``。"""
-    tree = ast.parse((SRC / "loop.py").read_text(encoding="utf-8"))
+    tree = ast.parse((SRC / "loop" / "core.py").read_text(encoding="utf-8"))
     for node in ast.walk(tree):
         if isinstance(node, ast.AsyncFunctionDef) and node.name == "_call_step":
             args = [a.arg for a in node.args.args + node.args.kwonlyargs]
@@ -123,7 +123,7 @@ def test_call_step_signature_has_no_async_mode():
 def test_call_sites_pass_no_async_mode_kwarg():
     """§7 断言 3（续）：8 个调用点都不再传 ``async_mode=``。"""
     hits = []
-    for p in (SRC / "loop.py", SRC / "loop_engine_adapters.py"):
+    for p in (SRC / "loop" / "core.py", SRC / "loop" / "engine_adapters.py"):
         tree = ast.parse(p.read_text(encoding="utf-8"))
         for node in ast.walk(tree):
             if (isinstance(node, ast.Call)
@@ -167,7 +167,7 @@ def test_crash_backfill_count_is_four():
     """
     pattern = re.compile(r'stop_reason\s*=\s*\w+\.stop_reason\s+or\s+"step_')
     total = 0
-    for p in (SRC / "loop.py", SRC / "loop_engine_adapters.py"):
+    for p in (SRC / "loop" / "core.py", SRC / "loop" / "engine_adapters.py"):
         hits = pattern.findall(p.read_text(encoding="utf-8"))
         assert len(hits) == 2, f"{p.name} 回填处应恰 2 处，实际 {len(hits)}"
         total += len(hits)
@@ -228,7 +228,7 @@ def test_step_adapters_has_zero_async_mode_refs():
 
 def test_call_step_has_no_legacy_execute_branch():
     """T11：``_call_step`` 的旧形状 ``step.execute(...)`` 分支删除。"""
-    tree = ast.parse((SRC / "loop.py").read_text(encoding="utf-8"))
+    tree = ast.parse((SRC / "loop" / "core.py").read_text(encoding="utf-8"))
     for node in ast.walk(tree):
         if isinstance(node, ast.AsyncFunctionDef) and node.name == "_call_step":
             calls = [

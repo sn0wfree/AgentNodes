@@ -187,7 +187,7 @@ class TestCallStepRejectsLegacyShape:
             def execute(self, ctx, *, async_mode):  # 旧形状：无 handle
                 raise AssertionError("execute 不应被调用")
 
-        from agentnodes.kernel.agent.loop import AgentLoop
+        from agentnodes.kernel.agent.loop.core import AgentLoop
 
         r = asyncio.run(AgentLoop._call_step(object(), _LegacyShape(), None))
         assert r.success is False
@@ -202,7 +202,7 @@ class TestCallStepRejectsLegacyShape:
             async def handle(self, input, ctx):
                 return StepResult.ok("ran")
 
-        from agentnodes.kernel.agent.loop import AgentLoop
+        from agentnodes.kernel.agent.loop.core import AgentLoop
 
         r = asyncio.run(AgentLoop._call_step(object(), _Ok(), None))
         assert r.success is True and r.output == "ran"

@@ -9,7 +9,7 @@ from pathlib import Path
 from unittest.mock import patch
 
 from agentnodes.kernel.agent.builtin_tools import build_default_registry
-from agentnodes.kernel.agent.loop import (
+from agentnodes.kernel.agent.loop.core import (
     AgentLoop,
     LoopResult,
 )
@@ -222,7 +222,7 @@ class TestGitCommit:
                 auto_git_commit=True,
             )
             patch_llm_client(loop, mock.chat)
-            with patch("agentnodes.kernel.agent.loop.git_commit", return_value=True) as mock_commit:
+            with patch("agentnodes.kernel.agent.loop.core.git_commit", return_value=True) as mock_commit:
                 loop.run("task")
                 mock_commit.assert_called_once()
                 args = mock_commit.call_args
@@ -244,7 +244,7 @@ class TestGitCommit:
                 auto_git_commit=False,
             )
             patch_llm_client(loop, mock.chat)
-            with patch("agentnodes.kernel.agent.loop.git_commit") as mock_commit:
+            with patch("agentnodes.kernel.agent.loop.core.git_commit") as mock_commit:
                 loop.run("task")
                 mock_commit.assert_not_called()
 

@@ -42,7 +42,7 @@ sys.path.insert(0, r"{root}\src")
 
 from agentnodes.foundation.llm import LLMConfig, LLMResponse, ToolCall
 from agentnodes.kernel.agent.builtin_tools import build_default_registry
-from agentnodes.kernel.agent.loop import AgentLoop
+from agentnodes.kernel.agent.loop.core import AgentLoop
 
 
 class MockLLM:

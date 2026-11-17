@@ -221,7 +221,7 @@ class TestMakeStrategyCtxHookCtx:
     def test_hook_ctx_is_passed_through(self):
         """_make_strategy_ctx carries the AgentHookContext through so
         steps can access the same instance the hook system uses."""
-        from agentnodes.kernel.agent.loop import _make_strategy_ctx
+        from agentnodes.kernel.agent.loop.core import _make_strategy_ctx
 
         class _AgentHookCtx:
             pass
@@ -238,7 +238,7 @@ class TestMakeStrategyCtxHookCtx:
         assert ctx.hook_ctx is hook_ctx
 
     def test_hook_ctx_default_none(self):
-        from agentnodes.kernel.agent.loop import _make_strategy_ctx
+        from agentnodes.kernel.agent.loop.core import _make_strategy_ctx
 
         ctx = _make_strategy_ctx(
             loop=None, messages=[], response=None, result=None, iteration=1,

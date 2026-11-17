@@ -47,7 +47,7 @@ sys.path.insert(0, r"{root}\src")
 
 from agentnodes.foundation.llm import LLMConfig, LLMResponse, ToolCall
 from agentnodes.kernel.agent.builtin_tools import build_default_registry
-from agentnodes.kernel.agent.loop import AgentLoop
+from agentnodes.kernel.agent.loop.core import AgentLoop
 from agentnodes.kernel.agent.runtime.sync_bridge import _run_coro_in_sync
 from agentnodes.kernel.permission import PermissionEvaluator
 from agentnodes.kernel.permission.schema import (
