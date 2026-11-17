@@ -15,8 +15,8 @@ from dataclasses import dataclass, field
 from typing import Any
 
 from agentnodes.foundation.utils.token_utils import estimate_tokens as _estimate_message_tokens
-from .policy import ContextPolicy
-from .protocol import ContextItem, ContextProvider, ContextQuery
+from agentnodes.kernel.context.policy import ContextPolicy
+from agentnodes.kernel.context.protocol import ContextItem, ContextProvider, ContextQuery
 
 logger = logging.getLogger(__name__)
 

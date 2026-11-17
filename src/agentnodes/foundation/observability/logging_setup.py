@@ -32,7 +32,7 @@ from logging.handlers import RotatingFileHandler
 from pathlib import Path
 from typing import Any
 
-from .trace import JsonFormatter, TraceFilter, ensure_trace_filter
+from agentnodes.foundation.observability.trace import JsonFormatter, TraceFilter, ensure_trace_filter
 
 # 文件日志默认目录：项目数据根下 logs/（与各 store 的 ~/.agentnodes
 # 同根；测试经 conftest home 沙箱自动重定向，不触真实目录）。

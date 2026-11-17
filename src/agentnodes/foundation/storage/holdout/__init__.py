@@ -11,7 +11,7 @@ H5 的保证就断了。
 
 from __future__ import annotations
 
-from .store import (
+from agentnodes.foundation.storage.holdout.store import (
     DEFAULT_SUBDIR,
     HoldoutAlreadyPersisted,
     HoldoutPointer,

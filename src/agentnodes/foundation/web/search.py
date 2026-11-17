@@ -18,7 +18,7 @@ from __future__ import annotations
 import json
 import logging
 
-from ._rate_limit import ExponentialBackoff
+from agentnodes.foundation.web._rate_limit import ExponentialBackoff
 
 logger = logging.getLogger(__name__)
 
@@ -54,7 +54,7 @@ def web_search(
 
     # Try MiniMax first (preferred: official API, structured payload).
     try:
-        from .minimax_search import has_minimax_credentials, minimax_search
+        from agentnodes.foundation.web.minimax_search import has_minimax_credentials, minimax_search
         if has_minimax_credentials():
             payload = minimax_search(query, count=max_results)
             # Chat API key ≠ Coding Plan search key — 400/invalid params

@@ -6,7 +6,7 @@ import logging
 import re
 from pathlib import Path
 
-from .models import Skill
+from agentnodes.kernel.skills.models import Skill
 
 logger = logging.getLogger(__name__)
 

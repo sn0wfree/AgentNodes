@@ -140,7 +140,7 @@ class HangingEventsStore:
             return  # closed — best-effort, observability must not raise
         if trace_id is None or round_num is None:
             try:
-                from .trace import get_trace_context
+                from agentnodes.foundation.observability.trace import get_trace_context
 
                 ctx = get_trace_context()
             except Exception:  # noqa: BLE001 — trace 不可用不阻断

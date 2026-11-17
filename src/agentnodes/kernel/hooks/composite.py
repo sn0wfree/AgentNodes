@@ -14,8 +14,8 @@ from __future__ import annotations
 import logging
 from typing import Any
 
-from .context import AgentHookContext
-from .utils import maybe_await as _maybe_await
+from agentnodes.kernel.hooks.context import AgentHookContext
+from agentnodes.kernel.hooks.utils import maybe_await as _maybe_await
 
 logger = logging.getLogger(__name__)
 

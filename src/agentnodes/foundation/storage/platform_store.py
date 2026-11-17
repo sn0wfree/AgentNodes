@@ -24,7 +24,7 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
-from .event_schema import ensure_event_log_schema
+from agentnodes.foundation.storage.event_schema import ensure_event_log_schema
 
 logger = logging.getLogger(__name__)
 

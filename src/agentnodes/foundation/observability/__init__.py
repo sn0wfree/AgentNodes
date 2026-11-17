@@ -1,18 +1,18 @@
 """Observability - trace context + structured logging + event vocabulary."""
 
-from .event_vocab import (
+from agentnodes.foundation.observability.event_vocab import (
     LLM_REQUEST_STRIP_FIELDS,
     SUMMARY_EVENT_TYPES,
     strip_llm_request_fields,
 )
-from .logging_setup import (
+from agentnodes.foundation.observability.logging_setup import (
     DEFAULT_TEXT_FORMAT,
     configure_logging,
     dual_log,
     resolve_level,
     timed_deco,
 )
-from .trace import (
+from agentnodes.foundation.observability.trace import (
     JsonFormatter,
     TraceFilter,
     bind_trace,

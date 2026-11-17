@@ -6,8 +6,8 @@ docs/design/context-hub-discussion.md）。只依赖协议，绝不 import 生�
 """
 from __future__ import annotations
 
-from .hub import ContextBundle, ContextHub
-from .protocol import ContextItem, ContextProvider, ContextQuery
+from agentnodes.kernel.context.hub import ContextBundle, ContextHub
+from agentnodes.kernel.context.protocol import ContextItem, ContextProvider, ContextQuery
 
 __all__ = [
     "ContextBundle",

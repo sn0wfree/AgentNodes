@@ -9,8 +9,8 @@ the SQLite stores (GoalStore, StudyStore, HypothesisStore, ...).
 供未来注入。此处不再 re-export 具体实现（否则 L4→L2 re-export 本身违规）。
 """
 
-from . import sqlite
-from .data_store import DataStore, get_default_data_store, register_default_data_store
+from agentnodes.foundation.storage import sqlite
+from agentnodes.foundation.storage.data_store import DataStore, get_default_data_store, register_default_data_store
 
 __all__ = [
     "sqlite",

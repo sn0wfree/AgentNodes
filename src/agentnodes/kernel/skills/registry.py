@@ -6,8 +6,8 @@ import logging
 from pathlib import Path
 from typing import Iterator
 
-from .loader import parse_skill_file
-from .models import Skill
+from agentnodes.kernel.skills.loader import parse_skill_file
+from agentnodes.kernel.skills.models import Skill
 
 logger = logging.getLogger(__name__)
 

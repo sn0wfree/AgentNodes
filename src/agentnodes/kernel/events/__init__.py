@@ -7,6 +7,6 @@ surface so call sites can write ``from agentnodes.kernel.events
 import EventV2`` if they prefer.
 """
 
-from .event_v2 import EventType, EventV2, is_known_event_type
+from agentnodes.kernel.events.event_v2 import EventType, EventV2, is_known_event_type
 
 __all__ = ["EventType", "EventV2", "is_known_event_type"]

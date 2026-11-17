@@ -1,6 +1,6 @@
-from .composite import AgentHook, CompositeHook, NoOpHook
-from .context import AgentHookContext
-from .utils import maybe_await
+from agentnodes.kernel.hooks.composite import AgentHook, CompositeHook, NoOpHook
+from agentnodes.kernel.hooks.context import AgentHookContext
+from agentnodes.kernel.hooks.utils import maybe_await
 
 __all__ = [
     "AgentHook",
