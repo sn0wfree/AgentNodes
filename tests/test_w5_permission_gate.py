@@ -234,7 +234,7 @@ def test_singleton_wires_evaluator_and_gateway():
 def test_both_paths_share_one_gateway_instance():
     """两条路径必须共用**同一个** gateway —— 审批是跨请求交互，
     挂起的 future 按 tool_call_id 查，实例不同就永远对不上。"""
-    from agentnodes.kernel.agent.chat_loop import build_default_permission_gateway
+    from agentnodes.kernel.agent.factory.chat_loop import build_default_permission_gateway
     from agentnodes.kernel.gateway import singleton
 
     singleton.reset_gateway()

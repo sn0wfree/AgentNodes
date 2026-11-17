@@ -296,7 +296,7 @@ class ScoreboardSource(Protocol):
 
 | 接点 | 位置 | 状态 |
 |---|---|---|
-| chat 循环参数 | `kernel/agent/chat_loop.py:41` `enable_goal_injection: bool = False` | ✅ 已有 |
+| chat 循环参数 | `kernel/agent/factory/chat_loop.py:41` `enable_goal_injection: bool = False` | ✅ 已有 |
 | API 会话开启 goal 注入 | `interfaces/api/session/service.py:942` `enable_goal_injection=True,  # long-horizon: continue until goal criteria met` | ✅ 已有 |
 | TUI 续跑开关 | `interfaces/cli/tui/session.py:371` `toggle_goal_continuation()`（ctrl+G，keybindings.py:27）| ✅ 已有 |
 | goal 工具集 | `apps/capabilities.py:187` `tool.goal` → `_tool_goal` | ✅ 已注册（但必然失败）|

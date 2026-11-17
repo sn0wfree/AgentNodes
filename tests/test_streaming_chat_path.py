@@ -89,7 +89,7 @@ class TestChatPathStreaming:
         """
         import inspect
 
-        from agentnodes.kernel.agent import chat_loop
+        from agentnodes.kernel.agent.factory import chat_loop
 
         loop_src = inspect.getsource(chat_loop.build_chat_agent_loop)
         assert "stream_mode=True" in loop_src

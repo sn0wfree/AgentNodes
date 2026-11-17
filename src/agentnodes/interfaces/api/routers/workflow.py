@@ -447,7 +447,7 @@ async def orchestrate_session(body: OrchestrateSessionRequest, request: Request)
     """Get (or create) the DAG-bound chat session for a definition.
 
     session_id = "dag:{dag_id}" — the agent loop for these sessions is
-    restricted to the submit_dag_step tool (see core/agent/chat_loop.py).
+    restricted to the submit_dag_step tool (see kernel/agent/factory/chat_loop.py).
     """
     dag_id = body.dag_id.strip()
     if not dag_id or "/" in dag_id or "\\" in dag_id:

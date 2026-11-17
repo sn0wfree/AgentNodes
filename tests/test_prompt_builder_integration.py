@@ -33,7 +33,7 @@ class TestPhase5RemovedLegacyPaths:
     def test_no_load_role_system_prompt_function(self):
         """``from role_factory import _load_role_system_prompt`` must raise."""
         with __import__("pytest").raises(ImportError):
-            from agentnodes.kernel.agent.role_factory import (  # noqa: F401
+            from agentnodes.kernel.agent.factory.role_factory import (  # noqa: F401
                 _load_role_system_prompt,
             )
 
@@ -75,7 +75,7 @@ class TestPhase5CallSitesUseFactory:
 
         旧实现里 ``session.py`` 通过 ``build_chat_agent_loop`` 走统一 prompt
         工厂；现在它只接 Gateway（``_run_via_gateway``），prompt 装配发生在
-        引擎侧（``kernel/agent/chat_loop.py`` → AgentLoop → 同一 factory）。
+        引擎侧（``kernel/agent/factory/chat_loop.py`` → AgentLoop → 同一 factory）。
         所以这里断言的是**新链路的完整性**，而不是旧的字符串存在。
         """
         from agentnodes.interfaces.cli.tui import session as tui_session
@@ -89,7 +89,7 @@ class TestPhase5CallSitesUseFactory:
         assert "_load_role_system_prompt" not in src
 
     def test_role_factory_routes_through_factory(self):
-        from agentnodes.kernel.agent import role_factory
+        from agentnodes.kernel.agent.factory import role_factory
 
         src = open(role_factory.__file__, encoding="utf-8").read()
         # role_factory routes prompt rendering through the shared

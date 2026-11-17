@@ -39,7 +39,7 @@ class TestRolePromptLoading:
     def test_prompt_files_match_templates(self):
         """9 个 prompt 文件名与 templates/.prompts/ 对应."""
         from agentnodes import _TEMPLATES_DIR
-        from agentnodes.kernel.agent.role_factory import _ROLE_PROMPT_FILES
+        from agentnodes.kernel.agent.factory.role_factory import _ROLE_PROMPT_FILES
         prompts_dir = _TEMPLATES_DIR / ".prompts"
         for role, filename in _ROLE_PROMPT_FILES.items():
             assert (prompts_dir / filename).exists(), f"{filename} missing in {prompts_dir}"
@@ -56,7 +56,7 @@ class TestToolWhitelist:
 
     def test_coder_has_write_tools(self):
         """coder 必须能 write + shell（通用编码 agent 的底线能力）。"""
-        from agentnodes.kernel.agent.role_factory import _get_tool_whitelist
+        from agentnodes.kernel.agent.factory.role_factory import _get_tool_whitelist
         wl = _get_tool_whitelist("coder")
         assert "write" in wl
         assert "read" in wl
@@ -64,7 +64,7 @@ class TestToolWhitelist:
 
     def test_explorer_is_readonly(self):
         """explorer 是只读 agent：能读能搜，不能写不能执行。"""
-        from agentnodes.kernel.agent.role_factory import _get_tool_whitelist
+        from agentnodes.kernel.agent.factory.role_factory import _get_tool_whitelist
         wl = _get_tool_whitelist("explorer")
         assert "read" in wl
         assert "websearch" in wl
@@ -74,14 +74,14 @@ class TestToolWhitelist:
 
     def test_critic_is_readonly(self):
         """critic 不能 write_file."""
-        from agentnodes.kernel.agent.role_factory import _get_tool_whitelist
+        from agentnodes.kernel.agent.factory.role_factory import _get_tool_whitelist
         wl = _get_tool_whitelist("critic")
         assert "write" not in wl
         assert "read" in wl
 
     def test_unknown_role_minimal_default(self):
         """未知 role 退到 minimal 最小集 (fail-safe)."""
-        from agentnodes.kernel.agent.role_factory import _get_tool_whitelist
+        from agentnodes.kernel.agent.factory.role_factory import _get_tool_whitelist
         from agentnodes.kernel.agent.tools.toolsets import TOOLSETS
         assert _get_tool_whitelist("foo_bar_baz") == TOOLSETS["minimal"]
 
@@ -97,14 +97,14 @@ class TestShouldUseRealLlm:
         monkeypatch.delenv("AGENTNODES_LLM_PROFILE", raising=False)
         # conftest._isolate_llm_bridge already points the bridge at a
         # disabled fixture, so LLMConfig.load() returns no api_key.
-        from agentnodes.kernel.agent.role_factory import should_use_real_llm
+        from agentnodes.kernel.agent.factory.role_factory import should_use_real_llm
         assert should_use_real_llm() is False
 
     def test_env_var_set_returns_false(self, monkeypatch):
         """AUTORESEARCH_BEHAVIOR=stub → 强制走 stub, 即便有 api key."""
         monkeypatch.setenv("AUTORESEARCH_BEHAVIOR", "static")
         monkeypatch.setenv("OPENAI_API_KEY", "sk-test")
-        from agentnodes.kernel.agent.role_factory import should_use_real_llm
+        from agentnodes.kernel.agent.factory.role_factory import should_use_real_llm
         assert should_use_real_llm() is False
 
     def test_placeholder_api_key_returns_false(self, monkeypatch):
@@ -113,7 +113,7 @@ class TestShouldUseRealLlm:
         monkeypatch.setenv("OPENAI_API_KEY", "your-api-key-here")
         # conftest._isolate_llm_bridge disables the bridge, so the
         # placeholder OPENAI_API_KEY is the only credential source.
-        from agentnodes.kernel.agent.role_factory import should_use_real_llm
+        from agentnodes.kernel.agent.factory.role_factory import should_use_real_llm
         assert should_use_real_llm() is False
 
 
@@ -121,8 +121,8 @@ class TestBuildAgentLoop:
     """build_agent_loop() 构造 AgentLoop 实例."""
 
     def test_returns_agent_loop_with_prompt(self, tmp_path):
+        from agentnodes.kernel.agent.factory.role_factory import build_agent_loop
         from agentnodes.kernel.agent.loop.core import AgentLoop
-        from agentnodes.kernel.agent.role_factory import build_agent_loop
 
         loop = build_agent_loop(
             role="researcher",
@@ -147,7 +147,7 @@ class TestBuildAgentLoop:
         → 天然没有 write。改用平台的通用 ``chat`` 角色（有 chat.md 提示词）
         验证同一件事。
         """
-        from agentnodes.kernel.agent.role_factory import build_agent_loop
+        from agentnodes.kernel.agent.factory.role_factory import build_agent_loop
 
         loop = build_agent_loop(
             role="chat",
@@ -160,7 +160,7 @@ class TestBuildAgentLoop:
         assert "shell" in tool_names
 
     def test_unknown_role_returns_none(self, tmp_path):
-        from agentnodes.kernel.agent.role_factory import build_agent_loop
+        from agentnodes.kernel.agent.factory.role_factory import build_agent_loop
 
         loop = build_agent_loop(
             role="nonexistent_role_xyz",
@@ -176,7 +176,7 @@ class TestRunAgentViaLlm:
 
     def test_unknown_role_raises(self, tmp_path):
         """未知 role 应抛 RuntimeError."""
-        from agentnodes.kernel.agent.role_factory import run_agent_via_llm
+        from agentnodes.kernel.agent.factory.role_factory import run_agent_via_llm
         with pytest.raises(RuntimeError, match="无法构造 AgentLoop"):
             run_agent_via_llm(
                 role="nonexistent_role_xyz",
@@ -192,7 +192,7 @@ class TestRunAgentViaLlm:
         AgentLoop 执行。所以接缝回到 build_agent_loop —— 这是设计意图，
         不是回退事故。
         """
-        from agentnodes.kernel.agent import role_factory as factory
+        from agentnodes.kernel.agent.factory import role_factory as factory
         from agentnodes.kernel.agent.loop.core import LoopResult
 
         mock_loop = MagicMock()
@@ -222,7 +222,7 @@ class TestRunAgentViaLlm:
 
     def test_known_role_with_loop_error_returns_error_json(self, tmp_path):
         """AgentLoop.run() 返回 error → 应序列化成 JSON error."""
-        from agentnodes.kernel.agent import role_factory as factory
+        from agentnodes.kernel.agent.factory import role_factory as factory
         from agentnodes.kernel.agent.loop.core import LoopResult
 
         mock_loop = MagicMock()

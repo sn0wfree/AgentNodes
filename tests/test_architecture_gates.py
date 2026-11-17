@@ -222,8 +222,8 @@ def test_domain_layers_use_the_agent_factory_not_raw_agentloop():
     那样会跳过角色提示装配、工具白名单、预算与权限接线。
 
     允许的构造点：
-      - kernel/agent/role_factory.py  → build_agent_loop（唯一构造点）
-      - kernel/agent/chat_loop.py     → chat 专用，P5-1c 待删
+      - kernel/agent/factory/role_factory.py  → build_agent_loop（唯一构造点）
+      - kernel/agent/factory/chat_loop.py     → chat 专用，P5-1c 待删
       - kernel/agent/plugins/executor.py → swarm 专用
     """
     violations: list[str] = []

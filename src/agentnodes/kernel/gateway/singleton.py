@@ -103,7 +103,7 @@ def get_gateway(
                 registry = None
         if permission_evaluator is None:
             try:
-                from agentnodes.kernel.agent.chat_loop import (
+                from agentnodes.kernel.agent.factory.chat_loop import (
                     build_default_permission_evaluator,
                 )
 
@@ -113,7 +113,7 @@ def get_gateway(
                 pass
         if permission_gateway is None:
             try:
-                from agentnodes.kernel.agent.chat_loop import (
+                from agentnodes.kernel.agent.factory.chat_loop import (
                     build_default_permission_gateway,
                 )
 

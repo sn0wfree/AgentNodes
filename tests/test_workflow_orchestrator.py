@@ -209,7 +209,7 @@ def test_prompt_builder_registered():
 
 def test_dag_session_registry_only_submit_tool(monkeypatch):
     """A dag:-prefixed session must expose exactly submit_dag_step."""
-    from agentnodes.kernel.agent import chat_loop
+    from agentnodes.kernel.agent.factory import chat_loop
 
     captured: dict = {}
 
@@ -236,7 +236,7 @@ def test_dag_session_registry_only_submit_tool(monkeypatch):
 
 
 def test_normal_session_registry_untouched(monkeypatch):
-    from agentnodes.kernel.agent import chat_loop
+    from agentnodes.kernel.agent.factory import chat_loop
 
     captured: dict = {}
 

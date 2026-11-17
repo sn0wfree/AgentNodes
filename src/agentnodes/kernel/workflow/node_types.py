@@ -166,7 +166,7 @@ class NodeContext:
 
 def default_loop_factory():
     """Lazy import of run_agent_via_llm (keeps import graph light)."""
-    from agentnodes.kernel.agent.role_factory import run_agent_via_llm
+    from agentnodes.kernel.agent.factory.role_factory import run_agent_via_llm
     return run_agent_via_llm
 
 

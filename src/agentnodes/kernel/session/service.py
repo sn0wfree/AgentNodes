@@ -911,7 +911,7 @@ class SessionService:
                 accumulated_parts=accumulated_parts,
             )
 
-        from agentnodes.kernel.agent.chat_loop import build_chat_agent_loop
+        from agentnodes.kernel.agent.factory.chat_loop import build_chat_agent_loop
 
         # cfg is passed in by caller; just apply model override
         if cfg and model:
