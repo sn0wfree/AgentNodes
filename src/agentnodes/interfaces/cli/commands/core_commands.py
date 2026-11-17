@@ -19,7 +19,7 @@ from __future__ import annotations
 import argparse
 import logging
 
-from .registry import cli_command
+from agentnodes.interfaces.cli.commands.registry import cli_command
 
 logger = logging.getLogger(__name__)
 

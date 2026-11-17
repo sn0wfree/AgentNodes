@@ -14,7 +14,7 @@ Completions 兼容 API。**只剩渠道身份**——行为全部来自
 
 from __future__ import annotations
 
-from .channel import ChannelAdapter, ChannelSpec, ErrorRule
+from agentnodes.foundation.llm.provider.channel import ChannelAdapter, ChannelSpec, ErrorRule
 
 
 class NvidiaAdapter(ChannelAdapter):

@@ -54,7 +54,7 @@ import logging
 from dataclasses import dataclass, field
 from typing import Any
 
-from .base import ProviderAdapter
+from agentnodes.foundation.llm.provider.base import ProviderAdapter
 
 logger = logging.getLogger(__name__)
 
@@ -223,7 +223,7 @@ class ChannelAdapter(ProviderAdapter):
         if not model:
             return self
         try:
-            from .channel_spec import load_channel_spec
+            from agentnodes.foundation.llm.provider.channel_spec import load_channel_spec
 
             spec = load_channel_spec(self.name, model)
             # toml 没有 [channel] 段 → 用渠道默认（保留旧行为）。
@@ -302,7 +302,7 @@ class ChannelAdapter(ProviderAdapter):
     def _model_limit(self, key: str) -> int | None:
         """读绑定模型 toml 的 ``[limit].<key>``（失败返回 None）。"""
         try:
-            from .channel_spec import load_model_limit
+            from agentnodes.foundation.llm.provider.channel_spec import load_model_limit
 
             return load_model_limit(self.name, self.bound_model, key)
         except Exception:  # noqa: BLE001 —— 配置缺失回落默认
@@ -403,7 +403,7 @@ class ChannelAdapter(ProviderAdapter):
         return None
 
     def _make_error(self, rule: ErrorRule, status: int, body: Any) -> Exception:
-        from ..errors import (
+        from agentnodes.foundation.llm.errors import (
             LLMAuthError,
             LLMConfigError,
             LLMError,

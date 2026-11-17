@@ -12,7 +12,7 @@ from __future__ import annotations
 import logging
 from typing import Any
 
-from .base import ProviderAdapter
+from agentnodes.foundation.llm.provider.base import ProviderAdapter
 
 logger = logging.getLogger(__name__)
 

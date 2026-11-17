@@ -28,7 +28,7 @@ from typing import Any
 
 from agentnodes.foundation import settings as _settings
 
-from .channel import ChannelSpec, ErrorRule
+from agentnodes.foundation.llm.provider.channel import ChannelSpec, ErrorRule
 
 logger = logging.getLogger(__name__)
 
@@ -39,7 +39,7 @@ try:  # Python 3.11+
 except ImportError:  # pragma: no cover - 3.10 fallback
     import tomli as tomllib  # type: ignore[import-untyped,no-redef]
 
-from . import MODELS_DEV_ID as _MODELS_DEV_ID  # noqa: E402  (循环安全：仅取映射)
+from agentnodes.foundation.llm.provider import MODELS_DEV_ID as _MODELS_DEV_ID  # noqa: E402  (循环安全：仅取映射)
 
 #: 内置模型/渠道规格目录（``foundation/llm/data/providers``）。
 #: 注意：本模块在 ``provider/`` 下，数据在 ``llm/data/``——是上上级。

@@ -15,8 +15,8 @@ from __future__ import annotations
 
 from typing import Any
 
-from ._dsml_patterns import StreamDsmlFixer, strip_dsml_text
-from .channel import ChannelAdapter, ChannelSpec
+from agentnodes.foundation.llm.provider._dsml_patterns import StreamDsmlFixer, strip_dsml_text
+from agentnodes.foundation.llm.provider.channel import ChannelAdapter, ChannelSpec
 
 
 class DeepSeekAdapter(ChannelAdapter):

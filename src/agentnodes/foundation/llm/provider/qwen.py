@@ -11,7 +11,7 @@
 
 from __future__ import annotations
 
-from .channel import ChannelAdapter, ChannelSpec
+from agentnodes.foundation.llm.provider.channel import ChannelAdapter, ChannelSpec
 
 
 class QwenAdapter(ChannelAdapter):

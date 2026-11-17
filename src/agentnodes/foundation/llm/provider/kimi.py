@@ -11,7 +11,7 @@ OpenAI 兼容 API。**只剩渠道身份**——思考字段来自
 
 from __future__ import annotations
 
-from .channel import ChannelAdapter, ChannelSpec
+from agentnodes.foundation.llm.provider.channel import ChannelAdapter, ChannelSpec
 
 
 class KimiAdapter(ChannelAdapter):

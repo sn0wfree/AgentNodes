@@ -115,7 +115,7 @@ _REQUEST_TIMEOUT = 5.0
 # also knows adapters added later, e.g. nvidia). This dict mirrors it
 # so `from .model_catalog import MODELS_DEV_ID` keeps working; keep it
 # as a sync alias rather than a second hand-maintained copy.
-from .provider import MODELS_DEV_ID  # noqa: F401  (re-export, see below)
+from agentnodes.foundation.llm.provider import MODELS_DEV_ID  # noqa: F401  (re-export, see below)
 from agentnodes.foundation import settings as _settings
 
 MODELS_DEV_ID: dict[str, str] = dict(MODELS_DEV_ID)

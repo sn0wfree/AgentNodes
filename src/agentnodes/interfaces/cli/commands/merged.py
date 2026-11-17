@@ -17,7 +17,7 @@ import argparse
 
 def dispatch_serve(args: argparse.Namespace) -> int:
     """serve: webui (default) or api-only."""
-    from .server import cmd_api_serve, cmd_webui_serve
+    from agentnodes.interfaces.cli.commands.server import cmd_api_serve, cmd_webui_serve
 
     if getattr(args, "api_only", False):
         return cmd_api_serve(args)

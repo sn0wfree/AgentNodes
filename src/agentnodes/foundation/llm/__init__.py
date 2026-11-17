@@ -29,8 +29,8 @@ Typical usage:
 
 from __future__ import annotations
 
-from .config import LLMConfig
-from .errors import (
+from agentnodes.foundation.llm.config import LLMConfig
+from agentnodes.foundation.llm.errors import (
     LLMAuthError,
     LLMConfigError,
     LLMError,
@@ -40,8 +40,8 @@ from .errors import (
     LLMServerError,
     LLMTimeoutError,
 )
-from .openai_client import OpenAICompatClient
-from .parser import LLMResponse, StreamChunk, ToolCall
+from agentnodes.foundation.llm.openai_client import OpenAICompatClient
+from agentnodes.foundation.llm.parser import LLMResponse, StreamChunk, ToolCall
 
 __all__ = [
     "LLMConfig",

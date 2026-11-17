@@ -18,7 +18,7 @@ import logging
 from dataclasses import dataclass, field
 from typing import Any
 
-from .errors import LLMMalformedResponseError
+from agentnodes.foundation.llm.errors import LLMMalformedResponseError
 
 logger = logging.getLogger(__name__)
 
@@ -122,7 +122,7 @@ class ProcessedMessage:
 def _resolve_adapter(adapter: Any) -> Any:
     """Return the adapter, falling back to FallbackAdapter when None."""
     if adapter is None:
-        from .provider import get_provider
+        from agentnodes.foundation.llm.provider import get_provider
 
         return get_provider(None)
     return adapter

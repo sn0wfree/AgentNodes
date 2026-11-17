@@ -46,7 +46,7 @@ class ModelBinding:
 
 
 def _known_providers() -> set[str]:
-    from .provider import _REGISTRY  # noqa: PLC2701 —— 注册表是唯一真相
+    from agentnodes.foundation.llm.provider import _REGISTRY  # noqa: PLC2701 —— 注册表是唯一真相
 
     return set(_REGISTRY)
 
@@ -86,7 +86,7 @@ def resolve(
       2. llm.json / env 里的 provider profile（source=config）
       3. provider 适配器的默认值（source=provider_default）
     """
-    from .config import LLMConfig
+    from agentnodes.foundation.llm.config import LLMConfig
 
     cfg = LLMConfig.load(env=env)
 
@@ -106,7 +106,7 @@ def resolve(
 
     _validate(eff_provider)
     if not eff_model:
-        from .provider import get_provider_defaults
+        from agentnodes.foundation.llm.provider import get_provider_defaults
 
         eff_model = str(get_provider_defaults(eff_provider).get("model") or "")
     if not eff_model:
@@ -132,7 +132,7 @@ def get_client(**overrides: Any) -> Any:
 
     ``overrides`` 透传 ``resolve``（provider/model/env）。
     """
-    from .openai_client import OpenAICompatClient
+    from agentnodes.foundation.llm.openai_client import OpenAICompatClient
 
     binding = resolve(**overrides)
     return OpenAICompatClient(binding.config)

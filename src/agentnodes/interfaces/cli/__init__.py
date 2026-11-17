@@ -16,33 +16,33 @@ from pathlib import Path
 import yaml
 
 # Core commands: imports this side-effect to register them in the dispatcher.
-from .commands import core_commands  # noqa: F401  (registration side effect)
-from .commands import llm as _llm_cmd  # noqa: F401  (registration side effect)
+from agentnodes.interfaces.cli.commands import core_commands  # noqa: F401  (registration side effect)
+from agentnodes.interfaces.cli.commands import llm as _llm_cmd  # noqa: F401  (registration side effect)
 # autoresearch 命令已随 apps/autoresearch 移除（2026-11-05 批次 3）
-from .commands.registry import ensure_builtin_commands as _ensure_builtin
-from .commands.registry import wire_commands as _wire
-from .commands.server import (
+from agentnodes.interfaces.cli.commands.registry import ensure_builtin_commands as _ensure_builtin
+from agentnodes.interfaces.cli.commands.registry import wire_commands as _wire
+from agentnodes.interfaces.cli.commands.server import (
     cmd_api_serve,
     cmd_mcp_list_tools,
     cmd_mcp_serve,
     cmd_webui_serve,
 )
-from .commands.session import (
+from agentnodes.interfaces.cli.commands.session import (
     cmd_session_delete,
     cmd_session_list,
     cmd_session_search,
     cmd_session_show,
 )
-from .commands.skills import cmd_skills_list, cmd_skills_search, cmd_skills_show
-from .commands.swarm import (
+from agentnodes.interfaces.cli.commands.skills import cmd_skills_list, cmd_skills_search, cmd_skills_show
+from agentnodes.interfaces.cli.commands.swarm import (
     cmd_swarm_cancel,
     cmd_swarm_inspect,
     cmd_swarm_list,
     cmd_swarm_run,
 )
-from .llm_config import _cli_overrides_from_args as _cli_overrides_from_args
-from .llm_config import _cmd_llm_list_profiles
-from .llm_config import build_llm_config as build_llm_config
+from agentnodes.interfaces.cli.llm_config import _cli_overrides_from_args as _cli_overrides_from_args
+from agentnodes.interfaces.cli.llm_config import _cmd_llm_list_profiles
+from agentnodes.interfaces.cli.llm_config import build_llm_config as build_llm_config
 
 # ============================================================
 # init 命令 — 5 步 TTY 向导，仿 vibe-trading cli/onboard.py:361
@@ -714,7 +714,7 @@ def _dispatch_webui(args, parsers) -> int:
 def _dispatch_compact(args, parsers) -> int:
     """Dispatch the compact subcommand."""
     if getattr(args, "compact_command", None) == "show":
-        from .commands.compact_show import cmd_compact_show
+        from agentnodes.interfaces.cli.commands.compact_show import cmd_compact_show
 
         return cmd_compact_show(args)
     else:
@@ -724,7 +724,7 @@ def _dispatch_compact(args, parsers) -> int:
 
 def _dispatch_serve(args, parsers) -> int:
     """Dispatch the serve subcommand (W2: --api-only supported)."""
-    from .commands.merged import dispatch_serve
+    from agentnodes.interfaces.cli.commands.merged import dispatch_serve
 
     return dispatch_serve(args)
 

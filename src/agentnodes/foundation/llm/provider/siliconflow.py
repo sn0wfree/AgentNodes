@@ -14,8 +14,8 @@ https://platform.siliconflow.cn — OpenAI Chat Completions 兼容端点。
 
 from __future__ import annotations
 
-from ._dsml_patterns import StreamDsmlFixer, strip_dsml_text
-from .channel import ChannelAdapter, ChannelSpec
+from agentnodes.foundation.llm.provider._dsml_patterns import StreamDsmlFixer, strip_dsml_text
+from agentnodes.foundation.llm.provider.channel import ChannelAdapter, ChannelSpec
 
 
 class SiliconFlowAdapter(ChannelAdapter):

@@ -48,13 +48,13 @@ from typing import Any, Mapping
 
 from agentnodes.foundation.compact_config import CompactConfig
 from agentnodes.foundation import settings as _settings
-from .quantnodes_bridge import (
+from agentnodes.foundation.llm.quantnodes_bridge import (
     CONFIG_PATH as QUANTNODES_LLM_JSON,
 )
-from .quantnodes_bridge import (
+from agentnodes.foundation.llm.quantnodes_bridge import (
     CONFIG_PATHS,
 )
-from .quantnodes_bridge import (
+from agentnodes.foundation.llm.quantnodes_bridge import (
     load_quantnodes_llm_config,
 )
 
@@ -105,7 +105,7 @@ def _build_provider_defaults() -> dict[str, dict[str, Any]]:
     Adding a new provider = new file in provider/ + register in __init__.py.
     This dict auto-updates.
     """
-    from .provider import _REGISTRY, get_provider_defaults  # noqa: PLC2701
+    from agentnodes.foundation.llm.provider import _REGISTRY, get_provider_defaults  # noqa: PLC2701
     out: dict[str, dict[str, Any]] = {}
     for name in sorted(_REGISTRY):
         out[name] = get_provider_defaults(name)
@@ -376,7 +376,7 @@ def _bridge_env_override_fields() -> set[str]:
     Used by profile resolution so a profile never clobbers a runtime
     env override (env priority is higher than the file/profile layer).
     """
-    from .quantnodes_bridge import _ENV_OVERRIDE_KEYS
+    from agentnodes.foundation.llm.quantnodes_bridge import _ENV_OVERRIDE_KEYS
     fields: set[str] = set()
     for key in _ENV_OVERRIDE_KEYS:
         if os.environ.get(key):
@@ -556,7 +556,7 @@ def _catalog_window(
     if not model:
         return None
     try:
-        from .model_catalog import get_model_info
+        from agentnodes.foundation.llm.model_catalog import get_model_info
 
         info = get_model_info(provider, model)
     except Exception:
@@ -692,7 +692,7 @@ def resolve_max_tokens(
     """
     if adapter is None:
         try:
-            from .provider import get_provider  # noqa: PLC2701
+            from agentnodes.foundation.llm.provider import get_provider  # noqa: PLC2701
 
             # **绑定当前模型**（V5）：adapter 的窗口/下限随模型而变
             # （读该模型 toml 的 [limit]），不绑就是渠道默认值。

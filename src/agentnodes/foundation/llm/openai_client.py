@@ -29,8 +29,8 @@ from typing import Any, AsyncIterator, Iterator
 
 import httpx
 
-from .config import LLMConfig
-from .errors import (
+from agentnodes.foundation.llm.config import LLMConfig
+from agentnodes.foundation.llm.errors import (
     LLMAuthError,
     LLMConfigError,
     LLMError,
@@ -39,8 +39,8 @@ from .errors import (
     LLMServerError,
     LLMTimeoutError,
 )
-from .parser import LLMResponse, StreamChunk, parse_chat_response, parse_stream_chunk
-from .provider import get_provider
+from agentnodes.foundation.llm.parser import LLMResponse, StreamChunk, parse_chat_response, parse_stream_chunk
+from agentnodes.foundation.llm.provider import get_provider
 
 logger = logging.getLogger(__name__)
 
@@ -163,7 +163,7 @@ def _build_payload(
     # auto-sized when unset, floored/clamped when the request is too
     # small or larger than the model's output cap (thinking models
     # otherwise return empty content under tiny budgets).
-    from .config import resolve_max_tokens
+    from agentnodes.foundation.llm.config import resolve_max_tokens
 
     _requested = overrides.get("max_tokens", config.max_tokens)
     payload["max_tokens"] = resolve_max_tokens(config, _requested, adapter=adapter)
@@ -234,7 +234,7 @@ def _raise_for_status(response: httpx.Response, adapter: Any = None) -> None:
     # instead of the resolved adapter — resolve it rather than crashing
     # with AttributeError and masking the real HTTP error.
     if adapter is None or isinstance(adapter, str):
-        from .provider import get_provider
+        from agentnodes.foundation.llm.provider import get_provider
 
         adapter = get_provider(adapter if isinstance(adapter, str) else None)
     custom_exception = adapter.handle_error(status, body)
@@ -314,7 +314,7 @@ class OpenAICompatClient:
         themselves. The adapter is resolved per call (no shared state
         is needed on the message path).
         """
-        from .parser import parse_chat_response
+        from agentnodes.foundation.llm.parser import parse_chat_response
 
         return parse_chat_response(raw, adapter=self._adapter())
 

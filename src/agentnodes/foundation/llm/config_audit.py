@@ -23,7 +23,7 @@ import logging
 from pathlib import Path
 from typing import Any, Final, Sequence
 
-from .config import (
+from agentnodes.foundation.llm.config import (
     ENV_API_KEY,
     ENV_BASE_URL,
     ENV_LLM_API_KEY,

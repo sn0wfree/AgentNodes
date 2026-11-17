@@ -20,8 +20,8 @@ from __future__ import annotations
 
 from typing import Any
 
-from ._think_stream import ThinkBlockBuffer
-from .channel import ChannelAdapter, ChannelSpec, ErrorRule
+from agentnodes.foundation.llm.provider._think_stream import ThinkBlockBuffer
+from agentnodes.foundation.llm.provider.channel import ChannelAdapter, ChannelSpec, ErrorRule
 
 
 class MiniMaxAdapter(ChannelAdapter):

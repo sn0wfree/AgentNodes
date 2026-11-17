@@ -18,16 +18,16 @@ from __future__ import annotations
 
 from typing import Any
 
-from ._reasoning_field import OpenAIReasoningFieldAdapter
-from .base import ProviderAdapter
-from .deepseek import DeepSeekAdapter
-from .fallback import FallbackAdapter
-from .kimi import KimiAdapter
-from .minimax import MiniMaxAdapter
-from .nvidia import NvidiaAdapter
-from .openai import OpenAIAdapter
-from .qwen import QwenAdapter
-from .siliconflow import SiliconFlowAdapter
+from agentnodes.foundation.llm.provider._reasoning_field import OpenAIReasoningFieldAdapter
+from agentnodes.foundation.llm.provider.base import ProviderAdapter
+from agentnodes.foundation.llm.provider.deepseek import DeepSeekAdapter
+from agentnodes.foundation.llm.provider.fallback import FallbackAdapter
+from agentnodes.foundation.llm.provider.kimi import KimiAdapter
+from agentnodes.foundation.llm.provider.minimax import MiniMaxAdapter
+from agentnodes.foundation.llm.provider.nvidia import NvidiaAdapter
+from agentnodes.foundation.llm.provider.openai import OpenAIAdapter
+from agentnodes.foundation.llm.provider.qwen import QwenAdapter
+from agentnodes.foundation.llm.provider.siliconflow import SiliconFlowAdapter
 
 _REGISTRY: dict[str, type[ProviderAdapter]] = {
     "openai": OpenAIAdapter,

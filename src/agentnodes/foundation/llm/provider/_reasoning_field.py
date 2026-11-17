@@ -24,7 +24,7 @@ from __future__ import annotations
 
 from typing import Any
 
-from .base import ProviderAdapter
+from agentnodes.foundation.llm.provider.base import ProviderAdapter
 
 
 class OpenAIReasoningFieldAdapter(ProviderAdapter):
