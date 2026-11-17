@@ -4,7 +4,7 @@
 """
 from __future__ import annotations
 
-from .entry_adapters import (
+from agentnodes.kernel.gateway.entry_adapters import (
     api_chat_request,
     cli_request,
     mcp_request,
@@ -12,11 +12,11 @@ from .entry_adapters import (
     scheduler_request,
     submit_via_entry,
 )
-from .fencing import FenceToken, FenceVerdict, SessionFence
-from .gateway import Gateway
-from .invariants import Invariant, InvariantViolation, invariants, verify_all
-from .session_controller import RunResult, SessionController
-from .singleton import get_gateway, reset_gateway
+from agentnodes.kernel.gateway.fencing import FenceToken, FenceVerdict, SessionFence
+from agentnodes.kernel.gateway.gateway import Gateway
+from agentnodes.kernel.gateway.invariants import Invariant, InvariantViolation, invariants, verify_all
+from agentnodes.kernel.gateway.session_controller import RunResult, SessionController
+from agentnodes.kernel.gateway.singleton import get_gateway, reset_gateway
 
 __all__ = [
     "api_chat_request",

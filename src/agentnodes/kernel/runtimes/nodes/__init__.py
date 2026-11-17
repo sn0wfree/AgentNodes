@@ -7,12 +7,12 @@
 """
 from __future__ import annotations
 
-from .agent_loop_node import (
+from agentnodes.kernel.runtimes.nodes.agent_loop_node import (
     make_agent_loop_node,
     make_loop_event_sink,
     wrap_async_capable_client,
 )
-from .llm import make_llm_node
+from agentnodes.kernel.runtimes.nodes.llm import make_llm_node
 
 __all__ = [
     "make_agent_loop_node",

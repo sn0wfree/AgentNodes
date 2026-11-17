@@ -30,8 +30,8 @@ from typing import Any, Callable
 from langgraph.graph import END as _LG_END
 from langgraph.graph import StateGraph
 
-from .cancel_scope import RunCancelled
-from .run_budget import RunBudget
+from agentnodes.kernel.runtimes.cancel_scope import RunCancelled
+from agentnodes.kernel.runtimes.run_budget import RunBudget
 
 EventSink = Callable[[str, dict], None]
 NodeFn = Callable[[dict], dict]
@@ -69,7 +69,7 @@ def _t2_branch_entry(worker: WorkerFn, payload: Any, ctx: dict) -> dict:
     budget 对象不跨进程：按 ctx 里的 limits 在子进程重建本地 RunBudget；
     中断转成可 pickle 标记；消耗以 _budget_usage 回传（主进程记回切片）。
     """
-    from .run_budget import RunBudget
+    from agentnodes.kernel.runtimes.run_budget import RunBudget
 
     budget = None
     limits = ctx.get("budget_limits")
@@ -453,7 +453,7 @@ class GraphEngine:
         job、join 不执行）。区别是取消有 5s 硬杀档位，且 worker 必须
         模块级可导入（pickle 预检给出可操作报错）。
         """
-        from .executor_bridge import JobSpec
+        from agentnodes.kernel.runtimes.executor_bridge import JobSpec
 
         branches = state.get("branches")
         if not isinstance(branches, list):

@@ -8,7 +8,7 @@ A4 启用 steer 真注入；E5 启用持久化幂等。E1 阶段由测试驱动�
 """
 from __future__ import annotations
 
-from .contracts import (
+from agentnodes.kernel.orchestration.contracts import (
     DEFAULT_QUEUE_MODE,
     BudgetSpec,
     ExecutionSpec,
@@ -20,10 +20,10 @@ from .contracts import (
     WorkRequest,
     validate_work_request,
 )
-from .mailbox import DEFAULT_CAP, Mailbox, QueueItem
-from .entry_point import EntryPoint
-from .config_hub import ConfigError, GatewayConfig, MailboxConfig, PlatformConfig, config_fingerprint, load_platform_config
-from .budget_gate import BudgetDecision, BudgetGate, BudgetUsage, DEFAULT_SESSION_BUDGET, effective_budget
+from agentnodes.kernel.orchestration.mailbox import DEFAULT_CAP, Mailbox, QueueItem
+from agentnodes.kernel.orchestration.entry_point import EntryPoint
+from agentnodes.kernel.orchestration.config_hub import ConfigError, GatewayConfig, MailboxConfig, PlatformConfig, config_fingerprint, load_platform_config
+from agentnodes.kernel.orchestration.budget_gate import BudgetDecision, BudgetGate, BudgetUsage, DEFAULT_SESSION_BUDGET, effective_budget
 
 __all__ = [
     "DEFAULT_QUEUE_MODE",

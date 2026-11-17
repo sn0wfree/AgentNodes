@@ -35,8 +35,8 @@ from typing import Any, Callable
 
 from agentnodes.kernel.runtimes import END, INTERRUPT_KEY, GraphEngine, GraphInterrupt
 from agentnodes.kernel.swarm.types import AgentResult, AgentStatus
-from .definition import WorkflowDefinition, WorkflowNode, WorkflowSegment
-from .node_types import NodeContext, NodeDispatchError, _retryable_node_error, dispatch_node
+from agentnodes.kernel.workflow.definition import WorkflowDefinition, WorkflowNode, WorkflowSegment
+from agentnodes.kernel.workflow.node_types import NodeContext, NodeDispatchError, _retryable_node_error, dispatch_node
 
 logger = logging.getLogger(__name__)
 
@@ -486,7 +486,7 @@ class WorkflowGraphCompiler:
     # ── Plan steps (mirror of executor._run_plan_steps) ───────
 
     def _run_plan_steps(self, run: CompiledRunState) -> None:
-        from .dag import topological_layers
+        from agentnodes.kernel.workflow.dag import topological_layers
 
         nodes: list[WorkflowNode] = []
         for step in run.plan:

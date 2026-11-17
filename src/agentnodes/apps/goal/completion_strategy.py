@@ -52,7 +52,7 @@ class AutoCompleteStrategy:
         evidence: list[dict[str, Any]],
         workflow_name: str,
     ) -> bool:
-        from .models import AuditRow, GoalStatus
+        from agentnodes.apps.goal.models import AuditRow, GoalStatus
 
         audit_rows = []
         all_evidence_ids = [e.get("evidence_id", "") for e in evidence]

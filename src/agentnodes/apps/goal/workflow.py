@@ -189,7 +189,7 @@ class GoalEvidenceCollector:
 
     def collect(self, agent_id: str, result: dict[str, Any], criterion_idx: int) -> int:
         """Append agent output as evidence. Returns number added (0/1)."""
-        from .models import EvidenceInput
+        from agentnodes.apps.goal.models import EvidenceInput
 
         answer = result.get("answer", "")
         if not answer or len(answer.strip()) < 10:
@@ -496,7 +496,7 @@ class GoalWorkflowRunner:
     async def start(self, objective: str) -> str:
         """Start the workflow: create goal → delegate to SwarmRuntime → return goal_id."""
         if self._store is None:
-            from .store import GoalStore
+            from agentnodes.apps.goal.store import GoalStore
             self._store = GoalStore()
 
 
@@ -525,8 +525,8 @@ class GoalWorkflowRunner:
 
     async def _start_inner(self, objective: str) -> str:
         """Inner start logic (session slot already claimed)."""
-        from .context import default_goal_criteria
-        from .models import RiskTier
+        from agentnodes.apps.goal.context import default_goal_criteria
+        from agentnodes.apps.goal.models import RiskTier
 
         # 1. Create the goal (or reuse existing if goal_id already set)
         if self._goal_id:
@@ -553,8 +553,8 @@ class GoalWorkflowRunner:
         }
 
         # 3. Create GoalWorkflowHook (P1.2: pass runner for cancelled check)
-        from .completion_strategy import CompletionStrategyFactory
-        from .workflow_hook import GoalWorkflowHook
+        from agentnodes.apps.goal.completion_strategy import CompletionStrategyFactory
+        from agentnodes.apps.goal.workflow_hook import GoalWorkflowHook
 
         self._hook = GoalWorkflowHook(
             session_id=self._session_id,
@@ -634,7 +634,7 @@ class GoalWorkflowRunner:
         """
         from agentnodes.kernel.swarm.runtime import SwarmRuntime
         from agentnodes.kernel.swarm.types import AgentResult
-        from .checkpoint_store import CheckpointStore
+        from agentnodes.apps.goal.checkpoint_store import CheckpointStore
 
         cps = CheckpointStore()
         cp_data = cps.load(self._session_id, self._goal_id)
@@ -674,8 +674,8 @@ class GoalWorkflowRunner:
         # Rebuild the evidence-map and hook (same as start, but no
         # replace_goal). The hook's _layer_results are pre-seeded so
         # subsequent evidence_collection doesn't double-count.
-        from .completion_strategy import CompletionStrategyFactory
-        from .workflow_hook import GoalWorkflowHook
+        from agentnodes.apps.goal.completion_strategy import CompletionStrategyFactory
+        from agentnodes.apps.goal.workflow_hook import GoalWorkflowHook
 
         evidence_map: dict[str, int] = {
             agent.id: agent.evidence_criterion
@@ -715,7 +715,7 @@ class GoalWorkflowRunner:
         try:
             # Need the original objective for prompts; reload from goal
             if self._store is None:
-                from .store import GoalStore
+                from agentnodes.apps.goal.store import GoalStore
                 self._store = GoalStore()
             goal = self._store.get_goal(self._goal_id)
             objective = goal.objective if goal else ""
@@ -770,11 +770,11 @@ class GoalWorkflowRunner:
             The child goal id.
         """
         if self._store is None:
-            from .store import GoalStore
+            from agentnodes.apps.goal.store import GoalStore
             self._store = GoalStore()
 
-        from .context import default_goal_criteria
-        from .models import RiskTier
+        from agentnodes.apps.goal.context import default_goal_criteria
+        from agentnodes.apps.goal.models import RiskTier
 
         self._state.status = "running"
         self._state.start_time = time.time()
@@ -800,8 +800,8 @@ class GoalWorkflowRunner:
 
         evidence_map = {a.id: a.evidence_criterion for a in self._config.agents}
 
-        from .completion_strategy import CompletionStrategyFactory
-        from .workflow_hook import GoalWorkflowHook
+        from agentnodes.apps.goal.completion_strategy import CompletionStrategyFactory
+        from agentnodes.apps.goal.workflow_hook import GoalWorkflowHook
 
         self._hook = GoalWorkflowHook(
             session_id=self._session_id,
@@ -890,7 +890,7 @@ class GoalWorkflowRunner:
         not an empty dict. This enables ``resume_from_checkpoint``
         to restore agent outputs for skip logic.
         """
-        from .checkpoint_store import CheckpointStore as _CPS
+        from agentnodes.apps.goal.checkpoint_store import CheckpointStore as _CPS
 
         hook = self._hook
         layer_results: dict[str, Any] = {}
@@ -938,7 +938,7 @@ class GoalWorkflowRunner:
             A GoalWorkflowRunner with restored state, or None if
             checkpoint not found.
         """
-        from .checkpoint_store import CheckpointStore as _CPS
+        from agentnodes.apps.goal.checkpoint_store import CheckpointStore as _CPS
         cp = _CPS()
         data = cp.load(session_id, goal_id)
         if data is None:
@@ -962,7 +962,7 @@ class GoalWorkflowRunner:
         layer_results = data.get("layer_results", {})
         if layer_results:
             if runner._hook is None:
-                from .workflow_hook import GoalWorkflowHook
+                from agentnodes.apps.goal.workflow_hook import GoalWorkflowHook
                 runner._hook = GoalWorkflowHook.__new__(GoalWorkflowHook)
                 runner._hook._layer_results = {}
                 runner._hook._completed = False
@@ -988,7 +988,7 @@ class GoalWorkflowRunner:
 
 
 # Re-exports for convenience
-from .event_bus import WorkflowEventBus  # noqa: E402
+from agentnodes.apps.goal.event_bus import WorkflowEventBus  # noqa: E402
 
 __all__ = [
     "GoalWorkflowConfig",

@@ -28,10 +28,10 @@ from __future__ import annotations
 
 from typing import Any
 
-from .agents import AgentExecutor, AgentRegistry
-from .dag import topological_layers, validate_dag
-from .executors import AgentLoopExecutor, CLIExecutor, PythonExecutor, StubExecutor
-from .validator import AgentValidator, ValidationResult
+from agentnodes.kernel.workflow.agents import AgentExecutor, AgentRegistry
+from agentnodes.kernel.workflow.dag import topological_layers, validate_dag
+from agentnodes.kernel.workflow.executors import AgentLoopExecutor, CLIExecutor, PythonExecutor, StubExecutor
+from agentnodes.kernel.workflow.validator import AgentValidator, ValidationResult
 
 # ``types`` 的三个 re-export 改为懒加载（见模块 docstring）——**不要**改成
 # 顶层 import：那会把 swarm/runtimes/langgraph/langchain_core/uuid_utils
@@ -42,7 +42,7 @@ _LAZY_TYPES: frozenset[str] = frozenset({"AgentCall", "AgentStatus", "SwarmHook"
 def __getattr__(name: str) -> Any:
     """PEP 562：按需加载 ``types`` 的 re-export（零包级副作用）。"""
     if name in _LAZY_TYPES:
-        from . import types as _types
+        from agentnodes.kernel.workflow import types as _types
 
         return getattr(_types, name)
     raise AttributeError(f"module {__name__!r} has no attribute {name!r}")

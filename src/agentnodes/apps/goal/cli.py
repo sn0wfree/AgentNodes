@@ -17,10 +17,10 @@ import json
 import sys
 from typing import Any
 
-from .context import format_goal_context
-from .models import AuditRow, EvidenceInput, GoalStatus, RiskTier
-from .policy import normalize_required_text
-from .store import GoalStore
+from agentnodes.apps.goal.context import format_goal_context
+from agentnodes.apps.goal.models import AuditRow, EvidenceInput, GoalStatus, RiskTier
+from agentnodes.apps.goal.policy import normalize_required_text
+from agentnodes.apps.goal.store import GoalStore
 
 
 def cmd_goal_start(args: argparse.Namespace) -> int:
@@ -31,7 +31,7 @@ def cmd_goal_start(args: argparse.Namespace) -> int:
 
     criteria = args.criterion or []
     if not criteria:
-        from .context import default_goal_criteria
+        from agentnodes.apps.goal.context import default_goal_criteria
         criteria = default_goal_criteria()
 
     try:

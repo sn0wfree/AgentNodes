@@ -50,7 +50,7 @@ def _inv_workers_pinned() -> bool:
 
 def _inv_fence_supersedes() -> bool:
     """INV-5：fence 认领即超越——旧 run 提交必被拦。"""
-    from .fencing import SessionFence
+    from agentnodes.kernel.gateway.fencing import SessionFence
 
     fence = SessionFence()
     old = fence.claim("inv-check", "old")
@@ -71,8 +71,8 @@ def _inv_settle_passes_fence() -> bool:
     落库发起方，检查它即覆盖全系统。
     """
     from agentnodes.kernel.orchestration import EntryPoint, SourceKind, WorkKind, WorkRequest
-    from .fencing import SessionFence
-    from .session_controller import SessionController
+    from agentnodes.kernel.gateway.fencing import SessionFence
+    from agentnodes.kernel.gateway.session_controller import SessionController
 
     fence = SessionFence()
     events: list[tuple[str, dict]] = []

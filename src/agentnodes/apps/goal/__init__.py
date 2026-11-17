@@ -7,14 +7,14 @@ live trading or order execution (see policy.py).
 
 from __future__ import annotations
 
-from .completion_strategy import (
+from agentnodes.apps.goal.completion_strategy import (
     AutoCompleteStrategy,
     CompletionStrategy,
     CompletionStrategyFactory,
     LiteCompleteStrategy,
     ManualCompleteStrategy,
 )
-from .context import (
+from agentnodes.apps.goal.context import (
     CONTINUABLE_GOAL_STATUSES,
     OPEN_CRITERION_STATUSES,
     criterion_is_covered,
@@ -25,14 +25,14 @@ from .context import (
     goal_needs_continuation,
     goal_progress_tuple,
 )
-from .event_bus import (
+from agentnodes.apps.goal.event_bus import (
     CollectingObserver,
     GoalPanelObserver,
     LoggerObserver,
     WorkflowEventBus,
     WorkflowEventObserver,
 )
-from .models import (
+from agentnodes.apps.goal.models import (
     AuditRow,
     EvidenceInput,
     EvidenceRecord,
@@ -44,13 +44,13 @@ from .models import (
     RiskTier,
     StaleGoalError,
 )
-from .policy import normalize_required_text, reject_live_execution_objective
-from .store import GoalStore
-from .validator_registry import (
+from agentnodes.apps.goal.policy import normalize_required_text, reject_live_execution_objective
+from agentnodes.apps.goal.store import GoalStore
+from agentnodes.apps.goal.validator_registry import (
     ValidatorRegistry,
     register_default_validators,
 )
-from .workflow import (
+from agentnodes.apps.goal.workflow import (
     CompletionConfig,
     GoalAgentConfig,
     GoalWorkflowConfig,
@@ -58,7 +58,7 @@ from .workflow import (
     GoalWorkflowRunner,
     GoalWorkflowState,
 )
-from .workflow_config import list_goal_workflows, load_goal_workflow
+from agentnodes.apps.goal.workflow_config import list_goal_workflows, load_goal_workflow
 
 __all__ = [
     "AuditRow",

@@ -21,7 +21,7 @@ from agentnodes.foundation.storage.sqlite import (
     user_version,
     write_transaction,
 )
-from .models import (
+from agentnodes.apps.goal.models import (
     AuditRow,
     EvidenceInput,
     EvidenceRecord,
@@ -33,7 +33,7 @@ from .models import (
     RiskTier,
     StaleGoalError,
 )
-from .policy import normalize_required_text, reject_live_execution_objective
+from agentnodes.apps.goal.policy import normalize_required_text, reject_live_execution_objective
 
 logger = logging.getLogger(__name__)
 
@@ -56,7 +56,7 @@ _COMPLETION_RESULTS = {
 }
 
 
-from .store_utils import (  # noqa: E402,F401
+from agentnodes.apps.goal.store_utils import (  # noqa: E402,F401
     _default_db_path,
     _label_similarity,
     _safe_artifact_path,
@@ -1361,7 +1361,7 @@ class GoalStore:
         if not sub_objectives:
             raise ValueError("sub_objectives cannot be empty")
 
-        from .context import default_goal_criteria
+        from agentnodes.apps.goal.context import default_goal_criteria
         criteria = default_criteria or default_goal_criteria()
 
         sub_goals: list[GoalRecord] = []
@@ -1438,7 +1438,7 @@ class GoalStore:
         backtest runs (at the novelty gate). Missing/empty predictions are
         stored as ``{}`` — claims tracking is optional by design.
         """
-        from .models import JournalEntry
+        from agentnodes.apps.goal.models import JournalEntry
         now = now_iso()
         entry_id = new_id("journal")
         with write_transaction(self._conn):
@@ -1698,7 +1698,7 @@ class GoalStore:
         return "\n".join(lines)
 
     def _journal_from_row(self, row: sqlite3.Row) -> "JournalEntry":
-        from .models import JournalEntry
+        from agentnodes.apps.goal.models import JournalEntry
         return JournalEntry(
             entry_id=row["entry_id"],
             goal_id=row["goal_id"],

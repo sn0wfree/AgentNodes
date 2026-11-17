@@ -1,9 +1,9 @@
 """Scheduled Research — cron 定时自动研究。"""
 
-from .cron_parser import next_cron_trigger, parse_cron
-from .executor import ScheduledResearchExecutor
-from .models import JobStatus, ScheduledResearchJob
-from .store import ScheduledResearchStore
+from agentnodes.apps.scheduled_research.cron_parser import next_cron_trigger, parse_cron
+from agentnodes.apps.scheduled_research.executor import ScheduledResearchExecutor
+from agentnodes.apps.scheduled_research.models import JobStatus, ScheduledResearchJob
+from agentnodes.apps.scheduled_research.store import ScheduledResearchStore
 
 __all__ = [
     "JobStatus",

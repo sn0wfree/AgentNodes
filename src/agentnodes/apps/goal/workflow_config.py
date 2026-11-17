@@ -16,7 +16,7 @@ from typing import Any
 
 from agentnodes.foundation import paths as _paths
 
-from .workflow import (
+from agentnodes.apps.goal.workflow import (
     CompletionConfig,
     GoalAgentConfig,
     GoalWorkflowConfig,
@@ -52,7 +52,7 @@ def build_autoresearch_workflow_config(
     Single source of truth for the 9-agent preset (previously copy-pasted
     verbatim between ``api/routers/chat.py`` and ``api/routers/study.py``).
     """
-    from .context import default_goal_criteria
+    from agentnodes.apps.goal.context import default_goal_criteria
 
     agent_configs = [
         GoalAgentConfig(id="researcher", prompt_file=".prompts/researcher.md",
@@ -150,7 +150,7 @@ def load_goal_workflow(
         FileNotFoundError: If the YAML file cannot be found.
         ValueError: If the YAML content is invalid.
     """
-    from .workflow import (
+    from agentnodes.apps.goal.workflow import (
         CompletionConfig,
         GoalAgentConfig,
         GoalWorkflowConfig,
@@ -204,7 +204,7 @@ def load_goal_workflow(
     dag = data.get("dag", {})
 
     # Parse branches (optional)
-    from .workflow import BranchConfig
+    from agentnodes.apps.goal.workflow import BranchConfig
     branches = []
     for branch_data in data.get("branches", []):
         branches.append(BranchConfig(

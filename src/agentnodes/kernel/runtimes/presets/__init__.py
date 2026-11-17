@@ -6,6 +6,6 @@ fanout = 拆分 → N 路并行子代理 → 汇合（本包）
 """
 from __future__ import annotations
 
-from .fanout import FAILURE_POLICIES, build_fanout_preset
+from agentnodes.kernel.runtimes.presets.fanout import FAILURE_POLICIES, build_fanout_preset
 
 __all__ = ["FAILURE_POLICIES", "build_fanout_preset"]

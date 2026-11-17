@@ -28,9 +28,9 @@ import time
 from pathlib import Path
 from typing import Awaitable, Callable, Optional
 
-from .cron_parser import next_cron_trigger
-from .models import JobStatus, ScheduledResearchJob
-from .store import ScheduledResearchStore
+from agentnodes.apps.scheduled_research.cron_parser import next_cron_trigger
+from agentnodes.apps.scheduled_research.models import JobStatus, ScheduledResearchJob
+from agentnodes.apps.scheduled_research.store import ScheduledResearchStore
 
 logger = logging.getLogger(__name__)
 

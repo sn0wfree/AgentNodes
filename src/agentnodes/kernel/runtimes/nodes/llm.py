@@ -14,7 +14,7 @@ from __future__ import annotations
 
 from typing import Any, Callable, Protocol
 
-from ..run_budget import RunBudget
+from agentnodes.kernel.runtimes.run_budget import RunBudget
 
 EventSink = Callable[[str, dict], None]
 

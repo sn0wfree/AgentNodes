@@ -9,13 +9,13 @@
 """
 from __future__ import annotations
 
-from .graph_engine import END, INTERRUPT_KEY, GraphEngine, GraphInterrupt
-from .nodes.agent_loop_node import (
+from agentnodes.kernel.runtimes.graph_engine import END, INTERRUPT_KEY, GraphEngine, GraphInterrupt
+from agentnodes.kernel.runtimes.nodes.agent_loop_node import (
     make_agent_loop_node,
     make_loop_event_sink,
     wrap_async_capable_client,
 )
-from .nodes.llm import make_llm_node
+from agentnodes.kernel.runtimes.nodes.llm import make_llm_node
 
 __all__ = [
     "END",

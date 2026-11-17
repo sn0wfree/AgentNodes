@@ -13,7 +13,7 @@ import logging
 from pathlib import Path
 from typing import Any
 
-from .definition import WorkflowDefinition, WorkflowDefinitionError
+from agentnodes.kernel.workflow.definition import WorkflowDefinition, WorkflowDefinitionError
 
 logger = logging.getLogger(__name__)
 

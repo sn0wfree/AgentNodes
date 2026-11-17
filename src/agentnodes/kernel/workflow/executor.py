@@ -26,15 +26,15 @@ from pathlib import Path
 from typing import Any, Callable
 
 from agentnodes.kernel.swarm.types import AgentResult, AgentStatus
-from .definition import WorkflowDefinition, WorkflowNode, WorkflowSegment
-from .node_types import (
+from agentnodes.kernel.workflow.definition import WorkflowDefinition, WorkflowNode, WorkflowSegment
+from agentnodes.kernel.workflow.node_types import (
     NodeContext,
     NodeDispatchError,
     _retryable_node_error,
     dispatch_node,
     register_builtin_tool_executors,
 )
-from .store import WorkflowStore, resolve_workflows_db_path
+from agentnodes.kernel.workflow.store import WorkflowStore, resolve_workflows_db_path
 
 logger = logging.getLogger(__name__)
 
@@ -208,7 +208,7 @@ class WorkflowRunner:
         is unchanged: the compiler's run state is mirrored back after
         every run.
         """
-        from .graph_compiler import APPROVAL_REASON, WorkflowGraphCompiler
+        from agentnodes.kernel.workflow.graph_compiler import APPROVAL_REASON, WorkflowGraphCompiler
 
         compiler = WorkflowGraphCompiler(
             self.definition,
@@ -283,7 +283,7 @@ class WorkflowRunner:
 
     def _sync_from_compiler(self, run_state, compiler) -> None:
         """Mirror compiled run state back onto the runner's public fields."""
-        from .graph_compiler import APPROVAL_REASON
+        from agentnodes.kernel.workflow.graph_compiler import APPROVAL_REASON
 
         self.pre_completed = dict(run_state.results)
         self.replan_count = run_state.replan_count

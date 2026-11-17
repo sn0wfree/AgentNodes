@@ -27,7 +27,7 @@ from dataclasses import dataclass, field, replace
 from datetime import datetime
 from typing import Callable, Iterable
 
-from .contracts import (
+from agentnodes.kernel.orchestration.contracts import (
     DEFAULT_QUEUE_MODE,
     QueueMode,
     Receipt,

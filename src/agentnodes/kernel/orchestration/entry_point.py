@@ -9,14 +9,14 @@ from __future__ import annotations
 import uuid
 from typing import Callable, Iterable
 
-from .contracts import (
+from agentnodes.kernel.orchestration.contracts import (
     QueueMode,
     Receipt,
     RejectReason,
     WorkRequest,
     validate_work_request,
 )
-from .mailbox import (
+from agentnodes.kernel.orchestration.mailbox import (
     DEFAULT_AGING_S,
     DEFAULT_CAP,
     DEFAULT_STEER_CAP,

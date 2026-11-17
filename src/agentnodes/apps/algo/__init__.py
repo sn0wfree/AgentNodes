@@ -10,6 +10,6 @@
 （51 处命中）。2026-11-16 迁回业务层：算法本身领域中立，但**名词是业务的**。
 """
 
-from .backtest import compute_simple_factors, evaluate
+from agentnodes.apps.algo.backtest import compute_simple_factors, evaluate
 
 __all__ = ["evaluate", "compute_simple_factors"]

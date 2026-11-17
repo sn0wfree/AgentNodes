@@ -18,7 +18,7 @@ from pathlib import Path
 from typing import List
 
 from agentnodes.foundation.storage.sqlite import connect, resolve_db_path, synchronized
-from .models import JobStatus, ScheduledResearchJob
+from agentnodes.apps.scheduled_research.models import JobStatus, ScheduledResearchJob
 
 logger = logging.getLogger(__name__)
 

@@ -17,7 +17,7 @@ from __future__ import annotations
 import time
 from dataclasses import dataclass, replace
 
-from .contracts import BudgetSpec
+from agentnodes.kernel.orchestration.contracts import BudgetSpec
 
 
 @dataclass(frozen=True)

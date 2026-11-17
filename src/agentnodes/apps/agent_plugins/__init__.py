@@ -40,7 +40,7 @@ def register_all_asset_modules() -> dict[str, int]:
 
     返回 ``{"模块名": 注册数量}``。
     """
-    from . import quant_display, quant_prompts, quant_validators
+    from agentnodes.apps.agent_plugins import quant_display, quant_prompts, quant_validators
 
     return {
         "quant_validators": quant_validators.register_all(),
@@ -55,7 +55,7 @@ def all_available_plugins() -> tuple["AgentPlugin", ...]:
     这是 kernel 侧唯一该问的入口：它不关心插件来自哪个域，
     只关心「能不能跑」。
     """
-    from .quant import available_plugins as quant_available
+    from agentnodes.apps.agent_plugins.quant import available_plugins as quant_available
 
     out: list[AgentPlugin] = []
     for provider in (quant_available,):

@@ -44,7 +44,7 @@ from agentnodes.foundation.storage.sqlite import (
     write_transaction,
 )
 
-from .ticket import (
+from agentnodes.kernel.orchestration.ticket import (
     Assignment,
     AssignmentStatus,
     Ticket,

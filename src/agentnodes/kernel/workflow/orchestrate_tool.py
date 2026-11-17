@@ -109,7 +109,7 @@ def _sanitize_payload(
 
 def _validate_dag(nodes: list[dict[str, Any]], edges: list[dict[str, Any]]) -> list[str]:
     """Validate a DAG payload; returns [] when valid."""
-    from .definition import WorkflowDefinition
+    from agentnodes.kernel.workflow.definition import WorkflowDefinition
 
     definition = WorkflowDefinition.from_dict(
         {"name": "orchestrate", "nodes": nodes, "edges": edges},

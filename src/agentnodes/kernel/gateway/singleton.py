@@ -69,7 +69,7 @@ def get_gateway(
     """
     gw = _singleton.get("gw")
     if gw is None:
-        from .gateway import Gateway
+        from agentnodes.kernel.gateway.gateway import Gateway
 
         if client is None:
             # R5：ModelHub 是 provider/model 解析的唯一入口（解析序集中 +

@@ -283,7 +283,7 @@ class GoalWorkflowHook:
         criterion_idx: int,
     ) -> bool:
         """Append agent output as goal evidence. Returns True on success."""
-        from .models import EvidenceInput
+        from agentnodes.apps.goal.models import EvidenceInput
 
         if len(output_text.strip()) < 10:
             return False
@@ -349,7 +349,7 @@ class GoalWorkflowHook:
         if snapshot is None:
             return
 
-        from .completion_strategy import CompletionStrategyFactory
+        from agentnodes.apps.goal.completion_strategy import CompletionStrategyFactory
 
         strategy = self._completion_strategy or CompletionStrategyFactory.get(
             self._completion_mode,
