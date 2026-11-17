@@ -333,7 +333,7 @@ def _invalidate_projection(session_id: str, request: Request | None = None) -> N
                 if callable(invalidate):
                     invalidate(session_id)
                 return
-        from .chat import _session_service_cache
+        from agentnodes.interfaces.api.routers.chat import _session_service_cache
         for service in _session_service_cache.values():
             bus = getattr(service, "event_bus", None)
             invalidate = getattr(bus, "invalidate", None)
@@ -455,7 +455,7 @@ async def list_messages(
 # ─────────────────────────────────────────────────────────────────────────────
 
 
-from ..session.web_session_state import (  # noqa: F401  (re-exports)
+from agentnodes.interfaces.api.session.web_session_state import (  # noqa: F401  (re-exports)
     _shape_agents_for_frontend,
 )
 

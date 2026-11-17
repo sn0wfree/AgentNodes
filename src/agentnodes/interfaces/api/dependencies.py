@@ -95,7 +95,7 @@ def get_session_service(request: Request) -> "SessionService":
 
     svc = getattr(request.app.state, _STATE_KEY_SESSION_SERVICE, None)
     if svc is None:
-        from .routers.chat import _get_permission_gateway
+        from agentnodes.interfaces.api.routers.chat import _get_permission_gateway
 
         svc = SessionService(
             store=get_session_store(request),

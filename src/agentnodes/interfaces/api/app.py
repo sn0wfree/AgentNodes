@@ -49,7 +49,7 @@ def create_app(
     # Register the core loop's compaction persister (legacy fallback
     # path) so core/agent/loop.py never imports the api layer.
     from agentnodes.kernel.agent.loop import register_compaction_persister
-    from .routers.web_session import persist_message
+    from agentnodes.interfaces.api.routers.web_session import persist_message
     register_compaction_persister(persist_message)
 
     # W10-3 (2026-11-04): fill the L4 DataStore slot. AgentLoop reads the
@@ -137,9 +137,9 @@ def create_app(
     # / SessionStore / EventStore (queue/cancel state, SSE bridges).
     # The legacy routers/chat.py singleton cache is pre-seeded with the
     # container's services so both access paths stay identical.
-    from .container import attach_container, build_container, services_from_container
-    from .routers.chat import _session_service_cache
-    from .routers.web_session import _get_db_path
+    from agentnodes.interfaces.api.container import attach_container, build_container, services_from_container
+    from agentnodes.interfaces.api.routers.chat import _session_service_cache
+    from agentnodes.interfaces.api.routers.web_session import _get_db_path
 
     container = build_container(workspace_path=workspace_path, db_path=Path(_get_db_path()))
     attach_container(app, container)
@@ -172,7 +172,7 @@ def create_app(
     )
 
     # Register auth middleware
-    from .middleware import AuthMiddleware
+    from agentnodes.interfaces.api.middleware import AuthMiddleware
     app.add_middleware(AuthMiddleware)
 
     # Register routers
@@ -182,7 +182,7 @@ def create_app(
     # apps/validation 未恢复，无条件不可达）。
     # study / slash_commands 两个 router 已随 apps/study 移除（2026-11-05 批次 3）。
     # run router 已随 apps/backtest 移除（2026-11-05 批次 4）。
-    from .routers import (
+    from agentnodes.interfaces.api.routers import (
         admin,
         auth,
         chat,
@@ -196,7 +196,7 @@ def create_app(
     app.include_router(chat.router, prefix="/api/chat", tags=["chat"])
     app.include_router(web_session.router, prefix="/api/chat/session", tags=["chat-session"])
     app.include_router(admin.router, prefix="/api/admin", tags=["admin"])
-    from .routers import admin_users
+    from agentnodes.interfaces.api.routers import admin_users
     app.include_router(admin_users.router, prefix="/api/admin", tags=["admin-users"])
 
     # Goal ledger (R2): /api/goal/* — frontend panel + goal_updated SSE.
@@ -209,10 +209,10 @@ def create_app(
 
     # /api/study 路由已随 apps/study 移除（2026-11-05 批次 3）
     # /api/run 路由已随 apps/backtest 移除（2026-11-05 批次 4）
-    from .routers import schedule
+    from agentnodes.interfaces.api.routers import schedule
     app.include_router(schedule.router, prefix="/api/schedule", tags=["schedule"])
     # MiniMax / DuckDuckGo web search (front-end direct invocation)
-    from .routers import search as search_router
+    from agentnodes.interfaces.api.routers import search as search_router
     app.include_router(search_router.router, tags=["search"])
 
     # Permission gate (Tier 1 A1) — answers to permission_request SSE
@@ -221,13 +221,13 @@ def create_app(
     app.include_router(permission.router, prefix="/api/chat/permission", tags=["permission"])
 
     # System info (settings modal)
-    from .routers import system
+    from agentnodes.interfaces.api.routers import system
     app.include_router(system.router, prefix="/api/system", tags=["system"])
 
     # Agent schemas (from .prompts/*.md — auto-refresh on file change)
-    from .routers import agents
+    from agentnodes.interfaces.api.routers import agents
     app.include_router(agents.router, prefix="/api/agents", tags=["agents"])
-    from .routers.agents import startup_warmup as _agents_warmup
+    from agentnodes.interfaces.api.routers.agents import startup_warmup as _agents_warmup
 
     @app.get("/health")
     async def health():

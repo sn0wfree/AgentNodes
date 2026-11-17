@@ -137,7 +137,7 @@ class AuthMiddleware(BaseHTTPMiddleware):
 
     def _verify_token(self, token: str) -> Optional[str]:
         """Verify signed token and return user_id, or None."""
-        from .auth_tokens import verify_token
+        from agentnodes.interfaces.api.auth_tokens import verify_token
         return verify_token(token)
 
     def _is_active(self, user_id: str) -> bool:
@@ -149,7 +149,7 @@ class AuthMiddleware(BaseHTTPMiddleware):
         table as "active" would let disabled accounts keep operating.
         """
         try:
-            from .user_db import get_user_db
+            from agentnodes.interfaces.api.user_db import get_user_db
             db = get_user_db()
             user = db.get_user_by_id(user_id)
             if user is not None:

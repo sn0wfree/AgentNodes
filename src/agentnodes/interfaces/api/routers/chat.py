@@ -18,7 +18,7 @@ from pydantic import BaseModel
 if TYPE_CHECKING:
     from agentnodes.kernel.permission import PermissionGateway
 
-from ..schemas.chat import (
+from agentnodes.interfaces.api.schemas.chat import (
     CancelRequest,
     ChatAttemptsResponse,
     ChatCancelResponse,
@@ -26,12 +26,12 @@ from ..schemas.chat import (
     ChatQueueResumeResponse,
     SendMessageResponse,
 )
-from ..schemas.chat import (
+from agentnodes.interfaces.api.schemas.chat import (
     ChatMessageRequest as ChatMessage,
 )
 from agentnodes.kernel.session.models import AttemptId, SessionId
 from agentnodes.kernel.session.service import SessionService
-from .slash_common import (
+from agentnodes.interfaces.api.routers.slash_common import (
     _handle_clear_command,
     _handle_compact_command,
     _handle_help_command,
@@ -170,8 +170,8 @@ def _get_session_service() -> SessionService:
     2. SSE push (via sse_pusher callback → SSEEventBuffer)
     3. messages + message_parts tables via Projector.flush (flush_to_messages=True)
     """
-    from ..container import build_container
-    from .web_session import _get_db_path
+    from agentnodes.interfaces.api.container import build_container
+    from agentnodes.interfaces.api.routers.web_session import _get_db_path
 
     db_path = str(_get_db_path())
     service = _session_service_cache.get(db_path)
@@ -233,7 +233,7 @@ async def send_async(body: ChatMessage, request: Request):
                 body.session_id, len(body.content), body.content[:50])
 
     # Ownership check: only the session owner may post messages
-    from .web_session import _fetch_session_owned, _get_db
+    from agentnodes.interfaces.api.routers.web_session import _fetch_session_owned, _get_db
     user_id = getattr(request.state, "user_id", "anonymous")
     _fetch_session_owned(_get_db(), body.session_id, user_id)
 
@@ -322,7 +322,7 @@ async def cancel_attempt(body: CancelRequest, request: Request):
     After cancellation the per-session queue is **paused** (queue_paused
     SSE event). Use ``POST /chat/queue/resume`` to continue processing.
     """
-    from .web_session import _fetch_session_owned, _get_db
+    from agentnodes.interfaces.api.routers.web_session import _fetch_session_owned, _get_db
     user_id = getattr(request.state, "user_id", "anonymous")
     _fetch_session_owned(_get_db(), body.session_id, user_id)
     service = _get_session_service()
@@ -353,7 +353,7 @@ async def queue_resume(body: QueueResumeRequest, request: Request):
     Returns ``{"ok": true, "session_id": ...}`` if the queue was paused
     and is now resumed; ``{"ok": false}`` if no paused queue exists.
     """
-    from .web_session import _fetch_session_owned, _get_db
+    from agentnodes.interfaces.api.routers.web_session import _fetch_session_owned, _get_db
     user_id = getattr(request.state, "user_id", "anonymous")
     _fetch_session_owned(_get_db(), body.session_id, user_id)
     service = _get_session_service()
@@ -733,7 +733,7 @@ async def send_sync(body: ChatMessage, request: Request):
     旧的 SessionService 直连分支已删除（`QNODES_NEW_ENTRY` 回退开关退役）。
     """
     # Ownership check: only the session owner may post messages
-    from .web_session import _fetch_session_owned, _get_db
+    from agentnodes.interfaces.api.routers.web_session import _fetch_session_owned, _get_db
     user_id = getattr(request.state, "user_id", "anonymous")
     _fetch_session_owned(_get_db(), body.session_id, user_id)
 
@@ -758,7 +758,7 @@ async def chat_events(
     """SSE event stream for a session."""
     from fastapi import HTTPException as _HTTPExc
 
-    from .web_session import _fetch_session_owned, _get_db, _get_db_path
+    from agentnodes.interfaces.api.routers.web_session import _fetch_session_owned, _get_db, _get_db_path
     user_id = getattr(request.state, "user_id", "anonymous")
     try:
         _fetch_session_owned(_get_db(), session_id, user_id)
@@ -814,7 +814,7 @@ async def list_active_attempts(
     created_at}`` — oldest first. Zombie rows (server restart) are
     filtered out by in-memory guards inside SessionService.
     """
-    from .web_session import _fetch_session_owned, _get_db
+    from agentnodes.interfaces.api.routers.web_session import _fetch_session_owned, _get_db
     user_id = getattr(request.state, "user_id", "anonymous")
     _fetch_session_owned(_get_db(), session_id, user_id)
     service = _get_session_service()
@@ -824,7 +824,7 @@ async def list_active_attempts(
 @router.get("/session/{session_id}/available_actions")
 async def chat_available_actions(session_id: str, request: Request):
     """C3: actions the current session state permits (drives the UI's buttons)."""
-    from .web_session import _fetch_session_owned, _get_db
+    from agentnodes.interfaces.api.routers.web_session import _fetch_session_owned, _get_db
     user_id = getattr(request.state, "user_id", "anonymous")
     _fetch_session_owned(_get_db(), session_id, user_id)
     service = _get_session_service()
@@ -849,7 +849,7 @@ async def chat_export(
     from fastapi.responses import PlainTextResponse
 
     from agentnodes.apps.chat.export import render
-    from .web_session import _fetch_session_owned, _get_db
+    from agentnodes.interfaces.api.routers.web_session import _fetch_session_owned, _get_db
 
     user_id = getattr(request.state, "user_id", "anonymous")
     _fetch_session_owned(_get_db(), session_id, user_id)
@@ -883,7 +883,7 @@ async def get_session_trace(
     """
     from agentnodes.kernel.agent.trace import TraceWriter
     from agentnodes.kernel.session.trace_projection import TraceProjection
-    from .web_session import _fetch_session_owned, _get_db
+    from agentnodes.interfaces.api.routers.web_session import _fetch_session_owned, _get_db
     user_id = getattr(request.state, "user_id", "anonymous")
     _fetch_session_owned(_get_db(), session_id, user_id)
 

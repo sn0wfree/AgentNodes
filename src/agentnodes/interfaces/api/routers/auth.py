@@ -97,7 +97,7 @@ def _is_legacy_hash(stored: str) -> bool:
 
 def _create_token(user_id: str) -> str:
     """Create a signed token for the user (24h expiry)."""
-    from ..auth_tokens import create_token
+    from agentnodes.interfaces.api.auth_tokens import create_token
     return create_token(user_id)
 
 
@@ -114,7 +114,7 @@ def _user_public(user: dict) -> dict:
 
 def _verify_token(token: str) -> Optional[str]:
     """Verify signed token and return user_id, or None."""
-    from ..auth_tokens import verify_token
+    from agentnodes.interfaces.api.auth_tokens import verify_token
     return verify_token(token)
 
 

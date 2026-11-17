@@ -19,7 +19,7 @@ def _register_wiring() -> None:
     因此这里吞异常并只在 debug 级别记录。
     """
     try:
-        from . import gateway_wiring  # noqa: F401 —— 触发自注册副作用
+        from agentnodes.interfaces import gateway_wiring  # noqa: F401 —— 触发自注册副作用
     except Exception:  # noqa: BLE001
         import logging
 

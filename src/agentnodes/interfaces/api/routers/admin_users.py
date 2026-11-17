@@ -20,8 +20,8 @@ from typing import Any
 from fastapi import APIRouter, Depends, Header, HTTPException, Query, Request
 from pydantic import BaseModel
 
-from .admin import _get_admin_token, _record_audit
-from .auth import _get_user_db, _hash_password, _user_public
+from agentnodes.interfaces.api.routers.admin import _get_admin_token, _record_audit
+from agentnodes.interfaces.api.routers.auth import _get_user_db, _hash_password, _user_public
 
 router = APIRouter()
 

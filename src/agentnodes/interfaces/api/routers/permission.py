@@ -45,7 +45,7 @@ async def respond_permission(
       reason; agent loop surfaces the denial as a tool error
     """
     from agentnodes.kernel.permission import PermissionAction, PermissionResponse
-    from .chat import _get_permission_gateway
+    from agentnodes.interfaces.api.routers.chat import _get_permission_gateway
 
     gateway = _get_permission_gateway(request)
     if gateway is None:
@@ -61,7 +61,7 @@ async def respond_permission(
     user_id = getattr(request.state, "user_id", None) or "anonymous"
     owner_session = gateway.owner_session_of(body.tool_call_id)
     if owner_session:
-        from .web_session import _fetch_session_owned, _get_db
+        from agentnodes.interfaces.api.routers.web_session import _fetch_session_owned, _get_db
         _fetch_session_owned(_get_db(), owner_session, user_id)
 
     try:

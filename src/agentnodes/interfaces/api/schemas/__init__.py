@@ -1,6 +1,6 @@
 """API response/request schemas (Pydantic v2 wire shapes)."""
 
-from .chat import (
+from agentnodes.interfaces.api.schemas.chat import (
     CancelRequest,
     ChatAttemptItem,
     ChatAttemptsResponse,
@@ -11,7 +11,7 @@ from .chat import (
     ChatQueueResumeResponse,
     SendMessageResponse,
 )
-from .study import (
+from agentnodes.interfaces.api.schemas.study import (
     ArtifactItem,
     DiffLine,
     DirectiveModel,

@@ -65,7 +65,7 @@ async def _require_run_access(run_id: str, request: Request) -> None:
     table already stores it — no schema change needed). 404 unknown,
     403 foreign, same semantics as chat sessions.
     """
-    from .web_session import _fetch_session_owned, _get_db
+    from agentnodes.interfaces.api.routers.web_session import _fetch_session_owned, _get_db
     user_id = getattr(request.state, "user_id", None) or "anonymous"
     registry = _get_run_registry()
     runner = registry.get(run_id)
@@ -91,8 +91,8 @@ async def workflow_start(req: WorkflowStartRequest, request: Request):
         from agentnodes.apps.goal.workflow import GoalWorkflowRunner
         from agentnodes.apps.goal.workflow_config import load_goal_workflow
 
-        from .chat import _get_session_service
-        from .web_session import _fetch_session_owned, _get_db
+        from agentnodes.interfaces.api.routers.chat import _get_session_service
+        from agentnodes.interfaces.api.routers.web_session import _fetch_session_owned, _get_db
 
         user_id = getattr(request.state, "user_id", None) or "anonymous"
         _fetch_session_owned(_get_db(), req.session_id, user_id)
@@ -453,7 +453,7 @@ async def orchestrate_session(body: OrchestrateSessionRequest, request: Request)
     if not dag_id or "/" in dag_id or "\\" in dag_id:
         raise HTTPException(status_code=400, detail="invalid dag_id")
     session_id = f"dag:{dag_id}"
-    from .web_session import WebSessionCreate, create_session
+    from agentnodes.interfaces.api.routers.web_session import WebSessionCreate, create_session
     try:
         session = await create_session(WebSessionCreate(title=f"DAG 编排 · {dag_id}", id=session_id), request)
     except Exception as exc:
@@ -567,7 +567,7 @@ async def definitions_delete(name: str, request: Request, x_admin_token: str | N
     """
     from agentnodes.kernel.workflow.builtin import delete_user_definition, load_definition
 
-    from .admin import _verify_admin
+    from agentnodes.interfaces.api.routers.admin import _verify_admin
     _verify_admin(x_admin_token)
     definition = load_definition(name, _definition_workspace())
     if definition is None:
@@ -618,7 +618,7 @@ async def start_definition(req: WorkflowStartDefinitionRequest, request: Request
     from agentnodes.kernel.workflow.executor import WorkflowRunner
     from agentnodes.kernel.workflow.node_types import register_builtin_tool_executors
 
-    from .web_session import _fetch_session_owned, _get_db
+    from agentnodes.interfaces.api.routers.web_session import _fetch_session_owned, _get_db
 
     user_id = getattr(request.state, "user_id", None) or "anonymous"
     _fetch_session_owned(_get_db(), req.session_id, user_id)
