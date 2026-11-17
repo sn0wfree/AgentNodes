@@ -316,6 +316,66 @@ dual_log(module, msg, *args)
 
 ---
 
+## 11 · 业界对照与解环决策（2026-11-17 调研回填）
+
+> 背景：审阅者问「logger.py 与 logging_setup.py 能否合并为一个文件 / sqlite 需要 logger、
+> 全系统也需要 log，成环后有无其它解法」。本节把调研结论与决策固化，防止后续重开。
+
+### 11.1 四个生态，同一个形状
+
+| 生态 | 获取（门面） | 装配（后端） | 铁律 |
+|---|---|---|---|
+| Java | SLF4J API（纯接口 artifact） | Logback / Log4j binding（另一个 artifact，部署时选） | **门面绝不 import 后端**（slf4j.org/manual、FAQ） |
+| Rust | `log` crate（零依赖 facade） | `env_logger` / `tracing` 等（bin 启动时 `set_logger` 安装） | 同上；库只依赖门面，后端选择权在可执行文件（crates.io/crates/log、docs.rs/env_logger） |
+| Python stdlib | **`logging` 本身就是零依赖门面**（在 stdlib 里，谁都能 import） | 应用入口 `basicConfig` / `dictConfig`；库**不加 handler**（docs.python.org/3/library/logging.html） | 官方推荐即每模块 `getLogger(__name__)`；自定义 wrapper 反而可能引入循环 import（Coralogix / SO 50714316） |
+| Django | 每模块 `getLogger(__name__)`（`django.db.backends` 这类最底层模块同样如此） | `settings.LOGGING` + `django.setup()` 时 `dictConfig` 一次（docs.djangoproject.com howto/topics） | 低层模块照常拿 logger，装配发生在入口 |
+
+**共识一句话：统一装配，按名获取。** 本方案（批 1 已落地）正是它在
+AgentNodes 的同构落地：内核 `foundation/logger.py` = SLF4J/`log` crate 的角色；
+`configure_logging` = binding/backend 安装的角色；`test_foundation_logger.py` 的
+「零项目 import AST 断言」+「子进程单独 import 不拖起 settings/observability」
+就是「门面不依赖后端」铁律的门禁化。
+
+### 11.2 环的根源与「合并为一个文件」的否决
+
+- **环的根源不是「sqlite 需要 logger」** —— stdlib `logging` 比 sqlite 更底层，
+  sqlite 拿 logger 天经地义（Django db backend 即实例）。根源只有一个：
+  **把「装配」和「获取」放进同一个文件**（装配需要 settings/storage，
+  于是所有想拿 logger 的底层文件反向依赖了它们）。
+- 实测链条：`logging_setup.py:37` 模块级 `from ...storage.sqlite import DEFAULT_DATA_DIR`
+  + `:38` `from agentnodes.foundation import settings`；`settings.py` / `storage/sqlite.py`
+  各有 1 处自身 logger。合并后批 2 收编 sqlite 即触发
+  `ImportError: ... partially initialized module`（最小复现：`tmp/probe/cycle_repro/`，
+  rc=1 已实证）。
+- 反向合并（把装配并进内核）同样成环，只是换了方向 —— 环不随合并方向转移。
+
+### 11.3 解环选项与裁决
+
+| 选项 | 形状 | 裁决 | 理由 |
+|---|---|---|---|
+| **A. 两文件拆层（现状）** | 内核零依赖 + 装配层 | ✅ **采纳** | 业界四生态同构；依赖方向由**包结构强制**（类比 crate/artifact 边界）；settings/sqlite 收编无环 |
+| B. 合成一个文件 + 懒 import 纪律 | 所有项目 import 推迟到函数体 | ❌ 否决 | 「内核零依赖」从**结构保证**降级为**纪律保证**——任何后人加一行"无害的"模块级 import 就复环，须再养一条门禁守它；为省一个文件养一条门禁，负收益 |
+| C. 最底层直用 stdlib + 门禁豁免 | settings/sqlite 保留 `logging.getLogger(__name__)` | ⭕ **永久兜底原则**（非现状） | CPython 自身形态；获取时刻行为与门面**零差异**（record.name / caplog / JSON 一致）。不作为现状的理由：棘轮停不在 0、留下要解释的永久特例 |
+| D. 依赖注入（logger 传参进 sqlite） | 构造参数传 logger | ❌ 排除 | 全调用链打穿；业界在此粒度不用（asyncio/sqlalchemy 内部均直取 stdlib logger） |
+| E. 为 sqlite 单独建一套「特殊 log」（专用 facade 文件 / 专用获取函数） | 第二个获取入口 | ❌ 否决（2026-11-17 讨论） | 制造**第二个入口**，正好复刻本次要消灭的「散落」；且在方案 A 下**没有必要**——内核零依赖，sqlite 与其它 158 处走完全相同的收编路，批 1 子进程隔离测试已证明 |
+
+### 11.4 永久兜底原则（C 的门禁化表述）
+
+> **任何模块若发现自己 import 内核会成环，合法出路是直用 stdlib
+> `logging.getLogger(__name__)` 并在 `check_logging_entry.py` 的
+> `EXEMPT_PREFIXES` 登记豁免（附一句成环原因）。这是业界官方级兜底
+> （Python stdlib 自身形态），不是妥协。**
+
+豁免的准入条件（三条同时满足）：
+1. 该模块处于内核的依赖闭包内（或未来可能进入）—— 即「内核若依赖它即成环」；
+2. 该模块用不到门面的增值能力（`deco` / 进程级 `APP_LOG`）—— 获取时刻行为本就零差异；
+3. 豁免清单保持**最小**，每条带原因注释；出现更优解（如内核进一步拆分）时**必须撤豁免**。
+
+现状豁免：`foundation/observability/`（装配层本职）+ `foundation/logger.py`（内核自身）。
+`settings.py` / `storage/sqlite.py` **不在**豁免内 —— 方案 A 下它们走统一收编（批 2）。
+
+---
+
 ## 附录 A · 实测口径
 
 ```bat
