@@ -508,6 +508,13 @@ class SessionService:
                         item["attempt_id"],
                     )
                     queue.task_done()
+                    # **2026-11-17 批次 B 补测抓到**：原实现这里直接
+                    # ``continue``，跳过了循环末尾的退出判定（``if
+                    # queue.empty(): break``）→ 消费者在该会话**永久阻塞**
+                    # 在 ``queue.get()``，该会话后续消息全部积压（生产可触发：
+                    # attempt 行被删 / DB 短暂不可见）。continue 前先评估退出。
+                    if queue.empty():
+                        break
                     continue
 
                 # Run the attempt as a tracked task so cancel(attempt_id) works
