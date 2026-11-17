@@ -133,7 +133,7 @@ footer code{background:rgba(148,163,184,.10);padding:1px 6px;border-radius:5px;c
     <div>
       <h2 class="arch-title">AgentNodes 分层架构 · L3 聚合</h2>
       <p class="arch-sub">样式 v2 · Glassmorphism / 正交布线（原版见 <code>architecture-layered.html</code>，数据层已同步重跑、tier 判定同批修订）
-        · 数据 2026-11-17 工作区 AST 复测 + 批次 α 平移：35 包 / 1978 符号 / 140 边 · L3 十五模块聚为四领域容器</p>
+        · 数据 2026-11-17 结构化阶段 7 后 AST 复测（口径同 <code>tmp/probe/scan_arch.py</code>）：35 包 / 1978 符号 / 133 包间边 · L3 十五模块聚为四领域容器</p>
     </div>
     <div class="bar" id="an-legend"></div>
   </div>
@@ -158,7 +158,8 @@ footer code{background:rgba(148,163,184,.10);padding:1px 6px;border-radius:5px;c
     <b style="color:var(--tierB)">黄</b>= 最小可干活 C13–C15 · <b style="color:var(--tierC)">绿</b>= 全能力 C16–C28。
     <b>红层是「能力归属标注」，不是可裁剪部署单元</b>（红→非红实测 118 次 import）—— 别把红色读成「可删」。
     2026-11-17 修订：<code>kernel/session</code> 由绿改红 —— R-014 下沉后它是会话域真身，承载 C8 历史持久化，
-    红层主链路 <code>api→session</code> 29 次 import。原版图数据层已同步重跑（35 包 / 1978 符号 / 140 边，批次 α 后）。<br>
+    红层主链路 <code>api→session</code> 29 次 import。原版图数据层已同步重跑（35 包 / 1978 符号 / 140 边，批次 α 后）。
+    2026-11-17 晚复测（结构化阶段 6/7 后）：旧记 140 边系错计，实为 <b>133</b> 条包间边；补画 L1→C3（interfaces→gateway 3 · api→gateway 2，w=5）。<br>
     连线权重只计 <b>≥2 次</b>的 import（与原版图 <code>DRAW_MIN=2</code> 同口径），1 次的横切边未画。
   </p>
 
@@ -185,15 +186,15 @@ footer code{background:rgba(148,163,184,.10);padding:1px 6px;border-radius:5px;c
     'apps/algo':                {n:10, files:2,  lines:326,  sub:'回测算法', role:'无前视调仓回测（2026-11-16 自 kernel/algo 迁入）', tier:'C', caps:[], iso:true},
     'apps/chat':                {n:7,  files:4,  lines:225,  sub:'产品策略', role:'会话侧业务策略', tier:'C', caps:[]},
     'apps/swarm_presets':       {n:1,  files:1,  lines:26,   sub:'拓扑 preset', role:'SwarmPreset YAML（37 个）', tier:'C', caps:['C19'], iso:true},
-    'kernel/agent':         {n:431, files:106, lines:22665, sub:'Agent 引擎', role:'LoopEngine / LoopSpec / loop_assembly / guardrails / deciders / 工具注册 / 压缩 / 遥测（最大包）', tier:'A', caps:['C2','C3','C9','C10','C12'], cl:'C1'},
+    'kernel/agent':         {n:431, files:112, lines:22714, sub:'Agent 引擎', role:'loop 引擎 / strategy / tools / builtin_tools / guards / policy / signals / factory / plugins / telemetry 等 17 子包 + state 组顶层残留（cache / event_store / memory_manager / projection_port）', tier:'A', caps:['C2','C3','C9','C10','C12'], cl:'C1'},
     'kernel/workflow':      {n:75,  files:15,  lines:3488,  sub:'工作流引擎', role:'definition / graph_compiler / executor / node_types / contract（B1 产物契约）', tier:'B', caps:['C13','C14'], cl:'C1'},
     'kernel/orchestration': {n:45,  files:10,  lines:2541,  sub:'编排', role:'genome_version / budget_gate / 判定层', tier:'C', caps:['C22'], cl:'C1'},
     'kernel/runtimes':      {n:20,  files:10,  lines:1649,  sub:'运行时', role:'执行器抽象与策略', tier:'B', caps:[], cl:'C1'},
     'kernel/swarm':         {n:16,  files:6,   lines:1488,  sub:'Swarm', role:'preset 加载 / 表达式求值 / 层图编译器', tier:'C', caps:['C19'], cl:'C1'},
     'kernel/session':       {n:89,  files:15,  lines:6164,  sub:'会话域真身', role:'service / store / projector / db：R-014 批次 A–B3 下沉后的会话域真身（创建 / 存储 / 投影）—— 承载 C8 历史持久化，红层主链路硬依赖（api→session 29 次 import）', tier:'A', caps:['C8'], sessionRole:'会话域真身：创建 / 存储 / 投影 / 只读浏览（R-014 下沉）', cl:'C2'},
     'kernel/evolution':     {n:62,  files:12,  lines:3453,  sub:'自进化', role:'GEP-RSI：genome_proposals / validation_gate / holdout / isolated_replay / evolution_agent', tier:'C', caps:['C17'], cl:'C2'},
-    'kernel/context':       {n:9,   files:4,   lines:407,   sub:'上下文', role:'context_injector / providers', tier:'B', caps:['C15'], cl:'C2'},
-    'kernel/memory':        {n:7,   files:3,   lines:604,   sub:'记忆', role:'持久化记忆', tier:'C', caps:['C24'], cl:'C2'},
+    'kernel/context':       {n:9,   files:4,   lines:407,   sub:'上下文', role:'ContextHub 组装点 / protocol 协议面 / policy 仲裁（注入器实现在 agent/context）', tier:'B', caps:['C15'], cl:'C2'},
+    'kernel/memory':        {n:7,   files:3,   lines:606,   sub:'记忆', role:'持久化记忆', tier:'C', caps:['C24'], cl:'C2'},
     'kernel/gateway':       {n:43,  files:9,   lines:2327,  sub:'会话网关', role:'session_controller / capacity：准入 + 容量闸 + 身份签发 + 驱动引擎', tier:'A', caps:['C7'], sessionRole:'run 调度器：准入 + 容量闸 + 身份签发 + 驱动引擎（不是会话生命周期）', cl:'C3'},
     'kernel/events':        {n:5,   files:2,   lines:465,   sub:'事件', role:'event_v2 协议 / event_store', tier:'A', caps:['C6','C23'], sessionRole:'事件源（append-only），投影器的输入', cl:'C3'},
     'kernel/hooks':         {n:5,   files:4,   lines:260,   sub:'钩子', role:'composite hook 组合', tier:'C', caps:[], cl:'C3'},
@@ -222,7 +223,7 @@ footer code{background:rgba(148,163,184,.10);padding:1px 6px;border-radius:5px;c
      intra:'域内省略 5 条：workflow→swarm 7 · workflow→agent 6 · swarm→agent 4 · runtimes→agent 4 · agent→workflow 2',
      caps:['C2','C3','C9','C10','C12','C13','C14','C19','C22']},
     {key:'C2', emoji:'💾', name:'上下文与状态', en:'Context & State', color:'#06B6D4',
-     desc:'内存与记忆：session 会话域真身（存储 / 投影 / 服务 —— 承载 C8 历史持久化，<b>红层必到</b>）、evolution 自进化、context 注入、memory 记忆',
+     desc:'内存与记忆：session 会话域真身（存储 / 投影 / 服务 —— 承载 C8 历史持久化，<b>红层必到</b>）、evolution 自进化、context 仲裁框架、memory 记忆',
      rows:[['kernel/session','kernel/evolution'],['kernel/context','kernel/memory']],
      intra:'域内无直接连线（四包互不 import）',
      caps:['C8','C15','C17','C24']},
@@ -246,6 +247,7 @@ footer code{background:rgba(148,163,184,.10);padding:1px 6px;border-radius:5px;c
     {id:'L1>C1', cls:'', w:56, br:'api→agent 16 · api→workflow 13 · interfaces→orchestration 4 · mcp→agent 5 · mcp→swarm 5 · cli→swarm 4 · interfaces→agent 3 · api→orchestration 2 · cli→agent 2 · tui→agent 2'},
     {id:'L1>C2', cls:'', w:54, br:'api→session 29 · interfaces→evolution 13 · cli→session 6 · tui→session 2 · mcp→session 2 · mcp→memory 2'},
     {id:'L1>C4', cls:'', w:9,  br:'cli→skills 4 · api→permission 3 · mcp→skills 2'},
+    {id:'L1>C3', cls:'', w:5,  br:'interfaces→gateway 3 · api→gateway 2'},
     {id:'L2>C1', cls:'', w:31, br:'agent_plugins→agent 9 · apps→agent 10（含 goal_tools 6，批次 α 后并入 apps）· goal→workflow 6 · goal→swarm 6'},
     {id:'C1>L4', cls:'', w:50, br:'agent→llm 11 · agent→utils 10 · agent→foundation 10 · agent→obs 8 · agent→storage 5 · agent→web 4 · orchestration→foundation 2'},
     {id:'C2>L4', cls:'', w:19, br:'session→llm 5 · session→storage 5 · session→foundation 4 · session→obs 3 · evolution→storage 2'},
@@ -382,6 +384,7 @@ footer code{background:rgba(148,163,184,.10);padding:1px 6px;border-radius:5px;c
       case 'L2>C1': { var y2 = yOn(K, 'C1', 126); return [[166, L.L2.b], [166, y2], [COL_X[0], y2]]; }
       case 'L1>C2': return [[913, L.L1.b], [913, K.C2.y]];
       case 'L1>C4': return [[1046, L.L1.b], [1046, K.C4.y]];
+      case 'L1>C3': { var y13 = yOn(K, 'C3', 50); return [[150, L.L1.b], [150, y13], [COL_X[0], y13]]; }
       case 'C1>L4': return [[400, K.C1.y + K.C1.h], [400, L.L4.y]];
       case 'C2>L4': { var gb = L.L3.b + 12; return [[913, K.C2.y + K.C2.h], [913, gb], [1128, gb], [1128, L.L4.y]]; }
       case 'C3>L4': { var y3 = yOn(K, 'C3', 76); return [[XL, y3], [698, y3], [698, L.L4.y]]; }
