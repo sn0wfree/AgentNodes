@@ -19,7 +19,7 @@ class TestRolePromptLoading:
     """9 个 role 的 prompt 都能从 templates/.prompts/ 加载 (via PromptBuilderFactory)."""
 
     def test_all_10_roles_have_prompt_files(self):
-        from agentnodes.kernel.agent.prompt_builder import PromptBuilderFactory
+        from agentnodes.kernel.agent.prompt.builder import PromptBuilderFactory
         roles = ["researcher", "data_quality", "factor_analyst", "strategist",
                  "portfolio_construction", "risk_controller", "attribution_analyst",
                  "anti_overfit_analyst", "backtest_diagnostics", "critic"]
@@ -31,7 +31,7 @@ class TestRolePromptLoading:
             assert "# Role:" in prompt, f"{role} prompt missing # Role: header"
 
     def test_unknown_role_returns_empty(self):
-        from agentnodes.kernel.agent.prompt_builder import PromptBuilderFactory
+        from agentnodes.kernel.agent.prompt.builder import PromptBuilderFactory
         assert PromptBuilderFactory.get("nonexistent_role_xyz").build_system_prompt(
             "nonexistent_role_xyz", {}
         ) == ""

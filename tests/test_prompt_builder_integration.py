@@ -107,7 +107,7 @@ class TestPhase5BehaviorUnchanged:
 
     def test_chat_prompt_matches_legacy_chat_md(self):
         """PromptBuilderFactory.get('chat') returns chat.md content (with empty context)."""
-        from agentnodes.kernel.agent.prompt_builder import (
+        from agentnodes.kernel.agent.prompt.builder import (
             PromptBuilderFactory,
         )
 
@@ -130,7 +130,7 @@ class TestPhase5BehaviorUnchanged:
         """
         from pathlib import Path
 
-        from agentnodes.kernel.agent.prompt_builder import (
+        from agentnodes.kernel.agent.prompt.builder import (
             PromptBuilderFactory,
         )
 
@@ -153,7 +153,7 @@ class TestPhase5FactoryConsistency:
 
     def test_factory_singleton_per_role(self):
         """Same role returns the same builder instance (no churn)."""
-        from agentnodes.kernel.agent.prompt_builder import (
+        from agentnodes.kernel.agent.prompt.builder import (
             PromptBuilderFactory,
         )
 
@@ -163,7 +163,7 @@ class TestPhase5FactoryConsistency:
 
     def test_register_persists_across_get(self):
         """Custom registered builder survives subsequent ``get`` calls."""
-        from agentnodes.kernel.agent.prompt_builder import (
+        from agentnodes.kernel.agent.prompt.builder import (
             PromptBuilderFactory,
             _NullBuilder,
         )

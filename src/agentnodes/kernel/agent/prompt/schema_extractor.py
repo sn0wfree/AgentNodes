@@ -374,7 +374,11 @@ def _read_prompt_text(role: str, prompt_dir: Path | None) -> str | None:
     """Load the role's prompt markdown; None when missing or unreadable."""
     if prompt_dir is None:
         prompt_dir = (
-            Path(__file__).parent.parent.parent / "templates" / ".prompts"
+            # 2026-11-17 下沉到 prompt/ 后深 1 层：原 parent.parent.parent 会
+            # 解析到 kernel/templates/ 而静默找不到 prompt。按 agentnodes 包根
+            # 定位，未来再移动文件也不会错位。
+            next(p for p in Path(__file__).parents if p.name == "agentnodes")
+            / "templates" / ".prompts"
         )
     prompt_path = prompt_dir / f"{role}.md"
     if not prompt_path.exists():
@@ -528,7 +532,11 @@ def load_all_schemas(prompt_dir: Path | None = None) -> Dict[str, AgentSchema]:
     """
     if prompt_dir is None:
         prompt_dir = (
-            Path(__file__).parent.parent.parent / "templates" / ".prompts"
+            # 2026-11-17 下沉到 prompt/ 后深 1 层：原 parent.parent.parent 会
+            # 解析到 kernel/templates/ 而静默找不到 prompt。按 agentnodes 包根
+            # 定位，未来再移动文件也不会错位。
+            next(p for p in Path(__file__).parents if p.name == "agentnodes")
+            / "templates" / ".prompts"
         )
 
     results: Dict[str, AgentSchema] = {}

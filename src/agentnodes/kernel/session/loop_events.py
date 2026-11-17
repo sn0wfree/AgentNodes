@@ -273,7 +273,7 @@ def _resolve_loop_prompt(system_prompt: Optional[str], persona: Optional[str]):
     final_prompt = system_prompt
     loop_role = "chat"
     if system_prompt is None and persona:
-        from agentnodes.kernel.agent.prompt_builder import PromptBuilderFactory
+        from agentnodes.kernel.agent.prompt.builder import PromptBuilderFactory
 
         if persona in PromptBuilderFactory.list_roles():
             persona_prompt = PromptBuilderFactory.get(persona).build_system_prompt(persona, {})

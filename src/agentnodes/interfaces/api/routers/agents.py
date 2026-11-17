@@ -34,7 +34,7 @@ def _refresh_schema_cache() -> None:
     """Re-parse all agent schemas.  Called on startup and when mtime changes."""
     try:
         # routers/agents.py → three dots up to agentnodes.core
-        from agentnodes.kernel.agent.prompt_schema_extractor import load_all_schemas
+        from agentnodes.kernel.agent.prompt.schema_extractor import load_all_schemas
     except ImportError:
         logger.warning("prompt_schema_extractor not importable; skipping schema cache")
         return

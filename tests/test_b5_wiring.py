@@ -18,7 +18,7 @@ from agentnodes.kernel.agent.builtin_tools.todo_tools import (
     TodoStore,
     TodoWriteTool,
 )
-from agentnodes.kernel.agent.context_providers import TodoContextProvider
+from agentnodes.kernel.agent.context.providers import TodoContextProvider
 from agentnodes.kernel.context.hub import ContextHub
 from agentnodes.kernel.context.protocol import ContextQuery
 from agentnodes.kernel.gateway.gateway import Gateway

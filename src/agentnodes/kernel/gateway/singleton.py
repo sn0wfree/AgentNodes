@@ -240,7 +240,7 @@ def _build_context_hub() -> Any | None:
     任一不可用则整体降级 None（与 registry 降级同款）。
     """
     try:
-        from agentnodes.kernel.agent.context_providers import (
+        from agentnodes.kernel.agent.context.providers import (
             TodoContextProvider,
             build_prerun_provider_for_session,
         )

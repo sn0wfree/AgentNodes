@@ -165,7 +165,7 @@ def test_context_hub_never_imports_producers():
 
     ContextHub 三条硬约束之一（docs/design/context-hub-discussion.md §3）：
     「生产方注册进中枢，中枢从不 import 生产方」——否则它就是下一个
-    上帝对象。生产方适配器住在 kernel/agent/context_providers.py，
+    上帝对象。生产方适配器住在 kernel/agent/context/providers.py，
     方向是 域→平台。（相对导入由 _imports 解析为绝对名后匹配。）
 
     已知豁免（平台→生产方，有意接线，非本门禁管辖）：

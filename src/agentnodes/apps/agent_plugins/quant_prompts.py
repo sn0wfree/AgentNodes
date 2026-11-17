@@ -1,7 +1,7 @@
 """量化域的角色提示词注册（L2 业务内容）。
 
 **批次 4d 迁出**：8 个业务角色的提示词路由原本硬编码在
-``kernel/agent/prompt_builder.py::PromptBuilderFactory._BUILDERS`` 里。
+``kernel/agent/prompt/builder.py::PromptBuilderFactory._BUILDERS`` 里。
 
 **为什么是业务**：这些角色的**提示词内容**含量化域名词——
 ``factor_analyst.md`` 讲 IC/IR，``risk_controller.md`` 讲 VaR/回撤，
@@ -40,7 +40,7 @@ def register_all() -> int:
     **调用时机**：装配根（L1）在需要量化工作流时显式调用——
     apps → kernel 方向，kernel 不知道这些角色的存在。
     """
-    from agentnodes.kernel.agent.prompt_builder import (
+    from agentnodes.kernel.agent.prompt.builder import (
         PromptBuilderFactory,
         StaticFilePromptBuilder,
     )

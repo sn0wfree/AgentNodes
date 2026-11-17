@@ -14,7 +14,7 @@ from agentnodes.kernel.agent.builtin_tools import (
     ToolHelpTool,
     build_default_registry,
 )
-from agentnodes.kernel.agent.context import ContextBuilder
+from agentnodes.kernel.agent.context.core import ContextBuilder
 from agentnodes.kernel.agent.tools import (
     EFFECT_DB,
     EFFECT_NET,

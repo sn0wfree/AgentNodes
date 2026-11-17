@@ -18,7 +18,7 @@ import pytest
 
 from agentnodes.kernel.agent.builtin_tools.file_tools import ReadFileTool
 from agentnodes.kernel.agent.combo import CompositeTool
-from agentnodes.kernel.agent.context import ContextBuilder
+from agentnodes.kernel.agent.context.core import ContextBuilder
 from agentnodes.kernel.agent.tool_result import ToolResult, from_any, render_for_llm
 from agentnodes.kernel.agent.tools import ToolContext, ToolRegistry
 from agentnodes.foundation.llm import LLMConfig

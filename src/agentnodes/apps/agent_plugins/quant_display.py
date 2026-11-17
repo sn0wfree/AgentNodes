@@ -48,7 +48,7 @@ def register_all() -> dict[str, int]:
     from agentnodes.kernel.agent.builtin_tools.display_tools import (
         register_metric_labels,
     )
-    from agentnodes.kernel.agent.prompt_schema_extractor import (
+    from agentnodes.kernel.agent.prompt.schema_extractor import (
         register_field_hints,
     )
     from agentnodes.kernel.agent.validators.claim_validator import (

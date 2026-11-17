@@ -24,7 +24,7 @@ from agentnodes.kernel.agent.harness_resolver import (
     apply_compaction_overrides,
     assemble,
 )
-from agentnodes.kernel.agent.prompt_builder import (
+from agentnodes.kernel.agent.prompt.builder import (
     PromptBuilderFactory,
     StaticFilePromptBuilder,
 )

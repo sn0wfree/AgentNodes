@@ -355,7 +355,7 @@ class AgentExecutor:
         from agentnodes.foundation.llm import LLMConfig
         from agentnodes.kernel.agent.builtin_tools import build_default_registry
         from agentnodes.kernel.agent.loop import AgentLoop
-        from agentnodes.kernel.agent.prompt_builder import PromptBuilderFactory
+        from agentnodes.kernel.agent.prompt.builder import PromptBuilderFactory
 
         if not plugin.prompt_file:
             return AgentExecutionResult(

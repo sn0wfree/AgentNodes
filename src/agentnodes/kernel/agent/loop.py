@@ -51,7 +51,7 @@ from agentnodes.kernel.agent._core_types import StepResult, maybe_await
 from agentnodes.kernel.agent.circuit_breaker import RetryPolicy, ToolLoopCircuitBreaker
 from agentnodes.kernel.agent.compact.core import CompactConfig
 from agentnodes.kernel.agent import agent_telemetry as _tel
-from agentnodes.kernel.agent.context import ContextBuilder, estimate_tokens
+from agentnodes.kernel.agent.context.core import ContextBuilder, estimate_tokens
 from agentnodes.kernel.agent.runtime.sync_bridge import _get_hook_loop as _get_hook_loop  # noqa: F401
 from agentnodes.kernel.agent.runtime.sync_bridge import _run_coro_in_sync
 from agentnodes.kernel.agent.tools import ToolRegistry
@@ -488,13 +488,13 @@ class AgentLoop(
         if _injectors is not None:
             self._injectors = sorted(_injectors, key=lambda i: getattr(i, "order", 0))
         else:
-            from agentnodes.kernel.agent.context_injector import build_default_injectors
+            from agentnodes.kernel.agent.context.injector import build_default_injectors
             self._injectors = build_default_injectors()
         # P5-4: pre-run 上下文（goal/memory）经 ContextHub 收集——唯一组装点。
         # per-iteration / post-response injector 仍走 self._injectors 原通路
         # （设计：docs/archive/2026-10/stage-p54-context-hub-w0-design-20261027.md §1）。
         from agentnodes.kernel.context import ContextHub
-        from agentnodes.kernel.agent.context_providers import build_prerun_context_provider
+        from agentnodes.kernel.agent.context.providers import build_prerun_context_provider
 
         self.context_hub = ContextHub()
         self.context_hub.register(build_prerun_context_provider(self, self._injectors))

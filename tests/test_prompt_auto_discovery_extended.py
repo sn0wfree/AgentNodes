@@ -10,7 +10,7 @@ import pytest
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
 
-from agentnodes.kernel.agent.prompt_builder import (
+from agentnodes.kernel.agent.prompt.builder import (
     PromptBuilderFactory,
     StaticFilePromptBuilder,
     _NullBuilder,

@@ -285,7 +285,7 @@ class TestThresholdEdgeCases:
 
     def test_microcompact_only_when_needed(self):
         """Microcompact should only trim large tool results."""
-        from agentnodes.kernel.agent.context import estimate_tokens
+        from agentnodes.kernel.agent.context.core import estimate_tokens
 
         # Check that a message with 100-char tool result has low token count
         msgs = [

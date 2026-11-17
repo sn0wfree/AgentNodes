@@ -12,7 +12,7 @@ import pytest
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
 
-from agentnodes.kernel.agent.context_injector import (
+from agentnodes.kernel.agent.context.injector import (
     ContextInjector,
     GoalContextInjector,
     TodosInjector,

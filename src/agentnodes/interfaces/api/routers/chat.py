@@ -943,7 +943,7 @@ async def list_personas(request: Request = None):
     ``PromptBuilderFactory``——L1 只做拼接。
     """
     from agentnodes.apps.chat.personas import list_for
-    from agentnodes.kernel.agent.prompt_builder import PromptBuilderFactory
+    from agentnodes.kernel.agent.prompt.builder import PromptBuilderFactory
 
     return {"personas": list_for(PromptBuilderFactory.list_roles())}
 

@@ -14,7 +14,7 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from agentnodes.kernel.agent.prompt_builder import (
+from agentnodes.kernel.agent.prompt.builder import (
     PromptBuilderFactory,
     StaticFilePromptBuilder,
 )

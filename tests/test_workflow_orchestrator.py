@@ -194,7 +194,7 @@ def test_deeply_malformed_payload_never_raises():
 
 
 def test_prompt_builder_registered():
-    from agentnodes.kernel.agent.prompt_builder import PromptBuilderFactory
+    from agentnodes.kernel.agent.prompt.builder import PromptBuilderFactory
 
     assert "workflow_orchestrator" in PromptBuilderFactory.list_roles()
     prompt = PromptBuilderFactory.get("workflow_orchestrator").build_system_prompt(

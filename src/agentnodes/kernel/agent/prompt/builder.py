@@ -48,9 +48,13 @@ logger = logging.getLogger(__name__)
 
 
 _PROMPTS_DIR = (
-    Path(__file__).parent.parent.parent / "templates" / ".prompts"
+    next(p for p in Path(__file__).parents if p.name == "agentnodes")
+    / "templates" / ".prompts"
 )
 # Resolves to: src/agentnodes/templates/.prompts/
+# 2026-11-17 下沉到 prompt/ 后比原来深 1 层 —— 原 ``parent.parent.parent`` 会
+# 解析到 kernel/templates/ 而静默找不到角色（_NullBuilder 兜底、prompt 为空）。
+# 改为按 ``agentnodes`` 包根定位：未来再移动文件也不会错位。
 
 # Common layer (truthfulness-design): principles 常驻, rules 按需
 _COMMON_DIR = _PROMPTS_DIR / "_common"
@@ -513,9 +517,10 @@ class PromptBuilderFactory:
     @classmethod
     def _discover_prompts(cls) -> dict[str, PromptBuilder]:
         """Scan templates/.prompts/*.md for role prompt files."""
-        # Reuse the module-level constant: this file sits in kernel/agent/, so
+        # Reuse the module-level constant: this file sits in kernel/agent/prompt/, so
         # a bare ``parent.parent`` would resolve to kernel/templates/ and the
-        # scan would silently find nothing.
+        # scan would silently find nothing. (2026-11-17: _PROMPTS_DIR 已改为按
+        # agentnodes 包根定位，不再依赖层级数。)
         prompts_dir = _PROMPTS_DIR
         if not prompts_dir.exists():
             return {}

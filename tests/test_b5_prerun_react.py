@@ -10,7 +10,7 @@ from __future__ import annotations
 
 from unittest.mock import patch
 
-from agentnodes.kernel.agent.context_providers import (
+from agentnodes.kernel.agent.context.providers import (
     build_prerun_provider_for_session,
 )
 from agentnodes.kernel.context.protocol import ContextQuery

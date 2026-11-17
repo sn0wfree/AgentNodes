@@ -90,7 +90,7 @@ class TestRunAgentViaLlmLoopStrategy:
 
         # Mock PromptBuilderFactory to always return a prompt
         import agentnodes.kernel.agent.role_factory as rf
-        from agentnodes.kernel.agent.prompt_builder import PromptBuilderFactory
+        from agentnodes.kernel.agent.prompt.builder import PromptBuilderFactory
 
         class _FakePromptBuilder:
             def build_system_prompt(self, role, data):

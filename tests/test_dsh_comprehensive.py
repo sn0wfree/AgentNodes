@@ -15,7 +15,7 @@ import pytest
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
 
-from agentnodes.kernel.agent.context_injector import (
+from agentnodes.kernel.agent.context.injector import (
     ContextInjector,
     GoalContinuationInjector,
     GoalContextInjector,
@@ -624,14 +624,14 @@ class TestPluginDiscoveryAdvanced:
 class TestPromptDiscoveryAdvanced:
     def test_discover_prompts_handles_nonexistent_dir(self):
         """_discover_prompts handles missing templates directory."""
-        from agentnodes.kernel.agent.prompt_builder import PromptBuilderFactory
+        from agentnodes.kernel.agent.prompt.builder import PromptBuilderFactory
         with patch.object(Path, "__truediv__", return_value=Path("/nonexistent/path")):
             result = PromptBuilderFactory._discover_prompts()
             assert isinstance(result, dict)
 
     def test_list_roles_deduplication(self):
         """list_roles doesn't have duplicates."""
-        from agentnodes.kernel.agent.prompt_builder import PromptBuilderFactory
+        from agentnodes.kernel.agent.prompt.builder import PromptBuilderFactory
         PromptBuilderFactory._discovered = None
         roles = PromptBuilderFactory.list_roles()
         assert len(roles) == len(set(roles))

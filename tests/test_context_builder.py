@@ -7,7 +7,7 @@ from pathlib import Path
 import pytest
 
 from agentnodes.kernel.agent.builtin_tools import build_default_registry
-from agentnodes.kernel.agent.context import (
+from agentnodes.kernel.agent.context.core import (
     ContextBuilder,
     estimate_tokens,
 )

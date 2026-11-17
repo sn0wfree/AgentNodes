@@ -3,7 +3,7 @@ from __future__ import annotations
 
 from types import SimpleNamespace
 
-from agentnodes.kernel.agent.context_injector import (
+from agentnodes.kernel.agent.context.injector import (
     MemoryRetrieverInjector,
     build_default_injectors,
 )

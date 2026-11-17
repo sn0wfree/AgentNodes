@@ -28,7 +28,7 @@ import pytest
 # 续跑分支只会静默返回 False。与本目录其它需要业务能力的测试同一约定。
 import agentnodes.apps  # noqa: F401,E402
 
-from agentnodes.kernel.agent.context_injector import (
+from agentnodes.kernel.agent.context.injector import (
     GoalContinuationInjector,
 )
 from agentnodes.foundation.llm import LLMResponse
@@ -75,7 +75,7 @@ def _snapshot_active_with_pending():
 @pytest.fixture
 def active_goal():
     with patch(
-        "agentnodes.kernel.agent.context_injector."
+        "agentnodes.kernel.agent.context.injector."
         "_get_goal_snapshot",
         return_value=_snapshot_active_with_pending(),
     ):
@@ -129,7 +129,7 @@ class TestZeroRegression:
         loop = _loop()
         resp = LLMResponse(content="plain text", finish_reason="stop")
         with patch(
-            "agentnodes.kernel.agent.context_injector."
+            "agentnodes.kernel.agent.context.injector."
             "_get_goal_snapshot",
             return_value=None,
         ):

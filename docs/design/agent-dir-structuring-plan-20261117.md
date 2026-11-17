@@ -254,3 +254,81 @@ compact / compaction_message / compaction_runtime  互不依赖 ✓
 **138**（两端 n>0）与 **143**（全部包）—— 140 与两者都对不上，是并行会话提交 `7b911121`
 时就写错的数字（本批未改，留给其归属方）。本批只同步了自己引入的 kernel/agent 节点
 files/lines。
+
+---
+
+## 9 · 阶段 2 实测（2026-11-17，prompt + context 簇）
+
+### 9.1 落地
+
+| 原路径 | 新路径 |
+|---|---|
+| `kernel/agent/prompt_builder.py` | `kernel/agent/prompt/builder.py` |
+| `kernel/agent/prompt_schema_extractor.py` | `kernel/agent/prompt/schema_extractor.py` |
+| `kernel/agent/context.py` | `kernel/agent/context/core.py` |
+| `kernel/agent/context_injector.py` | `kernel/agent/context/injector.py` |
+| `kernel/agent/context_providers.py` | `kernel/agent/context/providers.py` |
+| — | `prompt/__init__.py` + `context/__init__.py`（新增，零 re-export） |
+
+引用改写 **79 处 / 38 文件**（B=74 模块路径 · A=3 包级 import · C=2 文件路径）。
+
+### 9.2 幂等性教训的**换形态复现**（已修）
+
+阶段 1 的教训是「规则 B 不幂等 → 二次替换固化」。阶段 2 换了形态重演：
+
+- 规则 A 的**输出** `from agentnodes.kernel.agent.prompt import builder as pb_mod` 里含
+  `agentnodes.kernel.agent.prompt`；
+- 规则 B 的短前缀正则 `agentnodes\.kernel\.agent\.prompt\b(?!\.builder)` 负向前瞻
+  只排了 `.builder`，没排 ` import` → 第二遍匹配 A 的输出，改写成
+  `from agentnodes.kernel.agent.prompt.builder import builder as pb_mod`
+  —— **语法合法但语义错误**（`builder` 模块里没有 `builder` 这个名字）。
+
+**修复**：负向前瞻补 `(?![\s]+import)`；第二遍验证 0 文件 0 处（幂等达成）。
+
+> **通用规则（本次固化）**：批量替换脚本的幂等性必须同时满足
+> ① 已生成的目标形态不再命中（排 `.子模块`）② **其他规则的输出形态也不再命中**（排 ` import`）。
+> 验证方法：**跑两遍，第二遍必须 0 改动**。
+
+### 9.3 `__file__` 相对路径被移动破坏（10 个测试失败，已修）
+
+`prompt/builder.py:51` 与 `prompt/schema_extractor.py:377/531` 共 3 处：
+
+```python
+Path(__file__).parent.parent.parent / "templates" / ".prompts"
+# 原注释：Resolves to: src/agentnodes/templates/.prompts/
+```
+
+原文件在 `kernel/agent/`（3 层 = `agentnodes/`）；下沉到 `kernel/agent/prompt/` 后 3 层 =
+`kernel/` → 解析到 `kernel/templates/.prompts`（不存在）→ 角色发现静默失败 →
+`_NullBuilder` 兜底 / prompt 为空 / `list_roles()` 缺角色，**10 个测试红**。
+
+**修复**：改为按包根定位，未来再移动也不错位：
+
+```python
+next(p for p in Path(__file__).parents if p.name == "agentnodes") / "templates" / ".prompts"
+```
+
+> **通用规则（本次固化）**：移动文件前必须 grep `__file__` / `parents[` / `.parent` ——
+> 层数敏感的路径计算是子文件夹化的**头号隐藏破坏面**（症状是"静默兜底"而非报错，极难定位）。
+> compact 簇 4 文件无 `__file__` 用法，故阶段 1 未暴露此问题。
+
+### 9.4 与阶段 1 对比
+
+| 项 | 阶段 1（compact） | 阶段 2（prompt+context） |
+|---|---|---|
+| 引用改写 | 76+5 处 / 30 文件 | 79 处 / 38 文件 |
+| 包级 import 形态 | 20 处 | 3 处 |
+| monkeypatch | 9 处 | 2 处 |
+| importlib.reload | 8 处 | 0 |
+| subprocess 模板 | 4 组 | 0 |
+| **`__file__` 路径破坏** | 无 | **3 处 / 10 测试红** |
+| 幂等坑 | 规则 B 自身不幂等 | 规则 B 命中规则 A 的输出（换形态） |
+
+### 9.5 验证
+
+- 全量 **7596 passed / 106 skipped / 0 failed**（rc=0）
+- `batch_gate` **ALL GREEN**（11 步）
+- prompt/context 相关 **164 passed**（含路径修复前的 10 个红全部转绿）
+- 幂等验证：改写脚本第二遍 **0 文件 0 处**
+- 两图 JS `node --check` 通过；framework 文档数字同步（L3 211 文件 / 合计 433）
+- `kernel/agent`：104 文件 / 22614 行 / **符号 431 不变、包数 36 不变**（零漂移原理持续成立）

@@ -49,7 +49,7 @@ def assemble_loop_parts(
       逐字节一致（``get_for_signature(role, "")`` 等价于 ``get(role)``）。
     """
     from agentnodes.kernel.agent.builtin_tools import build_default_registry
-    from agentnodes.kernel.agent.prompt_builder import PromptBuilderFactory
+    from agentnodes.kernel.agent.prompt.builder import PromptBuilderFactory
 
     if registry is None:
         try:

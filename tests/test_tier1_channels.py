@@ -24,7 +24,7 @@ from agentnodes.kernel.agent.harness_resolver import (  # noqa: E402
     assemble,
     resolve_harness,
 )
-from agentnodes.kernel.agent.prompt_builder import (  # noqa: E402
+from agentnodes.kernel.agent.prompt.builder import (  # noqa: E402
     PromptBuilderFactory,
 )
 from agentnodes.kernel.orchestration.genome_runtime import (  # noqa: E402
