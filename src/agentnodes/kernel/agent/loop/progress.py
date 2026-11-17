@@ -100,7 +100,7 @@ class LoopProgressMixin:
             # Phase 5-guardrails v1: observe injection/exfil signatures in
             # tool outputs (docs/design/phase5-guardrails-design.md §2.2).
             try:
-                from agentnodes.kernel.agent.guardrails import scan_tool_result
+                from agentnodes.kernel.agent.guards.guardrails import scan_tool_result
 
                 content = tool_result_msg.get("content") or ""
                 tool_name = tool_result_msg.get("name") or "tool"

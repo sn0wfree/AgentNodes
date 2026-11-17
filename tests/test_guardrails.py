@@ -6,7 +6,7 @@ and the observation-only hook contract (finding.to_dict shape).
 """
 from __future__ import annotations
 
-from agentnodes.kernel.agent.guardrails import (
+from agentnodes.kernel.agent.guards.guardrails import (
     GUARDRAIL_PATTERNS,
     GuardrailFinding,
     scan_tool_result,

@@ -33,6 +33,8 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
 
+import agentnodes as _sr
+
 __all__ = [
     "LEGACY_ENGINE_SYMBOL",
     "LegacyAuditResult",
@@ -115,14 +117,8 @@ class LegacyAuditResult:
 
 
 def _repo_root() -> Path:
-    """仓库根。
-
-    本文件位于 ``src/agentnodes/kernel/agent/legacy_audit.py``——
-    ``dirname`` 向上：agent → kernel → agentnodes → src → **root**
-    （即 ``parents[3]``）。
-    """
-    here = os.path.dirname(os.path.abspath(__file__))
-    return Path(here).resolve().parents[3]
+    """Return the repository root relative to the installed agentnodes package."""
+    return Path(_sr.__file__).resolve().parents[2]
 
 
 def _is_loop_entry_call(node: ast.Call) -> bool:

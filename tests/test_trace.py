@@ -6,9 +6,10 @@ import sys
 import tempfile
 import unittest
 from pathlib import Path
+from unittest.mock import patch
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
-from agentnodes.kernel.agent.trace import TraceWriter, _env_int
+from agentnodes.kernel.agent.telemetry.trace import TraceWriter, _env_int
 
 
 class TestEnvInt(unittest.TestCase):
@@ -64,6 +65,28 @@ class TestTraceWriter(unittest.TestCase):
     def test_read_empty_dir(self) -> None:
         empty = Path(tempfile.mkdtemp())
         self.assertEqual(TraceWriter.read(empty), [])
+
+    def test_find_trace_dir_defaults_to_agentnodes_package_root(
+        self,
+    ) -> None:
+        import agentnodes as _sr
+
+        with tempfile.TemporaryDirectory() as temp_dir:
+            package_root = Path(temp_dir) / "agentnodes"
+            with patch.object(
+                _sr, "__file__", str(package_root / "__init__.py"),
+            ):
+                run_trace = package_root / "runs" / "run-1"
+                run_trace.mkdir(parents=True)
+                (run_trace / "trace.jsonl").touch()
+                self.assertEqual(TraceWriter.find_trace_dir("run-1"), run_trace)
+
+                session_trace = package_root / "sessions" / "run-1"
+                session_trace.mkdir(parents=True)
+                (session_trace / "trace.jsonl").touch()
+                self.assertEqual(
+                    TraceWriter.find_trace_dir("run-1"), session_trace,
+                )
 
     def test_write_tool_result(self) -> None:
         self.writer.write_tool_result(call_id="c1", result="ok", tool_name="search", status="ok", elapsed_ms=100, iteration=1)

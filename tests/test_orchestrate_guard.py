@@ -5,7 +5,7 @@ resolver (``max_continues``). The guard's integration point lives in
 ``api/session/service.py::_run_with_guard``.
 
 **归属变更**：模块原在 ``kernel/workflow/orchestrate_guard.py``，已下沉到
-``kernel/agent/text_guard.py``（切断 langgraph 隐式依赖，见
+``kernel/agent/guards/text_guard.py``（切断 langgraph 隐式依赖，见
 docs/design/langgraph-implicit-dep-fix-20261113.md）。**本文件所有断言
 零改动**——它们钉的是行为契约，与模块位置无关。
 """
@@ -13,7 +13,7 @@ import os
 
 import pytest
 
-from agentnodes.kernel.agent.text_guard import (
+from agentnodes.kernel.agent.guards.text_guard import (
     DEFAULT_MAX_CONTINUES,
     continue_instruction,
     looks_like_question,
@@ -123,7 +123,7 @@ def test_import_does_not_load_heavy_framework_modules() -> None:
     root = Path(__file__).resolve().parents[1]
     code = (
         "import sys\n"
-        "import agentnodes.kernel.agent.text_guard as tg\n"
+        "import agentnodes.kernel.agent.guards.text_guard as tg\n"
         "heavy = [m for m in ('langgraph', 'langchain_core',\n"
         "                     'agentnodes.kernel.swarm',\n"
         "                     'agentnodes.kernel.runtimes') if m in sys.modules]\n"

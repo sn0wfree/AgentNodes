@@ -881,7 +881,7 @@ async def get_session_trace(
     full LLM trajectory (system_prompt, tool schemas); previously ANY
     caller could read ANY session's trace. 404/403 per _fetch_session_owned.
     """
-    from agentnodes.kernel.agent.trace import TraceWriter
+    from agentnodes.kernel.agent.telemetry.trace import TraceWriter
     from agentnodes.kernel.session.trace_projection import TraceProjection
     from agentnodes.interfaces.api.routers.web_session import _fetch_session_owned, _get_db
     user_id = getattr(request.state, "user_id", "anonymous")

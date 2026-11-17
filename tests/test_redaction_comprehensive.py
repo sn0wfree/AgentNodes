@@ -9,7 +9,7 @@ import pytest
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
 
-from agentnodes.kernel.agent.redaction import (
+from agentnodes.kernel.agent.guards.redaction import (
     _fold_key,
     _internal_roots,
     is_sensitive_arg,
@@ -174,6 +174,11 @@ class TestInternalRoots:
         roots = _internal_roots()
         assert isinstance(roots, list)
         assert len(roots) > 0
+
+    def test_agentnodes_package_root_is_included(self):
+        import agentnodes as _sr
+
+        assert str(Path(_sr.__file__).resolve().parent) in _internal_roots()
 
     def test_sorted_longest_first(self):
         roots = _internal_roots()

@@ -1,4 +1,4 @@
-"""兼容壳（2026-11-13）：实现已下沉到 ``kernel/agent/text_guard.py``。
+"""兼容壳（2026-11-13）：实现已下沉到 ``kernel/agent/guards/text_guard.py``。
 
 **为什么下沉**：chat 主路径（``service.py::_run_with_guard``）只需要三个纯文本
 函数，却因本模块在 ``kernel.workflow`` 包内而触发整条重依赖链
@@ -11,7 +11,7 @@
 懒加载），所以本文件现在可以安全地做纯 re-export——从本模块 import 不再
 拉起重依赖。
 
-**调用方应改用** ``from agentnodes.kernel.agent.text_guard import ...``。
+**调用方应改用** ``from agentnodes.kernel.agent.guards.text_guard import ...``。
 本文件择期删除（随 U6 之后的清理批，需满足 R-015 四项）。
 
 ---
@@ -21,10 +21,10 @@
 
 from __future__ import annotations
 
-from agentnodes.kernel.agent.text_guard import (  # noqa: F401
+from agentnodes.kernel.agent.guards.text_guard import (  # noqa: F401
     DEFAULT_MAX_CONTINUES,
     continue_instruction,
     looks_like_question,
     max_continues,
 )
-from agentnodes.kernel.agent.text_guard import __all__ as __all__  # noqa: F401
+from agentnodes.kernel.agent.guards.text_guard import __all__ as __all__  # noqa: F401

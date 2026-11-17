@@ -48,14 +48,14 @@ from agentnodes.foundation.llm.errors import LLMError
 from agentnodes.kernel.memory.persistent import PersistentMemory
 from agentnodes.foundation.utils.ids import SessionId
 from agentnodes.kernel.agent._core_types import StepResult, maybe_await
-from agentnodes.kernel.agent.circuit_breaker import RetryPolicy, ToolLoopCircuitBreaker
+from agentnodes.kernel.agent.guards.circuit_breaker import RetryPolicy, ToolLoopCircuitBreaker
 from agentnodes.kernel.agent.compact.core import CompactConfig
-from agentnodes.kernel.agent import agent_telemetry as _tel
+from agentnodes.kernel.agent.telemetry import agent_telemetry as _tel
 from agentnodes.kernel.agent.context.core import ContextBuilder, estimate_tokens
 from agentnodes.kernel.agent.runtime.sync_bridge import _get_hook_loop as _get_hook_loop  # noqa: F401
 from agentnodes.kernel.agent.runtime.sync_bridge import _run_coro_in_sync
 from agentnodes.kernel.agent.tools.core import ToolRegistry
-from agentnodes.kernel.agent.trace import TraceWriter
+from agentnodes.kernel.agent.telemetry.trace import TraceWriter
 
 logger = logging.getLogger(__name__)
 
@@ -1146,7 +1146,7 @@ class AgentLoop(
         # task (docs/design/phase5-guardrails-design.md §2.3). Emits only — never
         # alters the message path; see extension-points.md hooks red line.
         try:
-            from agentnodes.kernel.agent.guardrails import scan_user_input
+            from agentnodes.kernel.agent.guards.guardrails import scan_user_input
 
             for finding in scan_user_input(task, source_id=self.session_id or ""):
                 self._emit("guardrail.finding", finding.to_dict())
@@ -1450,7 +1450,7 @@ class AgentLoop(
     def _trace(self, entry: dict[str, Any]) -> None:
         """Write a trace entry if trace writer is active.
 
-        批次 13 S3-b1：实现搬到 ``agent_telemetry.trace``（全仓 32 处按
+        批次 13 S3-b1：实现搬到 ``telemetry.agent_telemetry.trace``（全仓 32 处按
         方法名引用，故名字保留在此）。"""
         _tel.trace(self, entry)
 
@@ -1488,7 +1488,7 @@ class AgentLoop(
     ) -> None:
         """Log full LLM request envelope (DSH request/header pattern).
 
-        批次 13 S3-b1：实现（95 行）搬到 ``agent_telemetry.trace_llm_request``。
+        批次 13 S3-b1：实现（95 行）搬到 ``telemetry.agent_telemetry.trace_llm_request``。
         两个 sink 的语义与阈值保持不变。
         """
         _tel.trace_llm_request(self, messages, iteration, tools)

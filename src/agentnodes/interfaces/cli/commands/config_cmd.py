@@ -252,7 +252,7 @@ def cmd_config(args: argparse.Namespace) -> int:
 
     if args.action == "audit-legacy-engine":
         try:
-            from agentnodes.kernel.agent.legacy_audit import (
+            from agentnodes.kernel.agent.telemetry.legacy_audit import (
                 audit_legacy_engine,
                 audit_legacy_engine_text,
             )

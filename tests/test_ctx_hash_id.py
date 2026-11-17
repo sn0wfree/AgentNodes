@@ -29,7 +29,7 @@ from pathlib import Path
 import pytest
 
 from agentnodes.foundation.llm import LLMConfig, LLMResponse
-from agentnodes.kernel.agent.agent_telemetry import (
+from agentnodes.kernel.agent.telemetry.agent_telemetry import (
     compose_ctx_hash_id,
     compute_c_digest,
 )
@@ -133,7 +133,7 @@ def test_cross_process_consistent():
     )
     code = (
         "import sys; sys.path.insert(0, r'%s\\src');"
-        "from agentnodes.kernel.agent.agent_telemetry import compute_c_digest;"
+        "from agentnodes.kernel.agent.telemetry.agent_telemetry import compute_c_digest;"
         "m=%s;"
         "print(compute_c_digest(m))" % (str(ROOT), msgs_literal)
     )

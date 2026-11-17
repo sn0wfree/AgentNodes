@@ -17,7 +17,7 @@ from pathlib import Path
 
 from agentnodes.foundation.llm import LLMConfig
 from agentnodes.kernel.agent.builtin_tools import build_default_registry
-from agentnodes.kernel.agent.circuit_breaker import RetryPolicy
+from agentnodes.kernel.agent.guards.circuit_breaker import RetryPolicy
 from agentnodes.kernel.agent.loop.core import AgentLoop
 
 

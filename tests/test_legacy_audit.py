@@ -20,13 +20,18 @@ from pathlib import Path
 
 import pytest
 
-from agentnodes.kernel.agent.legacy_audit import (
+from agentnodes.kernel.agent.telemetry.legacy_audit import (
     LEGACY_ENGINE_SYMBOL,
+    _repo_root,
     audit_legacy_engine,
     audit_legacy_engine_text,
 )
 
 ROOT = Path(__file__).resolve().parents[1]
+
+
+def test_repo_root_is_resolved_from_agentnodes_package() -> None:
+    assert _repo_root() == ROOT
 
 
 # ── 1. 只读性 ──
@@ -64,7 +69,9 @@ def test_audit_does_not_import_legacy():
 
     结构验证：源码里不出现 `from ...loop import` 之类的引擎导入。
     """
-    src = (ROOT / "src/agentnodes/kernel/agent/legacy_audit.py").read_text(
+    src = (
+        ROOT / "src/agentnodes/kernel/agent/telemetry/legacy_audit.py"
+    ).read_text(
         encoding="utf-8")
     # 只允许 import 标准库 + 本模块需要的 ast/io/os/re/tokenize
     forbidden = ("from .loop import", "import loop", "from .loop_engine import")
@@ -74,7 +81,9 @@ def test_audit_does_not_import_legacy():
 
 def test_audit_does_not_read_env():
     """审计器不读环境变量（否则结果依赖运行环境，不可复现）。"""
-    src = (ROOT / "src/agentnodes/kernel/agent/legacy_audit.py").read_text(
+    src = (
+        ROOT / "src/agentnodes/kernel/agent/telemetry/legacy_audit.py"
+    ).read_text(
         encoding="utf-8")
     for pat in ("os.environ", "os.getenv"):
         assert pat not in src, f"审计器读了环境变量：{pat}"

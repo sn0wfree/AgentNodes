@@ -1007,11 +1007,11 @@ class SessionService:
         ``RuntimeError`` on AgentLoop failure (caller converts to a failed
         result dict).
         """
-        # **2026-11-13 下沉**：从 kernel.agent.text_guard import——原路径
+        # **2026-11-13 下沉**：从 kernel.agent.guards.text_guard import——原路径
         # kernel.workflow.orchestrate_guard 会触发 workflow/__init__ →
         # types → swarm → runtimes → graph_engine 硬 import langgraph
         # （可选 extra），导致 chat 主路径隐式依赖它。
-        from agentnodes.kernel.agent.text_guard import (
+        from agentnodes.kernel.agent.guards.text_guard import (
             continue_instruction,
             looks_like_question,
             max_continues,

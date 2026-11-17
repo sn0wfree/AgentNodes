@@ -24,6 +24,8 @@ from functools import cache
 from pathlib import Path
 from typing import Any
 
+import agentnodes as _sr
+
 _SENTINEL = "<redacted>"
 
 _REDACTED = "[redacted]"
@@ -99,10 +101,7 @@ _SENSITIVE_ARG_MARKERS_FOLDED = tuple(_fold_key(m) for m in _SENSITIVE_ARG_MARKE
 
 @cache
 def _internal_roots() -> list[str]:
-    # Strategy-research package root derived from file layout:
-    #   core/agent/redaction.py
-    #   parents[0]=core/agent/  parents[1]=core/  parents[2]=agentnodes/
-    agent_dir = Path(__file__).resolve().parents[2]
+    agent_dir = Path(_sr.__file__).resolve().parent
     cands = [
         Path.home(),
         Path.cwd(),

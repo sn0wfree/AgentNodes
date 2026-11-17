@@ -1,6 +1,6 @@
 """W-split 兼容层：hooks + emit/trace（批次 13 S3-b1 起为薄转发）。
 
-**实现已搬到** ``agent_telemetry.py``（模块级函数，显式传 loop）。
+**实现已搬到** ``telemetry/agent_telemetry.py``（模块级函数，显式传 loop）。
 本文件只保留 mixin 形状供 ``AgentLoop`` 的 MRO 与既有导入点使用——
 阶段 3 删 mixin 时整文件删除。
 
@@ -12,7 +12,7 @@ from __future__ import annotations
 import asyncio
 from typing import Any
 
-from agentnodes.kernel.agent import agent_telemetry as _tel
+from agentnodes.kernel.agent.telemetry import agent_telemetry as _tel
 
 __all__ = ["LoopTelemetryMixin"]
 

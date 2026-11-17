@@ -280,7 +280,7 @@ class LoopHooks:
         # ``raw_task`` 由 LoopPrepare 写入（``ctx.task`` 已含 pre-run 前缀）。
         original_task = (getattr(ctx, "metadata", None) or {}).get("raw_task", "")
         try:
-            from agentnodes.kernel.agent.guardrails import scan_user_input
+            from agentnodes.kernel.agent.guards.guardrails import scan_user_input
 
             for finding in scan_user_input(
                 original_task, source_id=loop.session_id or "",

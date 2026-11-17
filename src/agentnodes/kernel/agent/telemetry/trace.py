@@ -14,6 +14,8 @@ import time
 from pathlib import Path
 from typing import Any, Dict, Iterable, List, Optional
 
+import agentnodes as _sr
+
 
 def _env_int(name: str, default: int) -> int:
     """Read a positive integer environment variable with a safe fallback.
@@ -277,10 +279,12 @@ class TraceWriter:
         Returns:
             Directory containing ``trace.jsonl``, or ``None`` when absent.
         """
-        if sessions_dir is None:
-            sessions_dir = Path(__file__).resolve().parents[2] / "sessions"
-        if runs_dir is None:
-            runs_dir = Path(__file__).resolve().parents[2] / "runs"
+        if sessions_dir is None or runs_dir is None:
+            agentnodes_root = Path(_sr.__file__).resolve().parent
+            if sessions_dir is None:
+                sessions_dir = agentnodes_root / "sessions"
+            if runs_dir is None:
+                runs_dir = agentnodes_root / "runs"
 
         session_dir = sessions_dir / run_id
         if (session_dir / "trace.jsonl").exists():
