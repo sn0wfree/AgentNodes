@@ -376,6 +376,55 @@ AgentNodes 的同构落地：内核 `foundation/logger.py` = SLF4J/`log` crate �
 
 ---
 
+## 12 · 终局裁决（2026-11-17，supersede §3/§5/§7 的获取层部分）
+
+> 决策链：复制参考实现 → 能力合并 → 拆层（批 1 落地）→ **删除获取层包装（终局）**。
+> 每一步都被后续追问推翻，本节固化终点与理由，防止重开。
+
+### 12.1 终局形态：stdlib 直用 + 装配统一 + 门禁钉不变量
+
+| 件 | 内容 | 状态 |
+|---|---|---|
+| 获取 | 每模块 `logging.getLogger(__name__)` —— **Python 官方成语**（stdlib `logging` 本身就是那个零依赖门面，这是 Python 与 Java/Rust 需要自建 SLF4J/log-crate 的根本差别） | 164 处**保持现状，零改动**；批 2–4 收编**取消** |
+| 装配 | `configure_logging`（4 入口接线 / 流定向 / 轮转文件 / JSON / 级别）+ `dual_log` + **`timed_deco`（新，见 12.3）** | 不变 + 吸收一个助手 |
+| 上下文 | `TraceFilter` / `JsonFormatter` | 不变 |
+| 门禁 | `check_logging_assembly.py`（原 `check_logging_entry.py` 改造）：**① 装配泄漏 = 0**（`basicConfig`/`dictConfig`/`addHandler`/`removeHandler`/`setLevel`/`Formatter`/`StreamHandler`/`FileHandler`/`RotatingFileHandler` 只许出现在 `foundation/observability/`）；**② root 误用 = 0**（无参 `getLogger()` 只许在 observability 包内）。R-019 注入自检保留 | 棘轮与基线文件**废弃**（迁移目标不存在了） |
+
+### 12.2 「统一」的两种含义（澄清，防止后人误判）
+
+- **装配统一**（管理动作：格式/级别/去向/handler）：100% 收拢在 root 上的一次 `configure_logging`；
+  模块 logger 是零配置空壳，靠 stdlib 父链传播继承一切（实测：壳装配前后不变，输出全由 root 决定；
+  `getLogger` 为 CPython 原文未被替换）。**这才是「统一 log 管理」的实体。**
+- **获取成语**（模块内 `import logging` + `getLogger(__name__)` 两行）：**有意保留**。
+  这两行只是「领句柄」，不是管理；消除它们需要包装层，已按「不造轮子」原则否决。
+  **模块里见到 getLogger ≠ 没统一** —— 拿它当「未统一」证据属于概念混淆。
+
+### 12.3 logger.py 增值清点与吸收
+
+| 部件 | 裁决 | 去向 |
+|---|---|---|
+| `deco` 计时装饰器（异常路径也记耗时 + 栈并 re-raise） | ✅ 唯一真增值 | **吸收为 `logging_setup.timed_deco(logger, *, level, timer, extra_name)`** —— 与 `dual_log` 同类的 call-site 助手；显式传 logger，不做 frame 魔法 |
+| `get_logger` 门面 + 缓存壳 | ❌ 无可吸收 | stdlib `getLogger` 注册表已保证同名同对象；包装壳零功能增益 |
+| `APP_LOG` 进程级门面 | ❌ 无可吸收 | 0 消费方；装配层内部本就直接操作 `agentnodes` logger |
+
+### 12.4 演进记录（各步否决理由，一句话版）
+
+| 步 | 方案 | 否决理由 |
+|---|---|---|
+| 1 | 复制参考 logger.py | 造轮子（handler 双挂/Singleton 与 `configure_logging` 重复） |
+| 2 | 能力合并进 observability 单文件 | settings/sqlite 收编即成环（模块级 `DEFAULT_DATA_DIR` 互拉，复现 rc=1） |
+| 3 | 两文件拆层（批 1） | 门面增值 ≈ 0（deco/APP_LOG 零消费方），代价 = 159 文件 × 4 批次零行为迁移 |
+| 4 | 合并 + 懒 import | 结构保证降级为纪律保证；拖进 trace/`__init__` |
+| 5 | 为 sqlite 单独建特殊 log | 第二获取入口复刻散落；方案 A 下无必要（内核零依赖本就无环） |
+| **6** | **删除获取层包装（终局）** | stdlib 即门面；全部可预见需求（按包分级/trace/JSON/轮转）都落在装配层 |
+
+### 12.5 遗留可选项
+
+- `AGENTNODES_LOG_LEVELS=kernel=DEBUG`（按包分级，装配侧，§4.3）—— 与本裁决无耦合，另批。
+- print 治理（401 处）—— 另行排期。
+
+---
+
 ## 附录 A · 实测口径
 
 ```bat
