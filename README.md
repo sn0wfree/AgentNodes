@@ -8,10 +8,17 @@
 > 分批移除并归档到 `testcase/golden/`。
 > **RSI 自我进化已归位内核**（批次 8）：`apps/evolution/` → `kernel/evolution/`，
 > 因为 Tier 0/1/2 划分、±20% 退化阈值、holdout 只读语义都是**内核的策略约束**，
-> 不是业务可选项。当前 `apps/`（L2）只剩业务插件面：
-> `capabilities`（注册门面）、`builtin_tools`（业务工具实现）、两个小件。
+> 不是业务可选项。当前 `apps/`（L2）是业务插件面：子包 `goal`（长程任务域）·
+> `chat`（产品策略）· `agent_plugins`（量化插件）· `scheduled_research` ·
+> `swarm_presets` · `algo`，平文件 `capabilities`（注册门面）· `goal_tools`
+> （业务工具工厂）· `data_store_registry` / `workspace_setup`（两个小件）。
 > **包名与环境变量已重命名**：`strategy_research` → `agentnodes`，
 > `SR_*` / `QUANTNODES_*` → `AN_*` / `AGENTNODES_*`（批次 9，不兼容旧配置）。
+> **2026-11-17**：会话域下沉 `kernel/session`（R-014 —— 词汇表 / 存储 / 投影 /
+> 服务 / DB 归 L3，`interfaces/api/session` 退化为 re-export 垫片）；
+> `apps/builtin_tools` 包平铺为 `apps/goal_tools.py`（业务工具唯一幸存模块）；
+> MVP 归层修订：`kernel/session` 绿→红（承载 C8 历史持久化，红层主链路
+> `api→session` 29 次 import）。
 
 ---
 
@@ -47,7 +54,7 @@
 
 ### 能力供给
 
-- **CapabilityRegistry** — `kind → factory` 的进程级注册表，apps 注册、kernel 解析（当前 22 kind）
+- **CapabilityRegistry** — `kind → factory` 的进程级注册表，apps 注册、kernel 解析（当前 4 kind：`goal.store` / `goal.models` / `goal.context` / `tool.goal`）
 - **ContextHub** — `collect → arbitrate → render`，中枢不 import 生产方
 - **Permission** — ASK 审批闸，可插拔 evaluator
 - **Memory / Hooks / Skills** — 跨会话记忆（SQLite）、只读钩子、技能包加载
@@ -111,13 +118,17 @@ service = resolve("my.service")
 
 ## 架构
 
-完整架构图（含各层体量、跨层边数、违规矩阵）：**[`docs/architecture-diagram.html`](docs/architecture-diagram.html)**
+分层架构主图（各层体量 / 跨层边数 / 违规矩阵 / 能力清单，AST 实测生成）：
+**[`docs/architecture-layered.html`](docs/architecture-layered.html)**；
+功能模块视角：[`docs/architecture-diagram.html`](docs/architecture-diagram.html)；
+L3 四领域聚合视图（草稿）：[`docs/architecture-layered-l3-clusters.html`](docs/architecture-layered-l3-clusters.html)。
+当前实测：**35 包 / 1978 生产符号 / 140 条包间依赖 / 0 上行违规**（2026-11-17）。
 
 ```
 ┌──────────────────────────────────────────────────────────┐
 │ L1 interfaces   渠道层 — api / cli / mcp + 组装根          │
 ├──────────────────────────────────────────────────────────┤
-│ L2 apps         业务域 — 当前为插件示例（批次 4–6 移除中）  │
+│ L2 apps         业务插件 — goal 域 / 产品策略 / 量化插件   │
 ├──────────────────────────────────────────────────────────┤
 │ L3 kernel       平台机制 — 控制面 / 执行面 / 能力面         │
 ├──────────────────────────────────────────────────────────┤
@@ -149,14 +160,13 @@ kernel 侧所有 `resolve()` 都是**惰性 + try/except**：kind 不存在时�
 
 | 面 | 数量 | 说明 |
 |---|---|---|
-| CLI 顶层命令 | 18 | 见 [`docs/REFERENCE.md`](docs/REFERENCE.md) |
+| CLI 顶层命令 | 19 | 见 [`docs/REFERENCE.md`](docs/REFERENCE.md)；`backtest / check / reproduce / import / validate` 为业务遗留，底层已删待收尾 |
 | MCP 工具 | 17 | stdio + SSE 传输 |
 | Swarm preset | 37 | YAML DAG，编译为图执行 |
-| 能力 kind | 22 | apps 注册，kernel 解析（批次 4 已删 backtest/config 四类） |
-| 测试 | 7,400+ | `pytest tests --collect-only -q` |
+| 能力 kind | 4 | `goal.store` · `goal.models` · `goal.context` · `tool.goal` —— apps 注册，kernel 解析 |
+| 测试 | 6,600+ | `pytest tests --collect-only -q`（2026-11-17 实测） |
 
-> ⚠️ **批次 4–6 正在移除业务功能**（回测 / 数据 / 因子相关命令与工具）。
-> 上表是本文写作时的快照；每张表的「移除批次」列见 REFERENCE.md。
+> 上表为 2026-11-17 实测快照；逐条明细见 REFERENCE.md。业务裁剪（批次 4–6）已完成，
 > 框架本体的命令（`llm` / `compact` / `skills` / `swarm` / `mcp` / `serve` / `session`）不受影响。
 
 ---
@@ -165,7 +175,8 @@ kernel 侧所有 `resolve()` 都是**惰性 + try/except**：kind 不存在时�
 
 ```bash
 # 架构门禁（改完代码必跑）
-python scripts/arch/check_dangling_imports.py      # 悬空 import
+python scripts/arch/check_dangling_imports.py      # 悬空 import + 层方向
+python scripts/arch/check_capability_requires.py   # 能力 requires 声明双向校验（AST）
 python scripts/arch/check_path_literals.py          # 坏路径拼接
 python scripts/arch/sync_architecture_diagram.py    # 架构图是否过时
 
