@@ -1,0 +1,326 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>规则基因组体系 · 概念示意图（trace 绑定版 v2）</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC',
+                 'Hiragino Sans GB', 'Microsoft YaHei', sans-serif;
+    background: #0a0e1a; color: #e2e8f0; min-height: 100vh;
+    padding: 40px 22px 70px;
+    background-image:
+      radial-gradient(ellipse at 10% 0%, rgba(16,185,129,0.07) 0%, transparent 48%),
+      radial-gradient(ellipse at 60% 10%, rgba(59,130,246,0.06) 0%, transparent 45%),
+      radial-gradient(ellipse at 90% 90%, rgba(245,158,11,0.06) 0%, transparent 50%);
+  }
+  .page { max-width: 1400px; margin: 0 auto; }
+  .header { text-align: center; margin-bottom: 34px; }
+  .page-title {
+    font-size: 32px; font-weight: 800; letter-spacing: 3px;
+    background: linear-gradient(90deg, #34d399 0%, #60a5fa 50%, #fbbf24 100%);
+    -webkit-background-clip: text; background-clip: text;
+    -webkit-text-fill-color: transparent;
+    margin-bottom: 8px;
+  }
+  .page-subtitle { color: #64748b; font-size: 13px; letter-spacing: 1.2px; margin-bottom: 12px; }
+  .version-badge {
+    display: inline-block; font-size: 11px; font-weight: 700;
+    padding: 4px 16px; border-radius: 100px;
+    background: rgba(234,179,8,0.1); border: 1px solid rgba(234,179,8,0.35);
+    color: #facc15; letter-spacing: 0.8px;
+  }
+  .canvas-card {
+    background: rgba(15,23,42,0.6); border: 1px solid rgba(148,163,184,0.15);
+    border-radius: 18px; padding: 10px; margin-bottom: 34px;
+  }
+  svg { display: block; width: 100%; height: auto; }
+  .legend-grid {
+    display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 14px; margin-top: 30px;
+  }
+  .legend-card {
+    background: rgba(15,23,42,0.6); border: 1px solid rgba(148,163,184,0.15);
+    border-radius: 14px; padding: 16px 18px;
+  }
+  .legend-card h3 { font-size: 13px; letter-spacing: 1px; color: #cbd5e1; margin-bottom: 12px; }
+  .lg-row { display: flex; align-items: center; gap: 10px; font-size: 12px; color: #94a3b8; margin: 7px 0; }
+  .swatch { width: 34px; height: 0; border-top: 2.5px solid; flex: none; }
+  .warn-chip {
+    display: inline-block; font-size: 11px; font-weight: 700; margin: 3px 6px 3px 0;
+    padding: 3px 10px; border-radius: 8px;
+    background: rgba(244,63,94,0.1); border: 1px solid rgba(244,63,94,0.4); color: #fda4af;
+  }
+  .bio-table { width: 100%; border-collapse: collapse; font-size: 12px; margin-top: 8px; }
+  .bio-table td { padding: 6px 8px; border-top: 1px solid rgba(148,163,184,0.12); color: #94a3b8; }
+  .bio-table td:first-child { color: #7dd3fc; white-space: nowrap; font-weight: 600; }
+  .eval-note {
+    margin-top: 30px; background: rgba(15,23,42,0.6); border: 1px dashed rgba(244,63,94,0.4);
+    border-radius: 14px; padding: 18px 22px; font-size: 13px; color: #cbd5e1; line-height: 1.9;
+  }
+  .eval-note b { color: #fda4af; }
+  code { font-family: 'Cascadia Code', Consolas, monospace; font-size: 11.5px; color: #7dd3fc; }
+</style>
+</head>
+<body>
+<div class="page">
+  <div class="header">
+    <div class="page-title">规则基因组体系 · 概念示意图</div>
+    <div class="page-subtitle">规则 = 基因 · trace = 行为轨迹 · 归因 = 只读 join　｜　对应设计文档 rule-genome-design-20261117.md v2</div>
+    <div class="version-badge">v2 · trace 绑定版 · 未实施 · 含未决热点 ⚠ 标注</div>
+  </div>
+
+  <div class="canvas-card">
+  <svg viewBox="0 0 1340 1010" xmlns="http://www.w3.org/2000/svg" font-family="'Segoe UI','PingFang SC','Microsoft YaHei',sans-serif">
+    <defs>
+      <marker id="arr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto">
+        <path d="M0,0 L10,5 L0,10 z" fill="#64748b"/>
+      </marker>
+      <marker id="arrGreen" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto">
+        <path d="M0,0 L10,5 L0,10 z" fill="#34d399"/>
+      </marker>
+      <marker id="arrAmber" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto">
+        <path d="M0,0 L10,5 L0,10 z" fill="#fbbf24"/>
+      </marker>
+      <marker id="arrRose" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto">
+        <path d="M0,0 L10,5 L0,10 z" fill="#f43f5e"/>
+      </marker>
+    </defs>
+
+    <!-- ═══ 列标题 ═══ -->
+    <text x="145" y="66" text-anchor="middle" font-size="15" font-weight="800" fill="#34d399" letter-spacing="2">G · 基因组</text>
+    <text x="470" y="66" text-anchor="middle" font-size="15" font-weight="800" fill="#60a5fa" letter-spacing="2">E · 表达 / 转录</text>
+    <text x="785" y="66" text-anchor="middle" font-size="15" font-weight="800" fill="#a78bfa" letter-spacing="2">翻译器</text>
+    <text x="1160" y="66" text-anchor="middle" font-size="15" font-weight="800" fill="#fbbf24" letter-spacing="2">P · 表型</text>
+
+    <!-- ═══ G1 规则源 ═══ -->
+    <rect x="50" y="90" rx="12" width="190" height="92" fill="rgba(30,41,59,0.8)" stroke="rgba(52,211,153,0.5)" stroke-width="1.4"/>
+    <text x="64" y="114" font-size="13" font-weight="700" fill="#e2e8f0">规则源（散文基因）</text>
+    <text x="64" y="136" font-size="11.5" fill="#94a3b8">AGENTS.md · L0 十原则</text>
+    <text x="64" y="154" font-size="11.5" fill="#94a3b8">.rules/rules.md · L1（R-001…）</text>
+    <text x="64" y="172" font-size="11.5" fill="#94a3b8">lessons.md · L2 教训台账</text>
+
+    <!-- G1 → G2 解析 -->
+    <line x1="145" y1="182" x2="145" y2="212" stroke="#34d399" stroke-width="2" marker-end="url(#arrGreen)"/>
+    <text x="158" y="203" font-size="11" fill="#64748b">解析 · 只读 ⚠A1</text>
+
+    <!-- ═══ G2 Registry ═══ -->
+    <rect x="50" y="215" rx="12" width="190" height="128" fill="rgba(30,41,59,0.8)" stroke="rgba(52,211,153,0.5)" stroke-width="1.4"/>
+    <text x="64" y="239" font-size="13" font-weight="700" fill="#e2e8f0">Rule Registry 位点表</text>
+    <text x="64" y="261" font-size="11.5" fill="#94a3b8">rule_id · modality(MUST…)</text>
+    <text x="64" y="279" font-size="11.5" fill="#94a3b8">verifier 指针（失败字段）</text>
+    <text x="64" y="297" font-size="11.5" fill="#94a3b8">text_sha256（原文锚）</text>
+    <text x="64" y="315" font-size="11.5" fill="#94a3b8">registry_sha256</text>
+    <text x="64" y="333" font-size="11" font-weight="700" fill="#fda4af">⚠A3 历史版本化未决</text>
+
+    <!-- ═══ G3 版本链 ═══ -->
+    <rect x="50" y="385" rx="12" width="190" height="122" fill="rgba(30,41,59,0.8)" stroke="rgba(52,211,153,0.5)" stroke-width="1.4"/>
+    <text x="64" y="409" font-size="13" font-weight="700" fill="#e2e8f0">GenomeVersionStore</text>
+    <text x="64" y="431" font-size="11.5" fill="#94a3b8">Tier 0 冻结 / Tier 1 可提案</text>
+    <text x="64" y="449" font-size="11.5" fill="#94a3b8">Tier 2 研究域自改</text>
+    <text x="64" y="467" font-size="11.5" fill="#94a3b8">版本链 + 游标（不可变）</text>
+    <text x="64" y="485" font-size="11.5" fill="#7dd3fc">activate ⟵ proposal_id</text>
+
+    <!-- ═══ E1 选择性转录 ═══ -->
+    <rect x="320" y="90" rx="12" width="300" height="96" fill="rgba(30,41,59,0.8)" stroke="rgba(96,165,250,0.55)" stroke-width="1.4"/>
+    <text x="334" y="114" font-size="13" font-weight="700" fill="#e2e8f0">harness_resolver · 装配</text>
+    <text x="334" y="136" font-size="11.5" fill="#94a3b8">task_signature → prompt 版本 / skill 子集</text>
+    <text x="334" y="154" font-size="11.5" fill="#94a3b8">只追加 · 原 prompt 逐字保留</text>
+    <text x="334" y="174" font-size="11" font-weight="700" fill="#fda4af">★B6 规则是否也要选择性转录？未决</text>
+
+    <!-- E1 → M -->
+    <line x1="620" y1="138" x2="658" y2="138" stroke="#64748b" stroke-width="2" marker-end="url(#arr)"/>
+    <text x="624" y="128" font-size="10.5" fill="#64748b">转录本</text>
+
+    <!-- ═══ M 模型黑盒 ═══ -->
+    <rect x="662" y="90" rx="12" width="246" height="96" fill="rgba(30,41,59,0.8)" stroke="rgba(167,139,250,0.55)" stroke-width="1.4"/>
+    <text x="676" y="114" font-size="13" font-weight="700" fill="#e2e8f0">模型权重 · 黑盒翻译器</text>
+    <text x="676" y="136" font-size="11.5" fill="#94a3b8">无普适「密码子表」——解码</text>
+    <text x="676" y="154" font-size="11.5" fill="#94a3b8">schema 本身是待协商对象</text>
+    <text x="676" y="174" font-size="11" font-weight="700" fill="#fda4af">⚠D14 规则在场 = 干预</text>
+
+    <!-- ═══ E2 trace.jsonl ═══ -->
+    <rect x="320" y="235" rx="14" width="300" height="286" fill="rgba(15,23,42,0.55)" stroke="rgba(96,165,250,0.4)" stroke-width="1.6" stroke-dasharray="5 4"/>
+    <text x="334" y="261" font-size="13" font-weight="700" fill="#93c5fd">trace.jsonl（会话 · append-only）</text>
+
+    <!-- snapshot entry -->
+    <rect x="335" y="272" rx="9" width="270" height="64" fill="rgba(30,41,59,0.9)" stroke="rgba(52,211,153,0.45)" stroke-width="1.1"/>
+    <text x="347" y="292" font-size="12" font-weight="700" fill="#6ee7b7" font-family="Consolas,monospace">genome_snapshot</text>
+    <text x="347" y="310" font-size="10.5" fill="#94a3b8" font-family="Consolas,monospace">genome_version_id · registry_sha256</text>
+    <text x="347" y="327" font-size="10.5" fill="#94a3b8" font-family="Consolas,monospace">rule_refs[R-xxx@sha…] · 装配链</text>
+
+    <!-- behaviour entry -->
+    <rect x="335" y="347" rx="9" width="270" height="58" fill="rgba(30,41,59,0.9)" stroke="rgba(148,163,184,0.4)" stroke-width="1.1"/>
+    <text x="347" y="367" font-size="12" font-weight="700" fill="#cbd5e1" font-family="Consolas,monospace">tool_call / tool_result</text>
+    <text x="347" y="385" font-size="10.5" fill="#94a3b8" font-family="Consolas,monospace">iter · call_id · tool · status</text>
+    <text x="347" y="400" font-size="10.5" fill="#94a3b8" font-family="Consolas,monospace">（既有轨迹 · 本设计不动）</text>
+
+    <!-- rule_check entry -->
+    <rect x="335" y="416" rx="9" width="270" height="70" fill="rgba(30,41,59,0.9)" stroke="rgba(56,189,248,0.5)" stroke-width="1.1"/>
+    <text x="347" y="436" font-size="12" font-weight="700" fill="#7dd3fc" font-family="Consolas,monospace">rule_check</text>
+    <text x="347" y="454" font-size="10.5" fill="#94a3b8" font-family="Consolas,monospace">rule_id · verdict · channel</text>
+    <text x="347" y="471" font-size="10.5" fill="#94a3b8" font-family="Consolas,monospace">evidence{iter, call_id} ★同迭代绑定</text>
+
+    <text x="334" y="514" font-size="10.5" fill="#fda4af">⚠B7 compaction 后追加 snapshot</text>
+
+    <!-- M → E2 行为落 trace -->
+    <path d="M785,186 L785,215 L470,215 L470,233" fill="none" stroke="#64748b" stroke-width="2" marker-end="url(#arr)"/>
+    <text x="500" y="209" font-size="10.5" fill="#64748b">行为轨迹落 trace（iter / call_id）</text>
+
+    <!-- G3 → E1 -->
+    <path d="M240,420 L292,420 L292,150 L318,150" fill="none" stroke="#34d399" stroke-width="2" marker-end="url(#arrGreen)"/>
+
+
+    <!-- G2 → E2 snapshot -->
+    <path d="M240,279 L298,279 L298,304 L333,304" fill="none" stroke="#34d399" stroke-width="1.8" stroke-dasharray="4 3" marker-end="url(#arrGreen)"/>
+
+    <!-- E2 → P1 表型 -->
+    <path d="M622,330 L975,330 L975,120 L1008,120" fill="none" stroke="#fbbf24" stroke-width="2" marker-end="url(#arr)"/>
+    <text x="730" y="350" font-size="10.5" fill="#fbbf24">trace_ref 指纹（基因组变 ⟹ 指纹必变）</text>
+
+    <!-- ═══ P1 scorecard ═══ -->
+    <rect x="1010" y="90" rx="12" width="290" height="112" fill="rgba(30,41,59,0.8)" stroke="rgba(251,191,36,0.55)" stroke-width="1.4"/>
+    <text x="1024" y="114" font-size="13" font-weight="700" fill="#e2e8f0">scorecard · 70 golden + 指纹</text>
+    <text x="1024" y="136" font-size="11.5" fill="#94a3b8">指纹 ⊕ genome_version_id</text>
+    <text x="1024" y="154" font-size="11.5" fill="#94a3b8">指纹 ⊕ trace_ref</text>
+    <text x="1024" y="174" font-size="11" font-weight="700" fill="#fda4af">★C9 规则效应从任务级分数怎么拆？</text>
+    <text x="1024" y="192" font-size="11" font-weight="700" fill="#fda4af">★C11 n / 多重比较校正未决</text>
+
+    <!-- ═══ P2 journal ═══ -->
+    <rect x="1010" y="240" rx="12" width="290" height="96" fill="rgba(30,41,59,0.8)" stroke="rgba(251,191,36,0.4)" stroke-width="1.4"/>
+    <text x="1024" y="264" font-size="13" font-weight="700" fill="#e2e8f0">goal journal · event_log</text>
+    <text x="1024" y="286" font-size="11.5" fill="#94a3b8">append-only 执行轨迹（hash chain P2）</text>
+    <text x="1024" y="304" font-size="11.5" fill="#94a3b8">证据条目可带 rule_refs</text>
+    <text x="1024" y="322" font-size="11" fill="#94a3b8">⚠E16 swarm 时归属哪个主体？</text>
+
+    <!-- ═══ event_log rule.observed ═══ -->
+    <rect x="655" y="410" rx="12" width="250" height="96" fill="rgba(30,41,59,0.8)" stroke="rgba(56,189,248,0.45)" stroke-width="1.4"/>
+    <text x="669" y="434" font-size="13" font-weight="700" fill="#e2e8f0">event_log · EventV2</text>
+    <text x="669" y="456" font-size="11.5" fill="#94a3b8" font-family="Consolas,monospace">rule.observed</text>
+    <text x="669" y="474" font-size="11.5" fill="#94a3b8">aggregate: commit / proposal_id</text>
+    <text x="669" y="492" font-size="10.5" fill="#64748b">会话外观测的落点</text>
+
+    <!-- ═══ 理念七屏障 ═══ -->
+    <line x1="40" y1="618" x2="1300" y2="618" stroke="#f43f5e" stroke-width="1.6" stroke-dasharray="8 5" opacity="0.7"/>
+    <rect x="470" y="604" rx="8" width="330" height="26" fill="#0a0e1a" stroke="rgba(244,63,94,0.5)"/>
+    <text x="635" y="621" text-anchor="middle" font-size="12" font-weight="800" fill="#fb7185">理念七屏障：观测者 ≠ 被检方（agent 无写入口）</text>
+
+    <!-- ═══ 观测通道 ═══ -->
+    <rect x="320" y="648" rx="12" width="270" height="96" fill="rgba(30,41,59,0.8)" stroke="rgba(56,189,248,0.5)" stroke-width="1.4"/>
+    <text x="334" y="672" font-size="12.5" font-weight="700" fill="#e2e8f0">kernel 侧观测</text>
+    <text x="334" y="694" font-size="11.5" fill="#94a3b8">regex 行为锚点 · judge（M2 试点）</text>
+    <text x="334" y="712" font-size="11.5" fill="#94a3b8">uncertain 一等状态，不兜底</text>
+    <text x="334" y="731" font-size="11" font-weight="700" fill="#fda4af">⚠C10 量具校准 ⚠C11 统计功效</text>
+
+    <rect x="620" y="648" rx="12" width="270" height="96" fill="rgba(30,41,59,0.8)" stroke="rgba(56,189,248,0.5)" stroke-width="1.4"/>
+    <text x="634" y="672" font-size="12.5" font-weight="700" fill="#e2e8f0">进程外观测</text>
+    <text x="634" y="694" font-size="11.5" fill="#94a3b8">scripts/arch 门禁（batch_gate 8 步）</text>
+    <text x="634" y="712" font-size="11.5" fill="#94a3b8">标准 JSON → ingest → rule.observed</text>
+    <text x="634" y="731" font-size="11" fill="#94a3b8">绑定 commit / proposal_id</text>
+
+    <rect x="920" y="648" rx="12" width="180" height="96" fill="rgba(30,41,59,0.8)" stroke="rgba(148,163,184,0.35)" stroke-width="1.4"/>
+    <text x="934" y="672" font-size="12.5" font-weight="700" fill="#e2e8f0">人工抽查</text>
+    <text x="934" y="694" font-size="11.5" fill="#94a3b8">channel = human</text>
+    <text x="934" y="712" font-size="11.5" fill="#94a3b8">对接 3 个月审查 ⚠F21</text>
+
+    <!-- O1 → rule_check -->
+    <path d="M560,648 L560,489" fill="none" stroke="#38bdf8" stroke-width="2" marker-end="url(#arr)"/>
+    <text x="568" y="545" font-size="10.5" fill="#38bdf8">rule_check（同 iter 落 trace）</text>
+
+    <!-- O2 → event_log -->
+    <path d="M755,648 L755,509" fill="none" stroke="#38bdf8" stroke-width="2" marker-end="url(#arr)"/>
+    <text x="763" y="580" font-size="10.5" fill="#38bdf8">ingest 转写</text>
+
+    <!-- ═══ HGT 徽章 ═══ -->
+    <rect x="655" y="240" rx="9" width="250" height="52" fill="rgba(244,63,94,0.05)" stroke="rgba(244,63,94,0.45)" stroke-dasharray="5 4" stroke-width="1.2"/>
+    <text x="669" y="261" font-size="11.5" font-weight="700" fill="#fb7185">HGT · 外源序列</text>
+    <text x="669" y="280" font-size="10.5" fill="#94a3b8">注入 / 派生（OWASP LLM01）劫持转录机器</text>
+
+    <!-- ═══ AT1 归因三法 ═══ -->
+    <rect x="50" y="790" rx="14" width="370" height="168" fill="rgba(15,23,42,0.6)" stroke="rgba(52,211,153,0.5)" stroke-width="1.5"/>
+    <text x="66" y="816" font-size="13.5" font-weight="800" fill="#6ee7b7">归因三法（只读 join · 零新存储）</text>
+    <text x="66" y="842" font-size="11.5" fill="#94a3b8">① 表达谱　registry × snapshot × rule_check</text>
+    <text x="66" y="862" font-size="11.5" fill="#94a3b8">② 敲除　变体 registry ⟶ sha256 自证身份</text>
+    <text x="80" y="880" font-size="10.5" fill="#fda4af">⚠D13 单敲无表型 ≠ 无用（合成致死）</text>
+    <text x="66" y="902" font-size="11.5" fill="#94a3b8">③ 关联键　rule: × trace: × eval:（自研 #13）</text>
+    <text x="66" y="924" font-size="11" fill="#fda4af">⚠F20 触发场景库 ⟵ lessons.md 同源转化</text>
+    <text x="66" y="944" font-size="11" fill="#fda4af">⚠E17 冷启动窗口 / ⚠C12 观测层回归</text>
+
+    <!-- ═══ AT2 proposal ═══ -->
+    <rect x="460" y="790" rx="14" width="310" height="168" fill="rgba(30,41,59,0.8)" stroke="rgba(52,211,153,0.55)" stroke-width="1.5"/>
+    <text x="476" y="816" font-size="13.5" font-weight="800" fill="#e2e8f0">GenomeProposal</text>
+    <text x="476" y="840" font-size="11.5" fill="#94a3b8">evidence_refs URI 规范（v2）：</text>
+    <text x="476" y="864" font-size="11" fill="#7dd3fc" font-family="Consolas,monospace">rule:R-009@ab12cd34</text>
+    <text x="476" y="884" font-size="11" fill="#7dd3fc" font-family="Consolas,monospace">trace:&lt;sid&gt;#iter=7&amp;call_id=…</text>
+    <text x="476" y="904" font-size="11" fill="#7dd3fc" font-family="Consolas,monospace">eval:&lt;scorecard_run_id&gt;</text>
+    <text x="476" y="928" font-size="11" fill="#94a3b8">未知 scheme 拒绝 · 缺 @sha 判失败</text>
+    <text x="476" y="946" font-size="11" fill="#fda4af">⚠A2 rule_id 谱系（拆/并/改名）未决</text>
+
+    <!-- ═══ AT3 Weismann 闸 ═══ -->
+    <rect x="810" y="790" rx="14" width="230" height="168" fill="rgba(244,63,94,0.04)" stroke="rgba(244,63,94,0.55)" stroke-width="1.6"/>
+    <text x="826" y="816" font-size="13.5" font-weight="800" fill="#fb7185">validation_gate</text>
+    <text x="826" y="838" font-size="12" font-weight="700" fill="#fda4af">≈ Weismann 屏障</text>
+    <text x="826" y="862" font-size="11.5" fill="#94a3b8">隔离 slot + 只读 holdout</text>
+    <text x="826" y="880" font-size="11.5" fill="#94a3b8">Tier 0 构造时即拒</text>
+    <text x="826" y="904" font-size="11.5" fill="#94a3b8">检查信号 ⟵ 被检方不可控通道</text>
+    <text x="826" y="928" font-size="11" fill="#94a3b8">⚠F22 仪器自身进不进基因组管理？</text>
+
+    <!-- AT3 → G3 反馈回路 -->
+    <path d="M905,790 L905,565 L285,565 L285,446 L242,446" fill="none" stroke="#34d399" stroke-width="2.4" marker-end="url(#arrGreen)"/>
+    <text x="480" y="584" font-size="11.5" font-weight="700" fill="#34d399">activate ⟶ 新 version_id（闭环）</text>
+
+    <!-- 拉马克通道 -->
+    <path d="M1155,336 L1155,760 L145,760 L145,509" fill="none" stroke="#fbbf24" stroke-width="2" stroke-dasharray="6 4" marker-end="url(#arrAmber)"/>
+    <text x="340" y="778" font-size="11.5" font-weight="700" fill="#fbbf24">拉马克通道：经验 → skill 沉淀 / lesson → 升 L1 规则（写回基因组 · 带闸 + 来源 trace ⚠）</text>
+
+    <!-- E2 → AT1 join（表达谱） -->
+    <path d="M470,521 L470,600 M470,600 L240,600 L240,788" fill="none" stroke="#475569" stroke-width="1.6" stroke-dasharray="3 4" marker-end="url(#arr)"/>
+    <text x="248" y="640" font-size="10.5" fill="#64748b">只读 join（不产生新存储）</text>
+  </svg>
+  </div>
+
+  <div class="legend-grid">
+    <div class="legend-card">
+      <h3>线型图例</h3>
+      <div class="lg-row"><span class="swatch" style="border-color:#34d399"></span>ID 脊柱主数据流 / 闭环（绿）</div>
+      <div class="lg-row"><span class="swatch" style="border-color:#38bdf8"></span>观测通道写入（青）：kernel 侧 / ingest</div>
+      <div class="lg-row"><span class="swatch" style="border-color:#fbbf24; border-top-style:dashed"></span>拉马克通道（经验写回，带闸，琥珀虚线）</div>
+      <div class="lg-row"><span class="swatch" style="border-color:#f43f5e; border-top-style:dashed"></span>理念七屏障 / HGT 威胁面（玫红虚线）</div>
+      <div class="lg-row"><span class="swatch" style="border-color:#64748b"></span>中性数据流（灰）</div>
+    </div>
+    <div class="legend-card">
+      <h3>⚠ 未决热点（对应设计文档 §10）</h3>
+      <span class="warn-chip">★B6 转录语义</span><span class="warn-chip">★C9 表型粒度</span><span class="warn-chip">★C10 量具校准</span><span class="warn-chip">★C11 统计功效</span>
+      <span class="warn-chip">A1 原子化边界</span><span class="warn-chip">A2 rule_id 谱系</span><span class="warn-chip">A3 registry 历史版本</span>
+      <span class="warn-chip">B7 compaction</span><span class="warn-chip">D13 合成致死</span><span class="warn-chip">D14 观察者效应</span>
+      <span class="warn-chip">E16 swarm 归属</span><span class="warn-chip">E17 冷启动</span><span class="warn-chip">F20 事故→场景</span><span class="warn-chip">F22 仪器归属</span>
+    </div>
+    <div class="legend-card">
+      <h3>生物学对映（本图内出现）</h3>
+      <table class="bio-table">
+        <tr><td>基因组 G</td><td>Tier 0/1/2 工件全集 + Registry 位点表</td></tr>
+        <tr><td>转录 E</td><td>harness_resolver 装配（选择性表达）</td></tr>
+        <tr><td>转录本</td><td>runtime system prompt（trace 可查装配链）</td></tr>
+        <tr><td>翻译器</td><td>模型权重（黑盒，无普适解码表）</td></tr>
+        <tr><td>表型 P</td><td>scorecard / goal journal / event_log</td></tr>
+        <tr><td>Weismann 屏障</td><td>validation_gate（提案只能过闸生效）</td></tr>
+        <tr><td>拉马克通道</td><td>skill_memory 沉淀 / L2→L1 晋升（带闸）</td></tr>
+        <tr><td>HGT</td><td>prompt 注入 / 语料派生（劫持转录机器）</td></tr>
+        <tr><td>基因敲除</td><td>变体 registry 消融 → Δeffect + 本底对照</td></tr>
+      </table>
+    </div>
+  </div>
+
+  <div class="eval-note">
+    <b>评估锚点</b>（看图时建议自问的五个问题）：
+    ① <b>★B6</b>——左上「规则源」全文注入时 <code>genome_snapshot</code> 千篇一律，这条 entry 有信息量吗？要不要把「按 task_signature 选规则子集」做进 harness_resolver（牵动现有装配）？
+    ② <b>脊柱完整性</b>——从 <code>rule:R-xxx</code> 出发，沿绿线能否一路走到「某 session 第 iter 轮的某次工具调用 + 某个 eval 分数」？中间有没有断链？
+    ③ <b>闭环方向</b>——底部 activate 回路和琥珀色拉马克通道是两条方向相反的写回路径，闸门只挡得住哪一条？另一条的质量门够不够？
+    ④ <b>⚠C10/C11</b>——归因三法的每个数字都产自右下角「量具」，校准协议缺位时整张图的可信度上限在哪？
+    ⑤ <b>⚠E16</b>——这张图是单 agent 视角；swarm 多 agent 时 G/E/P 各要复制几份、归属怎么算？
+  </div>
+</div>
+</body>
+</html>
