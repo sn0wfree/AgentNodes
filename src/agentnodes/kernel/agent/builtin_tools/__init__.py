@@ -147,7 +147,7 @@ def build_default_registry(workspace: Path | None = None) -> ToolRegistry:
 
     # Paradigm v2 分层注册: 组合库加载器 (workspace tools/combo/*.yml)
     if workspace is not None:
-        from agentnodes.kernel.agent.combo import load_combo_tools
+        from agentnodes.kernel.agent.plugins.combo import load_combo_tools
         load_combo_tools(workspace, r)
 
     # DSH-inspired: plugin discovery via entry_points

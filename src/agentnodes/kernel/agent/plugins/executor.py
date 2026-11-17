@@ -22,8 +22,8 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any, Callable
 
-from agentnodes.kernel.agent.dag_config import AgentNodeConfig
-from agentnodes.kernel.agent.plugin import AgentPlugin
+from agentnodes.kernel.agent.plugins.dag_config import AgentNodeConfig
+from agentnodes.kernel.agent.plugins.plugin import AgentPlugin
 
 logger = logging.getLogger(__name__)
 
@@ -116,7 +116,7 @@ class AgentExecutor:
         registry: Any | None = None,
         llm_config: Any | None = None,
     ):
-        from agentnodes.kernel.agent.registry import get_default_registry
+        from agentnodes.kernel.agent.plugins.registry import get_default_registry
         self._registry = registry or get_default_registry()
         self._llm_config = llm_config
 

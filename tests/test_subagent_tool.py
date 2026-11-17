@@ -90,8 +90,8 @@ def patch_child_client(monkeypatch):
         created: list[dict[str, Any]] = []
         queue = list(child_responses)
 
-        from agentnodes.kernel.agent import executor as executor_mod
-        from agentnodes.kernel.agent.executor import AgentExecutionResult
+        from agentnodes.kernel.agent.plugins import executor as executor_mod
+        from agentnodes.kernel.agent.plugins.executor import AgentExecutionResult
 
         def fake_execute(self, plugin, task, workspace, **kwargs):
             created.append({"plugin_id": plugin.id, "task": task, "kwargs": kwargs})
@@ -239,8 +239,8 @@ class TestSubAgentCountLimit:
         # Patch the child client so the first MAX_SUBAGENTS calls succeed
         # deterministically (no real LLM config / network).
         # Patch AgentExecutor.execute so the child agent returns a deterministic result.
-        from agentnodes.kernel.agent import executor as executor_mod
-        from agentnodes.kernel.agent.executor import AgentExecutionResult
+        from agentnodes.kernel.agent.plugins import executor as executor_mod
+        from agentnodes.kernel.agent.plugins.executor import AgentExecutionResult
 
         def _fake_exec(self, plugin, task, workspace, **kwargs):
             return AgentExecutionResult(
@@ -272,8 +272,8 @@ class TestSubAgentCountLimit:
     def test_count_ref_increments_even_without_client(self, monkeypatch):
         """Counter increments before child client construction."""
         # Patch AgentExecutor.execute so the child agent returns a deterministic result.
-        from agentnodes.kernel.agent import executor as executor_mod
-        from agentnodes.kernel.agent.executor import AgentExecutionResult
+        from agentnodes.kernel.agent.plugins import executor as executor_mod
+        from agentnodes.kernel.agent.plugins.executor import AgentExecutionResult
 
         def _fake_exec(self, plugin, task, workspace, **kwargs):
             return AgentExecutionResult(
@@ -400,7 +400,7 @@ class TestChildToolCallsForwarded:
         """If the child agent raises, subagent_failed is emitted and the
         parent tool result is an error."""
 
-        from agentnodes.kernel.agent import executor as executor_mod
+        from agentnodes.kernel.agent.plugins import executor as executor_mod
 
         def _explode(self, plugin, task, workspace, **kwargs):
             raise RuntimeError("child boom")
@@ -533,8 +533,8 @@ class TestExecuteParamHandling:
 
         monkeypatch.setattr(SyncMockLLM, "chat", _spy_chat)
         # Patch AgentExecutor.execute so the child agent returns a deterministic result.
-        from agentnodes.kernel.agent import executor as executor_mod
-        from agentnodes.kernel.agent.executor import AgentExecutionResult
+        from agentnodes.kernel.agent.plugins import executor as executor_mod
+        from agentnodes.kernel.agent.plugins.executor import AgentExecutionResult
 
         def _fake_exec(self, plugin, task, workspace, **kwargs):
             return AgentExecutionResult(
@@ -559,8 +559,8 @@ class TestExecuteParamHandling:
             seen.append((et, data))
 
         # Patch AgentExecutor.execute so the child agent returns a deterministic result.
-        from agentnodes.kernel.agent import executor as executor_mod
-        from agentnodes.kernel.agent.executor import AgentExecutionResult
+        from agentnodes.kernel.agent.plugins import executor as executor_mod
+        from agentnodes.kernel.agent.plugins.executor import AgentExecutionResult
 
         def _fake_exec(self, plugin, task, workspace, **kwargs):
             return AgentExecutionResult(
@@ -583,8 +583,8 @@ class TestExecuteParamHandling:
         assert completed[0][1]["message_id"] == "msg-1"
 
     def test_tool_result_contains_answer_and_metrics(self, monkeypatch):
-        from agentnodes.kernel.agent import executor as executor_mod
-        from agentnodes.kernel.agent.executor import AgentExecutionResult
+        from agentnodes.kernel.agent.plugins import executor as executor_mod
+        from agentnodes.kernel.agent.plugins.executor import AgentExecutionResult
 
         def _fake(self, plugin, task, workspace, **kwargs):
             return AgentExecutionResult(
@@ -612,8 +612,8 @@ class TestWhitelistAtExecute:
     def test_tools_whitelist_limits_child_registry(self, monkeypatch):
         """Passing tools=[] gives the child an empty registry; the child
         then has no tools to call (text-only worker)."""
-        from agentnodes.kernel.agent import executor as executor_mod
-        from agentnodes.kernel.agent.executor import AgentExecutionResult
+        from agentnodes.kernel.agent.plugins import executor as executor_mod
+        from agentnodes.kernel.agent.plugins.executor import AgentExecutionResult
 
         def _fake(self, plugin, task, workspace, **kwargs):
             return AgentExecutionResult(
@@ -640,8 +640,8 @@ class TestMultiIterationChild:
     def test_child_with_tool_then_answer(self, monkeypatch):
         """A child that calls a tool then returns text completes with
         tool_calls_made=1 and iterations=2 in the returned metrics."""
-        from agentnodes.kernel.agent import executor as executor_mod
-        from agentnodes.kernel.agent.executor import AgentExecutionResult
+        from agentnodes.kernel.agent.plugins import executor as executor_mod
+        from agentnodes.kernel.agent.plugins.executor import AgentExecutionResult
 
         def _fake(self, plugin, task, workspace, **kwargs):
             return AgentExecutionResult(

@@ -2,7 +2,7 @@
 from __future__ import annotations
 
 from agentnodes.kernel.agent.builtin_tools.subagent_tool import SubAgentTool
-from agentnodes.kernel.agent.dag_config import AgentNodeConfig
+from agentnodes.kernel.agent.plugins.dag_config import AgentNodeConfig
 from agentnodes.kernel.agent.tools.toolsets import TOOLSETS
 
 

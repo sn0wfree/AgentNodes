@@ -156,7 +156,7 @@ class TestSwarmRuntime:
         """
         from types import SimpleNamespace
 
-        import agentnodes.kernel.agent.executor as executor_mod
+        import agentnodes.kernel.agent.plugins.executor as executor_mod
 
         captured = {}
 

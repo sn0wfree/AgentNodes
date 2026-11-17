@@ -206,7 +206,7 @@ def collect_plugin_refs() -> list[tuple[str, set[str], str]]:
     out: list[tuple[str, set[str], str]] = []
     # 插件模块是 L2 内容；门禁不预设具体模块名，发现即扫
     from agentnodes.apps import agent_plugins
-    from agentnodes.kernel.agent.plugin import AgentPlugin
+    from agentnodes.kernel.agent.plugins.plugin import AgentPlugin
 
     for mod_name in sorted(getattr(agent_plugins, "__all_plugin_modules__", ())):
         mod = __import__(

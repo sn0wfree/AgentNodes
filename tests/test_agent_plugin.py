@@ -16,12 +16,12 @@ from agentnodes.apps.agent_plugins.quant import (
     standard_pipeline_adjacency,
     standard_pipeline_plugin_ids,
 )
-from agentnodes.kernel.agent.dag_config import (
+from agentnodes.kernel.agent.plugins.dag_config import (
     AgentDAGConfig,
     AgentNodeConfig,
 )
-from agentnodes.kernel.agent.plugin import AgentPlugin
-from agentnodes.kernel.agent.registry import (
+from agentnodes.kernel.agent.plugins.plugin import AgentPlugin
+from agentnodes.kernel.agent.plugins.registry import (
     AgentPluginRegistry,
     get_default_registry,
 )

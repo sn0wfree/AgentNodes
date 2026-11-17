@@ -17,7 +17,7 @@ from pathlib import Path
 import pytest
 
 from agentnodes.kernel.agent.builtin_tools.file_tools import ReadFileTool
-from agentnodes.kernel.agent.combo import CompositeTool
+from agentnodes.kernel.agent.plugins.combo import CompositeTool
 from agentnodes.kernel.agent.context.core import ContextBuilder
 from agentnodes.kernel.agent.tools.result import ToolResult, from_any, render_for_llm
 from agentnodes.kernel.agent.tools.core import ToolContext, ToolRegistry

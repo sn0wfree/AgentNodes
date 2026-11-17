@@ -20,7 +20,7 @@
 """
 from __future__ import annotations
 
-from agentnodes.kernel.agent.plugin import AgentPlugin
+from agentnodes.kernel.agent.plugins.plugin import AgentPlugin
 
 #: 本插件集引用、但当前环境**没有实现**的工具。
 #: 与 ``tools.py`` 里的定义逐项对应，用于两件事：

@@ -20,8 +20,8 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
-    from agentnodes.kernel.agent.plugin import AgentPlugin
-    from agentnodes.kernel.agent.registry import AgentPluginRegistry
+    from agentnodes.kernel.agent.plugins.plugin import AgentPlugin
+    from agentnodes.kernel.agent.plugins.registry import AgentPluginRegistry
 
 #: 本包内提供插件集的模块名（不含本 ``__init__``）。
 #:

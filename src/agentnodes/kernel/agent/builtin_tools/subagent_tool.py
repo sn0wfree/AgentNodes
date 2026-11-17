@@ -218,10 +218,10 @@ class SubAgentTool(BaseTool):
 
         # ── Build child agent via unified AgentExecutor ──────────
         try:
-            from agentnodes.kernel.agent.dag_config import AgentNodeConfig
-            from agentnodes.kernel.agent.executor import AgentExecutor
-            from agentnodes.kernel.agent.plugin import AgentPlugin
-            from agentnodes.kernel.agent.registry import get_default_registry
+            from agentnodes.kernel.agent.plugins.dag_config import AgentNodeConfig
+            from agentnodes.kernel.agent.plugins.executor import AgentExecutor
+            from agentnodes.kernel.agent.plugins.plugin import AgentPlugin
+            from agentnodes.kernel.agent.plugins.registry import get_default_registry
 
             # Filtered registry (exclude delegate_to_agent + toolset whitelist)
             parent_registry: ToolRegistry | None = kwargs.get("_parent_registry")

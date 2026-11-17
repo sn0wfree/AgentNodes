@@ -8,12 +8,12 @@ import pytest
 
 from agentnodes.kernel.agent.tools import exec_registry
 from agentnodes.apps.agent_plugins.quant import BUILTIN_PLUGINS
-from agentnodes.kernel.agent.dag_config import AgentNodeConfig
-from agentnodes.kernel.agent.executor import (
+from agentnodes.kernel.agent.plugins.dag_config import AgentNodeConfig
+from agentnodes.kernel.agent.plugins.executor import (
     AgentExecutor,
     first_two_sentences,
 )
-from agentnodes.kernel.agent.registry import AgentPluginRegistry
+from agentnodes.kernel.agent.plugins.registry import AgentPluginRegistry
 from agentnodes.kernel.agent.loop.core import AgentLoop
 from agentnodes.foundation.llm import LLMConfig, LLMResponse
 
@@ -68,7 +68,7 @@ class TestPythonExec:
                 "hello": "world", "up": bool(upstream),
             },
         )
-        from agentnodes.kernel.agent.plugin import AgentPlugin
+        from agentnodes.kernel.agent.plugins.plugin import AgentPlugin
         plugin = AgentPlugin(
             id="py_hello", name="PyHello", category="tool", description="",
             executor_type="python", python_function="_py_hello",
@@ -80,7 +80,7 @@ class TestPythonExec:
         assert '"up": true' in r.output
 
     def test_python_plugin_unknown_fn_is_error(self, workspace, executor):
-        from agentnodes.kernel.agent.plugin import AgentPlugin
+        from agentnodes.kernel.agent.plugins.plugin import AgentPlugin
         plugin = AgentPlugin(
             id="py_missing", name="M", category="tool", description="",
             executor_type="python", python_function="_nope_",
@@ -102,7 +102,7 @@ class TestEvaluator:
             return {"verdict": "keep"}
 
         exec_registry.register_evaluator("_ev_decide", fake_decide)
-        from agentnodes.kernel.agent.plugin import AgentPlugin
+        from agentnodes.kernel.agent.plugins.plugin import AgentPlugin
         plugin = AgentPlugin(
             id="ev_decide", name="E", category="tool", description="",
             executor_type="evaluator", python_function="_ev_decide",
@@ -121,7 +121,7 @@ class TestEvaluator:
             return {}
 
         exec_registry.register_evaluator("_ev_ctx", fake_decide)
-        from agentnodes.kernel.agent.plugin import AgentPlugin
+        from agentnodes.kernel.agent.plugins.plugin import AgentPlugin
         plugin = AgentPlugin(
             id="ev_ctx", name="E", category="tool", description="",
             executor_type="evaluator", python_function="_ev_ctx",
@@ -199,7 +199,7 @@ class TestLLMExec:
         assert "研究动量因子" in user_msg
 
     def test_llm_no_prompt_file_is_error(self, workspace, executor):
-        from agentnodes.kernel.agent.plugin import AgentPlugin
+        from agentnodes.kernel.agent.plugins.plugin import AgentPlugin
         plugin = AgentPlugin(
             id="nope_prompt", name="N", category="research",
             description="", prompt_file="",
