@@ -135,7 +135,7 @@ footer code{background:var(--muted);padding:1px 5px;border-radius:4px;}
   <div class="arch-head">
     <div>
       <h2 class="arch-title">AgentNodes 分层架构</h2>
-      <p class="arch-sub">AST 实测 35 个包 / 1978 个生产符号 / 140 条包间依赖
+      <p class="arch-sub">AST 实测 35 个包 / 1978 个生产符号 / 138 条包间依赖
         · 方块宽度 ∝ 生产符号数 · 悬停查看职责与依赖</p>
     </div>
     <div class="arch-legend" id="an-legend"></div>
@@ -435,8 +435,8 @@ footer code{background:var(--muted);padding:1px 5px;border-radius:4px;}
   "pkgs": [
    {
     "id": "kernel/agent",
-    "files": 101,
-    "lines": 22542,
+    "files": 102,
+    "lines": 22562,
     "classes": 182,
     "funcs": 249,
     "n": 431,
@@ -920,11 +920,6 @@ footer code{background:var(--muted);padding:1px 5px;border-radius:4px;}
   10
  ],
  [
-  "foundation/llm",
-  "foundation",
-  10
- ],
- [
   "interfaces/api",
   "foundation/llm",
   10
@@ -947,6 +942,11 @@ footer code{background:var(--muted);padding:1px 5px;border-radius:4px;}
  [
   "apps/agent_plugins",
   "kernel/agent",
+  9
+ ],
+ [
+  "foundation/llm",
+  "foundation",
   9
  ],
  [
@@ -1367,7 +1367,7 @@ footer code{background:var(--muted);padding:1px 5px;border-radius:4px;}
  },
  "kernel/workflow": {
   "i": 6,
-  "o": 5
+  "o": 4
  },
  "interfaces/cli/tui": {
   "i": 1,
@@ -1386,16 +1386,16 @@ footer code{background:var(--muted);padding:1px 5px;border-radius:4px;}
   "o": 1
  },
  "apps": {
-  "i": 6,
+  "i": 5,
   "o": 3
- },
- "foundation": {
-  "i": 17,
-  "o": 0
  },
  "foundation/utils": {
   "i": 6,
   "o": 1
+ },
+ "foundation": {
+  "i": 17,
+  "o": 0
  },
  "kernel/gateway": {
   "i": 4,
@@ -1407,7 +1407,7 @@ footer code{background:var(--muted);padding:1px 5px;border-radius:4px;}
  },
  "apps/agent_plugins": {
   "i": 0,
-  "o": 3
+  "o": 2
  },
  "foundation/observability": {
   "i": 9,
@@ -1464,10 +1464,6 @@ footer code{background:var(--muted);padding:1px 5px;border-radius:4px;}
  "kernel/hooks": {
   "i": 1,
   "o": 0
- },
- "kernel": {
-  "i": 1,
-  "o": 0
  }
 };
   var FLOW  = ["interfaces/api", "kernel/gateway", "kernel/agent", "foundation/llm"];
@@ -1497,7 +1493,7 @@ footer code{background:var(--muted);padding:1px 5px;border-radius:4px;}
   function inEvalBand(id) { return layerKey(id) === EVAL_KEY; }
 
   var ISOLATED = {};
-  ["apps/algo", "scripts", "apps/swarm_presets"].forEach(function (id) { ISOLATED[id] = 1; });
+  ["apps/algo", "kernel", "scripts", "apps/swarm_presets"].forEach(function (id) { ISOLATED[id] = 1; });
 
   // ---- layout：层纵向堆叠，包在泳道内换行居中 ----
   var W = 1180, PADL = 132, PADR = 20, PADT = 8, PADB = 8, GAPY = 12, GAPX = 10, ROWH = 46;
@@ -1782,10 +1778,10 @@ footer code{background:var(--muted);padding:1px 5px;border-radius:4px;}
 
 <footer>
 本页由 AST 扫描实测生成（<code>tmp/probe/scan_arch.py</code> → <code>build_payload.py</code> → <code>gen_arch_html.py</code>）：
-35 个包 / 1978 个生产符号（顶层 class + func）/ 140 条包间依赖，绘制阈值 ≥2。<br>
+35 个包 / 1978 个生产符号（顶层 class + func）/ 138 条包间依赖，绘制阈值 ≥2。<br>
 分层口径与门禁一致（<code>scripts/arch/layer_matrix.py</code>）：L1 interfaces · L2 apps · L3 kernel · L4 foundation。
-跨层依赖 <b>89 条下行 / 0 条上行违规</b>，同层 44 条；另有 <b>7 条</b>属 evals 评估带跨层读取被测对象（设计内，不计违规）。<br>
-<b>零依赖包 3 个</b>：apps/algo · apps/swarm_presets · scripts —— 既无入边也无出边，是死代码候选（apps/algo 仍被 2 条测试直接引用）。<br>
+跨层依赖 <b>89 条下行 / 0 条上行违规</b>，同层 42 条；另有 <b>7 条</b>属 evals 评估带跨层读取被测对象（设计内，不计违规）。<br>
+<b>零依赖包 4 个</b>：apps/algo · apps/swarm_presets · scripts —— 既无入边也无出边，是死代码候选（apps/algo 仍被 2 条测试直接引用）。<br>
 本页零外部依赖（无 CDN / 无字体 / 无框架），随代码变化重新运行生成脚本即可。
 </footer>
 </div>

@@ -12,7 +12,7 @@ import dataclasses
 
 import pytest
 
-from agentnodes.kernel.agent.compact import CompactConfig
+from agentnodes.kernel.agent.compact.core import CompactConfig
 
 # ── Defaults (user-specified + opencode-aligned) ─────────────
 

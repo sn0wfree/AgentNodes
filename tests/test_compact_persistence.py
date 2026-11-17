@@ -11,7 +11,7 @@ from __future__ import annotations
 
 from unittest.mock import MagicMock
 
-from agentnodes.kernel.agent.compact import (
+from agentnodes.kernel.agent.compact.core import (
     CompactConfig,
     _resolve_threshold_tokens,
     compact_messages,

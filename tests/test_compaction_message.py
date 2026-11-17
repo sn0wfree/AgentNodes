@@ -10,7 +10,7 @@ from __future__ import annotations
 
 import json
 
-from agentnodes.kernel.agent.compaction_message import (
+from agentnodes.kernel.agent.compact.message import (
     MESSAGE_TYPE_ASSISTANT,
     MESSAGE_TYPE_COMPACTION,
     CompactionMessage,

@@ -10,7 +10,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
 
-from agentnodes.kernel.agent.compaction_message import CompactionMessage, new_compaction_message
+from agentnodes.kernel.agent.compact.message import CompactionMessage, new_compaction_message
 
 
 class TestCompactionMessageToMessageList(unittest.TestCase):

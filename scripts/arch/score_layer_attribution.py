@@ -43,7 +43,7 @@ v1 用词频打分 → 72 个可疑、假阳性过半；v2 改用 AST 提取的
 | 模块 | 命中 | 为什么是误报 |
 |---|---|---|
 | `kernel/agent/strategy/factory.py` | `StrategyFactory` | loop 策略工厂，非量化 |
-| `kernel/agent/compact.py` | `get_compaction_metrics` | 上下文压缩指标，非业绩指标 |
+| `kernel/agent/compact/core.py` | `get_compaction_metrics` | 上下文压缩指标，非业绩指标 |
 | `kernel/agent/exec_registry.py` | `extract_metrics_from_upstream` | 执行指标，非业绩指标 |
 | `kernel/agent/builtin_tools/display_tools.py` | `_load_metrics` | 展示用运行指标 |
 | `kernel/scheduled_research/cli.py` | `_parse_metric_targets` | 调度器的指标选择 |

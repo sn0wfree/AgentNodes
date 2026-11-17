@@ -13,7 +13,7 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
-from agentnodes.kernel.agent.compact import CompactConfig
+from agentnodes.kernel.agent.compact.core import CompactConfig
 from agentnodes.kernel.agent.loop import AgentLoop
 from agentnodes.foundation.llm.config import LLMConfig
 
@@ -67,7 +67,7 @@ class TestPersistPropagatesErrors:
         )
 
         with patch(
-            "agentnodes.kernel.agent.loop_compaction.logger"
+            "agentnodes.kernel.agent.compact.loop_compaction.logger"
         ) as mock_logger:
             with patch(
                 "agentnodes.interfaces.api.routers.web_session.persist_message",
@@ -148,7 +148,7 @@ class TestMaybeCompactRollsBack:
         loop = self._make_loop(msgs)
 
         with patch(
-            "agentnodes.kernel.agent.compact.compact_messages",
+            "agentnodes.kernel.agent.compact.core.compact_messages",
             side_effect=RuntimeError("compact internal error"),
         ):
             new_messages, applied = loop._maybe_compact(list(msgs))

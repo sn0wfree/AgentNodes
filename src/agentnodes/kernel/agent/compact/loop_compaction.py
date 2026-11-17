@@ -23,7 +23,7 @@ import logging
 from typing import Any
 
 from agentnodes.foundation.utils.token_utils import estimate_tokens
-from agentnodes.kernel.agent import compact as _compact_mod
+from agentnodes.kernel.agent.compact import core as _compact_mod
 from agentnodes.foundation import settings as _settings
 
 logger = logging.getLogger(__name__)
@@ -52,7 +52,7 @@ class LoopCompactionMixin:
         字典维护，而 ``cc`` / ``client`` / ``threshold_tokens`` 都是构造后
         可变的（测试会直接赋值）。构造开销只有一次闭包创建。
         """
-        from agentnodes.kernel.agent.compaction_runtime import make_compactor
+        from agentnodes.kernel.agent.compact.runtime import make_compactor
 
         return make_compactor(
             compact_config=self.cc,
@@ -118,7 +118,7 @@ class LoopCompactionMixin:
         """
         if not self.session_id:
             return await asyncio.to_thread(self._maybe_compact, messages)
-        from agentnodes.kernel.agent.compact import _compact_locks
+        from agentnodes.kernel.agent.compact.core import _compact_locks
 
         lock = await _compact_locks.get(self.session_id)
         async with lock:
@@ -171,7 +171,7 @@ class LoopCompactionMixin:
         self._previous_summary = summary_text
 
         try:
-            from agentnodes.kernel.agent.compaction_message import new_compaction_message
+            from agentnodes.kernel.agent.compact.message import new_compaction_message
 
             comp = new_compaction_message(
                 session_id=session_id,

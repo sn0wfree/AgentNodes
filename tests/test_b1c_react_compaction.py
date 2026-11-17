@@ -111,7 +111,7 @@ def test_compacted_messages_reach_the_llm():
 
 def test_make_compactor_rolls_back_on_failure(monkeypatch):
     """L4 失败 → 返回原始消息(模型保留完整历史,而非半压缩状态)。"""
-    from agentnodes.kernel.agent import compaction_runtime as cr
+    from agentnodes.kernel.agent.compact import runtime as cr
 
     def boom(*a, **k):
         raise RuntimeError("db down")
@@ -133,7 +133,7 @@ def test_make_compactor_rolls_back_on_failure(monkeypatch):
 
 
 def test_make_compactor_returns_compacted_and_layers(monkeypatch):
-    from agentnodes.kernel.agent import compaction_runtime as cr
+    from agentnodes.kernel.agent.compact import runtime as cr
 
     compacted = [{"role": "system", "content": "S"}]
 
@@ -160,7 +160,7 @@ def test_make_compactor_returns_compacted_and_layers(monkeypatch):
 
 def test_make_compactor_rolls_back_when_persistence_fails(monkeypatch):
     """持久化失败 → 回滚到原始消息(与 mixin 的 rollback 一致)。"""
-    from agentnodes.kernel.agent import compaction_runtime as cr
+    from agentnodes.kernel.agent.compact import runtime as cr
 
     monkeypatch.setattr(
         cr._compact_mod, "compact_messages",

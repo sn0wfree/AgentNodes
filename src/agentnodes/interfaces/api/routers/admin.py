@@ -97,7 +97,7 @@ async def toggle_keep_all_compactions(
             detail="Confirmation required: pass ?confirm=yes",
         )
 
-    from agentnodes.kernel.agent.compact import set_keep_all_override
+    from agentnodes.kernel.agent.compact.core import set_keep_all_override
 
     set_keep_all_override(enabled)
     _record_audit(
@@ -118,7 +118,7 @@ async def get_compaction_metrics(
 ) -> dict[str, Any]:
     """Get in-memory compaction metrics for monitoring."""
     _verify_admin(x_admin_token)
-    from agentnodes.kernel.agent.compact import get_compaction_metrics
+    from agentnodes.kernel.agent.compact.core import get_compaction_metrics
 
     metrics = get_compaction_metrics()
     return {
@@ -140,7 +140,7 @@ async def reset_compaction_metrics(
             detail="Confirmation required: pass ?confirm=yes",
         )
 
-    from agentnodes.kernel.agent.compact import reset_compaction_metrics
+    from agentnodes.kernel.agent.compact.core import reset_compaction_metrics
 
     reset_compaction_metrics()
     _record_audit("compaction.metrics.reset", {})

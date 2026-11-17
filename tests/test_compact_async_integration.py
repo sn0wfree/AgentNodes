@@ -5,7 +5,7 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
-from agentnodes.kernel.agent.compact import CompactConfig, compact_messages
+from agentnodes.kernel.agent.compact.core import CompactConfig, compact_messages
 
 
 def _register_mock_persister(mock):
@@ -152,7 +152,7 @@ class TestAsyncMaybeCompact:
             {"role": "assistant", "content": "y" * 300},
         ]
         with patch(
-            "agentnodes.kernel.agent.compact.compact_messages",
+            "agentnodes.kernel.agent.compact.core.compact_messages",
             side_effect=RuntimeError("compact error"),
         ):
             result, applied = await loop._amaybe_compact(msgs)
@@ -176,7 +176,7 @@ class TestAsyncMaybeCompact:
             "recent text",
         )
         with patch(
-            "agentnodes.kernel.agent.compact.compact_messages",
+            "agentnodes.kernel.agent.compact.core.compact_messages",
             return_value=mock_result,
         ), patch.object(
             loop, "_persist_compaction_event",
@@ -203,7 +203,7 @@ class TestAsyncMaybeCompact:
             "recent text",
         )
         with patch(
-            "agentnodes.kernel.agent.compact.compact_messages",
+            "agentnodes.kernel.agent.compact.core.compact_messages",
             return_value=mock_result,
         ), patch.object(
             loop, "_persist_compaction_event",
@@ -251,7 +251,7 @@ class TestSyncMaybeCompact:
         loop = self._make_loop()
         msgs = [{"role": "user", "content": "hello"}]
         with patch(
-            "agentnodes.kernel.agent.compact.compact_messages",
+            "agentnodes.kernel.agent.compact.core.compact_messages",
             side_effect=RuntimeError("error"),
         ):
             result, applied = loop._maybe_compact(msgs)
@@ -272,7 +272,7 @@ class TestSyncMaybeCompact:
             "recent",
         )
         with patch(
-            "agentnodes.kernel.agent.compact.compact_messages",
+            "agentnodes.kernel.agent.compact.core.compact_messages",
             return_value=mock_result,
         ), patch.object(
             loop, "_persist_compaction_event",

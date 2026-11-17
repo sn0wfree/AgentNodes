@@ -13,7 +13,7 @@ import pytest
 
 from agentnodes.interfaces.api.session.models import Message
 from agentnodes.interfaces.api.session.service import SessionService
-from agentnodes.kernel.agent.compact import CompactConfig
+from agentnodes.kernel.agent.compact.core import CompactConfig
 
 # ── Helpers ──────────────────────────────────────────────────────────
 

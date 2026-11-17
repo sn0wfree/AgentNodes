@@ -49,7 +49,7 @@ from agentnodes.kernel.memory.persistent import PersistentMemory
 from agentnodes.foundation.utils.ids import SessionId
 from agentnodes.kernel.agent._core_types import StepResult, maybe_await
 from agentnodes.kernel.agent.circuit_breaker import RetryPolicy, ToolLoopCircuitBreaker
-from agentnodes.kernel.agent.compact import CompactConfig
+from agentnodes.kernel.agent.compact.core import CompactConfig
 from agentnodes.kernel.agent import agent_telemetry as _tel
 from agentnodes.kernel.agent.context import ContextBuilder, estimate_tokens
 from agentnodes.kernel.agent.runtime.sync_bridge import _get_hook_loop as _get_hook_loop  # noqa: F401
@@ -119,7 +119,7 @@ def _get_goal_store() -> Any:
 # names are re-exported here so existing
 # ``from ...loop import register_compaction_persister`` callers
 # (``interfaces/api/app.py``, tests) keep working.
-from agentnodes.kernel.agent.compact import (  # noqa: E402  (kept here to preserve import order)
+from agentnodes.kernel.agent.compact.core import (  # noqa: E402  (kept here to preserve import order)
     compaction_persister_registered,
     get_compaction_persister,
     register_compaction_persister,
@@ -268,7 +268,7 @@ def _tool_call_hash(tc: ToolCall) -> str:
 # ── AgentLoop ────────────────────────────────────────────────────────
 
 
-from agentnodes.kernel.agent.loop_compaction import LoopCompactionMixin
+from agentnodes.kernel.agent.compact.loop_compaction import LoopCompactionMixin
 from agentnodes.kernel.agent.loop_lifecycle import LoopLifecycleMixin
 from agentnodes.kernel.agent.loop_progress import LoopProgressMixin
 from agentnodes.kernel.agent.loop_stream import LoopStreamMixin

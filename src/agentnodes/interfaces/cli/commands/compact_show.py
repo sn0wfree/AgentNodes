@@ -16,7 +16,7 @@ from rich.panel import Panel
 from rich.table import Table
 
 from agentnodes.interfaces.cli.theme import get_console
-from agentnodes.kernel.agent.compact import (
+from agentnodes.kernel.agent.compact.core import (
     CompactConfig,
     _resolve_threshold_tokens,
 )

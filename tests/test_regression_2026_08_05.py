@@ -24,7 +24,7 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
-from agentnodes.kernel.agent.compact import CompactConfig
+from agentnodes.kernel.agent.compact.core import CompactConfig
 
 # ════════════════════════════════════════════════════════════════════
 # Fix 1: _amaybe_compact no longer uses nested asyncio.run + to_thread
@@ -158,7 +158,7 @@ class TestAmaybeCompactRuntime:
             "recent text",
         )
         with patch(
-            "agentnodes.kernel.agent.compact.compact_messages",
+            "agentnodes.kernel.agent.compact.core.compact_messages",
             return_value=mock_result,
         ), warnings.catch_warnings(record=True) as caught:
             warnings.simplefilter("always")
@@ -197,7 +197,7 @@ class TestAmaybeCompactRuntime:
 
         msgs = [{"role": "user", "content": "x" * 400}]
         with patch(
-            "agentnodes.kernel.agent.compact.compact_messages",
+            "agentnodes.kernel.agent.compact.core.compact_messages",
             side_effect=fake_compact,
         ):
             await loop._amaybe_compact(list(msgs))

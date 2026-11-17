@@ -80,7 +80,7 @@ class TestMicrocompact:
 class TestLLMSummarize:
     def test_structured_summary_prompt(self):
         """L4 should use structured template for summarization."""
-        from agentnodes.kernel.agent.compact import DEFAULT_SUMMARY_TEMPLATE, _build_summary_prompt
+        from agentnodes.kernel.agent.compact.core import DEFAULT_SUMMARY_TEMPLATE, _build_summary_prompt
         prompt = _build_summary_prompt("test conversation", None, DEFAULT_SUMMARY_TEMPLATE)
         assert "## Objective" in prompt
         assert "## Work State" in prompt
@@ -88,7 +88,7 @@ class TestLLMSummarize:
 
     def test_incremental_summary(self):
         """L4 should support incremental summary updates."""
-        from agentnodes.kernel.agent.compact import DEFAULT_SUMMARY_TEMPLATE, _build_summary_prompt
+        from agentnodes.kernel.agent.compact.core import DEFAULT_SUMMARY_TEMPLATE, _build_summary_prompt
         prompt = _build_summary_prompt("new conversation", "old summary text", DEFAULT_SUMMARY_TEMPLATE)
         assert "Update the anchored summary" in prompt
         assert "<previous-summary>" in prompt

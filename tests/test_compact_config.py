@@ -7,7 +7,7 @@ from unittest.mock import MagicMock
 
 import pytest
 
-from agentnodes.kernel.agent.compact import (
+from agentnodes.kernel.agent.compact.core import (
     CompactConfig,
     _build_summary_prompt,
     _estimate_tokens,

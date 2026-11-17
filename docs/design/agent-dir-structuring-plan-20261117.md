@@ -190,3 +190,67 @@ compact / compaction_message / compaction_runtime  互不依赖 ✓
 1. **Q1 结论「不抽出」是否接受？**（若坚持，需先做 agent→builtin_tools 单向化重构）
 2. **试金石阶段 1 是否开工？**（`compact/` 4 文件，32 测试引用）
 3. **compact 内改名方案**：`core.py / message.py / runtime.py`（倾向） vs 文件名全保留？
+
+---
+
+## 8 · 执行结果（2026-11-17 阶段 1 试金石实测）
+
+### 8.1 落地
+
+`compact/` 簇 4 文件下沉完成（commit 见 git log）：
+
+| 原路径 | 新路径 |
+|---|---|
+| `kernel/agent/compact.py` | `kernel/agent/compact/core.py` |
+| `kernel/agent/compaction_message.py` | `kernel/agent/compact/message.py` |
+| `kernel/agent/compaction_runtime.py` | `kernel/agent/compact/runtime.py` |
+| `kernel/agent/loop_compaction.py` | `kernel/agent/compact/loop_compaction.py` |
+| — | `kernel/agent/compact/__init__.py`（新增，**零 re-export**，仅 docstring） |
+
+### 8.2 实测影响面（比方案预估大）
+
+| 项 | 方案预估 | **实测** |
+|---|---|---|
+| 模块路径引用 | 32 处 / 19 文件（tests） | **76 处 / 30 文件**（src 25 + tests 21 + scripts 1，含包级 import 形态） |
+| 包级 import 形态 `from pkg import compact` | 未单列 | **20 处**（test_admin_kill_switch 8 · test_compact_safety 4 · compaction_runtime/loop_compaction 各 1 · test_b1c 3 · test_no_cycle 1 等） |
+| monkeypatch 目标 | 8 处 | **9 处**（8 × `compact.compact_messages` + 1 × `loop_compaction.logger`） |
+| 新增文件数 | 0 | **+1**（`compact/__init__.py`）→ L3 208→209 文件、48,145→48,165 行 |
+
+### 8.3 三个踩坑（均为本批实测发现，已修）
+
+1. **规则 B 不幂等 → 二次替换**：改写脚本第一版的 `compact` 替换无负向前瞻，把规则 B 刚产出的
+   `...compact.message` 又二次替换成 `...compact.core.message`（5 处固化）。
+   → 加 `(?!(?:core|message|runtime|loop_compaction))` 前瞻 + 精确回正脚本修复。
+   **教训：批量替换脚本必须自证幂等（跑两遍结果应相同）。**
+2. **包级 import 的 group 拼接错误**：正则 group(1) 若含 `from ... import ` 再拼新路径 →
+   `from X import X.compact ...` 语法错误（6 文件被语法校验拦下，未写入 —— **自校验救了这批**）。
+3. **subprocess 字符串模板不被正则命中**：`test_no_loop_compaction_cycle.py` 里
+   `f"import {AGENT}.{first}"` 是运行时拼接，源码无字面路径 → 4 组参数 + 3 处字面需手工改。
+
+### 8.4 关键设计验证（§3.3 两条硬约束均成立）
+
+- **绑定名保持**：`from pkg import compact as X` → `from pkg.compact import core as X`
+  —— 后续 `X.attr` / `importlib.reload(X)` / `monkeypatch.setattr(X, ...)` **零改动**，
+  `test_compact_safety` 的 8 处 reload、`test_b1c` 的 `cr._compact_mod` patch 全部自动正确。
+- **monkeypatch 直达真实模块**：9 处目标全部变为 `...compact.core.compact_messages`（非包命名空间），
+  无 R-014 静默失效。
+
+### 8.5 零漂移原理验证（§3.2）
+
+`scan_arch.pkg_of` 把 `kernel/agent/compact/*.py` 归并到 `kernel/agent` →
+**包数 36 不变、符号 431 不变**；仅 files 101→102、lines 22540→22562（新增 `__init__.py` + 编辑）。
+依赖拓扑不变（同模块同边）。layer_matrix 无需登记（前缀匹配）。
+
+### 8.6 验证
+
+- 全量 **7596 passed / 106 skipped / 0 failed**（rc=0）
+- `batch_gate` **ALL GREEN**（11 步，含相对导入 / 装配纪律两道新门禁）
+- 两图 JS `node --check` 通过；framework 文档数字同步（L3 209 文件 / 合计 431）
+- compact 相关测试 121 passed（独立快跑）
+
+### 8.7 遗留（非本批引入，报告不擅改）
+
+`architecture-layered-l3-clusters.html` 头部写 **140 条包间依赖**，但实测两种口径分别为
+**138**（两端 n>0）与 **143**（全部包）—— 140 与两者都对不上，是并行会话提交 `7b911121`
+时就写错的数字（本批未改，留给其归属方）。本批只同步了自己引入的 kernel/agent 节点
+files/lines。
