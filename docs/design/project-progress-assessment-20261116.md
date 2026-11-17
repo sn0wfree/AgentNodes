@@ -33,9 +33,7 @@
 
 ### 1.1 后端分层（`src/agentnodes`）
 
-> ⚠️ **层编号口径**：本仓有**两套互相矛盾**的编号。门禁权威口径（`scripts/arch/layer_matrix.py:5`，自称「唯一事实源」）= **L1 interfaces / L2 apps / L3 kernel / L4 foundation**；但 `.rules/rules.md` §1.1 写的是「foundation（L1）← kernel（L2）← apps（L3）← interfaces（L4）」——**方向完全相反**。
-> 实测判定：以门禁输出矩阵反推（L4 行仅对角 97 → L4 不 import 任何人 → L4 = 最底层 = foundation；L1 行 import 全栈 → L1 = interfaces）→ **门禁口径正确，rules.md §1.1 的编号是错的**。
-> **本报告下文一律采用门禁口径**（L1=interfaces / L2=apps / L3=kernel / L4=foundation）。凡出现「L3→L2」均指此口径。
+> **层编号口径（2026-11-17 更新）**：本报告撰写时（2026-11-16）`.rules/rules.md` §1.1 的层号与门禁事实源不一致；该冲突已于 2026-11-17 修正。唯一口径为 **L1 interfaces / L2 apps / L3 kernel / L4 foundation**，与 `scripts/arch/layer_matrix.py` 一致。凡出现「L3→L2」均指 kernel 依赖 apps，必须为 0。
 
 | 层（门禁口径）| 目录 | 文件 | 行数 | 判读 |
 |---|---|---:|---:|---|
@@ -250,7 +248,7 @@
 | 9 | 批次 13 S3-b2 未完 + `loop.py` 目标 ≤650 未达 | 🟡 上帝对象仍在 | 缺口 | §2.2 |
 | 10 | `.prompts` 17 + `.skills` 26 量化资产残留 | 🟡 已决议延期 | 延期 | §2.2 |
 | 11 | CI 不跑 batch_gate / pytest 不覆盖 nouns | 🟡 **门禁体系自身的缺口** | 流程 | §4.2 |
-| 12 | **`.rules/rules.md` §1.1 的层编号与门禁口径相反** | 🟡 读「L3→L2」会得到相反含义 | 文档 | §1.1 |
+| 12 | **`.rules/rules.md` §1.1 的层编号与门禁口径相反** | ✅ **2026-11-17 已修复** | 文档 | §1.1 |
 | 13 | `docs/INDEX.md` 的 design / archive 份数与实测不符 | 🟡 索引漂移 | 文档 | §1.4 |
 
 ---
@@ -265,7 +263,7 @@
 | **2** | **修复两份 tracked `prepare.py` 副本的前视 bug** | `testcase/golden/templates/prepare.py`（480 行）与 `testcase/samples/01_yaml_backtest/input/prepare.py`（473 行）实测均为 LOOKAHEAD_BUG。修法：从 `git show 9140f6c3^:templates/prepare.py` 取回 `pending_weights` 机制（实测能通过同一性质检验），或直接改用 kernel/algo 的重排机制 | 二者都在 `testcase/`（`pyproject.toml` 的 `testpaths=["tests"]` 天然排除收集），**不受 pytest 保护** → 改完需手工验证，且**不能只靠 CI** |
 | **3** | **把 nouns 门禁接进 pytest** | 在 `tests/test_scripts_arch.py` 加 `test_kernel_nouns_real_repo_clean`，仿照既有的 `test_dangling_real_repo_clean` / `test_literals_real_repo_clean` | 这是本次事故暴露的真缺口：门禁只靠手动跑等于没有 |
 | **4** | **CI 增一条 batch_gate job** | 至少跑 8 步结构类 | 与 §4.2 的三重防线对应 |
-| **5** | 修 `rules.md` §1.1 的层编号 | 与门禁口径对齐（foundation=L4 / kernel=L3 / apps=L2 / interfaces=L1） | 顺手；口径歧义会让「L3→L2」被读反（§1.1）|
+| **5** | 修 `rules.md` §1.1 的层编号 | 与门禁口径对齐（foundation=L4 / kernel=L3 / apps=L2 / interfaces=L1） | ✅ **2026-11-17 已完成**；口径歧义会让「L3→L2」被读反（§1.1）|
 | **6** | 修 `docs/INDEX.md` 的 design / archive 份数 | 50→104、264→266 | 顺手，不单独占 commit |
 
 ### 6.2 需拍板

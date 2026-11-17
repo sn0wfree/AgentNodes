@@ -13,7 +13,7 @@
 **R-001. 四层单向依赖** · MUST
 
 - **触发**：新增/搬动 `src/agentnodes/` 下的任何文件。
-- **做法**：`foundation`（L1）← `kernel`（L2）← `apps`（L3）← `interfaces`（L4），只许向下 import。在 `scripts/arch/layer_matrix.py::LAYER_MEMBERSHIP` 登记新文件的层级。
+- **做法**：唯一层级口径为 `interfaces`（L1）→ `apps`（L2）→ `kernel`（L3）→ `foundation`（L4）。层间只允许从小编号依赖大编号；同层依赖由模块边界约束。在 `scripts/arch/layer_matrix.py::LAYER_MEMBERSHIP` 登记新文件的层级。
 - **失败**：门禁 `check_dangling_imports.py --layers` 报上行违规；未登记的文件判不出层级归属。
 - **来源**：L2 2026-11-11（架构图同步）；设计 `layered-skeleton-design-20261103.md`。
 
@@ -21,12 +21,12 @@
 
 | 层 | 目录 | 职责 |
 |---|---|---|
-| **L1** | `foundation/` | 零业务依赖的基础设施（paths / settings / llm 客户端 / 存储）|
-| **L2** | `kernel/` | 框架内核（agent loop / gateway / session / workflow / runtimes）|
-| **L3** | `apps/` | 业务能力（goal / agent_plugins）|
-| **L4** | `interfaces/` | 交付界面（cli / api / webui）|
+| **L1** | `interfaces/` | 交付界面（cli / api / webui）|
+| **L2** | `apps/` | 业务能力（goal / agent_plugins）|
+| **L3** | `kernel/` | 框架内核（agent loop / gateway / session / workflow / runtimes）|
+| **L4** | `foundation/` | 零业务依赖的基础设施（paths / settings / llm 客户端 / 存储）|
 
-**已知例外**：`L4→L3` 的 import 由 `check_dangling_imports.py --layers` 放行（interfaces 消费 apps 是设计意图）。上行（L4→L1/L2、L3→L1/L2）一律为 0。
+**合法依赖**：`L1→L2`（interfaces 消费 apps）是正常的向下依赖，不是例外。上行依赖（`L2→L1`、`L3→L1/L2`、`L4→L1/L2/L3`）必须为 0。
 
 ### 1.2 配置读取唯一入口
 

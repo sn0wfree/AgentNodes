@@ -23,33 +23,18 @@ v1.2 追加一句：**执行面已收敛为单引擎（LoopEngine）**，结构�
 
 ---
 
-## §2.0 层编号口径（v1.2 新增 · 必读）
+## §2.0 层编号口径（唯一规范）
 
-本仓存在**两套互相矛盾**的层编号，读任何文档前必须先确认口径：
+层编号以 `scripts/arch/layer_matrix.py::ORDER` 与 `LAYER_MEMBERSHIP` 为唯一事实源：
 
-| 来源 | 编号 |
-|---|---|
-| `scripts/arch/layer_matrix.py:5`（自称「唯一事实源」）| **L1 interfaces / L2 apps / L3 kernel / L4 foundation** |
-| `.rules/rules.md` §1.1 | 「foundation（L1）← kernel（L2）← apps（L3）← interfaces（L4）」|
+| 层 | 目录 | 依赖方向 |
+|---|---|---|
+| **L1** | `interfaces/` | 可依赖 L2、L3、L4 |
+| **L2** | `apps/` | 可依赖 L3、L4 |
+| **L3** | `kernel/` | 可依赖 L4 |
+| **L4** | `foundation/` | 不依赖更高层 |
 
-**实测判定 = 门禁口径正确**。判据是 `check_dangling_imports.py --layers` 的输出矩阵：
-
-```
-      L1    L2    L3    L4
-  L1   118    59   121    83
-  L2     0    42    33    11
-  L3     0     0   195    71
-  L4     0     0     0    63
-```
-
-- **L4 行只有对角 63** → L4 不 import 任何人 → L4 = 最底层 = `foundation`
-- **L3 行 import L4 共 71 处** → kernel→foundation 合法 → L3 = `kernel`
-- **L2 行 import L3/L4 共 33/11** → apps→kernel/foundation 合法 → L2 = `apps`
-- **L1 行 import 全栈 59/121/83** → interfaces 消费一切 → L1 = `interfaces`
-
-⇒ **本文件全部采用门禁口径**。凡出现「L3→L2」= kernel 不 import apps = 0。
-
-> `.rules/rules.md` §1.1 的编号已记为待修项（进度评估 §5 遗留 #12）。
+层间只允许从小编号依赖大编号；同层依赖由模块边界约束。`L1→L2`（interfaces 使用 apps）是合法的向下依赖；`L3→L2` 表示 kernel 依赖 apps，必须为 0。`.rules/rules.md` §1.1 已于 2026-11-17 同步为此口径。
 
 ### 2.0.1 旁挂评估带：`evals/` 不属于四层
 
@@ -227,9 +212,9 @@ v1.2 追加一句：**执行面已收敛为单引擎（LoopEngine）**，结构�
 |---|---|---:|---:|---|
 | L1 | `interfaces/` | 118 | 22,070 | 渠道层 + 组装根（哑适配器 + 唯一知道 apps 的位置）|
 | L2 | `apps/` | 41 | 9,654 | 业务插件层（goal / chat / agent_plugins / swarm_presets / scheduled_research / builtin_tools / **algo**）|
-| L3 | `kernel/` | 213 | 48,268 | 平台机制（agent / workflow / gateway / orchestration / events / session / evolution / swarm / …）|
+| L3 | `kernel/` | 215 | 48,297 | 平台机制（agent / workflow / gateway / orchestration / events / session / evolution / swarm / …）|
 | L4 | `foundation/` | 63 | 12,156 | 零业务原语 |
-| — | **合计** | **435** | **92,148** | 上行违规 **0** |
+| — | **合计** | **437** | **92,177** | 上行违规 **0** |
 
 ### 2.2 构件落位表（语义 × 物理 · 状态已回填）
 

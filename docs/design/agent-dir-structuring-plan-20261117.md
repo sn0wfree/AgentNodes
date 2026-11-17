@@ -554,3 +554,19 @@ agentnodes\.kernel\.agent\.tools\b
 - `_core_types` 留在顶层（11 个簇外依赖方，跨簇共享协议类型；下沉会制造「协议类型藏在某簇里」的耦合）。
 - 不改 `guards`/`policy` 等簇内的模块间 import 形态（保持拓扑不变）。
 - 不合并 `state` 的环（缓存/事件/记忆三者互相引用是**设计**，非偶然；强行拆开会引入额外抽象）。
+
+## 13 · 阶段 5 实测（2026-11-17）
+
+### 13.1 落地
+
+- 7 个模块按计划归入 `policy/`、`signals/`、`tools/`；新增 `policy/__init__.py` 与 `signals/__init__.py`，扩展既有 `tools/__init__.py`。
+- 更新 `src/`、`tests/`、`scripts/` 中的导入和路径引用；旧模块路径扫描为 0。同步修正 `test_step_contract.py` 的源码路径断言，以及挂起恢复测试中的旧路径注释。
+- `kernel/agent`：108 文件 / 22,668 行；L3：215 文件 / 48,297 行；全仓：437 文件 / 92,177 行。层包数不变，架构边方向无变化。
+
+### 13.2 验证
+
+- 阶段 5 受影响测试：**161 passed**；工具引用门禁测试：**15 passed**；阶段 5 移动模块 Ruff：**All checks passed**。
+- `batch_gate.cmd`：**ALL GREEN**（收集锚点 7,702）；架构图同步检查与 `check_framework_numbers.py` 均通过。
+- 全量 pytest（串行）：**7,595 passed / 106 skipped / 1 failed**。唯一失败为 `test_workspace_git_tools.py::TestFoundationGit::test_git_commit_rich_message_format`，不涉及本阶段改动；设置 `PYTHONUTF8=1` 后单测通过。保留为 Windows 编码环境的独立观察项，不在本阶段扩大修复范围。
+
+**结论**：阶段 5 的迁移和架构验收完成；全仓默认环境仍有上述 1 项独立测试失败，不将其记作全量测试全绿。
