@@ -212,9 +212,9 @@ v1.2 追加一句：**执行面已收敛为单引擎（LoopEngine）**，结构�
 |---|---|---:|---:|---|
 | L1 | `interfaces/` | 118 | 22,070 | 渠道层 + 组装根（哑适配器 + 唯一知道 apps 的位置）|
 | L2 | `apps/` | 41 | 9,654 | 业务插件层（goal / chat / agent_plugins / swarm_presets / scheduled_research / builtin_tools / **algo**）|
-| L3 | `kernel/` | 215 | 48,297 | 平台机制（agent / workflow / gateway / orchestration / events / session / evolution / swarm / …）|
+| L3 | `kernel/` | 217 | 48,305 | 平台机制（agent / workflow / gateway / orchestration / events / session / evolution / swarm / …）|
 | L4 | `foundation/` | 63 | 12,156 | 零业务原语 |
-| — | **合计** | **437** | **92,177** | 上行违规 **0** |
+| — | **合计** | **439** | **92,185** | 上行违规 **0** |
 
 ### 2.2 构件落位表（语义 × 物理 · 状态已回填）
 
@@ -255,7 +255,7 @@ src/agentnodes/                                      418 文件 / 91,340 行
 │   ├── builtin_tools/   业务工具
 │   └── algo/            无前视调仓回测（2026-11-16 自 kernel/algo 迁入）
 ├── kernel/              L3  平台机制
-│   ├── agent/           LoopEngine / LoopSpec / loop_assembly / guardrails / deciders
+│   ├── agent/           LoopEngine / LoopSpec / loop_assembly / guards / telemetry / policy
 │   ├── workflow/        contract.py（B1 节点产物契约）+ 编译器/执行器
 │   ├── evolution/       G/E/P 循环机制（holdout / validation_gate / evolution_agent）
 │   └── gateway/ orchestration/ events/ session/ swarm/ permission/ memory/ skills/
@@ -425,9 +425,9 @@ src/agentnodes/                                      418 文件 / 91,340 行
 | LoopEngine 统一引擎 | `kernel/agent/loop_engine.py` | 562 | 批次 11/12 |
 | LoopSpec 聚合 | `kernel/agent/loop_spec.py` | 284 | 批次 12 |
 | loop_assembly 双工厂收口 | `kernel/agent/loop_assembly.py` | 89 | phase3 |
-| guardrails 护栏 | `kernel/agent/guardrails.py` | 114 | phase5 |
+| guardrails 护栏 | `kernel/agent/guards/guardrails.py` | 114 | phase5 |
 | StepHandler 协议 | `kernel/agent/_core_types.py` | — | 批次 9 |
-| ctx_hash_id 上下文指纹 | `kernel/agent/agent_telemetry.py::compose_ctx_hash_id` | — | `7e68ac77` |
+| ctx_hash_id 上下文指纹 | `kernel/agent/telemetry/agent_telemetry.py::compose_ctx_hash_id` | — | `7e68ac77` |
 | 架构门禁全套 | `scripts/arch/`（14 文件）| — | 批次 4d / 8 |
 | 层级矩阵唯一事实源 | `scripts/arch/layer_matrix.py` | 207 | `layered-skeleton-design-20261103` |
 | 架构图同步器 | `scripts/arch/sync_architecture_diagram.py` | 390 | 批次 4d |

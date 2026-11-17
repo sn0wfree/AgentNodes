@@ -538,9 +538,9 @@
         <span class="code">L3</span>
         <div>
           <div class="nm">kernel · 平台机制层</div>
-          <div class="ds">agent（LoopEngine / LoopSpec / loop_assembly / guardrails）/ workflow（contract）/ evolution / gateway / orchestration / events / session / swarm</div>
+          <div class="ds">agent（LoopEngine / LoopSpec / loop_assembly / guards / telemetry / policy）/ workflow（contract）/ evolution / gateway / orchestration / events / session / swarm</div>
         </div>
-        <span class="st st-ok" data-fw="L3">215 文件 · 48,297 行</span>
+        <span class="st st-ok" data-fw="L3">217 文件 · 48,305 行</span>
       </div>
       <div class="phy-arrow">▼</div>
       <div class="phy-layer l4">
@@ -554,7 +554,7 @@
     </div>
 
     <div class="delta-note" style="margin-top:16px;margin-bottom:0;">
-      合计 <b data-fw="total">437 文件 · 92,177 行</b> · 跨层边：L1→L2 59 · L1→L3 135 · L1→L4 68 ·
+      合计 <b data-fw="total">439 文件 · 92,185 行</b> · 跨层边：L1→L2 59 · L1→L3 135 · L1→L4 68 ·
       L2→L3 33 · L2→L4 11 · L3→L4 88 · <b class="delta-ok">上行违规 0</b>。
       这些数字由 <span class="mono">scripts/arch/check_framework_numbers.py</span> 钉在代码上
       （batch_gate 第 9 步 + CI job + 2 条 pytest 断言）。
@@ -867,9 +867,9 @@
         <tr><td>LoopEngine 统一引擎</td><td class="mono">kernel/agent/loop_engine.py</td><td class="mono">562</td><td>批次 11/12</td></tr>
         <tr><td>LoopSpec 聚合</td><td class="mono">kernel/agent/loop_spec.py</td><td class="mono">284</td><td>批次 12</td></tr>
         <tr><td>loop_assembly 双工厂收口</td><td class="mono">kernel/agent/loop_assembly.py</td><td class="mono">89</td><td>phase3</td></tr>
-        <tr><td>guardrails 护栏</td><td class="mono">kernel/agent/guardrails.py</td><td class="mono">114</td><td>phase5</td></tr>
+        <tr><td>guardrails 护栏</td><td class="mono">kernel/agent/guards/guardrails.py</td><td class="mono">114</td><td>phase5</td></tr>
         <tr><td>StepHandler 协议</td><td class="mono">kernel/agent/_core_types.py</td><td class="mono">—</td><td>批次 9（B1 协议统一）</td></tr>
-        <tr><td>ctx_hash_id 上下文指纹</td><td class="mono">kernel/agent/agent_telemetry.py</td><td class="mono">—</td><td>7e68ac77</td></tr>
+        <tr><td>ctx_hash_id 上下文指纹</td><td class="mono">kernel/agent/telemetry/agent_telemetry.py</td><td class="mono">—</td><td>7e68ac77</td></tr>
         <tr><td>架构门禁全套</td><td class="mono">scripts/arch/（14 文件）</td><td class="mono">—</td><td>批次 4d / 8</td></tr>
         <tr><td>层级矩阵唯一事实源</td><td class="mono">scripts/arch/layer_matrix.py</td><td class="mono">207</td><td>layered-skeleton-design</td></tr>
         <tr><td>架构图同步器</td><td class="mono">scripts/arch/sync_architecture_diagram.py</td><td class="mono">390</td><td>批次 4d</td></tr>

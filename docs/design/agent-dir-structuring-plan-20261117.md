@@ -570,3 +570,20 @@ agentnodes\.kernel\.agent\.tools\b
 - 全量 pytest（串行）：**7,595 passed / 106 skipped / 1 failed**。唯一失败为 `test_workspace_git_tools.py::TestFoundationGit::test_git_commit_rich_message_format`，不涉及本阶段改动；设置 `PYTHONUTF8=1` 后单测通过。保留为 Windows 编码环境的独立观察项，不在本阶段扩大修复范围。
 
 **结论**：阶段 5 的迁移和架构验收完成；全仓默认环境仍有上述 1 项独立测试失败，不将其记作全量测试全绿。
+
+## 14 · 阶段 6 实测（2026-11-17）
+
+### 14.1 落地
+
+- 7 个模块按计划迁入 `guards/`、`telemetry/`，新增两个包入口；生产代码、测试及当前架构文档引用已同步。
+- 将 `redaction`、`trace`、`legacy_audit` 的文件层级路径计算改为从 `agentnodes` 包位置定位，并新增回归测试覆盖包根、runs/sessions 默认目录及仓库根。
+- `kernel/agent`：110 文件 / 22,676 行；L3：217 文件 / 48,305 行；全仓：439 文件 / 92,185 行。跨层边计数不变，上行违规为 0。
+
+### 14.2 验证
+
+- 阶段 6 受影响测试：**180 passed**；迁移路径扫描无旧模块引用。
+- `batch_gate.cmd`：**ALL GREEN**（11/11，收集锚点 7,705）；`check_framework_numbers.py`、`check_dangling_imports.py --layers` 均通过。
+- 全量 pytest（串行）：**7,598 passed / 106 skipped / 1 failed**。唯一失败仍为 `test_workspace_git_tools.py::TestFoundationGit::test_git_commit_rich_message_format`；与本阶段无关，`PYTHONUTF8=1` 下单测通过。
+- guards/telemetry Ruff 检查通过（排除已确认的历史诊断）；`telemetry/legacy_audit.py` 基线已有 2 项 C901 与 1 项 F841，本阶段未做无关清理。
+
+**结论**：阶段 6 的迁移和架构门禁完成；全量 pytest 默认 Windows 编码环境仍有 1 项独立失败，不记为全量测试全绿。
