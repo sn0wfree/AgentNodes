@@ -22,8 +22,8 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any, Callable
 
-from .dag_config import AgentNodeConfig
-from .plugin import AgentPlugin
+from agentnodes.kernel.agent.dag_config import AgentNodeConfig
+from agentnodes.kernel.agent.plugin import AgentPlugin
 
 logger = logging.getLogger(__name__)
 
@@ -116,7 +116,7 @@ class AgentExecutor:
         registry: Any | None = None,
         llm_config: Any | None = None,
     ):
-        from .registry import get_default_registry
+        from agentnodes.kernel.agent.registry import get_default_registry
         self._registry = registry or get_default_registry()
         self._llm_config = llm_config
 
@@ -234,7 +234,7 @@ class AgentExecutor:
         context: dict[str, Any] | None,
         t0: float,
     ) -> AgentExecutionResult:
-        from . import exec_registry
+        from agentnodes.kernel.agent import exec_registry
 
         fn_name = plugin.python_function or plugin.id
         fn = exec_registry.get_python_executor(fn_name)
@@ -272,7 +272,7 @@ class AgentExecutor:
         context: dict[str, Any] | None,
         t0: float,
     ) -> AgentExecutionResult:
-        from . import exec_registry
+        from agentnodes.kernel.agent import exec_registry
 
         fn_name = plugin.python_function or plugin.id
         fn = exec_registry.get_evaluator(fn_name)
@@ -354,8 +354,8 @@ class AgentExecutor:
     ) -> AgentExecutionResult:
         from agentnodes.foundation.llm import LLMConfig
         from agentnodes.kernel.agent.builtin_tools import build_default_registry
-        from .loop import AgentLoop
-        from .prompt_builder import PromptBuilderFactory
+        from agentnodes.kernel.agent.loop import AgentLoop
+        from agentnodes.kernel.agent.prompt_builder import PromptBuilderFactory
 
         if not plugin.prompt_file:
             return AgentExecutionResult(

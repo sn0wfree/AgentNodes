@@ -11,7 +11,7 @@ from __future__ import annotations
 from collections.abc import AsyncIterator, Callable
 from typing import Any
 
-from ._core_types import StreamingHandler
+from agentnodes.kernel.agent._core_types import StreamingHandler
 
 __all__ = ["FnStreamingHandler"]
 

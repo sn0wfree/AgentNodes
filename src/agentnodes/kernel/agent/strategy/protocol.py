@@ -28,7 +28,7 @@ from __future__ import annotations
 
 from typing import Protocol, runtime_checkable
 
-from .loop_context import LoopContext
+from agentnodes.kernel.agent.strategy.loop_context import LoopContext
 
 
 # ── 判定型 Protocol（decider 家族的降级适配面）────────────────────

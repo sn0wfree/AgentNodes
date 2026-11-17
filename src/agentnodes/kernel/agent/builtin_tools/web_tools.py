@@ -5,7 +5,7 @@ from __future__ import annotations
 import logging
 
 from agentnodes.kernel.agent.tools import BaseTool, ToolContext, ToolRegistry
-from .utils import err_actionable
+from agentnodes.kernel.agent.builtin_tools.utils import err_actionable
 
 logger = logging.getLogger(__name__)
 

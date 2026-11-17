@@ -10,7 +10,7 @@ from agentnodes.kernel.agent.tools import (
     ToolContext,
     ToolRegistry,
 )
-from .utils import err_actionable, tool_ok
+from agentnodes.kernel.agent.builtin_tools.utils import err_actionable, tool_ok
 
 logger = logging.getLogger(__name__)
 

@@ -8,7 +8,7 @@ from __future__ import annotations
 
 from typing import Any
 
-from . import loop_endings as _end
+from agentnodes.kernel.agent import loop_endings as _end
 
 __all__ = ["LoopLifecycleMixin"]
 

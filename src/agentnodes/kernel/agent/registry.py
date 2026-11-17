@@ -17,7 +17,7 @@ from __future__ import annotations
 
 from collections.abc import Iterable
 
-from .plugin import AgentPlugin
+from agentnodes.kernel.agent.plugin import AgentPlugin
 
 
 class AgentPluginRegistry:

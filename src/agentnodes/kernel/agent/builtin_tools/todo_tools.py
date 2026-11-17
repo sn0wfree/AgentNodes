@@ -16,7 +16,7 @@ import threading
 from typing import Any
 
 from agentnodes.kernel.agent.tools import EFFECT_DB, BaseTool, ToolContext
-from .utils import err_actionable, try_unwrap_list
+from agentnodes.kernel.agent.builtin_tools.utils import err_actionable, try_unwrap_list
 
 logger = logging.getLogger(__name__)
 

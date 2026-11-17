@@ -16,7 +16,7 @@ from __future__ import annotations
 from pathlib import Path
 from typing import Any
 
-from . import legacy as _legacy
+from agentnodes.kernel.agent.sandbox import legacy as _legacy
 
 
 class StaticSandbox:

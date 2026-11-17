@@ -47,15 +47,15 @@ from agentnodes.foundation.llm import LLMConfig, LLMResponse, OpenAICompatClient
 from agentnodes.foundation.llm.errors import LLMError
 from agentnodes.kernel.memory.persistent import PersistentMemory
 from agentnodes.foundation.utils.ids import SessionId
-from ._core_types import StepResult, maybe_await
-from .circuit_breaker import RetryPolicy, ToolLoopCircuitBreaker
-from .compact import CompactConfig
-from . import agent_telemetry as _tel
-from .context import ContextBuilder, estimate_tokens
-from .runtime.sync_bridge import _get_hook_loop as _get_hook_loop  # noqa: F401
-from .runtime.sync_bridge import _run_coro_in_sync
-from .tools import ToolRegistry
-from .trace import TraceWriter
+from agentnodes.kernel.agent._core_types import StepResult, maybe_await
+from agentnodes.kernel.agent.circuit_breaker import RetryPolicy, ToolLoopCircuitBreaker
+from agentnodes.kernel.agent.compact import CompactConfig
+from agentnodes.kernel.agent import agent_telemetry as _tel
+from agentnodes.kernel.agent.context import ContextBuilder, estimate_tokens
+from agentnodes.kernel.agent.runtime.sync_bridge import _get_hook_loop as _get_hook_loop  # noqa: F401
+from agentnodes.kernel.agent.runtime.sync_bridge import _run_coro_in_sync
+from agentnodes.kernel.agent.tools import ToolRegistry
+from agentnodes.kernel.agent.trace import TraceWriter
 
 logger = logging.getLogger(__name__)
 
@@ -119,7 +119,7 @@ def _get_goal_store() -> Any:
 # names are re-exported here so existing
 # ``from ...loop import register_compaction_persister`` callers
 # (``interfaces/api/app.py``, tests) keep working.
-from .compact import (  # noqa: E402  (kept here to preserve import order)
+from agentnodes.kernel.agent.compact import (  # noqa: E402  (kept here to preserve import order)
     compaction_persister_registered,
     get_compaction_persister,
     register_compaction_persister,
@@ -173,7 +173,7 @@ def _merge_spec(explicit: Any, folded: Any) -> Any:
     """
     from dataclasses import fields as _fields
 
-    from .loop_spec import LoopSpec as _LoopSpec
+    from agentnodes.kernel.agent.loop_spec import LoopSpec as _LoopSpec
 
     merged = _LoopSpec()
     defaults = _LoopSpec.fold_legacy_kwargs({})
@@ -268,12 +268,12 @@ def _tool_call_hash(tc: ToolCall) -> str:
 # ── AgentLoop ────────────────────────────────────────────────────────
 
 
-from .loop_compaction import LoopCompactionMixin
-from .loop_lifecycle import LoopLifecycleMixin
-from .loop_progress import LoopProgressMixin
-from .loop_stream import LoopStreamMixin
-from .loop_telemetry import LoopTelemetryMixin
-from .loop_tools import LoopToolsMixin
+from agentnodes.kernel.agent.loop_compaction import LoopCompactionMixin
+from agentnodes.kernel.agent.loop_lifecycle import LoopLifecycleMixin
+from agentnodes.kernel.agent.loop_progress import LoopProgressMixin
+from agentnodes.kernel.agent.loop_stream import LoopStreamMixin
+from agentnodes.kernel.agent.loop_telemetry import LoopTelemetryMixin
+from agentnodes.kernel.agent.loop_tools import LoopToolsMixin
 
 
 class AgentLoop(
@@ -372,7 +372,7 @@ class AgentLoop(
         # 批次 12 S2：把旧式参数折叠进 LoopSpec（单一事实源
         # ``loop_spec._LEGACY_MAP``）。显式传 spec 时以其为准，
         # 旧参数作为**覆盖层**（便于渐进迁移：先传 spec，再逐项删旧参）。
-        from .loop_spec import LoopSpec as _LoopSpec
+        from agentnodes.kernel.agent.loop_spec import LoopSpec as _LoopSpec
 
         _folded = _LoopSpec.fold_legacy_kwargs({
             # Scope（**workspace 曾漏传 → 工具拿不到 ctx.workspace，
@@ -488,13 +488,13 @@ class AgentLoop(
         if _injectors is not None:
             self._injectors = sorted(_injectors, key=lambda i: getattr(i, "order", 0))
         else:
-            from .context_injector import build_default_injectors
+            from agentnodes.kernel.agent.context_injector import build_default_injectors
             self._injectors = build_default_injectors()
         # P5-4: pre-run 上下文（goal/memory）经 ContextHub 收集——唯一组装点。
         # per-iteration / post-response injector 仍走 self._injectors 原通路
         # （设计：docs/archive/2026-10/stage-p54-context-hub-w0-design-20261027.md §1）。
         from agentnodes.kernel.context import ContextHub
-        from .context_providers import build_prerun_context_provider
+        from agentnodes.kernel.agent.context_providers import build_prerun_context_provider
 
         self.context_hub = ContextHub()
         self.context_hub.register(build_prerun_context_provider(self, self._injectors))
@@ -1013,9 +1013,9 @@ class AgentLoop(
         handlers 绑定 self，复用全部既有能力——引擎本体不知道预算怎么算、
         工具怎么执行。
         """
-        from .modes import deciders_for
-        from .loop_engine import LoopEngine
-        from .loop_engine_adapters import (
+        from agentnodes.kernel.agent.modes import deciders_for
+        from agentnodes.kernel.agent.loop_engine import LoopEngine
+        from agentnodes.kernel.agent.loop_engine_adapters import (
             LoopActor,
             LoopFinalize,
             LoopHooks,
@@ -1057,7 +1057,7 @@ class AgentLoop(
         history: list[dict[str, Any]] | None,
     ) -> Any:
         """构造一次运行的 spec（U5.5 从 ``_run_via_skeleton`` 提取）。"""
-        from .loop_engine import LoopEngineSpec
+        from agentnodes.kernel.agent.loop_engine import LoopEngineSpec
 
         return LoopEngineSpec(
             task=task,
@@ -1146,7 +1146,7 @@ class AgentLoop(
         # task (docs/design/phase5-guardrails-design.md §2.3). Emits only — never
         # alters the message path; see extension-points.md hooks red line.
         try:
-            from .guardrails import scan_user_input
+            from agentnodes.kernel.agent.guardrails import scan_user_input
 
             for finding in scan_user_input(task, source_id=self.session_id or ""):
                 self._emit("guardrail.finding", finding.to_dict())

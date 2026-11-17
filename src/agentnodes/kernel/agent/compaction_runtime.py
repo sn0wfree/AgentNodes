@@ -21,7 +21,7 @@ import logging
 from typing import Any, Callable
 
 from agentnodes.foundation.utils.token_utils import estimate_tokens
-from . import compact as _compact_mod
+from agentnodes.kernel.agent import compact as _compact_mod
 
 logger = logging.getLogger(__name__)
 

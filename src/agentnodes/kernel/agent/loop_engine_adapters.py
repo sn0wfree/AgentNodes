@@ -14,9 +14,9 @@ from __future__ import annotations
 import logging
 from typing import Any
 
-from ._core_types import StepHandler, StepResult
-from .loop import _make_strategy_ctx
-from .strategy.loop_context import LoopContext
+from agentnodes.kernel.agent._core_types import StepHandler, StepResult
+from agentnodes.kernel.agent.loop import _make_strategy_ctx
+from agentnodes.kernel.agent.strategy.loop_context import LoopContext
 
 logger = logging.getLogger(__name__)
 
@@ -208,7 +208,7 @@ class LoopPrepare:
         # decider 侧 ``ctx.pause(reason=..., payload=...)`` 创建挂起点
         # （**不阻塞**），引擎据此 yield pause 事件 → await 恢复 → 重跑该闸位。
         # 详见 design doc §3.5 与 kernel/agent/pause.py。
-        from .pause import attach_pause
+        from agentnodes.kernel.agent.pause import attach_pause
 
         attach_pause(ctx)
         # 批次 13 S3-a：保留用户原始 task（``full_task`` 已被 pre-run
@@ -238,7 +238,7 @@ class LoopIterationStart:
         loop = self._loop
         if not getattr(loop, "_wrap_up_nudge", False):
             return
-        from .loop import WRAP_UP_RATIO, WRAP_UP_NUDGE_TEXT
+        from agentnodes.kernel.agent.loop import WRAP_UP_RATIO, WRAP_UP_NUDGE_TEXT
 
         max_iter = loop._effective_max_iterations()
         ratio = getattr(loop, "_wrap_up_ratio", WRAP_UP_RATIO)
@@ -280,7 +280,7 @@ class LoopHooks:
         # ``raw_task`` 由 LoopPrepare 写入（``ctx.task`` 已含 pre-run 前缀）。
         original_task = (getattr(ctx, "metadata", None) or {}).get("raw_task", "")
         try:
-            from .guardrails import scan_user_input
+            from agentnodes.kernel.agent.guardrails import scan_user_input
 
             for finding in scan_user_input(
                 original_task, source_id=loop.session_id or "",

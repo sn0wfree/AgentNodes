@@ -24,30 +24,30 @@ All three register themselves in the factory at import time (see
 the bottom of this module).
 """
 
-from .._core_types import StepHandler
-from .custom_steps import (
+from agentnodes.kernel.agent._core_types import StepHandler
+from agentnodes.kernel.agent.strategy.custom_steps import (
     ClaimValidationFinalizationStep,
     NoOpToolExecutionStep,
 )
-from .explorer import ExplorerStrategy, ExplorerStrategyFactory
-from .factory import (
+from agentnodes.kernel.agent.strategy.explorer import ExplorerStrategy, ExplorerStrategyFactory
+from agentnodes.kernel.agent.strategy.factory import (
     CustomStrategy,
     ReActStrategyFactory,
     StrategyFactory,
     create_strategy,
     register_strategy,
 )
-from .loop_context import LoopContext
-from .loop_strategy import LoopConfig, LoopStrategy
-from .minimal import MinimalStrategy, MinimalStrategyFactory
-from .profile_resolver import resolve_loop_strategy
-from .protocol import (
+from agentnodes.kernel.agent.strategy.loop_context import LoopContext
+from agentnodes.kernel.agent.strategy.loop_strategy import LoopConfig, LoopStrategy
+from agentnodes.kernel.agent.strategy.minimal import MinimalStrategy, MinimalStrategyFactory
+from agentnodes.kernel.agent.strategy.profile_resolver import resolve_loop_strategy
+from agentnodes.kernel.agent.strategy.protocol import (
     ContinuationStep,
     ProgressStep,
     ResilienceStep,
     StopStep,
 )
-from .steps import (
+from agentnodes.kernel.agent.strategy.steps import (
     DefaultCompactionStep,
     DefaultContinuationStep,
     DefaultFinalizationStep,
@@ -58,7 +58,7 @@ from .steps import (
     DefaultStopStep,
     DefaultToolExecutionStep,
 )
-from .validator import ValidatorStrategy, ValidatorStrategyFactory
+from agentnodes.kernel.agent.strategy.validator import ValidatorStrategy, ValidatorStrategyFactory
 
 __all__ = [
     "ClaimValidationFinalizationStep",

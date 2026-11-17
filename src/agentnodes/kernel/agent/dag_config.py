@@ -10,8 +10,8 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from typing import Any
 
-from .plugin import AgentPlugin
-from .registry import AgentPluginRegistry, get_default_registry
+from agentnodes.kernel.agent.plugin import AgentPlugin
+from agentnodes.kernel.agent.registry import AgentPluginRegistry, get_default_registry
 
 
 @dataclass

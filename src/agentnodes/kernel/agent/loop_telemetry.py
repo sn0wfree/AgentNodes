@@ -12,7 +12,7 @@ from __future__ import annotations
 import asyncio
 from typing import Any
 
-from . import agent_telemetry as _tel
+from agentnodes.kernel.agent import agent_telemetry as _tel
 
 __all__ = ["LoopTelemetryMixin"]
 

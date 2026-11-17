@@ -6,7 +6,7 @@ import time
 from dataclasses import dataclass
 from typing import Any
 
-from ..strategy.budget import (
+from agentnodes.kernel.agent.strategy.budget import (
     BudgetLimits,
     BudgetUsage,
     evaluate_budget,

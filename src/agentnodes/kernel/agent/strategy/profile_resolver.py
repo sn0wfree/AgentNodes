@@ -30,8 +30,8 @@ from __future__ import annotations
 
 from typing import Any
 
-from .factory import create_strategy
-from .loop_strategy import LoopConfig, LoopStrategy
+from agentnodes.kernel.agent.strategy.factory import create_strategy
+from agentnodes.kernel.agent.strategy.loop_strategy import LoopConfig, LoopStrategy
 
 __all__ = ["resolve_loop_strategy"]
 

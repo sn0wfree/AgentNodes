@@ -32,8 +32,8 @@ from __future__ import annotations
 
 from typing import Any
 
-from .._core_types import StepHandler, StepResult
-from .loop_context import LoopContext
+from agentnodes.kernel.agent._core_types import StepHandler, StepResult
+from agentnodes.kernel.agent.strategy.loop_context import LoopContext
 
 
 class ClaimValidationFinalizationStep(StepHandler):

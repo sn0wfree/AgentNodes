@@ -13,8 +13,8 @@ logger = logging.getLogger(__name__)
 
 from concurrent.futures import ThreadPoolExecutor, as_completed
 
-from .progress import HeartbeatTimer
-from .tools import TRANSIENT_TOOL_ERRORS, ToolContext
+from agentnodes.kernel.agent.progress import HeartbeatTimer
+from agentnodes.kernel.agent.tools import TRANSIENT_TOOL_ERRORS, ToolContext
 
 _TOOL_MAX_RETRIES = 2
 _TOOL_RETRY_DELAY = 2.0
@@ -23,7 +23,7 @@ from agentnodes.kernel.agent.runtime.sync_bridge import _run_coro_in_sync
 
 if TYPE_CHECKING:
     from agentnodes.foundation.llm.parser import ToolCall
-    from .loop import LoopResult
+    from agentnodes.kernel.agent.loop import LoopResult
 
 class LoopToolsMixin:
 # ── Host surface (provided by AgentLoop / AutoresearchRunner) ──

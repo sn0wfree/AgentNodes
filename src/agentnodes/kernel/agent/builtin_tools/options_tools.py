@@ -8,7 +8,7 @@ from agentnodes.kernel.agent.tools import (
     BaseTool,
     ToolContext,
 )
-from .utils import err_actionable, tool_ok
+from agentnodes.kernel.agent.builtin_tools.utils import err_actionable, tool_ok
 
 logger = logging.getLogger(__name__)
 

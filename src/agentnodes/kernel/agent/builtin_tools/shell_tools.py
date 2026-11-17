@@ -13,7 +13,7 @@ import subprocess
 import time
 
 from agentnodes.kernel.agent.tools import EFFECT_FS, EFFECT_NET, BaseTool, ToolContext, ToolRegistry
-from .utils import err_actionable
+from agentnodes.kernel.agent.builtin_tools.utils import err_actionable
 
 logger = logging.getLogger(__name__)
 

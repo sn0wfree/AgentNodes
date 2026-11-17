@@ -24,9 +24,9 @@ from typing import Any, AsyncIterator, Callable
 
 from agentnodes.kernel.events.event_v2 import EventV2
 from agentnodes.foundation.protocol import ProtocolVersionError
-from .cache import CacheConfig, SessionCache, SessionLockMap
-from .memory_manager import InMemoryStore, SQLiteStore, resolve_db_path
-from .projection_port import ProjectionInterest, ProjectionSink
+from agentnodes.kernel.agent.cache import CacheConfig, SessionCache, SessionLockMap
+from agentnodes.kernel.agent.memory_manager import InMemoryStore, SQLiteStore, resolve_db_path
+from agentnodes.kernel.agent.projection_port import ProjectionInterest, ProjectionSink
 
 logger = logging.getLogger(__name__)
 

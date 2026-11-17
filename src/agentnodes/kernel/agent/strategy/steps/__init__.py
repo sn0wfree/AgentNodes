@@ -8,15 +8,15 @@ specific steps.
 
 from __future__ import annotations
 
-from .compaction import DefaultCompactionStep
-from .continuation import DefaultContinuationStep
-from .finalization import DefaultFinalizationStep
-from .llm_call import DefaultLLMCallStep
-from .pre_run import DefaultPreRunStep
-from .progress import DefaultProgressStep
-from .resilience import DefaultResilienceStep
-from .stop import DefaultStopStep
-from .tool_execution import DefaultToolExecutionStep
+from agentnodes.kernel.agent.strategy.steps.compaction import DefaultCompactionStep
+from agentnodes.kernel.agent.strategy.steps.continuation import DefaultContinuationStep
+from agentnodes.kernel.agent.strategy.steps.finalization import DefaultFinalizationStep
+from agentnodes.kernel.agent.strategy.steps.llm_call import DefaultLLMCallStep
+from agentnodes.kernel.agent.strategy.steps.pre_run import DefaultPreRunStep
+from agentnodes.kernel.agent.strategy.steps.progress import DefaultProgressStep
+from agentnodes.kernel.agent.strategy.steps.resilience import DefaultResilienceStep
+from agentnodes.kernel.agent.strategy.steps.stop import DefaultStopStep
+from agentnodes.kernel.agent.strategy.steps.tool_execution import DefaultToolExecutionStep
 
 __all__ = [
     "DefaultCompactionStep",

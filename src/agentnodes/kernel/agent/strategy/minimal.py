@@ -17,9 +17,9 @@ from __future__ import annotations
 
 from typing import Optional
 
-from .custom_steps import NoOpToolExecutionStep
-from .factory import CustomStrategy, ReActStrategyFactory
-from .loop_strategy import LoopConfig, LoopStrategy
+from agentnodes.kernel.agent.strategy.custom_steps import NoOpToolExecutionStep
+from agentnodes.kernel.agent.strategy.factory import CustomStrategy, ReActStrategyFactory
+from agentnodes.kernel.agent.strategy.loop_strategy import LoopConfig, LoopStrategy
 
 __all__ = ["MinimalStrategy", "MinimalStrategyFactory"]
 

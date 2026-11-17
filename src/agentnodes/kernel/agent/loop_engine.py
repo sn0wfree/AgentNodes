@@ -39,8 +39,8 @@ from collections.abc import AsyncIterator
 from dataclasses import dataclass, field
 from typing import Any, Callable
 
-from .deciders import Decision
-from ._core_types import StepResult
+from agentnodes.kernel.agent.deciders import Decision
+from agentnodes.kernel.agent._core_types import StepResult
 
 logger = logging.getLogger(__name__)
 

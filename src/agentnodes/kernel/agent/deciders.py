@@ -30,8 +30,8 @@ from __future__ import annotations
 from enum import Enum
 from typing import Any
 
-from ._core_types import StepHandler, StepResult
-from .strategy.loop_context import LoopContext
+from agentnodes.kernel.agent._core_types import StepHandler, StepResult
+from agentnodes.kernel.agent.strategy.loop_context import LoopContext
 
 __all__ = [
     "BudgetDecider",

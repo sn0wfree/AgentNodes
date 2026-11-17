@@ -12,7 +12,7 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from typing import Any
 
-from .deciders import (
+from agentnodes.kernel.agent.deciders import (
     BudgetDecider,
     CircuitBreakerDecider,
     Decider,

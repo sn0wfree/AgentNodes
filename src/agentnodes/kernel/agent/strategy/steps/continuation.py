@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from ..loop_context import LoopContext
+from agentnodes.kernel.agent.strategy.loop_context import LoopContext
 
 
 class DefaultContinuationStep:

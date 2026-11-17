@@ -6,8 +6,8 @@ Replaces the v0.1 stub: evaluates the three-dimensional run budget
 
 from __future__ import annotations
 
-from ..budget import BudgetLimits, BudgetUsage, evaluate_budget
-from ..loop_context import LoopContext
+from agentnodes.kernel.agent.strategy.budget import BudgetLimits, BudgetUsage, evaluate_budget
+from agentnodes.kernel.agent.strategy.loop_context import LoopContext
 
 
 class BudgetStopStep:

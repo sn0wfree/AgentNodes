@@ -13,7 +13,7 @@
 
 from __future__ import annotations
 
-from .registry import (
+from agentnodes.kernel.agent.capability.registry import (
     CapabilityAlreadyRegistered,
     CapabilityFactory,
     CapabilityNotFound,

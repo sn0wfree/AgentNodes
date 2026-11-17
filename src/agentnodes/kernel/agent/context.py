@@ -19,7 +19,7 @@ import logging
 from pathlib import Path
 from typing import Any
 
-from ..agent.tools import ToolRegistry
+from agentnodes.kernel.agent.tools import ToolRegistry
 from agentnodes.foundation.llm.config import LLMConfig
 from agentnodes.kernel.memory.persistent import PersistentMemory
 

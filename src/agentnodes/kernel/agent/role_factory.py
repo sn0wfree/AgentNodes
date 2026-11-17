@@ -19,7 +19,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
-    from .loop import AgentLoop
+    from agentnodes.kernel.agent.loop import AgentLoop
 
 import json
 import os
@@ -49,8 +49,8 @@ _ROLE_PROMPT_FILES = {
 
 # Role → tool whitelist now lives in core.agent.toolsets (A2).
 # Kept as a thin alias for backwards compatibility.
-from .toolsets import TOOLSETS as _ROLE_TOOL_WHITELIST
-from .toolsets import resolve_toolset as _resolve_toolset
+from agentnodes.kernel.agent.toolsets import TOOLSETS as _ROLE_TOOL_WHITELIST
+from agentnodes.kernel.agent.toolsets import resolve_toolset as _resolve_toolset
 
 
 def _get_tool_whitelist(role: str) -> list[str]:

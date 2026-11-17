@@ -31,7 +31,7 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any, Protocol
 
-from .cache import (
+from agentnodes.kernel.agent.cache import (
     CacheConfig,
     ConfigValidator,
     SessionCache,
@@ -255,7 +255,7 @@ class DynamicAvgTokenEstimator:
         if len(samples) < self._config.avg_tokens_min_samples:
             return self._config.avg_tokens_per_message
 
-        from .cache import compute_p86_plus_sigma
+        from agentnodes.kernel.agent.cache import compute_p86_plus_sigma
         try:
             p86_plus_sigma = compute_p86_plus_sigma(samples)
             estimated = int(
@@ -483,7 +483,7 @@ class UnifiedMemoryManager:
         Lazy import: ``event_store`` imports this module at module level.
         The instance is kept because it owns a SQLite connection.
         """
-        from .event_store import EventStore
+        from agentnodes.kernel.agent.event_store import EventStore
 
         store = getattr(self, "_event_store", None)
         if store is None:

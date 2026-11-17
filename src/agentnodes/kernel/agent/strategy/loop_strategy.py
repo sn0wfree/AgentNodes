@@ -13,9 +13,9 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 
-from .._core_types import StepHandler
-from .loop_context import LoopContext
-from .protocol import (
+from agentnodes.kernel.agent._core_types import StepHandler
+from agentnodes.kernel.agent.strategy.loop_context import LoopContext
+from agentnodes.kernel.agent.strategy.protocol import (
     ContinuationStep,
     ProgressStep,
     ResilienceStep,

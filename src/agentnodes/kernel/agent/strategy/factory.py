@@ -17,8 +17,8 @@ from __future__ import annotations
 
 from typing import Callable, Optional
 
-from .loop_strategy import LoopConfig, LoopStrategy
-from .steps import (
+from agentnodes.kernel.agent.strategy.loop_strategy import LoopConfig, LoopStrategy
+from agentnodes.kernel.agent.strategy.steps import (
     DefaultCompactionStep,
     DefaultContinuationStep,
     DefaultFinalizationStep,

@@ -36,7 +36,7 @@ def build_tool_context(
     Mirrors ``AgentLoop._execute_tool_call_core``'s constructor argument
     list so both executors produce equivalent contexts.
     """
-    from .tools import ToolContext
+    from agentnodes.kernel.agent.tools import ToolContext
 
     return ToolContext(
         workspace=workspace,

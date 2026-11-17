@@ -11,7 +11,7 @@ subpackage could expose ``ExecutionSandbox`` and ``StaticSandbox``
 without name collisions.
 """
 
-from .legacy import (
+from agentnodes.kernel.agent.sandbox.legacy import (
     DEFAULT_READ_ROOTS,
     DEFAULT_WRITE_ROOTS,
     ASTValidationError,
@@ -20,8 +20,8 @@ from .legacy import (
     validate_python_source,
     validate_python_source_or_raise,
 )
-from .protocol import ExecutionSandbox
-from .static_sandbox import StaticSandbox
+from agentnodes.kernel.agent.sandbox.protocol import ExecutionSandbox
+from agentnodes.kernel.agent.sandbox.static_sandbox import StaticSandbox
 
 __all__ = [
     # P0-2 Protocol + default provider

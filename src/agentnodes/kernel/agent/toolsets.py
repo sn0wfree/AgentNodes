@@ -20,7 +20,7 @@ from __future__ import annotations
 
 from typing import Iterable
 
-from .tools import ToolRegistry
+from agentnodes.kernel.agent.tools import ToolRegistry
 
 # Name → tool names. Keep lists small: every entry costs prompt tokens.
 #

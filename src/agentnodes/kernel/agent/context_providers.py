@@ -147,7 +147,7 @@ def build_prerun_provider_for_session(
     ``GoalContextInjector`` / ``MemoryRetrieverInjector`` the AgentLoop path
     runs, so goal/memory block shapes cannot drift between executors.
     """
-    from .context_injector import GoalContextInjector, MemoryRetrieverInjector
+    from agentnodes.kernel.agent.context_injector import GoalContextInjector, MemoryRetrieverInjector
 
     return SessionScopedPreRunProvider(
         _LoopFacade(

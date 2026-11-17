@@ -609,7 +609,7 @@ class BaseTool(ABC):
             }, ensure_ascii=False)
 
         # A3: structured ToolResult → wire envelope; legacy str/dict pass through.
-        from .tool_result import ToolResult, to_json
+        from agentnodes.kernel.agent.tool_result import ToolResult, to_json
 
         if isinstance(raw, ToolResult):
             return to_json(raw)
