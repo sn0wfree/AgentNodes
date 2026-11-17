@@ -156,3 +156,21 @@ def dual_log(module: str, msg: str, *args) -> None:
 - B 类 print 转换 ~51 处：db.py 26、data_import.py 14（7 失败→warning、7 进度→dual_log）、config_runner.py 5、autoresearch.py 3、mcp 邻接 1（slash_commands）、backtest/loader 各 1
 - 豁免清单（print 是产品语义，冻结数量）：engine/base.py 2（run.log→log_stall 数据通道）、mcp/server.py 3（JSON-RPC 协议帧）、preflight.py 10（isatty CLI 报告）、alpha_zoo_convert.py 5（CLI 批处理）、docstring 示例 6（AST 扫描天然排除）
 - 新测试：test_logging_setup.py（24）、test_print_governance.py（5，AST 门禁）、test_trace_context 回归（defect #17）、test_config_runner_factors 断言迁移 capsys→caplog
+
+
+## 8. 后续演进（2026-11-17）
+
+本文件的装配层契约（configure_logging 策略表 / TraceFilter / dual_log）持续有效；
+获取层与门禁在同日的统一日志中枢评审中演进为终局形态，
+见 `docs/design/logging-unified-hub-design-20261117.md` §12：
+
+1. **获取层维持 stdlib 直用**：每模块 `logging.getLogger(__name__)`（官方成语）——
+   不引入包装层/门面。理由：stdlib logging 本身就是零依赖门面；包装层增值
+   零消费方，迁移 159 文件零行为收益。
+2. **本模块新增 `timed_deco(logger, ...)`**：call-site 计时装饰器（成功按 level、
+   异常 warning + 栈 + 耗时并 re-raise；level 白名单装饰时校验），
+   与 `dual_log` 同类，从统一中枢评审的参考实现吸收。
+3. **新增装配纪律门禁** `scripts/arch/check_logging_assembly.py`（batch_gate 第 10 步）：
+   ① 装配调用（basicConfig/dictConfig/addHandler/setLevel/各 Handler/Formatter）
+   只许在 foundation/observability/；② 无参 getLogger()（root）只许 observability 包内。
+   守护本文件达成的「装配集中」不被新代码破坏。

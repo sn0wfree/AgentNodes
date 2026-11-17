@@ -58,7 +58,12 @@ def _iter_py(root: Path):
 
 
 def find_violations(src_root: Path) -> list[tuple[str, int, str]]:
-    """返回 [(相对路径, 行号, 违规类型), ...]。"""
+    """返回 [(相对路径, 行号, 违规类型), ...]。
+
+    兼容两种调用形态：``logging.basicConfig(...)``（Attribute）与
+    ``from logging import basicConfig; basicConfig(...)``（Name）——
+    后者是首批注入自检抓出的盲区。
+    """
     violations: list[tuple[str, int, str]] = []
     for p in _iter_py(src_root):
         rel = p.relative_to(src_root).as_posix()
@@ -69,12 +74,17 @@ def find_violations(src_root: Path) -> list[tuple[str, int, str]]:
         except SyntaxError:
             continue
         for node in ast.walk(tree):
-            if isinstance(node, ast.Call) and isinstance(node.func, ast.Attribute):
-                attr = node.func.attr
+            if not isinstance(node, ast.Call):
+                continue
+            func = node.func
+            if isinstance(func, ast.Attribute):
+                attr = func.attr
                 if attr in ASSEMBLY_CALLS:
                     violations.append((rel, node.lineno, f"assembly-leak: .{attr}()"))
                 elif attr == "getLogger" and not node.args:
                     violations.append((rel, node.lineno, "root-misuse: getLogger() 无参"))
+            elif isinstance(func, ast.Name) and func.id in ASSEMBLY_CALLS:
+                violations.append((rel, node.lineno, f"assembly-leak: {func.id}()"))
     return violations
 
 
@@ -88,7 +98,9 @@ def selftest() -> int:
             "logging.basicConfig(level=1)\n"
             "ROOT = logging.getLogger()\n"
             "h = logging.StreamHandler()\n"
-            "ROOT.addHandler(h)\n",
+            "ROOT.addHandler(h)\n"
+            "from logging import FileHandler\n"
+            "FileHandler('x.log')\n",
             encoding="utf-8",
         )
         clean = Path(td) / "pkg" / "clean.py"
@@ -108,10 +120,11 @@ def selftest() -> int:
         if clean_hits:
             print(f"[X] selftest 失败：合规文件被误报 {clean_hits}")
             return 1
-        if not {2, 3, 5} <= bad_lines:
+        # 2 basicConfig · 3 getLogger() · 5 addHandler · 7 from-import 裸名 FileHandler
+        if not {2, 3, 5, 7} <= bad_lines:
             print(f"[X] selftest 失败：违规行号不全，实得 {sorted(bad_lines)}")
             return 1
-    print("[OK] selftest：basicConfig(2)/getLogger()(3)/addHandler(5) 全部报出，合规文件零误报")
+    print("[OK] selftest：Attribute/Name 两形态违规全报出（2/3/5/7 行），合规文件零误报")
     return 0
 
 
