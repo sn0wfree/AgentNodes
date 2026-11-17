@@ -53,7 +53,7 @@
   semantic: E
   files:                     # 两文件都断言
     - src/agentnodes/kernel/evolution/skill_memory.py
-    - src/agentnodes/kernel/agent/harness_resolver.py
+    - src/agentnodes/kernel/agent/factory/harness_resolver.py
   allowed_layers: [L3]
   evidence: framework v1.1 §2.2
 

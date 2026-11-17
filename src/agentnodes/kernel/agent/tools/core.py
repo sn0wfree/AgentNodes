@@ -856,7 +856,7 @@ class ToolRegistry:
         """
         names = list(self._tools)
         try:
-            from agentnodes.kernel.agent.harness_resolver import (
+            from agentnodes.kernel.agent.factory.harness_resolver import (
                 resolve_harness,
             )
 

@@ -417,7 +417,7 @@ class SessionController:
         engine = GraphEngine(sink=self._sink)
         if self._registry is not None:
             from agentnodes.foundation.llm import LLMConfig
-            from agentnodes.kernel.agent.harness_resolver import (
+            from agentnodes.kernel.agent.factory.harness_resolver import (
                 apply_compaction_overrides,
             )
             from agentnodes.kernel.agent.loop.core import AgentLoop

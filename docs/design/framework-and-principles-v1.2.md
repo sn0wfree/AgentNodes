@@ -212,9 +212,9 @@ v1.2 追加一句：**执行面已收敛为单引擎（LoopEngine）**，结构�
 |---|---|---:|---:|---|
 | L1 | `interfaces/` | 118 | 22,070 | 渠道层 + 组装根（哑适配器 + 唯一知道 apps 的位置）|
 | L2 | `apps/` | 41 | 9,654 | 业务插件层（goal / chat / agent_plugins / swarm_presets / scheduled_research / builtin_tools / **algo**）|
-| L3 | `kernel/` | 218 | 48,313 | 平台机制（agent / workflow / gateway / orchestration / events / session / evolution / swarm / …）|
+| L3 | `kernel/` | 219 | 48,319 | 平台机制（agent / workflow / gateway / orchestration / events / session / evolution / swarm / …）|
 | L4 | `foundation/` | 63 | 12,156 | 零业务原语 |
-| — | **合计** | **440** | **92,193** | 上行违规 **0** |
+| — | **合计** | **441** | **92,199** | 上行违规 **0** |
 
 ### 2.2 构件落位表（语义 × 物理 · 状态已回填）
 
@@ -255,7 +255,7 @@ src/agentnodes/                                      418 文件 / 91,340 行
 │   ├── builtin_tools/   业务工具
 │   └── algo/            无前视调仓回测（2026-11-16 自 kernel/algo 迁入）
 ├── kernel/              L3  平台机制
-│   ├── agent/           LoopEngine / LoopSpec / loop_assembly / plugins / guards / telemetry / policy
+│   ├── agent/           LoopEngine / LoopSpec / loop_assembly / factory / plugins / guards / telemetry / policy
 │   ├── workflow/        contract.py（B1 节点产物契约）+ 编译器/执行器
 │   ├── evolution/       G/E/P 循环机制（holdout / validation_gate / evolution_agent）
 │   └── gateway/ orchestration/ events/ session/ swarm/ permission/ memory/ skills/

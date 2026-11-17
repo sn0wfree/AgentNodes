@@ -18,8 +18,8 @@ import pytest
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
 
 from agentnodes.foundation.compact_config import CompactConfig
-from agentnodes.kernel.agent import harness_resolver
-from agentnodes.kernel.agent.harness_resolver import (
+from agentnodes.kernel.agent.factory import harness_resolver
+from agentnodes.kernel.agent.factory.harness_resolver import (
     AssembledHarness,
     apply_compaction_overrides,
     assemble,

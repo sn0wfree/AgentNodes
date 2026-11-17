@@ -17,7 +17,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
 
 import agentnodes.apps  # noqa: F401,E402 —— 触发能力注册
 from agentnodes.foundation.compact_config import CompactConfig
-from agentnodes.kernel.agent.harness_resolver import (  # noqa: E402
+from agentnodes.kernel.agent.factory.harness_resolver import (  # noqa: E402
     apply_compaction_overrides,
     apply_skill_set,
     apply_tool_set,

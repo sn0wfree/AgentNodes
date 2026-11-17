@@ -466,7 +466,7 @@ class PromptBuilderFactory:
         RSI 时返回空 dict，``get()`` 的行为完全不变。
         """
         try:
-            from agentnodes.kernel.agent.harness_resolver import (
+            from agentnodes.kernel.agent.factory.harness_resolver import (
                 resolve_harness,
             )
 
@@ -485,7 +485,7 @@ class PromptBuilderFactory:
         文件，避免两处各自实现一套查找逻辑。
         """
         try:
-            from agentnodes.kernel.agent.harness_resolver import (
+            from agentnodes.kernel.agent.factory.harness_resolver import (
                 _load_skills,
                 resolve_harness,
             )
