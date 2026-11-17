@@ -541,6 +541,8 @@ agentnodes\.kernel\.agent\.tools\b
 | **7** | plugins(5) + factory(4) | 9 | 104 | factory 内 chat_loop 影响面最大（31） |
 | **8** | state(4) | 4 | 70 | 唯一有内部环的一组（顶层/函数内分层已验证无初始化环） |
 
+**阶段 7 分步执行**（每步独立验证、独立提交）：plugins(5) → factory helper（frontmatter / harness_resolver）→ factory 构造模块（role_factory / chat_loop）→ 全量验收与文档回填。
+
 ### 12.4 每阶段固定动作（前四轮已验证的方法论，§11.5）
 
 1. **移动前** grep `__file__` / `parents[` / `.parent` → 层数敏感的**先改成按 `agentnodes` 包根定位**；
@@ -587,3 +589,20 @@ agentnodes\.kernel\.agent\.tools\b
 - guards/telemetry Ruff 检查通过（排除已确认的历史诊断）；`telemetry/legacy_audit.py` 基线已有 2 项 C901 与 1 项 F841，本阶段未做无关清理。
 
 **结论**：阶段 6 的迁移和架构门禁完成；全量 pytest 默认 Windows 编码环境仍有 1 项独立失败，不记为全量测试全绿。
+
+## 15 · 阶段 7 实测（2026-11-17）
+
+### 15.1 落地
+
+- 9 个计划模块分别迁入 `plugins/`、`factory/`；新增两个包入口，并同步生产导入、测试导入、monkeypatch 字符串和活动设计文档引用。历史探针脚本中的 `core/agent/...` 旧路径按计划保留。
+- 分三批提交：plugins `020e39ba`、factory helpers `a8485491`、factory 构造模块 `5ccdeb47`；最终验收与本文档另行提交。
+- L3：219 文件 / 48,319 行；全仓：441 文件 / 92,199 行；跨层边计数不变，上行违规为 0。
+
+### 15.2 验证
+
+- 子批受影响测试：plugins **196 passed / 2 skipped**；factory helpers **157 passed**；factory 构造模块 **168 passed / 8 skipped**。
+- 全量 pytest（`PYTHONUTF8=1`、12 workers）：**7,599 passed / 106 skipped / 0 failed**。
+- `batch_gate.cmd`：**ALL GREEN**（11/11，收集 7,705）；语义放置 17 项检查通过，旧正式模块导入路径扫描为 0。
+- `sync_architecture_diagram.py`、`check_framework_numbers.py` 均通过；迁移测试子集 Ruff 检查通过。全目标文件扫描仍有既存 import 排序/未使用导入告警，本阶段未扩大到无关清理。
+
+**结论**：阶段 7 迁移与最终验收完成；插件、装配辅助与高影响构造模块已按职责收敛到子包。
