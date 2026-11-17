@@ -132,3 +132,153 @@ class TestDefaultRegistry:
         reset_default_registry()
         b = get_default_registry()
         assert a is not b
+
+
+# ── W1 能力自检 / 跳过集提升（2026-11-17 补测：原覆盖缺口 48 行）──────
+
+
+class TestSkipAndPromote:
+    def test_missing_dependency_skips_not_shells(self):
+        """依赖不全 → 整组不注册（降级返回 False），记录完整快照。"""
+        r = CapabilityRegistry()
+        assert r.register("biz.tool", lambda reg: 1, requires=("biz.data",)) is False
+        assert r.skipped() == {"biz.tool": frozenset({"biz.data"})}
+        assert not r.has("biz.tool")
+        with pytest.raises(CapabilityNotFound):
+            r.resolve("biz.tool")
+
+    def test_promote_after_dependency_arrives(self):
+        """W1 修复语义：依赖晚到 → 跳过集的 factory 真正补注册。"""
+        r = CapabilityRegistry()
+        r.register("biz.tool", lambda reg: "T", requires=("biz.data",))
+        r.register("biz.data", lambda reg: "D")
+        assert r.has("biz.tool")
+        assert r.resolve("biz.tool") == "T"
+        assert r.skipped() == {}
+
+    def test_skip_emits_to_registered_sink(self):
+        from agentnodes.kernel.agent.capability.registry import (
+            register_skip_sink,
+            reset_skip_sinks,
+        )
+        events = []
+        register_skip_sink(lambda event, payload: events.append((event, payload)))
+        try:
+            r = CapabilityRegistry()
+            r.register("biz.tool", lambda reg: 1, requires=("biz.data",))
+            assert "capability.skipped" in [e for e, _ in events]
+            payload = next(p for e, p in events if e == "capability.skipped")
+            assert payload["missing"] == ["biz.data"]
+        finally:
+            reset_skip_sinks()
+
+    def test_promote_emits_event(self):
+        from agentnodes.kernel.agent.capability.registry import (
+            register_skip_sink,
+            reset_skip_sinks,
+        )
+        events = []
+        register_skip_sink(lambda event, payload: events.append(event))
+        try:
+            r = CapabilityRegistry()
+            r.register("biz.tool", lambda reg: 1, requires=("biz.data",))
+            r.register("biz.data", lambda reg: 2)
+            assert "capability.promoted" in events
+        finally:
+            reset_skip_sinks()
+
+    def test_sink_exception_does_not_break_register(self):
+        from agentnodes.kernel.agent.capability.registry import (
+            register_skip_sink,
+            reset_skip_sinks,
+        )
+
+        def bad_sink(event, payload):
+            raise RuntimeError("sink dead")
+
+        register_skip_sink(bad_sink)
+        try:
+            r = CapabilityRegistry()
+            assert r.register("k", lambda reg: 1) is True
+        finally:
+            reset_skip_sinks()
+
+
+class TestTwoPhaseWiring:
+    def test_declare_then_register_many(self):
+        """两阶段装配：declare 让依赖声明先于实现落表。
+
+        **实测契约（2026-11-17）**：`register_many` 只提交**显式传入**的
+        mapping；pending 声明参与依赖可用性判定但不会被自动提交——
+        与 `declare` docstring「待后续 register_many 合并」的措辞有出入
+        （零生产调用方，暂按实际行为钉住；合并语义若需要，另行立项）。
+        """
+        r = CapabilityRegistry()
+        r.declare({"b": (lambda reg: "B", {"a"})})
+        r.declare({"a": lambda reg: "A"})
+        # b 在 declare 阶段就声明了依赖 a——register_many 阶段一次性提交
+        r.register_many({
+            "a": lambda reg: "A",
+            "b": (lambda reg: "B", {"a"}),
+        })
+        assert r.resolve("b") == "B"
+
+    def test_register_many_partial_skip(self):
+        r = CapabilityRegistry()
+        r.register_many({
+            "ok": lambda reg: 1,
+            "orphan": (lambda reg: 2, {"never_there"}),
+        })
+        assert r.has("ok") and not r.has("orphan")
+        assert r.skipped() == {"orphan": frozenset({"never_there"})}
+
+    def test_verify_dependencies_detects_backdoor(self):
+        """绕过 register 直接塞 _factories → 一致性检查抓到。"""
+        r = CapabilityRegistry()
+        r.register("dep", lambda reg: 2)  # 先注册依赖，否则 k 进跳过集
+        r.register("k", lambda reg: 1, requires=("dep",))
+        assert r.verify_dependencies() == {}
+        r._factories.pop("dep")
+        assert r.verify_dependencies() == {"k": ["dep"]}
+
+    def test_requires_of(self):
+        r = CapabilityRegistry()
+        r.register("dep", lambda reg: 2)  # 依赖先注册，k 才不会被跳过
+        r.register("k", lambda reg: 1, requires=("dep",))
+        assert r.requires_of("k") == frozenset({"dep"})
+        assert r.requires_of("nope") == frozenset()
+
+
+class TestPopulatorAndGeneration:
+    def teardown_method(self):
+        reset_default_registry()
+
+    def test_populator_runs_on_first_get(self):
+        from agentnodes.kernel.agent.capability.registry import (
+            register_populator,
+        )
+        calls = []
+        register_populator(lambda reg: calls.append(reg))
+        reset_default_registry()
+        r1 = get_default_registry()
+        r2 = get_default_registry()
+        assert r1 is r2
+        assert calls == [r1], "populator 只在新建时跑一次"
+
+    def test_populator_failure_tolerated(self):
+        from agentnodes.kernel.agent.capability.registry import (
+            register_populator,
+        )
+        register_populator(lambda reg: 1 / 0)
+        reset_default_registry()
+        assert get_default_registry() is not None
+
+    def test_generation_increments_on_set_and_reset(self):
+        from agentnodes.kernel.agent.capability.registry import (
+            registry_generation,
+        )
+        g0 = registry_generation()
+        set_default_registry(CapabilityRegistry())
+        assert registry_generation() == g0 + 1
+        reset_default_registry()
+        assert registry_generation() == g0 + 2

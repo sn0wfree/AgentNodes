@@ -64,8 +64,14 @@ def cmd_swarm_inspect(args) -> int:
     print()
     print("Agent 详情:")
     for a in preset.agents:
-        tools_str = ", ".join(a.tools) if a.tools else "(无工具)"
-        print(f"  {a.id}: {tools_str}")
+        # **修复（2026-11-17，测试抓到）**：原实现读 ``a.tools`` / ``a.id``——
+        # ``AgentCall`` 的字段是 ``agent_name`` / ``prompt`` / ``context`` /
+        # ``metadata``，没有这两个名字 → inspect 对**每一个** preset 都
+        # AttributeError。工具约束若在 metadata/context 里带了 ``tools``
+        # 键则展示，否则如实标注「未约束」。
+        tools = a.metadata.get("tools") or a.context.get("tools")
+        tools_str = ", ".join(tools) if tools else "(未约束)"
+        print(f"  {a.agent_name}: {tools_str}")
 
     return 0
 
