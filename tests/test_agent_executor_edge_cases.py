@@ -18,7 +18,7 @@ from unittest.mock import MagicMock
 
 import pytest
 
-from agentnodes.kernel.agent import exec_registry
+from agentnodes.kernel.agent.tools import exec_registry
 from agentnodes.kernel.agent.dag_config import AgentNodeConfig
 from agentnodes.kernel.agent.executor import (
     AgentExecutionResult,

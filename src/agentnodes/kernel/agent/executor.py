@@ -234,7 +234,7 @@ class AgentExecutor:
         context: dict[str, Any] | None,
         t0: float,
     ) -> AgentExecutionResult:
-        from agentnodes.kernel.agent import exec_registry
+        from agentnodes.kernel.agent.tools import exec_registry
 
         fn_name = plugin.python_function or plugin.id
         fn = exec_registry.get_python_executor(fn_name)
@@ -272,7 +272,7 @@ class AgentExecutor:
         context: dict[str, Any] | None,
         t0: float,
     ) -> AgentExecutionResult:
-        from agentnodes.kernel.agent import exec_registry
+        from agentnodes.kernel.agent.tools import exec_registry
 
         fn_name = plugin.python_function or plugin.id
         fn = exec_registry.get_evaluator(fn_name)

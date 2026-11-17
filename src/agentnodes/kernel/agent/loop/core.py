@@ -1013,7 +1013,7 @@ class AgentLoop(
         handlers 绑定 self，复用全部既有能力——引擎本体不知道预算怎么算、
         工具怎么执行。
         """
-        from agentnodes.kernel.agent.modes import deciders_for
+        from agentnodes.kernel.agent.policy.modes import deciders_for
         from agentnodes.kernel.agent.loop.engine import LoopEngine
         from agentnodes.kernel.agent.loop.engine_adapters import (
             LoopActor,

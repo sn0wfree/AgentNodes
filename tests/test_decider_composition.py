@@ -18,7 +18,7 @@ from pathlib import Path
 
 import pytest
 
-from agentnodes.kernel.agent.deciders import (
+from agentnodes.kernel.agent.policy.deciders import (
     Decision,
     Decider,
     ExternalTerminationDecider,
@@ -131,7 +131,7 @@ def test_external_termination_swallows_source_errors():
 
 def test_external_termination_wired_via_modes_injection():
     """装配层注入：deciders_for(halt_check=...) 时生效。"""
-    from agentnodes.kernel.agent.modes import deciders_for
+    from agentnodes.kernel.agent.policy.modes import deciders_for
     from agentnodes.kernel.agent.strategy.factory import create_strategy
 
     strategy = create_strategy("react")
@@ -153,7 +153,7 @@ def test_deciders_module_does_not_import_interfaces():
     from pathlib import Path
 
     src = Path(__file__).resolve().parents[1] / (
-        "src/agentnodes/kernel/agent/deciders.py")
+        "src/agentnodes/kernel/agent/policy/deciders.py")
     text = src.read_text(encoding="utf-8")
     assert "interfaces.cli" not in text, (
         "kernel 层不得 import interfaces/cli（R-001 四层单向依赖）")
@@ -165,7 +165,7 @@ def test_deciders_module_does_not_import_interfaces():
 
 def test_max_iteration_and_budget_combined_safety_net():
     """max 计数与语义条件组合：任一触发即停（典型安全网写法）。"""
-    from agentnodes.kernel.agent.deciders import MaxIterationsDecider
+    from agentnodes.kernel.agent.policy.deciders import MaxIterationsDecider
 
     class _Ctx:
         iteration = 5

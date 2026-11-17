@@ -289,7 +289,7 @@ def _is_plugin_usable(plugin: AgentPlugin, have: set[str]) -> bool:
     if fn:
         if fn in PENDING_EXECUTORS:
             return False  # 已登记待恢复，仍不可用
-        from agentnodes.kernel.agent.exec_registry import (
+        from agentnodes.kernel.agent.tools.exec_registry import (
             get_evaluator,
             get_python_executor,
         )

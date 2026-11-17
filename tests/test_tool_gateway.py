@@ -3,7 +3,7 @@ from __future__ import annotations
 
 import json
 
-from agentnodes.kernel.agent.gateway import ToolGateway, toolset_for_role
+from agentnodes.kernel.agent.tools.gateway import ToolGateway, toolset_for_role
 from agentnodes.kernel.agent.tools.core import ToolRegistry
 from agentnodes.kernel.agent.tools.toolsets import (
     MINIMAL,

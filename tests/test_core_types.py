@@ -16,7 +16,7 @@ from agentnodes.kernel.agent._core_types import (
     StreamingHandler,
     maybe_await,
 )
-from agentnodes.kernel.agent.step_adapters import FnStreamingHandler
+from agentnodes.kernel.agent.policy.step_adapters import FnStreamingHandler
 
 
 # ── StepResult ────────────────────────────────────────────────────────

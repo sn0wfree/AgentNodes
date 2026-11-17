@@ -6,7 +6,7 @@ from pathlib import Path
 
 import pytest
 
-from agentnodes.kernel.agent import exec_registry
+from agentnodes.kernel.agent.tools import exec_registry
 from agentnodes.apps.agent_plugins.quant import BUILTIN_PLUGINS
 from agentnodes.kernel.agent.dag_config import AgentNodeConfig
 from agentnodes.kernel.agent.executor import (

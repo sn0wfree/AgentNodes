@@ -15,7 +15,7 @@ from types import SimpleNamespace
 import pytest
 
 from agentnodes.kernel.agent._core_types import StepHandler
-from agentnodes.kernel.agent.deciders import (
+from agentnodes.kernel.agent.policy.deciders import (
     BudgetDecider,
     CircuitBreakerDecider,
     Decision,
@@ -209,7 +209,7 @@ class TestNoProgress:
 
 class TestRegistry:
     def test_register_get_list_roundtrip(self):
-        from agentnodes.kernel.agent.modes import (
+        from agentnodes.kernel.agent.policy.modes import (
             AgentModeConfig,
             get_mode_config,
             list_modes,
@@ -224,7 +224,7 @@ class TestRegistry:
 
     def test_deciders_for_assembles_four_gates(self):
         """统一引擎 U4 / D2：四闸（after_observe 为空位预留）。"""
-        from agentnodes.kernel.agent.modes import deciders_for
+        from agentnodes.kernel.agent.policy.modes import deciders_for
         from agentnodes.kernel.agent.strategy.factory import create_strategy
 
         strategy = create_strategy("react")
@@ -248,7 +248,7 @@ class TestRegistry:
 
     def test_deciders_for_binds_progress_window(self):
         """组装器负责 bind_agent_loop——ProgressStep 降级路径需要它。"""
-        from agentnodes.kernel.agent.modes import deciders_for
+        from agentnodes.kernel.agent.policy.modes import deciders_for
         from agentnodes.kernel.agent.strategy.factory import create_strategy
 
         loop = SimpleNamespace(no_progress_window=4, _recent_hashes=[])

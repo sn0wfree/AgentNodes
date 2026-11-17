@@ -39,7 +39,7 @@ from collections.abc import AsyncIterator
 from dataclasses import dataclass, field
 from typing import Any, Callable
 
-from agentnodes.kernel.agent.deciders import Decision
+from agentnodes.kernel.agent.policy.deciders import Decision
 from agentnodes.kernel.agent._core_types import StepResult
 
 logger = logging.getLogger(__name__)

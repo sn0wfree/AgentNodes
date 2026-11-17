@@ -222,7 +222,7 @@ def test_legacy_step_adapter_removed_from_src():
 
 def test_step_adapters_has_zero_async_mode_refs():
     """§7 断言 2（续）：``step_adapters.py`` 零 ``async_mode`` 代码引用。"""
-    refs = _async_mode_refs(SRC / "step_adapters.py")
+    refs = _async_mode_refs(SRC / "policy" / "step_adapters.py")
     assert not refs, f"step_adapters 仍有 async_mode 引用: {refs}"
 
 

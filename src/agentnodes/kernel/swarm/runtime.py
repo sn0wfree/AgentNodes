@@ -860,7 +860,7 @@ def _register_builtin_executors() -> None:
     swarm.runtime 导入即抛 CapabilityNotFound——这个缺陷在批次 2
     删包后暴露（``test_swarm_branches`` 收集失败）。
 
-    与 ``kernel/agent/exec_registry.py`` 的正确做法保持一致：让"谁需要
+    与 ``kernel/agent/tools/exec_registry.py`` 的正确做法保持一致：让"谁需要
     谁解析"，与注册时机解耦。
 
     **2026-11-05 做减法批次 4**：原先这里注册了两个业务 executor

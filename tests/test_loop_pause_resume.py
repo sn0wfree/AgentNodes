@@ -28,9 +28,9 @@ import pytest
 
 from agentnodes.foundation.llm import LLMConfig, LLMResponse, ToolCall
 from agentnodes.kernel.agent.builtin_tools import build_default_registry
-from agentnodes.kernel.agent.deciders import Decision, Decider
+from agentnodes.kernel.agent.policy.deciders import Decision, Decider
 from agentnodes.kernel.agent.loop.core import AgentLoop
-from agentnodes.kernel.agent.pause import CANCELLED, PauseHandle
+from agentnodes.kernel.agent.signals.pause import CANCELLED, PauseHandle
 
 USAGE = {"prompt_tokens": 100, "completion_tokens": 50, "total_tokens": 150}
 
@@ -130,10 +130,11 @@ async def _drive(loop: AgentLoop, judge: HumanJudgeDecider,
     loop._on_event = _on_event
 
     # 注入 judge decider 到 after_reason 闸（替换默认集合）
-    # 注意：loop.py:928 是**函数内局部导入** `from .modes import deciders_for`
-    # ——patch `agentnodes.kernel.agent.modes.deciders_for` 才生效
+    # 注意：loop/core.py 在函数内局部导入
+    # `agentnodes.kernel.agent.policy.modes.deciders_for`
+    # ——patch `agentnodes.kernel.agent.policy.modes.deciders_for` 才生效
     # （patch loop 模块属性无效：局部 import 每次重新查 modes 模块）。
-    from agentnodes.kernel.agent import modes as modes_mod
+    from agentnodes.kernel.agent.policy import modes as modes_mod
 
     orig_deciders_for = modes_mod.deciders_for
 

@@ -9,7 +9,7 @@ Covers:
 """
 from __future__ import annotations
 
-from agentnodes.kernel.agent import exec_registry
+from agentnodes.kernel.agent.tools import exec_registry
 
 
 # ── python_executor table ────────────────────────────────────────────

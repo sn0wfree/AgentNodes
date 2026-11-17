@@ -178,7 +178,7 @@ def env_gated_tools() -> set[str]:
 def installed_executors() -> tuple[set[str], set[str]]:
     """已注册的 python 执行器与评估器名（插件 ``python_function`` 的对照）。"""
     _ensure_src_on_path()
-    from agentnodes.kernel.agent.exec_registry import (
+    from agentnodes.kernel.agent.tools.exec_registry import (
         list_evaluators,
         list_python_executors,
     )

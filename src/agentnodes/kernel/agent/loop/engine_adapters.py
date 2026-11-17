@@ -207,8 +207,8 @@ class LoopPrepare:
         # 统一引擎 H1：装上挂起/恢复原语的工厂（循环级 HITL）。
         # decider 侧 ``ctx.pause(reason=..., payload=...)`` 创建挂起点
         # （**不阻塞**），引擎据此 yield pause 事件 → await 恢复 → 重跑该闸位。
-        # 详见 design doc §3.5 与 kernel/agent/pause.py。
-        from agentnodes.kernel.agent.pause import attach_pause
+        # 详见 design doc §3.5 与 kernel/agent/signals/pause.py。
+        from agentnodes.kernel.agent.signals.pause import attach_pause
 
         attach_pause(ctx)
         # 批次 13 S3-a：保留用户原始 task（``full_task`` 已被 pre-run

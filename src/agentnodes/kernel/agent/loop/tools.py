@@ -13,7 +13,7 @@ logger = logging.getLogger(__name__)
 
 from concurrent.futures import ThreadPoolExecutor, as_completed
 
-from agentnodes.kernel.agent.progress import HeartbeatTimer
+from agentnodes.kernel.agent.signals.progress import HeartbeatTimer
 from agentnodes.kernel.agent.tools.core import TRANSIENT_TOOL_ERRORS, ToolContext
 
 _TOOL_MAX_RETRIES = 2
