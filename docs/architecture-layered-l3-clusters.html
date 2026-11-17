@@ -133,7 +133,7 @@ footer code{background:rgba(148,163,184,.10);padding:1px 6px;border-radius:5px;c
     <div>
       <h2 class="arch-title">AgentNodes 分层架构 · L3 聚合</h2>
       <p class="arch-sub">样式 v2 · Glassmorphism / 正交布线（原版见 <code>architecture-layered.html</code>，数据层已同步重跑、tier 判定同批修订）
-        · 数据 2026-11-17 工作区 AST 复测（R-014 批次 A–F 后）：36 包 / 1977 符号 / 143 边 · L3 十五模块聚为四领域容器</p>
+        · 数据 2026-11-17 工作区 AST 复测（R-014 批次 A–F 后）：36 包 / 1979 符号 / 143 边 · L3 十五模块聚为四领域容器</p>
     </div>
     <div class="bar" id="an-legend"></div>
   </div>
@@ -158,7 +158,7 @@ footer code{background:rgba(148,163,184,.10);padding:1px 6px;border-radius:5px;c
     <b style="color:var(--tierB)">黄</b>= 最小可干活 C13–C15 · <b style="color:var(--tierC)">绿</b>= 全能力 C16–C28。
     <b>红层是「能力归属标注」，不是可裁剪部署单元</b>（红→非红实测 118 次 import）—— 别把红色读成「可删」。
     2026-11-17 修订：<code>kernel/session</code> 由绿改红 —— R-014 下沉后它是会话域真身，承载 C8 历史持久化，
-    红层主链路 <code>api→session</code> 29 次 import。原版图数据层已同步重跑（36 包 / 1977 符号 / 143 边）。<br>
+    红层主链路 <code>api→session</code> 29 次 import。原版图数据层已同步重跑（36 包 / 1979 符号 / 143 边）。<br>
     连线权重只计 <b>≥2 次</b>的 import（与原版图 <code>DRAW_MIN=2</code> 同口径），1 次的横切边未画。
   </p>
 
@@ -202,7 +202,7 @@ footer code{background:rgba(148,163,184,.10);padding:1px 6px;border-radius:5px;c
     'kernel/skills':        {n:5,   files:4,   lines:238,  sub:'技能', role:'skill 模型与加载', tier:'C', caps:['C25'], cl:'C4'},
     'kernel':               {n:2,   files:2,   lines:108,   sub:'内核门面', role:'子带声明', tier:'C', caps:[], cl:'C4'},
     'foundation/llm':           {n:130, files:24, lines:5508, sub:'LLM 客户端', role:'openai_client / model_catalog / config（三路径链）/ 多供应商适配', tier:'A', caps:['C4','C5']},
-    'foundation':               {n:61,  files:10, lines:2092, sub:'基础原语', role:'paths / settings（ENV_TABLE 唯一入口）/ 错误类型 / git', tier:'A', caps:[]},
+    'foundation':               {n:63,  files:11, lines:2265, sub:'基础原语', role:'paths / settings（ENV_TABLE 唯一入口）/ 错误类型 / git', tier:'A', caps:[]},
     'foundation/storage':       {n:46,  files:13, lines:2503, sub:'存储', role:'data_store / 持久化后端 —— C8 的 SQLite <b>底座</b>（连接 / DDL 归 kernel/session.db；<b>实现者是 kernel/session</b>）', tier:'A', caps:['C8']},
     'foundation/utils':         {n:22,  files:5,  lines:484,  sub:'工具函数', role:'通用工具', tier:'C', caps:[]},
     'foundation/observability': {n:18,  files:5,  lines:867,  sub:'可观测', role:'日志 / trace / spans', tier:'C', caps:[]},
@@ -762,7 +762,7 @@ footer code{background:rgba(148,163,184,.10);padding:1px 6px;border-radius:5px;c
 
 <footer>
 样式 v2（Glassmorphism / 正交圆角布线）· 与 <code>architecture-layered.html</code> 同源：数据层同口径，tier 判定同步（2026-11-17 修订 <code>kernel/session</code> 绿→红）。
-数据 2026-11-17 工作区 AST 复测（<code>tmp/probe/scan_arch.py</code> 口径）：36 包 / 1977 符号 / 143 条包间依赖 —— 与重跑后的原版图一致。<br>
+数据 2026-11-17 工作区 AST 复测（<code>tmp/probe/scan_arch.py</code> 口径）：36 包 / 1979 符号 / 143 条包间依赖 —— 与重跑后的原版图一致。<br>
 聚合规则：L3 十五包 → 4 容器（执行与编排 5 包 587 符号 · 上下文与状态 4 包 167 · 通信与基础设施 3 包 53 · 安全与扩展 3 包 29）。
 容器内连线省略（仅 C1 有 5 条域内边，≥2 次口径）；跨容器 7 条正交直连；跨层依赖按容器聚合 9 条（悬停看逐包明细）；
 主链路 <code>api→gateway→agent→llm</code> 节点级流动虚线（①–④）。全图正交布线零交叉；穿越玻璃容器的线段以低亮度透出，作为深度线索。<br>

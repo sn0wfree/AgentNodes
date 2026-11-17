@@ -179,7 +179,8 @@ src/agentnodes/foundation/
 > 参考实现本身也不是「全进程单实例」：`LoggerHelper(app_name)` 是**按 app 名**分实例的（它的「单一」= 每个 app 一个）。
 > 本仓的 app 名 = 模块名 → 158 个 logger 名 = 158 个实例，**这正是它的语义**。
 
-**进程级单例的落点**：内核提供 `Logger = get_logger("agentnodes")`（单例）供库级/进程级消息使用；
+**进程级单例的落点**：内核提供 `APP_LOG = get_logger("agentnodes")`（单例，命名避开类名 `Logger`）
+供库级/进程级消息使用；
 模块级仍按 `get_logger(__name__)` 取 —— 两者共享同一套装配与同一套 handler。
 
 ---
@@ -195,7 +196,7 @@ class Logger:                                           # 门面（复用参考�
     name: str
     def debug/info/warning/error/critical/exception/warn(...)   # 转发给 stdlib logger
     def deco(self, level="info", timer=True, extra_name="")    # 计时装饰器（M4 升级版）
-Logger = get_logger("agentnodes")                        # 进程级门面（单例；M2 的用途由 stdlib logger 注册表承担）
+APP_LOG = get_logger("agentnodes")                       # 进程级门面（单例；M2 的用途由 stdlib logger 注册表承担；命名避开类名 Logger）
 
 # foundation/observability/logging_setup.py（既有，不动）
 configure_logging(surface, *, level, json_output, log_file, force, stream)

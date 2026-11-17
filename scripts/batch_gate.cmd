@@ -107,9 +107,13 @@ echo [9/10] framework doc numbers ^(v1.2^)
 call :step_framework_numbers
 if errorlevel 1 set "FAILED=1"
 
-REM --- step 9/9: graphify symbolic audit (optional, second dimension) ------
+echo [10/10] logging entry ^(ratchet^)
+call :step_logging_entry
+if errorlevel 1 set "FAILED=1"
+
+REM --- step 10/10: graphify symbolic audit (optional, second dimension) ------
 echo.
-echo [10/10] graphify symbolic audit ^(optional^)
+echo [opt] graphify symbolic audit ^(optional^)
 if "%WANT_GRAPH%"=="1" (
     call :step_graph
     if errorlevel 1 set "FAILED=1"
@@ -354,6 +358,26 @@ if errorlevel 1 (
     exit /b 1
 )
 echo   [OK] framework doc numbers: consistent
+exit /b 0
+
+
+:step_logging_entry
+REM Bare logging.getLogger ratchet (unified logging hub, batch 1).
+REM Why this step: get_logger (agentnodes.foundation.logger) is the only
+REM acquisition entry; bare getLogger bypasses the facade cache and drifts
+REM back without a gate. Ratchet: only decrease allowed.
+if not exist "scripts\arch\check_logging_entry.py" (
+    echo   [SKIP] check_logging_entry.py not present
+    exit /b 0
+)
+set "LOG=%TEMP%\batch_gate_step10.log"
+"%PROBE_PI%" scripts\arch\check_logging_entry.py > "%LOG%" 2>&1
+if errorlevel 1 (
+    echo   [X] check_logging_entry.py: bare getLogger ratchet regressed
+    call :tail "%LOG%" 30
+    exit /b 1
+)
+echo   [OK] logging entry: ratchet holds
 exit /b 0
 
 
