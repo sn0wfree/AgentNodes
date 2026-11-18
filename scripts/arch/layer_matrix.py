@@ -83,14 +83,14 @@ LAYER_MEMBERSHIP: dict[str, str] = {
     "agentnodes.foundation.observability": "L4",
     "agentnodes.foundation.utils": "L4",
     "agentnodes.foundation.web": "L4",
-    "agentnodes.foundation.registry": "L4",
+    "agentnodes.foundation.utils.registry": "L4",
     "agentnodes.foundation.config_loader": "L4",
     "agentnodes.foundation": "L4",  # W0 试点：层目录 __init__
     "agentnodes.foundation.errors": "L4",
-    "agentnodes.foundation.git": "L4",
+    "agentnodes.foundation.utils.git": "L4",
     "agentnodes.foundation.protocol": "L4",
     "agentnodes.foundation.compact_config": "L4",
-    "agentnodes.foundation.structured_output": "L4",
+    "agentnodes.foundation.llm.structured_output": "L4",
 }
 
 # Facade __init__ modules excluded from direction assertions (re-exports only)

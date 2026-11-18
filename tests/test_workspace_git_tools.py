@@ -11,7 +11,7 @@ import subprocess
 
 import pytest
 
-from agentnodes.foundation import git as gitmod
+from agentnodes.foundation.utils import git as gitmod
 from agentnodes.kernel.agent.tools.core import ToolContext
 
 

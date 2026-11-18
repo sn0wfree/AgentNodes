@@ -2,7 +2,7 @@
 """会话库路径解析（L4）—— 单一事实源。
 
 **为什么在 L4**：路径解析是「文件放哪」的技术决策，与会话语义无关。
-放在 ``kernel/agent/memory_manager`` 里会让所有想读这条路径的模块
+放在 ``kernel/session/state/memory_manager`` 里会让所有想读这条路径的模块
 （EventStore、web_session、CLI）都依赖会话模块，制造不必要的耦合。
 
 **唯一事实源原则（保留原 docstring 的核心告诫）**：历史上

@@ -17,7 +17,7 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any, Callable
 
-from agentnodes.foundation.structured_output import get_parser
+from agentnodes.foundation.llm.structured_output import get_parser
 from agentnodes.kernel.swarm.types import AgentResult, AgentStatus
 from agentnodes.kernel.workflow.contract import enforce_contract
 

@@ -6,7 +6,7 @@ and size queries.
 
 Usage::
 
-    from agentnodes.foundation.registry import Registry
+    from agentnodes.foundation.utils.registry import Registry
 
     class ToolRegistry(Registry[BaseTool]):
         def register(self, tool):

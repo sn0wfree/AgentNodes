@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 """SQLite 后端基类（L4）—— 连接管理 + 健康检查 + 自愈。
 
-**为什么拆出来**：原先 ``SQLiteStore``（kernel/agent/memory_manager.py, 190 行）
+**为什么拆出来**：原先 ``SQLiteStore``（kernel/session/state/memory_manager.py, 190 行）
 把两类职责糅在一起：
 
 - **零会话语义的基建**：连接生命周期（WAL / busy_timeout）、
@@ -13,7 +13,7 @@
 只有会话域才需要。放在同一类里导致 L3 的会话代码和 L4 的存储原语耦合，
 也让「foundation 零业务语义」这条红线无法成立。
 
-本模块只放前者。会话 CRUD 留在 ``kernel.agent.memory_manager.SQLiteStore``
+本模块只放前者。会话 CRUD 留在 ``kernel.session.state.memory_manager.SQLiteStore``
 （继承本类的 ``SQLiteBackend``）。
 
 **依赖方向**：``memory_manager``(L3) → 本模块(L4)，合法下行。

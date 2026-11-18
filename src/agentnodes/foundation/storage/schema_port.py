@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 """Schema 初始化端口（L4 声明，上层实现）— 消除内核反向依赖。
 
-**背景**：``kernel/agent/memory_manager.SQLiteStore._init_schema`` 原先
+**背景**：``kernel/session/state/memory_manager.SQLiteStore._init_schema`` 原先
 ``from agentnodes.interfaces.api.session.web_session_db import _ensure_schema``
 —— 内核反向依赖接口层。原 docstring 的辩护是「event_store 也这么干，
 所以不算新增方向」，但「别人也违规」不构成合规理由（两个违规仍是两个

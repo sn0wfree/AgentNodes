@@ -24,7 +24,7 @@ from agentnodes.kernel.agent.context.injector import (
 )
 from agentnodes.kernel.agent.loop.core import AgentLoop, LoopResult
 from agentnodes.kernel.agent.tools.core import ToolGuard, ToolRegistry, BaseTool
-from agentnodes.foundation.registry import Registry
+from agentnodes.foundation.utils.registry import Registry
 
 
 # ══════════════════════════════════════════════════════════════════
