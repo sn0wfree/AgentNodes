@@ -61,31 +61,31 @@ echo ============================================================
 
 REM --- step 1/6: pytest collect directional anchor -------------------------
 echo.
-echo [1/8] pytest collect anchor
+echo [1/12] pytest collect anchor
 call :step_collect
 if errorlevel 1 set "FAILED=1"
 
 REM --- step 2/6: cross-layer import direction ------------------------------
 echo.
-echo [2/8] dangling imports + layer direction
+echo [2/12] dangling imports + layer direction
 call :step_dangling
 if errorlevel 1 set "FAILED=1"
 
 REM --- step 3/6: non-import path literals -----------------------------------
 echo.
-echo [3/8] path literals
+echo [3/12] path literals
 call :step_path_literals
 if errorlevel 1 set "FAILED=1"
 
 REM --- step 4/6: capability requires (W1, optional while landing) -----------
 echo.
-echo [4/8] capability requires
+echo [4/12] capability requires
 call :step_capability
 if errorlevel 1 set "FAILED=1"
 
 REM --- step 5/6: semantic placement (W1, optional while landing) ------------
 echo.
-echo [5/8] semantic placement
+echo [5/12] semantic placement
 call :step_semantics
 if errorlevel 1 set "FAILED=1"
 
@@ -95,24 +95,28 @@ echo [6/8] tool references
 call :step_tool_refs
 if errorlevel 1 set "FAILED=1"
 
-echo [7/9] kernel nouns
+echo [7/12] kernel nouns
 call :step_kernel_nouns
 if errorlevel 1 set "FAILED=1"
 
-echo [8/9] env access ^(settings read layer^)
+echo [8/12] env access ^(settings read layer^)
 call :step_env_access
 if errorlevel 1 set "FAILED=1"
 
-echo [9/10] framework doc numbers ^(v1.2^)
+echo [9/12] framework doc numbers ^(v1.2^)
 call :step_framework_numbers
 if errorlevel 1 set "FAILED=1"
 
-echo [10/11] logging assembly ^(discipline^)
+echo [10/12] logging assembly ^(discipline^)
 call :step_logging_entry
 if errorlevel 1 set "FAILED=1"
 
-echo [11/11] no relative imports
+echo [11/12] no relative imports
 call :step_no_relative_imports
+if errorlevel 1 set "FAILED=1"
+
+echo [12/12] kernel package SCC ^(module-level cycles^)
+call :step_kernel_scc
 if errorlevel 1 set "FAILED=1"
 
 REM --- step 10/10: graphify symbolic audit (optional, second dimension) ------
@@ -402,6 +406,26 @@ if errorlevel 1 (
     exit /b 1
 )
 echo   [OK] relative imports: 0
+exit /b 0
+
+
+:step_kernel_scc
+REM Kernel sub-package import cycles (2026-11-18 order 4 / plan 11.4-K2).
+REM Module-level cycle = import-time init risk -> HARD fail. Lazy (in-function)
+REM cycles = runtime collaboration -> must be registered with an owner in
+REM check_kernel_scc.py::KNOWN_LAZY_SCCS, else fail (no silent growth).
+if not exist "scripts\arch\check_kernel_scc.py" (
+    echo   [SKIP] check_kernel_scc.py not present
+    exit /b 0
+)
+set "LOG=%TEMP%\batch_gate_step12.log"
+"%PROBE_PI%" scripts\arch\check_kernel_scc.py > "%LOG%" 2>&1
+if errorlevel 1 (
+    echo   [X] check_kernel_scc.py: kernel package cycles found
+    call :tail "%LOG%" 30
+    exit /b 1
+)
+echo   [OK] kernel SCC: no module-level cycles
 exit /b 0
 
 
