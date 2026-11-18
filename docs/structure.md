@@ -1,5 +1,11 @@
 
 
+# 目标结构（非当前实现）
+
+> 本图是 **20261118 架构计划的目标边界视图**（`docs/design/project-architecture-review-and-refactor-plan-20261118.md` §11 结构），
+> 其中"候选边界""评估是否收进 agent/hooks"等标注为**待裁决项**，不代表当前代码状态。
+> 当前实现的权威视图见 `docs/architecture-layered-l3-clusters.html` 与 `docs/architecture-diagram.html`。
+
 ``` mermaid
 flowchart TB
   subgraph L1["L1 · interfaces"]

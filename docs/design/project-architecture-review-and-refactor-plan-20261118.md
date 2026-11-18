@@ -1,9 +1,9 @@
 # 项目架构复评与渐进式重构计划
 
 > **日期**：2026-11-18<br>
-> **状态**：架构复评与实施建议；待讨论确认，本文不授权代码迁移或删除。<br>
+> **状态**：已裁决并分批实施中——§8.1 四项裁决 + §8.2 执行顺序 ①-④ 与批次 A 已完成（见 §12.3 执行记录）；裁决 1/2/3 见 §8.3。删除类操作仍按 R-014/R-015/R-016 单独授权，本计划不构成一次性迁移许可。<br>
 > **审查范围**：四层依赖方向、关键模块语义落位、状态/历史读写契约、能力注册、组合根与执行路径。
-> **基线说明**：结论来自当前工作区的只读检查及现有架构门禁。State 簇迁移仍有在途工作，本计划要求先验收在途变更，再开始新的边界调整。
+> **基线说明**：结论来自只读检查及现有架构门禁；State 簇迁移已于 2026-11-18 验收完成。
 
 ## 0. 结论摘要
 
@@ -413,6 +413,12 @@ AgentLoop/LoopEngine、GraphEngine、SwarmRuntime、WorkflowRunner 分别可能�
 
 **约束**：`SessionService` 的队列/processing 标记暂不删除——GoalWorkflow 仍依赖其会话互斥状态。
 
+### 8.3 三项裁决（2026-11-18 第二轮，维护者确认）
+
+1. **Legacy `send_message` = 兼容 API，非生产接线**：全仓无生产调用点、`for_send_async()` 无消费者——保留可选 `policy` 注入能力与漂移/等价性测试，**不为"显式使用"制造无消费者的接线**；仓库外若有调用者，接入责任在 apps/chat 适配层。详见 §12.3 裁决 1 记录。
+2. **GoalWorkflow 会话协调 → Gateway session execution lease**：由 Gateway 提供**原子的、带所有权 token 的获取/释放**（GoalWorkflow 在整个 `start` 生命周期持有，成功/异常/取消三路都释放）；**等待空闲行为保持现状**（等待不改拒绝，未经裁决不改语义）。明确两条禁止：不得拿 `chat_session_state()` 快照当互斥（它是状态查询）；不得复用 `SessionFence.claim()`（新 run 顶替旧 run，非互斥获取）。先定语义矩阵（原子获取 / 竞争 / 取消 / 异常清理 / 等待），再迁移并做并发回归。
+3. **删除 SessionService 队列/AgentLoop 的时机**：仅当第 2 项已上线，且并发、取消、异常释放、API/TUI 回归全部通过后，作为**独立最后批次**执行——按 **R-015**（删接线对象四项）、**R-016**（删 fallback 前出口网）、**R-014**（方案先行）授权；保留 session/history/Attempt 持久化职责。
+
 ## 9. 验收总标准
 
 整个重构阶段完成时，至少满足：
@@ -738,6 +744,7 @@ flowchart LR
 - **验证**：新增 `tests/test_chat_policy.py`（漂移守护 ×2 用 `inspect.signature` 把两侧签名默认钉在 ChatPolicy 上 + 接线 ×3：policy 覆盖签名默认 / allow_shell_tools=False 移除 shell / 不传 policy 行为不变）；chat 相关回归 **97 passed**；`batch_gate.cmd` **ALL GREEN**；全量 **7629 passed / 106 skipped / 0 failed**；体量同步 L2 9,697 / L3 48,723 / 合计 93,000 行（443 文件）。
 - **2026-11-18｜顺序④（/attempts 查询归属）：已完成**：新建 `apps/chat/attempts_query.py`，`query_live_attempts(session_id, *, store, gateway)` 承接原 router 内联的"存储记录 × Gateway 实时状态"拼接（三状态查询 / 僵尸行过滤 / 失败最多 5 条 / prompt 截 200 / 六字段响应形状）；`store`/`gateway` 由入口显式传入，用例不取单例、不做鉴权、不碰 HTTP。`routers/chat.py` 的 `/attempts` 端点瘦身为"鉴权 → 取组合根句柄 → 调用用例 → 返回"，**响应形状与语义零变化**（Attempt ≠ Gateway Run、attempt_id ≠ run_id 不变）。
 - **验证**：新增 `tests/test_chat_attempts_query.py`（9 用例：状态集合、僵尸过滤、queued 透传、failed 免 Gateway 校验、失败上限只计失败、prompt 截断、message_id 归一、六键契约形状、状态集合透传）+ 既有 `/attempts` 契约测试，合并 **23 passed**；`check_dangling_imports.py --layers` 上行违规 **0**（L1→L2 合法）；`batch_gate.cmd` **ALL GREEN**；全量 **7639 passed / 106 skipped / 0 failed**；体量同步 L1 22,390 / L2 42 文件 9,779 / 合计 **444 文件 / 93,062 行**。
-- **2026-11-18｜批次 A：ChatPolicy 接入 legacy `send_message`（独立批次，不含队列移除）**：按裁决"先单独完成接入 + 回归确认队列行为不变，不与移除 SessionService 队列/AgentLoop 合并"——`send_message` 新增可选 `policy` 参数（鸭子类型，kernel 不 import apps）；`policy` 非 None 时覆盖 `max_iterations` / `allow_shell_tools`，入队条目、FIFO 顺序、响应形状与 10 条上限/429 全部不变；`None` 时行为与迁移前逐字节一致。
+- **2026-11-18｜批次 A：ChatPolicy 注入能力接入 legacy `send_message`（独立批次，不含队列移除）**：按裁决"先单独完成接入 + 回归确认队列行为不变，不与移除 SessionService 队列/AgentLoop 合并"——`send_message` 新增可选 `policy` 参数（鸭子类型，kernel 不 import apps）；`policy` 非 None 时覆盖 `max_iterations` / `allow_shell_tools`，入队条目、FIFO 顺序、响应形状与 10 条上限/429 全部不变；`None` 时行为与迁移前逐字节一致。
+- **2026-11-18｜裁决 1：legacy `send_message` 定为兼容 API，非生产接线**：全仓检索确认该方法**无生产调用点**（`/send_async` 已走 Gateway），`ChatPolicy.for_send_async()` 亦无生产消费者——批次 A 提供的是**注入能力**，不得表述为"生产路径已显式接入"。处置：保留可选 `policy` 参数与漂移/等价性测试（零行为风险，且钉住两路默认差异）；**不为"显式使用"制造无消费者的运行时接线**（kernel 永不 import apps）；若仓库外确有调用者，接入责任在 apps/chat 适配层。兼容策略以本记录为准。
 - **验证**：新增 `tests/test_chat_policy_legacy_wiring.py` 6 用例（policy 覆盖生效 / `for_send_async()` 与签名默认等价 / 入队条目键集合不变 / 带 policy 的 FIFO 与响应字段 / 队列满载 429 形状不变）+ 既有 `test_session_queue.py` 全量，合并 **15 passed**；`batch_gate.cmd` **ALL GREEN**；全量 **7644 passed / 106 skipped / 0 failed**；体量同步 L3 48,736 / 合计 **444 文件 / 93,075 行**。
 - **第二项（SessionService 队列/AgentLoop 移除）边界已定，暂不实施**：GoalWorkflow 保留工作流编排职责，**会话互斥/准入迁至 Gateway 共享控制面**；须先确认并发、取消、超时与状态语义，再独立实施移除。明确**不绕过 GoalWorkflow 迁移直接删 legacy 路径**。当前 `SessionService` 保留 `is_session_processing()` / `mark_session_processing()` 供 GoalWorkflow 使用。

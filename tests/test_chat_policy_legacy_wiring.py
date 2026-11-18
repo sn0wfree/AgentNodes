@@ -29,12 +29,11 @@ def temp_db(monkeypatch, tmp_path):
 def event_bus():
     from tests._fixtures.legacy_events import EventBus
 
-    bus = EventBus()
-    try:
-        bus.set_loop(asyncio.get_event_loop())
-    except Exception:
-        pass
-    return bus
+    # 不调用 set_loop：它只是跨线程 emit 的优化路径（call_soon_threadsafe），
+    # 测试内 emit 均发生在同一 loop，EventBus 走 put_nowait 兜底分支。
+    # 原先的 asyncio.get_event_loop() 在无运行 loop 的同步 fixture 中
+    # 抛弃用警告，且被宽泛 except 吞掉——两样都不需要。
+    return EventBus()
 
 
 @pytest.fixture
