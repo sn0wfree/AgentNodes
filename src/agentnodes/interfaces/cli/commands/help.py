@@ -9,6 +9,7 @@ from rich.table import Table
 
 from agentnodes.interfaces.cli.commands.slash_router import SLASH_COMMANDS
 from agentnodes.interfaces.cli.theme import get_console
+from agentnodes.interfaces.cli.commands._shared import _resolve_console
 
 _SHORTCUTS: tuple[tuple[str, str], ...] = (
     ("⏎ Send", "Enter"),
@@ -19,10 +20,6 @@ _SHORTCUTS: tuple[tuple[str, str], ...] = (
     ("Ctrl+D", "Exit"),
     ("/", "Open typeahead"),
 )
-
-
-def _resolve_console(console: Any = None) -> Console:
-    return console or get_console()
 
 
 def render_help_table(*, console: Any = None) -> int:

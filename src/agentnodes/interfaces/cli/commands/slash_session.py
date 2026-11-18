@@ -20,6 +20,7 @@ from rich.table import Table
 from rich.text import Text
 
 from agentnodes.interfaces.cli.theme import get_console
+from agentnodes.interfaces.cli.commands._shared import _resolve_console
 
 _PATH_ENV = "AGENTNODES_SESSION_DB"
 
@@ -37,10 +38,6 @@ def _resolve_db_path() -> Optional[str]:
     from agentnodes.foundation.config.settings import get_str as _get_str
 
     return _get_str("AGENTNODES_SESSION_DB") or None
-
-
-def _resolve_console(console: Any = None) -> Console:
-    return console or get_console()
 
 
 def cmd_history(*, console: Any = None, limit: int = 10) -> int:

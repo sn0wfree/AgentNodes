@@ -20,10 +20,7 @@ from rich.panel import Panel
 from rich.text import Text
 
 from agentnodes.interfaces.cli.theme import get_console
-
-
-def _resolve_console(console: Any = None) -> Console:
-    return console or get_console()
+from agentnodes.interfaces.cli.commands._shared import _resolve_console
 
 
 def _coming_soon(command: str, hint: str, console: Any = None) -> int:

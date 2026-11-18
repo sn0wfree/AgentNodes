@@ -26,6 +26,7 @@ from rich.table import Table
 
 from agentnodes.foundation.config import paths as _paths
 from agentnodes.interfaces.cli.theme import get_console
+from agentnodes.interfaces.cli.commands._shared import _resolve_console
 
 
 def _resolve_db_path() -> Path:
@@ -44,10 +45,6 @@ def _resolve_db_path() -> Path:
     from agentnodes.apps.goal.store_utils import _default_db_path
 
     return _default_db_path()
-
-
-def _resolve_console(console: Any = None) -> Console:
-    return console or get_console()
 
 
 def _store():

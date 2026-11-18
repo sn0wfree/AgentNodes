@@ -21,11 +21,8 @@ from rich.panel import Panel
 from rich.table import Table
 
 from agentnodes.interfaces.cli.theme import get_console
+from agentnodes.interfaces.cli.commands._shared import _resolve_console
 from agentnodes.foundation.config import settings as _settings
-
-
-def _resolve_console(console: Any = None) -> Console:
-    return console or get_console()
 
 
 def _memory_dir() -> Optional[str]:
