@@ -189,6 +189,9 @@ def test_cancel_session_api():
     assert gw.cancel_session("nobody") is False  # 无活跃 run
     scope = CancelScope()
     gw._cancel_scopes["sess-1"] = scope
+    # 生产生命周期不变式：活跃 run = fence claim + scope 注册成对出现
+    # （Gateway 收敛后 cancel_session 以 fence 为"是否有活跃 run"的判据）
+    gw.fence.claim("sess-1", "run-1")
     assert gw.cancel_session("sess-1", reason="user") is True
     assert scope.cancelled and scope.reason == "user"
     assert gw.cancel_session("sess-1") is True  # 幂等

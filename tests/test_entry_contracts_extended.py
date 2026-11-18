@@ -232,7 +232,12 @@ def test_validate_nested_payload_not_scanned():
 
 
 def test_no_asyncio_or_threading_in_boundary_modules():
-    """契约/mailbox/entry_point 不得引入并发原语（快同步的结构证据）。"""
+    """边界模块保持同步快语义：禁 asyncio 事件循环原语、禁线程生成。
+
+    2026-11-18 Gateway 收敛后 mailbox / entry_point 被 API 提交线程与
+    Gateway 消费线程共享，`threading.RLock` 是必要的内部互斥（边界仍同步、
+    无事件循环）——因此 threading 仅放行互斥锁形态，`Thread(` 生成线程仍然禁止。
+    """
     import inspect
 
     from agentnodes.kernel.orchestration import contracts, mailbox
@@ -242,7 +247,11 @@ def test_no_asyncio_or_threading_in_boundary_modules():
         source = inspect.getsource(module)
         assert "async def" not in source
         assert "import asyncio" not in source
-        assert "threading" not in source
+    contracts_source = inspect.getsource(contracts)
+    assert "threading" not in contracts_source, "contracts 不得引入 threading"
+    for module in (mailbox, entry_point):
+        source = inspect.getsource(module)
+        assert "Thread(" not in source, f"{module.__name__} 只允许互斥锁，不允许生成线程"
 
 
 def test_mutable_input_payload_cannot_break_frozen_request():
