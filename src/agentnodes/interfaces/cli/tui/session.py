@@ -11,9 +11,11 @@ that already implements:
 The session wraps each of those effects with a thin Textual-aware
 shell:
 
-* user input is read from ``ctx.pending_input`` (set by :class:`ResumeOrNewModal`
-  on accept) or arrived via :class:`SynthesizeInput` from
-  :class:`ChatInput` / :class:`CommandSidebar`.
+* user input arrives via :class:`SynthesizeInput` from
+  :class:`ChatInput` / :class:`CommandSidebar` / the
+  :class:`ResumeOrNewModal` first-prompt path (批1 #4：弹窗回调
+  post ``SynthesizeInput`` 走与键入同一条链，不再经 enqueue 缓冲——
+  此前 ``_pending_input`` 全仓零消费，首条消息被静默丢弃).
 * the session calls ``process_turn(text, ctx)`` and inspects the rc.
 * on ``rc == 2`` (the ``/quit`` sentinel from ``cmd_quit``), the
   session asks the app to exit.
@@ -95,17 +97,11 @@ class ChatSession:
         # ``(session_id, role, content)``. Reserved for Commit 5 (TTY
         # guard integration); unused here.
         self.session_logger = session_logger
-        # Pending raw input buffer used by :meth:`ResumeOrNewModal`.
-        self._pending_input: Optional[str] = None
         # Goal continuation control: when True, _check_goal_continuation
         # is suppressed so the agent stops after each LLM response.
         self._goal_continuation_paused: bool = False
 
     # ------------------------------------------------------------------ API
-
-    def enqueue(self, text: str) -> None:
-        """Queue text for the next :meth:`dispatch` cycle."""
-        self._pending_input = text
 
     async def dispatch(self, text: str) -> int:
         """Run a single turn: ``process_turn(text, ctx)`` → return rc.

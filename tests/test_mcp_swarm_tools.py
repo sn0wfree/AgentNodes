@@ -145,3 +145,35 @@ class TestGetSwarmStatus:
         body = _extract_body(result)
         assert "status" in body
         assert "run_status" in body
+
+
+# ============================================================
+# 批1 #5（三前端一核心）：timeout 契约欺骗修复
+# ============================================================
+
+
+class TestRunSwarmTimeoutContract:
+    def test_schema_no_timeout_advertised(self, server):
+        """schema 不得再宣告 timeout——此前宣告「默认 300」但 handler
+        从未使用（SwarmRuntime.execute 无超时形参），属契约欺骗。"""
+        tools = {t["name"]: t for t in server.list_tools()}
+        assert "run_swarm" in tools
+        dumped = json.dumps(tools["run_swarm"])
+        assert "timeout" not in dumped
+
+    def test_description_does_not_promise_timeout(self, server):
+        tools = {t["name"]: t for t in server.list_tools()}
+        desc = tools["run_swarm"].get("description", "")
+        assert "超时" not in desc
+
+    def test_legacy_timeout_kwarg_still_accepted(self, server, tmp_path):
+        """旧客户端仍传 timeout → **kwargs 吸收，行为不变
+        （走 preset not found 路径即可证明不炸）。"""
+        result = server.call_tool("run_swarm", {
+            "preset_name": "nonexistent_preset_xyz",
+            "workspace": str(tmp_path),
+            "timeout": 999,
+        })
+        body = _extract_body(result)
+        assert body["status"] == "error"
+        assert "not found" in body["error"].lower()

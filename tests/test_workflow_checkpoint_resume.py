@@ -194,3 +194,140 @@ def test_resume_and_continue_error_on_runtime_failure(cp_env, tmp_path, monkeypa
     assert restored._state.status == "error"
     assert "runtime exploded" in restored._state.error_message
     assert "workflow_failed" in events
+
+
+# ── 批1 #2（三前端一核心）：resume 与 chat 的会话执行互斥 ────────────
+
+
+def test_resume_from_checkpoint_passes_lease(cp_env: Path, tmp_path: Path):
+    """工厂透传 execution_lease；缺省 None 保持旧行为（直构测试路径）。"""
+    from agentnodes.kernel.gateway.session_lease import SessionExecutionLease
+
+    store = FakeStore()
+    runner = _make_runner(store, tmp_path)
+    _seed_hook(runner, output="第一层产出")
+    runner.checkpoint()
+
+    lease = SessionExecutionLease()
+    restored = GoalWorkflowRunner.resume_from_checkpoint(
+        session_id="sess-cp", goal_id="g1", config=CFG,
+        store=store, workspace=tmp_path, execution_lease=lease,
+    )
+    assert restored is not None
+    assert restored._execution_lease is lease
+
+    restored_default = GoalWorkflowRunner.resume_from_checkpoint(
+        session_id="sess-cp", goal_id="g1", config=CFG,
+        store=store, workspace=tmp_path,
+    )
+    assert restored_default is not None
+    assert restored_default._execution_lease is None
+
+
+def test_resume_and_continue_waits_for_lease_then_releases(
+    cp_env: Path, tmp_path: Path, monkeypatch,
+):
+    """resume 与 chat 互斥全链：chat 持锁时自旋等待 → 释放后获取 →
+    执行期间持有 goal:<goal_id> → 成功结束（finally）后释放。
+
+    此前 resume_and_continue 全程零 lease 触点，checkpoint 恢复的
+    DAG 可与 Gateway chat 并发写同一 session（裁决 2 缺口，批1 #2）。
+    """
+    import threading
+
+    import agentnodes.kernel.swarm.runtime as rt_mod
+
+    from agentnodes.kernel.gateway.session_lease import SessionExecutionLease
+
+    store = FakeStore()
+    store.goals["g1"] = SimpleNamespace(objective="obj")
+    runner = _make_runner(store, tmp_path)
+    _seed_hook(runner, output="第一层产出")
+    runner.checkpoint()
+
+    lease = SessionExecutionLease()
+    restored = GoalWorkflowRunner.resume_from_checkpoint(
+        session_id="sess-cp", goal_id="g1", config=CFG,
+        store=store, workspace=tmp_path, execution_lease=lease,
+    )
+    assert restored is not None
+
+    seen: dict = {}
+    started = threading.Event()
+    release_exec = threading.Event()
+
+    class SlowRuntime:
+        def __init__(self, *a, **k):
+            pass
+
+        def execute(self, *a, **k):
+            seen["holder_during_execute"] = lease.holder("sess-cp")
+            started.set()
+            release_exec.wait(timeout=5)
+            return SimpleNamespace(success=True)
+
+    # *a/**k：SwarmRuntime 接受 on_event=（agent 事件接线），桩要兼容。
+    monkeypatch.setattr(rt_mod, "SwarmRuntime", lambda *a, **k: SlowRuntime())
+
+    async def main() -> str:
+        chat_token = lease.acquire("sess-cp", "chat:run-1")
+        assert chat_token is not None  # 预占：模拟 chat 执行中
+
+        task = asyncio.create_task(restored.resume_and_continue())
+        # 让 resume 进入自旋（0.25s 周期），租约仍归 chat
+        await asyncio.sleep(0.35)
+        assert not task.done()
+        assert lease.holder("sess-cp") == "chat:run-1"
+
+        # chat 释放 → resume 获取并执行（execute 内观测到 goal 持有）。
+        # 注意：started.wait() 是阻塞调用，不能放在事件循环线程里——
+        # 会把整个 loop 卡死、resume 任务永远跑不到 execute。轮询代替。
+        lease.release("sess-cp", chat_token)
+        for _ in range(100):
+            if started.is_set():
+                break
+            await asyncio.sleep(0.05)
+        assert started.is_set()
+        assert lease.holder("sess-cp") == "goal:g1"
+        release_exec.set()
+        return await asyncio.wait_for(task, timeout=5)
+
+    goal_id = asyncio.run(main())
+    assert goal_id == "g1"
+    assert seen["holder_during_execute"] == "goal:g1"
+    # 成功路径 finally 释放
+    assert lease.holding("sess-cp") is False
+    assert lease.acquire("sess-cp", "chat:run-2") is not None
+
+
+def test_resume_and_continue_releases_lease_on_runtime_failure(
+    cp_env: Path, tmp_path: Path, monkeypatch,
+):
+    """异常路径也释放（finally）：execute 抛错 → 租约归还。"""
+    import agentnodes.kernel.swarm.runtime as rt_mod
+
+    from agentnodes.kernel.gateway.session_lease import SessionExecutionLease
+
+    store = FakeStore()
+    store.goals["g1"] = SimpleNamespace(objective="obj")
+    runner = _make_runner(store, tmp_path)
+    _seed_hook(runner, output="第一层产出")
+    runner.checkpoint()
+
+    lease = SessionExecutionLease()
+    restored = GoalWorkflowRunner.resume_from_checkpoint(
+        session_id="sess-cp", goal_id="g1", config=CFG,
+        store=store, workspace=tmp_path, execution_lease=lease,
+    )
+    assert restored is not None
+
+    class Boom:
+        def __init__(self, *a, **k):
+            pass
+
+        def execute(self, *a, **k):
+            raise RuntimeError("runtime exploded")
+
+    monkeypatch.setattr(rt_mod, "SwarmRuntime", lambda *a, **k: Boom())
+    asyncio.run(restored.resume_and_continue())
+    assert lease.holding("sess-cp") is False

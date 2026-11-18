@@ -275,7 +275,11 @@ class ResearchApp(App):
         else:
             self._write_transcript("[muted]Started fresh session.[/muted]")
         if pending_input and self.session is not None:
-            self.session.enqueue(pending_input)
+            # 批1 #4（三前端一核心）：首条 prompt 走与键入同一条链
+            # （post → on_synthesize_input → dispatch）。此前
+            # session.enqueue 存进 _pending_input 后全仓零消费，
+            # 弹窗里输入的首条消息被静默丢弃。
+            self.post_message(SynthesizeInput(pending_input))
 
     def _resume_most_recent_session(self) -> None:
         """Restore history + session_id from the most-recent persisted session.

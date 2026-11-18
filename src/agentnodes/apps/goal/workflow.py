@@ -321,6 +321,11 @@ class GoalWorkflowRunner:
     def goal_id(self) -> str:
         return self._goal_id
 
+    @property
+    def name(self) -> str:
+        """Workflow name（批1 #3：worker 通知走公开属性，替代 ``_config`` 私有访问）。"""
+        return self._config.name
+
     def set_goal_id(self, goal_id: str) -> None:
         """Set the goal_id to reuse an existing goal (skip goal creation in start)."""
         self._goal_id = goal_id
@@ -719,6 +724,17 @@ class GoalWorkflowRunner:
         self._state.evidence_count = int(state_data.get("evidence_count", 0) or 0)
         self._state.agent_statuses = dict(state_data.get("agent_statuses", {}))
 
+        # 批1 #2（三前端一核心，裁决 2）：resume 与 start 同一互斥语义——
+        # 等待 chat 空闲后原子获取（0.25s 自旋、无上限，等待语义保持现状）。
+        # 此前 resume_and_continue 全程零 lease 触点：checkpoint 恢复的 DAG
+        # 可与 Gateway chat 并发写同一 session。
+        lease_token: str | None = None
+        if self._execution_lease is not None:
+            while (lease_token := self._execution_lease.acquire(
+                self._session_id, f"goal:{self._goal_id}",
+            )) is None:
+                await asyncio.sleep(0.25)
+
         self._event_bus.emit("workflow_resumed", goal_id=self._goal_id)
 
         # Convert config → SwarmPreset (same as start)
@@ -761,6 +777,10 @@ class GoalWorkflowRunner:
             self._state.error_message = str(exc)
             self._event_bus.emit("workflow_failed", error=str(exc))
             logger.error("Goal workflow resume failed: %s", exc)
+        finally:
+            # 批1 #2（三前端一核心）：成功/异常两路都释放执行租约
+            if lease_token is not None:
+                self._execution_lease.release(self._session_id, lease_token)
 
         return self._goal_id
 
@@ -937,6 +957,7 @@ class GoalWorkflowRunner:
         config: GoalWorkflowConfig,
         store: Any = None,
         workspace: Path | None = None,
+        execution_lease: Any = None,
     ) -> "GoalWorkflowRunner | None":
         """Restore a runner from a saved checkpoint (P3.6).
 
@@ -946,6 +967,10 @@ class GoalWorkflowRunner:
             config: Workflow config (must match the original).
             store: GoalStore instance.
             workspace: Workspace path.
+            execution_lease: Session execution lease（裁决 2，批1 #2）——与
+                ``start`` 同源注入；``resume_and_continue`` 将按 start 的
+                同款 0.25s 自旋获取、finally 释放。``None`` = 无互斥
+                （直构测试路径，行为不变）。
 
         Returns:
             A GoalWorkflowRunner with restored state, or None if
@@ -962,6 +987,7 @@ class GoalWorkflowRunner:
             session_id=session_id,
             store=store,
             workspace=workspace,
+            execution_lease=execution_lease,
         )
         # Restore state
         state_data = data["state"]

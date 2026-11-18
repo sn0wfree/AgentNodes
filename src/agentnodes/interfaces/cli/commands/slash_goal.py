@@ -760,6 +760,7 @@ def _cmd_checkpoint_resume(console: Console, session_id: str,
 
     from agentnodes.apps.goal.workflow import GoalWorkflowRunner
     from agentnodes.apps.goal.workflow_config import load_goal_workflow
+    from agentnodes.kernel.gateway import get_gateway
 
     try:
         config = load_goal_workflow(workflow_name)
@@ -774,6 +775,9 @@ def _cmd_checkpoint_resume(console: Console, session_id: str,
         goal_id=goal_id,
         config=config,
         workspace=Path.cwd(),
+        # 批1 #2（三前端一核心，裁决 2）：resume 与 start 同一互斥——
+        # 传 Gateway 执行租约，checkpoint 恢复的 DAG 不再绕过会话互斥。
+        execution_lease=get_gateway().execution_lease,
     )
     if runner is None:
         return _show("checkpoint 状态还原失败。", is_error=True)

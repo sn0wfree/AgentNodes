@@ -153,19 +153,6 @@ async def test_session_drains_pending_prompt_after_slash():
     ]
 
 
-@pytest.mark.asyncio
-async def test_session_enqueues_text_for_next_dispatch():
-    """``enqueue('r')`` then ``dispatch('hello')`` runs them in order."""
-    ctx = InteractiveContext()
-    s = ChatSession(ctx)
-    s.enqueue("hello")
-    rc = await s.dispatch("ignored")
-    # The enqueued text got stored, but dispatch() only consumes the
-    # argument given. So the dispatched argument wins.
-    assert rc == 0
-    assert ctx.history == [{"role": "user", "content": "ignored"}]
-
-
 # ─── ResumeOrNewModal callback wiring ────────────────────────────────
 
 
@@ -216,9 +203,14 @@ def test_resume_modal_callback_new_branch(monkeypatch):
     assert any("Started fresh" in str(c) for c in write_calls)
 
 
-def test_resume_modal_callback_pending_input_enqueues(monkeypatch):
-    """``_on_resume_choice((False, 'hi'))`` enqueues 'hi' on the session."""
+def test_resume_modal_callback_pending_input_posts_synthesize_input(monkeypatch):
+    """批1 #4：弹窗首条 prompt 经 post_message(SynthesizeInput) 走键入同链。
+
+    此前 enqueue 进 ``_pending_input`` 后全仓零消费——弹窗里输入的
+    首条消息被静默丢弃。修复后与 ChatInput 提交完全同路。
+    """
     from agentnodes.interfaces.cli.tui.app import ResearchApp
+    from agentnodes.interfaces.cli.tui.messages import SynthesizeInput
 
     app = ResearchApp(model="m", version="0.4.2", skip_resume=True)
     app.session = ChatSession(app.ctx, app=app)
@@ -228,8 +220,18 @@ def test_resume_modal_callback_pending_input_enqueues(monkeypatch):
         lambda self, c: None,
         raising=False,
     )
+    posted = []
+    monkeypatch.setattr(
+        "agentnodes.interfaces.cli.tui.app.ResearchApp.post_message",
+        lambda self, m: posted.append(m),
+        raising=False,
+    )
     app._on_resume_choice((False, "hi there"))
-    assert app.session._pending_input == "hi there"
+    assert len(posted) == 1
+    assert isinstance(posted[0], SynthesizeInput)
+    assert posted[0].text == "hi there"
+    # enqueue/_pending_input 缓冲已随修复删除
+    assert not hasattr(app.session, "_pending_input")
 
 
 # ─── TUI integration smoke ────────────────────────────────────────

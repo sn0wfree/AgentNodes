@@ -188,6 +188,47 @@ class TestWorkflowWorkerCancel:
         mock_runner._start_event.set()
         await asyncio.wait_for(task, timeout=1.0)
 
+    # ── 批1 #3（三前端一核心）：immediate 是硬取消 ──────────────────
+
+    async def test_cancel_immediate_sets_cancelled(self, mock_runner, fresh_db):
+        """cancel(immediate=True) 落 CANCELLED（对齐文件头状态机图），
+        协同停止后不被盖章 COMPLETED。此前误记 PAUSED。"""
+        app = MagicMock()
+        worker = WorkflowWorker(mock_runner, app)
+        task = asyncio.create_task(worker.run("test"))
+
+        for _ in range(50):
+            await asyncio.sleep(0.005)
+            if worker.state == WorkflowWorkerState.RUNNING:
+                break
+        worker.cancel(immediate=True)
+        assert worker.state == WorkflowWorkerState.CANCELLED
+        mock_runner.pause.assert_called_once_with(immediate=True)
+
+        # 协同停止：runner 正常返回（不走 CancelledError），状态保持 CANCELLED
+        mock_runner._start_event.set()
+        await asyncio.wait_for(task, timeout=1.0)
+        assert worker.state == WorkflowWorkerState.CANCELLED
+
+    async def test_resume_after_immediate_cancel_is_blocked(self, mock_runner, fresh_db):
+        """硬取消不可被 resume 复活——worker 层 PAUSED 守卫拦截，
+        runner.resume() 不得被调（runner.resume 会清 cancelled 标志）。"""
+        app = MagicMock()
+        worker = WorkflowWorker(mock_runner, app)
+        task = asyncio.create_task(worker.run("test"))
+
+        for _ in range(50):
+            await asyncio.sleep(0.005)
+            if worker.state == WorkflowWorkerState.RUNNING:
+                break
+        worker.cancel(immediate=True)
+        worker.resume()
+        mock_runner.resume.assert_not_called()
+        assert worker.state == WorkflowWorkerState.CANCELLED
+
+        mock_runner._start_event.set()
+        await asyncio.wait_for(task, timeout=1.0)
+
 
 # ─── v0.5.2 P0.5 — ResearchApp.start_workflow ────────────────────────
 

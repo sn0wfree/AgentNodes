@@ -102,12 +102,19 @@ class WorkflowWorker:
         self._error = None
         self._subscribe_panel_observer()
         self._notify(
-            f"Workflow '{self._runner._config.name}' started",
+            f"Workflow '{self._runner.name}' started",
             severity="information",
         )
 
         try:
             self._goal_id = await self._runner.start(objective)
+            if self._state == WorkflowWorkerState.CANCELLED:
+                # 批1 #3（三前端一核心）：硬取消后的协同停止——runner 正常
+                # 返回（不走 CancelledError 分支），此处不得盖章 COMPLETED，
+                # 也不得发 "finished"；worker.cancel(immediate=True) 已置
+                # CANCELLED 且 resume() 的 PAUSED 守卫会拦下复活尝试。
+                self._notify("Workflow stopped (cancelled)", severity="warning")
+                return self._goal_id
             self._state = WorkflowWorkerState.COMPLETED
             progress = self._safe_progress()
             self._notify(
@@ -151,7 +158,15 @@ class WorkflowWorker:
 
         try:
             self._runner.pause(immediate=immediate)
-            self._state = WorkflowWorkerState.PAUSED
+            # 批1 #3（三前端一核心）：immediate 是硬取消而非暂停——按文件头
+            # 状态机图 ``cancel(immediate=True)──▶ CANCELLED`` 落状态；
+            # 此前误记 PAUSED，resume() 会经 runner.resume() 清掉 cancelled
+            # 标志，硬取消可被"复活"。
+            self._state = (
+                WorkflowWorkerState.CANCELLED
+                if immediate
+                else WorkflowWorkerState.PAUSED
+            )
             mode = "cancelled" if immediate else "paused"
             self._notify(f"Workflow {mode}", severity="warning")
         except Exception as exc:  # noqa: BLE001

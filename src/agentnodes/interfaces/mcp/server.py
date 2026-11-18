@@ -409,9 +409,12 @@ class MCPServer:
             workspace: str = "",
             task: str = "",
             max_workers: int = 4,
-            timeout: int = 300,
             **kwargs: Any,
         ) -> str:
+            # 批1 #5（三前端一核心）：``timeout`` 形参已删——schema 曾宣告
+            # 「超时秒数（默认 300）」但 handler 从未使用（SwarmRuntime.execute
+            # 无超时形参），属契约欺骗。旧客户端仍传 timeout 被 **kwargs 吸收。
+            # 真超时须先按裁决 3 缺口①的纪律验证执行器可中断，另行独立批次。
             if not preset_name:
                 return json.dumps({"status": "error", "error": "preset_name is required"}, ensure_ascii=False)
             if not workspace:
@@ -495,7 +498,7 @@ class MCPServer:
 
         self.register(MCPTool(
             name="run_swarm",
-            description="执行 swarm preset（同步阻塞，直到完成或超时）",
+            description="执行 swarm preset（同步阻塞直到完成）",
             parameters={
                 "type": "object",
                 "properties": {
@@ -503,7 +506,6 @@ class MCPServer:
                     "workspace": {"type": "string", "description": "工作区路径"},
                     "task": {"type": "string", "description": "任务描述"},
                     "max_workers": {"type": "integer", "description": "最大并行 worker 数（默认 4）", "default": 4},
-                    "timeout": {"type": "integer", "description": "超时秒数（默认 300）", "default": 300},
                 },
                 "required": ["preset_name", "workspace"],
             },
