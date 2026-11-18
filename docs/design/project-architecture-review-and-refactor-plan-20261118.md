@@ -726,7 +726,7 @@ flowchart LR
 - Attempt 状态由 Gateway run 事件更新；`/attempts` 用实时 queued/running 状态过滤重启后残留的 pending/running 行，并保留失败记录。
 - Attempt-specific `/cancel` 与 `/queue/resume` 已有路由契约测试。
 
-**剩余边界**：本批未删除 `SessionService` 内部队列/AgentLoop 逻辑；全仓生产代码搜索未发现 `send_message()`、`cancel_session()`、`resume_queue()` 或 `list_active_attempts()` 的调用点。但 `apps/goal/workflow.py` 仍用 `SessionService.is_session_processing()` / `mark_session_processing()` 与聊天共享会话互斥；Gateway 聊天不会更新这组旧标记。删除前需先把 GoalWorkflow 协调迁至共享控制面，再审查公开兼容面、失败/取消事件语义及 TUI/API 回归，并单独提交可回滚批次。
+**剩余边界（2026-11-18 更新）**：本批未删除 `SessionService` 内部队列/AgentLoop 逻辑。**GoalWorkflow 会话互斥已迁至 Gateway 共享控制面**（execution lease，594fe63a）——`apps/goal/workflow.py` 不再使用 `is_session_processing()` / `mark_session_processing()`，这两个方法已标注退役候选（B4，ff5bef26）。全仓生产调用审计（逐出口 + 接收者归属判定）确认旧队列 API 的 src 生产调用点为 **0**；但 `send_message` 已被定为**兼容 API**（§8.3 裁决 1），仓库内无调用 ≠ 外部无消费者。删除前须先完成兼容出口审查（见 `legacy-chat-api-compat-review-20261118.md`）：缺口①（attempt 超时在 Gateway 侧无对等物）、缺口③（Gateway 聊天历史读取异常被吞，与严格读契约冲突）待裁决，兼容期公告未发。满足 R-015 四项 + R-016 出口网 + R-014 方案先行后，作为独立最后批次提交。
 
 ### 12.3 执行记录
 
