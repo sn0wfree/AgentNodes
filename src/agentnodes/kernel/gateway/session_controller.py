@@ -475,6 +475,25 @@ class SessionController:
         except Exception as exc:  # noqa: BLE001
             logger.warning("ticket_sink.settle failed for %s: %s", run_id, exc)
 
+    def _resolve_attempt_timeout_s(self) -> float | None:
+        """读 attempt 级超时预算（秒）。
+
+        沿用旧队列路径的同一 env（``AGENTNODES_CHAT_ATTEMPT_TIMEOUT``）：
+        默认 600 秒；**0 = 禁用**（返回 None → loop 跳过 deadline 检查）。
+        旧实现只读取一次模块级常量，这里每次装配读一次——env 变更即时
+        生效（旧实现需重启进程）。
+        """
+        from agentnodes.foundation.config import settings as _settings
+
+        raw = _settings.get_int("AGENTNODES_CHAT_ATTEMPT_TIMEOUT")
+        try:
+            value = int(raw)
+        except (TypeError, ValueError):
+            value = 600
+        if value <= 0:
+            return None
+        return float(value)
+
     def _build_engine(self) -> GraphEngine:
         """正式构造路径（不再 monkey-patch）。engine_factory 优先。
 
@@ -582,6 +601,13 @@ class SessionController:
                 # 发它，不剥会把 system_prompt/tools_schema 逐调用落库。
                 on_event=make_loop_event_sink(self._sink),
             )
+            # attempt 级超时（顺序⑤ 缺口①，2026-11-18 裁决 3）：与旧队列
+            # 路径同一 env（``AGENTNODES_CHAT_ATTEMPT_TIMEOUT``，默认 600，
+            # 0 = 禁用）。**从实际执行开始计时**（loop.run/arun 入口），
+            # 不含排队。到点 → 抛 AttemptTimeoutError → 走本控制器的既有
+            # 失败路径（run.failed + run.settled{ok:False} + settle +
+            # fence release）→ 明确失败终态、完成事件、资源释放，无孤儿。
+            loop._attempt_timeout_s = self._resolve_attempt_timeout_s()
             # client 注入：AgentLoop 构造器自建 client；换成调用方的同一个
             # （生产 = ModelHub 解析实例；测试 = 脚本化假 client）。骨架
             # 引擎要 ``achat``/``astream``——原生四件套直通，否则包兼容壳。

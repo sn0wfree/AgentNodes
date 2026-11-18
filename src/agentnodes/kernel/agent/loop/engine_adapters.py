@@ -236,6 +236,13 @@ class LoopIterationStart:
 
     def __call__(self, state: Any, iteration: int) -> None:
         loop = self._loop
+        # attempt 级超时检查点（顺序⑤ 缺口①，2026-11-18 裁决 3）：
+        # 到点即抛 AttemptTimeoutError 中止本轮——**执行器内部**中断，
+        # 不是等待方超时。默认引擎（skeleton）的迭代循环经此钩子，故检查
+        # 点放"每轮开头动作"里。
+        check = getattr(loop, "_check_attempt_timeout", None)
+        if callable(check):
+            check(iteration)
         if not getattr(loop, "_wrap_up_nudge", False):
             return
         from agentnodes.kernel.agent.loop.core import WRAP_UP_RATIO, WRAP_UP_NUDGE_TEXT

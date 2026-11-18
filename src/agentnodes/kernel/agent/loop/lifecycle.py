@@ -31,6 +31,12 @@ class LoopLifecycleMixin:
         """Finalize the result for a per-iteration timeout."""
         _end.handle_iteration_timeout(self, result, iteration)
 
+    def _handle_attempt_timeout(
+        self, result, iteration: int, elapsed: float,
+    ) -> None:
+        """Finalize the result for an attempt-level (整轮) timeout."""
+        _end.handle_attempt_timeout(self, result, iteration, elapsed)
+
     def _handle_max_iter(self, result) -> None:
         """Populate max_iter result fields, emit trace + event."""
         _end.handle_max_iter(self, result)

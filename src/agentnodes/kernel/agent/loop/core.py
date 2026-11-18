@@ -269,6 +269,7 @@ def _tool_call_hash(tc: ToolCall) -> str:
 
 
 from agentnodes.kernel.agent.compact.loop_compaction import LoopCompactionMixin
+from agentnodes.kernel.agent.loop.errors import AttemptTimeoutError
 from agentnodes.kernel.agent.loop.lifecycle import LoopLifecycleMixin
 from agentnodes.kernel.agent.loop.progress import LoopProgressMixin
 from agentnodes.kernel.agent.loop.stream import LoopStreamMixin
@@ -503,6 +504,16 @@ class AgentLoop(
         # 不会反映到桥接；当前无消费者这么做）。
         # DSH-inspired: steering inbox for mid-loop message injection.
         self._inbox: asyncio.Queue = asyncio.Queue()
+
+        # ── attempt 级超时（顺序⑤ 缺口①，2026-11-18 裁决 3）────────
+        #: 整轮 attempt 的墙钟预算（秒）。None / 0 = 禁用。
+        #: 由 SessionController 装配（读 ``AGENTNODES_CHAT_ATTEMPT_TIMEOUT``，
+        #: 默认 600；0 = 禁用）——**属性注入**而非构造参数（与
+        #: ``_permission_evaluator`` 同型先例，避免扩散到 LoopSpec 折叠表）。
+        #: 计时**从实际执行开始**（run/arun 入口），不含排队。
+        self._attempt_timeout_s: float | None = None
+        self._attempt_deadline: float | None = None
+        self._started_at: float = 0.0
 
         # Tool filtering: allowed_tools > readonly > all
         # （批次 12 S2：读 spec 而非旧局部变量）
@@ -862,6 +873,9 @@ class AgentLoop(
         logger.info("[AGENT] run start task_len=%d history_len=%d",
                    len(task), len(history) if history else 0)
 
+        # attempt 级超时计时起点（**实际执行开始**，不含排队）。
+        self._begin_attempt_deadline()
+
         # Log compaction messages in history
         if history:
             compaction_count = sum(1 for h in history
@@ -871,6 +885,50 @@ class AgentLoop(
 
         return _run_coro_in_sync(
             self.arun(task, context=context, history=history)
+        )
+
+    # ── attempt 级超时（顺序⑤ 缺口①）──────────────────────────
+
+    def _begin_attempt_deadline(self) -> None:
+        """设定 attempt 级 deadline（**从实际执行开始**计时，不含排队）。
+
+        ``_attempt_timeout_s`` 由装配根注入（``AGENTNODES_CHAT_ATTEMPT_TIMEOUT``，
+        默认 600 秒；0 = 禁用）。禁用时 deadline 为 None，检查点跳过。
+        """
+        self._started_at = time.monotonic()
+        timeout = self._attempt_timeout_s
+        if timeout is None or timeout <= 0:
+            self._attempt_deadline = None
+            return
+        self._attempt_deadline = self._started_at + timeout
+
+    def _check_attempt_timeout(self, iteration: int, result: Any = None) -> None:
+        """attempt 级超时检查点（**迭代边界**）——到点即中止执行。
+
+        被两处调用：
+        - 默认引擎（skeleton）：``engine_adapters.LoopIterationStart`` 每轮开头
+        - legacy 引擎：``_run_loop_core`` 迭代开头
+
+        到点 → 补终态字段与事件（``handle_attempt_timeout``）→ 抛
+        :class:`AttemptTimeoutError` 中止本轮。**不再进入下一轮** → 不再调
+        LLM/工具/写库 → 无孤儿写入；异常经 GraphEngine → SessionController
+        的既有失败路径收尾（run.failed / run.settled{ok:False} / settle /
+        fence release）。
+
+        :param result: 已有的 ``LoopResult``（legacy 路径传入）；None = 引擎
+            路径尚未产出结果载体，用轻量替身仅供事件字段（tool_calls_made=0）。
+        """
+        if self._attempt_deadline is None:
+            return
+        now = time.monotonic()
+        if now < self._attempt_deadline:
+            return
+        elapsed = now - self._started_at
+        carrier = result if result is not None else LoopResult()
+        self._handle_attempt_timeout(carrier, iteration, elapsed)
+        raise AttemptTimeoutError(
+            f"attempt timed out after {self._attempt_timeout_s}s "
+            f"(elapsed {elapsed:.1f}s, iteration {iteration})",
         )
 
     # ── Async public API ──────────────────────────
@@ -906,6 +964,8 @@ class AgentLoop(
             LoopResult with answer, iterations, tool_calls_made, finished_reason.
         """
         self._ensure_trace_context()
+        # attempt 级超时计时起点（**实际执行开始**，不含排队）。
+        self._begin_attempt_deadline()
         if engine is None:
             import os
 
@@ -1160,6 +1220,9 @@ class AgentLoop(
         # callers that pass max_iterations=2 keep working unchanged.
         max_iter = self._effective_max_iterations()
         for iteration in range(1, max_iter + 1):
+            # attempt 级超时检查点（**迭代边界**）：到点即中止——
+            # 不再进入本轮（不再调 LLM/工具/写库）→ 无孤儿写入。
+            self._check_attempt_timeout(iteration, result)
             result.iterations = iteration
             hook_ctx = self._build_hook_context(iteration, messages)
 

@@ -503,6 +503,12 @@ async def _send_via_gateway(
     service = _get_session_service()
 
     # ── ① 读历史（与旧路径同一函数、同一参数）──────────────────
+    # 严格读契约（2026-11-18 裁决 3 缺口③）：聊天上下文的**历史读取失败
+    # 即失败**——不得以空历史继续（那会让模型"忘记"历史且无任何可观测
+    # 错误）。失败 → 中止提交（此处抛错，下面的 submit 不会发生，不产生
+    # run/attempt/事件）→ 调用方收到明确错误。
+    # 降级例外仅限**明确标记**的 UI best-effort 读取
+    #（MemoryManager.get_stale()），它不进模型上下文。
     history: list[dict] = []
     try:
         cfg = _build_llm_config()
@@ -514,8 +520,18 @@ async def _send_via_gateway(
         history = service._convert_messages_to_history(
             stored, keep_all_compactions=keep_all,
         )
-    except Exception as exc:  # noqa: BLE001 —— 历史缺失不阻断对话
-        logger.warning("send_via_gateway: history load failed: %s", exc)
+    except Exception as exc:  # noqa: BLE001 —— 转为明确错误，不静默降级
+        logger.exception(
+            "send_via_gateway: history load failed for session %s", session_id,
+        )
+        raise HTTPException(
+            status_code=500,
+            detail={
+                "error": "history_unavailable",
+                "reason": str(exc),
+                "session_id": session_id,
+            },
+        ) from exc
 
     # ── ② 提交（历史随 payload 进入引擎）───────────────────────
     gw = _get_gateway()

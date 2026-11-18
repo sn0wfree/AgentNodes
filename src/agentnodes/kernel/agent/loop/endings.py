@@ -24,11 +24,43 @@ logger = logging.getLogger(__name__)
 
 __all__ = [
     "finalize_metrics",
+    "handle_attempt_timeout",
     "handle_iteration_timeout",
     "handle_max_iter",
     "handle_stop",
     "run_claim_validation",
 ]
+
+
+def handle_attempt_timeout(
+    loop: Any, result: Any, iteration: int, elapsed: float
+) -> None:
+    """Finalize the result for an **attempt-level** (整轮) timeout.
+
+    与 :func:`handle_iteration_timeout` 的区别：迭代级是单次 LLM 调用超时
+    （循环正常退出，终态 ``finished_reason="timeout"``）；attempt 级是**整轮
+    预算耗尽**，必须**中止执行**——本函数只负责补齐终态字段与事件，
+    抛异常由调用方（``_run_loop_core``）完成。
+
+    事件面与迭代级保持同构（``loop_end`` + ``iter_end``），让下游按
+    ``finish_reason`` 归一处理时不必区分两级超时。
+    """
+    timeout_s = getattr(loop, "_attempt_timeout_s", None)
+    result.finished_reason = "timeout"
+    result.error = (
+        f"attempt timed out after {timeout_s}s "
+        f"(elapsed {elapsed:.1f}s, iteration {iteration})"
+    )
+    loop._trace_and_emit("loop_end", {
+        "reason": "attempt_timeout",
+        "iteration": iteration,
+        "elapsed": round(elapsed, 3),
+    })
+    loop._emit("iter_end", {
+        "iteration": iteration,
+        "finish_reason": "timeout",
+        "tool_calls_made": result.tool_calls_made,
+    })
 
 
 def handle_iteration_timeout(
