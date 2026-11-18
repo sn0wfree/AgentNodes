@@ -6,8 +6,9 @@ import asyncio
 import json
 import logging
 import os
+import threading
 import time
-from typing import TYPE_CHECKING, Any, Optional
+from typing import TYPE_CHECKING, Any, Callable, Optional
 
 from agentnodes.foundation.config import settings as _settings
 
@@ -536,6 +537,7 @@ async def _send_via_gateway(
     # ── ② 提交（历史随 payload 进入引擎）───────────────────────
     gw = _get_gateway()
     user_mid = user_message_id or str(_uuid.uuid4())
+    event_correlation_id = str(_uuid.uuid4())
     assistant_mid_holder: dict[str, str] = {}
 
     # **W3**：桥在 submit **之前**安装——work.enqueued 会在 submit 内唤醒
@@ -544,9 +546,25 @@ async def _send_via_gateway(
     # assistant 占位 seed；sync/wait 路径不带（保持「失败不落任何行」的
     # 既有不变量）。
     turn_persist = receipt_only or (gw.consumer_running() and not wait)
+    completion = threading.Event()
+    outcome: dict[str, Any] = {}
+
+    def observe_turn(kind: str, data: dict) -> None:
+        if kind in ("run.answer", "run.failed", "run.cancelled", "run.fenced"):
+            outcome["terminal"] = (kind, data)
+        elif kind == "work.summarized":
+            outcome["terminal"] = (kind, data)
+            outcome["settled"] = {"ok": False}
+            completion.set()
+        elif kind == "run.settled":
+            outcome["settled"] = data
+            completion.set()
+
     _unsub = _install_chat_event_bridge(
         gw, session_id, assistant_mid_holder,
         service=service, persist=turn_persist,
+        event_correlation_id=event_correlation_id,
+        terminal_observer=None if turn_persist else observe_turn,
         seed_user=(
             {
                 "message_id": user_mid,
@@ -561,22 +579,27 @@ async def _send_via_gateway(
     )
 
     turn_max_iter = 1 if (mode or "").strip().lower() == "plan" else None
-    receipt = gw.entry.submit(
-        api_chat_request(
-            session_id, content, history=history,
-            max_iterations=turn_max_iter,
-            queue_mode=queue_mode,
-            attempt_id=attempt_id,
-            assistant_message_id=assistant_message_id,
-            model=model,
-            system_prompt=system_prompt,
-            role=role,
-            allowed_tools=allowed_tools,
-            mode=mode,
-            thinking=thinking,
-        ),
-        max_pending=max_pending,
-    )
+    try:
+        receipt = gw.entry.submit(
+            api_chat_request(
+                session_id, content, history=history,
+                max_iterations=turn_max_iter,
+                queue_mode=queue_mode,
+                attempt_id=attempt_id,
+                assistant_message_id=assistant_message_id,
+                model=model,
+                system_prompt=system_prompt,
+                role=role,
+                allowed_tools=allowed_tools,
+                mode=mode,
+                thinking=thinking,
+                event_correlation_id=event_correlation_id,
+            ),
+            max_pending=max_pending,
+        )
+    except Exception:
+        _unsub()
+        raise
     if not receipt.accepted:
         # 未受理：桥立即撤（无 turn 可挂）
         _unsub()
@@ -629,41 +652,55 @@ async def _send_via_gateway(
     # ── ③ 执行（同步路径：kind 过滤；wait=true 时只等不驱动）────
     try:
         if gw.consumer_running() and wait:
-            run = await asyncio.get_running_loop().run_in_executor(
+            finished = await asyncio.get_running_loop().run_in_executor(
                 None,
-                lambda: gw.wait_turn(
-                    receipt.session_id or session_id,
-                    timeout=_chat_wait_timeout(),
-                ),
+                lambda: completion.wait(_chat_wait_timeout()),
             )
-            if run is None:
+            if not finished:
                 raise HTTPException(
                     status_code=504,
                     detail={"error": "wait_timeout",
                             "hint": "turn 未在时限内完成；请改用 SSE 订阅"},
                 )
         else:
-            runs = await asyncio.get_running_loop().run_in_executor(
+            await asyncio.get_running_loop().run_in_executor(
                 None, lambda: gw.run_once({WorkKind.CHAT}),
             )
-            if not runs:
+            if not completion.is_set():
                 raise HTTPException(status_code=504, detail="no run executed")
-            run = runs[-1]
     finally:
         # R7：兜底注销（bridge 在收尾事件时已自注销，这里幂等）
         _unsub()
-    if not run.ok:
-        _push_sse("error", {"message_id": run.run_id, "error": run.error or ""}, session_id)
-        _push_sse("agent_done", {"message_id": run.run_id, "status": "error"}, session_id)
+    terminal = outcome.get("terminal")
+    settled = outcome.get("settled", {})
+    if terminal is None:
+        raise HTTPException(status_code=502, detail={"error": "missing_run_terminal"})
+    terminal_kind, terminal_data = terminal
+    if terminal_kind == "work.summarized":
+        error = "queued request summarized before execution"
+        mid = assistant_message_id or user_mid
+        _push_sse("error", {"message_id": mid, "error": error}, session_id)
+        _push_sse("agent_done", {"message_id": mid, "status": "error"}, session_id)
+        raise HTTPException(
+            status_code=502, detail={"error": "request_summarized", "reason": error},
+        )
+    run_id = str(terminal_data.get("run_id") or "")
+    if not run_id:
+        raise HTTPException(status_code=502, detail={"error": "missing_run_id"})
+    if not settled.get("ok") or terminal_kind != "run.answer":
+        error = str(terminal_data.get("error") or terminal_data.get("reason") or "")
+        _push_sse("error", {"message_id": run_id, "error": error}, session_id)
+        _push_sse("agent_done", {"message_id": run_id, "status": "error"}, session_id)
         raise HTTPException(
             status_code=502,
-            detail={"error": "run_failed", "reason": run.error or ""},
+            detail={"error": "run_failed", "reason": error},
         )
+    answer = str(terminal_data.get("content") or "")
 
     # ── ④ 成功后只发事件 → projector 落库（与旧路径同源）─────────
     # 不调 persist_message：旧路径注释明确「not via direct store.append_message()」，
     # 且两路同写会撞 UNIQUE 或产生重复行（已实测）。
-    assistant_mid = run.run_id  # 新路径无 attempt，用 run_id 作消息标识
+    assistant_mid = run_id  # 新路径无 attempt，用 run_id 作消息标识
     try:
         service.event_bus.emit(session_id, "message_received", {
             "message_id": user_mid,
@@ -676,7 +713,7 @@ async def _send_via_gateway(
         service.event_bus.emit(session_id, "assistant_message", {
             "message_id": assistant_mid,
             "role": "assistant",
-            "content": run.answer,
+            "content": answer,
             "created_at": _time.time(),
         })
     except Exception as exc:  # noqa: BLE001 —— 落库失败不吞掉回答
@@ -687,8 +724,8 @@ async def _send_via_gateway(
 
     return {
         "message_id": assistant_mid,
-        "attempt_id": run.run_id,
-        "reply": run.answer,
+        "attempt_id": run_id,
+        "reply": answer,
         "status": "completed",
     }
 
@@ -714,6 +751,8 @@ def _install_chat_event_bridge(
     gw: Any, session_id: str, message_id_holder: dict[str, str],
     *, service: Any = None, persist: bool = False,
     seed_user: dict | None = None,
+    event_correlation_id: str | None = None,
+    terminal_observer: Callable[[str, dict], None] | None = None,
 ) -> Any:
     """把引擎的平台事件翻译成前端词表并推 SSE（P5-1b）。
 
@@ -751,16 +790,34 @@ def _install_chat_event_bridge(
                 logger.debug("bridge unsubscribe failed", exc_info=True)
 
     def bridge(kind: str, data: dict) -> None:
+        if (
+            event_correlation_id is not None
+            and kind == "steer.applied"
+            and event_correlation_id in data.get("applied_event_correlations", ())
+        ):
+            state["followed_correlation_id"] = data["event_correlation_id"]
+            _bridge_body("run.started", data)
+            return
+        if event_correlation_id is not None:
+            correlation = data.get("event_correlation_id")
+            followed = state.get("followed_correlation_id")
+            if correlation != event_correlation_id and (not followed or correlation != followed):
+                return
         try:
+            if terminal_observer is not None:
+                terminal_observer(kind, data)
             _bridge_body(kind, data)
         finally:
             # 收尾事件 → 本 turn 结束 → 注销，防累积/重复推送
-            if kind in (
+            if kind == "work.summarized":
+                _close()
+            elif terminal_observer is None and kind in (
                 "run.answer", "run.failed", "run.cancelled", "run.fenced",
             ):
                 _close()
             elif kind == "run.settled" and (
-                data.get("fenced") or not data.get("ok", True)
+                terminal_observer is not None
+                or data.get("fenced") or not data.get("ok", True)
             ):
                 _close()
 
@@ -826,6 +883,16 @@ def _install_chat_event_bridge(
             )
 
     def _bridge_body(kind: str, data: dict) -> None:
+        if kind == "work.summarized":
+            error = "queued request summarized before execution"
+            _update_attempt(data, "failed", error=error)
+            if persist:
+                mid = str(
+                    data.get("assistant_message_id") or (seed_user or {}).get("message_id") or ""
+                )
+                _push_sse("error", {"message_id": mid, "error": error}, session_id)
+                _push_sse("agent_done", {"message_id": mid, "status": "error"}, session_id)
+            return
         if kind == "run.started":
             _update_attempt(data, "running")
         elif kind == "run.answer":
@@ -914,6 +981,7 @@ def _install_chat_event_bridge(
             else:
                 return
         payload = dict(data)
+        payload.pop("event_correlation_id", None)
         mid = message_id_holder.get("id")
         if mid:
             payload.setdefault("message_id", mid)

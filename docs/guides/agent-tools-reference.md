@@ -142,6 +142,7 @@
 
 - **调用约定**：`execute(ctx: ToolContext, 显式参数)`——参数名/类型/默认值由签名与注解单源承担；schema 由注册时从签名派生。
 - **注入参数**：`workspace`/`session_id` 由框架经 ToolContext 注入（loop 统一接线），**不出现在 schema**，LLM 无需（也不应）传值；显式调用时 `ctx=None` 兼容部分工具。
+- **执行前检查**：AgentLoop 可在 `ToolContext.before_execute` 注入截止检查；`BaseTool` 在权限批准后及同步 `invoke` 入口调用它。覆盖 `ainvoke` 的工具须自行遵守该契约；它不能中断已经开始的同步操作或撤销远端副作用。
 - **副作用**：写工具在类上声明 `effects`（`db`=写数据库 / `fs`=写文件系统 / `net`=网络访问）；`is_readonly` 由 effects 派生。写工具清单（9 个）：`write_file` `run_backtest` `get_market_data` `import_data` `clean_data` `create_goal` `add_evidence` `complete_goal` `run_command`。
 - **错误范式**（两档）：
   - 业务/容错失败抛 `ToolError` → 结构化 `{"status": "error", "error", [received/expected/fix/tool]}`（received/expected/fix 可选，按场景填充）；

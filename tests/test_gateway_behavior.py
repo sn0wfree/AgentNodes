@@ -391,6 +391,59 @@ def test_engine_crash_isolated_per_turn():
     assert [s["ok"] for s in settled] == [False, True]
 
 
+@pytest.mark.parametrize("failure_point", ["engine", "context"])
+def test_turn_setup_failure_settles_and_next_turn_runs(failure_point):
+    events = Probe()
+    attempts = []
+    assignments = []
+
+    class TicketSink:
+        def admit(self, **kwargs):
+            assignment = object()
+            assignments.append(assignment)
+            return assignment
+
+        def settle(self, *, assignment, status, reason):
+            attempts.append((assignment, status, reason))
+
+    class Engine:
+        def run(self, state):
+            return {"answer": "ok"}
+
+    builds = []
+
+    def build():
+        builds.append("build")
+        if failure_point == "engine" and len(builds) == 1:
+            raise RuntimeError("turn setup failed")
+        return Engine()
+
+    gw = Gateway(client=FakeClient(), sink=events, engine_factory=build, ticket_sink=TicketSink())
+    if failure_point == "context":
+        def inject(messages, session_id):
+            if len(builds) == 1:
+                raise RuntimeError("turn setup failed")
+            return messages
+
+        gw.controller._inject_context = inject
+    gw.entry.submit(api_chat_request("s", "first", attempt_id="a1"))
+    [first] = gw.run_once()
+    assert not first.ok and "turn setup failed" in first.error
+    assert len(events.of("run.failed")) == 1
+    assert events.of("run.failed")[0]["attempt_id"] == "a1"
+    assert [event["ok"] for event in events.of("run.settled")] == [False]
+    assert attempts[0] == (assignments[0], "failed", "turn setup failed")
+    assert gw.fence.active_run("s") is None
+    assert not gw.execution_lease.holding("s")
+
+    gw.entry.submit(api_chat_request("s", "second", attempt_id="a2"))
+    [second] = gw.run_once()
+    assert second.ok and second.answer == "ok"
+    assert [event["ok"] for event in events.of("run.settled")] == [False, True]
+    assert gw.fence.active_run("s") is None
+    assert not gw.execution_lease.holding("s")
+
+
 def test_all_turns_failing_still_drains_queue():
     gw, _, _ = make_gateway(fail_first=10)
     for i in range(3):

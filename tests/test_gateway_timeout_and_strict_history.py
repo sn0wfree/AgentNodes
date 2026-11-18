@@ -3,7 +3,7 @@
 
 缺口① attempt 级超时（Gateway 等价语义）——三层验证：
 1. **执行器检查点**：``AgentLoop._check_attempt_timeout`` 到点抛
-   ``AttemptTimeoutError``（真中断，不是等待方超时）；
+   ``AttemptTimeoutError``（检查点中止，不代表阻塞工具可被强制中断）；
 2. **引擎挂钩**：默认引擎（skeleton）的每轮开头动作会调该检查点
    （``engine_adapters.LoopIterationStart``）；
 3. **控制面收尾**：超时异常经 controller 的既有失败路径 →
@@ -14,25 +14,28 @@
 """
 from __future__ import annotations
 
+import asyncio
+import threading
 import time
 
 import pytest
 
-from agentnodes.kernel.agent.loop.errors import AttemptTimeoutError
-from agentnodes.kernel.agent.loop.core import AgentLoop
-from agentnodes.kernel.agent.tools.core import ToolRegistry
 from agentnodes.foundation.llm import LLMConfig
+from agentnodes.kernel.agent.loop.core import AgentLoop
+from agentnodes.kernel.agent.loop.errors import AttemptTimeoutError
+from agentnodes.kernel.agent.tools.core import ToolRegistry
 from agentnodes.kernel.gateway.gateway import Gateway
 
 pytestmark = pytest.mark.asyncio
 
 
-def _make_loop(*, timeout_s, max_iterations=5):
+def _make_loop(*, timeout_s, max_iterations=5, stream_mode=True):
     loop = AgentLoop(
         config=LLMConfig(api_key=""),
         registry=ToolRegistry(),
         workspace=None,
         max_iterations=max_iterations,
+        stream_mode=stream_mode,
     )
     loop._attempt_timeout_s = timeout_s
     return loop
@@ -97,6 +100,575 @@ class TestAttemptTimeoutCheckPoint:
         loop._check_attempt_timeout(1)  # 不抛
 
 
+@pytest.mark.parametrize("engine", ["skeleton", "legacy"])
+async def test_attempt_deadline_interrupts_last_iteration(engine):
+    from agentnodes.foundation.llm import LLMResponse
+
+    loop = _make_loop(timeout_s=0.05, max_iterations=1, stream_mode=False)
+    started = asyncio.Event()
+    cancelled = asyncio.Event()
+    events = []
+    loop._on_event = lambda kind, data: events.append((kind, data))
+
+    async def slow_chat(messages, **kwargs):
+        started.set()
+        try:
+            await asyncio.sleep(0.3)
+        except asyncio.CancelledError:
+            cancelled.set()
+            raise
+        return LLMResponse(content="late", tool_calls=[], finish_reason="stop")
+
+    loop.client.achat = slow_chat
+    result = await loop.arun("deadline probe", engine=engine)
+
+    if not started.is_set():
+        pytest.fail("the probe must execute the real LLM call")
+    assert cancelled.is_set()
+    assert result.finished_reason == "timeout"
+    assert result.error and "timed out" in result.error
+    assert not result.success
+    assert sum(kind == "loop_end" for kind, _ in events) == 1
+    assert sum(kind == "iter_end" for kind, _ in events) == 1
+
+
+async def test_iteration_timeout_remains_distinct_from_attempt_timeout():
+    from agentnodes.kernel.agent.loop.core import LoopResult
+
+    loop = _make_loop(timeout_s=1.0)
+    loop._iteration_timeout_s = 0.05
+    loop._begin_attempt_deadline()
+    result = LoopResult()
+    cancelled = asyncio.Event()
+
+    async def slow_call():
+        try:
+            await asyncio.sleep(0.3)
+        finally:
+            cancelled.set()
+
+    assert await loop._with_iteration_timeout(slow_call(), 1, result) is None
+    assert cancelled.is_set()
+    assert result.finished_reason == "timeout"
+    assert result.error and "iteration 1 exceeded" in result.error
+
+
+async def test_provider_timeout_is_not_reported_as_attempt_deadline():
+    from agentnodes.kernel.agent.loop.core import LoopResult
+
+    loop = _make_loop(timeout_s=1.0)
+    loop._iteration_timeout_s = None
+    loop._begin_attempt_deadline()
+
+    async def provider_timeout():
+        raise TimeoutError("provider timeout")
+
+    with pytest.raises(TimeoutError, match="provider timeout"):
+        await loop._with_iteration_timeout(provider_timeout(), 1, LoopResult())
+
+
+@pytest.mark.parametrize("engine", ["skeleton", "legacy"])
+async def test_attempt_deadline_interrupts_stream(engine):
+    from agentnodes.foundation.llm.parser import StreamChunk
+
+    loop = _make_loop(timeout_s=0.05, max_iterations=1, stream_mode=True)
+    started = asyncio.Event()
+    cancelled = asyncio.Event()
+
+    async def slow_stream(messages, **kwargs):
+        started.set()
+        try:
+            await asyncio.sleep(0.3)
+        except asyncio.CancelledError:
+            cancelled.set()
+            raise
+        yield StreamChunk(delta_content="late", finish_reason="stop")
+
+    loop.client.astream = slow_stream
+    result = await loop.arun("deadline probe", engine=engine)
+    if not started.is_set():
+        pytest.fail("the probe must execute the real streaming call")
+    assert cancelled.is_set()
+    assert result.finished_reason == "timeout"
+    assert result.error and "attempt timed out" in result.error
+    assert not result.success
+
+
+@pytest.mark.xfail(
+    strict=True,
+    raises=AssertionError,
+    reason="synchronous tools cannot be interrupted by the attempt deadline",
+)
+async def test_attempt_deadline_stops_inflight_tool_side_effect():
+    from agentnodes.foundation.llm import LLMResponse, ToolCall
+    from agentnodes.kernel.agent.tools.core import BaseTool
+
+    calls = []
+
+    class SlowTool(BaseTool):
+        name = "slow_probe"
+        description = "bounded timeout probe"
+        parameters = {"type": "object", "properties": {}}
+
+        def execute(self, **kwargs):
+            calls.append("started")
+            time.sleep(0.3)
+            calls.append("side_effect")
+            return "ok"
+
+    loop = _make_loop(timeout_s=0.05, max_iterations=2, stream_mode=False)
+    loop.registry.register(SlowTool())
+
+    async def tool_request(messages, **kwargs):
+        return LLMResponse(
+            content="",
+            tool_calls=[ToolCall(id="probe", name="slow_probe", arguments={})],
+            finish_reason="tool_calls",
+        )
+
+    loop.client.achat = tool_request
+    result = await loop.arun("deadline probe")
+
+    if "started" not in calls:
+        pytest.fail("the probe must execute the real tool")
+    assert "side_effect" not in calls
+    assert result.finished_reason == "timeout"
+    assert result.error and "timed out" in result.error
+
+
+@pytest.mark.parametrize("engine", ["skeleton", "legacy"])
+async def test_finished_slow_tool_does_not_report_success(engine):
+    from agentnodes.foundation.llm import LLMResponse, ToolCall
+    from agentnodes.kernel.agent.tools.core import BaseTool
+
+    calls = []
+    events = []
+
+    class SlowTool(BaseTool):
+        name = "slow_probe"
+        description = "bounded timeout probe"
+        parameters = {"type": "object", "properties": {}}
+
+        def execute(self, **kwargs):
+            calls.append("started")
+            time.sleep(0.15)
+            calls.append("finished")
+            return "ok"
+
+    loop = _make_loop(timeout_s=0.05, max_iterations=1, stream_mode=False)
+    loop._on_event = lambda kind, data: events.append((kind, data))
+    loop.registry.register(SlowTool())
+
+    async def tool_request(messages, **kwargs):
+        return LLMResponse(
+            content="",
+            tool_calls=[ToolCall(id="probe", name="slow_probe", arguments={})],
+            finish_reason="tool_calls",
+        )
+
+    loop.client.achat = tool_request
+    result = await loop.arun("deadline probe", engine=engine)
+    assert calls == ["started", "finished"]
+    assert result.finished_reason == "timeout"
+    assert result.error and "attempt timed out" in result.error
+    assert not result.success
+    assert sum(kind == "loop_end" for kind, _ in events) == 1
+    assert sum(kind == "iter_end" for kind, _ in events) == 1
+
+
+@pytest.mark.parametrize("engine", ["skeleton", "legacy"])
+async def test_expired_deadline_does_not_start_next_write_tool(engine):
+    from agentnodes.foundation.llm import LLMResponse, ToolCall
+    from agentnodes.kernel.agent.tools.core import BaseTool
+
+    calls = []
+    events = []
+
+    class SlowWrite(BaseTool):
+        name = "slow_write_probe"
+        description = "bounded timeout probe"
+        parameters = {"type": "object", "properties": {}}
+        effects = frozenset({"fs"})
+
+        def execute(self, **kwargs):
+            calls.append("slow_started")
+            time.sleep(0.15)
+            calls.append("slow_finished")
+            return "ok"
+
+    class NextWrite(BaseTool):
+        name = "next_write_probe"
+        description = "second timeout probe"
+        parameters = {"type": "object", "properties": {}}
+        effects = frozenset({"fs"})
+
+        def execute(self, **kwargs):
+            calls.append("next_started")
+            return "ok"
+
+    loop = _make_loop(timeout_s=0.05, max_iterations=1, stream_mode=False)
+    loop._on_event = lambda kind, data: events.append((kind, data))
+    loop.registry.register(SlowWrite())
+    loop.registry.register(NextWrite())
+
+    async def tool_request(messages, **kwargs):
+        return LLMResponse(
+            content="",
+            tool_calls=[
+                ToolCall(id="first", name="slow_write_probe", arguments={}),
+                ToolCall(id="second", name="next_write_probe", arguments={}),
+            ],
+            finish_reason="tool_calls",
+        )
+
+    loop.client.achat = tool_request
+    result = await loop.arun("deadline probe", engine=engine)
+    assert calls == ["slow_started", "slow_finished"]
+    assert result.finished_reason == "timeout"
+    assert result.error and "attempt timed out" in result.error
+    endings = [data for kind, data in events if kind == "iter_end"]
+    assert len(endings) == 1 and endings[0]["iteration"] == 1
+
+
+@pytest.mark.parametrize("engine", ["skeleton", "legacy"])
+async def test_readonly_batch_timeout_stops_before_next_llm_call(engine):
+    from agentnodes.foundation.llm import LLMResponse, ToolCall
+    from agentnodes.kernel.agent.tools.core import BaseTool
+
+    calls = []
+
+    class AsyncRead(BaseTool):
+        name = "async_read_probe"
+        description = "bounded parallel timeout probe"
+        parameters = {"type": "object", "properties": {}}
+
+        def execute(self, **kwargs):
+            pytest.fail("the probe must execute the async path")
+
+        async def ainvoke(self, kwargs, ctx=None):
+            calls.append("started")
+            await asyncio.sleep(0.1)
+            calls.append("finished")
+            return "ok"
+
+    loop = _make_loop(timeout_s=0.05, max_iterations=2, stream_mode=False)
+    loop.registry.register(AsyncRead())
+    requests = []
+
+    async def tool_request(messages, **kwargs):
+        requests.append("request")
+        return LLMResponse(
+            content="",
+            tool_calls=[
+                ToolCall(id="first", name="async_read_probe", arguments={}),
+                ToolCall(id="second", name="async_read_probe", arguments={}),
+            ],
+            finish_reason="tool_calls",
+        )
+
+    loop.client.achat = tool_request
+    result = await loop.arun("deadline probe", engine=engine)
+    assert calls.count("started") == 2 and calls.count("finished") == 2
+    assert requests == ["request"]
+    assert result.finished_reason == "timeout"
+    assert result.error and "attempt timed out" in result.error
+
+
+@pytest.mark.parametrize("engine", ["skeleton", "legacy"])
+async def test_expired_deadline_stops_tool_retry(engine, monkeypatch):
+    from agentnodes.foundation.llm import LLMResponse, ToolCall
+    from agentnodes.kernel.agent.loop import tools as loop_tools
+    from agentnodes.kernel.agent.tools.core import BaseTool
+
+    calls = []
+
+    class SlowFailure(BaseTool):
+        name = "slow_retry_probe"
+        description = "bounded retry timeout probe"
+        parameters = {"type": "object", "properties": {}}
+
+        def execute(self, **kwargs):
+            calls.append("started")
+            time.sleep(0.15)
+            raise OSError("transient probe failure")
+
+    monkeypatch.setattr(loop_tools, "_TOOL_RETRY_DELAY", 0)
+    loop = _make_loop(timeout_s=0.05, max_iterations=1, stream_mode=False)
+    loop.registry.register(SlowFailure())
+
+    async def tool_request(messages, **kwargs):
+        return LLMResponse(
+            content="",
+            tool_calls=[ToolCall(id="probe", name="slow_retry_probe", arguments={})],
+            finish_reason="tool_calls",
+        )
+
+    loop.client.achat = tool_request
+    result = await loop.arun("deadline probe", engine=engine)
+    assert calls == ["started"]
+    assert result.finished_reason == "timeout"
+    assert result.error and "attempt timed out" in result.error
+
+
+@pytest.mark.parametrize("engine", ["skeleton", "legacy"])
+async def test_expired_deadline_stops_not_yet_started_readonly_tool(engine):
+    from agentnodes.foundation.llm import LLMResponse, ToolCall
+    from agentnodes.kernel.agent.tools.core import BaseTool
+
+    calls = []
+
+    class SlowRead(BaseTool):
+        name = "slow_read_probe"
+        description = "bounded readonly timeout probe"
+        parameters = {"type": "object", "properties": {}}
+
+        def execute(self, **kwargs):
+            calls.append("slow_started")
+            time.sleep(0.15)
+            calls.append("slow_finished")
+            return "ok"
+
+    class NextRead(BaseTool):
+        name = "next_read_probe"
+        description = "second readonly timeout probe"
+        parameters = {"type": "object", "properties": {}}
+
+        def execute(self, **kwargs):
+            calls.append("next_started")
+            return "ok"
+
+    loop = _make_loop(timeout_s=0.05, max_iterations=1, stream_mode=False)
+    loop.registry.register(SlowRead())
+    loop.registry.register(NextRead())
+
+    async def tool_request(messages, **kwargs):
+        return LLMResponse(
+            content="",
+            tool_calls=[
+                ToolCall(id="first", name="slow_read_probe", arguments={}),
+                ToolCall(id="second", name="next_read_probe", arguments={}),
+            ],
+            finish_reason="tool_calls",
+        )
+
+    loop.client.achat = tool_request
+    result = await loop.arun("deadline probe", engine=engine)
+    assert calls == ["slow_started", "slow_finished"]
+    assert result.finished_reason == "timeout"
+    assert result.error and "attempt timed out" in result.error
+
+
+@pytest.mark.parametrize("engine", ["skeleton", "legacy"])
+async def test_expired_deadline_stops_next_composite_step(engine):
+    from agentnodes.foundation.llm import LLMResponse, ToolCall
+    from agentnodes.kernel.agent.plugins.combo import CompositeTool
+    from agentnodes.kernel.agent.tools.core import BaseTool
+
+    calls = []
+
+    class SlowStep(BaseTool):
+        name = "slow_step_probe"
+        description = "bounded composite timeout probe"
+        parameters = {"type": "object", "properties": {}}
+
+        def execute(self, **kwargs):
+            calls.append("slow_started")
+            time.sleep(0.15)
+            calls.append("slow_finished")
+            return '{"status":"ok"}'
+
+    class NextStep(BaseTool):
+        name = "next_step_probe"
+        description = "second composite timeout probe"
+        parameters = {"type": "object", "properties": {}}
+        effects = frozenset({"fs"})
+
+        def execute(self, **kwargs):
+            calls.append("next_started")
+            return '{"status":"ok"}'
+
+    loop = _make_loop(timeout_s=0.05, max_iterations=1, stream_mode=False)
+    loop.registry.register(SlowStep())
+    loop.registry.register(NextStep())
+    loop.registry.register(CompositeTool(
+        name="combo_probe",
+        description="composite probe",
+        category="test",
+        steps=[
+            {"tool": "slow_step_probe", "params": {}},
+            {"tool": "next_step_probe", "params": {}},
+        ],
+        registry=loop.registry,
+    ))
+
+    async def tool_request(messages, **kwargs):
+        return LLMResponse(
+            content="",
+            tool_calls=[ToolCall(id="probe", name="combo_probe", arguments={})],
+            finish_reason="tool_calls",
+        )
+
+    loop.client.achat = tool_request
+    result = await loop.arun("deadline probe", engine=engine)
+    assert calls == ["slow_started", "slow_finished"]
+    assert result.finished_reason == "timeout"
+    assert result.error and "attempt timed out" in result.error
+
+
+@pytest.mark.parametrize("engine", ["skeleton", "legacy"])
+async def test_parallel_tools_finish_before_timeout_ending(engine):
+    from agentnodes.foundation.llm import LLMResponse, ToolCall
+    from agentnodes.kernel.agent.tools.core import BaseTool
+
+    order = []
+
+    class DelayedStart(BaseTool):
+        name = "delayed_start_probe"
+        description = "delayed tool entry probe"
+        parameters = {"type": "object", "properties": {}}
+
+        def execute(self, **kwargs):
+            pytest.fail("the expired tool must not execute")
+
+        async def ainvoke(self, kwargs, ctx=None):
+            await asyncio.sleep(0.1)
+            return await super().ainvoke(kwargs, ctx)
+
+    class RunningTool(BaseTool):
+        name = "running_tool_probe"
+        description = "running tool probe"
+        parameters = {"type": "object", "properties": {}}
+
+        def execute(self, **kwargs):
+            pytest.fail("the probe must execute the async path")
+
+        async def ainvoke(self, kwargs, ctx=None):
+            order.append("started")
+            await asyncio.sleep(0.2)
+            order.append("finished")
+            return "ok"
+
+    loop = _make_loop(timeout_s=0.05, max_iterations=1, stream_mode=False)
+    loop._on_event = lambda kind, data: order.append(kind)
+    loop.registry.register(DelayedStart())
+    loop.registry.register(RunningTool())
+
+    async def tool_request(messages, **kwargs):
+        return LLMResponse(
+            content="",
+            tool_calls=[
+                ToolCall(id="first", name="delayed_start_probe", arguments={}),
+                ToolCall(id="second", name="running_tool_probe", arguments={}),
+            ],
+            finish_reason="tool_calls",
+        )
+
+    loop.client.achat = tool_request
+    result = await loop.arun("deadline probe", engine=engine)
+    assert "started" in order and "finished" in order
+    assert order.index("finished") < order.index("loop_end")
+    assert order.count("loop_end") == 1
+    assert result.finished_reason == "timeout"
+
+
+@pytest.mark.xfail(
+    strict=True,
+    raises=AssertionError,
+    reason="cancelling the sync-only client bridge does not stop its worker thread",
+)
+async def test_attempt_deadline_stops_sync_only_client_worker():
+    from agentnodes.foundation.llm import LLMResponse
+    from agentnodes.kernel.runtimes.nodes.agent_loop_node import wrap_async_capable_client
+
+    started = threading.Event()
+    finished = threading.Event()
+
+    class SyncClient:
+        def chat(self, messages, **kwargs):
+            started.set()
+            time.sleep(0.2)
+            finished.set()
+            return LLMResponse(content="late", tool_calls=[], finish_reason="stop")
+
+    loop = _make_loop(timeout_s=0.05, max_iterations=1, stream_mode=False)
+    loop.client = wrap_async_capable_client(SyncClient())
+    result = await loop.arun("deadline probe")
+    if not started.is_set():
+        pytest.fail("the probe must execute the sync client")
+    await asyncio.to_thread(finished.wait, 0.4)
+    assert not finished.is_set()
+    assert result.finished_reason == "timeout"
+
+
+@pytest.mark.parametrize("engine", ["skeleton", "legacy"])
+@pytest.mark.parametrize(
+    ("timeout_s", "approval_delay", "should_execute"),
+    [(0.05, 0.1, False), (1.0, 0.0, True), (None, 0.1, True)],
+)
+async def test_attempt_deadline_after_permission(
+    tmp_path, engine, timeout_s, approval_delay, should_execute,
+):
+    from agentnodes.foundation.llm import LLMResponse, ToolCall
+    from agentnodes.kernel.agent.tools.core import BaseTool
+    from agentnodes.kernel.permission import (
+        PermissionAction,
+        PermissionGateway,
+        PermissionResponse,
+    )
+    from agentnodes.kernel.permission.schema import PermissionRule
+
+    calls = []
+    requested = asyncio.Event()
+
+    class ApprovalTool(BaseTool):
+        name = "approval_probe"
+        description = "bounded approval timeout probe"
+        parameters = {"type": "object", "properties": {}}
+        effects = frozenset({"fs"})
+
+        def execute(self, **kwargs):
+            calls.append("started")
+            return "ok"
+
+    gateway = PermissionGateway(
+        rules_path=tmp_path / "permission.yaml",
+        on_request=lambda *args: requested.set(),
+    )
+    gateway.evaluator.add_rule(PermissionRule(
+        permission="approval_probe", pattern="*", action=PermissionAction.ASK,
+    ))
+    loop = _make_loop(timeout_s=timeout_s, max_iterations=1, stream_mode=False)
+    loop._permission_evaluator = gateway.evaluator
+    loop._permission_gateway = gateway
+    loop.registry.register(ApprovalTool())
+    events = []
+    loop._on_event = lambda kind, data: events.append((kind, data))
+
+    async def tool_request(messages, **kwargs):
+        return LLMResponse(
+            content="",
+            tool_calls=[ToolCall(id="probe", name="approval_probe", arguments={})],
+            finish_reason="tool_calls",
+        )
+
+    loop.client.achat = tool_request
+    running = asyncio.create_task(loop.arun("deadline probe", engine=engine))
+    await asyncio.wait_for(requested.wait(), 2)
+    await asyncio.sleep(approval_delay)
+    gateway.respond("probe", PermissionResponse(action=PermissionAction.ALLOW))
+    result = await asyncio.wait_for(running, 2)
+    if should_execute:
+        assert calls == ["started"]
+        assert result.finished_reason != "timeout"
+        assert not result.error
+    else:
+        assert not calls
+        assert result.finished_reason == "timeout"
+        assert result.error and "attempt timed out" in result.error
+    assert sum(kind == "loop_end" for kind, _ in events) == 1
+    assert sum(kind == "iter_end" for kind, _ in events) == 1
+
+
 # ── 缺口①-2：引擎挂钩（默认引擎每轮开头检查）─────────────────────────
 
 
@@ -138,6 +710,150 @@ class _TimeoutEngine:
 
 
 class TestGatewayTimeoutSettlement:
+    async def test_sync_client_worker_holds_gateway_lease_until_it_returns(self):
+        from agentnodes.foundation.llm import LLMResponse
+        from agentnodes.kernel.gateway.entry_adapters import api_chat_request
+        from agentnodes.kernel.runtimes.nodes.agent_loop_node import (
+            make_agent_loop_node,
+            wrap_async_capable_client,
+        )
+
+        started = threading.Event()
+        release = threading.Event()
+
+        class SyncClient:
+            def chat(self, messages, **kwargs):
+                started.set()
+                if not release.wait(5):
+                    raise TimeoutError("probe release was not signalled")
+                return LLMResponse(content="late", tool_calls=[], finish_reason="stop")
+
+        loop = _make_loop(timeout_s=0.05, max_iterations=1, stream_mode=False)
+        loop.client = wrap_async_capable_client(SyncClient())
+        node = make_agent_loop_node(loop)
+
+        class Engine:
+            def run(self, state):
+                return node(state)
+
+        gw = Gateway(client=object(), sink=lambda kind, data: None)
+        gw.controller._engine_factory = Engine
+        gw.entry.submit(api_chat_request("s1", "hi"))
+        running = asyncio.create_task(asyncio.to_thread(gw.run_once))
+        try:
+            assert await asyncio.to_thread(started.wait, 2), "sync client did not start"
+            await asyncio.sleep(0.1)
+            assert not running.done()
+            assert gw.execution_lease.holding("s1")
+            assert gw.fence.active_run("s1") is not None
+        finally:
+            release.set()
+            results = await asyncio.wait_for(running, 5)
+
+        assert len(results) == 1 and not results[0].ok
+        assert "attempt timed out" in results[0].error
+        assert gw.fence.active_run("s1") is None
+        assert not gw.execution_lease.holding("s1")
+
+    async def test_blocking_tool_holds_lease_until_it_returns(self):
+        from agentnodes.foundation.llm import LLMResponse, ToolCall
+        from agentnodes.kernel.agent.tools.core import BaseTool
+        from agentnodes.kernel.gateway.entry_adapters import api_chat_request
+        from agentnodes.kernel.runtimes.nodes.agent_loop_node import make_agent_loop_node
+
+        started = threading.Event()
+        release = threading.Event()
+        events = []
+
+        class BlockingTool(BaseTool):
+            name = "blocking_probe"
+            description = "bounded lease probe"
+            parameters = {"type": "object", "properties": {}}
+
+            def execute(self, **kwargs):
+                started.set()
+                if not release.wait(5):
+                    raise TimeoutError("probe release was not signalled")
+                return "ok"
+
+        loop = _make_loop(timeout_s=0.05, max_iterations=1, stream_mode=False)
+        loop.registry.register(BlockingTool())
+
+        async def tool_request(messages, **kwargs):
+            return LLMResponse(
+                content="",
+                tool_calls=[ToolCall(id="probe", name="blocking_probe", arguments={})],
+                finish_reason="tool_calls",
+            )
+
+        loop.client.achat = tool_request
+        node = make_agent_loop_node(loop)
+
+        class Engine:
+            def run(self, state):
+                return node(state)
+
+        gw = Gateway(client=object(), sink=lambda kind, data: events.append((kind, data)))
+        gw.controller._engine_factory = Engine
+        gw.entry.submit(api_chat_request("s1", "hi", attempt_id="a1"))
+        running = asyncio.create_task(asyncio.to_thread(gw.run_once))
+        try:
+            assert await asyncio.to_thread(started.wait, 2), "tool did not start"
+            await asyncio.sleep(0.1)
+            assert not running.done()
+            assert gw.execution_lease.holding("s1")
+            assert gw.fence.active_run("s1") is not None
+        finally:
+            release.set()
+            results = await asyncio.wait_for(running, 5)
+
+        assert len(results) == 1 and not results[0].ok
+        assert "attempt timed out" in results[0].error
+        assert sum(kind == "run.failed" for kind, _ in events) == 1
+        assert sum(kind == "run.settled" for kind, _ in events) == 1
+        assert gw.fence.active_run("s1") is None
+        assert not gw.execution_lease.holding("s1")
+
+    async def test_real_agent_timeout_yields_failed_events_and_release(self):
+        from agentnodes.kernel.gateway.entry_adapters import api_chat_request
+        from agentnodes.kernel.runtimes.nodes.agent_loop_node import make_agent_loop_node
+
+        events = []
+        started = threading.Event()
+        cancelled = threading.Event()
+        loop = _make_loop(timeout_s=0.05, max_iterations=1, stream_mode=False)
+
+        async def slow_chat(messages, **kwargs):
+            started.set()
+            try:
+                await asyncio.sleep(0.3)
+            except asyncio.CancelledError:
+                cancelled.set()
+                raise
+
+        loop.client.achat = slow_chat
+        node = make_agent_loop_node(loop)
+
+        class Engine:
+            def run(self, state):
+                return node(state)
+
+        gw = Gateway(client=object(), sink=lambda kind, data: events.append((kind, data)))
+        gw.controller._engine_factory = Engine
+        gw.entry.submit(api_chat_request("s1", "hi", attempt_id="a1"))
+        results = gw.run_once()
+
+        assert started.is_set()
+        assert cancelled.is_set()
+        assert len(results) == 1 and not results[0].ok
+        assert "attempt timed out" in results[0].error
+        failed = [data for kind, data in events if kind == "run.failed"]
+        settled = [data for kind, data in events if kind == "run.settled"]
+        assert len(failed) == 1 and failed[0]["attempt_id"] == "a1"
+        assert len(settled) == 1 and settled[0]["ok"] is False
+        assert gw.fence.active_run("s1") is None
+        assert not gw.execution_lease.holding("s1")
+
     async def test_timeout_yields_failed_events_and_release(self):
         """超时 → run.failed + run.settled{ok:False} + fence 释放。"""
         events: list[tuple[str, dict]] = []

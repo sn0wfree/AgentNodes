@@ -823,13 +823,38 @@ class AgentLoop(
         ``finished_reason="timeout"`` and ``None`` is returned (the
         caller breaks the loop on a None response).
         """
-        if self._iteration_timeout_s is None:
+        timeout = self._iteration_timeout_s
+        attempt_timeout = False
+        if self._attempt_deadline is not None:
+            remaining = max(0.0, self._attempt_deadline - time.monotonic())
+            if timeout is None or remaining <= timeout:
+                timeout = remaining
+                attempt_timeout = True
+        if timeout is None:
             return await coro
+        task = asyncio.ensure_future(coro)
         try:
-            return await asyncio.wait_for(coro, timeout=self._iteration_timeout_s)
+            response = await asyncio.wait_for(task, timeout=timeout)
         except (asyncio.TimeoutError, TimeoutError):
-            self._handle_iteration_timeout(result, iteration)
-            return None
+            if not task.cancelled() and self._iteration_timeout_s is None:
+                raise
+            if not attempt_timeout or not task.cancelled():
+                self._handle_iteration_timeout(result, iteration)
+                return None
+        else:
+            if (
+                self._attempt_deadline is None
+                or time.monotonic() < self._attempt_deadline
+            ):
+                return response
+
+        self._handle_attempt_timeout(
+            result, iteration, time.monotonic() - self._started_at,
+        )
+        ctx = getattr(self, "_skeleton_ctx", None)
+        if ctx is not None and getattr(ctx, "result", None) is result:
+            ctx._ending_emitted = True
+        return None
 
     def _with_iteration_timeout_sync(
         self, fn: Callable[[], Any], iteration: int, result: LoopResult,
@@ -902,18 +927,13 @@ class AgentLoop(
             return
         self._attempt_deadline = self._started_at + timeout
 
-    def _check_attempt_timeout(self, iteration: int, result: Any = None) -> None:
-        """attempt 级超时检查点（**迭代边界**）——到点即中止执行。
+    def _check_attempt_timeout(
+        self, iteration: int, result: Any = None, *, finalize: bool = True,
+    ) -> None:
+        """Check the attempt deadline at execution boundaries.
 
-        被两处调用：
-        - 默认引擎（skeleton）：``engine_adapters.LoopIterationStart`` 每轮开头
-        - legacy 引擎：``_run_loop_core`` 迭代开头
-
-        到点 → 补终态字段与事件（``handle_attempt_timeout``）→ 抛
-        :class:`AttemptTimeoutError` 中止本轮。**不再进入下一轮** → 不再调
-        LLM/工具/写库 → 无孤儿写入；异常经 GraphEngine → SessionController
-        的既有失败路径收尾（run.failed / run.settled{ok:False} / settle /
-        fence release）。
+        On expiry emit the timeout ending and raise :class:`AttemptTimeoutError`.
+        This cannot interrupt a blocking tool or undo an external side effect.
 
         :param result: 已有的 ``LoopResult``（legacy 路径传入）；None = 引擎
             路径尚未产出结果载体，用轻量替身仅供事件字段（tool_calls_made=0）。
@@ -924,8 +944,17 @@ class AgentLoop(
         if now < self._attempt_deadline:
             return
         elapsed = now - self._started_at
-        carrier = result if result is not None else LoopResult()
-        self._handle_attempt_timeout(carrier, iteration, elapsed)
+        if finalize:
+            ctx = getattr(self, "_skeleton_ctx", None)
+            carrier = result
+            if carrier is None and ctx is not None:
+                carrier = getattr(ctx, "result", None)
+            if carrier is None:
+                carrier = LoopResult()
+            if carrier.finished_reason != "timeout":
+                self._handle_attempt_timeout(carrier, iteration, elapsed)
+            if ctx is not None and getattr(ctx, "result", None) is carrier:
+                ctx._ending_emitted = True
         raise AttemptTimeoutError(
             f"attempt timed out after {self._attempt_timeout_s}s "
             f"(elapsed {elapsed:.1f}s, iteration {iteration})",
@@ -943,9 +972,9 @@ class AgentLoop(
     ) -> LoopResult:
         """Async version of run() - all I/O points use await.
 
-        Uses ``client.astream()`` / ``client.achat()`` for LLM calls,
-        ``asyncio.to_thread()`` for tool execution, and ``asyncio.gather()``
-        for parallel readonly tools.
+        Uses ``client.astream()`` / ``client.achat()`` for LLM calls and
+        ``asyncio.gather()`` for parallel readonly tools. Tool implementations
+        may still block the event loop.
 
         Args:
             task: The user's task description.
@@ -1353,6 +1382,10 @@ class AgentLoop(
             step_r = await self._call_step(
                 self._strategy.tool_execution, tool_ctx
             )
+            try:
+                self._check_attempt_timeout(iteration, result)
+            except AttemptTimeoutError:
+                break
             if not step_r.success:
                 # 崩溃信号回填旧通道（B2-① T1）——tool_execution 自身不写
                 # should_stop，文本与旧 catch 一致。

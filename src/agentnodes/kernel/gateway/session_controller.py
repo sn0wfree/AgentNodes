@@ -13,6 +13,7 @@ A2 换成后台消费者常驻）。
 from __future__ import annotations
 
 import logging
+from contextvars import ContextVar
 from dataclasses import dataclass
 from typing import Any, Callable
 
@@ -24,6 +25,9 @@ from agentnodes.kernel.runtimes.graph_engine import GraphEngine
 logger = logging.getLogger(__name__)
 
 EventSink = Callable[[str, dict], None]
+_event_correlation: ContextVar[str | None] = ContextVar(
+    "gateway_event_correlation", default=None,
+)
 
 
 def _fence_domain(session_key: str) -> str:
@@ -261,10 +265,11 @@ class SessionController:
         turn_id = f"{session_id}#{self._turn_counters[session_id]}"
         run_id = f"{turn_id}:r0"
         run_meta: dict[str, Any] = {"session_id": session_id}
-        for key in ("attempt_id", "assistant_message_id"):
+        for key in ("attempt_id", "assistant_message_id", "event_correlation_id"):
             value = request.payload.get(key)
             if isinstance(value, str) and value:
                 run_meta[key] = value
+        run_meta.setdefault("event_correlation_id", f"run:{run_id}")
 
         # B2：session_key 进事件——fold 恢复 EntryPoint._sessions 映射的
         # 唯一来源（增量字段，向后兼容）。
@@ -306,68 +311,78 @@ class SessionController:
                 self._sink("ticket.admit_failed", {
                     "run_id": run_id, "error": str(exc),
                 })
-        # _build_engine keeps its zero-arg contract (tests replace it with
-        # a lambda); the current session reaches it via this attribute.
-        self._current_session_id = session_id
-        # **W4**：per-turn 迭代上限（/send 的 plan 模式走 payload 显式 1）。
-        # None = 用构造值（singleton 已按 LLMConfig.max_iterations 装配）。
-        # 与 _current_session_id 同一先例：_build_engine 每轮重建，读它。
-        _raw_iter = request.payload.get("max_iterations")
-        self._turn_max_iterations = (
-            int(_raw_iter) if isinstance(_raw_iter, (int, float)) else None
-        )
-        self._turn_model = _payload_string(request, "model")
-        self._turn_system_prompt = _payload_string(request, "system_prompt")
-        self._turn_role = _payload_string(request, "role")
-        self._turn_config = None
-        _allowed_tools = request.payload.get("allowed_tools")
-        self._turn_allowed_tools = (
-            [name for name in _allowed_tools if isinstance(name, str)]
-            if isinstance(_allowed_tools, list)
-            else None
-        )
-        engine = self._build_engine()
-        # P5-1：payload 可携带已格式化历史（旧路径 _convert_messages_to_history 的
-        # 输出同构）。顺序：历史在前、当前输入在后——调用方须在 emit 本轮事件
-        # **之前**读取历史，否则当前轮会重复注入。
-        history = request.payload.get("history")
-        messages: list[dict] = []
-        if isinstance(history, list):
-            messages.extend(
-                m for m in history
-                if isinstance(m, dict) and m.get("role") and "content" in m
-            )
-        messages.append({"role": "user", "content": _payload_text(request)})
-        # B1-b：pre-run 上下文（goal/memory）经 ContextHub 注入——与
-        # AgentLoop 路径同一契约（块在前、当前输入在后）。
-        messages = self._inject_context(messages, session_id)
-        state = {
-            "messages": messages,
-            "session_id": session_id,
-            "turn_id": turn_id,
-            "run_id": run_id,
-        }
-        for key in (
-            "attempt_id", "assistant_message_id", "mode", "thinking",
-        ):
-            value = request.payload.get(key)
-            if value is not None:
-                state[key] = value
-        # R2.2：steer 注入通道——执行引擎在安全点 drain（只追加）。
-        mailbox = self._ep.mailbox_for(request.session_key)
-        if mailbox is not None:
-            state["steer_inbox"] = mailbox.steer_inbox()
-        # R3：fence 域随 state 可见（测试引擎按域超越；引擎本身不修改它）。
-        state["fence_domain"] = fence_domain
-        # B1：取消信号——节点边界检查；注册到 registry 供 interrupt/cancel 触发。
-        scope = CancelScope()
-        state["cancel_scope"] = scope
-        if self._cancel_registry is not None:
-            self._cancel_registry[fence_domain] = scope
+        mailbox = None
+        scope = None
         try:
+            mailbox = self._ep.mailbox_for(request.session_key)
+            # _build_engine keeps its zero-arg contract (tests replace it with
+            # a lambda); the current session reaches it via this attribute.
+            self._current_session_id = session_id
+            # **W4**：per-turn 迭代上限（/send 的 plan 模式走 payload 显式 1）。
+            # None = 用构造值（singleton 已按 LLMConfig.max_iterations 装配）。
+            # 与 _current_session_id 同一先例：_build_engine 每轮重建，读它。
+            _raw_iter = request.payload.get("max_iterations")
+            self._turn_max_iterations = (
+                int(_raw_iter) if isinstance(_raw_iter, (int, float)) else None
+            )
+            self._turn_model = _payload_string(request, "model")
+            self._turn_system_prompt = _payload_string(request, "system_prompt")
+            self._turn_role = _payload_string(request, "role")
+            self._turn_config = None
+            _allowed_tools = request.payload.get("allowed_tools")
+            self._turn_allowed_tools = (
+                [name for name in _allowed_tools if isinstance(name, str)]
+                if isinstance(_allowed_tools, list)
+                else None
+            )
+            correlation_token = _event_correlation.set(run_meta.get("event_correlation_id"))
+            try:
+                engine = self._build_engine()
+            finally:
+                _event_correlation.reset(correlation_token)
+            # P5-1：payload 可携带已格式化历史（旧路径 _convert_messages_to_history 的
+            # 输出同构）。顺序：历史在前、当前输入在后——调用方须在 emit 本轮事件
+            # **之前**读取历史，否则当前轮会重复注入。
+            history = request.payload.get("history")
+            messages: list[dict] = []
+            if isinstance(history, list):
+                messages.extend(
+                    m for m in history
+                    if isinstance(m, dict) and m.get("role") and "content" in m
+                )
+            messages.append({"role": "user", "content": _payload_text(request)})
+            # B1-b：pre-run 上下文（goal/memory）经 ContextHub 注入——与
+            # AgentLoop 路径同一契约（块在前、当前输入在后）。
+            messages = self._inject_context(messages, session_id)
+            state = {
+                "messages": messages,
+                "session_id": session_id,
+                "turn_id": turn_id,
+                "run_id": run_id,
+                "event_correlation_id": run_meta["event_correlation_id"],
+            }
+            for key in (
+                "attempt_id", "assistant_message_id", "mode", "thinking",
+            ):
+                value = request.payload.get(key)
+                if value is not None:
+                    state[key] = value
+            # R2.2：steer 注入通道——执行引擎在安全点 drain（只追加）。
+            if mailbox is not None:
+                state["steer_inbox"] = mailbox.steer_inbox(
+                    event_correlation_id=run_meta["event_correlation_id"], run_id=run_id,
+                    assistant_message_id=run_meta.get("assistant_message_id", ""),
+                )
+            # R3：fence 域随 state 可见（测试引擎按域超越；引擎本身不修改它）。
+            state["fence_domain"] = fence_domain
+            # B1：取消信号——节点边界检查；注册到 registry 供 interrupt/cancel 触发。
+            scope = CancelScope()
+            state["cancel_scope"] = scope
+            if self._cancel_registry is not None:
+                self._cancel_registry[fence_domain] = scope
             final = engine.run(state)
             answer = str(final.get("answer", ""))
-        except Exception as exc:  # noqa: BLE001 —— 引擎崩溃不拖垮控制器
+        except Exception as exc:  # noqa: BLE001 —— turn 失败不拖垮控制器
             if mailbox is not None:
                 mailbox.promote_steer()  # turn 已死：滞留 steer 转正常队
             if token is not None:
@@ -382,7 +397,7 @@ class SessionController:
             self._settle_assignment(assignment, run_id, "failed", reason=str(exc))
             return RunResult(turn_id, run_id, ok=False, error=str(exc))
         finally:
-            if self._cancel_registry is not None:
+            if scope is not None and self._cancel_registry is not None:
                 # 只清自己（被后继 run 覆盖时不误删）
                 if self._cancel_registry.get(fence_domain) is scope:
                     self._cancel_registry.pop(fence_domain, None)
@@ -522,8 +537,14 @@ class SessionController:
         if self._engine_factory is not None:
             return self._engine_factory()
 
+        correlation_id = _event_correlation.get()
+        sink = self._sink
+        if correlation_id:
+            def sink(kind: str, data: dict) -> None:
+                self._sink(kind, {**data, "event_correlation_id": correlation_id})
+
         system = self._resolve_system_prompt()
-        engine = GraphEngine(sink=self._sink)
+        engine = GraphEngine(sink=sink)
         if self._registry is not None:
             import dataclasses
 
@@ -599,14 +620,14 @@ class SessionController:
                 approval_on_timeout="continue",
                 # ``llm_request`` 大字段剥离（转发 sink 约定）——react 从不
                 # 发它，不剥会把 system_prompt/tools_schema 逐调用落库。
-                on_event=make_loop_event_sink(self._sink),
+                on_event=make_loop_event_sink(sink),
             )
             # attempt 级超时（顺序⑤ 缺口①，2026-11-18 裁决 3）：与旧队列
             # 路径同一 env（``AGENTNODES_CHAT_ATTEMPT_TIMEOUT``，默认 600，
             # 0 = 禁用）。**从实际执行开始计时**（loop.run/arun 入口），
             # 不含排队。到点 → 抛 AttemptTimeoutError → 走本控制器的既有
             # 失败路径（run.failed + run.settled{ok:False} + settle +
-            # fence release）→ 明确失败终态、完成事件、资源释放，无孤儿。
+            # fence release）。同步阻塞调用无法强制中断，限制见超时设计。
             loop._attempt_timeout_s = self._resolve_attempt_timeout_s()
             # client 注入：AgentLoop 构造器自建 client；换成调用方的同一个
             # （生产 = ModelHub 解析实例；测试 = 脚本化假 client）。骨架
@@ -634,7 +655,7 @@ class SessionController:
                 "llm",
                 make_llm_node(
                     self._client, system=system,
-                    stream=self._stream, sink=self._sink,
+                    stream=self._stream, sink=sink,
                 ),
             )
         return engine

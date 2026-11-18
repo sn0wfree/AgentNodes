@@ -388,8 +388,9 @@ class Gateway:
 
     def attempt_state(self, session_id: str, attempt_id: str) -> str | None:
         """Return ``running``/``queued`` for a live Gateway attempt, else None."""
+        active_session_id = self.entry.session_id_for(f"chat:{session_id}") or session_id
         with self._sink_lock:
-            if self._active_attempts.get(session_id) == attempt_id:
+            if self._active_attempts.get(active_session_id) == attempt_id:
                 return "running"
         mailbox = self.entry.mailbox_for(f"chat:{session_id}")
         if mailbox is None:

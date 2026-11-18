@@ -26,7 +26,7 @@ import time
 from collections import deque
 from dataclasses import dataclass, field, replace
 from datetime import datetime
-from typing import Callable, Iterable
+from typing import Any, Callable, Iterable
 
 from agentnodes.kernel.orchestration.contracts import (
     DEFAULT_QUEUE_MODE,
@@ -214,25 +214,46 @@ class Mailbox:
         )
         return Receipt.ok(resolve_session(request.session_key))
 
-    def steer_inbox(self) -> "SteerInbox":
+    def steer_inbox(
+        self, *, event_correlation_id: str = "", run_id: str = "",
+        assistant_message_id: str = "",
+    ) -> "SteerInbox":
         """注入通道：controller 放进 engine state，执行引擎在安全点 drain。"""
-        return SteerInbox(self)
+        return SteerInbox(
+            self, event_correlation_id=event_correlation_id, run_id=run_id,
+            assistant_message_id=assistant_message_id,
+        )
 
-    def drain_steer(self) -> list[str]:
+    def drain_steer(
+        self, *, event_correlation_id: str = "", run_id: str = "",
+        assistant_message_id: str = "",
+    ) -> list[str]:
         """取走全部待注入文本（合批由调用方 join）。发 steer.applied——不静默。"""
         with self._lock:
             if self._paused:
                 return []
             texts: list[str] = []
+            applied_correlations: list[str] = []
             while self._steer:
                 req = self._steer.popleft()
                 text = req.payload.get("text")
                 if isinstance(text, str) and text:
                     texts.append(text)
+                    correlation = req.payload.get("event_correlation_id")
+                    if isinstance(correlation, str) and correlation:
+                        applied_correlations.append(correlation)
             if texts:
+                details: dict[str, Any] = {"session_id": self.session_id, "count": len(texts)}
+                if applied_correlations and event_correlation_id and run_id:
+                    details.update({
+                        "applied_event_correlations": applied_correlations,
+                        "event_correlation_id": event_correlation_id,
+                        "run_id": run_id,
+                    })
+                    if assistant_message_id:
+                        details["assistant_message_id"] = assistant_message_id
                 self._sink(
-                    "steer.applied",
-                    {"session_id": self.session_id, "count": len(texts)},
+                    "steer.applied", details,
                 )
             return texts
 
@@ -438,9 +459,18 @@ class Mailbox:
                 summarized_ids=merged_ids,
             )
             self._queue.appendleft(merged)
+            details: dict[str, Any] = {
+                "session_id": self.session_id, "merged": list(merged_ids),
+            }
+            correlation = oldest.request.payload.get("event_correlation_id")
+            if isinstance(correlation, str) and correlation:
+                details["event_correlation_id"] = correlation
+                for key in ("attempt_id", "assistant_message_id"):
+                    value = oldest.request.payload.get(key)
+                    if isinstance(value, str) and value:
+                        details[key] = value
             self._sink(
-                "work.summarized",
-                {"session_id": self.session_id, "merged": list(merged_ids)},
+                "work.summarized", details,
             )
 
     def _pop_next(self) -> QueueItem:
@@ -475,8 +505,17 @@ class SteerInbox:
     只暴露 drain()——引擎不能反向操作队列（红线：注入只追加、不开 run）。
     """
 
-    def __init__(self, mailbox: Mailbox) -> None:
+    def __init__(
+        self, mailbox: Mailbox, *, event_correlation_id: str = "", run_id: str = "",
+        assistant_message_id: str = "",
+    ) -> None:
         self._mb = mailbox
+        self._event_correlation_id = event_correlation_id
+        self._run_id = run_id
+        self._assistant_message_id = assistant_message_id
 
     def drain(self) -> list[str]:
-        return self._mb.drain_steer()
+        return self._mb.drain_steer(
+            event_correlation_id=self._event_correlation_id, run_id=self._run_id,
+            assistant_message_id=self._assistant_message_id,
+        )

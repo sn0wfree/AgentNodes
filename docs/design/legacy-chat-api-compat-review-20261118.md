@@ -4,6 +4,9 @@
 > **依据**：`project-architecture-review-and-refactor-plan-20261118.md` §8.3 裁决 1（`send_message` 为兼容 API）+ §12.1 顺序 2/3 + §12.2 剩余边界
 > **审计工具**：`scripts/arch/audit_legacy_chat_api.py`（只读、可复跑、不调用被审计的旧实现）
 > **裁决结论**：**先批准兼容审查，不批准删除**——本文件给出审查证据、两个待裁决差异、删除边界与兼容期策略。
+>
+> **后续复核**：§2–§8 保留为当时审查记录，当前状态和测试盲区以 §9 为准；
+> 特别是超时缺口尚未闭合，不能据当时的“可删”标注实施删除。
 
 ## 0. 结论摘要
 
@@ -127,3 +130,109 @@
 - 未修改旧队列行为（仅新增审计与断言测试）；
 - 未裁决缺口①③（待维护者决定）；
 - 未提交删除相关改动。
+
+## 9. 出口网复核（2026-11-18，进行中）
+
+复核发现 §3 中两条用例的名称和实际断言不一致：
+`test_wait_turn_returns_result_after_completion` 在驱动之前同步等待，
+接受 `None`，并未证明完成后可获得结果；
+`test_attempts_query_returns_live_running` 实际断言空列表，并未证明
+活跃 attempt 可查询。须用真实 Gateway 驱动及正向前提补齐，不将旧测试
+的名称当作证据。
+
+| 旧执行出口 | 新路径当前证据 | 尚需确认 |
+|---|---|---|
+| 入队成功/满队 | `test_gateway_legacy_parity.py` 提交回执；`test_gateway_behavior.py` cap/合并 | 新旧返回形状与上限语义不同，迁移契约须明确 |
+| 排队、暂停、恢复 | `test_gateway_behavior.py` FIFO 和取消后恢复 | 仓库外 `resume_queue` 调用方仍受兼容期保护 |
+| 执行成功/模型或工具失败 | `test_gateway_behavior.py`、`test_loop_exit_net.py`、`test_r2_consumer.py` | 必须逐出口核对持久化、事件、fence/lease，不以总测试数代替 |
+| 构造引擎及执行前准备失败 | 真实 Gateway 回归覆盖构造失败和上下文准备失败 | 已验证失败事件、assignment、fence/lease 收尾及后续 turn |
+| 可协作模型超时 | `test_gateway_timeout_and_strict_history.py` 双引擎与 Gateway 收尾 | 非协作同步工具和 sync-only 客户端仍有两个 xfail |
+| 用户取消 | `test_gateway_behavior.py` 活跃 turn 取消、暂停及恢复 | 被阻塞同步工具无法按时强制停止 |
+| 历史读失败 | `test_gateway_timeout_and_strict_history.py` 严格失败且不提交 | UI 降级不等同模型上下文路径 |
+| wait/尝试列表 reload | `test_r7_sink_and_wait.py`、`test_chat_attempts_query.py` | 用真实 Gateway 核验等待结果及 queued/running 身份 |
+| 旧 attempt 消失、配置缺失、队列交接 | 旧 `_process_session_queue` / `_run_attempt` 的独立出口 | 新路径是否存在同类场景及收尾尚待逐项映射 |
+
+该表不是完整出口网；旧 API 重导出、兼容期公告和独立删除审批仍需保留。
+本轮不删除旧实现。
+
+### 9.1 执行前准备失败的收尾方案
+
+验收前先以真实 `Gateway.run_once` 注入首轮 engine factory 失败、同会话
+第二轮正常的测试；要求首轮返回明确失败、`run.failed` 和
+`run.settled(ok=False)` 各一次、assignment 失败、fence/lease 释放，
+且第二轮可继续。以当前实现验证该断言是否从红变绿。
+
+若复现，将从每轮参数装配、构造引擎、上下文与取消作用域准备到
+`engine.run` 的代码一并纳入现有失败收尾分支；预先初始化 mailbox 和
+scope，保持正常路径、取消注册以及异常结果形状不变。影响仅限
+SessionController 在已认领 turn 的准备阶段失败时的终态；回滚可单独
+撤回控制器与相关测试，不触碰旧队列或持久化职责。
+
+### 9.2 活跃 attempt 身份映射
+
+`api_chat_request("s1", ...)` 的业务 session key 为 `chat:s1`，EntryPoint
+回执可能生成另一个 session id；`run.started` 的活跃 attempt 以回执 id
+为键，而 `/attempts` 按业务 session id 查询。补真实 Gateway 的 queued
+和运行中查询，分别使用业务 id 和回执 id，确认身份映射及非本会话
+隔离。若业务 id 查不到运行项，在 `Gateway.attempt_state` 中优先经
+`chat:<session_id>` 解析回执 id 后查询活跃记录，保留直接按回执 id
+查询与原有排队分支；回滚单独撤回该映射和对应回归。
+
+实测：修复后的真实 Gateway 回归覆盖 queued/running、业务 ID、回执 ID
+及跨会话隔离。`wait_turn` 仍是按会话代际等待，不能作为指定 attempt
+或指定排队 turn 的等待接口。
+
+### 9.3 事件桥跨 turn 隔离
+
+聊天桥注册在 Gateway 的广播 sink 上，需验证并发会话及同会话排队
+turn 的事件是否只到各自桥、其他 turn 终态是否会错误注销桥。当前
+loop 事件未统一携带 turn 身份，不能仅凭桥绑定了 `session_id` 就认定
+隔离成立。真实 `_send_via_gateway` 两会话回归复现：第一个会话的答案
+被写入第二个会话，两个桥均在首个 turn 终态注销，第二个答案丢失。
+
+方案：每次聊天提交生成独立事件关联 ID，桥在提交前按此 ID 注册；该 ID
+随 WorkRequest 的 payload 进入控制器，并附着在 run 生命周期事件及
+该 turn 的模型/工具流式事件上。桥只处理匹配 ID 的事件，并且只因匹配
+的终态注销。使用按执行上下文隔离的装配期信息构造事件 sink，
+不能用控制器共享可变字段串联不同线程。不得将未标识的事件广播到
+已绑定 turn 的桥；自定义引擎发流式事件时须保留关联 ID。
+
+验收：真实 Gateway 的不同会话、同会话连续 turn 和流式事件分别断言
+答案、终态与事件只到对应桥；正常及失败出口均收尾。无关联 ID 的既有
+直接桥构造测试保持其原有行为；此兼容分支不用于聊天提交入口。影响
+入口 adapter、SessionController 的事件 sink 和聊天桥，回滚此批即可
+恢复原路由，不删除旧队列。
+
+同步出口另有实际复现：无常驻消费者时，`run_once()` 可一次清空多个
+会话，取 `runs[-1]` 会将其他会话答案返回并写入当前会话；常驻消费者
+的按会话代际等待也无法区分同一会话中排队的多个 turn。同步聊天改为
+在提交前注册关联 ID 对应的终态观察器，等到该 turn 的 `run.settled`，
+从其自己的 `run.answer` / 失败事件读取结果；拒绝、超时及异常均注销
+观察器，不缓存全局历史结果。没有匹配终态时显式失败，不采用其他 turn
+的结果。现有 `Gateway.wait_turn` 对其他调用者的公共契约不变。验收包含
+跨会话同时排队、同会话前序 turn、先完成再等待、失败和超时。
+
+默认 `/send` 使用 STEER：活跃 turn 可以在安全点吸收请求而不创建新
+turn。关联方案不能把该请求永久留在独立桥上：`steer.applied` 须携带
+被吸收请求的关联 ID 和正在执行的 run 身份，只有实际被吸收的桥改为
+监听该 run；未吸收而提升为独立 turn 的请求继续使用自身关联 ID。
+先以真实 AgentLoop 安全点测试此分支，避免把 STEER 隐式改成 FOLLOWUP。
+
+实测：真实 Gateway 覆盖同/跨会话、无关联事件、Attempt 归属、模型和
+AgentLoop 工具流、失败及桥注销；同步路径覆盖先前排队、完成先于等待、
+失败、超时；STEER 覆盖自定义引擎和真实 AgentLoop 安全点、外部启动
+的 run 与提升为独立 turn。当前仍不代表完整出口网已闭合。
+STEER 被吸收时，两个同会话桥仍沿用既有行为分别通知同一 run；是否
+改为单次推送和落库属于另一个兼容语义决策，本轮不将其视为已优化。
+
+队列 cap 摘要还有一个关联出口需覆盖：`_coalesce_if_full` 保留第二个
+请求并移除第一个；被移除请求不会产生 run，故不能等其他 run 的终态，
+也不能让其桥永久挂起。方案是在既有 `work.summarized` 事件附带被移除
+请求的关联与 Attempt 身份，仅对应桥将它显式标记为失败、通知并注销；
+同步等待也应返回明确失败。队列摘要/顺序本身不变。验收要求真实满队、
+逐请求 Attempt/事件归属、保留项继续执行及桥全部注销；回滚单独撤回
+该事件元数据和桥处理。
+
+实测：cap=2 的真实 Gateway 中，首个被摘要请求的 Attempt 标为失败、
+收到对应错误并注销桥，其余两条继续执行；常驻消费者下同步等待被
+摘要的请求返回 `request_summarized`，不落入其他请求答案。

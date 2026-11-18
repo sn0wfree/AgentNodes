@@ -117,6 +117,7 @@ class ToolContext:
     # deferred to P0-3 once the BacktestEngine Protocol ships.
     data_store: Optional[Any] = None
     sandbox: Optional[Any] = None
+    before_execute: Optional[Callable[[], None]] = None
 
 
 class ToolError(Exception):
@@ -593,6 +594,9 @@ class BaseTool(ABC):
         - 其他意外异常 → 结构化 err JSON (带 tool 名, 消灭无结构输出)
         - ``ToolResult`` → A3 wire envelope (data + views)
         """
+        before_execute = getattr(kwargs.get("ctx"), "before_execute", None)
+        if before_execute is not None:
+            before_execute()
         try:
             cleaned = self._coerce_params(kwargs)
             raw = self._dispatch(cleaned)
@@ -649,6 +653,9 @@ class BaseTool(ABC):
         """
         if ctx is not None and ctx.permission_evaluator is not None:
             await self._enforce_permission(kwargs, ctx)
+        before_execute = getattr(ctx, "before_execute", None)
+        if before_execute is not None:
+            before_execute()
         return self.invoke(kwargs)
 
     async def _enforce_permission(

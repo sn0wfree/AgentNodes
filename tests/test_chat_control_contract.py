@@ -44,6 +44,496 @@ def _install_service(monkeypatch, service):
     return chat_router
 
 
+@pytest.mark.asyncio
+@pytest.mark.parametrize("second_session", ["s1", "s2"])
+@pytest.mark.parametrize("engine_kind", ["custom", "llm", "agent", "agent_tool", "failed"])
+async def test_gateway_chat_bridges_are_turn_scoped(monkeypatch, second_session, engine_kind):
+    from agentnodes.interfaces.api.routers import chat as chat_router
+    from agentnodes.foundation.llm.parser import StreamChunk, parse_chat_response
+    from agentnodes.kernel.agent.tools.core import BaseTool, ToolRegistry
+    from agentnodes.kernel.gateway.gateway import Gateway
+
+    persisted = []
+    pushed = []
+    attempts = {
+        ("s1", "a1"): Attempt(
+            attempt_id=AttemptId("a1"), session_id=SessionId("s1"),
+        ),
+        (second_session, "a2"): Attempt(
+            attempt_id=AttemptId("a2"), session_id=SessionId(second_session),
+        ),
+    }
+
+    class Engine:
+        def run(self, state):
+            content = state["messages"][-1]["content"]
+            if engine_kind == "failed" and content == "first":
+                raise RuntimeError("first failed")
+            gateway._combined_sink("text_delta", {
+                "text": content,
+                "event_correlation_id": state["event_correlation_id"],
+            })
+            return {"answer": content}
+
+    class Client:
+        parse_response = staticmethod(parse_chat_response)
+
+        def stream(self, messages, **kwargs):
+            yield StreamChunk(delta_content=messages[-1]["content"], finish_reason="stop")
+
+        async def astream(self, messages, **kwargs):
+            if engine_kind == "agent_tool" and not any(
+                message.get("role") == "tool" for message in messages
+            ):
+                yield StreamChunk(
+                    delta_tool_calls=[{
+                        "index": 0, "id": "call", "type": "function",
+                        "function": {"name": "echo", "arguments": "{}"},
+                    }],
+                    finish_reason="tool_calls",
+                )
+            else:
+                content = next(m["content"] for m in reversed(messages) if m["role"] == "user")
+                yield StreamChunk(delta_content=content, finish_reason="stop")
+
+    class EchoTool(BaseTool):
+        name = "echo"
+        description = "echo"
+        parameters = {}
+
+        def execute(self, **kwargs):
+            return "ok"
+
+    registry = ToolRegistry() if engine_kind in ("agent", "agent_tool") else None
+    if engine_kind == "agent_tool":
+        registry.register(EchoTool())
+    gateway = Gateway(
+        client=Client(),
+        engine_factory=Engine if engine_kind in ("custom", "failed") else None,
+        registry=registry,
+        stream=True,
+        max_iterations=2,
+    )
+    service = SimpleNamespace(
+        store=SimpleNamespace(
+            get_messages=lambda *args, **kwargs: [],
+            get_attempt=lambda sid, aid: attempts.get((sid, aid)),
+            update_attempt=Mock(),
+        ),
+        _convert_messages_to_history=lambda *args, **kwargs: [],
+        event_bus=SimpleNamespace(
+            emit=lambda sid, kind, data: persisted.append((sid, kind, data))
+        ),
+    )
+    monkeypatch.setattr(chat_router, "_get_gateway", lambda: gateway)
+    monkeypatch.setattr(chat_router, "_get_session_service", lambda: service)
+    monkeypatch.setattr(chat_router, "_build_llm_config", lambda: None)
+    monkeypatch.setattr(
+        chat_router, "_push_sse", lambda kind, data, sid: pushed.append((sid, kind, data)),
+    )
+
+    await chat_router._send_via_gateway(
+        "s1", "first", receipt_only=True, attempt_id="a1", assistant_message_id="m1",
+        queue_mode=QueueMode.FOLLOWUP,
+    )
+    await chat_router._send_via_gateway(
+        second_session, "second", receipt_only=True, attempt_id="a2",
+        assistant_message_id="m2", queue_mode=QueueMode.FOLLOWUP,
+    )
+    gateway._combined_sink("text_delta", {"text": "unscoped"})
+    gateway._combined_sink("run.answer", {"run_id": "unscoped", "content": "unscoped"})
+    assert len(gateway._sinks) == 2
+    runs = gateway.run_once()
+    assert len(runs) == 2
+    assert [run.ok for run in runs] == [engine_kind != "failed", True]
+    answers = [(sid, data["content"]) for sid, kind, data in persisted
+               if kind == "assistant_message"]
+    expected_answers = [(second_session, "second")]
+    if engine_kind != "failed":
+        expected_answers.insert(0, ("s1", "first"))
+    assert answers == expected_answers
+    endings = [(sid, data["message_id"]) for sid, kind, data in pushed
+               if kind == "agent_done"]
+    assert endings == [("s1", "m1"), (second_session, "m2")]
+    assert attempts[("s1", "a1")].status == (
+        AttemptStatus.FAILED if engine_kind == "failed" else AttemptStatus.COMPLETED
+    )
+    assert attempts[(second_session, "a2")].status == AttemptStatus.COMPLETED
+    assert len(gateway._sinks) == 0
+    if engine_kind == "failed":
+        errors = [(sid, data["message_id"]) for sid, kind, data in pushed if kind == "error"]
+        assert errors == [("s1", "m1")]
+    if engine_kind != "failed":
+        deltas = [(sid, data.get("text", data.get("delta")))
+                  for sid, kind, data in pushed if kind == "text_delta"]
+        assert deltas == [("s1", "first"), (second_session, "second")]
+        assert all("event_correlation_id" not in data for _, kind, data in pushed
+                   if kind == "text_delta")
+    if engine_kind == "agent_tool":
+        for event_kind in ("tool_call", "tool_result"):
+            tool_events = [(sid, data["message_id"])
+                           for sid, kind, data in pushed if kind == event_kind]
+            assert tool_events == [("s1", "m1"), (second_session, "m2")]
+
+
+@pytest.mark.asyncio
+async def test_gateway_sync_returns_its_own_turn_when_other_sessions_are_queued(monkeypatch):
+    from agentnodes.interfaces.api.routers import chat as chat_router
+    from agentnodes.kernel.gateway import api_chat_request
+    from agentnodes.kernel.gateway.gateway import Gateway
+
+    class Engine:
+        def run(self, state):
+            return {"answer": state["messages"][-1]["content"]}
+
+    gateway = Gateway(client=object(), engine_factory=Engine)
+    gateway.entry.submit(api_chat_request("s1", "earlier", queue_mode=QueueMode.FOLLOWUP))
+    gateway.entry.submit(api_chat_request("s2", "other", queue_mode=QueueMode.FOLLOWUP))
+    persisted = []
+    service = SimpleNamespace(
+        store=SimpleNamespace(get_messages=lambda *args, **kwargs: []),
+        _convert_messages_to_history=lambda *args, **kwargs: [],
+        event_bus=SimpleNamespace(
+            emit=lambda sid, kind, data: persisted.append((sid, kind, data))
+        ),
+    )
+    monkeypatch.setattr(chat_router, "_get_gateway", lambda: gateway)
+    monkeypatch.setattr(chat_router, "_get_session_service", lambda: service)
+    monkeypatch.setattr(chat_router, "_build_llm_config", lambda: None)
+    monkeypatch.setattr(chat_router, "_push_sse", lambda *args: None)
+
+    response = await chat_router._send_via_gateway(
+        "s1", "mine", wait=True, queue_mode=QueueMode.FOLLOWUP,
+    )
+    assert response["reply"] == "mine"
+    assert [data["content"] for sid, kind, data in persisted
+            if sid == "s1" and kind == "assistant_message"] == ["mine"]
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("scenario", ["queued", "early", "failed", "timeout"])
+async def test_gateway_sync_waits_for_exact_turn_with_consumer(monkeypatch, scenario):
+    import asyncio
+    import threading
+
+    from agentnodes.interfaces.api.routers import chat as chat_router
+    from agentnodes.kernel.gateway import api_chat_request
+    from agentnodes.kernel.gateway.gateway import Gateway
+
+    started = threading.Event()
+    release = threading.Event()
+    settled = threading.Event()
+    persisted = []
+
+    class Engine:
+        def run(self, state):
+            content = state["messages"][-1]["content"]
+            if (scenario == "queued" and content == "earlier") or scenario == "timeout":
+                started.set()
+                if not release.wait(5):
+                    raise RuntimeError("test release timed out")
+            if scenario == "failed":
+                raise RuntimeError("own failure")
+            return {"answer": content}
+
+    gateway = Gateway(client=object(), engine_factory=Engine)
+    service = SimpleNamespace(
+        store=SimpleNamespace(get_messages=lambda *args, **kwargs: []),
+        _convert_messages_to_history=lambda *args, **kwargs: [],
+        event_bus=SimpleNamespace(
+            emit=lambda sid, kind, data: persisted.append((sid, kind, data))
+        ),
+    )
+    monkeypatch.setattr(chat_router, "_get_gateway", lambda: gateway)
+    monkeypatch.setattr(chat_router, "_get_session_service", lambda: service)
+    monkeypatch.setattr(chat_router, "_build_llm_config", lambda: None)
+    monkeypatch.setattr(chat_router, "_push_sse", lambda *args: None)
+    unsubscribe = None
+    if scenario == "early":
+        unsubscribe = gateway.add_sink(
+            lambda kind, data: settled.set() if kind == "run.settled" else None
+        )
+        submit = gateway.entry.submit
+
+        def submit_after_settlement(*args, **kwargs):
+            receipt = submit(*args, **kwargs)
+            assert settled.wait(3)
+            return receipt
+
+        monkeypatch.setattr(gateway.entry, "submit", submit_after_settlement)
+    if scenario == "timeout":
+        monkeypatch.setattr(chat_router, "_chat_wait_timeout", lambda: 0.1)
+    if scenario == "queued":
+        gateway.entry.submit(
+            api_chat_request("s1", "earlier", queue_mode=QueueMode.FOLLOWUP),
+        )
+    gateway.start_consumer(poll_interval=0.01)
+    try:
+        if scenario == "queued":
+            assert await asyncio.to_thread(started.wait, 3)
+        task = asyncio.create_task(chat_router._send_via_gateway(
+            "s1", "mine", wait=True, queue_mode=QueueMode.FOLLOWUP,
+        ))
+        if scenario == "queued":
+            mailbox = gateway.entry.mailbox_for("chat:s1")
+            for _ in range(300):
+                if mailbox.peek_depth():
+                    break
+                await asyncio.sleep(0.01)
+            assert mailbox.peek_depth() == 1
+            release.set()
+        if scenario in ("failed", "timeout"):
+            with pytest.raises(HTTPException) as exc_info:
+                await task
+            assert exc_info.value.status_code == (502 if scenario == "failed" else 504)
+            assert not [item for item in persisted if item[1] == "assistant_message"]
+        else:
+            response = await task
+            assert response["reply"] == "mine"
+            assert [data["content"] for _, kind, data in persisted
+                    if kind == "assistant_message"] == ["mine"]
+    finally:
+        release.set()
+        if unsubscribe is not None:
+            unsubscribe()
+        gateway.stop_consumer(grace=3)
+    assert not gateway.consumer_running()
+    assert len(gateway._sinks) == 0
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("wait", [False, True])
+@pytest.mark.parametrize("engine_kind", ["custom", "agent", "promoted"])
+@pytest.mark.parametrize("origin", ["chat", "external"])
+async def test_gateway_chat_steer_follows_the_run_that_applies_it(
+    monkeypatch, wait, engine_kind, origin,
+):
+    import asyncio
+    import threading
+
+    from agentnodes.interfaces.api.routers import chat as chat_router
+    from agentnodes.foundation.llm.parser import StreamChunk, parse_chat_response
+    from agentnodes.kernel.agent.tools.core import BaseTool, ToolRegistry
+    from agentnodes.kernel.gateway import api_chat_request
+    from agentnodes.kernel.gateway.gateway import Gateway
+
+    started = threading.Event()
+    release = threading.Event()
+    queued = threading.Event()
+    settled = threading.Event()
+    pushed = []
+
+    class Engine:
+        def run(self, state):
+            if engine_kind == "promoted" and state["messages"][-1]["content"] == "steer":
+                return {"answer": "steer"}
+            started.set()
+            if not release.wait(5):
+                raise RuntimeError("test release timed out")
+            if engine_kind == "promoted":
+                return {"answer": "first"}
+            return {"answer": "|".join(
+                [state["messages"][-1]["content"], *state["steer_inbox"].drain()]
+            )}
+
+    class Client:
+        parse_response = staticmethod(parse_chat_response)
+
+        async def astream(self, messages, **kwargs):
+            if not any(message.get("role") == "tool" for message in messages):
+                started.set()
+                if not await asyncio.to_thread(release.wait, 5):
+                    raise RuntimeError("test release timed out")
+                yield StreamChunk(
+                    delta_tool_calls=[{
+                        "index": 0, "id": "call", "type": "function",
+                        "function": {"name": "echo", "arguments": "{}"},
+                    }],
+                    finish_reason="tool_calls",
+                )
+            else:
+                content = "|".join(m["content"] for m in messages if m["role"] == "user")
+                yield StreamChunk(delta_content=content, finish_reason="stop")
+
+    class EchoTool(BaseTool):
+        name = "echo"
+        description = "echo"
+        parameters = {}
+
+        def execute(self, **kwargs):
+            return "ok"
+
+    registry = ToolRegistry() if engine_kind == "agent" else None
+    if registry is not None:
+        registry.register(EchoTool())
+    gateway = Gateway(
+        client=Client(), engine_factory=Engine if engine_kind != "agent" else None,
+        registry=registry, stream=True, max_iterations=2,
+    )
+    unsubscribe = gateway.add_sink(
+        lambda kind, data: (
+            queued.set() if kind == "steer.queued"
+            else settled.set() if kind == "run.settled"
+            else None
+        )
+    )
+    service = SimpleNamespace(
+        store=SimpleNamespace(get_messages=lambda *args, **kwargs: []),
+        _convert_messages_to_history=lambda *args, **kwargs: [],
+        event_bus=SimpleNamespace(emit=Mock()),
+    )
+    monkeypatch.setattr(chat_router, "_get_gateway", lambda: gateway)
+    monkeypatch.setattr(chat_router, "_get_session_service", lambda: service)
+    monkeypatch.setattr(chat_router, "_build_llm_config", lambda: None)
+    monkeypatch.setattr(chat_router, "_chat_wait_timeout", lambda: 1.0)
+    monkeypatch.setattr(
+        chat_router, "_push_sse", lambda kind, data, sid: pushed.append((sid, kind, data)),
+    )
+    gateway.start_consumer(poll_interval=0.01)
+    try:
+        if origin == "chat":
+            await chat_router._send_via_gateway(
+                "s1", "first", receipt_only=True, queue_mode=QueueMode.FOLLOWUP,
+                assistant_message_id="m-active",
+            )
+        else:
+            gateway.entry.submit(
+                api_chat_request("s1", "first", queue_mode=QueueMode.FOLLOWUP),
+            )
+        assert await asyncio.to_thread(started.wait, 3)
+        task = asyncio.create_task(chat_router._send_via_gateway("s1", "steer", wait=wait))
+        assert await asyncio.to_thread(queued.wait, 3)
+        release.set()
+        response = await asyncio.wait_for(task, 3)
+        assert await asyncio.to_thread(settled.wait, 3)
+        if wait:
+            assert response["reply"] == ("steer" if engine_kind == "promoted" else "first|steer")
+        else:
+            assert response["accepted"] is True
+        expected_done = 2 if origin == "chat" else 1
+        for _ in range(300):
+            if len([item for item in pushed if item[1] == "agent_done"]) == expected_done:
+                break
+            await asyncio.sleep(0.01)
+        assert len([item for item in pushed if item[1] == "agent_done"]) == expected_done
+        if origin == "chat" and engine_kind != "promoted" and not wait:
+            assert all(data["message_id"] == "m-active"
+                       for _, kind, data in pushed if kind == "agent_done")
+    finally:
+        release.set()
+        unsubscribe()
+        gateway.stop_consumer(grace=3)
+    assert not gateway.consumer_running()
+    assert len(gateway._sinks) == 0
+
+
+@pytest.mark.asyncio
+async def test_gateway_summarized_request_fails_its_own_attempt_and_closes_bridge(monkeypatch):
+    from agentnodes.interfaces.api.routers import chat as chat_router
+    from agentnodes.kernel.gateway.gateway import Gateway
+
+    class Engine:
+        def run(self, state):
+            return {"answer": state["messages"][-1]["content"]}
+
+    gateway = Gateway(client=object(), engine_factory=Engine)
+    gateway.entry._cap = 2
+    attempts = {
+        f"a{i}": Attempt(attempt_id=AttemptId(f"a{i}"), session_id=SessionId("s1"))
+        for i in range(3)
+    }
+    pushed = []
+    service = SimpleNamespace(
+        store=SimpleNamespace(
+            get_messages=lambda *args, **kwargs: [],
+            get_attempt=lambda sid, aid: attempts.get(aid) if sid == "s1" else None,
+            update_attempt=Mock(),
+        ),
+        _convert_messages_to_history=lambda *args, **kwargs: [],
+        event_bus=SimpleNamespace(emit=Mock()),
+    )
+    monkeypatch.setattr(chat_router, "_get_gateway", lambda: gateway)
+    monkeypatch.setattr(chat_router, "_get_session_service", lambda: service)
+    monkeypatch.setattr(chat_router, "_build_llm_config", lambda: None)
+    monkeypatch.setattr(
+        chat_router, "_push_sse", lambda kind, data, sid: pushed.append((sid, kind, data)),
+    )
+    for i in range(3):
+        await chat_router._send_via_gateway(
+            "s1", f"message-{i}", receipt_only=True, queue_mode=QueueMode.FOLLOWUP,
+            attempt_id=f"a{i}", assistant_message_id=f"m{i}",
+        )
+
+    assert attempts["a0"].status == AttemptStatus.FAILED
+    assert [(sid, data["message_id"]) for sid, kind, data in pushed if kind == "error"] == [
+        ("s1", "m0"),
+    ]
+    runs = gateway.run_once()
+    assert [run.answer for run in runs] == ["message-1", "message-2"]
+    assert attempts["a1"].status == attempts["a2"].status == AttemptStatus.COMPLETED
+    assert len(gateway._sinks) == 0
+
+
+@pytest.mark.asyncio
+async def test_gateway_sync_waiter_fails_if_its_request_is_summarized(monkeypatch):
+    import asyncio
+    import threading
+
+    from agentnodes.interfaces.api.routers import chat as chat_router
+    from agentnodes.kernel.gateway import api_chat_request
+    from agentnodes.kernel.gateway.gateway import Gateway
+
+    started = threading.Event()
+    release = threading.Event()
+
+    class Engine:
+        def run(self, state):
+            content = state["messages"][-1]["content"]
+            if content == "active":
+                started.set()
+                if not release.wait(5):
+                    raise RuntimeError("test release timed out")
+            return {"answer": content}
+
+    gateway = Gateway(client=object(), engine_factory=Engine)
+    gateway.entry._cap = 2
+    service = SimpleNamespace(
+        store=SimpleNamespace(get_messages=lambda *args, **kwargs: []),
+        _convert_messages_to_history=lambda *args, **kwargs: [],
+        event_bus=SimpleNamespace(emit=Mock()),
+    )
+    monkeypatch.setattr(chat_router, "_get_gateway", lambda: gateway)
+    monkeypatch.setattr(chat_router, "_get_session_service", lambda: service)
+    monkeypatch.setattr(chat_router, "_build_llm_config", lambda: None)
+    monkeypatch.setattr(chat_router, "_chat_wait_timeout", lambda: 3.0)
+    monkeypatch.setattr(chat_router, "_push_sse", lambda *args: None)
+    gateway.entry.submit(api_chat_request("s1", "active", queue_mode=QueueMode.FOLLOWUP))
+    gateway.start_consumer(poll_interval=0.01)
+    try:
+        assert await asyncio.to_thread(started.wait, 3)
+        task = asyncio.create_task(chat_router._send_via_gateway(
+            "s1", "mine", wait=True, queue_mode=QueueMode.FOLLOWUP,
+        ))
+        mailbox = gateway.entry.mailbox_for("chat:s1")
+        for _ in range(300):
+            if mailbox.peek_depth() == 1:
+                break
+            await asyncio.sleep(0.01)
+        assert mailbox.peek_depth() == 1
+        gateway.entry.submit(api_chat_request("s1", "other1", queue_mode=QueueMode.FOLLOWUP))
+        gateway.entry.submit(api_chat_request("s1", "other2", queue_mode=QueueMode.FOLLOWUP))
+        with pytest.raises(HTTPException) as exc_info:
+            await asyncio.wait_for(task, 3)
+        assert exc_info.value.status_code == 502
+        assert exc_info.value.detail["error"] == "request_summarized"
+        assert service.event_bus.emit.call_count == 0
+        assert len(gateway._sinks) == 0
+    finally:
+        release.set()
+        gateway.stop_consumer(grace=3)
+    assert not gateway.consumer_running()
+
+
 def test_send_async_response_and_execution_options(client, monkeypatch):
     session_id = _new_session(client)
     service = SimpleNamespace(

@@ -17,6 +17,7 @@ Gateway / apps 的**当前**行为，给出绝对值（而不是"与旧路径相
 """
 from __future__ import annotations
 
+import threading
 import time
 
 from agentnodes.kernel.gateway.gateway import Gateway
@@ -138,11 +139,29 @@ class TestGatewayWaitParity:
     def test_wait_turn_returns_result_after_completion(self):
         """提交→驱动→wait_turn 拿到本轮结果（代际语义，不返回上一轮）。"""
         gw, _ = _make_gateway()
-        _submit(gw)
-        result = gw.wait_turn("s1", timeout=5.0)
-        gw.run_once()
-        # 代际：wait_turn 在结果产生后应可取到
-        assert result is None or result.answer == "ok"
+        receipt = _submit(gw)
+        waiting = threading.Event()
+        results = []
+
+        class ObservedEvent(threading.Event):
+            def wait(self, timeout=None):
+                waiting.set()
+                return super().wait(timeout)
+
+        gw._turn_done[receipt.session_id] = ObservedEvent()
+        waiter = threading.Thread(
+            target=lambda: results.append(gw.wait_turn(receipt.session_id, timeout=5))
+        )
+        waiter.start()
+        try:
+            assert waiting.wait(2), "wait_turn did not start waiting"
+            gw.start_consumer(poll_interval=0.05)
+        finally:
+            waiter.join(timeout=6)
+            gw.stop_consumer()
+        assert not waiter.is_alive()
+        assert len(results) == 1 and results[0] is not None
+        assert results[0].answer == "ok"
 
     def test_wait_turn_timeout_returns_none(self):
         """无 turn 完成 → 超时返回 None（旧路径同语义）。"""
@@ -180,7 +199,7 @@ class TestGatewayAttemptsParity:
         gw, _ = _make_gateway()
         assert query_live_attempts("s1", store=store, gateway=gw) == []  # 无实时状态→丢弃
 
-    def test_attempts_query_returns_live_running(self):
+    def test_attempts_query_excludes_leased_but_untracked_attempt(self):
         from agentnodes.apps.chat.attempts_query import query_live_attempts
         from agentnodes.kernel.session.models import AttemptStatus
 
@@ -200,6 +219,54 @@ class TestGatewayAttemptsParity:
         out = query_live_attempts("s1", store=_Store(), gateway=gw)
         # 无 attempt_state 的 gateway → 该 attempt 非活跃 → 空
         assert out == []
+
+    def test_attempts_query_returns_real_queued_and_running(self):
+        from agentnodes.apps.chat.attempts_query import query_live_attempts
+        from agentnodes.kernel.session.models import AttemptStatus
+
+        class Store:
+            def list_attempts_by_status(self, session_id, statuses):
+                class Attempt:
+                    attempt_id = "a1"
+                    status = AttemptStatus.RUNNING
+                    message_id = "m1"
+                    prompt = "p"
+                    created_at = "t"
+                    error = None
+                return [Attempt()]
+
+        started = threading.Event()
+        release = threading.Event()
+
+        class Engine:
+            def run(self, state):
+                started.set()
+                if not release.wait(5):
+                    raise TimeoutError("probe release was not signalled")
+                return {"answer": "ok"}
+
+        gw, _ = _make_gateway()
+        gw.controller._engine_factory = Engine
+        receipt = _submit(gw, attempt_id="a1")
+        store = Store()
+        queued = query_live_attempts(receipt.session_id, store=store, gateway=gw)
+        assert len(queued) == 1 and queued[0]["status"] == "queued"
+
+        worker = threading.Thread(target=gw.run_once)
+        worker.start()
+        try:
+            assert started.wait(2), "engine did not start"
+            running = query_live_attempts(receipt.session_id, store=store, gateway=gw)
+            assert len(running) == 1
+            assert running[0]["attempt_id"] == "a1"
+            assert running[0]["status"] == "running"
+            by_business_id = query_live_attempts("s1", store=store, gateway=gw)
+            assert by_business_id == running
+            assert query_live_attempts("another", store=store, gateway=gw) == []
+        finally:
+            release.set()
+            worker.join(timeout=6)
+        assert not worker.is_alive()
 
 
 # ── 出口 7：get_available_actions → Gateway.chat_session_state ────────

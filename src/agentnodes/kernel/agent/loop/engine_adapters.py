@@ -147,6 +147,9 @@ class LoopActor(StepHandler):
             ctx.messages, input, ctx.result, ctx.iteration, ctx.hook_ctx,
         )
         step_r = await loop._call_step(loop._strategy.tool_execution, tool_ctx)
+        check = getattr(loop, "_check_attempt_timeout", None)
+        if callable(check):
+            check(ctx.iteration, ctx.result)
         if not step_r.success:
             # 崩溃信号回填旧通道（B2-① T1）——tool_execution 自身不写
             # should_stop，文本与旧 catch 一致。

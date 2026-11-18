@@ -7,12 +7,14 @@ import asyncio
 import json
 import logging
 import time
+from functools import partial
 from typing import TYPE_CHECKING, Any
 
 logger = logging.getLogger(__name__)
 
 from concurrent.futures import ThreadPoolExecutor, as_completed
 
+from agentnodes.kernel.agent.loop.errors import AttemptTimeoutError
 from agentnodes.kernel.agent.signals.progress import HeartbeatTimer
 from agentnodes.kernel.agent.tools.core import TRANSIENT_TOOL_ERRORS, ToolContext
 
@@ -103,6 +105,10 @@ class LoopToolsMixin:
             missing_tool_payload,
         )
 
+        check = getattr(self, "_check_attempt_timeout", None)
+        if async_mode and callable(check):
+            check(getattr(self, "_current_iter", 0), result, finalize=False)
+
         tool = self.registry.get(tc.name)
         if tool is None:
             logger.warning("tool '%s' not in registry", tc.name)
@@ -133,6 +139,10 @@ class LoopToolsMixin:
         })
 
         kwargs = self._build_tool_kwargs(tc)
+        if async_mode and callable(check):
+            kwargs["ctx"].before_execute = partial(
+                check, getattr(self, "_current_iter", 0), result, finalize=False,
+            )
 
         t0 = time.perf_counter()
         # Count only calls that actually reached execution — the old
@@ -156,6 +166,8 @@ class LoopToolsMixin:
         )
         last_exc = None
         for _attempt in range(max_attempts):
+            if _attempt and async_mode and callable(check):
+                check(getattr(self, "_current_iter", 0), result, finalize=False)
             try:
                 if async_mode:
                     output = await tool.ainvoke(kwargs, kwargs.get("ctx"))
@@ -174,6 +186,8 @@ class LoopToolsMixin:
                     output = tool.invoke(kwargs)
                 last_exc = None
                 break
+            except AttemptTimeoutError:
+                raise
             except TRANSIENT_TOOL_ERRORS as exc:
                 last_exc = exc
                 logger.warning("tool %s raised %s (attempt %d/%d): %s",
@@ -392,6 +406,9 @@ class LoopToolsMixin:
                 for i in readonly_indices
             ]
             gathered = await asyncio.gather(*coros, return_exceptions=True)
+            for res in gathered:
+                if isinstance(res, AttemptTimeoutError):
+                    raise res
             for idx, res in zip(readonly_indices, gathered):
                 if isinstance(res, Exception):
                     logger.exception("parallel tool %s failed", tool_calls[idx].name)

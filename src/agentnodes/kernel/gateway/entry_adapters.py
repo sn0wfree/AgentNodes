@@ -44,6 +44,7 @@ def api_chat_request(
     allowed_tools: list[str] | None = None,
     mode: str | None = None,
     thinking: str | None = None,
+    event_correlation_id: str | None = None,
 ) -> WorkRequest:
     """把 API chat 请求翻译成 WorkRequest。
 
@@ -70,6 +71,7 @@ def api_chat_request(
         ("role", role),
         ("mode", mode),
         ("thinking", thinking),
+        ("event_correlation_id", event_correlation_id),
     ):
         if value is not None:
             payload[key] = value
