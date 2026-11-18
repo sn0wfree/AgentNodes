@@ -5,8 +5,7 @@ from __future__ import annotations
 import logging
 from pathlib import Path
 
-from agentnodes.kernel.swarm.runtime import SwarmPreset
-from agentnodes.kernel.swarm.types import AgentCall
+from agentnodes.kernel.swarm.types import AgentCall, SwarmPreset
 
 logger = logging.getLogger(__name__)
 

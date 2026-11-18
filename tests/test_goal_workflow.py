@@ -286,10 +286,10 @@ class TestYAMLLoading:
 
 class TestDAGValidation:
     def test_validate_acyclic_dag(self):
-        from agentnodes.kernel.workflow.dag import validate_dag
+        from agentnodes.kernel.dag import validate_dag
         validate_dag({"a": [], "b": ["a"], "c": ["b"]})
 
     def test_validate_cyclic_dag_raises(self):
-        from agentnodes.kernel.workflow.dag import validate_dag
+        from agentnodes.kernel.dag import validate_dag
         with pytest.raises(ValueError, match="cycle"):
             validate_dag({"a": ["b"], "b": ["a"]})

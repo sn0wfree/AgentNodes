@@ -19,7 +19,7 @@ from pathlib import Path
 from typing import Any
 
 from agentnodes.kernel.runtimes import END, INTERRUPT_KEY, GraphEngine, GraphInterrupt
-from agentnodes.kernel.workflow.dag import topological_layers
+from agentnodes.kernel.dag import topological_layers
 
 # W10-2 (2026-11-04): SwarmPreset / AgentResult / SwarmResult are defined in
 # ``.types`` — they are contracts consumed far more widely than produced

@@ -151,7 +151,7 @@ class DAGView(Vertical):
 
     def _rebuild_node_list(self) -> None:
         """Build a flat list of all nodes in topological order."""
-        from agentnodes.kernel.workflow.dag import topological_layers
+        from agentnodes.kernel.dag import topological_layers
         layers = topological_layers(self._dag)
         self._all_nodes = [node for layer in layers for node in layer]
         if self._selected not in self._all_nodes:

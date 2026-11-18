@@ -29,7 +29,7 @@ from __future__ import annotations
 from typing import Any
 
 from agentnodes.kernel.workflow.agents import AgentExecutor, AgentRegistry
-from agentnodes.kernel.workflow.dag import topological_layers, validate_dag
+from agentnodes.kernel.dag import topological_layers, validate_dag
 from agentnodes.kernel.workflow.executors import AgentLoopExecutor, CLIExecutor, PythonExecutor, StubExecutor
 from agentnodes.kernel.workflow.validator import AgentValidator, ValidationResult
 

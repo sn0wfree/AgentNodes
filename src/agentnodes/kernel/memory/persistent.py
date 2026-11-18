@@ -17,7 +17,7 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import List, Optional
 
-from agentnodes.kernel.agent.factory.frontmatter import (
+from agentnodes.kernel.memory.frontmatter import (
     parse_frontmatter as _parse_frontmatter,
 )
 

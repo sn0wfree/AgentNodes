@@ -486,7 +486,7 @@ class WorkflowGraphCompiler:
     # ── Plan steps (mirror of executor._run_plan_steps) ───────
 
     def _run_plan_steps(self, run: CompiledRunState) -> None:
-        from agentnodes.kernel.workflow.dag import topological_layers
+        from agentnodes.kernel.dag import topological_layers
 
         nodes: list[WorkflowNode] = []
         for step in run.plan:

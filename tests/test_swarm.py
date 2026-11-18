@@ -11,7 +11,7 @@ from agentnodes.kernel.swarm.runtime import (
     SwarmResult,
     SwarmRuntime,
 )
-from agentnodes.kernel.workflow.dag import topological_layers
+from agentnodes.kernel.dag import topological_layers
 from agentnodes.kernel.workflow.types import AgentCall, AgentStatus
 
 # ── Preset Loader Tests ────────────────────────────────────

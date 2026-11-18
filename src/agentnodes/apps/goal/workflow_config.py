@@ -342,7 +342,7 @@ def _validate_config(config: "GoalWorkflowConfig") -> None:
         )
 
     # Validate DAG is acyclic
-    from agentnodes.kernel.workflow.dag import validate_dag
+    from agentnodes.kernel.dag import validate_dag
     validate_dag(config.dag)
 
     # Validate evidence_criterion indices
@@ -401,7 +401,7 @@ def save_goal_workflow(
 
     # Validate DAG before writing
     if validate:
-        from agentnodes.kernel.workflow.dag import validate_dag
+        from agentnodes.kernel.dag import validate_dag
         validate_dag(config.dag)
 
     # Serialize to dict

@@ -24,7 +24,7 @@ from __future__ import annotations
 
 import enum
 
-from agentnodes.kernel.workflow.dag import topological_layers, validate_dag
+from agentnodes.kernel.dag import topological_layers, validate_dag
 
 
 class NodeStatus(str, enum.Enum):

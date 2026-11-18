@@ -479,7 +479,7 @@ class GoalWorkflowRunner:
 
         total_layers = 0
         try:
-            from agentnodes.kernel.workflow.dag import topological_layers
+            from agentnodes.kernel.dag import topological_layers
             dag = {a.id: [d for d in self._config.dag.get(a.id, [])]
                    for a in self._config.agents}
             total_layers = len(topological_layers(dag))

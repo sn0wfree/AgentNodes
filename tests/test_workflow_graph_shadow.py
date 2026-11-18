@@ -102,7 +102,7 @@ def _run_old(name, tmp_path, *, loop_factory, events):
             if node.type == "planner" and (res.artifacts or {}).get("plan"):
                 plan[:] = list(res.artifacts["plan"])
                 events.append("plan_created")
-                from agentnodes.kernel.workflow.dag import topological_layers
+                from agentnodes.kernel.dag import topological_layers
                 steps = {}
                 for s in plan:
                     sid = s.get("id") or ""

@@ -296,7 +296,7 @@ class WorkflowDefinition:
 
     def topological_layers(self) -> list[list[str]]:
         """Return node ids in topological layers (raises on cycle)."""
-        from agentnodes.kernel.workflow.dag import topological_layers as _tl
+        from agentnodes.kernel.dag import topological_layers as _tl
         try:
             return _tl(self.adjacency())
         except Exception as exc:  # dag module raises ValueError on cycles
