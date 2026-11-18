@@ -16,6 +16,7 @@ import logging
 from dataclasses import dataclass
 from typing import Any, Callable
 
+from agentnodes.kernel.gateway.session_lease import SessionExecutionLease
 from agentnodes.kernel.orchestration import EntryPoint, WorkRequest
 from agentnodes.kernel.runtimes.cancel_scope import CancelScope
 from agentnodes.kernel.runtimes.graph_engine import GraphEngine
@@ -70,6 +71,11 @@ class SessionController:
         ticket_sink: Any | None = None,
         capacity: Any | None = None,
         task_signature: str = "",
+        # 顺序④-B2（裁决 2）：会话执行互斥 lease。None = 自建独立实例
+        # （直构测试路径）；生产由 Gateway 注入同一实例——GoalWorkflow
+        # （B3）经同一实例与 chat 互斥。语义见
+        # docs/design/goal-gateway-session-lease-design-20261118.md。
+        lease: Any | None = None,
     ) -> None:
         self._ep = entry_point
         self._client = client
@@ -114,6 +120,8 @@ class SessionController:
         # 所有 harness 解析点零行为变化）。生产由装配根按 role/toolset
         # 计算后注入；测试路径留空。
         self._task_signature = task_signature
+        # B2：会话执行互斥（goal 持有 → chat 工单留 mailbox 本轮不领）。
+        self._lease = lease if lease is not None else SessionExecutionLease()
         self._current_session_id: str = ""  # per-turn, set by _execute
         # **W4**：per-turn 迭代上限覆盖（payload["max_iterations"]，/send 的
         # plan 模式传 1）。None = 用构造值 self._max_iterations。
@@ -154,18 +162,59 @@ class SessionController:
                 request = mailbox.poll_due(kinds)
                 if request is None:
                     break
-                token, skipped = self._acquire_capacity(request)
-                if skipped:
-                    # 池满：把工单放回队首，留给下轮。不 break——同 session
-                    # 的后续工单同样起不来，让循环继续会在同一轮内反复
-                    # 摘/放，所以 break 更省。
+                # B2（裁决 2）：会话执行互斥——GoalWorkflow（B3）持有
+                # lease 时，chat 工单**留在 mailbox**（requeue + break，
+                # 同容量闸语义），本轮不领；不拒绝、不丢单。
+                lease_token = self._acquire_execution_lease(request)
+                if lease_token is None:
                     mailbox.requeue_front(request)
                     break
                 try:
-                    results.append(self._execute(request))
+                    cap_token, skipped = self._acquire_capacity(request)
+                    if skipped:
+                        # 池满：把工单放回队首，留给下轮。不 break——同 session
+                        # 的后续工单同样起不来，让循环继续会在同一轮内反复
+                        # 摘/放，所以 break 更省。
+                        mailbox.requeue_front(request)
+                        break
+                    try:
+                        results.append(self._execute(request))
+                    finally:
+                        self._release_capacity(cap_token)
                 finally:
-                    self._release_capacity(token)
+                    self._release_execution_lease(lease_token, request)
         return results
+
+    def _acquire_execution_lease(self, request: Any) -> str | None:
+        """B2（裁决 2）：chat 工单执行前获取会话执行租约。
+
+        GoalWorkflow（B3）在整个 ``start`` 生命周期持有 lease——持有期间
+        chat 工单**留 mailbox 本轮不领**（返回 None），绝不并发改同一
+        session 的状态。返回 ownership token；``None`` = 被 goal 或他人
+        持有，本轮跳过。
+
+        域 = ``_fence_domain(session_key)``（物理 session id），与 fence
+        同域；owner = ``chat:<session_key>``（观测用）。
+        """
+        domain = _fence_domain(request.session_key)
+        token = self._lease.acquire(domain, f"chat:{request.session_key}")
+        if token is None:
+            self._sink("lease.held", {
+                "session_key": request.session_key,
+                "holder": self._lease.holder(domain),
+            })
+        return token
+
+    def _release_execution_lease(self, token: str, request: Any) -> None:
+        """归还执行租约（幂等；不匹配时无操作并记录）。"""
+        released = self._lease.release(
+            _fence_domain(request.session_key), token,
+        )
+        if not released:
+            logger.warning(
+                "execution lease release skipped: token mismatch for %s",
+                request.session_key,
+            )
 
     def _acquire_capacity(self, request: Any) -> tuple[Any, bool]:
         """问容量闸要一个池位。返回 ``(token, skipped)``。

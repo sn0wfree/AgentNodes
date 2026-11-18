@@ -72,6 +72,10 @@ class Gateway:
         # （ASK fail-closed 拒绝）；web 路由注入带 SSE 推送钩子的进程级实例
         # （与 /api/chat/permission/respond 端点共用同一个）。
         permission_gateway: Any | None = None,
+        # 顺序③-B2（裁决 2）：会话执行互斥 lease。None = 自建（GoalWorkflow
+        # 经 ``gateway.execution_lease`` 取同一实例与 chat 互斥；组合根/
+        # 测试可注入共享实例）。
+        execution_lease: Any | None = None,
     ) -> None:
         self._events: list[tuple[str, dict]] = []
         # 阶段一 §2.8：Worker Slot 管理器——订阅 assignment.report 管理
@@ -95,6 +99,15 @@ class Gateway:
         combined = self._combined_sink
         # R2.2：fence 先建——EntryPoint 的 steer 路由用它查活跃 run。
         self.fence = SessionFence()
+        # B2（裁决 2）：会话执行互斥 lease——chat run 启止与 GoalWorkflow
+        # （B3 经 ``execution_lease`` 属性取用）共用同一实例。
+        from agentnodes.kernel.gateway.session_lease import SessionExecutionLease
+
+        self.execution_lease = (
+            execution_lease
+            if execution_lease is not None
+            else SessionExecutionLease()
+        )
         # B1：活跃 run 的 CancelScope 注册表（物理 session id -> scope）。
         self._cancel_scopes: dict[str, Any] = {}
         # R2.3/E2：mailbox 的 cap / steer_cap / aging_s 来自平台配置
@@ -125,6 +138,8 @@ class Gateway:
             # B1：取消注册表——控制器把每次 run 的 CancelScope 挂上去，
             # interrupt/cancel_session 据此触发取消。
             cancel_registry=self._cancel_scopes,
+            # B2：会话执行互斥——goal 持有期间 chat 工单留 mailbox。
+            lease=self.execution_lease,
             # V3-c：有 registry 时控制器默认图用 AgentLoop 适配节点（节点名
             # 沿用 "react"），否则纯 llm 节点。
             registry=registry, stream=stream,
@@ -358,13 +373,17 @@ class Gateway:
             self._consumer_wake.set()
         return resumed
 
-    def chat_session_state(self, session_id: str) -> dict[str, bool]:
-        """Return live activity, pending-work, and pause state for a chat session."""
+    def chat_session_state(self, session_id: str) -> dict[str, bool | str]:
+        """Return live activity, pending-work, pause state, and lease holder."""
         mailbox = self.entry.mailbox_for(f"chat:{session_id}")
         return {
             "active": self.fence.active_run(session_id) is not None,
             "pending": mailbox.has_pending() if mailbox is not None else False,
             "paused": mailbox.is_paused if mailbox is not None else False,
+            # B2（裁决 2）：会话执行租约持有者（如 "goal:<goal_id>"）。
+            # None = 空闲可执行；goal 持有时 UI 不得显示 send（见
+            # available_actions 的抑制逻辑）。
+            "lease_holder": self.execution_lease.holder(session_id),
         }
 
     def attempt_state(self, session_id: str, attempt_id: str) -> str | None:

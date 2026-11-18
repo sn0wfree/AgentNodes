@@ -1042,7 +1042,14 @@ async def chat_available_actions(session_id: str, request: Request):
         actions.append({"name": "cancel", "label": "取消", "destructive": "false"})
     if state["paused"]:
         actions.append({"name": "resume", "label": "恢复", "destructive": "false"})
-    if not is_processing and not state["paused"]:
+    # B2（裁决 2）：GoalWorkflow 持有执行租约（holder 前缀 "goal:"）时
+    # 抑制 send——同一 session 的目标流程与聊天不得并发。
+    lease_holder = state.get("lease_holder") or ""
+    if (
+        not is_processing
+        and not state["paused"]
+        and not lease_holder.startswith("goal:")
+    ):
         actions.append({"name": "send", "label": "发送", "destructive": "false"})
     return {
         "status": "ok",

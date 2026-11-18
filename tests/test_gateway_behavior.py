@@ -101,6 +101,8 @@ def test_chat_session_state_combines_gateway_activity_and_mailbox_state():
         "active": False,
         "pending": False,
         "paused": False,
+        # B2（裁决 2）：执行租约持有者——None = 空闲可执行。
+        "lease_holder": None,
     }
 
     gw.entry.submit(api_chat_request(
@@ -110,7 +112,15 @@ def test_chat_session_state_combines_gateway_activity_and_mailbox_state():
         "active": False,
         "pending": True,
         "paused": False,
+        "lease_holder": None,
     }
+
+    # B2：goal 持有租约 → lease_holder 暴露持有者，UI 據此抑制 send。
+    # （release 必须用 acquire 返回的 token——owner 字符串不放行。）
+    goal_token = gw.execution_lease.acquire("s1", "goal:g1")
+    state = gw.chat_session_state("s1")
+    assert state["lease_holder"] == "goal:g1"
+    gw.execution_lease.release("s1", goal_token)
 
     token = gw.fence.claim("s1", "run-1")
     gw.pause_session("s1")
@@ -118,6 +128,7 @@ def test_chat_session_state_combines_gateway_activity_and_mailbox_state():
         "active": True,
         "pending": True,
         "paused": True,
+        "lease_holder": None,
     }
     gw.fence.release(token)
 
