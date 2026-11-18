@@ -27,12 +27,24 @@ def build_ticket_sink() -> Any | None:
     **不再经 CapabilityRegistry**——它已不是「业务能力」，是内核机制，
     与 CapacityGate / GenomeVersionStore 同类。
 
+    2026-11-18 顺序⑤ S2：显式传入 ``TaskSignaturePolicy``——签名口径
+    （role/tool_set/算法）是应用策略，由装配根声明；通用存储只负责在
+    唯一合法点（store 内部）计算。
+
     构造失败返回 None（不启用 Ticket 记账，turn 照常执行）。
     """
     try:
+        from agentnodes.kernel.orchestration.task_signature import (
+            TaskSignaturePolicy,
+        )
         from agentnodes.kernel.orchestration.ticket_store import TicketStore
 
-        return TicketStore()
+        # 顺序⑤ S2（K4）：签名口径**显式声明**——"用哪套 role/tool_set 算
+        # 任务签名"成为可见决策，而不是隐式默认（通用存储不再自己猜
+        # 应用策略）。算法仍默认取 evolution.holdout 实现。
+        return TicketStore(
+            signature_policy=TaskSignaturePolicy.from_scope(),
+        )
     except Exception as exc:  # noqa: BLE001 —— 未接上不得阻断启动
         logger.debug("ticket_store unavailable: %s", exc)
         return None

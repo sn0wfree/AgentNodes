@@ -144,3 +144,29 @@ class TaskSignaturePolicy:
 - 未修改任何实现代码（本轮为只读测绘 + 设计）；
 - 未删除/移动任何模块；
 - 未提交代码。
+
+## 7. 实施结果回填（2026-11-18，S1+S2 已完成）
+
+### 7.1 S1：策略注入化（已落地）
+
+- 新增 `kernel/orchestration/task_signature.py`（~190 行）：`TaskSignaturePolicy`（role + tool_set + `compute` 注入）+ `resolve_signature_scope` 口径解析 + `default_compute_signature`（默认 = `evolution.holdout.compute_task_signature`，**延迟 import**——避免 orchestration 在 import 期拉起 evolution）
+- `ticket_store.py`：签名口径代码迁出（`_SIG_ROLE_ENV`/`_tool_names_from`/`_registry_kinds`/`resolve_signature_scope`）+ 新增 `signature_policy` 构造参数（None = 现有缺省，**行为零变化**）；`signature_role`/`signature_tool_set` 改读 policy；`_signature_for` 改走 `policy.compute_signature`
+- **不变量保留**：签名**计算点仍在 store**（发起方不可自填——防奖励黑客）；策略只提供"怎么算"，不提供"算给谁"。`resolve_signature_scope` 保留 `ticket_store` 侧兼容导出（既有 import 零改动）
+
+### 7.2 S2：生产消费方显式化（已落地）
+
+- `interfaces/gateway_wiring.py:build_ticket_sink` 显式传 `TaskSignaturePolicy.from_scope()`——"用哪套签名口径算"从隐式默认变为**可见决策**（通用存储不再自己猜应用策略）
+
+### 7.3 验证
+
+- 新增 `tests/test_task_signature_policy.py` **9 用例**（默认等价 ×3 / 注入生效 ×3 / **防奖励黑客不变量 ×3**：admit 无 signature 参数、计算点在 store、`_signature_for` 无 evolution import 语句）
+- 受影响集 **71 passed**（ticket_assignment / production_wiring / holdout_readonly / policy）；`batch_gate.cmd` **ALL GREEN（12 步）**；全量 **7702 passed / 106 skipped / 0 failed**
+- 体量同步：L1 22,412 / L3 222 文件 49,084 行 / 合计 **446 文件 / 93,458 行**（+1 文件 = task_signature.py）
+
+### 7.4 过程中的实测修正（与设计稿的偏差，已落地为准）
+
+| 设计稿预估 | 实测真相 |
+|---|---|
+| 签名落在 Ticket | **落在 Assignment**（`assignments.task_signature` 列；`admit` 返回 Assignment 带签名） |
+| 需确认"签名自填守护是否已有" | **已有**：admit 无 signature 参数 + 计算点在 store（已写成 3 条守护测试） |
+| `resolve_signature_scope` 在 ticket_store | 确认在同模块（:100）→ 已随策略一并迁出并保留兼容导出 |
