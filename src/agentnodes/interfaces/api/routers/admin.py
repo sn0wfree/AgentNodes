@@ -181,14 +181,16 @@ async def get_session_metrics(
     real answer instead of a 404.
     """
     _verify_admin(x_admin_token)
-    from agentnodes.kernel.agent.event_store import EventStore
-    from agentnodes.kernel.agent.memory_manager import resolve_session_db_path
+    from agentnodes.kernel.session.state.event_store import EventStore
+    from agentnodes.kernel.session.state.memory_manager import resolve_session_db_path
 
-    # health_report() only reads in-process cache/subscriber state, so the
-    # store is discarded immediately -- no connection is left open.
-    health = EventStore(
+    store = EventStore(
         resolve_session_db_path(), flush_to_messages=False,
-    ).health_report()
+    )
+    try:
+        health = store.health_report()
+    finally:
+        store.close()
     return {"status": "ok", "health": health, "recent": []}
 
 

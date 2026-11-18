@@ -5,8 +5,8 @@ from pathlib import Path
 
 import pytest
 
-from agentnodes.kernel.agent.cache import CacheConfig
-from agentnodes.kernel.agent.memory_manager import (
+from agentnodes.kernel.session.state.cache import CacheConfig
+from agentnodes.kernel.session.state.memory_manager import (
     InMemoryStore,
     MemoryManagerFactory,
     SQLiteStore,
@@ -207,6 +207,20 @@ class TestEmergencyBuffer:
         assert report.emergency_buffer_session_count >= 1
 
 
+class TestClearFailure:
+    async def test_clear_surfaces_event_persistence_failure(self, mm):
+        def broken_emit(*args, **kwargs):
+            raise RuntimeError("event persistence failed")
+
+        original = mm._emit_event
+        mm._emit_event = broken_emit
+        try:
+            with pytest.raises(RuntimeError, match="event persistence failed"):
+                await mm.clear("s1")
+        finally:
+            mm._emit_event = original
+
+
 # ── Compaction (moved out of MemoryManager) ──────────────────────
 #
 # B4 Step 1 deleted ``UnifiedMemoryManager.compact()``: it had zero
@@ -279,6 +293,13 @@ class TestFactory:
         mm2 = MemoryManagerFactory.create(db_path=tmp_db)
         assert mm1 is mm2
 
+    def test_create_injects_projection_sink(self, tmp_db):
+        MemoryManagerFactory.reset()
+        sink = object()
+        mm = MemoryManagerFactory.create(db_path=tmp_db, projection_sink=sink)
+        assert mm._projection_sink is sink
+        MemoryManagerFactory.reset()
+
     def test_get_default_memory_manager(self, tmp_db):
         MemoryManagerFactory.reset()
         MemoryManagerFactory.create(db_path=tmp_db)
@@ -297,7 +318,7 @@ class TestFactory:
 
 class TestResolveDbPath:
     def test_default_creates_parent_dir(self, monkeypatch, tmp_path):
-        from agentnodes.kernel.agent.memory_manager import SESSION_DB_FILENAME
+        from agentnodes.kernel.session.state.memory_manager import SESSION_DB_FILENAME
         monkeypatch.setenv("HOME", str(tmp_path))
         monkeypatch.delenv("AGENTNODES_WORKSPACE", raising=False)
         monkeypatch.chdir(tmp_path)
@@ -330,3 +351,28 @@ class TestListRecentSessions:
         await mm.append("s3", "user", "c")
         sessions = mm.list_recent_sessions()
         assert len(sessions) == 3
+
+
+class TestCloseLifecycle:
+    async def test_close_releases_lazy_event_store_connections(
+        self, tmp_db: Path, cache_cfg: CacheConfig,
+    ):
+        sink = _make_projection_sink(tmp_db)
+        manager = UnifiedMemoryManager(
+            db_path=tmp_db,
+            projection_sink=sink,
+            cache_config=cache_cfg,
+        )
+        try:
+            await manager.append("s1", "user", "hello")
+            event_store = manager._event_store
+            platform_store = event_store._ps
+
+            assert platform_store._session_conns
+            manager.close()
+
+            assert platform_store._session_conns == {}
+            assert event_store._backend._conn is None
+        finally:
+            manager.close()
+            sink.close()

@@ -11,7 +11,7 @@ from pathlib import Path
 
 import pytest
 
-from agentnodes.kernel.agent.event_store import EventStore
+from agentnodes.kernel.session.state.event_store import EventStore
 from agentnodes.foundation.storage.event_schema import (
     ENVELOPE_COLUMNS,
 )
@@ -153,7 +153,14 @@ def test_facade_no_direct_event_log_sql():
     """门禁：EventStore 不再直接执行 event_log SQL（存储收口 PlatformStore）。"""
     from pathlib import Path as _P
 
-    src = (_P(__file__).resolve().parents[1] / "src" / "agentnodes"
-           / "kernel" / "agent" / "event_store.py").read_text(encoding="utf-8")
+    src = (
+        _P(__file__).resolve().parents[1]
+        / "src"
+        / "agentnodes"
+        / "kernel"
+        / "session"
+        / "state"
+        / "event_store.py"
+    ).read_text(encoding="utf-8")
     assert "INSERT INTO event_log" not in src
     assert "FROM event_log" not in src

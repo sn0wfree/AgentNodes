@@ -26,7 +26,9 @@ from typing import TYPE_CHECKING, Any, Callable
 from fastapi import Request
 
 if TYPE_CHECKING:
-    from agentnodes.kernel.agent.event_store import EventStore
+    from agentnodes.kernel.session.state.event_store import EventStore
+    from agentnodes.kernel.session.state.memory_manager import UnifiedMemoryManager
+    from agentnodes.kernel.session.projector import Projector
     from agentnodes.kernel.session.service import SessionService
     from agentnodes.kernel.session.store import SessionStore
 
@@ -50,8 +52,10 @@ class AppContainer:
 
     workspace_path: Path | None
     db_path: Path
+    projector: "Projector"
     session_store: "SessionStore"
     event_store: "EventStore"
+    memory_manager: "UnifiedMemoryManager"
     session_service: "SessionService"
 
 
@@ -80,8 +84,11 @@ def build_container(
     Returns:
         Fully constructed AppContainer with all services wired.
     """
-    from agentnodes.kernel.agent.event_store import EventStore
-    from agentnodes.kernel.agent.memory_manager import resolve_session_db_path
+    from agentnodes.kernel.session.state.event_store import EventStore
+    from agentnodes.kernel.session.state.memory_manager import (
+        UnifiedMemoryManager,
+        resolve_session_db_path,
+    )
     from agentnodes.kernel.session.projector import Projector
     from agentnodes.kernel.session.service import SessionService
     from agentnodes.kernel.session.store import SessionStore
@@ -90,18 +97,27 @@ def build_container(
         db_path = resolve_session_db_path()
     db_path = Path(db_path)
 
-    # Construct services in dependency order
-    session_store = (session_store_factory or SessionStore)(db_path)
+    # Construct services in dependency order. The same projector owns the
+    # projection cache used by both event writes and session reads.
+    projector = Projector(db_path)
+    session_store = (
+        session_store_factory(db_path)
+        if session_store_factory is not None
+        else SessionStore(db_path, projector=projector)
+    )
     # 「要不要投影」这个决策只属于组合根（2026-11-05）：
     # 原先 EventStore 自己在 _get_projector() 里 lazy import 并 new 一个
     # Projector —— 既是 L3→L1 上行违规，也让同一进程出现两个互不相通的
     # Projector 实例（增量缓存各算各的）。现在在这里构造一次、注入进去。
-    projection_sink = Projector(db_path)
     event_store = (event_store_factory or (
         lambda p: EventStore(
-            p, flush_to_messages=True, projection_sink=projection_sink,
+            p, flush_to_messages=True, projection_sink=projector,
         )
     ))(db_path)
+    memory_manager = UnifiedMemoryManager(
+        db_path=db_path,
+        projection_sink=projector,
+    )
     # A2: no SSE bridge — /api/chat/events subscribes to the event store
     # directly (single track).
     session_service = (session_service_factory or SessionService)(session_store, event_store)
@@ -109,8 +125,10 @@ def build_container(
     return AppContainer(
         workspace_path=Path(workspace_path) if workspace_path else None,
         db_path=db_path,
+        projector=projector,
         session_store=session_store,
         event_store=event_store,
+        memory_manager=memory_manager,
         session_service=session_service,
     )
 
@@ -160,7 +178,10 @@ def close_container(container: AppContainer) -> None:
     W1-8（2026-11-03）：此前无任何释放契约，测试用 TemporaryDirectory 建库
     后直接泄漏句柄，成为全量套件 55 项级联失败的污染源。
     """
-    for attr in ("session_service", "event_store", "session_store"):
+    for attr in (
+        "session_service", "memory_manager", "event_store", "session_store",
+        "projector",
+    ):
         svc = getattr(container, attr, None)
         if svc is None:
             continue
@@ -189,6 +210,8 @@ def services_from_container(container: AppContainer) -> dict[str, Any]:
         "_session_service": container.session_service,
         "_session_store": container.session_store,
         "_event_store": container.event_store,
+        "_memory_manager": container.memory_manager,
+        "_projector": container.projector,
     }
 
 

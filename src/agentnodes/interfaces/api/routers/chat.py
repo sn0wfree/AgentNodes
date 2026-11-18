@@ -249,7 +249,12 @@ async def send_async(body: ChatMessage, request: Request):
     # immediately without invoking the LLM. The TUI does not use this
     # path; equivalent TUI behaviour is `clear_session`. ─────────────
     if body.content.strip() == "/clear":
-        return await _handle_clear_command(body)
+        from agentnodes.interfaces.api.dependencies import get_memory_manager
+
+        return await _handle_clear_command(
+            body,
+            memory_manager=get_memory_manager(request),
+        )
 
     # ── /help command intercept — returns a static cheat-sheet text
     # in a synthetic assistant message so the user sees it in context.

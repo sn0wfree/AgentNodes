@@ -232,11 +232,9 @@ class ChatSession:
         mm = None
         history: list[dict] | None = None
         try:
-            from agentnodes.kernel.agent.memory_manager import (
-                get_default_memory_manager,
-            )
-
-            mm = get_default_memory_manager()
+            mm = getattr(self.app, "_memory_manager", None)
+            if mm is None:
+                raise RuntimeError("TUI MemoryManager has not been composed")
             full = await mm.get(session_id)
             history = full[:-1] if len(full) > 1 else None
         except Exception:  # noqa: BLE001 —— 无 MemoryManager 时退化为内存历史

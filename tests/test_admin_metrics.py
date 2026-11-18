@@ -61,6 +61,31 @@ class TestAdminMetricsPayload:
         # The retired metrics surface is gone.
         assert "stats" not in body
 
+    def test_closes_temporary_event_store(self, admin_client, monkeypatch):
+        import agentnodes.kernel.session.state.event_store as event_store_module
+
+        stores = []
+
+        class TrackingEventStore:
+            def __init__(self, *args, **kwargs):
+                self.closed = False
+                stores.append(self)
+
+            def health_report(self):
+                return {"event_store": {}}
+
+            def close(self):
+                self.closed = True
+
+        monkeypatch.setattr(event_store_module, "EventStore", TrackingEventStore)
+        response = admin_client.get(
+            "/api/admin/metrics", headers={"X-Admin-Token": _TOKEN},
+        )
+
+        assert response.status_code == 200
+        assert len(stores) == 1
+        assert stores[0].closed
+
     def test_legacy_recent_param_still_accepted(self, admin_client):
         """Operators may have ?recent= bookmarked; keep it working."""
         r = admin_client.get(

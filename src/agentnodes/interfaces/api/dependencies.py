@@ -18,7 +18,9 @@ from typing import TYPE_CHECKING, Any
 from fastapi import Request
 
 if TYPE_CHECKING:
-    from agentnodes.kernel.agent.event_store import EventStore
+    from agentnodes.kernel.session.state.event_store import EventStore
+    from agentnodes.kernel.session.state.memory_manager import UnifiedMemoryManager
+    from agentnodes.kernel.session.projector import Projector
     from agentnodes.kernel.session.service import SessionService
     from agentnodes.kernel.session.store import SessionStore
 
@@ -27,11 +29,13 @@ if TYPE_CHECKING:
 _STATE_KEY_SESSION_STORE = "_session_store"
 _STATE_KEY_EVENT_STORE = "_event_store"
 _STATE_KEY_SESSION_SERVICE = "_session_service"
+_STATE_KEY_MEMORY_MANAGER = "_memory_manager"
+_STATE_KEY_PROJECTOR = "_projector"
 
 
 def _resolve_db_path() -> Path:
     """Return the SQLite DB path for the active workspace (fallback)."""
-    from agentnodes.kernel.agent.memory_manager import resolve_session_db_path
+    from agentnodes.kernel.session.state.memory_manager import resolve_session_db_path
 
     return resolve_session_db_path()
 
@@ -53,6 +57,20 @@ def get_db_path(request: Request) -> Path:
     return _resolve_db_path()
 
 
+def get_projector(request: Request) -> "Projector":
+    """Return the app-scoped projector shared by fallback providers."""
+    container = getattr(request.app.state, "_container", None)
+    if container is not None:
+        return container.projector
+    projector = getattr(request.app.state, _STATE_KEY_PROJECTOR, None)
+    if projector is None:
+        from agentnodes.kernel.session.projector import Projector
+
+        projector = Projector(get_db_path(request))
+        setattr(request.app.state, _STATE_KEY_PROJECTOR, projector)
+    return projector
+
+
 def get_session_store(request: Request) -> "SessionStore":
     """FastAPI dependency: shared SessionStore."""
     container = getattr(request.app.state, "_container", None)
@@ -62,7 +80,10 @@ def get_session_store(request: Request) -> "SessionStore":
 
     store = getattr(request.app.state, _STATE_KEY_SESSION_STORE, None)
     if store is None:
-        store = SessionStore(db_path=get_db_path(request))
+        store = SessionStore(
+            db_path=get_db_path(request),
+            projector=get_projector(request),
+        )
         setattr(request.app.state, _STATE_KEY_SESSION_STORE, store)
     return store
 
@@ -72,15 +93,36 @@ def get_event_store(request: Request) -> "EventStore":
     container = getattr(request.app.state, "_container", None)
     if container is not None:
         return container.event_store
-    from agentnodes.kernel.agent.event_store import EventStore
+    from agentnodes.kernel.session.state.event_store import EventStore
 
     store = getattr(request.app.state, _STATE_KEY_EVENT_STORE, None)
     if store is None:
         # A2: single SSE track — the events endpoint subscribes to this
         # store directly, so no bridge is needed.
-        store = EventStore(db_path=get_db_path(request), flush_to_messages=True)
+        store = EventStore(
+            db_path=get_db_path(request),
+            flush_to_messages=True,
+            projection_sink=get_projector(request),
+        )
         setattr(request.app.state, _STATE_KEY_EVENT_STORE, store)
     return store
+
+
+def get_memory_manager(request: Request) -> "UnifiedMemoryManager":
+    """Return the app-scoped MemoryManager wired to the same projector."""
+    container = getattr(request.app.state, "_container", None)
+    if container is not None:
+        return container.memory_manager
+    manager = getattr(request.app.state, _STATE_KEY_MEMORY_MANAGER, None)
+    if manager is None:
+        from agentnodes.kernel.session.state.memory_manager import UnifiedMemoryManager
+
+        manager = UnifiedMemoryManager(
+            db_path=get_db_path(request),
+            projection_sink=get_projector(request),
+        )
+        setattr(request.app.state, _STATE_KEY_MEMORY_MANAGER, manager)
+    return manager
 
 
 def get_session_service(request: Request) -> "SessionService":
@@ -117,8 +159,20 @@ def reset_app_state(app: Any) -> None:
 
     Useful between test cases to ensure fresh state.
     """
-    for key in (_STATE_KEY_SESSION_STORE, _STATE_KEY_EVENT_STORE,
-                _STATE_KEY_SESSION_SERVICE):
+    keys = (
+        _STATE_KEY_SESSION_SERVICE,
+        _STATE_KEY_MEMORY_MANAGER,
+        _STATE_KEY_EVENT_STORE,
+        _STATE_KEY_SESSION_STORE,
+        _STATE_KEY_PROJECTOR,
+    )
+    closed: set[int] = set()
+    for key in keys:
+        service = getattr(app.state, key, None)
+        close = getattr(service, "close", None)
+        if callable(close) and id(service) not in closed:
+            close()
+            closed.add(id(service))
         if hasattr(app.state, key):
             delattr(app.state, key)
 
@@ -126,6 +180,8 @@ def reset_app_state(app: Any) -> None:
 __all__ = [
     "get_db_path",
     "get_event_store",
+    "get_memory_manager",
+    "get_projector",
     "get_session_service",
     "get_session_store",
     "reset_app_state",

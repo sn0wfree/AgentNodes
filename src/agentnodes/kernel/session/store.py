@@ -37,7 +37,7 @@ class SessionStore:
         db_path: Absolute path to the SQLite database file.
     """
 
-    def __init__(self, db_path: Path | str) -> None:
+    def __init__(self, db_path: Path | str, projector: Any | None = None) -> None:
         self.db_path = Path(db_path)
         self.db_path.parent.mkdir(parents=True, exist_ok=True)
         # B3: read from event_log via projector? Controlled by env var
@@ -46,8 +46,9 @@ class SessionStore:
         # Set AGENTNODES_EVENT_LOG_READ=0 to fall back to direct DB reads.
         import os
         self._use_event_log_read = _settings.get_str("AGENTNODES_EVENT_LOG_READ") != "0"
-        # Lazily-built cached Projector (see _get_projector).
-        self._projector = None
+        # A composition root may share one Projector with EventStore.
+        self._projector = projector
+        self._owns_projector = projector is None
 
     # ── Connection helper ──────────────────────────────────────────────
 
@@ -210,6 +211,15 @@ class SessionStore:
             from agentnodes.kernel.session.projector import Projector
             self._projector = Projector(self.db_path)
         return self._projector
+
+    def close(self) -> None:
+        """Close a lazily owned Projector; injected instances belong to the composition root."""
+        if not self._owns_projector:
+            return
+        close = getattr(self._projector, "close", None)
+        if callable(close):
+            close()
+        self._projector = None
 
     # Label retracted (2026-10-08): live caller at session/service.py:215.
     def create_attempt(self, attempt: Attempt) -> Attempt:

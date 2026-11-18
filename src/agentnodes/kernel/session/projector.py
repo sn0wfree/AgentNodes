@@ -59,7 +59,7 @@ class Projector:
     # ── ProjectionSink 端口实现（2026-11-05 依赖倒置）──────────────
     #
     # kernel 侧 ``EventStore`` 现在只依赖 ``ProjectionSink`` Protocol，
-    # 由组合根注入本实例。两端契约见 kernel/agent/projection_port.py。
+    # 由组合根注入本实例。两端契约见 kernel/session/state/projection_port.py。
 
     #: 触发投影刷新的事件边界。**读侧自决**——原先这份白名单写在
     #: ``EventStore._should_flush()`` 里，等于写侧替读侧决定读模型关心

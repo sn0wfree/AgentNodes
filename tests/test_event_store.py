@@ -5,8 +5,8 @@ from pathlib import Path
 
 import pytest
 
-from agentnodes.kernel.agent.cache import CacheConfig
-from agentnodes.kernel.agent.event_store import (
+from agentnodes.kernel.session.state.cache import CacheConfig
+from agentnodes.kernel.session.state.event_store import (
     EventStore,
     EventV2,
 )
@@ -24,7 +24,7 @@ def es(tmp_db: Path):
     cfg = CacheConfig(min_entries=10, max_entries=100)
     store = EventStore(db_path=tmp_db, cache_config=cfg)
     yield store
-    store._backend._conn = None  # close
+    store.close()
 
 
 # ── Basic emit ────────────────────────────────────────────────────
@@ -181,7 +181,7 @@ class TestHealth:
             # Repair succeeded
             assert type(store._backend).__name__ == "SQLiteStore"
         else:
-            from agentnodes.kernel.agent.memory_manager import InMemoryStore
+            from agentnodes.kernel.session.state.memory_manager import InMemoryStore
             assert isinstance(store._backend, InMemoryStore)
 
 
@@ -198,9 +198,62 @@ class TestDirectConstruction:
 
     async def test_independent_instances(self, tmp_db):
         """Different EventStore instances don't share state."""
-        e1 = EventStore(db_path=tmp_db, flush_to_messages=True)
+        e1 = EventStore(db_path=tmp_db)
         e2 = EventStore(db_path=tmp_db, flush_to_messages=False)
         assert e1 is not e2
+
+    async def test_projection_flush_requires_sink(self, tmp_db):
+        with pytest.raises(ValueError, match="projection_sink is required"):
+            EventStore(db_path=tmp_db, flush_to_messages=True)
+
+    async def test_persist_failure_does_not_return_success(self, es, monkeypatch):
+        def broken_persist(event):
+            raise OSError("disk unavailable")
+
+        monkeypatch.setattr(es, "_persist", broken_persist)
+        with pytest.raises(OSError, match="disk unavailable"):
+            es.emit("s1", "test", {})
+        assert es.replay("s1") == []
+
+    async def test_projection_failure_keeps_durable_event(self, tmp_db, caplog):
+        class BrokenSink:
+            def interested_in(self, event_type):
+                return True
+
+            def apply_projection(self, session_id):
+                raise OSError("projection unavailable")
+
+        store = EventStore(
+            db_path=tmp_db,
+            flush_to_messages=True,
+            projection_sink=BrokenSink(),
+        )
+        try:
+            emitted = store.emit("s1", "assistant_message", {})
+            assert [event.id for event in store.replay("s1")] == [emitted.id]
+            assert "Projection flush failed" in caplog.text
+        finally:
+            store.close()
+
+    async def test_invalidate_forwards_to_projection_sink(self, tmp_db):
+        class Sink:
+            def apply_projection(self, session_id):
+                pass
+
+            def invalidate(self, session_id):
+                self.invalidated = session_id
+
+        sink = Sink()
+        store = EventStore(
+            db_path=tmp_db,
+            flush_to_messages=True,
+            projection_sink=sink,
+        )
+        try:
+            store.invalidate("s1")
+            assert sink.invalidated == "s1"
+        finally:
+            store.close()
 
 
 # ── Projector flush boundary (P0) ──────────────────────────────────
@@ -272,13 +325,14 @@ class TestParentAndBranchRoundTrip:
         assert replayed[0].parent_event_id == e1.id
         assert replayed[0].branch_id == "exp1"
 
+
     async def test_replay_legacy_row_uses_defaults(
         self, es: EventStore, tmp_path: Path,
     ) -> None:
         """Simulate a pre-A3 row by INSERTing directly without the new
         columns — replay() must still work and use default values.
         """
-        from agentnodes.kernel.agent.memory_manager import resolve_db_path
+        from agentnodes.kernel.session.state.memory_manager import resolve_db_path
         import sqlite3
         # `es` fixture may have its own DB; reach the EventStore's path
         # by going through the backend connection.
@@ -299,3 +353,16 @@ class TestParentAndBranchRoundTrip:
         assert len(replayed) == 1
         assert replayed[0].parent_event_id is None
         assert replayed[0].branch_id == "main"
+
+
+class TestCloseLifecycle:
+    async def test_close_releases_platform_store_connections(self, tmp_db):
+        store = EventStore(db_path=tmp_db)
+        store.emit("s1", "test", {})
+        platform_store = store._ps
+
+        assert platform_store._session_conns
+        store.close()
+
+        assert platform_store._session_conns == {}
+        assert store._backend._conn is None

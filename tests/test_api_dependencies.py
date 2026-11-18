@@ -57,12 +57,40 @@ class TestGetEventStore(unittest.TestCase):
         """Calling get_event_store twice should return the same instance."""
         from agentnodes.interfaces.api.dependencies import get_event_store
 
-        request = MagicMock()
-        request.app.state = type("State", (), {})()
+        with TemporaryDirectory() as tmpdir:
+            request = MagicMock()
+            request.app.state = type("State", (), {"workspace_path": Path(tmpdir)})()
 
-        store1 = get_event_store(request)
-        store2 = get_event_store(request)
-        self.assertIs(store1, store2)
+            store1 = get_event_store(request)
+            store2 = get_event_store(request)
+            self.assertIs(store1, store2)
+            self.assertIs(store1._projector, request.app.state._projector)
+
+            from agentnodes.interfaces.api.dependencies import reset_app_state
+
+            reset_app_state(request.app)
+
+    def test_fallback_providers_share_projector(self):
+        from agentnodes.interfaces.api.dependencies import (
+            get_event_store,
+            get_memory_manager,
+            get_session_store,
+            reset_app_state,
+        )
+
+        with TemporaryDirectory() as tmpdir:
+            request = MagicMock()
+            request.app.state = type("State", (), {"workspace_path": Path(tmpdir)})()
+            try:
+                store = get_session_store(request)
+                event_store = get_event_store(request)
+                manager = get_memory_manager(request)
+                sink = request.app.state._projector
+                self.assertIs(store._projector, sink)
+                self.assertIs(event_store._projector, sink)
+                self.assertIs(manager._projection_sink, sink)
+            finally:
+                reset_app_state(request.app)
 
     def test_container_wins(self):
         """An attached container's EventStore is used."""

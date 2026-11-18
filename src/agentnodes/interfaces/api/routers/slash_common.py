@@ -24,6 +24,7 @@ from __future__ import annotations
 
 import logging
 import uuid
+from typing import Any
 
 from agentnodes.interfaces.api.schemas.chat import (
     ChatMessageRequest as ChatMessage,
@@ -141,7 +142,10 @@ async def _handle_compact_command(body: ChatMessage) -> SendMessageResponse:
 # ── /clear ──────────────────────────────────────────────────────────
 
 
-async def _handle_clear_command(body: ChatMessage) -> SendMessageResponse:
+async def _handle_clear_command(
+    body: ChatMessage,
+    memory_manager: Any,
+) -> SendMessageResponse:
     """Handle ``/clear`` — drop the LLM-visible history for this session.
 
     Implementation: calls ``MemoryManager.clear`` which truncates the
@@ -153,11 +157,7 @@ async def _handle_clear_command(body: ChatMessage) -> SendMessageResponse:
     ``/compact``.
     """
     try:
-        from agentnodes.kernel.agent.memory_manager import (
-            get_default_memory_manager,
-        )
-        mm = get_default_memory_manager()
-        await mm.clear(body.session_id)
+        await memory_manager.clear(body.session_id)
         response_text = "✅ 已清空当前会话的上下文。历史消息保留可见。"
     except Exception as exc:
         logger.exception("clear failed")

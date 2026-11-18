@@ -31,7 +31,7 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any, Protocol
 
-from agentnodes.kernel.agent.cache import (
+from agentnodes.kernel.session.state.cache import (
     CacheConfig,
     ConfigValidator,
     SessionCache,
@@ -255,7 +255,7 @@ class DynamicAvgTokenEstimator:
         if len(samples) < self._config.avg_tokens_min_samples:
             return self._config.avg_tokens_per_message
 
-        from agentnodes.kernel.agent.cache import compute_p86_plus_sigma
+        from agentnodes.kernel.session.state.cache import compute_p86_plus_sigma
         try:
             p86_plus_sigma = compute_p86_plus_sigma(samples)
             estimated = int(
@@ -463,10 +463,7 @@ class UnifiedMemoryManager:
         self._cache.invalidate(session_id)
         await self._locks.clear(session_id)
         self._emergency_buffer.pop(session_id, None)
-        try:
-            self._emit_clear_marker(session_id)
-        except Exception as exc:  # noqa: BLE001 — clear must not fail the caller
-            logger.warning("clear() marker emit failed for %s: %s", session_id, exc)
+        self._emit_clear_marker(session_id)
 
     def _emit_event(self, session_id: str, event_type: str, payload: dict) -> None:
         """Emit through a lazily built EventStore (B4 Step 1).
@@ -483,17 +480,15 @@ class UnifiedMemoryManager:
         Lazy import: ``event_store`` imports this module at module level.
         The instance is kept because it owns a SQLite connection.
         """
-        from agentnodes.kernel.agent.event_store import EventStore
+        from agentnodes.kernel.session.state.event_store import EventStore
 
         store = getattr(self, "_event_store", None)
         if store is None:
             sink = getattr(self, "_projection_sink", None)
             if sink is None:
-                logger.warning(
-                    "UnifiedMemoryManager has no projection_sink: events will "
-                    "land in event_log but messages table stays empty "
-                    "(append-then-get will return nothing). "
-                    "Pass projection_sink=<Projector> from the composition root."
+                raise RuntimeError(
+                    "UnifiedMemoryManager requires projection_sink for writes; "
+                    "inject Projector from the composition root."
                 )
             store = EventStore(
                 self._db_path,
@@ -618,11 +613,7 @@ class UnifiedMemoryManager:
         store = getattr(self, "_event_store", None)
         if store is not None:
             try:
-                # EventStore owns a SQLiteStore; close that directly (the
-                # store itself has no close(), only its backend does).
-                backend = getattr(store, "backend", None)
-                if backend is not None:
-                    backend.close()
+                store.close()
             except Exception:  # noqa: BLE001 — close must not raise
                 pass
             self._event_store = None
@@ -650,17 +641,32 @@ class MemoryManagerFactory:
         db_path: Path | None = None,
         cache_config: CacheConfig | None = None,
         compact_config: Any = None,
+        projection_sink: Any = None,
     ) -> UnifiedMemoryManager:
         global _default_instance
         if (
             _default_instance is None
             or (db_path is not None and _default_instance._db_path != resolve_db_path(db_path))
         ):
+            if _default_instance is not None:
+                _default_instance.close()
             _default_instance = UnifiedMemoryManager(
                 db_path=db_path,
                 cache_config=cache_config,
                 compact_config=compact_config,
+                projection_sink=projection_sink,
             )
+        elif projection_sink is not None:
+            if _default_instance._projection_sink is None:
+                if getattr(_default_instance, "_event_store", None) is not None:
+                    raise RuntimeError(
+                        "Cannot inject projection_sink after EventStore creation"
+                    )
+                _default_instance._projection_sink = projection_sink
+            elif _default_instance._projection_sink is not projection_sink:
+                raise RuntimeError(
+                    "MemoryManager singleton already uses a different projection_sink"
+                )
         return _default_instance
 
     @classmethod

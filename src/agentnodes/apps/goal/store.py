@@ -339,7 +339,7 @@ class GoalStore:
         "anonymous".
         """
         try:
-            from agentnodes.kernel.agent.memory_manager import resolve_session_db_path
+            from agentnodes.kernel.session.state.memory_manager import resolve_session_db_path
 
             db_path = resolve_session_db_path()
             conn = sqlite3.connect(str(db_path))

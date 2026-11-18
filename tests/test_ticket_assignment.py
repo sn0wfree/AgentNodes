@@ -42,7 +42,7 @@ def store(tmp_path: Path):
 @pytest.fixture()
 def event_store(tmp_path: Path):
     """Isolated EventStore so assignment.report replays are deterministic."""
-    from agentnodes.kernel.agent.event_store import EventStore
+    from agentnodes.kernel.session.state.event_store import EventStore
 
     es = EventStore(db_path=tmp_path / "events.db")
     yield es

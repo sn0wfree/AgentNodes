@@ -24,9 +24,9 @@ from typing import Any, AsyncIterator, Callable
 
 from agentnodes.kernel.events.event_v2 import EventV2
 from agentnodes.foundation.protocol import ProtocolVersionError
-from agentnodes.kernel.agent.cache import CacheConfig, SessionCache, SessionLockMap
-from agentnodes.kernel.agent.memory_manager import InMemoryStore, SQLiteStore, resolve_db_path
-from agentnodes.kernel.agent.projection_port import ProjectionInterest, ProjectionSink
+from agentnodes.kernel.session.state.cache import CacheConfig, SessionCache, SessionLockMap
+from agentnodes.kernel.session.state.memory_manager import InMemoryStore, SQLiteStore, resolve_db_path
+from agentnodes.kernel.session.state.projection_port import ProjectionInterest, ProjectionSink
 
 logger = logging.getLogger(__name__)
 
@@ -56,12 +56,16 @@ class EventStore:
         flush_to_messages: bool = False,
         projection_sink: "ProjectionSink | None" = None,
     ):
+        if flush_to_messages and projection_sink is None:
+            raise ValueError(
+                "projection_sink is required when flush_to_messages=True"
+            )
         self._db_path = resolve_db_path(db_path)
         self._flush_to_messages = flush_to_messages
         # 2026-11-05：投影器由**组合根注入**（依赖倒置），不再在这里
         # lazy import 接口层的 Projector —— 那是 L3→L1 上行违规，也是
         # composition root bypass（container.py 早已做过这个决策）。
-        # 端口定义见 kernel/agent/projection_port.py。
+        # 端口定义见 kernel/session/state/projection_port.py。
         self._projector: "ProjectionSink | None" = projection_sink
         cache_config = cache_config or CacheConfig.from_env()
 
@@ -193,8 +197,9 @@ class EventStore:
     ) -> EventV2:
         """Assign the next seq, build the EventV2, persist under the backend lock.
 
-        Persist failures are logged and swallowed — live subscribers
-        must still receive the event.
+        Failures from the durable backend are logged and propagated. When
+        auto-repair has selected the in-memory fallback, writes are only
+        process-local; ``is_degraded`` and the health report expose that state.
         """
         with self._backend._lock if hasattr(self._backend, "_lock") else _noop_cm():  # type: ignore[attr-defined]
             seq = self._next_seq(session_id)
@@ -210,8 +215,7 @@ class EventStore:
                 self._persist(event)
             except Exception as exc:
                 logger.exception("event_log persist failed: %s", exc)
-                # Continue — at least push to live subscribers
-                pass
+                raise
         return event
 
     def _flush_projector(self, session_id: str, event_type: str) -> None:
@@ -613,6 +617,12 @@ class EventStore:
                 logger.warning("SSE parent fan-out failed (%s): %s", parent, exc)
         self._broadcast_live(parent, event)
 
+    def invalidate(self, session_id: str) -> None:
+        """Invalidate the projection cache for a session, if supported."""
+        invalidate = getattr(self._projector, "invalidate", None)
+        if callable(invalidate):
+            invalidate(session_id)
+
     def close(self) -> None:
         """Release the SQLite backend handle (W1-8).
 
@@ -620,6 +630,14 @@ class EventStore:
         会让临时目录无法删除（WinError 32），也会在进程内跨用例污染。
         best-effort：重复调用安全，degraded（InMemoryStore）后端同样支持。
         """
+        platform_store = getattr(self, "_ps", None)
+        close = getattr(platform_store, "close", None)
+        if callable(close):
+            try:
+                close()
+            except Exception as exc:  # noqa: BLE001 — 释放尽力而为
+                logger.debug("EventStore.close (platform_store) failed: %s", exc)
+
         backend = getattr(self, "_backend", None)
         close = getattr(backend, "close", None)
         if close is not None:

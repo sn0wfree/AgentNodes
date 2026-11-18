@@ -660,7 +660,7 @@ async def test_chat_session_dispatches_plain_text_to_llm():
         return_value=fake_gw,
     ), mock.patch(
         # 无 MemoryManager → 退化到 ctx.history（本测试钉住的路径）
-        "agentnodes.kernel.agent.memory_manager.get_default_memory_manager",
+        "agentnodes.kernel.session.state.memory_manager.get_default_memory_manager",
         side_effect=RuntimeError("no mm in test"),
     ):
         rc = await s.dispatch("hi there")

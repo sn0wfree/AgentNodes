@@ -8,7 +8,7 @@ their sidecar blobs, so a separate trace.jsonl is no longer required.
 
 from __future__ import annotations
 
-from agentnodes.kernel.agent.event_store import EventStore
+from agentnodes.kernel.session.state.event_store import EventStore
 
 
 def _big(n: int) -> str:

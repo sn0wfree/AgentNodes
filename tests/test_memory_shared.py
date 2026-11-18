@@ -11,8 +11,8 @@ from pathlib import Path
 
 import pytest
 
-from agentnodes.kernel.agent.cache import CacheConfig
-from agentnodes.kernel.agent.memory_manager import (
+from agentnodes.kernel.session.state.cache import CacheConfig
+from agentnodes.kernel.session.state.memory_manager import (
     MemoryManagerFactory,
     UnifiedMemoryManager,
 )
@@ -134,7 +134,7 @@ class TestServicePySharedBackend:
 
     async def test_messages_table_shared(self, shared_db):
         """MemoryManager writes should be visible to raw SQLiteStore query."""
-        from agentnodes.kernel.agent.memory_manager import SQLiteStore
+        from agentnodes.kernel.session.state.memory_manager import SQLiteStore
 
         cfg = CacheConfig(min_entries=10)
         mm = UnifiedMemoryManager(db_path=shared_db, projection_sink=_make_projection_sink(shared_db), cache_config=cfg)

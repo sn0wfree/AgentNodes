@@ -113,12 +113,17 @@ def create_app(
         try:
             yield
         finally:
-            schedule_executor.stop()
-            task.cancel()
             try:
-                await task
-            except (asyncio.CancelledError, Exception):
-                pass
+                schedule_executor.stop()
+                task.cancel()
+                try:
+                    await task
+                except (asyncio.CancelledError, Exception):
+                    pass
+            finally:
+                from agentnodes.interfaces.api.container import close_container
+
+                close_container(container)
 
     app = FastAPI(
         title="Strategy Research API",

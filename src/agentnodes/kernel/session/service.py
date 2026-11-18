@@ -22,7 +22,7 @@ from typing import Any, Optional
 
 from agentnodes.foundation import settings as _settings
 from agentnodes.kernel.agent.compact.core import CompactConfig, compact_messages
-from agentnodes.kernel.agent.event_store import EventStore
+from agentnodes.kernel.session.state.event_store import EventStore
 from agentnodes.foundation.llm import LLMConfig
 
 from agentnodes.kernel.session.models import Attempt, AttemptId, AttemptStatus, Message, MessageId, SessionId

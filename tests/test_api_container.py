@@ -30,6 +30,9 @@ class TestBuildContainer(unittest.TestCase):
                 self.assertIsNotNone(container.event_store)
                 self.assertIsNotNone(container.session_store)
                 self.assertIsNotNone(container.session_service)
+                self.assertIs(container.event_store._projector, container.projector)
+                self.assertIs(container.session_store._projector, container.projector)
+                self.assertIs(container.memory_manager._projection_sink, container.projector)
             finally:
                 close_container(container)
 
@@ -97,7 +100,12 @@ class TestBuildContainerWithFactories(unittest.TestCase):
             db_path=Path("/tmp/x.db"),
             event_store_factory=lambda db_path: fake_store,
         )
-        self.assertIs(container.event_store, fake_store)
+        try:
+            self.assertIs(container.event_store, fake_store)
+        finally:
+            from agentnodes.interfaces.api.container import close_container
+
+            close_container(container)
 
     def test_session_service_factory_override(self):
         from agentnodes.interfaces.api.container import build_container
@@ -107,7 +115,12 @@ class TestBuildContainerWithFactories(unittest.TestCase):
             db_path=Path("/tmp/x.db"),
             session_service_factory=lambda store, bus: fake_svc,
         )
-        self.assertIs(container.session_service, fake_svc)
+        try:
+            self.assertIs(container.session_service, fake_svc)
+        finally:
+            from agentnodes.interfaces.api.container import close_container
+
+            close_container(container)
 
 
 class TestAttachContainer(unittest.TestCase):
@@ -127,13 +140,18 @@ class TestAttachContainer(unittest.TestCase):
         app.state = type("State", (), {})()
 
         container = build_container(db_path=Path("/tmp/x.db"))
-        attach_container(app, container)
+        try:
+            attach_container(app, container)
 
-        # get_container works
-        request = MagicMock()
-        request.app = app
-        result = get_container(request)
-        self.assertIs(result, container)
+            # get_container works
+            request = MagicMock()
+            request.app = app
+            result = get_container(request)
+            self.assertIs(result, container)
+        finally:
+            from agentnodes.interfaces.api.container import close_container
+
+            close_container(container)
 
     def test_get_container_without_attach_raises(self):
         from agentnodes.interfaces.api.container import get_container
@@ -166,11 +184,17 @@ class TestResetContainer(unittest.TestCase):
         app = FakeApp()
         app.state = type("State", (), {})()
 
-        attach_container(app, build_container(db_path=Path("/tmp/x.db")))
-        self.assertTrue(hasattr(app.state, "_container"))
+        container = build_container(db_path=Path("/tmp/x.db"))
+        try:
+            attach_container(app, container)
+            self.assertTrue(hasattr(app.state, "_container"))
 
-        reset_container(app)
-        self.assertFalse(hasattr(app.state, "_container"))
+            reset_container(app)
+            self.assertFalse(hasattr(app.state, "_container"))
+        finally:
+            from agentnodes.interfaces.api.container import close_container
+
+            close_container(container)
 
 
 class TestServicesFromContainer(unittest.TestCase):
@@ -182,14 +206,20 @@ class TestServicesFromContainer(unittest.TestCase):
         )
 
         container = build_container(db_path=Path("/tmp/x.db"))
-        services = services_from_container(container)
-        self.assertIn("_event_store", services)
-        self.assertIn("_session_store", services)
-        self.assertIn("_session_service", services)
-        # Same instances
-        self.assertIs(services["_event_store"], container.event_store)
-        self.assertIs(services["_session_store"], container.session_store)
-        self.assertIs(services["_session_service"], container.session_service)
+        try:
+            services = services_from_container(container)
+            self.assertIn("_event_store", services)
+            self.assertIn("_session_store", services)
+            self.assertIn("_session_service", services)
+            self.assertIn("_memory_manager", services)
+            # Same instances
+            self.assertIs(services["_event_store"], container.event_store)
+            self.assertIs(services["_session_store"], container.session_store)
+            self.assertIs(services["_session_service"], container.session_service)
+        finally:
+            from agentnodes.interfaces.api.container import close_container
+
+            close_container(container)
 
 
 class TestContainerIsFrozen(unittest.TestCase):
@@ -199,8 +229,13 @@ class TestContainerIsFrozen(unittest.TestCase):
         from agentnodes.interfaces.api.container import build_container
 
         container = build_container(db_path=Path("/tmp/x.db"))
-        with self.assertRaises(Exception):
-            container.db_path = Path("/tmp/other.db")  # type: ignore[misc]
+        try:
+            with self.assertRaises(Exception):
+                container.db_path = Path("/tmp/other.db")  # type: ignore[misc]
+        finally:
+            from agentnodes.interfaces.api.container import close_container
+
+            close_container(container)
 
 
 if __name__ == "__main__":

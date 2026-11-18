@@ -39,7 +39,7 @@ def _get_db_path() -> Path:
     resolution order (AGENTNODES_SESSION_DB > AGENTNODES_WORKSPACE > cwd >
     ~/.quantnodes fallback).
     """
-    from agentnodes.kernel.agent.memory_manager import resolve_session_db_path
+    from agentnodes.kernel.session.state.memory_manager import resolve_session_db_path
     return resolve_session_db_path()
 
 

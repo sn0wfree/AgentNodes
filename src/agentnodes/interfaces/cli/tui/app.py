@@ -74,6 +74,8 @@ class ResearchApp(App):
         self._model = model
         self._version = version
         self._session_db_path = session_db_path
+        self._memory_manager = None
+        self._projection_sink = None
         # Per-session state shared with the legacy REPL (process_turn dispatcher).
         self.ctx = InteractiveContext()
         self.banner: Optional[Banner] = None
@@ -125,6 +127,25 @@ class ResearchApp(App):
         #    isolation (see tests/test_session_id_init.py).
         model, sid = self._resolve_session_identity()
 
+        from pathlib import Path
+
+        from agentnodes.kernel.session.state.memory_manager import (
+            UnifiedMemoryManager,
+            resolve_session_db_path,
+        )
+        from agentnodes.kernel.session.projector import Projector
+
+        db_path = (
+            Path(self._session_db_path)
+            if self._session_db_path is not None
+            else resolve_session_db_path()
+        )
+        self._projection_sink = Projector(db_path)
+        self._memory_manager = UnifiedMemoryManager(
+            db_path=db_path,
+            projection_sink=self._projection_sink,
+        )
+
         # 1) Banner Renderable sits as the first row inside the transcript.
         from agentnodes.interfaces.cli.ui.banner import render_banner
         transcript = self.query_one(TranscriptView)
@@ -164,6 +185,14 @@ class ResearchApp(App):
         # Push the modal; the callback wires the user's choice into the session.
         modal = ResumeOrNewModal(latest_session=latest_title)
         self.push_screen(modal, self._on_resume_choice)
+
+    def on_unmount(self) -> None:
+        if self._memory_manager is not None:
+            self._memory_manager.close()
+            self._memory_manager = None
+        if self._projection_sink is not None:
+            self._projection_sink.close()
+            self._projection_sink = None
 
     # ------------------------------------------------------------------ identity
 
@@ -642,7 +671,7 @@ class ResearchApp(App):
         except Exception:
             self.write_transcript("[muted]/help not yet rendered in TUI v1.[/muted]")
 
-    def action_clear_transcript(self) -> None:
+    async def action_clear_transcript(self) -> None:
         """Ctrl+L — wipe the chat log."""
         try:
             tv = self.query_one(TranscriptView)
@@ -652,19 +681,10 @@ class ResearchApp(App):
         # Also wipe memory for the session so re-runs start clean.
         if self.session is not None:
             self.ctx.history = []
-            # Phase 7+8: also clear in MemoryManager (SQLite)
-            try:
-                import asyncio
-
-                from agentnodes.kernel.agent.memory_manager import (
-                    get_default_memory_manager,
+            if self._memory_manager is not None:
+                await self._memory_manager.clear(
+                    getattr(self.ctx, "session_id", ""),
                 )
-                mm = get_default_memory_manager()
-                asyncio.get_event_loop().run_until_complete(
-                    mm.clear(getattr(self.ctx, "session_id", ""))
-                )
-            except Exception:
-                pass
 
     def action_toggle_sidebar(self) -> None:
         """Ctrl+1 — toggle the Commands sidebar visibility."""

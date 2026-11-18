@@ -80,14 +80,8 @@ class TestSlashCommandIntercepts:
         clear_mock = AsyncMock(return_value=None)
         send_mock = AsyncMock()
 
-        with patch(
-            "agentnodes.kernel.agent.memory_manager.get_default_memory_manager",
-            return_value=type(
-                "MM",
-                (),
-                {"clear": clear_mock, "get": AsyncMock(return_value=[])},
-            )(),
-        ), patch.object(
+        memory_manager = client.app.state._container.memory_manager
+        with patch.object(memory_manager, "clear", clear_mock), patch.object(
             client.app.state if hasattr(client.app, "state") else object(),
             "_noop",
             create=True,
@@ -176,7 +170,7 @@ class TestSlashCommandIntercepts:
 
         clear_mock = AsyncMock(return_value=None)
         with patch(
-            "agentnodes.kernel.agent.memory_manager.get_default_memory_manager",
+            "agentnodes.kernel.session.state.memory_manager.get_default_memory_manager",
             return_value=type(
                 "MM",
                 (),

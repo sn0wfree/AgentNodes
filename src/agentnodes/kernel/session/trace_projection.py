@@ -17,7 +17,7 @@ import logging
 from pathlib import Path
 from typing import Any, Optional
 
-from agentnodes.kernel.agent.event_store import EventStore
+from agentnodes.kernel.session.state.event_store import EventStore
 from agentnodes.kernel.events.event_v2 import EventType
 
 logger = logging.getLogger(__name__)

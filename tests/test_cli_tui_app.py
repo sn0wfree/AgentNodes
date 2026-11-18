@@ -64,9 +64,14 @@ def test_tui_bindings_are_well_formed():
 
 
 @pytest.mark.asyncio
-async def test_research_app_run_test_mounts_widgets():
+async def test_research_app_run_test_mounts_widgets(tmp_path):
     """End-to-end: app.run_test() mounts the full skeleton."""
-    app = ResearchApp(model="gpt-4o", version="0.4.2")
+    app = ResearchApp(
+        model="gpt-4o",
+        version="0.4.2",
+        session_db_path=str(tmp_path / "session.db"),
+        skip_resume=True,
+    )
     async with app.run_test() as pilot:
         await pilot.pause()
         # All 5 named inner widgets are present (header + footer are auto-mounted).
@@ -74,12 +79,18 @@ async def test_research_app_run_test_mounts_widgets():
         assert app.query_one(CommandSidebar).is_mounted
         assert app.query_one("#mode-bar", ModeBar).is_mounted
         assert app.query_one("#input").is_mounted  # ChatInput uses id="input"
+        assert app._memory_manager._projection_sink is app._projection_sink
 
 
 @pytest.mark.asyncio
-async def test_write_transcript_message_appends_to_log():
+async def test_write_transcript_message_appends_to_log(tmp_path):
     """Posting a ``WriteTranscript`` message lands inside the transcript widget."""
-    app = ResearchApp(model="m", version="0.4.2")
+    app = ResearchApp(
+        model="m",
+        version="0.4.2",
+        session_db_path=str(tmp_path / "session.db"),
+        skip_resume=True,
+    )
     async with app.run_test() as pilot:
         await pilot.pause()
         text_marker = "TI_MARKER_HELLO"
@@ -92,7 +103,7 @@ async def test_write_transcript_message_appends_to_log():
 
 
 @pytest.mark.asyncio
-async def test_synthesize_input_echoes_to_transcript():
+async def test_synthesize_input_echoes_to_transcript(tmp_path):
     """Sidebar ``SynthesizeInput`` clicks dispatch through the session.
 
     Commit 2 wires ``on_synthesize_input`` to :class:`ChatSession.dispatch`
@@ -101,7 +112,12 @@ async def test_synthesize_input_echoes_to_transcript():
     history is populated rather than the transcript (the help panel
     rendering lives in Commit 3).
     """
-    app = ResearchApp(model="m", version="0.4.2")
+    app = ResearchApp(
+        model="m",
+        version="0.4.2",
+        session_db_path=str(tmp_path / "session.db"),
+        skip_resume=True,
+    )
     async with app.run_test() as pilot:
         await pilot.pause()
         # Manually wire the session — Commit 2 wires it in on_mount, but
@@ -120,14 +136,19 @@ async def test_synthesize_input_echoes_to_transcript():
 
 
 @pytest.mark.asyncio
-async def test_app_mount_renders_banner_in_transcript():
+async def test_app_mount_renders_banner_in_transcript(tmp_path):
     """End-to-end: app mount renders the gradient banner into TranscriptView.
 
     This is the smoke test that proves the full skeleton works:
     CSS loads, widgets mount, on_mount runs, and the banner Rich
     ``Text`` lands inside the chat log as the first scrollback entry.
     """
-    app = ResearchApp(model="gpt-4o", version="0.4.2")
+    app = ResearchApp(
+        model="gpt-4o",
+        version="0.4.2",
+        session_db_path=str(tmp_path / "session.db"),
+        skip_resume=True,
+    )
     async with app.run_test() as pilot:
         await pilot.pause()
         await pilot.pause()
@@ -146,7 +167,12 @@ async def test_app_save_screenshot_produces_valid_svg(tmp_path):
     one to keep CI honest that the renderer emits an actual layout
     (CSS OK, widgets painted, no exceptions).
     """
-    app = ResearchApp(model="gpt-4o", version="0.4.2")
+    app = ResearchApp(
+        model="gpt-4o",
+        version="0.4.2",
+        session_db_path=str(tmp_path / "session.db"),
+        skip_resume=True,
+    )
     async with app.run_test() as pilot:
         await pilot.pause()
         await pilot.pause()

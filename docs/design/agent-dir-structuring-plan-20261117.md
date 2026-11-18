@@ -1,6 +1,6 @@
 # kernel/agent 目录结构化方案 —— builtin_tools 抽出评估 + 顶层文件分层
 
-> **日期**: 2026-11-17 · **性质**: 调研 + 实施设计（**本轮只梳理，未动代码**）
+> **日期**: 2026-11-17 · **性质**: 调研 + 实施设计 · **状态**: 阶段 8 实施完成；全量验收有 1 项无关失败
 > **触发问题**：
 > ① `kernel/agent/builtin_tools` 能否拿出来与 `agent` 同级？
 > ② `agent/` 顶层 53 个文件散落，想结构化分层（例：三个 `compact*.py` 下沉到 `compact/`）
@@ -507,7 +507,7 @@ agentnodes\.kernel\.agent\.tools\b
 
 ---
 
-## 12 · 剩余 28 个顶层文件的分组规划（2026-11-17 实测后定稿）
+## 12 · 剩余 28 个顶层文件的分组规划（2026-11-17 实测；state 归属另行定稿）
 
 ### 12.1 现状实测（分组依据）
 
@@ -522,7 +522,7 @@ agentnodes\.kernel\.agent\.tools\b
 
 | 组 | 文件 | 语义 | 簇内依赖 | 影响面 |
 |---|---|---|---|---|
-| **`state/`** | cache, event_store, memory_manager, projection_port | 持久化与状态投影 | 有环（无顶层环） | 70 |
+| **`kernel/session/state/`** | cache, event_store, memory_manager, projection_port | session 事件、历史与状态投影；从 `kernel/agent` 跨域迁入 | 有环（无顶层环） | 70 |
 | **`factory/`** | chat_loop, role_factory, harness_resolver, frontmatter | agent 构造与装配期解析 | role_factory→loop/assembly/toolsets | 56 |
 | **`plugins/`** | plugin, registry, dag_config, executor, combo | agent 定义 / 注册 / DAG 编排 / 执行 | 无环 | 48 |
 | **`guards/`** | guardrails, text_guard, circuit_breaker, redaction | 守卫与安全 | 无 | 16 |
@@ -539,7 +539,7 @@ agentnodes\.kernel\.agent\.tools\b
 | **5** | signals(2) + tools 追加(2) + policy(3) | 7 | 21 | 最小批，快速验证方法论 |
 | **6** | guards(4) + telemetry(3) | 7 | 23 | **修 3 处 `__file__` 层数敏感**（redaction / trace / legacy_audit → 改包根定位） |
 | **7** | plugins(5) + factory(4) | 9 | 104 | factory 内 chat_loop 影响面最大（31） |
-| **8** | state(4) | 4 | 70 | 唯一有内部环的一组（顶层/函数内分层已验证无初始化环） |
+| **8** | state(4) → `kernel/session/state/` | 4 | 70 | 跨域迁移；先遵循 §16 明确事实源、装配、投影与缓存契约 |
 
 **阶段 7 分步执行**（每步独立验证、独立提交）：plugins(5) → factory helper（frontmatter / harness_resolver）→ factory 构造模块（role_factory / chat_loop）→ 全量验收与文档回填。
 
@@ -555,7 +555,7 @@ agentnodes\.kernel\.agent\.tools\b
 
 - `_core_types` 留在顶层（11 个簇外依赖方，跨簇共享协议类型；下沉会制造「协议类型藏在某簇里」的耦合）。
 - 不改 `guards`/`policy` 等簇内的模块间 import 形态（保持拓扑不变）。
-- 不合并 `state` 的环（缓存/事件/记忆三者互相引用是**设计**，非偶然；强行拆开会引入额外抽象）。
+- `state` 簇整体迁入 `kernel/session/state/`，不拆分缓存/事件/记忆的既有依赖环（顶层/函数内分层已验证无初始化环；强行拆开会引入额外抽象）。
 
 ## 13 · 阶段 5 实测（2026-11-17）
 
@@ -606,3 +606,71 @@ agentnodes\.kernel\.agent\.tools\b
 - `sync_architecture_diagram.py`、`check_framework_numbers.py` 均通过；迁移测试子集 Ruff 检查通过。全目标文件扫描仍有既存 import 排序/未使用导入告警，本阶段未扩大到无关清理。
 
 **结论**：阶段 7 迁移与最终验收完成；插件、装配辅助与高影响构造模块已按职责收敛到子包。
+
+## 16 · 阶段 8 设计定稿：state 簇边界（2026-11-17）
+
+> **性质**：阶段 8 实施设计；本节记录已确认的目标边界，实际实施进展见 §16.6。
+
+### 16.1 目标包路径
+
+四个模块整体迁入 `kernel/session/state/`：`cache.py`、`event_store.py`、`memory_manager.py`、`projection_port.py`。`Projector`、`ProjectionStore`、`SessionStore` 和 session 生命周期服务继续留在 `kernel/session/`。
+
+选择 `kernel/session/state/`，因为该簇以 session 为主要数据键和生命周期，并与 `kernel/session` 的存储、投影实现协作。拒绝 `kernel/agent/state/`：它会错误暗示这些状态能力属于 agent 私有，且让 session 子域依赖 agent 子域。暂不选更泛化的 `kernel/state/`：尚无证据表明本簇要服务非 session 状态；若未来出现实际跨域消费者，再单独评估。
+
+### 16.2 数据所有权与事实源
+
+本决策只定义会话消息时间线，不把 session 元数据、attempt 等所有状态一并改成事件溯源。
+
+| 数据 / 能力 | 权威者与写入责任 | 约束 |
+|---|---|---|
+| `event_log` 中的会话事件 | EventStore 拥有事件流语义；PlatformStore 负责底层持久化 | 是会话消息时间线的事实源，可用于重放与投影重建 |
+| `messages` / `message_parts` | Projector / ProjectionStore 是唯一常规写入者 | 是可重建的读模型；禁止业务路径绕过投影器直接写入，维护/修复操作须显式标识 |
+| session 元数据、attempt、生命周期 | 保持在 `kernel/session` 现有职责内 | 不因 state 簇迁移而转交给 MemoryManager 或 EventStore |
+| 进程内缓存与锁 | 各自组件拥有 | 易失、可丢弃，不是持久化事实源 |
+| session history 外观 | MemoryManager | `append` 发出事件；`get` 遵循统一的 history 读取契约；`clear` 发边界事件，不代表删除历史 |
+
+不允许 `event_log` 与 `messages` 成为可独立写入的双事实源。读取侧应统一 history 接口：以投影满足常规查询；投影缺失或损坏时，以 event_log 为依据重建或修复。
+
+### 16.3 装配与一致性保证
+
+- API、TUI 和其他入口必须遵循同一套明确的装配规则，确保 EventStore 的投影依赖不是因 fallback 或默认工厂而静默缺失。
+- 需要写入投影的模式必须注入 ProjectionSink；缺失时显式报错。若保留 event-only 模式，必须由显式配置启用，并说明该模式下 messages 的可见性与读取保证。
+- 默认采用**同步写穿尝试**：EventStore 先持久化事件，再在返回前调用投影 sink。正常时 messages 在本次 emit 返回前刷新；投影失败时 event_log 仍是已持久化事实，失败须记录并可从 event_log 重建，不回滚事件。
+- 正常持久化模式下，`append` / `emit` 成功的最低保证是事件已可靠写入 event_log；持久化失败必须向调用方传播。自动修复失败而切到 InMemoryStore 时，成功仅代表进程内可读，`is_degraded` / health 必须表明非持久化。MemoryManager 的 `emergency_*` 返回值同样是带 health 标记的内存降级结果，不是已持久化成功。
+- event-only 调用必须明确采用 `flush_to_messages=False`；需要投影的调用必须注入 sink，缺失即构造失败。投影错误、可见性和重建行为均以针对性测试固定。
+
+当前装配缺口需在迁移中覆盖：[API fallback](../../src/agentnodes/interfaces/api/dependencies.py) 未注入 sink；`MemoryManagerFactory` 未暴露 sink 参数；`SessionStore` 的投影读取与 EventStore 注入 sink 使用不同 Projector 实例。迁移不能只改 import 而保留隐式不一致。
+
+### 16.4 缓存、生命周期与删除语义
+
+- 暂不合并为全局缓存。EventStore、MemoryManager、Projector 各自拥有其缓存；组合根负责创建和关闭组件，缓存所属组件负责本地清理。
+- session 生命周期操作必须有明确的投影/缓存失效契约；覆盖 EventStore、MemoryManager、Projector 和 SessionStore 的相关缓存。现有 `web_session` 失效逻辑查找 EventStore 不具备的 `invalidate`，阶段 8 需补齐或改由正确所有者承接。
+- 语义固定如下：`clear` 追加边界事件，不删除历史；`archive` 是逻辑软归档，保留事件和投影；投影重建只更新可重建读模型；`purge` 是显式永久清理，必须同时处理事件、投影、session 元数据及相关缓存，不得由普通 clear/archive 隐式触发。
+- 关闭顺序固定为：容器关闭 MemoryManager、EventStore 和 SessionStore 后，最后关闭共享 Projector；SessionStore 只关闭自己懒创建的 Projector，MemoryManager 关闭其懒创建的 EventStore 与自有 SQLiteBackend，EventStore 关闭 PlatformStore 与事件库连接。TUI 关闭自有 MemoryManager 和 Projector；短生命周期的管理路由必须在 `finally` 中关闭临时 EventStore。
+
+### 16.5 阶段 8 实施门槛
+
+1. 盘点所有入口的 EventStore / MemoryManager 构造路径及 messages 写入路径，确定并测试统一的 history 读写契约。
+2. 统一组合根接线；为 sink 缺失、显式 event-only、投影失败/重建补充有正向前提的测试。
+3. 明确并验证 §16.3 的投影时序、错误传播与可见性保证。
+4. 将四个模块整体迁入 `kernel/session/state/`，按 §12.4 更新生产/测试导入及字符串路径，并保持既有依赖环拓扑。
+5. 覆盖 clear、archive、投影重建、purge 的数据边界与缓存失效；完成受影响测试、全量 pytest、`batch_gate`、架构图同步后，回填实测结果。
+
+**回滚边界**：模块迁移和装配/行为契约调整应分批提交；若迁移验证失败，可单独回退路径迁移，不得因此回退已确认的数据所有权文档。
+
+### 16.6 当前实施进展（2026-11-17）
+
+- **装配**：API container 与 fallback providers 共用 Projector；TUI 在应用生命周期内构造并关闭 MemoryManager / Projector；`/clear` 使用注入的 MemoryManager。`flush_to_messages=True` 缺 sink 时显式失败。
+- **写入保证**：EventStore 持久化失败现在传播；投影缓存失效通过 EventStore 转发给 sink。
+- **迁移**：四个模块已移入 `kernel/session/state/`；生产、测试和脚本引用完成机械更新，路径审计在 `src/`、`tests/`、`scripts/` 未发现旧模块路径。
+- **定向验证**：最后重跑的受影响测试集 **118 passed / 1 skipped / 0 failed**。
+- **全量验收**：pytest **7605 passed / 106 skipped / 1 failed**；唯一失败为未修改文件 `tests/test_workspace_git_tools.py::TestFoundationGit::test_git_commit_rich_message_format`，断言的假设文本与实际提交信息不一致。`batch_gate.cmd` 全绿；架构图已同步，实测 442 文件 / 92,337 行、上行违规 0。
+- **Ruff**：本次涉及的 Python 文件检查报告 60 项，主要为导入排序与未使用导入；未批量自动修复，以免夹带无关清理。
+
+### 16.7 阶段 0 收尾核验（2026-11-18）
+
+- **装配与所有权**：API container 与 fallback providers 共用同一 Projector；容器负责关闭共享实例，SessionStore 不关闭注入实例。TUI 在应用生命周期内创建并关闭自己的 MemoryManager / Projector。
+- **写入与读取**：EventStore / MemoryManager 写入 `event_log`，Projector / ProjectionStore 常规写入 `messages` 投影。SessionStore 默认经 Projector 从 `event_log` 读取，异常时回退 `messages` 表；MemoryManager 的 cache miss 直接读 `messages` 表，CLI reader 和部分 web session 查询也直接读该投影。
+- **明确的后续边界**：上述读取入口仍未完全汇合；投影失败时，直读 `messages` 的入口可能暂时看到旧投影。`event_log` 仍是事实源；在架构总计划 §12 的“统一会话事实源”阶段收敛读接口、缺失检测与重建行为，不把该工作混入本次 State 路径迁移。
+- **生命周期修复**：EventStore 关闭时释放其 PlatformStore 连接；MemoryManager 委托关闭自有 EventStore；`/api/admin/metrics` 在健康检查后关闭临时 EventStore。共享 Projector 仍由容器/TUI 的组合根关闭。
+- **验证**：所有已修改测试文件 **335 passed / 1 skipped**；`batch_gate.cmd` **ALL GREEN**；架构图同步检查与框架数字核对均通过。架构统计为 **442 文件 / 92,343 行**，上行违规 **0**。
