@@ -1016,37 +1016,17 @@ async def list_active_attempts(
     from agentnodes.interfaces.api.routers.web_session import _fetch_session_owned, _get_db
     user_id = getattr(request.state, "user_id", "anonymous")
     _fetch_session_owned(_get_db(), session_id, user_id)
-    service = _get_session_service()
-    gateway = _get_gateway()
-    attempts = service.store.list_attempts_by_status(
-        session_id,
-        [
-            AttemptStatus.PENDING.value,
-            AttemptStatus.RUNNING.value,
-            AttemptStatus.FAILED.value,
-        ],
-    )
-    live = []
-    failed_count = 0
-    for attempt in attempts:
-        if attempt.status == AttemptStatus.FAILED:
-            failed_count += 1
-            if failed_count > 5:
-                continue
-            status = "failed"
-        else:
-            status = gateway.attempt_state(session_id, str(attempt.attempt_id))
-            if status is None:
-                continue
-        live.append({
-            "attempt_id": str(attempt.attempt_id),
-            "message_id": str(attempt.message_id or ""),
-            "status": status,
-            "prompt": attempt.prompt[:200] if attempt.prompt else "",
-            "created_at": attempt.created_at,
-            "error": attempt.error or "",
-        })
-    return {"attempts": live}
+    # 顺序④（裁决 4）：存储记录 × Gateway 实时状态的拼接归 apps/chat
+    # 查询用例；router 只做鉴权、取组合根句柄与返回。
+    from agentnodes.apps.chat.attempts_query import query_live_attempts
+
+    return {
+        "attempts": query_live_attempts(
+            session_id,
+            store=_get_session_service().store,
+            gateway=_get_gateway(),
+        )
+    }
 
 
 @router.get("/session/{session_id}/available_actions")
