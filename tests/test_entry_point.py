@@ -5,6 +5,8 @@
 """
 from __future__ import annotations
 
+from concurrent.futures import ThreadPoolExecutor
+
 import pytest
 
 from agentnodes.kernel.orchestration import (
@@ -166,3 +168,42 @@ def test_custom_cap_respected():
         ep.submit(req(text=f"q{i}", mode=QueueMode.FOLLOWUP, key="chat:c"))
     mailbox = ep.mailbox_for("chat:c")
     assert mailbox is not None and mailbox.peek_depth() <= 3
+
+
+def test_per_submission_pending_limit_rejects_at_limit():
+    ep = EntryPoint(sink=lambda k, d: None)
+    receipts = [
+        ep.submit(req(text=f"q{i}"), max_pending=10)
+        for i in range(11)
+    ]
+
+    assert sum(receipt.accepted for receipt in receipts) == 10
+    rejected = receipts[-1]
+    assert rejected.reason is RejectReason.QUEUE_FULL
+    assert rejected.current_size == 10
+    mailbox = ep.mailbox_for("chat:s")
+    assert mailbox is not None and mailbox.peek_depth() == 10
+
+
+def test_pending_limit_is_opt_in_for_existing_entry_callers():
+    ep = EntryPoint(sink=lambda k, d: None)
+    receipts = [ep.submit(req(text=f"q{i}")) for i in range(11)]
+
+    assert all(receipt.accepted for receipt in receipts)
+    mailbox = ep.mailbox_for("chat:s")
+    assert mailbox is not None and mailbox.peek_depth() == 11
+
+
+def test_concurrent_submissions_respect_pending_limit():
+    ep = EntryPoint(sink=lambda k, d: None)
+    with ThreadPoolExecutor(max_workers=16) as pool:
+        receipts = list(pool.map(
+            lambda i: ep.submit(req(text=f"q{i}"), max_pending=10),
+            range(32),
+        ))
+
+    assert sum(receipt.accepted for receipt in receipts) == 10
+    rejected = [r for r in receipts if not r.accepted]
+    assert rejected
+    assert all(r.reason is RejectReason.QUEUE_FULL for r in rejected)
+    assert all(r.current_size == 10 for r in rejected)

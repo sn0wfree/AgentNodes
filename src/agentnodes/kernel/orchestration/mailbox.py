@@ -21,6 +21,7 @@
 """
 from __future__ import annotations
 
+import threading
 import time
 from collections import deque
 from dataclasses import dataclass, field, replace
@@ -92,8 +93,10 @@ class Mailbox:
         self.aging_s = aging_s
         self._clock = clock
         self._sink = sink or (lambda kind, data: None)
+        self._lock = threading.RLock()
         self._queue: deque[QueueItem] = deque()
         self._steer: deque[WorkRequest] = deque()  # R2.2：待注入 steer
+        self._paused = False
 
     # ── 入口 ─────────────────────────────────────────────
 
@@ -103,6 +106,7 @@ class Mailbox:
         *,
         resolve_session: SessionResolver,
         is_session_active: bool | None = None,
+        max_pending: int | None = None,
     ) -> Receipt:
         """入口校验 + 入队。两级拒绝的第一级在此完成（无副作用返回 rejected）。
 
@@ -110,11 +114,36 @@ class Mailbox:
         EntryPoint 用 fence 查询注入）。STEER 工单据此路由：活跃 → steer
         队等待安全点注入；不活跃 → 直接作正常 turn。
         """
+        with self._lock:
+            return self._submit_locked(
+                request,
+                resolve_session=resolve_session,
+                is_session_active=is_session_active,
+                max_pending=max_pending,
+            )
+
+    def _submit_locked(
+        self,
+        request: WorkRequest,
+        *,
+        resolve_session: SessionResolver,
+        is_session_active: bool | None,
+        max_pending: int | None,
+    ) -> Receipt:
         reason = validate_work_request(request)
         if reason is not None:
             return Receipt.reject(reason)
+        if max_pending is not None and max_pending < 1:
+            raise ValueError("max_pending must be positive")
 
         self.expire_due()
+        if max_pending is not None:
+            current_size = len(self._queue) + len(self._steer)
+            if current_size >= max_pending:
+                return Receipt.reject(
+                    RejectReason.QUEUE_FULL,
+                    current_size=current_size,
+                )
 
         mode = request.queue_mode or DEFAULT_QUEUE_MODE.get(request.source, QueueMode.FOLLOWUP)
 
@@ -191,18 +220,21 @@ class Mailbox:
 
     def drain_steer(self) -> list[str]:
         """取走全部待注入文本（合批由调用方 join）。发 steer.applied——不静默。"""
-        texts: list[str] = []
-        while self._steer:
-            req = self._steer.popleft()
-            text = req.payload.get("text")
-            if isinstance(text, str) and text:
-                texts.append(text)
-        if texts:
-            self._sink(
-                "steer.applied",
-                {"session_id": self.session_id, "count": len(texts)},
-            )
-        return texts
+        with self._lock:
+            if self._paused:
+                return []
+            texts: list[str] = []
+            while self._steer:
+                req = self._steer.popleft()
+                text = req.payload.get("text")
+                if isinstance(text, str) and text:
+                    texts.append(text)
+            if texts:
+                self._sink(
+                    "steer.applied",
+                    {"session_id": self.session_id, "count": len(texts)},
+                )
+            return texts
 
     def promote_steer(self) -> int:
         """turn 收尾后仍滞留的 steer 转主队（下一个 turn 执行）——不丢消息。
@@ -233,21 +265,50 @@ class Mailbox:
 
     # ── 消费者接口（A2 SessionController 使用；E1 由测试驱动） ──
 
+    def pause(self) -> bool:
+        """暂停该会话后续工单；返回是否发生了状态转换。"""
+        with self._lock:
+            was_paused = self._paused
+            self._paused = True
+            return not was_paused
+
+    def resume(self) -> bool:
+        """恢复该会话工单消费；返回是否发生了状态转换。"""
+        with self._lock:
+            if not self._paused:
+                return False
+            self._paused = False
+            return True
+
+    @property
+    def is_paused(self) -> bool:
+        with self._lock:
+            return self._paused
+
+    def has_pending(self) -> bool:
+        """是否存在主队列或 steer 队列中的待处理工单。"""
+        with self._lock:
+            self.expire_due()
+            return bool(self._queue or self._steer)
+
     def poll_due(self, kinds: Iterable[WorkKind] | None = None) -> WorkRequest | None:
         """取下一个可执行工单：interrupt/aged 优先，其后 FIFO；过期项在此惰性出清。
 
         kinds：可选的 kind 过滤（消费者只领自己负责的工单）。不匹配的工单
         **留在队列**，不丢弃；interrupt 优先级在过滤后的集合内生效。
         """
-        self.expire_due()
-        self._apply_aging()
-        if not self._queue:
-            return None
-        if kinds is None:
-            return self._pop_next().request
-        allowed = {k if isinstance(k, WorkKind) else WorkKind(k) for k in kinds}
-        item = self._pop_next_where(lambda it: it.request.kind in allowed)
-        return item.request if item is not None else None
+        with self._lock:
+            self.expire_due()
+            if self._paused:
+                return None
+            self._apply_aging()
+            if not self._queue:
+                return None
+            if kinds is None:
+                return self._pop_next().request
+            allowed = {k if isinstance(k, WorkKind) else WorkKind(k) for k in kinds}
+            item = self._pop_next_where(lambda it: it.request.kind in allowed)
+            return item.request if item is not None else None
 
     def _apply_aging(self) -> int:
         """R2.3：普通项等待 ≥ aging_s 后升入 interrupt 级——领先有界。
@@ -277,11 +338,12 @@ class Mailbox:
         return boosted
 
     def peek_depth(self, kinds: Iterable[WorkKind] | None = None) -> int:
-        self.expire_due()
-        if kinds is None:
-            return len(self._queue)
-        allowed = {k if isinstance(k, WorkKind) else WorkKind(k) for k in kinds}
-        return sum(1 for it in self._queue if it.request.kind in allowed)
+        with self._lock:
+            self.expire_due()
+            if kinds is None:
+                return len(self._queue)
+            allowed = {k if isinstance(k, WorkKind) else WorkKind(k) for k in kinds}
+            return sum(1 for it in self._queue if it.request.kind in allowed)
 
     def requeue_front(self, request: WorkRequest) -> None:
         """把刚摘出的工单放回队首（容量闸满时的"现在起不了"路径）。
@@ -304,34 +366,51 @@ class Mailbox:
         self.expire_due()
         return tuple(self._queue)
 
+    def pending_attempt_ids(self) -> tuple[str, ...]:
+        """Return attempt IDs still waiting in either the normal or steer lane."""
+        with self._lock:
+            self.expire_due()
+            requests = [item.request for item in self._queue]
+            requests.extend(self._steer)
+            return tuple(
+                attempt_id
+                for request in requests
+                if isinstance(
+                    (attempt_id := request.payload.get("attempt_id")),
+                    str,
+                )
+                and attempt_id
+            )
+
     # ── deadline ─────────────────────────────────────────
 
     def expire_due(self, now: datetime | None = None) -> int:
         """出清所有已过 deadline 的排队项，发 EXPIRED 事件。返回清理数。"""
-        now_ts = self._clock()
-        expired: list[QueueItem] = []
-        remaining: deque[QueueItem] = deque()
-        for item in self._queue:
-            dl = item.request.deadline
-            if dl is not None and dl.timestamp() <= now_ts:
-                expired.append(item)
-            else:
-                remaining.append(item)
-        if not expired:
-            return 0
-        self._queue = remaining
-        for item in expired:
-            self._sink(
-                "work.expired",
-                {
-                    "session_id": self.session_id,
-                    "label": item.label,
-                    "deadline": item.request.deadline.isoformat()
-                    if item.request.deadline
-                    else None,
-                },
-            )
-        return len(expired)
+        with self._lock:
+            now_ts = self._clock()
+            expired: list[QueueItem] = []
+            remaining: deque[QueueItem] = deque()
+            for item in self._queue:
+                dl = item.request.deadline
+                if dl is not None and dl.timestamp() <= now_ts:
+                    expired.append(item)
+                else:
+                    remaining.append(item)
+            if not expired:
+                return 0
+            self._queue = remaining
+            for item in expired:
+                self._sink(
+                    "work.expired",
+                    {
+                        "session_id": self.session_id,
+                        "label": item.label,
+                        "deadline": item.request.deadline.isoformat()
+                        if item.request.deadline
+                        else None,
+                    },
+                )
+            return len(expired)
 
     # ── 内部 ─────────────────────────────────────────────
 

@@ -29,7 +29,14 @@ from agentnodes.interfaces.api.schemas.chat import (
 from agentnodes.interfaces.api.schemas.chat import (
     ChatMessageRequest as ChatMessage,
 )
-from agentnodes.kernel.session.models import AttemptId, SessionId
+from agentnodes.kernel.session.models import (
+    Attempt,
+    AttemptId,
+    AttemptStatus,
+    MessageId,
+    SessionId,
+)
+from agentnodes.kernel.orchestration import QueueMode, RejectReason
 from agentnodes.kernel.session.service import SessionService
 from agentnodes.interfaces.api.routers.slash_common import (
     _handle_clear_command,
@@ -46,12 +53,37 @@ def _shell_tools_enabled(mode: str | None = None) -> bool:
     """Whether the ``run_command`` shell tool should be offered to the agent.
 
     2026-11-05：策略本体已下沉到 L2 ``apps/chat/policy.py``——L1 是哑
-    适配器，不该读环境变量做安全决策。这里保留薄壳以兼容既有调用点
-    （``_send_via_gateway`` 与 gateway wiring 都调它）。
+    适配器，不该读环境变量做安全决策。Gateway 组合根对工具注册表
+    应用相同策略；这里保留薄壳以兼容已有调用方。
     """
     from agentnodes.apps.chat.policy import shell_tools_enabled
 
     return shell_tools_enabled(mode)
+
+
+def _gateway_chat_options(body: ChatMessage) -> dict[str, Any]:
+    """Translate legacy API options into Gateway per-turn execution options."""
+    from agentnodes.kernel.session.loop_events import (
+        _plan_mode_allowed_tools,
+        _resolve_loop_prompt,
+        _thinking_instructions,
+    )
+
+    mode = (body.mode or "build").strip().lower()
+    system_prompt, role = _resolve_loop_prompt(None, body.agent_id)
+    thinking = body.thinking or "auto"
+    instructions = _thinking_instructions(thinking)
+    if instructions and system_prompt is not None:
+        system_prompt += instructions
+    return {
+        "mode": mode,
+        "system_prompt": system_prompt,
+        "role": role,
+        "allowed_tools": _plan_mode_allowed_tools(mode),
+        "thinking": thinking,
+        "model": body.model,
+    }
+
 
 # ── Shared EventStore + SessionService (singleton) ──────────────────────────
 # The EventStore is created per-DB-path inside _get_session_service()
@@ -225,9 +257,9 @@ async def send_async(body: ChatMessage, request: Request):
     Returns message_id + event_id for confirmation.
     Frontend should listen to /events SSE stream for real-time response.
 
-    Uses the unified SessionService (also shared with TUI). New messages
-    are appended to a per-session queue and processed FIFO; if the queue
-    is full (hard limit 10) the API returns 429.
+    Submits a FOLLOWUP work item to the shared Gateway mailbox. New messages
+    are processed FIFO; if 10 items are already pending, the API returns 429.
+    SessionService remains responsible for persisted session and Attempt data.
     """
     logger.info("[SEND] session=%s content_len=%d content_preview=%s",
                 body.session_id, len(body.content), body.content[:50])
@@ -262,58 +294,96 @@ async def send_async(body: ChatMessage, request: Request):
     if body.content.strip() == "/help":
         return await _handle_help_command(body)
 
-    # Delegate to SessionService — it handles DB persistence, queueing,
-    # AgentLoop execution, history context, and event emission.
     service = _get_session_service()
-    # Chat mode: bounded iteration budget from llm.json (default 50).
-    # Prevents a failing tool loop from growing the prompt unboundedly.
-    from agentnodes.foundation.llm.config import LLMConfig
-    try:
-        _cfg = LLMConfig.load()
-        _max_iter = _cfg.max_iterations
-    except (OSError, ValueError, KeyError):
-        _max_iter = 50
-    # Shell tools are opt-in (AGENTNODES_ALLOW_SHELL_TOOLS=1); plan mode never
-    # exposes them (analysis-only, single iteration).
-    _mode = body.mode or "build"
-    _max_iter_eff = 1 if _mode == "plan" else _max_iter
-    _allow_shell_eff = _shell_tools_enabled(_mode)
-    result = await service.send_message(
-        session_id=body.session_id,
-        content=body.content,
-        max_iterations=_max_iter_eff,
-        allow_shell_tools=_allow_shell_eff,
+    import uuid
+
+    user_message_id = str(uuid.uuid4())
+    assistant_message_id = str(uuid.uuid4())
+    attempt_id = uuid.uuid4().hex[:12]
+    options = _gateway_chat_options(body)
+    attempt = Attempt(
+        attempt_id=AttemptId(attempt_id),
+        session_id=SessionId(body.session_id),
+        prompt=body.content,
+        message_id=MessageId(assistant_message_id),
+        status=AttemptStatus.PENDING,
         persona=body.agent_id,
-        mode=_mode,
-        model=body.model,
-        thinking=body.thinking,
+        mode=options["mode"],
+        model_override=body.model,
+        thinking=options["thinking"],
+    )
+    service.store.create_attempt(attempt)
+    try:
+        service.event_bus.emit(
+            body.session_id,
+            "attempt.created",
+            {"attempt_id": attempt_id, "prompt": body.content},
+        )
+    except Exception:  # noqa: BLE001 — event-log failure must not block admission
+        logger.warning("send_async: attempt.created persistence failed", exc_info=True)
+
+    admitted = False
+    try:
+        await _send_via_gateway(
+            body.session_id,
+            body.content,
+            queue_mode=QueueMode.FOLLOWUP,
+            max_pending=10,
+            user_message_id=user_message_id,
+            attempt_id=attempt_id,
+            assistant_message_id=assistant_message_id,
+            receipt_only=True,
+            **options,
+        )
+        admitted = True
+    finally:
+        if not admitted:
+            service.store.delete_attempt(attempt_id)
+
+    gateway = _get_gateway()
+    live_state = gateway.attempt_state(body.session_id, attempt_id)
+    persisted_attempt = service.store.get_attempt(body.session_id, attempt_id)
+    status = "queued" if live_state == "queued" or (
+        persisted_attempt is not None
+        and persisted_attempt.status == AttemptStatus.PENDING
+    ) else "processing"
+    mailbox = gateway.entry.mailbox_for(f"chat:{body.session_id}")
+    queue_length = mailbox.peek_depth() if mailbox is not None else 0
+    try:
+        service.event_bus.emit(body.session_id, "message_received", {
+            "message_id": user_message_id,
+            "user_message_id": user_message_id,
+            "assistant_message_id": assistant_message_id,
+            "role": "user",
+            "content": body.content,
+            "attempt_id": attempt_id,
+            "status": status,
+            "queue_position": queue_length if status == "queued" else 1,
+            "queue_length": queue_length,
+            "created_at": time.time(),
+        })
+    except Exception:  # noqa: BLE001 — persistence failure must not reject accepted work
+        logger.warning("send_async: message_received persistence failed", exc_info=True)
+    try:
+        service.event_bus.emit(body.session_id, "queue_state", {
+            "session_id": body.session_id,
+            "queue_length": queue_length,
+        })
+    except Exception:  # noqa: BLE001 — queue observability must not reject accepted work
+        logger.warning("send_async: queue_state persistence failed", exc_info=True)
+
+    logger.info(
+        "[SEND] ok session=%s user_msg=%s attempt=%s status=%s",
+        body.session_id, user_message_id, attempt_id, status,
     )
 
-    # Queue-full guard: SessionService returns {"error": "queue_full", ...}
-    # when the session already has _QUEUE_LIMIT items waiting.
-    if result.get("error") == "queue_full":
-        logger.warning("[SEND] queue_full session=%s limit=%d current=%d",
-                       body.session_id, result["limit"], result["current_size"])
-        raise HTTPException(
-            status_code=429,
-            detail={
-                "error": "queue_full",
-                "limit": result["limit"],
-                "current_size": result["current_size"],
-            },
-        )
-
-    logger.info("[SEND] ok session=%s user_msg=%s attempt=%s status=%s",
-                body.session_id, result.get("user_message_id"),
-                result.get("attempt_id"), result.get("status"))
-
     return SendMessageResponse(
-        message_id=result["user_message_id"],
-        user_message_id=result["user_message_id"],
-        assistant_message_id=result["assistant_message_id"],
+        message_id=user_message_id,
+        user_message_id=user_message_id,
+        assistant_message_id=assistant_message_id,
         event_id="",
-        status=result.get("status", "processing"),
-        attempt_id=result.get("attempt_id"),
+        status=status,
+        attempt_id=attempt_id,
     )
 
 
@@ -324,23 +394,26 @@ async def cancel_attempt(body: CancelRequest, request: Request):
     If attempt_id is provided, cancels that specific attempt.
     Otherwise, cancels any active attempt for the session.
 
-    After cancellation the per-session queue is **paused** (queue_paused
+    After cancellation the Gateway mailbox is **paused** (queue_paused
     SSE event). Use ``POST /chat/queue/resume`` to continue processing.
     """
     from agentnodes.interfaces.api.routers.web_session import _fetch_session_owned, _get_db
     user_id = getattr(request.state, "user_id", "anonymous")
     _fetch_session_owned(_get_db(), body.session_id, user_id)
-    service = _get_session_service()
+    gateway = _get_gateway()
 
-    # Prefer the session-scoped cancel (cancels the per-attempt task; the
-    # consumer loop catches CancelledError and pauses the queue).
-    if body.attempt_id:
-        ok = service.cancel(AttemptId(body.attempt_id))
+    if body.attempt_id and (
+        gateway.attempt_state(body.session_id, body.attempt_id) == "running"
+    ):
+        ok = gateway.cancel_session(body.session_id)
         if ok:
-            return {"status": "cancelled", "attempt_id": body.attempt_id}
+            return {
+                "status": "cancelled",
+                "session_id": body.session_id,
+                "attempt_id": body.attempt_id,
+            }
 
-    # Fallback: cancel by session_id only
-    ok = service.cancel_session(SessionId(body.session_id))
+    ok = gateway.cancel_session(body.session_id)
     if ok:
         return {"status": "cancelled", "session_id": body.session_id}
 
@@ -353,7 +426,7 @@ class QueueResumeRequest(BaseModel):
 
 @router.post("/queue/resume", response_model=ChatQueueResumeResponse)
 async def queue_resume(body: QueueResumeRequest, request: Request):
-    """Resume a paused per-session queue after an explicit cancel.
+    """Resume a paused Gateway mailbox after an explicit cancel.
 
     Returns ``{"ok": true, "session_id": ...}`` if the queue was paused
     and is now resumed; ``{"ok": false}`` if no paused queue exists.
@@ -361,8 +434,7 @@ async def queue_resume(body: QueueResumeRequest, request: Request):
     from agentnodes.interfaces.api.routers.web_session import _fetch_session_owned, _get_db
     user_id = getattr(request.state, "user_id", "anonymous")
     _fetch_session_owned(_get_db(), body.session_id, user_id)
-    service = _get_session_service()
-    ok = service.resume_queue(body.session_id)
+    ok = _get_gateway().resume_session(body.session_id)
     return {"ok": ok, "session_id": body.session_id}
 
 
@@ -382,7 +454,22 @@ def _get_gateway():
 
 
 async def _send_via_gateway(
-    session_id: str, content: str, *, wait: bool = False, mode: str | None = None,
+    session_id: str,
+    content: str,
+    *,
+    wait: bool = False,
+    mode: str | None = None,
+    queue_mode: QueueMode | None = None,
+    max_pending: int | None = None,
+    user_message_id: str | None = None,
+    attempt_id: str | None = None,
+    assistant_message_id: str | None = None,
+    model: str | None = None,
+    system_prompt: str | None = None,
+    role: str | None = None,
+    allowed_tools: list[str] | None = None,
+    thinking: str | None = None,
+    receipt_only: bool = False,
 ) -> dict:
     """新路径：WorkRequest → EntryPoint → 准入 → 引擎 → 事件流。
 
@@ -391,7 +478,7 @@ async def _send_via_gateway(
     - 写消息 → ``event_bus.emit`` → projector（``flush_to_messages=True``）
 
     P5-1b：流式与工具链——
-    - Gateway 装配 tool registry（shell 工具按 ``_shell_tools_enabled`` 门禁）
+    - Gateway 装配 tool registry（shell 工具遵循 apps/chat 的 shell policy）
     - 引擎事件经 ``install_sink`` 转发为前端词表（text_delta / tool_call / …）
     - 末尾补发 ``agent_done``
 
@@ -402,8 +489,7 @@ async def _send_via_gateway(
     阻塞至 turn 完成、响应携带 reply。wait=true 只是**等待**，执行仍是
     消费者的事（无消费者时回落请求内驱动）。
 
-    **W4**：``mode="plan"`` → payload 带 ``max_iterations=1``（与
-    /send_async 的 chat.py:265 同一语义：分析单轮、不进循环）。
+    **W4**：``mode="plan"`` → payload 带 ``max_iterations=1``（分析单轮、不进循环）。
     build 模式不传 → 用 singleton 按 LLMConfig.max_iterations 装配的值。
 
     顺序关键：**先读历史、再 emit 本轮事件**——否则当前轮会被重复注入。
@@ -433,7 +519,7 @@ async def _send_via_gateway(
 
     # ── ② 提交（历史随 payload 进入引擎）───────────────────────
     gw = _get_gateway()
-    user_mid = str(_uuid.uuid4())
+    user_mid = user_message_id or str(_uuid.uuid4())
     assistant_mid_holder: dict[str, str] = {}
 
     # **W3**：桥在 submit **之前**安装——work.enqueued 会在 submit 内唤醒
@@ -441,7 +527,7 @@ async def _send_via_gateway(
     # 空）。receipt 路径（persist=True）带 seed_user：run.started 时补推
     # assistant 占位 seed；sync/wait 路径不带（保持「失败不落任何行」的
     # 既有不变量）。
-    turn_persist = gw.consumer_running() and not wait
+    turn_persist = receipt_only or (gw.consumer_running() and not wait)
     _unsub = _install_chat_event_bridge(
         gw, session_id, assistant_mid_holder,
         service=service, persist=turn_persist,
@@ -463,15 +549,44 @@ async def _send_via_gateway(
         api_chat_request(
             session_id, content, history=history,
             max_iterations=turn_max_iter,
-        )
+            queue_mode=queue_mode,
+            attempt_id=attempt_id,
+            assistant_message_id=assistant_message_id,
+            model=model,
+            system_prompt=system_prompt,
+            role=role,
+            allowed_tools=allowed_tools,
+            mode=mode,
+            thinking=thinking,
+        ),
+        max_pending=max_pending,
     )
     if not receipt.accepted:
         # 未受理：桥立即撤（无 turn 可挂）
         _unsub()
+        if receipt.reason is RejectReason.QUEUE_FULL:
+            raise HTTPException(
+                status_code=429,
+                detail={
+                    "error": "queue_full",
+                    "limit": max_pending,
+                    "current_size": receipt.current_size,
+                },
+            )
         raise HTTPException(
             status_code=400,
             detail={"error": "entry_rejected", "reason": str(receipt.reason)},
         )
+
+    if receipt_only:
+        return {
+            "accepted": True,
+            "message_id": user_mid,
+            "user_message_id": user_mid,
+            "assistant_message_id": assistant_message_id or "",
+            "attempt_id": attempt_id,
+            "session_id": receipt.session_id or session_id,
+        }
 
     # ── ②-b receipt 路径（R2.1c，E1=C）────────────────────────
     # 消费者在跑且未要求 wait：用户消息此刻落库，答案经 run.answer 由
@@ -624,21 +739,96 @@ def _install_chat_event_bridge(
             _bridge_body(kind, data)
         finally:
             # 收尾事件 → 本 turn 结束 → 注销，防累积/重复推送
-            if kind in ("run.answer", "run.failed"):
+            if kind in (
+                "run.answer", "run.failed", "run.cancelled", "run.fenced",
+            ):
                 _close()
             elif kind == "run.settled" and (
                 data.get("fenced") or not data.get("ok", True)
             ):
                 _close()
 
+    def _update_attempt(
+        data: dict,
+        status: str,
+        *,
+        summary: str | None = None,
+        error: str = "",
+    ) -> None:
+        attempt_id = data.get("attempt_id")
+        if service is None or not isinstance(attempt_id, str) or not attempt_id:
+            return
+        try:
+            attempt = service.store.get_attempt(session_id, attempt_id)
+            if attempt is None:
+                logger.warning("Gateway event references missing Attempt %s", attempt_id)
+                return
+            if status == "running":
+                attempt.mark_running()
+            elif status == "completed":
+                attempt.mark_completed(summary)
+            elif status == "cancelled":
+                attempt.mark_cancelled()
+            elif status == "failed":
+                attempt.mark_failed(error or "Gateway run failed")
+            else:
+                raise ValueError(f"unsupported Attempt status: {status}")
+            service.store.update_attempt(attempt)
+            lifecycle_event = {
+                "running": ("attempt.started", {
+                    "attempt_id": attempt_id,
+                    "message_id": str(attempt.message_id or ""),
+                }),
+                "completed": ("attempt.completed", {
+                    "attempt_id": attempt_id,
+                    "status": "completed",
+                    "summary": summary or "",
+                }),
+                "cancelled": ("attempt.failed", {
+                    "attempt_id": attempt_id,
+                    "status": "cancelled",
+                }),
+                "failed": ("attempt.failed", {
+                    "attempt_id": attempt_id,
+                    "status": "error",
+                    "error": error or "Gateway run failed",
+                }),
+            }[status]
+            try:
+                service.event_bus.emit(
+                    session_id,
+                    lifecycle_event[0],
+                    lifecycle_event[1],
+                )
+            except Exception:  # noqa: BLE001 — lifecycle event failure is observable
+                logger.warning(
+                    "Gateway Attempt event failed for %s", attempt_id, exc_info=True,
+                )
+        except Exception:  # noqa: BLE001 — bookkeeping must not stop chat delivery
+            logger.warning(
+                "Gateway Attempt update failed for %s", attempt_id, exc_info=True,
+            )
+
     def _bridge_body(kind: str, data: dict) -> None:
-        # **批次 V3-b**：run_id 就是 assistant message id（run.answer 落库
-        # 时用它作 message_id）。在 run.started 就把 holder 置上——此后的
+        if kind == "run.started":
+            _update_attempt(data, "running")
+        elif kind == "run.answer":
+            _update_attempt(
+                data, "completed", summary=str(data.get("content") or ""),
+            )
+        elif kind == "run.failed":
+            _update_attempt(data, "failed", error=str(data.get("error") or ""))
+        elif kind == "run.cancelled":
+            _update_attempt(data, "cancelled")
+        elif kind == "run.fenced":
+            _update_attempt(data, "failed", error=str(data.get("reason") or ""))
+
+        # 在 run.started 就把 assistant message ID 写入 holder——此后的
         # 流式事件（text_delta / thinking_delta / tool_call）经 setdefault 拿到
         # message_id，前端按 text_id/think_id 路由的 handlers 才能落件。
         # 此前 holder 到 run.answer 才置，整个流式阶段的 chunk 全部无主。
         if kind == "run.started" and not message_id_holder.get("id"):
-            mid = str(data.get("run_id") or "")
+            mid = str(data.get("assistant_message_id") or data.get("run_id") or "")
             if mid:
                 message_id_holder["id"] = mid
                 # **W3**：占位 seed——前端 `messageReceived` 只有在事件带
@@ -660,7 +850,7 @@ def _install_chat_event_bridge(
                         logger.debug("assistant seed push failed", exc_info=True)
         if persist:
             if kind == "run.answer":
-                mid = str(data.get("run_id") or "")
+                mid = str(data.get("assistant_message_id") or data.get("run_id") or "")
                 message_id_holder["id"] = mid
                 if service is not None:
                     try:
@@ -677,16 +867,19 @@ def _install_chat_event_bridge(
                     "message_id": mid, "status": "completed",
                 }, session_id)
                 return
-            if kind == "run.failed" or (
-                kind == "run.settled" and data.get("fenced")
+            if kind in ("run.failed", "run.fenced", "run.cancelled") or (
+                kind == "run.settled" and (data.get("fenced") or data.get("cancelled"))
             ):
-                mid = str(data.get("run_id") or "")
+                mid = str(data.get("assistant_message_id") or data.get("run_id") or "")
                 reason = str(data.get("error") or data.get("reason") or "")
-                _push_sse("error", {
-                    "message_id": mid, "error": reason,
-                }, session_id)
+                cancelled = kind == "run.cancelled" or data.get("cancelled")
+                if not cancelled:
+                    _push_sse("error", {
+                        "message_id": mid, "error": reason,
+                    }, session_id)
                 _push_sse("agent_done", {
-                    "message_id": mid, "status": "error",
+                    "message_id": mid,
+                    "status": "cancelled" if cancelled else "error",
                 }, session_id)
                 return
 
@@ -747,8 +940,9 @@ async def send_sync(body: ChatMessage, request: Request):
     wait = (request.query_params.get("wait") or "").strip().lower() in (
         "1", "true", "yes",
     )
+    gateway_options = _gateway_chat_options(body)
     return await _send_via_gateway(
-        body.session_id, body.content, wait=wait, mode=body.mode,
+        body.session_id, body.content, wait=wait, **gateway_options,
     )
 
 
@@ -806,7 +1000,7 @@ async def list_active_attempts(
     session_id: str = Query(...),
     request: Request = None,
 ):
-    """Non-terminal attempts for a session (reload recovery).
+    """Live and recent failed Attempts for a session (reload recovery).
 
     The frontend calls this after loading messages to rebuild its
     streaming/queued state: a page reload loses ``streamingMessageId``
@@ -817,13 +1011,42 @@ async def list_active_attempts(
     Returns ``{"attempts": [...]}`` with each entry:
     ``{attempt_id, message_id, status: "running"|"queued", prompt,
     created_at}`` — oldest first. Zombie rows (server restart) are
-    filtered out by in-memory guards inside SessionService.
+    filtered by the Gateway's live mailbox/run state.
     """
     from agentnodes.interfaces.api.routers.web_session import _fetch_session_owned, _get_db
     user_id = getattr(request.state, "user_id", "anonymous")
     _fetch_session_owned(_get_db(), session_id, user_id)
     service = _get_session_service()
-    return {"attempts": service.list_active_attempts(session_id)}
+    gateway = _get_gateway()
+    attempts = service.store.list_attempts_by_status(
+        session_id,
+        [
+            AttemptStatus.PENDING.value,
+            AttemptStatus.RUNNING.value,
+            AttemptStatus.FAILED.value,
+        ],
+    )
+    live = []
+    failed_count = 0
+    for attempt in attempts:
+        if attempt.status == AttemptStatus.FAILED:
+            failed_count += 1
+            if failed_count > 5:
+                continue
+            status = "failed"
+        else:
+            status = gateway.attempt_state(session_id, str(attempt.attempt_id))
+            if status is None:
+                continue
+        live.append({
+            "attempt_id": str(attempt.attempt_id),
+            "message_id": str(attempt.message_id or ""),
+            "status": status,
+            "prompt": attempt.prompt[:200] if attempt.prompt else "",
+            "created_at": attempt.created_at,
+            "error": attempt.error or "",
+        })
+    return {"attempts": live}
 
 
 @router.get("/session/{session_id}/available_actions")
@@ -832,11 +1055,19 @@ async def chat_available_actions(session_id: str, request: Request):
     from agentnodes.interfaces.api.routers.web_session import _fetch_session_owned, _get_db
     user_id = getattr(request.state, "user_id", "anonymous")
     _fetch_session_owned(_get_db(), session_id, user_id)
-    service = _get_session_service()
+    state = _get_gateway().chat_session_state(session_id)
+    is_processing = state["active"] or state["pending"]
+    actions = []
+    if is_processing:
+        actions.append({"name": "cancel", "label": "取消", "destructive": "false"})
+    if state["paused"]:
+        actions.append({"name": "resume", "label": "恢复", "destructive": "false"})
+    if not is_processing and not state["paused"]:
+        actions.append({"name": "send", "label": "发送", "destructive": "false"})
     return {
         "status": "ok",
         "session_id": session_id,
-        "actions": service.get_available_actions(session_id),
+        "actions": actions,
     }
 
 

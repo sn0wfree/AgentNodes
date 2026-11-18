@@ -118,6 +118,11 @@ class SessionController:
         # **W4**：per-turn 迭代上限覆盖（payload["max_iterations"]，/send 的
         # plan 模式传 1）。None = 用构造值 self._max_iterations。
         self._turn_max_iterations: int | None = None
+        self._turn_model: str | None = None
+        self._turn_system_prompt: str | None = None
+        self._turn_role: str | None = None
+        self._turn_allowed_tools: list[str] | None = None
+        self._turn_config: Any | None = None
         self._turn_counters: dict[str, int] = {}  # session_id -> 已发 turn 数
 
     # ── 驱动 ─────────────────────────────────────────────
@@ -206,6 +211,11 @@ class SessionController:
         self._turn_counters[session_id] = self._turn_counters.get(session_id, 0) + 1
         turn_id = f"{session_id}#{self._turn_counters[session_id]}"
         run_id = f"{turn_id}:r0"
+        run_meta: dict[str, Any] = {"session_id": session_id}
+        for key in ("attempt_id", "assistant_message_id"):
+            value = request.payload.get(key)
+            if isinstance(value, str) and value:
+                run_meta[key] = value
 
         # B2：session_key 进事件——fold 恢复 EntryPoint._sessions 映射的
         # 唯一来源（增量字段，向后兼容）。
@@ -214,7 +224,11 @@ class SessionController:
             "session_id": session_id,
             "session_key": request.session_key,
         })
-        self._sink("run.started", {"run_id": run_id, "kind": request.kind.value})
+        self._sink("run.started", {
+            "run_id": run_id,
+            "kind": request.kind.value,
+            **run_meta,
+        })
         # R1 fence ①：认领即超越（INV-5）。域=物理 session id（R3：chat 与
         # automation 同域互斥）。None = 不设防（直构测试路径）。
         fence_domain = _fence_domain(request.session_key)
@@ -253,6 +267,16 @@ class SessionController:
         self._turn_max_iterations = (
             int(_raw_iter) if isinstance(_raw_iter, (int, float)) else None
         )
+        self._turn_model = _payload_string(request, "model")
+        self._turn_system_prompt = _payload_string(request, "system_prompt")
+        self._turn_role = _payload_string(request, "role")
+        self._turn_config = None
+        _allowed_tools = request.payload.get("allowed_tools")
+        self._turn_allowed_tools = (
+            [name for name in _allowed_tools if isinstance(name, str)]
+            if isinstance(_allowed_tools, list)
+            else None
+        )
         engine = self._build_engine()
         # P5-1：payload 可携带已格式化历史（旧路径 _convert_messages_to_history 的
         # 输出同构）。顺序：历史在前、当前输入在后——调用方须在 emit 本轮事件
@@ -274,6 +298,12 @@ class SessionController:
             "turn_id": turn_id,
             "run_id": run_id,
         }
+        for key in (
+            "attempt_id", "assistant_message_id", "mode", "thinking",
+        ):
+            value = request.payload.get(key)
+            if value is not None:
+                state[key] = value
         # R2.2：steer 注入通道——执行引擎在安全点 drain（只追加）。
         mailbox = self._ep.mailbox_for(request.session_key)
         if mailbox is not None:
@@ -294,8 +324,12 @@ class SessionController:
             if token is not None:
                 # 本 run 已死：释放以免挡住同 session 的下一个 turn。
                 self._fence.release(token)
-            self._sink("run.failed", {"run_id": run_id, "error": str(exc)})
-            self._sink("run.settled", {"run_id": run_id, "ok": False})
+            self._sink("run.failed", {
+                "run_id": run_id, "error": str(exc), **run_meta,
+            })
+            self._sink("run.settled", {
+                "run_id": run_id, "ok": False, **run_meta,
+            })
             self._settle_assignment(assignment, run_id, "failed", reason=str(exc))
             return RunResult(turn_id, run_id, ok=False, error=str(exc))
         finally:
@@ -313,11 +347,11 @@ class SessionController:
                 mailbox.promote_steer()
             self._sink("run.cancelled", {
                 "run_id": run_id,
-                "session_id": session_id,
                 "reason": scope.reason or "interrupt",
+                **run_meta,
             })
             self._sink("run.settled", {
-                "run_id": run_id, "ok": False, "cancelled": True,
+                "run_id": run_id, "ok": False, "cancelled": True, **run_meta,
             })
             self._settle_assignment(
                 assignment, run_id, "waiting",
@@ -336,11 +370,11 @@ class SessionController:
             if not verdict.ok:
                 self._sink("run.fenced", {
                     "run_id": run_id,
-                    "session_id": session_id,
                     "reason": verdict.reason,
+                    **run_meta,
                 })
                 self._sink("run.settled", {
-                    "run_id": run_id, "ok": False, "fenced": True,
+                    "run_id": run_id, "ok": False, "fenced": True, **run_meta,
                 })
                 self._settle_assignment(
                     assignment, run_id, "dropped",
@@ -356,7 +390,9 @@ class SessionController:
         # 上方提前 return，陈旧答案不会出现在事件流里。消费方：
         # chat bridge 据此发 assistant_message（消费者模型下请求线程
         # 看不到 RunResult，事件流是答案的唯一通道）。
-        self._sink("run.answer", {"run_id": run_id, "content": answer})
+        self._sink("run.answer", {
+            "run_id": run_id, "content": answer, **run_meta,
+        })
 
         # R2.2：turn 收尾——未被安全点消费的 steer 转正常队（不丢消息）。
         if mailbox is not None:
@@ -364,7 +400,12 @@ class SessionController:
 
         self._sink(
             "run.settled",
-            {"run_id": run_id, "ok": True, "answer_chars": len(answer)},
+            {
+                "run_id": run_id,
+                "ok": True,
+                "answer_chars": len(answer),
+                **run_meta,
+            },
         )
         self._settle_assignment(assignment, run_id, "ready")
         return RunResult(turn_id, run_id, ok=True, answer=answer)
@@ -416,6 +457,8 @@ class SessionController:
         system = self._resolve_system_prompt()
         engine = GraphEngine(sink=self._sink)
         if self._registry is not None:
+            import dataclasses
+
             from agentnodes.foundation.llm import LLMConfig
             from agentnodes.kernel.agent.factory.harness_resolver import (
                 apply_compaction_overrides,
@@ -430,6 +473,20 @@ class SessionController:
             # client 可能没有 ``.config``（测试脚本替身）——退化最小配置；
             # 真正的请求走注入的 client（下方整体替换 ``loop.client``）。
             config = getattr(self._client, "config", None) or LLMConfig(api_key="")
+            turn_client = self._client
+            if self._turn_model:
+                if not dataclasses.is_dataclass(config):
+                    raise RuntimeError(
+                        "Gateway client does not support per-request model overrides"
+                    )
+                config = dataclasses.replace(config, model=self._turn_model)
+                from agentnodes.foundation.llm.openai_client import OpenAICompatClient
+
+                turn_client = OpenAICompatClient(
+                    config,
+                    transport=getattr(self._client, "_transport", None),
+                )
+            self._turn_config = config
 
             # 压缩配置：装配期按 task_signature 应用 harness 覆盖（施工方案
             # §4.7，与原 ``_build_compactor`` 同一语义）；None 时 AgentLoop
@@ -443,8 +500,8 @@ class SessionController:
             # **W3**：流式自适应——调用方要流式但 client 不支持（测试假件
             # 只有 ``chat``）时降级为非流式，而非在 LLM 调用时炸出
             # AttributeError。生产 client（OpenAICompatClient）四件套齐全。
-            _can_stream = hasattr(self._client, "astream") or hasattr(
-                self._client, "stream"
+            _can_stream = hasattr(turn_client, "astream") or hasattr(
+                turn_client, "stream"
             )
 
             loop = AgentLoop(
@@ -453,6 +510,7 @@ class SessionController:
                 workspace=self._workspace,
                 session_id=self._current_session_id or None,
                 system_prompt=system,
+                allowed_tools=self._turn_allowed_tools,
                 stream_mode=self._stream and _can_stream,
                 # **W4**：per-turn 覆盖优先（plan 模式 = 1），否则构造值
                 # （singleton 按 LLMConfig.max_iterations 装配，默认 50）。
@@ -478,7 +536,7 @@ class SessionController:
             # client 注入：AgentLoop 构造器自建 client；换成调用方的同一个
             # （生产 = ModelHub 解析实例；测试 = 脚本化假 client）。骨架
             # 引擎要 ``achat``/``astream``——原生四件套直通，否则包兼容壳。
-            loop.client = wrap_async_capable_client(self._client)
+            loop.client = wrap_async_capable_client(turn_client)
             # 权限闸挂载（chat_loop 同型的防御式 setattr）。
             for _attr, _val in (
                 ("_permission_evaluator", self._permission_evaluator),
@@ -515,7 +573,7 @@ class SessionController:
         8_000 fallback: chat was compressing at 8k tokens instead of 80% of
         the model window, while AgentLoop (which reads LLMConfig) was not.
         """
-        cfg = getattr(self._client, "config", None)
+        cfg = self._turn_config or getattr(self._client, "config", None)
         return (
             getattr(cfg, "model_context_tokens", None),
             getattr(cfg, "model_max_output_tokens", None),
@@ -539,6 +597,8 @@ class SessionController:
         engaged only for the react path (registry present), where the
         AgentLoop chat path would also have rendered a role prompt.
         """
+        if self._turn_system_prompt is not None:
+            return self._turn_system_prompt
         if self._system is not None:
             return self._system
         if self._registry is None:
@@ -553,7 +613,7 @@ class SessionController:
             # - 用 ``get_definitions_for`` 裁剪 tool_set
             # 空 signature 时两者都与改动前逐字节一致。
             assembly = assemble_loop_parts(
-                role=self._role,
+                role=self._turn_role or self._role,
                 registry=self._registry,
                 extra_context=self._extra_context,
                 workspace=self._workspace,
@@ -630,6 +690,11 @@ class SessionController:
         except Exception as exc:  # noqa: BLE001 — 上下文失败不阻断 chat
             self._sink("context.inject_failed", {"error": str(exc)})
             return messages
+
+
+def _payload_string(request: WorkRequest, key: str) -> str | None:
+    value = request.payload.get(key)
+    return value if isinstance(value, str) else None
 
 
 def _payload_text(request: WorkRequest) -> str:

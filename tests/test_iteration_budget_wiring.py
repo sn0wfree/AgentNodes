@@ -1,8 +1,9 @@
-"""Tests for the chat iteration-budget wiring (context-overflow Fix2).
+"""Tests for chat iteration-budget wiring.
 
 Verifies:
-- send_async reads max_iterations from LLMConfig (not the unbounded
-  legacy default) and passes it to send_message.
+- SessionService retains a bounded iteration budget for legacy callers.
+- Gateway receives its build budget from singleton configuration; plan
+  requests carry a one-iteration per-turn override.
 - send_message defaults to a bounded budget (50) rather than
   9999999999, so a failing tool loop cannot grow the prompt unboundedly.
 - _run_with_agent forwards max_iterations to AgentLoop unchanged.
@@ -39,63 +40,48 @@ class TestLLMConfigDefaults(unittest.TestCase):
         assert LLMConfig().agent_max_iterations == 9999
 
 
-class TestSendAsyncPassesConfigBudget(unittest.TestCase):
-    """send_async must pass LLMConfig.max_iterations (not the default)."""
+class TestGatewayTurnBudget(unittest.TestCase):
+    """Gateway requests carry only mode-specific iteration overrides."""
 
-    async def _run_send_async(self, cfg_max_iterations):
+    @staticmethod
+    def _run_gateway_submit(mode):
+        from types import SimpleNamespace
         from agentnodes.interfaces.api.routers import chat as chat_router
+        from agentnodes.kernel.orchestration import Receipt
 
-        captured = {}
+        entry = SimpleNamespace(submit=MagicMock(return_value=Receipt.ok("s1")))
+        gateway = SimpleNamespace(
+            entry=entry,
+            consumer_running=MagicMock(return_value=False),
+            add_sink=MagicMock(return_value=lambda: None),
+        )
+        service = SimpleNamespace(
+            store=SimpleNamespace(get_messages=MagicMock(return_value=[])),
+            _convert_messages_to_history=MagicMock(return_value=[]),
+        )
 
-        async def fake_send_message(session_id, content, **kwargs):
-            captured["max_iterations"] = kwargs.get("max_iterations")
-            return {
-                "message_id": "m1",
-                "attempt_id": "a1",
-                "user_message_id": "um1",
-                "assistant_message_id": "am1",
-            }
+        async def submit():
+            with (
+                patch.object(chat_router, "_get_gateway", return_value=gateway),
+                patch.object(chat_router, "_get_session_service", return_value=service),
+                patch.object(chat_router, "_build_llm_config", return_value=None),
+            ):
+                await chat_router._send_via_gateway(
+                    "s1", "hello", mode=mode, receipt_only=True,
+                )
+            request = entry.submit.call_args.args[0]
+            return request.payload.get("max_iterations")
 
-        class _Body:
-            session_id = "s1"
-            content = "hello"
-            agent_id = None
-            mode = "build"
-            model = None
-            thinking = "auto"
-
-        class _Request:
-            state = MagicMock(user_id="u1")
-
-        with (
-            patch.object(
-                LLMConfig,
-                "load",
-                return_value=LLMConfig(max_iterations=cfg_max_iterations),
-            ),
-            patch("agentnodes.interfaces.api.routers.web_session._fetch_session_owned", return_value=None),
-            patch("agentnodes.interfaces.api.routers.web_session._get_db", return_value=MagicMock()),
-            patch("agentnodes.interfaces.api.routers.chat._get_session_service", return_value=MagicMock(send_message=fake_send_message)),
-            # _handle_goal_command 已随 apps/goal 移除（批次 2），不再需要 patch
-            patch("agentnodes.interfaces.api.routers.chat._handle_compact_command"),
-        ):
-            body = _Body()
-            await chat_router.send_async(body, _Request())
-
-        return captured.get("max_iterations")
-
-    def test_passes_config_value(self):
         import asyncio
 
-        result = asyncio.run(self._run_send_async(30))
-        assert result == 30
+        return asyncio.run(submit())
 
-    def test_passes_default_when_config_unset(self):
-        import asyncio
+    def test_build_uses_gateway_default_budget(self):
+        # Build mode uses the Gateway's singleton-configured budget.
+        assert self._run_gateway_submit("build") is None
 
-        # LLMConfig() with no overrides → default 50
-        result = asyncio.run(self._run_send_async(50))
-        assert result == 50
+    def test_plan_overrides_budget_with_one_iteration(self):
+        assert self._run_gateway_submit("plan") == 1
 
 
 class TestRunWithAgentForwardsBudget(unittest.TestCase):

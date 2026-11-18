@@ -78,6 +78,35 @@ def test_api_chat_payload_has_only_text():
     assert set(req.payload) == {"text"}
 
 
+def test_api_chat_adapter_preserves_compatibility_fields():
+    req = api_chat_request(
+        "s",
+        "内容",
+        queue_mode=QueueMode.FOLLOWUP,
+        attempt_id="attempt-1",
+        assistant_message_id="message-1",
+        model="model-x",
+        system_prompt="persona prompt",
+        role="reviewer",
+        allowed_tools=["read_file"],
+        mode="plan",
+        thinking="on",
+    )
+
+    assert req.queue_mode is QueueMode.FOLLOWUP
+    assert req.payload == {
+        "text": "内容",
+        "attempt_id": "attempt-1",
+        "assistant_message_id": "message-1",
+        "model": "model-x",
+        "system_prompt": "persona prompt",
+        "role": "reviewer",
+        "allowed_tools": ["read_file"],
+        "mode": "plan",
+        "thinking": "on",
+    }
+
+
 def test_mcp_payload_passed_through_as_copy():
     original = {"q": 1, "nested": {"a": 2}}
     req = mcp_request("c", original)

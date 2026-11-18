@@ -20,7 +20,7 @@ from pathlib import Path
 
 import pytest
 
-from agentnodes.kernel.agent.event_store import EventStore
+from agentnodes.kernel.session.state.event_store import EventStore
 from agentnodes.kernel.events.event_v2 import EventV2
 from agentnodes.kernel.orchestration.contracts import (
     PROTOCOL_VERSION,

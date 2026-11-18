@@ -3,6 +3,8 @@
 import sqlite3
 import time
 import uuid
+from types import SimpleNamespace
+from unittest.mock import AsyncMock, Mock, patch
 
 import pytest
 from fastapi.testclient import TestClient
@@ -89,28 +91,24 @@ class TestWebSession:
 
 
 class TestChatAPI:
-    def _stub_send(self, status="processing"):
-        """Stub the session service so send_async never starts a real
-        AgentLoop background task (which would block TestClient close)."""
-        from unittest.mock import MagicMock, patch
-
-        svc = MagicMock()
-        async def _send(*args, **kwargs):
-            return {
-                "message_id": "m1",
-                "user_message_id": "um1",
-                "assistant_message_id": "am1",
-                "event_id": "e1",
-                "status": status,
-            }
-        svc.send_message = _send
-        return patch("agentnodes.interfaces.api.routers.chat._get_session_service",
-                     return_value=svc)
-
     def test_send_async(self, client):
         # Session must exist before sending (ownership check)
         sid = client.post("/api/chat/session", json={"title": "S"}).json()["id"]
-        with self._stub_send():
+        import agentnodes.interfaces.api.routers.chat as chat_router
+
+        submit = AsyncMock(return_value={"accepted": True})
+        gateway = SimpleNamespace(
+            attempt_state=Mock(return_value="queued"),
+            entry=SimpleNamespace(
+                mailbox_for=Mock(
+                    return_value=SimpleNamespace(peek_depth=Mock(return_value=1)),
+                ),
+            ),
+        )
+        with (
+            patch.object(chat_router, "_send_via_gateway", submit),
+            patch.object(chat_router, "_get_gateway", return_value=gateway),
+        ):
             res = client.post("/api/chat/send_async", json={
                 "session_id": sid,
                 "content": "Hello",
@@ -119,7 +117,8 @@ class TestChatAPI:
         data = res.json()
         assert "message_id" in data
         assert "event_id" in data
-        assert data["status"] == "processing"
+        assert data["status"] == "queued"
+        submit.assert_awaited_once()
 
 class TestSessionMessages:
     def test_create_session_with_new_fields(self, client):

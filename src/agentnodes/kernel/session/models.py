@@ -224,3 +224,8 @@ class Attempt:
         self.status = AttemptStatus.FAILED
         self.completed_at = _utc_now_iso()
         self.error = error
+
+    def mark_cancelled(self) -> None:
+        """Mark the attempt as cancelled."""
+        self.status = AttemptStatus.CANCELLED
+        self.completed_at = _utc_now_iso()

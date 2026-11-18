@@ -297,6 +297,15 @@ class SessionStore:
             )
             conn.commit()
 
+    def delete_attempt(self, attempt_id: str) -> None:
+        """Remove an Attempt that was prepared but rejected before admission."""
+        with self._conn() as conn:
+            conn.execute(
+                "DELETE FROM attempts WHERE attempt_id = ?",
+                (attempt_id,),
+            )
+            conn.commit()
+
     def get_attempt(self, session_id: str, attempt_id: str) -> Optional[Attempt]:
         """Read an Attempt by ID."""
         with self._conn() as conn:

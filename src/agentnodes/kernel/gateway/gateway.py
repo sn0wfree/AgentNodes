@@ -88,6 +88,7 @@ class Gateway:
         self._sink_lock = threading.Lock()
         self._turn_gen: dict[str, int] = {}      # session_id -> 已入队轮数
         self._turn_done_gen: dict[str, int] = {} # session_id -> 已完成轮数
+        self._active_attempts: dict[str, str] = {}  # session_id -> attempt_id
         # 构造时的 sink 进集合（与 add_sink 同路径，语义一致）。
         if sink is not None:
             self._sinks.add(sink)
@@ -240,6 +241,22 @@ class Gateway:
 
     def _combined_sink(self, kind: str, data: dict) -> None:
         self._default_sink(kind, data)
+        if kind == "run.started":
+            session_id = str(data.get("session_id") or "")
+            attempt_id = data.get("attempt_id")
+            if session_id and isinstance(attempt_id, str) and attempt_id:
+                with self._sink_lock:
+                    self._active_attempts[session_id] = attempt_id
+        elif kind in ("run.settled", "run.interrupted"):
+            session_id = str(data.get("session_id") or "")
+            attempt_id = data.get("attempt_id")
+            if session_id:
+                with self._sink_lock:
+                    if (
+                        attempt_id is None
+                        or self._active_attempts.get(session_id) == attempt_id
+                    ):
+                        self._active_attempts.pop(session_id, None)
         # 阶段一 §2.8：Worker Slot 订阅——只订阅事件，不读 Ticket 表。
         # 放在默认 sink 之后、外部 sink 之前：slot 状态先更新，外部
         # 观察者看到的 slot 表已是本事件的后果。
@@ -308,11 +325,66 @@ class Gateway:
         return True
 
     def cancel_session(self, session_id: str, *, reason: str = "user") -> bool:
-        """对外取消 API：取消该 session 的活跃 run（幂等）。
+        """取消活跃 run 并暂停该 chat mailbox，避免继续消费后续 turn。
 
-        返回 True=已发出取消信号；False=当前无活跃 run（不报错）。
+        先暂停 mailbox 再发取消信号，确保取消收尾后消费者不会取走下一项。
+        返回 True=发现活跃 run 或待处理工单；False=会话当前空闲。
         """
-        return self._cancel_active_run(session_id, reason)
+        session_key = f"chat:{session_id}"
+        mailbox = self.entry.mailbox_for(session_key)
+        active_run_id = self.fence.active_run(session_id)
+        has_pending = mailbox.has_pending() if mailbox is not None else False
+        if not active_run_id and not has_pending:
+            return False
+
+        if mailbox is not None:
+            mailbox.pause()
+        cancelled = self._cancel_active_run(session_id, reason)
+        self._combined_sink("queue_paused", {
+            "session_id": session_id,
+            "run_id": str(active_run_id or ""),
+        })
+        return bool(active_run_id or cancelled or has_pending)
+
+    def pause_session(self, session_id: str) -> bool:
+        """暂停已有 chat mailbox；不会创建新 session 或 mailbox。"""
+        return self.entry.pause_session(f"chat:{session_id}")
+
+    def resume_session(self, session_id: str) -> bool:
+        """恢复 chat mailbox 并唤醒 Gateway 消费者。"""
+        resumed = self.entry.resume_session(f"chat:{session_id}")
+        if resumed:
+            self._combined_sink("queue_resumed", {"session_id": session_id})
+            self._consumer_wake.set()
+        return resumed
+
+    def chat_session_state(self, session_id: str) -> dict[str, bool]:
+        """Return live activity, pending-work, and pause state for a chat session."""
+        mailbox = self.entry.mailbox_for(f"chat:{session_id}")
+        return {
+            "active": self.fence.active_run(session_id) is not None,
+            "pending": mailbox.has_pending() if mailbox is not None else False,
+            "paused": mailbox.is_paused if mailbox is not None else False,
+        }
+
+    def attempt_state(self, session_id: str, attempt_id: str) -> str | None:
+        """Return ``running``/``queued`` for a live Gateway attempt, else None."""
+        with self._sink_lock:
+            if self._active_attempts.get(session_id) == attempt_id:
+                return "running"
+        mailbox = self.entry.mailbox_for(f"chat:{session_id}")
+        if mailbox is None:
+            mailbox = next(
+                (
+                    candidate
+                    for key, candidate in self.entry.iter_mailboxes()
+                    if self.entry.session_id_for(key) == session_id
+                ),
+                None,
+            )
+        if mailbox is not None and attempt_id in mailbox.pending_attempt_ids():
+            return "queued"
+        return None
 
     # ── E2：配置指纹进事件流 ─────────────────────────────
 
@@ -356,6 +428,10 @@ class Gateway:
             "active_run_id": run_id,
             "queued": (self.entry.mailbox_for(session_key).peek_depth()
                        if self.entry.mailbox_for(session_key) is not None else 0),
+            "paused": bool(
+                self.entry.mailbox_for(session_key)
+                and self.entry.mailbox_for(session_key).is_paused
+            ),
             "last_turn_id": last.turn_id if last else "",
             "last_ok": (last.ok if last else None),
             "last_answer": (last.answer if last else ""),

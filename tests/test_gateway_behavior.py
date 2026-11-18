@@ -13,6 +13,7 @@
 """
 from __future__ import annotations
 
+import threading
 from dataclasses import dataclass, field
 from datetime import datetime, timedelta, timezone
 
@@ -31,7 +32,6 @@ from agentnodes.kernel.orchestration import (
     WorkKind,
     WorkRequest,
 )
-
 
 # ── 假件 ─────────────────────────────────────────────────
 
@@ -95,6 +95,33 @@ def test_empty_queue_run_returns_nothing():
     assert events.kinds() == []  # 无工单不产生事件
 
 
+def test_chat_session_state_combines_gateway_activity_and_mailbox_state():
+    gw, _, _ = make_gateway()
+    assert gw.chat_session_state("s1") == {
+        "active": False,
+        "pending": False,
+        "paused": False,
+    }
+
+    gw.entry.submit(api_chat_request(
+        "s1", "queued", queue_mode=QueueMode.FOLLOWUP,
+    ))
+    assert gw.chat_session_state("s1") == {
+        "active": False,
+        "pending": True,
+        "paused": False,
+    }
+
+    token = gw.fence.claim("s1", "run-1")
+    gw.pause_session("s1")
+    assert gw.chat_session_state("s1") == {
+        "active": True,
+        "pending": True,
+        "paused": True,
+    }
+    gw.fence.release(token)
+
+
 def test_repeated_run_once_after_drain_is_noop():
     gw, events, client = make_gateway()
     gw.entry.submit(api_chat_request("s", "q"))
@@ -141,6 +168,23 @@ def test_event_order_is_causally_correct():
     assert kinds.index("turn.admitted") < kinds.index("run.started")
     assert kinds.index("run.started") < kinds.index("node.started")
     assert kinds.index("node.completed") < kinds.index("run.settled")
+
+
+def test_run_events_preserve_attempt_correlation_ids():
+    gw, events, _ = make_gateway()
+    gw.entry.submit(api_chat_request(
+        "s",
+        "q",
+        queue_mode=QueueMode.FOLLOWUP,
+        attempt_id="attempt-1",
+        assistant_message_id="assistant-1",
+    ))
+    gw.run_once()
+
+    for kind in ("run.started", "run.answer", "run.settled"):
+        [event] = events.of(kind)
+        assert event["attempt_id"] == "attempt-1"
+        assert event["assistant_message_id"] == "assistant-1"
 
 
 # ── B. 会话串行域 ────────────────────────────────────────
@@ -229,6 +273,96 @@ def test_deadline_expiry_before_execution():
     assert runs == []  # 过期项不执行
     assert events.of("work.expired")
     assert client.calls == []
+
+
+def test_pause_resume_preserves_queued_fifo_order():
+    gw, _, client = make_gateway()
+    gw.entry.submit(api_chat_request("s", "first"))
+    gw.entry.submit(api_chat_request("s", "second"))
+
+    assert gw.pause_session("s") is True
+    assert gw.run_once() == []
+    assert gw.session_status("chat:s")["paused"] is True
+    assert gw.entry.mailbox_for("chat:s").peek_depth() == 2
+
+    assert gw.resume_session("s") is True
+    runs = gw.run_once()
+    assert len(runs) == 2
+    assert [call[-1]["content"] for call in client.calls] == ["first", "second"]
+    assert gw.resume_session("s") is False
+
+
+def test_cancel_active_run_pauses_before_next_queued_turn():
+    started = threading.Event()
+    release = threading.Event()
+
+    class BlockingEngine:
+        def __init__(self) -> None:
+            self.calls = 0
+
+        def run(self, state):
+            self.calls += 1
+            if self.calls == 1:
+                started.set()
+                assert release.wait(timeout=3)
+            return {"answer": "done"}
+
+    engine = BlockingEngine()
+    events = Probe()
+    gw = Gateway(
+        client=FakeClient(),
+        sink=events,
+        engine_factory=lambda: engine,
+    )
+    active_receipt = gw.entry.submit(api_chat_request(
+        "s", "active", attempt_id="attempt-active",
+    ))
+
+    result: list = []
+    worker = threading.Thread(target=lambda: result.extend(gw.run_once()))
+    worker.start()
+    assert started.wait(timeout=3)
+    assert gw.attempt_state(
+        active_receipt.session_id, "attempt-active",
+    ) == "running"
+
+    queued_receipt = gw.entry.submit(api_chat_request(
+        "s", "queued", attempt_id="attempt-queued",
+    ))
+    assert queued_receipt.accepted
+    mailbox = gw.entry.mailbox_for("chat:s")
+    assert mailbox is not None
+    assert mailbox.pending_attempt_ids() == ("attempt-queued",)
+    assert gw.attempt_state(
+        active_receipt.session_id, "attempt-queued",
+    ) == "queued"
+
+    assert gw.cancel_session("s") is True
+    release.set()
+    worker.join(timeout=3)
+    assert not worker.is_alive()
+    assert len(result) == 1
+    assert result[0].error is not None
+    assert gw.entry.mailbox_for("chat:s").peek_depth() == 1
+    assert gw.attempt_state(active_receipt.session_id, "attempt-active") is None
+    assert gw.attempt_state(
+        active_receipt.session_id, "attempt-queued",
+    ) == "queued"
+    assert gw.run_once() == []
+    assert events.of("queue_paused")
+
+    assert gw.resume_session("s") is True
+    resumed = gw.run_once()
+    assert len(resumed) == 1
+    assert resumed[0].ok is True
+    assert gw.attempt_state(active_receipt.session_id, "attempt-queued") is None
+    assert engine.calls == 2
+
+
+def test_cancel_idle_session_does_not_create_or_pause_mailbox():
+    gw, _, _ = make_gateway()
+    assert gw.cancel_session("missing") is False
+    assert gw.entry.mailbox_for("chat:missing") is None
 
 
 # ── D. 错误与恢复 ────────────────────────────────────────

@@ -1,4 +1,4 @@
-"""SessionService: unified orchestration for chat (API + TUI).
+"""SessionService: session persistence and legacy Attempt execution compatibility.
 
 Borrowed from vibe_trading ``src/session/service.py``. Adapted to:
 - Reuse strategy-research's SQLite SessionStore instead of filesystem
@@ -54,11 +54,13 @@ from agentnodes.kernel.session.loop_events import (  # noqa: E402,F401
 
 
 class SessionService:
-    """Unified chat service used by both API and TUI paths.
+    """Session persistence service with a retained legacy execution API.
 
     Attributes:
         store: SQLite-backed SessionStore.
         event_bus: EventStore for event_log + SSE + projector flush.
+
+    Production API/TUI chat execution is routed through Gateway.
     """
 
     def __init__(
@@ -119,7 +121,7 @@ class SessionService:
         )
         return {"id": session_id, "title": title or "新会话"}
 
-    # ── Public entry point (shared by API and TUI) ─────────────────────
+    # ── Legacy chat entry point (compatibility only) ───────────────────
 
     async def send_message(
         self,

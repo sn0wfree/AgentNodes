@@ -6,6 +6,7 @@ session 解析由注入的 resolver 完成（E1 用内存表，全局登记索�
 """
 from __future__ import annotations
 
+import threading
 import uuid
 from typing import Callable, Iterable
 
@@ -55,10 +56,25 @@ class EntryPoint:
         self._mailboxes: dict[str, Mailbox] = {}
         self._sessions: dict[str, str] = {}  # session_key -> session_id
         self._idempotency: dict[str, tuple[str, Receipt]] = {}  # key -> (digest, receipt)
+        self._lock = threading.RLock()
 
     # ── 提交（快同步，契约 §5 不变量 8） ─────────────────
 
-    def submit(self, request: WorkRequest) -> Receipt:
+    def submit(
+        self,
+        request: WorkRequest,
+        *,
+        max_pending: int | None = None,
+    ) -> Receipt:
+        with self._lock:
+            return self._submit_locked(request, max_pending=max_pending)
+
+    def _submit_locked(
+        self,
+        request: WorkRequest,
+        *,
+        max_pending: int | None,
+    ) -> Receipt:
         reason = validate_work_request(request)
         if reason is not None:
             return Receipt.reject(reason)
@@ -100,6 +116,7 @@ class EntryPoint:
             request,
             resolve_session=self._resolve_session,
             is_session_active=active,
+            max_pending=max_pending,
         )
 
         if request.idempotency_key and receipt.accepted:
@@ -112,20 +129,36 @@ class EntryPoint:
     # ── 观测/消费（A2/E5 接线） ─────────────────────────
 
     def mailbox_for(self, session_key: str) -> Mailbox | None:
-        return self._mailboxes.get(session_key)
+        with self._lock:
+            return self._mailboxes.get(session_key)
+
+    def pause_session(self, session_key: str) -> bool:
+        """暂停已有会话 mailbox；不会因控制请求而惰性创建 mailbox。"""
+        with self._lock:
+            mailbox = self._mailboxes.get(session_key)
+            return mailbox.pause() if mailbox is not None else False
+
+    def resume_session(self, session_key: str) -> bool:
+        """恢复已有会话 mailbox；未暂停或不存在时返回 False。"""
+        with self._lock:
+            mailbox = self._mailboxes.get(session_key)
+            return mailbox.resume() if mailbox is not None else False
 
     def iter_mailboxes(self) -> Iterable[tuple[str, Mailbox]]:
         """遍历所有已建 mailbox（消费者清空队列用；快照语义）。"""
-        return tuple(self._mailboxes.items())
+        with self._lock:
+            return tuple(self._mailboxes.items())
 
     def session_id_for(self, session_key: str) -> str | None:
-        return self._sessions.get(session_key)
+        with self._lock:
+            return self._sessions.get(session_key)
 
     def restore_session(self, session_key: str, session_id: str) -> None:
         """B2：fold 恢复 session_key → uuid 映射（同 key 落回同一 aggregate）。"""
-        existing = self._sessions.get(session_key)
-        if existing is None:
-            self._sessions[session_key] = session_id
+        with self._lock:
+            existing = self._sessions.get(session_key)
+            if existing is None:
+                self._sessions[session_key] = session_id
 
     # ── 内部 ─────────────────────────────────────────────
 

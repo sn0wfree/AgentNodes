@@ -68,6 +68,7 @@ class RejectReason(str, Enum):
     UNSUPPORTED_QUEUE_MODE = "unsupported_queue_mode"
     IDEMPOTENCY_CONFLICT = "idempotency_conflict"
     PAYLOAD_PROTOCOL_FIELD = "payload_protocol_field"
+    QUEUE_FULL = "queue_full"
 
 
 DEFAULT_QUEUE_MODE: dict[SourceKind, QueueMode] = {
@@ -129,14 +130,23 @@ class Receipt:
     accepted: bool
     session_id: str = ""
     reason: RejectReason | None = None
+    current_size: int | None = None
 
     @staticmethod
     def ok(session_id: str) -> "Receipt":
         return Receipt(accepted=True, session_id=session_id)
 
     @staticmethod
-    def reject(reason: RejectReason) -> "Receipt":
-        return Receipt(accepted=False, reason=reason)
+    def reject(
+        reason: RejectReason,
+        *,
+        current_size: int | None = None,
+    ) -> "Receipt":
+        return Receipt(
+            accepted=False,
+            reason=reason,
+            current_size=current_size,
+        )
 
 
 def validate_work_request(req: WorkRequest) -> RejectReason | None:

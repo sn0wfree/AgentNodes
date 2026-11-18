@@ -253,6 +253,48 @@ def test_system_prompt_injected():
     assert client.calls[0][0] == {"role": "system", "content": "你是助手"}
 
 
+def test_per_turn_model_persona_and_tool_limits_reach_agent_loop(monkeypatch):
+    from types import SimpleNamespace
+
+    import agentnodes.foundation.llm.openai_client as openai_client
+    import agentnodes.kernel.agent.loop.core as loop_core
+    import agentnodes.kernel.runtimes.nodes.agent_loop_node as loop_node
+    from agentnodes.foundation.llm.config import LLMConfig
+
+    captured = {}
+
+    class ConfiguredClient:
+        def __init__(self, config, transport=None):
+            self.config = config
+            self.transport = transport
+
+    class StubLoop:
+        def __init__(self, **kwargs):
+            captured.update(kwargs)
+            self.client = None
+
+    monkeypatch.setattr(openai_client, "OpenAICompatClient", ConfiguredClient)
+    monkeypatch.setattr(loop_core, "AgentLoop", StubLoop)
+    monkeypatch.setattr(loop_node, "make_agent_loop_node", lambda _loop: lambda s: s)
+    monkeypatch.setattr(loop_node, "make_loop_event_sink", lambda sink: sink)
+    monkeypatch.setattr(loop_node, "wrap_async_capable_client", lambda client: client)
+
+    client = SimpleNamespace(config=LLMConfig(api_key="test", model="base"))
+    controller, _, _, _ = make_controller(client=client)
+    controller._registry = object()
+    controller._current_session_id = "session-1"
+    controller._turn_model = "model-override"
+    controller._turn_system_prompt = "persona prompt"
+    controller._turn_role = "researcher"
+    controller._turn_allowed_tools = ["read_file"]
+
+    controller._build_engine()
+
+    assert captured["config"].model == "model-override"
+    assert captured["system_prompt"] == "persona prompt"
+    assert captured["allowed_tools"] == ["read_file"]
+
+
 def test_no_system_prompt_added_when_none():
     controller, ep, _, client = make_controller()
     ep.submit(chat())

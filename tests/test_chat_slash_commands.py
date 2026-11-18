@@ -11,7 +11,8 @@ intercept is locked against future refactors of the routing layer.
 
 from __future__ import annotations
 
-from unittest.mock import AsyncMock, patch
+from types import SimpleNamespace
+from unittest.mock import AsyncMock, Mock, patch
 
 import pytest
 from fastapi.testclient import TestClient
@@ -156,19 +157,29 @@ class TestSlashCommandIntercepts:
         assert "/goal" not in assistant["content"]
 
     def test_clear_with_trailing_args_is_not_matched(
-        self, client: TestClient, auth_headers,
+        self, client: TestClient, auth_headers, monkeypatch,
     ) -> None:
         """``/clear foo`` must NOT short-circuit — only exact ``/clear``.
 
-        Guards the strict ``content.strip() == "/clear"`` equality check
-        against future loosening. The fallback path runs
-        ``SessionService.send_message`` (which we mock to raise — the
-        point is that ``memory_manager.clear`` was NOT awaited and the
-        regular path WAS attempted).
+        The exact ``/clear`` command clears memory; an argument-bearing
+        variant must instead be submitted as a normal Gateway turn.
         """
         sid = _new_session(client, auth_headers)
 
         clear_mock = AsyncMock(return_value=None)
+        submit = AsyncMock(return_value={"accepted": True})
+        gateway = SimpleNamespace(
+            attempt_state=Mock(return_value="queued"),
+            entry=SimpleNamespace(
+                mailbox_for=Mock(
+                    return_value=SimpleNamespace(peek_depth=Mock(return_value=1)),
+                ),
+            ),
+        )
+        import agentnodes.interfaces.api.routers.chat as chat_router
+        monkeypatch.setattr(chat_router, "_send_via_gateway", submit)
+        monkeypatch.setattr(chat_router, "_get_gateway", lambda: gateway)
+
         with patch(
             "agentnodes.kernel.session.state.memory_manager.get_default_memory_manager",
             return_value=type(
@@ -177,24 +188,15 @@ class TestSlashCommandIntercepts:
                 {"clear": clear_mock, "get": AsyncMock(return_value=[])},
             )(),
         ):
-            import agentnodes.interfaces.api.routers.chat as chat_router
             chat_router._session_service_cache.clear()
-            real_service = chat_router._get_session_service()
-            real_service.send_message = AsyncMock(  # type: ignore[attr-defined]
-                side_effect=RuntimeError("queue_full_or_llm_unconfigured"),
+            response = client.post(
+                "/api/chat/send_async",
+                json={"session_id": sid, "content": "/clear foo"},
+                headers=auth_headers,
             )
 
-            # The mock raises inside send_async — TestClient surfaces
-            # that as a 500 (Starlette re-raises in this async path).
-            # Either way the side-effect assertions below are the real
-            # contract: the clear handler must not have run, and the
-            # regular send_message path must have been attempted.
-            with pytest.raises(RuntimeError, match="queue_full_or_llm_unconfigured"):
-                client.post(
-                    "/api/chat/send_async",
-                    json={"session_id": sid, "content": "/clear foo"},
-                    headers=auth_headers,
-                )
-
-            clear_mock.assert_not_called()
-            real_service.send_message.assert_awaited_once()  # type: ignore[attr-defined]
+        assert response.status_code == 200, response.text
+        assert response.json()["status"] == "queued"
+        clear_mock.assert_not_awaited()
+        submit.assert_awaited_once()
+        assert submit.call_args.kwargs["queue_mode"].value == "followup"

@@ -15,6 +15,7 @@ from __future__ import annotations
 
 import asyncio
 import uuid
+from types import SimpleNamespace
 
 import pytest
 from fastapi.testclient import TestClient
@@ -134,6 +135,15 @@ def client(monkeypatch, session_service):
     from agentnodes.interfaces.api.routers import chat as chat_router
 
     monkeypatch.setattr(chat_router, "_get_session_service", lambda: session_service)
+    states = {}
+    monkeypatch.setattr(
+        chat_router,
+        "_get_gateway",
+        lambda: SimpleNamespace(
+            attempt_state=lambda _session_id, attempt_id: states.get(attempt_id),
+        ),
+    )
+    session_service._gateway_attempt_states = states
     app = create_app()
     c = TestClient(app)
     c.headers.update({"Authorization": f"Bearer {create_token('admin')}"})
@@ -145,6 +155,7 @@ def test_endpoint_returns_attempts(client, session_service):
     sid = r.json()["id"]
     a = _insert_attempt(session_service.store, sid, AttemptStatus.RUNNING, "2026-01-01T00:00:01")
     session_service._active_loops[a.attempt_id] = asyncio.Task
+    session_service._gateway_attempt_states[a.attempt_id] = "running"
 
     r2 = client.get(f"/api/chat/attempts?session_id={sid}")
     assert r2.status_code == 200

@@ -12,6 +12,7 @@ from __future__ import annotations
 
 from agentnodes.kernel.orchestration import (
     EntryPoint,
+    QueueMode,
     Receipt,
     SourceKind,
     WorkKind,
@@ -34,6 +35,15 @@ def api_chat_request(
     *,
     history: list[dict] | None = None,
     max_iterations: int | None = None,
+    queue_mode: QueueMode | None = None,
+    attempt_id: str | None = None,
+    assistant_message_id: str | None = None,
+    model: str | None = None,
+    system_prompt: str | None = None,
+    role: str | None = None,
+    allowed_tools: list[str] | None = None,
+    mode: str | None = None,
+    thinking: str | None = None,
 ) -> WorkRequest:
     """把 API chat 请求翻译成 WorkRequest。
 
@@ -45,17 +55,32 @@ def api_chat_request(
 
     ``max_iterations``：**W4** per-turn 覆盖（/send 的 plan 模式传 1）。
     None = 用控制器装配值（singleton 按 LLMConfig.max_iterations）。
+    ``queue_mode``：兼容入口可显式要求 FOLLOWUP；None 保持 API_CHAT 默认 STEER。
     """
     payload: dict[str, object] = {"text": content}
     if history:
         payload["history"] = history
     if max_iterations is not None:
         payload["max_iterations"] = int(max_iterations)
+    for key, value in (
+        ("attempt_id", attempt_id),
+        ("assistant_message_id", assistant_message_id),
+        ("model", model),
+        ("system_prompt", system_prompt),
+        ("role", role),
+        ("mode", mode),
+        ("thinking", thinking),
+    ):
+        if value is not None:
+            payload[key] = value
+    if allowed_tools is not None:
+        payload["allowed_tools"] = list(allowed_tools)
     return WorkRequest(
         kind=WorkKind.CHAT,
         source=SourceKind.API_CHAT,
         session_key=f"chat:{session_id}",
         payload=payload,
+        queue_mode=queue_mode,
     )
 
 

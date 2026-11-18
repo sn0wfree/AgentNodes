@@ -125,10 +125,12 @@ class TestSSEReconnection:
         url = f"{base_url}/api/chat/events?session_id={session_id}&token={token}"
         events_received = []
         connected = threading.Event()
+        queue_received = threading.Event()
 
         def listen():
             with requests.get(url, stream=True, timeout=30) as resp:
                 connected.set()
+                evt_type = ""
                 try:
                     for line in resp.iter_lines(decode_unicode=True):
                         if line and line.startswith("event: "):
@@ -139,6 +141,8 @@ class TestSSEReconnection:
                             except Exception:
                                 data = {}
                             events_received.append({"event": evt_type, "data": data})
+                            if evt_type == "queue_state":
+                                queue_received.set()
                 except requests.exceptions.RequestException:
                     # Server shut down (fixture teardown) — safe to stop.
                     pass
@@ -153,13 +157,15 @@ class TestSSEReconnection:
         })
         assert r.status_code == 200
 
-        # Wait for agent_done
-        time.sleep(3)
+        # send_async is receipt-only; without a Gateway consumer it emits
+        # admission/queue events but does not execute the turn inline.
+        assert queue_received.wait(timeout=5), "queue_state not received"
         initial_count = len(events_received)
         assert initial_count > 0, "Should receive events"
 
-        # Verify connection works
-        assert any(e["event"] == "agent_done" for e in events_received), "agent_done not received"
+        event_types = {event["event"] for event in events_received}
+        assert "message_received" in event_types
+        assert "queue_state" in event_types
 
     def test_sse_last_event_id_replay(self, auth_info):
         """Last-Event-ID → missed events replayed on reconnection."""
@@ -170,25 +176,27 @@ class TestSSEReconnection:
             "session_id": session_id, "content": "replay test"
         })
         assert r.status_code == 200
-        time.sleep(2)
 
-        # Read some events to get their IDs
+        # Read the persisted admission events and stop at queue_state.
         url = f"{base_url}/api/chat/events?session_id={session_id}&token={token}"
         event_ids = []
         with requests.get(url, stream=True, timeout=10) as resp:
+            event_type = ""
             for line in resp.iter_lines(decode_unicode=True):
                 if line and line.startswith("id: "):
                     eid = line[4:].strip()
                     if eid and not eid.startswith("hb_"):
                         event_ids.append(eid)
-                elif line and line.startswith("event: agent_done"):
+                elif line and line.startswith("event: "):
+                    event_type = line[7:].strip()
+                elif line and line.startswith("data: ") and event_type == "queue_state":
                     break
 
         if len(event_ids) < 2:
             pytest.skip("Not enough events to test replay")
 
-        # Reconnect with Last-Event-ID
         last_id = event_ids[-2]  # Second to last
+        expected_replay = event_ids[-1]
         replay_url = f"{url}&Last-Event-ID={last_id}"
         replayed = []
         with requests.get(replay_url, stream=True, timeout=10) as resp:
@@ -197,11 +205,10 @@ class TestSSEReconnection:
                     eid = line[4:].strip()
                     if eid and not eid.startswith("hb_"):
                         replayed.append(eid)
-                elif line and line.startswith("event: agent_done"):
-                    break
+                        if eid == expected_replay:
+                            break
 
-        # Should have replayed the last event (or at least connected)
-        assert len(replayed) >= 0, "Replay connection should work"
+        assert expected_replay in replayed
 
     def test_sse_heartbeat(self, auth_info):
         """No activity for 15s → heartbeat received."""
