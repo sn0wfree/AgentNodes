@@ -186,3 +186,14 @@ foundation/
 - 无 monkeypatch 字符串锚、无 importlib/`__import__` 动态引用、无 `__file__` 层数敏感
 - settings 主导绑定 `from agentnodes.foundation import settings as _settings`（30 src 文件），别名保持后零调用点改动
 - `test_default_paths.py` 为 paths 行为套件；其消费方相等性断言不受移动影响
+
+### 6.7 执行实测回填（2026-11-18 完成）
+
+| 批 | 提交 | 实测 |
+|---|---|---|
+| 0 | `18b05fe0` | 复评文档 + §6 计划定稿 |
+| 1 | `6a5689cd` | 3 文件 git mv；改写 11 文件 13 处（脚本自身拼接 bug 抓到并修复）；受影响 167 passed；全量 7606 / 0 failed；batch_gate GREEN |
+| 2 | `71bec0f8` | 3 文件 git mv + 新建 `config/__init__.py`；幂等改写 57 文件 69 处（B=14 A=55，第二遍 0 改动）；手工锚点 20 处（env_access/path_literals 白名单、test_settings 豁免+Path 拼接、layer_matrix、caplog 锚 ×2 随规则 B 自动愈合、cosmetic 注释 7 处）；受影响 197 passed；全量（-n 4）7623 passed / **2 failed 归因 f01555d5**（mailbox.py 新增 threading 违反边界契约测试 + Gateway cancel_session 语义，非本批引入，留待 Gateway 线） |
+| 3 | 本提交 | l3-clusters HTML 全表同步（9 节点数字 + 新增 foundation/config 节点 n=41/files=4/lines=1376 + LANES L4 拆两行 4+3 防溢出 + EDGES 7 条更新：L1>C1 56→46（api→agent 16→7，路由切换证据）、C1>L4 50→35（agent→config 5 新边）、C2>L4 19→30）；graphify5 第二量纲复核（矩阵全下行、core 残留 0）；全表复测节点漂移 0 |
+
+**foundation 终态**：顶层 4 文件（errors / compact_config / protocol / `__init__`——纯共享契约）+ 6 子包（config·llm·storage·utils·observability·web）。全仓 443 文件 / 92,892 行，上行违规 0。

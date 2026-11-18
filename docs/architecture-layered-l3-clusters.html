@@ -133,7 +133,7 @@ footer code{background:rgba(148,163,184,.10);padding:1px 6px;border-radius:5px;c
     <div>
       <h2 class="arch-title">AgentNodes 分层架构 · L3 聚合</h2>
       <p class="arch-sub">样式 v2 · Glassmorphism / 正交布线（原版见 <code>architecture-layered.html</code>，数据层已同步重跑、tier 判定同批修订）
-        · 数据 2026-11-17 结构化阶段 7 后 AST 复测（口径同 <code>tmp/probe/scan_arch.py</code>）：35 包 / 1978 符号 / 133 包间边 · L3 十五模块聚为四领域容器</p>
+        · 数据 2026-11-18 复测（state 簇迁移 + Gateway 收敛 + foundation/config 拆分后，口径同 <code>tmp/probe/scan_arch.py</code>）：36 包 / 1982 符号 / 141 包间边 · L3 十五模块聚为四领域容器</p>
     </div>
     <div class="bar" id="an-legend"></div>
   </div>
@@ -172,12 +172,12 @@ footer code{background:rgba(148,163,184,.10);padding:1px 6px;border-radius:5px;c
   var NS = 'http://www.w3.org/2000/svg';
   var REDUCED = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
-  // ═══════════ 数据（2026-11-17 工作区 AST 复测，口径同 tmp/probe/scan_arch.py）═══════════
+  // ═══════════ 数据（2026-11-18 复测：state 簇迁移 + gateway 收敛 + foundation/config 拆分后，口径同 tmp/probe/scan_arch.py）═══════════
   var NODES = {
-    'interfaces/api':       {n:251, files:39, lines:6828, sub:'REST + SSE 入口', role:'FastAPI 路由装配：chat / workflow / goal / admin / permission / session 投影；SSE 事件分发', tier:'A', caps:['C1','C5','C6'], sessionRole:'HTTP 层：会话创建/删除路由 + SSE 流式'},
+    'interfaces/api':       {n:254, files:39, lines:7150, sub:'REST + SSE 入口', role:'FastAPI 路由装配：chat / workflow / goal / admin / permission / session 投影；SSE 事件分发', tier:'A', caps:['C1','C5','C6'], sessionRole:'HTTP 层：会话创建/删除路由 + SSE 流式'},
     'interfaces/cli':       {n:290, files:46, lines:8912, sub:'CLI 命令', role:'slash 命令族（goal / rsi / config / session）+ slash_router + onboard', tier:'C', caps:['C26']},
     'interfaces':           {n:57,  files:6,  lines:1806, sub:'组装根', role:'gateway_wiring / rsi_wiring / tier0_snapshot：唯一允许知道 apps 的位置', tier:'C', caps:[]},
-    'interfaces/cli/tui':   {n:47,  files:25, lines:3949, sub:'TUI', role:'Textual 终端界面：app / widgets / workers（DAG 视图、工作流 worker）', tier:'C', caps:['C27']},
+    'interfaces/cli/tui':   {n:47,  files:25, lines:3967, sub:'TUI', role:'Textual 终端界面：app / widgets / workers（DAG 视图、工作流 worker）', tier:'C', caps:['C27']},
     'interfaces/mcp':       {n:6,   files:2,  lines:575,  sub:'MCP 服务', role:'Model Context Protocol 工具桥接', tier:'C', caps:['C28']},
     'apps/goal':                {n:78, files:18, lines:5975, sub:'长程任务', role:'判据 / 台账 / DAG 工作流 / journal / scoreboard（R1 恢复）', tier:'C', caps:['C16']},
     'apps/scheduled_research':  {n:21, files:6,  lines:1180, sub:'定时研究', role:'cron 式研究调度（批次 8 自 kernel 迁入）', tier:'C', caps:['C21']},
@@ -186,27 +186,28 @@ footer code{background:rgba(148,163,184,.10);padding:1px 6px;border-radius:5px;c
     'apps/algo':                {n:10, files:2,  lines:326,  sub:'回测算法', role:'无前视调仓回测（2026-11-16 自 kernel/algo 迁入）', tier:'C', caps:[], iso:true},
     'apps/chat':                {n:7,  files:4,  lines:225,  sub:'产品策略', role:'会话侧业务策略', tier:'C', caps:[]},
     'apps/swarm_presets':       {n:1,  files:1,  lines:26,   sub:'拓扑 preset', role:'SwarmPreset YAML（37 个）', tier:'C', caps:['C19'], iso:true},
-    'kernel/agent':         {n:431, files:112, lines:22714, sub:'Agent 引擎', role:'loop 引擎 / strategy / tools / builtin_tools / guards / policy / signals / factory / plugins / telemetry 等 17 子包 + state 组顶层残留（cache / event_store / memory_manager / projection_port）', tier:'A', caps:['C2','C3','C9','C10','C12'], cl:'C1'},
+    'kernel/agent':         {n:402, files:108, lines:20697, sub:'Agent 引擎', role:'loop 引擎 / strategy / tools / builtin_tools / guards / policy / signals / factory / plugins / telemetry / validators / capability / sandbox / compact / context / prompt / runtime 等 17 子包（state 组已迁 kernel/session/state）', tier:'A', caps:['C2','C3','C9','C10','C12'], cl:'C1'},
     'kernel/workflow':      {n:75,  files:15,  lines:3488,  sub:'工作流引擎', role:'definition / graph_compiler / executor / node_types / contract（B1 产物契约）', tier:'B', caps:['C13','C14'], cl:'C1'},
-    'kernel/orchestration': {n:45,  files:10,  lines:2541,  sub:'编排', role:'genome_version / budget_gate / 判定层', tier:'C', caps:['C22'], cl:'C1'},
+    'kernel/orchestration': {n:45,  files:10,  lines:2663,  sub:'编排', role:'genome_version / budget_gate / 判定层', tier:'C', caps:['C22'], cl:'C1'},
     'kernel/runtimes':      {n:20,  files:10,  lines:1649,  sub:'运行时', role:'执行器抽象与策略', tier:'B', caps:[], cl:'C1'},
     'kernel/swarm':         {n:16,  files:6,   lines:1488,  sub:'Swarm', role:'preset 加载 / 表达式求值 / 层图编译器', tier:'C', caps:['C19'], cl:'C1'},
-    'kernel/session':       {n:89,  files:15,  lines:6164,  sub:'会话域真身', role:'service / store / projector / db：R-014 批次 A–B3 下沉后的会话域真身（创建 / 存储 / 投影）—— 承载 C8 历史持久化，红层主链路硬依赖（api→session 29 次 import）', tier:'A', caps:['C8'], sessionRole:'会话域真身：创建 / 存储 / 投影 / 只读浏览（R-014 下沉）', cl:'C2'},
+    'kernel/session':       {n:118, files:20,  lines:8232,  sub:'会话域真身', role:'service / store / projector / db / <b>state/</b>（EventStore·cache·MemoryManager·projection_port，2026-11-18 迁入）：会话域真身（创建 / 存储 / 投影 / 状态）—— 承载 C8 历史持久化，红层主链路硬依赖（api→session 44 次 import）', tier:'A', caps:['C8'], sessionRole:'会话域真身：创建 / 存储 / 投影 / 状态 / 只读浏览', cl:'C2'},
     'kernel/evolution':     {n:62,  files:12,  lines:3453,  sub:'自进化', role:'GEP-RSI：genome_proposals / validation_gate / holdout / isolated_replay / evolution_agent', tier:'C', caps:['C17'], cl:'C2'},
     'kernel/context':       {n:9,   files:4,   lines:407,   sub:'上下文', role:'ContextHub 组装点 / protocol 协议面 / policy 仲裁（注入器实现在 agent/context）', tier:'B', caps:['C15'], cl:'C2'},
     'kernel/memory':        {n:7,   files:3,   lines:606,   sub:'记忆', role:'持久化记忆', tier:'C', caps:['C24'], cl:'C2'},
-    'kernel/gateway':       {n:43,  files:9,   lines:2327,  sub:'会话网关', role:'session_controller / capacity：准入 + 容量闸 + 身份签发 + 驱动引擎', tier:'A', caps:['C7'], sessionRole:'run 调度器：准入 + 容量闸 + 身份签发 + 驱动引擎（不是会话生命周期）', cl:'C3'},
-    'kernel/events':        {n:5,   files:2,   lines:465,   sub:'事件', role:'event_v2 协议 / event_store', tier:'A', caps:['C6','C23'], sessionRole:'事件源（append-only），投影器的输入', cl:'C3'},
+    'kernel/gateway':       {n:44,  files:9,   lines:2493,  sub:'会话网关', role:'session_controller / capacity / mailbox pause·resume：唯一聊天执行控制面（2026-11-18 收敛，/send_async 已切 Gateway）', tier:'A', caps:['C7'], sessionRole:'run 调度器：准入 + 容量闸 + 身份签发 + 驱动引擎（不是会话生命周期）', cl:'C3'},
+    'kernel/events':        {n:5,   files:2,   lines:465,   sub:'事件', role:'event_v2 协议 / 事件词表（EventStore 持久化在 kernel/session/state）', tier:'A', caps:['C6','C23'], sessionRole:'事件源（append-only），投影器的输入', cl:'C3'},
     'kernel/hooks':         {n:5,   files:4,   lines:260,   sub:'钩子', role:'composite hook 组合', tier:'C', caps:[], cl:'C3'},
     'kernel/permission':    {n:22,  files:5,   lines:1174,  sub:'权限', role:'规则引擎 / hard_deny / evaluator / schema（L0–L4）', tier:'A', caps:['C11'], cl:'C4'},
     'kernel/skills':        {n:5,   files:4,   lines:238,  sub:'技能', role:'skill 模型与加载', tier:'C', caps:['C25'], cl:'C4'},
     'kernel':               {n:2,   files:2,   lines:108,   sub:'内核门面', role:'子带声明', tier:'C', caps:[], cl:'C4'},
-    'foundation/llm':           {n:130, files:24, lines:5508, sub:'LLM 客户端', role:'openai_client / model_catalog / config（三路径链）/ 多供应商适配', tier:'A', caps:['C4','C5']},
-    'foundation':               {n:61,  files:10, lines:2092, sub:'基础原语', role:'paths / settings（ENV_TABLE 唯一入口）/ 错误类型 / git', tier:'A', caps:[]},
+    'foundation/llm':           {n:133, files:25, lines:5760, sub:'LLM 客户端', role:'openai_client / model_catalog / config（三路径链）/ 多供应商适配 / structured_output（tool_call 参数解析）', tier:'A', caps:['C4','C5']},
+    'foundation':               {n:12,  files:4,  lines:296,  sub:'共享契约', role:'errors（StrategyResearchError 异常根）/ compact_config / protocol 事件契约 —— 配置域已拆 <b>foundation/config/</b>', tier:'A', caps:[]},
     'foundation/storage':       {n:46,  files:13, lines:2503, sub:'存储', role:'data_store / 持久化后端 —— C8 的 SQLite <b>底座</b>（连接 / DDL 归 kernel/session.db；<b>实现者是 kernel/session</b>）', tier:'A', caps:['C8']},
-    'foundation/utils':         {n:22,  files:5,  lines:484,  sub:'工具函数', role:'通用工具', tier:'C', caps:[]},
+    'foundation/utils':         {n:27,  files:7,  lines:666,  sub:'工具函数', role:'通用工具 / git 封装 / 泛型 Registry', tier:'C', caps:[]},
     'foundation/observability': {n:19,  files:5,  lines:932,  sub:'可观测', role:'日志 / trace / spans', tier:'C', caps:[]},
     'foundation/web':           {n:10,  files:6,  lines:637,  sub:'Web 基础', role:'静态资源 / web 工具', tier:'C', caps:[]},
+    'foundation/config':        {n:41,  files:4,  lines:1376, sub:'配置域', role:'settings（ENV_TABLE 唯一 env 入口，R-002）/ paths（PROFILES 数据路径，R-005）/ config_loader（通用四层加载）', tier:'A'},
     'evals':   {n:44, files:6, lines:1237, sub:'冻结基准', role:'golden 任务集 + scorecard + 完整性指纹', tier:'C', caps:['C18']},
     'scripts': {n:2,  files:1, lines:104,  sub:'脚本', role:'历史遗留单文件', tier:'C', caps:[], iso:true}
   };
@@ -238,29 +239,29 @@ footer code{background:rgba(148,163,184,.10);padding:1px 6px;border-radius:5px;c
     {key:'L1', name:'L1 interfaces · 交付界面', note:'渠道层 · 组装根', rows:[['interfaces/cli','interfaces/api','interfaces','interfaces/cli/tui','interfaces/mcp']]},
     {key:'L2', name:'L2 apps · 业务能力', note:'业务插件', rows:[['apps/goal','apps/scheduled_research','apps/agent_plugins','apps'],['apps/algo','apps/chat','apps/swarm_presets']]},
     {key:'L3', name:'L3 kernel · 平台机制', note:'4 领域容器 · 可折叠'},
-    {key:'L4', name:'L4 foundation · 基础原语', note:'零业务依赖', rows:[['foundation/llm','foundation','foundation/storage','foundation/utils','foundation/observability','foundation/web']]},
+    {key:'L4', name:'L4 foundation · 基础原语', note:'零业务依赖', rows:[['foundation/llm','foundation/config','foundation','foundation/storage'],['foundation/utils','foundation/observability','foundation/web']]},
     {key:'EV', name:'evals · 旁挂评估带', note:'跨层读取被测对象', rows:[['evals','scripts']]}
   ];
 
-  // 聚合边（跨层 9 + 跨容器 7）：id/cls/w/br 数据不变，rt 为正交布线锚点
+  // 聚合边（跨层 10 + 跨容器 7）：id/cls/w/br 数据不变，rt 为正交布线锚点
   var EDGES = [
-    {id:'L1>C1', cls:'', w:56, br:'api→agent 16 · api→workflow 13 · interfaces→orchestration 4 · mcp→agent 5 · mcp→swarm 5 · cli→swarm 4 · interfaces→agent 3 · api→orchestration 2 · cli→agent 2 · tui→agent 2'},
-    {id:'L1>C2', cls:'', w:54, br:'api→session 29 · interfaces→evolution 13 · cli→session 6 · tui→session 2 · mcp→session 2 · mcp→memory 2'},
+    {id:'L1>C1', cls:'', w:46, br:'api→workflow 13 · api→agent 7 · mcp→agent 5 · mcp→swarm 5 · cli→swarm 4 · interfaces→orchestration 4 · api→orchestration 3 · interfaces→agent 3 · cli→agent 2'},
+    {id:'L1>C2', cls:'', w:71, br:'api→session 44 · interfaces→evolution 13 · cli→session 6 · tui→session 4 · mcp→session 2 · mcp→memory 2'},
     {id:'L1>C4', cls:'', w:9,  br:'cli→skills 4 · api→permission 3 · mcp→skills 2'},
     {id:'L1>C3', cls:'', w:5,  br:'interfaces→gateway 3 · api→gateway 2'},
     {id:'L2>C1', cls:'', w:31, br:'agent_plugins→agent 9 · apps→agent 10（含 goal_tools 6，批次 α 后并入 apps）· goal→workflow 6 · goal→swarm 6'},
-    {id:'C1>L4', cls:'', w:50, br:'agent→llm 11 · agent→utils 10 · agent→foundation 10 · agent→obs 8 · agent→storage 5 · agent→web 4 · orchestration→foundation 2'},
-    {id:'C2>L4', cls:'', w:19, br:'session→llm 5 · session→storage 5 · session→foundation 4 · session→obs 3 · evolution→storage 2'},
-    {id:'C3>L4', cls:'', w:8,  br:'gateway→foundation 3 · gateway→llm 3 · gateway→storage 2'},
+    {id:'C1>L4', cls:'', w:35, br:'agent→utils 11 · agent→llm 11 · agent→config 5 · agent→web 4 · agent→obs 4'},
+    {id:'C2>L4', cls:'', w:30, br:'session→storage 9 · session→obs 7 · session→config 5 · session→llm 5 · evolution→storage 2 · session→foundation 2'},
+    {id:'C3>L4', cls:'', w:9,  br:'gateway→llm 4 · gateway→config 3 · gateway→storage 2'},
     {id:'EV>C1', cls:'eval', w:4, br:'evals→agent 4'},
     {id:'C2>EV', cls:'eval', w:4, br:'evolution→evals 4（自进化读取冻结基准）'},
     {id:'C3>C1', cls:'xcross', w:22, br:'gateway→orchestration 10 · gateway→agent 7 · gateway→runtimes 5'},
-    {id:'C2>C1', cls:'xcross', w:13, br:'session→agent 13'},
+    {id:'C2>C1', cls:'xcross', w:9,  br:'session→agent 9'},
     {id:'C1>C2', cls:'xcross', w:6,  br:'agent→memory 3 · agent→context 3'},
     {id:'C1>C4', cls:'xcross', w:9,  br:'agent→permission 6 · agent→skills 3'},
     {id:'C1>C3', cls:'xcross', w:2,  br:'agent→hooks 2'},
     {id:'C3>C2', cls:'xcross', w:3,  br:'gateway→context 3'},
-    {id:'C2>C3', cls:'xcross', w:3,  br:'session→events 3'}
+    {id:'C2>C3', cls:'xcross', w:4,  br:'session→events 4'}
   ];
 
   var CHAIN = [
