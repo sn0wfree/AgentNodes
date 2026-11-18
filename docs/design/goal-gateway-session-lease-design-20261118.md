@@ -88,7 +88,12 @@ class SessionExecutionLease:
 ## 3. 实施批次
 
 1. **B1 lease 原语 ✅（2026-11-18 完成）**：`kernel/gateway/session_lease.py` + `tests/test_session_lease.py` **20 用例**（基本生命周期 / 不顶替 / token 校验与双重释放 / session 隔离 / holder 观测不泄漏 token / asyncio 并发竞争恰一赢家 / 释放瞬间多等待者恰一成功 / 跨线程竞争 / 交错序列一致性 / **AST 级原子性契约**——acquire/release 禁 async 化）。**实施期微调**：`acquire` 恒为非阻塞（设计稿 `wait` 参数移除——asyncio 内同步阻塞是反模式；等待语义由调用方自旋，B3 正是保持现状形态）。零接线。验证：20 passed；batch_gate ALL GREEN；全量 7664 passed / 0 failed。
-2. **B2 chat 侧挂钩**：Gateway run 启动/收尾 acquire/release + `chat_session_state.lease_holder` + available_actions 感知 + 回归（现有 Gateway/API 测试全量 + 新增并发用例：goal 持有 → /send 排队；goal 释放 → 唤醒）。
+2. **B2 chat 侧挂钩（含已确认的语义澄清）**：Gateway run 启动/收尾 acquire/release + `chat_session_state.lease_holder` + available_actions 感知 + 回归（现有 Gateway/API 测试全量 + 新增并发用例：goal 持有 → /send 排队；goal 释放 → 唤醒）。
+
+   **语义澄清（2026-11-18 第二轮裁决确认）**：lease 使 GoalWorkflow 与 Gateway chat **互斥——这是相对当前行为的显式变化**，不是"保持旧行为"（现状互斥已空转：Gateway 聊天不读 legacy 标记，goal 与 Gateway 聊天当前可并发）。该变化已被接受：避免同一 session 的目标流程与聊天同时改状态。B2 硬要求：
+   - goal 持有 lease 时，chat 请求**留在 mailbox**（绝不拒绝/丢弃）；
+   - lease 释放后消费者**可靠唤醒**，不空转、不丢单；
+   - 释放失败/异常路径不影响 mailbox 完整性（回归用例必须覆盖"持有期间入队 → 释放 → 次条正常消费"。
 3. **B3 GoalWorkflow 迁移**：`workflow.py:507-524` 切 lease（保持等待语义与 finally 形态）；`session_service` 注入点保留（其余职责不用）；并发回归（双 goal / goal×chat 交错 / 异常释放）。
 4. **B4 legacy 标记退役标注**（不删除）：`mark_session_processing` 等标注退役候选，删除走裁决 3 批次。
 

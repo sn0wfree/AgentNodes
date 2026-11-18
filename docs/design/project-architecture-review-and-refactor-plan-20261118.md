@@ -497,6 +497,8 @@ TUI
   → Gateway 路径
 ```
 
+> **2026-11-18 状态更新（按批次验收同步）**：下列迁移前缺口已全部关闭——`/send_async`、`/cancel`、`/queue/resume`、`/attempts` 已切 Gateway；mailbox pause/resume 与消费者唤醒已实现并有契约测试；Attempt/Run 映射、10 条上限、旧请求参数（模型/persona/thinking/plan 工具限制）已映射。本段保留为**迁移前快照**，当前权威状态见 §12.2 行为矩阵与 §12.3 执行记录。
+
 `SessionService` 和 Gateway 当前持有不同的排队、取消/恢复和运行身份机制；一个请求线程走哪条路径会影响 API 行为。唯一控制面方向已接受，但**当前 Gateway 尚不具备 SessionService 的全部队列控制语义**：
 
 - `Gateway.cancel_session()` 只对活跃 run 发取消信号；目前没有显式的 per-session queue pause/resume API；
