@@ -1,6 +1,7 @@
 """Tests for Phase 7+8 MemoryManager — SQLite + cache + auto-repair + emergency fallback."""
 from __future__ import annotations
 
+import sqlite3
 from pathlib import Path
 
 import pytest
@@ -196,22 +197,34 @@ class TestHistoryContract:
         finally:
             mm._emit_event = original
 
-    async def test_get_recovers_from_event_log_when_projection_fails(self, mm):
-        """C2 修复路径：投影读失败 → event_log 重放成功 → 返回重放结果。"""
-        await mm.append("s1", "user", "hi")
+    async def test_corrupt_projection_row_is_rebuilt_from_event_log(self, mm):
+        """C2：损坏 messages 投影行 → event_log 重放并自动全量修复投影。"""
+        await mm.append("s1", "user", "canonical text", metadata={"origin": "event"})
+        row = mm._backend.list_messages("s1")[0]
 
-        def broken(*args, **kwargs):
-            raise RuntimeError("projection read failed")
-
-        original = mm._backend.list_messages
-        mm._backend.list_messages = broken
+        # Inject row-level corruption that SQL can read but the projection
+        # decoder must reject. The event_log remains intact as source of truth.
+        conn = sqlite3.connect(str(mm._db_path))
         try:
-            msgs = await mm.get("s1", use_cache=False)
-            # 重放路径返回 Projector 的 Message dataclass（属性访问）；
-            # 与 backend 行对象的取值形态统一是"统一 history API"的后续项。
-            assert len(msgs) == 1 and msgs[0].content == "hi"
+            conn.execute(
+                "UPDATE messages SET metadata_json = ? WHERE id = ?",
+                ("{malformed-json", row["id"]),
+            )
+            conn.commit()
         finally:
-            mm._backend.list_messages = original
+            conn.close()
+
+        msgs = await mm.get("s1", use_cache=False)
+        assert len(msgs) == 1
+        assert msgs[0].content == "canonical text"
+        assert msgs[0].metadata["origin"] == "event"
+
+        # Recovery must repair the materialized view, not just return a
+        # one-off replay result. A subsequent direct projection read succeeds.
+        repaired = mm._backend.list_messages("s1")
+        assert len(repaired) == 1
+        assert repaired[0]["content"] == "canonical text"
+        assert repaired[0]["metadata"] == {"origin": "event"}
 
     async def test_get_strict_raises_when_replay_also_fails(self, mm, monkeypatch):
         """C2：投影与重放都失败 → HistoryReadError（不静默回退）。"""

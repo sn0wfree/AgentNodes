@@ -70,8 +70,6 @@ from agentnodes.foundation.storage.session_paths import (  # noqa: F401
     resolve_session_db_path,
 )
 
-
-
 # ── SQLiteStore (source of truth) ───────────────────────────────────
 
 
@@ -139,8 +137,10 @@ class SQLiteStore(SQLiteBackend):
             if r[5]:
                 try:
                     msg["metadata"] = json.loads(r[5])
-                except Exception:
-                    pass
+                except (json.JSONDecodeError, TypeError) as exc:
+                    raise ValueError(
+                        f"corrupt projection metadata for message {r[0]!r}"
+                    ) from exc
             result.append(msg)
         return result
 
@@ -473,19 +473,30 @@ class UnifiedMemoryManager:
     def _derive_from_event_log(
         self, session_id: str, *, on_behalf: str,
     ) -> list[Message]:
-        """从事实源（event_log）重放推导消息（C2 修复路径）。"""
-        from agentnodes.kernel.session.projector import Projector
-
+        """Replay the source of truth and fully rebuild its damaged projection (C2)."""
+        projector = None
         try:
+            from agentnodes.kernel.session.projector import Projector
+
             projector = Projector(self._db_path)
-            return projector.project_to_messages(session_id)
+            # Full flush (touched=None) re-upserts canonical rows and removes
+            # stale projection rows. Merely returning replayed messages would
+            # leave the next strict read broken again.
+            state = projector.project_and_flush(session_id)
+            return state.to_messages()
         except Exception as repair_exc:
             raise HistoryReadError(
                 f"history read failed for session {session_id!r}: "
-                f"projection unavailable ({on_behalf}) and event_log replay "
+                f"projection unavailable ({on_behalf}) and event_log replay/repair "
                 f"also failed ({repair_exc})",
                 details={"session_id": session_id},
             ) from repair_exc
+        finally:
+            if projector is not None:
+                try:
+                    projector.close()
+                except Exception as close_exc:  # noqa: BLE001 — don't mask read result
+                    logger.warning("projector close failed after history recovery: %s", close_exc)
 
     async def clear(self, session_id: str) -> None:
         """Reset the LLM's context window without destroying history (B4 D1).
