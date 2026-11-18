@@ -395,6 +395,24 @@ AgentLoop/LoopEngine、GraphEngine、SwarmRuntime、WorkflowRunner 分别可能�
 6. **聊天控制面**：已接受 Gateway 为唯一聊天执行控制面；仍需明确 `/send_async` 的队列上限、`attempt_id`/`run_id`、取消后暂停与恢复、事件顺序和响应体兼容策略。
 7. **其他执行路径**：legacy AgentLoop/LoopEngine、WorkflowRunner 与 SwarmRuntime 分别有哪些实际消费者，哪些属于有期限的兼容入口？
 
+### 8.1 裁决记录（2026-11-18，维护者已确认）
+
+四项裁决为**职责边界定稿**，不做一次性大搬迁：
+
+1. **MemoryManager（裁决第 1 项）**：保留并收窄为**会话历史 facade**。只协调 append/get/clear，不承载聊天产品策略；clear 仍是边界事件。等所有消费者改走统一 history API 后，再评估是否退役——不先删后找调用方。
+2. **投影失败读策略（裁决第 2 项）**：`event_log` 是事实源；Projection 是快速读模型。投影缺失、过期或不一致时尝试从 event_log **修复**；修复失败时，聊天上下文等**严格读路径显式报错**；只有明确标记 stale/degraded 的 best-effort UI 读取可返回旧投影，**不能静默喂给模型**。
+3. **聊天用例（裁决第 3 项）**：`apps/chat` 拥有编排和产品策略；`kernel/session` 保留通用会话数据、持久化与兼容服务；Gateway 仍是唯一执行控制面。`SessionService` 暂时作为 legacy adapter，待消费者迁移后收窄。`factory/chat_loop.py` 逐步变成机械装配器，聊天默认值由 apps/chat 显式传入。**先保行为再移默认值**：当前 builder 的 `max_iterations=1` 与 `SessionService.send_message` 的默认 50 不同，且 shell 默认值与文档描述不一致，不能直接搬动默认值造成行为变化（参见 `SessionService.send_message` 与 `build_chat_agent_loop`）。
+4. **Attempt（新增裁决）**：保留为**持久化领域记录**，不把它等同于 Gateway Run。Gateway 管实时 queued/running/cancel 状态；持久化 Attempt 保存可恢复的身份、输入和终态信息。`/attempts` 最终由 apps/chat 的查询用例组合存储记录与 Gateway 实时状态，API router 不负责拼接；`attempt_id` 与 `run_id` 保持不同。现状：Attempt 已有持久化字段，而 `Gateway.attempt_state` 只表达运行时状态；GET /attempts 当前正是在两者间做临时拼接。
+
+### 8.2 执行顺序（按本次裁决定稿）
+
+1. 盘点 MemoryManager 消费者并定唯一历史读写契约；
+2. 锁定投影失败策略及测试；
+3. 提取 apps/chat 用例与显式 ChatPolicy；
+4. 迁移 /attempts 查询归属。
+
+**约束**：`SessionService` 的队列/processing 标记暂不删除——GoalWorkflow 仍依赖其会话互斥状态。
+
 ## 9. 验收总标准
 
 整个重构阶段完成时，至少满足：
