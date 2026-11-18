@@ -90,8 +90,7 @@ async def workflow_start(req: WorkflowStartRequest, request: Request):
     try:
         from agentnodes.apps.goal.workflow import GoalWorkflowRunner
         from agentnodes.apps.goal.workflow_config import load_goal_workflow
-
-        from agentnodes.interfaces.api.routers.chat import _get_session_service
+        from agentnodes.interfaces.api.routers.chat import _get_gateway, _get_session_service
         from agentnodes.interfaces.api.routers.web_session import _fetch_session_owned, _get_db
 
         user_id = getattr(request.state, "user_id", None) or "anonymous"
@@ -103,6 +102,8 @@ async def workflow_start(req: WorkflowStartRequest, request: Request):
             config=config,
             session_id=req.session_id,
             session_service=session_service,
+            # B3（裁决 2）：与 chat 执行同一 Gateway 的执行租约（互斥迁移）。
+            execution_lease=_get_gateway().execution_lease,
         )
 
         goal_id = await runner.start(req.objective)
@@ -338,6 +339,7 @@ async def workflow_events(goal_id: str, request: Request):
 # ─────────────────────────────────────────────────────────────────────
 
 from pathlib import Path as _Path  # noqa: E402
+
 from agentnodes.foundation.config import settings as _settings
 
 _run_registry = None
@@ -565,9 +567,8 @@ async def definitions_delete(name: str, request: Request, x_admin_token: str | N
     but destructive writes need the admin token. Builtin definitions are
     read-only regardless.
     """
-    from agentnodes.kernel.workflow.builtin import delete_user_definition, load_definition
-
     from agentnodes.interfaces.api.routers.admin import _verify_admin
+    from agentnodes.kernel.workflow.builtin import delete_user_definition, load_definition
     _verify_admin(x_admin_token)
     definition = load_definition(name, _definition_workspace())
     if definition is None:
@@ -614,11 +615,10 @@ async def definitions_graph(name: str, request: Request):
 async def start_definition(req: WorkflowStartDefinitionRequest, request: Request):
     """Start a modular workflow definition run (session ownership required;
     the run is owner-stamped for status/detail/events/approve access)."""
+    from agentnodes.interfaces.api.routers.web_session import _fetch_session_owned, _get_db
     from agentnodes.kernel.workflow.builtin import load_definition
     from agentnodes.kernel.workflow.executor import WorkflowRunner
     from agentnodes.kernel.workflow.node_types import register_builtin_tool_executors
-
-    from agentnodes.interfaces.api.routers.web_session import _fetch_session_owned, _get_db
 
     user_id = getattr(request.state, "user_id", None) or "anonymous"
     _fetch_session_owned(_get_db(), req.session_id, user_id)

@@ -17,7 +17,6 @@ Phase 4 v0.5.1 added workflow + checkpoint subcommands.
 from __future__ import annotations
 
 import asyncio
-import os
 from pathlib import Path
 from typing import Any, Optional
 
@@ -215,11 +214,15 @@ def _start_workflow(
         console.print(f"[red]Failed to load workflow:[/red] {exc}")
         return 1
 
+    from agentnodes.kernel.gateway import get_gateway
+
     runner = GoalWorkflowRunner(
         config=config,
         session_id=session_id,
         store=store,
         workspace=Path.cwd(),
+        # B3（裁决 2）：与 chat 执行同一 Gateway 的执行租约（互斥迁移）。
+        execution_lease=get_gateway().execution_lease,
     )
 
     console.print(

@@ -252,6 +252,7 @@ class GoalWorkflowRunner:
         use_validators: bool = True,
         workspace: Path | None = None,
         session_service: Any = None,
+        execution_lease: Any = None,
     ) -> None:
         """Initialize the runner.
 
@@ -265,6 +266,11 @@ class GoalWorkflowRunner:
             use_validators: Whether to register validators.
             workspace: Workspace path for prompt file resolution.
             session_service: SessionService for cooperative mutex with chat.
+            execution_lease: Session execution lease（裁决 2，B3）——GoalWorkflow
+                在整个 ``start`` 生命周期持有（owner = ``goal:<goal_id>``），
+                与 Gateway chat 互斥；组合根从 ``gateway.execution_lease``
+                注入同一实例。``None`` = 无互斥（直构测试路径，行为与
+                ``session_service=None`` 时一致）。kernel 不 import apps。
         """
         # P1.6: Deprecation warnings for dead parameters (v0.5.3)
         if agent_runner is not None:
@@ -294,6 +300,8 @@ class GoalWorkflowRunner:
         self._agent_runner_type = agent_runner_type
         self._runner_kwargs = runner_kwargs or {}
         self._session_service = session_service
+        # 顺序③-B3（裁决 2）：会话执行互斥租约——组合根注入 Gateway 同一实例。
+        self._execution_lease = execution_lease
         # Phase 1.4: directive store for mid-execution user commands
         self._directives: list[dict] = []
         # Phase 1.5: background monitor task
@@ -504,11 +512,16 @@ class GoalWorkflowRunner:
         self._state.start_time = time.time()
         self._event_bus.emit("workflow_start", workflow=self._config.name)
 
-        # 0. Session mutex: wait for chat to be idle, then claim slot
-        if self._session_service is not None:
-            while self._session_service.is_session_processing(self._session_id):
+        # 0. Session execution lease（顺序③-B3，裁决 2）：等待 chat 空闲后
+        # 原子获取执行租约——**等待语义保持现状**（0.25s 自旋、无上限，
+        # 不改拒绝）；owner 标识持有者供观测。GoalWorkflow 不再写
+        # SessionService 的 processing 标记（互斥迁 Gateway 共享控制面）。
+        lease_token: str | None = None
+        if self._execution_lease is not None:
+            while (lease_token := self._execution_lease.acquire(
+                self._session_id, f"goal:{self._goal_id or 'new'}",
+            )) is None:
                 await asyncio.sleep(0.25)
-            self._session_service.mark_session_processing(self._session_id, True)
 
         try:
             return await self._start_inner(objective)
@@ -519,9 +532,9 @@ class GoalWorkflowRunner:
             logger.error("Goal workflow failed: %s", exc)
             return self._goal_id
         finally:
-            # 0b. Release session slot
-            if self._session_service is not None:
-                self._session_service.mark_session_processing(self._session_id, False)
+            # 0b. Release execution lease（成功/异常两路都释放）
+            if lease_token is not None:
+                self._execution_lease.release(self._session_id, lease_token)
 
     async def _start_inner(self, objective: str) -> str:
         """Inner start logic (session slot already claimed)."""
@@ -632,9 +645,9 @@ class GoalWorkflowRunner:
         Raises:
             FileNotFoundError: No checkpoint exists for this goal.
         """
+        from agentnodes.apps.goal.checkpoint_store import CheckpointStore
         from agentnodes.kernel.swarm.runtime import SwarmRuntime
         from agentnodes.kernel.swarm.types import AgentResult
-        from agentnodes.apps.goal.checkpoint_store import CheckpointStore
 
         cps = CheckpointStore()
         cp_data = cps.load(self._session_id, self._goal_id)
