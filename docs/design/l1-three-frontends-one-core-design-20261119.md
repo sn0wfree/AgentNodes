@@ -226,4 +226,23 @@
 
 ## §10 执行记录
 
-（待批次开工后回填：每批的提交号、实测数字、判定清单偏差。）
+### 批 1 · P0 修复（2026-11-19，已执行）
+
+**裁决**：维护者确认按评估改法开工（五项：#1/#2/#3/#4/#5/#6；#7 goal.py env 后门未列入本批，保持待裁决）。评估报告先行核实现场：五项改法全部逐行复核，其中 #2 比 §2.1 预估深一档——不止工厂缺参数，`resume_and_continue` 全程零 lease 触点，修复为两段式。
+
+**提交**：
+- `ae8b9896` fix(api)：#1 schedule `_load_job_owned` 补 `_require_owner`（校验链 调用者→session→job 闭合）+ #6 search `asyncio.to_thread` 去阻塞；+3 用例（他人 session show/run→403、不存在 session→404）
+- `44411950` fix(goal/tui/mcp)：#2 resume lease 两段式（工厂参数缺省 None 保持旧行为 + `resume_and_continue` 补 0.25s 自旋 acquire / finally release，acquire 前置于 `workflow_resumed` emit）+ CLI 接线 + #3 worker 状态机（immediate→CANCELLED、run() 完成守卫、runner.name property）+ #4 弹窗首条消息改 post `SynthesizeInput`（删 enqueue 死缓冲）+ #5 mcp 删 timeout 契约欺骗；+8 用例、2 用例改写
+
+**核实记录（§2.1 之外的实施期发现）**：
+- `start_sub_workflow`（workflow.py:767）不独立 acquire 也不死锁——同 runner 同 session，在父 `start()` 的 lease 生命周期内执行；无新增缺口，记档不改
+- #4 的既有用例 `test_resume_modal_callback_pending_input_enqueues` 断言的正是 bug 行为（`_pending_input == "hi there"`），随修复改写为断言 `SynthesizeInput` 发布
+- #5 实施细节：新描述不得含「超时」字样（会打脸自身的"不承诺"断言）
+- 测试教训：`threading.Event.wait()` 不能放在事件循环线程里等 `asyncio.to_thread` 的结果——阻塞 loop 使被测任务永远无法推进（lease 自旋测试初版死锁，改非阻塞轮询）
+
+**验证**：
+- 受影响面：api 组 71 passed；goal/tui/mcp 组 176 passed（含 phase3b/v053/lease_hooks/session_lease/mcp 全家回归）
+- 全量：7787 passed / 106 skipped / 2 xfailed；2 failed 中 1 条为体量数字同步（已知待办，见下）、1 条为 xdist 节点崩落（gw11/gw12 Not properly terminated）的连带，`--lf` 复跑仅剩数字 1 条
+- batch_gate：11/12 绿（collect 7908 / 0 errors；层方向、path literals、env access、no-relative、kernel SCC 全绿）；第 9 步体量数字红 = 既有待办（数字文档带并行批次未提交改动，按「他人产出不混提」 deferred，与 `_shared.py` 批同条件）
+
+**裁决点状态**：§9-1 已执行闭环；§9-2 ~ §9-6 仍待裁决。
