@@ -172,39 +172,78 @@ class TestAutoRepair:
             assert isinstance(mgr._backend, InMemoryStore)
 
 
-# ── Emergency buffer ──────────────────────────────────────────────
+# ── History contract（C1/C2/C3，2026-11-18 裁决 2）────────────────
 
 
-class TestEmergencyBuffer:
-    async def test_emergency_buffer_used_when_backend_fails(self, mm):
-        """B4 Step 1: the write path is the event emit, so that is what fails."""
+class _BrokenProjector:
+    def __init__(self, *args, **kwargs):
+        raise RuntimeError("replay failed")
+
+
+class TestHistoryContract:
+    async def test_append_failure_propagates(self, mm):
+        """C1：事件发射失败必须抛错（emergency buffer 静默兜底已废除）。"""
         def broken_emit(*args, **kwargs):
             raise RuntimeError("simulated DB failure")
 
         original = mm._emit_event
         mm._emit_event = broken_emit
         try:
-            msg_id = await mm.append("s1", "user", "hi")
-            assert msg_id.startswith("emergency_")
-            assert "s1" in mm._emergency_buffer
-            assert len(mm._emergency_buffer["s1"]) == 1
-            assert mm._emergency_buffer["s1"][0]["content"] == "hi"
+            with pytest.raises(RuntimeError, match="simulated DB failure"):
+                await mm.append("s1", "user", "hi")
+            assert getattr(mm, "_emergency_buffer", "removed") == "removed", \
+                "emergency buffer 已按 C1 契约移除"
         finally:
             mm._emit_event = original
 
-    async def test_emergency_buffer_reported_in_health(self, mm):
+    async def test_get_recovers_from_event_log_when_projection_fails(self, mm):
+        """C2 修复路径：投影读失败 → event_log 重放成功 → 返回重放结果。"""
+        await mm.append("s1", "user", "hi")
+
         def broken(*args, **kwargs):
-            raise RuntimeError("test")
+            raise RuntimeError("projection read failed")
 
-        original = mm._emit_event
-        mm._emit_event = broken
+        original = mm._backend.list_messages
+        mm._backend.list_messages = broken
         try:
-            await mm.append("s1", "user", "hi")
+            msgs = await mm.get("s1", use_cache=False)
+            # 重放路径返回 Projector 的 Message dataclass（属性访问）；
+            # 与 backend 行对象的取值形态统一是"统一 history API"的后续项。
+            assert len(msgs) == 1 and msgs[0].content == "hi"
         finally:
-            mm._emit_event = original
-        report = mm.health_report()
-        assert report.emergency_buffer_active is True
-        assert report.emergency_buffer_session_count >= 1
+            mm._backend.list_messages = original
+
+    async def test_get_strict_raises_when_replay_also_fails(self, mm, monkeypatch):
+        """C2：投影与重放都失败 → HistoryReadError（不静默回退）。"""
+        def broken(*args, **kwargs):
+            raise RuntimeError("projection read failed")
+
+        original = mm._backend.list_messages
+        mm._backend.list_messages = broken
+        import agentnodes.kernel.session.projector as proj_mod
+        monkeypatch.setattr(proj_mod, "Projector", _BrokenProjector)
+        from agentnodes.kernel.session.state.memory_manager import HistoryReadError
+
+        try:
+            with pytest.raises(HistoryReadError):
+                await mm.get("s1", use_cache=False)
+        finally:
+            mm._backend.list_messages = original
+
+    async def test_get_stale_never_raises(self, mm, monkeypatch):
+        """C3：宽松读可为空，永不抛错（结果不得进入模型上下文）。"""
+        def broken(*args, **kwargs):
+            raise RuntimeError("everything failed")
+
+        original = mm._backend.list_messages
+        mm._backend.list_messages = broken
+        import agentnodes.kernel.session.projector as proj_mod
+        monkeypatch.setattr(proj_mod, "Projector", _BrokenProjector)
+        try:
+            msgs = await mm.get_stale("s1")
+            assert msgs == []
+        finally:
+            mm._backend.list_messages = original
 
 
 class TestClearFailure:
@@ -272,7 +311,6 @@ class TestHealthReport:
         assert report.mm_degraded is False
         assert report.mm_backend == "SQLiteStore"
         assert report.sqlite_healthy is True
-        assert report.emergency_buffer_active is False
 
     async def test_health_after_writes(self, mm):
         await mm.append("s1", "user", "hi")

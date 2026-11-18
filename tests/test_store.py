@@ -282,8 +282,12 @@ class TestRowToAttempt(unittest.TestCase):
         self.assertEqual(attempt.react_trace, [])
 
 
-class TestSessionStoreEnvVar(unittest.TestCase):
-    """Verify AGENTNODES_EVENT_LOG_READ env var behavior."""
+class TestSessionStoreStrictRead(unittest.TestCase):
+    """C4（2026-11-18 裁决 2）：读取恒走 event_log/projector。
+
+    AGENTNODES_EVENT_LOG_READ 只留在 settings 诊断层——env 不再分支；
+    投影重放失败 → HistoryReadError（不静默退 messages 直读）。
+    """
 
     def setUp(self) -> None:
         self.tmp = tempfile.NamedTemporaryFile(suffix=".db", delete=False)
@@ -295,30 +299,30 @@ class TestSessionStoreEnvVar(unittest.TestCase):
         os.unlink(self.db_path)
         os.environ.pop("AGENTNODES_EVENT_LOG_READ", None)
 
-    def test_default_is_event_log_read(self) -> None:
-        os.environ.pop("AGENTNODES_EVENT_LOG_READ", None)
-        store = SessionStore(self.db_path)
-        self.assertTrue(store._use_event_log_read)
-
-    def test_export_0_disables_event_log(self) -> None:
+    def test_env_var_no_longer_branches(self) -> None:
         os.environ["AGENTNODES_EVENT_LOG_READ"] = "0"
         store = SessionStore(self.db_path)
-        self.assertFalse(store._use_event_log_read)
+        self.assertFalse(hasattr(store, "_use_event_log_read"))
 
-    def test_export_1_enables_event_log(self) -> None:
-        os.environ["AGENTNODES_EVENT_LOG_READ"] = "1"
-        store = SessionStore(self.db_path)
-        self.assertTrue(store._use_event_log_read)
+    def test_projection_failure_raises_instead_of_db_fallback(self) -> None:
+        import agentnodes.kernel.session.projector as proj_mod
 
-    def test_export_false_enables_event_log(self) -> None:
-        os.environ["AGENTNODES_EVENT_LOG_READ"] = "false"
         store = SessionStore(self.db_path)
-        self.assertTrue(store._use_event_log_read)
+        original = proj_mod.Projector
+        proj_mod.Projector = _BrokenProjector
+        try:
+            with self.assertRaises(HistoryReadError):
+                store.get_messages("s1")
+        finally:
+            proj_mod.Projector = original
 
-    def test_export_empty_enables_event_log(self) -> None:
-        os.environ["AGENTNODES_EVENT_LOG_READ"] = ""
-        store = SessionStore(self.db_path)
-        self.assertTrue(store._use_event_log_read)
+
+class _BrokenProjector:
+    def __init__(self, *args, **kwargs):
+        raise RuntimeError("replay failed")
+
+
+from agentnodes.kernel.session.state.memory_manager import HistoryReadError  # noqa: E402
 
 
 class TestSessionStoreConn(unittest.TestCase):

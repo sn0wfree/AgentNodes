@@ -1,19 +1,22 @@
-"""Phase 7+8 — MemoryManager: SQLite 单一事实源 + cache 加速 + auto-repair.
+"""会话历史 facade（MemoryManager）——唯一历史读写契约（C1-C5，2026-11-18 裁决 2）。
 
-Unifies 3 parallel history sources:
-- ``api/routers/chat.py:_session_histories`` (legacy in-memory dict, removed)
-- ``cli/tui/session.py:self.ctx.history`` (TUI in-memory list)
-- ``api/session/service.py`` SQLite messages table (current production path)
+## 历史读写契约（project-architecture-review-and-refactor-plan-20261118.md §8.1）
 
-Architecture:
-- ``SQLiteStore`` (source of truth) — WAL mode + auto_repair on corruption
-- ``SessionCache`` (LRU accelerator) — bounded by compaction-linked max_entries
-- ``UnifiedMemoryManager`` (Protocol impl) — write-through + emergency fallback
+- **C1 写**：唯一常规写者 = 边界事件发射（message_received / assistant_message /
+  compact.ended）。事件发射失败**显式抛错**，不做静默内存兜底。
+- **C2 严格读**（聊天上下文/模型输入）：cache → 投影（backend）→ 失败时从
+  事实源（event_log 经 Projector 重放）重新推导 → 重放也失败则抛
+  :class:`HistoryReadError`。绝不静默回退旧投影或内存缓冲。
+- **C3 宽松读**：``get_stale()`` 仅供 best-effort UI 渲染，可为旧投影/空，
+  永不抛错；结果不得进入模型上下文。
+- **C4**：``AGENTNODES_EVENT_LOG_READ`` 只留在 settings 诊断层，读取层不再认。
+- **C5**：``list_recent_sessions`` / ``health_report`` 生产零调用，退役候选。
 
-Health:
-- ``is_degraded`` reflects backend status
-- ``emergency_buffer`` last-resort when both SQLite and cache fail
-- ``health_report()`` exposes active layer + failure counts for telemetry
+## 架构
+
+- ``SQLiteStore``（投影读模型宿主）— WAL mode + auto_repair on corruption
+- ``SessionCache``（LRU 加速）— bounded by compaction-linked max_entries
+- 事实源 = ``event_log``（EventStore 写入）；``messages`` 是 Projector 的读模型
 """
 from __future__ import annotations
 
@@ -37,6 +40,7 @@ from agentnodes.kernel.session.state.cache import (
     SessionCache,
     SessionLockMap,
 )
+from agentnodes.foundation.errors import SessionError
 from agentnodes.foundation.storage.db_backend import (
     AUTO_REPAIR_TIMEOUT_S,
     WAL_BUSY_TIMEOUT_MS,
@@ -334,17 +338,24 @@ class HealthReport:
     sqlite_healthy: bool = True
     sqlite_last_check_at: float = 0.0
     sqlite_repaired: bool = False
-    emergency_buffer_active: bool = False
-    emergency_buffer_session_count: int = 0
     last_compaction_at: float = 0.0
     last_compaction_failures: int = 0
+
+
+class HistoryReadError(SessionError):
+    """历史严格读失败（C2）：投影不可用且 event_log 重放也未成功。
+
+    依据 project-architecture-review-and-refactor-plan-20261118.md §8.1
+    裁决 2：严格读路径（聊天上下文/模型输入）不得静默回退旧投影或内存
+    缓冲。UI best-effort 读取请走 ``UnifiedMemoryManager.get_stale()``。
+    """
 
 
 # ── UnifiedMemoryManager ────────────────────────────────────────────
 
 
 class UnifiedMemoryManager:
-    """SQLite = source of truth, 内存 = cache, emergency buffer = last-resort."""
+    """会话历史 facade（C1-C5）：append/get/clear 协调者，不做产品策略。"""
 
     def __init__(
         self,
@@ -384,7 +395,6 @@ class UnifiedMemoryManager:
                 self._cache_config = cache_config
                 self._cache = SessionCache(cache_config)
                 self._locks = SessionLockMap()
-                self._emergency_buffer: dict[str, list[Message]] = {}
                 self._estimator = DynamicAvgTokenEstimator(self, cache_config)
                 self._last_compaction_at = 0.0
                 self._last_compaction_failures = 0
@@ -396,7 +406,6 @@ class UnifiedMemoryManager:
         self._cache_config = cache_config
         self._cache = SessionCache(cache_config)
         self._locks = SessionLockMap()
-        self._emergency_buffer: dict[str, list[Message]] = {}
         self._estimator = DynamicAvgTokenEstimator(self, cache_config)
         self._last_compaction_at = 0.0
         self._last_compaction_failures = 0
@@ -411,29 +420,25 @@ class UnifiedMemoryManager:
         metadata: dict | None = None,
         message_type: str = "assistant",
     ) -> str:
-        try:
-            return await self._primary_append(
-                session_id, role, content, metadata, message_type,
-            )
-        except Exception as exc:
-            logger.exception(
-                "append() failed for session %s; using emergency buffer: %s",
-                session_id, exc,
-            )
-            self._emergency_buffer.setdefault(session_id, []).append({
-                "id": f"emergency_{uuid.uuid4().hex[:8]}",
-                "session_id": session_id,
-                "role": role,
-                "content": content,
-                "created_at": time.time(),
-                "message_type": message_type,
-                **({"metadata": metadata} if metadata else {}),
-            })
-            return f"emergency_{uuid.uuid4().hex[:8]}"
+        """C1 写契约：事件发射失败必须显式抛错，不做静默内存兜底。
+
+        事件是历史的唯一常规写者；写失败被吞掉意味着消息永久丢失且无从
+        诊断（2026-11-18 裁决 2：写失败不静默）。重试/上报由调用方决定。
+        """
+        return await self._primary_append(
+            session_id, role, content, metadata, message_type,
+        )
 
     async def get(
         self, session_id: str, *, use_cache: bool = True,
     ) -> list[Message]:
+        """C2 严格读（聊天上下文/模型输入）：投影 → event_log 重放 → 显式报错。
+
+        1. cache → 投影（backend）；
+        2. 投影读失败时从事实源（event_log 经 Projector 重放）重新推导；
+        3. 重放也失败 → :class:`HistoryReadError`——绝不静默回退旧投影或
+           内存缓冲（2026-11-18 裁决 2）。UI best-effort 请用 ``get_stale``。
+        """
         if use_cache:
             cached = self._cache.get(session_id)
             if cached is not None:
@@ -441,10 +446,46 @@ class UnifiedMemoryManager:
         try:
             msgs = self._backend.list_messages(session_id)
         except Exception as exc:
-            logger.exception("get() failed; returning emergency buffer: %s", exc)
-            return list(self._emergency_buffer.get(session_id, []))
+            msgs = self._derive_from_event_log(session_id, on_behalf=f"get: {exc}")
+            logger.warning(
+                "history strict read: projection failed for %s; "
+                "recovered %d messages from event_log replay",
+                session_id, len(msgs),
+            )
         self._cache.set(session_id, msgs)
         return msgs
+
+    async def get_stale(self, session_id: str) -> list[Message]:
+        """C3 宽松读（UI best-effort）：可为旧投影/空，永不抛错。
+
+        调用本方法即视为调用方显式接受 stale/degraded——返回结果不得
+        进入模型上下文（裁决 2）。失败链路：投影 → event_log 重放 → []。
+        """
+        try:
+            return await self.get(session_id, use_cache=False)
+        except Exception as exc:
+            logger.warning(
+                "history degraded read for %s returned no data: %s",
+                session_id, exc,
+            )
+            return []
+
+    def _derive_from_event_log(
+        self, session_id: str, *, on_behalf: str,
+    ) -> list[Message]:
+        """从事实源（event_log）重放推导消息（C2 修复路径）。"""
+        from agentnodes.kernel.session.projector import Projector
+
+        try:
+            projector = Projector(self._db_path)
+            return projector.project_to_messages(session_id)
+        except Exception as repair_exc:
+            raise HistoryReadError(
+                f"history read failed for session {session_id!r}: "
+                f"projection unavailable ({on_behalf}) and event_log replay "
+                f"also failed ({repair_exc})",
+                details={"session_id": session_id},
+            ) from repair_exc
 
     async def clear(self, session_id: str) -> None:
         """Reset the LLM's context window without destroying history (B4 D1).
@@ -462,7 +503,6 @@ class UnifiedMemoryManager:
         """
         self._cache.invalidate(session_id)
         await self._locks.clear(session_id)
-        self._emergency_buffer.pop(session_id, None)
         self._emit_clear_marker(session_id)
 
     def _emit_event(self, session_id: str, event_type: str, payload: dict) -> None:
@@ -514,10 +554,11 @@ class UnifiedMemoryManager:
     # direct-SQL twin would have been a second writer after eventisation.
 
     def list_recent_sessions(self, limit: int = 10) -> list[str]:
+        """生产零调用（C5 退役候选）。"""
         try:
             return self._backend.list_recent_sessions(limit)
         except Exception:
-            return list(self._emergency_buffer.keys())[:limit]
+            return []
 
     def health_report(self) -> HealthReport:
         report = HealthReport(
@@ -528,8 +569,6 @@ class UnifiedMemoryManager:
             cache_failure_counts={},
             cache_max_entries=self._cache.current_max_entries,
             cache_session_count=self._cache.session_count,
-            emergency_buffer_active=bool(self._emergency_buffer),
-            emergency_buffer_session_count=len(self._emergency_buffer),
             last_compaction_at=self._last_compaction_at,
             last_compaction_failures=self._last_compaction_failures,
         )

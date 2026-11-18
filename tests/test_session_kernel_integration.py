@@ -72,11 +72,12 @@ class TestSessionDomainLoop:
         assert auto_title_session("sess-loop", "帮我回测动量策略") == "帮我回测动量策略"
 
         # 4) 消息按投影器形状写入；SessionStore 直读（独立连接，同库）
+        # C4（2026-11-18）：get_messages 恒走 event_log/projector，
+        # messages 读模型直读显式走 `_get_messages_from_db`。
         _insert_message_like_projector(db_path, "sess-loop", "回测结果: IC=0.05", 1)
         _insert_message_like_projector(db_path, "sess-loop", "回测结果: 换手=0.3", 2)
         store = SessionStore(str(db_path))
-        store._use_event_log_read = False
-        msgs = store.get_messages("sess-loop")
+        msgs = store._get_messages_from_db("sess-loop")
         assert [m.content for m in msgs] == ["回测结果: IC=0.05", "回测结果: 换手=0.3"]
 
         # 5) reader 搜索命中
@@ -93,7 +94,7 @@ class TestSessionDomainLoop:
         assert row is not None and row["archived"] is True
         assert len(get_messages("sess-loop")) == 2
         #   6d. SessionStore 直读同样保留
-        assert len(store.get_messages("sess-loop")) == 2
+        assert len(store._get_messages_from_db("sess-loop")) == 2
 
     def test_two_sessions_independent_visibility(self, db_path):
         """多会话：删除其一不影响另一（列表/搜索按会话隔离）。"""

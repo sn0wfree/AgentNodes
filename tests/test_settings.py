@@ -157,6 +157,11 @@ def test_no_phantom_declarations():
         # blob 清理 TTL：读取点在 scripts/cleanup_blobs.py（scripts/
         # 不在本测试的扫描范围内）
         "AGENTNODES_BLOB_TTL_DAYS",
+        # ── C4 退役开关（2026-11-18 裁决 2）────────────────────────
+        # AGENTNODES_EVENT_LOG_READ：历史读取恒走 event_log/projector
+        # 之后，该开关在读取层已死。按 R-004 先有只读审计（settings
+        # legacy_usage / audit-legacy）再保留诊断层登记，读取层不认。
+        "AGENTNODES_EVENT_LOG_READ",
     }
     phantom = sorted(set(settings.ENV_TABLE) - used - RESERVED)
     assert not phantom, (

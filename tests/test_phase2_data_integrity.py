@@ -241,18 +241,19 @@ class TestGetMessagesMostRecent(unittest.TestCase):
         with tempfile.TemporaryDirectory(ignore_cleanup_errors=True) as tmp:
             db = self._db_with_messages(Path(tmp), 120)
             store = SessionStore(db_path=str(db))
-            store._use_event_log_read = False
 
             conn = sqlite3.connect(str(db))
             conn.row_factory = sqlite3.Row
             # **2026-11-16 批次 B3**：`store.get_messages` 的 `_get_db` 改从
             # kernel/session/db.py 取（K1 消除）—— patch 必须打在**实现模块**，
             # router 的同名 re-export 不再被查找。
+            # C4（2026-11-18）：get_messages 恒走 event_log/projector 后，
+            # messages 直读排序语义由 `_get_messages_from_db` 显式守护。
             with patch(
                 "agentnodes.kernel.session.db._get_db",
                 return_value=conn,
             ):
-                msgs = store.get_messages("s0", limit=100)
+                msgs = store._get_messages_from_db("s0", limit=100)
             conn.close()
             self.assertEqual(len(msgs), 100)
             seqs = [m.seq for m in msgs]

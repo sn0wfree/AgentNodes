@@ -20,7 +20,6 @@ from pathlib import Path
 from typing import Any, Optional, Sequence
 
 from agentnodes.kernel.session.models import Attempt, AttemptStatus, Message
-from agentnodes.foundation.config import settings as _settings
 
 logger = logging.getLogger(__name__)
 
@@ -40,12 +39,8 @@ class SessionStore:
     def __init__(self, db_path: Path | str, projector: Any | None = None) -> None:
         self.db_path = Path(db_path)
         self.db_path.parent.mkdir(parents=True, exist_ok=True)
-        # B3: read from event_log via projector? Controlled by env var
-        # so we can toggle without code changes.
-        # Default: enabled (event_log is the source of truth in B3).
-        # Set AGENTNODES_EVENT_LOG_READ=0 to fall back to direct DB reads.
-        import os
-        self._use_event_log_read = _settings.get_str("AGENTNODES_EVENT_LOG_READ") != "0"
+        # C4（2026-11-18 裁决 2）：历史读取恒走 event_log/projector；
+        # AGENTNODES_EVENT_LOG_READ 只留在 settings 诊断层，读取层不再认。
         # A composition root may share one Projector with EventStore.
         self._projector = projector
         self._owns_projector = projector is None
@@ -102,14 +97,11 @@ class SessionStore:
         message_parts table (via _row_to_message's `parts` param).
         Batch-fetched in a single query to avoid N+1.
 
-        Level 3 / B3: by default, reads from event_log via the projector
-        (event_log is the source of truth; messages + message_parts
-        are materialized views). Set AGENTNODES_EVENT_LOG_READ=0 to fall
-        back to direct DB reads.
+        C4（2026-11-18 裁决 2）：恒走 event_log/projector。投影读失败不再
+        静默退直读 DB——由 ``_get_messages_from_event_log`` 抛
+        ``HistoryReadError``，调用方（聊天上下文）显式感知。
         """
-        if self._use_event_log_read:
-            return self._get_messages_from_event_log(session_id, limit)
-        return self._get_messages_from_db(session_id, limit)
+        return self._get_messages_from_event_log(session_id, limit)
 
     def _get_messages_from_db(
         self,
@@ -184,11 +176,10 @@ class SessionStore:
         """Read messages from event_log via projector (B3 path).
 
         event_log is the source of truth; the projector rebuilds
-        message state from the event stream. This is the B3 read
-        path that replaces direct messages table reads.
+        message state from the event stream. This is the C2 严格读路径。
 
-        Falls back to DB path if event_log is empty or projector
-        fails (defensive).
+        投影重放失败时按裁决 2 显式抛 ``HistoryReadError``——
+        messages 直读是旧投影，不是修复，不得静默回退。
         """
         logger.debug("[STORE] get_messages (event_log) session=%s limit=%d", session_id, limit)
         try:
@@ -197,11 +188,12 @@ class SessionStore:
             logger.debug("[STORE] loaded %d messages (event_log)", len(msgs))
             return msgs
         except Exception as exc:
-            logger.warning(
-                "[STORE] event_log read failed for %s: %s — falling back to DB",
-                session_id, exc,
-            )
-            return self._get_messages_from_db(session_id, limit)
+            from agentnodes.kernel.session.state.memory_manager import HistoryReadError
+
+            raise HistoryReadError(
+                f"event_log replay failed for session {session_id!r}: {exc}",
+                details={"session_id": session_id},
+            ) from exc
 
     def _get_projector(self):
         """Cached Projector instance — constructing one per call drops
