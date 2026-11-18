@@ -9,7 +9,7 @@ import os
 import time
 from typing import TYPE_CHECKING, Any, Optional
 
-from agentnodes.foundation import settings as _settings
+from agentnodes.foundation.config import settings as _settings
 
 from fastapi import APIRouter, Header, HTTPException, Query, Request
 from fastapi.responses import StreamingResponse

@@ -16,7 +16,7 @@ from starlette.middleware.cors import CORSMiddleware
 
 import agentnodes
 from agentnodes import __version__
-from agentnodes.foundation import settings as _settings
+from agentnodes.foundation.config import settings as _settings
 
 logger = logging.getLogger(__name__)
 

@@ -14,7 +14,7 @@ import logging
 from pathlib import Path
 from typing import Any
 
-from agentnodes.foundation import paths as _paths
+from agentnodes.foundation.config import paths as _paths
 
 from agentnodes.apps.goal.workflow import (
     CompletionConfig,

@@ -14,7 +14,7 @@ if TYPE_CHECKING:
 
 from agentnodes.foundation.llm.config import LLMConfig
 from agentnodes.kernel.session.part_accumulate import _accumulate_part
-from agentnodes.foundation import settings as _settings
+from agentnodes.foundation.config import settings as _settings
 
 logger = logging.getLogger(__name__)
 

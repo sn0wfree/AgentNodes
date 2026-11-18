@@ -17,7 +17,7 @@ from pathlib import Path
 
 import pytest
 
-from agentnodes.foundation import paths
+from agentnodes.foundation.config import paths
 from agentnodes.foundation.storage import session_paths
 
 

@@ -29,7 +29,7 @@ import uuid
 from contextlib import contextmanager
 from contextvars import ContextVar
 from typing import Any, Iterator
-from agentnodes.foundation import settings as _settings
+from agentnodes.foundation.config import settings as _settings
 
 # ── ContextVars ──────────────────────────────────────────────────────
 

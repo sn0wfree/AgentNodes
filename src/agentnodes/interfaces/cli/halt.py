@@ -37,7 +37,7 @@ import os
 import threading
 import time
 from pathlib import Path
-from agentnodes.foundation import settings as _settings
+from agentnodes.foundation.config import settings as _settings
 
 logger = logging.getLogger(__name__)
 

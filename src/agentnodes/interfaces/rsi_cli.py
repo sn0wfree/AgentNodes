@@ -35,7 +35,7 @@ from dataclasses import dataclass
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Callable, Iterable
-from agentnodes.foundation import settings as _settings
+from agentnodes.foundation.config import settings as _settings
 
 logger = logging.getLogger(__name__)
 

@@ -3,7 +3,7 @@
 
 **为什么需要**：`src/agentnodes/` 曾有 56 个 env、71 个读取点，每个模块各自
 `os.environ.get(...)`。后果是无法集中校验（拼错静默失效）、无法文档化、
-无法做配置快照。批次 A 建立了 `foundation/settings.py` 声明表，本门禁确保
+无法做配置快照。批次 A 建立了 `foundation/config/settings.py` 声明表，本门禁确保
 **新代码不能再绕过它**。
 
 规则：
@@ -13,7 +13,7 @@
 3. 读**未登记**的本项目前缀变量（AN_ / AGENTNODES_ / QNODES_ /
    QUANTNODES_ / SR_）→ 报错：要么登记进表，要么加进 EXTERNAL。
 
-白名单：`foundation/settings.py` 自身（它就是读取层）。
+白名单：`foundation/config/settings.py` 自身（它就是读取层）。
 
 用法：
     python scripts/arch/check_env_access.py
@@ -34,8 +34,8 @@ sys.path.insert(0, os.path.join(ROOT, 'src'))
 
 #: 读取层自身——它是唯一合法的直接访问点。
 EXEMPT_FILES = (
-    'foundation/settings.py',
-    'foundation/paths.py',      # env_override / PROFILE_ENV 常量
+    'foundation/config/settings.py',
+    'foundation/config/paths.py',      # env_override / PROFILE_ENV 常量
 )
 
 #: 需要写回/删除 env 的场景（测试与 CLI 参数注入），不是"读配置"。
@@ -67,7 +67,7 @@ PROJECT_PREFIXES = ('AN_', 'AGENTNODES_', 'QNODES_', 'QUANTNODES_', 'SR_',
 
 
 def _load_tables():
-    from agentnodes.foundation import settings
+    from agentnodes.foundation.config import settings
 
     return settings.ENV_TABLE, settings.EXTERNAL_ENV_VARS
 
@@ -142,7 +142,7 @@ def main() -> int:
     if args.allow_legacy:
         print('\n[--allow-legacy] 迁移期：不判失败', file=sys.stderr)
         return 0
-    print('\n修复方向：配置读取统一经 foundation.settings；'
+    print('\n修复方向：配置读取统一经 foundation.config.settings；'
           '外部生态变量需显式加进 EXTERNAL_ENV_VARS。', file=sys.stderr)
     return 1
 

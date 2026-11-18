@@ -21,7 +21,7 @@ import yaml
 
 from agentnodes.kernel.permission.evaluator import DEFAULT_RULES
 from agentnodes.kernel.permission.schema import Permission, PermissionAction, PermissionRule
-from agentnodes.foundation import settings as _settings
+from agentnodes.foundation.config import settings as _settings
 
 logger = logging.getLogger(__name__)
 

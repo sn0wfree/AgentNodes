@@ -13,7 +13,7 @@ CLI、API、MCP 三个渠道都要用同一套判据——放在某个 router �
 from __future__ import annotations
 
 import os
-from agentnodes.foundation import settings as _settings
+from agentnodes.foundation.config import settings as _settings
 
 #: 环境变量名（``1`` / ``true`` / ``yes`` 视为开启）。
 #:

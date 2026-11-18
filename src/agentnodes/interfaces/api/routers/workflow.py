@@ -338,7 +338,7 @@ async def workflow_events(goal_id: str, request: Request):
 # ─────────────────────────────────────────────────────────────────────
 
 from pathlib import Path as _Path  # noqa: E402
-from agentnodes.foundation import settings as _settings
+from agentnodes.foundation.config import settings as _settings
 
 _run_registry = None
 _run_store = None

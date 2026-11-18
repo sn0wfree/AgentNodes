@@ -26,7 +26,7 @@ from contextlib import contextmanager
 from dataclasses import dataclass, field
 from typing import Any
 
-from agentnodes.foundation import settings as _settings
+from agentnodes.foundation.config import settings as _settings
 
 logger = logging.getLogger(__name__)
 

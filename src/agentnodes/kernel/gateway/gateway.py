@@ -16,7 +16,7 @@ from typing import Any, Callable
 from agentnodes.kernel.gateway.fencing import SessionFence
 from agentnodes.kernel.gateway.session_controller import RunResult, SessionController
 from agentnodes.kernel.orchestration import EntryPoint
-from agentnodes.foundation import settings as _settings
+from agentnodes.foundation.config import settings as _settings
 
 logger = logging.getLogger(__name__)
 

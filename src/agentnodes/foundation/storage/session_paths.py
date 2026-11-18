@@ -14,8 +14,8 @@ from __future__ import annotations
 import os
 from pathlib import Path
 
-from agentnodes.foundation.paths import active_profile, session_db_filename
-from agentnodes.foundation import settings as _settings
+from agentnodes.foundation.config.paths import active_profile, session_db_filename
+from agentnodes.foundation.config import settings as _settings
 
 #: 统一会话库文件名（点号前缀 → 文件管理器里隐藏）。
 #: 放在工作区目录，EventStore / web_session / SessionStore 读写同一个文件。

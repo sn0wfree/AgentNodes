@@ -46,7 +46,7 @@
 
 `resolve_canonical()` / `legacy_names()` / `legacy_usage()` 是诊断入口。
 
-## 与 `foundation/paths.py` 的分工
+## 与 `foundation/config/paths.py` 的分工
 
 - `paths.py`：**路径计算**（profile、数据目录、会话库文件名）
 - `settings.py`：**值读取**（env → 类型 → 默认值 → 校验）
@@ -154,7 +154,7 @@ def _flag(name: str, domain: str, doc: str = "") -> Setting:
 
 _DECLARED: tuple[Setting, ...] = (
     # ── 路径与数据（domain: paths）─────────────────────────────
-    # 与 foundation/paths.py 配合：settings 读取值，paths 拼路径。
+    # 与 foundation/config/paths.py 配合：settings 读取值，paths 拼路径。
     _s("AGENTNODES_DATA_DIR", "paths", "",
        "数据根目录覆盖（空 = 用 profile 默认）"),
     _s("AGENTNODES_PROFILE", "paths", "",

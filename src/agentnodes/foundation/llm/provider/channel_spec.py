@@ -26,7 +26,7 @@ import logging
 from pathlib import Path
 from typing import Any
 
-from agentnodes.foundation import settings as _settings
+from agentnodes.foundation.config import settings as _settings
 
 from agentnodes.foundation.llm.provider.channel import ChannelSpec, ErrorRule
 
@@ -59,7 +59,7 @@ def _user_specs_dir() -> Path:
     """
     import os
 
-    from agentnodes.foundation import paths as _paths
+    from agentnodes.foundation.config import paths as _paths
 
     override = _settings.get_str("AGENTNODES_MODEL_CATALOG_DIR").strip()
     if override:

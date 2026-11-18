@@ -34,7 +34,7 @@ def _resolve_db_path() -> Optional[str]:
     **批 E-2**：旧拼法 ``AGENTNODES_SESSIONS_DB`` 与旧名 ``AN_SESSIONS_DB``
     都已不再被读取（兼容层删除）。
     """
-    from agentnodes.foundation.settings import get_str as _get_str
+    from agentnodes.foundation.config.settings import get_str as _get_str
 
     return _get_str("AGENTNODES_SESSION_DB") or None
 

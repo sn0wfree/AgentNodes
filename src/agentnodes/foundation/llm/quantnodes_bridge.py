@@ -41,7 +41,7 @@ def _profile_home_dir(profile: str) -> str:
     不硬编码品牌字面量——路径字面量门禁（``check_path_literals``）
     会拦旧品牌硬编码，且 profile 改名时这里自动跟上。
     """
-    from agentnodes.foundation.paths import PROFILES
+    from agentnodes.foundation.config.paths import PROFILES
 
     return PROFILES[profile].home_dir_name
 

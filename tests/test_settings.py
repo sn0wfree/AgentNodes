@@ -19,7 +19,7 @@ from pathlib import Path
 
 import pytest
 
-from agentnodes.foundation import settings
+from agentnodes.foundation.config import settings
 
 SRC = Path(__file__).resolve().parents[1] / "src" / "agentnodes"
 
@@ -49,8 +49,8 @@ def _scan_settings_reads() -> set[str]:
 
 #: 允许直接读 env 的文件（读取层自身 + profile 机制）。
 _RAW_READ_EXEMPT = frozenset({
-    "foundation/settings.py",
-    "foundation/paths.py",
+    "foundation/config/settings.py",
+    "foundation/config/paths.py",
 })
 
 
@@ -136,13 +136,13 @@ def test_no_phantom_declarations():
     used |= {settings.resolve_canonical(n) for n, _, _, _ in _scan_raw_reads()}
     #: 已声明但当前**没有读取点**——即"预留/兼容"项，必须逐个解释。
     RESERVED = {
-        # 由 foundation/paths.py 消费（通过 env_override 与
+        # 由 foundation/config/paths.py 消费（通过 env_override 与
         # PROFILE_ENV 常量间接读，正则扫不到）
         "AGENTNODES_PROFILE",
         "AGENTNODES_CHECKPOINTS_DIR",
         "AGENTNODES_WORKFLOWS_DIR",
         "AGENTNODES_MODEL_CATALOG_DIR",
-        # 由 foundation/paths.py 的 PROFILE 机制间接使用
+        # 由 foundation/config/paths.py 的 PROFILE 机制间接使用
         "AGENTNODES_DATA_DIR",
         # ── 批 E-3（2026-11-11）：读取点在扫描器盲区里，见
         # docs/design/settings-declaration-hygiene-20261111.md §2.1 ──
@@ -171,7 +171,7 @@ def test_duplicate_declaration_raises_at_import():
     本模块初版就把 ``AGENTNODES_TEST_CHAT`` 登记了两次，domain 被后者
     悄悄改掉——典型「静默覆盖」。
     """
-    src = (SRC / "foundation" / "settings.py").read_text(encoding="utf-8")
+    src = (SRC / "foundation" / "config" / "settings.py").read_text(encoding="utf-8")
     assert "duplicate env declarations" in src, (
         "settings.py 缺少重复登记的 import 期防线"
     )

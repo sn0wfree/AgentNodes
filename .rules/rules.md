@@ -24,7 +24,7 @@
 | **L1** | `interfaces/` | 交付界面（cli / api / webui）|
 | **L2** | `apps/` | 业务能力（goal / agent_plugins）|
 | **L3** | `kernel/` | 框架内核（agent loop / gateway / session / workflow / runtimes）|
-| **L4** | `foundation/` | 零业务依赖的基础设施（paths / settings / llm 客户端 / 存储）|
+| **L4** | `foundation/` | 零业务依赖的基础设施（config 域：settings / paths / llm 客户端 / 存储）|
 
 **合法依赖**：`L1→L2`（interfaces 消费 apps）是正常的向下依赖，不是例外。上行依赖（`L2→L1`、`L3→L1/L2`、`L4→L1/L2/L3`）必须为 0。
 
@@ -33,7 +33,7 @@
 **R-002. 环境变量只经 settings 读** · MUST / 禁止直读
 
 - **触发**：任何需要读环境变量的代码。
-- **做法**：① 在 `foundation/settings.py` 的 `ENV_TABLE` 声明（`_s`/`_i`/`_f`/`_b`/`_flag`）；② 经 `settings.get_str()`/`get_int()`/`get_float()`/`get_bool()` 读取。
+- **做法**：① 在 `foundation/config/settings.py` 的 `ENV_TABLE` 声明（`_s`/`_i`/`_f`/`_b`/`_flag`）；② 经 `settings.get_str()`/`get_int()`/`get_float()`/`get_bool()` 读取。
 - **失败**：`check_env_access.py`（batch_gate 第 8 步）报错。
 - **来源**：L2 2026-11-09（批 A/B'）；设计 `param-naming-unification-20261109.md`。
 
@@ -72,7 +72,7 @@
 **R-005. 目录名只从 PROFILES 取** · 禁止硬编码
 
 - **触发**：任何需要拼 `.agentnodes` / `.quantnodes` 之类目录的地方。
-- **做法**：从 `foundation/paths.py::PROFILES` 取 `home_dir_name`。
+- **做法**：从 `foundation/config/paths.py::PROFILES` 取 `home_dir_name`。
 - **失败**：`check_path_literals.py`（batch_gate 第 3 步）拦下；profile 改名时链不跟随。
 - **来源**：L2 2026-11-09（批 D 初版被门禁拦下）；设计 `data-dir-unification-20261109.md`。
 
@@ -375,7 +375,7 @@ stream    sync  流式        astream   async 流式   ← stream_mode=True（�
 - **失败**：2026-11-11 实测 8 道门禁，7 道真拦，1 道有盲区——
   `check_path_literals` 的 `PATTERN_BRAND_DIR` 要求字符串**恰好**是 `.quantnodes`，
   于是 `".quantnodes/probe"`（拼路径的常见写法）**完全放行**。
-- **注**：注入前先确认该文件**不在 `EXEMPT_FILES` 里**（`settings.py` 是 env 门禁的豁免文件，
+- **注**：注入前先确认该文件**不在 `EXEMPT_FILES` 里**（`config/settings.py` 是 env 门禁的豁免文件，
   往那里注入当然不报——这是探针设计错误，不是门禁盲区）。
 - **来源**：L2 2026-11-11（同文档 §2）。
 

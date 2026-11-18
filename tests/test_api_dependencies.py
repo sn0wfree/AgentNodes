@@ -15,7 +15,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
 class TestDbPath(unittest.TestCase):
 
     def test_default_db_path(self):
-        from agentnodes.foundation.paths import session_db_filename
+        from agentnodes.foundation.config.paths import session_db_filename
         from agentnodes.interfaces.api.dependencies import _resolve_db_path
 
         old = os.environ.pop("AGENTNODES_WORKSPACE", None)

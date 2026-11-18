@@ -30,7 +30,7 @@ import secrets
 import time
 from pathlib import Path
 from typing import Optional
-from agentnodes.foundation import settings as _settings
+from agentnodes.foundation.config import settings as _settings
 
 TOKEN_TTL_SECONDS = 86400  # 24h
 

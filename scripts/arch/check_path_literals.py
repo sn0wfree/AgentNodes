@@ -50,14 +50,14 @@ EXEMPT_MARK = "path-literal: ok"
 #   只抓**旧品牌** ``.quantnodes`` / ``.quantnodes-research`` / 旧文件名。
 #   ``.agentnodes`` 是当前默认，散落在各处是正常的（不是本次要禁的）；
 #   要禁的是"旧品牌又长回来"。
-# 唯一合法落点：foundation/paths.py 的 PROFILES / LEGACY_DIRS。
+# 唯一合法落点：foundation/config/paths.py 的 PROFILES / LEGACY_DIRS。
 PATTERN_BRAND_DIR = re.compile(
     r'["\']\.quantnodes(-research)?["\']'
     r'|["\']\.quantnodes_[a-z_]*\.db["\']'
 )
 #: 品牌目录的单一事实源 + 迁移脚本（它们操作的就是旧路径）。
 EXEMPT_FILES_C = (
-    "foundation/paths.py",
+    "foundation/config/paths.py",
     "migrate_to_unified_db.py",
     "migrate_anonymous_sessions.py",
 )
@@ -101,7 +101,7 @@ def scan(allow: set[str]) -> list[str]:
                     ):
                         # **只约束 src/**：tests 里写旧名是合理的（它们就是在
                         # 断言旧名/构造 legacy 场景）；scripts 的迁移脚本同理。
-                        hit = ("旧品牌数据目录硬编码（用 foundation.paths，"
+                        hit = ("旧品牌数据目录硬编码（用 foundation.config.paths，"
                                "见 data-dir-unification-20261109）")
                     else:
                         m = PATTERN_PKG_SEG.search(line)

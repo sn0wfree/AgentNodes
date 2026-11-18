@@ -11,7 +11,7 @@ A2 会把这里升级为正式生命周期管理（start/stop、worker 自检、
 from __future__ import annotations
 
 from typing import Any, Callable
-from agentnodes.foundation import settings as _settings
+from agentnodes.foundation.config import settings as _settings
 
 _singleton: dict[str, Any] = {}
 
@@ -218,7 +218,7 @@ def _platform_data_dir(workspace: Any) -> Any | None:
     ):
         return None
     try:
-        from agentnodes.foundation import paths as _paths
+        from agentnodes.foundation.config import paths as _paths
 
         data_dir = (
             workspace / _paths.active_profile().home_dir_name / "platform"

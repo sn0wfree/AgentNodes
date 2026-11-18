@@ -16,7 +16,7 @@ import json
 import os
 from pathlib import Path
 from typing import TypedDict
-from agentnodes.foundation import settings as _settings
+from agentnodes.foundation.config import settings as _settings
 
 # QuantNodes 标准配置位置（与 onboard.py 一致）
 QUANTNODES_DIR = Path.home() / ".agentnodes"

@@ -26,7 +26,7 @@ from typing import Optional
 
 from rich.console import Console
 from rich.theme import Theme as _RichThemeType
-from agentnodes.foundation import settings as _settings
+from agentnodes.foundation.config import settings as _settings
 
 # Brand palette — kept in sync with QuantNodes-Research frontend.
 _BRAND_HEX = "#d97706"

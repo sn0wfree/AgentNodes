@@ -21,7 +21,7 @@ import json
 
 import pytest
 
-from agentnodes.foundation import settings as S
+from agentnodes.foundation.config import settings as S
 
 
 # ── settings 层：legacy_usage ───────────────────────────────
@@ -110,7 +110,7 @@ def test_audit_does_not_emit_alias_warnings():
     import logging
 
     S.reset_warnings()
-    with caplog_at("agentnodes.foundation.settings") as cap:
+    with caplog_at("agentnodes.foundation.config.settings") as cap:
         S.legacy_usage({"AN_WORKSPACE_PATH": "/w"})
     assert not [r for r in cap.records if "deprecated" in r.getMessage()]
 
@@ -161,7 +161,7 @@ def test_reading_canonical_warns_when_old_name_lurks(monkeypatch):
     monkeypatch.setenv("AN_WORKSPACE_PATH", "/data/proj")
     monkeypatch.delenv("AGENTNODES_WORKSPACE", raising=False)
     S.reset_warnings()
-    with caplog_at("agentnodes.foundation.settings") as cap:
+    with caplog_at("agentnodes.foundation.config.settings") as cap:
         S.get_str("AGENTNODES_WORKSPACE")
     msgs = [r.getMessage() for r in cap.records]
     assert any("AN_WORKSPACE_PATH" in m for m in msgs), msgs

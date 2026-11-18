@@ -24,7 +24,7 @@ from typing import Any
 
 from agentnodes.foundation.utils.token_utils import estimate_tokens
 from agentnodes.kernel.agent.compact import core as _compact_mod
-from agentnodes.foundation import settings as _settings
+from agentnodes.foundation.config import settings as _settings
 
 logger = logging.getLogger(__name__)
 

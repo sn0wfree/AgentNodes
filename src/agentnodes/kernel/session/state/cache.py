@@ -17,7 +17,7 @@ import time
 from dataclasses import dataclass
 from enum import Enum
 from typing import Any
-from agentnodes.foundation import settings as _settings
+from agentnodes.foundation.config import settings as _settings
 
 logger = logging.getLogger(__name__)
 

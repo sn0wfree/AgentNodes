@@ -83,7 +83,7 @@ def build_genome_store(workspace: Any | None = None) -> Any | None:
             try:
                 from pathlib import Path
 
-                from agentnodes.foundation import paths as _paths
+                from agentnodes.foundation.config import paths as _paths
                 from agentnodes.foundation.storage.genome_store import (
                     GenomeStore,
                 )

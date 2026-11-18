@@ -34,7 +34,7 @@ from dataclasses import replace
 from pathlib import Path
 from typing import Any, Callable, Iterable
 
-from agentnodes.foundation import settings as _settings
+from agentnodes.foundation.config import settings as _settings
 from agentnodes.foundation.storage.sqlite import (
     connect,
     ensure_column,

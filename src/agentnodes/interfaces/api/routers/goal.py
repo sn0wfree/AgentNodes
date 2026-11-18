@@ -6,7 +6,7 @@ from typing import Optional
 
 from fastapi import APIRouter, HTTPException, Request
 from pydantic import BaseModel
-from agentnodes.foundation import settings as _settings
+from agentnodes.foundation.config import settings as _settings
 
 router = APIRouter()
 

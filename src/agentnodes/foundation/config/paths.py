@@ -104,8 +104,8 @@ def active_profile(name: str | None = None) -> DataProfile:
         raw = name
     else:
         # 惰性 import：paths.py 承诺"零外部依赖"（只 import stdlib），
-        # settings 是同层的 stdlib-only 模块，但这里仍走惰性以免导入期成环。
-        from agentnodes.foundation.settings import get_legacy as _get_legacy
+        # settings 是同包（config/）的 stdlib-only 模块，仍走惰性以免导入期成环。
+        from agentnodes.foundation.config.settings import get_legacy as _get_legacy
 
         raw = (os.environ.get(PROFILE_ENV)
                or _get_legacy(PROFILE_ENV_LEGACY, "")
@@ -134,7 +134,7 @@ def data_dir(profile: DataProfile | str | None = None) -> Path:
     **批 E-2**：旧名 ``AGENTNODES_DATA_DIR`` **不再被读取**（兼容层已删）。
     设了它会被忽略——用 ``agentnodes config audit-legacy`` 可查。
     """
-    from agentnodes.foundation.settings import get_str as _get_str
+    from agentnodes.foundation.config.settings import get_str as _get_str
 
     override = (_get_str("AGENTNODES_DATA_DIR") or "").strip()
     if override:

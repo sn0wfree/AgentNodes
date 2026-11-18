@@ -37,7 +37,7 @@ from agentnodes.foundation.observability.trace import JsonFormatter, TraceFilter
 # 文件日志默认目录：项目数据根下 logs/（与各 store 的 ~/.agentnodes
 # 同根；测试经 conftest home 沙箱自动重定向，不触真实目录）。
 from agentnodes.foundation.storage.sqlite import DEFAULT_DATA_DIR
-from agentnodes.foundation import settings as _settings
+from agentnodes.foundation.config import settings as _settings
 
 DEFAULT_TEXT_FORMAT = (
     "%(asctime)s %(levelname)-8s %(name)s "

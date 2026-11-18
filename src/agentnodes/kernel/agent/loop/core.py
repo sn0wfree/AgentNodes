@@ -40,7 +40,7 @@ from pathlib import Path
 from typing import Any, AsyncIterator, Callable
 
 from agentnodes.foundation.utils.git import git_commit
-from agentnodes.foundation import settings as _settings
+from agentnodes.foundation.config import settings as _settings
 from agentnodes.kernel.hooks.composite import CompositeHook
 from agentnodes.kernel.hooks.context import AgentHookContext
 from agentnodes.foundation.llm import LLMConfig, LLMResponse, OpenAICompatClient, ToolCall

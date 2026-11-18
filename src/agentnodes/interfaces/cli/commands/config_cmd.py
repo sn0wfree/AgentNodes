@@ -42,7 +42,7 @@ def _audit_legacy_text(environ=None) -> tuple[str, int]:
     """人读版审计报告。返回 (报告文本, 退出码)。"""
     import os
 
-    from agentnodes.foundation import settings as S
+    from agentnodes.foundation.config import settings as S
 
     summary = S.legacy_usage_summary(environ)
     items = summary["items"]
@@ -273,7 +273,7 @@ def cmd_config(args: argparse.Namespace) -> int:
         return 2
     try:
         if args.json:
-            from agentnodes.foundation import settings as S
+            from agentnodes.foundation.config import settings as S
 
             summary = S.legacy_usage_summary()
             print(json.dumps(summary, ensure_ascii=False, indent=2))

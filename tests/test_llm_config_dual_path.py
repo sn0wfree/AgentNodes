@@ -39,7 +39,7 @@ def test_quantnodes_path_is_in_the_chain():
     agentnodes 目录，但 CONFIG_PATHS 仍是 `(CONFIG_PATH,)`——旧路径就此
     退出读取链，而十几处 docstring 仍宣称它是"兼容回退"。
     """
-    from agentnodes.foundation.paths import PROFILES
+    from agentnodes.foundation.config.paths import PROFILES
 
     qn_home = PROFILES["quantnodes"].home_dir_name
     quantnodes_path = QB.CONFIG_PATHS[-1]
@@ -48,12 +48,12 @@ def test_quantnodes_path_is_in_the_chain():
 
 
 def test_chain_dirs_come_from_profiles():
-    """链里的目录名来自 ``foundation.paths.PROFILES``，不是硬编码字面量。
+    """链里的目录名来自 ``foundation.config.paths.PROFILES``，不是硬编码字面量。
 
     路径字面量门禁（``check_path_literals``）拦下过一版硬编码旧品牌；
     这条测试保证"取自 PROFILES"这个性质不被后续改动破坏。
     """
-    from agentnodes.foundation.paths import PROFILES
+    from agentnodes.foundation.config.paths import PROFILES
 
     an = PROFILES["agentnodes"].home_dir_name
     qn = PROFILES["quantnodes"].home_dir_name
@@ -64,7 +64,7 @@ def test_chain_dirs_come_from_profiles():
 
 def test_switching_profile_moves_the_chain(monkeypatch):
     """profile 的目录名若改变，链跟着变（证明不是硬编码）。"""
-    from agentnodes.foundation import paths as P
+    from agentnodes.foundation.config import paths as P
 
     fake_profiles = {
         "agentnodes": P.DataProfile("agentnodes", ".renamed-an", "x.db"),

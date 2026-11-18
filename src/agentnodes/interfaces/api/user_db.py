@@ -16,7 +16,7 @@ import time
 import uuid
 from pathlib import Path
 from typing import Optional
-from agentnodes.foundation import settings as _settings
+from agentnodes.foundation.config import settings as _settings
 
 logger = logging.getLogger(__name__)
 

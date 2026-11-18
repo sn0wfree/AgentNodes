@@ -20,7 +20,7 @@ from pathlib import Path
 from typing import Any, Optional, Sequence
 
 from agentnodes.kernel.session.models import Attempt, AttemptStatus, Message
-from agentnodes.foundation import settings as _settings
+from agentnodes.foundation.config import settings as _settings
 
 logger = logging.getLogger(__name__)
 

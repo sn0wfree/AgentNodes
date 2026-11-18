@@ -19,7 +19,7 @@ from pathlib import Path
 from typing import Any, Callable
 
 from agentnodes.kernel.agent.loop.core import AgentLoop
-from agentnodes.foundation import settings as _settings
+from agentnodes.foundation.config import settings as _settings
 
 logger = logging.getLogger(__name__)
 

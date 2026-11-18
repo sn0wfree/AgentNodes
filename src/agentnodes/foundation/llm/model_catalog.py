@@ -29,7 +29,7 @@ from typing import Any, Literal
 
 import httpx
 
-from agentnodes.foundation import paths as _paths
+from agentnodes.foundation.config import paths as _paths
 
 if sys.version_info >= (3, 11):
     import tomllib  # type: ignore[import-not-found]
@@ -116,7 +116,7 @@ _REQUEST_TIMEOUT = 5.0
 # so `from .model_catalog import MODELS_DEV_ID` keeps working; keep it
 # as a sync alias rather than a second hand-maintained copy.
 from agentnodes.foundation.llm.provider import MODELS_DEV_ID  # noqa: F401  (re-export, see below)
-from agentnodes.foundation import settings as _settings
+from agentnodes.foundation.config import settings as _settings
 
 MODELS_DEV_ID: dict[str, str] = dict(MODELS_DEV_ID)
 

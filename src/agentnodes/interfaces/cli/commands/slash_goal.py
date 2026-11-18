@@ -25,7 +25,7 @@ from rich.console import Console
 from rich.panel import Panel
 from rich.table import Table
 
-from agentnodes.foundation import paths as _paths
+from agentnodes.foundation.config import paths as _paths
 from agentnodes.interfaces.cli.theme import get_console
 
 
@@ -64,7 +64,7 @@ def _user_workflows_dir() -> Path:
 
     **2026-11-09 路径统一**：原先这里独立拼了一遍路径，与
     ``apps/goal/workflow_config._USER_WORKFLOWS_DIR`` 重复——改一处漏一处的
-    典型来源。现在委托给 ``foundation.paths``，与那边同源。
+    典型来源。现在委托给 ``foundation.config.paths``，与那边同源。
     """
     return _paths.data_subdir("workflows", env_var="AGENTNODES_WORKFLOWS_DIR")
 

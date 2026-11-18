@@ -41,7 +41,7 @@ from pathlib import Path
 from typing import Any, Callable, Iterable
 
 from agentnodes.evals.scorecard import GoldenTask, load_golden_tasks
-from agentnodes.foundation import settings as _settings
+from agentnodes.foundation.config import settings as _settings
 
 logger = logging.getLogger(__name__)
 

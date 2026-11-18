@@ -84,7 +84,7 @@ LAYER_MEMBERSHIP: dict[str, str] = {
     "agentnodes.foundation.utils": "L4",
     "agentnodes.foundation.web": "L4",
     "agentnodes.foundation.utils.registry": "L4",
-    "agentnodes.foundation.config_loader": "L4",
+    "agentnodes.foundation.config.config_loader": "L4",
     "agentnodes.foundation": "L4",  # W0 试点：层目录 __init__
     "agentnodes.foundation.errors": "L4",
     "agentnodes.foundation.utils.git": "L4",

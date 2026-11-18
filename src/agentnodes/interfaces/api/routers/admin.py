@@ -25,7 +25,7 @@ from collections import deque
 from typing import Any
 
 from fastapi import APIRouter, Header, HTTPException, Query
-from agentnodes.foundation import settings as _settings
+from agentnodes.foundation.config import settings as _settings
 
 logger = logging.getLogger(__name__)
 

@@ -29,7 +29,7 @@ def _cache_dir_name() -> str:
     2026-11-09 路径统一：测试不再硬编码 ``.quantnodes``——否则一次
     profile 切换会静默让这些测试变成「断言旧路径」的死测试。
     """
-    from agentnodes.foundation.paths import active_profile
+    from agentnodes.foundation.config.paths import active_profile
 
     return active_profile().home_dir_name
 

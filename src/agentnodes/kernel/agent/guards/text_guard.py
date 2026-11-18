@@ -6,7 +6,7 @@
 于是「只用一个正则函数」变成了「必须装 langgraph」。实测后果：按文档装
 ``[api]`` 的用户在 chat 第一条消息就炸 ``ModuleNotFoundError``。
 
-本模块只依赖 ``os`` / ``re`` / ``foundation.settings``——下沉后链条切断。
+本模块只依赖 ``os`` / ``re`` / ``foundation.config.settings``——下沉后链条切断。
 详见 ``docs/design/langgraph-implicit-dep-fix-20261113.md``。
 
 **当前唯一消费者**：``interfaces/api/session/service.py::_run_with_guard``
@@ -40,7 +40,7 @@ from __future__ import annotations
 
 import re
 
-from agentnodes.foundation import settings as _settings
+from agentnodes.foundation.config import settings as _settings
 
 DEFAULT_MAX_CONTINUES = 10
 """Upper bound on automatic continuation attempts for one user message.
