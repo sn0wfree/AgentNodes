@@ -135,6 +135,7 @@ class SessionService:
         persona: str | None = None,
         mode: str | None = None,
         thinking: str | None = None,
+        policy: Any | None = None,
     ) -> dict[str, Any]:
         """Send a user message and enqueue background AgentLoop execution.
 
@@ -152,6 +153,10 @@ class SessionService:
             system_prompt: Optional custom system prompt (TUI goal mode uses
                 a different prompt than API chat mode).
             allow_shell_tools: Whether the registry may include shell tools.
+            policy: Optional product policy (apps.chat.policy.ChatPolicy,
+                duck-typed — kernel never imports apps). When provided,
+                its ``max_iterations`` / ``allow_shell_tools`` override the
+                signature defaults. ``None`` keeps current legacy behavior.
             persona: Optional role/persona name (e.g. ``researcher``,
                 ``strategist``). When provided and valid, its system prompt
                 replaces the default chat prompt. Unknown personas fall back
@@ -163,6 +168,14 @@ class SessionService:
             returns ``{"error": "queue_full", "limit": 10, "current_size": N}``.
         """
         logger.info("[MSG] send_message session=%s content_len=%d", session_id, len(content))
+
+        # ── 0. Product policy override（顺序③后续，裁决 3）─────────────
+        # kernel 不 import apps：policy 按鸭子类型读取（apps.chat.ChatPolicy）。
+        # None = 维持签名默认（既有 legacy 行为，零变化）。只覆盖本方法
+        # 消费的两个字段，入队值与响应形状不变。
+        if policy is not None:
+            max_iterations = policy.max_iterations
+            allow_shell_tools = policy.allow_shell_tools
 
         # ── 1. Generate user message ID + timestamp ────────────────────
         # B4: user message is persisted via EventBusV2 → projector.flush(),
