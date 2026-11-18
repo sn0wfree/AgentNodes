@@ -331,3 +331,59 @@ def test_resume_and_continue_releases_lease_on_runtime_failure(
     monkeypatch.setattr(rt_mod, "SwarmRuntime", lambda *a, **k: Boom())
     asyncio.run(restored.resume_and_continue())
     assert lease.holding("sess-cp") is False
+
+
+def test_resume_without_checkpoint_does_not_touch_lease(cp_env: Path, tmp_path: Path):
+    """checkpoint 缺失 → FileNotFoundError 在 acquire 之前——租约零接触
+    （不空转拿锁、无泄漏窗口）。
+
+    注意：工厂路径下 checkpoint 缺失直接返回 None（构建不出 runner），
+    所以这里直构 runner 模拟「工厂之后 checkpoint 被删」的窗口。
+    """
+    from unittest.mock import MagicMock
+
+    lease = MagicMock()
+    runner = GoalWorkflowRunner(
+        CFG, "sess-none", store=FakeStore(), workspace=tmp_path,
+        execution_lease=lease,
+    )
+    runner.set_goal_id("g-none")
+    with pytest.raises(FileNotFoundError):
+        asyncio.run(runner.resume_and_continue())
+    lease.acquire.assert_not_called()
+    lease.release.assert_not_called()
+
+
+def test_resume_lease_owner_label_and_single_release(cp_env, tmp_path, monkeypatch):
+    """owner 标签 ``goal:<goal_id>``；acquire 恰一次；成功路径 release
+    恰一次且带原 token。"""
+    from unittest.mock import MagicMock
+
+    import agentnodes.kernel.swarm.runtime as rt_mod
+
+    store = FakeStore()
+    store.goals["g1"] = SimpleNamespace(objective="obj")
+    runner = _make_runner(store, tmp_path)
+    _seed_hook(runner, output="第一层产出")
+    runner.checkpoint()
+
+    lease = MagicMock()
+    lease.acquire.return_value = "tok-1"
+    restored = GoalWorkflowRunner.resume_from_checkpoint(
+        session_id="sess-cp", goal_id="g1", config=CFG,
+        store=store, workspace=tmp_path, execution_lease=lease,
+    )
+    assert restored is not None
+
+    class FastRuntime:
+        def __init__(self, *a, **k):
+            pass
+
+        def execute(self, *a, **k):
+            return SimpleNamespace(success=True)
+
+    monkeypatch.setattr(rt_mod, "SwarmRuntime", lambda *a, **k: FastRuntime())
+    goal_id = asyncio.run(restored.resume_and_continue())
+    assert goal_id == "g1"
+    lease.acquire.assert_called_once_with("sess-cp", "goal:g1")
+    lease.release.assert_called_once_with("sess-cp", "tok-1")

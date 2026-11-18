@@ -139,6 +139,66 @@ class TestCmdHelp:
         assert "evidence" in out.lower()
 
 
+# ─── checkpoint resume lease wiring（批1 #2）───────────────────────────
+
+
+class TestCheckpointResumeLeaseWiring:
+    """``/goal resume`` 必须把 Gateway 执行租约传给工厂——此前 resume
+    路径零 lease 触点，checkpoint 恢复的 DAG 可与 Gateway chat 并发。"""
+
+    def test_resume_passes_gateway_lease(self, console, fresh_db, monkeypatch):
+        import asyncio
+        from types import SimpleNamespace
+
+        from agentnodes.apps.goal import workflow as wf_mod
+        from agentnodes.interfaces.cli.commands.slash_goal import (
+            _cmd_checkpoint_resume,
+        )
+        from agentnodes.kernel.gateway import get_gateway
+
+        # checkpoint.load 返回带 workflow_name 的最小数据（跳过检视回退）
+        fake_cp = {
+            "state": {"goal_status": "paused", "current_layer": 1},
+            "layer_results": {"researcher": {"output": "x"}},
+            "meta": {"workflow_name": "resume_flow"},
+        }
+        monkeypatch.setattr(
+            "agentnodes.apps.goal.checkpoint_store.CheckpointStore.load",
+            lambda self, session_id=None, goal_id=None: dict(fake_cp),
+        )
+        # workflow 装载成功（跳过检视回退）
+        monkeypatch.setattr(
+            "agentnodes.apps.goal.workflow_config.load_goal_workflow",
+            lambda name: SimpleNamespace(name=name),
+        )
+
+        captured: dict = {}
+
+        class StubRunner:
+            async def resume_and_continue(self):
+                return "g-cli"
+
+            def get_progress(self):
+                return {"status": "completed", "evidence_count": 0}
+
+        def _factory(cls, **kwargs):
+            captured.update(kwargs)
+            return StubRunner()
+
+        monkeypatch.setattr(
+            wf_mod.GoalWorkflowRunner, "resume_from_checkpoint",
+            classmethod(_factory),
+        )
+
+        rc = _cmd_checkpoint_resume(console=console, session_id="sess-cli",
+                                    goal_id="g-cli")
+        assert rc == 0
+        assert captured["session_id"] == "sess-cli"
+        assert captured["goal_id"] == "g-cli"
+        assert captured["workspace"] == Path.cwd()
+        assert captured["execution_lease"] is get_gateway().execution_lease
+
+
 # ─── run dispatcher ────────────────────────────────────────────────────
 
 

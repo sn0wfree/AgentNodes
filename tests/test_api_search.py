@@ -129,3 +129,38 @@ async def test_minimax_search_http_error_returns_502(monkeypatch):
         ) as client:
             r = await client.get("/api/search/minimax?q=auth-test")
             assert r.status_code == 502
+
+
+@pytest.mark.asyncio
+async def test_minimax_search_runs_off_event_loop(monkeypatch):
+    """批1 #6：minimax_search 必须经 asyncio.to_thread 在线程池执行。
+
+    判据：worker 线程里没有 running loop（get_running_loop 抛
+    RuntimeError）。若回归为 async 端点内直调，sync 函数会在 loop 线程
+    执行（get_running_loop 成功）→ 本用例红。
+    """
+    import asyncio as _asyncio
+
+    monkeypatch.setenv("MINIMAX_CODE_PLAN_KEY", "test-key")
+    seen = {}
+
+    def fake_search(query, count=5):
+        try:
+            _asyncio.get_running_loop()
+            seen["in_event_loop"] = True
+        except RuntimeError:
+            seen["in_event_loop"] = False
+        return json.dumps({"status": "ok", "results": [], "related_queries": []})
+
+    monkeypatch.setattr(
+        "agentnodes.interfaces.api.routers.search.minimax_search", fake_search,
+    )
+    app = _build_app()
+    async with httpx.AsyncClient(
+        transport=httpx.ASGITransport(app=app),
+        base_url="http://test",
+        headers=_bearer(),
+    ) as client:
+        r = await client.get("/api/search/minimax?q=python")
+    assert r.status_code == 200
+    assert seen["in_event_loop"] is False

@@ -177,3 +177,35 @@ class TestRunSwarmTimeoutContract:
         body = _extract_body(result)
         assert body["status"] == "error"
         assert "not found" in body["error"].lower()
+
+    def test_run_swarm_success_with_legacy_timeout_kwarg(self, server, tmp_path):
+        """成功路径 + legacy timeout 参数并存——**kwargs 吸收不影响结果。"""
+        with patch("agentnodes.kernel.swarm.runtime.SwarmRuntime.execute") as mock_exec:
+            from agentnodes.kernel.swarm.runtime import AgentResult, SwarmResult
+            from agentnodes.kernel.workflow.types import AgentStatus
+
+            mock_exec.return_value = SwarmResult(
+                run_id="timeout_legacy_001",
+                preset_name="quant_research_team",
+                success=True,
+                elapsed_s=0.5,
+                agent_results={
+                    "researcher": AgentResult(
+                        agent_id="researcher",
+                        status=AgentStatus.SUCCESS,
+                        output="ok",
+                        elapsed_s=0.1,
+                    ),
+                },
+                final_output="ok",
+            )
+            result = server.call_tool("run_swarm", {
+                "preset_name": "quant_research_team",
+                "workspace": str(tmp_path),
+                "task": "legacy timeout client",
+                "timeout": 300,
+            })
+            body = _extract_body(result)
+            assert body["status"] == "ok"
+            assert body["run_id"] == "timeout_legacy_001"
+            assert body["success"] is True

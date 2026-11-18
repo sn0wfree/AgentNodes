@@ -238,6 +238,69 @@ class TestScheduleOwnership:
         assert res2.status_code == 404
 
 
+class TestScheduleOwnershipChain:
+    """批1 #1 补强：四端点全覆盖 + 校验链顺序 + CLI job 语义。"""
+
+    def _create(self, client_obj, tmp_path):
+        res = client_obj.post(
+            "/api/schedule/create", headers=auth_header(),
+            json={"session_id": "sess-1", "workspace_path": str(tmp_path), **WORKSPACE_ARGS},
+        )
+        assert res.status_code == 200
+        return res.json()["job_id"]
+
+    def test_cancel_foreign_users_session_403(self, client):
+        client_obj, tmp_path = client
+        job_id = self._create(client_obj, tmp_path)
+        res = client_obj.post(f"/api/schedule/cancel/{job_id}",
+                              headers=auth_header(user_id="mallory"),
+                              params={"session_id": "sess-1"})
+        assert res.status_code == 403
+
+    def test_delete_foreign_users_session_403(self, client):
+        client_obj, tmp_path = client
+        job_id = self._create(client_obj, tmp_path)
+        res = client_obj.post(f"/api/schedule/delete/{job_id}",
+                              headers=auth_header(user_id="mallory"),
+                              params={"session_id": "sess-1"})
+        assert res.status_code == 403
+
+    def test_chain_order_session_check_first(self, client):
+        """校验链顺序：session 归属段（403 Forbidden）先于 job 段。
+
+        若 job 段先跑，mallory 传 tester 的 session_id 会拿到
+        "belongs to another session"——消息即链序的观测面。
+        """
+        client_obj, tmp_path = client
+        job_id = self._create(client_obj, tmp_path)
+        res = client_obj.get(f"/api/schedule/show/{job_id}",
+                             headers=auth_header(user_id="mallory"),
+                             params={"session_id": "sess-1"})
+        assert res.status_code == 403
+        assert res.json()["detail"] == "Forbidden"
+
+    def test_cli_owned_job_not_mutable_via_api(self, client):
+        """CLI 创建的 job（owner_session_id=None）——session 段通过后
+        仍被 job 段拦截：API 不可动语义保持。"""
+        from agentnodes.apps.scheduled_research.models import ScheduledResearchJob
+        from agentnodes.apps.scheduled_research.store import ScheduledResearchStore
+
+        client_obj, tmp_path = client
+        job = ScheduledResearchJob(
+            workspace=str(tmp_path), strategy_name="cli_strategy",
+            prompt="cli objective", cron="", interval_ms=0,
+            next_run_at=1.0, max_rounds=1, target="study",
+            owner_session_id=None, config={},
+        )
+        with ScheduledResearchStore() as store:
+            store.add(job)
+        res = client_obj.post(f"/api/schedule/cancel/{job.id}",
+                              headers=auth_header(),
+                              params={"session_id": "sess-1"})
+        assert res.status_code == 403
+        assert "belongs to another session" in res.json()["detail"]
+
+
 # ── permission respond ───────────────────────────────────────────────
 
 

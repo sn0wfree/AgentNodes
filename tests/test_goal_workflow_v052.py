@@ -229,6 +229,38 @@ class TestWorkflowWorkerCancel:
         mock_runner._start_event.set()
         await asyncio.wait_for(task, timeout=1.0)
 
+    async def test_resume_after_graceful_returns_to_running(self, mock_runner, fresh_db):
+        """graceful 暂停 → resume → 回 RUNNING（补状态断言，与硬取消路径
+        形成对照）。"""
+        app = MagicMock()
+        worker = WorkflowWorker(mock_runner, app)
+        task = asyncio.create_task(worker.run("test"))
+        for _ in range(50):
+            await asyncio.sleep(0.005)
+            if worker.state == WorkflowWorkerState.RUNNING:
+                break
+        worker.cancel()
+        assert worker.state == WorkflowWorkerState.PAUSED
+        worker.resume()
+        assert worker.state == WorkflowWorkerState.RUNNING
+        mock_runner._start_event.set()
+        await asyncio.wait_for(task, timeout=1.0)
+
+    async def test_is_running_false_after_immediate_cancel(self, mock_runner, fresh_db):
+        """硬取消后 is_running=False——app.py 的 Ctrl+G 分支以 is_running
+        为条件，二次按下不再打 worker（防重复 cancel 打点）。"""
+        app = MagicMock()
+        worker = WorkflowWorker(mock_runner, app)
+        task = asyncio.create_task(worker.run("test"))
+        for _ in range(50):
+            await asyncio.sleep(0.005)
+            if worker.state == WorkflowWorkerState.RUNNING:
+                break
+        worker.cancel(immediate=True)
+        assert not worker.is_running
+        mock_runner._start_event.set()
+        await asyncio.wait_for(task, timeout=1.0)
+
 
 # ─── v0.5.2 P0.5 — ResearchApp.start_workflow ────────────────────────
 
