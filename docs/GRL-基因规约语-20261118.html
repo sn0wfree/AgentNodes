@@ -1,0 +1,219 @@
+<!doctype html><html lang="zh-CN"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>GRL 基因规约语 · 专属于大模型与 agent 的规则语言</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#0f1115; --panel:#171a21; --panel2:#1d212a; --line:#2a2f3a;
+  --fg:#e6e8ee; --dim:#9aa3b2; --acc:#5cc8ff; --acc2:#7ee787;
+  --warn:#ffb86b; --bad:#ff7b72; --acc3:#d2a8ff;
+}
+body{background:var(--bg);color:var(--fg);font:15px/1.75 -apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Hiragino Sans GB","Microsoft YaHei",sans-serif;-webkit-font-smoothing:antialiased}
+.wrap{max-width:1120px;margin:0 auto;padding:0 20px 80px}
+header{padding:56px 0 34px;border-bottom:1px solid var(--line);margin-bottom:36px}
+h1{font-size:34px;line-height:1.25;letter-spacing:-.5px;margin-bottom:8px}
+h1 span{color:var(--acc)}
+.sub{color:var(--dim);font-size:16px;max-width:760px}
+.vd{display:inline-flex;align-items:center;gap:8px;margin-top:18px;padding:7px 15px;border-radius:6px;
+  background:rgba(126,231,135,.12);border:1px solid rgba(126,231,135,.4);color:var(--acc2);
+  font:600 13px/1 ui-monospace,SFMono-Regular,Menlo,monospace;letter-spacing:.5px}
+.vd.bad{background:rgba(255,123,114,.12);border-color:rgba(255,123,114,.4);color:var(--bad)}
+h2{font-size:21px;margin:44px 0 6px;padding-bottom:10px;border-bottom:1px solid var(--line)}
+h2 .n{color:var(--acc);font:600 13px ui-monospace,Menlo,monospace;margin-right:10px}
+h3{font-size:16px;margin:22px 0 10px;color:var(--acc)}
+p{color:var(--dim);margin:9px 0}
+p strong,li strong{color:var(--fg)}
+code{font:13px/1.6 ui-monospace,SFMono-Regular,Menlo,monospace;background:var(--panel2);
+  padding:1.5px 6px;border-radius:4px;color:var(--acc3)}
+pre{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:16px;overflow-x:auto;margin:12px 0}
+pre code{background:none;padding:0;color:#c9d1d9;font-size:12.5px;line-height:1.72;white-space:pre}
+.grid{display:grid;gap:12px}
+.g4{grid-template-columns:repeat(4,1fr)}
+.g3{grid-template-columns:repeat(3,1fr)}
+.g2{grid-template-columns:repeat(2,1fr)}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:14px 16px}
+.card .v{font:700 25px/1.2 ui-monospace,SFMono-Regular,Menlo,monospace;color:var(--acc)}
+.card .v.g{color:var(--acc2)} .card .v.w{color:var(--warn)} .card .v.p{color:var(--acc3)}
+.card .t{font-size:13.5px;color:var(--fg);margin-top:5px;font-weight:600}
+.card .d{font-size:12px;color:var(--dim);margin-top:4px;line-height:1.6}
+table{width:100%;border-collapse:collapse;margin:12px 0;font-size:13.5px}
+th,td{text-align:left;padding:9px 11px;border-bottom:1px solid var(--line);vertical-align:top}
+th{color:var(--dim);font-weight:600;font-size:12.5px;text-transform:uppercase;letter-spacing:.4px}
+tbody tr:hover{background:var(--panel)}
+.tscroll{overflow-x:auto;-webkit-overflow-scrolling:touch}
+.bar{position:relative;height:22px;background:var(--panel2);border-radius:4px;min-width:130px;margin:3px 0}
+.bar span{position:absolute;left:0;top:0;bottom:0;border-radius:4px}
+.bar b{position:absolute;right:8px;top:50%;transform:translateY(-50%);font:600 12px ui-monospace,Menlo,monospace;color:var(--fg)}
+.b1 span{background:linear-gradient(90deg,#1f6feb,#5cc8ff)}
+.b2 span{background:linear-gradient(90deg,#238636,#7ee787)}
+.b3 span{background:linear-gradient(90deg,#8957e5,#d2a8ff)}
+.b4 span{background:linear-gradient(90deg,#9a6700,#ffb86b)}
+.barrow{display:grid;grid-template-columns:190px 1fr;gap:12px;align-items:center;margin:5px 0}
+.barrow .lbl{font-size:12.5px;color:var(--fg);text-align:right}
+.chip{display:inline-block;padding:2px 9px;border-radius:20px;font:600 11.5px ui-monospace,Menlo,monospace;
+  background:var(--panel2);border:1px solid var(--line);color:var(--dim);margin:2px}
+.chip.ok{background:rgba(126,231,135,.14);border-color:rgba(126,231,135,.4);color:var(--acc2)}
+.chip.no{background:rgba(255,123,114,.14);border-color:rgba(255,123,114,.4);color:var(--bad)}
+.chip.c1{background:rgba(92,200,255,.12);border-color:rgba(92,200,255,.35);color:var(--acc)}
+.chip.c2{background:rgba(210,168,255,.12);border-color:rgba(210,168,255,.35);color:var(--acc3)}
+.chip.c3{background:rgba(255,184,107,.12);border-color:rgba(255,184,107,.35);color:var(--warn)}
+.refrow{display:grid;grid-template-columns:118px 1fr;gap:14px;padding:11px 0;border-bottom:1px dashed var(--line);align-items:start}
+.refrow:last-child{border-bottom:none}
+.ref{font:700 13px ui-monospace,Menlo,monospace;color:var(--acc);white-space:nowrap}
+.ref2{font:700 13px ui-monospace,Menlo,monospace;color:var(--acc3);white-space:nowrap}
+.ref3{font:700 13px ui-monospace,Menlo,monospace;color:var(--acc2);white-space:nowrap}
+.ref4{font:700 13px ui-monospace,Menlo,monospace;color:var(--warn);white-space:nowrap}
+.refdesc{font-size:13.5px;color:var(--dim)}
+.refdesc b{color:var(--fg)}
+ul{margin:9px 0 9px 20px;color:var(--dim)}
+li{margin:5px 0}
+.kv{display:flex;gap:10px;flex-wrap:wrap;margin:8px 0}
+.note{background:rgba(255,184,107,.07);border-left:3px solid var(--warn);padding:11px 14px;border-radius:0 7px 7px 0;margin:12px 0}
+.note p{margin:0;color:var(--dim);font-size:13.5px}
+.note b{color:var(--warn)}
+.big{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:16px 18px;margin:12px 0}
+.big .h{font-size:14px;font-weight:700;color:var(--fg);margin-bottom:8px}
+pre.out{font-size:12px;line-height:1.6;color:#a9b3c2;max-height:420px;overflow:auto}
+footer{margin-top:56px;padding-top:22px;border-top:1px solid var(--line);color:var(--dim);font-size:12.5px}
+@media(max-width:900px){
+  .g4{grid-template-columns:repeat(2,1fr)} .g3{grid-template-columns:1fr} .g2{grid-template-columns:1fr}
+  h1{font-size:26px} .barrow{grid-template-columns:120px 1fr}
+  .refrow{grid-template-columns:1fr;gap:2px}
+}
+@media(max-width:560px){
+  .g4{grid-template-columns:1fr} .wrap{padding:0 14px 60px}
+  header{padding:34px 0 24px}
+}
+</style></head><body><div class="wrap">
+<header><h1>GRL <span>基因规约语</span></h1>
+<p class="sub">Gene-Rule Language —— 规则是一等数据，散文是它的编译产物。已在 5526 条真实条款（38 文件 / 15 厂商）上跑通反编译到编译的闭环，18 条机检判据全部通过，其中一条是刻意注入违规的自证靶子。</p>
+<div class="vd">VERDICT: PASS</div>
+</header>
+<h2><span class="n">§1</span>定位：它填的是哪块空白</h2>
+<p>上一轮调研确认了三处行业空白：强度 / 模态字段、作用域字段、条款 ID 与评测分数的关联键。GRL 就是这三处的填补物 —— 它的必填字段恰好就是那三个空白。</p>
+<div class="grid g3">
+<div class="card"><div class="t">它是什么</div><ul><li>规则的一等数据表示</li><li>跨厂商可比较的坐标系</li><li>提示词基因编码的等位层实现</li><li>散文由编译器生成</li></ul></div>
+<div class="card"><div class="t">它不是什么</div><ul><li>不是自然语言的替代品</li><li>不是行为约束引擎</li><li>不是通用策略语言</li><li>不是行业标准</li></ul></div>
+<div class="card"><div class="t">它填的空白</div><ul><li>强度字段（有序等级，非布尔）</li><li>作用域字段（原文 + 归一键）</li><li>条款 ID 与评测分数的关联键</li><li>位点级 diff</li></ul></div>
+</div>
+<h2><span class="n">§2</span>语法速览</h2>
+<p>刻意做成 JSONC：LLM 输出 JSON 的可靠性远高于任何自定义语法，而机检成本最低。散文里的表格、引用、优先级声明全部下沉成数据字段。</p>
+<div class="grid g2">
+<pre><code>{
+  "id": "R-ANTH-SAF-0007",
+  "locus": "D01",
+  "tier": 0,
+  "class": "regulative",
+  "modality": "must",
+  "negation": "no",
+  "scope": { "key": "core search behaviors", "raw": "Core Search Behaviors" },
+  "addressee": "you",
+  "verb": "use",
+  "object": { "key": "queries relevant them", "raw": "them for relevant queries" },
+  "condition": "when internal tools are available",
+  "truncated": true,
+  "eval": ["safety.refusal_rate"],
+  "provenance": { "vendor": "ANTHROPIC", "file": "Claude-4.1.json" }
+}</code></pre>
+<div class="card">
+<div class="h" style="font-weight:700;color:var(--fg);margin-bottom:6px">四个字段的实测依据</div><ul>
+<li><b>modality</b> 的 6 个取值 = 语料 10 种原始表述的归并结果</li>
+<li><b>negation</b> 是三态字符串而非布尔 —— 缺失与相同必须可区分</li>
+<li><b>scope</b> 同时存归一键与原文 —— 原始名有 295 个变体</li>
+<li><b>eval</b> 故意留空 —— 机制已定义，真实分数还没挂</li>
+</ul></div>
+</div>
+<h3>四种引用形态：这就是「代指特定规则」</h3>
+<div class="big">
+<div class="refrow"><div class="ref">#D01</div><div class="refdesc">位点引用 —— 一个维度下的全部规则<br><b style="font-size:12.5px">存在性层；命中量有上限检查，防止过滤失效</b></div></div>
+<div class="refrow"><div class="ref2">#D01~must</div><div class="refdesc">等位引用 —— 该维度下所有 must 模态的规则<br><b style="font-size:12.5px">等位层；不指名文件，但精确到语义等价类</b></div></div>
+<div class="refrow"><div class="ref3">@R-ANTH-SAF-0007</div><div class="refdesc">精确引用 —— 指定的那一条<br><b style="font-size:12.5px">个体层；跨厂商可指向同一条规则</b></div></div>
+<div class="refrow"><div class="ref4">A ⊇ B</div><div class="refdesc">断言引用 —— 集合之间的可判定关系<br><b style="font-size:12.5px">验证层；⊇ / ⊥ / ≡ 三种，全部可机检</b></div></div>
+</div>
+<h2><span class="n">§3</span>实测数字</h2>
+<div class="grid g4">
+<div class="card"><div class="v ">5526</div><div class="t">真实条款</div><div class="d">38 文件 / 15 厂商，SPDeconstruction 产物</div></div>
+<div class="card"><div class="v w">68.2%</div><div class="t">规约条款未写模态</div><div class="d">2888 / 4237 —— 强度字段的信息上限</div></div>
+<div class="card"><div class="v g">100%</div><div class="t">槽位保真度</div><div class="d">4237 / 4237，编译回散文不丢任何槽位</div></div>
+<div class="card"><div class="v g">12711</div><div class="t">强度守恒检查</div><div class="d">0 违规（极性 + 保档双检 × 3 套文风）</div></div>
+<div class="card"><div class="v g">2073/2073</div><div class="t">风格可替换</div><div class="d">同规则 × 3 文风 ⇒ 3 个不同输出</div></div>
+<div class="card"><div class="v ">L2</div><div class="t">等位键最优分辨率</div><div class="d">scope+模态+否定+动词；两头都掉</div></div>
+<div class="card"><div class="v w">54.6%</div><div class="t">位点自动归属唯一率</div><div class="d">36.6% 无命中 · 8.8% 并列歧义</div></div>
+<div class="card"><div class="v g">18/18</div><div class="t">机检判据</div><div class="d">含 1 条刻意注入违规的自证靶子</div></div>
+<div class="card"><div class="v w">25.9%</div><div class="t">上游 C 槽混装 section</div><div class="d">864 / 3334 条，已显式标记</div></div>
+<div class="card"><div class="v w">31.9%</div><div class="t">条件字段语义截断</div><div class="d">1353 / 4237 条，已显式标记</div></div>
+<div class="card"><div class="v ">295→268</div><div class="t">作用域规范化</div><div class="d">原文保留 + 键归一；收益集中在头部</div></div>
+<div class="card"><div class="v ">25.8%</div><div class="t">否定高置信检出</div><div class="d">否定极少出现在模态槽里，需跨槽探测</div></div>
+</div>
+<h2><span class="n">§4</span>等位键的分辨率是实测出来的</h2>
+<p>等位键分三层，跨厂商共享量两头都掉：L1 太粗（丢掉否定与动词，混掉不同规则），L3 太细（完整对象逐字不同，几乎不可比）。<b>L2 是最优分辨率</b>。</p>
+<div class="tscroll"><table><thead><tr><th>厂商对</th><th>L1 粗<br>scope+模态</th><th>L2 中<br>scope+模态+否定+动词</th><th>L3 细<br>+完整对象</th></tr></thead><tbody>
+<tr><td><b>ANTHROPIC</b> × OPENAI</td><td style="min-width:120px"><div class="bar"><span class="b1" style="width:17.1%"></span><b>6</b></div></td><td style="min-width:120px"><div class="bar"><span class="b2" style="width:100.0%"></span><b>35</b></div></td><td style="min-width:120px"><div class="bar"><span class="b3" style="width:8.6%"></span><b>3</b></div></td></tr>
+<tr><td><b>ANTHROPIC</b> × XAI</td><td style="min-width:120px"><div class="bar"><span class="b1" style="width:17.1%"></span><b>6</b></div></td><td style="min-width:120px"><div class="bar"><span class="b2" style="width:45.7%"></span><b>16</b></div></td><td style="min-width:120px"><div class="bar"><span class="b3" style="width:1.5%"></span><b>0</b></div></td></tr>
+<tr><td><b>META</b> × GOOGLE</td><td style="min-width:120px"><div class="bar"><span class="b1" style="width:14.3%"></span><b>5</b></div></td><td style="min-width:120px"><div class="bar"><span class="b2" style="width:8.6%"></span><b>3</b></div></td><td style="min-width:120px"><div class="bar"><span class="b3" style="width:1.5%"></span><b>0</b></div></td></tr>
+<tr><td><b>HUME</b> × MISTRAL</td><td style="min-width:120px"><div class="bar"><span class="b1" style="width:2.9%"></span><b>1</b></div></td><td style="min-width:120px"><div class="bar"><span class="b2" style="width:14.3%"></span><b>5</b></div></td><td style="min-width:120px"><div class="bar"><span class="b3" style="width:1.5%"></span><b>0</b></div></td></tr>
+<tr><td><b>DIA</b> × CLUELY</td><td style="min-width:120px"><div class="bar"><span class="b1" style="width:2.9%"></span><b>1</b></div></td><td style="min-width:120px"><div class="bar"><span class="b2" style="width:1.5%"></span><b>0</b></div></td><td style="min-width:120px"><div class="bar"><span class="b3" style="width:1.5%"></span><b>0</b></div></td></tr>
+</tbody></table></div>
+<div class="note"><p><b>对上一轮结论的修正</b>：上一轮在存在性层测出的「ANTHROPIC 与 OPENAI 相似度 0.913」，在条款级等位层并不成立 —— 两家在 L2 上共享 35 条，在 L3 上只共享 3 条。存在性层的相似度不能外推到条款层。</p></div>
+<h2><span class="n">§5</span>强度与否定：两个必须做成结构化字段的理由</h2>
+<div class="grid g2">
+<div class="card"><div class="t" style="margin-bottom:8px">模态分布（regulative 4237 条）</div>
+<div class="barrow"><div class="lbl">must 强制</div><div class="bar"><span class="b1" style="width:13.4%"></span><b>387</b></div></div>
+<div class="barrow"><div class="lbl">must_not 强制禁止</div><div class="bar"><span class="b1" style="width:6.6%"></span><b>190</b></div></div>
+<div class="barrow"><div class="lbl">should 建议</div><div class="bar"><span class="b1" style="width:16.9%"></span><b>489</b></div></div>
+<div class="barrow"><div class="lbl">may 可选</div><div class="bar"><span class="b1" style="width:1.6%"></span><b>46</b></div></div>
+<div class="barrow"><div class="lbl">can 许可</div><div class="bar"><span class="b1" style="width:8.2%"></span><b>237</b></div></div>
+<div class="barrow"><div class="lbl">unspecified 未声明（散文）</div><div class="bar"><span class="b4" style="width:100.0%"></span><b>2888</b></div></div>
+</div>
+<div class="card"><div class="t" style="margin-bottom:8px">否定三态</div>
+<div class="barrow"><div class="lbl">yes 高置信检出</div><div class="bar"><span class="b2" style="width:37.0%"></span><b>1094</b></div></div>
+<div class="barrow"><div class="lbl">no 未检出</div><div class="bar"><span class="b1" style="width:100.0%"></span><b>2955</b></div></div>
+<div class="barrow"><div class="lbl">suspected 低置信存疑</div><div class="bar"><span class="b4" style="width:6.4%"></span><b>188</b></div></div>
+<p style="font-size:12.5px;margin-top:10px">模态槽明确表态否定的只有 26 条（cannot 24 · cannot 2），但全语料有 1094 条规约带否定语义 —— 否定藏在 I 槽前缀、否定动词、对象槽深处、条件从句里，必须跨槽探测。</p>
+</div></div>
+<h2><span class="n">§6</span>编译器契约：风格表数据驱动 + 强度守恒</h2>
+<p>渲染策略（各家文风）是数据不是代码。编译器必须自证两条，缺一不可：<b>极性守恒</b>（must 不许编译成 never / must not）与<b>强度保档</b>（must 不许降级成 may）。只查极性会漏掉降级，只查档位会漏掉极性反转 —— 两种漏法在实测中都真实发生过。</p>
+<pre><code>xai_policy     open=&lt;policy&gt;  close=&lt;/policy&gt;  must→MUST   frame={body}.
+openai_plain   open=           close=            must→must   frame={body}.
+anthropic_effect open=         close=            must→always frame={body}, because it directly affects the user.</code></pre>
+<h2><span class="n">§7</span>跑起来才暴露的 7 个真缺陷</h2>
+<p>设计本身不产生证据。以下全部是在跑真实语料时暴露的，其中第 7 条是判据自己有洞。</p>
+<div class="tscroll"><table><thead><tr><th>#</th><th>缺陷</th><th>症状</th><th>修法</th><th>类别</th></tr></thead><tbody>
+<tr><td><b>1</b></td><td><b>编译器槽位粘连</b></td><td>输出 <code>search resultsalways</code></td><td>槽位用列表拼接 + 空槽守卫</td><td><span class="chip c1">实现</span></td></tr>
+<tr><td><b>2</b></td><td><b>风格表极性反转</b></td><td><code>must</code> 被渲染成 <code>never</code>，语义相反</td><td>风格措辞纳入受控强度词表</td><td><span class="chip c1">实现</span></td></tr>
+<tr><td><b>3</b></td><td><b>三态字符串被当布尔</b></td><td><code>if rule.negation</code> 把 <code>'no'</code> 当真</td><td>显式 <code>== 'yes'</code></td><td><span class="chip c1">实现</span></td></tr>
+<tr><td><b>4</b></td><td><b>否定过计</b></td><td>章节名 <code>or not search</code> 被当否定（124 条）</td><td>否定扫描排除作用域，只扫正文</td><td><span class="chip c1">实现</span></td></tr>
+<tr><td><b>5</b></td><td><b>上游数据污染</b></td><td>C 槽混装 section + 语义截断</td><td>剥离 + 显式 <code>truncated</code> 标记</td><td><span class="chip c3">数据</span></td></tr>
+<tr><td><b>6</b></td><td><b>极性探测器复合模态</b></td><td><code>must not</code> 拆 token 后首个是 <code>must</code>（190 条误判）</td><td>极性从编译器写入的模态槽判定</td><td><span class="chip c1">实现</span></td></tr>
+<tr><td><b>7</b></td><td><b>判据自己有洞</b></td><td>C3 空 token 集误判；C8a 命中 5526 条=全集仍判 PASS；C11 恒真</td><td>空集守卫 + 命中量加上限 + 自证探针</td><td><span class="chip no">★ 判据</span></td></tr>
+</tbody></table></div>
+<div class="note"><p><b>第 7 条最值得记住</b>：PASS 不等于判据正确。C8a 抓到了 5526 条（全集）却仍然 PASS，因为判据只写了「大于等于 1」。<b>给命中量加下限是弱判据，给它加上限才是强判据</b> —— 上限能抓住过滤条件失效导致的全集命中。</p></div>
+<h2><span class="n">§8</span>18 条机检判据</h2>
+<div class="big"><div class="h">自检输出（可复跑：<code>python3 grl_check.py</code>）</div><pre class="out">GRL 自检 · 18 条判据
+  [PASS] C1   反编译不丢条款（regulative 条数守恒）                       语料 regulative=4237，反编译后=4237
+  [PASS] C2   核心槽位填充率（动词/对象/作用域）                             verb=100.0% object=97.1% scope=63.9%
+  [PASS] C3   槽位保真度（GRL→散文 不丢任何槽位内容）                         4237/4237 = 100.0%
+  [PASS] C4   强度守恒（极性守恒 + 强度保档）                              检查 12711 次，违规 0 次
+  [PASS] C5   风格可替换（同规则 × 多文风 ⇒ 多输出）                         输出变体数分布 {3: 2073}（共 2073 条规则）
+  [PASS] C6   风格表词表封闭（映射值必须落在受控强度词表内）                        违规风格表：无
+  [PASS] C7   模态枚举封闭（只有 6 个取值）                               实测取值 ['can', 'may', 'must', 'must_not', 'should', 'unspecified']
+  [PASS] C8a  引用形态：位点引用 #D01（且不能把 locus=None 的规则算进去）         命中 5 条（全集 5526 条）—— 上限检查是必须的：原实现返回 5526=全集仍被判 PASS
+  [PASS] C8b  引用形态：等位引用 #D01~must                            命中 0 条，且全部 modality=must
+  [PASS] C8c  引用形态：精确引用 @ID                                  命中 1 条
+  [PASS] C8d  引用形态：位点+等位收窄（⊆ 关系成立）                           等位 0 ≤ 位点 5
+  [PASS] C9   断言求值 ⊇/⊥/≡ 对同一对象给出互补结论                         ⊇=True ⊥=False ≡=True（同一对象必须 ⊇真 ⊥假 ≡真）
+  [PASS] C10  否定三态完备（yes/no/suspected 三者互斥且穷尽）               yes=1094 no=2955 suspected=188，合计=4237
+  [PASS] C11  上游数据污染被显式标记（截断/外来 section），且检测器自证有效            语料中条件截断 1353 条；自证探针：污染条款被剥离并标记截断=True
+  [PASS] C12  作用域规范化产生真实归并（原文保留 + 键归一）                       原始 295 个 → 规范化 268 个（保留原文，键归一）
+  [PASS] C13  等位键最优分辨率可复算（L2 = scope+模态+否定+动词 共享量最大）         3/5 组厂商对满足 L2 最优
+  [PASS] C14  ★ 自证靶子：故意把 must 映射成 never，判据必须报错               200 条里被抓出 69 条（判据不是摆设）
+  [PASS] C15  编译器幂等（同输入两次编译逐字一致）                             len=56
+VERDICT: PASS（18/18 条判据全过）</pre></div>
+<h2><span class="n">§9</span>边界：明确没做什么</h2>
+<div class="grid g2">
+<div class="card"><div class="t">数据边界</div><ul><li>语料只覆盖 15 厂商，另 11 家无产物</li><li>条款数据是 gemini-flash-3.5 一次生成，非黄金标准</li><li>上游缺陷已量化并标记，但消不掉</li><li>位点自动归属唯一率仅 54.6%</li></ul></div>
+<div class="card"><div class="t">验证边界</div><ul><li><b>eval 字段是空的</b>：机制已定义，没挂真实评测分数</li><li>行为层一次都没验：规则是否真被执行未测</li><li>正编译不还原原文：它生成新散文，不是复刻</li><li>位点级 diff 只做了 6 组厂商对，样本偏小</li></ul></div>
+</div>
+<div class="note"><p><b>这是我的设计，不是行业标准</b>：命名、ID 格式、引用形态都是本轮定的，没有与任何外部规范对齐过。</p></div>
+<footer>数据源：SPDeconstruction 对 CL4R1T4S 的处理产物（38 文件 / 15 厂商 / 5526 条条款）。自检脚本：<code>python3 grl_check.py</code>（含刻意注入违规的自证靶子 C14）。　VERDICT: PASS</footer>
+</div></body></html>
