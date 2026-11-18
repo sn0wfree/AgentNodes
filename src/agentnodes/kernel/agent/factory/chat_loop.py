@@ -100,6 +100,11 @@ def build_chat_agent_loop(
     # ── Tier 1 A1: permission gate plumbing ─────────────────────
     permission_evaluator: Any | None = None,
     permission_gateway: Any | None = None,
+    # ── 顺序③（裁决 3）：产品策略由 apps/chat 显式传入 ──────────
+    # L3 不 import apps——policy 按鸭子类型读取（apps.chat.policy.ChatPolicy）。
+    # None = 维持签名默认（行为不变）。policy 优先于签名默认；需要
+    # per-turn 覆盖的调用方应构造不同的 policy，而不是混用两者。
+    policy: Any | None = None,
 ) -> AgentLoop:
     """Construct a chat-mode ``AgentLoop``.
 
@@ -118,10 +123,12 @@ def build_chat_agent_loop(
     - ``system_prompt`` is rendered via ``PromptBuilderFactory.get(role)``
       with ``extra_context`` (e.g. ``{"workspace": ..., "tool_list": ...}``)
       unless ``system_prompt_override`` is provided
-    - ``allow_shell_tools`` (default ``False``): opt-in to include
-      ``run_command`` in the registry. When ``False``, the shell tool is
-      removed from the default registry before the agent is built so the
-      LLM never sees it as an available option.
+    - ``allow_shell_tools`` (default ``True``): include ``run_command`` in
+      the registry. When ``False``, the shell tool is removed from the
+      default registry before the agent is built so the LLM never sees it
+      as an available option. (Legacy ``SessionService.send_message``
+      passes ``False`` — that path difference is pinned in
+      ``apps.chat.policy.ChatPolicy``.)
 
     P2 (``allowed_tools`` unlock):
         ``allowed_tools`` defaults to ``None`` (= all tools). Previously
@@ -134,9 +141,25 @@ def build_chat_agent_loop(
         When ``workspace`` is ``None``, ``{workspace}`` stays empty and
         ``{tool_list}`` still renders from the default registry (so the LLM
         sees what tools are available even without a workspace).
+
+    顺序③（裁决 3）：产品默认由 ``apps/chat.policy.ChatPolicy`` 显式声明。
+    ``policy`` 非 None 时，max_iterations / allow_shell_tools /
+    enable_goal_injection / enable_claim_validation / strict_claim_validation
+    以 policy 字段为准（覆盖签名默认）。注意：本 docstring 此前把
+    ``allow_shell_tools`` 写成 default ``False``——签名实际是 ``True``；
+    legacy ``SessionService.send_message`` 路径的默认才是 ``False``（两路
+    差异见 ``ChatPolicy`` 表格，先保行为、暂不统一）。
     """
     from agentnodes.kernel.agent.builtin_tools import build_default_registry
     from agentnodes.kernel.agent.loop.assembly import assemble_loop_parts
+
+    if policy is not None:
+        # 顺序③（裁决 3）：产品策略覆盖签名默认（precedence 见 docstring）。
+        max_iterations = policy.max_iterations
+        allow_shell_tools = policy.allow_shell_tools
+        enable_goal_injection = policy.enable_goal_injection
+        enable_claim_validation = policy.enable_claim_validation
+        strict_claim_validation = policy.strict_claim_validation
 
     # Tool registry (default: all built-in tools)
     if registry is None:

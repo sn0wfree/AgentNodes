@@ -129,9 +129,9 @@ class SessionService:
         content: str,
         *,
         model: str | None = None,
-        max_iterations: int = 50,
+        max_iterations: int = 50,  # == apps.chat.ChatPolicy.for_send_async().max_iterations（kernel 不 import apps，漂移由 tests/test_chat_policy.py 钉住）
         system_prompt: Optional[str] = None,
-        allow_shell_tools: bool = False,
+        allow_shell_tools: bool = False,  # == ChatPolicy.for_send_async().allow_shell_tools（与 builder 默认 True 不同——两路既有行为）
         persona: str | None = None,
         mode: str | None = None,
         thinking: str | None = None,
