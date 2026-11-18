@@ -452,10 +452,15 @@ class SessionController:
 
         # R2.1a：答案进事件流（「一切事实经事件流」）。fenced 的 run 在
         # 上方提前 return，陈旧答案不会出现在事件流里。消费方：
-        # chat bridge 据此发 assistant_message（消费者模型下请求线程
-        # 看不到 RunResult，事件流是答案的唯一通道）。
+        # chat 层的进程单例落库观察器据此把 assistant_message 恰一次
+        # 写入会话（批1-S2 · A1+B2：三个 HTTP 落库点已停用）；
+        # 消费者模型下请求线程看不到 RunResult，事件流是答案的唯一通道。
+        # 注意：run_meta["session_id"] 是 EntryPoint 回执 id（UUID），不是
+        # 业务 id——落库观察器用的是 business_session_id（剥 kind 前缀）。
         self._sink("run.answer", {
-            "run_id": run_id, "content": answer, **run_meta,
+            "run_id": run_id, "content": answer,
+            "business_session_id": _fence_domain(request.session_key),
+            **run_meta,
         })
 
         # R2.2：turn 收尾——未被安全点消费的 steer 转正常队（不丢消息）。

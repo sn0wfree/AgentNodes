@@ -142,7 +142,9 @@ async def test_gateway_chat_bridges_are_turn_scoped(monkeypatch, second_session,
     )
     gateway._combined_sink("text_delta", {"text": "unscoped"})
     gateway._combined_sink("run.answer", {"run_id": "unscoped", "content": "unscoped"})
-    assert len(gateway._sinks) == 2
+    # 批1-S2：_send_via_gateway 会安装 1 个进程单例落库观察器（两请求共用
+    # 同一 gateway 实例只装一次）→ 2 桥 + 1 观察器 = 3
+    assert len(gateway._sinks) == 3
     runs = gateway.run_once()
     assert len(runs) == 2
     assert [run.ok for run in runs] == [engine_kind != "failed", True]
@@ -159,7 +161,8 @@ async def test_gateway_chat_bridges_are_turn_scoped(monkeypatch, second_session,
         AttemptStatus.FAILED if engine_kind == "failed" else AttemptStatus.COMPLETED
     )
     assert attempts[(second_session, "a2")].status == AttemptStatus.COMPLETED
-    assert len(gateway._sinks) == 0
+    # 桥在终态自注销；落库观察器随 gateway 实例存活 → 剩 1
+    assert len(gateway._sinks) == 1
     if engine_kind == "failed":
         errors = [(sid, data["message_id"]) for sid, kind, data in pushed if kind == "error"]
         assert errors == [("s1", "m1")]
@@ -206,8 +209,12 @@ async def test_gateway_sync_returns_its_own_turn_when_other_sessions_are_queued(
         "s1", "mine", wait=True, queue_mode=QueueMode.FOLLOWUP,
     )
     assert response["reply"] == "mine"
+    # 批1-S2（B2）：外部直提的 run（earlier/other，无 HTTP 桥）也由单例
+    # 观察器恰一次落库——这正是"外部启动 run"场景的验收面。
     assert [data["content"] for sid, kind, data in persisted
-            if sid == "s1" and kind == "assistant_message"] == ["mine"]
+            if sid == "s1" and kind == "assistant_message"] == ["earlier", "mine"]
+    assert [data["content"] for sid, kind, data in persisted
+            if sid == "s2" and kind == "assistant_message"] == ["other"]
 
 
 @pytest.mark.asyncio
@@ -290,15 +297,18 @@ async def test_gateway_sync_waits_for_exact_turn_with_consumer(monkeypatch, scen
         else:
             response = await task
             assert response["reply"] == "mine"
+            # 批1-S2（B2）：queued 场景里先行的外部直提 run 也落库
+            expected = ["earlier", "mine"] if scenario == "queued" else ["mine"]
             assert [data["content"] for _, kind, data in persisted
-                    if kind == "assistant_message"] == ["mine"]
+                    if kind == "assistant_message"] == expected
     finally:
         release.set()
         if unsubscribe is not None:
             unsubscribe()
         gateway.stop_consumer(grace=3)
     assert not gateway.consumer_running()
-    assert len(gateway._sinks) == 0
+    # 批1-S2：落库观察器随 gateway 实例存活（桥已全部注销）
+    assert len(gateway._sinks) == 1
 
 
 @pytest.mark.asyncio
@@ -416,6 +426,16 @@ async def test_gateway_chat_steer_follows_the_run_that_applies_it(
                 break
             await asyncio.sleep(0.01)
         assert len([item for item in pushed if item[1] == "agent_done"]) == expected_done
+        # 批1-S2（A1+B2）：多等待方各自通知（expected_done），但落库单点——
+        # promoted 场景两个独立 run 各一次；absorbed 场景同一 run 恰一次
+        # （此前被 A/B 两桥分别落库两次）。
+        expected_persists = 2 if engine_kind == "promoted" else 1
+        persist_calls = [c for c in service.event_bus.emit.call_args_list
+                         if c.args[1] == "assistant_message"]
+        assert len(persist_calls) == expected_persists
+        assert all(c.args[0] == "s1" for c in persist_calls)
+        if engine_kind != "promoted":
+            assert "first|steer" in persist_calls[0].args[2]["content"]
         if origin == "chat" and engine_kind != "promoted" and not wait:
             assert all(data["message_id"] == "m-active"
                        for _, kind, data in pushed if kind == "agent_done")
@@ -424,7 +444,8 @@ async def test_gateway_chat_steer_follows_the_run_that_applies_it(
         unsubscribe()
         gateway.stop_consumer(grace=3)
     assert not gateway.consumer_running()
-    assert len(gateway._sinks) == 0
+    # 批1-S2：落库观察器随 gateway 实例存活
+    assert len(gateway._sinks) == 1
 
 
 @pytest.mark.asyncio
@@ -471,7 +492,8 @@ async def test_gateway_summarized_request_fails_its_own_attempt_and_closes_bridg
     runs = gateway.run_once()
     assert [run.answer for run in runs] == ["message-1", "message-2"]
     assert attempts["a1"].status == attempts["a2"].status == AttemptStatus.COMPLETED
-    assert len(gateway._sinks) == 0
+    # 批1-S2：落库观察器随 gateway 实例存活（两个 receipt 桥已注销）
+    assert len(gateway._sinks) == 1
 
 
 @pytest.mark.asyncio
@@ -526,8 +548,12 @@ async def test_gateway_sync_waiter_fails_if_its_request_is_summarized(monkeypatc
             await asyncio.wait_for(task, 3)
         assert exc_info.value.status_code == 502
         assert exc_info.value.detail["error"] == "request_summarized"
-        assert service.event_bus.emit.call_count == 0
-        assert len(gateway._sinks) == 0
+        # 批1-S2：被摘要请求无 assistant_message 落库（用户消息已在提交点
+        # 落库——"提交即事实"），其余 run 未到终态 → 观察器静默
+        assert not [c for c in service.event_bus.emit.call_args_list
+                    if c.args[1] == "assistant_message"]
+        # 批1-S2：落库观察器随 gateway 实例存活（被摘要请求的桥已注销）
+        assert len(gateway._sinks) == 1
     finally:
         release.set()
         gateway.stop_consumer(grace=3)
@@ -836,7 +862,10 @@ def test_attempt_reload_uses_live_gateway_state(client, monkeypatch):
     ]
 
 
-def test_gateway_event_bridge_updates_attempt_and_assistant_message(monkeypatch):
+def test_gateway_event_bridge_updates_attempt_without_persisting(monkeypatch):
+    """批1-S2（A1+B2）：桥只做 Attempt 生命周期 + SSE 收尾；
+    assistant_message 落库已收归进程单例观察器（_install_answer_persister），
+    桥不再 emit——STEER 被吸收时跟随桥与所有者桥不会重复落库。"""
     import agentnodes.interfaces.api.routers.chat as chat_router
 
     session_id = "session-1"
@@ -892,13 +921,61 @@ def test_gateway_event_bridge_updates_attempt_and_assistant_message(monkeypatch)
     assert attempt.status is AttemptStatus.COMPLETED
     assert attempt.summary == "answer"
     assert message_id_holder["id"] == "assistant-1"
-    assert service.event_bus.emit.call_args.args[1] == "assistant_message"
-    assert service.event_bus.emit.call_args.args[2]["message_id"] == "assistant-1"
+    # 桥不再落库（B2）：assistant_message 由单例观察器负责。
+    # 桥仍 emit Attempt 生命周期事件（attempt.started/completed）——只断言
+    # 没有 assistant_message。
+    assert not [c for c in service.event_bus.emit.call_args_list
+                if c.args[1] == "assistant_message"]
     assert ("agent_done", {
         "message_id": "assistant-1",
         "status": "completed",
     }) in sse
     assert unsubscribed == [True]
+
+
+@pytest.mark.asyncio
+async def test_answer_persister_persists_once_per_run_and_skips_unscoped(monkeypatch):
+    """批1-S2（A1+B2）：单例观察器按 run_id 去重、按 session_id 归属；
+    外部启动 run（无 HTTP 桥）与原桥超时场景照常恰一次落库。"""
+    import agentnodes.interfaces.api.routers.chat as chat_router
+
+    emitted = []
+    service = SimpleNamespace(
+        event_bus=SimpleNamespace(
+            emit=lambda sid, kind, data: emitted.append((sid, kind, data)),
+        ),
+    )
+    monkeypatch.setattr(chat_router, "_get_session_service", lambda: service)
+
+    sinks = []
+    gateway = SimpleNamespace(
+        add_sink=lambda sink: sinks.append(sink) or (lambda: None),
+    )
+    chat_router._install_answer_persister(gateway)
+    chat_router._install_answer_persister(gateway)  # 旗标幂等：只装一次
+    assert len(sinks) == 1
+
+    persist = sinks[0]
+    persist("run.answer", {
+        "run_id": "r1", "business_session_id": "s1",
+        "assistant_message_id": "m1", "content": "answer-1",
+    })
+    persist("run.answer", {  # 同 run 双源触发（桥内外）→ run_id 去重
+        "run_id": "r1", "business_session_id": "s1",
+        "assistant_message_id": "m1", "content": "answer-1",
+    })
+    persist("run.answer", {"run_id": "r2", "content": "no-session"})  # 无归属 → 跳过
+    persist("run.failed", {"run_id": "r3", "business_session_id": "s1"})  # 非答案 → 跳过
+    persist("run.answer", {  # 外部启动 run：无桥无 HTTP 请求 → 照常落库
+        "run_id": "r4", "business_session_id": "s9",
+        "content": "external",
+    })
+
+    assert [(sid, data["message_id"], data["content"])
+            for sid, kind, data in emitted if kind == "assistant_message"] == [
+        ("s1", "m1", "answer-1"),
+        ("s9", "r4", "external"),
+    ]
 
 
 @pytest.mark.asyncio

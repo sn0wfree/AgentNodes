@@ -151,7 +151,10 @@ def test_events_written_to_event_log(env):
     assert "assistant_message" in kinds
 
 
-def test_engine_failure_writes_nothing(env, monkeypatch):
+def test_engine_failure_persists_user_message_only(env, monkeypatch):
+    """引擎失败：用户消息在提交点已落库（批1-S2 前移，与 receipt 路径
+    「提交即事实」对齐——transcript 如实记录"问过但失败"）；
+    assistant/答案不落库。"""
     tc, db_path, client = env
 
     def boom(messages, tools=None, **kwargs):
@@ -160,7 +163,10 @@ def test_engine_failure_writes_nothing(env, monkeypatch):
     monkeypatch.setattr(client, "chat", boom)
     res = tc.post("/api/chat/send", json={"session_id": "sess-1", "content": "失败"})
     assert res.status_code == 502
-    assert _rows(db_path) == [], "失败路径不应写消息"
+    rows = _rows(db_path)
+    assert [(r["role"], r["content"]) for r in rows] == [("user", "失败")], (
+        "失败路径：用户消息在档（提交即事实），答案不落库"
+    )
 
 
 def test_idempotent_no_duplicate_rows(env):

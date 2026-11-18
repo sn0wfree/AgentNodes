@@ -149,7 +149,11 @@ def test_wait_turn_unknown_session_times_out():
 # ── C. persist 桥 ────────────────────────────────────────
 
 
-def test_bridge_persist_mode_emits_assistant_message():
+def test_bridge_persist_mode_does_not_emit_assistant_message():
+    """批1-S2（A1+B2）：persist 桥只负责 agent_done 收尾 SSE 与 holder
+    注入；assistant_message 落库收归进程单例观察器
+    （``_install_answer_persister``，run.answer 触发、run_id 去重）——
+    STEER 被吸收时跟随桥与所有者桥不会重复落库。"""
     from agentnodes.interfaces.api.routers.chat import _install_chat_event_bridge
 
     class FakeEventBus:
@@ -183,9 +187,7 @@ def test_bridge_persist_mode_emits_assistant_message():
 
     kinds = [(k, d) for sid, k, d in service.event_bus.emitted]
     assistant = [d for k, d in kinds if k == "assistant_message"]
-    assert len(assistant) == 1
-    assert assistant[0]["content"] == "你好"
-    assert assistant[0]["message_id"] == "t1:r0"
+    assert assistant == [], "桥不再落库——assistant_message 归单例观察器"
     assert holder["id"] == "t1:r0"
 
 

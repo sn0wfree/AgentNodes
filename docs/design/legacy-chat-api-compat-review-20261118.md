@@ -249,6 +249,51 @@ STEER 被吸收时，两个同会话桥仍沿用既有行为分别通知同一 r
 收到对应错误并注销桥，其余两条继续执行；常驻消费者下同步等待被
 摘要的请求返回 `request_summarized`，不落入其他请求答案。
 
+### 9.4 STEER 单次通知：落库收归进程单例观察器（2026-11-19，已批准 A1+B2）
+
+§9.3 实测遗留的兼容语义决策：STEER 被吸收时，两个同会话桥分别通知
+同一 run——同一 `run.answer` 被落库两次（A 的 receipt 桥 + B 的跟随桥
+各 `event_bus.emit("assistant_message")` 一次），transcript 出现重复
+assistant 行。维护者已裁决：**A1**（持久化恰好一次；每个等待方连接
+各自保留通知/流式转发——多等待方各自得到结果）+ **B2**（落库收归
+controller 侧单点，不依赖任何 HTTP 桥存活）。
+
+**落地形态**（B2 的实现取「gateway 广播出口上的进程单例终态观察器」，
+避免 kernel gateway→session 的新边与 SessionService 双实例陷阱）：
+
+- `run.answer` 事件补带 `business_session_id`（controller 一行；事件此前
+  只有 run_meta 里的 EntryPoint 回执 id——UUID，不能用作持久化归属；
+  观察器按剥掉 chat:/automation: kind 前缀后的物理 id 归属）；
+- chat.py 新增 `_install_answer_persister(gw)`：按 gateway 实例一次性
+  注册（属性旗标防重），观察 `run.answer` → 按 run_id 去重 → 解析
+  session service → `event_bus.emit("assistant_message")` 恰一次；
+- **三个 HTTP 落库点全部停用**：receipt 桥 persist 分支、sync 分支的
+  assistant emit、STEER 跟随桥（同 receipt 分支）。落库失败 → 单例
+  观察器记 warning（不阻断事件流），不影响各等待方 SSE；
+- sync 路径的用户 `message_received` 前移到 submit 后（对齐 receipt
+  路径的提交即落库语义），保证事件序 user→assistant 不反转；
+  **既有「失败不落任何行」sync 不变量随之修订**：失败/超时后用户消息
+  在档（提交即事实，transcript 如实记录"问过但失败"），assistant/答案
+  不落库——与 receipt 路径行为对齐；
+- 桥的 `_update_attempt`（含跟随桥把 B 的 attempt 标 completed）与
+  各连接的 agent_done/error 通知**保持不变**（A1）。
+
+**验收矩阵**（对照路线步骤 2 的四个场景）：
+
+| 场景 | 验收 |
+|---|---|
+| STEER 被吸收（B 注入 A 的 run） | `assistant_message` 恰 emit 一次（run_id 去重）；A/B 两连接各收到 agent_done（既有 expected_done==2 保持）；B 的 attempt 标 completed 带答案摘要 |
+| 原桥超时（B 同步等待 504 后 run 仍完成） | 答案仍恰一次落库（观察器不依赖桥存活）；B 的连接不再收到通知（已注销） |
+| 外部启动 run（无 HTTP 桥，消费者驱动） | 提交后无人挂桥 → 观察器仍恰一次落库 |
+| 多个 STEER（B、C 同注入 A） | 一次 run.answer → 一次落库；B/C 各自通知 |
+| 失败 / 取消 / fenced | 无 `run.answer` → 观察器零落库（既有 502/no-persist 断言保持） |
+| 兼容面 | 无 HTTP 桥的直接桥构造测试保持原行为（观察器只由 `_send_via_gateway` 安装）；`Gateway.wait_turn` 公共契约不变 |
+
+**回滚**：单独撤回本批（controller 一行 + chat.py 观察器与两处 emit
+删除）即恢复三落库点原状；不触碰旧队列与持久化职责归属。
+**明确不做**：不把「桥不再落库」扩大为「桥退役」（批 3a 范畴）；
+不改 `work.summarized`/STEER 提升/溢出语义（§9.3 已闭合项）。
+
 ## 10. 现状校准（2026-11-19 · 维护者路线对齐）
 
 维护者已定七步路线（步骤 1 即本节校准）。三个维度的**当前事实**：

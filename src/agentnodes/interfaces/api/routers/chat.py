@@ -454,6 +454,51 @@ def _get_gateway():
     return get_gateway(stream=True)
 
 
+def _install_answer_persister(gw: Any) -> None:
+    """把 ``run.answer`` 的 assistant_message 落库收归**进程单例观察器**。
+
+    批1-S2（三前端一核心 · STEER 单次通知，A1+B2 裁决）：此前三个 HTTP
+    落库点（receipt 桥 / sync 分支 / STEER 跟随桥）各自 emit——STEER 被
+    吸收时两个同会话桥对同一 ``run.answer`` 分别落库，transcript 出现
+    重复 assistant 行。收归单点后：
+
+    - 每次成功的 run 恰好落库一次（按 run_id 去重，防桥内外重复触发）；
+    - **外部启动 run**（消费者驱动、无 HTTP 桥）与**原桥超时**场景天然
+      覆盖——落库不依赖任何桥存活；
+    - 各等待方连接的通知/流式转发保持不变（A1：多等待方各自得到结果）。
+
+    落库失败只记 warning，不阻断事件流与各等待方 SSE。
+    """
+    if getattr(gw, "_answer_persister_installed", False):
+        return
+    seen_run_ids: set[str] = set()
+
+    def _persist_answer(kind: str, data: dict) -> None:
+        if kind != "run.answer":
+            return
+        run_id = str(data.get("run_id") or "")
+        # 归属键 = business_session_id（controller 剥掉 chat:/automation:
+        # kind 前缀后的物理 session id）。run_meta["session_id"] 是 EntryPoint
+        # 回执 id（UUID），不能用于持久化归属。
+        session_id = str(data.get("business_session_id") or "")
+        if not run_id or not session_id or run_id in seen_run_ids:
+            return
+        seen_run_ids.add(run_id)
+        try:
+            service = _get_session_service()
+            service.event_bus.emit(session_id, "assistant_message", {
+                "message_id": str(data.get("assistant_message_id") or run_id),
+                "role": "assistant",
+                "content": str(data.get("content") or ""),
+                "created_at": time.time(),
+            })
+        except Exception:  # noqa: BLE001 —— 落库失败不吞事件流
+            logger.warning("answer persister: assistant persist failed", exc_info=True)
+
+    gw.add_sink(_persist_answer)
+    gw._answer_persister_installed = True
+
+
 async def _send_via_gateway(
     session_id: str,
     content: str,
@@ -485,7 +530,8 @@ async def _send_via_gateway(
 
     R2.1c（E1=C）：消费者在跑且未要求 wait → **receipt 路径**——submit 后
     立即返回 ``{accepted, message_id, session_id}``，答案经 ``run.answer``
-    事件由 persist 桥落库并补 agent_done；请求线程不再驱动执行。
+    事件由**进程单例落库观察器**写入会话（批1-S2 · A1+B2），桥补
+    agent_done；请求线程不再驱动执行。
     同步路径（消费者未跑 = 测试/直构；或 ``wait=true``）保持现契约：
     阻塞至 turn 完成、响应携带 reply。wait=true 只是**等待**，执行仍是
     消费者的事（无消费者时回落请求内驱动）。
@@ -536,6 +582,9 @@ async def _send_via_gateway(
 
     # ── ② 提交（历史随 payload 进入引擎）───────────────────────
     gw = _get_gateway()
+    # 批1-S2（A1+B2）：run.answer 的 assistant_message 落库收归进程单例
+    # 观察器（按 gateway 实例一次性安装）——本函数内三处旧落库点全部停用。
+    _install_answer_persister(gw)
     user_mid = user_message_id or str(_uuid.uuid4())
     event_correlation_id = str(_uuid.uuid4())
     assistant_mid_holder: dict[str, str] = {}
@@ -629,9 +678,10 @@ async def _send_via_gateway(
 
     # ── ②-b receipt 路径（R2.1c，E1=C）────────────────────────
     # 消费者在跑且未要求 wait：用户消息此刻落库，答案经 run.answer 由
-    # persist 桥落库并补 agent_done；HTTP 立即返回两态回执。
+    # 进程单例落库观察器写入（批1-S2），桥补 agent_done 与 seed/流式
+    # 转发；HTTP 立即返回两态回执。
     # **注意**：这里 return 不注销桥——turn 交给消费者异步执行，run.answer
-    # 的落库与 seed/流式转发都靠它；桥在收尾事件时自注销（R7）。
+    # 的 seed/流式转发都靠它；桥在收尾事件时自注销（R7）。
     if turn_persist:
         try:
             service.event_bus.emit(session_id, "message_received", {
@@ -648,6 +698,22 @@ async def _send_via_gateway(
             "message_id": user_mid,
             "session_id": receipt.session_id or session_id,
         }
+
+    # ── ②-c 用户消息落库（提交即事实；批1-S2 前移）──────────────
+    # 此前在 wait 成功后与 assistant 一起 emit；assistant 落库收归进程
+    # 单例观察器（run.answer 触发）后，用户消息前移到提交点——保证事件
+    # 序 user→assistant 不反转（对齐 receipt 路径 ②-b 的提交即落库），
+    # 且 wait 超时时用户消息照常在档。
+    try:
+        service.event_bus.emit(session_id, "message_received", {
+            "message_id": user_mid,
+            "user_message_id": user_mid,
+            "role": "user",
+            "content": content,
+            "created_at": _time.time(),
+        })
+    except Exception as exc:  # noqa: BLE001 —— 落库失败不阻断受理
+        logger.warning("send_via_gateway: user persist failed: %s", exc)
 
     # ── ③ 执行（同步路径：kind 过滤；wait=true 时只等不驱动）────
     try:
@@ -697,27 +763,13 @@ async def _send_via_gateway(
         )
     answer = str(terminal_data.get("content") or "")
 
-    # ── ④ 成功后只发事件 → projector 落库（与旧路径同源）─────────
+    # ── ④ 成功后只发收尾 SSE（落库已收归单例观察器）────────────
+    # 批1-S2（A1+B2）：assistant_message 由 _install_answer_persister 在
+    # run.answer 时恰一次落库；用户消息已在 ②-c 提交点落库。此处不再
+    # emit——STEER 被吸收/多等待方场景下不再有重复落库。
     # 不调 persist_message：旧路径注释明确「not via direct store.append_message()」，
     # 且两路同写会撞 UNIQUE 或产生重复行（已实测）。
     assistant_mid = run_id  # 新路径无 attempt，用 run_id 作消息标识
-    try:
-        service.event_bus.emit(session_id, "message_received", {
-            "message_id": user_mid,
-            "user_message_id": user_mid,
-            "assistant_message_id": assistant_mid,
-            "role": "user",
-            "content": content,
-            "created_at": _time.time(),
-        })
-        service.event_bus.emit(session_id, "assistant_message", {
-            "message_id": assistant_mid,
-            "role": "assistant",
-            "content": answer,
-            "created_at": _time.time(),
-        })
-    except Exception as exc:  # noqa: BLE001 —— 落库失败不吞掉回答
-        logger.warning("send_via_gateway: persist via event failed: %s", exc)
 
     # ── ⑤ 收尾事件 ─────────────────────────────────────────
     _push_sse("agent_done", {"message_id": assistant_mid, "status": "completed"}, session_id)
@@ -935,17 +987,10 @@ def _install_chat_event_bridge(
             if kind == "run.answer":
                 mid = str(data.get("assistant_message_id") or data.get("run_id") or "")
                 message_id_holder["id"] = mid
-                if service is not None:
-                    try:
-                        service.event_bus.emit(session_id, "assistant_message", {
-                            "message_id": mid,
-                            "role": "assistant",
-                            "content": str(data.get("content") or ""),
-                            "created_at": time.time(),
-                        })
-                    except Exception:  # noqa: BLE001 —— 落库失败不吞 SSE
-                        logger.warning(
-                            "bridge: assistant persist failed", exc_info=True)
+                # 批1-S2（A1+B2）：assistant_message 落库已收归进程单例
+                # 观察器（_install_answer_persister，run.answer 触发）——
+                # 桥不再 emit。STEER 被吸收时跟随桥与所有者桥只各自通知
+                # （agent_done），落库恰一次。
                 _push_sse("agent_done", {
                     "message_id": mid, "status": "completed",
                 }, session_id)
