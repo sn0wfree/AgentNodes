@@ -7,6 +7,7 @@ use the same backend via ``web_search()``.
 """
 from __future__ import annotations
 
+import asyncio
 import json
 
 from fastapi import APIRouter, HTTPException, Query
@@ -40,7 +41,10 @@ async def search_minimax(
                 "in the environment and restart."
             ),
         )
-    raw = minimax_search(q, count=count)
+    # 批1 #6（三前端一核心）：minimax_search 是同步 urlopen，async 端点里
+    # 直调会阻塞事件循环整个超时窗口——丢线程池执行（仓库惯例同
+    # apps/goal/workflow.py 的 asyncio.to_thread）。
+    raw = await asyncio.to_thread(minimax_search, q, count=count)
     try:
         payload = json.loads(raw)
     except json.JSONDecodeError as exc:

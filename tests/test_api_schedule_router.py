@@ -190,6 +190,54 @@ class TestScheduleCrud:
         assert "another session" in res.json()["detail"]
 
 
+# ── ownership（批1 #1：session 归属调用者，IDOR 链第一段） ────────────
+
+
+class TestScheduleOwnership:
+    def test_show_foreign_users_session_403(self, client):
+        """sess-1 存在但归属 tester——mallory 拿它 show tester 的 job → 403。
+
+        修复前：_load_job_owned 只比 job.owner_session_id == session_id，
+        mallory 传 session_id=sess-1 即可读 tester 的 job。
+        """
+        client_obj, tmp_path = client
+        res = client_obj.post(
+            "/api/schedule/create", headers=auth_header(),
+            json={"session_id": "sess-1", "workspace_path": str(tmp_path), **WORKSPACE_ARGS},
+        )
+        assert res.status_code == 200
+        job_id = res.json()["job_id"]
+        res2 = client_obj.get(f"/api/schedule/show/{job_id}",
+                              headers=auth_header(user_id="mallory"),
+                              params={"session_id": "sess-1"})
+        assert res2.status_code == 403
+        assert res2.json()["detail"] == "Forbidden"
+
+    def test_run_foreign_users_session_403(self, client):
+        """run 是最危险端点（触发执行）——同样必须过 session 归属。"""
+        client_obj, tmp_path = client
+        res = client_obj.post(
+            "/api/schedule/create", headers=auth_header(),
+            json={"session_id": "sess-1", "workspace_path": str(tmp_path), **WORKSPACE_ARGS},
+        )
+        job_id = res.json()["job_id"]
+        res2 = client_obj.post(f"/api/schedule/run/{job_id}",
+                               headers=auth_header(user_id="mallory"),
+                               params={"session_id": "sess-1"})
+        assert res2.status_code == 403
+
+    def test_show_nonexistent_session_404(self, client):
+        client_obj, tmp_path = client
+        res = client_obj.post(
+            "/api/schedule/create", headers=auth_header(),
+            json={"session_id": "sess-1", "workspace_path": str(tmp_path), **WORKSPACE_ARGS},
+        )
+        job_id = res.json()["job_id"]
+        res2 = client_obj.get(f"/api/schedule/show/{job_id}", headers=auth_header(),
+                              params={"session_id": "no-such-session"})
+        assert res2.status_code == 404
+
+
 # ── permission respond ───────────────────────────────────────────────
 
 

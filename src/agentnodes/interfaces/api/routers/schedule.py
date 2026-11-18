@@ -49,7 +49,15 @@ def _require_owner(request: Request, session_id: str) -> None:
 
 
 def _load_job_owned(request: Request, job_id: str, session_id: str):
-    """Load a job and verify ownership; returns the job or raises 404/403."""
+    """Load a job and verify ownership; returns the job or raises 404/403.
+
+    2026-11-19 批1（三前端一核心 #1）：先校验 **session 归属调用者**，再校验
+    job↔session 链。此前 show/cancel/delete/run 四端点只比
+    ``job.owner_session_id == session_id``，而 ``session_id`` 来自请求参数、
+    未与认证用户核对——任何登录用户拿他人 session_id 即可操作其 job（IDOR）。
+    校验链：调用者 → session（_require_owner）→ job。
+    """
+    _require_owner(request, session_id)
     from agentnodes.apps.scheduled_research.store import ScheduledResearchStore
 
     with ScheduledResearchStore() as store:
