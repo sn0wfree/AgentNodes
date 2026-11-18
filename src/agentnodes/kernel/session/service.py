@@ -368,6 +368,12 @@ class SessionService:
         already driving. The previous v1 study scheduler also consulted
         this, but the v2 refactor decoupled chat/study sessions — see
         ``core/study/_archived/chat_mutex_legacy.py``.
+
+        **退役候选（B4，2026-11-18，裁决 2/3）**：GoalWorkflow 已迁
+        Gateway session execution lease（594fe63a），生产调用点已清零
+        （唯一消费 = tests/test_session_service_units.py 直测标记自身）。
+        删除须走裁决 3 独立批次（R-015 四项 + R-016 出口网 + R-004
+        只读审计先行）。
         """
         return session_id in self._processing_sessions
 
@@ -397,6 +403,10 @@ class SessionService:
         and block concurrent chat attempts. The v1 study scheduler did
         the same, but the v2 refactor decoupled chat/study sessions —
         see ``core/study/_archived/chat_mutex_legacy.py``.
+
+        **退役候选（B4，2026-11-18，裁决 2/3）**：GoalWorkflow 已切
+        Gateway session execution lease（594fe63a），生产调用点已清零。
+        删除须走裁决 3 独立批次（R-015/R-016/R-004 同上）。
         """
         if processing:
             self._processing_sessions.add(session_id)
