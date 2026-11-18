@@ -12,6 +12,7 @@
 |---|---|
 | 了解项目是什么、快速跑起来 | [`../README.md`](../README.md) |
 | 查命令 / MCP 工具 / swarm preset / 环境变量 | [`REFERENCE.md`](REFERENCE.md) |
+| 查提示词基因组研究专题（调研→设计→语言→决策队列） | [`prompt-genome/INDEX.md`](prompt-genome/INDEX.md) |
 | 看架构长什么样（含实测数字） | [`architecture-diagram.html`](architecture-diagram.html) |
 | **理解框架理念与当前状态** | [`框架与理念 · v1.2.html`](框架与理念 · v1.2.html)（可读版）· [`design/framework-and-principles-v1.2.md`](design/framework-and-principles-v1.2.md)（md 底稿）|
 | 理解四层引擎为什么这样分 | [`design/layered-skeleton-design-20261103.md`](design/layered-skeleton-design-20261103.md) |
@@ -152,7 +153,26 @@
 
 ---
 
-## 3. archive/ — 历史施工记录（266 份）
+## 3. prompt-genome/ — 提示词基因组研究专题（8 份）
+
+**判据**：单一研究线（2026-11-17 起：业界调研 → 概念框架 → 规则基因组设计 → GRL 规则语言）的专属归档文件夹，**自带索引**——这是三层结构（guides/design/archive）之外的专题例外，入口统一走：
+
+| 文档 | 内容 |
+|---|---|
+| [`prompt-genome/INDEX.md`](prompt-genome/INDEX.md) | **专题入口**：文档地图 + 阅读路径 + 决策队列（★ 六项）+ GRL↔设计 schema 接口表 |
+| [`prompt-genome/提示词基因框架-业界先例调研-20261117.md`](prompt-genome/提示词基因框架-业界先例调研-20261117.md) | 业界先例地图（45 项先例 / 空白地图 / 框架草案） |
+| [`prompt-genome/CL4R1T4S-项目评估-20261117.md`](prompt-genome/CL4R1T4S-项目评估-20261117.md) | 语料评估（判决：值得读 / 不值得整仓吃进管道） |
+| [`prompt-genome/提示词与基因组-概念对映研究-20261117.md`](prompt-genome/提示词与基因组-概念对映研究-20261117.md) | 概念对映（R1–R6 / 18 概念判定 / 失效边界） |
+| [`prompt-genome/rule-genome-design-20261117.md`](prompt-genome/rule-genome-design-20261117.md) | 规则基因组设计 v2（trace 绑定版 + §10 未决 22 项） |
+| [`prompt-genome/rule-genome-synthesis-20261118.md`](prompt-genome/rule-genome-synthesis-20261118.md) | 汇总锚点（六轮收敛 + 拍板要点 + 下一步） |
+| [`prompt-genome/GRL-基因规约语-20261118.md`](prompt-genome/GRL-基因规约语-20261118.md) | GRL 等位层规则语言（并行会话，5526 条款闭环自证） |
+| [`prompt-genome/规则基因组体系 · 概念示意图 · 20261117.html`](prompt-genome/规则基因组体系 · 概念示意图 · 20261117.html) | ID 脊柱全链图（含未决热点标注） |
+
+> GRL 工具包 zip 为未入库工作快照，不列目。
+
+---
+
+## 4. archive/ — 历史施工记录（266 份）
 
 **判据**：已完成批次的执行记录、被取代的设计、一次性调研。**不维护，仅备查**——
 里面的数字与路径反映的是当时状态，不要按它操作。
@@ -182,7 +202,7 @@ archive/
 
 ---
 
-## 4. 根目录保留的文件
+## 5. 根目录保留的文件
 
 | 文件 | 为什么留在根 |
 |---|---|
@@ -194,9 +214,9 @@ archive/
 
 ---
 
-## 5. 维护约定
+## 6. 维护约定
 
-1. **新文档先判层**：操作手册 → `guides/`；设计决策 → `design/`；一次性记录 → `archive/<YYYY-MM>/`。
+1. **新文档先判层**：操作手册 → `guides/`；设计决策 → `design/`；一次性记录 → `archive/<YYYY-MM>/`；**专题研究线 → 自带索引的专属文件夹**（先例：`prompt-genome/`）。
 2. **设计先行**：结构改动先写 `design/*-design-*.md`，再实施。完成的实施记录进 `archive/`。
 3. **不重写历史**：`archive/` 的文档保留原文，即使里面的路径已失效。
 4. **改名准则**：`design/` 里的文档若被代码注释引用，移动时必须同步改代码
