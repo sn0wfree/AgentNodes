@@ -85,9 +85,9 @@ class SessionExecutionLease:
 - `is_session_processing` / `mark_session_processing` 在迁移完成前**保留**（goal 仍用，直至其调用点切到 lease）；切换后二者标注退役候选（R-004：先审计后删，删除归裁决 3 批次）。
 - `SessionService` 队列/AgentLoop **本设计不触碰**（裁决 3）。
 
-## 3. 实施批次（待确认后执行）
+## 3. 实施批次
 
-1. **B1 lease 原语**：`kernel/gateway` 新增 `SessionExecutionLease` + 单测（原子竞争 / token 校验 / 双重释放 / 并发 asyncio 任务交错）——零接线，独立提交。
+1. **B1 lease 原语 ✅（2026-11-18 完成）**：`kernel/gateway/session_lease.py` + `tests/test_session_lease.py` **20 用例**（基本生命周期 / 不顶替 / token 校验与双重释放 / session 隔离 / holder 观测不泄漏 token / asyncio 并发竞争恰一赢家 / 释放瞬间多等待者恰一成功 / 跨线程竞争 / 交错序列一致性 / **AST 级原子性契约**——acquire/release 禁 async 化）。**实施期微调**：`acquire` 恒为非阻塞（设计稿 `wait` 参数移除——asyncio 内同步阻塞是反模式；等待语义由调用方自旋，B3 正是保持现状形态）。零接线。验证：20 passed；batch_gate ALL GREEN；全量 7664 passed / 0 failed。
 2. **B2 chat 侧挂钩**：Gateway run 启动/收尾 acquire/release + `chat_session_state.lease_holder` + available_actions 感知 + 回归（现有 Gateway/API 测试全量 + 新增并发用例：goal 持有 → /send 排队；goal 释放 → 唤醒）。
 3. **B3 GoalWorkflow 迁移**：`workflow.py:507-524` 切 lease（保持等待语义与 finally 形态）；`session_service` 注入点保留（其余职责不用）；并发回归（双 goal / goal×chat 交错 / 异常释放）。
 4. **B4 legacy 标记退役标注**（不删除）：`mark_session_processing` 等标注退役候选，删除走裁决 3 批次。
