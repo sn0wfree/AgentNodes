@@ -23,6 +23,7 @@ from typing import Any, Optional
 from agentnodes.foundation.config import settings as _settings
 from agentnodes.kernel.agent.compact.core import CompactConfig, compact_messages
 from agentnodes.kernel.session.state.event_store import EventStore
+from agentnodes.kernel.events.event_v2 import EventType
 from agentnodes.foundation.llm import LLMConfig
 
 from agentnodes.kernel.session.models import Attempt, AttemptId, AttemptStatus, Message, MessageId, SessionId
@@ -652,7 +653,7 @@ class SessionService:
             attempt.mark_failed(error="LLM config unavailable")
             self.store.update_attempt(attempt)
             self.event_bus.emit(
-                session_id, "attempt.failed",
+                session_id, EventType.ATTEMPT_FAILED,
                 {"attempt_id": attempt.attempt_id, "error": "LLM config unavailable"},
             )
             return
@@ -661,7 +662,7 @@ class SessionService:
         # streamingMessageId from queued placeholder to actual stream.
         self.event_bus.emit(
             session_id,
-            "attempt.started",
+            EventType.ATTEMPT_STARTED,
             {
                 "attempt_id": attempt.attempt_id,
                 "message_id": attempt.message_id,
@@ -723,7 +724,7 @@ class SessionService:
                     )
                     self.store.update_attempt(attempt)
                     self.event_bus.emit(
-                        session_id, "attempt.failed",
+                        session_id, EventType.ATTEMPT_FAILED,
                         {"attempt_id": attempt.attempt_id, "status": "error",
                          "error": attempt.error},
                     )
@@ -833,7 +834,7 @@ class SessionService:
             # 4. Emit attempt.completed / attempt.failed
             self.event_bus.emit(
                 session_id,
-                "attempt.completed" if attempt.status == AttemptStatus.COMPLETED else "attempt.failed",
+                EventType.ATTEMPT_COMPLETED if attempt.status == AttemptStatus.COMPLETED else EventType.ATTEMPT_FAILED,
                 {
                     "attempt_id": attempt.attempt_id,
                     "status": attempt.status.value,
@@ -866,7 +867,7 @@ class SessionService:
             self.store.update_attempt(attempt)
             self.event_bus.emit(
                 session_id,
-                "attempt.failed",
+                EventType.ATTEMPT_FAILED,
                 {"attempt_id": attempt.attempt_id, "status": "cancelled"},
             )
             self.event_bus.emit(
@@ -884,7 +885,7 @@ class SessionService:
             self.store.update_attempt(attempt)
             self.event_bus.emit(
                 session_id,
-                "attempt.failed",
+                EventType.ATTEMPT_FAILED,
                 {"attempt_id": attempt.attempt_id, "error": str(exc)},
             )
             self.event_bus.emit(

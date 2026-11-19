@@ -40,12 +40,10 @@ class ChatEvent:
     THINKING_END: Final[str] = EventType.THINKING_END
     TOOL_CALL: Final[str] = EventType.TOOL_CALL
     TOOL_RESULT: Final[str] = EventType.TOOL_RESULT
-    # 以下三个是 chat 产品层的 attempt 生命周期事件（EventStore 落库用），
-    # kernel EventType 只定义 attempt.created（队列层），故在此声明产品名。
-    # wire 名与现网 bridge 逐字一致，不可改名。
-    ATTEMPT_STARTED: Final[str] = "attempt.started"
-    ATTEMPT_COMPLETED: Final[str] = "attempt.completed"
-    ATTEMPT_FAILED: Final[str] = "attempt.failed"
+    # attempt 生命周期：wire 名从 EventType 取（单一事实源，3a.3 决策 6）
+    ATTEMPT_STARTED: Final[str] = EventType.ATTEMPT_STARTED
+    ATTEMPT_COMPLETED: Final[str] = EventType.ATTEMPT_COMPLETED
+    ATTEMPT_FAILED: Final[str] = EventType.ATTEMPT_FAILED
 
 
 # 引擎事件名 → 产品事件名（bridge 现网 mapping；名字相同 = 直通）。

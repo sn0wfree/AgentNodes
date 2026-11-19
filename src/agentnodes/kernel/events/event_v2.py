@@ -76,6 +76,10 @@ class EventType:
     SESSION_CREATED = "session.created"
     SESSION_META_UPDATED = "session_meta_updated"
     ATTEMPT_CREATED = "attempt.created"
+    # Attempt lifecycle（产品层事件名；wire 值固定，引用单点）
+    ATTEMPT_STARTED = "attempt.started"
+    ATTEMPT_COMPLETED = "attempt.completed"
+    ATTEMPT_FAILED = "attempt.failed"
     QUEUE_STATE = "queue_state"
     QUEUE_PAUSED = "queue_paused"
 

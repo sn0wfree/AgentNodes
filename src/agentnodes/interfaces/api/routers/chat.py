@@ -902,21 +902,24 @@ def _install_chat_event_bridge(
             else:
                 raise ValueError(f"unsupported Attempt status: {status}")
             service.store.update_attempt(attempt)
+            # 3a.3 候选3：attempt.* 产品事件名从单一事实源取（wire 零变化）
+            from agentnodes.apps.chat.events import ChatEvent
+
             lifecycle_event = {
-                "running": ("attempt.started", {
+                "running": (ChatEvent.ATTEMPT_STARTED, {
                     "attempt_id": attempt_id,
                     "message_id": str(attempt.message_id or ""),
                 }),
-                "completed": ("attempt.completed", {
+                "completed": (ChatEvent.ATTEMPT_COMPLETED, {
                     "attempt_id": attempt_id,
                     "status": "completed",
                     "summary": summary or "",
                 }),
-                "cancelled": ("attempt.failed", {
+                "cancelled": (ChatEvent.ATTEMPT_FAILED, {
                     "attempt_id": attempt_id,
                     "status": "cancelled",
                 }),
-                "failed": ("attempt.failed", {
+                "failed": (ChatEvent.ATTEMPT_FAILED, {
                     "attempt_id": attempt_id,
                     "status": "error",
                     "error": error or "Gateway run failed",
