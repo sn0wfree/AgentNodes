@@ -114,16 +114,17 @@
 
 **不做**：不制造第二套执行队列；不删除 `SessionService` 类本身（其余职责仍在）。
 
-## 6. 兼容期与破坏性变更策略（需维护者确认）
+## 6. 兼容期与破坏性变更策略（2026-11-19 定稿 · 删除仍需单独审批）
 
-1. **兼容承诺期**：`send_message` 已在裁决 1 定为兼容 API → 保留至兼容期结束，期内行为不变（含 `max_iterations=50` / `allow_shell_tools=False` 默认与 policy 注入能力）。
+1. **兼容承诺期**：`send_message` 已在裁决 1 定为兼容 API → 保留至兼容期结束，期内行为不变（含 `max_iterations=50` / `allow_shell_tools=False` 默认与 policy 注入能力）。维护者裁决：**弃用期至少一个完整正式版本周期**。
 2. **删除前置条件**（全部满足才进入删除批次）：
-   - 缺口①按裁决落地（补超时 或 明确退役）；
-   - 缺口③按裁决落地（显式失败 或 明确保留并记录）；
-   - 兼容期公告已发（仓库 + CHANGELOG + 迁移说明：外部消费者如何改用 Gateway 入口）；
-   - 本审查的 18 条绝对值断言全绿（删除前后各跑一次全量 + batch_gate）。
-3. **删除批次形式**：R-014 方案先行 + R-015 四项 + R-016 出口网 + R-020 独立最后批次；**独立提交**，可单独回滚。
-4. **迁移方式**：外部消费者改用 Gateway 入口（`api_chat_request` + `cancel_session` / `resume_session` / `wait_turn`）；旧方法在兼容期内标注 deprecated（docstring + 公告），期满后随删除批次移除。
+   - 缺口①按裁决落地（补超时 或 明确退役）；✅ 已实施（`d9945a5c`）
+   - 缺口③按裁决落地（显式失败 或 明确保留并记录）；✅ 已实施（`d9945a5c`）
+   - 兼容期公告已发（CHANGELOG `## Deprecated` + 迁移指南 + 本节定稿）；✅ 2026-11-19
+   - 本审查绝对值断言全绿（删除前后各跑一次全量 + batch_gate）。✅ 步骤 5 已补齐出口网
+3. **删除批次形式**：R-014 方案先行 + R-015 四项 + R-016 出口网 + R-020 独立最后批次；**独立提交**，可单独回滚。维护者裁决：旧队列与 3a.4 DEPRECATED 面可协同但**保持独立提交**；`seq_generator` 单独批次。
+4. **迁移方式**：外部消费者改用 Gateway 入口（`api_chat_request` + `cancel_session` / `resume_session` / `wait_turn`）；旧方法在兼容期内标注 deprecated（docstring + 公告），期满后随删除批次移除。**迁移指南**：[docs/guides/legacy-chat-api-migration.md](../guides/legacy-chat-api-migration.md)（逐出口对照 + 语义差异 + 仓库外消费者自查）。
+5. **删除审批**：**仍未批准**——本公告与本节定稿不构成删除授权；期满后须单独提交删除批次方案并获批准。
 
 ## 7. R-015 四项现状判定
 

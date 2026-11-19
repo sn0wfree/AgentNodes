@@ -65,10 +65,33 @@
 
 **判定依据**：不是靠静态零引用删，而是靠「既定退役决议 + 文档一致 + docstring 伪消费者已证伪」三重证据。仍按 R-014 出方案 + 短公告确认无仓库外调用者后进删除批。
 
-## 4. 顺带发现的陈旧文档（建议修复）
+## 4. 顺带发现的陈旧文档（独立审计结果）
 
-- `docs/guides/extension-points.md:54` — 提到 `hooks/unified.py` + `hooks/adapter.py` 为 DELETE-CANDIDATE，但两文件当前已不存在（陈述过时）。
-- `examples/session_example.py:6` — `from agentnodes.core.hooks import ...`（旧 `core` 包名，示例已失效）。
+维护者裁决要求「先独立审计再决定更新或归档」。审计结论：**问题不止两处**——
+`examples/` 下 4 个示例中 3 个有旧 `agentnodes.core.*` import（整个 `core` 包
+已不存在），共 10 处失效 import：
+
+| 文件 | 失效 import | 类名/API 核对 |
+|---|---|---|
+| `examples/e2e_flow.py:23-25` | `agentnodes.core.agent.builtin_tools` / `.loop` / `.llm` | `AgentLoop` / `LLMConfig` / `LLMResponse` / `ToolCall` 等类仍存在（在新路径），但 import 全失效 |
+| `examples/goal_workflow_demo.py:30-36` | `agentnodes.core.goal.{workflow_config,workflow,store,event_bus}` | `GoalWorkflowRunner` / `GoalStore` 等仍存在（新路径 `kernel/goal`→`apps/goal`），import 全失效 |
+| `examples/session_example.py:6-8` | `agentnodes.core.{hooks,memory,session}` | `AgentHook` / `CompositeHook` / `PersistentMemory` 等仍存在（新路径），import 全失效 |
+| `examples/demo_workflow.py` | 无旧 import | 可能用 subprocess/独立脚本形态，无 import 失效 |
+
+`agentnodes.core` / `strategy_research` / `quantnodes` 三个旧包名均不可导入
+（已实测 ModuleNotFoundError）。文档中引用这些示例的地方仅 2 处 archive +
+本审计文档，无活跃文档承诺。
+
+**建议**（需维护者裁决）：examples 的失效 import 是「更新」还是「归档」——
+- 更新：按新路径改 10 处 import（机械改动，示例类名仍存在），但需确认示例
+  脚本本身仍有演示价值（GoalWorkflow 已大改，demo 语义可能过时）；
+- 归档：移入 `examples/attic/` 或 `docs/archive/`，注明「历史示例，当前
+  以 `docs/guides/` 与测试为准」——零维护成本，但失去可运行示例。
+本轮**不执行**任一选项（用户不可用，未取得批准）。
+
+另外 `docs/guides/extension-points.md:54` 提到 `hooks/unified.py` +
+`hooks/adapter.py` 为 DELETE-CANDIDATE，两文件当前已不存在——同属陈旧
+陈述，建议与 examples 决定一起处理。
 
 ## 5. 执行建议
 

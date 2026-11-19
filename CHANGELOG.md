@@ -5,6 +5,28 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## Deprecated（2026-11-19 公告 · 删除需另行审批）
+
+旧聊天队列 API（`SessionService` 的 9 个出口）进入弃用期。src 生产调用已全 0；
+Gateway 对应入口均已落地（`api_chat_request` / `cancel_session` /
+`resume_session` / `wait_turn` / `chat_session_state` / `attempts_query`）。
+`send_message` 按裁决 1 为兼容 API，弃用期内行为不变（含默认参数与 policy
+注入面）。
+
+**弃用出口**：`send_message` / `cancel` / `cancel_session` / `resume_queue` /
+`wait_for_attempt` / `is_session_processing` / `mark_session_processing` /
+`list_active_attempts` / `get_available_actions`，以及重导出链
+`_CHAT_ATTEMPT_TIMEOUT`（`kernel.session` / `interfaces.api.session.service`）。
+
+**期限**：至少一个完整正式版本周期（维护者裁决）；删除仍需**单独审批**，
+本公告不构成删除授权。旧队列与 3a.4 DEPRECATED 面可协同但**独立提交**；
+`seq_generator` 单独批次。
+
+**迁移**：逐出口对照与代码示例见
+[docs/guides/legacy-chat-api-migration.md](docs/guides/legacy-chat-api-migration.md)；
+语义差异（wait_turn 代际语义 / STEER 单次通知 / 超时能力四级）与仓库外
+消费者自查方法同见该指南。
+
 ## [0.8.0] — 2026-11-05
 
 ### 架构 — 全层上行违规归零
