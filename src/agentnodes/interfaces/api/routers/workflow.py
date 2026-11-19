@@ -378,6 +378,9 @@ def _get_run_registry() -> Any:
     if _run_registry is None:
         from agentnodes.kernel.workflow.executor import WorkflowRunRegistry
         _run_registry = WorkflowRunRegistry()
+    # 注：不在此处 prune 终态 run——approve 端点依赖 registry 仍持有终态
+    # runner 以返回 409（而非 404），立即清理会改变可观察 HTTP 语义。
+    # 终态残留的内存治理须连同 approve/status 语义一起裁决（M13 待办）。
     return _run_registry
 
 

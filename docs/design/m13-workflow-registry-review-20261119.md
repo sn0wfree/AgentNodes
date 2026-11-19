@@ -55,3 +55,17 @@ api/routers/workflow.py" 注释改为准确表述：L1 goal-workflow 另有独�
 process-local handle cache，键/值/职责与 kernel registry 不同。
 
 （审查全程只读；未运行改变系统状态的命令。）
+
+## 5. 终态残留整改尝试与回退（2026-11-19）
+
+按风险表尝试在 `_get_run_registry()` 统一入口 prune 终态 run，并补了
+「终态后 registry 不再持有 run」测试。**回归发现语义冲突**：
+`tests/test_workflow_approval_api.py::test_approve_rejects_when_not_awaiting`
+期望终态 run 的 approve 返回 **409**（存在但不 awaiting），prune 后变
+**404**（不存在）——立即清理改变可观察 HTTP 语义。
+
+**已回退** prune 接线与该测试（34 workflow 测试恢复全绿），并在
+`_get_run_registry()` 留注释说明冲突。终态残留的内存治理须连同
+approve/status 的 404-vs-409 语义一起裁决（例如：registry 保留终态 run
+但加 TTL 上限，或 approve 端改为查 store 判定存在性）——**本批不做**。
+这是「独立整改项不混提」纪律的实证：修复不能破坏现有契约。
