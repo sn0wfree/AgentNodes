@@ -90,3 +90,20 @@ interfaces/api/composition.py（新，深模块）
 **验证**：M12 相关 77 passed；层方向违规 0；全量 `-n 12` 7844 passed /
 106 skipped / 2 xfailed / 0 failed（bg_proc 一条负载抖动 `--lf` 复跑过）；
 batch_gate ALL GREEN；数字同步（452 文件 / 94,748 行，L1 +1 文件 = composition.py）。
+
+### 6.1 生命周期引用释放修正（17:06 复审候选 1 · Strong）
+
+复审 weakref 探针复现：原 `register()` 为每个容器注册绑定容器的 atexit
+回调（`atexit.register(close_resources, container)`），`close_all()` 只清
+注册表——回调仍持有容器强引用，`register → close_all → del → gc.collect`
+后对象存活。定向 31 测试未覆盖该后置条件。
+
+最小修正（零形状变更、不重做 M12）：
+- `atexit` 只注册一次无参 `close_all`（模块级 `_ATEXIT_REGISTERED` 守卫），
+  回调不绑定任何容器；
+- `close_resources()` 关闭后从 `_REGISTRY` 移除引用（幂等标记 `_CLOSED`
+  按实例 id 保留，不依赖注册表存在性）→ 对象可被 gc 回收。
+
+新增 `tests/test_api_composition_lifecycle.py` 4 用例（先红后绿）：关闭恰一次、
+close_all/unregister 清注册表、weakref 回收、atexit 单注册无参。weakref
+探针复核：修复前存活=True → 修复后存活=False、注册表 0。

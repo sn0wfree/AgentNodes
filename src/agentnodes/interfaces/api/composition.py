@@ -34,6 +34,9 @@ __all__ = [
 # 重建 container，按路径幂等会把新实例误判为已关闭（句柄泄漏）。
 _REGISTRY: dict[int, Any] = {}
 _CLOSED: set[int] = set()
+# 进程退出兜底：只注册一次无参 close_all（不绑定任何容器——绑定容器的
+# 回调会永久持有强引用，导致 close 后对象无法回收；17:06 复审候选 1）。
+_ATEXIT_REGISTERED = False
 
 
 def build_resources(**kwargs: Any) -> Any:
@@ -45,10 +48,15 @@ def build_resources(**kwargs: Any) -> Any:
 
 def register(container: Any) -> None:
     """登记资源图（幂等：同实例只登记一次）。"""
+    global _ATEXIT_REGISTERED
     key = id(container)
     if key not in _REGISTRY:
         _REGISTRY[key] = container
-        atexit.register(close_resources, container)  # 进程退出兜底关闭
+    if not _ATEXIT_REGISTERED:
+        # 无参 close_all：进程退出时关闭所有仍登记的资源图；不绑定容器，
+        # close 后对象可被回收（weakref 回归测试守护）。
+        atexit.register(close_all)
+        _ATEXIT_REGISTERED = True
 
 
 def unregister(container: Any) -> None:
@@ -73,6 +81,9 @@ def close_resources(container: Any) -> None:
         return
     _CLOSED.add(key)
     close_container(container)
+    # 关闭后释放注册表引用：对象可被 gc 回收（17:06 复审候选 1）；
+    # 幂等标记 _CLOSED 保留（防重复 close），不依赖注册表存在性。
+    _REGISTRY.pop(key, None)
 
 
 def close_all() -> None:
