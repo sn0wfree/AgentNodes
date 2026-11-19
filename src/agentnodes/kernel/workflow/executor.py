@@ -11,7 +11,10 @@ Runs a WorkflowDefinition segment by segment:
      the user responds via approve(); timeout keeps waiting.
 
 Execution is synchronous per segment; the controller stores active
-runs (mirrors _active_runners in api/routers/workflow.py).
+runs keyed by wf_ run_id. Note: the API layer keeps a separate
+process-local handle cache (goal_ ids, owner/TTL metadata) for the
+goal-workflow family—different keys, values and responsibilities;
+see docs/design/m13-workflow-registry-review-20261119.md.
 
 Design: docs/design/workflow-module-design.md
 """
@@ -366,7 +369,8 @@ class WorkflowRunner:
         return merged
 
 
-# ── Active-run registry (mirrors _active_runners in the API) ───
+# ── Active-run registry (wf_ run_id → WorkflowRunner；与 API 层 goal_ handle
+#    cache 键/值/职责不同，见 m13-workflow-registry-review) ───
 
 
 class WorkflowRunRegistry:
