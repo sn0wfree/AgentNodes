@@ -14,6 +14,7 @@ from agentnodes.apps.chat.send_turn import (
     SendTurnDeps,
     SendTurnInput,
     SendTurnResult,
+    precheck_history,
     send_turn,
 )
 from agentnodes.kernel.orchestration.contracts import QueueMode, RejectReason
@@ -158,3 +159,44 @@ async def test_answer_persister_installed_once():
     answer_sinks = [s for s in gw._sinks
                     if getattr(s, "__name__", "") == "_persist_answer"]
     assert len(answer_sinks) == 1
+
+
+@pytest.mark.asyncio
+async def test_prevalidated_history_skips_second_read():
+    """重复 A 修复：调用方已预检并传入 history 时，send_turn 不再二次
+    读库（预检只读幂等，但两次 get_messages 成本翻倍）。"""
+    gw = FakeGateway()
+    emitted, pushed = [], []
+    service = FakeService()
+    calls = {"n": 0}
+
+    def _counting_get_messages(*args, **kwargs):
+        calls["n"] += 1
+        return []
+
+    service.store.get_messages = _counting_get_messages
+    deps = _deps(gw, service, emitted, pushed)
+
+    # 入口侧预检一次（send_async 的做法）
+    history = precheck_history(
+        SendTurnInput(session_id="s1", content="hello"), deps,
+    )
+    assert calls["n"] == 1
+
+    # 传入预检结果 → send_turn 跳过二次读取
+    result = await send_turn(
+        SendTurnInput(
+            session_id="s1", content="hello", receipt_only=True,
+            prevalidated_history=history,
+        ),
+        deps,
+    )
+    assert result.accepted is True
+    assert calls["n"] == 1, "send_turn 不应二次读历史"
+
+    # 未提供时仍自包含预检（兼容旧调用）
+    await send_turn(
+        SendTurnInput(session_id="s1", content="hello", receipt_only=True),
+        deps,
+    )
+    assert calls["n"] == 2

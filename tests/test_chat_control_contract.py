@@ -44,6 +44,47 @@ def _install_service(monkeypatch, service):
     return chat_router
 
 
+def test_send_async_prechecks_history_only_once(client, monkeypatch):
+    """重复 A 修复（路由级）：/send_async 先预检历史、创建 Attempt，再把
+    预检结果传 send_turn——整个请求只读一次历史（不是入口+用例各一次）。"""
+    session_id = _new_session(client)
+    counts = {"get_messages": 0, "convert": 0}
+
+    def _get_messages(*args, **kwargs):
+        counts["get_messages"] += 1
+        return []
+
+    service = SimpleNamespace(
+        store=SimpleNamespace(
+            create_attempt=Mock(), delete_attempt=Mock(),
+            get_attempt=Mock(return_value=SimpleNamespace(status="pending")),
+            get_messages=_get_messages,
+        ),
+        _convert_messages_to_history=lambda *a, **k: (
+            counts.__setitem__("convert", counts["convert"] + 1) or []
+        ),
+        event_bus=SimpleNamespace(emit=Mock()),
+    )
+    chat_router = _install_service(monkeypatch, service)
+
+    class _Engine:
+        def run(self, state):
+            return {"answer": "ok", "messages": state.get("messages", [])}
+
+    from agentnodes.kernel.gateway.gateway import Gateway
+
+    gateway = Gateway(client=object(), engine_factory=_Engine())
+    monkeypatch.setattr(chat_router, "_get_gateway", lambda: gateway)
+
+    response = client.post(
+        "/api/chat/send_async",
+        json={"session_id": session_id, "content": "question"},
+    )
+    assert response.status_code == 200, response.text
+    assert counts["get_messages"] == 1, "入口 + send_turn 不得各读一次历史"
+    assert counts["convert"] == 1
+
+
 @pytest.mark.asyncio
 @pytest.mark.parametrize("second_session", ["s1", "s2"])
 @pytest.mark.parametrize("engine_kind", ["custom", "llm", "agent", "agent_tool", "failed"])
@@ -625,6 +666,8 @@ def test_send_async_response_and_execution_options(client, monkeypatch):
         attempt_id=body["attempt_id"],
         assistant_message_id=body["assistant_message_id"],
         receipt_only=True,
+        # 重复 A 修复：预检结果透传（send_turn 跳过二次读历史）
+        prevalidated_history=[],
         mode="plan",
         system_prompt="persona prompt",
         role="researcher",

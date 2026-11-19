@@ -131,6 +131,10 @@ class SendTurnInput:
     wait: bool = False
     mode: str | None = None
     receipt_only: bool = False
+    # 调用方（send_async）已在创建 Attempt 前预检过的历史——提供则
+    # send_turn 跳过二次预检（重复 A 修复）。信任模型与所有注入依赖同款：
+    # 只有同一请求内刚预检的结果才应传入；apps 不验证来源。
+    prevalidated_history: list[dict] | None = None
 
     @property
     def turn_max_iterations(self) -> int | None:
@@ -409,11 +413,14 @@ def _precheck_history(inp: SendTurnInput, deps: SendTurnDeps) -> list[dict]:
 # ── 主用例：唯一外部 seam ───────────────────────────────────────────
 
 
-def precheck_history(inp: SendTurnInput, deps: SendTurnDeps) -> None:
+def precheck_history(inp: SendTurnInput, deps: SendTurnDeps) -> list[dict]:
     """公开预检（决策 5 的 router 前置）：send_async 在创建 Attempt 之前
-    调用本函数——历史失败时零 Attempt/事件。send_turn 内部仍会再预检
-    一次（只读、幂等），保持用例自包含。"""
-    _precheck_history(inp, deps)
+    调用本函数——历史失败时零 Attempt/事件。
+
+    返回预检后的 history，供调用方通过 ``prevalidated_history`` 传给
+    send_turn 跳过二次预检（重复 A 修复）。现有调用方忽略返回值仍兼容。
+    """
+    return _precheck_history(inp, deps)
 
 
 async def send_turn(inp: SendTurnInput, deps: SendTurnDeps) -> SendTurnResult:
@@ -422,8 +429,13 @@ async def send_turn(inp: SendTurnInput, deps: SendTurnDeps) -> SendTurnResult:
     决策 5：历史预检在 Attempt 创建之前——半提交路径从结构上消失。
     本函数不 import interfaces / FastAPI，错误以应用异常表达。
     """
-    # ① 先验证历史（失败 → 零 Attempt/事件/run）
-    history = _precheck_history(inp, deps)
+    # ① 先验证历史（失败 → 零 Attempt/事件/run）。调用方已预检并传入结果时
+    #    跳过二次读取（重复 A 修复）；未提供则自包含地预检。
+    history = (
+        inp.prevalidated_history
+        if inp.prevalidated_history is not None
+        else _precheck_history(inp, deps)
+    )
 
     gw = deps.gateway
     _install_answer_persister(gw, deps)

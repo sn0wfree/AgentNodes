@@ -302,7 +302,7 @@ async def send_async(body: ChatMessage, request: Request):
     from agentnodes.apps.chat import send_turn as usecase
 
     try:
-        usecase.precheck_history(
+        prevalidated_history = usecase.precheck_history(
             usecase.SendTurnInput(session_id=body.session_id, content=body.content),
             usecase.SendTurnDeps(
                 gateway=_get_gateway(), service=service,
@@ -350,6 +350,9 @@ async def send_async(body: ChatMessage, request: Request):
             attempt_id=attempt_id,
             assistant_message_id=assistant_message_id,
             receipt_only=True,
+            # 重复 A 修复：预检结果透传给 send_turn，跳过二次历史读取。
+            # 只在本请求内刚预检过的结果才传入。
+            prevalidated_history=prevalidated_history,
             **options,
         )
         admitted = True
@@ -536,6 +539,7 @@ async def _send_via_gateway(
     allowed_tools: list[str] | None = None,
     thinking: str | None = None,
     receipt_only: bool = False,
+    prevalidated_history: list[dict] | None = None,
 ) -> dict:
     """L1 薄适配（3a.3b）：构造 apps.send_turn 的输入/依赖，调用用例，
     并把应用层错误映射为既有 HTTP status/detail。
@@ -559,6 +563,7 @@ async def _send_via_gateway(
         assistant_message_id=assistant_message_id, model=model,
         system_prompt=system_prompt, role=role, allowed_tools=allowed_tools,
         thinking=thinking, receipt_only=receipt_only,
+        prevalidated_history=prevalidated_history,
     )
     deps = usecase.SendTurnDeps(
         gateway=gw, service=service,

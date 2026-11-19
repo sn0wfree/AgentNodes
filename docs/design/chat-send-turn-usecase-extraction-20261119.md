@@ -275,7 +275,7 @@ API chat 的发送编排。输入、结果和失败使用最小的类型化结�
 - 层方向门禁：L2>L1 / L3>L1 / L3>L2 / L4>L* 全 **0**
 - 全量 `-n 12`：**7836 passed / 106 skipped / 2 xfailed / 0 failed**
 - batch_gate：**12 步 ALL GREEN**
-- 体量数字：**451 文件 / 94,622 行**（L1 从 22,600 降至 22,402 = wrapper 收敛净效果；L2 10,551 = send_turn + events + messages 深模块）
+- 体量数字：**451 文件 / 94,652 行**（L1 从 22,600 降至 22,420 = wrapper 收敛净效果；L2 10,563 = send_turn + events + messages 深模块）
 
 ### 10.5 3a.4 清理审计（2026-11-19 · 裁决：本版本只标记，下版本删除）
 
