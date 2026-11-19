@@ -12,7 +12,7 @@ import sys
 
 import pytest
 
-from agentnodes.apps.chat.isolation import (
+from agentnodes.kernel.agent.tools.isolation import (
     ACTUAL_STATES,
     ApprovalProxy,
     IsolationResult,
@@ -21,7 +21,7 @@ from agentnodes.apps.chat.isolation import (
     build_worker_adapter,
     isolate_tool_call,
 )
-from agentnodes.apps.chat.isolation import _EOF
+from agentnodes.kernel.agent.tools.isolation import _EOF
 
 pytestmark = pytest.mark.skipif(
     sys.platform != "win32",
@@ -84,7 +84,7 @@ def test_actual_states_match_4a_vocabulary():
 
 def test_unsupported_platform_is_explicit():
     """未验证平台显式拒绝，不静默降级到进程内执行。"""
-    from agentnodes.apps.chat.isolation import _PosixAdapter
+    from agentnodes.kernel.agent.tools.isolation import _PosixAdapter
 
     adapter = _PosixAdapter()
     with pytest.raises(UnsupportedPlatform):
@@ -97,7 +97,7 @@ def test_read_timeout_is_not_eof():
     根因：早期实现用 None 同时表示「超时」与「EOF」，worker 首次 import
     慢于一次读超时就被误判为已退出 → 实际状态错报 unknown。
     """
-    from agentnodes.apps.chat.isolation import IsolationChannel
+    from agentnodes.kernel.agent.tools.isolation import IsolationChannel
 
     handle = {"proc": type("P", (), {
         "stdout": iter(()), "stderr": None, "pid": 1,

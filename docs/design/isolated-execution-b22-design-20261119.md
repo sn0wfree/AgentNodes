@@ -197,3 +197,22 @@ batch_gate ALL GREEN；数字同步（455 文件 / 95,562 行，L2 +68 行）。
 
 下一子批 3d（平台测试矩阵：Windows 必过 / POSIX skip-with-reason 进
 gate 记录）需单独批准。
+
+## 10. seam 层级迁移记录（2026-11-20 · 已实施）
+
+roadmap §6 #2 裁决落定：通用 worker/平台机制归 kernel——本迁移是
+**回归 §2 的原定落位**（当时 L2 落位是偏差，不是设计变更）。三文件
+`isolation.py` / `_isolation_win32.py` / `_isolation_worker.py` 由
+`apps/chat/`（L2）迁至 `kernel/agent/tools/`（L3），保持同目录（两条
+硬耦合：`isolation.py` 延迟 import `_isolation_win32`、
+`_WORKER_SCRIPT = Path(__file__).with_name("_isolation_worker.py")`）。
+
+- 改写面：src 1 处延迟 import + worker usage 字符串 + 测试 7 条 import
+  （test_isolation_adapter / channel / pilot）；**零生产接线状态不变**
+  （src 内无任何其他模块 import seam）。
+- 门禁：layer_matrix 由 `agentnodes.kernel.agent` 前缀覆盖（不加显式
+  行，与 kernel.agent 子包既有风格一致）；semantics_placement /
+  kernel_nouns / path_literals 零改动即绿；数字文档 L2 45 文件 10,563
+  行 / L3 226 文件 50,299 行（-758/+758，总数不变）。
+- §6/§7 执行记录中的 `apps/chat/` 路径为**历史记录**，不回写（惯例同
+  M13 文档的回退留痕）；本节之后的设计引用一律用 kernel 路径。

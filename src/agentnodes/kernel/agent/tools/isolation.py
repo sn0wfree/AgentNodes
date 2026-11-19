@@ -82,7 +82,7 @@ class _PosixAdapter:
 def build_worker_adapter() -> WorkerAdapter:
     """按当前平台返回 adapter；不支持则给禁启用 adapter（不抛，便于测试）。"""
     if sys.platform == "win32":
-        from agentnodes.apps.chat._isolation_win32 import Win32JobAdapter
+        from agentnodes.kernel.agent.tools._isolation_win32 import Win32JobAdapter
 
         return Win32JobAdapter()
     return _PosixAdapter()

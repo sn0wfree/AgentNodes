@@ -11,7 +11,7 @@ from pathlib import Path
 
 import pytest
 
-from agentnodes.apps.chat.isolation import (
+from agentnodes.kernel.agent.tools.isolation import (
     UnsupportedPlatform,
     WorkerAdapter,
     _PosixAdapter,

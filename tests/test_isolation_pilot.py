@@ -14,7 +14,7 @@ import time
 
 import pytest
 
-from agentnodes.apps.chat.isolation import isolate_tool_call
+from agentnodes.kernel.agent.tools.isolation import isolate_tool_call
 
 pytestmark = pytest.mark.skipif(
     sys.platform != "win32",
@@ -70,7 +70,7 @@ def test_s3b_resident_worker_poisoned_after_timeout():
 
     毒化保证旧任务的迟到结果行不可能被新调用冒名接收（D2）。
     """
-    from agentnodes.apps.chat.isolation import IsolationWorker
+    from agentnodes.kernel.agent.tools.isolation import IsolationWorker
 
     with IsolationWorker() as worker:
         result = worker.call("probe_sleep", {"seconds": 8.0}, timeout_s=1.5)

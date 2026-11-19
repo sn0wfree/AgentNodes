@@ -15,7 +15,7 @@ import subprocess
 import time
 from typing import Any
 
-from agentnodes.apps.chat.isolation import WorkerAdapter
+from agentnodes.kernel.agent.tools.isolation import WorkerAdapter
 
 _k32 = ctypes.WinDLL("kernel32", use_last_error=True)
 

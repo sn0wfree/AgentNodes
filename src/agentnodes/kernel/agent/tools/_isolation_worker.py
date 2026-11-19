@@ -155,7 +155,7 @@ def _worker_loop() -> int:
 def main() -> int:
     if "--worker" in sys.argv:
         return _worker_loop()
-    print("usage: python -m agentnodes.apps.chat._isolation_worker --worker", file=sys.stderr)
+    print("usage: python -m agentnodes.kernel.agent.tools._isolation_worker --worker", file=sys.stderr)
     return 2
 
 
