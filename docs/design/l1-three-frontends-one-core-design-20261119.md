@@ -296,3 +296,16 @@
 按方案 §4 子批顺序实施：3a.0 基线 → 3a.1 探针 → 3a.2 事件词表 →
 3a.3 send_turn 用例（含 Attempt 顺序修复）→ 3a.4 清理审计；
 3a-M13（runner 注册表）独立子批。
+
+**实施状态（2026-11-19）**：3a.0（`52cbee62`）→ 3a.1（`d33f7b0b`）→
+3a.2（`dde0fd8d`）→ 3a.3a 深模块纯新增（`8afb0640`）→ 3a.3b 接线
+（`8bd0561f`）**全部完成**；详细执行记录见 [Chat send_turn 用例下沉
+实施方案 §10](./chat-send-turn-usecase-extraction-20261119.md)。
+批 1 ✅ / 批 2 预警标记 ✅（删除延后一版本）/ 批 3a 主体 ✅；
+剩余 **3a.4 清理审计**（待裁决）、3a-M13（独立子批）、批 4 一致性收尾。
+
+关键结果：router `_send_via_gateway` 从 280 行编排收敛为 ~60 行薄 wrapper
+（L1 净减 198 行）；send-turn 编排全部在 `apps/chat/send_turn.py` 深模块；
+attempt.* 三字面量单源化（kernel EventType）；send_async 半提交路径消除
+（历史预检先于 Attempt 创建）。契约网 205 passed / 2 xfailed，层违规 0，
+全量 7836 passed / 0 failed，batch_gate ALL GREEN。

@@ -233,3 +233,52 @@ API chat 的发送编排。输入、结果和失败使用最小的类型化结�
 - 回滚粒度按决策 8：3a.3a 回退 = 恢复零新增；3a.3b 回退 = 恢复旧 router 路径；单例观察器不回滚。
 
 实施按此决策记录执行；如实施中发现与新决策冲突的现实约束，先回到本文档修订决策再动代码。
+
+## 10. 执行记录（2026-11-19 · 3a.0 ~ 3a.3b 全部完成）
+
+### 10.1 子批与提交
+
+| 子批 | 提交 | 内容 |
+|---|---|---|
+| 3a.0 基线 | `52cbee62` | 契约网 179 passed / 2 xfailed 冻结；消费者/monkeypatch 锚图（排除 docstring 误报）；API wire 冻结表；5 项风险登记 |
+| 3a.1 探针 | `d33f7b0b` | `apps/chat/messages.py`（build_message_received + record_user_message + UserMessageRecord）；chat.py ②-c 接入；7 用例逐字段断言四种形状 |
+| 3a.2 事件词表 | `dde0fd8d` | `apps/chat/events.py`（ChatEvent 从 EventType 取值 + ENGINE_TO_PRODUCT + STREAM_PASSTHROUGH_KINDS + translate_engine_event）；bridge mapping/直通收归词表；6 用例 |
+| 方案审阅 + 决策 | `fd1594e8` / `484092e8` | 审阅通过（核实 Attempt 半提交属实、单例观察器位置）；improve-codebase-architecture 审计报告 + 两轮 grilling 8 项决策 |
+| 3a.3a 纯新增 | `8afb0640` | `apps/chat/send_turn.py` 深模块（SendTurnInput/Deps/Result + 9 应用异常 + 内部 bridge/persister/precheck）；attempt.* 单源（kernel EventType 补 3 常量，apps/kernel 发射点改引用）；4 直测用例。**零调用方切换** |
+| 3a.3b 接线 | `8bd0561f` | `_send_via_gateway` 280 行 → ~60 行薄 wrapper；send_async 历史预检前置（半提交修复生效）；bridge persist 分支补齐（3a.3a 搬迁遗漏）；契约网过渡适配；wire 零变化 |
+
+### 10.2 决策落地核对
+
+| 决策（§9） | 落地位置 | 状态 |
+|---|---|---|
+| 1 两参数 interface | `send_turn.py:SendTurnInput/SendTurnDeps` | ✅ |
+| 2 应用异常 + router 一处映射 | `send_turn.py:SendTurnError` 子类 + wrapper `error_map` | ✅ |
+| 3 bridge/persister 内部 seam | `send_turn.py:_event_bridge/_install_answer_persister`（不导出） | ✅ |
+| 4 过渡面 | `_send_via_gateway` 签名保留；3a.0 锚 17+16+17 全绿 | ✅ 待 3a.4 关闭 |
+| 5 历史预检先于 Attempt | `send_turn.precheck_history()` 在 send_async:create_attempt 之前 | ✅ |
+| 6 attempt.* 单源 | kernel EventType 三常量 + apps ChatEvent + 11 处引用替换 | ✅ |
+| 7 41 用例保绿 + 新增直测 | `test_chat_control_contract.py` 41 passed；`test_chat_send_turn.py` 4 用例；`test_chat_messages.py` 7；`test_chat_events.py` 6 | ✅ |
+| 8 提交切分 | 3a.3a 纯新增 / 3a.3b 接线，各自独立提交 | ✅ |
+
+### 10.3 实施期发现与修正
+
+1. **3a.3a 搬迁遗漏**：`_event_bridge` 漏搬 `if persist:` 整块（run.answer→agent_done completed / 失败→error+agent_done），3a.3b 接线时 23 个契约用例红——从 `git show 8afb0640^:...chat.py` 取回原文补齐，wire 零变化。**教训**：跨文件搬迁后必须在接线前对「被搬函数的完整分支集合」做静态核对，不能只靠新增直测（它们没覆盖 persist 分支）。
+2. **wrapper 的 emit 延迟取值**：初版 `emit=service.event_bus.emit` 导致严格历史失败用例的 fake service（无 event_bus）在 deps 构造时就 AttributeError——改 lambda 延迟取，历史失败路径不触达 emit，与旧实现语义一致。
+3. **源序测试迁移**：`test_w3_sse_seed.py::test_bridge_installed_before_submit` 原用 `inspect.getsource(chat_router._send_via_gateway)` 文本断言，接线后 router 源码不再含 bridge 调用——改为断言 `apps/send_turn.py` 的 `_event_bridge` 先于 `gw.entry.submit`，语义不变。
+4. **两个 send_async 契约测试的 fake 补面**：precheck 新增后 fake store 缺 `get_messages` / service 缺 `_convert_messages_to_history`——补最小空实现，保持它们对提交部分的隔离意图（不弱化断言）。
+5. **负载抖动**：全量 `-n 12` 偶见 goal_panel/timeout 预算类用例失败，`--lf` 复跑过；已由 `7b635161` 的时间加固覆盖大部分，剩余为既有并发抖动，非本批回归。
+
+### 10.4 验证矩阵（每批固定）
+
+- 契约网（15 文件）：**205 passed / 2 xfailed**（两 xfail = 同步工具强中断、sync-only 线程桥——既有结构边界）
+- 核心 `test_chat_control_contract.py`：**41 passed**（wire/事件/Attempt 状态/STEER 全绿）
+- 层方向门禁：L2>L1 / L3>L1 / L3>L2 / L4>L* 全 **0**
+- 全量 `-n 12`：**7836 passed / 106 skipped / 2 xfailed / 0 failed**
+- batch_gate：**12 步 ALL GREEN**
+- 体量数字：**451 文件 / 94,622 行**（L1 从 22,600 降至 22,402 = wrapper 收敛净效果；L2 10,551 = send_turn + events + messages 深模块）
+
+### 10.5 剩余工作
+
+- **3a.4 清理审计**（待裁决）：关闭 router 过渡面、41 用例逐项迁到 send_turn seam、旧 helper 按 R-015 三查后删除（R-020 独立提交）、R-016 出口网逐项关闭。
+- **3a-M13 独立子批**：workflow runner 注册表（`_active_runners`）职责/线程安全/owner 过滤另出方案，不与 send-turn 混提。
+- legacy `send_message` / 旧队列 / 兼容重导出 / 漂移测试：全程未动（§8）。
