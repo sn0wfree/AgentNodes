@@ -9,6 +9,13 @@ Field names follow the API wire contract (not necessarily the core model):
 - ``round_num`` (never ``round`` — ``round`` shadows the builtin)
 - ``factor_failures`` / ``verdict_reason`` / ``error`` present on every
   round shape so the UI can render failure detail without optional checks.
+
+DEPRECATED（2026-11-19，三前端一核心批 2 删除预警）：整个 study schema
+簇的 `/api/study` 路由已随 apps/study 移除（2026-11-05 批次 3），本模块
+全仓零消费者（逐项三查：定义 + src/tests/scripts 引用 + 注册面）。
+按维护者裁决**删除延后一个版本**，本版保留零行为改动；删除时连同
+`schemas/__init__.py` 的 study 导入块一并整删。依据见
+docs/design/l1-three-frontends-one-core-design-20261119.md §2.3/§5 批 2。
 """
 
 from __future__ import annotations

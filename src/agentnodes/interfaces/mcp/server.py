@@ -46,7 +46,12 @@ def _df_to_records(rows: Any) -> list[dict]:
 
 
 def _package_fetch_result(data: dict, max_rows: int) -> tuple[dict, int, bool]:
-    """Convert fetched DataFrames into JSON-safe records with truncation."""
+    """Convert fetched DataFrames into JSON-safe records with truncation.
+
+    DEPRECATED（2026-11-19，批 2 删除预警）：所属 data_source 工具面已随
+    apps/data_source 移除，本函数及其 df 序列化辅助全仓零调用（三查确认）；
+    删除延后一个版本，本版保留、零行为改动。依据见三前端一核心设计 §2.3。
+    """
     result_data = {}
     total_rows = 0
     truncated = False

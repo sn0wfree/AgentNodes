@@ -257,7 +257,11 @@ async def stream_chat_async(
     client: OpenAICompatClient,
     messages: list[dict[str, Any]],
 ) -> AsyncIterator[StreamChunk]:
-    """Async version of the streaming bridge (used by tests + future HTTP/2 use).
+    """DEPRECATED（2026-11-19，批 2 删除预警）：全仓零调用（三查确认），
+    删除延后一个版本；本版保留、零行为改动。所谓"future HTTP/2 use"
+    并未落地，仅 `stream_chat_to_tui` 仍在用。依据见三前端一核心设计 §2.3。
+
+    Async version of the streaming bridge (used by tests + future HTTP/2 use).
 
     Yields each :class:`StreamChunk` as it arrives so callers can
     decide whether to flush to the transcript immediately or batch.

@@ -344,7 +344,11 @@ def _invalidate_projection(session_id: str, request: Request | None = None) -> N
 
 
 def delete_messages(session_id: str, message_ids: list[str]) -> None:
-    """Delete specific messages by ID from a session."""
+    """Delete specific messages by ID from a session.
+
+    DEPRECATED（2026-11-19，批 2 删除预警）：全仓零调用（三查确认），
+    删除延后一个版本；本版保留、零行为改动。依据见三前端一核心设计 §2.3。
+    """
     if not message_ids:
         return
     try:

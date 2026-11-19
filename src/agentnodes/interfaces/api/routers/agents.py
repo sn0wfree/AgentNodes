@@ -27,6 +27,8 @@ _PROMPTS_DIR = (
 _schema_cache: dict[str, dict[str, Any]] = {}  # role → AgentSchema as dict
 _schema_mtimes: dict[str, float] = {}          # role → file mtime
 
+# DEPRECATED（2026-11-19，批 2 删除预警）：全仓零引用（三查确认），
+# 删除延后一个版本；本版保留、零行为改动。
 _CACHE_KEY = "schemas"  # top-level cache key
 
 
