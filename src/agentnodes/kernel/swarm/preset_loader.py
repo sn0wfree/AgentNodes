@@ -129,3 +129,31 @@ def list_presets(directory: Path) -> list[SwarmPreset]:
             presets.append(preset)
 
     return presets
+
+
+def find_preset(name: str, directory: Path) -> SwarmPreset | None:
+    """按 preset 的 ``name:`` 字段查找（M7 统一单点，批 3c）。
+
+    此前 cli/commands/swarm.py（inspect/run）与 mcp/server.py 各持一份
+    逐字相同的 glob 循环；统一到这里。约定：
+
+    - 匹配的是 preset **内部 ``name:`` 字段**，不是文件 stem（二者可不同）
+    - glob 两种扩展名且 sorted——查找顺序确定，不再依赖文件系统序
+    - 目录由调用方传入：kernel 不反向取 ``apps.swarm_presets.PRESETS_DIR``
+      （层方向约束，L1 调用方自持目录）
+    - 找不到返回 None；首个命中即返回
+    """
+    if not directory.is_dir():
+        return None
+
+    for yml_file in sorted(directory.glob("*.yaml")):
+        preset = load_preset(yml_file)
+        if preset is not None and preset.name == name:
+            return preset
+
+    for yml_file in sorted(directory.glob("*.yml")):
+        preset = load_preset(yml_file)
+        if preset is not None and preset.name == name:
+            return preset
+
+    return None

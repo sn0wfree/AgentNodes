@@ -34,18 +34,10 @@ def cmd_swarm_list(args) -> int:
 
 def cmd_swarm_inspect(args) -> int:
     """显示 swarm preset 结构。"""
-    from agentnodes.kernel.swarm import load_preset
+    from agentnodes.kernel.swarm import find_preset
 
     presets_dir = _swarm_presets.PRESETS_DIR  # batch 8: presets moved to L2
-    preset = None
-    for ext in ("*.yaml", "*.yml"):
-        for f in presets_dir.glob(ext):
-            p = load_preset(f)
-            if p and p.name == args.name:
-                preset = p
-                break
-        if preset:
-            break
+    preset = find_preset(args.name, presets_dir)  # M7: 三处 glob 循环统一单点
 
     if not preset:
         print(f"Preset '{args.name}' 不存在")
@@ -78,18 +70,10 @@ def cmd_swarm_inspect(args) -> int:
 
 def cmd_swarm_run(args) -> int:
     """执行 swarm preset。"""
-    from agentnodes.kernel.swarm import SwarmRuntime, load_preset
+    from agentnodes.kernel.swarm import SwarmRuntime, find_preset
 
     presets_dir = _swarm_presets.PRESETS_DIR  # batch 8: presets moved to L2
-    preset = None
-    for ext in ("*.yaml", "*.yml"):
-        for f in presets_dir.glob(ext):
-            p = load_preset(f)
-            if p and p.name == args.name:
-                preset = p
-                break
-        if preset:
-            break
+    preset = find_preset(args.name, presets_dir)  # M7: 三处 glob 循环统一单点
 
     if not preset:
         print(f"Preset '{args.name}' 不存在")

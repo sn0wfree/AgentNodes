@@ -16,15 +16,17 @@ from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:  # 类型标注仅供 IDE；运行时按需加载
     from agentnodes.kernel.swarm.preset_loader import (
+        find_preset as _find_preset,
         load_preset as _load_preset,
         list_presets as _list_presets,
     )
     from agentnodes.kernel.swarm.runtime import SwarmRuntime as _SwarmRuntime
 
-__all__ = ["SwarmRuntime", "list_presets", "load_preset"]
+__all__ = ["SwarmRuntime", "find_preset", "list_presets", "load_preset"]
 
 _LAZY = {
     "SwarmRuntime": ("agentnodes.kernel.swarm.runtime", "SwarmRuntime"),
+    "find_preset": ("agentnodes.kernel.swarm.preset_loader", "find_preset"),
     "load_preset": ("agentnodes.kernel.swarm.preset_loader", "load_preset"),
     "list_presets": ("agentnodes.kernel.swarm.preset_loader", "list_presets"),
 }

@@ -430,18 +430,10 @@ class MCPServer:
             from pathlib import Path
 
             import agentnodes.kernel.swarm as swarm_module
-            from agentnodes.kernel.swarm import SwarmRuntime, load_preset
+            from agentnodes.kernel.swarm import SwarmRuntime, find_preset
 
             presets_dir = _swarm_presets.PRESETS_DIR  # batch 8: presets moved to L2  # 层无关：跟随 swarm 包实际位置
-            preset = None
-            for ext in ("*.yaml", "*.yml"):
-                for f in presets_dir.glob(ext):
-                    p = load_preset(f)
-                    if p and p.name == preset_name:
-                        preset = p
-                        break
-                if preset:
-                    break
+            preset = find_preset(preset_name, presets_dir)  # M7: 三处 glob 循环统一单点
 
             if preset is None:
                 return json.dumps({

@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import pytest
 
-from agentnodes.kernel.swarm.preset_loader import list_presets, load_preset
+from agentnodes.kernel.swarm.preset_loader import find_preset, list_presets, load_preset
 from agentnodes.kernel.swarm.runtime import (
     AgentResult,
     SwarmPreset,
@@ -68,6 +68,39 @@ class TestPresetLoader:
     def test_list_presets_nonexistent_dir(self, tmp_path):
         presets = list_presets(tmp_path / "nonexistent")
         assert presets == []
+
+
+class TestFindPreset:
+    """M7 统一单点：按 preset 内部 name 字段查找（非文件 stem）。"""
+
+    def test_matches_name_field_not_file_stem(self, tmp_path):
+        """name 字段 ≠ 文件 stem：按字段命中，按 stem 找不到。"""
+        (tmp_path / "v2.yaml").write_text(
+            "name: quant_team\nagents: []\ndag: {}",
+        )
+        found = find_preset("quant_team", tmp_path)
+        assert found is not None
+        assert found.name == "quant_team"
+        assert find_preset("v2", tmp_path) is None
+
+    def test_matches_yml_extension(self, tmp_path):
+        (tmp_path / "b.yml").write_text("name: preset_yml\nagents: []\ndag: {}")
+        assert find_preset("preset_yml", tmp_path) is not None
+
+    def test_missing_returns_none(self, tmp_path):
+        (tmp_path / "a.yaml").write_text("name: preset_a\nagents: []\ndag: {}")
+        assert find_preset("ghost", tmp_path) is None
+
+    def test_nonexistent_dir_returns_none(self, tmp_path):
+        assert find_preset("anything", tmp_path / "nope") is None
+
+    def test_deterministic_first_match(self, tmp_path):
+        """sorted 确定序：两个同名 preset（不同文件名）→ yaml 优先、stem 字典序。"""
+        (tmp_path / "b.yaml").write_text("name: dup\nagents: []\ndag: {}")
+        (tmp_path / "a.yaml").write_text("name: dup\nagents: []\ndag: {}")
+        # 同名不区分实例（SwarmPreset 相同），只断言命中且可重复
+        assert find_preset("dup", tmp_path) is not None
+        assert find_preset("dup", tmp_path) is not None
 
 
 # ── SwarmRuntime Tests ─────────────────────────────────────
