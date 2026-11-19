@@ -309,3 +309,9 @@
 attempt.* 三字面量单源化（kernel EventType）；send_async 半提交路径消除
 （历史预检先于 Attempt 创建）。契约网 205 passed / 2 xfailed，层违规 0，
 全量 7836 passed / 0 failed，batch_gate ALL GREEN。
+
+**3a.4 裁决（2026-11-19）**：批准 3a.4，但**删除延后到下一版本，本版本
+只做 DEPRECATED 标记**。已完成三查（三个装配 helper 有生产消费者、不标）、
+三处过渡面标注（wrapper / bridge 副本 / persister 副本，注明双源漂移风险）、
+R-016 出口网覆盖核对（12/14 类已覆盖，2 类列下版本补测）。本版本零删除、
+零测试迁移——58 个 patch 锚与删除同批（下版本）迁移才有收益。

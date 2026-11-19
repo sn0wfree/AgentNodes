@@ -277,8 +277,38 @@ API chat 的发送编排。输入、结果和失败使用最小的类型化结�
 - batch_gate：**12 步 ALL GREEN**
 - 体量数字：**451 文件 / 94,622 行**（L1 从 22,600 降至 22,402 = wrapper 收敛净效果；L2 10,551 = send_turn + events + messages 深模块）
 
-### 10.5 剩余工作
+### 10.5 3a.4 清理审计（2026-11-19 · 裁决：本版本只标记，下版本删除）
 
-- **3a.4 清理审计**（待裁决）：关闭 router 过渡面、41 用例逐项迁到 send_turn seam、旧 helper 按 R-015 三查后删除（R-020 独立提交）、R-016 出口网逐项关闭。
+维护者裁决：**批准 3a.4，但删除延后到下一版本；本版本只做 DEPRECATED 标记**
+（与批 2 死代码同款处理）。
+
+**本版本已执行**（零行为改动）：
+
+- **R-015 三查**：过渡面符号按「定义处 + 全仓引用 + 框架注册面」复核。
+  关键发现：`_get_session_service` / `_get_gateway` / `_build_llm_config`
+  有真实生产跨路由消费者（goal / slash_common / workflow），**不是过渡面**，
+  不标 DEPRECATED；`_push_sse` / `_chat_wait_timeout` 是 wrapper 的 deps
+  来源与 patch 锚，不是纯过渡面，不标。
+- **DEPRECATED 标记**（3 处，均在 docstring 追加、零行为改动）：
+  `chat.py::_send_via_gateway`（wrapper 过渡面，生产调用已全迁 send_turn）、
+  `_install_chat_event_bridge`（桥副本已下沉为 send_turn 内部 seam）、
+  `_install_answer_persister`（观察器副本已下沉；**双实现并存有漂移风险**，
+  下版本删除以消除双源）。三处均注明「下一版本删除、本版本保留兼容」。
+- **R-016 出口网覆盖核对**（验证性、不改代码）：逐出口核对
+  14 类场景（receipt/wait/429/历史失败/wait 超时/run 失败/summarized/
+  取消/STEER/Attempt/单例落库/跨会话隔离/legacy 兼容）——12 类已覆盖；
+  `entry_rejected` 400 与 legacy send_message 专项断言未直接覆盖，
+  **列入下版本删除批的补测项**（届时随测试迁移一并按新 seam 补）。
+
+**本版本明确不做**：不删任何代码、不迁 58 个 router patch 锚（41 契约用例
+依赖真实 Gateway + threading，迁移需 fake adapter 重写，风险高——与删除
+同批做才有收益；本版本迁移只会制造两套测试并存）。DEPRECATED 标记 +
+测试锚保持 = 下版本删除的前置条件已就绪。
+
+### 10.6 剩余工作（下版本 / 独立批）
+
+- **3a.4 删除批（下版本，待再批准）**：关闭 router 过渡面、58 patch 锚逐项
+  迁到 send_turn seam、删 3 个 DEPRECATED 旧实现（R-015 三查重核 +
+  R-020 独立提交）、补 entry_rejected/legacy 专项断言、R-016 出口网逐项关闭。
 - **3a-M13 独立子批**：workflow runner 注册表（`_active_runners`）职责/线程安全/owner 过滤另出方案，不与 send-turn 混提。
 - legacy `send_message` / 旧队列 / 兼容重导出 / 漂移测试：全程未动（§8）。

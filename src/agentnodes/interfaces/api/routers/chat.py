@@ -484,6 +484,10 @@ def _install_answer_persister(gw: Any) -> None:
     - 各等待方连接的通知/流式转发保持不变（A1：多等待方各自得到结果）。
 
     落库失败只记 warning，不阻断事件流与各等待方 SSE。
+
+    DEPRECATED（2026-11-19，3a.4 裁决）：同一观察器已下沉为
+    apps/chat/send_turn.py::_install_answer_persister，生产零调用；
+    **下一版本删除**，本版本保留兼容（单例语义不变）。
     """
     if getattr(gw, "_answer_persister_installed", False):
         return
@@ -538,6 +542,11 @@ async def _send_via_gateway(
 
     签名保留为过渡面（3a.0 基线冻结的 17 处 monkeypatch 锚继续生效）；
     3a.4 再逐项关闭。RunResult/事件 wire 由 apps 用例保证逐字不变。
+
+    DEPRECATED（2026-11-19，3a.4 裁决）：本 wrapper 是 send-turn 下沉的
+    过渡面，生产调用已全部迁至 apps/chat.send_turn。**下一版本删除**
+    （与批 2 死代码同批次协调）；本版本只标注、不改行为。测试锚按
+    R-016 出口网逐项迁移，迁移完成前保留此面。
     """
     from agentnodes.apps.chat import send_turn as usecase
 
@@ -624,6 +633,10 @@ def _install_chat_event_bridge(
     一直存活，用旧 message_id 推送重复 SSE（同一 session 第二次请求时
     出现重复文本），且 sink 链随请求数线性增长。调用方也应在 finally
     里兜底注销。
+
+    DEPRECATED（2026-11-19，3a.4 裁决）：本桥已下沉为
+    apps/chat/send_turn.py::_event_bridge 内部 seam，生产零调用；
+    **下一版本删除**（测试 import/patch 锚先迁走），本版本保留兼容。
     """
     # 3a.2：引擎→产品事件映射与流式直通集合收归 apps/chat.events 单点
     # （词表值从 kernel EventType 取，wire 名绝对值不变）。
