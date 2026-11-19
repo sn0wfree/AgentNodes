@@ -567,7 +567,10 @@ def test_send_async_response_and_execution_options(client, monkeypatch):
             create_attempt=Mock(),
             delete_attempt=Mock(),
             get_attempt=Mock(return_value=SimpleNamespace(status="pending")),
+            # 3a.3b：send_async 新增历史预检（决策 5），fake 补最小面
+            get_messages=Mock(return_value=[]),
         ),
+        _convert_messages_to_history=Mock(return_value=[]),
         event_bus=SimpleNamespace(emit=Mock()),
     )
     _install_service(monkeypatch, service)
@@ -678,7 +681,12 @@ def test_gateway_chat_options_reuse_persona_plan_and_thinking_policy(monkeypatch
 def test_send_async_queue_full_preserves_429_detail(client, monkeypatch):
     session_id = _new_session(client)
     service = SimpleNamespace(
-        store=SimpleNamespace(create_attempt=Mock(), delete_attempt=Mock()),
+        store=SimpleNamespace(
+            create_attempt=Mock(), delete_attempt=Mock(),
+            # 3a.3b：send_async 新增历史预检（决策 5），fake 补最小面
+            get_messages=Mock(return_value=[]),
+        ),
+        _convert_messages_to_history=Mock(return_value=[]),
         event_bus=SimpleNamespace(emit=Mock()),
     )
     _install_service(monkeypatch, service)

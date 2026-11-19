@@ -58,6 +58,7 @@ __all__ = [
     "MissingRunId",
     "RequestSummarized",
     "RunFailed",
+    "precheck_history",
     "send_turn",
 ]
 
@@ -217,6 +218,7 @@ def _event_bridge(
     event_correlation_id: str,
     terminal_observer: Callable[[str, dict], None] | None,
     seed_user: dict | None,
+    persist: bool = False,
 ) -> Callable[[], None]:
     """安装事件桥，返回注销函数。逐字搬迁自 router，wire 零变化。"""
     mapping = {"tool_call": "tool_call", "tool_result": "tool_result"}
@@ -308,6 +310,30 @@ def _event_bridge(
                     except Exception:  # noqa: BLE001
                         logger.debug("assistant seed push failed", exc_info=True)
 
+        # receipt 路径（persist=True）：桥负责各等待方的终态 SSE 通知。
+        # assistant_message 落库已收归单例观察器（run.answer 触发），桥不 emit。
+        if persist:
+            if kind == "run.answer":
+                mid = str(data.get("assistant_message_id") or data.get("run_id") or "")
+                assistant_mid_holder["id"] = mid
+                deps.publish_sse("agent_done", {
+                    "message_id": mid, "status": "completed",
+                }, session_id)
+                return
+            if kind in ("run.failed", "run.fenced", "run.cancelled") or (
+                kind == "run.settled" and (data.get("fenced") or data.get("cancelled"))
+            ):
+                mid = str(data.get("assistant_message_id") or data.get("run_id") or "")
+                reason = str(data.get("error") or data.get("reason") or "")
+                cancelled = kind == "run.cancelled" or data.get("cancelled")
+                if not cancelled:
+                    deps.publish_sse("error", {"message_id": mid, "error": reason}, session_id)
+                deps.publish_sse("agent_done", {
+                    "message_id": mid,
+                    "status": "cancelled" if cancelled else "error",
+                }, session_id)
+                return
+
     def bridge(kind: str, data: dict) -> None:
         if kind == "steer.applied" and event_correlation_id in data.get("applied_event_correlations", ()):
             state["followed_correlation_id"] = data["event_correlation_id"]
@@ -383,6 +409,13 @@ def _precheck_history(inp: SendTurnInput, deps: SendTurnDeps) -> list[dict]:
 # ── 主用例：唯一外部 seam ───────────────────────────────────────────
 
 
+def precheck_history(inp: SendTurnInput, deps: SendTurnDeps) -> None:
+    """公开预检（决策 5 的 router 前置）：send_async 在创建 Attempt 之前
+    调用本函数——历史失败时零 Attempt/事件。send_turn 内部仍会再预检
+    一次（只读、幂等），保持用例自包含。"""
+    _precheck_history(inp, deps)
+
+
 async def send_turn(inp: SendTurnInput, deps: SendTurnDeps) -> SendTurnResult:
     """执行一次 chat send（receipt 或 completed）。
 
@@ -422,6 +455,7 @@ async def send_turn(inp: SendTurnInput, deps: SendTurnDeps) -> SendTurnResult:
             "message_id": user_mid, "user_message_id": user_mid,
             "role": "user", "content": inp.content, "created_at": time.time(),
         } if turn_persist else None),
+        persist=turn_persist,
     )
 
     try:

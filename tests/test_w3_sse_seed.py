@@ -125,13 +125,16 @@ def test_seed_missing_run_id_is_noop(bridge_env):
 
 
 def test_bridge_installed_before_submit():
-    """源序断言：`_install_chat_event_bridge` 调用必须出现在
-    `gw.entry.submit` 之前——work.enqueued 在 submit 内唤醒消费者，
-    晚装会错过 run.started。"""
-    import agentnodes.interfaces.api.routers.chat as chat_mod
+    """源序断言：事件桥安装必须出现在 submit 之前——work.enqueued 在
+    submit 内唤醒消费者，晚装会错过 run.started。
 
-    src = inspect.getsource(chat_mod._send_via_gateway)
-    install_at = src.find("_install_chat_event_bridge(")
+    3a.3b：编排下沉到 apps/chat.send_turn，断言移到新模块源码
+    （_event_bridge 调用先于 gw.entry.submit）；语义不变。
+    """
+    from agentnodes.apps.chat import send_turn as usecase
+
+    src = inspect.getsource(usecase.send_turn)
+    install_at = src.find("_event_bridge(")
     submit_at = src.find("gw.entry.submit(")
     assert install_at != -1 and submit_at != -1
     assert install_at < submit_at, "桥必须先于 submit 安装（W3 时序）"

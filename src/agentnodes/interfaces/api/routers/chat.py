@@ -296,6 +296,22 @@ async def send_async(body: ChatMessage, request: Request):
         return await _handle_help_command(body)
 
     service = _get_session_service()
+
+    # 3a.3b（决策 5）：先验证严格历史，再创建 Attempt/发 attempt.created——
+    # 历史失败时零 Attempt 事件（消除原「先发事件后删行」半提交路径）。
+    from agentnodes.apps.chat import send_turn as usecase
+
+    try:
+        usecase.precheck_history(
+            usecase.SendTurnInput(session_id=body.session_id, content=body.content),
+            usecase.SendTurnDeps(
+                gateway=_get_gateway(), service=service,
+                emit=lambda *a: None, publish_sse=lambda *a: None,
+                build_llm_config=_build_llm_config, wait_timeout=_chat_wait_timeout,
+            ),
+        )
+    except usecase.HistoryUnavailable as exc:
+        raise HTTPException(status_code=500, detail=exc.detail) from exc
     import uuid
 
     user_message_id = str(uuid.uuid4())
@@ -517,270 +533,56 @@ async def _send_via_gateway(
     thinking: str | None = None,
     receipt_only: bool = False,
 ) -> dict:
-    """新路径：WorkRequest → EntryPoint → 准入 → 引擎 → 事件流。
+    """L1 薄适配（3a.3b）：构造 apps.send_turn 的输入/依赖，调用用例，
+    并把应用层错误映射为既有 HTTP status/detail。
 
-    P5-1：补齐历史注入与持久化，**照抄旧路径的两条机制**（不改选型）：
-    - 读历史 → ``SessionStore.get_messages`` + ``_convert_messages_to_history``
-    - 写消息 → ``event_bus.emit`` → projector（``flush_to_messages=True``）
-
-    P5-1b：流式与工具链——
-    - Gateway 装配 tool registry（shell 工具遵循 apps/chat 的 shell policy）
-    - 引擎事件经 ``install_sink`` 转发为前端词表（text_delta / tool_call / …）
-    - 末尾补发 ``agent_done``
-
-    R2.1c（E1=C）：消费者在跑且未要求 wait → **receipt 路径**——submit 后
-    立即返回 ``{accepted, message_id, session_id}``，答案经 ``run.answer``
-    事件由**进程单例落库观察器**写入会话（批1-S2 · A1+B2），桥补
-    agent_done；请求线程不再驱动执行。
-    同步路径（消费者未跑 = 测试/直构；或 ``wait=true``）保持现契约：
-    阻塞至 turn 完成、响应携带 reply。wait=true 只是**等待**，执行仍是
-    消费者的事（无消费者时回落请求内驱动）。
-
-    **W4**：``mode="plan"`` → payload 带 ``max_iterations=1``（分析单轮、不进循环）。
-    build 模式不传 → 用 singleton 按 LLMConfig.max_iterations 装配的值。
-
-    顺序关键：**先读历史、再 emit 本轮事件**——否则当前轮会被重复注入。
+    签名保留为过渡面（3a.0 基线冻结的 17 处 monkeypatch 锚继续生效）；
+    3a.4 再逐项关闭。RunResult/事件 wire 由 apps 用例保证逐字不变。
     """
-    import time as _time
-    import uuid as _uuid
-
-    from agentnodes.kernel.gateway import api_chat_request
-    from agentnodes.kernel.orchestration import WorkKind
+    from agentnodes.apps.chat import send_turn as usecase
 
     service = _get_session_service()
-
-    # ── ① 读历史（与旧路径同一函数、同一参数）──────────────────
-    # 严格读契约（2026-11-18 裁决 3 缺口③）：聊天上下文的**历史读取失败
-    # 即失败**——不得以空历史继续（那会让模型"忘记"历史且无任何可观测
-    # 错误）。失败 → 中止提交（此处抛错，下面的 submit 不会发生，不产生
-    # run/attempt/事件）→ 调用方收到明确错误。
-    # 降级例外仅限**明确标记**的 UI best-effort 读取
-    #（MemoryManager.get_stale()），它不进模型上下文。
-    history: list[dict] = []
-    try:
-        cfg = _build_llm_config()
-        keep_all = bool(
-            cfg and cfg.compact_config
-            and cfg.compact_config.keep_all_compactions_in_history
-        )
-        stored = service.store.get_messages(session_id, limit=100)
-        history = service._convert_messages_to_history(
-            stored, keep_all_compactions=keep_all,
-        )
-    except Exception as exc:  # noqa: BLE001 —— 转为明确错误，不静默降级
-        logger.exception(
-            "send_via_gateway: history load failed for session %s", session_id,
-        )
-        raise HTTPException(
-            status_code=500,
-            detail={
-                "error": "history_unavailable",
-                "reason": str(exc),
-                "session_id": session_id,
-            },
-        ) from exc
-
-    # ── ② 提交（历史随 payload 进入引擎）───────────────────────
     gw = _get_gateway()
-    # 批1-S2（A1+B2）：run.answer 的 assistant_message 落库收归进程单例
-    # 观察器（按 gateway 实例一次性安装）——本函数内三处旧落库点全部停用。
-    _install_answer_persister(gw)
-    user_mid = user_message_id or str(_uuid.uuid4())
-    event_correlation_id = str(_uuid.uuid4())
-    assistant_mid_holder: dict[str, str] = {}
-
-    # **W3**：桥在 submit **之前**安装——work.enqueued 会在 submit 内唤醒
-    # 消费者，晚装可能错过 run.started（占位 seed 与 message_id 注入全落
-    # 空）。receipt 路径（persist=True）带 seed_user：run.started 时补推
-    # assistant 占位 seed；sync/wait 路径不带（保持「失败不落任何行」的
-    # 既有不变量）。
-    turn_persist = receipt_only or (gw.consumer_running() and not wait)
-    completion = threading.Event()
-    outcome: dict[str, Any] = {}
-
-    def observe_turn(kind: str, data: dict) -> None:
-        if kind in ("run.answer", "run.failed", "run.cancelled", "run.fenced"):
-            outcome["terminal"] = (kind, data)
-        elif kind == "work.summarized":
-            outcome["terminal"] = (kind, data)
-            outcome["settled"] = {"ok": False}
-            completion.set()
-        elif kind == "run.settled":
-            outcome["settled"] = data
-            completion.set()
-
-    _unsub = _install_chat_event_bridge(
-        gw, session_id, assistant_mid_holder,
-        service=service, persist=turn_persist,
-        event_correlation_id=event_correlation_id,
-        terminal_observer=None if turn_persist else observe_turn,
-        seed_user=(
-            {
-                "message_id": user_mid,
-                "user_message_id": user_mid,
-                "role": "user",
-                "content": content,
-                "created_at": _time.time(),
-            }
-            if turn_persist
-            else None
-        ),
+    inp = usecase.SendTurnInput(
+        session_id=session_id, content=content, wait=wait, mode=mode,
+        queue_mode=queue_mode, max_pending=max_pending,
+        user_message_id=user_message_id, attempt_id=attempt_id,
+        assistant_message_id=assistant_message_id, model=model,
+        system_prompt=system_prompt, role=role, allowed_tools=allowed_tools,
+        thinking=thinking, receipt_only=receipt_only,
     )
-
-    turn_max_iter = 1 if (mode or "").strip().lower() == "plan" else None
-    try:
-        receipt = gw.entry.submit(
-            api_chat_request(
-                session_id, content, history=history,
-                max_iterations=turn_max_iter,
-                queue_mode=queue_mode,
-                attempt_id=attempt_id,
-                assistant_message_id=assistant_message_id,
-                model=model,
-                system_prompt=system_prompt,
-                role=role,
-                allowed_tools=allowed_tools,
-                mode=mode,
-                thinking=thinking,
-                event_correlation_id=event_correlation_id,
-            ),
-            max_pending=max_pending,
-        )
-    except Exception:
-        _unsub()
-        raise
-    if not receipt.accepted:
-        # 未受理：桥立即撤（无 turn 可挂）
-        _unsub()
-        if receipt.reason is RejectReason.QUEUE_FULL:
-            raise HTTPException(
-                status_code=429,
-                detail={
-                    "error": "queue_full",
-                    "limit": max_pending,
-                    "current_size": receipt.current_size,
-                },
-            )
-        raise HTTPException(
-            status_code=400,
-            detail={"error": "entry_rejected", "reason": str(receipt.reason)},
-        )
-
-    if receipt_only:
-        return {
-            "accepted": True,
-            "message_id": user_mid,
-            "user_message_id": user_mid,
-            "assistant_message_id": assistant_message_id or "",
-            "attempt_id": attempt_id,
-            "session_id": receipt.session_id or session_id,
-        }
-
-    # ── ②-b receipt 路径（R2.1c，E1=C）────────────────────────
-    # 消费者在跑且未要求 wait：用户消息此刻落库，答案经 run.answer 由
-    # 进程单例落库观察器写入（批1-S2），桥补 agent_done 与 seed/流式
-    # 转发；HTTP 立即返回两态回执。
-    # **注意**：这里 return 不注销桥——turn 交给消费者异步执行，run.answer
-    # 的 seed/流式转发都靠它；桥在收尾事件时自注销（R7）。
-    if turn_persist:
-        try:
-            service.event_bus.emit(session_id, "message_received", {
-                "message_id": user_mid,
-                "user_message_id": user_mid,
-                "role": "user",
-                "content": content,
-                "created_at": _time.time(),
-            })
-        except Exception as exc:  # noqa: BLE001 —— 落库失败不阻断受理
-            logger.warning("send_via_gateway: user persist failed: %s", exc)
-        return {
-            "accepted": True,
-            "message_id": user_mid,
-            "session_id": receipt.session_id or session_id,
-        }
-
-    # ── ②-c 用户消息落库（提交即事实；批1-S2 前移）──────────────
-    # 此前在 wait 成功后与 assistant 一起 emit；assistant 落库收归进程
-    # 单例观察器（run.answer 触发）后，用户消息前移到提交点——保证事件
-    # 序 user→assistant 不反转（对齐 receipt 路径 ②-b 的提交即落库），
-    # 且 wait 超时时用户消息照常在档。
-    # 3a.1 探针：用户消息记录经 apps/chat.messages 单点构造（形状 3：
-    # 无 assistant_message_id/queue 字段），wire 字段与 emit 语义零变化。
-    from agentnodes.apps.chat.messages import record_user_message
-
-    record_user_message(
-        service.event_bus.emit,
-        session_id=session_id,
-        message_id=user_mid,
-        content=content,
-        created_at=_time.time(),
+    deps = usecase.SendTurnDeps(
+        gateway=gw, service=service,
+        # 延迟取 event_bus.emit：严格历史失败路径在 send_turn 内先预检，
+        # 不触达 emit——fake service 可无 event_bus（与旧实现一致）。
+        emit=lambda sid, kind, data: service.event_bus.emit(sid, kind, data),
+        publish_sse=_push_sse,
+        build_llm_config=_build_llm_config, wait_timeout=_chat_wait_timeout,
     )
-
-    # ── ③ 执行（同步路径：kind 过滤；wait=true 时只等不驱动）────
-    try:
-        if gw.consumer_running() and wait:
-            finished = await asyncio.get_running_loop().run_in_executor(
-                None,
-                lambda: completion.wait(_chat_wait_timeout()),
-            )
-            if not finished:
-                raise HTTPException(
-                    status_code=504,
-                    detail={"error": "wait_timeout",
-                            "hint": "turn 未在时限内完成；请改用 SSE 订阅"},
-                )
-        else:
-            await asyncio.get_running_loop().run_in_executor(
-                None, lambda: gw.run_once({WorkKind.CHAT}),
-            )
-            if not completion.is_set():
-                raise HTTPException(status_code=504, detail="no run executed")
-    finally:
-        # R7：兜底注销（bridge 在收尾事件时已自注销，这里幂等）
-        _unsub()
-    terminal = outcome.get("terminal")
-    settled = outcome.get("settled", {})
-    if terminal is None:
-        raise HTTPException(status_code=502, detail={"error": "missing_run_terminal"})
-    terminal_kind, terminal_data = terminal
-    if terminal_kind == "work.summarized":
-        error = "queued request summarized before execution"
-        mid = assistant_message_id or user_mid
-        _push_sse("error", {"message_id": mid, "error": error}, session_id)
-        _push_sse("agent_done", {"message_id": mid, "status": "error"}, session_id)
-        raise HTTPException(
-            status_code=502, detail={"error": "request_summarized", "reason": error},
-        )
-    run_id = str(terminal_data.get("run_id") or "")
-    if not run_id:
-        raise HTTPException(status_code=502, detail={"error": "missing_run_id"})
-    if not settled.get("ok") or terminal_kind != "run.answer":
-        error = str(terminal_data.get("error") or terminal_data.get("reason") or "")
-        _push_sse("error", {"message_id": run_id, "error": error}, session_id)
-        _push_sse("agent_done", {"message_id": run_id, "status": "error"}, session_id)
-        raise HTTPException(
-            status_code=502,
-            detail={"error": "run_failed", "reason": error},
-        )
-    answer = str(terminal_data.get("content") or "")
-
-    # ── ④ 成功后只发收尾 SSE（落库已收归单例观察器）────────────
-    # 批1-S2（A1+B2）：assistant_message 由 _install_answer_persister 在
-    # run.answer 时恰一次落库；用户消息已在 ②-c 提交点落库。此处不再
-    # emit——STEER 被吸收/多等待方场景下不再有重复落库。
-    # 不调 persist_message：旧路径注释明确「not via direct store.append_message()」，
-    # 且两路同写会撞 UNIQUE 或产生重复行（已实测）。
-    assistant_mid = run_id  # 新路径无 attempt，用 run_id 作消息标识
-
-    # ── ⑤ 收尾事件 ─────────────────────────────────────────
-    _push_sse("agent_done", {"message_id": assistant_mid, "status": "completed"}, session_id)
-
-    return {
-        "message_id": assistant_mid,
-        "attempt_id": run_id,
-        "reply": answer,
-        "status": "completed",
+    error_map = {
+        usecase.HistoryUnavailable: 500,
+        usecase.QueueFull: 429,
+        usecase.EntryRejected: 400,
+        usecase.WaitTimeout: 504,
+        usecase.NoRunExecuted: 504,
+        usecase.MissingRunTerminal: 502,
+        usecase.MissingRunId: 502,
+        usecase.RequestSummarized: 502,
+        usecase.RunFailed: 502,
     }
+    try:
+        result = await usecase.send_turn(inp, deps)
+    except Exception as exc:
+        status = None
+        for etype, code in error_map.items():
+            if isinstance(exc, etype):
+                status = code
+                break
+        if status is None:
+            raise
+        detail = exc.detail if isinstance(exc, usecase.SendTurnError) else str(exc)
+        raise HTTPException(status_code=status, detail=detail) from exc
+    return result.as_dict()
 
 
 def _push_sse(kind: str, data: dict, session_id: str) -> None:
