@@ -44,6 +44,11 @@ def handle_attempt_timeout(
 
     事件面与迭代级保持同构（``loop_end`` + ``iter_end``），让下游按
     ``finish_reason`` 归一处理时不必区分两级超时。
+
+    批 4a（路线步骤 4 · 裁决 §10）：``loop_end`` 附带
+    ``timeout_tool_outcomes``——attempt 超时时逐调用的**实际**结果
+    （state ∈ stopped/still_running/returned/unknown），与声明的
+    能力级别并列透出。声明 ≠ 事实：未知显式记 unknown。
     """
     timeout_s = getattr(loop, "_attempt_timeout_s", None)
     result.finished_reason = "timeout"
@@ -55,6 +60,7 @@ def handle_attempt_timeout(
         "reason": "attempt_timeout",
         "iteration": iteration,
         "elapsed": round(elapsed, 3),
+        "timeout_tool_outcomes": list(getattr(loop, "_timeout_tool_outcomes", []) or []),
     })
     loop._emit("iter_end", {
         "iteration": iteration,

@@ -30,6 +30,23 @@ from typing import (
     runtime_checkable,
 )
 
+# ── 超时能力声明（批 4a · 路线步骤 4 · 裁决见
+# docs/design/gateway-timeout-and-strict-history-design-20261118.md §10）──
+# 四级是**机制属性，非强弱排序**：abandonable 与 unstoppable 都可能继续
+# 执行并产生副作用，区别是等待方是否可放弃。声明 ≠ 事实：事件按每次
+# 调用的实际状态（stopped/still_running/returned/unknown）记录，不由
+# 本声明推断。
+TIMEOUT_CAPABILITY_CANCELLABLE = "cancellable"
+TIMEOUT_CAPABILITY_ABANDONABLE = "abandonable"
+TIMEOUT_CAPABILITY_ISOLATABLE = "isolatable"
+TIMEOUT_CAPABILITY_UNSTOPPABLE = "unstoppable"
+TIMEOUT_CAPABILITIES = frozenset({
+    TIMEOUT_CAPABILITY_CANCELLABLE,
+    TIMEOUT_CAPABILITY_ABANDONABLE,
+    TIMEOUT_CAPABILITY_ISOLATABLE,
+    TIMEOUT_CAPABILITY_UNSTOPPABLE,
+})
+
 logger = logging.getLogger(__name__)
 
 
@@ -548,6 +565,10 @@ class BaseTool(ABC):
     category: str = "other"       # 领域分类: 文件/回测/因子/行情/分析/技能/Web/Goal/Shell
     effects: frozenset[str] = frozenset()  # {EFFECT_DB, EFFECT_FS, EFFECT_NET}
     brief: str = ""               # 注册时由 ToolRegistry 自动填充
+    # 超时能力声明（批 4a）：四级机制属性（非强弱排序），默认最保守——
+    # 未声明不承诺可中断。声明 ≠ 事实：事件按每次调用的实际状态记录。
+    # isolatable 准入门槛：过隔离清单（超时设计 §10.3/§9.7）才可声明。
+    timeout_capability: str = TIMEOUT_CAPABILITY_UNSTOPPABLE
 
     def __init_subclass__(cls, **kw: Any) -> None:
         """Automatically wrap every subclass ``execute`` with ``tool_errors``.
@@ -849,6 +870,16 @@ class ToolRegistry:
     def get(self, name: str) -> Optional[BaseTool]:
         """Retrieve a tool by name."""
         return self._tools.get(name)
+
+    def timeout_capability(self, name: str) -> str:
+        """声明的超时能力（批 4a）。
+
+        未注册 / 未声明 / 声明值非法 → ``unstoppable``（诚实默认：
+        声明 ≠ 事实，本方法只回声明面，不推断实际结果）。
+        """
+        tool = self._tools.get(name)
+        cap = getattr(tool, "timeout_capability", TIMEOUT_CAPABILITY_UNSTOPPABLE)
+        return cap if cap in TIMEOUT_CAPABILITIES else TIMEOUT_CAPABILITY_UNSTOPPABLE
 
     def all_tools(self) -> List[BaseTool]:
         """All registered tools (stable order)."""

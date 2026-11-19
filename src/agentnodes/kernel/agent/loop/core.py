@@ -54,7 +54,12 @@ from agentnodes.kernel.agent.telemetry import agent_telemetry as _tel
 from agentnodes.kernel.agent.context.core import ContextBuilder, estimate_tokens
 from agentnodes.kernel.agent.runtime.sync_bridge import _get_hook_loop as _get_hook_loop  # noqa: F401
 from agentnodes.kernel.agent.runtime.sync_bridge import _run_coro_in_sync
-from agentnodes.kernel.agent.tools.core import ToolRegistry
+from agentnodes.kernel.agent.tools.core import (
+    TIMEOUT_CAPABILITY_ABANDONABLE,
+    TIMEOUT_CAPABILITY_CANCELLABLE,
+    TIMEOUT_CAPABILITY_UNSTOPPABLE,
+    ToolRegistry,
+)
 from agentnodes.kernel.agent.telemetry.trace import TraceWriter
 
 logger = logging.getLogger(__name__)
@@ -514,6 +519,11 @@ class AgentLoop(
         self._attempt_timeout_s: float | None = None
         self._attempt_deadline: float | None = None
         self._started_at: float = 0.0
+        # 批 4a（路线步骤 4 · 裁决 §10）：attempt 超时时逐调用的**实际**
+        # 结果记录（声明 ≠ 事实；state ∈ stopped/still_running/returned/
+        # unknown，未知显式为 unknown）——由各记录点写入，endings 在
+        # attempt_timeout 终态事件中透出。
+        self._timeout_tool_outcomes: list[dict[str, str]] = []
 
         # Tool filtering: allowed_tools > readonly > all
         # （批次 12 S2：读 spec 而非旧局部变量）
@@ -825,6 +835,7 @@ class AgentLoop(
         """
         timeout = self._iteration_timeout_s
         attempt_timeout = False
+        llm_outcome_state: str | None = None
         if self._attempt_deadline is not None:
             remaining = max(0.0, self._attempt_deadline - time.monotonic())
             if timeout is None or remaining <= timeout:
@@ -841,13 +852,31 @@ class AgentLoop(
             if not attempt_timeout or not task.cancelled():
                 self._handle_iteration_timeout(result, iteration)
                 return None
+            # 批 4a（§10.5）：attempt 截止触发——取消已交付并等待完成。
+            # 实际状态按机制判：原生异步 → stopped；sync-only 桥弃等、
+            # 工作线程机制已知继续 → still_running（非强弱排序）。
+            llm_outcome_state = (
+                "still_running"
+                if getattr(self.client, "is_sync_only_bridge", False)
+                else "stopped"
+            )
         else:
             if (
                 self._attempt_deadline is None
                 or time.monotonic() < self._attempt_deadline
             ):
                 return response
+            # 批 4a（§10.5）：响应晚于截止返回 → 实际状态"已返回（拒收）"
+            llm_outcome_state = "returned"
 
+        if llm_outcome_state is not None:
+            self._record_timeout_outcome(
+                "llm", type(getattr(self, "client", None)).__name__,
+                TIMEOUT_CAPABILITY_ABANDONABLE
+                if getattr(self.client, "is_sync_only_bridge", False)
+                else TIMEOUT_CAPABILITY_CANCELLABLE,
+                llm_outcome_state,
+            )
         self._handle_attempt_timeout(
             result, iteration, time.monotonic() - self._started_at,
         )
@@ -867,6 +896,16 @@ class AgentLoop(
         """
         t0 = time.perf_counter()
         out = fn()
+        # 批 4a（§10.5）：同步调用不可取消（unstoppable）——截止后发现
+        # 已自然返回 → 实际状态"returned"（结果拒收），不得记"仍在运行"。
+        if (
+            self._attempt_deadline is not None
+            and time.monotonic() >= self._attempt_deadline
+        ):
+            self._record_timeout_outcome(
+                "llm", type(getattr(self, "client", None)).__name__,
+                TIMEOUT_CAPABILITY_UNSTOPPABLE, "returned",
+            )
         if (
             self._iteration_timeout_s is not None
             and (time.perf_counter() - t0) > self._iteration_timeout_s
@@ -921,11 +960,30 @@ class AgentLoop(
         默认 600 秒；0 = 禁用）。禁用时 deadline 为 None，检查点跳过。
         """
         self._started_at = time.monotonic()
+        self._timeout_tool_outcomes = []  # 批 4a：每次 attempt 重置
         timeout = self._attempt_timeout_s
         if timeout is None or timeout <= 0:
             self._attempt_deadline = None
             return
         self._attempt_deadline = self._started_at + timeout
+
+    def _record_timeout_outcome(
+        self, kind: str, name: str, declared: str, state: str,
+    ) -> None:
+        """批 4a（§10.5）：按调用记录超时时的**实际**结果（声明 ≠ 事实）。
+
+        :param state: 实际观测值——``stopped``（取消已交付且等待完成 /
+            隔离进程确认退出）/ ``still_running``（弃等且机制已知继续）/
+            ``returned``（截止后发现已自然返回，结果拒收）/
+            ``unknown``（无观察通道）。未知必须显式记 unknown，
+            **不得由声明推断**；并发调用按调用分别记录。
+        """
+        outcomes = getattr(self, "_timeout_tool_outcomes", None)
+        if outcomes is None:
+            return
+        outcomes.append({
+            "kind": kind, "name": name, "declared": declared, "state": state,
+        })
 
     def _check_attempt_timeout(
         self, iteration: int, result: Any = None, *, finalize: bool = True,

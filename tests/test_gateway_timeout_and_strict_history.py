@@ -940,3 +940,162 @@ class TestHistoryStrictFailure:
         assert detail["session_id"] == "s1"
         assert exc.value.status_code == 500
         assert not events, "中止提交不得产生任何 run 事件"
+
+
+# ── 批 4a（路线步骤 4 · 契约 §10）：实际状态事件面 ────────────────────
+# 声明 ≠ 事实：事件按每次调用的实际状态记录（stopped / still_running /
+# returned / unknown），不由注册表声明推断；未知显式为 unknown。
+
+
+def _loop_end_outcomes(events) -> list:
+    for kind, data in events:
+        if kind == "loop_end" and data.get("reason") == "attempt_timeout":
+            return list(data.get("timeout_tool_outcomes") or [])
+    return []
+
+
+class TestTimeoutToolOutcomes:
+    """验收（契约 §10.6）：真实 loop 分别产出四种实际状态。"""
+
+    async def test_stopped_cancellable_llm(self):
+        """原生异步 LLM：取消已交付并等待完成 → stopped。"""
+        from agentnodes.foundation.llm import LLMResponse
+
+        loop = _make_loop(timeout_s=0.05, max_iterations=1, stream_mode=False)
+        events = []
+        loop._on_event = lambda kind, data: events.append((kind, data))
+
+        async def slow_chat(messages, **kwargs):
+            await asyncio.sleep(0.3)
+            return LLMResponse(content="late", tool_calls=[], finish_reason="stop")
+
+        loop.client.achat = slow_chat
+        await loop.arun("deadline probe")
+
+        outcomes = _loop_end_outcomes(events)
+        assert outcomes == [{
+            "kind": "llm",
+            "declared": "cancellable",
+            "state": "stopped",
+        }] or (len(outcomes) == 1 and outcomes[0]["kind"] == "llm"
+               and outcomes[0]["declared"] == "cancellable"
+               and outcomes[0]["state"] == "stopped")
+        assert outcomes[0]["name"]
+
+    async def test_still_running_abandonable_bridge(self):
+        """sync-only 桥：弃等、工作线程机制已知继续 → still_running。"""
+        from agentnodes.foundation.llm import LLMResponse
+        from agentnodes.kernel.runtimes.nodes.agent_loop_node import (
+            wrap_async_capable_client,
+        )
+
+        class SyncClient:
+            def chat(self, messages, **kwargs):
+                time.sleep(0.2)
+                return LLMResponse(content="late", tool_calls=[], finish_reason="stop")
+
+        loop = _make_loop(timeout_s=0.05, max_iterations=1, stream_mode=False)
+        events = []
+        loop._on_event = lambda kind, data: events.append((kind, data))
+        loop.client = wrap_async_capable_client(SyncClient())
+        await loop.arun("deadline probe")
+
+        outcomes = _loop_end_outcomes(events)
+        assert len(outcomes) == 1
+        assert outcomes[0]["kind"] == "llm"
+        assert outcomes[0]["declared"] == "abandonable"
+        assert outcomes[0]["state"] == "still_running"
+
+    async def test_returned_late_tool(self):
+        """同步工具阻塞到自然返回后才被发现超时 → returned（结果拒收），
+        **不得记"仍在运行"**。"""
+        from agentnodes.foundation.llm import LLMResponse, ToolCall
+        from agentnodes.kernel.agent.tools.core import BaseTool
+
+        class SlowTool(BaseTool):
+            name = "slow_probe"
+            description = "late-return probe"
+            parameters = {"type": "object", "properties": {}}
+            effects = frozenset({"fs"})
+
+            def execute(self, **kwargs):
+                time.sleep(0.2)
+                return "late-ok"
+
+        loop = _make_loop(timeout_s=0.05, max_iterations=2, stream_mode=False)
+        events = []
+        loop._on_event = lambda kind, data: events.append((kind, data))
+        calls = {"n": 0}
+
+        async def tool_then_stop(messages, **kwargs):
+            calls["n"] += 1
+            if calls["n"] == 1:
+                return LLMResponse(
+                    content="",
+                    tool_calls=[ToolCall(id="t1", name="slow_probe", arguments={})],
+                    finish_reason="tool_calls",
+                )
+            return LLMResponse(content="done", tool_calls=[], finish_reason="stop")
+
+        loop.client.achat = tool_then_stop
+        loop.registry.register(SlowTool())
+        await loop.arun("deadline probe")
+
+        outcomes = _loop_end_outcomes(events)
+        tool_entries = [o for o in outcomes if o["kind"] == "tool"]
+        assert tool_entries == [{
+            "kind": "tool",
+            "name": "slow_probe",
+            "declared": "unstoppable",
+            "state": "returned",
+        }]
+
+    async def test_unknown_state_is_first_class(self):
+        """unknown 是一等实际状态：无观察通道时显式记 unknown，
+        终态事件原样透出（不由声明推断）。"""
+        loop = _make_loop(timeout_s=0.05)
+        events = []
+        loop._on_event = lambda kind, data: events.append((kind, data))
+        loop._begin_attempt_deadline()
+        time.sleep(0.08)
+        loop._timeout_tool_outcomes = [{
+            "kind": "tool", "name": "opaque_probe",
+            "declared": "isolatable", "state": "unknown",
+        }]
+        with pytest.raises(AttemptTimeoutError):
+            loop._check_attempt_timeout(1)
+
+        outcomes = _loop_end_outcomes(events)
+        assert outcomes == [{
+            "kind": "tool", "name": "opaque_probe",
+            "declared": "isolatable", "state": "unknown",
+        }]
+
+    async def test_declared_capability_defaults_and_registry_surface(self):
+        """未声明 → unstoppable（诚实默认）；非法声明值 → unstoppable；
+        registry 聚合面按名读取。"""
+        from agentnodes.kernel.agent.tools.core import BaseTool
+
+        class PlainTool(BaseTool):
+            name = "plain_probe"
+            description = "no capability declared"
+            parameters = {"type": "object", "properties": {}}
+
+            def execute(self, **kwargs):
+                return "ok"
+
+        class LiarTool(BaseTool):
+            name = "liar_probe"
+            description = "declares an unknown level"
+            parameters = {"type": "object", "properties": {}}
+            timeout_capability = "wall_clock_guaranteed"  # 非法值
+
+            def execute(self, **kwargs):
+                return "ok"
+
+        registry = ToolRegistry()
+        registry.register(PlainTool())
+        registry.register(LiarTool())
+        assert registry.timeout_capability("plain_probe") == "unstoppable"
+        assert registry.timeout_capability("liar_probe") == "unstoppable"
+        assert registry.timeout_capability("never_registered") == "unstoppable"

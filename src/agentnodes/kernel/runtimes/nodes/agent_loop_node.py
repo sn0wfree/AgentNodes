@@ -68,6 +68,12 @@ class _AsyncCapableClient:
     行为不变。
     """
 
+    # 批 4a（路线步骤 4 · 超时契约 §10）：机制标记——本桥的等待可放弃
+    # （弃等），但底层同步调用在工作线程继续（不可终止）。AgentLoop
+    # 据此在 attempt 超时事件中记实际状态 still_running（机制已知，
+    # 非推断）；声明面归 abandonable。
+    is_sync_only_bridge = True
+
     def __init__(self, inner: Any) -> None:
         self._inner = inner
 

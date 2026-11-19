@@ -16,7 +16,11 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 
 from agentnodes.kernel.agent.loop.errors import AttemptTimeoutError
 from agentnodes.kernel.agent.signals.progress import HeartbeatTimer
-from agentnodes.kernel.agent.tools.core import TRANSIENT_TOOL_ERRORS, ToolContext
+from agentnodes.kernel.agent.tools.core import (
+    TIMEOUT_CAPABILITY_UNSTOPPABLE,
+    TRANSIENT_TOOL_ERRORS,
+    ToolContext,
+)
 
 _TOOL_MAX_RETRIES = 2
 _TOOL_RETRY_DELAY = 2.0
@@ -184,6 +188,18 @@ class LoopToolsMixin:
                         kwargs.get("ctx"),
                     )
                     output = tool.invoke(kwargs)
+                # 批 4a（§10.5）：截止后发现工具已自然返回（含失败返回）→
+                # 实际状态"returned"（结果拒收）。同步工具常阻塞到自然
+                # 返回后才被发现超时——按实际观察记录，不得记"仍在运行"。
+                # 并发调用各在自身完成点记录。
+                _deadline = getattr(self, "_attempt_deadline", None)
+                if _deadline is not None and time.monotonic() >= _deadline:
+                    self._record_timeout_outcome(
+                        "tool", tc.name,
+                        getattr(tool, "timeout_capability",
+                                TIMEOUT_CAPABILITY_UNSTOPPABLE),
+                        "returned",
+                    )
                 last_exc = None
                 break
             except AttemptTimeoutError:
