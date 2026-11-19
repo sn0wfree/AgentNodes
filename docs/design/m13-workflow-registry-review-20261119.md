@@ -69,3 +69,24 @@ process-local handle cache，键/值/职责与 kernel registry 不同。
 approve/status 的 404-vs-409 语义一起裁决（例如：registry 保留终态 run
 但加 TTL 上限，或 approve 端改为查 store 判定存在性）——**本批不做**。
 这是「独立整改项不混提」纪律的实证：修复不能破坏现有契约。
+
+## 6. 终态保留语义锁定（2026-11-20 · WP-7 实施）
+
+roadmap §6 #6 裁决落定（推荐默认）：**保留已知终态记录，不接自动
+prune**——§5 冲突的正向解决。锁定测试落地：
+
+- `tests/test_workflow_run_registry.py`（新，kernel 级直测——此前
+  registry 零直测）：终态 runner 经任意多次 get 仍保留；显式 pop
+  （DELETE 端点路径）是唯一移除路径；`active()` 快照含终态 run。
+- `tests/test_workflow_approval_api.py::test_terminal_run_retained_
+  after_status_access`（API 层正断言锁）：completed run 经 status
+  访问后 approve 仍 **409**——若未来再引入 prune-on-access，本用例
+  409→404 变红（把 §5 的「间接靠既有用例变红」升级为正断言）。
+
+遗留（记录，不实施）：`executor.py` `prune()` 现为**零接线死代码**，
+其退役列删除批候选（R-020 独立审批）；`cancelled` 终态无 API 构造
+路径，approve 409 锚点只覆盖 completed/failed 之外的 completed 一态
+（failed 态经 kernel 直测覆盖 get 保留语义）；重启后 registry 空而
+store 有终态记录 → approve=404 的现状语义快照留待 §5 末句的裁决
+（TTL / store 查询）一并处理。goal 侧 `_active_runners` 的访问清理
+（TTL 3600s）是**另一套有测试锁的既有行为**，不随之改动。

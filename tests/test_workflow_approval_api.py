@@ -275,6 +275,34 @@ class TestRunFlow:
             })
             assert resp.status_code == 404
 
+    async def test_terminal_run_retained_after_status_access(self, api_env):
+        """终态 run 经 status 访问后 approve 仍 409（无 prune-on-access 正断言）。
+
+        M13 裁决（roadmap §6 #6）：已知终态保留，known-terminal=409 /
+        unknown=404；若未来引入自动 prune，本用例的 409 会变 404 而红。
+        prune 实验的回退记录见 m13-workflow-registry-review-20261119.md §5。
+        """
+        app, _ = api_env
+        _patch_loop_factory(None)
+        async with _client(app) as client:
+            resp = await client.post("/api/goal/workflow/start-definition", json={
+                "session_id": "s1", "definition_name": "plan_execute_auto",
+                "objective": "研究动量策略",
+            })
+            assert resp.status_code == 200
+            assert resp.json()["run"]["status"] == "completed"
+            run_id = resp.json()["run_id"]
+
+            # 访问 status（prune-on-access 实验的触发点）不得驱逐终态记录
+            resp = await client.get(f"/api/goal/workflow/run/{run_id}/status")
+            assert resp.status_code == 200
+            assert resp.json()["run"]["status"] == "completed"
+
+            resp = await client.post("/api/goal/workflow/approve", json={
+                "run_id": run_id, "approved": True,
+            })
+            assert resp.status_code == 409
+
     async def test_params_override(self, api_env):
         app, _ = api_env
         _patch_loop_factory(None)
