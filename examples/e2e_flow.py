@@ -20,9 +20,9 @@ from pathlib import Path
 REPO = Path("/home/ll/Public/strategy-research")
 sys.path.insert(0, str(REPO / "src"))
 
-from agentnodes.core.agent.builtin_tools import build_default_registry
-from agentnodes.core.agent.loop import AgentLoop
-from agentnodes.core.llm import LLMConfig, LLMResponse, ToolCall
+from agentnodes.kernel.agent.builtin_tools import build_default_registry
+from agentnodes.kernel.agent.loop.core import AgentLoop
+from agentnodes.foundation.llm import LLMConfig, LLMResponse, ToolCall
 
 WS = Path("/tmp/opencode/e2e_ws")
 SESSION = "e2e-20260805"

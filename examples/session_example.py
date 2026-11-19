@@ -1,199 +1,134 @@
 #!/usr/bin/env python3
-"""实际使用示例 — 展示 Hook + Memory + Session 的完整用法。"""
+"""实际使用示例 — Hook + Memory + Session（当前 API · 2026-11-19 更新）。
 
+历史版本使用 ``agentnodes.core.*`` 旧包名与 SessionDB / SessionManager /
+RateLimiter / MetricsLogger 等已移除的类。本版按当前真实 API 重写：
+
+- Memory：``kernel.memory.persistent.PersistentMemory``（签名未变）
+- Hooks：``kernel.hooks.*``（hook 方法为**同步**，旧版 asyncio.run 调用已移除）
+- Session：``kernel.session.state.event_store.EventStore``（事件写入 + 投影）
+  + ``kernel.session.store.SessionStore``（读侧）——旧 SessionDB.add_message
+  直写已被「事件溯源 → projector 投影」取代
+"""
+from __future__ import annotations
+
+import asyncio
 import tempfile
 from pathlib import Path
-from agentnodes.core.hooks import AgentHook, CompositeHook, AgentHookContext
-from agentnodes.core.memory import PersistentMemory
-from agentnodes.core.session import SessionDB, SessionManager, RateLimiter, MetricsLogger
 
+from agentnodes.kernel.hooks.composite import AgentHook, CompositeHook
+from agentnodes.kernel.hooks.context import AgentHookContext
+from agentnodes.kernel.memory.persistent import PersistentMemory
+from agentnodes.kernel.session.projector import Projector
+from agentnodes.kernel.session.state.event_store import EventStore
+from agentnodes.kernel.session.store import SessionStore
 
-# ============================================================
-# 1. 定义自定义 Hook
-# ============================================================
 
 class ResearchLoggerHook(AgentHook):
-    """研究日志 Hook — 记录每次迭代的研究发现。"""
-    
-    name = "research_logger"
-    
+    """记忆研究发现：每轮结束后把回答写入项目记忆。"""
+
     def __init__(self, memory: PersistentMemory):
         self.memory = memory
-        self.findings = []
-    
-    def after_iteration(self, ctx: AgentHookContext):
-        """迭代结束后记录发现。"""
-        iteration = ctx.iteration
-        # 模拟从 context 中提取研究发现
-        finding = f"Iteration {iteration}: Analyzed strategy performance"
-        self.findings.append(finding)
-        
-        # 保存到 memory
-        self.memory.add(
-            name=f"finding_{iteration}",
-            content=finding,
-            memory_type="feedback",
-            description=f"Research finding from iteration {iteration}"
-        )
-    
-    def on_error(self, ctx: AgentHookContext, error: BaseException):
-        """错误时记录。"""
-        self.memory.add(
-            name=f"error_{ctx.iteration}",
-            content=f"Error in iteration {ctx.iteration}: {error}",
-            memory_type="feedback",
-            description=f"Error from iteration {ctx.iteration}"
-        )
+        self.findings: list[str] = []
+
+    def after_iteration(self, ctx: AgentHookContext) -> None:
+        if ctx.final_content:
+            self.findings.append(ctx.final_content)
+            self.memory.add(
+                f"finding_{ctx.iteration}", ctx.final_content,
+                "project", f"Iteration {ctx.iteration} finding",
+            )
+
+    def on_error(self, ctx: AgentHookContext, error: BaseException) -> None:
+        self.memory.add("last_error", str(error), "project", "Most recent error")
 
 
 class PerformanceTrackerHook(AgentHook):
-    """性能跟踪 Hook — 跟踪工具执行性能。"""
-    
-    name = "performance_tracker"
-    
+    """统计工具调用次数与累计 token。"""
+
     def __init__(self):
-        self.tool_calls = []
-        self.total_time = 0.0
-    
-    def before_execute_tools(self, ctx: AgentHookContext):
-        """工具执行前记录时间。"""
-        import time
-        self._start_time = time.time()
-    
-    def after_tool_executed(self, ctx: AgentHookContext, tool_call, result):
-        """工具执行后记录耗时。"""
-        import time
-        duration = time.time() - self._start_time
-        tool_name = getattr(tool_call, 'name', 'unknown')
-        self.tool_calls.append({
-            "tool": tool_name,
-            "duration": duration,
-            "success": True
-        })
-        self.total_time += duration
-    
-    def get_stats(self):
-        """获取统计信息。"""
-        return {
-            "total_calls": len(self.tool_calls),
-            "total_time": self.total_time,
-            "avg_time": self.total_time / len(self.tool_calls) if self.tool_calls else 0,
-            "tools": list(set(t["tool"] for t in self.tool_calls))
-        }
+        self.total_calls = 0
+        self.total_tokens = 0
+
+    def before_execute_tools(self, ctx: AgentHookContext) -> None:
+        self.total_calls += len(ctx.tool_calls)
+
+    def after_iteration(self, ctx: AgentHookContext) -> None:
+        self.total_tokens += sum(ctx.usage.values())
+
+    def get_stats(self) -> dict:
+        return {"total_calls": self.total_calls, "total_tokens": self.total_tokens}
 
 
-# ============================================================
-# 2. 实际使用示例
-# ============================================================
-
-def main():
+def main() -> None:
     with tempfile.TemporaryDirectory() as tmp_dir:
         tmp_path = Path(tmp_dir)
-        
         print("=" * 60)
-        print("实际使用示例：Hook + Memory + Session")
+        print("实际使用示例：Hook + Memory + Session（当前 API）")
         print("=" * 60)
-        
-        # --------------------------------------------------
-        # 初始化 Memory
-        # --------------------------------------------------
+
+        # 1. Memory
         print("\n1. 初始化 Memory...")
         memory = PersistentMemory(tmp_path / "memory")
-        
-        # 添加一些初始知识
-        memory.add("strategy_knowledge", """
-            Momentum factor works well in large cap stocks.
-            - IC mean > 0.03 is considered good
-            - IR mean > 0.5 is acceptable
-            - Max drawdown should be < 20%
-        """, "reference", "Momentum strategy knowledge")
-        
-        memory.add("user_preference", """
-            Preference: Low frequency strategies (1-5 day holding)
-            Risk tolerance: Max drawdown < 15%
-            Market: A-shares + Hong Kong
-        """, "user", "User trading preferences")
-        
+        memory.add("strategy_knowledge", "Momentum factor works in large caps.",
+                   "reference", "Momentum strategy knowledge")
+        memory.add("user_preference", "Low-frequency strategies, max drawdown < 15%.",
+                   "user", "User trading preferences")
         print(f"  Memory entries: {len(memory.list_entries())}")
-        
-        # --------------------------------------------------
-        # 初始化 Session
-        # --------------------------------------------------
+
+        # 2. Session（事实源 event_log → projector → messages 读侧）
         print("\n2. 初始化 Session...")
-        db = SessionDB(tmp_path / "sessions.db")
-        session = db.create_session("research_001", workspace=str(tmp_path))
-        print(f"  Session ID: {session.id}")
-        
-        # --------------------------------------------------
-        # 初始化 Hooks
-        # --------------------------------------------------
+        db_path = tmp_path / "sessions.db"
+        projector = Projector(db_path)
+        event_store = EventStore(
+            db_path, flush_to_messages=True, projection_sink=projector,
+        )
+        session_store = SessionStore(db_path, projector=projector)
+        print(f"  SessionStore + EventStore ready at {db_path}")
+
+        # 3. Hooks（同步方法，不再 asyncio.run）
         print("\n3. 初始化 Hooks...")
         research_logger = ResearchLoggerHook(memory)
         performance_tracker = PerformanceTrackerHook()
-        
         composite = CompositeHook([research_logger, performance_tracker])
-        print(f"  Registered hooks: {[h.name for h in composite._hooks]}")
-        
-        # --------------------------------------------------
-        # 模拟研究会话
-        # --------------------------------------------------
+        print(f"  Registered hooks: {len(composite._hooks)}")
+
+        # 4. 模拟研究会话：hook 生命周期 + 事件写入
         print("\n4. 模拟研究会话...")
-        
-        # 模拟多轮迭代
+        # 先建会话行——否则 assistant_message 投影会因外键缺失被丢弃
+        from agentnodes.kernel.session.db import ensure_session_row
+
+        ensure_session_row(db_path, "research_001", "Hook demo")
         for i in range(5):
-            ctx = AgentHookContext(iteration=i)
-            
-            # 触发 hooks
-            import asyncio
+            ctx = AgentHookContext(iteration=i, usage={"total_tokens": 10})
+            ctx.tool_calls = [object()]  # 模拟一次工具调用
+            ctx.final_content = f"Iteration {i} complete"
+            # CompositeHook 的生命周期方法是 async（AgentHook 基类为同步，
+            # CompositeHook 覆写为 async 并行分发）——必须 await
             asyncio.run(composite.before_iteration(ctx))
             asyncio.run(composite.before_execute_tools(ctx))
             asyncio.run(composite.after_iteration(ctx))
-            
-            # 记录消息到 session
-            db.add_message("research_001", "user", f"Analyze iteration {i}")
-            db.add_message("research_001", "assistant", f"Iteration {i} complete")
-        
-        # --------------------------------------------------
-        # 查看结果
-        # --------------------------------------------------
+            # 当前写入路径：emit 事件 → projector 投影（不直写 messages 表）
+            event_store.emit("research_001", "assistant_message", {
+                "message_id": f"m-{i}", "role": "assistant",
+                "content": ctx.final_content,
+            })
+        messages = session_store.get_messages("research_001")  # 先读后关
+        # 显式释放全部句柄（Windows 临时目录 WinError 32）
+        for resource in (event_store, session_store, projector):
+            close = getattr(resource, "close", None)
+            if callable(close):
+                close()
+
+        # 5. 结果
         print("\n5. 查看结果...")
-        
-        # Memory 统计
-        print(f"\n  Memory 统计:")
-        print(f"    - 总条目: {len(memory.list_entries())}")
-        
-        # Memory 搜索
-        print(f"\n  Memory 搜索 'momentum':")
-        results = memory.find_relevant("momentum")
-        for r in results:
-            print(f"    - {r.title}: {r.description[:50]}...")
-        
-        # Session 统计
-        print(f"\n  Session 统计:")
-        messages = db.get_messages("research_001")
-        print(f"    - 消息数: {len(messages)}")
-        
-        # Hook 统计
-        print(f"\n  Hook 统计:")
-        print(f"    - 研究发现: {len(research_logger.findings)}")
-        print(f"    - 工具调用: {performance_tracker.get_stats()['total_calls']}")
-        
-        # Metrics 统计
-        print(f"\n  Metrics 统计:")
-        stats = db.metrics_logger.get_stats()
-        print(f"    - 总写入: {stats.get('total_writes', 0)}")
-        print(f"    - 成功率: {stats.get('success_rate', 0):.1%}")
-        
-        # --------------------------------------------------
-        # CLI 命令演示
-        # --------------------------------------------------
-        print("\n6. CLI 命令演示:")
-        print("  $ agentnodes session stats")
-        print("  $ agentnodes session list")
-        
-        print("\n" + "=" * 60)
-        print("示例完成！")
+        print(f"  Memory 条目: {len(memory.list_entries())}")
+        print(f"  Memory 搜索 'momentum': {len(memory.find_relevant('momentum'))} 条")
+        print(f"  Hook 研究发现: {len(research_logger.findings)}")
+        print(f"  Hook 工具调用: {performance_tracker.get_stats()['total_calls']}")
+        print(f"  Session 消息数: {len(messages)}")
         print("=" * 60)
+        print("示例完成！")
 
 
 if __name__ == "__main__":

@@ -44,14 +44,14 @@
 
 | 项 | 值 |
 |---|---|
-| 位置 | `core/hooks/composite.py`（`AgentHook` 基类 + `CompositeHook` 组合）；上下文 `hooks/context.py::AgentHookContext` |
+| 位置 | `kernel/hooks/composite.py`（`AgentHook` 基类 + `CompositeHook` 组合）；上下文 `kernel/hooks/context.py::AgentHookContext` |
 | 生命周期点（11） | `before_run` · `after_run` · `before_iteration` · `after_iteration` · `on_stream` · `on_stream_end` · `before_execute_tools` · `after_tool_executed` · `on_tool_error` · `on_confirmation` · `on_error` |
 | 触发 | `loop` 内 `_fire(name, ctx)` / `_afire_hooks(...)`；sync 路径经 `runtime/sync_bridge` |
 | 职责 | 打点、审计、metrics、旁路通知 |
 
 **红线**：**hook 不得改变控制流**——不许吞异常、不许改 messages、不许影响 stop/continue 判定。需要改变流程的需求 → 属于 step 或 injector，不是 hook。
 
-**已知债**：`hooks/unified.py` + `hooks/adapter.py` 是 pre-P5 遗留，已标 DELETE-CANDIDATE（B5/B6），新代码只用 composite。
+（原 pre-P5 遗留的 `hooks/unified.py` + `hooks/adapter.py` 已在架构重构中删除；当前只用 composite。）
 
 ### 1.3 数据注入 — Injectors
 

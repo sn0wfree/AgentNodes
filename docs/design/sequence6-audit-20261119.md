@@ -89,6 +89,18 @@
   以 `docs/guides/` 与测试为准」——零维护成本，但失去可运行示例。
 本轮**不执行**任一选项（用户不可用，未取得批准）。
 
+**执行结果（2026-11-19 · 维护者裁决「更新」）**：
+- `e2e_flow.py` / `goal_workflow_demo.py`：7 处 import 更新为当前真实路径
+  （`kernel.agent.*` / `foundation.llm` / `apps.goal.*`），所有类仍有对应物，
+  语法 + import 冒烟通过。
+- `session_example.py`：4 个已移除类（SessionDB/SessionManager/RateLimiter/
+  MetricsLogger）无法只改 import——按当前 API 重写：PersistentMemory +
+  CompositeHook（hook 方法 async，改 asyncio.run）+ EventStore(flush_to_messages,
+  projection_sink) → SessionStore 读侧 + `ensure_session_row` 建会话行。
+  实跑通过（5 消息 / 7 记忆 / hook 统计正确，无 WinError 32 / 无投影警告）。
+- `extension-points.md`：hooks 位置更新为 `kernel/hooks/*`，删除已不存在的
+  `hooks/unified.py` + `hooks/adapter.py` DELETE-CANDIDATE 陈述。
+
 另外 `docs/guides/extension-points.md:54` 提到 `hooks/unified.py` +
 `hooks/adapter.py` 为 DELETE-CANDIDATE，两文件当前已不存在——同属陈旧
 陈述，建议与 examples 决定一起处理。
