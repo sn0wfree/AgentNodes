@@ -1,8 +1,9 @@
 # -*- coding: utf-8 -*-
-"""4c B2.2 子批 3b：IPC 通道 + 审批代理 + actual_state 词表。
+"""4c B2.2 子批 3b：IPC 通道 + 审批代理（Windows 行为类）。
 
-E2 上下文跨界（可序列化 ctx 子集）、E3 审批往返（ALLOW/DENY 两路）、
-actual_state 与 4a 词表一致、POSIX/未验证平台显式拒绝。
+E2 上下文跨界（可序列化 ctx 子集）与 E3 审批往返（ALLOW/DENY 两路）
+的真 worker 行为。平台守卫类（词表/fail-closed/POSIX 显式拒绝/读超时
+回归）在 test_isolation_platform_matrix.py——全平台真跑。
 **用常驻 worker**（spawn 一次复用）——每次调用 spawn 的 ~500ms 成本会让
 本文件在全量并发下显著拖慢。
 """
@@ -13,15 +14,10 @@ import sys
 import pytest
 
 from agentnodes.kernel.agent.tools.isolation import (
-    ACTUAL_STATES,
     ApprovalProxy,
-    IsolationResult,
     IsolationWorker,
-    UnsupportedPlatform,
-    build_worker_adapter,
     isolate_tool_call,
 )
-from agentnodes.kernel.agent.tools.isolation import _EOF
 
 pytestmark = pytest.mark.skipif(
     sys.platform != "win32",
@@ -69,47 +65,6 @@ def test_e3_permission_roundtrip(worker, action, expected_status, expected_state
     assert seen[0]["tool"] == "risky_write"
     assert result.status == expected_status
     assert result.actual_state == expected_state
-
-
-def test_approval_proxy_defaults_to_deny():
-    """未知裁决 → deny（fail-closed）。"""
-    proxy = ApprovalProxy(lambda req: "maybe")
-    assert proxy.decide({"id": "x"}) == "deny"
-
-
-def test_actual_states_match_4a_vocabulary():
-    """actual_state 词表与 4a 的 timeout_tool_outcomes[].state 严格一致。"""
-    assert ACTUAL_STATES == {"stopped", "still_running", "returned", "unknown"}
-
-
-def test_unsupported_platform_is_explicit():
-    """未验证平台显式拒绝，不静默降级到进程内执行。"""
-    from agentnodes.kernel.agent.tools.isolation import _PosixAdapter
-
-    adapter = _PosixAdapter()
-    with pytest.raises(UnsupportedPlatform):
-        isolate_tool_call("probe_context", {}, adapter=adapter)
-
-
-def test_read_timeout_is_not_eof():
-    """回归：读超时（worker 只是慢）不得被当成 EOF/退出。
-
-    根因：早期实现用 None 同时表示「超时」与「EOF」，worker 首次 import
-    慢于一次读超时就被误判为已退出 → 实际状态错报 unknown。
-    """
-    from agentnodes.kernel.agent.tools.isolation import IsolationChannel
-
-    handle = {"proc": type("P", (), {
-        "stdout": iter(()), "stderr": None, "pid": 1,
-    })()}
-    channel = IsolationChannel(handle)
-    assert channel.read(0.05) is None, "空队列读超时 → None（非 EOF）"
-    assert channel._eof is False, "读超时不置 EOF 标志"
-
-    # 显式 EOF 哨兵 → 置 EOF 标志
-    channel._queue.put(_EOF)
-    assert channel.read(0.05) is None
-    assert channel._eof is True, "真 EOF 才置标志"
 
 
 def test_resident_worker_reused_for_multiple_calls(worker):

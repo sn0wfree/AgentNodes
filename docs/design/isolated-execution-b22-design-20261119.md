@@ -216,3 +216,18 @@ roadmap §6 #2 裁决落定：通用 worker/平台机制归 kernel——本迁�
   行 / L3 226 文件 50,299 行（-758/+758，总数不变）。
 - §6/§7 执行记录中的 `apps/chat/` 路径为**历史记录**，不回写（惯例同
   M13 文档的回退留痕）；本节之后的设计引用一律用 kernel 路径。
+
+## 11. 平台矩阵记录（2026-11-20 · WP-3 / 子批 3d）
+
+| 平台 | 载体 | 覆盖 | 结论 |
+|---|---|---|---|
+| Windows（本机真机） | batch_gate.cmd 前的全量 pytest | adapter E1/E5 + IPC/审批 6 + 试点 5 真跑（真 worker / Job Object / taskkill 降级路径） | 启动 / 通信 / 取消终止 / 退出确认 / lease 顺序逐项过 |
+| POSIX（ubuntu CI） | `.github/workflows/tests.yml` unit job（3.10-3.12 × 4 shard） | 平台守卫 5+2 条真跑（词表 / fail-closed / POSIX 显式拒绝 / 平台承诺 / 读超时回归 + adapter Protocol/禁启用）；行为类 win32-gated skip-with-reason | 未验证平台显式 unsupported，不静默降级 |
+| Windows CI | **不存在**（全 workflow 仅 ubuntu runner） | 已知局限：Windows 矩阵记录落本机 batch_gate 运行 + 本表 | 显式记录，不冒充 CI 覆盖 |
+
+- 平台守卫测试独立成文件 `tests/test_isolation_platform_matrix.py`
+  （无 skipif，全平台跑）——修正此前守卫被整文件 win32 gate 误伤、
+  在 POSIX CI 上从未运行的缺口；`test_isolation_adapter.py` 的
+  per-test gate 样板保持。
+- POSIX 生产启用前置：平台矩阵未验证前 `build_worker_adapter()` 在
+  POSIX 返回禁启用 adapter（守卫测试钉住，3d 前置裁决维持）。
