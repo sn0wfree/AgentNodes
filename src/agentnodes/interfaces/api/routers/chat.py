@@ -704,16 +704,17 @@ async def _send_via_gateway(
     # 单例观察器（run.answer 触发）后，用户消息前移到提交点——保证事件
     # 序 user→assistant 不反转（对齐 receipt 路径 ②-b 的提交即落库），
     # 且 wait 超时时用户消息照常在档。
-    try:
-        service.event_bus.emit(session_id, "message_received", {
-            "message_id": user_mid,
-            "user_message_id": user_mid,
-            "role": "user",
-            "content": content,
-            "created_at": _time.time(),
-        })
-    except Exception as exc:  # noqa: BLE001 —— 落库失败不阻断受理
-        logger.warning("send_via_gateway: user persist failed: %s", exc)
+    # 3a.1 探针：用户消息记录经 apps/chat.messages 单点构造（形状 3：
+    # 无 assistant_message_id/queue 字段），wire 字段与 emit 语义零变化。
+    from agentnodes.apps.chat.messages import record_user_message
+
+    record_user_message(
+        service.event_bus.emit,
+        session_id=session_id,
+        message_id=user_mid,
+        content=content,
+        created_at=_time.time(),
+    )
 
     # ── ③ 执行（同步路径：kind 过滤；wait=true 时只等不驱动）────
     try:
