@@ -44,6 +44,7 @@ LAYER_MEMBERSHIP: dict[str, str] = {
     "agentnodes.apps.capabilities": "L2",
     "agentnodes.apps.data_store_registry": "L2",
     "agentnodes.apps.workspace_setup": "L2",
+    "agentnodes.apps.evolution": "L2",  # WP-8 批 3b：RSI 领域逻辑落位（设计裁决 3：独立成簇，不并入 apps/goal）
     "agentnodes.templates": "L2",
     # ── L3 kernel (平台机制) ──────────────────────────────────────────
     # 2026-11-05 批次 8：evolution 从 L2 移入（RSI 自我进化是内核机制）。
