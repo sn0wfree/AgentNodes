@@ -13,6 +13,7 @@ Test override::
 from __future__ import annotations
 
 from pathlib import Path
+from agentnodes.interfaces.api.composition import resources_from_request
 from typing import TYPE_CHECKING, Any
 
 from fastapi import Request
@@ -42,7 +43,7 @@ def _resolve_db_path() -> Path:
 
 def get_db_path(request: Request) -> Path:
     """FastAPI dependency: the active unified session DB path."""
-    container = getattr(request.app.state, "_container", None)
+    container = resources_from_request(request)
     if container is not None:
         return container.db_path
     workspace = getattr(request.app.state, "workspace_path", None)
@@ -59,7 +60,7 @@ def get_db_path(request: Request) -> Path:
 
 def get_projector(request: Request) -> "Projector":
     """Return the app-scoped projector shared by fallback providers."""
-    container = getattr(request.app.state, "_container", None)
+    container = resources_from_request(request)
     if container is not None:
         return container.projector
     projector = getattr(request.app.state, _STATE_KEY_PROJECTOR, None)
@@ -73,7 +74,7 @@ def get_projector(request: Request) -> "Projector":
 
 def get_session_store(request: Request) -> "SessionStore":
     """FastAPI dependency: shared SessionStore."""
-    container = getattr(request.app.state, "_container", None)
+    container = resources_from_request(request)
     if container is not None:
         return container.session_store
     from agentnodes.kernel.session.store import SessionStore
@@ -90,7 +91,7 @@ def get_session_store(request: Request) -> "SessionStore":
 
 def get_event_store(request: Request) -> "EventStore":
     """FastAPI dependency: shared EventStore (event_log + SSE + projector)."""
-    container = getattr(request.app.state, "_container", None)
+    container = resources_from_request(request)
     if container is not None:
         return container.event_store
     from agentnodes.kernel.session.state.event_store import EventStore
@@ -110,7 +111,7 @@ def get_event_store(request: Request) -> "EventStore":
 
 def get_memory_manager(request: Request) -> "UnifiedMemoryManager":
     """Return the app-scoped MemoryManager wired to the same projector."""
-    container = getattr(request.app.state, "_container", None)
+    container = resources_from_request(request)
     if container is not None:
         return container.memory_manager
     manager = getattr(request.app.state, _STATE_KEY_MEMORY_MANAGER, None)
@@ -130,7 +131,7 @@ def get_session_service(request: Request) -> "SessionService":
 
     Constructed once per process by the container; all routers share it.
     """
-    container = getattr(request.app.state, "_container", None)
+    container = resources_from_request(request)
     if container is not None:
         return container.session_service
     from agentnodes.kernel.session.service import SessionService
@@ -175,6 +176,11 @@ def reset_app_state(app: Any) -> None:
             closed.add(id(service))
         if hasattr(app.state, key):
             delattr(app.state, key)
+    # M12：router cache 自建的 container 不在 app.state 中——统一兜底关闭
+    # （测试 reset 与进程退出双关闭；close_resources 幂等，重复调用无副作用）
+    from agentnodes.interfaces.api.composition import close_all
+
+    close_all()
 
 
 __all__ = [

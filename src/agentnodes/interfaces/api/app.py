@@ -121,9 +121,9 @@ def create_app(
                 except (asyncio.CancelledError, Exception):
                     pass
             finally:
-                from agentnodes.interfaces.api.container import close_container
+                from agentnodes.interfaces.api.composition import close_resources
 
-                close_container(container)
+                close_resources(container)
 
     app = FastAPI(
         title="Strategy Research API",
@@ -148,6 +148,9 @@ def create_app(
 
     container = build_container(workspace_path=workspace_path, db_path=Path(_get_db_path()))
     attach_container(app, container)
+    from agentnodes.interfaces.api.composition import register
+
+    register(container)  # M12：统一生命周期入口（进程退出兜底 close）
     for key, svc in services_from_container(container).items():
         setattr(app.state, key, svc)
     _session_service_cache[str(container.db_path)] = container.session_service

@@ -70,4 +70,23 @@ interfaces/api/composition.py（新，深模块）
 3. router cache 的 close 时机：测试 `reset_app_state` 时 / 进程退出时 / 两者都做？
 4. `app.py` lifespan 当前不显式调 close_container（与其它会话的产物可能冲突）——是否本批一并补齐？
 
-（零代码改动，仅方案；批准后按 R-014 批次实施。）
+## 6. 执行记录（2026-11-19 · 子批 1-4 已实施）
+
+维护者裁决（报告 16:17 轮）：保留 fallback、旧名删除延后另批；router cache
+在测试 reset 与进程退出双关闭；app lifespan 同批显式 close。子批 1-4 已按此完成：
+
+| 子批 | 内容 | 落地 |
+|---|---|---|
+| 1 | `interfaces/api/composition.py` 深模块：`build_resources`（薄转调 build_container）/ `register` / `unregister` / `resources_from_request` / `close_resources` / `close_all`；**按实例 id 幂等**（不按 db_path——测试间重建同路径容器不能被误判已关闭） | ✅ |
+| 2 | `dependencies.py` 6 处 provider 改经 `resources_from_request(request)` 定位，fallback 逻辑原样保留 | ✅ |
+| 3 | `chat.py::_get_session_service` 自建 container 纳入 register（进程退出兜底 close）；`reset_app_state` 末尾 close_all（测试 reset 关闭）→ 双关闭 | ✅ |
+| 4 | `app.py` lifespan `close_container` → `close_resources`；生产 container 构造后 register | ✅ |
+
+**子批 5（旧名删除 / fallback 移除）延后下版本**，与 3a.4 / 兼容期删除批次协调。
+
+新增 `tests/test_api_composition.py` 3 用例：构造 wiring 完整、注册/关闭按实例幂等
+（含同 db_path 重建不被误伤——WinError 32 判据）、request 定位优先 container。
+
+**验证**：M12 相关 77 passed；层方向违规 0；全量 `-n 12` 7844 passed /
+106 skipped / 2 xfailed / 0 failed（bg_proc 一条负载抖动 `--lf` 复跑过）；
+batch_gate ALL GREEN；数字同步（452 文件 / 94,748 行，L1 +1 文件 = composition.py）。

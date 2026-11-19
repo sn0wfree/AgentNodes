@@ -210,6 +210,11 @@ def _get_session_service() -> SessionService:
     service = _session_service_cache.get(db_path)
     if service is None:
         container = build_container(db_path=db_path)
+        # M12：自建 container 纳入 composition 注册表——进程退出 / 测试 reset
+        # 时统一 close（此前无 close 路径，Windows 临时目录 WinError 32 隐患）
+        from agentnodes.interfaces.api.composition import register
+
+        register(container)
         service = container.session_service
         _session_service_cache[db_path] = service
     return service
