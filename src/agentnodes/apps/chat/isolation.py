@@ -14,13 +14,25 @@ POSIX CI 上也要能跑）。Windows 相关 ctypes 只在 build_worker_adapter(
 """
 from __future__ import annotations
 
+import json
+import queue
 import sys
-from typing import Any, Protocol, runtime_checkable
+import threading
+import time
+from dataclasses import dataclass, field
+from pathlib import Path
+from typing import Any, Callable, Protocol, runtime_checkable
 
 __all__ = [
+    "ACTUAL_STATES",
+    "ApprovalProxy",
+    "IsolationChannel",
+    "IsolationResult",
+    "IsolationWorker",
     "UnsupportedPlatform",
     "WorkerAdapter",
     "build_worker_adapter",
+    "isolate_tool_call",
 ]
 
 
@@ -74,3 +86,303 @@ def build_worker_adapter() -> WorkerAdapter:
 
         return Win32JobAdapter()
     return _PosixAdapter()
+
+
+# ── 3b：IPC 通道 + 审批代理 + 单入口 ────────────────────────────────
+
+#: 实际状态词表——与 4a 的 ``timeout_tool_outcomes[].state`` 严格一致
+#: （stopped / still_running / returned / unknown）。声明 ≠ 事实：这里记录
+#: 的是**实际观测**，不由工具的声明能力推断。
+ACTUAL_STATES = frozenset({"stopped", "still_running", "returned", "unknown"})
+
+_WORKER_SCRIPT = str(Path(__file__).with_name("_isolation_worker.py"))
+
+#: EOF 哨兵——与「读超时返回 None」区分（worker 只是慢 ≠ worker 已退出）
+_EOF = object()
+
+
+@dataclass
+class IsolationResult:
+    """一次隔离执行的结果。"""
+
+    status: str                      # completed / terminated / failed
+    payload: dict[str, Any] = field(default_factory=dict)
+    actual_state: str = "unknown"    # ACTUAL_STATES 之一
+    platform: str = ""              # 实际使用的 adapter 标识
+
+
+class ApprovalProxy:
+    """父进程侧的审批代理：worker 发 ASK → 父进程裁决 → 回传 worker。
+
+    ``decider(request) -> str`` 返回 ``"allow"`` / ``"deny"``；由组合根注入
+    （生产走 PermissionGateway，测试走 stub）。**worker 内不做权限判定**。
+    """
+
+    def __init__(self, decider: Callable[[dict[str, Any]], str]) -> None:
+        self._decider = decider
+
+    def decide(self, request: dict[str, Any]) -> str:
+        action = self._decider(request)
+        return action if action in ("allow", "deny") else "deny"
+
+
+class IsolationChannel:
+    """父进程侧的 JSON Lines 通道（任务行出 / 事件行入）。
+
+    Windows 上 ``select()`` 不接受管道 fd → 用后台读线程 + 队列做带超时读取
+    （原型同款实现）。
+    """
+
+    def __init__(self, handle: dict[str, Any]) -> None:
+        self._handle = handle
+        self._proc = handle["proc"]
+        self._queue: "queue.Queue[Any]" = queue.Queue()
+        self._reader: threading.Thread | None = None
+        self._eof = False
+
+    def start_reader(self) -> None:
+        if self._reader is not None:
+            return
+
+        def _pump(proc, q):
+            for line in proc.stdout:
+                line = line.strip()
+                if not line:
+                    continue
+                try:
+                    q.put(json.loads(line))
+                except ValueError:
+                    # worker stdout 上混入非协议行（工具构造日志等）→ 跳过，
+                    # 不让读线程崩溃（否则后续行全丢）。
+                    continue
+            q.put(_EOF)  # EOF 哨兵（worker 死亡/管道关闭）
+
+        self._reader = threading.Thread(
+            target=_pump, args=(self._proc, self._queue), daemon=True,
+        )
+        self._reader.start()
+
+    def send(self, obj: dict[str, Any]) -> None:
+        self._proc.stdin.write(json.dumps(obj, ensure_ascii=False) + "\n")
+        self._proc.stdin.flush()
+
+    def read(self, timeout_s: float) -> dict[str, Any] | None:
+        """读一行事件。**返回 None 表示超时（尚无数据）**；worker 退出由
+        ``_EOF`` 哨兵表示——两者必须可区分（否则 worker 只是慢就会被
+        误判为已退出）。
+        """
+        try:
+            obj = self._queue.get(timeout=timeout_s)
+        except queue.Empty:
+            return None
+        if obj is _EOF:
+            self._eof = True
+            return None
+        return obj
+
+    def drain_until(
+        self, predicate: Callable[[dict[str, Any]], bool], timeout_s: float,
+    ) -> dict[str, Any] | None:
+        """读事件直到命中 predicate（或超时/EOF）。"""
+        deadline = time.monotonic() + timeout_s
+        while time.monotonic() < deadline:
+            obj = self.read(0.2)
+            if obj is None:
+                if self._eof:
+                    return None
+                continue
+            if predicate(obj):
+                return obj
+        return None
+
+
+class IsolationWorker:
+    """常驻隔离 worker：spawn 一次，多次投递任务（进程池语义）。
+
+    每次调用 spawn 一个 worker 的成本 ~500ms（worker 需 import agentnodes
+    全量依赖）——生产与批量测试都应复用。生命周期：``with`` 或显式
+    ``close()``；``close`` 走 adapter 的终止+确认路径。
+    """
+
+    def __init__(
+        self,
+        adapter: WorkerAdapter | None = None,
+        *,
+        timeout_s: float = 30.0,
+    ) -> None:
+        self._adapter = adapter or build_worker_adapter()
+        if not self._adapter.supported():
+            raise UnsupportedPlatform(
+                "当前平台隔离执行未验证——跨平台生产启用前必须完成平台测试"
+            )
+        self._handle = self._adapter.spawn(_WORKER_SCRIPT)
+        self._channel = IsolationChannel(self._handle)
+        self._channel.start_reader()
+        self._timeout_s = timeout_s
+        self._closed = False
+
+    @property
+    def platform(self) -> str:
+        return "isolated"
+
+    def call(
+        self,
+        tool_name: str,
+        args: dict[str, Any] | None = None,
+        *,
+        ctx: dict[str, Any] | None = None,
+        approval: ApprovalProxy | None = None,
+        timeout_s: float | None = None,
+    ) -> IsolationResult:
+        """在常驻 worker 内执行一次工具调用。"""
+        if self._closed:
+            raise RuntimeError("IsolationWorker 已关闭")
+        return _execute_on_channel(
+            self._channel, tool_name, args or {}, ctx or {},
+            approval=approval, timeout_s=timeout_s or self._timeout_s,
+            platform=self.platform,
+        )
+
+    def close(self) -> None:
+        if self._closed:
+            return
+        self._closed = True
+        self._adapter.close(self._handle)
+
+    def __enter__(self) -> "IsolationWorker":
+        return self
+
+    def __exit__(self, *exc: Any) -> None:
+        self.close()
+
+
+def _execute_on_channel(
+    channel: IsolationChannel,
+    tool_name: str,
+    args: dict[str, Any],
+    ctx: dict[str, Any],
+    *,
+    approval: ApprovalProxy | None,
+    timeout_s: float,
+    platform: str,
+) -> IsolationResult:
+    """在给定通道上执行一次工具调用并解析结果行。"""
+    deadline = time.monotonic() + timeout_s
+    channel.send({"tool": tool_name, "args": args, "ctx": ctx})
+
+    while True:
+        obj = channel.read(0.2)
+        if obj is None:
+            if channel._eof:
+                # worker 已退出且无结果行 → 下方 unknown 分支
+                break
+            if time.monotonic() > deadline:
+                # 超过整体等待上限 → 未知状态（不无限等）
+                break
+            continue
+        if obj.get("ev") == "permission_request":
+            action = "deny"
+            if approval is not None:
+                action = approval.decide(obj)
+            channel.send({
+                "op": "permission_response",
+                "id": obj.get("id"),
+                "action": action,
+            })
+            continue
+        if "result" in obj:
+            result = obj["result"]
+            status = result.get("status")
+            if status == "ok":
+                # 工具自身可能返回结构化错误（例：写根保护拒绝）——
+                # 那是**工具级失败**，worker 执行成功；实际状态按
+                # 「已返回结果」记 returned。
+                payload = result.get("output")
+                tool_failed = False
+                if isinstance(payload, str):
+                    try:
+                        decoded = json.loads(payload)
+                    except ValueError:
+                        decoded = None
+                    if isinstance(decoded, dict) and decoded.get("status") == "error":
+                        tool_failed = True
+                if tool_failed:
+                    return IsolationResult(
+                        status="failed", payload=result,
+                        actual_state="returned", platform=platform,
+                    )
+                return IsolationResult(
+                    status="completed", payload=result,
+                    actual_state="stopped", platform=platform,
+                )
+            if status == "denied":
+                return IsolationResult(
+                    status="failed", payload=result,
+                    actual_state="returned", platform=platform,
+                )
+            return IsolationResult(
+                status="failed", payload=result,
+                actual_state="returned", platform=platform,
+            )
+    # 未收到结果行：worker 异常退出 → 实际状态未知
+    stderr_tail = ""
+    err = channel._handle["proc"].stderr
+    if err is not None:
+        try:
+            stderr_tail = err.read1(500) if hasattr(err, "read1") else ""
+        except Exception:  # noqa: BLE001 —— 诊断信息尽力而为
+            stderr_tail = ""
+    return IsolationResult(
+        status="failed",
+        payload={
+            "error": "worker exited without result",
+            "worker_stderr": stderr_tail[-500:],
+        },
+        actual_state="unknown", platform=platform,
+    )
+
+
+def isolate_tool_call(
+    tool_name: str,
+    args: dict[str, Any] | None = None,
+    *,
+    ctx: dict[str, Any] | None = None,
+    approval: ApprovalProxy | None = None,
+    timeout_s: float = 30.0,
+    adapter: WorkerAdapter | None = None,
+    worker: "IsolationWorker | None" = None,
+) -> IsolationResult:
+    """在隔离 worker 内执行一次工具调用（3b 单入口，**不接生产路径**）。
+
+    流程：spawn worker → 任务行（含可序列化 ctx）→ 处理事件行（审批请求
+    转交 ``approval`` 代理裁决）→ 结果行 → 收尾。返回的实际状态与 4a
+    词表一致：正常完成 ``stopped``；审批拒绝/工具级失败 ``returned``（有
+    明确结果但非成功）；超时/失败 ``unknown``。
+
+    平台未验证（POSIX）→ adapter 抛 UnsupportedPlatform（显式拒绝，
+    不静默降级到 in-process 执行）。
+
+    ``worker`` 传入常驻 worker 可复用进程（省 ~500ms/次的 spawn 成本）；
+    不传则临时建一个并在返回前关闭。
+    """
+    if worker is not None:
+        return worker.call(
+            tool_name, args, ctx=ctx, approval=approval, timeout_s=timeout_s,
+        )
+
+    adapter = adapter or build_worker_adapter()
+    if not adapter.supported():
+        raise UnsupportedPlatform(
+            "当前平台隔离执行未验证——跨平台生产启用前必须完成平台测试"
+        )
+
+    handle = adapter.spawn(_WORKER_SCRIPT)
+    channel = IsolationChannel(handle)
+    channel.start_reader()
+    try:
+        return _execute_on_channel(
+            channel, tool_name, args or {}, ctx or {},
+            approval=approval, timeout_s=timeout_s, platform="isolated",
+        )
+    finally:
+        adapter.close(handle)

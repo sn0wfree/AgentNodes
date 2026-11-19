@@ -91,6 +91,7 @@ class Win32JobAdapter(WorkerAdapter):
         proc = subprocess.Popen(
             [__import__("sys").executable, worker_script, "--worker"],
             stdin=subprocess.PIPE, stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
             text=True, encoding="utf-8",
             creationflags=subprocess.CREATE_NEW_PROCESS_GROUP,
         )
@@ -108,6 +109,7 @@ class Win32JobAdapter(WorkerAdapter):
             proc = subprocess.Popen(
                 [__import__("sys").executable, worker_script, "--worker"],
                 stdin=subprocess.PIPE, stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
                 text=True, encoding="utf-8",
                 creationflags=subprocess.CREATE_NEW_PROCESS_GROUP,
             )

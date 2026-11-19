@@ -100,3 +100,35 @@ payload（工具返回或错误）、actual_state（`stopped` / `returned` / `un
 ALL GREEN；数字同步（454 文件 / 95,024 行，L2 +2 文件 = 两个 adapter）。
 
 下一子批 3b（IPC + 审批回调 + actual_state 对齐 4a）需单独批准。
+
+## 7. 子批 3b 执行记录（2026-11-19 · 已实施）
+
+IPC 通道 + 审批回调代理 + actual_state 对齐 4a 词表：
+
+- `apps/chat/isolation.py` 扩展：`IsolationChannel`（JSON Lines，后台读
+  线程 + 队列；``_EOF`` 哨兵把「读超时」与「worker 已退出」区分开——
+  早期实现两者都用 None 表示，worker 首次 import 慢于一次读超时就被
+  误判为已退出 → actual_state 错报 unknown）；`IsolationWorker`（常驻
+  worker，spawn 一次复用——每次 spawn ~500ms 成本，生产与批量测试都应
+  复用）；`ApprovalProxy`（fail-closed：未知裁决 → deny，worker 内不做
+  权限判定）；`isolate_tool_call()` 单入口（可传常驻 worker 复用进程）。
+- `apps/chat/_isolation_worker.py`（新）：worker 入口——`_install_stdout_
+  guard()` 把 sys.stdout 改指 stderr（依赖 import 的告警行不得污染协议
+  帧）+ 父进程读线程跳过非 JSON 行，双向防护；可序列化 dict →
+  `ToolContext` 构造；审批请求行（ASK）→ 父进程裁决 → 回传 worker。
+- actual_state 词表：`ACTUAL_STATES` 与 4a `timeout_tool_outcomes[].state`
+  严格一致（stopped / still_running / returned / unknown）。正常完成
+  `stopped`；审批拒绝 / 工具级失败（工具返回结构化 error，worker 执行
+  本身成功）`returned`；worker 无结果行退出 `unknown`。
+- `tests/test_isolation_channel.py` 10 用例：E2 上下文跨界、E3 审批往返
+  ALLOW/DENY 两路、fail-closed 默认拒绝、词表对齐、POSIX 显式拒绝、
+  读超时≠EOF 回归、常驻 worker 复用、单入口接常驻 worker、真实 write
+  工具隔离执行（绝对路径被工具写根保护拒绝 + 相对路径写入 workspace
+  成功——3c 试点的前置能力证明）。Windows 真机跑。
+
+验证：隔离 10 passed + 适配器 4 passed（并入全量，常驻 worker 使
+wall-clock 无劣化）；全量 `-n 12` 7869 passed / 106 skipped / 2 xfailed
+/ 0 failed（81.7s）；batch_gate ALL GREEN；数字同步（455 文件 /
+95,494 行）。
+
+下一子批 3c（临时工作区 WriteFileTool 试点）需单独批准。
