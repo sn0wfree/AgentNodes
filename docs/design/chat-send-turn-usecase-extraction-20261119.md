@@ -200,3 +200,36 @@ API chat 的发送编排。输入、结果和失败使用最小的类型化结�
 - 不把 workflow runner registry 混入 chat send-turn；M13 独立审查。
 - 不做同步工具隔离生产接线、超时语义变化、SessionService/AgentLoop 大拆分。
 - 不批量删除三前端设计中的候选死代码；按 R-015/R-016/R-020 单项处理。
+
+## 9. 3a.3 决策记录（grilling 两轮 · 2026-11-19）
+
+架构摩擦审计（improve-codebase-architecture skill，报告在 OS 临时目录）
+选出候选 1（send-turn 深模块）+ 候选 3（attempt.* 单源），并两轮 grilling
+走完决策树。以下 8 项全部采纳推荐答案，shared understanding 达成。
+
+### Round 1（interface / 错误 / 桥归属 / 过渡面）
+
+| # | 决策 | 选定 |
+|---|---|---|
+| 1 | send_turn interface 形状 | **A**：`send_turn(input, deps)`——`SendTurnInput` dataclass + 依赖容器（gateway/store/emit/publish/timeout），interface 缩到两个参数 |
+| 2 | 错误表达 | **A**：应用层异常类型（`HistoryUnavailable`/`QueueFull`/`RunFailed`/`WaitTimeout`/`RequestSummarized`），router 一处 except 映射到现有 status/detail |
+| 3 | bridge 与答案落库器归属 | **A**：作为 send_turn 模块的**内部 seam**（同文件私有函数/类），router 不再接触 |
+| 4 | 现有 monkeypatch 出口网 | **A**：3a.3 期间保留 router 可 patch 薄转发面，3a.4 逐项迁测试后删除（兑现 R-014 退出路径，非新永久垫片）|
+
+### Round 2（Attempt / 单源 / 测试 / 提交）
+
+| # | 决策 | 选定 |
+|---|---|---|
+| 5 | Attempt 创建与历史预检位置 | **A**：全部下沉进 send_turn——内部先验历史、再建 Attempt、再发事件、再 submit；router 从 `SendTurnResult` 拿 attempt_id。send_sync 不建 Attempt（用 run_id），由 send_turn 内部分支 |
+| 6 | attempt.* 单源范围 | **A**：kernel `EventType` 补三个常量，apps `ChatEvent` 与 kernel session service 发射点都改引用——纯引用替换、wire 零变化；不改 `send_message` 逻辑/默认值/测试（§8 边界）|
+| 7 | 测试存活与新增 | **A**：41 用例靠过渡面保持绿；只新增 2-3 个直测 send_turn 用例钉新行为（历史预检失败零 Attempt 事件、成功路径状态迁移、错误映射）；3a.4 再逐项迁 |
+| 8 | 提交切分 | **A**：`3a.3a` 新模块（含内部 bridge/persister、异常类型、input/result、attempt.* 单源）纯新增零调用方切换 + 直测用例；`3a.3b` send_async/send_sync 切换 + Attempt 顺序修复 + router 过渡面；`3a.4` 清理（另行裁决）|
+
+### 落地约束（由决策派生）
+
+- send_turn 的内部 seam 不对外暴露：bridge/persister 不是 apps/chat 平级 module（候选 6「别让 apps 变成浅模块集合」）。
+- interface 即测试面：新增直测用例穿过 `send_turn(input, deps)`，不戳内部同步原语。
+- 错误类型与 wire 绝对值冻结表（3a.0 基线 §4）并行守护：异常类型只在 router 映射层转成现有 status/detail。
+- 回滚粒度按决策 8：3a.3a 回退 = 恢复零新增；3a.3b 回退 = 恢复旧 router 路径；单例观察器不回滚。
+
+实施按此决策记录执行；如实施中发现与新决策冲突的现实约束，先回到本文档修订决策再动代码。
