@@ -47,6 +47,12 @@ TIMEOUT_CAPABILITIES = frozenset({
     TIMEOUT_CAPABILITY_UNSTOPPABLE,
 })
 
+# 4c-B2.1 准入门槛：声明 isolatable 的工具必须只含可在进程终止边界内
+# 结束的副作用。DB / NET 操作已发出的请求无法靠终止本地进程撤销
+# （契约 §10.4：需服务端确认取消 + 禁止截止后提交，尚未实现）——
+# 声明 isolatable + DB/NET effects 属过度承诺，准入检查拒绝。
+_ISOLATION_FORBIDDEN_EFFECTS = frozenset({"db", "net"})
+
 logger = logging.getLogger(__name__)
 
 
@@ -854,6 +860,33 @@ class BaseTool(ABC):
         }
 
 
+def check_isolation_admission(tool: Any) -> str | None:
+    """4c-B2.1：检查工具声明 ``isolatable`` 是否满足准入门槛。
+
+    Returns:
+        None = 可声明；非空字符串 = 拒绝原因（声明应回落
+        ``unstoppable``）。**纯声明面校验**——本函数不执行工具、
+        不改运行路径，也不保证声明等于事实（契约 §10.3）。
+
+    门槛依据（超时设计 §9.7 原型五实验）：
+    - DB / NET 副作用：进程终止无法撤销已受理的远端操作（需服务端
+      确认取消，尚未实现）→ 拒绝 isolatable 声明；
+    - 仅 FS / 只读副作用：进程终止可停止本地执行，副作用不撤销——
+      允许声明（首试点限临时工作区 file_write，shell 暂缓）。
+    """
+    cap = getattr(tool, "timeout_capability", TIMEOUT_CAPABILITY_UNSTOPPABLE)
+    if cap != TIMEOUT_CAPABILITY_ISOLATABLE:
+        return None  # 非 isolatable 声明不在本门槛范围
+    effects = set(getattr(tool, "effects", ()) or ())
+    forbidden = effects & _ISOLATION_FORBIDDEN_EFFECTS
+    if forbidden:
+        return (
+            f"isolatable 声明拒绝：effects 含 {sorted(forbidden)}——"
+            "进程终止不能撤销已受理的远端/DB 操作（需服务端确认取消）"
+        )
+    return None
+
+
 class ToolRegistry:
     """Tool registry with DSH-inspired scoped tools and guard pipeline."""
 
@@ -879,7 +912,12 @@ class ToolRegistry:
         """
         tool = self._tools.get(name)
         cap = getattr(tool, "timeout_capability", TIMEOUT_CAPABILITY_UNSTOPPABLE)
-        return cap if cap in TIMEOUT_CAPABILITIES else TIMEOUT_CAPABILITY_UNSTOPPABLE
+        if cap not in TIMEOUT_CAPABILITIES:
+            return TIMEOUT_CAPABILITY_UNSTOPPABLE
+        # 4c-B2.1：isolatable 声明必须过准入门槛，否则回落诚实默认
+        if cap == TIMEOUT_CAPABILITY_ISOLATABLE and check_isolation_admission(tool) is not None:
+            return TIMEOUT_CAPABILITY_UNSTOPPABLE
+        return cap
 
     def all_tools(self) -> List[BaseTool]:
         """All registered tools (stable order)."""

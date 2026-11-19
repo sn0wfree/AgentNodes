@@ -117,3 +117,19 @@
 **用户不可用，未取得进一步批准；除三处公告外，代码和文档均未改动。**
 
 （三处公告文档已落地；其余为方案 + 裁决记录，零代码改动。）
+
+## E. 步骤 4c · B2.1 执行记录（2026-11-19）
+
+按裁决启动 B2.1（工具准入），**零执行路径变化**：
+
+- `kernel/agent/tools/core.py` 新增 `check_isolation_admission(tool)`：
+  声明 `isolatable` 且 effects 含 `db`/`net` → 拒绝（进程终止不能撤销
+  已受理的远端/DB 操作，需服务端确认取消——契约 §10.4 尚未实现）；
+  仅 FS/只读 → 允许。首试点限临时工作区 file_write，shell 暂缓。
+- `ToolRegistry.timeout_capability(name)` 用准入门槛兜底：不合规的
+  isolatable 声明回落 `unstoppable`（诚实默认）。
+- `tests/test_tool_isolation_admission.py` 6 用例覆盖四级别准入与 registry 回落。
+
+**验收**：6 passed；层方向 / 门禁 / 全量按批次验证。
+**边界**：sync-only xfail 在范围外；POSIX 在跨平台生产启用前验证；
+本阶段不接生产隔离执行路径（B2.2 起）。
