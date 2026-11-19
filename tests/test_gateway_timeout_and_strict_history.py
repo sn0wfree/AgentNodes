@@ -63,9 +63,9 @@ class TestAttemptTimeoutCheckPoint:
 
     async def test_check_point_raises_when_deadline_passed(self):
         """到点 → 抛 AttemptTimeoutError（执行器内部中断）。"""
-        loop = _make_loop(timeout_s=0.05)
+        loop = _make_loop(timeout_s=0.2)
         loop._begin_attempt_deadline()
-        time.sleep(0.08)
+        time.sleep(1.2)
         with pytest.raises(AttemptTimeoutError):
             loop._check_attempt_timeout(1)
 
@@ -77,9 +77,9 @@ class TestAttemptTimeoutCheckPoint:
 
     async def test_timeout_message_states_budget(self):
         """错误信息含预算秒数（与旧路径 "attempt timed out after Ns" 对齐）。"""
-        loop = _make_loop(timeout_s=0.05)
+        loop = _make_loop(timeout_s=0.2)
         loop._begin_attempt_deadline()
-        time.sleep(0.08)
+        time.sleep(1.2)
         with pytest.raises(AttemptTimeoutError) as exc:
             loop._check_attempt_timeout(2)
         assert "timed out" in str(exc.value)
@@ -104,7 +104,7 @@ class TestAttemptTimeoutCheckPoint:
 async def test_attempt_deadline_interrupts_last_iteration(engine):
     from agentnodes.foundation.llm import LLMResponse
 
-    loop = _make_loop(timeout_s=0.05, max_iterations=1, stream_mode=False)
+    loop = _make_loop(timeout_s=0.2, max_iterations=1, stream_mode=False)
     started = asyncio.Event()
     cancelled = asyncio.Event()
     events = []
@@ -113,7 +113,7 @@ async def test_attempt_deadline_interrupts_last_iteration(engine):
     async def slow_chat(messages, **kwargs):
         started.set()
         try:
-            await asyncio.sleep(0.3)
+            await asyncio.sleep(1.2)
         except asyncio.CancelledError:
             cancelled.set()
             raise
@@ -143,7 +143,7 @@ async def test_iteration_timeout_remains_distinct_from_attempt_timeout():
 
     async def slow_call():
         try:
-            await asyncio.sleep(0.3)
+            await asyncio.sleep(1.2)
         finally:
             cancelled.set()
 
@@ -171,14 +171,14 @@ async def test_provider_timeout_is_not_reported_as_attempt_deadline():
 async def test_attempt_deadline_interrupts_stream(engine):
     from agentnodes.foundation.llm.parser import StreamChunk
 
-    loop = _make_loop(timeout_s=0.05, max_iterations=1, stream_mode=True)
+    loop = _make_loop(timeout_s=0.2, max_iterations=1, stream_mode=True)
     started = asyncio.Event()
     cancelled = asyncio.Event()
 
     async def slow_stream(messages, **kwargs):
         started.set()
         try:
-            await asyncio.sleep(0.3)
+            await asyncio.sleep(1.2)
         except asyncio.CancelledError:
             cancelled.set()
             raise
@@ -212,11 +212,11 @@ async def test_attempt_deadline_stops_inflight_tool_side_effect():
 
         def execute(self, **kwargs):
             calls.append("started")
-            time.sleep(0.3)
+            time.sleep(1.2)
             calls.append("side_effect")
             return "ok"
 
-    loop = _make_loop(timeout_s=0.05, max_iterations=2, stream_mode=False)
+    loop = _make_loop(timeout_s=0.2, max_iterations=2, stream_mode=False)
     loop.registry.register(SlowTool())
 
     async def tool_request(messages, **kwargs):
@@ -251,11 +251,11 @@ async def test_finished_slow_tool_does_not_report_success(engine):
 
         def execute(self, **kwargs):
             calls.append("started")
-            time.sleep(0.15)
+            time.sleep(0.6)
             calls.append("finished")
             return "ok"
 
-    loop = _make_loop(timeout_s=0.05, max_iterations=1, stream_mode=False)
+    loop = _make_loop(timeout_s=0.2, max_iterations=1, stream_mode=False)
     loop._on_event = lambda kind, data: events.append((kind, data))
     loop.registry.register(SlowTool())
 
@@ -292,7 +292,7 @@ async def test_expired_deadline_does_not_start_next_write_tool(engine):
 
         def execute(self, **kwargs):
             calls.append("slow_started")
-            time.sleep(0.15)
+            time.sleep(0.6)
             calls.append("slow_finished")
             return "ok"
 
@@ -306,7 +306,7 @@ async def test_expired_deadline_does_not_start_next_write_tool(engine):
             calls.append("next_started")
             return "ok"
 
-    loop = _make_loop(timeout_s=0.05, max_iterations=1, stream_mode=False)
+    loop = _make_loop(timeout_s=0.2, max_iterations=1, stream_mode=False)
     loop._on_event = lambda kind, data: events.append((kind, data))
     loop.registry.register(SlowWrite())
     loop.registry.register(NextWrite())
@@ -347,11 +347,11 @@ async def test_readonly_batch_timeout_stops_before_next_llm_call(engine):
 
         async def ainvoke(self, kwargs, ctx=None):
             calls.append("started")
-            await asyncio.sleep(0.1)
+            await asyncio.sleep(0.5)
             calls.append("finished")
             return "ok"
 
-    loop = _make_loop(timeout_s=0.05, max_iterations=2, stream_mode=False)
+    loop = _make_loop(timeout_s=0.2, max_iterations=2, stream_mode=False)
     loop.registry.register(AsyncRead())
     requests = []
 
@@ -389,11 +389,11 @@ async def test_expired_deadline_stops_tool_retry(engine, monkeypatch):
 
         def execute(self, **kwargs):
             calls.append("started")
-            time.sleep(0.15)
+            time.sleep(0.6)
             raise OSError("transient probe failure")
 
     monkeypatch.setattr(loop_tools, "_TOOL_RETRY_DELAY", 0)
-    loop = _make_loop(timeout_s=0.05, max_iterations=1, stream_mode=False)
+    loop = _make_loop(timeout_s=0.2, max_iterations=1, stream_mode=False)
     loop.registry.register(SlowFailure())
 
     async def tool_request(messages, **kwargs):
@@ -424,7 +424,7 @@ async def test_expired_deadline_stops_not_yet_started_readonly_tool(engine):
 
         def execute(self, **kwargs):
             calls.append("slow_started")
-            time.sleep(0.15)
+            time.sleep(0.6)
             calls.append("slow_finished")
             return "ok"
 
@@ -437,7 +437,7 @@ async def test_expired_deadline_stops_not_yet_started_readonly_tool(engine):
             calls.append("next_started")
             return "ok"
 
-    loop = _make_loop(timeout_s=0.05, max_iterations=1, stream_mode=False)
+    loop = _make_loop(timeout_s=0.2, max_iterations=1, stream_mode=False)
     loop.registry.register(SlowRead())
     loop.registry.register(NextRead())
 
@@ -473,7 +473,7 @@ async def test_expired_deadline_stops_next_composite_step(engine):
 
         def execute(self, **kwargs):
             calls.append("slow_started")
-            time.sleep(0.15)
+            time.sleep(0.6)
             calls.append("slow_finished")
             return '{"status":"ok"}'
 
@@ -487,7 +487,7 @@ async def test_expired_deadline_stops_next_composite_step(engine):
             calls.append("next_started")
             return '{"status":"ok"}'
 
-    loop = _make_loop(timeout_s=0.05, max_iterations=1, stream_mode=False)
+    loop = _make_loop(timeout_s=0.2, max_iterations=1, stream_mode=False)
     loop.registry.register(SlowStep())
     loop.registry.register(NextStep())
     loop.registry.register(CompositeTool(
@@ -531,7 +531,7 @@ async def test_parallel_tools_finish_before_timeout_ending(engine):
             pytest.fail("the expired tool must not execute")
 
         async def ainvoke(self, kwargs, ctx=None):
-            await asyncio.sleep(0.1)
+            await asyncio.sleep(0.5)
             return await super().ainvoke(kwargs, ctx)
 
     class RunningTool(BaseTool):
@@ -544,11 +544,11 @@ async def test_parallel_tools_finish_before_timeout_ending(engine):
 
         async def ainvoke(self, kwargs, ctx=None):
             order.append("started")
-            await asyncio.sleep(0.2)
+            await asyncio.sleep(0.8)
             order.append("finished")
             return "ok"
 
-    loop = _make_loop(timeout_s=0.05, max_iterations=1, stream_mode=False)
+    loop = _make_loop(timeout_s=0.2, max_iterations=1, stream_mode=False)
     loop._on_event = lambda kind, data: order.append(kind)
     loop.registry.register(DelayedStart())
     loop.registry.register(RunningTool())
@@ -586,16 +586,20 @@ async def test_attempt_deadline_stops_sync_only_client_worker():
     class SyncClient:
         def chat(self, messages, **kwargs):
             started.set()
-            time.sleep(0.2)
+            time.sleep(0.8)
             finished.set()
             return LLMResponse(content="late", tool_calls=[], finish_reason="stop")
 
-    loop = _make_loop(timeout_s=0.05, max_iterations=1, stream_mode=False)
+    loop = _make_loop(timeout_s=0.2, max_iterations=1, stream_mode=False)
     loop.client = wrap_async_capable_client(SyncClient())
     result = await loop.arun("deadline probe")
     if not started.is_set():
         pytest.fail("the probe must execute the sync client")
-    await asyncio.to_thread(finished.wait, 0.4)
+    # xfail 探针：等待窗口须 > 工具 sleep（现 0.8s），让工作线程有机会
+    # 自然结束并设置 finished → `assert not finished` 失败 → xfail 成立。
+    # 时间整体放大 4x 后这里必须同步放大，否则 finished 来不及设置会
+    # 变成 XPASS(strict) 失败。
+    await asyncio.to_thread(finished.wait, 1.2)
     assert not finished.is_set()
     assert result.finished_reason == "timeout"
 
@@ -603,7 +607,7 @@ async def test_attempt_deadline_stops_sync_only_client_worker():
 @pytest.mark.parametrize("engine", ["skeleton", "legacy"])
 @pytest.mark.parametrize(
     ("timeout_s", "approval_delay", "should_execute"),
-    [(0.05, 0.1, False), (1.0, 0.0, True), (None, 0.1, True)],
+    [(0.2, 0.5, False), (1.0, 0.0, True), (None, 0.5, True)],
 )
 async def test_attempt_deadline_after_permission(
     tmp_path, engine, timeout_s, approval_delay, should_execute,
@@ -653,10 +657,10 @@ async def test_attempt_deadline_after_permission(
 
     loop.client.achat = tool_request
     running = asyncio.create_task(loop.arun("deadline probe", engine=engine))
-    await asyncio.wait_for(requested.wait(), 2)
+    await asyncio.wait_for(requested.wait(), 5)
     await asyncio.sleep(approval_delay)
     gateway.respond("probe", PermissionResponse(action=PermissionAction.ALLOW))
-    result = await asyncio.wait_for(running, 2)
+    result = await asyncio.wait_for(running, 5)
     if should_execute:
         assert calls == ["started"]
         assert result.finished_reason != "timeout"
@@ -678,13 +682,13 @@ class TestEngineIterationStartHook:
         from agentnodes.kernel.agent.loop.engine_adapters import LoopIterationStart
 
         class _Loop:
-            _attempt_timeout_s = 0.05
+            _attempt_timeout_s = 0.2
             _attempt_deadline = None
             _started_at = 0.0
             _wrap_up_nudge = False
 
             def _check_attempt_timeout(self, iteration, result=None):
-                raise AttemptTimeoutError("attempt timed out after 0.05s")
+                raise AttemptTimeoutError("attempt timed out after 0.2s")
 
         with pytest.raises(AttemptTimeoutError):
             LoopIterationStart(_Loop())(None, 1)
@@ -706,7 +710,7 @@ class _TimeoutEngine:
 
     def run(self, state, **kw):  # noqa: ANN003 — GraphEngine 节点契约
         self.calls += 1
-        raise AttemptTimeoutError("attempt timed out after 0.05s")
+        raise AttemptTimeoutError("attempt timed out after 0.2s")
 
 
 class TestGatewayTimeoutSettlement:
@@ -728,7 +732,7 @@ class TestGatewayTimeoutSettlement:
                     raise TimeoutError("probe release was not signalled")
                 return LLMResponse(content="late", tool_calls=[], finish_reason="stop")
 
-        loop = _make_loop(timeout_s=0.05, max_iterations=1, stream_mode=False)
+        loop = _make_loop(timeout_s=0.2, max_iterations=1, stream_mode=False)
         loop.client = wrap_async_capable_client(SyncClient())
         node = make_agent_loop_node(loop)
 
@@ -742,7 +746,7 @@ class TestGatewayTimeoutSettlement:
         running = asyncio.create_task(asyncio.to_thread(gw.run_once))
         try:
             assert await asyncio.to_thread(started.wait, 2), "sync client did not start"
-            await asyncio.sleep(0.1)
+            await asyncio.sleep(0.5)
             assert not running.done()
             assert gw.execution_lease.holding("s1")
             assert gw.fence.active_run("s1") is not None
@@ -776,7 +780,7 @@ class TestGatewayTimeoutSettlement:
                     raise TimeoutError("probe release was not signalled")
                 return "ok"
 
-        loop = _make_loop(timeout_s=0.05, max_iterations=1, stream_mode=False)
+        loop = _make_loop(timeout_s=0.2, max_iterations=1, stream_mode=False)
         loop.registry.register(BlockingTool())
 
         async def tool_request(messages, **kwargs):
@@ -799,7 +803,7 @@ class TestGatewayTimeoutSettlement:
         running = asyncio.create_task(asyncio.to_thread(gw.run_once))
         try:
             assert await asyncio.to_thread(started.wait, 2), "tool did not start"
-            await asyncio.sleep(0.1)
+            await asyncio.sleep(0.5)
             assert not running.done()
             assert gw.execution_lease.holding("s1")
             assert gw.fence.active_run("s1") is not None
@@ -821,12 +825,12 @@ class TestGatewayTimeoutSettlement:
         events = []
         started = threading.Event()
         cancelled = threading.Event()
-        loop = _make_loop(timeout_s=0.05, max_iterations=1, stream_mode=False)
+        loop = _make_loop(timeout_s=0.2, max_iterations=1, stream_mode=False)
 
         async def slow_chat(messages, **kwargs):
             started.set()
             try:
-                await asyncio.sleep(0.3)
+                await asyncio.sleep(1.2)
             except asyncio.CancelledError:
                 cancelled.set()
                 raise
@@ -892,7 +896,7 @@ class TestGatewayTimeoutSettlement:
         gw.entry.submit(api_chat_request("s1", "hi"))
         gw.run_once()
         calls_after = engine.calls
-        time.sleep(0.2)
+        time.sleep(0.8)
         assert engine.calls == calls_after, "超时后不得继续执行"
 
 
@@ -961,12 +965,12 @@ class TestTimeoutToolOutcomes:
         """原生异步 LLM：取消已交付并等待完成 → stopped。"""
         from agentnodes.foundation.llm import LLMResponse
 
-        loop = _make_loop(timeout_s=0.05, max_iterations=1, stream_mode=False)
+        loop = _make_loop(timeout_s=0.2, max_iterations=1, stream_mode=False)
         events = []
         loop._on_event = lambda kind, data: events.append((kind, data))
 
         async def slow_chat(messages, **kwargs):
-            await asyncio.sleep(0.3)
+            await asyncio.sleep(1.2)
             return LLMResponse(content="late", tool_calls=[], finish_reason="stop")
 
         loop.client.achat = slow_chat
@@ -991,10 +995,10 @@ class TestTimeoutToolOutcomes:
 
         class SyncClient:
             def chat(self, messages, **kwargs):
-                time.sleep(0.2)
+                time.sleep(0.8)
                 return LLMResponse(content="late", tool_calls=[], finish_reason="stop")
 
-        loop = _make_loop(timeout_s=0.05, max_iterations=1, stream_mode=False)
+        loop = _make_loop(timeout_s=0.2, max_iterations=1, stream_mode=False)
         events = []
         loop._on_event = lambda kind, data: events.append((kind, data))
         loop.client = wrap_async_capable_client(SyncClient())
@@ -1019,10 +1023,10 @@ class TestTimeoutToolOutcomes:
             effects = frozenset({"fs"})
 
             def execute(self, **kwargs):
-                time.sleep(0.2)
+                time.sleep(0.8)
                 return "late-ok"
 
-        loop = _make_loop(timeout_s=0.05, max_iterations=2, stream_mode=False)
+        loop = _make_loop(timeout_s=0.2, max_iterations=2, stream_mode=False)
         events = []
         loop._on_event = lambda kind, data: events.append((kind, data))
         calls = {"n": 0}
@@ -1053,11 +1057,11 @@ class TestTimeoutToolOutcomes:
     async def test_unknown_state_is_first_class(self):
         """unknown 是一等实际状态：无观察通道时显式记 unknown，
         终态事件原样透出（不由声明推断）。"""
-        loop = _make_loop(timeout_s=0.05)
+        loop = _make_loop(timeout_s=0.2)
         events = []
         loop._on_event = lambda kind, data: events.append((kind, data))
         loop._begin_attempt_deadline()
-        time.sleep(0.08)
+        time.sleep(1.2)
         loop._timeout_tool_outcomes = [{
             "kind": "tool", "name": "opaque_probe",
             "declared": "isolatable", "state": "unknown",

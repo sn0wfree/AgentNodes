@@ -51,7 +51,7 @@ def interrupt_worker(payload, branch_state):
         from agentnodes.kernel.runtimes.graph_engine import GraphInterrupt
 
         raise GraphInterrupt("t2_stop", {"where": "child"})
-    time.sleep(0.05)
+    time.sleep(0.4)
     return {"v": payload}
 
 
