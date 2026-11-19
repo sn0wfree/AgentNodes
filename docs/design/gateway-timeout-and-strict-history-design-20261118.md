@@ -330,3 +330,57 @@ sync-only 客户端，验证 Windows 及项目支持的其他平台）与步骤 
 宣称全部工具可强中断；远端已接受的操作须服务端确认取消并禁止
 截止后提交——幂等不能代替取消）均未启动。两 xfail 闭合前**不得
 宣称超时完全等价**，删除前置保持未满足。
+
+### 9.7 进程隔离原型实测（2026-11-19，路线步骤 3 · 不接生产）
+
+原型：`scripts/prototypes/sync_isolation_probe.py`（ctypes kernel32 +
+JSON Lines IPC；生产零依赖、零改动）。五实验全部 PASS，数据如下。
+
+**E1 启动/关停**：worker 启动 ~8-9.4ms（§9.5 初探的 33.5ms 为含
+解释器冷启的口径，本口径为 spawn+Assign 后首个回包）；干净关停确认
+exited。
+
+**E2 上下文跨界清单**（ToolContext 16 字段静态定性 + 数据字段抽样
+验证）：
+
+| 类别 | 字段 | 结论 |
+|---|---|---|
+| 可序列化直传（已验证） | `workspace` / `session_id` / `strategy_dir` / `results_tsv` / `write_roots` / `read_roots` / `message_id` / `tool_call_id` | 数据字段跨界回传一致（E2） |
+| 回调转 IPC（原型已验证通道） | `emit_progress` / `emit_event` / `before_execute` | worker 事件行 → 父进程转发到真回调（E3 的请求/结果行同通道） |
+| 进程内对象（需代理或重开） | `permission_evaluator` + `permission_gateway` | **审批 IPC 往返已验证**（E3：ALLOW/DENY 两路，往返 ~0.1-0.2ms） |
+| 进程内对象（未验证） | `data_store`（worker 自持连接方案）/ `sandbox`（配置子集可传，对象本体不可） | **未验证**，列入迁移路径 |
+
+**E3 权限审批跨进程**：ASK 事件 → 父进程裁决点 → 回传 ALLOW/DENY →
+worker 继续/拒绝，两路均通；往返延迟 ~0.1-0.2ms（JSON Lines 管道）。
+
+**E4 子进程树终止**：worker → child → grandchild 两层后代先确认存活
+（`[true, true]`）→ 整树终止 → 逐 pid 确认全部消失。
+
+**E5 截止时间 + lease 序列**：lease 全程持有（终止前断言）→ 终止 →
+**确认退出 → 无迟到结果 → 之后才 release**——「确认退出后再释放
+lease」的序列成立。
+
+**隔离原语的关键环境发现**：本探针宿主（agent 沙箱）自身处于受限
+Job，`AssignProcessToJobObject` 被拒（ERROR_ACCESS_DENIED）→ 本主机
+验证的是**降级原语 `taskkill /PID <pid> /T /F` 树终止**（语义等价点：
+整树杀 + 确认先于释放）。生产 uvicorn 进程在普通 shell/服务下预期
+可用 **Job Object**（无树遍历竞态，KILL_ON_JOB_CLOSE 兜底）——部署时
+必须先验证 Job 分配可用，不可用则降级 taskkill 树终止。
+
+**支持/不支持类别**（对照 §9.3）：
+
+- ✅ 可隔离：只读工具、文件写入工具（终态后副作用已发生——不支持
+  撤销，仅支持终止执行）、子进程树工具、带权限请求工具；
+- ✅ 已验证：启动/终止/回收时延、审批往返、树终止、lease 序列；
+- ❌ 仍不支持：运行中同步工具的进程内中断（进程终止是唯一手段，
+  代价是丢失工具局部状态）；sync-only LLM 客户端线程（不在进程隔离
+  范围内，保持 xfail）；远端已接受操作的撤销（步骤 4 契约）；
+- ❌ 未验证：POSIX（`os.setsid`+`killpg` 设计未实现——本主机为
+  Windows）；`data_store`/`sandbox` 跨界；真实 BaseTool 工具（原型用
+  演示替身）；breakaway 子进程（`CREATE_BREAKAWAY_FROM_JOB`）行为。
+
+**迁移路径**（未批准，不实施）：`ToolContext` 增加 `isolated: bool`
+与 worker 工厂注入 → permission gateway 走 E3 的 IPC 桥 → deadline
+触发 E5 序列（终止/确认/丢弃迟到结果/后释放）→ 按 §9.3 的
+fail-closed 策略声明每工具的隔离类别 → R-014 方案 + 用户确认后分批
+实施。本原型不构成缺口①闭合：不接生产、未过出口网。
