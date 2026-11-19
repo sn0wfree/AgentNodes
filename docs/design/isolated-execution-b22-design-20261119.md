@@ -132,3 +132,68 @@ wall-clock 无劣化）；全量 `-n 12` 7869 passed / 106 skipped / 2 xfailed
 95,494 行）。
 
 下一子批 3c（临时工作区 WriteFileTool 试点）需单独批准。
+
+## 8. 子批 3c 方案（2026-11-19 · 先行）
+
+§3 验收行：试点「写文件成功 / 截止终止 / 迟到结果拒收 / lease 确认后
+释放；shell 不接入」。方案审查发现两个必须先补的 seam 缺口，否则
+S2/S4 无法诚实通过：
+
+- **缺口 A（截止即未知）**：现在 deadline 触发后 `_execute_on_channel`
+  直接返回 `failed`/`unknown` 并返回调用方，杀进程发生在 `finally` 的
+  `adapter.close()`——**杀而不确认**，actual_state 永远报不到 `stopped`
+  （4a 词表：确认终止才能记 stopped）。S4 的「确认后释放」无从成立。
+- **缺口 B（常驻毒帧）**：常驻 worker 超时后进程还在跑工具，下次
+  `call()` 的任务行会排在旧任务后面，旧任务的**迟到结果行会被新调用
+  冒名接收**——正是「迟到结果拒收」要防的错配。
+
+### 8.1 决策
+
+| # | 决策 | 内容 |
+|---|---|---|
+| D1 | 截止升级为「确认停止」 | transient `isolate_tool_call` 在 deadline 触发时先 `adapter.kill_and_confirm(handle, [根pid], 确认超时 5s)`：全部确认死 → `status="terminated"`、`actual_state="stopped"`；有 pid 未确认 → 保持 `failed`/`unknown`。`close()`（释放句柄）在确认**之后**。EOF 分支（worker 自然退出无结果行）语义不动——保持 `failed`/`unknown`（本批不改，是否升 stopped 留 B2.3 裁决） |
+| D2 | 常驻 worker 超时即毒化 | `IsolationWorker.call` 返回 `unknown`（deadline 或 EOF 无结果）→ worker 置 poisoned：先 kill_and_confirm（timed_out 路径同 D1 升级），然后关闭；后续 `call()` 抛 `RuntimeError`。**不引入每调用请求 id 关联协议**——那是 B2.3 的协议演进，本批用毒化达成拒收保证 |
+| D3 | 试点形态 = pytest | `tests/test_isolation_pilot.py` 四场景 S1-S4（Windows 真机跑 + POSIX skip-with-reason），与 3a「原型五实验 → 适配器测试」同构：可重复、进 gate，不落散装脚本 |
+| D4 | 确认口径（诚实边界） | kill_and_confirm 确认的是**根 pid**；树内其余成员由 Job Object 语义覆盖（`TerminateJobObject` 原子杀全树 + `KILL_ON_JOB_CLOSE` 兜底；taskkill `/T` 同为树杀）。handle 不追踪后代 pid——记录此口径，**不宣称全树逐 pid 确认** |
+
+### 8.2 场景 → 实现映射
+
+| 场景 | 驱动 | 断言 |
+|---|---|---|
+| S1 写文件成功 | 真实 `write` 工具 + tmp workspace（transient） | `completed`/`stopped`，文件落盘、绝对路径被写根拒绝（3b 已证，复跑一次作试点基线） |
+| S2 截止终止 | 新增 `probe_sleep` 探针（worker 脚本内，仅测试用）睡 8s，deadline 1.5s | `terminated`/`stopped`；wall-clock < 6s（4x 余量） |
+| S3 迟到结果拒收 | (a) S2 结果 payload 无工具输出；(b) 常驻 worker 超时后置 poisoned，后续 call 抛 RuntimeError | 迟到行结构性与协议性双重拒收 |
+| S4 lease 确认后释放 | stub lease 记录事件序包裹 S2 调用 | `acquire` < （`actual_state=="stopped"` 即确认完成）< `release` |
+
+### 8.3 不做
+
+shell 工具不接入；不改 BaseTool.ainvoke / AgentLoop / 生产路径；不做
+per-call id 协议演进（B2.3）；POSIX 不实现（禁启用不变）；EOF 无结果
+分支语义不动。
+
+## 9. 子批 3c 执行记录（2026-11-19 · 已实施）
+
+按 §8 方案实施（D1-D4 全部落地）：
+
+- `apps/chat/isolation.py`：`IsolationResult` 增 seam 内部驱动字段
+  `timed_out`；`_execute_on_channel` 区分 deadline 触发与 EOF 退出（
+  payload 消息分开）；新增 `_confirm_termination()`（杀 + 逐 pid 确认，
+  全部确认死 → `terminated`/`stopped`，未确认保持 `failed`/`unknown`；
+  确认口径按 D4：根 pid 确认，树由 Job Object 语义覆盖）。transient
+  路径先杀+确认再在 finally 释放句柄（确认先于释放）。`IsolationWorker`
+  增加 `_poisoned`：`unknown` 结束的调用 → 杀+确认（timed_out 路径升级
+  词表）→ 毒化关闭，后续调用抛 RuntimeError（检查顺序：毒化先于已关闭
+  ——毒化是更具体的死因；首版顺序反了，试点 S3b 当场抓住）。
+- `apps/chat/_isolation_worker.py`：新增 `probe_sleep` 探针（仅测试用，
+  驱动 deadline 与迟到结果场景）。
+- `tests/test_isolation_pilot.py`（新）5 用例：S1 真实 write 写临时
+  工作区成功；S2 截止终止（terminated/stopped，wall-clock < 6s）；
+  S3a 迟到结果不归因（payload 无工具输出）；S3b 常驻毒化后拒绝复用；
+  S4 lease 事件序 acquire < confirmed < release。Windows 真机跑。
+
+验证：隔离三文件 19 passed（试点 5 + 通道 10 + 适配器 4，11.1s）；
+全量 `-n 12` 7874 passed / 106 skipped / 2 xfailed / 0 failed（95.5s）；
+batch_gate ALL GREEN；数字同步（455 文件 / 95,562 行，L2 +68 行）。
+
+下一子批 3d（平台测试矩阵：Windows 必过 / POSIX skip-with-reason 进
+gate 记录）需单独批准。

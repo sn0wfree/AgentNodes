@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-"""隔离执行 adapter 平台 seam（4c B2.2 子批 3a · 不接生产）。
+"""隔离执行 adapter 平台 seam（4c B2.2 子批 3a-3c · 不接生产）。
 
 把「进程隔离执行一个同步工具」封装为一个可替换的 adapter：Windows 用
 Job Object / taskkill 树终止（从原型提炼），POSIX 尚未验证 → 禁启用
@@ -100,6 +100,9 @@ _WORKER_SCRIPT = str(Path(__file__).with_name("_isolation_worker.py"))
 #: EOF 哨兵——与「读超时返回 None」区分（worker 只是慢 ≠ worker 已退出）
 _EOF = object()
 
+#: deadline 触发后 kill_and_confirm 的逐 pid 确认等待上限（确认先于释放）
+_KILL_CONFIRM_TIMEOUT_S = 5.0
+
 
 @dataclass
 class IsolationResult:
@@ -109,6 +112,7 @@ class IsolationResult:
     payload: dict[str, Any] = field(default_factory=dict)
     actual_state: str = "unknown"    # ACTUAL_STATES 之一
     platform: str = ""              # 实际使用的 adapter 标识
+    timed_out: bool = False         # deadline 触发（调用方据此杀+确认，3c D1）
 
 
 class ApprovalProxy:
@@ -220,6 +224,7 @@ class IsolationWorker:
         self._channel.start_reader()
         self._timeout_s = timeout_s
         self._closed = False
+        self._poisoned = False
 
     @property
     def platform(self) -> str:
@@ -234,14 +239,36 @@ class IsolationWorker:
         approval: ApprovalProxy | None = None,
         timeout_s: float | None = None,
     ) -> IsolationResult:
-        """在常驻 worker 内执行一次工具调用。"""
+        """在常驻 worker 内执行一次工具调用。
+
+        调用以 ``unknown`` 结束（deadline 触发，或 worker 无结果行退出）
+        → worker **毒化**：杀+确认后关闭，后续调用抛 ``RuntimeError``。
+        理由（3c D2）：worker 可能仍在跑旧工具，旧任务的迟到结果行会
+        被新调用冒名接收——毒化是拒收保证的最小实现（per-call id 关联
+        协议留 B2.3 演进）。
+        """
+        if self._poisoned:
+            raise RuntimeError(
+                "IsolationWorker 已毒化（上次调用超时/无结果，工具可能仍在"
+                "运行，迟到结果不得被新调用冒名接收）——禁止复用"
+            )
         if self._closed:
             raise RuntimeError("IsolationWorker 已关闭")
-        return _execute_on_channel(
+        result = _execute_on_channel(
             self._channel, tool_name, args or {}, ctx or {},
             approval=approval, timeout_s=timeout_s or self._timeout_s,
             platform=self.platform,
         )
+        if result.actual_state == "unknown":
+            if result.timed_out:
+                _confirm_termination(
+                    self._adapter, self._handle, result,
+                    _KILL_CONFIRM_TIMEOUT_S,
+                )
+            self._poisoned = True
+            self._closed = True
+            self._adapter.close(self._handle)
+        return result
 
     def close(self) -> None:
         if self._closed:
@@ -270,6 +297,7 @@ def _execute_on_channel(
     deadline = time.monotonic() + timeout_s
     channel.send({"tool": tool_name, "args": args, "ctx": ctx})
 
+    timed_out = False
     while True:
         obj = channel.read(0.2)
         if obj is None:
@@ -277,7 +305,8 @@ def _execute_on_channel(
                 # worker 已退出且无结果行 → 下方 unknown 分支
                 break
             if time.monotonic() > deadline:
-                # 超过整体等待上限 → 未知状态（不无限等）
+                # 截止触发 → 调用方负责杀+确认（3c D1），不无限等
+                timed_out = True
                 break
             continue
         if obj.get("ev") == "permission_request":
@@ -324,7 +353,7 @@ def _execute_on_channel(
                 status="failed", payload=result,
                 actual_state="returned", platform=platform,
             )
-    # 未收到结果行：worker 异常退出 → 实际状态未知
+    # 未收到结果行：deadline 触发（待杀+确认）或 worker 异常退出 → 未知
     stderr_tail = ""
     err = channel._handle["proc"].stderr
     if err is not None:
@@ -335,11 +364,37 @@ def _execute_on_channel(
     return IsolationResult(
         status="failed",
         payload={
-            "error": "worker exited without result",
+            "error": (
+                "deadline exceeded, worker kill pending"
+                if timed_out else "worker exited without result"
+            ),
             "worker_stderr": stderr_tail[-500:],
         },
-        actual_state="unknown", platform=platform,
+        actual_state="unknown", platform=platform, timed_out=timed_out,
     )
+
+
+def _confirm_termination(
+    adapter: WorkerAdapter,
+    handle: dict[str, Any],
+    result: IsolationResult,
+    confirm_timeout_s: float,
+) -> None:
+    """deadline 路径（3c D1）：杀 worker 并逐 pid 确认；全部确认死 →
+    ``terminated``/``stopped``（4a 词表：确认终止才可记 stopped）；
+    有 pid 未确认 → 保持 ``failed``/``unknown``。
+
+    确认口径：确认的是**根 pid**；树内其余成员由 Job Object 语义覆盖
+    （TerminateJobObject 原子杀全树 + KILL_ON_JOB_CLOSE 兜底）。
+    """
+    confirmed = adapter.kill_and_confirm(
+        handle, [handle["proc"].pid], confirm_timeout_s,
+    )
+    if confirmed and all(
+        v in ("exited", "already-gone") for v in confirmed.values()
+    ):
+        result.status = "terminated"
+        result.actual_state = "stopped"
 
 
 def isolate_tool_call(
@@ -357,13 +412,15 @@ def isolate_tool_call(
     流程：spawn worker → 任务行（含可序列化 ctx）→ 处理事件行（审批请求
     转交 ``approval`` 代理裁决）→ 结果行 → 收尾。返回的实际状态与 4a
     词表一致：正常完成 ``stopped``；审批拒绝/工具级失败 ``returned``（有
-    明确结果但非成功）；超时/失败 ``unknown``。
+    明确结果但非成功）；deadline 触发 → 杀 worker 并逐 pid 确认，确认死
+    → ``terminated``/``stopped``，未确认 → ``unknown``；worker 无结果行
+    退出（EOF）→ ``unknown``。
 
     平台未验证（POSIX）→ adapter 抛 UnsupportedPlatform（显式拒绝，
     不静默降级到 in-process 执行）。
 
     ``worker`` 传入常驻 worker 可复用进程（省 ~500ms/次的 spawn 成本）；
-    不传则临时建一个并在返回前关闭。
+    不传则临时建一个并在返回前关闭（deadline 杀+确认发生在释放之前）。
     """
     if worker is not None:
         return worker.call(
@@ -380,9 +437,13 @@ def isolate_tool_call(
     channel = IsolationChannel(handle)
     channel.start_reader()
     try:
-        return _execute_on_channel(
+        result = _execute_on_channel(
             channel, tool_name, args or {}, ctx or {},
             approval=approval, timeout_s=timeout_s, platform="isolated",
         )
+        if result.timed_out:
+            # 截止终止：先杀+确认，再在 finally 释放句柄（确认先于释放）
+            _confirm_termination(adapter, handle, result, _KILL_CONFIRM_TIMEOUT_S)
+        return result
     finally:
         adapter.close(handle)

@@ -25,6 +25,7 @@ from __future__ import annotations
 
 import json
 import sys
+import time
 
 #: 协议通道（原始 stdout）；worker 启动后 sys.stdout 改指 stderr
 _PROTOCOL_OUT = None
@@ -140,6 +141,12 @@ def _worker_loop() -> int:
                 _emit({"result": {"status": "ok", "approved": True}})
             else:
                 _emit({"result": {"status": "denied", "approved": False}})
+            continue
+        if tool == "probe_sleep":
+            # 仅测试用探针（3c 试点 S2/S3/S4）：阻塞 N 秒后回结果——
+            # 驱动 deadline 触发与迟到结果场景。
+            time.sleep(float(args.get("seconds", 1.0)))
+            _emit({"result": {"status": "ok", "slept": args.get("seconds")}})
             continue
         _emit({"result": _run_tool(tool, args, ctx)})
     return 0
