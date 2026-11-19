@@ -1,0 +1,333 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>规则基因组 · 行为决定与利用流程图（生物 ⇄ 系统对映版）</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC',
+                 'Hiragino Sans GB', 'Microsoft YaHei', sans-serif;
+    background: #0a0e1a; color: #e2e8f0; min-height: 100vh;
+    padding: 40px 22px 70px;
+    background-image:
+      radial-gradient(ellipse at 10% 0%, rgba(16,185,129,0.07) 0%, transparent 48%),
+      radial-gradient(ellipse at 60% 10%, rgba(59,130,246,0.06) 0%, transparent 45%),
+      radial-gradient(ellipse at 90% 90%, rgba(245,158,11,0.06) 0%, transparent 50%);
+  }
+  .page { max-width: 1400px; margin: 0 auto; }
+  .header { text-align: center; margin-bottom: 30px; }
+  .page-title {
+    font-size: 32px; font-weight: 800; letter-spacing: 3px;
+    background: linear-gradient(90deg, #34d399 0%, #60a5fa 50%, #fbbf24 100%);
+    -webkit-background-clip: text; background-clip: text;
+    -webkit-text-fill-color: transparent;
+    margin-bottom: 8px;
+  }
+  .page-subtitle { color: #64748b; font-size: 13px; letter-spacing: 1.2px; margin-bottom: 12px; }
+  .version-badge {
+    display: inline-block; font-size: 11px; font-weight: 700;
+    padding: 4px 16px; border-radius: 100px;
+    background: rgba(234,179,8,0.1); border: 1px solid rgba(234,179,8,0.35);
+    color: #facc15; letter-spacing: 0.8px;
+  }
+  .canvas-card {
+    background: rgba(15,23,42,0.6); border: 1px solid rgba(148,163,184,0.15);
+    border-radius: 18px; padding: 10px; margin-bottom: 30px;
+  }
+  svg { display: block; width: 100%; height: auto; }
+  .legend-grid {
+    display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+    gap: 14px; margin-top: 8px;
+  }
+  .legend-card {
+    background: rgba(15,23,42,0.6); border: 1px solid rgba(148,163,184,0.15);
+    border-radius: 14px; padding: 16px 18px;
+  }
+  .legend-card h3 { font-size: 13px; letter-spacing: 1px; color: #cbd5e1; margin-bottom: 12px; }
+  .lg-row { display: flex; align-items: center; gap: 10px; font-size: 12px; color: #94a3b8; margin: 7px 0; }
+  .swatch { width: 34px; height: 0; border-top: 2.5px solid; flex: none; }
+  .bio-table { width: 100%; border-collapse: collapse; font-size: 12px; margin-top: 8px; }
+  .bio-table td { padding: 6px 8px; border-top: 1px solid rgba(148,163,184,0.12); color: #94a3b8; }
+  .bio-table td:first-child { color: #6ee7b7; white-space: nowrap; font-weight: 600; }
+  .bio-table td:nth-child(2) { color: #e2e8f0; }
+  .eval-note {
+    margin-top: 20px; background: rgba(15,23,42,0.6); border: 1px dashed rgba(244,63,94,0.4);
+    border-radius: 14px; padding: 18px 22px; font-size: 13px; color: #cbd5e1; line-height: 1.9;
+  }
+  .eval-note b { color: #fda4af; }
+  code { font-family: 'Cascadia Code', Consolas, monospace; font-size: 11.5px; color: #7dd3fc; }
+</style>
+</head>
+<body>
+<div class="page">
+  <div class="header">
+    <div class="page-title">行为决定与利用 · 流程示意图</div>
+    <div class="page-subtitle">基因如何决定性状 ⇄ 规则如何决定行为：同一条流程，两个实现　｜　配套 unified-framework-design-20261119.md（UPGF）</div>
+    <div class="version-badge">流程机制图 · 2026-11-19 · 未决点 ⚠/★ 照常标注</div>
+  </div>
+
+  <div class="canvas-card">
+  <svg viewBox="0 0 1340 950" xmlns="http://www.w3.org/2000/svg" font-family="'Segoe UI','PingFang SC','Microsoft YaHei',sans-serif">
+    <defs>
+      <marker id="arr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto">
+        <path d="M0,0 L10,5 L0,10 z" fill="#64748b"/>
+      </marker>
+      <marker id="arrG" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto">
+        <path d="M0,0 L10,5 L0,10 z" fill="#34d399"/>
+      </marker>
+      <marker id="arrA" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto">
+        <path d="M0,0 L10,5 L0,10 z" fill="#fbbf24"/>
+      </marker>
+      <marker id="arrR" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto">
+        <path d="M0,0 L10,5 L0,10 z" fill="#f43f5e"/>
+      </marker>
+    </defs>
+
+    <!-- ════════ A · 生物学原型 ════════ -->
+    <text x="40" y="40" font-size="15" font-weight="800" fill="#6ee7b7" letter-spacing="1.5">A · 生物学原型：基因 → 性状 → 利用</text>
+
+    <!-- 利用 chips -->
+    <rect x="240" y="58" rx="8" width="120" height="30" fill="rgba(251,191,36,0.06)" stroke="rgba(251,191,36,0.5)" stroke-dasharray="4 3"/>
+    <text x="300" y="77" text-anchor="middle" font-size="11" font-weight="700" fill="#fbbf24">表观修饰</text>
+    <line x1="300" y1="88" x2="300" y2="96" stroke="#fbbf24" stroke-width="1.6" stroke-dasharray="3 3" marker-end="url(#arrA)"/>
+
+    <rect x="600" y="58" rx="8" width="120" height="30" fill="rgba(45,212,191,0.06)" stroke="rgba(45,212,191,0.5)" stroke-dasharray="4 3"/>
+    <text x="660" y="77" text-anchor="middle" font-size="11" font-weight="700" fill="#2dd4bf">基因敲除</text>
+    <line x1="660" y1="88" x2="660" y2="96" stroke="#2dd4bf" stroke-width="1.6" stroke-dasharray="3 3" marker-end="url(#arrA)"/>
+
+    <rect x="960" y="58" rx="8" width="120" height="30" fill="rgba(45,212,191,0.06)" stroke="rgba(45,212,191,0.5)" stroke-dasharray="4 3"/>
+    <text x="1020" y="77" text-anchor="middle" font-size="11" font-weight="700" fill="#2dd4bf">人工选育</text>
+    <line x1="1020" y1="88" x2="1020" y2="96" stroke="#2dd4bf" stroke-width="1.6" stroke-dasharray="3 3" marker-end="url(#arrA)"/>
+
+    <!-- bio nodes -->
+    <rect x="40" y="98" rx="10" width="180" height="85" fill="rgba(30,41,59,0.85)" stroke="rgba(52,211,153,0.55)" stroke-width="1.4"/>
+    <text x="52" y="120" font-size="12.5" font-weight="700" fill="#e2e8f0">DNA · 基因组</text>
+    <text x="52" y="140" font-size="10.5" fill="#94a3b8">遗传物质 · 序列稳定</text>
+    <text x="52" y="157" font-size="10.5" fill="#94a3b8">改变它 = 改变所有后代</text>
+
+    <rect x="240" y="98" rx="10" width="180" height="85" fill="rgba(30,41,59,0.85)" stroke="rgba(52,211,153,0.55)" stroke-width="1.4"/>
+    <text x="252" y="120" font-size="12.5" font-weight="700" fill="#e2e8f0">转录（受调控）</text>
+    <text x="252" y="140" font-size="10.5" fill="#94a3b8">启动子 / 转录因子决定</text>
+    <text x="252" y="157" font-size="10.5" fill="#94a3b8">何时 · 多强地表达</text>
+
+    <rect x="440" y="98" rx="10" width="140" height="85" fill="rgba(30,41,59,0.85)" stroke="rgba(52,211,153,0.55)" stroke-width="1.4"/>
+    <text x="452" y="120" font-size="12.5" font-weight="700" fill="#e2e8f0">mRNA 转录本</text>
+    <text x="452" y="140" font-size="10.5" fill="#94a3b8">表达产物 · 一次性</text>
+    <text x="452" y="157" font-size="10.5" fill="#94a3b8">会降解</text>
+
+    <rect x="600" y="98" rx="10" width="160" height="85" fill="rgba(30,41,59,0.85)" stroke="rgba(52,211,153,0.55)" stroke-width="1.4"/>
+    <text x="612" y="120" font-size="12.5" font-weight="700" fill="#e2e8f0">翻译（核糖体）</text>
+    <text x="612" y="140" font-size="10.5" fill="#94a3b8">密码子表 · 普适</text>
+    <text x="612" y="157" font-size="10.5" fill="#94a3b8">机械解码</text>
+
+    <rect x="780" y="98" rx="10" width="160" height="85" fill="rgba(30,41,59,0.85)" stroke="rgba(52,211,153,0.55)" stroke-width="1.4"/>
+    <text x="792" y="120" font-size="12.5" font-weight="700" fill="#e2e8f0">性状（蛋白·表型）</text>
+    <text x="792" y="140" font-size="10.5" fill="#94a3b8">可观测</text>
+    <text x="792" y="157" font-size="10.5" fill="#94a3b8">选择作用于它</text>
+
+    <rect x="960" y="98" rx="10" width="170" height="85" fill="rgba(30,41,59,0.85)" stroke="rgba(52,211,153,0.55)" stroke-width="1.4"/>
+    <text x="972" y="120" font-size="12.5" font-weight="700" fill="#e2e8f0">选择（适应度）</text>
+    <text x="972" y="140" font-size="10.5" fill="#94a3b8">环境裁决</text>
+    <text x="972" y="157" font-size="10.5" fill="#94a3b8">留下 · 淘汰</text>
+
+    <!-- bio flow arrows -->
+    <line x1="220" y1="140" x2="238" y2="140" stroke="#64748b" stroke-width="2" marker-end="url(#arr)"/>
+    <line x1="420" y1="140" x2="438" y2="140" stroke="#64748b" stroke-width="2" marker-end="url(#arr)"/>
+    <line x1="580" y1="140" x2="598" y2="140" stroke="#64748b" stroke-width="2" marker-end="url(#arr)"/>
+    <line x1="760" y1="140" x2="778" y2="140" stroke="#64748b" stroke-width="2" marker-end="url(#arr)"/>
+    <line x1="940" y1="140" x2="958" y2="140" stroke="#64748b" stroke-width="2" marker-end="url(#arr)"/>
+
+    <!-- bio return (Darwin) -->
+    <path d="M1045,183 L1045,215 L130,215 L130,185" fill="none" stroke="#34d399" stroke-width="2.2" marker-end="url(#arrG)"/>
+    <text x="400" y="209" font-size="11.5" font-weight="700" fill="#34d399">遗传：变异 / 重组 → 进入下一代（达尔文回路）</text>
+    <text x="400" y="234" font-size="10.5" fill="#fb7185">获得性遗传 ✗（Weismann 屏障：体细胞经验不写入生殖系）——AI 侧此结论反转，见下方琥珀线</text>
+
+    <!-- correspondence note -->
+    <text x="670" y="272" text-anchor="middle" font-size="11" fill="#64748b">同构映射 · 逐级对应：DNA→基因库 ／ 转录调控→装配 ／ 转录本→prompt ／ 翻译→模型 ／ 性状→行为 ／ 适应度选择→验证闸（详表见图例）</text>
+
+    <!-- HGT chip -->
+    <rect x="735" y="288" rx="8" width="210" height="28" fill="rgba(244,63,94,0.05)" stroke="rgba(244,63,94,0.45)" stroke-dasharray="5 4"/>
+    <text x="840" y="306" text-anchor="middle" font-size="10.5" font-weight="700" fill="#fb7185">⚠ HGT：注入 = 外源序列劫持转录</text>
+    <line x1="840" y1="316" x2="840" y2="343" stroke="#f43f5e" stroke-width="1.8" stroke-dasharray="5 4" marker-end="url(#arrR)"/>
+
+    <!-- ════════ B · 系统机制 ════════ -->
+    <text x="40" y="332" font-size="15" font-weight="800" fill="#93c5fd" letter-spacing="1.5">B · 系统机制：定义行为 → 观测 → 归因 → 改变行为</text>
+
+    <!-- row A -->
+    <rect x="40" y="345" rx="10" width="200" height="115" fill="rgba(30,41,59,0.85)" stroke="rgba(96,165,250,0.55)" stroke-width="1.4"/>
+    <text x="52" y="367" font-size="12.5" font-weight="700" fill="#e2e8f0">① 基因库 · 基因组</text>
+    <text x="52" y="387" font-size="10.5" fill="#94a3b8">AGENTS.md L0 · rules R-xxx</text>
+    <text x="52" y="404" font-size="10.5" fill="#94a3b8">Tier0 冻结 / Tier1 可提案</text>
+    <text x="52" y="421" font-size="10.5" fill="#94a3b8">版本链 + 游标</text>
+    <text x="52" y="438" font-size="10.5" fill="#7dd3fc" font-family="Consolas,monospace">registry_sha256 · locus 表</text>
+
+    <rect x="270" y="345" rx="10" width="220" height="115" fill="rgba(30,41,59,0.85)" stroke="rgba(96,165,250,0.55)" stroke-width="1.4"/>
+    <text x="282" y="367" font-size="12.5" font-weight="700" fill="#e2e8f0">② 选择性转录 · 装配</text>
+    <text x="282" y="387" font-size="10.5" fill="#94a3b8">task_signature → prompt 版 / skill 子集</text>
+    <text x="282" y="404" font-size="10.5" fill="#94a3b8">只追加 · 装配链可查</text>
+    <text x="282" y="421" font-size="10.5" fill="#fda4af">★B6 规则是否也按任务选子集？</text>
+    <text x="282" y="438" font-size="10.5" fill="#94a3b8">（= 启动子：决定表达哪些基因）</text>
+
+    <rect x="520" y="345" rx="10" width="190" height="115" fill="rgba(30,41,59,0.85)" stroke="rgba(96,165,250,0.55)" stroke-width="1.4"/>
+    <text x="532" y="367" font-size="12.5" font-weight="700" fill="#e2e8f0">③ 转录本 · prompt</text>
+    <text x="532" y="387" font-size="10.5" fill="#94a3b8">装配产物 · 会话内一次性</text>
+    <text x="532" y="404" font-size="10.5" fill="#94a3b8">compaction 后会出窗 ⚠B7</text>
+    <text x="532" y="421" font-size="10.5" fill="#94a3b8">（= mRNA：用完即弃）</text>
+
+    <rect x="740" y="345" rx="10" width="190" height="115" fill="rgba(30,41,59,0.85)" stroke="rgba(167,139,250,0.55)" stroke-width="1.4"/>
+    <text x="752" y="367" font-size="12.5" font-weight="700" fill="#e2e8f0">④ 翻译器 · 模型黑盒</text>
+    <text x="752" y="387" font-size="10.5" fill="#94a3b8">基因 → 行为 映射不可读</text>
+    <text x="752" y="404" font-size="10.5" fill="#94a3b8">无普适「密码子表」</text>
+    <text x="752" y="421" font-size="10.5" fill="#94a3b8">（= 核糖体：但解码表</text>
+    <text x="752" y="438" font-size="10.5" fill="#94a3b8">　 每家不同 → schema 待协商）</text>
+
+    <rect x="960" y="345" rx="10" width="220" height="115" fill="rgba(30,41,59,0.85)" stroke="rgba(251,191,36,0.55)" stroke-width="1.4"/>
+    <text x="972" y="367" font-size="12.5" font-weight="700" fill="#e2e8f0">⑤ 性状 · 行为</text>
+    <text x="972" y="387" font-size="10.5" fill="#94a3b8">会话动作 / 产出 / commit</text>
+    <text x="972" y="404" font-size="10.5" fill="#94a3b8">eval 分数 = 适应度代理</text>
+    <text x="972" y="421" font-size="10.5" fill="#94a3b8">（代理可被猎取 → 隔离回放）</text>
+
+    <line x1="240" y1="400" x2="268" y2="400" stroke="#64748b" stroke-width="2" marker-end="url(#arr)"/>
+    <line x1="490" y1="400" x2="518" y2="400" stroke="#64748b" stroke-width="2" marker-end="url(#arr)"/>
+    <line x1="710" y1="400" x2="738" y2="400" stroke="#64748b" stroke-width="2" marker-end="url(#arr)"/>
+    <line x1="930" y1="400" x2="958" y2="400" stroke="#64748b" stroke-width="2" marker-end="url(#arr)"/>
+
+    <!-- barrier -->
+    <line x1="30" y1="482" x2="1310" y2="482" stroke="#f43f5e" stroke-width="1.6" stroke-dasharray="8 5" opacity="0.7"/>
+    <rect x="430" y="468" rx="8" width="480" height="28" fill="#0a0e1a" stroke="rgba(244,63,94,0.5)"/>
+    <text x="670" y="486" text-anchor="middle" font-size="11.5" font-weight="800" fill="#fb7185">理念七屏障 · 检查信号须经被检方不可控通道（agent 无观测写入口）</text>
+
+    <!-- ⑤ -> ⑥ -->
+    <path d="M1020,460 L1020,508 L140,508 L140,513" fill="none" stroke="#64748b" stroke-width="2" marker-end="url(#arr)"/>
+    <text x="1035" y="502" font-size="10.5" fill="#64748b">行为被观测（同 iter / call_id 绑定）</text>
+
+    <!-- row B -->
+    <rect x="40" y="515" rx="10" width="200" height="115" fill="rgba(30,41,59,0.85)" stroke="rgba(56,189,248,0.5)" stroke-width="1.4"/>
+    <text x="52" y="537" font-size="12.5" font-weight="700" fill="#e2e8f0">⑥ 观测 · 表型记录</text>
+    <text x="52" y="557" font-size="10.5" fill="#94a3b8" font-family="Consolas,monospace">trace: rule_check(iter/call_id)</text>
+    <text x="52" y="574" font-size="10.5" fill="#94a3b8">scorecard 指纹 ⊕ 基因组版本</text>
+    <text x="52" y="591" font-size="10.5" fill="#94a3b8">观测者：kernel / 进程外 / 人工</text>
+    <text x="52" y="608" font-size="10.5" fill="#fda4af">uncertain = 一等状态</text>
+
+    <rect x="270" y="515" rx="10" width="220" height="115" fill="rgba(30,41,59,0.85)" stroke="rgba(56,189,248,0.5)" stroke-width="1.4"/>
+    <text x="282" y="537" font-size="12.5" font-weight="700" fill="#e2e8f0">⑦ 归因 · 只读 join</text>
+    <text x="282" y="557" font-size="10.5" fill="#94a3b8">表达谱：表达率 / 遵守率</text>
+    <text x="282" y="574" font-size="10.5" fill="#94a3b8">敲除：Δeffect + 本底对照</text>
+    <text x="282" y="591" font-size="10.5" fill="#94a3b8">关联键：rule × eval（#13）</text>
+    <text x="282" y="608" font-size="10.5" fill="#94a3b8">零新存储 · 零新增 ID</text>
+
+    <rect x="520" y="515" rx="10" width="190" height="115" fill="rgba(30,41,59,0.85)" stroke="rgba(52,211,153,0.55)" stroke-width="1.4"/>
+    <text x="532" y="537" font-size="12.5" font-weight="700" fill="#e2e8f0">⑧ 变异 · 提案</text>
+    <text x="532" y="557" font-size="10.5" fill="#94a3b8" font-family="Consolas,monospace">GenomeProposal(change)</text>
+    <text x="532" y="574" font-size="10.5" fill="#94a3b8">证据 URI：rule / trace /</text>
+    <text x="532" y="591" font-size="10.5" fill="#94a3b8" font-family="Consolas,monospace">eval / ext:</text>
+    <text x="532" y="608" font-size="10.5" fill="#94a3b8">含 W 引进：保守位点缺口</text>
+
+    <rect x="740" y="515" rx="10" width="190" height="115" fill="rgba(244,63,94,0.04)" stroke="rgba(244,63,94,0.55)" stroke-width="1.4"/>
+    <text x="752" y="537" font-size="12.5" font-weight="700" fill="#fb7185">⑨ 选择 · 闸</text>
+    <text x="752" y="557" font-size="10.5" fill="#94a3b8">validation_gate · 隔离 slot</text>
+    <text x="752" y="574" font-size="10.5" fill="#94a3b8">只读 holdout · Tier0 硬拒</text>
+    <text x="752" y="591" font-size="10.5" fill="#94a3b8">过闸才 activate</text>
+    <text x="752" y="608" font-size="10.5" fill="#94a3b8">（= Weismann 屏障）</text>
+
+    <rect x="960" y="515" rx="10" width="220" height="115" fill="rgba(167,139,250,0.05)" stroke="rgba(167,139,250,0.5)" stroke-width="1.4" stroke-dasharray="6 4"/>
+    <text x="972" y="537" font-size="12.5" font-weight="700" fill="#c4b5fd">业界语料 · W 域</text>
+    <text x="972" y="557" font-size="10.5" fill="#94a3b8">只观察（Rung 1 · 禁因果）</text>
+    <text x="972" y="574" font-size="10.5" fill="#94a3b8">38 文件 / 15 厂商 / 5526 条款</text>
+    <text x="972" y="591" font-size="10.5" fill="#94a3b8">注释层 sidecar（S→W 无写）</text>
+    <text x="972" y="608" font-size="10.5" fill="#94a3b8">语料更新 → 注释须重编码</text>
+
+    <line x1="240" y1="572" x2="268" y2="572" stroke="#64748b" stroke-width="2" marker-end="url(#arr)"/>
+    <line x1="490" y1="572" x2="518" y2="572" stroke="#64748b" stroke-width="2" marker-end="url(#arr)"/>
+    <line x1="710" y1="572" x2="738" y2="572" stroke="#64748b" stroke-width="2" marker-end="url(#arr)"/>
+    <!-- ⑨ 与 W 域之间刻意无箭头：S→W 无写路径（U5） -->
+
+    <!-- W -> ⑧ -->
+    <path d="M1070,630 L1070,652 L615,652 L615,632" fill="none" stroke="#a78bfa" stroke-width="2" marker-end="url(#arr)"/>
+    <text x="640" y="647" font-size="10.5" fill="#c4b5fd">ext: 证据包（nanopub-lite）· 只能进提案闸</text>
+
+    <!-- Darwin loop ⑨ -> ① -->
+    <path d="M835,630 L835,695 L24,695 L24,405 L38,405" fill="none" stroke="#34d399" stroke-width="2.4" marker-end="url(#arrG)"/>
+    <text x="180" y="688" font-size="11.5" font-weight="700" fill="#34d399">遗传：activate → 新 version_id（游标前移 · 可回滚）—— 达尔文回路闭合</text>
+
+    <!-- Lamarck bypass ⑤ -> ① -->
+    <path d="M1180,420 L1210,420 L1210,730 L14,730 L14,432 L38,432" fill="none" stroke="#fbbf24" stroke-width="2" stroke-dasharray="6 4" marker-end="url(#arrA)"/>
+    <text x="180" y="724" font-size="11.5" font-weight="700" fill="#fbbf24">拉马克旁路：经验 → skill 沉淀 / lesson 升 L1（快 · 必须带来源 trace · 不过闸）</text>
+
+    <!-- ════════ C · 如何利用 ════════ -->
+    <text x="40" y="760" font-size="15" font-weight="800" fill="#2dd4bf" letter-spacing="1.5">C · 如何利用：三种性状操控（= 归因结论的三种用途）</text>
+
+    <rect x="40" y="775" rx="12" width="400" height="150" fill="rgba(15,23,42,0.6)" stroke="rgba(45,212,191,0.5)" stroke-width="1.5"/>
+    <text x="56" y="800" font-size="13" font-weight="800" fill="#2dd4bf">卡1 · 定位 —— 基因敲除（因果 · Rung 2）</text>
+    <text x="56" y="824" font-size="11" fill="#94a3b8">变体 registry（删 R-x · sha256 自证身份）</text>
+    <text x="56" y="843" font-size="11" fill="#94a3b8">同触发场景 × {原版, 敲除版} 对照跑</text>
+    <text x="56" y="862" font-size="11" fill="#94a3b8">→ Δeffect + 本底对照（敲了没变化 = 权重先验）</text>
+    <text x="56" y="886" font-size="11" font-weight="700" fill="#e2e8f0">产出：必需条款集（删了会坏）· 退役名单</text>
+    <text x="56" y="908" font-size="10.5" fill="#fda4af">⚠D13 单敲无表型 ≠ 无用（功能冗余 / 合成致死）</text>
+
+    <rect x="470" y="775" rx="12" width="400" height="150" fill="rgba(15,23,42,0.6)" stroke="rgba(52,211,153,0.5)" stroke-width="1.5"/>
+    <text x="486" y="800" font-size="13" font-weight="800" fill="#6ee7b7">卡2 · 选优 —— 人工选育（因果 · Rung 2）</text>
+    <text x="486" y="824" font-size="11" fill="#94a3b8">提案 → 隔离 slot + 只读 holdout 验证</text>
+    <text x="486" y="843" font-size="11" fill="#94a3b8">变好才 activate（达尔文选择）</text>
+    <text x="486" y="862" font-size="11" fill="#94a3b8">退化 → 游标回滚 · 不伤历史</text>
+    <text x="486" y="886" font-size="11" font-weight="700" fill="#e2e8f0">产出：只让变好的基因进入下一代（会话）</text>
+    <text x="486" y="908" font-size="10.5" fill="#fda4af">奖励黑客防线：holdout 包外持有（理念七）</text>
+
+    <rect x="900" y="775" rx="12" width="400" height="150" fill="rgba(15,23,42,0.6)" stroke="rgba(167,139,250,0.5)" stroke-width="1.5"/>
+    <text x="916" y="800" font-size="13" font-weight="800" fill="#c4b5fd">卡3 · 引进 —— 杂交导入性状（关联 · Rung 1）</text>
+    <text x="916" y="824" font-size="11" fill="#94a3b8">W 观察：保守位点（15/15 厂商都有）· 空白位点</text>
+    <text x="916" y="843" font-size="11" fill="#94a3b8">结论止于「表达层面相关」（U1 · 禁因果）</text>
+    <text x="916" y="862" font-size="11" fill="#94a3b8">nanopub-lite 证据包（ext:）→ 提案闸</text>
+    <text x="916" y="886" font-size="11" font-weight="700" fill="#e2e8f0">产出：业界都有 · 自仓缺的底线条款补齐</text>
+    <text x="916" y="908" font-size="10.5" fill="#fda4af">照搬防线：判断与改写永远发生在 S 域提案流程内</text>
+  </svg>
+  </div>
+
+  <div class="legend-grid">
+    <div class="legend-card">
+      <h3>线型图例</h3>
+      <div class="lg-row"><span class="swatch" style="border-color:#64748b"></span>定义链 / 观测链（灰 · 主数据流）</div>
+      <div class="lg-row"><span class="swatch" style="border-color:#34d399"></span>达尔文回路：⑨闸 → activate → 新版本（绿）</div>
+      <div class="lg-row"><span class="swatch" style="border-color:#fbbf24; border-top-style:dashed"></span>拉马克旁路：经验直接写回（琥珀虚线 · AI 侧常态，bio 侧被否决）</div>
+      <div class="lg-row"><span class="swatch" style="border-color:#a78bfa"></span>W→S 引进回路：外源观察 → 提案闸（紫）</div>
+      <div class="lg-row"><span class="swatch" style="border-color:#f43f5e; border-top-style:dashed"></span>屏障 / HGT 威胁（玫红虚线）</div>
+      <div class="lg-row"><span class="swatch" style="border-color:#2dd4bf; border-top-style:dashed"></span>利用手段（青虚线 · 敲除 / 选育）</div>
+    </div>
+    <div class="legend-card">
+      <h3>生物 ⇄ 系统对应表</h3>
+      <table class="bio-table">
+        <tr><td>DNA 基因组</td><td>① 基因库（AGENTS.md / rules + 版本链）</td></tr>
+        <tr><td>转录调控（启动子）</td><td>② harness 装配（task_signature 决定表达哪些基因）★B6</td></tr>
+        <tr><td>mRNA 转录本</td><td>③ runtime prompt（用完即弃 · compaction 会出窗）</td></tr>
+        <tr><td>核糖体翻译</td><td>④ 模型（差异：无普适密码子表 → schema 需协商）</td></tr>
+        <tr><td>蛋白 / 性状</td><td>⑤ 行为（eval 分数 = 适应度代理）</td></tr>
+        <tr><td>自然选择</td><td>⑨ validation_gate + holdout（Weismann 屏障）</td></tr>
+        <tr><td>基因敲除</td><td>卡1 变体 registry 消融 → Δeffect</td></tr>
+        <tr><td>人工选育</td><td>卡2 提案 → 过闸选优</td></tr>
+        <tr><td>杂交导入性状</td><td>卡3 业界保守位点引进（W→S 回路）</td></tr>
+        <tr><td>表观修饰</td><td>会话上下文 / RAG（不改序列改表达 · session 级不隔代）</td></tr>
+        <tr><td>获得性遗传 ✗</td><td>bio 否决 ⇄ AI 反转：拉马克是常态 → 靠闸 + 来源 trace 驯化</td></tr>
+      </table>
+    </div>
+    <div class="legend-card">
+      <h3>流程口诀</h3>
+      <div class="lg-row" style="font-size:12.5px; color:#e2e8f0; line-height:1.8; display:block;">
+        <b style="color:#93c5fd">定义行为</b>：基因库 → 按 task_signature 转录 → 装配 prompt → 模型翻译成行为。<br>
+        <b style="color:#7dd3fc">看见行为</b>：trace 同迭代绑定 + eval 指纹 ⊕ 基因组版本。<br>
+        <b style="color:#6ee7b7">改变行为</b>：归因找到承重基因 → 变异（提案）→ 选择（闸）→ 遗传（新版本）；快路径走拉马克沉淀（带来源 trace）。<br>
+        <b style="color:#c4b5fd">借外部</b>：业界保守位点观察 → 证据包 → 只能从提案闸进来。
+      </div>
+    </div>
+  </div>
+
+  <div class="eval-note">
+    <b>评估锚点</b>（看图自问三问）：
+    ① <b>定义链的选择性</b>——② 若不做「按 task_signature 选规则子集」（★B6），①→③ 就是全文注入：基因组 = 转录本，⑦ 归因的「表达谱」将无信息量。这条决定整张图左半边的价值。
+    ② <b>三卡的证据强度不同</b>——卡1/卡2 是因果（Rung 2，可写 Δeffect），卡3 是关联（Rung 1，止于「表达层面相关」）；任何对外报告是否把三者的结论强度分开标注？
+    ③ <b>两条回路的配比</b>——琥珀拉马克快但污染风险高（来源 trace 是唯一防线），绿达尔文慢但可信（过闸才遗传）；skill 沉淀量与闸通过率的比例是否有人盯（对接 F21 审查节奏）？
+  </div>
+</div>
+</body>
+</html>
