@@ -79,3 +79,24 @@ payload（工具返回或错误）、actual_state（`stopped` / `returned` / `un
 2. POSIX adapter 本阶段只做「禁启用保护」是否接受（vs 本阶段就实现）？
 3. 试点工具确认 `WriteFileTool`（临时工作区），shell 暂缓？
 4. 3a-3d 逐子批独立提交、3d 后单独批准 B2.3（上下文跨界）？（零代码改动，仅方案；批准后按 R-014 子批实施。）
+
+## 6. 子批 3a 执行记录（2026-11-19 · 已实施）
+
+按推荐答案推进（单入口 / POSIX 禁启用 / WriteFile 试点 / 逐批）：
+
+- `apps/chat/isolation.py`（新）：平台 seam——`WorkerAdapter` Protocol
+  （supported/spawn/kill_and_confirm/close）+ `_PosixAdapter`（supported
+  False、spawn 抛 `UnsupportedPlatform`）+ `build_worker_adapter()` 按
+  `sys.platform` 选 adapter。**顶层不 import ctypes.WinDLL** → POSIX 可安全导入。
+- `apps/chat/_isolation_win32.py`（新）：Windows 实现，从原型提炼
+  Job Object + taskkill 两级降级、逐 pid 确认退出。延迟 import（仅 win32）。
+- `tests/test_isolation_adapter.py` 4 用例：Protocol 合规、POSIX 禁启用、
+  E1 spawn/close、E5 kill 确认退出（Windows 真机跑）。E2 上下文/E3 审批
+  留 3b IPC 层。
+- **零生产接线**——不改 BaseTool.ainvoke、不接 AgentLoop/GraphEngine。
+
+验证：适配器 4 passed（Windows E1/E5 实跑）；层方向违规 0；全量
+`-n 12` 7859 passed / 106 skipped / 2 xfailed / 0 failed；batch_gate
+ALL GREEN；数字同步（454 文件 / 95,024 行，L2 +2 文件 = 两个 adapter）。
+
+下一子批 3b（IPC + 审批回调 + actual_state 对齐 4a）需单独批准。
