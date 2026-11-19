@@ -823,12 +823,14 @@ def _install_chat_event_bridge(
     出现重复文本），且 sink 链随请求数线性增长。调用方也应在 finally
     里兜底注销。
     """
-    mapping = {
-        # **V3-c**:react 词表映射已随 react.py 删除——唯一执行引擎是
-        # AgentLoop,词表直通。
-        "tool_call": "tool_call",
-        "tool_result": "tool_result",
-    }
+    # 3a.2：引擎→产品事件映射与流式直通集合收归 apps/chat.events 单点
+    # （词表值从 kernel EventType 取，wire 名绝对值不变）。
+    from agentnodes.apps.chat.events import (
+        ENGINE_TO_PRODUCT,
+        STREAM_PASSTHROUGH_KINDS,
+    )
+
+    mapping = ENGINE_TO_PRODUCT
     state: dict[str, Any] = {"unsubscribe": None, "closed": False}
 
     def _close() -> None:
@@ -1014,15 +1016,10 @@ def _install_chat_event_bridge(
 
         out_kind = mapping.get(kind)
         if out_kind is None:
-            # 流式词表直通。AgentLoop 的 3-step 协议（text.started →
-            # text_delta{text_id} → text.ended）与 thinking 协议
-            # （thinking_start/delta/done/end）前端 handlers 全都注册；
-            # stream.failed 由 llm 单发节点（nodes/llm.py）继续发出。
-            if kind in (
-                "text_delta", "thinking_delta", "thinking_done", "stream.failed",
-                "text.started", "text.ended",
-                "thinking_start", "thinking_end",
-            ):
+            # 3a.2：流式直通集合收归 apps/chat.events（现网 8 个事件名
+            # 逐字一致）；AgentLoop 的 3-step / thinking / stream.failed
+            # 协议前端 handlers 全都注册。
+            if kind in STREAM_PASSTHROUGH_KINDS:
                 out_kind = kind
             else:
                 return
