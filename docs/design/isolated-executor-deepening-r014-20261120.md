@@ -120,7 +120,23 @@ IsolatedToolExecutor.run(
 验证：隔离面 105 passed（decision/wiring/context/platform/channel/pilot/
 settings）；数字同步 462 文件 / 96,647 行（L3 +25）。**本提交不改 core 行为**。
 
-### 提交② · core 接线收单次调用（待实施）
+### 提交② · core 接线收单次调用（2026-11-20 · 已实施）
 
-`_execute_tool_call_core` 隔离分支收为 executor 一次调用；删
-`_emit_isolation_outcome` / `async_mode` 死参数；开关关回归锚 118 passed。
+- `IsolatedToolExecutor`（`_isolated_exec.py`）新增：`_prepare`（决策+规则闸）、
+  `_settle`（E5 记录+finalize 重注入+终态事件）、`run`/`arun`（sync/async
+  各一次调用）。接口单一 `run/arun(...)`，core 不再分段编排。
+- `loop/tools.py`：隔离分支 40+ 行内联 → `executor.run/arun` 一次调用（按
+  async_mode 选方法，core 只选方法不做编排）；删 `_emit_isolation_outcome`
+  / `_tool_args` 两 helper（含死参数 `async_mode`）；4a shadow 事件改由
+  executor 内部发（不再单独调用）；`_deadline` 提到分支前统一取值。
+- 终态语义保真：`_settle` 保留 finalize 重注入（`_check_attempt_timeout
+  (finalize=True)`）+ `isolation.terminal` 事件，与既有 E5 同构。
+- 测试：`test_isolated_exec_wiring.py` 的 E5 重注入用例改测
+  `IsolatedToolExecutor._settle`（新 seam）；新增 `TestExecutorRunInterface`
+  两例（开关关返回 None、隔离全流程）。
+
+验证：wiring+decision 38 passed；开关关回归锚 130 passed / 2 xfailed
+（loop/E5/工具面逐字不变）；数字同步 462 文件 / 96,684 行（L3 +37）。
+
+**两提交全部完成**——候选 1（事件收口）+ 候选 2（编排下沉）+ 顺带
+候选 3（结果一次构造）、5（测试旋钮）全部落地。候选 4/6/7 独立批未动。

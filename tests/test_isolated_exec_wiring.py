@@ -152,12 +152,12 @@ class TestIsolatedOutcomeShape:
 
 
 class TestE5OutcomeReinjection:
-    """_emit_isolation_outcome：declared 取 registry + state 取实际观测 + 终态重注入。"""
+    """IsolatedToolExecutor._settle：declared 取 registry + 终态重注入 + 事件。"""
 
-    def _loop_stub(self):
-        from agentnodes.kernel.agent.loop.tools import LoopToolsMixin
+    def _executor(self):
+        from agentnodes.kernel.agent.loop._isolated_exec import IsolatedToolExecutor
 
-        class Stub(LoopToolsMixin):
+        class HostStub:
             def __init__(self):
                 self.outcomes = []
                 self.events = []
@@ -176,36 +176,106 @@ class TestE5OutcomeReinjection:
             def _check_attempt_timeout(self, iteration, result, *, finalize=True):
                 self.events.append(("timeout_checked", {"finalize": finalize}))
 
-        return Stub()
+        host = HostStub()
+        return IsolatedToolExecutor(host), host
 
     def test_declared_uses_registry_not_raw_getattr(self):
-        loop = self._loop_stub()
-        tool = SimpleNamespace(name="write", timeout_capability="unstoppable")
+        executor, host = self._executor()
         outcome = IsolatedOutcome("{}", "returned", "failed", "x", 0, False)
-        loop._emit_isolation_outcome(
-            SimpleNamespace(name="write"), tool, outcome, None, async_mode=True,
+        decision = SimpleNamespace(
+            isolate=True, reason="isolatable", capability="isolatable", tool_name="write",
         )
-        # registry 返回 isolatable（即使 tool 裸声明 unstoppable）——证明取 registry
-        assert loop.outcomes == [("tool", "write", "isolatable", "returned")]
+        executor._record_outcome(SimpleNamespace(name="write"), outcome)
+        assert host.outcomes == [("tool", "write", "isolatable", "returned")]
 
     def test_terminal_reinjects_timeout_chain(self):
-        loop = self._loop_stub()
-        loop._attempt_deadline = 1.0  # 非 None → terminal 会触发 timeout 检查
-        tool = SimpleNamespace(name="write", timeout_capability="isolatable")
+        executor, host = self._executor()
+        host._attempt_deadline = 1.0  # 非 None → terminal 触发 finalize
         outcome = IsolatedOutcome("{}", "stopped", "terminated", "x", 0, True)
-        loop._emit_isolation_outcome(
-            SimpleNamespace(name="write"), tool, outcome, None, async_mode=True,
+        decision = SimpleNamespace(
+            isolate=True, reason="isolatable", capability="isolatable", tool_name="write",
         )
-        kinds = [k for k, _ in loop.events]
+        executor._settle(SimpleNamespace(name="write"), outcome, decision)
+        kinds = [k for k, _ in host.events]
         assert "timeout_checked" in kinds  # 终态重注入
-        assert "isolation_terminal" in kinds
+        assert "isolation.terminal" in kinds
 
     def test_non_terminal_no_reinjection(self):
-        loop = self._loop_stub()
-        loop._attempt_deadline = 1.0
-        tool = SimpleNamespace(name="write", timeout_capability="isolatable")
+        executor, host = self._executor()
+        host._attempt_deadline = 1.0
         outcome = IsolatedOutcome("{}", "stopped", "completed", "x", 0, False)
-        loop._emit_isolation_outcome(
-            SimpleNamespace(name="write"), tool, outcome, None, async_mode=True,
+        decision = SimpleNamespace(
+            isolate=True, reason="isolatable", capability="isolatable", tool_name="write",
         )
-        assert loop.events == []  # 正常完成不重注入终态链
+        executor._settle(SimpleNamespace(name="write"), outcome, decision)
+        kinds = [k for k, _ in host.events]
+        assert "timeout_checked" not in kinds
+        assert "isolation.terminal" not in kinds
+
+
+class TestExecutorRunInterface:
+    """Q7：IsolatedToolExecutor.run 单一接口——不隔离返回 None，隔离走全流程。"""
+
+    def _host(self):
+        from agentnodes.kernel.agent.loop._isolated_exec import IsolatedToolExecutor
+
+        class HostStub:
+            def __init__(self):
+                self.events = []
+                self.outcomes = []
+                self._attempt_deadline = None
+                self._current_iter = 0
+                self.registry = SimpleNamespace(
+                    timeout_capability=lambda name: "isolatable",
+                )
+
+            def _record_timeout_outcome(self, kind, name, declared, state):
+                self.outcomes.append((kind, name, declared, state))
+
+            def _trace_and_emit(self, kind, payload):
+                self.events.append((kind, payload))
+
+            def _check_attempt_timeout(self, iteration, result, *, finalize=True):
+                self.events.append(("timeout_checked", {"finalize": finalize}))
+
+        host = HostStub()
+        return IsolatedToolExecutor(host), host
+
+    def test_switch_off_returns_none(self, monkeypatch):
+        import os
+
+        monkeypatch.delenv("AGENTNODES_ISOLATION_EXECUTION", raising=False)
+        executor, host = self._host()
+        tool = SimpleNamespace(
+            name="write", timeout_capability="isolatable",
+            enforce_permission_sync=lambda args, ctx: None,
+        )
+        tc = SimpleNamespace(name="write", arguments={})
+        out = executor.run(
+            tc, tool, tool_ctx=None, remaining_budget_s=5.0,
+            platform="win32",
+        )
+        assert out is None  # 开关关 → core 走 in-process 路径
+        assert host.events == [] and host.outcomes == []
+
+    def test_isolated_run_full_flow(self, monkeypatch, patch_isolation):
+        import agentnodes.kernel.agent.tools.isolation as iso
+
+        monkeypatch.setenv("AGENTNODES_ISOLATION_EXECUTION", "1")
+        monkeypatch.setenv("AGENTNODES_ISOLATION_TOOLS", "write")
+        patch_isolation["fake"] = _result()
+        executor, host = self._host()
+        tool = SimpleNamespace(
+            name="write", timeout_capability="isolatable",
+            enforce_permission_sync=lambda args, ctx: None,
+        )
+        tc = SimpleNamespace(name="write", arguments={"path": "x"})
+        out = executor.run(
+            tc, tool, tool_ctx=None, remaining_budget_s=5.0,
+            platform="win32",
+        )
+        assert out is not None and out.status == "completed"
+        assert host.outcomes == [("tool", "write", "isolatable", "stopped")]
+        kinds = [k for k, _ in host.events]
+        assert "isolation.shadow_decision" in kinds
+        assert "isolation.terminal" not in kinds  # 正常完成非终态

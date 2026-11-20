@@ -269,11 +269,116 @@ async def arun_isolated(
     return await asyncio.to_thread(run_isolated, tool_name, tool_args, **kw)
 
 
+class IsolatedToolExecutor:
+    """一次隔离工具调用的执行器（deep module；见 GLOSSARY.md）。
+
+    单一 interface :meth:`run` 把「决策 → 规则闸 → 执行 → E5 outcome →
+    终态事件」全包住；调用方（loop core）只调一次、只接收 outcome，
+    不感知内部编排。host 是鸭子类型（提供 registry / deadline / emit /
+    _record_timeout_outcome / _check_attempt_timeout），避免循环依赖。
+    """
+
+    def __init__(self, host: Any) -> None:
+        self._host = host
+
+    def _decision(self, tool: Any, *, platform: str | None = None) -> IsolationDecision:
+        return should_isolate(tool, self._host.registry, platform=platform)
+
+    def _emit_both(self, decision: IsolationDecision, outcome: IsolatedOutcome | None) -> None:
+        """两类观测事件统一从这里发（type 键 + EventType 常量）。"""
+        self._host._trace_and_emit("isolation.shadow_decision", shadow_event(decision))
+        if outcome is not None:
+            self._host._trace_and_emit("isolation.terminal", terminal_event(outcome))
+
+    def _record_outcome(self, tc: Any, outcome: IsolatedOutcome) -> None:
+        """E5 实际状态记录（declared 取准入过滤后的 registry 值）。"""
+        name = getattr(tc, "name", "")
+        declared = (
+            self._host.registry.timeout_capability(name)
+            if self._host.registry is not None
+            else "unstoppable"
+        )
+        self._host._record_timeout_outcome("tool", name, declared, outcome.actual_state)
+
+    def _prepare(
+        self, tc: Any, tool: Any, *, tool_ctx: Any, platform: str | None,
+    ) -> tuple[IsolationDecision, dict[str, Any]] | None:
+        """决策 + 规则闸 + 参数归一（同步部分）；不隔离返回 None。"""
+        decision = self._decision(tool, platform=platform)
+        if not decision.isolate:
+            return None
+        tool_args = dict(tc.arguments) if isinstance(getattr(tc, "arguments", None), dict) else {}
+        tool.enforce_permission_sync(tool_args, tool_ctx)  # ASK fail-closed
+        return decision, tool_args
+
+    def _settle(
+        self, tc: Any, outcome: IsolatedOutcome, decision: IsolationDecision,
+    ) -> IsolatedOutcome:
+        """outcome 后处理：终态事件 + E5 记录 + finalize 重注入（sync/async 共用）。"""
+        terminal = outcome.status == "terminated" or (
+            outcome.actual_state == "unknown" and outcome.timed_out
+        )
+        self._record_outcome(tc, outcome)
+        if terminal:
+            # E5 终态链重注入：finalize 置 timeout ending（AttemptTimeoutError
+            # 由外层 check 在边界抛；此处不直接抛，与既有 E5 同构）。
+            check = getattr(self._host, "_check_attempt_timeout", None)
+            if callable(check) and getattr(self._host, "_attempt_deadline", None) is not None:
+                check(getattr(self._host, "_current_iter", 0), None, finalize=True)
+        self._emit_both(decision, outcome if terminal else None)
+        return outcome
+
+    def run(
+        self,
+        tc: Any,
+        tool: Any,
+        *,
+        tool_ctx: Any,
+        remaining_budget_s: float | None,
+        approval_decider: Any = None,
+        platform: str | None = None,
+    ) -> IsolatedOutcome | None:
+        """同步一次调用（sync loop 路径）；不隔离返回 None。"""
+        prepared = self._prepare(tc, tool, tool_ctx=tool_ctx, platform=platform)
+        if prepared is None:
+            return None
+        decision, tool_args = prepared
+        outcome = run_isolated(
+            tool.name, tool_args,
+            remaining_budget_s=remaining_budget_s,
+            approval_decider=approval_decider, ctx=tool_ctx,
+        )
+        return self._settle(tc, outcome, decision)
+
+    async def arun(
+        self,
+        tc: Any,
+        tool: Any,
+        *,
+        tool_ctx: Any,
+        remaining_budget_s: float | None,
+        approval_decider: Any = None,
+        platform: str | None = None,
+    ) -> IsolatedOutcome | None:
+        """async 一次调用（async loop 路径，blocking 隔离在线程里跑）。"""
+        prepared = self._prepare(tc, tool, tool_ctx=tool_ctx, platform=platform)
+        if prepared is None:
+            return None
+        decision, tool_args = prepared
+        outcome = await arun_isolated(
+            tool.name, tool_args,
+            remaining_budget_s=remaining_budget_s,
+            approval_decider=approval_decider, ctx=tool_ctx,
+        )
+        return self._settle(tc, outcome, decision)
+
+
 __all__ = [
     "ISOLATION_EXECUTION_ENV",
     "ISOLATION_TOOLS_ENV",
     "IsolatedOutcome",
     "IsolationDecision",
+    "IsolatedToolExecutor",
     "arun_isolated",
     "isolation_execution_enabled",
     "isolation_tool_allowlist",
