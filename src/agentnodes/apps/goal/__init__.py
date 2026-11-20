@@ -9,10 +9,12 @@ from __future__ import annotations
 
 from agentnodes.apps.goal.completion_strategy import (
     AutoCompleteStrategy,
+    CompletionContext,
     CompletionStrategy,
     CompletionStrategyFactory,
     LiteCompleteStrategy,
     ManualCompleteStrategy,
+    complete_goal,
 )
 from agentnodes.apps.goal.context import (
     CONTINUABLE_GOAL_STATUSES,
@@ -64,7 +66,9 @@ __all__ = [
     "AuditRow",
     "AutoCompleteStrategy",
     "CollectingObserver",
+    "complete_goal",
     "CompletionConfig",
+    "CompletionContext",
     "CompletionStrategy",
     "CompletionStrategyFactory",
     "CONTINUABLE_GOAL_STATUSES",

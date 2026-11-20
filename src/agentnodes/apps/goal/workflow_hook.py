@@ -340,34 +340,31 @@ class GoalWorkflowHook:
         if snapshot is None:
             return
 
-        from agentnodes.apps.goal.completion_strategy import CompletionStrategyFactory
+        from agentnodes.apps.goal.completion_strategy import (
+            CompletionContext,
+            complete_goal,
+        )
 
-        strategy = self._completion_strategy or CompletionStrategyFactory.get(
-            self._completion_mode,
+        mode = "lite" if self._completion_mode == "lite" else "auto"
+        recap = (
+            f"Workflow {self._workflow_name} auto-completed"
+            + (" (lite)" if mode == "lite" else "")
+        )
+        context = CompletionContext(
+            store=self._store,
+            session_id=self._session_id,
+            goal_id=self._goal_id,
+            snapshot=snapshot,
+            mode=mode,
+            workflow_name=self._workflow_name,
+            recap=recap,
+            strategy=self._completion_strategy,  # 注入策略（测试/宿主）仍生效
         )
 
         try:
-            import asyncio
-            # If we're already in an async context, schedule; otherwise call sync
-            try:
-                loop = asyncio.get_running_loop()
-                loop.create_task(strategy.complete(
-                    self._store, self._session_id, self._goal_id,
-                    snapshot.get("criteria", []),
-                    snapshot.get("evidence", []),
-                    self._workflow_name,
-                ))
-            except RuntimeError:
-                # No running loop — run synchronously
-                asyncio.run(strategy.complete(
-                    self._store, self._session_id, self._goal_id,
-                    snapshot.get("criteria", []),
-                    snapshot.get("evidence", []),
-                    self._workflow_name,
-                ))
-
+            complete_goal(context)
             self._completed = True
-            logger.info("Goal %s auto-completed via %s", self._goal_id, type(strategy).__name__)
+            logger.info("Goal %s auto-completed via %s", self._goal_id, mode)
             if self._event_bus:
                 self._event_bus.emit("workflow_completed", goal_id=self._goal_id)
 

@@ -7,6 +7,10 @@
 """
 from __future__ import annotations
 
+from types import SimpleNamespace
+
+import pytest
+
 from agentnodes.apps.goal.audit import (
     all_criteria_covered,
     build_completion_audit_rows,
@@ -135,31 +139,67 @@ class TestCoverageUnification:
         assert rows[0].evidence_ids == ["e1"]
         assert rows[1].evidence_ids == ["e1"]  # 无匹配 → 回退全量首个
 
-    def test_workflow_hook_uses_single_source(self):
-        """架构锚：workflow_hook 不再自建 evidence_by_criterion 口径。"""
-        import io
-        from pathlib import Path
+    def test_workflow_hook_coverage_via_audit_single_source(self):
+        """行为锚（G2）：hook 的覆盖判定经 audit.all_criteria_covered 单源。
 
-        p = (
-            Path(__file__).resolve().parents[1]
-            / "src/agentnodes/apps/goal/workflow_hook.py"
+        替换原源码文本锚（"all_criteria_covered" in text）——直接调 hook 的
+        判定方法，断言 status+evidence 口径由 audit 给出。
+        """
+        from agentnodes.apps.goal.workflow_hook import GoalWorkflowHook
+
+        snapshot = {
+            "criteria": [{"criterion_id": "c1", "required": True}],
+            "evidence": [{"criterion_id": "c1", "status": "ok"}],
+        }
+        store = SimpleNamespace(get_current_snapshot=lambda sid: snapshot)
+        hook = GoalWorkflowHook("s1", "g1", {}, store)
+        assert hook._check_all_criteria_covered() is True
+
+
+class TestCompletionStrategyBehavior:
+    """G2：两源码文本锚换真实策略行为——断言 store mutation 而非字符串。"""
+
+    @pytest.mark.asyncio
+    async def test_auto_strategy_uses_rows_for_shape(self):
+        """Auto 经 rows_for 产出 per-criterion 行形（必填过滤 + 回退）。"""
+        from agentnodes.apps.goal.completion_strategy import (
+            CompletionContext,
+            AutoCompleteStrategy,
         )
-        text = io.open(p, encoding="utf-8").read()
-        assert "all_criteria_covered" in text
-        # 实际构建逻辑（赋值语句）已删；docstring 里提及旧口径无妨
-        assert "evidence_by_criterion:" not in text
 
-
-class TestCompletionStrategyUsesSingleShape:
-    def test_completion_strategy_uses_rows_for(self):
-        """架构锚：completion_strategy 不再自建 AuditRow 行形。"""
-        import io
-        from pathlib import Path
-
-        p = (
-            Path(__file__).resolve().parents[1]
-            / "src/agentnodes/apps/goal/completion_strategy.py"
+        calls = []
+        store = SimpleNamespace(
+            update_status=lambda **kw: calls.append(kw),
         )
-        text = io.open(p, encoding="utf-8").read()
-        assert "rows_for" in text
-        assert "cid_evidence_ids" not in text
+        ctx = CompletionContext(
+            store=store, session_id="s1", goal_id="g1",
+            snapshot={
+                "criteria": [
+                    {"criterion_id": "c1", "required": True},
+                    {"criterion_id": "c2", "required": False},
+                ],
+                "evidence": [{"evidence_id": "e1", "criterion_id": "c1"}],
+            },
+            mode="auto", workflow_name="wf",
+        )
+        assert await AutoCompleteStrategy().complete(ctx) is True
+        assert len(calls) == 1
+        rows = calls[0]["audit"]
+        assert len(rows) == 1  # 非必填 c2 被过滤
+        assert rows[0].criterion_id == "c1"
+        assert rows[0].evidence_ids == ["e1"]
+
+    @pytest.mark.asyncio
+    async def test_lite_strategy_calls_complete_lite(self):
+        from agentnodes.apps.goal.completion_strategy import (
+            CompletionContext,
+            LiteCompleteStrategy,
+        )
+
+        ctx = CompletionContext(
+            store=SimpleNamespace(complete_lite=lambda **kw: None),
+            session_id="s1", goal_id="g1", snapshot={},
+            mode="lite", workflow_name="wf", recap="r",
+        )
+
+        assert await LiteCompleteStrategy().complete(ctx) is True

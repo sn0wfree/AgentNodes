@@ -301,7 +301,10 @@ def cmd_complete(recap: str = "", *, console: Any = None,
             all_criteria_covered,
             build_completion_audit_rows,
         )
-        from agentnodes.apps.goal.models import GoalStatus
+        from agentnodes.apps.goal.completion_strategy import (
+            CompletionContext,
+            complete_goal,
+        )
 
         store = _store()
         snapshot = store.get_current_snapshot(session_id)
@@ -309,14 +312,12 @@ def cmd_complete(recap: str = "", *, console: Any = None,
             console.print("[yellow]No active goal.[/yellow]")
             return 0
         goal_id = snapshot["goal"]["goal_id"]
-        criteria = snapshot.get("criteria", [])
 
         if lite:
             # Lite mode: just verify all required criteria have evidence
-            store.complete_lite(
-                session_id=session_id,
-                goal_id=goal_id,
-                expected_goal_id=goal_id,
+            context = CompletionContext(
+                store=store, session_id=session_id, goal_id=goal_id,
+                snapshot=snapshot, mode="lite", workflow_name="cli",
                 recap=recap or "(lite completion)",
             )
         else:
@@ -326,15 +327,14 @@ def cmd_complete(recap: str = "", *, console: Any = None,
             if not all_criteria_covered(snapshot):
                 console.print("[red]Cannot complete:[/red] not all criteria have evidence.")
                 return 1
-            audit_rows = build_completion_audit_rows(snapshot, recap)
-            store.update_status(
-                session_id=session_id,
-                goal_id=goal_id,
-                expected_goal_id=goal_id,
-                status=GoalStatus.COMPLETE,
-                audit=audit_rows,
+            context = CompletionContext(
+                store=store, session_id=session_id, goal_id=goal_id,
+                snapshot=snapshot, mode="auto", workflow_name="cli",
                 recap=recap or None,
+                # CLI 全量 evidence 行形（已决口径）——显式注入，策略不自建。
+                audit_rows=build_completion_audit_rows(snapshot, recap),
             )
+        complete_goal(context)
     except Exception as exc:  # noqa: BLE001
         console.print(f"[red]/goal complete failed:[/red] {exc}")
         return 1

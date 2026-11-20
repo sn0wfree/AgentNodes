@@ -211,8 +211,9 @@ class FakeStrategy:
     def __init__(self):
         self.calls: list[tuple] = []
 
-    async def complete(self, store, session_id, goal_id, criteria, evidence, name):
-        self.calls.append((session_id, goal_id, name))
+    async def complete(self, context):
+        """G2：单参 CompletionContext 接口（取代 6 参数）。"""
+        self.calls.append((context.session_id, context.goal_id, context.workflow_name))
 
 
 def test_metric_meet_triggers_auto_complete():

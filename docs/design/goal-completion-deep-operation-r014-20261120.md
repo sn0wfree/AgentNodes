@@ -85,3 +85,13 @@
 ## 6. 实施前确认
 
 本方案来自 grilling 全 A（Q4-Q6）。**未获批不得实施任何代码**；获批后按 R-007 单提交实施，doc first 纪律已满足（本文件）。
+
+## 7. 执行记录（2026-11-20 · 已实施 · 用户"请继续做完所有的"授权）
+
+- `completion_strategy.py`：新增冻结 `CompletionContext`（含 `strategy` 显式注入字段，保 hook 注入策略的测试路径），`CompletionStrategy.complete(context)` 单参取代 6 参；新增深操作 `complete_goal(context)` 独占选策略 + 异步派发（running loop → create_task 返回 None；无 loop → asyncio.run 返回 bool）。
+- `workflow_hook.py::_auto_complete`：构造 context（recap 固定串、注入 strategy 经 context 字段）+ 调 `complete_goal`；`_completed` 置位 / 事件 / 异常吞噬逐字不变。
+- `slash_goal.py::cmd_complete`：两分支均构造 context 调深操作；非 lite 经 `audit_rows=build_completion_audit_rows(snapshot, recap)` 显式保留全量行形；gate / 打印 / rc 逐字不变。
+- `apps/goal/__init__.py`：导出新符号（CompletionContext / complete_goal）。
+- 测试：`test_goal_audit.py` 两源码文本锚换 3 个行为测试（hook 覆盖判定经 audit、Auto 行形 store mutation、Lite complete_lite）；`test_workflow_hook.py` FakeStrategy 6 参 → 单参（行为断言不动）。
+- 已决边界守住：覆盖单源 / store / schema / 事件 / CLI gate / hook 触发零改动；其他完成面（apps/goal/cli.py、goal_tools.py）零改动。
+- 验证：受影响面 78 passed；全量 `-n 6` **8072 passed** / 0 failed（+1 净新例）；batch_gate ALL GREEN；数字 464/97,029（L2 11,546）。
