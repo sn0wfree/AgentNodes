@@ -104,14 +104,12 @@ def cmd_skill(*, console: Any = None) -> int:
     """
     console = _resolve_console(console)
     try:
-        import agentnodes
-
         from agentnodes.kernel.skills import SkillRegistry
 
+        # M8（批 3c）：统一装载入口——bundled 打底 + workspace 覆盖
+        #（顺序与旧实现等价，路径公式单源到 kernel.skills）。
         registry = SkillRegistry()
-        registry.load_directory(
-            Path(agentnodes.__file__).parent / "templates" / ".skills")
-        registry.load_directory(_resolve_workspace() / ".skills")
+        registry.load_default(_resolve_workspace())
         skills = registry.list_all()
     except Exception as exc:  # noqa: BLE001
         console.print(f"[red]/skill failed:[/red] {exc}")

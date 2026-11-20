@@ -137,6 +137,77 @@ class TestWorkspaceTools:
         assert tool.name == "skill"
 
 
+class TestSkillWorkspaceOverride:
+    """M8（批 3c）：workspace 同名技能覆盖 bundled——修复两处旧 bug：
+
+    1. 顺序反转（旧实现 bundled 后注册 → bundled 覆盖 workspace，违背
+       ``LoadSkillTool`` 说明书「workspace/.skills/ 覆盖同名内置技能」）；
+    2. bundled 路径三级上溯落到 ``kernel/templates``（不存在）→ bundled
+       技能在 list_skills/skill 工具中**从未装载**。
+    """
+
+    def _make_bundled(self, tmp_path):
+        fake = tmp_path / "bundled" / ".skills"
+        fake.mkdir(parents=True, exist_ok=True)
+        (fake / "demo.md").write_text(
+            "---\nname: demo\ndescription: bundled-version\ncategory: t\n---\n\nbundled body\n",
+            encoding="utf-8",
+        )
+        return fake
+
+    def test_load_skill_prefers_workspace_version(self, tmp_path, monkeypatch):
+        import json
+
+        monkeypatch.setattr(
+            "agentnodes.kernel.skills.registry.BUNDLED_SKILLS_DIR",
+            self._make_bundled(tmp_path),
+        )
+        ws = tmp_path / "ws"
+        (ws / ".skills").mkdir(parents=True)
+        (ws / ".skills" / "demo.md").write_text(
+            "---\nname: demo\ndescription: workspace-version\ncategory: t\n---\n\nworkspace body\n",
+            encoding="utf-8",
+        )
+
+        from agentnodes.kernel.agent.builtin_tools.workspace_tools import LoadSkillTool
+        from agentnodes.kernel.agent.tools.core import ToolContext
+
+        out = LoadSkillTool().execute(ToolContext(workspace=tmp_path / "ws"), name="demo")
+        payload = json.loads(out)
+        assert payload["status"] == "ok"
+        assert "workspace body" in payload["content"]
+
+    def test_list_skills_sees_bundled_and_workspace(self, tmp_path, monkeypatch):
+        import json
+
+        monkeypatch.setattr(
+            "agentnodes.kernel.skills.registry.BUNDLED_SKILLS_DIR",
+            tmp_path / "bundled" / ".skills",
+        )
+        bundled = tmp_path / "bundled" / ".skills"
+        bundled.mkdir(parents=True)
+        (bundled / "only-bundled.md").write_text(
+            "---\nname: only-bundled\ndescription: b\ncategory: t\n---\n\nx\n",
+            encoding="utf-8",
+        )
+        ws = tmp_path / "ws"
+        (ws / ".skills").mkdir(parents=True)
+        (ws / ".skills" / "demo.md").write_text(
+            "---\nname: demo\ndescription: w\ncategory: t\n---\n\nx\n",
+            encoding="utf-8",
+        )
+
+        from agentnodes.kernel.agent.builtin_tools.workspace_tools import ListSkillsTool
+        from agentnodes.kernel.agent.tools.core import ToolContext
+
+        out = ListSkillsTool().execute(ToolContext(workspace=ws))
+        payload = json.loads(out)
+        names = {s["name"] for s in payload["skills"]}
+        # bundled（旧实现从未可见）与 workspace 同时在列
+        assert "only-bundled" in names
+        assert "demo" in names
+
+
 # ── Todo Tools ────────────────────────────────────────────────────
 
 

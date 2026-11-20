@@ -300,14 +300,11 @@ class ListSkillsTool(BaseTool):
             from agentnodes.kernel.skills import SkillRegistry
             registry = SkillRegistry()
 
-            # Load from workspace .skills/ first, then bundled templates
-            workspace_skills = workspace / ".skills"
-            if workspace_skills.is_dir():
-                registry.load_directory(workspace_skills)
-
-            bundled_skills = Path(__file__).parent.parent.parent / "templates" / ".skills"
-            if bundled_skills.is_dir():
-                registry.load_directory(bundled_skills)
+            # M8（批 3c）：统一装载入口——bundled 打底 + workspace 覆盖
+            # （后注册者赢）。旧实现两处 bug：顺序反了（bundled 覆盖
+            # workspace，违背下方工具说明书宣称）；bundled 路径三级上溯
+            # 落到 kernel/templates（不存在）→ bundled 技能从未装载。
+            registry.load_default(workspace)
 
             if category:
                 skills = registry.by_category(category)
@@ -387,14 +384,9 @@ class LoadSkillTool(BaseTool):
             from agentnodes.kernel.skills import SkillRegistry
             registry = SkillRegistry()
 
-            # Load from workspace .skills/ first (user overrides), then bundled
-            workspace_skills = workspace / ".skills"
-            if workspace_skills.is_dir():
-                registry.load_directory(workspace_skills)
-
-            bundled_skills = Path(__file__).parent.parent.parent / "templates" / ".skills"
-            if bundled_skills.is_dir():
-                registry.load_directory(bundled_skills)
+            # M8（批 3c）：统一装载入口（bundled 打底 + workspace 覆盖），
+            # 修复旧实现的顺序反转与 bundled 路径落空——见 list_skills 侧注。
+            registry.load_default(workspace)
 
             skill = registry.get(name)
             if skill is None:

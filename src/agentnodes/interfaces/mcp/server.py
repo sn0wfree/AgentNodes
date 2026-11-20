@@ -202,19 +202,29 @@ class MCPServer:
         self._register_swarm_execution_tools()
 
     def _register_skill_tools(self) -> None:
+        def _workspace_hint() -> "Any":
+            """M8（批 3c）：MCP 无 workspace 概念，env 显式注入才启用覆盖。
+
+            行为变更（已声明）：设了 ``AGENTNODES_WORKSPACE`` 时 MCP 开始
+            看到 workspace ``.skills/`` 同名覆盖（设计钦定）；未设时仅
+            bundled——与旧行为兼容。
+            """
+            from agentnodes.foundation.config import settings as _settings
+
+            ws = _settings.get_str("AGENTNODES_WORKSPACE")
+            return Path(ws) if ws else None
+
         def list_skills(**kwargs: Any) -> str:
             from agentnodes.kernel.skills import SkillRegistry
-            skills_dir = Path(__file__).parent.parent.parent / "templates" / ".skills"
             registry = SkillRegistry()
-            registry.load_directory(skills_dir)
+            registry.load_default(_workspace_hint())
             skills = registry.list_all()
             return json.dumps([{"name": s.name, "category": s.category, "description": s.description} for s in skills], ensure_ascii=False)
 
         def load_skill(name: str = "", **kwargs: Any) -> str:
             from agentnodes.kernel.skills import SkillRegistry
-            skills_dir = Path(__file__).parent.parent.parent / "templates" / ".skills"
             registry = SkillRegistry()
-            registry.load_directory(skills_dir)
+            registry.load_default(_workspace_hint())
             skill = registry.get(name)
             if skill is None:
                 return f"Skill '{name}' not found"

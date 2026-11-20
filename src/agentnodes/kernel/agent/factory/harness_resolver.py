@@ -156,22 +156,17 @@ def apply_skill_set(
 def _load_skills(names: list[str]) -> list[tuple[str, str]]:
     """从 kernel 的 SkillRegistry 读技能正文。
 
-    优先 workspace 侧的 ``.skills/``（用户覆盖），其次随包模板。
+    M8（批 3c）：改走统一装载入口 ``load_default(None)``——装配期签名
+    （``resolve_harness(task_signature)``）没有 workspace 可传，只装载
+    bundled（行为与旧实现等价：旧实现实际也只装载了 bundled，docstring
+    曾宣称「优先 workspace 覆盖」但代码没有——本版修正文档失实）。
     找不到的名字跳过——一个失效的 skill 名不该让整次装配失败。
     """
     try:
-        from pathlib import Path
-
         from agentnodes.kernel.skills import SkillRegistry
 
         registry = SkillRegistry()
-        try:
-            import agentnodes as _sr
-
-            bundled = Path(_sr.__file__).parent / "templates" / ".skills"
-            registry.load_directory(bundled)
-        except Exception:  # noqa: BLE001 —— 模板缺失则什么都读不到
-            logger.debug("bundled skills unavailable", exc_info=True)
+        registry.load_default(None)
 
         out: list[tuple[str, str]] = []
         for name in names:

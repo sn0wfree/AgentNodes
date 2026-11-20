@@ -11,6 +11,27 @@ from agentnodes.kernel.skills.models import Skill
 
 logger = logging.getLogger(__name__)
 
+#: bundled 技能目录（随包安装的 ``agentnodes/templates/.skills``）。
+#: M8（批 3c）统一单点——此前 5 个装载点各自拼路径（其中
+#: ``workspace_tools`` 的三级上溯从 ``kernel/agent/builtin_tools`` 落到
+#: ``kernel/``，目录不存在，bundled 技能**从未装载**）。
+BUNDLED_SKILLS_DIR = Path(__file__).resolve().parents[2] / "templates" / ".skills"
+
+
+def default_skills_dirs(workspace: Path | None = None) -> list[Path]:
+    """技能装载目录序：**bundled 打底 + workspace/.skills 覆盖**。
+
+    统一语义（M8 裁决）：``SkillRegistry._register`` 是同名 last-write-wins，
+    所以顺序必须 bundled 先、workspace 后——workspace 同名技能覆盖内置
+    （对齐 ``LoadSkillTool`` 工具说明书的既有宣称）。
+
+    ``workspace`` 为 ``None`` 或 ``.skills`` 目录不存在时仅 bundled。
+    """
+    dirs = [BUNDLED_SKILLS_DIR]
+    if workspace is not None:
+        dirs.append(Path(workspace) / ".skills")
+    return dirs
+
 
 class SkillRegistry:
     """Registry of loaded skills, indexed by name and category.
@@ -43,6 +64,19 @@ class SkillRegistry:
                 count += 1
 
         logger.info("Loaded %d skills from %s", count, path)
+        return count
+
+    def load_default(self, workspace: Path | None = None) -> int:
+        """统一装载入口（M8）：bundled 打底 + workspace 覆盖。
+
+        目录不存在时静默跳过（workspace 侧没有 ``.skills`` 是常态，不是
+        警告）。返回成功装载的技能文件数。既有 :meth:`load_directory`
+        公共面不变——调用方可继续精确控制装载目录。
+        """
+        count = 0
+        for d in default_skills_dirs(workspace):
+            if d.is_dir():
+                count += self.load_directory(d)
         return count
 
     def load_file(self, path: Path) -> Skill | None:

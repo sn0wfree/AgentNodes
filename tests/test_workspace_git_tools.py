@@ -141,12 +141,19 @@ class TestListHistoryTool:
 
 
 class TestSkillsTools:
-    def test_list_skills_empty_workspace(self, repo):
+    def test_list_skills_workspace_without_local_skills_shows_bundled(self, repo):
+        """M8（批 3c）行为变更（已声明）：bundled 技能现在可见。
+
+        旧实现 bundled 路径三级上溯落到 kernel/templates（不存在）→
+        bundled 从未装载，空 workspace 得 []。统一入口 load_default
+        修复路径后，bundled 26 个技能照常在列。
+        """
         from agentnodes.kernel.agent.builtin_tools.workspace_tools import ListSkillsTool
 
         out = json.loads(ListSkillsTool().execute(ctx=ToolContext(workspace=repo)))
         assert out["status"] == "ok"
-        assert out.get("skills") == []
+        names = {s["name"] for s in out.get("skills", [])}
+        assert "asset-allocation" in names  # bundled 资产
 
     def test_list_skills_requires_workspace(self):
         from agentnodes.kernel.agent.builtin_tools.workspace_tools import ListSkillsTool

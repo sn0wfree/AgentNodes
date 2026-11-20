@@ -203,6 +203,66 @@ class TestSkillRegistry:
         count = registry.load_directory(tmp_path)
         assert count == 2
 
+
+# ── M8 统一装载入口（批 3c）────────────────────────────────────────
+
+
+class TestLoadDefault:
+    """bundled 打底 + workspace 覆盖（后注册者赢）；workspace 缺目录静默跳过。"""
+
+    def _write_skill(self, root, name, description):
+        d = root / ".skills"
+        d.mkdir(parents=True, exist_ok=True)
+        (d / (name + ".md")).write_text(
+            "---\nname: " + name + "\ndescription: " + description
+            + "\ncategory: t\n---\n\nbody\n",
+            encoding="utf-8",
+        )
+
+    def test_none_workspace_loads_bundled(self):
+        from agentnodes.kernel.skills import BUNDLED_SKILLS_DIR
+
+        registry = SkillRegistry()
+        n = registry.load_default(None)
+        if not BUNDLED_SKILLS_DIR.is_dir():
+            assert n == 0
+        else:
+            assert n > 0
+
+    def test_workspace_same_name_overrides_bundled(self, tmp_path, monkeypatch):
+        """顺序契约（M8.2 修复的顺序反转）：workspace 同名覆盖 bundled。"""
+        from agentnodes.kernel.skills import registry as reg_mod
+
+        fake_bundled = tmp_path / "bundled" / ".skills"
+        fake_bundled.mkdir(parents=True)
+        (fake_bundled / "demo.md").write_text(
+            "---\nname: demo\ndescription: bundled-version\ncategory: t\n---\n\nbundled\n",
+            encoding="utf-8",
+        )
+        monkeypatch.setattr(reg_mod, "BUNDLED_SKILLS_DIR", fake_bundled)
+
+        self._write_skill(tmp_path / "ws", "demo", "workspace-version")
+
+        registry = SkillRegistry()
+        registry.load_default(tmp_path / "ws")
+        skill = registry.get("demo")
+        assert skill is not None
+        assert skill.description == "workspace-version"
+
+    def test_missing_workspace_dir_is_silent(self, tmp_path):
+        registry = SkillRegistry()
+        n = registry.load_default(tmp_path)  # .skills 不存在 → 不崩不警告
+        assert n >= 0
+
+    def test_default_skills_dirs_order(self, tmp_path):
+        from agentnodes.kernel.skills import default_skills_dirs
+
+        dirs = default_skills_dirs(tmp_path)
+        assert dirs[0].parent.name == "templates"
+        assert dirs[0].name == ".skills"
+        assert dirs[1] == tmp_path / ".skills"
+        assert default_skills_dirs(None) == dirs[:1]
+
     def test_duplicate_name_warning(self, tmp_path, caplog):
         (tmp_path / "a.md").write_text("---\nname: dup\n---\nBody A")
         (tmp_path / "b.md").write_text("---\nname: dup\n---\nBody B")

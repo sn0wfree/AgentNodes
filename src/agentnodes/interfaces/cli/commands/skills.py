@@ -4,22 +4,32 @@ Contains:
 - cmd_skills_list
 - cmd_skills_show
 - cmd_skills_search
+
+M8（批 3c）：装载走 ``SkillRegistry.load_default`` 统一入口——bundled
+打底 + workspace 覆盖。行为扩展（已声明）：设了 ``AGENTNODES_WORKSPACE``
+时 CLI 三命令会看到 workspace ``.skills/`` 同名覆盖；cwd 不兜底（避免
+把任意当前目录的 .skills 吸进清单）。
 """
 
 from __future__ import annotations
 
-import agentnodes  # noqa: F401  (路径锚点)
-
 from pathlib import Path
+
+
+def _workspace_hint() -> Path | None:
+    """workspace 覆盖目录——仅 ``AGENTNODES_WORKSPACE`` 显式设置时启用。"""
+    from agentnodes.foundation.config import settings as _settings
+
+    ws = _settings.get_str("AGENTNODES_WORKSPACE")
+    return Path(ws) if ws else None
 
 
 def cmd_skills_list(args) -> int:
     """列出所有技能。"""
     from agentnodes.kernel.skills import SkillRegistry
 
-    skills_dir = Path(agentnodes.__file__).parent / "templates" / ".skills"
     registry = SkillRegistry()
-    registry.load_directory(skills_dir)
+    registry.load_default(_workspace_hint())
 
     category = getattr(args, "category", None)
     if category:
@@ -44,9 +54,8 @@ def cmd_skills_show(args) -> int:
     """显示技能内容。"""
     from agentnodes.kernel.skills import SkillRegistry
 
-    skills_dir = Path(agentnodes.__file__).parent / "templates" / ".skills"
     registry = SkillRegistry()
-    registry.load_directory(skills_dir)
+    registry.load_default(_workspace_hint())
 
     skill = registry.get(args.name)
     if not skill:
@@ -70,9 +79,8 @@ def cmd_skills_search(args) -> int:
     """搜索技能。"""
     from agentnodes.kernel.skills import SkillRegistry
 
-    skills_dir = Path(agentnodes.__file__).parent / "templates" / ".skills"
     registry = SkillRegistry()
-    registry.load_directory(skills_dir)
+    registry.load_default(_workspace_hint())
 
     results = registry.search(args.query)
     if not results:
