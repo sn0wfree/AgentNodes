@@ -50,8 +50,8 @@
 |---|---|---|
 | 3b.1 | BaselinePolicy 抽类（纯策略零行为变化）+ 新包 + 直测 | ✅ 2026-11-20 |
 | 3b.2 | 预算闸/状态/证据门/`run_once` 下沉 + halt 注入 + 删 rsi_cli.py + 补模块内单测 | ✅ 2026-11-20 |
-| 3b.3 | wiring 收敛（只剩构造）+ `parents` 路径核对 + 锚点终审 | 待做 |
-| 3b.4 | 架构清单与文档收尾（semantics_placement「循环驱动」条目核对、docstring 文案、体量数字） | 待做 |
+| 3b.3 | wiring 收敛（只剩构造）+ `parents` 路径核对 + 锚点终审 | 核对完成（§7：路径/锚点均无需改；**结构收敛推迟待独立方案**） |
+| 3b.4 | 架构清单与文档收尾（semantics_placement「循环驱动」条目核对、docstring 文案、体量数字） | 核对完成（§7：条目有效；体量数字已随前批同步） |
 
 ## 6. 3b.2 执行记录（2026-11-20 · 已实施）
 
@@ -123,3 +123,18 @@
 - semantics_placement.yaml:146-153「循环驱动」条目含
   `interfaces/rsi_wiring.py`（留 L1 不变）；apps/evolution 新文件不在
   表内，无需登记（判定器只断言已列文件）。
+
+## 7. 3b.3/3b.4 核对状态（2026-11-20 · 只核不改）
+
+逐项核对审计清单的 3b.3/3b.4 前置项，**本轮不实施结构收敛**（那是
+新范围，须 R-014 方案 + 单独审批；当前批准面是「1+2」）：
+
+| 核对项 | 结果 | 处置 |
+|---|---|---|
+| `_build_replay` 的 `parents[1]` 路径敏感（审计风险 1） | **不成立**：实测 `parents[1]=src/agentnodes/`，evals 目录 + 两份 golden jsonl 均在（历史 `parents[4]` bug 早已修好） | 不改 |
+| 测试锚点（wiring） | `test_golden_eval.py:250/:310`（经薄委托）与 `test_production_wiring.py:167/:175`（`build_rsi_loop` 留 L1）——3b.1/3b.2 均未动，锚稳定 | 不改 |
+| semantics_placement.yaml:151「循环驱动」条目 | 指向 `interfaces/rsi_wiring.py`（未迁），路径有效；新 `apps/evolution/*` 不在表内、判定器只断言已列文件 | 不改 |
+| `_heldout_kwargs` 的 `trip_halt` import（L1→L1 合法） | rsi_wiring 留 L1，import `interfaces.cli.halt` 是 L1 内部边，无上行违规 | 不改 |
+| wiring 收敛「只剩构造」 | **推迟**：`_heldout_kwargs` / `_build_replay` 等残余行为件迁走会改 L1 装配与 halt 注入链，属新范围。基线策略件已在 3b.1 抽走，收敛的硬收益已大部分兑现 | 待独立方案审批 |
+
+3b.4 的机械部分（体量数字）已随前批同步，无额外改动。
