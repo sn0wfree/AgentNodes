@@ -301,24 +301,6 @@ def resolve_objective(
 # ── 驱动 ────────────────────────────────────────────────────────────
 
 
-class _GwProxy:
-    """给 ``build_rsi_loop`` 的 Gateway 视图，唯一目的是替换 ``_combined_sink``。
-
-    ``build_rsi_loop`` 用 ``gw._combined_sink`` 作为 RSI 事件的发射器，而
-    Gateway 的默认 sink 会把"没有 session_id 的事件"全落 ``default`` 分区
-    （评审 P2i 的老问题）。这里包一层注入 ``session_id``，让 RSI 的全部
-    事件落到本轮的 RSI session 分区；其余属性（genome / capacity / store）
-    原样透传。
-    """
-
-    def __init__(self, gw: Any, emit: Callable[[str, dict], None]) -> None:
-        object.__setattr__(self, "_gw", gw)
-        object.__setattr__(self, "_combined_sink", emit)
-
-    def __getattr__(self, name: str) -> Any:
-        return getattr(object.__getattribute__(self, "_gw"), name)
-
-
 def _session_emitter(
     gw: Any, session_id: str
 ) -> Callable[[str, dict], None]:
@@ -353,13 +335,13 @@ def make_loop_builder(
 ) -> Callable[[Any, Callable[[str, dict], None], int], Any | None]:
     """L1 宿主用：把 ``rsi_wiring.build_rsi_loop`` 包成 ``loop_builder``。
 
-    本层（L2）不能 import L1 的装配根；宿主注入时经本助手包一层，
-    ``_GwProxy``（session 分区发射器）仍是驱动内部的实现细节。
+    本层（L2）不能 import L1 的装配根；宿主注入时经本助手把 session 分区
+    发射器显式传给 ``build_rsi_loop``。
     """
     def builder(
         gw: Any, emit: Callable[[str, dict], None], seed: int,
     ) -> Any | None:
-        return build_rsi_loop(_GwProxy(gw, emit), seed=seed)
+        return build_rsi_loop(gw, emit=emit, seed=seed)
 
     return builder
 

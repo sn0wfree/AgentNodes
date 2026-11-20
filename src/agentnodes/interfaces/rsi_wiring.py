@@ -158,7 +158,9 @@ def _version_of(genome: Any) -> str:
         return ""
 
 
-def build_rsi_loop(gw: Any, *, seed: int = 0) -> Any | None:
+def build_rsi_loop(
+    gw: Any, *, emit: Callable[[str, dict], None], seed: int = 0
+) -> Any | None:
     """按 Gateway 上已接线的子系统组装 RSI 闭环。
 
     缺任何一环（容量闸 / 基因组 / TicketSink 事件流）都返回 None 并
@@ -166,6 +168,7 @@ def build_rsi_loop(gw: Any, *, seed: int = 0) -> Any | None:
     无法诊断的幽灵问题。
 
     :param gw: 已由 ``wire_gateway`` 接线的 Gateway
+    :param emit: 事件发射器（由宿主经 loop_builder 显式注入，带 session_id 分区）
     :param seed: holdout 抽样种子（附录 C：必须显式给，不许默认随机）
 
     **C9 seed 进程外注入**：若设置了 ``AN_GOLDEN_SEED``，它**覆盖**本参数。
@@ -173,7 +176,6 @@ def build_rsi_loop(gw: Any, *, seed: int = 0) -> Any | None:
     「按固定抽样过拟合」的入口留在被检方手里。未设时沿用 ``seed``，并
     emit ``rsi.golden_seed``（``source=default``）让默认值可见。
     """
-    emit = getattr(gw, "_combined_sink", None) or (lambda k, d: None)
     genome = getattr(gw, "genome", None)
     capacity = getattr(gw, "capacity", None)
 
@@ -237,7 +239,7 @@ def build_rsi_loop(gw: Any, *, seed: int = 0) -> Any | None:
             emit=emit,
             replay=replay,
             baseline_metric=_baseline_metric(gw, golden_tasks, seed),
-            **_heldout_kwargs(gw, seed=seed, emit=emit),
+            **_heldout_kwargs(seed=seed, emit=emit),
         )
         return RsiLoop(
             agent=agent,
@@ -280,7 +282,7 @@ def _resolve_seed(
 
 
 def _heldout_kwargs(
-    gw: Any, *, seed: int, emit: Callable[[str, dict], None]
+    *, seed: int, emit: Callable[[str, dict], None]
 ) -> dict[str, Any]:
     """C9：构造 ``ValidationGate`` 的 held-out 关键字参数（失败即空 dict）。
 

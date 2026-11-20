@@ -206,20 +206,26 @@ class TestRunOnceGates:
 
 
 class TestMakeLoopBuilder:
-    def test_wraps_gwproxy_and_forwards_seed(self):
+    def test_forwards_gw_emit_and_seed(self):
+        """emit 作为显式参数透传，gw 原样到达 build_rsi_loop（无私有字段绕道）。"""
         captured = {}
+        emitted = []
 
-        def fake_build(gw, seed=0):
+        def fake_build(gw, *, emit, seed=0):
             captured["gw"] = gw
+            captured["emit"] = emit
             captured["seed"] = seed
             return SimpleNamespace(name="loop")
 
         gw = SimpleNamespace(store="S", genome="G")
         builder = cd.make_loop_builder(fake_build)
-        loop = builder(gw, lambda kind, data: None, 7)
+        emit = lambda kind, data: emitted.append((kind, data))
+        loop = builder(gw, emit, 7)
 
         assert loop.name == "loop"
+        assert captured["gw"] is gw
+        assert captured["emit"] is emit
         assert captured["seed"] == 7
-        # GwProxy 透传原属性，并持有 session 分区发射器
-        assert captured["gw"].store == "S"
-        assert callable(captured["gw"]._combined_sink)
+        # 行为断言：透传的 emit 真的能发事件（接口就是测试面）
+        captured["emit"]("rsi.probe", {"x": 1})
+        assert emitted == [("rsi.probe", {"x": 1})]

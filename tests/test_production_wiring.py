@@ -166,7 +166,7 @@ class TestRsiLoopAssembles:
     def test_loop_builds_from_wired_gateway(self, gateway):
         from agentnodes.interfaces.rsi_wiring import build_rsi_loop
 
-        loop = build_rsi_loop(gateway, seed=42)
+        loop = build_rsi_loop(gateway, emit=gateway._combined_sink, seed=42)
         assert loop is not None, "RSI 闭环组装失败（genome/capacity/store 缺一环）"
 
     def test_loop_runs_a_full_cycle(self, gateway):
@@ -192,7 +192,7 @@ class TestRsiLoopAssembles:
         events: list[tuple[str, dict]] = []
         gateway.add_sink(lambda k, d: events.append((k, d)))
 
-        loop = build_rsi_loop(gateway, seed=42)
+        loop = build_rsi_loop(gateway, emit=gateway._combined_sink, seed=42)
         out = loop.run_once(
             sig, objective="动量研究", role="researcher",
             tool_set=frozenset({"read", "write"}),
