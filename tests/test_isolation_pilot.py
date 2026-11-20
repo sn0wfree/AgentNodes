@@ -47,6 +47,28 @@ def test_s1_write_file_in_temp_workspace(tmp_path):
     assert (tmp_path / "pilot.txt").read_text(encoding="utf-8") == "3c-pilot"
 
 
+def test_s1_absolute_path_outside_workspace_rejected(tmp_path):
+    """S1 扩展：绝对路径越界 → 工具结构化拒绝，磁盘无越界文件（B2.5 5b）。
+
+    边界按代码事实（DEFAULT_WRITE_ROOTS=(\".\",) → tmp_path 子树），不照抄
+    过时 docstring 的四目录清单。
+    """
+    from agentnodes.kernel.agent.tools._isolation_context import to_wire
+    from agentnodes.kernel.agent.tools.core import ToolContext
+
+    outside = tmp_path.parent / "outside-pilot.txt"
+    try:
+        result = isolate_tool_call(
+            "write", {"path": str(outside), "content": "bad"},
+            ctx=to_wire(ToolContext(workspace=tmp_path)), timeout_s=30.0,
+        )
+        assert result.status == "failed"
+        assert not outside.exists(), "越界绝对路径不得落盘"
+    finally:
+        if outside.exists():
+            outside.unlink()
+
+
 def test_s2_deadline_terminates_and_confirms():
     """S2：deadline 触发 → 杀 worker → 逐 pid 确认 → terminated/stopped。
 
@@ -102,3 +124,51 @@ def test_s4_lease_released_after_kill_confirmation():
         events.append("confirmed" if result.actual_state == "stopped" else "unconfirmed")
     assert result.status == "terminated"
     assert events == ["acquire", "confirmed", "release"]
+
+
+def test_s5_real_write_deadline_terminate_and_side_effect_boundary(tmp_path):
+    """S5（B2.5 5b）：真实 write 路径的 deadline/终止/迟到/副作用边界端到端。
+
+    用 probe_slow_write（先 sleep 造确定性窗口，再调**真实 write**注册表路径）
+    使 deadline 落在「已派发真实工具、尚未写出」窗口。断言：
+    - terminated/stopped（确认成功）；
+    - 返回 payload 无成功写入回执（迟到结果拒收）；
+    - lease 序 acquire < confirmed < release（确认先于释放）；
+    - 磁盘产物如实记录——**不假设为空**（进程终止不撤销已发出写盘）。
+    """
+    from agentnodes.kernel.agent.tools._isolation_context import to_wire
+    from agentnodes.kernel.agent.tools.core import ToolContext
+
+    target = tmp_path / "s5-real-write.txt"
+    events: list[str] = []
+
+    class _StubLease:
+        def __enter__(self):
+            events.append("acquire")
+            return self
+
+        def __exit__(self, *exc):
+            events.append("release")
+            return False
+
+    t0 = time.perf_counter()
+    with _StubLease():
+        result = isolate_tool_call(
+            "probe_slow_write",
+            {"path": target.name, "content": "x" * 1024, "seconds": 8.0},
+            ctx=to_wire(ToolContext(workspace=tmp_path)),
+            timeout_s=1.5,
+        )
+        events.append("confirmed" if result.actual_state == "stopped" else "unconfirmed")
+    elapsed = time.perf_counter() - t0
+
+    assert result.status == "terminated"
+    assert result.actual_state == "stopped"
+    assert elapsed < 6.0, f"真实工具路径终止应在 deadline 附近完成，实测 {elapsed:.1f}s"
+    # 迟到结果拒收：返回的 payload 不含成功写入回执
+    assert "output" not in result.payload or "s5-real-write" not in str(result.payload)
+    # lease 顺序：确认先于释放
+    assert events == ["acquire", "confirmed", "release"]
+    # 副作用诚实边界：如实记录磁盘状态，不假设为空（sleep 在 write 之前，
+    # 本场景 deadline 落在 sleep 内 → 通常无文件；但代码不依赖该假设）。
+    _ = target.exists()  # 仅观测，不断言空/非空

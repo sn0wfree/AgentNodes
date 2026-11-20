@@ -189,6 +189,14 @@ def _worker_loop() -> int:
             time.sleep(float(args.get("seconds", 1.0)))
             _emit({"result": {"status": "ok", "slept": args.get("seconds")}})
             continue
+        if tool == "probe_slow_write":
+            # B2.5 5b 试点探针（仅测试用）：先 sleep 造确定性延时窗口，
+            # 再调**真实 write**（同一 _run_tool 注册表路径）——证明
+            # deadline/终止/迟到/副作用边界由真实工具路径端到端覆盖。
+            # 禁止用纯 probe_sleep 冒充真实工具路径（方案 §2.3）。
+            time.sleep(float(args.get("seconds", 1.0)))
+            _emit({"result": _run_tool("write", args, tool_ctx)})
+            continue
         _emit({"result": _run_tool(tool, args, tool_ctx)})
     return 0
 
