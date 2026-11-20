@@ -45,9 +45,10 @@ async def respond_permission(
       reason; agent loop surfaces the denial as a tool error
     """
     from agentnodes.kernel.permission import PermissionAction, PermissionResponse
-    from agentnodes.interfaces.api.routers.chat import _get_permission_gateway
+    # C3：单例归 composition（原自 routers.chat 私有穿透）
+    from agentnodes.interfaces.api.composition import get_permission_gateway
 
-    gateway = _get_permission_gateway(request)
+    gateway = get_permission_gateway(request)
     if gateway is None:
         # Gateway not wired up (e.g. test fixtures, sync-only
         # builds). Treat as no-op so the UI doesn't loop on retries.

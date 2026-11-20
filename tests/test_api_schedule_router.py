@@ -312,9 +312,9 @@ class TestPermissionRespond:
         拿到网关——该防御分支用注入 None 触发。
         """
         client_obj, _ = client
-        from agentnodes.interfaces.api.routers import chat as chat_mod
+        from agentnodes.interfaces.api import composition as composition_mod
 
-        monkeypatch.setattr(chat_mod, "_get_permission_gateway", lambda request: None)
+        monkeypatch.setattr(composition_mod, "get_permission_gateway", lambda request: None)
         res = client_obj.post(
             "/api/chat/permission/respond", headers=auth_header(),
             json={"tool_call_id": "tc-1", "action": "allow"},
@@ -337,9 +337,9 @@ class TestPermissionRespond:
                 seen["resp"] = response
                 return True
 
-        from agentnodes.interfaces.api.routers import chat as chat_mod
+        from agentnodes.interfaces.api import composition as composition_mod
 
-        monkeypatch.setattr(chat_mod, "_get_permission_gateway",
+        monkeypatch.setattr(composition_mod, "get_permission_gateway",
                             lambda request: StubGateway())
         res = client_obj.post(
             "/api/chat/permission/respond", headers=auth_header(),
@@ -360,9 +360,9 @@ class TestPermissionRespond:
             def respond(self, tool_call_id, response):
                 return True
 
-        from agentnodes.interfaces.api.routers import chat as chat_mod
+        from agentnodes.interfaces.api import composition as composition_mod
 
-        monkeypatch.setattr(chat_mod, "_get_permission_gateway",
+        monkeypatch.setattr(composition_mod, "get_permission_gateway",
                             lambda request: StubGateway())
         res = client_obj.post(
             "/api/chat/permission/respond", headers=auth_header(),
@@ -380,9 +380,9 @@ class TestPermissionRespond:
             def respond(self, tool_call_id, response):
                 return False
 
-        from agentnodes.interfaces.api.routers import chat as chat_mod
+        from agentnodes.interfaces.api import composition as composition_mod
 
-        monkeypatch.setattr(chat_mod, "_get_permission_gateway",
+        monkeypatch.setattr(composition_mod, "get_permission_gateway",
                             lambda request: StubGateway())
         res = client_obj.post(
             "/api/chat/permission/respond", headers=auth_header(),
@@ -401,9 +401,9 @@ class TestPermissionRespond:
             def respond(self, tool_call_id, response):
                 return True
 
-        from agentnodes.interfaces.api.routers import chat as chat_mod
+        from agentnodes.interfaces.api import composition as composition_mod
 
-        monkeypatch.setattr(chat_mod, "_get_permission_gateway",
+        monkeypatch.setattr(composition_mod, "get_permission_gateway",
                             lambda request: StubGateway())
         # tester 只拥有 sess-1/sess-2 → 允许
         res = client_obj.post(

@@ -107,7 +107,7 @@ class SessionService:
         self.event_bus = event_bus
         # **W5**：审批通道（ASK 判定需要它把请求递给用户）。
         # None = 无通道（ASK fail-closed 拒绝）；web 路由注入带 SSE 推送
-        # 钩子的进程级实例（``routers/chat._get_permission_gateway``），
+        # 钩子的进程级实例（``composition.get_permission_gateway``），
         # 与 ``/api/chat/permission/respond`` 端点共用同一个。
         self.permission_gateway = permission_gateway
         self._active_loops: dict[str, "asyncio.Task"] = {}

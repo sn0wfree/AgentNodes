@@ -69,6 +69,7 @@ def build_container(
     session_store_factory: Callable[[Path], "SessionStore"] | None = None,
     event_store_factory: Callable[[Path], "EventStore"] | None = None,
     session_service_factory: Callable[["SessionStore", "EventStore"], "SessionService"] | None = None,
+    permission_gateway: Any = None,
 ) -> AppContainer:
     """Construct the application container.
 
@@ -80,6 +81,10 @@ def build_container(
         *_factory: Optional factory overrides for testing. Each receives
             the standard constructor args and must return a compatible
             instance.
+        permission_gateway: Optional PermissionGateway injected into the
+            default-constructed SessionService（第四轮 C3）。``None``（默认）
+            = 无审批通道（ASK fail-closed）——与既有 container 路径行为
+            逐字一致；宿主可经 composition 单例显式注入。
 
     Returns:
         Fully constructed AppContainer with all services wired.
@@ -120,7 +125,13 @@ def build_container(
     )
     # A2: no SSE bridge — /api/chat/events subscribes to the event store
     # directly (single track).
-    session_service = (session_service_factory or SessionService)(session_store, event_store)
+    session_service = (
+        session_service_factory(session_store, event_store)
+        if session_service_factory is not None
+        else SessionService(
+            session_store, event_store, permission_gateway=permission_gateway,
+        )
+    )
 
     return AppContainer(
         workspace_path=Path(workspace_path) if workspace_path else None,

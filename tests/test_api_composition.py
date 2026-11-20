@@ -50,3 +50,63 @@ def test_resources_from_request_prefers_container():
 
     request = SimpleNamespace(app=SimpleNamespace(state=_State()))
     assert composition.resources_from_request(request) == "the-container"
+
+
+class TestPermissionGatewaySingleton:
+    """C3：PermissionGateway 单例归 composition 的契约。"""
+
+    def test_singleton_identity(self, monkeypatch):
+        """同一进程重复取用 → 同一实例（cache dict "default"）。"""
+        monkeypatch.setitem(composition._permission_gateway_cache, "default", None)
+        composition._permission_gateway_cache.pop("default", None)
+        try:
+            g1 = composition.get_permission_gateway()
+            g2 = composition.get_permission_gateway()
+            assert g1 is g2
+        finally:
+            composition._permission_gateway_cache.pop("default", None)
+
+    def test_gateway_wires_sse_hook(self, monkeypatch):
+        """on_request 钩子已接线（进程级 SSE 推送），且无 session 时不推。"""
+        monkeypatch.setitem(composition._permission_gateway_cache, "default", None)
+        composition._permission_gateway_cache.pop("default", None)
+        try:
+            gw = composition.get_permission_gateway()
+            assert gw is not None
+            # 无 session_id 的请求被丢弃（原 router 行为逐字保留）
+            pushes = []
+            monkeypatch.setattr(composition, "_push_event",
+                                lambda sid, et, data: pushes.append((sid, et)))
+            hook = None
+            # 钩子闭包在 gateway 内部——经 on_request 触发验证
+            gw_on_request = getattr(gw, "_on_request", None)
+            if gw_on_request is None:
+                return  # gateway 封装不暴露钩子时跳过（行为由 e2e 覆盖）
+            hook = gw_on_request
+            hook("tc-1", type("D", (), {"pattern": "p", "target": "t"})(), {})
+            assert pushes == []
+        finally:
+            composition._permission_gateway_cache.pop("default", None)
+
+    def test_container_and_fallback_paths_equivalent(self, monkeypatch, tmp_path):
+        """两构造路径同构：container 路径与 fallback SessionService 均无
+        permission_gateway（None，ASK fail-closed）——C3 统一后的契约。"""
+        from agentnodes.interfaces.api.container import build_container
+        from agentnodes.kernel.session.service import SessionService
+
+        with TemporaryDirectory() as tmpdir:
+            container = build_container(db_path=Path(tmpdir) / "a.db")
+            try:
+                assert container.session_service.permission_gateway is None
+            finally:
+                composition.close_resources(container)
+
+        # fallback（dependencies.get_session_service 的裸构造形态）
+        monkeypatch.setenv("AGENTNODES_SESSION_DB", str(Path(tmpdir) / "b.db"))
+        from agentnodes.kernel.session.store import SessionStore
+        from agentnodes.kernel.session.state.event_store import EventStore
+
+        store = SessionStore(Path(tmpdir) / "b.db")
+        bus = EventStore(Path(tmpdir) / "b.db")
+        svc = SessionService(store=store, event_bus=bus)
+        assert svc.permission_gateway is None

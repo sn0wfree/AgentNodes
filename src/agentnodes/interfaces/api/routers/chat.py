@@ -104,93 +104,14 @@ def _gateway_chat_options(body: ChatMessage) -> dict[str, Any]:
 from agentnodes.interfaces.api.composition import _SERVICE_CACHE as _session_service_cache  # noqa: F401
 
 # ── Tier 1 A1: permission gateway ──────────────────────────────────
-# One process-wide PermissionGateway (mirrors SessionService). Wired
-# with an ``on_request`` hook that pushes a ``permission_request``
-# SSE event for every ASK verdict; the front-end answers via
-# ``POST /api/chat/permission/respond`` which calls
-# ``gateway.respond(tool_call_id, ...)``.
-_permission_gateway_cache: dict[str, "PermissionGateway"] = {}
-
-
-def _get_permission_gateway(request: Request | None = None) -> "PermissionGateway | None":
-    """Lazy-init the process-wide gateway.
-
-    The ``on_request`` hook is wired on first use so we can attach the
-    SSE buffer without circular imports.
-    """
-    from agentnodes.kernel.permission import PermissionGateway
-
-    gateway = _permission_gateway_cache.get("default")
-    if gateway is not None:
-        return gateway
-
-    def _push_sse(tool_call_id, decision, args):
-        try:
-            from agentnodes.kernel.events.event_v2 import EventType
-
-            session_id = args.get("__session_id__") or ""
-            if not session_id:
-                # No session scope = no subscriber can see this.
-                # Drop on the floor (and log so operators notice).
-                logger.warning(
-                    "permission request without session_id; dropping",
-                )
-                return
-            # Tool name is implicit from the EventType subscriber;
-            # payload carries call_id + args for the dialog UI.
-            payload = {
-                "tool_call_id": tool_call_id,
-                "tool_name": args.get("__tool_name__", ""),
-                "args": _safe_payload(args),
-                "pattern": decision.pattern,
-                "target": decision.target,
-            }
-            _push_event(session_id, EventType.PERMISSION_REQUEST, payload)
-        except Exception as exc:  # noqa: BLE001
-            logger.warning("permission SSE push failed: %s", exc)
-
-    gateway = PermissionGateway(
-        on_request=_push_sse,
-    )
-    _permission_gateway_cache["default"] = gateway
-    return gateway
-
-
-def _safe_payload(args: dict) -> dict:
-    """Drop large fields before SSE-serialising the request."""
-    out = {}
-    for k, v in args.items():
-        if k.startswith("__") and k.endswith("__"):
-            continue  # internal marker
-        s = repr(v)
-        out[k] = s[:200] + "…" if len(s) > 200 else v
-    return out
-
-
-def _push_event(session_id: str, event_type: str, data: Any) -> None:
-    """A2: emit an SSE-visible event through the single EventStore track.
-
-    Replaces the retired ``legacy in-process SSE push``
-    calls. The event store persists it (event_log), feeds live
-    subscribers (``/api/chat/events`` via ``subscribe()``) and — when
-    configured — projects it into messages. Payloads that were already
-    JSON strings on the old track are accepted for a mechanical
-    migration; dicts are preferred.
-
-    Never raises: SSE visibility must not break the request path.
-    """
-    try:
-        payload: Any = data
-        if isinstance(data, str):
-            try:
-                payload = json.loads(data)
-            except (json.JSONDecodeError, TypeError):
-                payload = {"raw": data}
-        if not isinstance(payload, dict):
-            payload = {"value": payload}
-        _get_session_service().event_bus.emit(session_id, event_type, payload)
-    except Exception as exc:  # noqa: BLE001 — best effort by design
-        logger.warning("[SSE] emit %s failed session=%s: %s", event_type, session_id, exc)
+# 第四轮 C3：进程级 PermissionGateway 单例与 SSE 推送 helper 归
+# composition 单一所有（``get_permission_gateway`` / ``_push_event`` /
+# ``_safe_payload``）；此处经模块级 import 保持既有调用面与测试锚
+# （chat_mod._push_event 等）——名字仍是可 patch 的模块全局。
+from agentnodes.interfaces.api.composition import (  # noqa: E402,F401
+    _push_event,
+    _safe_payload,
+)
 
 
 def _get_session_service() -> SessionService:

@@ -7,8 +7,10 @@ dependencies.py（fallback）、router cache（自建 container，无 close）�
 外部只需 ``build_resources`` / ``register`` / ``resources_from_request`` /
 ``close_all`` 四个行为，内部保留现有 AppContainer 构造（薄转调，零 wiring 变化）。
 
-边界：不引入 DI framework；不镜像资源字段（getattr 按约定取）；不碰 Gateway
-singleton（独立控制面）。旧名（container.py 的函数）保留薄转发，下版本删除。
+边界：不引入 DI framework；不镜像资源字段（getattr 按约定取）；不碰 kernel
+Gateway singleton（``kernel.gateway.singleton.get_gateway``，独立控制面——
+与 PermissionGateway 是两个类，后者自第四轮 C3 起归本模块所有）。
+旧名（container.py 的函数）保留薄转发，下版本删除。
 """
 from __future__ import annotations
 
@@ -27,6 +29,7 @@ __all__ = [
     "resources_from_request",
     "session_service_from",
     "delete_session_lifecycle",
+    "get_permission_gateway",
     "clear_service_cache",
     "close_resources",
     "close_all",
@@ -112,6 +115,96 @@ def session_service_from(request: Any = None) -> Any:
 def clear_service_cache() -> None:
     """清服务缓存（测试 reset 用；不 close——close 仍归 close_all）。"""
     _SERVICE_CACHE.clear()
+
+
+# ── PermissionGateway 进程单例（第四轮 C3 自 routers/chat.py 迁入）──────
+# One process-wide PermissionGateway（mirrors SessionService）。Wired with an
+# ``on_request`` hook that pushes a ``permission_request`` SSE event for every
+# ASK verdict; the front-end answers via ``POST /api/chat/permission/respond``
+# which calls ``gateway.respond(tool_call_id, ...)``。
+_permission_gateway_cache: dict[str, Any] = {}
+
+
+def _safe_payload(args: dict) -> dict:
+    """Drop large fields before SSE-serialising the request."""
+    out = {}
+    for k, v in args.items():
+        if k.startswith("__") and k.endswith("__"):
+            continue  # internal marker
+        s = repr(v)
+        out[k] = s[:200] + "…" if len(s) > 200 else v
+    return out
+
+
+def _push_event(session_id: str, event_type: str, data: Any) -> None:
+    """A2: emit an SSE-visible event through the single EventStore track.
+
+    The event store persists it (event_log), feeds live subscribers
+    (``/api/chat/events`` via ``subscribe()``) and — when configured —
+    projects it into messages. Payloads that were already JSON strings on
+    the old track are accepted for a mechanical migration; dicts preferred.
+
+    Never raises: SSE visibility must not break the request path.
+    """
+    import json as _json
+
+    try:
+        payload: Any = data
+        if isinstance(data, str):
+            try:
+                payload = _json.loads(data)
+            except (ValueError, TypeError):
+                payload = {"raw": data}
+        if not isinstance(payload, dict):
+            payload = {"value": payload}
+        session_service_from().event_bus.emit(session_id, event_type, payload)
+    except Exception as exc:  # noqa: BLE001 — best effort by design
+        logger.warning("[SSE] emit %s failed session=%s: %s", event_type, session_id, exc)
+
+
+def get_permission_gateway(request: Any = None) -> Any:
+    """Lazy-init the process-wide PermissionGateway（第四轮 C3 单一归属）。
+
+    The ``on_request`` hook is wired on first use so we can attach the
+    SSE buffer without circular imports. ``request`` 参数保留（与原
+    router 签名同形，兼容既有调用方/测试锚），当前不使用。
+    """
+    from agentnodes.kernel.permission import PermissionGateway
+
+    gateway = _permission_gateway_cache.get("default")
+    if gateway is not None:
+        return gateway
+
+    def _push_sse(tool_call_id, decision, args):
+        try:
+            from agentnodes.kernel.events.event_v2 import EventType
+
+            session_id = args.get("__session_id__") or ""
+            if not session_id:
+                # No session scope = no subscriber can see this.
+                # Drop on the floor (and log so operators notice).
+                logger.warning(
+                    "permission request without session_id; dropping",
+                )
+                return
+            # Tool name is implicit from the EventType subscriber;
+            # payload carries call_id + args for the dialog UI.
+            payload = {
+                "tool_call_id": tool_call_id,
+                "tool_name": args.get("__tool_name__", ""),
+                "args": _safe_payload(args),
+                "pattern": decision.pattern,
+                "target": decision.target,
+            }
+            _push_event(session_id, EventType.PERMISSION_REQUEST, payload)
+        except Exception as exc:  # noqa: BLE001
+            logger.warning("permission SSE push failed: %s", exc)
+
+    gateway = PermissionGateway(
+        on_request=_push_sse,
+    )
+    _permission_gateway_cache["default"] = gateway
+    return gateway
 
 
 def delete_session_lifecycle(session_id: str, request: Any = None) -> bool:

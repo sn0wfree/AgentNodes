@@ -68,7 +68,7 @@ def build_default_permission_gateway() -> Any:
     **无 SSE 钩子**：默认形态用于 CLI/TUI 等无审批 UI 的路径——此时 ASK
     仍 fail-closed（``tools.py`` 找不到 on_request 就等超时后拒绝），
     但通道本身在位，接上 UI 即可用。web 路由会传入自己那个带
-    ``on_request`` 钩子的实例（``routers/chat._get_permission_gateway``）。
+    ``on_request`` 钩子的实例（``composition.get_permission_gateway``）。
     """
     from agentnodes.kernel.permission import PermissionGateway
 
@@ -249,7 +249,7 @@ def build_chat_agent_loop(
         #
         # 这里装默认 gateway（无 on_request 钩子时 ASK 仍走 fail-closed，
         # 但**有**通道可用）；web 路由会传入带 SSE 推送钩子的进程级
-        # gateway（``routers/chat._get_permission_gateway``）。
+        # gateway（``composition.get_permission_gateway``）。
         permission_gateway = build_default_permission_gateway()
     # 防御式挂载：测试/子类可能传入不接受任意属性的 loop 替身。
     for _attr, _val in (

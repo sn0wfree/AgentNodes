@@ -130,6 +130,12 @@ def get_session_service(request: Request) -> "SessionService":
     """FastAPI dependency: shared SessionService.
 
     Constructed once per process by the container; all routers share it.
+
+    第四轮 C3：fallback 与 container 路径**同构**——都不注入
+    permission_gateway（None，ASK fail-closed）。原 W5 的 gateway 注入
+    消费路径（``SessionService.send_message``）在生产 HTTP 无调用者，
+    且 router 私有穿透已删除；若将来该路径复活，应经
+    ``composition.get_permission_gateway`` 显式注入。
     """
     container = resources_from_request(request)
     if container is not None:
@@ -138,15 +144,9 @@ def get_session_service(request: Request) -> "SessionService":
 
     svc = getattr(request.app.state, _STATE_KEY_SESSION_SERVICE, None)
     if svc is None:
-        from agentnodes.interfaces.api.routers.chat import _get_permission_gateway
-
         svc = SessionService(
             store=get_session_store(request),
             event_bus=get_event_store(request),
-            # **W5**：注入带 SSE 推送钩子的进程级审批通道——与
-            # ``/api/chat/permission/respond`` 端点共用同一个实例，
-            # 于是用户点的审批能真正递到正在等它的工具调用上。
-            permission_gateway=_get_permission_gateway(),
         )
         setattr(request.app.state, _STATE_KEY_SESSION_SERVICE, svc)
     return svc
