@@ -39,7 +39,7 @@ from agentnodes.kernel.gateway import api_chat_request
 from agentnodes.kernel.orchestration import WorkKind
 from agentnodes.kernel.orchestration.contracts import QueueMode, RejectReason
 
-from agentnodes.apps.chat.events import ChatEvent
+from agentnodes.apps.chat.events import ChatEvent, translate_engine_event
 from agentnodes.apps.chat.messages import record_user_message
 
 logger = logging.getLogger(__name__)
@@ -224,10 +224,11 @@ def _event_bridge(
     seed_user: dict | None,
     persist: bool = False,
 ) -> Callable[[], None]:
-    """安装事件桥，返回注销函数。逐字搬迁自 router，wire 零变化。"""
-    mapping = {"tool_call": "tool_call", "tool_result": "tool_result"}
-    from agentnodes.apps.chat.events import STREAM_PASSTHROUGH_KINDS
+    """安装事件桥，返回注销函数。逐字搬迁自 router，wire 零变化。
 
+    事件名翻译走 :func:`events.translate_engine_event`（第四轮 C1）——
+    词汇表与翻译规则的单一定义点；本地硬编码 mapping 已删。
+    """
     state: dict[str, Any] = {"unsubscribe": None, "closed": False}
 
     def _close() -> None:
@@ -363,12 +364,9 @@ def _event_bridge(
             ):
                 _close()
 
-        out_kind = mapping.get(kind)
+        out_kind = translate_engine_event(kind)
         if out_kind is None:
-            if kind in STREAM_PASSTHROUGH_KINDS:
-                out_kind = kind
-            else:
-                return
+            return
         payload = dict(data)
         payload.pop("event_correlation_id", None)
         mid = assistant_mid_holder.get("id")

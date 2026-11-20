@@ -78,3 +78,53 @@ def test_bridge_uses_vocabulary_wire_unchanged(monkeypatch):
     # run.started，故 payload 不注入 message_id。
     assert pushed[0][1] == {"name": "echo"}
     assert pushed[1][1] == {"text": "hi"}
+
+
+def test_live_send_turn_bridge_calls_translate_helper(monkeypatch):
+    """C1 行为锚：send_turn 活桥的翻译决策真的经过 translate_engine_event。
+
+    spy 拦截 + 驱动真桥（不经 3a.4 deprecated 面）：已知 kind 翻译转发、
+    未知 kind 丢弃——helper 从"零生产调用"变为活的 interface。
+    """
+    from types import SimpleNamespace
+
+    from agentnodes.apps.chat import send_turn as st
+
+    calls: list[str] = []
+    real = st.translate_engine_event
+
+    def spy(kind: str):
+        calls.append(kind)
+        return real(kind)
+
+    monkeypatch.setattr(st, "translate_engine_event", spy)
+
+    pushed = []
+    deps = SimpleNamespace(
+        publish_sse=lambda kind, data, sid: pushed.append((sid, kind, data)),
+        emit=lambda *a, **k: None,
+        service=None,
+    )
+
+    class FakeGW:
+        def __init__(self):
+            self.sinks = []
+
+        def add_sink(self, sink):
+            self.sinks.append(sink)
+            return lambda: None
+
+    gw = FakeGW()
+    st._event_bridge(
+        gw, deps=deps, session_id="s1", assistant_mid_holder={},
+        event_correlation_id="c1", terminal_observer=None, seed_user=None,
+    )
+    bridge = gw.sinks[0]
+    bridge("text_delta", {"event_correlation_id": "c1", "text": "hi"})
+    bridge("node.started", {"event_correlation_id": "c1"})
+
+    # spy 证明两个 kind 都经过 helper（行为断言，非源码文本）
+    assert calls == ["text_delta", "node.started"]
+    # 直通转发、未知丢弃——wire 行为与 helper 契约一致
+    assert [(kind, sid) for sid, kind, _ in pushed] == [("text_delta", "s1")]
+    assert pushed[0][2]["text"] == "hi"
