@@ -22,6 +22,8 @@ from typing import Any, Optional
 from fastapi import APIRouter, HTTPException, Request
 from pydantic import BaseModel
 
+from agentnodes.interfaces.api.authz import _fetch_session_owned
+
 logger = logging.getLogger(__name__)
 
 router = APIRouter()
@@ -70,16 +72,8 @@ from agentnodes.kernel.session.db import (  # noqa: E402,F401  (re-exports for o
 )
 
 
-# ── M11a（2026-11-20 · 三前端一核心批 3c）：鉴权原语上移 ────────────────────
-# _fetch_session_owned 本体已迁至 ``agentnodes.interfaces.api.authz``（顶层
-# 共用鉴权原语）：chat/goal/permission/schedule/workflow 五路由改从 authz 取，
-# 不再横向 import 本模块私名。本模块 5 处调用点经下面的同名绑定自动改调
-# authz 版本，行为零变化。
-#
-# DEPRECATED（2026-11-20，M11a 过渡面）：本名保留为 re-export，兼容既有
-# import / patch 锚；**下一版本删除**（M11b，复刻 3a.4「零删除、标注过渡面、
-# 下版删」模式）。
-from agentnodes.interfaces.api.authz import _fetch_session_owned  # noqa: E402,F401  (DEPRECATED re-export: M11b 删)
+# 鉴权原语 ``_fetch_session_owned`` 住 interfaces/api/authz（M11a 上移，
+# M11b 已删本模块的过渡 re-export）；本模块 5 处调用点直接经顶部 import 取。
 
 
 def persist_message(
