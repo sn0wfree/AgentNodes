@@ -255,10 +255,8 @@ async def send_async(body: ChatMessage, request: Request):
                 body.session_id, len(body.content), body.content[:50])
 
     # Ownership check: only the session owner may post messages
-    from agentnodes.interfaces.api.authz import _fetch_session_owned
-    from agentnodes.kernel.session.db import _get_db
-    user_id = getattr(request.state, "user_id", "anonymous")
-    _fetch_session_owned(_get_db(), body.session_id, user_id)
+    from agentnodes.interfaces.api.authz import enforce_session_owned
+    enforce_session_owned(request, body.session_id)
 
     # ── /goal command intercept 已随 apps/goal 移除（2026-11-04 批次 2）──
     # ── /study command intercept 已随 apps/study 移除（2026-11-05 批次 3）──
@@ -407,10 +405,8 @@ async def cancel_attempt(body: CancelRequest, request: Request):
     After cancellation the Gateway mailbox is **paused** (queue_paused
     SSE event). Use ``POST /chat/queue/resume`` to continue processing.
     """
-    from agentnodes.interfaces.api.authz import _fetch_session_owned
-    from agentnodes.kernel.session.db import _get_db
-    user_id = getattr(request.state, "user_id", "anonymous")
-    _fetch_session_owned(_get_db(), body.session_id, user_id)
+    from agentnodes.interfaces.api.authz import enforce_session_owned
+    enforce_session_owned(request, body.session_id)
     gateway = _get_gateway()
 
     if body.attempt_id and (
@@ -442,10 +438,8 @@ async def queue_resume(body: QueueResumeRequest, request: Request):
     Returns ``{"ok": true, "session_id": ...}`` if the queue was paused
     and is now resumed; ``{"ok": false}`` if no paused queue exists.
     """
-    from agentnodes.interfaces.api.authz import _fetch_session_owned
-    from agentnodes.kernel.session.db import _get_db
-    user_id = getattr(request.state, "user_id", "anonymous")
-    _fetch_session_owned(_get_db(), body.session_id, user_id)
+    from agentnodes.interfaces.api.authz import enforce_session_owned
+    enforce_session_owned(request, body.session_id)
     ok = _get_gateway().resume_session(body.session_id)
     return {"ok": ok, "session_id": body.session_id}
 
@@ -873,10 +867,8 @@ async def send_sync(body: ChatMessage, request: Request):
     旧的 SessionService 直连分支已删除（`QNODES_NEW_ENTRY` 回退开关退役）。
     """
     # Ownership check: only the session owner may post messages
-    from agentnodes.interfaces.api.authz import _fetch_session_owned
-    from agentnodes.kernel.session.db import _get_db
-    user_id = getattr(request.state, "user_id", "anonymous")
-    _fetch_session_owned(_get_db(), body.session_id, user_id)
+    from agentnodes.interfaces.api.authz import enforce_session_owned
+    enforce_session_owned(request, body.session_id)
 
     # R2.1c（E1=C）：?wait=true 保留同步 reply 语义（外部脚本用户）；
     # 默认 receipt 型——submit 即回，答案走 SSE。
@@ -900,11 +892,10 @@ async def chat_events(
     """SSE event stream for a session."""
     from fastapi import HTTPException as _HTTPExc
 
-    from agentnodes.interfaces.api.authz import _fetch_session_owned
-    from agentnodes.kernel.session.db import _get_db, _get_db_path
-    user_id = getattr(request.state, "user_id", "anonymous")
+    from agentnodes.interfaces.api.authz import enforce_session_owned
+    from agentnodes.kernel.session.db import _get_db_path
     try:
-        _fetch_session_owned(_get_db(), session_id, user_id)
+        enforce_session_owned(request, session_id)
     except _HTTPExc as exc:
         # Auto-recreate bare study_id session on 404 so SSE works
         # even after the session row was deleted or never created.
@@ -916,7 +907,7 @@ async def chat_events(
                     _get_db_path(), session_id,
                     f"Study: {session_id}",
                 )
-                _fetch_session_owned(_get_db(), session_id, user_id)
+                enforce_session_owned(request, session_id)
             except Exception:
                 raise exc from exc
         else:
@@ -957,10 +948,8 @@ async def list_active_attempts(
     created_at}`` — oldest first. Zombie rows (server restart) are
     filtered by the Gateway's live mailbox/run state.
     """
-    from agentnodes.interfaces.api.authz import _fetch_session_owned
-    from agentnodes.kernel.session.db import _get_db
-    user_id = getattr(request.state, "user_id", "anonymous")
-    _fetch_session_owned(_get_db(), session_id, user_id)
+    from agentnodes.interfaces.api.authz import enforce_session_owned
+    enforce_session_owned(request, session_id)
     # 顺序④（裁决 4）：存储记录 × Gateway 实时状态的拼接归 apps/chat
     # 查询用例；router 只做鉴权、取组合根句柄与返回。
     from agentnodes.apps.chat.attempts_query import query_live_attempts
@@ -977,10 +966,8 @@ async def list_active_attempts(
 @router.get("/session/{session_id}/available_actions")
 async def chat_available_actions(session_id: str, request: Request):
     """C3: actions the current session state permits (drives the UI's buttons)."""
-    from agentnodes.interfaces.api.authz import _fetch_session_owned
-    from agentnodes.kernel.session.db import _get_db
-    user_id = getattr(request.state, "user_id", "anonymous")
-    _fetch_session_owned(_get_db(), session_id, user_id)
+    from agentnodes.interfaces.api.authz import enforce_session_owned
+    enforce_session_owned(request, session_id)
     state = _get_gateway().chat_session_state(session_id)
     is_processing = state["active"] or state["pending"]
     actions = []
@@ -1018,11 +1005,9 @@ async def chat_export(
     from fastapi.responses import PlainTextResponse
 
     from agentnodes.apps.chat.export import render
-    from agentnodes.interfaces.api.authz import _fetch_session_owned
-    from agentnodes.kernel.session.db import _get_db
+    from agentnodes.interfaces.api.authz import enforce_session_owned
 
-    user_id = getattr(request.state, "user_id", "anonymous")
-    _fetch_session_owned(_get_db(), session_id, user_id)
+    enforce_session_owned(request, session_id)
     service = _get_session_service()
     messages = service.store.get_messages(session_id, limit=10000)
 
@@ -1053,10 +1038,8 @@ async def get_session_trace(
     """
     from agentnodes.kernel.agent.telemetry.trace import TraceWriter
     from agentnodes.kernel.session.trace_projection import TraceProjection
-    from agentnodes.interfaces.api.authz import _fetch_session_owned
-    from agentnodes.kernel.session.db import _get_db
-    user_id = getattr(request.state, "user_id", "anonymous")
-    _fetch_session_owned(_get_db(), session_id, user_id)
+    from agentnodes.interfaces.api.authz import enforce_session_owned
+    enforce_session_owned(request, session_id)
 
     type_filter = set(types.split(",")) if types else None
 

@@ -12,8 +12,27 @@ chat/goal/permission/schedule/workflow 五路由此前横向 import 该路由模
 from __future__ import annotations
 
 import sqlite3
+from typing import Any
 
 from fastapi import HTTPException
+
+
+def enforce_session_owned(request: Any, session_id: str) -> sqlite3.Row:
+    """请求侧的会话归属校验 adapter（第三轮复审候选 S1）。
+
+    独占「request.state.user_id 提取 → 连接获取 → 归属校验」三步；21 个
+    调用点此前各自重复这三行，且 user_id 口径分裂为 ``"anonymous"`` 与
+    ``None or "anonymous"`` 两种。统一为本 helper 一种实现（与
+    ``auth.get_current_user_id`` 一致）。特例（goal 旁路开关 / chat
+    study-404 重建 / permission 条件检查 / workflow live-runner 短路）
+    留在各自本地 wrapper，本 helper 只拥有公共三步。
+
+    ``_fetch_session_owned`` 位置不动；本 helper 包装它。
+    """
+    from agentnodes.kernel.session.db import _get_db
+
+    user_id = getattr(request.state, "user_id", None) or "anonymous"
+    return _fetch_session_owned(_get_db(), session_id, user_id)
 
 
 def _fetch_session_owned(

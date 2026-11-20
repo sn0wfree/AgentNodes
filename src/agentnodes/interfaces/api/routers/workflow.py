@@ -65,8 +65,7 @@ async def _require_run_access(run_id: str, request: Request) -> None:
     table already stores it — no schema change needed). 404 unknown,
     403 foreign, same semantics as chat sessions.
     """
-    from agentnodes.interfaces.api.authz import _fetch_session_owned
-    from agentnodes.kernel.session.db import _get_db
+    from agentnodes.interfaces.api.authz import enforce_session_owned
     user_id = getattr(request.state, "user_id", None) or "anonymous"
     registry = _get_run_registry()
     runner = registry.get(run_id)
@@ -76,7 +75,7 @@ async def _require_run_access(run_id: str, request: Request) -> None:
     record = _get_run_store().get_run(run_id)
     if record is None:
         raise HTTPException(status_code=404, detail=f"Run '{run_id}' not found")
-    _fetch_session_owned(_get_db(), record["session_id"], user_id)
+    enforce_session_owned(request, record["session_id"])
 
 
 @router.post("/start")
@@ -92,11 +91,8 @@ async def workflow_start(req: WorkflowStartRequest, request: Request):
         from agentnodes.apps.goal.workflow import GoalWorkflowRunner
         from agentnodes.apps.goal.workflow_config import load_goal_workflow
         from agentnodes.interfaces.api.routers.chat import _get_gateway, _get_session_service
-        from agentnodes.interfaces.api.authz import _fetch_session_owned
-        from agentnodes.kernel.session.db import _get_db
-
-        user_id = getattr(request.state, "user_id", None) or "anonymous"
-        _fetch_session_owned(_get_db(), req.session_id, user_id)
+        from agentnodes.interfaces.api.authz import enforce_session_owned
+        enforce_session_owned(request, req.session_id)
 
         config = load_goal_workflow(req.workflow_name)
         session_service = _get_session_service()
@@ -620,14 +616,13 @@ async def definitions_graph(name: str, request: Request):
 async def start_definition(req: WorkflowStartDefinitionRequest, request: Request):
     """Start a modular workflow definition run (session ownership required;
     the run is owner-stamped for status/detail/events/approve access)."""
-    from agentnodes.interfaces.api.authz import _fetch_session_owned
-    from agentnodes.kernel.session.db import _get_db
+    from agentnodes.interfaces.api.authz import enforce_session_owned
     from agentnodes.kernel.workflow.builtin import load_definition
     from agentnodes.kernel.workflow.executor import WorkflowRunner
     from agentnodes.kernel.workflow.node_types import register_builtin_tool_executors
 
+    enforce_session_owned(request, req.session_id)
     user_id = getattr(request.state, "user_id", None) or "anonymous"
-    _fetch_session_owned(_get_db(), req.session_id, user_id)
 
     definition = load_definition(req.definition_name, _definition_workspace())
     if definition is None:

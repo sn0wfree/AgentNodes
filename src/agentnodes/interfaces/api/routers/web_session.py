@@ -23,6 +23,7 @@ from fastapi import APIRouter, HTTPException, Request
 from pydantic import BaseModel
 
 from agentnodes.interfaces.api.authz import _fetch_session_owned
+from agentnodes.interfaces.api.authz import enforce_session_owned
 
 logger = logging.getLogger(__name__)
 
@@ -249,18 +250,16 @@ async def list_sessions(request: Request, limit: int = 50, include_archived: boo
 @router.get("/{session_id}")
 async def get_session(session_id: str, request: Request):
     """Get a single session."""
-    user_id = getattr(request.state, "user_id", "anonymous")
     conn = _get_db()
-    row = _fetch_session_owned(conn, session_id, user_id)
+    row = enforce_session_owned(request, session_id)
     return _row_to_session(row)
 
 
 @router.patch("/{session_id}")
 async def update_session(session_id: str, body: WebSessionUpdate, request: Request):
     """Update session metadata: title, starred, archived, tags."""
-    user_id = getattr(request.state, "user_id", "anonymous")
     conn = _get_db()
-    row = _fetch_session_owned(conn, session_id, user_id)
+    row = enforce_session_owned(request, session_id)
     now = time.time()
     fields: dict[str, Any] = {"updated_at": now}
     if body.title is not None:
@@ -292,9 +291,8 @@ async def delete_session(session_id: str, request: Request):
     disappears from ``list_sessions`` (which filters ``archived=0``)
     but remains readable via ``GET /{session_id}``.
     """
-    user_id = getattr(request.state, "user_id", "anonymous")
     conn = _get_db()
-    _fetch_session_owned(conn, session_id, user_id)
+    enforce_session_owned(request, session_id)
     conn.execute("UPDATE sessions SET archived = 1 WHERE id = ?", (session_id,))
     conn.commit()
     _invalidate_projection(session_id, request)
@@ -377,9 +375,8 @@ async def list_messages(
     accept a unix ts; we map it to the maximum seq seen before that ts
     via a subquery for cursor-pagination compatibility.
     """
-    user_id = getattr(request.state, "user_id", "anonymous")
     conn = _get_db()
-    _fetch_session_owned(conn, session_id, user_id)
+    enforce_session_owned(request, session_id)
     params: list[Any] = [session_id]
     cursor_sql = ""
     if before is not None:
@@ -455,9 +452,8 @@ async def get_session_state(session_id: str, request: Request):
     goal / workflow 子面板已随 apps/goal 移除（批次 2）：恒返回 null，
     前端显示空态；agents 列表恒为空（SSE 流负责刷新 chat 主面板）。
     """
-    user_id = getattr(request.state, "user_id", "anonymous")
     conn = _get_db()
-    _fetch_session_owned(conn, session_id, user_id)
+    enforce_session_owned(request, session_id)
 
     return {
         "goal": None,

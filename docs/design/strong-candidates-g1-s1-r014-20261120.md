@@ -91,3 +91,22 @@
 ## 6. 实施前确认
 
 本方案来自 grilling 全 A 共识（Q1-Q8）。**未获批不得实施任何代码**；获批后按 R-007 分两批独立提交，doc first 纪律已满足（本文件）。
+
+## 7. 执行记录（2026-11-20 · 两批已实施 · 用户"开始吧"批准）
+
+### G1 · `43b76401`（7 files，+33/-43）
+- `rsi_wiring.py`：`build_rsi_loop(gw, *, emit, seed=0)` 必填 emit；删 `getattr(gw, "_combined_sink")` 与静默 no-op fallback；`_heldout_kwargs` 删未用 `gw`。
+- `cycle_driver.py`：删整个 `_GwProxy`；`make_loop_builder` 直接 `build_rsi_loop(gw, emit=emit, seed=seed)`。
+- 测试锚：`test_evolution_cycle_driver.py:209-225` 从 `assert callable(captured["gw"]._combined_sink)` 改为行为断言（emit 透传 + 真发事件）；`test_production_wiring.py:169,195` 两处调用补显式 emit。
+- 验证：RSI 面 67 passed；全量 `-n 6` 8045 passed；batch_gate ALL GREEN；数字 464/96,893（L1 21,929 / L2 11,542）。
+
+### S1 · 本批（21 处收口 + 新单测）
+- `authz.py`：新增 `enforce_session_owned(request, session_id) -> Row`（lazy import `_get_db`，统一 `None or "anonymous"` 口径，包装 `_fetch_session_owned` 位置不动）。
+- 21 处调用点：chat 10 / web_session 5 / workflow 3 / goal 1 / permission 1 / schedule 1 全换 helper 一行；三处特例原样保留（chat study-404 try/except、goal 三开关、permission 条件、workflow live-runner 短路 + start-definition owner stamp）。
+- `test_session_ownership.py` 新增 5 例（owner 取 row / 403 / 404 / user_id=None 与属性缺失回落 anonymous）。
+- 实施中发现并修复：`workflow.start_definition` 的 `runner._owner = user_id` 是真实本地用途，恢复其局部提取（非归属校验重复）。
+- 验证：归属 E2E 面 136 passed / 1 skipped；全量 `-n 6` **8050 passed** / 0 failed（+5 新单测）；batch_gate ALL GREEN；数字 464/96,879（L1 21,915）。
+
+### 共同事实
+- 每批独立提交，不 push；`sync_architecture_diagram.py --write` + `check_framework_numbers.py` 已同步 md/HTML 锚点。
+- 环境插曲：`set PYTHONUTF8=` 曾给子进程留下空值导致 82 个 subprocess 类测试假失败；确认根因后以 `PYTHONUTF8=1` 重跑全绿，非代码回归。G1 的 `-n 12` 曾因资源压力 node down，按 rules §2.1 降 `-n 6` 通过。

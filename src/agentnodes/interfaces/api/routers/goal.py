@@ -32,10 +32,8 @@ def _session_owned(request: Request, session_id: str) -> None:
         return
     if (_settings.get_legacy("SR_ENFORCE_STUDY_IDOR", "") or "") == "0":
         return
-    from agentnodes.interfaces.api.authz import _fetch_session_owned
-    from agentnodes.kernel.session.db import _get_db
-    user_id = getattr(request.state, "user_id", None) or "anonymous"
-    _fetch_session_owned(_get_db(), session_id, user_id)
+    from agentnodes.interfaces.api.authz import enforce_session_owned
+    enforce_session_owned(request, session_id)
 
 
 class GoalStartRequest(BaseModel):
