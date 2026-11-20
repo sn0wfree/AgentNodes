@@ -11,6 +11,7 @@ from agentnodes.apps.goal.audit import (
     all_criteria_covered,
     build_completion_audit_rows,
     resolve_criterion_ref,
+    rows_for,
 )
 
 _E = lambda eid, cid: {"evidence_id": eid, "criterion_id": cid}
@@ -92,3 +93,73 @@ class TestBuildCompletionAuditRows:
 
     def test_empty_criteria_gives_empty_rows(self):
         assert build_completion_audit_rows(_snapshot([], []), "") == []
+
+
+class TestCoverageUnification:
+    """候选 7：覆盖判定单源——status 口径不漏判 + required 统一 + 行形单源。"""
+
+    def test_status_covered_without_evidence(self):
+        """回归 workflow_hook 漏判：status 已覆盖但无 evidence → covered。"""
+        snap = _snapshot(
+            [{"criterion_id": "c1", "status": "covered"}], [],
+        )
+        assert all_criteria_covered(snap) is True
+
+    def test_non_required_uncovered_does_not_block(self):
+        """非必填未覆盖不阻塞（修 goal_progress_tuple 的 len 口径）。"""
+        snap = _snapshot(
+            [
+                {"criterion_id": "c1", "status": "covered"},
+                {"criterion_id": "c2", "required": False, "status": "open"},
+            ],
+            [],
+        )
+        assert all_criteria_covered(snap) is True
+
+    def test_required_uncovered_blocks(self):
+        snap = _snapshot(
+            [{"criterion_id": "c1", "status": "open"}], [],
+        )
+        assert all_criteria_covered(snap) is False
+
+    def test_rows_for_filters_per_criterion_with_fallback(self):
+        """行形单源：按 criterion 过滤，无匹配回退全量首个。"""
+        criteria = [
+            {"criterion_id": "c1", "required": True},
+            {"criterion_id": "c2", "required": True},
+            {"criterion_id": "c3", "required": False},
+        ]
+        evidence = [_E("e1", "c1")]
+        rows = rows_for(criteria, evidence, "note")
+        assert len(rows) == 2  # c3 非必填被跳过
+        assert rows[0].evidence_ids == ["e1"]
+        assert rows[1].evidence_ids == ["e1"]  # 无匹配 → 回退全量首个
+
+    def test_workflow_hook_uses_single_source(self):
+        """架构锚：workflow_hook 不再自建 evidence_by_criterion 口径。"""
+        import io
+        from pathlib import Path
+
+        p = (
+            Path(__file__).resolve().parents[1]
+            / "src/agentnodes/apps/goal/workflow_hook.py"
+        )
+        text = io.open(p, encoding="utf-8").read()
+        assert "all_criteria_covered" in text
+        # 实际构建逻辑（赋值语句）已删；docstring 里提及旧口径无妨
+        assert "evidence_by_criterion:" not in text
+
+
+class TestCompletionStrategyUsesSingleShape:
+    def test_completion_strategy_uses_rows_for(self):
+        """架构锚：completion_strategy 不再自建 AuditRow 行形。"""
+        import io
+        from pathlib import Path
+
+        p = (
+            Path(__file__).resolve().parents[1]
+            / "src/agentnodes/apps/goal/completion_strategy.py"
+        )
+        text = io.open(p, encoding="utf-8").read()
+        assert "rows_for" in text
+        assert "cid_evidence_ids" not in text

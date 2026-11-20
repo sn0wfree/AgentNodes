@@ -72,3 +72,22 @@ required（与 workflow_hook 一致）。无 required criteria → True。
 ## 6. 实施前确认
 
 本方案来自用户「继续」推进候选 7 的授权，确认后按 R-007 单提交实施。
+
+## 7. 执行记录（2026-11-20 · 已实施）
+
+- `audit.py::all_criteria_covered` 改为逐条 required criterion 用
+  `criterion_is_covered(snapshot, c)` 判定——统一 status+evidence 口径
+  + 只算 required（修 workflow_hook 漏判与 goal_progress_tuple 的 len 口径）。
+- `audit.py` 新增 `rows_for(criteria, evidence, notes)` 行形单源（按
+  criterion 过滤 + 无匹配回退全量首个）；`build_completion_audit_rows`
+  增 `per_criterion=False` 参数（默认全量保留 CLI 行为，True 委托 rows_for）。
+- 两调用方切换：`workflow_hook._check_all_criteria_covered` 删自建
+  evidence_by_criterion 循环 → `all_criteria_covered(snapshot)`；
+  `completion_strategy.complete` 删自建 AuditRow 循环 → `rows_for(...)`。
+- 新测试 `test_goal_audit.py::TestCoverageUnification` 5 例 + `TestCompletionStrategyUsesSingleShape` 1 例：status 覆盖无 evidence、非必填未覆盖不阻塞、必填未覆盖阻塞、rows_for 过滤+回退、两调用方源码锚。
+
+验证：goal 面 116 passed（audit/context/workflow_hook/workflow_v051/
+api_goal_router）；全量 + gate 见提交前记录。零 schema/接口/事件变化。
+
+**架构复审七候选全部收口**：1（事件）/2（编排）/3（部分，from_seam_result）/
+4（入口）/5（旋钮）/6（RSI 宿主）/7（goal 口径）。

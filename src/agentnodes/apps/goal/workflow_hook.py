@@ -318,27 +318,18 @@ class GoalWorkflowHook:
             return False
 
     def _check_all_criteria_covered(self) -> bool:
-        """Check if all required criteria have at least one evidence."""
+        """全部 required criterion 已覆盖（委托 audit 单源，修 status 漏判）。
+
+        原实现自建 evidence_by_criterion 只看 evidence——status 已覆盖但无
+        evidence 的 criterion 被误判未覆盖。现统一到
+        :func:`apps.goal.audit.all_criteria_covered`（status + evidence 口径）。
+        """
+        from agentnodes.apps.goal.audit import all_criteria_covered
+
         snapshot = self._store.get_current_snapshot(self._session_id)
         if snapshot is None:
             return False
-
-        criteria = snapshot.get("criteria", [])
-        evidence = snapshot.get("evidence", [])
-
-        evidence_by_criterion: dict[str, list] = {}
-        for ev in evidence:
-            cid = ev.get("criterion_id")
-            if cid:
-                evidence_by_criterion.setdefault(cid, []).append(ev)
-
-        for criterion in criteria:
-            if not criterion.get("required", True):
-                continue
-            cid = criterion.get("criterion_id", "")
-            if not evidence_by_criterion.get(cid):
-                return False
-        return True
+        return all_criteria_covered(snapshot)
 
     def _auto_complete(self) -> None:
         """Trigger goal completion via the configured strategy."""

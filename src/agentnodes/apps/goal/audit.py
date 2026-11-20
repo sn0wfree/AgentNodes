@@ -22,6 +22,7 @@ __all__ = [
     "all_criteria_covered",
     "build_completion_audit_rows",
     "resolve_criterion_ref",
+    "rows_for",
 ]
 
 
@@ -47,19 +48,53 @@ def resolve_criterion_ref(
 
 
 def all_criteria_covered(snapshot: dict[str, Any]) -> bool:
-    """全部 criteria 都已被证据/状态覆盖（完成闸的单一事实源）。
+    """全部 **required** criterion 已被证据/状态覆盖（完成闸单一事实源）。
 
-    以 :func:`apps.goal.context.goal_progress_tuple` 为准——原 CLI 读的
-    ``all_covered`` 是幻影键（无生产方），恒 False 使非 lite 完成在有
-    criteria 时恒拒绝。无 criteria 时视为已覆盖（nothing to prove）。
+    逐条用 :func:`apps.goal.context.criterion_is_covered` 判定——统一 status
+    + evidence 口径（修 workflow_hook 漏判 status 覆盖），且只算 required
+    （非必填未覆盖不阻塞完成，修 goal_progress_tuple 的 len 口径）。无
+    required criteria 时返回 True（nothing to prove）。
+
+    原 CLI 读的 ``all_covered`` 是幻影键（无生产方），恒 False 使非 lite
+    完成在有 criteria 时恒拒绝——M5 已修，本函数是该修复的口径收尾。
     """
-    from agentnodes.apps.goal.context import goal_progress_tuple
+    from agentnodes.apps.goal.context import criterion_is_covered
 
     criteria = snapshot.get("criteria") or []
-    if not criteria:
+    required = [c for c in criteria if c.get("required", True)]
+    if not required:
         return True
-    covered, _ = goal_progress_tuple(snapshot)
-    return covered >= len(criteria)
+    return all(criterion_is_covered(snapshot, c) for c in required)
+
+
+def rows_for(
+    criteria: list[dict[str, Any]],
+    evidence: list[dict[str, Any]],
+    notes: str,
+) -> list[Any]:
+    """从 criteria/evidence 两 list 合成 AuditRow（行形单源，per-criterion）。
+
+    只处理 required criterion；每条 evidence_ids 取该 criterion 匹配的，
+    无匹配则回退全量首个（与 AutoCompleteStrategy 原行为一致）。供有
+    criteria/evidence list 但无 snapshot 的调用方（completion_strategy）。
+    """
+    from agentnodes.apps.goal.models import AuditRow
+
+    all_ids = [e.get("evidence_id", "") for e in evidence]
+    rows = []
+    for c in criteria:
+        if not c.get("required", True):
+            continue
+        cid = str(c.get("criterion_id", ""))
+        cid_ids = [
+            e.get("evidence_id", "") for e in evidence
+            if e.get("criterion_id") == cid
+        ]
+        rows.append(AuditRow(
+            criterion_id=cid, result="satisfied",
+            evidence_ids=cid_ids or all_ids[:1], notes=notes,
+        ))
+    return rows
 
 
 def build_completion_audit_rows(
@@ -67,13 +102,19 @@ def build_completion_audit_rows(
     recap: str = "",
     *,
     evidence_ids: list[str] | None = None,
+    per_criterion: bool = False,
 ) -> list[Any]:
-    """为每条 criterion 合成一行 ``AuditRow``（与原 CLI 实现逐字等价）。
+    """为每条 criterion 合成一行 ``AuditRow``。
 
-    ``evidence_ids`` 缺省取快照内全部证据 id（原行为）；显式传入可做
-    按条目过滤（AutoCompleteStrategy 口径，本批不用）。调用方应先用
-    :func:`all_criteria_covered` 过闸——本函数不重复判定。
+    ``per_criterion=False``（默认，原 CLI 行为）：全量 evidence_ids 或显式传入。
+    ``per_criterion=True``：委托 :func:`rows_for`（按 criterion 过滤，行形统一）。
+    调用方应先用 :func:`all_criteria_covered` 过闸——本函数不重复判定。
     """
+    if per_criterion:
+        return rows_for(
+            snapshot.get("criteria", []), snapshot.get("evidence", []), recap,
+        )
+
     from agentnodes.apps.goal.models import AuditRow
 
     ids = (

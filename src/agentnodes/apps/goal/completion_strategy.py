@@ -52,24 +52,13 @@ class AutoCompleteStrategy:
         evidence: list[dict[str, Any]],
         workflow_name: str,
     ) -> bool:
-        from agentnodes.apps.goal.models import AuditRow, GoalStatus
+        from agentnodes.apps.goal.audit import rows_for
+        from agentnodes.apps.goal.models import GoalStatus
 
-        audit_rows = []
-        all_evidence_ids = [e.get("evidence_id", "") for e in evidence]
-        for criterion in criteria:
-            if not criterion.get("required", True):
-                continue
-            cid = criterion.get("criterion_id", "")
-            cid_evidence_ids = [
-                e.get("evidence_id", "") for e in evidence
-                if e.get("criterion_id") == cid
-            ]
-            audit_rows.append(AuditRow(
-                criterion_id=cid,
-                result="satisfied",
-                evidence_ids=cid_evidence_ids or all_evidence_ids[:1],
-                notes=f"Auto-completed by workflow {workflow_name}",
-            ))
+        # 行形单源：与 audit/slash_goal 共用 rows_for（按 criterion 过滤 + 回退）。
+        audit_rows = rows_for(
+            criteria, evidence, f"Auto-completed by workflow {workflow_name}",
+        )
 
         store.update_status(
             session_id=session_id,
