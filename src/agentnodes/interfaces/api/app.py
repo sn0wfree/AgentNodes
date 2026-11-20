@@ -144,7 +144,7 @@ def create_app(
     # container's services so both access paths stay identical.
     from agentnodes.interfaces.api.container import attach_container, build_container, services_from_container
     from agentnodes.interfaces.api.routers.chat import _session_service_cache
-    from agentnodes.interfaces.api.routers.web_session import _get_db_path
+    from agentnodes.kernel.session.db import _get_db_path
 
     container = build_container(workspace_path=workspace_path, db_path=Path(_get_db_path()))
     attach_container(app, container)
