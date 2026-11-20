@@ -4,15 +4,19 @@ These are *slash command* entrypoints used by the interactive REPL; the
 legacy argparse-based session commands (``cmd_session_*``) live in
 ``cli.commands.session`` and are unrelated.
 
-* :func:`cmd_history` (``/history``) — list recent sessions via ``SessionDB``.
-* :func:`cmd_search` (``/search <query>``) — FTS5 search across messages.
+* :func:`cmd_history` (``/history``) — list recent sessions.
+* :func:`cmd_search` (``/search <query>``) — LIKE search across messages.
 * :func:`cmd_export` (``/export``) — placeholder pointing at the web UI.
+
+M3（批 3c）：取数走 ``apps.chat.session_views``（L2 领域数据面），渲染
+留在本前端。原 ``_PATH_ENV`` / ``_resolve_db_path`` 死代码已删——env
+语义由 ``kernel.session.reader._resolve``（``resolve_session_db_path``）
+承担，两者在本模块零调用。
 """
 
 from __future__ import annotations
 
-import os
-from typing import Any, Optional
+from typing import Any
 
 from rich.console import Console
 from rich.panel import Panel
@@ -21,23 +25,6 @@ from rich.text import Text
 
 from agentnodes.interfaces.cli.theme import get_console
 from agentnodes.interfaces.cli.commands._shared import _resolve_console
-
-_PATH_ENV = "AGENTNODES_SESSION_DB"
-
-
-def _resolve_db_path() -> Optional[str]:
-    """Find the sessions DB path. Returns ``None`` if env unset.
-
-    **2026-11-09 修正拼写**：原为 ``AGENTNODES_SESSIONS_DB``（多一个 S），
-    与 settings 声明的 ``AGENTNODES_SESSION_DB`` 不一致——用户按文档设
-    ``AGENTNODES_SESSION_DB`` 在这里**不生效**。
-
-    **批 E-2**：旧拼法 ``AGENTNODES_SESSIONS_DB`` 与旧名 ``AN_SESSIONS_DB``
-    都已不再被读取（兼容层删除）。
-    """
-    from agentnodes.foundation.config.settings import get_str as _get_str
-
-    return _get_str("AGENTNODES_SESSION_DB") or None
 
 
 def cmd_history(*, console: Any = None, limit: int = 10) -> int:
@@ -50,8 +37,8 @@ def cmd_history(*, console: Any = None, limit: int = 10) -> int:
     """
     console = _resolve_console(console)
     try:
-        from agentnodes.kernel.session.reader import list_sessions
-        sessions = list_sessions(limit=limit)
+        from agentnodes.apps.chat.session_views import list_recent_sessions
+        sessions = list_recent_sessions(limit=limit)
     except Exception as exc:  # noqa: BLE001
         console.print(f"[red]/history failed:[/red] {exc}")
         return 1
@@ -81,8 +68,8 @@ def cmd_search(query: str, *, console: Any = None, limit: int = 10) -> int:
         console.print("[red]Usage:[/red] /search <query>")
         return 1
     try:
-        from agentnodes.kernel.session.reader import search_messages
-        matches = search_messages(query, limit=limit)
+        from agentnodes.apps.chat.session_views import search_session_messages
+        matches = search_session_messages(query, limit=limit)
     except Exception as exc:  # noqa: BLE001
         console.print(f"[red]/search failed:[/red] {exc}")
         return 1

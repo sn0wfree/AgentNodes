@@ -19,12 +19,12 @@ from __future__ import annotations
 def cmd_session_list(args) -> int:
     """列出会话（统一库，B4 D5）。
 
-    原先走 ``core.session.db.SessionDB``（旧栈，schema 不同）。改用
-    ``kernel.session.reader.list_sessions``——与 CLI/TUI/MCP 共用同一查询。
+    走 ``apps.chat.session_views``（M3：L1 前端拿 L2 领域行数据，不再
+    直调 L3 reader）。
     """
-    from agentnodes.kernel.session.reader import list_sessions
+    from agentnodes.apps.chat.session_views import list_recent_sessions
 
-    sessions = list_sessions(limit=args.limit)
+    sessions = list_recent_sessions(limit=args.limit)
 
     if not sessions:
         print("暂无会话")
@@ -48,9 +48,9 @@ def cmd_session_show(args) -> int:
     ``msg.timestamp``——旧 dataclass 根本没有这两个字段，所以它一直是坏的
     （AttributeError）。统一库的列名是 ``created_at`` / ``metadata_json``。
     """
-    from agentnodes.kernel.session.reader import get_messages, get_session
+    from agentnodes.apps.chat.session_views import session_detail, session_messages
 
-    session = get_session(args.session_id)
+    session = session_detail(args.session_id)
     if not session:
         print(f"会话 {args.session_id} 不存在")
         return 1
@@ -65,7 +65,7 @@ def cmd_session_show(args) -> int:
     print(f"  创建时间:  {created}")
     print(f"  更新时间:  {updated}")
 
-    messages = get_messages(args.session_id, limit=50)
+    messages = session_messages(args.session_id, limit=50)
     if messages:
         print(f"\n=== 消息 (共 {len(messages)} 条) ===")
         for msg in messages:
@@ -84,9 +84,9 @@ def cmd_session_search(args) -> int:
     旧实现走 ``SessionDB`` 的 FTS5 索引；当前 Web 搜索端点已经改用 LIKE
     （trigram 分词器行为问题），这里跟随线上语义，不重新引入第二套索引。
     """
-    from agentnodes.kernel.session.reader import search_messages
+    from agentnodes.apps.chat.session_views import search_session_messages
 
-    results = search_messages(args.query, limit=args.limit)
+    results = search_session_messages(args.query, limit=args.limit)
 
     if not results:
         print(f"未找到匹配 '{args.query}' 的消息")
@@ -104,13 +104,13 @@ def cmd_session_search(args) -> int:
 
 def cmd_session_delete(args) -> int:
     """删除会话（E1 起软删，与 web 一致：archived=1，消息与 event_log 保留）。"""
-    from agentnodes.kernel.session.reader import delete_session, get_session
+    from agentnodes.apps.chat.session_views import delete_session_by_id, session_detail
 
-    if not get_session(args.session_id):
+    if not session_detail(args.session_id):
         print(f"会话 {args.session_id} 不存在")
         return 1
 
-    ok = delete_session(args.session_id)
+    ok = delete_session_by_id(args.session_id)
     if ok:
         print(f"已删除会话 {args.session_id}（软删：数据保留，列表/搜索不再显示）")
     else:

@@ -21,6 +21,7 @@ HTML）。这类东西放 L1 会让「渠道适配器」变成产品配置中心
 - :mod:`personas` —— 可选角色清单 + 中文展示名（Composer 的角色选择器）
 - :mod:`policy` —— shell 工具开关等运行期策略
 - :mod:`export` —— 对话导出格式（markdown / json）
+- :mod:`session_views` —— 会话视图用例（M3：CLI/REPL 取数走 L2，渲染留前端）
 
 **刻意不包含**（这些不是产品策略）：
 
@@ -34,4 +35,4 @@ HTML）。这类东西放 L1 会让「渠道适配器」变成产品配置中心
 """
 from __future__ import annotations
 
-__all__ = ["export", "personas", "policy"]
+__all__ = ["export", "personas", "policy", "session_views"]
