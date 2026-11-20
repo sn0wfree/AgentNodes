@@ -9,15 +9,19 @@ from typing import Optional
 
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
+from agentnodes.foundation.config import paths as _paths
 from agentnodes.foundation.config import settings as _settings
 
 logger = logging.getLogger(__name__)
 
 router = APIRouter()
 
-_QUANTNODES_DIR = Path.home() / ".agentnodes"
-_LLM_JSON_PATH = _QUANTNODES_DIR / "llm.json"
-_DOTENV_PATH = _QUANTNODES_DIR / ".env"
+# M9-2（批 3c）：路径公式单源到 foundation.config.paths——此前 5 份游离
+# 副本各自 Path.home()/.agentnodes 硬编码，profile 切换时失灵。旧常量名
+# 保留作测试锚（tests patch 模块属性）；运行时求值访问器供新消费者直接用。
+_QUANTNODES_DIR = _paths.data_dir()
+_LLM_JSON_PATH = _paths.llm_json_path()
+_DOTENV_PATH = _paths.dotenv_path()
 
 
 class LLMConfigUpdate(BaseModel):

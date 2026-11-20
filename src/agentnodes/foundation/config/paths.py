@@ -39,7 +39,9 @@ __all__ = [
     "active_profile",
     "data_dir",
     "data_subdir",
+    "dotenv_path",
     "env_override",
+    "llm_json_path",
     "session_db_filename",
 ]
 
@@ -177,3 +179,27 @@ def session_db_filename(profile: DataProfile | str | None = None) -> str:
     """
     prof = profile if isinstance(profile, DataProfile) else active_profile(profile)
     return prof.session_db_name
+
+
+def llm_json_path(profile: DataProfile | str | None = None) -> Path:
+    """LLM 配置文件（llm.json）路径（M9 单源，运行时求值）。
+
+    此前 4 处游离副本（``api/routers/system.py``、``cli/llm_config_check.py``、
+    ``cli/commands/llm.py``、``foundation/llm/config_audit.py``）各自硬编码
+    ``Path.home() / ".agentnodes" / "llm.json"``——profile 切换时全部失灵
+    （M9 审计）。读取链（config.yaml → llm.json → 旧品牌）仍在
+    ``foundation.llm.quantnodes_bridge.CONFIG_PATHS``——其语义被
+    test_llm_config_dual_path 锁定，本函数只提供叶子路径，不改链语义；
+    ``AGENTNODES_LLM_CONFIG`` 单文件覆盖仍在读取方处理。
+    """
+    return data_dir(profile) / "llm.json"
+
+
+def dotenv_path(profile: DataProfile | str | None = None) -> Path:
+    """用户级 dotenv（默认 ``~/.agentnodes/.env``）路径（M9 单源）。
+
+    与 :func:`llm_json_path` 同理：公式单源到 data_dir，profile /
+    ``AGENTNODES_DATA_DIR`` 感知；写语义（原子写、override 与否）由
+    调用方决定——本函数只回答「文件在哪」。
+    """
+    return data_dir(profile) / ".env"

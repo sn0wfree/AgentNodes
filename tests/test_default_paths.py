@@ -97,6 +97,28 @@ def test_data_dir_env_overrides_profile(clean_env, monkeypatch, tmp_path):
     assert paths.data_dir() == tmp_path
 
 
+# ── M9 单源访问器（批 3c）────────────────────────────────────────────
+
+
+def test_llm_json_and_dotenv_follow_data_root(clean_env, monkeypatch, tmp_path):
+    """M9-1：llm.json / dotenv 公式单源到 paths——随数据根与 profile 走。
+
+    此前 4 处游离副本各自 Path.home()/.agentnodes 硬编码，profile 切换
+    时全部失灵（M9 审计）；访问器以 data_dir 为根，AGENTNODES_DATA_DIR
+    与 AN_DATA_PROFILE 都能生效。
+    """
+    monkeypatch.setenv("AGENTNODES_DATA_DIR", str(tmp_path))
+    assert paths.llm_json_path() == tmp_path / "llm.json"
+    assert paths.dotenv_path() == tmp_path / ".env"
+
+
+def test_llm_json_dotenv_default_profile(clean_env):
+    """默认 profile 下与历史常量同值（零行为变化的公式迁移）。"""
+    home = Path.home() / ".agentnodes"
+    assert paths.llm_json_path() == home / "llm.json"
+    assert paths.dotenv_path() == home / ".env"
+
+
 def test_subdir_env_override(clean_env, monkeypatch, tmp_path):
     monkeypatch.setenv("AGENTNODES_CHECKPOINTS_DIR", str(tmp_path / "ckpt"))
     got = paths.data_subdir("checkpoints", env_var="AGENTNODES_CHECKPOINTS_DIR")

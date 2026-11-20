@@ -23,6 +23,7 @@ import logging
 from pathlib import Path
 from typing import Any, Final, Sequence
 
+from agentnodes.foundation.config import paths
 from agentnodes.foundation.llm.config import (
     ENV_API_KEY,
     ENV_BASE_URL,
@@ -109,12 +110,13 @@ def _is_placeholder(value: str) -> bool:
     return False
 
 
-# Canonical QuantNodes config locations (core-owned; api/cli/onboard
-# import from here rather than the reverse — previously this module
-# imported cli.onboard's private constants, forming a core↔cli cycle).
-_QUANTNODES_DIR: Final[Path] = Path.home() / ".agentnodes"
-DEFAULT_LLM_JSON_PATH: Final[Path] = _QUANTNODES_DIR / "llm.json"
-DEFAULT_DOTENV_PATH: Final[Path] = _QUANTNODES_DIR / ".env"
+# Canonical config locations (core-owned; api/cli/onboard import from here
+# rather than the reverse — previously this module imported cli.onboard's
+# private constants, forming a core↔cli cycle). M9-2（批 3c）：公式单源到
+# foundation.config.paths；旧常量名保留作测试锚。
+_QUANTNODES_DIR: Final[Path] = paths.data_dir()
+DEFAULT_LLM_JSON_PATH: Final[Path] = paths.llm_json_path()
+DEFAULT_DOTENV_PATH: Final[Path] = paths.dotenv_path()
 
 
 def _key_fingerprint(value: str) -> str:

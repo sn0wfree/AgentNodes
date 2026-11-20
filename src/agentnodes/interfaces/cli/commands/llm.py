@@ -23,6 +23,7 @@ from datetime import datetime
 from pathlib import Path
 
 from agentnodes.interfaces.cli.commands.registry import cli_command
+from agentnodes.foundation.config import paths as _paths
 from agentnodes.foundation.llm.config import _try_load_dotenv as _load_dotenv
 
 # **2026-11-16**：原先这里有一句模块级 ``_load_dotenv()``。它的唯一作用点是
@@ -31,9 +32,10 @@ from agentnodes.foundation.llm.config import _try_load_dotenv as _load_dotenv
 # （``_try_load_dotenv`` 幂等 + override=False，重复调用安全）。
 # 其它走 ``LLMConfig.load()`` 的路径不需要外部 dotenv —— ``load()`` 内部会做。
 
-QUANTNODES_DIR = Path.home() / ".agentnodes"
-LLM_JSON_PATH = QUANTNODES_DIR / "llm.json"
-DOTENV_PATH = QUANTNODES_DIR / ".env"
+# M9-2（批 3c）：公式单源到 foundation.config.paths；旧常量名保留作测试锚。
+QUANTNODES_DIR = _paths.data_dir()
+LLM_JSON_PATH = _paths.llm_json_path()
+DOTENV_PATH = _paths.dotenv_path()
 
 
 # ── Providers / profiles helpers ────────────────────────────────────

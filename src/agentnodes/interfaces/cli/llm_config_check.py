@@ -1,8 +1,8 @@
-"""LLM 配置检测：检查 ~/.quantnodes/ 是否存在并已配置。
+"""LLM 配置检测：检查用户数据目录（默认 ~/.agentnodes/）是否已配置。
 
 检测三件事：
-1. `~/.quantnodes/llm.json` 是否存在且包含有效 LLM 段
-2. `~/.quantnodes/.env` 是否存在且包含 LLM_API_KEY
+1. `llm.json` 是否存在且包含有效 LLM 段
+2. 用户数据目录的 `.env` 是否存在且包含 LLM_API_KEY
 3. `OPENAI_API_KEY` 环境变量是否设置
 
 返回值：
@@ -16,12 +16,14 @@ import json
 import os
 from pathlib import Path
 from typing import TypedDict
+from agentnodes.foundation.config import paths as _paths
 from agentnodes.foundation.config import settings as _settings
 
-# QuantNodes 标准配置位置（与 onboard.py 一致）
-QUANTNODES_DIR = Path.home() / ".agentnodes"
-LLM_JSON_PATH = QUANTNODES_DIR / "llm.json"
-DOTENV_PATH = QUANTNODES_DIR / ".env"
+# 用户数据目录标准配置位置（M9-2：公式单源到 foundation.config.paths；
+# 与 onboard.py 一致）。旧常量名保留作测试锚（tests patch 模块属性）。
+QUANTNODES_DIR = _paths.data_dir()
+LLM_JSON_PATH = _paths.llm_json_path()
+DOTENV_PATH = _paths.dotenv_path()
 
 
 class LLMConfigStatus(TypedDict):
