@@ -18,6 +18,7 @@ from agentnodes.kernel.agent.tools.isolation import (
     ACTUAL_STATES,
     ApprovalProxy,
     IsolationChannel,
+    ReadResult,
     UnsupportedPlatform,
     _EOF,
     _PosixAdapter,
@@ -75,13 +76,20 @@ def test_read_timeout_is_not_eof():
         "stdout": iter(()), "stderr": None, "pid": 1,
     })()}
     channel = IsolationChannel(handle)
-    assert channel.read(0.05) is None, "空队列读超时 → None（非 EOF）"
-    assert channel._eof is False, "读超时不置 EOF 标志"
+    timed_out = channel.read(0.05)
+    assert timed_out.kind == "timeout", "空队列读超时 → kind=timeout（非 eof）"
+    assert timed_out.data is None
 
-    # 显式 EOF 哨兵 → 置 EOF 标志
+    # 显式 EOF 哨兵 → kind=eof（接口契约，不再读私有 _eof）
     channel._queue.put(_EOF)
-    assert channel.read(0.05) is None
-    assert channel._eof is True, "真 EOF 才置标志"
+    ended = channel.read(0.05)
+    assert ended.kind == "eof"
+    assert ended.data is None
+
+    # data 行 → kind=data + 原始事件（契约三值齐全）
+    channel._queue.put({"ev": "probe"})
+    data = channel.read(0.05)
+    assert data == ReadResult("data", {"ev": "probe"})
 
 
 # ── B2.3 3b：发送侧 ctx 统一编码（全平台，无真 worker）─────────────

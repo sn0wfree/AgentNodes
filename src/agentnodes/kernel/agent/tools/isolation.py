@@ -140,6 +140,20 @@ def _normalize_ctx_wire(ctx: Any) -> dict[str, Any]:
     )
 
 
+@dataclass(frozen=True)
+class ReadResult:
+    """一次通道读取的显式契约（第三轮复审候选 I2）。
+
+    ``kind`` 三值：``data``（有事件行，data 为 dict）/ ``timeout``（队列空，
+    worker 只是慢）/ ``eof``（worker 退出、管道关闭）。此前三者都塌成
+    ``None``，调用方只能读私有 ``channel._eof`` 区分——现在 kind 本身就是
+    返回契约，测试面落在 interface 上。
+    """
+
+    kind: str
+    data: dict[str, Any] | None = None
+
+
 @dataclass
 class IsolationResult:
     """一次隔离执行的结果。"""
@@ -208,33 +222,49 @@ class IsolationChannel:
         self._proc.stdin.write(json.dumps(obj, ensure_ascii=False) + "\n")
         self._proc.stdin.flush()
 
-    def read(self, timeout_s: float) -> dict[str, Any] | None:
-        """读一行事件。**返回 None 表示超时（尚无数据）**；worker 退出由
-        ``_EOF`` 哨兵表示——两者必须可区分（否则 worker 只是慢就会被
-        误判为已退出）。
+    def read(self, timeout_s: float) -> ReadResult:
+        """读一行事件，返回显式 :class:`ReadResult`（kind = data/timeout/eof）。
+
+        timeout（worker 只是慢）与 eof（worker 已退出）必须可区分——这是
+        调用方决定「继续等」还是「kill+确认」的依据。此前两者都返回 None、
+        靠私有 ``_eof`` 区分（I2 收口为返回契约）。
         """
         try:
             obj = self._queue.get(timeout=timeout_s)
         except queue.Empty:
-            return None
+            return ReadResult("timeout")
         if obj is _EOF:
             self._eof = True
-            return None
-        return obj
+            return ReadResult("eof")
+        return ReadResult("data", obj)
+
+    def stderr_tail(self, limit: int = 500) -> str:
+        """尽力读 worker stderr 尾段（诊断用；失败返回空串）。"""
+        err = self._handle["proc"].stderr
+        if err is None:
+            return ""
+        try:
+            return err.read1(limit) if hasattr(err, "read1") else ""
+        except Exception:  # noqa: BLE001 —— 诊断信息尽力而为
+            return ""
 
     def drain_until(
         self, predicate: Callable[[dict[str, Any]], bool], timeout_s: float,
     ) -> dict[str, Any] | None:
-        """读事件直到命中 predicate（或超时/EOF）。"""
+        """读事件直到命中 predicate（或超时/EOF）。
+
+        零调用者的历史 API（冻结删除批，保留原样）；仅把 read 消费改为按
+        kind 分支，行为等价。
+        """
         deadline = time.monotonic() + timeout_s
         while time.monotonic() < deadline:
-            obj = self.read(0.2)
-            if obj is None:
-                if self._eof:
+            result = self.read(0.2)
+            if result.kind != "data":
+                if result.kind == "eof":
                     return None
                 continue
-            if predicate(obj):
-                return obj
+            if predicate(result.data):
+                return result.data
         return None
 
 
@@ -350,9 +380,9 @@ def _execute_on_channel(
     timed_out = False
     discarded = 0
     while True:
-        obj = channel.read(0.2)
-        if obj is None:
-            if channel._eof:
+        read = channel.read(0.2)
+        if read.kind != "data":
+            if read.kind == "eof":
                 # worker 已退出且无结果行 → 下方 unknown 分支
                 break
             if time.monotonic() > deadline:
@@ -360,6 +390,7 @@ def _execute_on_channel(
                 timed_out = True
                 break
             continue
+        obj = read.data
         # B2.4 4b：id 过滤——不匹配行丢弃计数，绝不接纳其 payload
         if obj.get("call_id") != call_id:
             discarded += 1
@@ -414,13 +445,7 @@ def _execute_on_channel(
                 call_id=call_id, discarded_rows=discarded,
             )
     # 未收到结果行：deadline 触发（待杀+确认）或 worker 异常退出 → 未知
-    stderr_tail = ""
-    err = channel._handle["proc"].stderr
-    if err is not None:
-        try:
-            stderr_tail = err.read1(500) if hasattr(err, "read1") else ""
-        except Exception:  # noqa: BLE001 —— 诊断信息尽力而为
-            stderr_tail = ""
+    stderr_tail = channel.stderr_tail()
     return IsolationResult(
         status="failed",
         payload={

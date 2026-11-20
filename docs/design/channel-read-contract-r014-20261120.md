@@ -78,3 +78,12 @@
 ## 6. 实施前确认
 
 本方案来自 grilling 全 A（Q13-Q16）。**未获批不得实施任何代码**；获批后按 R-007 单提交实施，doc first 纪律已满足（本文件）。
+
+## 7. 执行记录（2026-11-20 · 已实施 · 用户"请继续做完所有的"授权）
+
+- `isolation.py`：新增不可变 `ReadResult(kind, data)`（三值 data/timeout/eof）；`read()` 改返回它（`_eof` 保留为内部实现）；新增 `channel.stderr_tail(limit=500)`（best-effort 逻辑原样搬入）。
+- `_execute_on_channel`：按 `read.kind` 分支（data → id 过滤/结果处理；timeout → deadline 判定；eof → break），stderr 改调 `channel.stderr_tail()`——`channel._eof` / `channel._handle` 外部读取归零。
+- `drain_until`：保留（冻结删除批），内部消费适配 kind 分支，行为等价。
+- `test_isolation_platform_matrix.py::test_read_timeout_is_not_eof`：去掉 `_eof` 断言，改断言 `ReadResult.kind`（timeout/eof/data 三值齐全）；stale-row 测试用真 read + 队列注入，零改动仍绿。
+- 毒化 / EOF / deadline / E5 语义零改动；worker 脚本零改动。
+- 验证：I2 面 54 passed；全量 `-n 6` **8062 passed** / 0 failed；batch_gate ALL GREEN；数字 464/96,998（L3 51,301）。
