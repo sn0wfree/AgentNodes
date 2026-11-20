@@ -54,6 +54,39 @@ from agentnodes.kernel.session.loop_events import (  # noqa: E402,F401
 )
 
 
+def available_actions(
+    *,
+    active: bool,
+    pending: bool,
+    paused: bool,
+    lease_holder: str | None = None,
+) -> list[dict[str, str]]:
+    """会话可用动作矩阵的单一定义点（第三轮复审候选 S3）。
+
+    输入是小状态快照（与 ``Gateway.chat_session_state`` 的 active/pending/
+    paused/lease_holder 四键对齐）；输出 ``{name, label, destructive}`` 列表。
+    ``lease_holder`` 以 ``goal:`` 开头时抑制 send——GoalWorkflow 持执行租约
+    时聊天不得并发（B2 裁决 2）。
+
+    此前 kernel 方法与 router handler 各写一份矩阵且已漂移（kernel 读的是
+    chat 路径永不写入的空转集合、无 lease 维度）；两份都改为调本函数，
+    矩阵只有一个定义点。纯函数、无副作用，可直接表驱动测试。
+    """
+    actions: list[dict[str, str]] = []
+    is_processing = active or pending
+    if is_processing:
+        actions.append({"name": "cancel", "label": "取消", "destructive": "false"})
+    if paused:
+        actions.append({"name": "resume", "label": "恢复", "destructive": "false"})
+    if (
+        not is_processing
+        and not paused
+        and not (lease_holder or "").startswith("goal:")
+    ):
+        actions.append({"name": "send", "label": "发送", "destructive": "false"})
+    return actions
+
+
 class SessionService:
     """Session persistence service with a retained legacy execution API.
 
@@ -382,18 +415,17 @@ class SessionService:
         """Actions the current session state permits (C3: drives the UI).
 
         Returns a list of ``{name, label, destructive}`` dicts.
+
+        矩阵定义收在 :func:`available_actions`（第三轮复审候选 S3）；本方法
+        只剩把内部两个集合映射成快照的一行薄包装。kernel 无 lease 维度，
+        lease_holder=None 与既有行为逐字一致。
         """
-        actions: list[dict[str, str]] = []
-        if session_id in self._processing_sessions:
-            # Running attempt: can cancel
-            actions.append({"name": "cancel", "label": "取消", "destructive": "false"})
-        if session_id in self._paused_sessions:
-            # Paused: can resume
-            actions.append({"name": "resume", "label": "恢复", "destructive": "false"})
-        if session_id not in self._processing_sessions and session_id not in self._paused_sessions:
-            # Idle: can send
-            actions.append({"name": "send", "label": "发送", "destructive": "false"})
-        return actions
+        return available_actions(
+            active=session_id in self._processing_sessions,
+            pending=False,
+            paused=session_id in self._paused_sessions,
+            lease_holder=None,
+        )
 
     def mark_session_processing(
         self, session_id: str, *, processing: bool
@@ -1544,4 +1576,4 @@ def _friendly_error_text(error_detail: str) -> str:
     return "⚠️ 模型请求失败，请稍后再试"
 
 
-__all__ = ["SessionService", "MAX_HISTORY_CHARS"]
+__all__ = ["SessionService", "MAX_HISTORY_CHARS", "available_actions"]

@@ -76,3 +76,11 @@
 ## 6. 实施前确认
 
 本方案来自 grilling 全 A（Q1-Q3）。**未获批不得实施任何代码**；获批后按 R-007 单提交实施，doc first 纪律已满足（本文件）。
+
+## 7. 执行记录（2026-11-20 · 已实施 · 用户"请继续做完所有的"授权）
+
+- `kernel/session/service.py`：新增纯函数 `available_actions(*, active, pending, paused, lease_holder=None)`（入 `__all__`）——cancel/resume/send 矩阵 + goal lease 抑制 send 的唯一定义点；`get_available_actions` 改薄包装（删除候选状态不变）。
+- `routers/chat.py`：`chat_available_actions` 删内联矩阵，改调纯函数；ownership 与返回信封逐字不变。
+- `interfaces/api/session/service.py`：**同步补 `available_actions` re-export**（迁移 parity 测试 `test_every_top_level_name_is_reexported[service]` 捕获——新增 kernel 顶层符号必须进冻结垫片；不删任何垫片）。
+- 新增 `tests/test_available_actions.py`（9 例表驱动：四输入组合含 lease 抑制 + label/destructive 契约）；kernel 5 例 + router 3 例零改动全绿。
+- 验证：受影响面 96 passed；全量 `-n 6` **8071 passed** / 0 failed（+9 新例）；batch_gate ALL GREEN；数字 464/97,025（L1 21,946 / L3 51,333）。

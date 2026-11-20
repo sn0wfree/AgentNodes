@@ -967,23 +967,16 @@ async def list_active_attempts(
 async def chat_available_actions(session_id: str, request: Request):
     """C3: actions the current session state permits (drives the UI's buttons)."""
     from agentnodes.interfaces.api.authz import enforce_session_owned
+    from agentnodes.kernel.session.service import available_actions
+
     enforce_session_owned(request, session_id)
     state = _get_gateway().chat_session_state(session_id)
-    is_processing = state["active"] or state["pending"]
-    actions = []
-    if is_processing:
-        actions.append({"name": "cancel", "label": "取消", "destructive": "false"})
-    if state["paused"]:
-        actions.append({"name": "resume", "label": "恢复", "destructive": "false"})
-    # B2（裁决 2）：GoalWorkflow 持有执行租约（holder 前缀 "goal:"）时
-    # 抑制 send——同一 session 的目标流程与聊天不得并发。
-    lease_holder = state.get("lease_holder") or ""
-    if (
-        not is_processing
-        and not state["paused"]
-        and not lease_holder.startswith("goal:")
-    ):
-        actions.append({"name": "send", "label": "发送", "destructive": "false"})
+    # 动作矩阵收在 kernel.session.service.available_actions 单点
+    # （第三轮复审候选 S3）——含 goal lease 抑制 send（B2 裁决 2）。
+    actions = available_actions(
+        active=state["active"], pending=state["pending"],
+        paused=state["paused"], lease_holder=state.get("lease_holder"),
+    )
     return {
         "status": "ok",
         "session_id": session_id,

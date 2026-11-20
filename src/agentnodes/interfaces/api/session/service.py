@@ -37,7 +37,8 @@ from agentnodes.kernel.session.service import (  # noqa: F401
     _accumulate_text_started,
     _accumulate_thinking_delta,
     _accumulate_tool_result,
-    _build_tool_call_part
+    _build_tool_call_part,
+    available_actions
 )
 
 __all__ = [
@@ -70,5 +71,6 @@ __all__ = [
     "_accumulate_text_started",
     "_accumulate_thinking_delta",
     "_accumulate_tool_result",
-    "_build_tool_call_part"
+    "_build_tool_call_part",
+    "available_actions"
 ]
