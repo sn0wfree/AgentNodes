@@ -103,6 +103,10 @@ _EOF = object()
 #: deadline 触发后 kill_and_confirm 的逐 pid 确认等待上限（确认先于释放）
 _KILL_CONFIRM_TIMEOUT_S = 5.0
 
+#: 任务行信封版本（B2.4 4b）。缺失/不兼容显式报错——与 ctx_v 正交：
+#: ctx_v 管上下文 schema（B2.3），TASK_V 管任务行关联协议（本批）。
+TASK_V = 1
+
 
 def _normalize_ctx_wire(ctx: Any) -> dict[str, Any]:
     """把调用方 ctx 统一编码为带 ``ctx_v`` 的 wire dict（B2.3 3b）。
@@ -145,6 +149,8 @@ class IsolationResult:
     actual_state: str = "unknown"    # ACTUAL_STATES 之一
     platform: str = ""              # 实际使用的 adapter 标识
     timed_out: bool = False         # deadline 触发（调用方据此杀+确认，3c D1）
+    call_id: str = ""               # per-call id（B2.4 4b，任务↔结果关联）
+    discarded_rows: int = 0         # 不匹配 call_id 被丢弃的回传行数（可观测）
 
 
 class ApprovalProxy:
@@ -325,11 +331,24 @@ def _execute_on_channel(
     timeout_s: float,
     platform: str,
 ) -> IsolationResult:
-    """在给定通道上执行一次工具调用并解析结果行。"""
+    """在给定通道上执行一次工具调用并解析结果行。
+
+    B2.4 4b：任务行带信封 ``v`` + 每次调用全新 ``call_id``；只消费
+    回显同一 ``call_id`` 的行，不匹配行**丢弃并计数**（可观测，绝不
+    接纳其 payload）——这是「常驻 worker 复用时迟到结果错配」的
+    精确防线，与 3c D2 毒化构成纵深防御（二者互不替代）。
+    """
+    import uuid
+
     deadline = time.monotonic() + timeout_s
-    channel.send({"tool": tool_name, "args": args, "ctx": ctx})
+    call_id = f"{tool_name}:{uuid.uuid4().hex[:12]}"
+    channel.send({
+        "v": TASK_V, "call_id": call_id,
+        "tool": tool_name, "args": args, "ctx": ctx,
+    })
 
     timed_out = False
+    discarded = 0
     while True:
         obj = channel.read(0.2)
         if obj is None:
@@ -341,11 +360,16 @@ def _execute_on_channel(
                 timed_out = True
                 break
             continue
+        # B2.4 4b：id 过滤——不匹配行丢弃计数，绝不接纳其 payload
+        if obj.get("call_id") != call_id:
+            discarded += 1
+            continue
         if obj.get("ev") == "permission_request":
             action = "deny"
             if approval is not None:
                 action = approval.decide(obj)
             channel.send({
+                "v": TASK_V, "call_id": call_id,
                 "op": "permission_response",
                 "id": obj.get("id"),
                 "action": action,
@@ -371,19 +395,23 @@ def _execute_on_channel(
                     return IsolationResult(
                         status="failed", payload=result,
                         actual_state="returned", platform=platform,
+                        call_id=call_id, discarded_rows=discarded,
                     )
                 return IsolationResult(
                     status="completed", payload=result,
                     actual_state="stopped", platform=platform,
+                    call_id=call_id, discarded_rows=discarded,
                 )
             if status == "denied":
                 return IsolationResult(
                     status="failed", payload=result,
                     actual_state="returned", platform=platform,
+                    call_id=call_id, discarded_rows=discarded,
                 )
             return IsolationResult(
                 status="failed", payload=result,
                 actual_state="returned", platform=platform,
+                call_id=call_id, discarded_rows=discarded,
             )
     # 未收到结果行：deadline 触发（待杀+确认）或 worker 异常退出 → 未知
     stderr_tail = ""
@@ -403,6 +431,7 @@ def _execute_on_channel(
             "worker_stderr": stderr_tail[-500:],
         },
         actual_state="unknown", platform=platform, timed_out=timed_out,
+        call_id=call_id, discarded_rows=discarded,
     )
 
 

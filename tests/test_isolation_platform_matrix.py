@@ -113,3 +113,76 @@ def test_toolcontext_encoded():
     assert wire["ctx_v"] == 1
     assert wire["session_id"] == "s1"
     assert wire["workspace"] is None
+
+
+# ── B2.4 4b：per-call id 信封（全平台，fake channel 驱动）───────────
+
+
+def test_task_envelope_version_constant_matches_worker():
+    """isolation.TASK_V 与 worker 镜像常量必须同值（B2.4 4b 契约）。"""
+    from agentnodes.kernel.agent.tools import _isolation_worker as worker
+    from agentnodes.kernel.agent.tools.isolation import TASK_V
+
+    assert worker.TASK_V == TASK_V == 1
+
+
+def test_stale_row_discarded_and_counted(monkeypatch):
+    """旧 call_id 的结果行被丢弃计数；当前 id 的结果被接纳（精确关联）。
+
+    拦截 channel.send 捕获真实 call_id，注入「stale + 当前」两行：
+    _execute_on_channel 必须丢弃 stale、接纳当前，discarded_rows==1。
+    """
+    import json
+
+    from agentnodes.kernel.agent.tools.isolation import (
+        IsolationChannel,
+        _execute_on_channel,
+    )
+
+    handle = {
+        "proc": type("P", (), {
+            "stdin": type("In", (), {
+                "write": lambda self, s: None,
+                "flush": lambda self: None,
+            })(),
+            "stdout": iter(()), "stderr": None, "pid": 1,
+        })(),
+    }
+    channel = IsolationChannel(handle)
+
+    sent: dict[str, Any] = {}
+
+    def fake_send(obj):
+        sent.update(obj)
+
+    monkeypatch.setattr(channel, "send", fake_send)
+
+    # _execute_on_channel 先 send 再进 read 循环；第一次 read 时 send 已完成、
+    # 真实 call_id 已知——此刻注入「stale + current」两行到队列。
+    original_read = channel.read
+    injected = False
+
+    def read_once(timeout):
+        nonlocal injected
+        if not injected:
+            injected = True
+            current_id = sent.get("call_id", "")
+            channel._queue.put({
+                "call_id": "stale:1",
+                "result": {"status": "ok", "output": "OLD"},
+            })
+            channel._queue.put({
+                "call_id": current_id,
+                "result": {"status": "ok", "output": "NEW"},
+            })
+        return original_read(timeout)
+
+    monkeypatch.setattr(channel, "read", read_once)
+    result = _execute_on_channel(
+        channel, "probe", {}, _normalize_ctx_wire(None),
+        approval=None, timeout_s=1.0, platform="fake",
+    )
+    assert result.status == "completed"
+    assert result.payload.get("output") == "NEW"  # 接纳当前 id，不接纳 stale
+    assert result.discarded_rows == 1
+    assert result.call_id == sent["call_id"]

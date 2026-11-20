@@ -30,6 +30,15 @@ import time
 #: 协议通道（原始 stdout）；worker 启动后 sys.stdout 改指 stderr
 _PROTOCOL_OUT = None
 
+#: 当前任务的 call_id（B2.4 4b）——worker 单线程串行协议，一次只处理一个
+#: 任务；_emit 自动把它注入每条回传行，父侧按 id 精确关联/丢弃迟到行。
+_CURRENT_CALL_ID: str = ""
+
+#: 任务行信封版本——**必须与 isolation.py 的 TASK_V 同值**（B2.4 4b 契约）。
+#: worker 作为独立子进程，不 import isolation.py（避免拉整个 seam 依赖），
+#: 故在此镜像常量；契约测试钉住两者一致。
+TASK_V = 1
+
 
 def _configure_logging() -> None:
     """日志走 stderr——stdout 只能是协议帧（父进程按 JSON Lines 解析）。
@@ -44,7 +53,10 @@ def _configure_logging() -> None:
 
 def _emit(obj: dict) -> None:
     out = _PROTOCOL_OUT or sys.stdout
-    out.write(json.dumps(obj, ensure_ascii=False) + "\n")
+    # B2.4 4b：所有回传行回显 call_id（父侧按 id 过滤迟到结果）
+    frame = dict(obj)
+    frame["call_id"] = _CURRENT_CALL_ID
+    out.write(json.dumps(frame, ensure_ascii=False) + "\n")
     out.flush()
 
 
@@ -118,6 +130,21 @@ def _worker_loop() -> int:
         op = task.get("op")
         if op == "permission_response":
             # 父进程对审批请求的裁决（worker 内不自行判定）
+            continue
+        # B2.4 4b：信封版本校验（与 ctx_v 正交）——缺失/不兼容显式报错。
+        global _CURRENT_CALL_ID
+        _CURRENT_CALL_ID = str(task.get("call_id", ""))
+        if task.get("v") != TASK_V:
+            _emit({"result": {
+                "status": "error",
+                "error": f"task envelope v={task.get('v')!r} incompatible "
+                         f"(expected {TASK_V})",
+            }})
+            continue
+        if not _CURRENT_CALL_ID:
+            _emit({"result": {
+                "status": "error", "error": "missing task call_id",
+            }})
             continue
         tool = task.get("tool")
         args = task.get("args", {})

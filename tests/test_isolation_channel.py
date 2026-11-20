@@ -153,6 +153,19 @@ def test_malformed_wire_key_rejected_and_worker_survives(worker):
     assert ok.status == "completed"
 
 
+def test_each_call_gets_unique_call_id(worker):
+    """B2.4 4b：每次调用拿全新 call_id（不复用 tc.id 语义），回显关联正常。"""
+    r1 = worker.call("probe_context", {"payload": "one"})
+    r2 = worker.call("probe_context", {"payload": "two"})
+    assert r1.status == "completed"
+    assert r2.status == "completed"
+    assert r1.call_id and r2.call_id
+    assert r1.call_id != r2.call_id, "每次 attempt 必须生成全新 call_id"
+    assert r1.payload["echo"] == "one"
+    assert r2.payload["echo"] == "two"
+    assert r1.discarded_rows == 0 and r2.discarded_rows == 0
+
+
 def test_probe_ctx_echo_reveals_only_whitelisted_keys(worker):
     """3c 契约探针：回调全填的 ToolContext 编码后，worker 实际收到的
     wire 键集合恰为白名单 + ctx_v——无对象/回调键跨界（两端夹击）。"""

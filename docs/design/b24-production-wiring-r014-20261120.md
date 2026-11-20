@@ -377,3 +377,29 @@ settings 登记开关 +3 行）。实施中门禁抓到两处纪律缺口并已�
 两次均按门禁反馈修正而非绕过。仍零实际隔离执行（4c 才接）。
 
 下一子批 4b（per-call id 协议）需单独批准。
+
+## 8. 子批 4b 执行记录（2026-11-20 · 已实施 · 仍零生产接线）
+
+- **任务行信封**（`isolation.py`）：新增 `TASK_V=1`（与 ctx_v 正交——
+  信封管任务关联，ctx_v 管上下文 schema）；`_execute_on_channel` 每次
+  调用生成**全新** `call_id = f"{tool}:{uuid12}"`（不复用 `tc.id`，
+  方案 §2.2 幂等纪律），任务行/审批响应行带 `v` + `call_id`；
+  `IsolationResult` 增 `call_id` + `discarded_rows`（丢弃计数可观测）。
+- **父侧过滤**：只消费 `call_id == 当前` 的回传行；不匹配行**丢弃并
+  计数**、绝不接纳其 payload（fake channel 测试精确验证：注入 stale
+  + current 两行 → 接纳 NEW、discarded_rows==1）。
+- **worker 侧**（`_isolation_worker.py`）：模块镜像 `TASK_V=1`（worker
+  子进程不 import isolation.py 以免拉整个 seam；契约测试钉住同值）；
+  主循环校验信封 `v`（缺失/不兼容 → 结构化错误行）与 call_id 非空；
+  `_CURRENT_CALL_ID` 单任务状态 + `_emit` 自动给**所有**回传行回显
+  call_id（progress/permission/result 全覆盖）。
+- **与毒化分层**：per-call id 是关联精度，3c D2 毒化是拒收保证——
+  二者互不替代（工具级 returned 后 worker 健康复用时仍需 id 防错配）。
+  codec / ctx_v / 9 字段白名单 / 毒化判定全部未动。
+
+验证：全平台 codec+守卫 33 passed；platform 新增信封同值 + 迟到
+丢弃 2 例（11 passed）；win32 真机 19 passed（含每次调用全新
+call_id、审批往返不退化）；全量 + gate 见提交前记录；数字同步
+462 文件 / 96,397 行（L3 +56 行）。仍零实际隔离执行（4c 才接）。
+
+下一子批 4c（生产接线 + deadline/lease 顺序）需单独批准。
