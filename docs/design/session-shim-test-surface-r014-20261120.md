@@ -64,3 +64,20 @@
 ## 6. 实施前确认
 
 本方案来自 grilling 共识（#5 Round 1 全 A）。确认后按 R-007 单提交实施第一步。
+
+## 7. 执行记录（2026-11-20 · 已实施 · 只加测试零生产改动）
+
+- 新建 `tests/test_session_kernel_direct.py` 6 例，全部 import
+  `agentnodes.kernel.session.*`（不经过 14 垫片）：Projector（apply 幂等 /
+  interested_in FLUSH_ON 过滤）、SessionStore（attempt CRUD 往返 /
+  list_attempts_by_status）、SessionService（新会话非 processing /
+  create_session 后查询）。part_accumulate 是 Projector 内部实现，经 apply 间接覆盖。
+- 测试自建最小 schema（临时 db_path），不污染生产数据；Attempt 用真实
+  AttemptStatus 枚举 + react_trace_json/metrics_json 列名（探针核实）。
+- deletion test 现在成立：14 垫片删除后本文件仍绿（下版独立批验证）。
+
+验证：新测试 6 passed；零生产改动（数字不变 464 文件 / 96,912 行）。
+14 垫片保留（Q1/Q3-A，下版独立批删除）；90+ 现有测试锚本批不动。
+
+**候选 5 第一步完成**：深模块获得公开 interface 直测，测试面贴深模块。
+删除类动作（迁 90+ 锚 + 删 14 垫片）留独立批，与兼容门槛一致。
