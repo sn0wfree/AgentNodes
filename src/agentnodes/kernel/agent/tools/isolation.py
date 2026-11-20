@@ -493,23 +493,13 @@ def isolate_tool_call(
             tool_name, args, ctx=ctx, approval=approval, timeout_s=timeout_s,
         )
 
-    adapter = adapter or build_worker_adapter()
-    if not adapter.supported():
-        raise UnsupportedPlatform(
-            "当前平台隔离执行未验证——跨平台生产启用前必须完成平台测试"
+    # 入口收敛（候选 4）：transient 复用 IsolationWorker 这一唯一执行体——
+    # spawn / 通道 / 执行 / 确认 / 毒化 / 关闭全在 worker.call + with 里，
+    # 不再重复编排。毒化仅影响「后续调用」；transient 无后续调用，with
+    # 退出即 close，故语义与旧 transient 分支逐字等价（确认先于释放不变）。
+    with IsolationWorker(
+        adapter or build_worker_adapter(), timeout_s=timeout_s,
+    ) as transient:
+        return transient.call(
+            tool_name, args, ctx=ctx, approval=approval, timeout_s=timeout_s,
         )
-
-    handle = adapter.spawn(_WORKER_SCRIPT)
-    channel = IsolationChannel(handle)
-    channel.start_reader()
-    try:
-        result = _execute_on_channel(
-            channel, tool_name, args or {}, _normalize_ctx_wire(ctx),
-            approval=approval, timeout_s=timeout_s, platform="isolated",
-        )
-        if result.timed_out:
-            # 截止终止：先杀+确认，再在 finally 释放句柄（确认先于释放）
-            _confirm_termination(adapter, handle, result, _KILL_CONFIRM_TIMEOUT_S)
-        return result
-    finally:
-        adapter.close(handle)

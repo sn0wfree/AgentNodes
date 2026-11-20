@@ -77,3 +77,26 @@ allowlist、shell、POSIX 启用；④ 并发复用 worker（每调用仍独占�
 ## 6. 实施前确认
 
 本方案来自用户「只做 #4」裁决。确认后按 R-007 单提交实施验证。
+
+## 7. 执行记录（2026-11-20 · 已实施）
+
+- `isolation.py::isolate_tool_call(worker=None)` 的 transient 分支从
+  自建 spawn/channel/start_reader/execute/confirm/close（约 20 行）收为
+  `with IsolationWorker(adapter, timeout_s) as transient: return transient.call(...)`
+  ——spawn / 通道 / 执行 / 确认 / 毒化 / 关闭全在 `IsolationWorker.call`
+  + `with` 单一编排里。
+- `UnsupportedPlatform` 检查仍在 `IsolationWorker.__init__`（原 transient
+  分支的自检等价）；`_confirm_termination` / `_execute_on_channel` /
+  `_WORKER_SCRIPT` / `IsolationChannel` 全部仍被 worker 路径使用，无死代码。
+- 毒化语义不变：transient 无"后续调用"，worker 毒化标记只在 with 退出前
+  存在、不影响返回值；resident 毒化拒复用（S3b）原样保留。
+- 对外 interface 零变化：`isolate_tool_call(...)` / `IsolationWorker.call(...)`
+  签名与返回 `IsolationResult` 均未动。
+
+验证：隔离面 92 passed（context/platform/channel/pilot/adapter/wiring/
+decision，含 S2 超时确认与 S3b 毒化试点）；全量 + gate 见提交前记录。
+单提交可整批回退恢复旧 transient 编排。
+
+**候选 4 收口**：三入口重叠已消——`isolate_tool_call` 与
+`IsolationWorker.call` 共用同一执行体，不再各自维护编排。候选 3
+（结果信封）保持现状（已由 from_seam_result 部分收口）。
