@@ -92,6 +92,103 @@ class GoalWorkflowHook:
         """Number of evidence records collected."""
         return self._evidence_count
 
+    # ── Runner 侧公开面（第三轮复审候选 G3）────────────────────
+    # runner 此前直读 hook._layer_results / 用 __new__ 恢复 15 私有字段。
+    # 以下接口让跨对象状态传递有显式 interface；字段本身保留（测试锚不动）。
+
+    def state_snapshot(self) -> dict[str, Any]:
+        """给 runner.checkpoint 的可观测状态（不暴露私有字段布局）。"""
+        return {
+            "layer_results": dict(self._layer_results),
+            "evidence_count": self._evidence_count,
+            "completed": self._completed,
+        }
+
+    def seed_layer_results(self, results: dict[str, Any]) -> None:
+        """恢复已保存的层产出（resume_and_continue 用，替私有写）。"""
+        self._layer_results = results
+
+    @classmethod
+    def from_snapshot(
+        cls,
+        session_id: str,
+        goal_id: str,
+        evidence_map: dict[str, int],
+        store: Any,
+        *,
+        runner: Any,
+        layer_results: dict[str, Any],
+        workflow_name: str,
+        event_bus: Any,
+        completion_strategy: Any = None,
+        completion_mode: str = "",
+        metric_targets: list[dict] | None = None,
+    ) -> "GoalWorkflowHook":
+        """从 checkpoint 恢复 hook（第三轮复审候选 G3）。
+
+        经构造器走完整 init（16 字段齐全，含此前 __new__ 恢复漏掉的
+        ``_evidence_agents`` / ``_metric_targets``），再灌入已保存的层产出。
+        取代 runner 里的 ``__new__`` + 15 次私有赋值。
+        """
+        hook = cls(
+            session_id=session_id,
+            goal_id=goal_id,
+            evidence_map=evidence_map,
+            store=store,
+            runner=runner,
+            completion_strategy=completion_strategy,
+            completion_mode=completion_mode,
+            workflow_name=workflow_name,
+            event_bus=event_bus,
+            metric_targets=metric_targets,
+        )
+        hook._layer_results = layer_results
+        return hook
+
+    # ── Runner 公开面适配（第三轮复审候选 G3）──────────────────
+    # 优先走 runner 的窄公开方法/属性；fake runner（测试用 SimpleNamespace
+    # 只带 _state）无这些方法时回落到旧私有布局——行为逐字等价，测试零改动。
+
+    # 公开面按**类型**判定：interface 是类级契约，MagicMock/SimpleNamespace
+    # 等测试替身会在实例上自动生成任意属性，按实例 hasattr 会误判。
+
+    def _set_runner_layer(self, layer: int) -> None:
+        if self._runner is None:
+            return
+        if hasattr(type(self._runner), "current_layer"):
+            self._runner.current_layer = layer
+            return
+        state = getattr(self._runner, "_state", None)
+        if state is not None:
+            state.current_layer = layer
+
+    def _set_runner_agent_status(self, agent_id: str, status: str) -> None:
+        if self._runner is None:
+            return
+        if hasattr(type(self._runner), "set_agent_status"):
+            self._runner.set_agent_status(agent_id, status)
+            return
+        state = getattr(self._runner, "_state", None)
+        if state is not None:
+            setter = getattr(state, "set_agent_status", None)
+            if callable(setter):
+                setter(agent_id, status)
+
+    def _runner_cancelled(self) -> bool:
+        if self._runner is None:
+            return False
+        if hasattr(type(self._runner), "is_cancelled"):
+            return bool(self._runner.is_cancelled())
+        state = getattr(self._runner, "_state", None)
+        return bool(state and getattr(state, "cancelled", False))
+
+    def _runner_goal_id(self) -> str:
+        if self._runner is None:
+            return ""
+        if hasattr(type(self._runner), "goal_id"):
+            return str(getattr(self._runner, "goal_id", "") or "")
+        return str(getattr(self._runner, "_goal_id", "") or "")
+
     # ── SwarmHook callbacks ────────────────────────────────────
 
     def on_layer_start(
@@ -101,11 +198,9 @@ class GoalWorkflowHook:
         context: dict[str, Any],
     ) -> None:
         logger.info("GoalWorkflowHook: layer %d starting, agents=%s", layer_idx, agents)
-        runner_state = getattr(self._runner, "_state", None)
-        if runner_state is not None:
-            runner_state.current_layer = layer_idx + 1
-            for aid in agents:
-                runner_state.set_agent_status(aid, "running")
+        self._set_runner_layer(layer_idx + 1)
+        for aid in agents:
+            self._set_runner_agent_status(aid, "running")
 
         # Phase 1.4: consume and inject directives
         if self._runner is not None:
@@ -133,13 +228,11 @@ class GoalWorkflowHook:
         if not output_text:
             return
 
-        runner_state = getattr(self._runner, "_state", None)
-        if runner_state is not None:
-            result_status = getattr(result, "status", None)
-            runner_state.set_agent_status(
-                agent_id,
-                "skipped" if result_status == "skipped" else "success",
-            )
+        result_status = getattr(result, "status", None)
+        self._set_runner_agent_status(
+            agent_id,
+            "skipped" if result_status == "skipped" else "success",
+        )
 
         # Auto-collect evidence
         criterion_idx = self._evidence_map.get(agent_id, -1)
@@ -239,9 +332,8 @@ class GoalWorkflowHook:
         ``pause(immediate=True)`` actually interrupts DAG execution
         via SwarmRuntime's ``should_stop`` hook.
         """
-        # Check runner's cancelled flag (P1.2)
-        runner_state = getattr(self._runner, "_state", None)
-        if runner_state and getattr(runner_state, "cancelled", False):
+        # Check runner's cancelled flag (P1.2) — 经公开面 + legacy fallback
+        if self._runner_cancelled():
             return True
         return self._completed
 
@@ -252,14 +344,15 @@ class GoalWorkflowHook:
         执行依赖。无 goal_id（runner 尚未 start）时跳过。
         """
         runner = self._runner
-        if runner is None or not getattr(runner, "_goal_id", ""):
+        goal_id = self._runner_goal_id()
+        if runner is None or not goal_id:
             return
         try:
             runner.checkpoint()
         except Exception as exc:  # noqa: BLE001
             logger.warning(
                 "Auto-checkpoint failed for goal %s: %s",
-                runner._goal_id, exc,
+                goal_id, exc,
             )
 
     # ── Internal helpers ───────────────────────────────────────

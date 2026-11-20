@@ -334,6 +334,25 @@ class GoalWorkflowRunner:
     def event_bus(self) -> "WorkflowEventBus":
         return self._event_bus
 
+    # ── Hook 公开面（第三轮复审候选 G3）─────────────────────────
+    # hook 此前直读 runner._state / _goal_id——契约是私有属性布局。
+    # 以下窄方法让跨对象状态传递有显式 interface；内部仍操作 _state，
+    # 行为逐字不变（既有钉 _state 的测试零改动）。
+
+    @property
+    def current_layer(self) -> int:
+        return self._state.current_layer
+
+    @current_layer.setter
+    def current_layer(self, value: int) -> None:
+        self._state.current_layer = value
+
+    def set_agent_status(self, agent_id: str, status: str) -> None:
+        self._state.set_agent_status(agent_id, status)
+
+    def is_cancelled(self) -> bool:
+        return bool(self._state.cancelled)
+
     def _agent_event_bridge(self):
         """agent 级事件 → WorkflowEventBus 的适配回调。
 
@@ -714,9 +733,9 @@ class GoalWorkflowRunner:
             event_bus=self._event_bus,
             metric_targets=self._config.completion.metric_targets,
         )
-        # Seed the hook's _layer_results so on_layer_complete doesn't
-        # re-parse already-saved outputs.
-        self._hook._layer_results = layer_results_raw
+        # Seed the hook's layer results via公开面 so on_layer_complete
+        # doesn't re-parse already-saved outputs（G3：不再私有写）。
+        self._hook.seed_layer_results(layer_results_raw)
 
         # Restore snapshot state on the runner
         self._state.status = "running"
@@ -928,17 +947,21 @@ class GoalWorkflowRunner:
         hook = self._hook
         layer_results: dict[str, Any] = {}
         if hook is not None:
-            raw = getattr(hook, "_layer_results", None)
-            if isinstance(raw, dict):
-                layer_results = raw
-            elif raw is not None:
-                # Fallback: try evidence_count + completed info
-                layer_results = {
-                    "_summary": {
-                        "evidence_count": getattr(hook, "evidence_count", 0),
-                        "completed": getattr(hook, "completed", False),
+            # G3：经公开面取状态；非 GoalWorkflowHook 的 fake 回落旧探测。
+            snap = getattr(hook, "state_snapshot", None)
+            if callable(snap):
+                layer_results = dict(snap().get("layer_results") or {})
+            else:
+                raw = getattr(hook, "_layer_results", None)
+                if isinstance(raw, dict):
+                    layer_results = raw
+                elif raw is not None:
+                    layer_results = {
+                        "_summary": {
+                            "evidence_count": getattr(hook, "evidence_count", 0),
+                            "completed": getattr(hook, "completed", False),
+                        }
                     }
-                }
 
         cp = _CPS()
         return cp.save(
@@ -997,27 +1020,25 @@ class GoalWorkflowRunner:
         runner._state.agent_statuses = state_data.get("agent_statuses", {})
         runner._goal_id = goal_id
 
-        # P1.3: Restore layer_results into hook (create hook if needed)
+        # P1.3: Restore layer_results into hook（G3：经 from_snapshot 走构造器，
+        # 不再 __new__ + 15 私有赋值；构造器补全 _evidence_agents/_metric_targets）
         layer_results = data.get("layer_results", {})
         if layer_results:
             if runner._hook is None:
                 from agentnodes.apps.goal.workflow_hook import GoalWorkflowHook
-                runner._hook = GoalWorkflowHook.__new__(GoalWorkflowHook)
-                runner._hook._layer_results = {}
-                runner._hook._completed = False
-                runner._hook._evidence_count = 0
-                runner._hook._session_id = session_id
-                runner._hook._goal_id = goal_id
-                runner._hook._evidence_map = {}
-                runner._hook._store = None
-                runner._hook._runner = runner
-                runner._hook._run_store = None
-                runner._hook._run_id = ""
-                runner._hook._completion_strategy = None
-                runner._hook._completion_mode = ""
-                runner._hook._workflow_name = config.name
-                runner._hook._event_bus = runner._event_bus
-            runner._hook._layer_results = layer_results
+
+                runner._hook = GoalWorkflowHook.from_snapshot(
+                    session_id=session_id,
+                    goal_id=goal_id,
+                    evidence_map={},
+                    store=None,
+                    runner=runner,
+                    layer_results=layer_results,
+                    workflow_name=config.name,
+                    event_bus=runner._event_bus,
+                )
+            else:
+                runner._hook.seed_layer_results(layer_results)
 
         logger.info(
             "Resumed workflow from checkpoint: goal_id=%s layer=%d evidence=%d",

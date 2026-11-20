@@ -80,3 +80,11 @@ runner 已有 `state` / `goal_id` / `name` / `event_bus` property（`:316-335`�
 ## 6. 实施前确认
 
 本方案来自 grilling 全 A（Q7-Q9）。**未获批不得实施任何代码**；获批后按 R-007 单提交实施，doc first 纪律已满足（本文件）。
+
+## 7. 执行记录（2026-11-20 · 已实施 · 用户"请继续做完所有的"授权）
+
+- `workflow.py`：runner 加窄公开面（`current_layer` property getter/setter、`set_agent_status`、`is_cancelled`）；3 处 hook 私有读写改走公开面（`resume_and_continue` → `seed_layer_results`；`checkpoint` → `state_snapshot` + fake 回落；`resume_from_checkpoint` → `from_snapshot`）。
+- `workflow_hook.py`：加 runner 公开面**类型级**适配助手（`_set_runner_layer` / `_set_runner_agent_status` / `_runner_cancelled` / `_runner_goal_id`——按 `type(...)` 判 interface，MagicMock/SimpleNamespace fake 自动回落旧 `_state`，既有私有字段测试零改动）；加 hook 侧 `state_snapshot()` / `seed_layer_results()` / `from_snapshot()`（经 `__init__` 构造，补全旧 `__new__` 漏掉的 `_evidence_agents` / `_metric_targets`）。
+- **所有私有字段保留**，checkpoint 文件格式 / SwarmRuntime 回调 / goal 语义零改动。
+- 新增 2 例行为测试：只暴露公开面的 fake runner 驱动 hook（不读 `_state`）、`from_snapshot` 补全两字段。
+- 验证：受影响面 99 passed（初版按实例 hasattr 误判 MagicMock 导致 2 例失败，改类型级判定后转绿）；全量 `-n 6` **8074 passed** / 0 failed（+2 新例）；batch_gate ALL GREEN；数字 464/97,143（L2 11,660）。

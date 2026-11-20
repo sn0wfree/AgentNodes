@@ -244,6 +244,48 @@ def test_metric_miss_does_not_complete():
     assert strategy.calls == []
 
 
+def test_public_runner_surface_used_without_private_state():
+    """G3：runner 只暴露公开面时 hook 正常工作（不读 _state 私有布局）。"""
+    calls = []
+
+    class PublicRunner:
+        current_layer = 0
+
+        def set_agent_status(self, agent_id, status):
+            calls.append((agent_id, status))
+
+        def is_cancelled(self):
+            return True
+
+        def consume_directives(self):
+            return "公开指令"
+
+    runner = PublicRunner()
+    store = FakeStore(_snapshot("c1"))
+    h = _hook(store, runner=runner)
+    ctx = {}
+
+    h.on_layer_start(2, ["researcher"], ctx)
+    assert runner.current_layer == 3
+    assert ("researcher", "running") in calls
+    assert ctx["user_directives"] == "公开指令"
+    assert h.should_stop() is True  # is_cancelled 公开方法生效
+
+
+def test_from_snapshot_restores_complete_hook():
+    """G3：from_snapshot 走构造器，补全 __new__ 漏掉的两字段。"""
+    from agentnodes.apps.goal.workflow_hook import GoalWorkflowHook
+
+    hook = GoalWorkflowHook.from_snapshot(
+        session_id="s1", goal_id="g1", evidence_map={}, store=None,
+        runner=None, layer_results={"a": {"output": "x"}},
+        workflow_name="wf", event_bus=None,
+    )
+    assert hook.state_snapshot()["layer_results"] == {"a": {"output": "x"}}
+    assert hook._evidence_agents == set()  # 构造器补全（旧 __new__ 漏掉）
+    assert hook._metric_targets is None    # 构造器补全（旧 __new__ 漏掉）
+
+
 def test_auto_complete_idempotent():
     store = FakeStore(_snapshot("c1", "c2"))
     strategy = FakeStrategy()
