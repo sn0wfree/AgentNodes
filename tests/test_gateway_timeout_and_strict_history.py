@@ -904,16 +904,15 @@ class TestGatewayTimeoutSettlement:
 
 
 class _FakeServiceWithBrokenHistory:
-    """store.get_messages 抛错（模拟历史读失败）。"""
-
-    class store:  # noqa: N801 — 替身形状
-        @staticmethod
-        def get_messages(session_id, limit=100):
-            raise RuntimeError("event_log replay failed")
+    """load_history 抛错（模拟历史读失败）——C2 窄 port 形状。"""
 
     @staticmethod
-    def _convert_messages_to_history(stored, keep_all_compactions=False):
-        return []
+    def load_history(session_id, keep_all_compactions=False):
+        raise RuntimeError("event_log replay failed")
+
+    @staticmethod
+    def update_attempt_status(*args, **kwargs):
+        return None
 
 
 class TestHistoryStrictFailure:

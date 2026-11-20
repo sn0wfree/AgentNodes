@@ -47,6 +47,7 @@ logger = logging.getLogger(__name__)
 __all__ = [
     "SendTurnInput",
     "SendTurnDeps",
+    "HistoryDeps",
     "SendTurnResult",
     "SendTurnError",
     "HistoryUnavailable",
@@ -141,12 +142,25 @@ class SendTurnInput:
         return 1 if (self.mode or "").strip().lower() == "plan" else None
 
 
+@dataclass(frozen=True)
+class HistoryDeps:
+    """历史预检的窄依赖（第四轮 C2）——router 前置只需这两个 callable，
+    不再伪造完整 SendTurnDeps 的 no-op emit/publish_sse。"""
+
+    load_history: Callable[[str, bool], list[dict[str, Any]]]
+    build_llm_config: Callable[[], Any]
+
+
 @dataclass
 class SendTurnDeps:
-    """注入的依赖——组合根提供真 adapter，测试提供 fake。"""
+    """注入的依赖——组合根提供真 adapter，测试提供 fake。
+
+    ``service: Any`` 已收为两个命名 port（第四轮 C2）：``load_history``
+    与 ``update_attempt_status``（attempt 状态机归 kernel）。"""
 
     gateway: Any
-    service: Any
+    load_history: Callable[[str, bool], list[dict[str, Any]]]
+    update_attempt_status: Callable[..., Any]
     emit: Callable[[str, str, dict[str, Any]], None]
     publish_sse: Callable[[str, dict[str, Any], str], None]
     build_llm_config: Callable[[], Any]
@@ -248,21 +262,13 @@ def _event_bridge(
         if not isinstance(attempt_id, str) or not attempt_id:
             return
         try:
-            attempt = deps.service.store.get_attempt(session_id, attempt_id)
+            # C2：attempt 状态机 + 持久化归 kernel 公开面（缺失 → None）
+            attempt = deps.update_attempt_status(
+                session_id, attempt_id, status, summary=summary, error=error,
+            )
             if attempt is None:
                 logger.warning("Gateway event references missing Attempt %s", attempt_id)
                 return
-            if status == "running":
-                attempt.mark_running()
-            elif status == "completed":
-                attempt.mark_completed(summary)
-            elif status == "cancelled":
-                attempt.mark_cancelled()
-            elif status == "failed":
-                attempt.mark_failed(error or "Gateway run failed")
-            else:
-                raise ValueError(f"unsupported Attempt status: {status}")
-            deps.service.store.update_attempt(attempt)
             lifecycle_event = {
                 "running": (ChatEvent.ATTEMPT_STARTED, {
                     "attempt_id": attempt_id,
@@ -388,7 +394,7 @@ def _event_bridge(
 # ── 内部 seam 3：历史预检（先验证，再创建 Attempt）──────────────────
 
 
-def _precheck_history(inp: SendTurnInput, deps: SendTurnDeps) -> list[dict]:
+def _precheck_history(inp: SendTurnInput, deps: HistoryDeps) -> list[dict]:
     """严格读契约：历史读取失败 → HistoryUnavailable，submit 不发生。"""
     try:
         cfg = deps.build_llm_config()
@@ -396,10 +402,7 @@ def _precheck_history(inp: SendTurnInput, deps: SendTurnDeps) -> list[dict]:
             cfg and getattr(cfg, "compact_config", None)
             and cfg.compact_config.keep_all_compactions_in_history
         )
-        stored = deps.service.store.get_messages(inp.session_id, limit=100)
-        return deps.service._convert_messages_to_history(
-            stored, keep_all_compactions=keep_all,
-        )
+        return deps.load_history(inp.session_id, keep_all)
     except Exception as exc:  # noqa: BLE001 —— 转为明确错误，不静默降级
         logger.exception("send_turn: history load failed for session %s", inp.session_id)
         raise HistoryUnavailable({
@@ -411,9 +414,12 @@ def _precheck_history(inp: SendTurnInput, deps: SendTurnDeps) -> list[dict]:
 # ── 主用例：唯一外部 seam ───────────────────────────────────────────
 
 
-def precheck_history(inp: SendTurnInput, deps: SendTurnDeps) -> list[dict]:
+def precheck_history(inp: SendTurnInput, deps: HistoryDeps) -> list[dict]:
     """公开预检（决策 5 的 router 前置）：send_async 在创建 Attempt 之前
     调用本函数——历史失败时零 Attempt/事件。
+
+    收窄为 :class:`HistoryDeps`（第四轮 C2）——router 前置只注入
+    load_history + build_llm_config，不再伪造完整 deps 的 no-op。
 
     返回预检后的 history，供调用方通过 ``prevalidated_history`` 传给
     send_turn 跳过二次预检（重复 A 修复）。现有调用方忽略返回值仍兼容。
@@ -432,7 +438,10 @@ async def send_turn(inp: SendTurnInput, deps: SendTurnDeps) -> SendTurnResult:
     history = (
         inp.prevalidated_history
         if inp.prevalidated_history is not None
-        else _precheck_history(inp, deps)
+        else _precheck_history(inp, HistoryDeps(
+            load_history=deps.load_history,
+            build_llm_config=deps.build_llm_config,
+        ))
     )
 
     gw = deps.gateway

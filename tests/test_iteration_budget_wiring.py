@@ -56,8 +56,8 @@ class TestGatewayTurnBudget(unittest.TestCase):
             add_sink=MagicMock(return_value=lambda: None),
         )
         service = SimpleNamespace(
-            store=SimpleNamespace(get_messages=MagicMock(return_value=[])),
-            _convert_messages_to_history=MagicMock(return_value=[]),
+            load_history=MagicMock(return_value=[]),
+            update_attempt_status=MagicMock(return_value=None),
         )
 
         async def submit():

@@ -9,6 +9,7 @@ from __future__ import annotations
 import pytest
 
 from agentnodes.apps.chat.send_turn import (
+    HistoryDeps,
     HistoryUnavailable,
     QueueFull,
     SendTurnDeps,
@@ -20,23 +21,19 @@ from agentnodes.apps.chat.send_turn import (
 from agentnodes.kernel.orchestration.contracts import QueueMode, RejectReason
 
 
-class FakeStore:
+class FakeHistory:
+    """C2：load_history callable fake——不再复制 SessionService 内部形状。"""
+
     def __init__(self, messages=None, fail_history=False):
         self.messages = messages or []
         self.fail_history = fail_history
+        self.calls = {"n": 0}
 
-    def get_messages(self, session_id, limit=100):
+    def __call__(self, session_id, keep_all_compactions=False):
+        self.calls["n"] += 1
         if self.fail_history:
             raise RuntimeError("db down")
-        return self.messages
-
-
-class FakeService:
-    def __init__(self, messages=None, fail_history=False):
-        self.store = FakeStore(messages, fail_history)
-
-    def _convert_messages_to_history(self, stored, keep_all_compactions=False):
-        return [{"role": m["role"], "content": m["content"]} for m in stored]
+        return [{"role": m["role"], "content": m["content"]} for m in self.messages]
 
 
 class FakeReceipt:
@@ -79,10 +76,11 @@ class FakeGateway:
         return self._mailbox
 
 
-def _deps(gw, service, emitted, pushed):
+def _deps(gw, history, emitted, pushed):
     return SendTurnDeps(
         gateway=gw,
-        service=service,
+        load_history=history,
+        update_attempt_status=lambda *a, **k: None,
         emit=lambda sid, kind, data: emitted.append((sid, kind, data)),
         publish_sse=lambda kind, data, sid: pushed.append((sid, kind, data)),
         build_llm_config=lambda: None,
@@ -96,7 +94,7 @@ async def test_history_failure_raises_before_any_gateway_submit():
     零 emit（尤其无 attempt.created 半提交事件）。"""
     gw = FakeGateway()
     emitted, pushed = [], []
-    deps = _deps(gw, FakeService(fail_history=True), emitted, pushed)
+    deps = _deps(gw, FakeHistory(fail_history=True), emitted, pushed)
     inp = SendTurnInput(session_id="s1", content="hello", receipt_only=True)
 
     with pytest.raises(HistoryUnavailable) as exc:
@@ -113,7 +111,7 @@ async def test_receipt_only_result_fields():
     """receipt 路径：SendTurnResult 字段与现网响应逐字对齐。"""
     gw = FakeGateway()
     emitted, pushed = [], []
-    deps = _deps(gw, FakeService(), emitted, pushed)
+    deps = _deps(gw, FakeHistory(), emitted, pushed)
     inp = SendTurnInput(
         session_id="s1", content="hello", receipt_only=True,
         user_message_id="u1", assistant_message_id="a1", attempt_id="at1",
@@ -134,7 +132,7 @@ async def test_queue_full_error_type():
     """queue-full → 应用层 QueueFull（detail 与现网 HTTP body 一致）。"""
     gw = FakeGateway(FakeReceipt(accepted=False, reason=RejectReason.QUEUE_FULL, current_size=10))
     emitted, pushed = [], []
-    deps = _deps(gw, FakeService(), emitted, pushed)
+    deps = _deps(gw, FakeHistory(), emitted, pushed)
     inp = SendTurnInput(session_id="s1", content="hello", receipt_only=True, max_pending=10)
 
     with pytest.raises(QueueFull) as exc:
@@ -148,7 +146,7 @@ async def test_answer_persister_installed_once():
     """决策 7 资源不变量：一个 Gateway 仅安装一个答案持久化观察器。"""
     gw = FakeGateway()
     emitted, pushed = [], []
-    deps = _deps(gw, FakeService(), emitted, pushed)
+    deps = _deps(gw, FakeHistory(), emitted, pushed)
     inp = SendTurnInput(session_id="s1", content="hello", receipt_only=True)
 
     await send_turn(inp, deps)
@@ -164,39 +162,33 @@ async def test_answer_persister_installed_once():
 @pytest.mark.asyncio
 async def test_prevalidated_history_skips_second_read():
     """重复 A 修复：调用方已预检并传入 history 时，send_turn 不再二次
-    读库（预检只读幂等，但两次 get_messages 成本翻倍）。"""
+    读库（预检只读幂等，但两次读成本翻倍）。"""
     gw = FakeGateway()
     emitted, pushed = [], []
-    service = FakeService()
-    calls = {"n": 0}
+    history = FakeHistory()
+    deps = _deps(gw, history, emitted, pushed)
 
-    def _counting_get_messages(*args, **kwargs):
-        calls["n"] += 1
-        return []
-
-    service.store.get_messages = _counting_get_messages
-    deps = _deps(gw, service, emitted, pushed)
-
-    # 入口侧预检一次（send_async 的做法）
-    history = precheck_history(
-        SendTurnInput(session_id="s1", content="hello"), deps,
+    # 入口侧预检一次（send_async 的做法）——经 HistoryDeps 窄接口
+    pre = precheck_history(
+        SendTurnInput(session_id="s1", content="hello"),
+        HistoryDeps(load_history=history, build_llm_config=lambda: None),
     )
-    assert calls["n"] == 1
+    assert history.calls["n"] == 1
 
     # 传入预检结果 → send_turn 跳过二次读取
     result = await send_turn(
         SendTurnInput(
             session_id="s1", content="hello", receipt_only=True,
-            prevalidated_history=history,
+            prevalidated_history=pre,
         ),
         deps,
     )
     assert result.accepted is True
-    assert calls["n"] == 1, "send_turn 不应二次读历史"
+    assert history.calls["n"] == 1, "send_turn 不应二次读历史"
 
     # 未提供时仍自包含预检（兼容旧调用）
     await send_turn(
         SendTurnInput(session_id="s1", content="hello", receipt_only=True),
         deps,
     )
-    assert calls["n"] == 2
+    assert history.calls["n"] == 2

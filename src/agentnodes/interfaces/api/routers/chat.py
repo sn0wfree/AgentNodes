@@ -292,10 +292,9 @@ async def send_async(body: ChatMessage, request: Request):
     try:
         prevalidated_history = usecase.precheck_history(
             usecase.SendTurnInput(session_id=body.session_id, content=body.content),
-            usecase.SendTurnDeps(
-                gateway=_get_gateway(), service=service,
-                emit=lambda *a: None, publish_sse=lambda *a: None,
-                build_llm_config=_build_llm_config, wait_timeout=_chat_wait_timeout,
+            usecase.HistoryDeps(
+                load_history=service.load_history,
+                build_llm_config=_build_llm_config,
             ),
         )
     except usecase.HistoryUnavailable as exc:
@@ -552,7 +551,10 @@ async def _send_via_gateway(
         prevalidated_history=prevalidated_history,
     )
     deps = usecase.SendTurnDeps(
-        gateway=gw, service=service,
+        gateway=gw,
+        # C2：命名 port——组合根绑定 kernel 公开面（attempt 状态机归 kernel）
+        load_history=service.load_history,
+        update_attempt_status=service.update_attempt_status,
         # 延迟取 event_bus.emit：严格历史失败路径在 send_turn 内先预检，
         # 不触达 emit——fake service 可无 event_bus（与旧实现一致）。
         emit=lambda sid, kind, data: service.event_bus.emit(sid, kind, data),

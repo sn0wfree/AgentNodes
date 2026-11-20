@@ -232,3 +232,56 @@ class TestWaitForAttempt:
         svc._signal_attempt_done("a-sig", {"status": "completed", "summary": "s", "error": ""})
         res = await waiter
         assert res["status"] == "completed"
+
+
+class TestSessionPublicPorts:
+    """C2：load_history / update_attempt_status 公开面直测。
+
+    apps 层 SendTurnDeps 的两个命名 port 绑定到这里——窄 port 的 kernel
+    侧契约：状态机归 kernel、缺失返回 None、非法 status 显式抛。
+    """
+
+    async def test_load_history_matches_private_conversion(self, svc):
+        """load_history ≡ store.get_messages(limit=100) + 私有转换（逐字等价）。"""
+        _seed_session(svc, "sess-hist")
+        await svc.send_message("sess-hist", "帮我回测动量因子")
+        direct = svc._convert_messages_to_history(
+            svc.store.get_messages("sess-hist", limit=100),
+            keep_all_compactions=False,
+        )
+        assert svc.load_history("sess-hist") == direct
+
+    async def test_load_history_keep_all_flag_forwarded(self, svc):
+        """keep_all_compactions 透传私有转换（apps 侧原语义）。"""
+        _seed_session(svc, "sess-flag")
+        a = svc.load_history("sess-flag", keep_all_compactions=False)
+        b = svc.load_history("sess-flag", keep_all_compactions=True)
+        assert isinstance(a, list) and isinstance(b, list)
+
+    async def test_update_attempt_status_lifecycle(self, svc):
+        """四状态推进 + 持久化（gateway 事件驱动的原 apps 状态机逐字迁入）。"""
+        _seed_session(svc, "sess-att")
+        attempt = Attempt(session_id="sess-att", prompt="hi")
+        svc.store.create_attempt(attempt)
+
+        got = svc.update_attempt_status("sess-att", attempt.attempt_id, "running")
+        assert got is not None and got.status == AttemptStatus.RUNNING
+
+        got = svc.update_attempt_status(
+            "sess-att", attempt.attempt_id, "completed", summary="done",
+        )
+        assert got.status == AttemptStatus.COMPLETED and got.summary == "done"
+
+        persisted = svc.store.get_attempt("sess-att", attempt.attempt_id)
+        assert persisted.status == AttemptStatus.COMPLETED
+
+    async def test_update_attempt_status_missing_returns_none(self, svc):
+        _seed_session(svc, "sess-miss")
+        assert svc.update_attempt_status("sess-miss", "nope", "running") is None
+
+    async def test_update_attempt_status_invalid_raises(self, svc):
+        _seed_session(svc, "sess-bad")
+        attempt = Attempt(session_id="sess-bad", prompt="hi")
+        svc.store.create_attempt(attempt)
+        with pytest.raises(ValueError, match="unsupported Attempt status"):
+            svc.update_attempt_status("sess-bad", attempt.attempt_id, "bogus")

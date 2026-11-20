@@ -116,7 +116,8 @@ async def test_wired_sync_path_emits_same_payload(monkeypatch):
         "get_messages": lambda *a, **k: [],
         "get_attempt": lambda *a, **k: None,
     })()
-    service._convert_messages_to_history = lambda *a, **k: []
+    service.load_history = lambda *a, **k: []
+    service.update_attempt_status = lambda *a, **k: None
     bus = type("Bus", (), {})()
     # 用 staticmethod 避免 bound-method 把 self 混进 emit 参数
     bus.emit = staticmethod(lambda sid, kind, payload: emitted.append((sid, kind, payload)))

@@ -44,25 +44,47 @@ def _install_service(monkeypatch, service):
     return chat_router
 
 
+def _fake_update_attempt_status(lookup):
+    """C2 port 的 fake 实现：对内存 attempts 推进模型状态机（mark_*）。
+
+    lookup(session_id, attempt_id) -> Attempt | None——与 kernel
+    SessionService.update_attempt_status 同契约（缺失返回 None）。
+    """
+    def _update(session_id, attempt_id, status, *, summary=None, error=""):
+        attempt = lookup(session_id, attempt_id)
+        if attempt is None:
+            return None
+        if status == "running":
+            attempt.mark_running()
+        elif status == "completed":
+            attempt.mark_completed(summary)
+        elif status == "cancelled":
+            attempt.mark_cancelled()
+        elif status == "failed":
+            attempt.mark_failed(error or "Gateway run failed")
+        else:
+            raise ValueError(f"unsupported Attempt status: {status}")
+        return attempt
+    return _update
+
+
 def test_send_async_prechecks_history_only_once(client, monkeypatch):
     """重复 A 修复（路由级）：/send_async 先预检历史、创建 Attempt，再把
     预检结果传 send_turn——整个请求只读一次历史（不是入口+用例各一次）。"""
     session_id = _new_session(client)
-    counts = {"get_messages": 0, "convert": 0}
+    counts = {"load_history": 0}
 
-    def _get_messages(*args, **kwargs):
-        counts["get_messages"] += 1
+    def _load_history(session_id, keep_all_compactions=False):
+        counts["load_history"] += 1
         return []
 
     service = SimpleNamespace(
         store=SimpleNamespace(
             create_attempt=Mock(), delete_attempt=Mock(),
             get_attempt=Mock(return_value=SimpleNamespace(status="pending")),
-            get_messages=_get_messages,
         ),
-        _convert_messages_to_history=lambda *a, **k: (
-            counts.__setitem__("convert", counts["convert"] + 1) or []
-        ),
+        load_history=_load_history,
+        update_attempt_status=lambda *a, **k: None,
         event_bus=SimpleNamespace(emit=Mock()),
     )
     chat_router = _install_service(monkeypatch, service)
@@ -81,8 +103,7 @@ def test_send_async_prechecks_history_only_once(client, monkeypatch):
         json={"session_id": session_id, "content": "question"},
     )
     assert response.status_code == 200, response.text
-    assert counts["get_messages"] == 1, "入口 + send_turn 不得各读一次历史"
-    assert counts["convert"] == 1
+    assert counts["load_history"] == 1, "入口 + send_turn 不得各读一次历史"
 
 
 @pytest.mark.asyncio
@@ -161,7 +182,10 @@ async def test_gateway_chat_bridges_are_turn_scoped(monkeypatch, second_session,
             get_attempt=lambda sid, aid: attempts.get((sid, aid)),
             update_attempt=Mock(),
         ),
-        _convert_messages_to_history=lambda *args, **kwargs: [],
+        load_history=lambda *args, **kwargs: [],
+        update_attempt_status=_fake_update_attempt_status(
+            lambda sid, aid: attempts.get((sid, aid)),
+        ),
         event_bus=SimpleNamespace(
             emit=lambda sid, kind, data: persisted.append((sid, kind, data))
         ),
@@ -236,7 +260,8 @@ async def test_gateway_sync_returns_its_own_turn_when_other_sessions_are_queued(
     persisted = []
     service = SimpleNamespace(
         store=SimpleNamespace(get_messages=lambda *args, **kwargs: []),
-        _convert_messages_to_history=lambda *args, **kwargs: [],
+        load_history=lambda *args, **kwargs: [],
+        update_attempt_status=lambda *args, **kwargs: None,
         event_bus=SimpleNamespace(
             emit=lambda sid, kind, data: persisted.append((sid, kind, data))
         ),
@@ -287,7 +312,8 @@ async def test_gateway_sync_waits_for_exact_turn_with_consumer(monkeypatch, scen
     gateway = Gateway(client=object(), engine_factory=Engine)
     service = SimpleNamespace(
         store=SimpleNamespace(get_messages=lambda *args, **kwargs: []),
-        _convert_messages_to_history=lambda *args, **kwargs: [],
+        load_history=lambda *args, **kwargs: [],
+        update_attempt_status=lambda *args, **kwargs: None,
         event_bus=SimpleNamespace(
             emit=lambda sid, kind, data: persisted.append((sid, kind, data))
         ),
@@ -430,7 +456,8 @@ async def test_gateway_chat_steer_follows_the_run_that_applies_it(
     )
     service = SimpleNamespace(
         store=SimpleNamespace(get_messages=lambda *args, **kwargs: []),
-        _convert_messages_to_history=lambda *args, **kwargs: [],
+        load_history=lambda *args, **kwargs: [],
+        update_attempt_status=lambda *args, **kwargs: None,
         event_bus=SimpleNamespace(emit=Mock()),
     )
     monkeypatch.setattr(chat_router, "_get_gateway", lambda: gateway)
@@ -511,7 +538,10 @@ async def test_gateway_summarized_request_fails_its_own_attempt_and_closes_bridg
             get_attempt=lambda sid, aid: attempts.get(aid) if sid == "s1" else None,
             update_attempt=Mock(),
         ),
-        _convert_messages_to_history=lambda *args, **kwargs: [],
+        load_history=lambda *args, **kwargs: [],
+        update_attempt_status=_fake_update_attempt_status(
+            lambda sid, aid: attempts.get(aid) if sid == "s1" else None,
+        ),
         event_bus=SimpleNamespace(emit=Mock()),
     )
     monkeypatch.setattr(chat_router, "_get_gateway", lambda: gateway)
@@ -562,7 +592,8 @@ async def test_gateway_sync_waiter_fails_if_its_request_is_summarized(monkeypatc
     gateway.entry._cap = 2
     service = SimpleNamespace(
         store=SimpleNamespace(get_messages=lambda *args, **kwargs: []),
-        _convert_messages_to_history=lambda *args, **kwargs: [],
+        load_history=lambda *args, **kwargs: [],
+        update_attempt_status=lambda *args, **kwargs: None,
         event_bus=SimpleNamespace(emit=Mock()),
     )
     monkeypatch.setattr(chat_router, "_get_gateway", lambda: gateway)
@@ -611,7 +642,8 @@ def test_send_async_response_and_execution_options(client, monkeypatch):
             # 3a.3b：send_async 新增历史预检（决策 5），fake 补最小面
             get_messages=Mock(return_value=[]),
         ),
-        _convert_messages_to_history=Mock(return_value=[]),
+        load_history=Mock(return_value=[]),
+        update_attempt_status=Mock(return_value=None),
         event_bus=SimpleNamespace(emit=Mock()),
     )
     _install_service(monkeypatch, service)
@@ -729,7 +761,8 @@ def test_send_async_queue_full_preserves_429_detail(client, monkeypatch):
             # 3a.3b：send_async 新增历史预检（决策 5），fake 补最小面
             get_messages=Mock(return_value=[]),
         ),
-        _convert_messages_to_history=Mock(return_value=[]),
+        load_history=Mock(return_value=[]),
+        update_attempt_status=Mock(return_value=None),
         event_bus=SimpleNamespace(emit=Mock()),
     )
     _install_service(monkeypatch, service)
@@ -1042,7 +1075,8 @@ async def test_gateway_receipt_path_does_not_run_inline_without_consumer(monkeyp
     )
     service = SimpleNamespace(
         store=SimpleNamespace(get_messages=Mock(return_value=[])),
-        _convert_messages_to_history=Mock(return_value=[]),
+        load_history=Mock(return_value=[]),
+        update_attempt_status=Mock(return_value=None),
     )
     monkeypatch.setattr(chat_router, "_get_gateway", lambda: gateway)
     monkeypatch.setattr(chat_router, "_get_session_service", lambda: service)
@@ -1082,7 +1116,8 @@ async def test_gateway_queue_full_maps_to_429_with_current_size(monkeypatch):
     )
     service = SimpleNamespace(
         store=SimpleNamespace(get_messages=Mock(return_value=[])),
-        _convert_messages_to_history=Mock(return_value=[]),
+        load_history=Mock(return_value=[]),
+        update_attempt_status=Mock(return_value=None),
     )
     monkeypatch.setattr(chat_router, "_get_gateway", lambda: gateway)
     monkeypatch.setattr(chat_router, "_get_session_service", lambda: service)

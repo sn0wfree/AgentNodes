@@ -1405,6 +1405,51 @@ class SessionService:
 
     # ── History conversion ────────────────────────────────────────────
 
+    def load_history(
+        self, session_id: str, keep_all_compactions: bool = False,
+    ) -> list[dict[str, Any]]:
+        """读取会话历史并转为 LLM 格式（第四轮 C2 公开面）。
+
+        封装 ``store.get_messages(limit=100)`` + ``_convert_messages_to_history``
+        ——apps 层 use case 经此单一入口取历史，不再穿透 store/私有方法。
+        签名即 SendTurnDeps 的 port 契约 ``Callable[[str, bool], list[dict]]``
+        （两个位置参数）；``limit=100`` 与原 apps 侧调用逐字一致。
+        """
+        stored = self.store.get_messages(session_id, limit=100)
+        return self._convert_messages_to_history(
+            stored, keep_all_compactions=keep_all_compactions,
+        )
+
+    def update_attempt_status(
+        self,
+        session_id: str,
+        attempt_id: str,
+        status: str,
+        *,
+        summary: str | None = None,
+        error: str = "",
+    ) -> Attempt | None:
+        """按 gateway 事件推进 Attempt 生命周期并持久化（第四轮 C2 公开面）。
+
+        状态机（mark_running/completed/cancelled/failed）归 kernel 单点；
+        attempt 缺失返回 None（调用方自行告警），未知 status 抛 ValueError。
+        """
+        attempt = self.store.get_attempt(session_id, attempt_id)
+        if attempt is None:
+            return None
+        if status == "running":
+            attempt.mark_running()
+        elif status == "completed":
+            attempt.mark_completed(summary)
+        elif status == "cancelled":
+            attempt.mark_cancelled()
+        elif status == "failed":
+            attempt.mark_failed(error or "Gateway run failed")
+        else:
+            raise ValueError(f"unsupported Attempt status: {status}")
+        self.store.update_attempt(attempt)
+        return attempt
+
     @staticmethod
     def _convert_messages_to_history(
         messages: list[Message],
