@@ -140,3 +140,20 @@ settings）；数字同步 462 文件 / 96,647 行（L3 +25）。**本提交不�
 
 **两提交全部完成**——候选 1（事件收口）+ 候选 2（编排下沉）+ 顺带
 候选 3（结果一次构造）、5（测试旋钮）全部落地。候选 4/6/7 独立批未动。
+
+### 候选 6 · RSI 宿主注入收成已绑定 runner（2026-11-20 · 已实施）
+
+- 新 `interfaces/rsi_host.py`（L1）：`RsiHost`（已绑定 halt_check +
+  loop_builder 的 runner）+ `build_rsi_host()` 单一装配入口。
+- 两宿主切换：`cli/commands/rsi.py` 删内嵌 `_halt_check`、_cmd_run 改
+  `build_rsi_host().run_cycle(...)`；`goal_settled_consumer.py` 删内嵌
+  `_halt_check` 与 make_loop_builder 组装、_run 改同款单点。注入契约
+  （halt tuple 返回 + 三参 builder + 3 import）不再摊回每个宿主。
+- **不跨层**：host adapter 在 L1，import L1 halt/wiring 与 L2 cycle_driver
+  是合法下行；L2 `run_once` 签名与 halt 注入契约未动。
+- 新测试 `tests/test_rsi_host.py` 3 例：run_cycle 绑定注入契约、真实
+  装配、两宿主源码锚（都调 build_rsi_host，旧复制形态消失）。
+
+验证：RSI 面 96 passed（host/cycle_driver/consumer/golden_eval/
+production_wiring）；数字同步 463 文件 / 96,708 行（L1 +1 host +34 行）。
+候选 7（goal 覆盖口径）独立批未动。

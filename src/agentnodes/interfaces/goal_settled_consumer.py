@@ -127,27 +127,12 @@ def make_goal_settled_consumer(
     """
     _emit = emit or (lambda kind, data: None)
 
-    def _halt_check() -> tuple[bool, str]:
-        from agentnodes.interfaces.cli.halt import HALT_REASON, is_halted
-
-        if is_halted():
-            return True, HALT_REASON
-        return False, ""
-
     def _run(session_id: str | None = None) -> Any:
         if run_cycle is not None:
             return run_cycle(session_id=session_id)
-        from agentnodes.apps.evolution.cycle_driver import (
-            make_loop_builder,
-            run_once,
-        )
-        from agentnodes.interfaces.rsi_wiring import build_rsi_loop
+        from agentnodes.interfaces.rsi_host import build_rsi_host
 
-        return run_once(
-            session_id=session_id,
-            halt_check=_halt_check,
-            loop_builder=make_loop_builder(build_rsi_loop),
-        )
+        return build_rsi_host().run_cycle(session_id=session_id)
 
     def consume(kind: str, payload: dict[str, Any]) -> None:
         if kind != "goal.settled":

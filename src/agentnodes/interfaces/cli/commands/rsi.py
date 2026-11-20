@@ -24,15 +24,6 @@ import json
 from agentnodes.interfaces.cli.commands.registry import cli_command
 
 
-def _halt_check() -> tuple[bool, str]:
-    """门 1 护栏（宿主注入）：L1 的 kill switch → 驱动 callable。"""
-    from agentnodes.interfaces.cli.halt import HALT_REASON, is_halted
-
-    if is_halted():
-        return True, HALT_REASON
-    return False, ""
-
-
 def _print_outcome(outcome) -> int:
     data = outcome.to_dict()
     print(json.dumps(data, ensure_ascii=False, indent=2, default=str))
@@ -46,15 +37,12 @@ def _print_outcome(outcome) -> int:
 
 
 def _cmd_run(args: argparse.Namespace) -> int:
-    from agentnodes.apps.evolution.cycle_driver import make_loop_builder, run_once
-    from agentnodes.interfaces.rsi_wiring import build_rsi_loop
+    from agentnodes.interfaces.rsi_host import build_rsi_host
 
-    outcome = run_once(
+    outcome = build_rsi_host().run_cycle(
         seed=int(args.seed),
         session_id=getattr(args, "session_id", None) or None,
         force=bool(getattr(args, "force", False)),
-        halt_check=_halt_check,
-        loop_builder=make_loop_builder(build_rsi_loop),
     )
     return _print_outcome(outcome)
 
