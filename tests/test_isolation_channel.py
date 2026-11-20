@@ -10,9 +10,11 @@ E2 上下文跨界（可序列化 ctx 子集）与 E3 审批往返（ALLOW/DENY 
 from __future__ import annotations
 
 import sys
+from pathlib import Path
 
 import pytest
 
+from agentnodes.kernel.agent.tools.core import ToolContext
 from agentnodes.kernel.agent.tools.isolation import (
     ApprovalProxy,
     IsolationWorker,
@@ -37,7 +39,7 @@ def test_e2_context_crosses_to_worker(worker):
     result = worker.call(
         "probe_context",
         {"payload": "ctx-probe"},
-        ctx={"workspace": "D:/probe-ws", "session_id": "sess-42"},
+        ctx=ToolContext(workspace=Path("D:/probe-ws"), session_id="sess-42"),
     )
     assert result.status == "completed"
     assert result.payload["echo"] == "ctx-probe"
@@ -102,7 +104,7 @@ def test_real_tool_executes_in_isolated_worker(worker, tmp_path):
     denied = worker.call(
         "write",
         {"path": str(tmp_path / "abs.txt"), "content": "x"},
-        ctx={"workspace": str(tmp_path)},
+        ctx=ToolContext(workspace=tmp_path),
     )
     # 工具级失败：worker 执行成功、工具返回结构化拒绝 → status=failed,
     # actual_state=returned
@@ -115,7 +117,37 @@ def test_real_tool_executes_in_isolated_worker(worker, tmp_path):
     ok = worker.call(
         "write",
         {"path": "rel.txt", "content": "iso-write"},
-        ctx={"workspace": str(tmp_path)},
+        ctx=ToolContext(workspace=tmp_path),
     )
     assert ok.status == "completed"
     assert (tmp_path / "rel.txt").read_text(encoding="utf-8") == "iso-write"
+
+
+# ── B2.3 3b：版本 / 解码失败行为（真 worker，win32 gate）──────────
+
+
+def test_incompatible_version_rejected_by_worker(worker):
+    """ctx_v 超版本 → worker 回结构化错误行（failed/returned），不毒化。"""
+    result = worker.call(
+        "probe_context", {"payload": "x"},
+        ctx={"ctx_v": 999, "workspace": "D:/probe"},
+    )
+    assert result.status == "failed"
+    assert result.actual_state == "returned"
+    assert "ctx_v" in str(result.payload)
+
+    # 健康 worker 仍可复用（解码失败不毒化——毒化只属 deadline/EOF）
+    ok = worker.call("probe_context", {"payload": "after-bad-ctx"})
+    assert ok.status == "completed"
+    assert ok.actual_state == "stopped"
+
+
+def test_malformed_wire_key_rejected_and_worker_survives(worker):
+    """白名单外键（回调暗道）→ worker 结构化错误行，后续调用正常。"""
+    bad = {"ctx_v": 1, "permission_gateway": "leak"}
+    result = worker.call("probe_context", {"payload": "x"}, ctx=bad)
+    assert result.status == "failed"
+    assert "unexpected wire ctx keys" in str(result.payload)
+
+    ok = worker.call("probe_context", {"payload": "after-leak"})
+    assert ok.status == "completed"

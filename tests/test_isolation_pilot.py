@@ -34,9 +34,13 @@ def test_s1_write_file_in_temp_workspace(tmp_path):
     """S1：真实 write 工具在隔离 worker 内写临时工作区成功。"""
     if not _write_registered():
         pytest.skip("write 工具未注册")
+    # B2.3 3b：用 codec 产出的带版本 wire dict（双形态之一，覆盖发送路径）
+    from agentnodes.kernel.agent.tools._isolation_context import to_wire
+    from agentnodes.kernel.agent.tools.core import ToolContext
+
     result = isolate_tool_call(
         "write", {"path": "pilot.txt", "content": "3c-pilot"},
-        ctx={"workspace": str(tmp_path)}, timeout_s=30.0,
+        ctx=to_wire(ToolContext(workspace=tmp_path)), timeout_s=30.0,
     )
     assert result.status == "completed"
     assert result.actual_state == "stopped"

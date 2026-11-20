@@ -257,3 +257,37 @@ codec 构造——一次性的、可见的 diff，换来今后 schema 变更必�
 
 下一子批 3b（发送/接收接线 + 15 处调用点切换 + 解码失败结构化错误行）
 需单独批准。
+
+## 8. 子批 3b 执行记录（2026-11-20 · 已实施 · 仍不接生产）
+
+范围澄清：方案按早期快照估「15 处手拼 ctx 调用点」，实测当前树 ctx
+调用点 = 4 处测试（channel 3 + pilot 1）+ 发送侧 3 + worker 解码 1
++ probe 2——全部切换，无遗漏（探针清单由脚本逐行核实）。
+
+- **worker 侧**（`_isolation_worker.py`）：`_build_ctx` → `_decode_ctx`
+  （`from_wire` 唯一解码入口，返回 `(tool_context, error)`）；解码失败
+  回结构化错误行 `{"result": {"status": "error", "error": "ctx schema
+  reject: ..."}}`，**worker 不崩溃/不毒化**（3c D2 边界：毒化只属
+  deadline/EOF）；`probe_context` 改读解码后的 ToolContext（str/Path 一致）；
+  `_run_tool` 接 ToolContext 而非裸 dict。
+- **发送侧**（`isolation.py`）：新增 `_normalize_ctx_wire` 统一编码——
+  `None` → 空 ToolContext 编码；`ToolContext` → `to_wire`；带 `ctx_v`
+  的 dict → 原样透传（worker 侧校验）；**裸 dict 无 ctx_v → 显式拒**
+  （决策 3 零容忍）。`IsolationWorker.call` / `isolate_tool_call` 的
+  `ctx` 参数放宽为双形态，`_execute_on_channel` 只传 wire dict——
+  任务行现在必带 `ctx_v`，发送前编码失败在父进程抛
+  `IsolationContextError`（坏 ctx 不出父进程）。
+- **测试切换**：channel 3 处 + pilot 1 处调用点改 codec 构造（pilot 用
+  wire dict 形态覆盖双形态之一）；platform_matrix 增 4 条全平台编码
+  测试（裸 dict 拒 / None→带版本 / wire 透传 / ToolContext 编码）；
+  channel 增 2 条 Windows 真机测试（超版本→failed/returned 且 worker
+  仍可复用；白名单外键→结构化错误行且后续调用正常）。
+- 错误映射：`status="error"`（解码失败）落 `_execute_on_channel` 的
+  通用 `failed`/`returned` 分支——有明确结果但非成功，与方案 §2.3 一致。
+
+验证：全平台 codec+守卫 33 passed（0.51s）；Windows 真机 17 passed
+（11.9s）；全隔离面 50 passed；dangling 0；层方向 0 违规。3b 仍零
+生产接线——`BaseTool.ainvoke` / `AgentLoop` / `loop/tools.py` 未改。
+
+下一子批 3c（契约硬化：`probe_ctx_echo` 探针 + WP-4 验收逐条映射）
+需单独批准。

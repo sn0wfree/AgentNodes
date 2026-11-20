@@ -69,30 +69,27 @@ def _read_line() -> str | None:
     return line.strip() if line else None
 
 
-def _build_ctx(ctx: dict) -> Any:
-    """从可序列化的 ctx dict 构造 worker 内的 ToolContext。
+def _decode_ctx(ctx: dict) -> tuple[Any | None, str]:
+    """wire dict → ToolContext（B2.3 3b：唯一解码入口）。
 
-    只承载**数据字段**（§9.7 E2 清单：workspace / session_id /
-    strategy_dir / results_tsv / write_roots / read_roots / message_id /
-    tool_call_id）。回调与进程内对象（emit_* / permission_* / data_store /
-    sandbox）不在 worker 内可用——回调由父进程代理（3b 审批）、其余留 3c
-    之后评估。
+    返回 ``(tool_context, error)``——解码失败**不让 worker 崩溃/退出**：
+    错误由调用方回结构化结果行，worker 保持健康可复用（不毒化，
+    B2.3 §2.3 / 3c D2 边界：毒化只属 deadline/EOF）。
     """
-    from agentnodes.kernel.agent.tools.core import ToolContext
-
-    return ToolContext(
-        workspace=ctx.get("workspace"),
-        session_id=ctx.get("session_id"),
-        strategy_dir=ctx.get("strategy_dir"),
-        results_tsv=ctx.get("results_tsv"),
-        write_roots=ctx.get("write_roots"),
-        read_roots=ctx.get("read_roots"),
-        message_id=ctx.get("message_id"),
-        tool_call_id=ctx.get("tool_call_id"),
+    from agentnodes.kernel.agent.tools._isolation_context import (
+        IsolationContextError,
+        from_wire,
     )
 
+    try:
+        return from_wire(ctx), ""
+    except IsolationContextError as exc:
+        return None, f"ctx schema reject: {exc}"
+    except Exception as exc:  # noqa: BLE001 —— 兜底也走结构化错误行
+        return None, f"ctx decode failed: {type(exc).__name__}: {exc}"
 
-def _run_tool(name: str, args: dict, ctx: dict) -> dict:
+
+def _run_tool(name: str, args: dict, tool_ctx: Any) -> dict:
     """在 worker 内解析工具并执行（注册表按名查找）。"""
     from agentnodes.kernel.agent.builtin_tools import build_default_registry
 
@@ -102,7 +99,7 @@ def _run_tool(name: str, args: dict, ctx: dict) -> dict:
         return {"status": "error", "error": f"unknown tool: {name}"}
     try:
         # v2 入口：ctx 由框架注入 kwargs["ctx"]（见 BaseTool.invoke/_dispatch）
-        output = tool.invoke({**dict(args), "ctx": _build_ctx(ctx)})
+        output = tool.invoke({**dict(args), "ctx": tool_ctx})
     except Exception as exc:  # noqa: BLE001 —— worker 内错误回传父进程
         return {"status": "error", "error": f"{type(exc).__name__}: {exc}"}
     return {"status": "ok", "output": output}
@@ -125,9 +122,15 @@ def _worker_loop() -> int:
         tool = task.get("tool")
         args = task.get("args", {})
         ctx = task.get("ctx", {})
+        tool_ctx, ctx_error = _decode_ctx(ctx)
+        if ctx_error:
+            # B2.3 3b：解码失败 → 结构化错误行；worker 保持健康（不毒化）。
+            _emit({"result": {"status": "error", "error": ctx_error}})
+            continue
         if tool == "probe_context":
-            _emit({"ev": "progress", "ctx_workspace": ctx.get("workspace"),
-                   "ctx_session": ctx.get("session_id")})
+            _emit({"ev": "progress", "ctx_workspace": (
+                str(tool_ctx.workspace) if tool_ctx.workspace else None
+            ), "ctx_session": tool_ctx.session_id})
             _emit({"result": {"status": "ok", "echo": args.get("payload")}})
             continue
         if tool == "probe_permission":
@@ -148,7 +151,7 @@ def _worker_loop() -> int:
             time.sleep(float(args.get("seconds", 1.0)))
             _emit({"result": {"status": "ok", "slept": args.get("seconds")}})
             continue
-        _emit({"result": _run_tool(tool, args, ctx)})
+        _emit({"result": _run_tool(tool, args, tool_ctx)})
     return 0
 
 

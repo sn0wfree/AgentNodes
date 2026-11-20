@@ -21,9 +21,11 @@ from agentnodes.kernel.agent.tools.isolation import (
     UnsupportedPlatform,
     _EOF,
     _PosixAdapter,
+    _normalize_ctx_wire,
     build_worker_adapter,
     isolate_tool_call,
 )
+from agentnodes.kernel.agent.tools._isolation_context import IsolationContextError
 
 
 def test_approval_proxy_defaults_to_deny():
@@ -80,3 +82,34 @@ def test_read_timeout_is_not_eof():
     channel._queue.put(_EOF)
     assert channel.read(0.05) is None
     assert channel._eof is True, "真 EOF 才置标志"
+
+
+# ── B2.3 3b：发送侧 ctx 统一编码（全平台，无真 worker）─────────────
+
+
+def test_bare_ctx_dict_rejected():
+    """裸 dict（无 ctx_v）必须显式拒——调用方须经 codec 构造（决策 3）。"""
+    with pytest.raises(IsolationContextError, match="bare ctx dict"):
+        _normalize_ctx_wire({"workspace": "D:/probe"})
+
+
+def test_none_ctx_becomes_versioned_wire():
+    ctx = _normalize_ctx_wire(None)
+    assert ctx["ctx_v"] == 1
+    assert set(ctx) == {"ctx_v", "workspace", "session_id", "strategy_dir",
+                        "runs_dir", "results_tsv", "write_roots", "read_roots",
+                        "message_id", "tool_call_id"}
+
+
+def test_versioned_dict_passes_through():
+    wire = {"ctx_v": 1, "workspace": "D:/probe"}
+    assert _normalize_ctx_wire(wire) is wire  # 不拷贝，原样透传（worker 侧校验）
+
+
+def test_toolcontext_encoded():
+    from agentnodes.kernel.agent.tools.core import ToolContext
+
+    wire = _normalize_ctx_wire(ToolContext(session_id="s1"))
+    assert wire["ctx_v"] == 1
+    assert wire["session_id"] == "s1"
+    assert wire["workspace"] is None

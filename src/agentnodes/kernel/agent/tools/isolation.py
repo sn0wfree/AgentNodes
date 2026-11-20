@@ -104,6 +104,38 @@ _EOF = object()
 _KILL_CONFIRM_TIMEOUT_S = 5.0
 
 
+def _normalize_ctx_wire(ctx: Any) -> dict[str, Any]:
+    """把调用方 ctx 统一编码为带 ``ctx_v`` 的 wire dict（B2.3 3b）。
+
+    接受（方案 §5 决策 5 双形态）：
+    - ``None`` → 空 ToolContext 编码（只有 ``ctx_v``）；
+    - :class:`ToolContext` → ``to_wire``（唯一编码器，回调字段不可能泄漏）；
+    - **带 ``ctx_v`` 的 dict**（codec 产出或校验过的 wire）→ 原样透传；
+    - 裸 dict（无 ``ctx_v``）→ 显式拒绝——不静默补版本（决策 3 零容忍），
+      调用方必须经 :func:`to_wire` 构造，schema 漂移当场可见。
+    """
+    from agentnodes.kernel.agent.tools._isolation_context import IsolationContextError
+    from agentnodes.kernel.agent.tools.core import ToolContext
+
+    if ctx is None:
+        ctx = ToolContext()
+    if isinstance(ctx, ToolContext):
+        from agentnodes.kernel.agent.tools._isolation_context import to_wire
+
+        return to_wire(ctx)
+    if isinstance(ctx, dict):
+        if "ctx_v" not in ctx:
+            raise IsolationContextError(
+                "bare ctx dict is not allowed — use "
+                "agentnodes.kernel.agent.tools._isolation_context.to_wire(...) "
+                "to build a versioned wire dict"
+            )
+        return ctx  # 已带版本的 wire dict，由 worker from_wire 校验
+    raise IsolationContextError(
+        f"ctx must be ToolContext | versioned dict | None, got {type(ctx).__name__}"
+    )
+
+
 @dataclass
 class IsolationResult:
     """一次隔离执行的结果。"""
@@ -235,7 +267,7 @@ class IsolationWorker:
         tool_name: str,
         args: dict[str, Any] | None = None,
         *,
-        ctx: dict[str, Any] | None = None,
+        ctx: Any = None,  # ToolContext | versioned wire dict | None（B2.3 3b）
         approval: ApprovalProxy | None = None,
         timeout_s: float | None = None,
     ) -> IsolationResult:
@@ -255,7 +287,7 @@ class IsolationWorker:
         if self._closed:
             raise RuntimeError("IsolationWorker 已关闭")
         result = _execute_on_channel(
-            self._channel, tool_name, args or {}, ctx or {},
+            self._channel, tool_name, args or {}, _normalize_ctx_wire(ctx),
             approval=approval, timeout_s=timeout_s or self._timeout_s,
             platform=self.platform,
         )
@@ -401,7 +433,7 @@ def isolate_tool_call(
     tool_name: str,
     args: dict[str, Any] | None = None,
     *,
-    ctx: dict[str, Any] | None = None,
+    ctx: Any = None,  # ToolContext | versioned wire dict | None（B2.3 3b）
     approval: ApprovalProxy | None = None,
     timeout_s: float = 30.0,
     adapter: WorkerAdapter | None = None,
@@ -409,12 +441,17 @@ def isolate_tool_call(
 ) -> IsolationResult:
     """在隔离 worker 内执行一次工具调用（3b 单入口，**不接生产路径**）。
 
-    流程：spawn worker → 任务行（含可序列化 ctx）→ 处理事件行（审批请求
-    转交 ``approval`` 代理裁决）→ 结果行 → 收尾。返回的实际状态与 4a
-    词表一致：正常完成 ``stopped``；审批拒绝/工具级失败 ``returned``（有
-    明确结果但非成功）；deadline 触发 → 杀 worker 并逐 pid 确认，确认死
-    → ``terminated``/``stopped``，未确认 → ``unknown``；worker 无结果行
-    退出（EOF）→ ``unknown``。
+    流程：spawn worker → 任务行（含可序列化 ctx，B2.3 3b 起经 codec
+    编码为带 ``ctx_v`` 的 wire dict）→ 处理事件行（审批请求转交
+    ``approval`` 代理裁决）→ 结果行 → 收尾。返回的实际状态与 4a
+    词表一致：正常完成 ``stopped``；审批拒绝/工具级失败/ctx 解码失败
+    ``returned``（有明确结果但非成功）；deadline 触发 → 杀 worker 并逐
+    pid 确认，确认死 → ``terminated``/``stopped``，未确认 → ``unknown``；
+    worker 无结果行退出（EOF）→ ``unknown``。
+
+    ``ctx`` 接受 :class:`ToolContext` / codec 产出的带版本 dict / None；
+    裸 dict（无 ``ctx_v``）显式拒绝——调用方必须经 codec 构造。发送前
+    编码失败在父进程抛 :class:`IsolationContextError`（坏 ctx 不出父进程）。
 
     平台未验证（POSIX）→ adapter 抛 UnsupportedPlatform（显式拒绝，
     不静默降级到 in-process 执行）。
@@ -438,7 +475,7 @@ def isolate_tool_call(
     channel.start_reader()
     try:
         result = _execute_on_channel(
-            channel, tool_name, args or {}, ctx or {},
+            channel, tool_name, args or {}, _normalize_ctx_wire(ctx),
             approval=approval, timeout_s=timeout_s, platform="isolated",
         )
         if result.timed_out:
