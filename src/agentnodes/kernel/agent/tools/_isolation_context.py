@@ -27,6 +27,7 @@ __all__ = [
     "WIRE_FIELDS",
     "from_wire",
     "to_wire",
+    "validate_wire",
 ]
 
 #: 当前 wire 协议版本。改 schema（增删字段/改类型）必须 +1 并评审。
@@ -111,18 +112,20 @@ def to_wire(ctx: Any) -> dict[str, Any]:
     return wire
 
 
-def from_wire(obj: dict[str, Any]) -> Any:
-    """wire dict → ToolContext（worker 侧唯一解码入口）。
+def validate_wire(obj: dict[str, Any]) -> None:
+    """校验 wire dict（纯函数：不改 obj、不构造 ToolContext）。
 
-    校验顺序（失败抛 :class:`IsolationContextError`）：
-    ① ``ctx_v`` 缺失/无效/不兼容 → 拒；② 白名单外键 → 拒（报错含键名）；
-    ③ 类型强转（str→Path、list→tuple）；④ 路径字段绝对性 + ``..`` 段
-    检查；⑤ 缺失字段 → None（与 ToolContext 默认一致）。
+    校验顺序与异常消息与 :func:`from_wire` 逐字一致：
+    ① dict 类型；② ``ctx_v`` 缺失/无效/不兼容；③ 白名单外键（报错含键名）；
+    ④ 路径字段绝对性 + ``..`` 段检查；⑤ 各字段 wire 类型。
+
+    存在的理由（第三轮复审候选 I3）：父侧公开入口 ``isolate_tool_call``
+    需在 spawn 前校验 versioned-dict 形态——「坏 ctx 不出父进程」的宣称
+    要落在承载它的 interface 上。worker 侧 :func:`from_wire` 复用本函数，
+    保留纵深防御（拒收不毒化），二者规则同源、不会漂移。
 
     不做语义级穿越判定（相对 workspace 越界归 PathWhitelist 单一职责）。
     """
-    from agentnodes.kernel.agent.tools.core import ToolContext
-
     if not isinstance(obj, dict):
         raise IsolationContextError(
             f"wire ctx must be dict, got {type(obj).__name__}"
@@ -136,11 +139,9 @@ def from_wire(obj: dict[str, Any]) -> Any:
             f"(callbacks / in-process objects must not cross the boundary)"
         )
 
-    values: dict[str, Any] = {}
     for name in WIRE_FIELDS:
         value = obj.get(name)
         if value is None:
-            values[name] = None
             continue
         if name in _PATH_FIELDS:
             if not isinstance(value, str):
@@ -152,7 +153,6 @@ def from_wire(obj: dict[str, Any]) -> Any:
                 raise IsolationContextError(
                     f"{name} must be an absolute path without '..': {value!r}"
                 )
-            values[name] = path
         elif name in _TUPLE_FIELDS:
             if not isinstance(value, (list, tuple)) or not all(
                 isinstance(item, str) for item in value
@@ -160,12 +160,36 @@ def from_wire(obj: dict[str, Any]) -> Any:
                 raise IsolationContextError(
                     f"{name} must be a list of str on wire, got {value!r}"
                 )
-            values[name] = tuple(value)
         else:
             if not isinstance(value, str):
                 raise IsolationContextError(
                     f"{name} must be str or None on wire, got {type(value).__name__}"
                 )
+
+
+def from_wire(obj: dict[str, Any]) -> Any:
+    """wire dict → ToolContext（worker 侧唯一解码入口）。
+
+    先经 :func:`validate_wire` 完整校验（异常类型/消息逐字不变），再做值
+    强转（str→Path、list→tuple）构造 ToolContext；缺失字段 → None（与
+    ToolContext 默认一致）。
+
+    不做语义级穿越判定（相对 workspace 越界归 PathWhitelist 单一职责）。
+    """
+    from agentnodes.kernel.agent.tools.core import ToolContext
+
+    validate_wire(obj)
+
+    values: dict[str, Any] = {}
+    for name in WIRE_FIELDS:
+        value = obj.get(name)
+        if value is None:
+            values[name] = None
+        elif name in _PATH_FIELDS:
+            values[name] = Path(value)
+        elif name in _TUPLE_FIELDS:
+            values[name] = tuple(value)
+        else:
             values[name] = value
 
     return ToolContext(**values)

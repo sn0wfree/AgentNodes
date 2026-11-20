@@ -106,6 +106,37 @@ def test_versioned_dict_passes_through():
     assert _normalize_ctx_wire(wire) is wire  # 不拷贝，原样透传（worker 侧校验）
 
 
+def test_bad_versioned_dict_rejected_in_parent_before_spawn():
+    """I3：畸形 wire dict 在生产公开入口父侧抛 IsolationContextError。
+
+    worker 侧结构化拒收测试（test_isolation_channel 三例）仍走 worker.call，
+    各自验证纵深防御——二者规则同源（validate_wire）、失败面不同。
+    """
+    with pytest.raises(IsolationContextError, match="unexpected wire ctx keys"):
+        isolate_tool_call(
+            "probe_context", {}, ctx={"ctx_v": 1, "permission_gateway": "leak"},
+        )
+
+
+def test_incompatible_version_rejected_in_parent_before_spawn():
+    """非法 ctx_v 同样父侧拒——spawn 之前，不留畸形 ctx 过进程边界。"""
+    with pytest.raises(IsolationContextError, match="incompatible 'ctx_v'"):
+        isolate_tool_call(
+            "probe_context", {}, ctx={"ctx_v": 999, "workspace": "D:/probe"},
+        )
+
+
+def test_validate_wire_is_pure():
+    """validate_wire 不改 obj、不构造 ToolContext（纯函数）。"""
+    from agentnodes.kernel.agent.tools._isolation_context import validate_wire
+
+    wire = {"ctx_v": 1, "workspace": "D:/probe"}
+    snapshot = dict(wire)
+    assert validate_wire(wire) is None
+    assert wire == snapshot
+
+
+
 def test_toolcontext_encoded():
     from agentnodes.kernel.agent.tools.core import ToolContext
 

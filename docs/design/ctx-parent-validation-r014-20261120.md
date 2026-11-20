@@ -84,3 +84,11 @@
 ## 6. 实施前确认
 
 本方案来自 grilling 全 A（Q17/Q18）+ I3 落点二次确认（方案一：isolate_tool_call 入口）。**未获批不得实施任何代码**；获批后按 R-007 单提交实施，doc first 纪律已满足（本文件）。
+
+## 7. 执行记录（2026-11-20 · 已实施 · 用户"go"批准）
+
+- `_isolation_context.py`：新增公开纯 `validate_wire(obj)`（入 `__all__`），从 `from_wire` 抽出完整校验（dict 类型 / 版本 / 白名单外键 / 路径 / 类型，异常消息逐字不变）；`from_wire` 改为「先 validate_wire 再值强转构造」，对外行为逐字等价。
+- `isolation.py`：`isolate_tool_call` 入口对 dict 形态把关——裸 dict 保留原 `bare ctx dict` 消息、带 `ctx_v` 的调 `validate_wire`；spawn 之前抛 `IsolationContextError`。"坏 ctx 不出父进程"在公开 interface 上真正成立。
+- `worker.call` / `_normalize_ctx_wire`：**零改动**；worker 侧三个结构化拒收测试零改动且全绿（纵深防御仍验）。
+- `test_isolation_platform_matrix.py`：新增 3 例（父侧多余键拒 / 非法 ctx_v 拒 / validate_wire 纯函数）；identity 透传与裸 dict 拒收锚不动。
+- 验证：I3 面 48 passed；全量 `-n 6` **8058 passed** / 0 failed（+3 新例）；batch_gate ALL GREEN；数字 464/96,959（L3 51,262）。

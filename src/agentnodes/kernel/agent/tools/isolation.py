@@ -487,7 +487,27 @@ def isolate_tool_call(
 
     ``worker`` 传入常驻 worker 可复用进程（省 ~500ms/次的 spawn 成本）；
     不传则临时建一个并在返回前关闭（deadline 杀+确认发生在释放之前）。
+
+    **父侧校验（第三轮复审候选 I3）**：dict 形态（versioned wire）在 spawn
+    前经 codec ``validate_wire`` 校验——「坏 ctx 不出父进程」在公开入口上
+    真正成立。``ToolContext`` / None 仍走 to_wire（构造 impossibility 保证
+    合法）。worker 侧 from_wire 校验保留作纵深防御（拒收不毒化）。
     """
+    if isinstance(ctx, dict):
+        from agentnodes.kernel.agent.tools._isolation_context import (
+            IsolationContextError,
+            validate_wire,
+        )
+
+        if "ctx_v" not in ctx:
+            # 裸 dict 消息逐字保留（test_bare_ctx_dict_rejected 锚）。
+            raise IsolationContextError(
+                "bare ctx dict is not allowed — use "
+                "agentnodes.kernel.agent.tools._isolation_context.to_wire(...) "
+                "to build a versioned wire dict"
+            )
+        validate_wire(ctx)
+
     if worker is not None:
         return worker.call(
             tool_name, args, ctx=ctx, approval=approval, timeout_s=timeout_s,
