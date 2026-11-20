@@ -232,3 +232,28 @@ codec 构造——一次性的、可见的 diff，换来今后 schema 变更必�
    是 ToolContext 数据字段的 wire 投影，源结构不动。
 7. **`emit_progress` 等回调的跨界实现**（如 worker 侧进度回传协议）——
    本批只确立"回调不入 wire"；若 B2.5 试点需要进度回传，另走方案。
+
+## 7. 子批 3a 执行记录（2026-11-20 · 已实施 · 零接线）
+
+两处范围澄清（讨论批准时采纳）：① `runs_dir` 纳入 codec schema（9 字段
+完整），3b 才接 worker 解码端；② 3a 只测 codec 纯函数，`isolate_tool_call`
+的 `ctx=` 双形态（决策 5）留 3b 接线时实现——3a 不渗透调用方 API。
+
+- 新模块 `kernel/agent/tools/_isolation_context.py`（L3 私有 sibling）：
+  `CTX_VERSION=1` / `WIRE_FIELDS`（9 字段白名单，唯一事实源）/
+  `IsolationCtxWire` frozen dataclass / `IsolationContextError` /
+  `to_wire`（ToolContext→wire，Path→str、tuple→list；回调字段**从不
+  读取**，构造 impossibility）/ `from_wire`（wire→ToolContext，五步校验：
+  版本→多余键→类型强转→路径绝对性+`..`→缺省 None）。
+- 新测试 `tests/test_isolation_context.py` 24 用例（**全平台无 skipif**）：
+  9 字段往返（含类型强转还原）、wire 键集合 == 白名单+版本、回调全部
+  恒 None、`ctx_v` 缺失/非整型/0/负/超版本/bool 六类显式报错、白名单
+  外键与未来字段拒、相对路径与 `..` 段拒、输入类型拒。
+
+验证：codec 24 passed（0.34s）；dangling imports 0；层方向违规 0；
+数字同步 L3 +1 文件 +171 行（461 文件 / 96,145 行）；全量 + gate 见
+提交前最终记录。3a 零接线——`isolation.py` / worker / 普通工具路径
+全部未改，回滚零生产影响。
+
+下一子批 3b（发送/接收接线 + 15 处调用点切换 + 解码失败结构化错误行）
+需单独批准。
