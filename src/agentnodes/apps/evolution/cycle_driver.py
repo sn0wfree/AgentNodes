@@ -1,10 +1,9 @@
-"""RSI 驱动 + 预算闸 + 证据增量门（组装根，L1）。
+"""RSI 驱动 + 预算闸 + 证据增量门（领域驱动，L2 · WP-8 批 3b.2）。
 
 **这个模块存在的理由**：``build_rsi_loop()`` 在本批之前**生产零调用**——
 零件齐全（holdout / EvolutionAgent / ValidationGate / golden replay），
 但没有任何东西真的去驱动它。本模块就是那个驱动：一个薄薄的一层，把
-"什么时候值得跑一轮 RSI"的判断题从 kernel 里拿出来，放到已知配置与
-宿主的 L1。
+"什么时候值得跑一轮 RSI"的判断题收敛成可复用的领域用例。
 
 **它做的三件事**（全部在真正跑 cycle 之前）：
 
@@ -20,9 +19,21 @@
 可覆盖）。目录解析复用 ``foundation.storage.sqlite.ensure_data_dir``——
 不硬编码 home，也不各自实现一套迁移逻辑。
 
-**为什么在 L1 而不是 kernel**：它需要 Gateway（含 ticket_sink 的签名口径）、
-RSI 装配、halt、数据目录——这四样只有组装根能同时看到。放 kernel 会逼
-kernel 反向依赖 interfaces（L3→L1 上行违规）。
+**宿主注入契约（L2 不上行）**：本层在 L2，不能 import L1 的
+``interfaces.cli.halt``（kill switch）与 ``interfaces.rsi_wiring``
+（闭环装配）——由 L1 宿主经 :func:`run_once` 的 ``halt_check`` /
+``loop_builder`` 注入（设计文档「halt 以 callable 注入」的完整形态）：
+
+- ``halt_check() -> (blocked, reason)``：CLI 宿主用
+  ``interfaces.cli.halt.is_halted``；``None`` = 无 halt 护栏（宿主必须
+  **显式选择**放弃护栏）；护栏 callable 抛异常按「未 halt」处理（与旧
+  「halt 模块不可用不影响驱动」语义一致）。
+- ``loop_builder(gw, emit, seed) -> loop | None``：CLI 宿主用
+  :func:`make_loop_builder` 包 ``rsi_wiring.build_rsi_loop``；
+  ``None`` = 不装配（cycle 以 ``wiring_skipped`` 跳过）。
+
+生产注入点：``interfaces/cli/commands/rsi.py`` 与
+``interfaces/goal_settled_consumer.py``（迁移前各只此两处调用）。
 """
 
 from __future__ import annotations
@@ -337,16 +348,20 @@ def _resolve_gateway(gateway: Any | None) -> tuple[Any | None, str | None]:
         return None, str(exc)
 
 
-def _gate_halt() -> tuple[bool, str]:
-    """门 1：halt。返回 ``(blocked, reason)``。"""
-    try:
-        from agentnodes.interfaces.cli.halt import HALT_REASON, is_halted
-    except Exception:  # noqa: BLE001 —— halt 模块不可用不影响驱动
-        logger.debug("halt check unavailable", exc_info=True)
-        return False, ""
-    if is_halted():
-        return True, HALT_REASON
-    return False, ""
+def make_loop_builder(
+    build_rsi_loop: Callable[..., Any],
+) -> Callable[[Any, Callable[[str, dict], None], int], Any | None]:
+    """L1 宿主用：把 ``rsi_wiring.build_rsi_loop`` 包成 ``loop_builder``。
+
+    本层（L2）不能 import L1 的装配根；宿主注入时经本助手包一层，
+    ``_GwProxy``（session 分区发射器）仍是驱动内部的实现细节。
+    """
+    def builder(
+        gw: Any, emit: Callable[[str, dict], None], seed: int,
+    ) -> Any | None:
+        return build_rsi_loop(_GwProxy(gw, emit), seed=seed)
+
+    return builder
 
 
 def _select_evidence(
@@ -379,12 +394,18 @@ def _signature_scope(gw: Any) -> tuple[str, tuple[str, ...]]:
     return role, tool_set
 
 
-def _assemble_loop(gw: Any, emit: Callable[[str, dict], None], seed: int) -> Any | None:
-    """装配 RSI 闭环；失败返回 None（由调用方发 ``wiring_skipped``）。"""
+def _assemble_loop(
+    gw: Any,
+    emit: Callable[[str, dict], None],
+    seed: int,
+    loop_builder: Callable[[Any, Callable[[str, dict], None], int], Any | None] | None,
+) -> Any | None:
+    """装配 RSI 闭环；宿主未注入或装配失败返回 None（``wiring_skipped``）。"""
+    if loop_builder is None:
+        logger.warning("rsi loop_builder not provided by host; cycle skipped")
+        return None
     try:
-        from agentnodes.interfaces.rsi_wiring import build_rsi_loop
-
-        return build_rsi_loop(_GwProxy(gw, emit), seed=seed)
+        return loop_builder(gw, emit, seed)
     except Exception as exc:  # noqa: BLE001
         logger.warning("rsi loop assembly failed: %s", exc)
         return None
@@ -502,6 +523,8 @@ def run_once(
     gateway: Any = None,
     force: bool = False,
     now: datetime | None = None,
+    halt_check: Callable[[], tuple[bool, str]] | None = None,
+    loop_builder: Callable[[Any, Callable[[str, dict], None], int], Any | None] | None = None,
 ) -> CycleOutcome:
     """跑一轮 RSI（过三道门之后）。
 
@@ -513,6 +536,11 @@ def run_once(
     :param force: 跳过预算闸（**不**跳过 halt 与证据门）。仅供运维手动
         重跑；不建议在自动化里使用。
     :param now: 时间源（测试注入）
+    :param halt_check: 门 1 护栏 callable（宿主注入，见模块 docstring）。
+        ``None`` = 无 halt 护栏——**宿主必须显式选择**；callable 抛异常
+        按「未 halt」处理（旧「halt 不可用不影响驱动」语义）。
+    :param loop_builder: 闭环装配注入（宿主经 :func:`make_loop_builder`
+        构造）；``None`` = 不装配，cycle 以 ``wiring_skipped`` 跳过。
 
     **永不抛出**：RSI 是增强通道，任何失败都落成返回值 + 事件。
     """
@@ -530,10 +558,15 @@ def run_once(
     monitor = _build_monitor(emit, state)
     skip = _make_skipper(emit=emit, state=state, monitor=monitor)
 
-    # ── 门 1：halt（不可 force 绕过）──────────────────────────────
-    halted, halt_reason = _gate_halt()
-    if halted:
-        return skip("halted", halt_reason=halt_reason)
+    # ── 门 1：halt（不可 force 绕过；宿主注入）────────────────────
+    if halt_check is not None:
+        try:
+            halted, halt_reason = halt_check()
+        except Exception:  # noqa: BLE001 —— 护栏不可用不影响驱动（旧语义）
+            logger.debug("halt check raised; treating as not halted", exc_info=True)
+            halted, halt_reason = False, ""
+        if halted:
+            return skip("halted", halt_reason=halt_reason)
 
     # ── 门 2：预算 ────────────────────────────────────────────────
     if not force:
@@ -569,9 +602,13 @@ def run_once(
         )
 
     # ── 装配 + 跑 ────────────────────────────────────────────────
-    loop = _assemble_loop(gw, emit, seed)
+    loop = _assemble_loop(gw, emit, seed, loop_builder)
     if loop is None:
-        return skip("wiring_skipped", task_signature=signature)
+        return skip(
+            "wiring_skipped",
+            task_signature=signature,
+            loop_builder="unwired" if loop_builder is None else "failed",
+        )
 
     outcome = _run_loop(
         loop,
@@ -606,6 +643,7 @@ __all__ = [
     "collect_reports",
     "daily_limit",
     "load_state",
+    "make_loop_builder",
     "per_session_limit",
     "record_cycle",
     "resolve_objective",

@@ -9,9 +9,10 @@ CLI + cron。阶段 2 要加两个高信号触发点：
 - ``run.settled``（后续批次）——需要去重门（冷却窗口）。
 
 **为什么在 L1 而不在 kernel**：本模块要同时看到事件流（L3）与
-``rsi_cli.run_once``（L1 组装根）。放进 kernel 会逼 kernel 反向依赖 L1。
+``apps.evolution.cycle_driver.run_once``（L2 领域驱动，WP-8 3b.2 下沉）
+——并把 L1 资产（halt 护栏 / 闭环装配）按「callable 注入」契约传给驱动。
 R1 已恢复 ``apps/goal`` 的 ``goal.settled`` 事件（``event_v2.EventType``），
-消费者住组装根是唯一合法位置。
+消费者住 L1 是注入 L1 资产的唯一合法位置。
 
 **质量防线（评审「阶段 2 前置」）**：
 1. **判据强度门**——恒真判据（``"true"`` / ``"1"`` / ``x or true``）不触发
@@ -19,7 +20,7 @@ R1 已恢复 ``apps/goal`` 的 ``goal.settled`` 事件（``event_v2.EventType``�
    「自己写考勤」。
 2. **写入方鉴别**——payload 的 ``writer`` 字段区分「业务侧正常完成」与
    「工具侧自证完成」。后者不走 RSI 触发（避免 agent 自己刷 cycle 预算）。
-3. **每 session 限频**——复用 ``rsi_cli`` 的预算闸（session ≤ 1 / 日 ≤ N）。
+3. **每 session 限频**——复用 ``cycle_driver`` 的预算闸（session ≤ 1 / 日 ≤ N）。
 
 **不变式**：本模块**永不抛出**。goal.settled 是通知，不是命令；驱动失败
 必须记事件而不是打断 settle 流程。
@@ -117,20 +118,36 @@ def make_goal_settled_consumer(
 ) -> Callable[[str, dict[str, Any]], None]:
     """构造 ``(kind, payload) -> None`` 的事件消费者。
 
-    :param run_cycle: 注入的 cycle 执行器（缺省延迟导入 ``rsi_cli.run_once``）。
-        测试注入替身即可断言「触发/不触发」。
+    :param run_cycle: 注入的 cycle 执行器（缺省走
+        ``apps.evolution.cycle_driver.run_once``，并注入 L1 宿主资产：
+        halt 护栏 + 闭环装配）。测试注入替身即可断言「触发/不触发」。
     :param emit: 事件出口（缺省写日志）。
 
     **永不抛出**——消费者在事件泵里跑，任何异常都会污染事件流。
     """
     _emit = emit or (lambda kind, data: None)
 
+    def _halt_check() -> tuple[bool, str]:
+        from agentnodes.interfaces.cli.halt import HALT_REASON, is_halted
+
+        if is_halted():
+            return True, HALT_REASON
+        return False, ""
+
     def _run(session_id: str | None = None) -> Any:
         if run_cycle is not None:
             return run_cycle(session_id=session_id)
-        from agentnodes.interfaces.rsi_cli import run_once
+        from agentnodes.apps.evolution.cycle_driver import (
+            make_loop_builder,
+            run_once,
+        )
+        from agentnodes.interfaces.rsi_wiring import build_rsi_loop
 
-        return run_once(session_id=session_id)
+        return run_once(
+            session_id=session_id,
+            halt_check=_halt_check,
+            loop_builder=make_loop_builder(build_rsi_loop),
+        )
 
     def consume(kind: str, payload: dict[str, Any]) -> None:
         if kind != "goal.settled":

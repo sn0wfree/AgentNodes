@@ -49,9 +49,40 @@
 | 子批 | 内容 | 状态 |
 |---|---|---|
 | 3b.1 | BaselinePolicy 抽类（纯策略零行为变化）+ 新包 + 直测 | ✅ 2026-11-20 |
-| 3b.2 | 预算闸/状态/证据门/`run_once` 下沉 + halt 注入 + 删 rsi_cli.py + 补模块内单测（现状零覆盖） | 待做 |
+| 3b.2 | 预算闸/状态/证据门/`run_once` 下沉 + halt 注入 + 删 rsi_cli.py + 补模块内单测 | ✅ 2026-11-20 |
 | 3b.3 | wiring 收敛（只剩构造）+ `parents` 路径核对 + 锚点终审 | 待做 |
 | 3b.4 | 架构清单与文档收尾（semantics_placement「循环驱动」条目核对、docstring 文案、体量数字） | 待做 |
+
+## 6. 3b.2 执行记录（2026-11-20 · 已实施）
+
+- `interfaces/rsi_cli.py` → `apps/evolution/cycle_driver.py`（git mv 保
+  rename 追踪）：领域件逐字等价迁入——预算常量 / `CycleOutcome` / 状态
+  三件 / 预算闸 / 证据门 / 驱动辅助 / `run_once`。
+- **注入契约（对审计方案的修正）**：审计清单原计划 cycle_driver 直接
+  import `rsi_wiring.build_rsi_loop`——那是 **L2→L1 上行违规**
+  （rsi_wiring 留 L1 的前提下）。修正：`run_once` 增加
+  `halt_check` / `loop_builder` 双注入参数，L1 宿主显式注入——
+  - `interfaces/cli/commands/rsi.py`：`_halt_check`（L1 kill switch）
+    + `make_loop_builder(build_rsi_loop)`；
+  - `interfaces/goal_settled_consumer.py`：同款注入（默认 run_cycle 分支）。
+  `halt_check=None` = 宿主显式放弃护栏；`halt_check` 抛异常按未 halt
+  （旧「halt 模块不可用不影响驱动」语义）；`loop_builder=None` →
+  `wiring_skipped`（detail 标 `unwired`/`failed`）。`make_loop_builder`
+  是 L1 宿主的包装助手（`_GwProxy` 仍是驱动内部细节）。
+- `wiring_skipped` reason 保留（CLI 退出码映射不变）；审计原列的
+  `_heldout_kwargs` trip_halt 改注入**不需要**——rsi_wiring 本批不动，
+  L1→L1 import halt 合法（3b.3 若迁 wiring 才需要）。
+- 新测试 `tests/test_evolution_cycle_driver.py` 17 用例：状态三件
+  （env 覆盖 / 损坏回骨架 / 往返）、预算闸判定表（session 重复 / 日限
+  / 跨日重置 / 有界名单）、签名选择确定性、三道门（halt 阻断 / 护栏
+  异常容忍 / force 绕预算不绕 halt / builder 未注入 / happy path 记账
+  / gateway 缺席）、`make_loop_builder` 包装契约。
+- 消费方：`commands/rsi.py`（run/status 两分支）与
+  `goal_settled_consumer.py`（docstring 同步）；旧 `rsi_cli` 路径全仓
+  0 残留（dangling imports 0）。
+
+验证：RSI 面 6 文件 137 passed；导入冒烟三模块 OK；全量与 gate 见
+提交前最终记录。
 
 ## 4. 3b.1 执行记录（2026-11-20 · 已实施）
 

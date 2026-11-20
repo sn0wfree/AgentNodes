@@ -6,9 +6,11 @@ Usage::
     agentnodes rsi run --seed 0 --force  # 跳过预算闸（仍过 halt 与证据门）
     agentnodes rsi status              # 打印预算/证据/halt 状态
 
-**为什么是薄命令**：真正的驱动逻辑在 ``interfaces/rsi_cli.py``（L1 组装
-根）。这里只做参数解析与打印——命令模块若承担逻辑，就没法被非 CLI 的
-宿主（API / 定时任务）复用，而 RSI 的驱动恰恰需要多种宿主。
+**为什么是薄命令**：真正的驱动逻辑在 ``apps/evolution/cycle_driver.py``
+（L2 领域用例，WP-8 批 3b.2 下沉）。这里只做参数解析、打印与**宿主
+注入**（halt 护栏 + 闭环装配是 L1 资产，按「halt 以 callable 注入」
+契约传给驱动）——命令模块若承担逻辑，就没法被非 CLI 的宿主
+（API / 定时任务）复用，而 RSI 的驱动恰恰需要多种宿主。
 
 **退出码约定**：0 = 跑完或正常跳过（跳过是预期行为，不是错误）；
 1 = 门挡下的异常态（halt / 装配失败 / 崩溃），便于运维脚本判定。
@@ -20,6 +22,15 @@ import argparse
 import json
 
 from agentnodes.interfaces.cli.commands.registry import cli_command
+
+
+def _halt_check() -> tuple[bool, str]:
+    """门 1 护栏（宿主注入）：L1 的 kill switch → 驱动 callable。"""
+    from agentnodes.interfaces.cli.halt import HALT_REASON, is_halted
+
+    if is_halted():
+        return True, HALT_REASON
+    return False, ""
 
 
 def _print_outcome(outcome) -> int:
@@ -35,18 +46,21 @@ def _print_outcome(outcome) -> int:
 
 
 def _cmd_run(args: argparse.Namespace) -> int:
-    from agentnodes.interfaces.rsi_cli import run_once
+    from agentnodes.apps.evolution.cycle_driver import make_loop_builder, run_once
+    from agentnodes.interfaces.rsi_wiring import build_rsi_loop
 
     outcome = run_once(
         seed=int(args.seed),
         session_id=getattr(args, "session_id", None) or None,
         force=bool(getattr(args, "force", False)),
+        halt_check=_halt_check,
+        loop_builder=make_loop_builder(build_rsi_loop),
     )
     return _print_outcome(outcome)
 
 
 def _cmd_status(args: argparse.Namespace) -> int:
-    from agentnodes.interfaces.rsi_cli import (
+    from agentnodes.apps.evolution.cycle_driver import (
         daily_limit,
         load_state,
         per_session_limit,
