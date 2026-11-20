@@ -133,6 +133,17 @@ def _worker_loop() -> int:
             ), "ctx_session": tool_ctx.session_id})
             _emit({"result": {"status": "ok", "echo": args.get("payload")}})
             continue
+        if tool == "probe_ctx_echo":
+            # B2.3 3c 契约探针（仅测试用）：回显**收到的 wire ctx 原始键集合**。
+            # 注意用原始 `ctx`（解码前）——白名单外键已被 from_wire 拒，探针
+            # 需在解码成功路径上断言「实际跨界的就是白名单那几把钥匙」，
+            # 与 to_wire 的构造级 impossibility 形成两端夹击。
+            _emit({"result": {
+                "status": "ok",
+                "wire_keys": sorted(ctx.keys()) if isinstance(ctx, dict) else [],
+                "ctx_v": ctx.get("ctx_v") if isinstance(ctx, dict) else None,
+            }})
+            continue
         if tool == "probe_permission":
             _emit({"ev": "permission_request", "id": args.get("id"),
                    "tool": args.get("tool")})

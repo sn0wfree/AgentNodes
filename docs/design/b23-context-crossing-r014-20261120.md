@@ -291,3 +291,33 @@ codec 构造——一次性的、可见的 diff，换来今后 schema 变更必�
 
 下一子批 3c（契约硬化：`probe_ctx_echo` 探针 + WP-4 验收逐条映射）
 需单独批准。
+
+## 9. 子批 3c 执行记录（2026-11-20 · 已实施 · B2.3 收口）
+
+- **契约探针**：`_isolation_worker.py` 增 `probe_ctx_echo`（仅测试用）——
+  回显**收到的 wire ctx 原始键集合**（解码前 `ctx`，不是解码后的
+  ToolContext）：白名单外键已被 `from_wire` 拒，探针在解码成功路径上
+  断言「实际跨界的恰是白名单 + `ctx_v`」，与 `to_wire` 的构造级
+  impossibility 形成**两端夹击**。
+- 新用例 `test_probe_ctx_echo_reveals_only_whitelisted_keys`（win32 真机）：
+  回调/对象字段全填的 ToolContext → worker 回显键集合 == 白名单 10 把
+  钥匙；白名单外键（sandbox 暗道）→ 结构化错误行（失败且不毒化）。
+
+**WP-4 验收行逐条映射（收口核对，全部有测试证据）**：
+
+| WP-4 验收 | 落点（已实施） |
+|---|---|
+| 最小上下文可跨界往返 | `test_isolation_context.py::test_all_nine_fields_round_trip`（全平台 codec）+ `test_isolation_channel.py::test_e2_context_crosses_to_worker`（win32 真 worker） |
+| 缺失、无效和不兼容版本显式报错 | codec `TestVersionErrors` 六类（缺失/非整型/0/负/超版本/bool，全平台）+ `test_incompatible_version_rejected_by_worker`（win32 真 worker） |
+| 对象/句柄不跨进程泄漏 | `to_wire` 白名单构造（impossibility，3a）+ `from_wire` 多余键拒（3a）+ `test_probe_ctx_echo_reveals_only_whitelisted_keys`（3c 探针）三重保证 |
+| 相应契约测试覆盖 | `test_isolation_context.py` 24（全平台）+ `test_isolation_platform_matrix.py` 编码守卫 4 + channel 契约/版本/探针用例（win32） |
+
+**B2.3 结论**：3a（codec + 契约）+ 3b（接线 + 双形态 + 解码失败
+结构化错误且不毒化）+ 3c（探针 + WP-4 逐条收口）全部验收；全程零
+生产接线（`BaseTool.ainvoke` / `AgentLoop` / `loop/tools.py` 未改）。
+回滚粒度：各子批独立提交，回退任一子批即恢复 B2.2 已验收 IPC，
+普通工具调用路径全程未动。
+
+**后续（不在本阶段）**：B2.4（生产接线 + per-call id 时序 + deadline/
+lease，roadmap WP-5）需另立 R-014 方案；B2.5 真实工具试点（WP-6）
+及其准入复核（§2.6 的 worker ctx 无回调 / kwargs 直注分叉）依序推进。

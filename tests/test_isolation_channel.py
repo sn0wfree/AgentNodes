@@ -151,3 +151,27 @@ def test_malformed_wire_key_rejected_and_worker_survives(worker):
 
     ok = worker.call("probe_context", {"payload": "after-leak"})
     assert ok.status == "completed"
+
+
+def test_probe_ctx_echo_reveals_only_whitelisted_keys(worker):
+    """3c 契约探针：回调全填的 ToolContext 编码后，worker 实际收到的
+    wire 键集合恰为白名单 + ctx_v——无对象/回调键跨界（两端夹击）。"""
+    from agentnodes.kernel.agent.tools.core import ToolContext
+
+    ctx = ToolContext(
+        workspace=Path("D:/probe-ws"), session_id="sess-echo",
+        emit_progress=lambda x: None, emit_event=lambda k, d: None,
+        permission_gateway=object(), data_store=object(), sandbox=object(),
+    )
+    result = worker.call("probe_ctx_echo", {}, ctx=ctx)
+    assert result.status == "completed"
+    assert result.payload["ctx_v"] == 1
+    assert set(result.payload["wire_keys"]) == (
+        {"ctx_v", "workspace", "session_id", "strategy_dir", "runs_dir",
+         "results_tsv", "write_roots", "read_roots", "message_id", "tool_call_id"}
+    )
+
+    # 结构化错误行侧：白名单外键（回调暗道）在 worker 解码即被拒
+    bad = worker.call("probe_ctx_echo", {}, ctx={"ctx_v": 1, "sandbox": "leak"})
+    assert bad.status == "failed"
+    assert "unexpected wire ctx keys" in str(bad.payload)
