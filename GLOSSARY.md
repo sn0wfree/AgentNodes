@@ -23,3 +23,14 @@
   actual_state / call_id / discarded_rows 等。
 - `IsolatedOutcome`：IsolatedToolExecutor 的**结果语义**，含派生的
   `result_rejected`（执行器据此禁止重试）。二者分层不同，不做 alias。
+
+### IsolationAdmission
+
+工具"超时能力声明 → 有效能力"的判定点（L3 深模块）。单一公开面
+`check_isolation_admission`（能否声明 isolatable）与 `effective_capability`
+（读声明 + 非法值回落 + 准入回落后的实际有效能力）。四级能力常量
+（`TIMEOUT_CAPABILITY_*`）是本模块的公共词汇，由 core.py re-export 给
+loop 消费者，保持 import 面稳定。
+
+- 不是 `IsolatedToolExecutor`（那是执行器，这里是准入判定）。
+- 名字来源：2026-11-20 第二轮复审候选 1+2 的 grilling 决策 Q7。
