@@ -96,6 +96,9 @@ UNUSED
 analysis/
 docs/*.pdf
 
+# 会话本地 skills（.agents/ 为会话级技能目录，不入库；.zcode/ 为仓库级，保持跟踪）
+.agents/
+
 # Golden-eval runtime workspace (run_evals_llm.py)
 evals/_ws/
 
