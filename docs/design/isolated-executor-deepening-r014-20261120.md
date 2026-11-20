@@ -100,3 +100,27 @@ IsolatedToolExecutor.run(
 
 本方案来自 grilling 12 项共识（Round 1 全 A + Round 2 全 A）。实施前请维护者
 确认：① 方案与共识一致；② 授权进入两提交实施。确认后按 R-007 逐提交验证。
+
+## 7. 执行记录
+
+### 提交① · 内部重构（2026-11-20 · 已实施）
+
+- `event_v2.py`：EventType 增 `ISOLATION_SHADOW_DECISION` /
+  `ISOLATION_TERMINAL`（入 `_ALL_EVENT_TYPES`，`is_known_event_type` 覆盖）；
+  观测事件不登记 projector。
+- `_isolated_exec.py`：`shadow_event`/新 `terminal_event` 用 EventType 常量、
+  统一 `type` 键 + 形状；`IsolatedOutcome.from_seam_result` 一次构造（去
+  platform 死字段，result_rejected 保留为 executor 决策依据）；删
+  `should_isolate(enabled=/allowlist=)` 测试旋钮——改从 settings 读（测试
+  用 monkeypatch 系统状态），仅保留 `platform=`（Q10 后备：POSIX CI 测
+  win32 分支）。
+- 测试：`test_isolated_exec_decision.py` 用 `isolation_on` fixture（env 注入）
+  替旋钮；两类事件用 `is_known_event_type` 断言注册表覆盖。
+
+验证：隔离面 105 passed（decision/wiring/context/platform/channel/pilot/
+settings）；数字同步 462 文件 / 96,647 行（L3 +25）。**本提交不改 core 行为**。
+
+### 提交② · core 接线收单次调用（待实施）
+
+`_execute_tool_call_core` 隔离分支收为 executor 一次调用；删
+`_emit_isolation_outcome` / `async_mode` 死参数；开关关回归锚 118 passed。

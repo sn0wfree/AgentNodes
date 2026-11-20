@@ -92,28 +92,26 @@ def should_isolate(
     tool: Any,
     registry: Any = None,
     *,
-    enabled: bool | None = None,
     platform: str | None = None,
-    allowlist: frozenset[str] | None = None,
 ) -> IsolationDecision:
-    """是否对本次工具调用走隔离分支（4a 决策探针，纯函数、零副作用）。
+    """是否对本次工具调用走隔离分支（IsolatedToolExecutor 内部决策）。
 
     判定顺序（先便宜后昂贵、先硬约束后软条件）：
-    1. 开关关闭 → 不隔离（**唯一决策输入**，默认关）；
+    1. 开关关闭 → 不隔离（**唯一决策输入**，默认关；经 settings 读取）；
     2. 平台不支持（非 win32）→ 不隔离（POSIX 永不启用，禁启用保护不变）；
     3. capability 非 isolatable → 不隔离；
     4. 声明 isolatable 但准入不通过 → 不隔离（B2.1 回落语义：
        ``ToolRegistry.timeout_capability`` 已把准入折叠进返回值）；
     5. 工具名不在 allowlist → 不隔离（4d 灰度；默认空 = 不启用任何工具）。
 
-    ``registry`` 给定时用 ``registry.timeout_capability(name)``（遵守
-    B2.1 准入回落）；否则降级读裸 ``tool.timeout_capability``（测试 /
-    合成工具场景）。**生产调用必须传 registry**——否则绕过准入。
+    开关/allowlist 从 settings 读取（生产输入；测试用 monkeypatch settings 替）。
+    ``platform`` 是唯一保留的注入点——POSIX CI 需测 win32 分支（grilling Q10 后备）。
+    ``registry`` 给定时用 ``registry.timeout_capability(name)``（遵守 B2.1
+    准入回落）；否则降级读裸 ``tool.timeout_capability``（合成工具场景）。
+    **生产调用必须传 registry**——否则绕过准入。
     """
     name = getattr(tool, "name", "") or type(tool).__name__
-    if enabled is None:
-        enabled = isolation_execution_enabled()
-    if not enabled:
+    if not isolation_execution_enabled():
         return IsolationDecision(False, _REASON_DISABLED, "", name)
 
     if platform is None:
@@ -139,22 +137,35 @@ def should_isolate(
         )
         return IsolationDecision(False, reason, capability, name)
 
-    if allowlist is None:
-        allowlist = isolation_tool_allowlist()
-    if name not in allowlist:
+    if name not in isolation_tool_allowlist():
         return IsolationDecision(False, _REASON_NOT_ALLOWLISTED, capability, name)
 
     return IsolationDecision(True, _REASON_OK, capability, name)
 
 
 def shadow_event(decision: IsolationDecision) -> dict[str, Any]:
-    """4a shadow 模式事件体（只计算决策、发事件，不执行隔离）。"""
+    """shadow 决策事件体（观测事件，事件名取 EventType 单一事实源）。"""
+    from agentnodes.kernel.events.event_v2 import EventType
+
     return {
-        "kind": "isolation.shadow_decision",
+        "type": EventType.ISOLATION_SHADOW_DECISION,
         "tool": decision.tool_name,
         "isolate": decision.isolate,
         "reason": decision.reason,
         "capability": decision.capability,
+    }
+
+
+def terminal_event(outcome: "IsolatedOutcome") -> dict[str, Any]:
+    """隔离终态事件体（与 shadow 统一 `type` 键 + 形状，事件名取 EventType）。"""
+    from agentnodes.kernel.events.event_v2 import EventType
+
+    return {
+        "type": EventType.ISOLATION_TERMINAL,
+        "status": outcome.status,
+        "actual_state": outcome.actual_state,
+        "call_id": outcome.call_id,
+        "discarded_rows": outcome.discarded_rows,
     }
 
 
@@ -176,8 +187,31 @@ class IsolatedOutcome:
 
     @property
     def result_rejected(self) -> bool:
-        """结果是否被拒收（截止后 returned / terminated / unknown）。"""
+        """结果是否被拒收（截止后 returned / terminated / unknown）——executor 据此禁止重试。"""
         return self.actual_state in ("returned", "unknown") or self.status == "terminated"
+
+    @classmethod
+    def from_seam_result(cls, result: Any) -> "IsolatedOutcome":
+        """从 seam 的 IsolationResult 一次构造（字段映射集中此处，非散落在调用方）。
+
+        ``platform`` 是 seam 的实现标识，executor 语义不需要——不复制。
+        """
+        import json
+
+        output = result.payload.get("output")
+        if output is None:
+            output = json.dumps(result.payload, ensure_ascii=False, default=str)
+        payload = output if isinstance(output, str) else json.dumps(
+            output, ensure_ascii=False, default=str,
+        )
+        return cls(
+            payload=payload,
+            actual_state=result.actual_state,
+            status=result.status,
+            call_id=result.call_id,
+            discarded_rows=result.discarded_rows,
+            timed_out=result.timed_out,
+        )
 
 
 def run_isolated(
@@ -202,8 +236,6 @@ def run_isolated(
     确认先于返回（seam 内 kill_and_confirm 完成后才返回）；本函数**不**
     自动重试（terminated/unknown 不得重试——不使工具幂等）。
     """
-    import json
-
     from agentnodes.kernel.agent.tools.isolation import (
         ApprovalProxy,
         isolate_tool_call,
@@ -219,20 +251,7 @@ def run_isolated(
         timeout_s=timeout,
         # worker=None → transient（每次独占，安全优先；复用模式 4d 另批）
     )
-    # 工具输出：result.payload["output"]（与 worker 回传结构一致）
-    output = result.payload.get("output")
-    if output is None:
-        output = json.dumps(result.payload, ensure_ascii=False, default=str)
-    return IsolatedOutcome(
-        payload=output if isinstance(output, str) else json.dumps(
-            output, ensure_ascii=False, default=str,
-        ),
-        actual_state=result.actual_state,
-        status=result.status,
-        call_id=result.call_id,
-        discarded_rows=result.discarded_rows,
-        timed_out=result.timed_out,
-    )
+    return IsolatedOutcome.from_seam_result(result)
 
 
 async def arun_isolated(
@@ -261,5 +280,6 @@ __all__ = [
     "run_isolated",
     "shadow_event",
     "should_isolate",
+    "terminal_event",
     "validate_isolation_config",
 ]

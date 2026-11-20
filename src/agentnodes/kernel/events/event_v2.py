@@ -216,6 +216,11 @@ class EventType:
     STUDY_KNOWLEDGE_COMPACTED = "study_knowledge_compacted"
     STUDY_DIRECTIVES_CONSUMED = "study_directives_consumed"
 
+    # Isolated execution observability（B2.4 深化 · grilling Q2/Q11）：
+    # 观测事件——不投影 message_part，仅用于决策/终态的可观测性。
+    ISOLATION_SHADOW_DECISION = "isolation.shadow_decision"
+    ISOLATION_TERMINAL = "isolation.terminal"
+
 
 # Set of all known event types (for validation)
 _ALL_EVENT_TYPES: Set[str] = set()
