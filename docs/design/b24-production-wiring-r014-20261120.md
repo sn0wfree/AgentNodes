@@ -350,3 +350,30 @@ kill+确认只证明**进程停止**，不撤销已发出的文件写入；S1 �
 8. **sync-only xfail、prune/registry、历史文档回写**——本批不碰。
 
 > 实施后按子批追加执行记录（§7+，风格同 B2.3 §7–§9）；本文当前不含实施授权。
+
+## 7. 子批 4a 执行记录（2026-11-20 · 已实施 · 零生产影响）
+
+- 新 helper `kernel/agent/loop/_isolated_exec.py`（L3）：`should_isolate`
+  决策探针（开关→平台→capability→准入，顺序先硬后软）+ `IsolationDecision`
+  + `isolation_execution_enabled`（`AGENTNODES_ISOLATION_EXECUTION` 默认
+  关、大小写不敏感）+ `shadow_event`。生产路径必须传 registry——
+  `registry.timeout_capability(name)` 已折叠 B2.1 准入回落；合成工具
+  场景才降级裸 getattr。
+- 生产路径仅一处改动：`loop/tools.py::_execute_tool_call_core` 拿到 tool
+  后调用一次 `should_isolate(tool, self.registry)` 并发
+  `isolation.shadow_decision` 事件（**只发事件、不执行隔离**）。执行分支
+  逐字不变；sync/async/retry 共用该决策点（单一输入，无旁路）。
+- 新测试 `tests/test_isolated_exec_decision.py`：开关值（默认关/6 关值/
+  4 开值）、决策短路顺序（关→任何工具不隔离；非 win32 永不隔离；
+  capability 门；isolatable 放行；registry 准入回落→reason=admission）、
+  shadow 事件形状。
+
+验证：决策测试 23 passed（0.35s）；settings 面 65 passed；loop 核心
++ E5 timeout 面 142 passed / 2 xfailed（开关关时逐字不变）；层方向 0
+违规；数字同步 462 文件 / 96,341 行（L3 +1 helper +142 行，L4
+settings 登记开关 +3 行）。实施中门禁抓到两处纪律缺口并已修：
+`check_env_access`（开关须经 settings 登记，不能裸读 os.environ）、
+`test_no_phantom_declarations`（常量形态读取需 RESERVED 说明）——
+两次均按门禁反馈修正而非绕过。仍零实际隔离执行（4c 才接）。
+
+下一子批 4b（per-call id 协议）需单独批准。

@@ -142,6 +142,20 @@ class LoopToolsMixin:
             "iter": getattr(self, "_current_iter", 0),
         })
 
+        # B2.4 4a（决策探针）：唯一隔离决策输入——开关默认关，关闭时
+        # should_isolate 恒 False，下方执行分支逐字不变。shadow 模式只
+        # 发决策事件，不执行隔离（实际隔离接线在 4c）。sync/async/retry
+        # 共用本决策点，禁止旁路（方案 §4「不得保留部分接线」）。
+        from agentnodes.kernel.agent.loop._isolated_exec import (
+            shadow_event,
+            should_isolate,
+        )
+
+        _isolation_decision = should_isolate(tool, self.registry)
+        self._trace_and_emit(
+            "isolation.shadow_decision", shadow_event(_isolation_decision),
+        )
+
         kwargs = self._build_tool_kwargs(tc)
         if async_mode and callable(check):
             kwargs["ctx"].before_execute = partial(

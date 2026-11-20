@@ -162,6 +162,10 @@ def test_no_phantom_declarations():
         # 之后，该开关在读取层已死。按 R-004 先有只读审计（settings
         # legacy_usage / audit-legacy）再保留诊断层登记，读取层不认。
         "AGENTNODES_EVENT_LOG_READ",
+        # B2.4 4a：隔离执行开关——经 kernel/agent/loop/_isolated_exec.py
+        # 的 settings.get_bool(ISOLATION_EXECUTION_ENV, False) 读取，
+        # 变量以**常量形态**传入，正则扫描器看不到字面量（形态③间接读）。
+        "AGENTNODES_ISOLATION_EXECUTION",
     }
     phantom = sorted(set(settings.ENV_TABLE) - used - RESERVED)
     assert not phantom, (
