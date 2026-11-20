@@ -107,17 +107,12 @@ def _scan_isolation_callback_deps(execute: Any) -> str | None:
     return None
 
 
-# ── 准入判定缓存（提交① 暂留；提交② 删除）─────────────────────────
-_ADMISSION_CACHE: dict[Any, str | None | object] = {}
-_ADMISSION_MISSING = object()
-
-
 def check_isolation_admission(tool: Any) -> str | None:
     """检查工具声明 ``isolatable`` 是否满足准入门槛（B2.1 C1 + B2.5 C2/C3）。
 
     Returns: None = 可声明；非空字符串 = 拒绝理由（声明应回落 unstoppable）。
     不执行工具、不改运行路径，也不保证声明等于事实（契约 §10.3）。
-    C2/C3 静态扫描结果按 execute 函数缓存。
+    扫描是**纯函数**——无全局缓存、无 execute 强引用（第二轮候选 2）。
 
     门槛：
     - C1 effects：DB / NET 进程终止无法撤销 → 拒；
@@ -137,11 +132,7 @@ def check_isolation_admission(tool: Any) -> str | None:
     execute = getattr(tool, "execute", None)
     if execute is None:
         return "isolatable 声明拒绝：无 execute 可审查（fail-closed）"
-    cached = _ADMISSION_CACHE.get(execute, _ADMISSION_MISSING)
-    if cached is _ADMISSION_MISSING:
-        cached = _scan_isolation_callback_deps(execute)
-        _ADMISSION_CACHE[execute] = cached
-    return cached  # type: ignore[return-value]
+    return _scan_isolation_callback_deps(execute)  # 纯扫描，无缓存
 
 
 def effective_capability(tool: Any) -> str:

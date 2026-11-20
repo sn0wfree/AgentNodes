@@ -2,24 +2,13 @@
 """4c-B2.1：isolatable 声明准入门槛的契约测试（纯声明面，零执行）。"""
 from __future__ import annotations
 
-import pytest
-
 from agentnodes.kernel.agent.tools.isolation_admission import (
     TIMEOUT_CAPABILITY_ISOLATABLE,
     TIMEOUT_CAPABILITY_UNSTOPPABLE,
-    _ADMISSION_CACHE,
     check_isolation_admission,
     effective_capability,
 )
 from agentnodes.kernel.agent.tools.core import BaseTool, ToolRegistry
-
-
-@pytest.fixture(autouse=True)
-def _clear_admission_cache():
-    """C5 回归守卫：每个用例独立判定，避免静态扫描缓存跨用例复用。"""
-    _ADMISSION_CACHE.clear()
-    yield
-    _ADMISSION_CACHE.clear()
 
 
 class _Tool(BaseTool):
@@ -66,6 +55,30 @@ def test_non_isolatable_not_subject_to_admission():
     """门槛只管 isolatable 声明；其他三级不受影响。"""
     tool = _Tool()  # 默认 unstoppable
     assert check_isolation_admission(tool) is None
+
+
+class TestEffectiveCapability:
+    """Q3/Q6：有效能力收口三件事——未注册/非法值/准入回落。"""
+
+    def test_none_tool_is_unstoppable(self):
+        assert effective_capability(None) == TIMEOUT_CAPABILITY_UNSTOPPABLE
+
+    def test_invalid_declaration_falls_back(self):
+        tool = _Tool()
+        tool.timeout_capability = "bogus"
+        assert effective_capability(tool) == TIMEOUT_CAPABILITY_UNSTOPPABLE
+
+    def test_isolatable_admission_failure_falls_back(self):
+        tool = _Tool()
+        tool.timeout_capability = TIMEOUT_CAPABILITY_ISOLATABLE
+        tool.effects = frozenset({"net"})
+        assert effective_capability(tool) == TIMEOUT_CAPABILITY_UNSTOPPABLE
+
+    def test_valid_isolatable_preserved(self):
+        tool = _Tool()
+        tool.timeout_capability = TIMEOUT_CAPABILITY_ISOLATABLE
+        tool.effects = frozenset({"fs"})
+        assert effective_capability(tool) == TIMEOUT_CAPABILITY_ISOLATABLE
 
 
 def test_registry_falls_back_for_invalid_isolatable():

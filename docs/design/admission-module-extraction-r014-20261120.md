@@ -108,4 +108,18 @@ core 单向 import admission 并 re-export。loop 三处仍从 core import 常�
 验证：准入+decision 36 passed；全量 8033 passed（仅数字漂移）；数字
 同步 464 文件 / 96,862 行（L3 +1 文件 +48 行）。
 
-### 提交② · 删缓存+扫描纯函数化（待实施）
+### 提交② · 删缓存+扫描纯函数化（2026-11-20 · 已实施）
+
+- 删 `_ADMISSION_CACHE` / `_ADMISSION_MISSING` / 缓存读写逻辑——扫描成
+  纯函数（无全局可变状态、无 execute 函数强引用）。
+- 测试删 autouse 清缓存 fixture + 私有 `_ADMISSION_CACHE` import；monkeypatch
+  `inspect.getsource` 用例实时生效（不再依赖清缓存）。
+- 新增 `TestEffectiveCapability` 4 例直测公开函数（未注册 / 非法值 /
+  isolatable 准入失败 / 合法 isolatable 保留）。
+
+验证：准入面 16 passed；数字同步 464 文件 / 96,853 行（L3 -9，删缓存）。
+全量 + gate 见提交前记录。
+
+**候选 1+2 全部收口**：准入 policy 成独立深模块（core.py 减 109 行、registry
+一行委托）、扫描纯函数化（测试不碰私有量、无全局强引用）。零行为变化、
+loop 三处 import 面不变。
