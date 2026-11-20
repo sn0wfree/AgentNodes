@@ -103,14 +103,20 @@ def cmd_session_search(args) -> int:
 
 
 def cmd_session_delete(args) -> int:
-    """删除会话（E1 起软删，与 web 一致：archived=1，消息与 event_log 保留）。"""
-    from agentnodes.apps.chat.session_views import delete_session_by_id, session_detail
+    """删除会话（E1 起软删，与 web 一致：archived=1，消息与 event_log 保留）。
+
+    删除的完整生命周期（归档 + 投影缓存失效）归
+    ``composition.delete_session_lifecycle``（第三轮复审候选 S2）——
+    Web 与 CLI 共用同一操作。
+    """
+    from agentnodes.apps.chat.session_views import session_detail
+    from agentnodes.interfaces.api.composition import delete_session_lifecycle
 
     if not session_detail(args.session_id):
         print(f"会话 {args.session_id} 不存在")
         return 1
 
-    ok = delete_session_by_id(args.session_id)
+    ok = delete_session_lifecycle(args.session_id)
     if ok:
         print(f"已删除会话 {args.session_id}（软删：数据保留，列表/搜索不再显示）")
     else:

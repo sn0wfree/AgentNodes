@@ -24,6 +24,7 @@ from pydantic import BaseModel
 
 from agentnodes.interfaces.api.authz import _fetch_session_owned
 from agentnodes.interfaces.api.authz import enforce_session_owned
+from agentnodes.interfaces.api.composition import delete_session_lifecycle
 
 logger = logging.getLogger(__name__)
 
@@ -290,39 +291,14 @@ async def delete_session(session_id: str, request: Request):
     flushing and SSE stays functional for active studies.  The session
     disappears from ``list_sessions`` (which filters ``archived=0``)
     but remains readable via ``GET /{session_id}``.
+
+    删除的完整生命周期（归档 + 投影缓存失效）归
+    ``composition.delete_session_lifecycle``（第三轮复审候选 S2）——
+    Web 与 CLI 共用同一操作。
     """
-    conn = _get_db()
     enforce_session_owned(request, session_id)
-    conn.execute("UPDATE sessions SET archived = 1 WHERE id = ?", (session_id,))
-    conn.commit()
-    _invalidate_projection(session_id, request)
+    delete_session_lifecycle(session_id, request)
     return {"status": "ok", "deleted_id": session_id}
-
-
-def _invalidate_projection(session_id: str, request: Request | None = None) -> None:
-    """Drop the projector's in-memory state for a deleted session.
-
-    The projector cache lives on the EventStore held by the process-wide
-    SessionService. Prefers the DI container (attached by ``create_app``);
-    falls back to the process-wide service cache for tests/scripts.
-    """
-    try:
-        if request is not None:
-            container = getattr(request.app.state, "_container", None)
-            if container is not None:
-                bus = container.session_service.event_bus
-                invalidate = getattr(bus, "invalidate", None)
-                if callable(invalidate):
-                    invalidate(session_id)
-                return
-        from agentnodes.interfaces.api.routers.chat import _session_service_cache
-        for service in _session_service_cache.values():
-            bus = getattr(service, "event_bus", None)
-            invalidate = getattr(bus, "invalidate", None)
-            if callable(invalidate):
-                invalidate(session_id)
-    except Exception as exc:
-        logger.debug("projection invalidation skipped: %s", exc)
 
 
 def delete_messages(session_id: str, message_ids: list[str]) -> None:

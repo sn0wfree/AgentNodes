@@ -123,3 +123,14 @@ return {"status": "ok", "deleted_id": session_id}
 ## 6. 实施前确认
 
 本方案来自 grilling 全 A 共识（Q1-Q5）。**未获批不得实施任何代码**；获批后按 R-007 单提交实施，doc first 纪律已满足（本文件）。
+
+## 7. 执行记录（2026-11-20 · 已实施 · 用户"批准"后）
+
+- `composition.py`：新增 `delete_session_lifecycle(session_id, request=None) -> bool`（入 `__all__`）+ 私有 `_invalidate_projection(session_id, request)`。归档委托 L3 `reader.delete_session`（归档 SQL 的唯一出处），路径显式取 `db._get_db_path()`（与 Web 侧原实现同源，tests 经该入口重定向 DB）。
+- `web_session.py`：DELETE handler 改调 `delete_session_lifecycle(session_id, request)`；删本地 `_invalidate_projection`（含 `from chat import _session_service_cache` 私有穿透）。
+- `cli/commands/session.py`：`cmd_session_delete` 改直调 `delete_session_lifecycle`；`session_detail` 存在性检查与输出/返回码逐字不变。
+- `apps/chat/session_views.py`：**零改动**（`delete_session_by_id` 原样保留，生产上不再是删除入口）。
+- `kernel/session/**`：**零改动**（git diff 确认）。
+- 新增 `tests/test_session_deletion_lifecycle.py`（5 例）：归档+列表口径、重复删除幂等、删不存在返回 False、Web 入口、CLI 入口（各断言 projector 缓存已丢）。
+- **判别力验证**：临时摘掉 `_invalidate_projection` 调用后重跑，3 例失败（含 CLI 例——正是本次修的缺口），确认测试真的钉住了行为；随后完整还原。
+- 验证：S2 面 102 passed / 1 skipped；全量 `-n 6` **8055 passed** / 0 failed（+5 新例）；batch_gate ALL GREEN；数字 464/96,915（L1 21,951 / L2 11,542）。

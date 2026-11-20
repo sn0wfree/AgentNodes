@@ -26,6 +26,7 @@ __all__ = [
     "unregister",
     "resources_from_request",
     "session_service_from",
+    "delete_session_lifecycle",
     "clear_service_cache",
     "close_resources",
     "close_all",
@@ -111,6 +112,59 @@ def session_service_from(request: Any = None) -> Any:
 def clear_service_cache() -> None:
     """清服务缓存（测试 reset 用；不 close——close 仍归 close_all）。"""
     _SERVICE_CACHE.clear()
+
+
+def delete_session_lifecycle(session_id: str, request: Any = None) -> bool:
+    """删除会话的完整生命周期：软删归档 + 投影缓存失效（第三轮复审候选 S2）。
+
+    **唯一拥有者（L1）**：Web ``DELETE /session/{id}`` 与 CLI ``session delete``
+    共用本操作。此前 Web 侧自建归档 SQL + 私有失效函数，CLI 侧只归档不失效，
+    两前端语义分叉——CLI 删除后 projector 缓存留着已删会话的投影。
+
+    - 归档：委托 L3 ``reader.delete_session``（归档 SQL 的唯一出处；软删，
+      消息与 event_log 保留——投影器/SSE 依赖它们继续可用，``GET`` 仍可读）。
+      路径显式取 ``db._get_db_path()``——与 Web 侧原实现同源（tests 经该
+      入口重定向 DB）；
+    - 失效：丢弃 projector 的内存投影缓存（下次 ``project_incremental`` 全量
+      重建——event_log 是唯一事实源）。
+
+    ``request`` 给定时优先从 ``app.state._container`` 取该服务；否则遍历本模块
+    的 ``_SERVICE_CACHE``（按 db_path 分容器，删除方不知道归属哪个，故全遍历）。
+
+    返回 True 表示会话行存在且已被归档（SQLite UPDATE 的 rowcount 计匹配行，
+    重复删除幂等返回 True）。
+    """
+    from agentnodes.kernel.session.db import _get_db_path
+    from agentnodes.kernel.session.reader import delete_session
+
+    existed = delete_session(session_id, db_path=_get_db_path())
+    _invalidate_projection(session_id, request)
+    return existed
+
+
+def _invalidate_projection(session_id: str, request: Any = None) -> None:
+    """丢弃已删会话的 projector 内存投影（best-effort，失败不阻断删除）。
+
+    投影缓存挂在进程级 SessionService 持有的 EventStore 上。有 request 时
+    走 DI container（create_app 已 attach）；否则遍历进程级服务缓存
+    （脚本/测试 fallback——删除方未必知道会话归属哪个 db_path）。
+    """
+    try:
+        if request is not None:
+            container = resources_from_request(request)
+            if container is not None:
+                bus = getattr(container.session_service, "event_bus", None)
+                invalidate = getattr(bus, "invalidate", None)
+                if callable(invalidate):
+                    invalidate(session_id)
+                return
+        for service in _SERVICE_CACHE.values():
+            bus = getattr(service, "event_bus", None)
+            invalidate = getattr(bus, "invalidate", None)
+            if callable(invalidate):
+                invalidate(session_id)
+    except Exception as exc:  # noqa: BLE001 —— 失效失败不阻断删除
+        logger.debug("projection invalidation skipped: %s", exc)
 
 
 def close_resources(container: Any) -> None:
