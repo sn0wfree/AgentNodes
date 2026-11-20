@@ -119,10 +119,105 @@ def shadow_event(decision: IsolationDecision) -> dict[str, Any]:
     }
 
 
+@dataclass(frozen=True)
+class IsolatedOutcome:
+    """隔离执行的结构化结果（供 loop 映射 E5 outcome / tool_result）。
+
+    ``payload`` 是工具原始输出字符串（与 in-process 路径同形）；
+    ``actual_state`` 是实际观测（四值），**不由声明推断**；
+    ``terminated/unknown`` 表明已执行但结果被拒收——loop 不得重试。
+    """
+
+    payload: str
+    actual_state: str
+    status: str
+    call_id: str
+    discarded_rows: int
+    timed_out: bool
+
+    @property
+    def result_rejected(self) -> bool:
+        """结果是否被拒收（截止后 returned / terminated / unknown）。"""
+        return self.actual_state in ("returned", "unknown") or self.status == "terminated"
+
+
+def run_isolated(
+    tool_name: str,
+    tool_args: dict[str, Any],
+    *,
+    remaining_budget_s: float | None,
+    approval_decider: Any = None,
+    ctx: Any = None,
+) -> IsolatedOutcome:
+    """在隔离 worker 内执行一次工具调用（**同步阻塞核心**，4c）。
+
+    :param tool_args: 工具参数（``tc.arguments``，**不含** ctx/内部注入键）。
+    :param remaining_budget_s: 剩余 attempt 预算（``max(0, deadline-now)``）；
+        ``None`` = 无 deadline（不推荐——用 seam 默认 30s）。
+    :param approval_decider: 父进程 ASK 裁决 callable（闭包捕获本调用的
+        tool/args/ctx；未知裁决 fail-closed）——经 ApprovalProxy 注入。
+    :param ctx: 工具上下文（ToolContext）——经 codec 编码，回调不入 wire。
+
+    **纪律**（方案 §2.3/§2.5）：每调用独占 transient worker（默认，不复用
+    句柄→无并发错配）；blocking 实现由调用方包 ``asyncio.to_thread``；
+    确认先于返回（seam 内 kill_and_confirm 完成后才返回）；本函数**不**
+    自动重试（terminated/unknown 不得重试——不使工具幂等）。
+    """
+    import json
+
+    from agentnodes.kernel.agent.tools.isolation import (
+        ApprovalProxy,
+        isolate_tool_call,
+    )
+
+    timeout = remaining_budget_s if remaining_budget_s is not None else 30.0
+    approval = ApprovalProxy(approval_decider) if approval_decider is not None else None
+    result = isolate_tool_call(
+        tool_name,
+        dict(tool_args),
+        ctx=ctx,
+        approval=approval,
+        timeout_s=timeout,
+        # worker=None → transient（每次独占，安全优先；复用模式 4d 另批）
+    )
+    # 工具输出：result.payload["output"]（与 worker 回传结构一致）
+    output = result.payload.get("output")
+    if output is None:
+        output = json.dumps(result.payload, ensure_ascii=False, default=str)
+    return IsolatedOutcome(
+        payload=output if isinstance(output, str) else json.dumps(
+            output, ensure_ascii=False, default=str,
+        ),
+        actual_state=result.actual_state,
+        status=result.status,
+        call_id=result.call_id,
+        discarded_rows=result.discarded_rows,
+        timed_out=result.timed_out,
+    )
+
+
+async def arun_isolated(
+    tool_name: str,
+    tool_args: dict[str, Any],
+    **kw: Any,
+) -> IsolatedOutcome:
+    """async 包装：blocking 隔离在线程里跑（不阻塞事件循环/不互饿）。
+
+    上层若用 ``asyncio.wait_for`` 只作返回保护——不能替代 seam 内的
+    kill+确认（4c 的 deadline 顺序由 ``remaining_budget_s`` + seam 保证）。
+    """
+    import asyncio
+
+    return await asyncio.to_thread(run_isolated, tool_name, tool_args, **kw)
+
+
 __all__ = [
     "ISOLATION_EXECUTION_ENV",
+    "IsolatedOutcome",
     "IsolationDecision",
     "isolation_execution_enabled",
+    "arun_isolated",
+    "run_isolated",
     "shadow_event",
     "should_isolate",
 ]

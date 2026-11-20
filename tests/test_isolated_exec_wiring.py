@@ -1,0 +1,211 @@
+# -*- coding: utf-8 -*-
+"""B2.4 子批 4c：run_isolated helper + WP-5 六场景契约测试。
+
+用 fake isolate_tool_call 驱动六场景（deadline 前完成/到达/终止成功/
+终止失败未知/迟到结果/lease 不误放关注的确认前不返回），不依赖真 Windows
+worker；真 worker 时序由 3c S1-S4 已证 + 本批 `_emit_isolation_outcome`
+的重注入测试覆盖。生产开关默认关（4a/4d 语义），本文件不改默认行为。
+"""
+from __future__ import annotations
+
+from types import SimpleNamespace
+
+import pytest
+
+from agentnodes.kernel.agent.loop._isolated_exec import (
+    IsolatedOutcome,
+    run_isolated,
+)
+
+
+class FakeIsolationModule:
+    """替换 isolation.isolate_tool_call 的返回值工厂。"""
+
+    def __init__(self, result):
+        self.result = result
+        self.calls = []
+
+    def __call__(self, tool, args, **kw):
+        self.calls.append((tool, args, kw))
+        return self.result
+
+
+def _result(status="completed", state="stopped", *, timed_out=False,
+            discarded=0, payload=None):
+    return SimpleNamespace(
+        status=status,
+        payload=payload if payload is not None else {"output": '{"ok": true}'},
+        actual_state=state, platform="fake", timed_out=timed_out,
+        call_id="write:x", discarded_rows=discarded,
+    )
+
+
+@pytest.fixture()
+def patch_isolation(monkeypatch):
+    """返回 setter：设置 fake 结果并注入 isolation 模块。"""
+    import agentnodes.kernel.agent.tools.isolation as iso
+
+    holder = {"fake": None}
+
+    def fake_isolate(tool, args, **kw):
+        holder["calls"].append((tool, args, kw))
+        return holder["fake"]
+
+    holder["calls"] = []
+    monkeypatch.setattr(iso, "isolate_tool_call", fake_isolate)
+    return holder
+
+
+class TestRunIsolated:
+    def test_deadline_before_completion(self, patch_isolation):
+        """场景1：deadline 前完成 → completed/stopped，不重注入终态。"""
+        patch_isolation["fake"] = _result()
+        out = run_isolated(
+            "write", {"path": "x"}, remaining_budget_s=9.0,
+        )
+        assert out.status == "completed"
+        assert out.actual_state == "stopped"
+        assert out.timed_out is False
+        assert out.result_rejected is False
+        # 剩余预算透传（不用 seam 默认 30s）
+        assert patch_isolation["calls"][0][2]["timeout_s"] == 9.0
+
+    def test_deadline_reached_terminated(self, patch_isolation):
+        """场景3：确认成功 → terminated/stopped，结果拒收。"""
+        patch_isolation["fake"] = _result(
+            status="terminated", state="stopped", timed_out=True,
+        )
+        out = run_isolated("write", {}, remaining_budget_s=0.0)
+        assert out.status == "terminated"
+        assert out.actual_state == "stopped"
+        assert out.timed_out is True
+        assert out.result_rejected is True
+
+    def test_termination_failed_unknown(self, patch_isolation):
+        """场景4：未确认 → unknown，结果拒收、不升级 stopped。"""
+        patch_isolation["fake"] = _result(
+            status="failed", state="unknown", timed_out=True,
+        )
+        out = run_isolated("write", {}, remaining_budget_s=0.0)
+        assert out.actual_state == "unknown"
+        assert out.actual_state != "stopped"
+        assert out.result_rejected is True
+
+    def test_late_result_discarded(self, patch_isolation):
+        """场景5：迟到结果（discarded_rows>0）被丢弃计数，不接纳其 payload。"""
+        patch_isolation["fake"] = _result(
+            status="completed", state="stopped", discarded=2,
+            payload={"output": '{"ok": true}'},
+        )
+        out = run_isolated("write", {}, remaining_budget_s=5.0)
+        assert out.discarded_rows == 2
+        assert out.call_id == "write:x"
+
+    def test_no_auto_retry_on_unknown(self, patch_isolation):
+        """场景6：unknown 不重试——run_isolated 只调用一次 seam。"""
+        patch_isolation["fake"] = _result(
+            status="failed", state="unknown", timed_out=True,
+        )
+        run_isolated("write", {}, remaining_budget_s=0.0)
+        assert len(patch_isolation["calls"]) == 1
+
+    def test_transient_worker_per_call(self, patch_isolation):
+        """每调用独占 transient worker——不传 worker（复用模式本批不开）。"""
+        patch_isolation["fake"] = _result()
+        run_isolated("write", {}, remaining_budget_s=3.0)
+        kw = patch_isolation["calls"][0][2]
+        assert "worker" not in kw or kw["worker"] is None
+
+    def test_ctx_and_approval_passed(self, patch_isolation):
+        """ctx 与 approval_decider 透传到 seam（回调不入 wire 由 codec 保证）。"""
+        patch_isolation["fake"] = _result()
+        ctx = SimpleNamespace(workspace=None)
+        decider = lambda req: "deny"
+        run_isolated(
+            "write", {}, remaining_budget_s=3.0,
+            ctx=ctx, approval_decider=decider,
+        )
+        kw = patch_isolation["calls"][0][2]
+        assert kw["ctx"] is ctx
+        assert kw["approval"] is not None  # ApprovalProxy 包装
+
+    def test_none_budget_uses_seam_default(self, patch_isolation):
+        patch_isolation["fake"] = _result()
+        run_isolated("write", {}, remaining_budget_s=None)
+        assert patch_isolation["calls"][0][2]["timeout_s"] == 30.0
+
+
+class TestIsolatedOutcomeShape:
+    def test_result_rejected_values(self):
+        assert IsolatedOutcome(
+            "{}", "stopped", "completed", "x", 0, False,
+        ).result_rejected is False
+        assert IsolatedOutcome(
+            "{}", "returned", "failed", "x", 0, False,
+        ).result_rejected is True
+        assert IsolatedOutcome(
+            "{}", "unknown", "failed", "x", 0, True,
+        ).result_rejected is True
+        assert IsolatedOutcome(
+            "{}", "stopped", "terminated", "x", 0, True,
+        ).result_rejected is True
+
+
+class TestE5OutcomeReinjection:
+    """_emit_isolation_outcome：declared 取 registry + state 取实际观测 + 终态重注入。"""
+
+    def _loop_stub(self):
+        from agentnodes.kernel.agent.loop.tools import LoopToolsMixin
+
+        class Stub(LoopToolsMixin):
+            def __init__(self):
+                self.outcomes = []
+                self.events = []
+                self._attempt_deadline = None
+                self._current_iter = 0
+                self.registry = SimpleNamespace(
+                    timeout_capability=lambda name: "isolatable",
+                )
+
+            def _record_timeout_outcome(self, kind, name, declared, state):
+                self.outcomes.append((kind, name, declared, state))
+
+            def _trace_and_emit(self, kind, payload):
+                self.events.append((kind, payload))
+
+            def _check_attempt_timeout(self, iteration, result, *, finalize=True):
+                self.events.append(("timeout_checked", {"finalize": finalize}))
+
+        return Stub()
+
+    def test_declared_uses_registry_not_raw_getattr(self):
+        loop = self._loop_stub()
+        tool = SimpleNamespace(name="write", timeout_capability="unstoppable")
+        outcome = IsolatedOutcome("{}", "returned", "failed", "x", 0, False)
+        loop._emit_isolation_outcome(
+            SimpleNamespace(name="write"), tool, outcome, None, async_mode=True,
+        )
+        # registry 返回 isolatable（即使 tool 裸声明 unstoppable）——证明取 registry
+        assert loop.outcomes == [("tool", "write", "isolatable", "returned")]
+
+    def test_terminal_reinjects_timeout_chain(self):
+        loop = self._loop_stub()
+        loop._attempt_deadline = 1.0  # 非 None → terminal 会触发 timeout 检查
+        tool = SimpleNamespace(name="write", timeout_capability="isolatable")
+        outcome = IsolatedOutcome("{}", "stopped", "terminated", "x", 0, True)
+        loop._emit_isolation_outcome(
+            SimpleNamespace(name="write"), tool, outcome, None, async_mode=True,
+        )
+        kinds = [k for k, _ in loop.events]
+        assert "timeout_checked" in kinds  # 终态重注入
+        assert "isolation_terminal" in kinds
+
+    def test_non_terminal_no_reinjection(self):
+        loop = self._loop_stub()
+        loop._attempt_deadline = 1.0
+        tool = SimpleNamespace(name="write", timeout_capability="isolatable")
+        outcome = IsolatedOutcome("{}", "stopped", "completed", "x", 0, False)
+        loop._emit_isolation_outcome(
+            SimpleNamespace(name="write"), tool, outcome, None, async_mode=True,
+        )
+        assert loop.events == []  # 正常完成不重注入终态链

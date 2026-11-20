@@ -93,6 +93,49 @@ class LoopToolsMixin:
             kwargs["emit_event"] = self._emit
         return kwargs
 
+    @staticmethod
+    def _tool_args(tc: Any) -> dict[str, Any]:
+        """工具参数（tc.arguments）——不含 ctx/内部注入键。"""
+        args = getattr(tc, "arguments", {})
+        return dict(args) if isinstance(args, dict) else {}
+
+    def _emit_isolation_outcome(
+        self, tc: Any, tool: Any, outcome: Any, result: Any, *, async_mode: bool,
+    ) -> None:
+        """隔离结果的 E5 终态重注入 + outcome 记录（B2.4 4c）。
+
+        - declared 取**准入过滤后**的 registry.timeout_capability（修正裸 getattr）；
+        - state 取实际观测（声明 ≠ 事实）；
+        - terminated / unknown(timed_out) → 记录 outcome + finalize（重注入
+          终态链，禁止把 terminated 当普通 tool_result）；
+        - returned（截止后自然返回）→ 记录 outcome，不 finalize（未到截止）。
+        """
+        declared = (
+            self.registry.timeout_capability(tc.name)
+            if self.registry is not None
+            else getattr(tool, "timeout_capability", TIMEOUT_CAPABILITY_UNSTOPPABLE)
+        )
+        self._record_timeout_outcome("tool", tc.name, declared, outcome.actual_state)
+        terminal = outcome.status == "terminated" or (
+            outcome.actual_state == "unknown" and outcome.timed_out
+        )
+        if terminal:
+            # 重注入 E5 终态链：记录 finalize（AttemptTimeoutError 由调用方
+            # 在 check 检查点抛出；此处不直接抛——保持与现有 E5 同构）。
+            check = getattr(self, "_check_attempt_timeout", None)
+            if callable(check) and getattr(self, "_attempt_deadline", None) is not None:
+                # deadline 已到 → finalize 置 timeout ending（不抛，结果仍返回）
+                try:
+                    check(getattr(self, "_current_iter", 0), result, finalize=True)
+                except AttemptTimeoutError:
+                    raise
+            self._trace_and_emit("isolation_terminal", {
+                "tool": tc.name,
+                "call_id": outcome.call_id,
+                "status": outcome.status,
+                "actual_state": outcome.actual_state,
+            })
+
     async def _execute_tool_call_core(
         self, tc: ToolCall, result: LoopResult, *, async_mode: bool
     ) -> dict[str, Any]:
@@ -187,6 +230,43 @@ class LoopToolsMixin:
             if _attempt and async_mode and callable(check):
                 check(getattr(self, "_current_iter", 0), result, finalize=False)
             try:
+                if _isolation_decision.isolate:
+                    # B2.4 4c：隔离分支（开关开 + should_isolate=True 才可达）。
+                    # blocking seam 在线程里跑；剩余预算 deadline；确认先于返回
+                    # （seam 内 kill_and_confirm 完成后才出 run_isolated）。
+                    from agentnodes.kernel.agent.loop._isolated_exec import (
+                        arun_isolated,
+                        run_isolated,
+                    )
+
+                    _deadline = getattr(self, "_attempt_deadline", None)
+                    _remaining = (
+                        max(0.0, _deadline - time.monotonic())
+                        if _deadline is not None else None
+                    )
+                    # 规则闸（同步、ASK fail-closed——与 sync 路径同语义）：
+                    # worker 内无 gateway，ASK 不能在隔离线程里 await；
+                    # 先在主循环做规则判定，DENY 抛错、ASK fail-closed。
+                    tool.enforce_permission_sync(_tool_args(tc), kwargs.get("ctx"))
+                    _iso_kw = dict(
+                        remaining_budget_s=_remaining,
+                        ctx=kwargs.get("ctx"),
+                        # 规则已过 → worker ASK 恒 deny（fail-closed；隔离工具
+                        # 不应触发 ASK，若触发说明声明不准，拒收更安全）。
+                        approval_decider=lambda req: "deny",
+                    )
+                    _outcome = (
+                        await arun_isolated(tc.name, _tool_args(tc), **_iso_kw)
+                        if async_mode
+                        else run_isolated(tc.name, _tool_args(tc), **_iso_kw)
+                    )
+                    # E5 实际状态 + 终态重注入（declared 取准入过滤后的值）
+                    self._emit_isolation_outcome(
+                        tc, tool, _outcome, result, async_mode=async_mode,
+                    )
+                    output = _outcome.payload
+                    last_exc = None
+                    break
                 if async_mode:
                     output = await tool.ainvoke(kwargs, kwargs.get("ctx"))
                 else:
@@ -208,11 +288,16 @@ class LoopToolsMixin:
                 # 并发调用各在自身完成点记录。
                 _deadline = getattr(self, "_attempt_deadline", None)
                 if _deadline is not None and time.monotonic() >= _deadline:
+                    # B2.4 4c：declared 取准入过滤后的 registry 值（修正裸
+                    # getattr 绕过 B2.1 回落的偏差）；state 仍是实际观测。
+                    _declared = (
+                        self.registry.timeout_capability(tc.name)
+                        if self.registry is not None
+                        else getattr(tool, "timeout_capability",
+                                    TIMEOUT_CAPABILITY_UNSTOPPABLE)
+                    )
                     self._record_timeout_outcome(
-                        "tool", tc.name,
-                        getattr(tool, "timeout_capability",
-                                TIMEOUT_CAPABILITY_UNSTOPPABLE),
-                        "returned",
+                        "tool", tc.name, _declared, "returned",
                     )
                 last_exc = None
                 break

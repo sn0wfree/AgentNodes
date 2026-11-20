@@ -403,3 +403,34 @@ call_id、审批往返不退化）；全量 + gate 见提交前记录；数字�
 462 文件 / 96,397 行（L3 +56 行）。仍零实际隔离执行（4c 才接）。
 
 下一子批 4c（生产接线 + deadline/lease 顺序）需单独批准。
+
+## 9. 子批 4c 执行记录（2026-11-20 · 已实施 · 开关默认关）
+
+- **helper**（`_isolated_exec.py`）：`run_isolated`（同步阻塞核心）+ `arun_isolated`
+  （`asyncio.to_thread` 包装，不阻塞事件循环）+ `IsolatedOutcome`（结构化
+  结果：payload/actual_state/status/call_id/discarded_rows/timed_out +
+  `result_rejected`）。剩余预算 `max(0, deadline-now)` 透传（不用 seam
+  默认 30s）；每调用独占 transient worker（不复用句柄→无并发错配）；
+  seam 内 kill_and_confirm 完成后才返回（确认先于释放，lease 外层 finally
+  天然落在确认之后）；本函数不自动重试（unknown/terminated 不得重试）。
+- **loop 接线**（`loop/tools.py`）：retry 循环执行点一处分支——仅
+  `should_isolate=True`（开关开 + win32 + isolatable + 准入通过）可达；
+  执行前 `tool.enforce_permission_sync` 规则判定（**实现调整**：worker
+  内无 gateway，ASK 无法在 blocking 线程 await——故隔离模式 ASK 走
+  fail-closed，与 sync 路径同语义；方案 §2.5.5 的 gateway 配对属 4d+
+  异步握手另议）；E5 outcome 用 `_emit_isolation_outcome` 重注入
+  （declared 取 `registry.timeout_capability`，修正裸 getattr 绕过 B2.1
+  回落；state 取实际观测；terminal → `_check_attempt_timeout(finalize)`
+  + `isolation_terminal` 事件；正常完成不重注入）；截止后自然返回的
+  declared 也改 registry。**开关关时所有分支逐字不变**。
+- 新测试 `tests/test_isolated_exec_wiring.py` 12 用例：run_isolated 六
+  场景（deadline 前完成/到达/终止成功/终止失败未知/迟到丢弃计数/unknown
+  不重试/transient 独占/ctx+approval 透传/无预算用默认）+ E5 重注入
+  3 例（declared 取 registry、终态重注入、正常完成不重注入）。
+
+验证：wiring 12 passed；开关关闭回归 118 passed / 2 xfailed（loop+E5
+timeout 面逐字不变）；层方向 0 违规；数字同步 462 文件 / 96,577 行
+（L3 +180 行）。**生产开关仍默认关、工具 allowlist 为空（4d 灰度）**，
+正常生产路径不会走隔离分支。
+
+下一子批 4d（开关默认关 + 灰度 + 回滚演练）需单独批准。
