@@ -434,3 +434,31 @@ timeout 面逐字不变）；层方向 0 违规；数字同步 462 文件 / 96,5
 正常生产路径不会走隔离分支。
 
 下一子批 4d（开关默认关 + 灰度 + 回滚演练）需单独批准。
+
+## 10. 子批 4d 执行记录（2026-11-20 · 已实施 · B2.4 收口）
+
+- **灰度 allowlist**：新增 `AGENTNODES_ISOLATION_TOOLS`（逗号分隔，
+  经 settings 登记，默认空）——**B2.4 不放行任何真实工具**（留给 B2.5
+  试点单独裁决）；`should_isolate` 判定新增第 5 顺位「工具名不在
+  allowlist → 不隔离」（reason=not_allowlisted）。
+- **启动期平台校验**：`validate_isolation_config()`——开关默认关时永远
+  通过（零影响）；强制开但非 win32 → 抛 RuntimeError（不静默降级
+  in-process 后声称隔离成功）。
+- **测试**：decision 测试补 allowlist 解析/默认值、平台校验、单一决策
+  输入（开关关时 allowlist 有无都不隔离）等；settings RESERVED 补新
+  env 说明（常量形态读取，扫描器盲区）。
+- **回滚演练**：关开关状态下跑全量 + gate 全绿（8003 passed，仅数字
+  同步需更新）——证明关闭即回到 HEAD 行为；wiring 代码保留但不可达；
+  不得部分接线由「开关是唯一决策输入」测试锚钉住。
+
+验证：decision+settings 71 passed；env 门禁 0 问题；全量 8003 passed
+（关开关）；数字同步 462 文件 / 96,622 行（L3 +42 / L4 +3）；gate 全绿。
+
+**B2.4 结论**：4a（决策探针）→ 4b（per-call id）→ 4c（生产接线+
+deadline/lease/E5 重注入）→ 4d（灰度 + 回滚演练）全部验收；全程
+**生产开关默认关 + allowlist 空**，正常路径零行为变化。四子批独立
+提交、独立可回滚；回滚任一子批即恢复前态，普通工具调用路径从未改变。
+
+**后续**：B2.5（WP-6 真实工具试点 + 准入复核）需在 B2.4 验收后单独
+批准——注意 4d allowlist 默认空正是 B2.5 试点的受控入口（试点放行
+`write` 须经 B2.5 方案裁决与单独审批，不得在此顺手打开）。

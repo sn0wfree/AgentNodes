@@ -166,6 +166,9 @@ def test_no_phantom_declarations():
         # 的 settings.get_bool(ISOLATION_EXECUTION_ENV, False) 读取，
         # 变量以**常量形态**传入，正则扫描器看不到字面量（形态③间接读）。
         "AGENTNODES_ISOLATION_EXECUTION",
+        # 同上：B2.4 4d 灰度白名单，经 settings.get_str(ISOLATION_TOOLS_ENV)
+        # 常量形态读取（kernel/agent/loop/_isolated_exec.py）。
+        "AGENTNODES_ISOLATION_TOOLS",
     }
     phantom = sorted(set(settings.ENV_TABLE) - used - RESERVED)
     assert not phantom, (

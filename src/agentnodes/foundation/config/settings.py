@@ -235,6 +235,9 @@ _DECLARED: tuple[Setting, ...] = (
     # B2.4 4a：隔离执行生产开关（默认关；值真才开，非「存在即开」）。
     _b("AGENTNODES_ISOLATION_EXECUTION", "engine", False,
        "隔离执行接线总开关（默认关；灰度见 B2.4 方案 §4）"),
+    # B2.4 4d：灰度工具 allowlist（逗号分隔，默认空=不启用任何工具）。
+    _s("AGENTNODES_ISOLATION_TOOLS", "engine", "",
+       "隔离执行灰度工具白名单（默认空；B2.4 不放行真实工具）"),
 
     # ── 门禁盲区补登记（2026-11-09）─────────────────────────────
     # 这些变量原先通过**模块级常量**间接读取（os.environ.get(_CONST)），

@@ -27,11 +27,16 @@ logger = logging.getLogger(__name__)
 #: 生产开关（默认 0=关）。关闭即回到既有 in-process 执行（回滚开关）。
 ISOLATION_EXECUTION_ENV = "AGENTNODES_ISOLATION_EXECUTION"
 
+#: 灰度工具 allowlist（逗号分隔，默认空 = 不启用任何工具——B2.4 口径：
+#: 即使开关打开也不放行真实工具，留给 B2.5 试点单独裁决）。
+ISOLATION_TOOLS_ENV = "AGENTNODES_ISOLATION_TOOLS"
+
 # 决策原因（供 shadow 事件/测试断言，稳定词表）
 _REASON_DISABLED = "disabled"
 _REASON_PLATFORM = "unsupported_platform"
 _REASON_CAPABILITY = "capability"
 _REASON_ADMISSION = "admission"
+_REASON_NOT_ALLOWLISTED = "not_allowlisted"
 _REASON_OK = "isolatable"
 
 
@@ -56,12 +61,40 @@ def isolation_execution_enabled() -> bool:
     return _settings.get_bool(ISOLATION_EXECUTION_ENV, False)
 
 
+def isolation_tool_allowlist() -> frozenset[str]:
+    """灰度 allowlist（默认空 = 不启用任何工具，B2.4 口径）。
+
+    逗号分隔，空白去除；经 settings.get_str 读取（门禁纪律）。
+    """
+    from agentnodes.foundation.config import settings as _settings
+
+    raw = _settings.get_str(ISOLATION_TOOLS_ENV, "") or ""
+    return frozenset(x.strip() for x in raw.split(",") if x.strip())
+
+
+def validate_isolation_config() -> None:
+    """启动期配置校验（4d）：强制开启但平台不支持时显式报错，不静默降级。
+
+    开关默认关时永远通过（零生产影响）。开关开但非 win32 → 抛
+    ``RuntimeError``（"不得静默降级为 in-process 并声称隔离成功"）。
+    """
+    if not isolation_execution_enabled():
+        return
+    if sys.platform != "win32":
+        raise RuntimeError(
+            "AGENTNODES_ISOLATION_EXECUTION=1 but platform is "
+            f"{sys.platform!r}: isolation is Windows-only; refusing to "
+            "silently fall back to in-process execution"
+        )
+
+
 def should_isolate(
     tool: Any,
     registry: Any = None,
     *,
     enabled: bool | None = None,
     platform: str | None = None,
+    allowlist: frozenset[str] | None = None,
 ) -> IsolationDecision:
     """是否对本次工具调用走隔离分支（4a 决策探针，纯函数、零副作用）。
 
@@ -70,7 +103,8 @@ def should_isolate(
     2. 平台不支持（非 win32）→ 不隔离（POSIX 永不启用，禁启用保护不变）；
     3. capability 非 isolatable → 不隔离；
     4. 声明 isolatable 但准入不通过 → 不隔离（B2.1 回落语义：
-       ``ToolRegistry.timeout_capability`` 已把准入折叠进返回值）。
+       ``ToolRegistry.timeout_capability`` 已把准入折叠进返回值）；
+    5. 工具名不在 allowlist → 不隔离（4d 灰度；默认空 = 不启用任何工具）。
 
     ``registry`` 给定时用 ``registry.timeout_capability(name)``（遵守
     B2.1 准入回落）；否则降级读裸 ``tool.timeout_capability``（测试 /
@@ -104,6 +138,11 @@ def should_isolate(
             else _REASON_CAPABILITY
         )
         return IsolationDecision(False, reason, capability, name)
+
+    if allowlist is None:
+        allowlist = isolation_tool_allowlist()
+    if name not in allowlist:
+        return IsolationDecision(False, _REASON_NOT_ALLOWLISTED, capability, name)
 
     return IsolationDecision(True, _REASON_OK, capability, name)
 
@@ -213,11 +252,14 @@ async def arun_isolated(
 
 __all__ = [
     "ISOLATION_EXECUTION_ENV",
+    "ISOLATION_TOOLS_ENV",
     "IsolatedOutcome",
     "IsolationDecision",
-    "isolation_execution_enabled",
     "arun_isolated",
+    "isolation_execution_enabled",
+    "isolation_tool_allowlist",
     "run_isolated",
     "shadow_event",
     "should_isolate",
+    "validate_isolation_config",
 ]

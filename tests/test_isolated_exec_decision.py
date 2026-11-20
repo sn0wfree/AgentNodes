@@ -13,9 +13,12 @@ import pytest
 
 from agentnodes.kernel.agent.loop._isolated_exec import (
     ISOLATION_EXECUTION_ENV,
+    ISOLATION_TOOLS_ENV,
     isolation_execution_enabled,
+    isolation_tool_allowlist,
     shadow_event,
     should_isolate,
+    validate_isolation_config,
 )
 from agentnodes.kernel.agent.tools.core import (
     TIMEOUT_CAPABILITY_ABANDONABLE,
@@ -73,11 +76,20 @@ class TestShouldIsolate:
     def test_isolatable_allowed_on_windows(self):
         d = should_isolate(
             _tool("write", TIMEOUT_CAPABILITY_ISOLATABLE),
-            enabled=True, platform="win32",
+            enabled=True, platform="win32", allowlist=frozenset({"write"}),
         )
         assert d.isolate is True
         assert d.reason == "isolatable"
         assert d.tool_name == "write"
+
+    def test_not_in_allowlist_rejected(self):
+        """4d：默认 allowlist 为空 → 即使 isolatable 也不启用（灰度）。"""
+        d = should_isolate(
+            _tool("write", TIMEOUT_CAPABILITY_ISOLATABLE),
+            enabled=True, platform="win32", allowlist=frozenset(),
+        )
+        assert d.isolate is False
+        assert d.reason == "not_allowlisted"
 
     def test_registry_timeout_capability_used_for_admission(self):
         """生产必须传 registry——准入门槛折叠在 timeout_capability 里。
@@ -101,7 +113,7 @@ class TestShadowEvent:
     def test_shadow_event_shape(self):
         d = should_isolate(
             _tool("write", TIMEOUT_CAPABILITY_ISOLATABLE),
-            enabled=True, platform="win32",
+            enabled=True, platform="win32", allowlist=frozenset({"write"}),
         )
         ev = shadow_event(d)
         assert ev["kind"] == "isolation.shadow_decision"
@@ -109,3 +121,46 @@ class TestShadowEvent:
         assert ev["isolate"] is True
         assert ev["reason"] == "isolatable"
         assert ev["capability"] == TIMEOUT_CAPABILITY_ISOLATABLE
+
+
+class TestGrayRelease:
+    """4d：灰度 allowlist + 启动期平台校验 + 单一决策输入。"""
+
+    def test_allowlist_default_empty(self, monkeypatch):
+        monkeypatch.delenv(ISOLATION_TOOLS_ENV, raising=False)
+        assert isolation_tool_allowlist() == frozenset()
+
+    def test_allowlist_parses_comma_separated(self, monkeypatch):
+        monkeypatch.setenv(ISOLATION_TOOLS_ENV, "write, read ,")
+        assert isolation_tool_allowlist() == frozenset({"write", "read"})
+
+    def test_validate_disabled_always_passes(self, monkeypatch):
+        monkeypatch.delenv(ISOLATION_EXECUTION_ENV, raising=False)
+        validate_isolation_config()  # 不抛
+
+    def test_validate_forced_on_posix_raises(self, monkeypatch):
+        monkeypatch.setenv(ISOLATION_EXECUTION_ENV, "1")
+        # 用平台参数无法直接注入 validate（它读 sys.platform）；在 Windows
+        # 上此测试应通过（不抛），在 POSIX CI 上应抛——两种都对，故断言
+        # 「 Windows 上不抛」并按平台分支。
+        import sys
+
+        if sys.platform == "win32":
+            validate_isolation_config()  # win32 允许
+        else:
+            with pytest.raises(RuntimeError, match="Windows-only"):
+                validate_isolation_config()
+
+    def test_should_isolate_is_single_decision_input(self, monkeypatch):
+        """不得保留部分接线：开关关时 sync/async 都走 in-process（同一决策）。"""
+        monkeypatch.delenv(ISOLATION_EXECUTION_ENV, raising=False)
+        monkeypatch.delenv(ISOLATION_TOOLS_ENV, raising=False)
+        tool = _tool("write", TIMEOUT_CAPABILITY_ISOLATABLE)
+        registry = SimpleNamespace(
+            timeout_capability=lambda n: TIMEOUT_CAPABILITY_ISOLATABLE,
+        )
+        # 无论 allowlist 是否含工具名，开关关→不隔离（开关是唯一输入）
+        d1 = should_isolate(tool, registry, allowlist=frozenset({"write"}))
+        d2 = should_isolate(tool, registry, allowlist=frozenset())
+        assert d1.isolate is False and d2.isolate is False
+        assert d1.reason == d2.reason == "disabled"

@@ -28,7 +28,7 @@
   <h1>架构 v10.2 · 四层堆叠 · 功能模块化</h1>
   <p class="sub">
     依赖只向下流：<b>L1 interfaces → L2 apps → L3 kernel → L4 foundation</b>。
-    每层内部按<b>功能域</b>分模块，模块边界取自真实包结构（462 文件 / 96,577 行，AST 实测）。
+    每层内部按<b>功能域</b>分模块，模块边界取自真实包结构（462 文件 / 96,622 行，AST 实测）。
     违规仅剩 0 条（<code>L3→L1</code> 0 · <code>L2→L1</code> 0），<code>L3→L2</code> 已清零。
     <b>2026-11-05 做减法批次 5</b>：移除数据域（data_source · compute_factor · db ·
     tools · data_import · data_readiness · preflight，22 文件 6,822 行），
@@ -306,7 +306,7 @@
   <line x1="420" y1="1360" x2="420" y2="1392" class="arrow"/>
   <line x1="800" y1="1360" x2="800" y2="1392" class="arrow"/>
   <line x1="1180" y1="1360" x2="1180" y2="1392" class="arrow"/>
-  <text x="1230" y="1380" class="st mono" fill="#0284c7">L3→L4 92</text>
+  <text x="1230" y="1380" class="st mono" fill="#0284c7">L3→L4 93</text>
 
   <!-- ══════════════ L4 foundation ══════════════ -->
   <rect x="24" y="1416" width="124" height="132" rx="10" fill="#dcfce7" stroke="#86efac" stroke-width="1.4"/>
@@ -361,7 +361,7 @@
   <text x="180" y="1656" class="st mono">        →L1     →L2     →L3     →L4</text>
   <text x="180" y="1678" class="st mono">L1       —       77     148      71</text>
   <text x="180" y="1700" class="st mono">L2     <tspan fill="#dc2626">0 ⚠</tspan>       —       49      14</text>
-  <text x="180" y="1722" class="st mono">L3     <tspan fill="#dc2626">0 ⚠</tspan>       <tspan fill="#16a34a">0 ✅</tspan>       —       92</text>
+  <text x="180" y="1722" class="st mono">L3     <tspan fill="#dc2626">0 ⚠</tspan>       <tspan fill="#16a34a">0 ✅</tspan>       —       93</text>
   <text x="180" y="1744" class="st mono">L4       0       0       0        —</text>
 
   <rect x="880" y="1602" width="696" height="164" rx="10" class="dombox"/>
@@ -418,7 +418,7 @@
 </table>
 
 <footer>
-  数据：AST 实测 2026-11-14（462 文件 / 96,577 行 · C 方案 kernel/algo 入账）· 门禁：<code>check_dangling_imports.py --layers</code> ·
+  数据：AST 实测 2026-11-14（462 文件 / 96,622 行 · C 方案 kernel/algo 入账）· 门禁：<code>check_dangling_imports.py --layers</code> ·
   版本史：<code>docs/architecture-diagram-changelog.md</code> · 设计：<code>docs/layered-skeleton-design-20261103.md</code>
 </footer>
 </div>
