@@ -91,6 +91,34 @@
 
 **诚实边界**：GO slims 细节未逐字核；Hennig 分带出自 fpc 文档约定而非硬标准；N=5 / ARI 0.55 / 证据 10 条为**自设预注册值**（业界无先例），不适用时走预注册修订流程。
 
+### 3.2 U1 调研简报（两域不对称 · 待拍板）
+
+**决策问题**：W 域结论的因果语义上限；S 域归因的合法性来源。
+**先例（已核实摘要级）**：Pearl 因果阶梯（Rung 1 关联 / Rung 2 干预 / Rung 3 反事实；[Bareinboim 2019](https://arxiv.org/abs/1912.09416)）——**W = Rung 1，S = Rung 2，敲除即 do 算子**；Kohavi《Trustworthy Online Controlled Experiments》（2020）——OLAP 仪表盘陷阱（观测数据的辛普森悖论），受控实验才产生因果；医学证据分级惯例同构。
+**精化点**：W 域存在**准实验材料**（官方 prompt 仓库带日期版本链 = 条款级自然实验）——但无随机化无对照，结论上限 = 「准实验/伴随变化」，仍不入 Rung 2。
+**拍板要点**：① Rung 分级作为两域报告口径 ② W 域证据上限声明（准实验）写进 U1 文本 ③ W 域报告模板加「证据层级」字段。
+
+### 3.3 U2 调研简报（标识符 · 待拍板 · 含修正）
+
+**决策问题**：两域 rule_id 如何共用一个空间而不冲突。
+**先例（已核实）**：OBO Foundry ID Policy（[id-policy](http://obofoundry.org/id-policy.html) + [URI 原则 fp-003](http://obofoundry.org/principles/fp-003-uris.html)）——CURIE `IDSPACE:LOCAL_ID`、每本体一个**注册前缀**、PURL 统一解析；[Wimalaratne 2018](https://pmc.ncbi.nlm.nih.gov/articles/PMC5966759) 均匀解析框架。
+**修正（相对初案）**：初案「一个 R- 空间、两套命名约定、靠约定消歧」→ 应升级为**注册消歧**：IDSPACE 前缀注册表（如 `an:` = 自仓规则，`cl4r:` / 各厂商 = W 域），CURIE 为全局形式（`an:R-001`），GRL 现有 id 保留为 local id；**机检拒绝未注册 IDSPACE**（与 evidence URI 未知 scheme 拒绝同构）。
+**拍板要点**：① 前缀注册表工件化（并入 U4 已拍板的 registry 家族，同走版本化）② 现行 R- 形态 → CURIE 的迁移成本 ③ W 域 IDSPACE 命名规范。
+
+### 3.4 U3 调研简报（证据引用 · 待拍板 · 含形状升级）
+
+**决策问题**：`ext:` 证据 URI 指向什么、带什么。
+**先例（已核实）**：Nanopublication 三图模型——assertion（断言）+ provenance（怎么来的）+ publication info（谁/何时），最小可引用断言单元（[Schultes 2022 / ACM CSUR](https://dl.acm.org/doi/10.1145/3699682)；[nanopub.net guidelines](https://nanopub.net/guidelines/)）；Wikidata statement+reference 同构【教科书级】。
+**升级（相对初案）**：`ext:` 从裸条款指针 → **nanopub-lite 证据包**：断言（「15/15 厂商有 X 位点」）+ 出处（编码 run / locus_table 版本）+ 署名（谁/何时）——JSON 三段即可，不搬 RDF 全家桶。
+**拍板要点**：① 证据包 schema 定稿（放 UPGF 还是 GRL）② 最小必填字段 ③ 与 `GenomeProposal.evidence_refs` 的嵌套关系。
+
+### 3.5 U5 调研简报（回路单向 · 待拍板 · 含结构化升级）
+
+**决策问题**：「S→W 无写路径」是政策还是结构。
+**先例（已核实）**：Data diode（光纤 TX-only，**物理上不存在返回通道**，核/国防标准；[Wikipedia](https://en.wikipedia.org/wiki/Data_diode)、[OPSWAT](https://www.opswat.com/resources/guides/unidirectional-security-gateway-and-data-diode-guide)）——单向应**结构化**；fork/PR 流（GitHub Docs）——改动只能经 PR 进上游，**stale fork 不自动传播补丁**。
+**升级（相对初案）**：W 语料文件**只读**（git 原样跟踪）+ 我方观点只写**注释层 sidecar**（独立文件）；stale-fork 教训 → 语料更新后注释层/编码产物**必须显式重编码**（CI 提示），否则陈旧注释静默漂移。
+**拍板要点**：① sidecar 命名与存放约定 ② 重编码触发条件 ③ 与 U4 `registry_sha256` 版本化的衔接。
+
 ## 4. 统一流水线（吸收业界框架草案 L1/L2/L3 + 规则基因组 M1–M3）
 
 业界框架草案的三层在这里**按域重排**——它原本是 W 域专用管线，统一后 L1/L2 上提为两域共享，L3 按域分裂为「对齐（W）」与「归因（S）」：
