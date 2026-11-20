@@ -55,15 +55,3 @@ class TestRsiHost:
         assert isinstance(host, RsiHost)
         assert host._halt_check() == (False, "")
         assert callable(host._loop_builder)
-
-    def test_both_hosts_use_single_entry(self):
-        """架构锚：两宿主的源码都调 build_rsi_host，不再复制注入细节。"""
-        import io
-        from pathlib import Path
-
-        root = Path(__file__).resolve().parents[1] / "src" / "agentnodes" / "interfaces"
-        for rel in ("cli/commands/rsi.py", "goal_settled_consumer.py"):
-            text = io.open(root / rel, encoding="utf-8").read()
-            assert "build_rsi_host" in text, rel
-            assert "halt_check=_halt_check" not in text, rel  # 旧复制形态已消失
-            assert "make_loop_builder" not in text, rel

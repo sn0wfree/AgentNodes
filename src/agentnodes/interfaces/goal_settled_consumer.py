@@ -113,14 +113,13 @@ def should_trigger(payload: dict[str, Any]) -> tuple[bool, str]:
 
 def make_goal_settled_consumer(
     *,
-    run_cycle: Callable[..., Any] | None = None,
     emit: Callable[[str, dict], None] | None = None,
 ) -> Callable[[str, dict[str, Any]], None]:
     """构造 ``(kind, payload) -> None`` 的事件消费者。
 
-    :param run_cycle: 注入的 cycle 执行器（缺省走
-        ``apps.evolution.cycle_driver.run_once``，并注入 L1 宿主资产：
-        halt 护栏 + 闭环装配）。测试注入替身即可断言「触发/不触发」。
+    唯一注入 seam 是 ``build_rsi_host()``（L1 已绑定 runner）；测试经
+    monkeypatch 它注入替身（候选 7：删 run_cycle 第二注入口）。
+
     :param emit: 事件出口（缺省写日志）。
 
     **永不抛出**——消费者在事件泵里跑，任何异常都会污染事件流。
@@ -128,8 +127,6 @@ def make_goal_settled_consumer(
     _emit = emit or (lambda kind, data: None)
 
     def _run(session_id: str | None = None) -> Any:
-        if run_cycle is not None:
-            return run_cycle(session_id=session_id)
         from agentnodes.interfaces.rsi_host import build_rsi_host
 
         return build_rsi_host().run_cycle(session_id=session_id)

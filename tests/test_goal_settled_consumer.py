@@ -114,70 +114,74 @@ class _Outcome:
     reason = "approved"
 
 
+@pytest.fixture()
+def host_stub(monkeypatch):
+    """候选 7：经 RsiHost 覆盖生产分支（删 run_cycle 第二注入口）。
+
+    monkeypatch build_rsi_host 返回已绑定 runner 的 RsiHost；测试通过
+    ``stub["calls"]`` 观察 session_id 透传，``stub["outcome"]`` 控制返回。
+    """
+    from agentnodes.interfaces import rsi_host as host_mod
+    from agentnodes.interfaces.rsi_host import RsiHost
+
+    stub = {"calls": [], "outcome": _Outcome(), "raise": None}
+
+    def fake_run_once(**kw):
+        stub["calls"].append(kw.get("session_id"))
+        if stub["raise"] is not None:
+            raise stub["raise"]
+        return stub["outcome"]
+
+    monkeypatch.setattr(
+        host_mod, "build_rsi_host",
+        lambda: RsiHost(fake_run_once, lambda: (False, ""), lambda *a, **k: object()),
+    )
+    return stub
+
+
 class TestConsumer:
-    def _collect(self, **kwargs):
-        calls: list[str | None] = []
+    def test_triggered_runs_cycle_with_session(self, host_stub):
         events: list[tuple[str, dict]] = []
         consume = make_goal_settled_consumer(
-            run_cycle=kwargs.pop("run_cycle", lambda session_id=None: _Outcome()),
-            emit=lambda k, d: events.append((k, d)),
-        )
-        return consume, calls, events
-
-    def test_triggered_runs_cycle_with_session(self):
-        calls: list[str | None] = []
-
-        def run_cycle(session_id=None):
-            calls.append(session_id)
-            return _Outcome()
-
-        events: list[tuple[str, dict]] = []
-        consume = make_goal_settled_consumer(
-            run_cycle=run_cycle, emit=lambda k, d: events.append((k, d))
+            emit=lambda k, d: events.append((k, d))
         )
         consume("goal.settled", _payload())
 
-        assert calls == ["s-1"], "cycle 应以 payload 的 session_id 为预算口径"
+        assert host_stub["calls"] == ["s-1"], "cycle 应以 payload 的 session_id 为预算口径"
         assert [k for k, _ in events] == [
             "rsi.goal_settled_triggered",
             "rsi.goal_settled_cycle_done",
         ]
 
-    def test_ignored_emits_reason(self):
-        calls: list[str | None] = []
+    def test_ignored_emits_reason(self, host_stub):
         events: list[tuple[str, dict]] = []
         consume = make_goal_settled_consumer(
-            run_cycle=lambda session_id=None: calls.append(session_id) or _Outcome(),
             emit=lambda k, d: events.append((k, d)),
         )
         consume("goal.settled", _payload(outcome="abandoned"))
 
-        assert calls == [], "未完成不应触发 cycle"
+        assert host_stub["calls"] == [], "未完成不应触发 cycle"
         assert len(events) == 1
         assert events[0][0] == "rsi.goal_settled_ignored"
         assert events[0][1]["reason"] == "not_completed"
 
-    def test_other_kinds_ignored(self):
-        calls: list[str | None] = []
+    def test_other_kinds_ignored(self, host_stub):
         events: list[tuple[str, dict]] = []
         consume = make_goal_settled_consumer(
-            run_cycle=lambda session_id=None: calls.append(session_id) or _Outcome(),
             emit=lambda k, d: events.append((k, d)),
         )
         consume("goal_updated", _payload())
 
-        assert calls == []
+        assert host_stub["calls"] == []
         assert events == []
 
-    def test_cycle_exception_is_swallowed(self):
+    def test_cycle_exception_is_swallowed(self, host_stub):
         """消费者住在事件泵里——异常必须落成事件而非外泄。"""
         events: list[tuple[str, dict]] = []
-
-        def boom(**kwargs):
-            raise RuntimeError("cycle exploded")
+        host_stub["raise"] = RuntimeError("cycle exploded")
 
         consume = make_goal_settled_consumer(
-            run_cycle=boom, emit=lambda k, d: events.append((k, d))
+            emit=lambda k, d: events.append((k, d))
         )
         consume("goal.settled", _payload())  # 不抛
 
@@ -186,11 +190,7 @@ class TestConsumer:
             "rsi.goal_settled_failed",
         ]
 
-    def test_missing_session_id_passes_none(self):
-        calls: list[str | None] = []
-        consume = make_goal_settled_consumer(
-            run_cycle=lambda session_id=None: calls.append(session_id) or _Outcome(),
-            emit=lambda k, d: None,
-        )
+    def test_missing_session_id_passes_none(self, host_stub):
+        consume = make_goal_settled_consumer(emit=lambda k, d: None)
         consume("goal.settled", _payload(session_id=None))
-        assert calls == [None]
+        assert host_stub["calls"] == [None]

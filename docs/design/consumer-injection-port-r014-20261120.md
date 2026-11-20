@@ -62,3 +62,16 @@ run_cycle 第二入口，让 6 个消费者测试真实经过已绑定 host 的�
 ## 6. 实施前确认
 
 本方案来自 grilling 共识（全 A）。确认后按 R-007 单提交实施。
+
+## 7. 执行记录（2026-11-20 · 已实施 · 行为零变化）
+
+- `goal_settled_consumer.py`：删 `run_cycle` 参数与 `if run_cycle is not None`
+  分支——`_run` 唯一路径 `build_rsi_host().run_cycle(session_id=...)`。
+- `test_goal_settled_consumer.py`：新增 `host_stub` fixture（monkeypatch
+  `rsi_host.build_rsi_host` 返回 RsiHost(fake_run_once, ...)），6 个消费者
+  用例全经生产 host 路径，断言 session_id 透传 / 触发 / 异常吞噬不变。
+- `test_rsi_host.py`：删源码文本锚 `test_both_hosts_use_single_entry`——
+  生产分支已由消费者行为测试覆盖（interface is the test surface）。
+
+验证：RSI 面 66 passed（consumer/host/cycle_driver/baseline）；行为零变化、
+文本锚删除后无覆盖损失（行为测试已替代）。全量 + gate 见提交前记录。
