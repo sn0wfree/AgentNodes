@@ -99,7 +99,9 @@ def _gateway_chat_options(body: ChatMessage) -> dict[str, Any]:
 # real bug: queues/tasks/pause state live on the instance, so cancel,
 # queue_full and FIFO ordering silently broke (two parallel AgentLoops
 # per session). Keyed by db path so tests/workspace switches re-create.
-_session_service_cache: dict[str, SessionService] = {}
+# 第二轮候选 4：缓存单点已搬到 composition._SERVICE_CACHE；此处保留别名
+# 过渡（测试锚仍可 .clear()），下版删除（与 M11b 同款标注）。
+from agentnodes.interfaces.api.composition import _SERVICE_CACHE as _session_service_cache  # noqa: F401
 
 # ── Tier 1 A1: permission gateway ──────────────────────────────────
 # One process-wide PermissionGateway (mirrors SessionService). Wired
@@ -192,32 +194,14 @@ def _push_event(session_id: str, event_type: str, data: Any) -> None:
 
 
 def _get_session_service() -> SessionService:
-    """Return the process-wide singleton SessionService for the DB.
+    """SessionService 取用（过渡 re-export：下版删，改调 composition 单点）。
 
-    The DI container is the single construction point: ``create_app``
-    attaches it and pre-seeds this cache; the lazy fallback here (only
-    reached in tests/scripts without an app) builds a fresh container
-    with the same production wiring:
-
-    1. event_log (persistent source of truth)
-    2. SSE push (via sse_pusher callback → SSEEventBuffer)
-    3. messages + message_parts tables via Projector.flush (flush_to_messages=True)
+    实现已搬到 ``composition.session_service_from``（第二轮候选 4）——缓存
+    单点 + 取用 seam 归 composition root。本名保留供 router/测试锚过渡。
     """
-    from agentnodes.interfaces.api.container import build_container
-    from agentnodes.kernel.session.db import _get_db_path
+    from agentnodes.interfaces.api.composition import session_service_from
 
-    db_path = str(_get_db_path())
-    service = _session_service_cache.get(db_path)
-    if service is None:
-        container = build_container(db_path=db_path)
-        # M12：自建 container 纳入 composition 注册表——进程退出 / 测试 reset
-        # 时统一 close（此前无 close 路径，Windows 临时目录 WinError 32 隐患）
-        from agentnodes.interfaces.api.composition import register
-
-        register(container)
-        service = container.session_service
-        _session_service_cache[db_path] = service
-    return service
+    return session_service_from()
 
 
 # ── LLM Config ────────────────────────────────────────────────────────

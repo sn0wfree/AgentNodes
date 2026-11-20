@@ -25,6 +25,8 @@ __all__ = [
     "register",
     "unregister",
     "resources_from_request",
+    "session_service_from",
+    "clear_service_cache",
     "close_resources",
     "close_all",
 ]
@@ -70,6 +72,45 @@ def resources_from_request(request: Request) -> Any | None:
     """FastAPI 请求侧定位：优先 app.state._container，无则 None（由
     dependencies.py 的现有 fallback 处理——本批不删 fallback）。"""
     return getattr(request.app.state, "_container", None)
+
+
+#: 服务取用缓存（第二份 router 缓存归位此处，第二轮候选 4）。key = db_path，
+#: value = SessionService。create_app 预置的 container 不在此缓存——它走
+#: resources_from_request(request)；此缓存只服务无 request 的脚本/测试 fallback。
+_SERVICE_CACHE: dict[str, Any] = {}
+
+
+def session_service_from(request: Any = None) -> Any:
+    """SessionService 的唯一取用点（第二轮候选 4）。
+
+    - ``request`` 给定时：优先从 app.state._container 取（正常请求路径，
+      create_app 已 attach）；
+    - 无 request / container 时：按 db_path 从缓存取或构造（原 chat.py
+      fallback 逐字迁入，含 composition.register 统一 close）。
+
+    ``request=None`` 的 fallback 与 chat.py 原 `_get_session_service` 等价。
+    """
+    if request is not None:
+        container = resources_from_request(request)
+        if container is not None:
+            return container.session_service
+
+    from agentnodes.interfaces.api.container import build_container
+    from agentnodes.kernel.session.db import _get_db_path
+
+    db_path = str(_get_db_path())
+    service = _SERVICE_CACHE.get(db_path)
+    if service is None:
+        container = build_container(db_path=db_path)
+        register(container)  # 统一 close 生命周期（原 chat.py fallback 同款）
+        service = container.session_service
+        _SERVICE_CACHE[db_path] = service
+    return service
+
+
+def clear_service_cache() -> None:
+    """清服务缓存（测试 reset 用；不 close——close 仍归 close_all）。"""
+    _SERVICE_CACHE.clear()
 
 
 def close_resources(container: Any) -> None:

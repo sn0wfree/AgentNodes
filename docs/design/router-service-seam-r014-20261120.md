@@ -82,3 +82,20 @@ router 自建 container 无 close 的半吊子状态）。
 ## 6. 实施前确认
 
 本方案来自 grilling 共识（#4 Round 1 全 A）。确认后按 R-007 单提交实施。
+
+## 7. 执行记录（2026-11-20 · 已实施 · 行为零变化）
+
+- `composition.py` 新增 `session_service_from(request=None)` 唯一取用点 +
+  `_SERVICE_CACHE`（服务缓存单点，从 chat.py 归位）+ `clear_service_cache()`；
+  request 路径走 `resources_from_request`，无 request fallback 逐字复用原
+  chat.py 逻辑（含 composition.register 统一 close）。
+- `chat.py`：删 `_session_service_cache` 独立定义，改为 composition
+  `_SERVICE_CACHE` 别名（测试锚 .clear()/迭代仍生效）；`_get_session_service`
+  改薄委托 `session_service_from()` + DEPRECATED 过渡标注（下版删，M11b 同款）。
+- router 们本批不改 import（仍经 chat 过渡 re-export，Q3-A）；测试锚不动。
+- 事实修正：`_get_session_service` 原 fallback 已经过 composition.register
+  （M12 加的），本批收益是缓存/取用单点，不是生命周期修复——文档已按实记录。
+
+验证：API 面 115 passed（chat/workflow/compact/webui 等）；全量 8038 passed
+（仅数字漂移）；数字同步 464 文件 / 96,912 行（L1 +25）。
+`_get_permission_gateway` / `_build_llm_config` 未动（Q1-A 下次批）。
