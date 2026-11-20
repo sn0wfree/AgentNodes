@@ -2,13 +2,24 @@
 """4c-B2.1：isolatable 声明准入门槛的契约测试（纯声明面，零执行）。"""
 from __future__ import annotations
 
+import pytest
+
 from agentnodes.kernel.agent.tools.core import (
     TIMEOUT_CAPABILITY_ISOLATABLE,
     TIMEOUT_CAPABILITY_UNSTOPPABLE,
+    _ADMISSION_CACHE,
     BaseTool,
     ToolRegistry,
     check_isolation_admission,
 )
+
+
+@pytest.fixture(autouse=True)
+def _clear_admission_cache():
+    """C5 回归守卫：每个用例独立判定，避免静态扫描缓存跨用例复用。"""
+    _ADMISSION_CACHE.clear()
+    yield
+    _ADMISSION_CACHE.clear()
 
 
 class _Tool(BaseTool):
@@ -69,3 +80,114 @@ def test_registry_falls_back_for_invalid_isolatable():
     # FS-only 声明保留 isolatable
     tool.effects = frozenset({"fs"})
     assert registry.timeout_capability("admission_probe") == TIMEOUT_CAPABILITY_ISOLATABLE
+
+
+# ── B2.5 5a：C2/C3 分叉面判定 + C4 allowlist + C5 风险清单 ──────────
+
+
+class _CtxCallbackTool(BaseTool):
+    """函数体读 ctx.emit_event——C3 应拒。"""
+
+    name = "ctx_cb_probe"
+    description = "probe"
+    parameters: dict = {}
+    effects = frozenset({"fs"})
+    timeout_capability = TIMEOUT_CAPABILITY_ISOLATABLE
+
+    def execute(self, ctx, **kwargs):
+        if ctx.emit_event:
+            ctx.emit_event("x", {})
+        return "ok"
+
+
+class _KwargsInjectTool(BaseTool):
+    """**kwargs 读 emit_event——C3 应拒（**kwargs 不因未显式声明豁免）。"""
+
+    name = "kwargs_probe"
+    description = "probe"
+    parameters: dict = {}
+    effects = frozenset({"fs"})
+    timeout_capability = TIMEOUT_CAPABILITY_ISOLATABLE
+
+    def execute(self, **kwargs):
+        cb = kwargs.get("emit_event")
+        return "ok" if cb else "no"
+
+
+class _ExplicitInjectTool(BaseTool):
+    """显式声明注入参数——C2 应拒。"""
+
+    name = "explicit_probe"
+    description = "probe"
+    parameters: dict = {}
+    effects = frozenset({"fs"})
+    timeout_capability = TIMEOUT_CAPABILITY_ISOLATABLE
+
+    def execute(self, ctx, emit_event=None):
+        return "ok"
+
+
+def test_c3_ctx_callback_rejected():
+    reason = check_isolation_admission(_CtxCallbackTool())
+    assert reason and "ctx.emit_event" in reason
+
+
+def test_c3_kwargs_inject_rejected():
+    reason = check_isolation_admission(_KwargsInjectTool())
+    assert reason and "kwargs.emit_event" in reason
+
+
+def test_c2_explicit_inject_rejected():
+    reason = check_isolation_admission(_ExplicitInjectTool())
+    assert reason and "emit_event" in reason
+
+
+def test_c3_unparsable_source_fail_closed(monkeypatch):
+    """源码不可解析 → fail-closed 拒（不静默放行）。"""
+    import inspect
+
+    tool = _Tool()
+    tool.timeout_capability = TIMEOUT_CAPABILITY_ISOLATABLE
+    tool.effects = frozenset({"fs"})
+    monkeypatch.setattr(inspect, "getsource", lambda fn: "def broken(:" )
+    reason = check_isolation_admission(tool)
+    assert reason and "fail-closed" in reason
+
+
+def test_write_tool_passes_admission():
+    """试点入选工具 write 通过 C1–C3（不读回调、不读 kwargs 注入）。"""
+    from agentnodes.kernel.agent.builtin_tools import build_default_registry
+
+    registry = build_default_registry()
+    write = registry.get("write")
+    assert write is not None
+    # write 默认 unstoppable——临时按 isolatable 测判定（用完恢复）
+    original = write.timeout_capability
+    try:
+        write.timeout_capability = TIMEOUT_CAPABILITY_ISOLATABLE
+        assert check_isolation_admission(write) is None
+    finally:
+        write.timeout_capability = original
+
+
+def test_c_risk_inventory_catches_real_tools():
+    """风险清单：E3 三类工具（show_chart/task/todowrite）被 C2/C3 抓到。"""
+    from agentnodes.kernel.agent.builtin_tools import build_default_registry
+
+    registry = build_default_registry()
+    flagged = {}
+    original = {t.name: t.timeout_capability for t in registry.all_tools()}
+    try:
+        for tool in registry.all_tools():
+            tool.timeout_capability = TIMEOUT_CAPABILITY_ISOLATABLE
+            reason = check_isolation_admission(tool)
+            if reason and ("ctx.emit_event" in reason or "kwargs." in reason):
+                flagged[tool.name] = reason
+    finally:
+        for tool in registry.all_tools():
+            tool.timeout_capability = original[tool.name]
+    assert "show_chart" in flagged  # 函数体读 ctx.emit_event
+    assert "task" in flagged          # **kwargs 读 emit_event
+    # todowrite 也有 kwargs.emit_event，但它 effects 含 db → C1 先拒（正确顺序），
+    # 不因分叉进 worker，故不在 C2/C3 风险清单里——这不是漏检。
+    assert "write" not in flagged     # 试点工具无分叉

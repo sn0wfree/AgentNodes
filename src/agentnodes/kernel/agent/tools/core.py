@@ -860,19 +860,95 @@ class BaseTool(ABC):
         }
 
 
+# B2.5 5a：注入参数 superset（以 _build_tool_kwargs 实际注入面为事实源，
+# 不复用已过时的 _INJECTED_PARAMS——后者缺 emit_event/_subagent_count_ref/
+# _parent_registry/message_id）。回调字段永不跨界（B2.3 codec 构造级保证），
+# 依赖它们的工具在 worker 内会静默分叉，故 isolatable 声明必须拒绝。
+ISO_INJECTED_KWARGS: frozenset[str] = frozenset({
+    "workspace", "session_id", "_progress_callback", "emit_event",
+    "message_id", "_subagent_count_ref", "_parent_registry",
+})
+_ISO_CALLBACK_ATTRS: frozenset[str] = frozenset({
+    "emit_progress", "emit_event", "permission_evaluator",
+    "permission_gateway", "data_store", "sandbox", "before_execute",
+})
+
+#: 准入判定缓存（按 execute 函数对象）——避免每次 registry 查询都 getsource+AST。
+#: tool 类/execute 不变则复用；测试 monkeypatch execute 时用不同函数对象自然隔离。
+#: 值 None 也是合法结果（通过），故用 MISSING 哨兵区分「未缓存」。
+_ADMISSION_CACHE: dict[Any, str | None | object] = {}
+_ADMISSION_MISSING = object()
+
+
+def _scan_isolation_callback_deps(execute: Any) -> str | None:
+    """B2.5 5a C2/C3：静态扫描 execute 是否读回调/kwargs 注入面。
+
+    - C2 签名面：显式声明 ISO_INJECTED_KWARGS 中的参数 → 拒（**kwargs 形态
+      转 C3，不因"未显式声明"豁免）；
+    - C3 函数体面：AST 读 `ctx.<回调字段>` 或 `kwargs.get/[]` 注入键 → 拒；
+    - `inspect.getsource` / AST 解析失败 → **fail-closed 拒**（不静默放行）。
+
+    Returns None = 无分叉依赖；非空 = 拒绝理由。静态扫描非形式化证明——
+    别名/反射可能绕过，C4 显式 allowlist 才是最终执行依据（方案 §2.1）。
+    """
+    import ast
+    import inspect
+    import textwrap
+
+    try:
+        sig = inspect.signature(execute)
+    except (TypeError, ValueError):
+        return "isolatable 声明拒绝：execute 签名不可解析（fail-closed）"
+    explicit = set(sig.parameters)
+    declared = explicit & ISO_INJECTED_KWARGS
+    if declared:
+        return f"isolatable 声明拒绝：execute 显式依赖注入参数 {sorted(declared)}"
+
+    try:
+        src = textwrap.dedent(inspect.getsource(execute))  # 类方法源码带缩进
+        tree = ast.parse(src)
+    except (OSError, TypeError, SyntaxError) as exc:
+        return f"isolatable 声明拒绝：execute 源码不可解析（fail-closed）：{exc}"
+
+    for node in ast.walk(tree):
+        # ctx.<callback>
+        if isinstance(node, ast.Attribute):
+            if (
+                isinstance(node.value, ast.Name) and node.value.id == "ctx"
+                and node.attr in _ISO_CALLBACK_ATTRS
+            ):
+                return f"isolatable 声明拒绝：execute 读 ctx.{node.attr}（worker 内恒 None，静默分叉）"
+        # kwargs.get("emit_event") / kwargs["emit_event"]
+        if isinstance(node, ast.Call) and isinstance(node.func, ast.Attribute):
+            if (
+                isinstance(node.func.value, ast.Name)
+                and node.func.value.id == "kwargs" and node.func.attr == "get"
+                and node.args and isinstance(node.args[0], ast.Constant)
+                and node.args[0].value in ISO_INJECTED_KWARGS
+            ):
+                return f"isolatable 声明拒绝：execute 读 kwargs.{node.args[0].value}（worker 不注入）"
+        if isinstance(node, ast.Subscript):
+            if (
+                isinstance(node.value, ast.Name) and node.value.id == "kwargs"
+                and isinstance(node.slice, ast.Constant)
+                and node.slice.value in ISO_INJECTED_KWARGS
+            ):
+                return f"isolatable 声明拒绝：execute 读 kwargs[{node.slice.value!r}]（worker 不注入）"
+    return None
+
+
 def check_isolation_admission(tool: Any) -> str | None:
-    """4c-B2.1：检查工具声明 ``isolatable`` 是否满足准入门槛。
+    """检查工具声明 ``isolatable`` 是否满足准入门槛（B2.1 C1 + B2.5 C2/C3）。
 
     Returns:
         None = 可声明；非空字符串 = 拒绝原因（声明应回落
-        ``unstoppable``）。**纯声明面校验**——本函数不执行工具、
-        不改运行路径，也不保证声明等于事实（契约 §10.3）。
+        ``unstoppable``）。不执行工具、不改运行路径，也不保证声明等于事实
+        （契约 §10.3）。C2/C3 静态扫描结果按 execute 函数缓存。
 
-    门槛依据（超时设计 §9.7 原型五实验）：
-    - DB / NET 副作用：进程终止无法撤销已受理的远端操作（需服务端
-      确认取消，尚未实现）→ 拒绝 isolatable 声明；
-    - 仅 FS / 只读副作用：进程终止可停止本地执行，副作用不撤销——
-      允许声明（首试点限临时工作区 file_write，shell 暂缓）。
+    门槛：
+    - C1 effects：DB / NET 进程终止无法撤销 → 拒；
+    - C2/C3 分叉面：execute 读回调 / kwargs 注入面 → 拒（worker 内静默
+      分叉）；源码不可解析 → fail-closed 拒。
     """
     cap = getattr(tool, "timeout_capability", TIMEOUT_CAPABILITY_UNSTOPPABLE)
     if cap != TIMEOUT_CAPABILITY_ISOLATABLE:
@@ -884,7 +960,14 @@ def check_isolation_admission(tool: Any) -> str | None:
             f"isolatable 声明拒绝：effects 含 {sorted(forbidden)}——"
             "进程终止不能撤销已受理的远端/DB 操作（需服务端确认取消）"
         )
-    return None
+    execute = getattr(tool, "execute", None)
+    if execute is None:
+        return "isolatable 声明拒绝：无 execute 可审查（fail-closed）"
+    cached = _ADMISSION_CACHE.get(execute, _ADMISSION_MISSING)
+    if cached is _ADMISSION_MISSING:
+        cached = _scan_isolation_callback_deps(execute)
+        _ADMISSION_CACHE[execute] = cached
+    return cached  # type: ignore[return-value]
 
 
 class ToolRegistry:
