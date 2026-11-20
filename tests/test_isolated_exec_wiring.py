@@ -192,6 +192,20 @@ class TestE5OutcomeReinjection:
         executor._record_outcome(SimpleNamespace(name="write"), outcome)
         assert host.outcomes == [("tool", "write", "isolatable", "returned")]
 
+    def test_declared_registry_none_falls_back_to_unstoppable(self, exec_host_stub):
+        """I1：执行器 registry=None（此前零覆盖）→ unstoppable 常量，非裸字面量。"""
+        from agentnodes.kernel.agent.tools.core import (
+            TIMEOUT_CAPABILITY_UNSTOPPABLE,
+        )
+
+        executor, host = exec_host_stub
+        host.registry = None
+        outcome = IsolatedOutcome("{}", "returned", "failed", "x", 0, False)
+        executor._record_outcome(SimpleNamespace(name="write"), outcome)
+        assert host.outcomes == [
+            ("tool", "write", TIMEOUT_CAPABILITY_UNSTOPPABLE, "returned"),
+        ]
+
     def test_terminal_reinjects_timeout_chain(self, exec_host_stub):
         executor, host = exec_host_stub
         outcome = IsolatedOutcome("{}", "stopped", "terminated", "x", 0, True)

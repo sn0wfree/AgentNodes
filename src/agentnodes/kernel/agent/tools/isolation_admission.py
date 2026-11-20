@@ -155,6 +155,22 @@ def effective_capability(tool: Any) -> str:
     return cap
 
 
+def declared_capability(registry: Any, name: str, tool: Any) -> str:
+    """E5 记录的 declared 单点解析（第三轮复审候选 I1）。
+
+    - ``registry`` 非 None（正常生产路径）→ ``registry.timeout_capability(name)``
+      （它内部已走 effective_capability，含准入过滤）；
+    - ``registry is None``（未装配 registry 的测试/脚本路径）→ ``effective_capability(tool)``，
+      把裸 getattr 的偏差（非法声明原样透传）修成诚实回落 unstoppable。
+
+    两条 tool 路径（in-process / 隔离执行器）共用本函数，字面量 "unstoppable"
+    与裸 getattr 从此消失。声明 ≠ 事实：本函数只回"有效声明面"，不推断实际状态。
+    """
+    if registry is not None:
+        return registry.timeout_capability(name)
+    return effective_capability(tool)
+
+
 __all__ = [
     "TIMEOUT_CAPABILITY_CANCELLABLE",
     "TIMEOUT_CAPABILITY_ABANDONABLE",
@@ -163,4 +179,5 @@ __all__ = [
     "TIMEOUT_CAPABILITIES",
     "check_isolation_admission",
     "effective_capability",
+    "declared_capability",
 ]

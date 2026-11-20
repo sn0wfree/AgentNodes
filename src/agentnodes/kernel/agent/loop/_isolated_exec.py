@@ -292,13 +292,13 @@ class IsolatedToolExecutor:
             self._host.trace_and_emit("isolation.terminal", terminal_event(outcome))
 
     def _record_outcome(self, tc: Any, outcome: IsolatedOutcome) -> None:
-        """E5 实际状态记录（declared 取准入过滤后的 registry 值）。"""
+        """E5 实际状态记录（declared 经 declared_capability 单点解析）。"""
+        from agentnodes.kernel.agent.tools.core import declared_capability
+
         name = getattr(tc, "name", "")
-        declared = (
-            self._host.registry.timeout_capability(name)
-            if self._host.registry is not None
-            else "unstoppable"
-        )
+        # _settle 未传 tool 到此作用域（已核实）；registry=None 时
+        # effective_capability(None) → unstoppable，与原字面量逐字等价。
+        declared = declared_capability(self._host.registry, name, None)
         self._host.record_timeout_outcome("tool", name, declared, outcome.actual_state)
 
     def _prepare(

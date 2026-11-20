@@ -39,6 +39,7 @@ from agentnodes.kernel.agent.tools.isolation_admission import (  # noqa: F401
     TIMEOUT_CAPABILITY_ISOLATABLE,
     TIMEOUT_CAPABILITY_UNSTOPPABLE,
     check_isolation_admission,
+    declared_capability,
     effective_capability,
 )
 

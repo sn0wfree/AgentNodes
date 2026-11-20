@@ -17,9 +17,9 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 from agentnodes.kernel.agent.loop.errors import AttemptTimeoutError
 from agentnodes.kernel.agent.signals.progress import HeartbeatTimer
 from agentnodes.kernel.agent.tools.core import (
-    TIMEOUT_CAPABILITY_UNSTOPPABLE,
     TRANSIENT_TOOL_ERRORS,
     ToolContext,
+    declared_capability,
 )
 
 _TOOL_MAX_RETRIES = 2
@@ -255,14 +255,10 @@ class LoopToolsMixin:
                 # 返回后才被发现超时——按实际观察记录，不得记"仍在运行"。
                 # 并发调用各在自身完成点记录（_deadline 已在分支前统一取值）。
                 if _deadline is not None and time.monotonic() >= _deadline:
-                    # B2.4 4c：declared 取准入过滤后的 registry 值（修正裸
-                    # getattr 绕过 B2.1 回落的偏差）；state 仍是实际观测。
-                    _declared = (
-                        self.registry.timeout_capability(tc.name)
-                        if self.registry is not None
-                        else getattr(tool, "timeout_capability",
-                                    TIMEOUT_CAPABILITY_UNSTOPPABLE)
-                    )
+                    # I1：declared 单点解析（第三轮复审候选）——registry=None
+                    # 也走 effective_capability（非法声明诚实回落 unstoppable）；
+                    # state 仍是实际观测，不由声明推断。
+                    _declared = declared_capability(self.registry, tc.name, tool)
                     self._record_timeout_outcome(
                         "tool", tc.name, _declared, "returned",
                     )

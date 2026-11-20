@@ -97,3 +97,12 @@
 ## 6. 实施前确认
 
 本方案来自 grilling 全 A（Q10-Q12）。**未获批不得实施任何代码**；获批后按 R-007 单提交实施，doc first 纪律已满足（本文件）。
+
+## 7. 执行记录（2026-11-20 · 已实施 · 用户"请继续做完所有的"授权）
+
+- `isolation_admission.py`：新增 `declared_capability(registry, name, tool)`（入 `__all__`，core re-export），registry 非 None 走 `registry.timeout_capability(name)`、None 走 `effective_capability(tool)`。
+- `tools.py`：in-process 超时分支改调 helper，删裸 getattr 表达式与不再使用的 `TIMEOUT_CAPABILITY_UNSTOPPABLE` import。
+- `_isolated_exec.py::_record_outcome`：改调 helper（tool=None），删裸字面量 `"unstoppable"`。
+- **共享 sink 与 LLM 路径零改动**：`core.py::_record_timeout_outcome` 与 `:873/:905` 两处 LLM declared 常量原样——"收敛到 helper"而非 sink 的关键约束已守。
+- 新增 4 例：执行器 registry=None → unstoppable 常量（`test_isolated_exec_wiring.py`）；helper 三例（registry 透传 / 非法声明回落 / 无 tool 回落，`test_tool_isolation_admission.py`）。Q11 行为变更（"bogus" → unstoppable）已钉住。
+- 验证：I1 面 80 passed / 2 xfailed；全量 `-n 6` **8062 passed** / 0 failed（+4 新例）；batch_gate ALL GREEN；数字 464/96,973（L3 51,276）。

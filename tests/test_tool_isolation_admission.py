@@ -6,6 +6,7 @@ from agentnodes.kernel.agent.tools.isolation_admission import (
     TIMEOUT_CAPABILITY_ISOLATABLE,
     TIMEOUT_CAPABILITY_UNSTOPPABLE,
     check_isolation_admission,
+    declared_capability,
     effective_capability,
 )
 from agentnodes.kernel.agent.tools.core import BaseTool, ToolRegistry
@@ -55,6 +56,27 @@ def test_non_isolatable_not_subject_to_admission():
     """门槛只管 isolatable 声明；其他三级不受影响。"""
     tool = _Tool()  # 默认 unstoppable
     assert check_isolation_admission(tool) is None
+
+
+class TestDeclaredCapability:
+    """I1：E5 declared 单点解析——两条 tool 路径共用，registry=None 诚实回落。"""
+
+    def test_registry_present_uses_registry(self):
+        registry = type("R", (), {
+            "timeout_capability": lambda self, name: "isolatable",
+        })()
+        tool = _Tool()
+        assert declared_capability(registry, "any", tool) == "isolatable"
+
+    def test_registry_none_invalid_declaration_falls_back(self):
+        """Q11：in-process 裸 getattr 偏差已修——"bogus" 不再原样透传。"""
+        tool = _Tool()
+        tool.timeout_capability = "bogus"
+        assert declared_capability(None, "any", tool) == TIMEOUT_CAPABILITY_UNSTOPPABLE
+
+    def test_registry_none_no_tool_is_unstoppable(self):
+        """执行器路径（无 tool 对象）registry=None → unstoppable（原字面量语义）。"""
+        assert declared_capability(None, "any", None) == TIMEOUT_CAPABILITY_UNSTOPPABLE
 
 
 class TestEffectiveCapability:
