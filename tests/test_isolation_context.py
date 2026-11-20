@@ -20,6 +20,7 @@ from agentnodes.kernel.agent.tools._isolation_context import (
     IsolationCtxWire,
     from_wire,
     to_wire,
+    validate_wire,
 )
 from agentnodes.kernel.agent.tools.core import ToolContext
 
@@ -164,3 +165,52 @@ class TestInputTypes:
     def test_from_wire_rejects_non_dict(self):
         with pytest.raises(IsolationContextError, match="must be dict"):
             from_wire("not-a-dict")  # type: ignore[arg-type]
+
+
+class TestValidateWire:
+    """I3：validate_wire 纯函数契约——父侧入口把关的直接测试面。
+
+    与 from_wire 校验规则同源（异常类型/消息逐字一致），但**不构造**
+    ToolContext、不改 obj。from_wire 的既有测试覆盖「解码」；本类覆盖
+    「父侧纯校验」这一独立接口。
+    """
+
+    def test_valid_wire_passes_and_does_not_mutate(self):
+        wire = to_wire(_full_ctx())
+        snapshot = dict(wire)
+        assert validate_wire(wire) is None
+        assert wire == snapshot
+
+    @pytest.mark.parametrize("bad", [
+        {},                             # 缺 ctx_v
+        {"ctx_v": 0},                   # 非法版本
+        {"ctx_v": CTX_VERSION + 1},     # 不兼容版本
+    ])
+    def test_invalid_version_rejected(self, bad):
+        with pytest.raises(IsolationContextError, match="ctx_v"):
+            validate_wire({"workspace": "D:/ws", **bad})
+
+    def test_extra_key_rejected(self):
+        bad = to_wire(_full_ctx())
+        bad["permission_gateway"] = object()
+        with pytest.raises(IsolationContextError, match="unexpected wire ctx keys"):
+            validate_wire(bad)
+
+    def test_relative_path_rejected(self):
+        bad = to_wire(_full_ctx())
+        bad["workspace"] = "relative/path"
+        with pytest.raises(IsolationContextError, match="absolute path"):
+            validate_wire(bad)
+
+    def test_non_dict_rejected(self):
+        with pytest.raises(IsolationContextError, match="must be dict"):
+            validate_wire("not-a-dict")  # type: ignore[arg-type]
+
+    def test_same_rules_as_from_wire(self):
+        """同源性：对同一畸形输入，validate_wire 与 from_wire 同类异常。"""
+        bad = to_wire(_full_ctx())
+        bad["read_roots"] = [1, 2]
+        with pytest.raises(IsolationContextError, match="read_roots must be a list"):
+            validate_wire(bad)
+        with pytest.raises(IsolationContextError, match="read_roots must be a list"):
+            from_wire(bad)
