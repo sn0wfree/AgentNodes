@@ -272,45 +272,21 @@ def _save_tokens_to_dotenv(
     """Write key=value lines to ``~/.quantnodes/.env`` (chmod 0600).
 
     Existing keys with non-empty values are preserved; new keys are
-    appended. Atomic write via mkstemp + os.replace.
+    appended. M9-3（批 3c）：读写收敛到 L4 IO 单源 ``io_utils``
+    （``read_dotenv`` + ``atomic_write_text``，即 mkstemp + os.replace
+    的共享实现）；``env:VAR`` 引用约定与合并语义不变——传入的非空
+    token 覆盖同名 key，空值跳过。
     """
+    from agentnodes.foundation.utils.io_utils import atomic_write_text, read_dotenv
+
     path = dotenv_path or _quantnodes_dotenv_path()
-    path.parent.mkdir(parents=True, exist_ok=True)
-
-    existing: dict[str, str] = {}
-    if path.exists():
-        try:
-            for line in path.read_text(encoding="utf-8").splitlines():
-                line = line.strip()
-                if not line or line.startswith("#") or "=" not in line:
-                    continue
-                k, v = line.split("=", 1)
-                existing[k.strip()] = v
-        except OSError:
-            existing = {}
-
+    merged = read_dotenv(path)
     for k, v in tokens.items():
         if v:
-            existing[k] = v
+            merged[k] = v
 
-    content = "\n".join(f"{k}={v}" for k, v in existing.items()) + "\n"
-
-    fd, tmp_name = tempfile.mkstemp(prefix=".env.", dir=str(path.parent))
-    try:
-        with os.fdopen(fd, "w", encoding="utf-8") as f:
-            f.write(content)
-        os.replace(tmp_name, path)
-        try:
-            path.chmod(0o600)
-        except OSError:
-            pass
-    except Exception:
-        try:
-            os.unlink(tmp_name)
-        except OSError:
-            pass
-        raise
-    return path
+    content = "\n".join(f"{k}={v}" for k, v in merged.items()) + "\n"
+    return atomic_write_text(path, content, mode=0o600)
 
 
 def is_onboarded(*, llm_json_path: Path | None = None) -> bool:

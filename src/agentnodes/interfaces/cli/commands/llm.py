@@ -128,6 +128,41 @@ def _write_dotenv(tokens: dict[str, str], *,
     return path
 
 
+def reload_user_dotenv() -> None:
+    """Load the wizard-written user dotenv into ``os.environ`` (override=True).
+
+    M9-4（批 3c）：``cli/__main__.py``（``_build_llm_client``）、
+    ``cli/__init__.py``（``cmd_run_onboarding``）、
+    ``cli/_auto_onboard.py``（``_maybe_run_onboarding``）三处各自的
+    ``load_dotenv(_QUANTNODES_DOTENV_PATH, override=True)`` 收敛到此单点。
+
+    **override=True 是显式裁决保留的语义，不是疏漏**，与 R-006 的服务
+    路径（``foundation.llm.config._try_load_dotenv``，override=False，
+    「显式 env > 文件」）**有意不同**：本函数的调用点全部位于「向导刚
+    把密钥写进 .env」之后——override=True 的语义是「向导写盘后立即让
+    密钥可见」。若沿用 override=False，进程里残留的旧 env 值会遮住刚
+    写盘的新密钥，向导完成后的首次 LLM 调用直接失败。两条路径的裁决：
+    服务路径用户显式 export 赢；向导路径刚写盘的向导结果赢。
+
+    Best-effort：python-dotenv 缺失或加载失败时静默跳过（与旧三处的
+    try/except 行为一致）。幂等：重复调用安全（后一次覆盖前一次）。
+    """
+    try:
+        from dotenv import load_dotenv
+    except ImportError:
+        return
+    try:
+        # 读「向导实际写盘的文件」：onboard 的 PEP 562 动态访问器（测试
+        # monkeypatch 仍生效）。默认与 paths.dotenv_path() 相同
+        # （~/.agentnodes/.env）；AGENTNODES_DATA_DIR 设置时 onboard 的
+        # 公式仍指向 ~/.agentnodes/.env——重载必须跟向导的写路径一致，
+        # 所以不用 paths.dotenv_path()（M6 收敛 onboard 路径公式时同步）。
+        from agentnodes.interfaces.cli.onboard import _QUANTNODES_DOTENV_PATH
+        load_dotenv(_QUANTNODES_DOTENV_PATH, override=True)
+    except Exception:                          # noqa: BLE001
+        pass
+
+
 # ── llm.json write (atomic, preserves other top-level keys) ─────────
 
 

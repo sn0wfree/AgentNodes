@@ -114,8 +114,11 @@ def _maybe_run_onboarding(console) -> bool:
         return False
 
     try:
-        from dotenv import load_dotenv
-        load_dotenv(_QUANTNODES_DOTENV_PATH, override=True)
+        # M9-4（批 3c）：dotenv 加载单点 reload_user_dotenv（override=True
+        # 语义=向导写盘后立即让密钥可见，见其 docstring）。
+        from agentnodes.interfaces.cli.commands.llm import reload_user_dotenv
+
+        reload_user_dotenv()
     except Exception:
         pass
     return True

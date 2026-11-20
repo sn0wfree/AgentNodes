@@ -97,10 +97,11 @@ def _build_llm_client():
     Callers that don't need the model name should use ``[0]`` only.
     """
     try:
-        from dotenv import load_dotenv
+        # M9-4（批 3c）：dotenv 加载单点 reload_user_dotenv（override=True
+        # 语义=向导写盘后立即让密钥可见，见其 docstring）。
+        from agentnodes.interfaces.cli.commands.llm import reload_user_dotenv
 
-        from agentnodes.interfaces.cli.onboard import _QUANTNODES_DOTENV_PATH
-        load_dotenv(_QUANTNODES_DOTENV_PATH, override=True)
+        reload_user_dotenv()
     except Exception:
         pass
     try:

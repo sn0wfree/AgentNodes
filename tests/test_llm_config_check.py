@@ -307,3 +307,26 @@ class TestReadDotenv:
         result = llm_config_check._read_dotenv_api_key(isolated_quantnodes / "nonexistent")
 
         assert result == ""
+
+    def test_strips_whitespace_around_equals(self, isolated_quantnodes):
+        """``= `` 后的空白与行尾空白由调用方 strip（io_utils 契约：值原样保留）。"""
+        (isolated_quantnodes / ".env").write_text(
+            "OPENAI_API_KEY =  spaced-value  \n",
+            encoding="utf-8",
+        )
+
+        result = llm_config_check._read_dotenv_api_key(isolated_quantnodes / ".env")
+
+        assert result == "spaced-value"
+
+    def test_first_match_in_file_order_wins(self, isolated_quantnodes):
+        """两个 key 同时存在时按文件行序取先出现者（M9-3 裁决：保留旧行序
+        语义，不改为按 key 名固定优先级）。"""
+        (isolated_quantnodes / ".env").write_text(
+            "OPENAI_API_KEY=openai-first\nLLM_API_KEY=llm-second\n",
+            encoding="utf-8",
+        )
+
+        result = llm_config_check._read_dotenv_api_key(isolated_quantnodes / ".env")
+
+        assert result == "openai-first"

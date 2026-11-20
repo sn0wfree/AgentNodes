@@ -11,6 +11,7 @@ from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
 from agentnodes.foundation.config import paths as _paths
 from agentnodes.foundation.config import settings as _settings
+from agentnodes.foundation.utils import io_utils
 
 logger = logging.getLogger(__name__)
 
@@ -32,24 +33,28 @@ class LLMConfigUpdate(BaseModel):
 
 
 def _read_dotenv() -> dict[str, str]:
-    """Read .env file into a dict."""
-    result = {}
-    if _DOTENV_PATH.exists():
-        for line in _DOTENV_PATH.read_text().splitlines():
-            line = line.strip()
-            if line and not line.startswith("#") and "=" in line:
-                k, v = line.split("=", 1)
-                result[k.strip()] = v.strip()
-    return result
+    """Read .env file into a dict.
+
+    M9-3（批 3c）：解析单源 ``io_utils.read_dotenv``。与旧内联实现的
+    语义差异（io_utils 契约）：值**原样保留**——不 strip 首尾空白、
+    不剥引号（旧实现 ``v.strip()``）；文件不存在/不可读返回 ``{}``
+    而非抛 OSError。
+    """
+    return io_utils.read_dotenv(_DOTENV_PATH)
 
 
 def _write_dotenv(data: dict[str, str]) -> None:
-    """Write dict to .env file, preserving other keys."""
+    """Write dict to .env file, preserving other keys.
+
+    M9-3 行为修复：原实现 ``Path.write_text`` 非原子（进程崩溃/并发
+    写入可能留下半截 .env），改为 ``io_utils.atomic_write_text``
+    （tmp + os.replace + 0600）。合并语义不变：``data`` 覆盖同名 key，
+    其余 key 原样保留。
+    """
     existing = _read_dotenv()
     existing.update(data)
     lines = [f"{k}={v}" for k, v in existing.items()]
-    _DOTENV_PATH.write_text("\n".join(lines) + "\n")
-    _DOTENV_PATH.chmod(0o600)
+    io_utils.atomic_write_text(_DOTENV_PATH, "\n".join(lines) + "\n")
 
 
 @router.get("/info")

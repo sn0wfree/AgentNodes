@@ -55,7 +55,6 @@ def cmd_run_onboarding(args: argparse.Namespace) -> int:
     - LLM 结构化字段 → ``~/.quantnodes/llm.json``（保留其它顶层 key）
     - 凭证 token → ``~/.quantnodes/.env``（chmod 0600）
     """
-    from dotenv import load_dotenv
     from rich.panel import Panel
     from rich.prompt import Confirm
     from rich.table import Table
@@ -98,7 +97,11 @@ def cmd_run_onboarding(args: argparse.Namespace) -> int:
 
     # Load the dotenv sidecar so LLM_API_KEY (and TUSHARE_TOKEN) enter
     # os.environ before the bridge resolves "env:LLM_API_KEY" in llm.json.
-    load_dotenv(_QUANTNODES_DOTENV_PATH, override=True)
+    # M9-4（批 3c）：dotenv 加载单点 reload_user_dotenv（override=True
+    # 语义=向导写盘后立即让密钥可见，见其 docstring）。
+    from agentnodes.interfaces.cli.commands.llm import reload_user_dotenv
+
+    reload_user_dotenv()
 
     panel = Table.grid(expand=True)
     panel.add_column(width=10, style="dim")

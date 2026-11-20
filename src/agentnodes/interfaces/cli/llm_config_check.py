@@ -18,6 +18,7 @@ from pathlib import Path
 from typing import TypedDict
 from agentnodes.foundation.config import paths as _paths
 from agentnodes.foundation.config import settings as _settings
+from agentnodes.foundation.utils import io_utils
 
 # 用户数据目录标准配置位置（M9-2：公式单源到 foundation.config.paths；
 # 与 onboard.py 一致）。旧常量名保留作测试锚（tests patch 模块属性）。
@@ -52,24 +53,20 @@ def _read_llm_json(path: Path) -> dict:
 
 
 def _read_dotenv_api_key(path: Path) -> str:
-    """从 .env 文件提取 LLM_API_KEY 或 OPENAI_API_KEY。"""
-    if not path.exists():
-        return ""
-    try:
-        with open(path, "r", encoding="utf-8") as f:
-            for line in f:
-                line = line.strip()
-                if not line or line.startswith("#"):
-                    continue
-                if "=" not in line:
-                    continue
-                key, _, value = line.partition("=")
-                key = key.strip()
-                value = value.strip().strip('"').strip("'")
-                if key in ("LLM_API_KEY", "OPENAI_API_KEY"):
-                    return value
-    except OSError:
-        pass
+    """从 .env 文件提取 LLM_API_KEY 或 OPENAI_API_KEY。
+
+    M9-3（批 3c）：解析单源 ``io_utils.read_dotenv``。语义裁决：
+
+    - **按文件行序取第一个匹配 key**（dict 保序，遍历 items() 复刻旧
+      实现的行序语义），不按 key 名固定优先级——两个 key 同时在文件里
+      时行为与旧实现一致；
+    - **引号/空白剥离留在调用方**：io_utils 契约是 values are NOT
+      quote-stripped（且 ``=`` 后空白原样保留），所以 ``strip() +
+      剥引号`` 在这里补上，不能省略也不重复。
+    """
+    for key, value in io_utils.read_dotenv(path).items():
+        if key in ("LLM_API_KEY", "OPENAI_API_KEY"):
+            return value.strip().strip('"').strip("'")
     return ""
 
 

@@ -516,7 +516,8 @@ class TestRealLLMChat:
         at startup, so this test launches its own server with an
         invalid LLM_API_KEY under an isolated HOME (the host
         ~/.quantnodes/.env would otherwise be re-injected by
-        load_dotenv(override=True) inside _build_llm_config).
+        _try_load_dotenv — override=False, R-006 — inside
+        LLMConfig.load(), which _build_llm_config calls).
         """
         import tempfile as _tf
 

@@ -325,3 +325,60 @@ class TestCheckLLMConfig:
 
         status = lcc.check_llm_config()
         assert status["configured"] is False
+
+
+# ── _read_dotenv / _write_dotenv (M9-3: io_utils 单源语义锚) ─────────
+
+
+class TestDotenvIOHelpers:
+    """M9-3（批 3c）：``system._read_dotenv`` / ``_write_dotenv`` 收敛到
+    ``io_utils.read_dotenv`` / ``atomic_write_text`` 后的语义锚。
+
+    与旧内联实现的关键差异（io_utils 契约）：值**原样保留**——不 strip
+    首尾空白、不剥引号；文件缺失/不可读返回 {}；写入改为原子
+    （tmp + os.replace），父目录不存在时自动创建。
+    """
+
+    def test_read_dotenv_preserves_raw_value(self, isolated):
+        from agentnodes.interfaces.api.routers import system as system_router
+
+        _, dotenv = isolated
+        dotenv.write_text(
+            'NVIDIA_API_KEY= "nv-key" \nMINIMAX_API_KEY=sk-mm\n',
+            encoding="utf-8",
+        )
+        data = system_router._read_dotenv()
+        # io_utils 契约：值不 strip 空白、不剥引号（旧实现 v.strip() 会吃掉）。
+        # 注意整行先 strip()：行尾空白被去掉，`=` 后的前导空格保留。
+        assert data["NVIDIA_API_KEY"] == ' "nv-key"'
+        assert data["MINIMAX_API_KEY"] == "sk-mm"
+
+    def test_read_dotenv_missing_file_returns_empty(self, isolated):
+        from agentnodes.interfaces.api.routers import system as system_router
+
+        _, dotenv = isolated  # fixture 不创建 .env
+        assert system_router._read_dotenv() == {}
+
+    def test_write_dotenv_preserves_other_keys(self, isolated):
+        from agentnodes.interfaces.api.routers import system as system_router
+
+        _, dotenv = isolated
+        dotenv.write_text("MINIMAX_API_KEY=sk-old\nOTHER=keep\n", encoding="utf-8")
+        system_router._write_dotenv({"NVIDIA_API_KEY": "nv-new"})
+        content = dotenv.read_text(encoding="utf-8")
+        assert "NVIDIA_API_KEY=nv-new" in content
+        assert "MINIMAX_API_KEY=sk-old" in content
+        assert "OTHER=keep" in content
+
+    def test_write_dotenv_creates_missing_parent(self, tmp_path, monkeypatch):
+        """行为注：旧 write_text 在父目录缺失时抛 FileNotFoundError；
+        atomic_write_text 自动创建父目录。"""
+        from agentnodes.interfaces.api.routers import system as system_router
+
+        deep = tmp_path / "nested" / ".env"
+        monkeypatch.setattr(
+            "agentnodes.interfaces.api.routers.system._DOTENV_PATH", deep
+        )
+        system_router._write_dotenv({"NVIDIA_API_KEY": "nv-new"})
+        assert deep.exists()
+        assert "NVIDIA_API_KEY=nv-new" in deep.read_text(encoding="utf-8")
