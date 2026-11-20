@@ -154,11 +154,12 @@ def cmd_start(objective: str, *, console: Any = None,
         if template_key:
             tmpl = get_template(template_key)
             if tmpl is None:
+                # M5（批 3c）：__import__ 反模式改正常 import——
+                # template_names() 是 templates.py 的现成单源。
+                from agentnodes.apps.goal.templates import template_names
+
                 console.print(f"[red]Unknown template:[/red] {template_key}")
-                console.print("[dim]Available: " + ", ".join(
-                    sorted(getattr(__import__('agentnodes.apps.goal.templates',
-                                              fromlist=['TEMPLATES']), 'TEMPLATES').keys())
-                ) + "[/dim]")
+                console.print("[dim]Available: " + ", ".join(template_names()) + "[/dim]")
                 return 1
             criteria = tmpl.criteria
             # tmpl.risk_tier may be a string — coerce to RiskTier enum.
@@ -261,20 +262,10 @@ def cmd_evidence(criterion_ref: str, note: str, *,
 
         goal_id = snapshot["goal"]["goal_id"]
         criteria = snapshot.get("criteria", [])
-        # Resolve criterion_ref — 1-based index or exact id or prefix
-        criterion_id = None
-        try:
-            idx = int(criterion_ref) - 1
-            if 0 <= idx < len(criteria):
-                criterion_id = criteria[idx].get("criterion_id")
-        except ValueError:
-            pass
-        if criterion_id is None:
-            for c in criteria:
-                cid = str(c.get("criterion_id", ""))
-                if cid == criterion_ref or cid.startswith(criterion_ref):
-                    criterion_id = cid
-                    break
+        # M5（批 3c）：引用解析下沉 apps/goal/audit（1-based / 精确 id / 前缀）
+        from agentnodes.apps.goal.audit import resolve_criterion_ref
+
+        criterion_id = resolve_criterion_ref(criteria, criterion_ref)
         if criterion_id is None:
             console.print(f"[red]Unknown criterion:[/red] {criterion_ref}")
             return 1
@@ -306,7 +297,11 @@ def cmd_complete(recap: str = "", *, console: Any = None,
     """
     console = _resolve_console(console)
     try:
-        from agentnodes.apps.goal.models import AuditRow, GoalStatus
+        from agentnodes.apps.goal.audit import (
+            all_criteria_covered,
+            build_completion_audit_rows,
+        )
+        from agentnodes.apps.goal.models import GoalStatus
 
         store = _store()
         snapshot = store.get_current_snapshot(session_id)
@@ -325,20 +320,13 @@ def cmd_complete(recap: str = "", *, console: Any = None,
                 recap=recap or "(lite completion)",
             )
         else:
-            all_covered = snapshot.get("all_covered", False)
-            if criteria and not all_covered:
+            # M5（批 3c）：完成闸改 goal_progress_tuple 单源——原读快照的
+            # ``all_covered`` 幻影键（无生产方），有 criteria 时恒拒绝。
+            # 行为变更（已声明）：非 lite 完成从「恒拒绝」变为「证据齐即可完成」。
+            if not all_criteria_covered(snapshot):
                 console.print("[red]Cannot complete:[/red] not all criteria have evidence.")
                 return 1
-            evidence_ids = [e.get("evidence_id", "") for e in snapshot.get("evidence", [])]
-            audit_rows = [
-                AuditRow(
-                    criterion_id=str(c.get("criterion_id", "")),
-                    result="satisfied",
-                    evidence_ids=evidence_ids,
-                    notes=recap or "",
-                )
-                for c in criteria
-            ]
+            audit_rows = build_completion_audit_rows(snapshot, recap)
             store.update_status(
                 session_id=session_id,
                 goal_id=goal_id,
