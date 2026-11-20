@@ -4,14 +4,14 @@ from __future__ import annotations
 
 import pytest
 
-from agentnodes.kernel.agent.tools.core import (
+from agentnodes.kernel.agent.tools.isolation_admission import (
     TIMEOUT_CAPABILITY_ISOLATABLE,
     TIMEOUT_CAPABILITY_UNSTOPPABLE,
     _ADMISSION_CACHE,
-    BaseTool,
-    ToolRegistry,
     check_isolation_admission,
+    effective_capability,
 )
+from agentnodes.kernel.agent.tools.core import BaseTool, ToolRegistry
 
 
 @pytest.fixture(autouse=True)

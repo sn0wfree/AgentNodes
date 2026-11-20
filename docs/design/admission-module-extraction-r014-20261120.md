@@ -91,3 +91,21 @@ core 单向 import admission 并 re-export。loop 三处仍从 core import 常�
 
 本方案来自 grilling 共识（Round 1 全 A + Q8 选 B 修正 Q1，Q6/Q7 采纳推荐默认）。
 确认后按 R-007 两提交实施。
+
+## 7. 执行记录
+
+### 提交① · 纯迁移（2026-11-20 · 已实施 · 行为逐字不变）
+
+- 新建 `kernel/agent/tools/isolation_admission.py`：四级能力常量、forbidden
+  effects、ISO_INJECTED_KWARGS / _ISO_CALLBACK_ATTRS、C2/C3 AST 扫描、
+  check_isolation_admission、effective_capability 全部逐字迁入；公开面
+  仅 5 常量 + 2 函数（私有扫描器/常量集不导出）。
+- `core.py`：删 109 行 policy 实现，改 re-export import（loop 三处消费者
+  import 源零变化）；`ToolRegistry.timeout_capability` 改一行
+  `return effective_capability(self._tools.get(name))`。
+- 测试 import 源改 `isolation_admission`（缓存暂留，commit② 删）。
+
+验证：准入+decision 36 passed；全量 8033 passed（仅数字漂移）；数字
+同步 464 文件 / 96,862 行（L3 +1 文件 +48 行）。
+
+### 提交② · 删缓存+扫描纯函数化（待实施）
