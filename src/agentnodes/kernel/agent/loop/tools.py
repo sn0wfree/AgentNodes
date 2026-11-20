@@ -31,6 +31,41 @@ if TYPE_CHECKING:
     from agentnodes.foundation.llm.parser import ToolCall
     from agentnodes.kernel.agent.loop.core import LoopResult
 
+class _ExecHost:
+    """IsolatedToolExecutor 的宿主能力面（第二轮候选 3）。
+
+    把 loop self 收成执行器实际需要的 4 个能力——执行器不再读私有数据字段
+    （_attempt_deadline / _current_iter），seam 落在能力上而非内部状态上。
+    finalize_timeout 刻意吞 AttemptTimeoutError：终态重注入只需事件副作用，
+    异常由外层 check 边界处理（与执行器原注释语义一致）。
+    """
+
+    def __init__(self, loop: Any) -> None:
+        self._loop = loop
+
+    @property
+    def registry(self) -> Any:
+        return self._loop.registry
+
+    def trace_and_emit(self, kind: str, payload: dict) -> None:
+        self._loop._trace_and_emit(kind, payload)
+
+    def record_timeout_outcome(self, kind: str, name: str, declared: str, state: str) -> None:
+        self._loop._record_timeout_outcome(kind, name, declared, state)
+
+    def finalize_timeout(self) -> None:
+        """终态重注入（只产事件副作用，不抛 AttemptTimeoutError）。"""
+        from agentnodes.kernel.agent.loop.errors import AttemptTimeoutError
+
+        check = getattr(self._loop, "_check_attempt_timeout", None)
+        if not callable(check):
+            return
+        try:
+            check(getattr(self._loop, "_current_iter", 0), None, finalize=True)
+        except AttemptTimeoutError:
+            pass  # 刻意吞：终态重注入只需要 finalize 事件，不需要抛
+
+
 class LoopToolsMixin:
 # ── Host surface (provided by AgentLoop / AutoresearchRunner) ──
     _build_data_store: Any
@@ -147,7 +182,7 @@ class LoopToolsMixin:
         # run/arun 返回 None，下方执行分支逐字不变。sync/async/retry 共用。
         from agentnodes.kernel.agent.loop._isolated_exec import IsolatedToolExecutor
 
-        _executor = IsolatedToolExecutor(self)
+        _executor = IsolatedToolExecutor(_ExecHost(self))
 
         kwargs = self._build_tool_kwargs(tc)
         if async_mode and callable(check):

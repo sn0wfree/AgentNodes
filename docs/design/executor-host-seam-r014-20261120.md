@@ -74,3 +74,19 @@
 ## 6. 实施前确认
 
 本方案来自 grilling 共识（Q1-Q3 全推荐 + Q4-B）。确认后按 R-007 单提交实施。
+
+## 7. 执行记录（2026-11-20 · 已实施）
+
+- `tools.py` 新增私有 `_ExecHost` 适配器（4 能力：registry / trace_and_emit /
+  record_timeout_outcome / finalize_timeout）；`finalize_timeout` 内部
+  try `_check_attempt_timeout(...)` / except AttemptTimeoutError: pass——
+  终态重注入只产事件副作用，不抛（Q2 钉住）。
+- `loop core` 传 `IsolatedToolExecutor(_ExecHost(self))`；执行器 4 处消费
+  全改能力方法，`_settle` 的 terminal 分支直接 `self._host.finalize_timeout()`，
+  不再读 `_attempt_deadline` / `_current_iter` 私有字段。执行器 docstring
+  同步 host seam 描述。
+- 测试两份 HostStub → 一份 `exec_host_stub` fixture（4 能力、无私有字段）；
+  新增 `test_exec_host_finalize_swallows_timeout_error` 钉住"不抛"。
+
+验证：wiring 15 passed；开关关回归 70 passed（loop/E5/timeout 面逐字不变）；
+数字同步 464 文件 / 96,887 行（L3 +34）。零行为变化、E5 终态语义不变。

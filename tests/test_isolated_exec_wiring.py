@@ -18,6 +18,38 @@ from agentnodes.kernel.agent.loop._isolated_exec import (
 )
 
 
+@pytest.fixture()
+def exec_host_stub():
+    """单一 host 能力面 stub（候选 3：两份 HostStub 合并）。
+
+    4 能力：registry / trace_and_emit / record_timeout_outcome /
+    finalize_timeout——执行器不读宿主私有数据字段。
+    """
+    from agentnodes.kernel.agent.loop._isolated_exec import IsolatedToolExecutor
+
+    class HostStub:
+        def __init__(self):
+            self.outcomes = []
+            self.events = []
+            self.finalized = []
+            self.registry = SimpleNamespace(
+                timeout_capability=lambda name: "isolatable",
+            )
+
+        def trace_and_emit(self, kind, payload):
+            self.events.append((kind, payload))
+
+        def record_timeout_outcome(self, kind, name, declared, state):
+            self.outcomes.append((kind, name, declared, state))
+
+        def finalize_timeout(self):
+            self.events.append(("timeout_checked", {"finalize": True}))
+            self.finalized.append(1)
+
+    host = HostStub()
+    return IsolatedToolExecutor(host), host
+
+
 class FakeIsolationModule:
     """替换 isolation.isolate_tool_call 的返回值工厂。"""
 
@@ -154,55 +186,26 @@ class TestIsolatedOutcomeShape:
 class TestE5OutcomeReinjection:
     """IsolatedToolExecutor._settle：declared 取 registry + 终态重注入 + 事件。"""
 
-    def _executor(self):
-        from agentnodes.kernel.agent.loop._isolated_exec import IsolatedToolExecutor
-
-        class HostStub:
-            def __init__(self):
-                self.outcomes = []
-                self.events = []
-                self._attempt_deadline = None
-                self._current_iter = 0
-                self.registry = SimpleNamespace(
-                    timeout_capability=lambda name: "isolatable",
-                )
-
-            def _record_timeout_outcome(self, kind, name, declared, state):
-                self.outcomes.append((kind, name, declared, state))
-
-            def _trace_and_emit(self, kind, payload):
-                self.events.append((kind, payload))
-
-            def _check_attempt_timeout(self, iteration, result, *, finalize=True):
-                self.events.append(("timeout_checked", {"finalize": finalize}))
-
-        host = HostStub()
-        return IsolatedToolExecutor(host), host
-
-    def test_declared_uses_registry_not_raw_getattr(self):
-        executor, host = self._executor()
+    def test_declared_uses_registry_not_raw_getattr(self, exec_host_stub):
+        executor, host = exec_host_stub
         outcome = IsolatedOutcome("{}", "returned", "failed", "x", 0, False)
-        decision = SimpleNamespace(
-            isolate=True, reason="isolatable", capability="isolatable", tool_name="write",
-        )
         executor._record_outcome(SimpleNamespace(name="write"), outcome)
         assert host.outcomes == [("tool", "write", "isolatable", "returned")]
 
-    def test_terminal_reinjects_timeout_chain(self):
-        executor, host = self._executor()
-        host._attempt_deadline = 1.0  # 非 None → terminal 触发 finalize
+    def test_terminal_reinjects_timeout_chain(self, exec_host_stub):
+        executor, host = exec_host_stub
         outcome = IsolatedOutcome("{}", "stopped", "terminated", "x", 0, True)
         decision = SimpleNamespace(
             isolate=True, reason="isolatable", capability="isolatable", tool_name="write",
         )
         executor._settle(SimpleNamespace(name="write"), outcome, decision)
         kinds = [k for k, _ in host.events]
-        assert "timeout_checked" in kinds  # 终态重注入
+        assert "timeout_checked" in kinds  # 终态重注入（经 finalize_timeout 能力）
         assert "isolation.terminal" in kinds
+        assert host.finalized == [1]
 
-    def test_non_terminal_no_reinjection(self):
-        executor, host = self._executor()
-        host._attempt_deadline = 1.0
+    def test_non_terminal_no_reinjection(self, exec_host_stub):
+        executor, host = exec_host_stub
         outcome = IsolatedOutcome("{}", "stopped", "completed", "x", 0, False)
         decision = SimpleNamespace(
             isolate=True, reason="isolatable", capability="isolatable", tool_name="write",
@@ -212,40 +215,28 @@ class TestE5OutcomeReinjection:
         assert "timeout_checked" not in kinds
         assert "isolation.terminal" not in kinds
 
+    def test_exec_host_finalize_swallows_timeout_error(self):
+        """Q2：ExecHost.finalize_timeout 吞 AttemptTimeoutError（终态重注入只产事件）。"""
+        from agentnodes.kernel.agent.loop.errors import AttemptTimeoutError
+        from agentnodes.kernel.agent.loop.tools import _ExecHost
+
+        class FakeLoop:
+            _current_iter = 0
+
+            def _check_attempt_timeout(self, iteration, result, *, finalize=True):
+                assert finalize is True
+                raise AttemptTimeoutError("deadline reached")
+
+        adapter = _ExecHost(FakeLoop())
+        adapter.finalize_timeout()  # 不抛（刻意吞）
+
 
 class TestExecutorRunInterface:
     """Q7：IsolatedToolExecutor.run 单一接口——不隔离返回 None，隔离走全流程。"""
 
-    def _host(self):
-        from agentnodes.kernel.agent.loop._isolated_exec import IsolatedToolExecutor
-
-        class HostStub:
-            def __init__(self):
-                self.events = []
-                self.outcomes = []
-                self._attempt_deadline = None
-                self._current_iter = 0
-                self.registry = SimpleNamespace(
-                    timeout_capability=lambda name: "isolatable",
-                )
-
-            def _record_timeout_outcome(self, kind, name, declared, state):
-                self.outcomes.append((kind, name, declared, state))
-
-            def _trace_and_emit(self, kind, payload):
-                self.events.append((kind, payload))
-
-            def _check_attempt_timeout(self, iteration, result, *, finalize=True):
-                self.events.append(("timeout_checked", {"finalize": finalize}))
-
-        host = HostStub()
-        return IsolatedToolExecutor(host), host
-
-    def test_switch_off_returns_none(self, monkeypatch):
-        import os
-
+    def test_switch_off_returns_none(self, monkeypatch, exec_host_stub):
         monkeypatch.delenv("AGENTNODES_ISOLATION_EXECUTION", raising=False)
-        executor, host = self._host()
+        executor, host = exec_host_stub
         tool = SimpleNamespace(
             name="write", timeout_capability="isolatable",
             enforce_permission_sync=lambda args, ctx: None,
@@ -258,13 +249,11 @@ class TestExecutorRunInterface:
         assert out is None  # 开关关 → core 走 in-process 路径
         assert host.events == [] and host.outcomes == []
 
-    def test_isolated_run_full_flow(self, monkeypatch, patch_isolation):
-        import agentnodes.kernel.agent.tools.isolation as iso
-
+    def test_isolated_run_full_flow(self, monkeypatch, patch_isolation, exec_host_stub):
         monkeypatch.setenv("AGENTNODES_ISOLATION_EXECUTION", "1")
         monkeypatch.setenv("AGENTNODES_ISOLATION_TOOLS", "write")
         patch_isolation["fake"] = _result()
-        executor, host = self._host()
+        executor, host = exec_host_stub
         tool = SimpleNamespace(
             name="write", timeout_capability="isolatable",
             enforce_permission_sync=lambda args, ctx: None,

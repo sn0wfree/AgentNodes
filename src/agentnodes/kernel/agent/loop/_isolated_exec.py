@@ -274,8 +274,9 @@ class IsolatedToolExecutor:
 
     单一 interface :meth:`run` 把「决策 → 规则闸 → 执行 → E5 outcome →
     终态事件」全包住；调用方（loop core）只调一次、只接收 outcome，
-    不感知内部编排。host 是鸭子类型（提供 registry / deadline / emit /
-    _record_timeout_outcome / _check_attempt_timeout），避免循环依赖。
+    不感知内部编排。host 是四能力适配器（registry / trace_and_emit /
+    record_timeout_outcome / finalize_timeout，见 tools.py 的 _ExecHost）——
+    seam 落在能力上，执行器不读宿主私有数据字段（候选 3）。
     """
 
     def __init__(self, host: Any) -> None:
@@ -286,9 +287,9 @@ class IsolatedToolExecutor:
 
     def _emit_both(self, decision: IsolationDecision, outcome: IsolatedOutcome | None) -> None:
         """两类观测事件统一从这里发（type 键 + EventType 常量）。"""
-        self._host._trace_and_emit("isolation.shadow_decision", shadow_event(decision))
+        self._host.trace_and_emit("isolation.shadow_decision", shadow_event(decision))
         if outcome is not None:
-            self._host._trace_and_emit("isolation.terminal", terminal_event(outcome))
+            self._host.trace_and_emit("isolation.terminal", terminal_event(outcome))
 
     def _record_outcome(self, tc: Any, outcome: IsolatedOutcome) -> None:
         """E5 实际状态记录（declared 取准入过滤后的 registry 值）。"""
@@ -298,7 +299,7 @@ class IsolatedToolExecutor:
             if self._host.registry is not None
             else "unstoppable"
         )
-        self._host._record_timeout_outcome("tool", name, declared, outcome.actual_state)
+        self._host.record_timeout_outcome("tool", name, declared, outcome.actual_state)
 
     def _prepare(
         self, tc: Any, tool: Any, *, tool_ctx: Any, platform: str | None,
@@ -320,11 +321,9 @@ class IsolatedToolExecutor:
         )
         self._record_outcome(tc, outcome)
         if terminal:
-            # E5 终态链重注入：finalize 置 timeout ending（AttemptTimeoutError
-            # 由外层 check 在边界抛；此处不直接抛，与既有 E5 同构）。
-            check = getattr(self._host, "_check_attempt_timeout", None)
-            if callable(check) and getattr(self._host, "_attempt_deadline", None) is not None:
-                check(getattr(self._host, "_current_iter", 0), None, finalize=True)
+            # E5 终态链重注入：finalize 置 timeout ending——委托宿主能力面
+            # （ExecHost.finalize_timeout 内部吞 AttemptTimeoutError，不抛）。
+            self._host.finalize_timeout()
         self._emit_both(decision, outcome if terminal else None)
         return outcome
 
