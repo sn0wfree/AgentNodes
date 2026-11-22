@@ -51,19 +51,11 @@ export function SessionSidebar() {
     }
   }, [taggingId])
 
-  // Test/debug session keywords to filter out
-  const TEST_KEYWORDS = ['test', 'verify', 'debug', 'diag', 'check', 'probe', 'quick']
-
-  const isTestSession = (title: string) => {
-    const lower = title.toLowerCase()
-    return TEST_KEYWORDS.some((kw) => lower.includes(kw))
-  }
-
   const filtered = useMemo(() => {
     let list = sessions
     if (filter === 'starred') list = list.filter((s) => s.starred && !s.archived)
     else if (filter === 'archived') list = list.filter((s) => s.archived)
-    else list = list.filter((s) => !s.archived && !isTestSession(s.title) && !s.id.startsWith('dag:'))
+    else list = list.filter((s) => !s.archived && !s.id.startsWith('dag:'))
 
     if (search.trim()) {
       const q = search.toLowerCase()
@@ -77,12 +69,14 @@ export function SessionSidebar() {
 
   const handleNew = async () => {
     await createNewSession('新会话')
+    if (useLayoutStore.getState().narrowViewport) setSidebarOpen(false)
   }
 
   const handleSelect = (id: string) => {
     if (id !== currentSessionId) {
       void switchSession(id)
     }
+    if (useLayoutStore.getState().narrowViewport) setSidebarOpen(false)
   }
 
   const handleStartEdit = (sess: Session) => {
@@ -145,13 +139,6 @@ export function SessionSidebar() {
         <span className="text-sm font-medium text-slate-300">会话</span>
         <div className="flex gap-1">
           <button
-            onClick={handleNew}
-            className="rounded p-1 text-slate-400 hover:bg-slate-800 hover:text-slate-200"
-            title="新建会话"
-          >
-            <Plus className="h-4 w-4" />
-          </button>
-          <button
             onClick={() => setSidebarOpen(false)}
             className="rounded p-1 text-slate-400 hover:bg-slate-800 hover:text-slate-200"
             title="收起侧边栏"
@@ -159,6 +146,17 @@ export function SessionSidebar() {
             <X className="h-4 w-4" />
           </button>
         </div>
+      </div>
+
+      <div className="px-3 pt-3">
+        <button
+          onClick={handleNew}
+          className="ua-primary-action flex w-full items-center justify-center gap-2 rounded-lg px-3 py-2 text-sm font-medium transition-colors"
+          title="新建会话"
+        >
+          <Plus className="h-4 w-4" />
+          新建会话
+        </button>
       </div>
 
       {/* Search */}
@@ -183,7 +181,7 @@ export function SessionSidebar() {
             onClick={() => setFilter(f)}
             className={`rounded px-2 py-0.5 text-xs transition-colors ${
               filter === f
-                ? 'bg-primary-600/20 text-primary-400'
+                ? 'bg-slate-800 text-slate-100'
                 : 'text-slate-400 hover:bg-slate-800 hover:text-slate-200'
             }`}
           >
@@ -303,7 +301,7 @@ function SessionRow({
       onClick={onSelect}
       className={`group mb-1 cursor-pointer rounded-md px-2 py-1.5 transition-colors ${
         isActive
-          ? 'bg-primary-600/20 text-primary-300'
+          ? 'bg-slate-800 text-slate-100'
           : 'text-slate-300 hover:bg-slate-800'
       }`}
     >

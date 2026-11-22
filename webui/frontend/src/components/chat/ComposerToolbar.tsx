@@ -47,7 +47,7 @@ export function ComposerToolbar({ sessionId, onApplyMarkdown }: ComposerToolbarP
   }, [])
 
   return (
-    <div className="mb-2 flex items-center gap-1">
+    <div className="mb-2 flex flex-wrap items-center gap-1">
       {/* Persona selector */}
       <div className="relative" ref={menuRef}>
         {(() => {

@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
-import { useAuthStore } from '../../stores/auth'
+import { useAuthStore, type User } from '../../stores/auth'
 import { api } from '../../api/client'
 
 export function LoginPage() {
@@ -16,40 +16,39 @@ export function LoginPage() {
     setError('')
     setLoading(true)
     try {
-      const res = await api.post<{ access_token: string; user: any }>('/auth/login', {
+      const res = await api.post<{ access_token: string; user: User }>('/auth/login', {
         username,
         password,
       })
       setAuth(res.access_token, res.user)
-      navigate('/')
-    } catch (err: any) {
-      setError(err.message || '登录失败')
+      navigate('/chat')
+    } catch (err: unknown) {
+      setError(err instanceof Error && err.message ? err.message : '登录失败')
     } finally {
       setLoading(false)
     }
   }
 
   return (
-    <div className="relative flex min-h-screen items-center justify-center bg-app">
-      <div className="aurora-backdrop">
-        <div className="grid-layer" />
-        <div className="aurora-layer" />
-        <div className="vignette-layer" />
-        <div className="grain-layer" />
-      </div>
-      <div className="glass-elevated relative z-10 w-full max-w-sm rounded-2xl p-8">
-        <h1 className="mb-6 text-center text-xl font-semibold text-slate-100">
-          Strategy Research
-        </h1>
+    <div className="flex min-h-screen items-center justify-center bg-app px-4 py-8">
+      <div className="w-full max-w-sm rounded-2xl border border-slate-800 bg-surface p-6 shadow-soft sm:p-8">
+        <div className="mb-8">
+          <div className="mb-5 inline-flex h-10 w-10 items-center justify-center rounded-xl bg-slate-800 text-sm font-bold text-slate-100">
+            AN
+          </div>
+          <h1 className="text-xl font-semibold text-slate-100">AgentNodes</h1>
+          <p className="mt-1 text-sm text-slate-400">登录以进入会话工作台</p>
+        </div>
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
             <label htmlFor="login-username" className="mb-1 block text-sm text-slate-400">用户名</label>
             <input
               id="login-username"
               type="text"
+              autoComplete="username"
               value={username}
               onChange={(e) => setUsername(e.target.value)}
-              className="w-full rounded-lg border border-slate-700 bg-slate-800 px-3 py-2 text-sm text-slate-100 outline-none focus:border-primary-500"
+              className="w-full rounded-lg border border-slate-700 bg-slate-900 px-3 py-2 text-sm text-slate-100 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-500"
               required
             />
           </div>
@@ -58,26 +57,27 @@ export function LoginPage() {
             <input
               id="login-password"
               type="password"
+              autoComplete="current-password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              className="w-full rounded-lg border border-slate-700 bg-slate-800 px-3 py-2 text-sm text-slate-100 outline-none focus:border-primary-500"
+              className="w-full rounded-lg border border-slate-700 bg-slate-900 px-3 py-2 text-sm text-slate-100 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-500"
               required
             />
           </div>
           {error && (
-            <p className="text-sm text-red-400">{error}</p>
+            <p role="alert" className="text-sm text-red-400">{error}</p>
           )}
           <button
             type="submit"
             disabled={loading}
-            className="w-full rounded-lg bg-primary-600 py-2.5 text-sm font-medium text-white hover:bg-primary-700 disabled:opacity-50"
+            className="ua-primary-action w-full rounded-lg py-2.5 text-sm font-medium disabled:opacity-50"
           >
             {loading ? '登录中...' : '登录'}
           </button>
         </form>
         <p className="mt-4 text-center text-sm text-slate-500">
           没有账号？{' '}
-          <Link to="/register" className="text-primary-400 hover:underline">
+          <Link to="/register" className="text-sky-500 hover:underline">
             注册
           </Link>
         </p>

@@ -171,6 +171,17 @@ describe('PermissionRequestDialog', () => {
     expect(input.value).toBe('会覆盖现有策略')
   })
 
+  it('includes the reason when rejecting a request', () => {
+    render(
+      <PermissionRequestDialog request={baseRequest} onRespond={onRespond} />,
+    )
+    fireEvent.change(screen.getByTestId('permission-reason-input'), {
+      target: { value: '会覆盖现有策略' },
+    })
+    fireEvent.click(screen.getByTestId('permission-deny-once'))
+    expect(onRespond).toHaveBeenCalledWith('deny', false, '会覆盖现有策略')
+  })
+
   it('dialog has correct ARIA attributes for a11y', () => {
     render(
       <PermissionRequestDialog request={baseRequest} onRespond={onRespond} />,

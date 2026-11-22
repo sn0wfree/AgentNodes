@@ -28,6 +28,25 @@ describe('useLayoutStore', () => {
     expect(localStorage.getItem('sr-right-visible')).toBe('true')
   })
 
+  it('keeps desktop panel choices when opening and closing mobile drawers', () => {
+    useLayoutStore.getState().setSidebarOpen(true)
+    useLayoutStore.getState().setNarrowViewport(true)
+    expect(useLayoutStore.getState().sidebarOpen).toBe(false)
+    expect(useLayoutStore.getState().rightPanelVisible).toBe(false)
+
+    useLayoutStore.getState().toggleSidebar()
+    expect(useLayoutStore.getState().sidebarOpen).toBe(true)
+    useLayoutStore.getState().toggleRightPanel()
+    expect(useLayoutStore.getState().sidebarOpen).toBe(false)
+    expect(useLayoutStore.getState().rightPanelVisible).toBe(true)
+    expect(localStorage.getItem('sr-sidebar-open')).toBe('true')
+    expect(localStorage.getItem('sr-right-visible')).toBeNull()
+
+    useLayoutStore.getState().setNarrowViewport(false)
+    expect(useLayoutStore.getState().sidebarOpen).toBe(true)
+    expect(useLayoutStore.getState().rightPanelVisible).toBe(true)
+  })
+
   it('loads right panel visibility from localStorage', async () => {
     localStorage.setItem('sr-right-visible', 'false')
     vi.resetModules()

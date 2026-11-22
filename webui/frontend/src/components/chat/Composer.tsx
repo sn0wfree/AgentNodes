@@ -1,4 +1,4 @@
-import { useState, useRef, useCallback, useEffect } from 'react'
+import { useState, useRef, useCallback, useEffect, useLayoutEffect } from 'react'
 import { Send, Image as ImageIcon, X, Square } from 'lucide-react'
 import { useChatStore } from '../../stores/chat'
 import { useChatSessionId } from '../../contexts/ChatSessionContext'
@@ -41,6 +41,7 @@ export function Composer({ composeMessage, readOnly }: ComposerProps = {}) {
   const textareaRef = useRef<HTMLTextAreaElement>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
   const currentSessionId = useChatSessionId()
+  const activeSessionRef = useRef(currentSessionId)
   const addMessage = useChatStore((s) => s.addMessage)
   const streamingMessageId = useChatStore((s) => s.streamingMessageId)
   const setActiveAttempt = useChatStore((s) => s.setActiveAttempt)
@@ -55,6 +56,13 @@ export function Composer({ composeMessage, readOnly }: ComposerProps = {}) {
   const isStreaming = streamingMessageId !== null
 
   const draftKey = currentSessionId ? `sr-draft-${currentSessionId}` : null
+
+  useLayoutEffect(() => {
+    activeSessionRef.current = currentSessionId
+    return () => {
+      activeSessionRef.current = null
+    }
+  }, [currentSessionId])
 
   // Load persisted mode when switching sessions
   useEffect(() => {
@@ -80,8 +88,13 @@ export function Composer({ composeMessage, readOnly }: ComposerProps = {}) {
       return
     }
     const t = setTimeout(() => localStorage.setItem(draftKey, text), 300)
-    return () => clearTimeout(t)
-  }, [text, draftKey])
+    return () => {
+      clearTimeout(t)
+      if (activeSessionRef.current !== currentSessionId) {
+        localStorage.setItem(draftKey, text)
+      }
+    }
+  }, [text, draftKey, currentSessionId])
 
   // Auto-resize textarea
   useEffect(() => {
@@ -93,12 +106,14 @@ export function Composer({ composeMessage, readOnly }: ComposerProps = {}) {
   }, [text])
 
   const handleSend = useCallback(async () => {
+    if (sending) return
     if (!text.trim() && images.length === 0) return
     if (!currentSessionId) return
 
     const content = (composeMessage ?? ((s) => s))(text.trim())
     const messageImages = [...images]
     const persona = currentSessionId ? getSessionPersona(currentSessionId) : undefined
+    if (draftKey) localStorage.removeItem(draftKey)
     setText('')
     setImages([])
     setSending(true)
@@ -159,6 +174,13 @@ export function Composer({ composeMessage, readOnly }: ComposerProps = {}) {
       }
     } catch (err: any) {
       console.error('Send failed:', err)
+      if (activeSessionRef.current === currentSessionId) {
+        setText((draft) => [text, draft].filter(Boolean).join('\n\n'))
+        setImages((draft) => [...messageImages, ...draft])
+      } else if (text && draftKey) {
+        const draft = localStorage.getItem(draftKey) ?? ''
+        localStorage.setItem(draftKey, [text, draft].filter(Boolean).join('\n\n'))
+      }
       const status = err?.status
       const detail = err?.detail
       if (status === 429 && detail?.error === 'queue_full') {
@@ -175,7 +197,7 @@ export function Composer({ composeMessage, readOnly }: ComposerProps = {}) {
     } finally {
       setSending(false)
     }
-  }, [text, images, currentSessionId, addMessage, setActiveAttempt, getSessionPersona, addToast, mode, getModelForSession, thinkingMode])
+  }, [text, images, currentSessionId, draftKey, composeMessage, sending, addMessage, setActiveAttempt, getSessionPersona, addToast, mode, getModelForSession, thinkingMode])
 
   const handleCancel = useCallback(() => {
     cancelAttempt()
@@ -382,7 +404,7 @@ export function Composer({ composeMessage, readOnly }: ComposerProps = {}) {
           }
           disabled={!currentSessionId}
           rows={1}
-          className="flex-1 resize-none bg-transparent text-sm text-slate-100 placeholder-slate-500 outline-none disabled:opacity-50"
+          className="min-w-0 flex-1 resize-none bg-transparent text-sm text-slate-100 placeholder-slate-500 outline-none disabled:opacity-50"
         />
         <div className="flex items-center gap-1">
           {!readOnly && (
@@ -400,6 +422,7 @@ export function Composer({ composeMessage, readOnly }: ComposerProps = {}) {
               onClick={handleCancel}
               className="rounded-lg bg-red-600 p-1.5 text-white hover:bg-red-700 transition-colors"
               title="停止生成"
+              aria-label="停止生成"
             >
               <Square className="h-4 w-4" />
             </button>
@@ -407,7 +430,7 @@ export function Composer({ composeMessage, readOnly }: ComposerProps = {}) {
             <button
               onClick={handleSend}
               disabled={sending || (!text.trim() && images.length === 0) || !currentSessionId}
-              className="rounded-lg bg-gradient-to-br from-primary-500 to-accent-400 p-1.5 text-white shadow-glow transition-all hover:brightness-110 disabled:opacity-30 disabled:shadow-none disabled:hover:brightness-100"
+              className="ua-primary-action rounded-lg p-1.5 transition-colors disabled:opacity-30"
               title="发送 (Enter)"
             >
               <Send className="h-4 w-4" />

@@ -30,7 +30,7 @@ export function SessionTabs() {
             key={sess.id}
             className={`group relative flex h-7 items-center gap-1.5 rounded-t-md border-b-2 px-2.5 text-xs transition-colors cursor-pointer flex-shrink-0
               ${isActive
-                ? 'border-primary-500 bg-slate-800 text-slate-100'
+                ? 'border-sky-500 bg-slate-800 text-slate-100'
                 : 'border-transparent text-slate-400 hover:bg-slate-800/50 hover:text-slate-200'
               }
             `}

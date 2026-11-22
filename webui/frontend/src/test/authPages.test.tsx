@@ -32,6 +32,7 @@ function loginUi() {
       <Routes>
         <Route path="/login" element={<LoginPage />} />
         <Route path="/register" element={<RegisterPage />} />
+        <Route path="/chat" element={<div>会话工作台已打开</div>} />
         <Route path="/" element={<Home />} />
       </Routes>
     </MemoryRouter>
@@ -63,7 +64,7 @@ describe('LoginPage', () => {
     )
     expect(useAuthStore.getState().token).toBe('tok-123')
     expect(useAuthStore.getState().user?.username).toBe('tester')
-    expect(await screen.findByText('首页已跳转')).toBeInTheDocument()
+    expect(await screen.findByText('会话工作台已打开')).toBeInTheDocument()
   })
 
   it('surfaces the API error message on failure', async () => {

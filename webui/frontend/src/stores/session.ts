@@ -156,6 +156,7 @@ export const useSessionStore = create<SessionState>()(
           set({ sessions: filtered })
         } catch (err) {
           console.error('loadSessions failed:', err)
+          throw err
         }
       },
 
@@ -376,7 +377,11 @@ export const useSessionStore = create<SessionState>()(
         } catch (err) {
           console.error('updateSessionMeta failed:', err)
           // Re-fetch to recover
-          await get().loadSessions()
+          try {
+            await get().loadSessions()
+          } catch (refreshError) {
+            console.error('session refresh failed:', refreshError)
+          }
           throw err
         }
       },

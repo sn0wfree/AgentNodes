@@ -60,7 +60,7 @@ export function TopBar() {
   const cancel = () => setEditing(false)
 
   return (
-    <header className="glass flex h-12 items-center justify-between border-b border-slate-800 px-4">
+    <header className="glass flex h-12 items-center justify-between gap-1 overflow-x-auto border-b border-slate-800 px-2 sm:px-4">
       <div className="flex items-center gap-3 min-w-0">
         {currentSession && (
           <div className="flex items-center gap-1 min-w-0">
@@ -102,11 +102,11 @@ export function TopBar() {
             )}
           </div>
         )}
-        <div className="ml-2 border-l border-slate-700 pl-2 flex-shrink-0">
+        <div className="ml-2 border-l border-slate-700 pl-2 min-w-0 overflow-hidden">
           <SSEStatus />
         </div>
       </div>
-      <div className="flex items-center gap-2 flex-shrink-0">
+      <div className="flex items-center gap-1 sm:gap-2 flex-shrink-0">
         <button
           onClick={() => {
             const idx = DENSITY_CYCLE.indexOf(density)
@@ -114,27 +114,27 @@ export function TopBar() {
             setDensity(next)
           }}
           title={`布局密度：${DENSITY_LABEL[density]}（点击切换）`}
-          className="flex items-center gap-1.5 rounded-lg border border-slate-700 bg-slate-800/50 px-2.5 py-1.5 text-xs text-slate-400 transition-colors hover:border-slate-600 hover:text-slate-300"
+          className="flex items-center gap-1.5 rounded-lg border border-slate-700 bg-slate-800/50 px-1.5 sm:px-2.5 py-1.5 text-xs text-slate-400 transition-colors hover:border-slate-600 hover:text-slate-300"
         >
           <Columns2 className="h-3.5 w-3.5" />
-          <span>{DENSITY_LABEL[density]}</span>
+          <span className="hidden sm:inline">{DENSITY_LABEL[density]}</span>
         </button>
         <button
           onClick={() => setThinkingCollapsed(!thinkingCollapsed)}
           title={thinkingCollapsed ? '展开思考过程' : '折叠思考过程'}
-          className={`flex items-center gap-1.5 rounded-lg border px-2.5 py-1.5 text-xs transition-colors ${
+          className={`flex items-center gap-1.5 rounded-lg border px-1.5 sm:px-2.5 py-1.5 text-xs transition-colors ${
             thinkingCollapsed
               ? 'border-slate-700 bg-slate-800/50 text-slate-400 hover:border-slate-600 hover:text-slate-300'
               : 'border-violet-500/50 bg-violet-500/10 text-violet-300 hover:bg-violet-500/20'
           }`}
         >
           <Sparkles className="h-3.5 w-3.5" />
-          <span>{thinkingCollapsed ? '思考折叠' : '思考展开'}</span>
+          <span className="hidden sm:inline">{thinkingCollapsed ? '思考折叠' : '思考展开'}</span>
         </button>
         <button
           onClick={toggleTheme}
           title={theme === 'dark' ? '切换到浅色模式' : '切换到深色模式'}
-          className="flex items-center gap-1.5 rounded-lg border border-slate-700 bg-slate-800/50 px-2.5 py-1.5 text-xs text-slate-400 transition-colors hover:border-slate-600 hover:text-slate-300"
+          className="flex items-center gap-1.5 rounded-lg border border-slate-700 bg-slate-800/50 px-1.5 sm:px-2.5 py-1.5 text-xs text-slate-400 transition-colors hover:border-slate-600 hover:text-slate-300"
         >
           {theme === 'dark' ? (
             <Sun className="h-3.5 w-3.5" />
@@ -145,7 +145,7 @@ export function TopBar() {
         <button
           onClick={toggleRightPanel}
           title={rightPanelVisible ? '隐藏右侧面板' : '显示右侧面板'}
-          className="flex items-center gap-1.5 rounded-lg border border-slate-700 bg-slate-800/50 px-2.5 py-1.5 text-xs text-slate-400 hover:border-slate-600 hover:text-slate-300"
+          className="flex items-center gap-1.5 rounded-lg border border-slate-700 bg-slate-800/50 px-1.5 sm:px-2.5 py-1.5 text-xs text-slate-400 hover:border-slate-600 hover:text-slate-300"
         >
           {rightPanelVisible ? (
             <PanelRightClose className="h-3.5 w-3.5" />
@@ -155,11 +155,12 @@ export function TopBar() {
         </button>
         <button
           onClick={() => setSearchOpen(true)}
-          className="flex items-center gap-2 rounded-lg border border-slate-700 bg-slate-800/50 px-3 py-1.5 text-xs text-slate-400 hover:border-slate-600 hover:text-slate-300"
+          aria-label="搜索消息"
+          className="flex items-center gap-2 rounded-lg border border-slate-700 bg-slate-800/50 px-1.5 sm:px-3 py-1.5 text-xs text-slate-400 hover:border-slate-600 hover:text-slate-300"
         >
           <Search className="h-3 w-3" />
-          搜索消息
-          <kbd className="ml-2 rounded border border-slate-600 px-1.5 py-0.5 text-[10px] text-slate-500">
+          <span className="hidden sm:inline">搜索消息</span>
+          <kbd className="ml-2 hidden sm:inline rounded border border-slate-600 px-1.5 py-0.5 text-[10px] text-slate-500">
             <Command className="inline h-2.5 w-2.5" /> K
           </kbd>
         </button>

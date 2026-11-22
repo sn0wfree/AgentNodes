@@ -148,6 +148,72 @@ describe('Composer', () => {
       expect(useChatStore.getState().messages.size).toBe(0)
     )
     expect(useToastStore.getState().toasts.length).toBeGreaterThan(0)
+    expect(textarea()).toHaveValue('hi')
+  })
+
+  it('keeps new input as well as the failed message', async () => {
+    let rejectSend: (reason: Error) => void = () => {}
+    vi.mocked(api.post).mockReturnValueOnce(new Promise((_, reject) => {
+      rejectSend = reject
+    }))
+    render(<Composer />)
+    fireEvent.change(textarea(), { target: { value: 'first message' } })
+    fireEvent.keyDown(textarea(), { key: 'Enter' })
+    fireEvent.change(textarea(), { target: { value: 'next draft' } })
+    rejectSend(new Error('offline'))
+
+    await waitFor(() => expect(textarea()).toHaveValue('first message\n\nnext draft'))
+  })
+
+  it('does not send another message while the first submission is pending', async () => {
+    let resolveSend: (value: { message_id: string; status: string }) => void = () => {}
+    vi.mocked(api.post).mockReturnValueOnce(new Promise((resolve) => {
+      resolveSend = resolve
+    }))
+    render(<Composer />)
+    fireEvent.change(textarea(), { target: { value: 'first message' } })
+    fireEvent.keyDown(textarea(), { key: 'Enter' })
+    fireEvent.change(textarea(), { target: { value: 'next draft' } })
+    fireEvent.keyDown(textarea(), { key: 'Enter' })
+    expect(api.post).toHaveBeenCalledTimes(1)
+    expect(textarea()).toHaveValue('next draft')
+
+    resolveSend({ message_id: 'm-1', status: 'queued' })
+    await waitFor(() => expect(screen.getByTitle('发送 (Enter)')).toBeEnabled())
+    fireEvent.keyDown(textarea(), { key: 'Enter' })
+    await waitFor(() => expect(api.post).toHaveBeenCalledTimes(2))
+  })
+
+  it('restores a failed message to its original session after switching', async () => {
+    let rejectSend: (reason: Error) => void = () => {}
+    vi.mocked(api.post).mockReturnValueOnce(new Promise((_, reject) => {
+      rejectSend = reject
+    }))
+    const { rerender } = render(<Composer />)
+    fireEvent.change(textarea(), { target: { value: 'original message' } })
+    fireEvent.keyDown(textarea(), { key: 'Enter' })
+    fireEvent.change(textarea(), { target: { value: 'unfinished follow-up' } })
+    sessionMock.id = 'sess-2'
+    rerender(<Composer />)
+    fireEvent.change(textarea(), { target: { value: 'other session draft' } })
+    rejectSend(new Error('offline'))
+
+    await waitFor(() => expect(localStorage.getItem('sr-draft-sess-1')).toBe('original message\n\nunfinished follow-up'))
+    expect(textarea()).toHaveValue('other session draft')
+  })
+
+  it('restores a failed message after the composer unmounts', async () => {
+    let rejectSend: (reason: Error) => void = () => {}
+    vi.mocked(api.post).mockReturnValueOnce(new Promise((_, reject) => {
+      rejectSend = reject
+    }))
+    const { unmount } = render(<Composer />)
+    fireEvent.change(textarea(), { target: { value: 'original message' } })
+    fireEvent.keyDown(textarea(), { key: 'Enter' })
+    unmount()
+    rejectSend(new Error('offline'))
+
+    await waitFor(() => expect(localStorage.getItem('sr-draft-sess-1')).toBe('original message'))
   })
 
   it('toasts a queue-full hint on 429', async () => {

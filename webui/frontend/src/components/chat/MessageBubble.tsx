@@ -88,7 +88,7 @@ export function MessageBubble({ message, layout, hideCodeTail }: MessageBubblePr
   const editBtn = (
     <button
       onClick={startEdit}
-      className="flex h-6 w-6 items-center justify-center rounded-md border border-slate-700 bg-slate-800/80 text-slate-400 opacity-0 shadow-lg backdrop-blur transition-all hover:text-slate-100 group-hover:opacity-100"
+      className="flex h-6 w-6 items-center justify-center rounded-md border border-slate-700 bg-slate-800/80 text-slate-400 opacity-0 shadow-lg backdrop-blur transition-all hover:text-slate-100 focus:opacity-100 group-hover:opacity-100"
       title="编辑"
       aria-label="编辑消息"
     >
@@ -155,7 +155,7 @@ export function MessageBubble({ message, layout, hideCodeTail }: MessageBubblePr
         {editing ? (
           <div className="rounded-2xl border border-slate-700 bg-slate-800/60 p-3">{editingArea}</div>
         ) : (
-          <div className="rounded-2xl rounded-br-md bg-gradient-to-br from-primary-500 to-accent-400 px-4 py-2.5 text-sm text-white shadow-glow">
+          <div className="user-message-bubble rounded-2xl rounded-br-md px-4 py-2.5 text-sm">
             {parts.map((part, i) => (
               <PartContent key={i} part={part} hideCodeTail={hideCodeTail} />
             ))}

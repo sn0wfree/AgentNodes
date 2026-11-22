@@ -105,6 +105,21 @@ describe('useSSE', () => {
     vi.restoreAllMocks()
   })
 
+  it('does not close a newer permission request when an older result arrives', () => {
+    renderHook(() => useSSE('sess-1'))
+    const es = getCurrentES()!
+    act(() => {
+      es.emit('permission_request', { tool_call_id: 'tc-1', tool_name: 'write_file' })
+      es.emit('permission_request', { tool_call_id: 'tc-2', tool_name: 'read_file' })
+      es.emit('permission_result', { tool_call_id: 'tc-1', action: 'deny' })
+    })
+    expect(useChatStore.getState().pendingPermission?.tool_call_id).toBe('tc-2')
+    act(() => {
+      es.emit('permission_result', { tool_call_id: 'tc-2', action: 'allow' })
+    })
+    expect(useChatStore.getState().pendingPermission).toBeNull()
+  })
+
   // ──────────── connection lifecycle ────────────
 
   describe('connection lifecycle', () => {
@@ -150,6 +165,30 @@ describe('useSSE', () => {
       unmount()
 
       expect(closeSpy).toHaveBeenCalled()
+    })
+
+    it('does not reconnect a rejected stream after switching sessions', () => {
+      vi.useFakeTimers()
+      try {
+        const { rerender, unmount } = renderHook(
+          ({ sessionId }: { sessionId: string }) => useSSE(sessionId),
+          { initialProps: { sessionId: 'sess-1' } },
+        )
+        const oldSource = getCurrentES()
+        oldSource.readyState = MockEventSource.CLOSED
+        act(() => {
+          oldSource.onerror?.({ currentTarget: oldSource })
+        })
+
+        rerender({ sessionId: 'sess-2' })
+        expect(getCurrentES().url).toContain('session_id=sess-2')
+        act(() => { vi.advanceTimersByTime(1000) })
+        expect(MockEventSource.instances).toHaveLength(2)
+        expect(oldSource.readyState).toBe(MockEventSource.CLOSED)
+        unmount()
+      } finally {
+        vi.useRealTimers()
+      }
     })
 
     it('onerror sets status disconnected but does not create new EventSource (native reconnect)', () => {
@@ -199,11 +238,16 @@ describe('useSSE', () => {
       act(() => { vi.advanceTimersByTime(1000) })
       expect(MockEventSource.instances.length).toBe(initialCount + 2)
 
-      // 3rd rejection → gives up permanently
+      // 3rd rejection → gives up (status stays disconnected)
       reject()
       expect(useSSEStore.getState().status).toBe('disconnected')
       act(() => { vi.advanceTimersByTime(5000) })
       expect(MockEventSource.instances.length).toBe(initialCount + 2)
+
+      // P0-5 新契约：放弃 ≠ 永久 —— 看门狗在断开 ≥10s 后恢复慢速重连
+      // （后端复活后无需用户切会话/刷新即可恢复连接）。
+      act(() => { vi.advanceTimersByTime(10_000) })
+      expect(MockEventSource.instances.length).toBeGreaterThan(initialCount + 2)
 
       vi.useRealTimers()
     })
@@ -893,7 +937,7 @@ describe('useSSE', () => {
 
     it('reconnect on open clears stale streaming state', () => {
       act(() => {
-        getCurrentES().onopen && getCurrentES().onopen()
+        getCurrentES().onopen?.()
       })
       act(() => {
         useChatStore.getState().setStreamingMessage('mid-stale')
@@ -902,7 +946,7 @@ describe('useSSE', () => {
       // Second open = reconnect → stale streaming cleared.
       act(() => {
         const cur = getCurrentES()
-        cur.onopen && cur.onopen()
+        cur.onopen?.()
       })
       expect(useChatStore.getState().streamingMessageId).toBeNull()
     })
@@ -913,7 +957,7 @@ describe('useSSE', () => {
       act(() => {
         const cur = getCurrentES()
         cur.readyState = 2
-        cur.onerror && cur.onerror({ currentTarget: cur })
+        cur.onerror?.({ currentTarget: cur })
       })
       vi.advanceTimersByTime(1000)
       vi.useRealTimers()
@@ -926,7 +970,7 @@ describe('useSSE', () => {
         act(() => {
           const cur = getCurrentES()
           cur.readyState = 2
-          cur.onerror && cur.onerror({ currentTarget: cur })
+          cur.onerror?.({ currentTarget: cur })
         })
         vi.advanceTimersByTime(1000)
       }
@@ -941,7 +985,7 @@ describe('useSSE', () => {
       act(() => {
         const cur = getCurrentES()
         cur.readyState = 0 // CONNECTING — browser retries natively
-        cur.onerror && cur.onerror({ currentTarget: cur })
+        cur.onerror?.({ currentTarget: cur })
       })
       expect(useSSEStore.getState().status).toBe('disconnected')
     })
@@ -973,7 +1017,7 @@ describe('useSSE', () => {
       expect(() => {
         act(() => {
           const fn = getCurrentES().listeners.get('text_delta')
-          fn && fn({ type: 'text_delta', data: '{not json' })
+          fn?.({ type: 'text_delta', data: '{not json' })
         })
       }).not.toThrow()
     })

@@ -6,6 +6,7 @@ as a scrollable timeline.  Fetches data from GET /api/chat/session/{id}/trace.
 
 import { useCallback, useEffect, useState } from "react";
 import { Area, AreaChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
+import { api } from "../../api/client";
 
 interface TraceEvent {
   ts?: number;
@@ -358,11 +359,9 @@ export function TraceViewer({ sessionId, onClose }: TraceViewerProps) {
     try {
       const params = new URLSearchParams({ limit: "200" });
       if (filter) params.set("types", filter);
-      const res = await fetch(
-        `/api/chat/session/${encodeURIComponent(sessionId)}/trace?${params}`
+      const data = await api.get<{ events: TraceEvent[] }>(
+        `/chat/session/${encodeURIComponent(sessionId)}/trace?${params}`
       );
-      if (!res.ok) throw new Error(`HTTP ${res.status}`);
-      const data = await res.json();
       setEvents(data.events ?? []);
     } catch (e: unknown) {
       setError(e instanceof Error ? e.message : "Failed to load trace");

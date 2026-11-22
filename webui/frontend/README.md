@@ -1,32 +1,42 @@
-# React + TypeScript + Vite
+# AgentNodes Web UI
 
-This template provides a minimal setup to get React working in Vite with HMR and some Oxlint rules.
+## 开发启动
 
-Currently, two official plugins are available:
+需要 Python 3.10+、Node.js 22.12+ 和 npm。以下命令使用 PowerShell，在项目根目录执行：
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
-
-## React Compiler
-
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
-
-## Expanding the Oxlint configuration
-
-If you are developing a production application, we recommend enabling type-aware lint rules by installing `oxlint-tsgolint` and editing `.oxlintrc.json`:
-
-```json
-{
-  "$schema": "./node_modules/oxlint/configuration_schema.json",
-  "plugins": ["react", "typescript", "oxc"],
-  "options": {
-    "typeAware": true
-  },
-  "rules": {
-    "react/rules-of-hooks": "error",
-    "react/only-export-components": ["warn", { "allowConstantExport": true }]
-  }
-}
+```powershell
+python -m pip install -e ".[webui-api,llm]"
+python -m agentnodes.interfaces.cli serve --an-workspace .
 ```
 
-See the [Oxlint rules documentation](https://oxc.rs/docs/guide/usage/linter/rules) for the full list of rules and categories.
+后端默认监听 `http://127.0.0.1:8766`，健康检查为 `/health`。保持该终端运行，在第二个终端启动前端：
+
+```powershell
+Set-Location .\webui\frontend
+npm ci
+npm run dev
+```
+
+访问 Vite 显示的地址（默认 `http://localhost:5173`）。`/api` 默认代理到后端 8766 端口；
+如果后端使用其他端口，在运行 `npm run dev` 的终端设置例如
+`$env:API_TARGET = 'http://127.0.0.1:9000'`。
+
+## 登录和操作
+
+- 用户数据库为空时首次登录请求会创建 `admin` 账户。启动前可设置
+  `AGENTNODES_ADMIN_PASSWORD` 为自己选择的密码；否则生成的初始密码保存在
+  `~/.agentnodes/admin_password.txt`。环境变量不会更改已存在账户的密码。
+- 注册默认关闭；仅在需要开放注册时，启动后端前设置
+  `$env:AGENTNODES_API_ALLOW_REGISTRATION = '1'`。
+- 登录成功后进入 Chat，创建或选择会话，在输入框发送消息；空闲时 `Enter` 发送，
+  `Shift+Enter` 换行，生成过程中 `Enter` 或停止按钮可停止生成。
+- 在设置中配置 LLM 后才能发起模型对话。请勿将 API 密钥提交到仓库。
+- 侧栏可进入工作流编排；右侧面板可查看当前会话的目标、上下文和 Trace。
+  部分历史 Study、Run、因子及策略界面依赖当前后端未挂载的业务接口，
+  不应视为已完成的功能。
+
+## 构建和验证
+
+在 `webui/frontend` 目录执行 `npm run lint`、`npm test` 和 `npm run build`。
+构建会生成并覆盖 `webui/static`，之后可通过后端的 8766 端口访问页面。
+服务器默认仅绑定本机；如需对外开放，应先配置安全的认证和网络访问策略。

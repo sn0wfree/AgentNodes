@@ -4,7 +4,7 @@
 // the allSettled degradation, the 15s poll lifecycle, and navigation.
 
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
-import { render as rtlRender, screen, fireEvent, waitFor } from '@testing-library/react'
+import { act, render as rtlRender, screen, fireEvent, waitFor } from '@testing-library/react'
 import { MemoryRouter } from 'react-router-dom'
 
 const navigateMock = vi.hoisted(() => vi.fn())
@@ -29,6 +29,7 @@ import { api } from '../api/client'
 import { useSystemStore } from '../stores/system'
 import { useSessionStore } from '../stores/session'
 import { useAgentStore } from '../stores/agents'
+import { useLayoutStore } from '../stores/layout'
 import { MonitorPage } from '../pages/MonitorPage'
 
 const render = (ui: import('react').ReactElement) =>
@@ -113,14 +114,29 @@ describe('MonitorPage', () => {
     })
   })
 
-  it('flags the health card as 异常 when loading fails', async () => {
+  it('shows a failed run request instead of reporting an empty run list', async () => {
     vi.mocked(api.run.list).mockRejectedValueOnce(new Error('boom'))
     render(<MonitorPage />)
-    // allSettled swallows the rejection, so the page stays healthy —
-    // this documents that the KPI is driven by page-level error state,
-    // not by a single endpoint failure.
-    await waitFor(() => expect(screen.getByText('系统健康')).toBeInTheDocument())
-    expect(screen.getByText('正常')).toBeInTheDocument()
+    expect(await screen.findByText('运行数据加载失败：boom')).toBeInTheDocument()
+    expect(screen.queryByText('暂无运行记录')).not.toBeInTheDocument()
+    const card = screen.getByText('最近 Run').parentElement!
+    expect(card.querySelector('.font-mono')?.textContent).toBe('—')
+  })
+
+  it('shows a failed study request without hiding successful runs', async () => {
+    vi.mocked(api.study.list).mockRejectedValueOnce(new Error('study unavailable'))
+    vi.mocked(api.run.list).mockResolvedValueOnce({ runs: [{ name: 'r1' }] } as never)
+    render(<MonitorPage />)
+    expect(await screen.findByText('研究数据加载失败：study unavailable')).toBeInTheDocument()
+    expect(screen.getByText('r1')).toBeInTheDocument()
+    expect(screen.queryByText(/暂无进行中的研究/)).not.toBeInTheDocument()
+  })
+
+  it('shows that the workspace is not ready rather than loading indefinitely', async () => {
+    useSystemStore.setState({ workspacePath: '' })
+    render(<MonitorPage />)
+    expect(await screen.findByText('运行数据加载失败：工作区尚未就绪')).toBeInTheDocument()
+    expect(api.run.list).not.toHaveBeenCalled()
   })
 
   it('shows the empty state with a link into Chat', async () => {
@@ -162,16 +178,33 @@ describe('MonitorPage', () => {
     }
   })
 
+  it('keeps the chat sidebar preference when navigating from the dashboard', async () => {
+    useLayoutStore.setState({ sidebarOpen: true })
+    render(<MonitorPage />)
+    await screen.findByText(/暂无进行中的研究/)
+    fireEvent.click(screen.getByTitle('Chat'))
+    expect(useLayoutStore.getState().sidebarOpen).toBe(true)
+  })
+
+  it('still toggles the sidebar when Chat is already active', async () => {
+    useLayoutStore.setState({ sidebarOpen: true })
+    rtlRender(<MemoryRouter initialEntries={['/chat']}><MonitorPage /></MemoryRouter>)
+    await screen.findByText(/暂无进行中的研究/)
+    fireEvent.click(screen.getByTitle('Chat'))
+    expect(useLayoutStore.getState().sidebarOpen).toBe(false)
+    useLayoutStore.getState().setSidebarOpen(true)
+  })
+
   it('polls every 15s and clears the interval on unmount', async () => {
     // Drive the interval with fake timers from the start, but let the
     // initial load resolve through microtasks so waitFor is not needed.
     vi.useFakeTimers()
     const { unmount } = render(<MonitorPage />)
-    await vi.advanceTimersByTimeAsync(0)
+    await act(() => vi.advanceTimersByTimeAsync(0))
     const callsAfterMount = vi.mocked(api.study.list).mock.calls.length
     expect(callsAfterMount).toBeGreaterThan(0)
 
-    await vi.advanceTimersByTimeAsync(15000)
+    await act(() => vi.advanceTimersByTimeAsync(15000))
     expect(vi.mocked(api.study.list).mock.calls.length).toBeGreaterThan(callsAfterMount)
 
     const beforeUnmount = vi.mocked(api.study.list).mock.calls.length
@@ -185,5 +218,6 @@ describe('MonitorPage', () => {
     render(<MonitorPage />)
     await waitFor(() => expect(api.run.list).toHaveBeenCalled())
     expect(api.study.list).not.toHaveBeenCalled()
+    expect(await screen.findByText('请选择会话以查看研究')).toBeInTheDocument()
   })
 })

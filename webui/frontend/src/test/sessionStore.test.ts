@@ -112,6 +112,18 @@ describe('useSessionStore — async actions', () => {
     expect(useSessionStore.getState().sessions.length).toBe(2)
   })
 
+  it('propagates a list failure instead of treating it as an empty list', async () => {
+    mockedApi.get.mockRejectedValueOnce(new Error('offline'))
+    await expect(useSessionStore.getState().loadSessions()).rejects.toThrow('offline')
+  })
+
+  it('preserves the original update error if refreshing the list also fails', async () => {
+    mockedApi.patch.mockRejectedValueOnce(new Error('update failed'))
+    mockedApi.get.mockRejectedValueOnce(new Error('refresh failed'))
+    await expect(useSessionStore.getState().updateSessionMeta('a', { title: 'new' }))
+      .rejects.toThrow('update failed')
+  })
+
   it('loadSessions filters out study sessions (both prefixes)', async () => {
     // Round sessions (study:*) and bare study sessions (study_*) belong
     // to the study detail page, never the chat sidebar.

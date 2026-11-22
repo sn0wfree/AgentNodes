@@ -2,38 +2,6 @@
 @tailwind components;
 @tailwind utilities;
 
-/* ── Geist Variable (self-hosted, SIL OFL 1.1) ── */
-@font-face {
-  font-family: 'Geist Variable';
-  src: url('/fonts/geist-latin-wght-normal-BgDaEnEv.woff2') format('woff2-variations');
-  font-weight: 100 900;
-  font-display: swap;
-}
-@font-face {
-  font-family: 'Geist Variable';
-  src: url('/fonts/geist-latin-ext-wght-normal-DC-KSUi6.woff2') format('woff2-variations');
-  font-weight: 100 900;
-  font-display: swap;
-}
-@font-face {
-  font-family: 'Geist Variable';
-  src: url('/fonts/geist-cyrillic-wght-normal-BEAKL7Jp.woff2') format('woff2-variations');
-  font-weight: 100 900;
-  font-display: swap;
-}
-@font-face {
-  font-family: 'Geist Variable';
-  src: url('/fonts/geist-cyrillic-ext-wght-normal-DjL33-gN.woff2') format('woff2-variations');
-  font-weight: 100 900;
-  font-display: swap;
-}
-@font-face {
-  font-family: 'Geist Variable';
-  src: url('/fonts/geist-vietnamese-wght-normal-6IgcOCM7.woff2') format('woff2-variations');
-  font-weight: 100 900;
-  font-display: swap;
-}
-
 /* ── Design tokens · dark (default) ── */
 :root,
 [data-theme='dark'] {
@@ -45,6 +13,9 @@
   --popover-foreground: #e8e8ed;
   --primary: #8b5cf6;
   --primary-foreground: #ffffff;
+  --ua-action: #f3f4f6;
+  --ua-action-foreground: #111827;
+  --ua-action-hover: #d1d5db;
   --secondary: #1e1e26;
   --secondary-foreground: #c9c9d0;
   --muted: #1e1e26;
@@ -87,6 +58,9 @@
   --popover-foreground: #1a1a1a;
   --primary: #ea580c;
   --primary-foreground: #ffffff;
+  --ua-action: #171717;
+  --ua-action-foreground: #ffffff;
+  --ua-action-hover: #404040;
   --secondary: #f5f5f0;
   --secondary-foreground: #334155;
   --muted: #f0f0eb;
@@ -116,7 +90,7 @@
 }
 
 html {
-  font-family: 'Geist Variable', 'Inter', system-ui, -apple-system, sans-serif;
+  font-family: system-ui, -apple-system, 'Segoe UI', sans-serif;
   line-height: 1.5;
   font-weight: 400;
   font-synthesis: none;
@@ -317,6 +291,31 @@ pre,
 .bg-surface { background-color: var(--card); }
 .bg-side { background-color: var(--sidebar); }
 .text-muted-fg { color: var(--muted-foreground); }
+
+.user-message-bubble {
+  color: var(--foreground);
+  background-color: color-mix(in srgb, var(--foreground) 7%, var(--background));
+}
+
+.ua-primary-action {
+  color: var(--ua-action-foreground);
+  background-color: var(--ua-action);
+}
+.ua-primary-action:hover:not(:disabled) {
+  background-color: var(--ua-action-hover);
+}
+.ua-primary-action:focus-visible {
+  outline: 2px solid #3b82f6;
+  outline-offset: 2px;
+}
+
+/* ── 全局键盘焦点环（§3.2：focus visible；键盘 Tab 时可见，鼠标点击不触发）──
+   P0-5 实机矩阵发现 Tab 落到 tabIndex 卡片时 outline:none —— 统一在此兜底。
+   !important：压过 Tailwind 的 focus:outline-none / outline-none 工具类。 */
+:focus-visible {
+  outline: 2px solid #3b82f6 !important;
+  outline-offset: 1px;
+}
 
 /* ── Reduced motion ── */
 @media (prefers-reduced-motion: reduce) {

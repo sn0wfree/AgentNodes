@@ -72,7 +72,7 @@ export function ComposerStatusBar({ sessionId }: ComposerStatusBarProps) {
   const thinkingCfg = THINKING_OPTIONS.find((o) => o.value === thinkingMode) ?? THINKING_OPTIONS[2]
 
   return (
-    <div className="mb-2 flex items-center gap-2 text-[11px]">
+    <div className="mb-2 flex flex-wrap items-center gap-2 text-[11px]">
       {/* Mode toggle */}
       <button
         type="button"

@@ -49,6 +49,13 @@ describe('SessionSidebar', () => {
     expect(screen.getByText('Beta')).toBeInTheDocument()
   })
 
+  it('does not hide sessions with test-related words in their titles', () => {
+    seed([mkSession({ id: 'a', title: 'API test' }), mkSession({ id: 'b', title: 'Quick review' })])
+    renderSidebar()
+    expect(screen.getByText('API test')).toBeInTheDocument()
+    expect(screen.getByText('Quick review')).toBeInTheDocument()
+  })
+
   it('filters sessions by the search box', () => {
     seed([mkSession({ id: 'a', title: 'Alpha' }), mkSession({ id: 'b', title: 'Beta' })])
     renderSidebar()
@@ -84,12 +91,33 @@ describe('SessionSidebar', () => {
     expect(switchSpy).toHaveBeenCalledWith('a')
   })
 
+  it('closes the mobile drawer after selecting a session', () => {
+    useSessionStore.setState({ switchSession: vi.fn().mockResolvedValue(undefined) } as never)
+    seed([mkSession({ id: 'a', title: 'Alpha' })])
+    useLayoutStore.getState().setNarrowViewport(true)
+    useLayoutStore.getState().setSidebarOpen(true)
+    renderSidebar()
+    fireEvent.click(screen.getByText('Alpha'))
+    expect(useLayoutStore.getState().sidebarOpen).toBe(false)
+    useLayoutStore.getState().setNarrowViewport(false)
+  })
+
   it('the new-session button creates a session', () => {
     const createSpy = vi.fn().mockResolvedValue(undefined)
     useSessionStore.setState({ createNewSession: createSpy } as never)
     renderSidebar()
     fireEvent.click(screen.getByTitle('新建会话'))
     expect(createSpy).toHaveBeenCalled()
+  })
+
+  it('closes the mobile drawer after creating a session', async () => {
+    useSessionStore.setState({ createNewSession: vi.fn().mockResolvedValue(undefined) } as never)
+    useLayoutStore.getState().setNarrowViewport(true)
+    useLayoutStore.getState().setSidebarOpen(true)
+    renderSidebar()
+    fireEvent.click(screen.getByTitle('新建会话'))
+    await waitFor(() => expect(useLayoutStore.getState().sidebarOpen).toBe(false))
+    useLayoutStore.getState().setNarrowViewport(false)
   })
 
   it('inline rename commits through updateSessionMeta on Enter', async () => {

@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import {
   Activity, Bot, Target, ChartLine, HeartPulse, Zap,
@@ -84,9 +84,17 @@ export function MonitorPage() {
   const [runs, setRuns] = useState<RunListItem[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const [studyError, setStudyError] = useState<string | null>(null)
+  const [runError, setRunError] = useState<string | null>(null)
+  const requestId = useRef(0)
 
   const load = useCallback(async () => {
-    if (!workspacePath) return
+    const currentRequest = ++requestId.current
+    if (!workspacePath) {
+      setLoading(false)
+      setError('工作区尚未就绪')
+      return
+    }
     setLoading(true)
     setError(null)
     try {
@@ -94,19 +102,27 @@ export function MonitorPage() {
         sessionId ? api.study.list({ session_id: sessionId, limit: 20 }) : Promise.resolve(null),
         api.run.list(workspacePath, '', 10),
       ])
+      if (currentRequest !== requestId.current) return
       setStudies(studyRes.status === 'fulfilled' && studyRes.value ? studyRes.value.studies : [])
       setRuns(runRes.status === 'fulfilled' ? runRes.value.runs : [])
+      setStudyError(studyRes.status === 'rejected' ? String(studyRes.reason instanceof Error ? studyRes.reason.message : studyRes.reason) : null)
+      setRunError(runRes.status === 'rejected' ? String(runRes.reason instanceof Error ? runRes.reason.message : runRes.reason) : null)
     } catch (e) {
-      setError(e instanceof Error ? e.message : String(e))
+      if (currentRequest === requestId.current) {
+        setError(e instanceof Error ? e.message : String(e))
+      }
     } finally {
-      setLoading(false)
+      if (currentRequest === requestId.current) setLoading(false)
     }
   }, [workspacePath, sessionId])
 
   useEffect(() => {
     void load()
     const timer = setInterval(() => void load(), 15000)
-    return () => clearInterval(timer)
+    return () => {
+      clearInterval(timer)
+      requestId.current += 1
+    }
   }, [load])
 
   const agentList = Array.from(agents.values()).sort((a, b) => b.created_at - a.created_at)
@@ -134,7 +150,7 @@ export function MonitorPage() {
         <StatCard
           icon={<Target className="h-4 w-4" />}
           iconCls="border border-sky-500/30 bg-sky-500/10 text-sky-400"
-          value={loading ? '…' : String(activeStudies.length)}
+          value={loading ? '…' : error || studyError || !sessionId ? '—' : String(activeStudies.length)}
           label="活跃研究"
           valueCls="text-sky-400"
         />
@@ -148,16 +164,16 @@ export function MonitorPage() {
         <StatCard
           icon={<ChartLine className="h-4 w-4" />}
           iconCls="border border-primary-500/30 bg-primary-500/10 text-primary-400"
-          value={loading ? '…' : String(runs.length)}
+          value={loading ? '…' : error || runError ? '—' : String(runs.length)}
           label="最近 Run"
           valueCls="text-primary-400"
         />
         <StatCard
           icon={<HeartPulse className="h-4 w-4" />}
           iconCls="border border-emerald-500/30 bg-emerald-500/10 text-emerald-400"
-          value={error ? '异常' : '正常'}
-          label="系统健康"
-          valueCls={error ? 'text-red-400' : 'text-emerald-400'}
+          value={loading ? '加载中' : error || studyError || runError ? '异常' : '完成'}
+          label="数据加载"
+          valueCls={error || studyError || runError ? 'text-red-400' : 'text-emerald-400'}
         />
       </div>
 
@@ -225,6 +241,14 @@ export function MonitorPage() {
             <div className="space-y-2">
               <ShimmerCard /><ShimmerCard />
             </div>
+          ) : error || studyError ? (
+            <div role="alert" className="rounded-xl border border-red-500/30 px-4 py-8 text-center text-xs text-red-400">
+              研究数据加载失败：{error || studyError}
+            </div>
+          ) : !sessionId ? (
+            <div className="rounded-xl border border-dashed border-slate-800 px-4 py-8 text-center text-xs text-slate-600">
+              请选择会话以查看研究
+            </div>
           ) : activeStudies.length === 0 ? (
             <div className="rounded-xl border border-dashed border-slate-800 px-4 py-8 text-center text-xs text-slate-600">
               暂无进行中的研究 —— 去 <span className="cursor-pointer text-primary-400 hover:underline" onClick={() => navigate('/chat')}>Chat</span> 发起一个吧
@@ -266,6 +290,10 @@ export function MonitorPage() {
           {loading ? (
             <div className="space-y-2">
               <ShimmerCard /><ShimmerCard /><ShimmerCard />
+            </div>
+          ) : error || runError ? (
+            <div role="alert" className="rounded-xl border border-red-500/30 px-4 py-8 text-center text-xs text-red-400">
+              运行数据加载失败：{error || runError}
             </div>
           ) : runs.length === 0 ? (
             <div className="rounded-xl border border-dashed border-slate-800 px-4 py-8 text-center text-xs text-slate-600">

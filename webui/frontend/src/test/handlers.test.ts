@@ -196,12 +196,14 @@ describe('HANDLERS — SSE dispatch registry contract', () => {
   })
 
   it('registers every named handler by same-source identity', () => {
+    const handlers = new Map(Object.entries(HANDLERS))
     for (const [event, fn] of Object.entries(EXPECTED)) {
-      expect(HANDLERS[event], `wiring for ${event}`).toBe(fn)
+      expect(handlers.get(event), `wiring for ${event}`).toBe(fn)
     }
   })
 
   it('has no extra registrations beyond expected + documented inline handlers', () => {
+    const handlers = new Map(Object.entries(HANDLERS))
     const INLINE_KEYS = [
       'agent_thinking_start',
       'agent_thinking_done',
@@ -212,7 +214,7 @@ describe('HANDLERS — SSE dispatch registry contract', () => {
       'agent_loop_end',
     ]
     for (const k of INLINE_KEYS) {
-      expect(typeof HANDLERS[k], `inline handler ${k} must be registered`).toBe(
+      expect(typeof handlers.get(k), `inline handler ${k} must be registered`).toBe(
         'function'
       )
     }

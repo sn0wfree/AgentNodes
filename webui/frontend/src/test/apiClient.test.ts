@@ -136,6 +136,19 @@ describe('APIClient', () => {
   // ──────────── error handling ────────────
 
   describe('error handling', () => {
+    it('keeps the login page open and exposes invalid credentials', async () => {
+      mockFetch.mockResolvedValueOnce({
+        ok: false,
+        status: 401,
+        statusText: 'Unauthorized',
+        json: async () => ({ detail: 'Invalid credentials' }),
+      })
+
+      await expect(api.post('/auth/login', { username: 'admin', password: 'bad' }))
+        .rejects.toThrow('Invalid credentials')
+      expect(window.location.href).toBe('')
+    })
+
     it('401 triggers logout + redirect + throws', async () => {
       const logoutSpy = vi.fn()
       useAuthStore.setState({

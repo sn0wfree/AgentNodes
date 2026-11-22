@@ -65,6 +65,9 @@ interface LayoutState {
   navWidth: number
   sidebarOpen: boolean
   rightPanelVisible: boolean
+  narrowViewport: boolean
+  desktopSidebarOpen: boolean
+  desktopRightPanelVisible: boolean
   workMode: WorkMode
   rightRatio: number
   density: Density
@@ -74,6 +77,7 @@ interface LayoutState {
   toggleSidebar: () => void
   setSidebarOpen: (open: boolean) => void
   toggleRightPanel: () => void
+  setNarrowViewport: (narrow: boolean) => void
   setWorkMode: (mode: WorkMode) => void
   setRightRatio: (r: number) => void
   setDensity: (d: Density) => void
@@ -83,10 +87,15 @@ interface LayoutState {
 
 export const useLayoutStore = create<LayoutState>()((set) => {
   const density = loadInitialDensity()
+  const sidebarOpen = loadInitialSidebar()
+  const rightPanelVisible = loadInitialRightVisible()
   return {
     navWidth: 64,
-    sidebarOpen: loadInitialSidebar(),
-    rightPanelVisible: loadInitialRightVisible(),
+    sidebarOpen,
+    rightPanelVisible,
+    narrowViewport: false,
+    desktopSidebarOpen: sidebarOpen,
+    desktopRightPanelVisible: rightPanelVisible,
     workMode: 'monitor',
     rightRatio: loadInitialRightRatio(density),
     density,
@@ -96,30 +105,55 @@ export const useLayoutStore = create<LayoutState>()((set) => {
     toggleSidebar: () =>
       set((s) => {
         const next = !s.sidebarOpen
+        if (s.narrowViewport) {
+          return { sidebarOpen: next, rightPanelVisible: next ? false : s.rightPanelVisible }
+        }
         if (typeof window !== 'undefined') {
           localStorage.setItem(SIDEBAR_KEY, String(next))
         }
         return { sidebarOpen: next }
       }),
-    setSidebarOpen: (open) => {
-      if (typeof window !== 'undefined') {
-        localStorage.setItem(SIDEBAR_KEY, String(open))
-      }
-      set({ sidebarOpen: open })
-    },
+    setSidebarOpen: (open) =>
+      set((s) => {
+        if (s.narrowViewport) {
+          return { sidebarOpen: open, rightPanelVisible: open ? false : s.rightPanelVisible }
+        }
+        if (typeof window !== 'undefined') localStorage.setItem(SIDEBAR_KEY, String(open))
+        return { sidebarOpen: open }
+      }),
     toggleRightPanel: () =>
       set((s) => {
         const next = !s.rightPanelVisible
+        if (s.narrowViewport) {
+          return { rightPanelVisible: next, sidebarOpen: next ? false : s.sidebarOpen }
+        }
         if (typeof window !== 'undefined') {
           localStorage.setItem(RIGHT_VISIBLE_KEY, String(next))
         }
         return { rightPanelVisible: next }
       }),
-    setWorkMode: (mode) =>
-      set({
-        workMode: mode,
-        rightPanelVisible: mode === 'monitor',
+    setNarrowViewport: (narrow) =>
+      set((s) => {
+        if (s.narrowViewport === narrow) return s
+        if (narrow) {
+          return {
+            narrowViewport: true,
+            desktopSidebarOpen: s.sidebarOpen,
+            desktopRightPanelVisible: s.rightPanelVisible,
+            sidebarOpen: false,
+            rightPanelVisible: false,
+          }
+        }
+        return {
+          narrowViewport: false,
+          sidebarOpen: s.desktopSidebarOpen,
+          rightPanelVisible: s.desktopRightPanelVisible,
+        }
       }),
+    setWorkMode: (mode) =>
+      set((s) => s.narrowViewport
+        ? { workMode: mode, desktopRightPanelVisible: mode === 'monitor' }
+        : { workMode: mode, rightPanelVisible: mode === 'monitor' }),
     setRightRatio: (r) => {
       const clamped = clamp(r, RIGHT_RATIO_MIN, RIGHT_RATIO_MAX)
       if (typeof window !== 'undefined') {

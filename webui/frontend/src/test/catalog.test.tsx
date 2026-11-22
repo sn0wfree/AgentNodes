@@ -4,7 +4,7 @@
 // That doubles as a data-integrity gate: a broken story fails here
 // instead of silently producing a blank catalog baseline.
 
-import { describe, it, expect, beforeEach, vi } from 'vitest'
+import { describe, it, expect, beforeEach } from 'vitest'
 import { render, screen } from '@testing-library/react'
 import { MemoryRouter, Routes, Route } from 'react-router-dom'
 

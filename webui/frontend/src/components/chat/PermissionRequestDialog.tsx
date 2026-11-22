@@ -4,7 +4,9 @@ import type { PermissionRequest } from '../../hooks/sse/permissionHandlers'
 
 interface PermissionRequestDialogProps {
   request: PermissionRequest | null
-  onRespond: (action: 'allow' | 'deny', permanent: boolean) => void
+  onRespond: (action: 'allow' | 'deny', permanent: boolean, reason?: string) => void
+  submitting?: boolean
+  error?: string
 }
 
 const ACTION_LABELS = {
@@ -36,12 +38,18 @@ const ACTION_LABELS = {
 export function PermissionRequestDialog({
   request,
   onRespond,
+  submitting = false,
+  error,
 }: PermissionRequestDialogProps) {
   const [reason, setReason] = useState('')
 
   if (!request) return null
 
   const label = ACTION_LABELS[request.tool_name] ?? request.tool_name
+  const deny = (permanent: boolean) => {
+    if (reason) onRespond('deny', permanent, reason)
+    else onRespond('deny', permanent)
+  }
 
   // Render the args in a copy-paste-friendly block. Keep tool
   // metadata out so the user sees the actual intent ("path: x" vs
@@ -56,6 +64,7 @@ export function PermissionRequestDialog({
       role="dialog"
       aria-modal="true"
       aria-labelledby="permission-title"
+      aria-busy={submitting}
       className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm"
     >
       <div className="w-full max-w-lg rounded-xl border border-amber-700/60 bg-slate-900 shadow-2xl">
@@ -82,7 +91,8 @@ export function PermissionRequestDialog({
           </div>
           <button
             type="button"
-            onClick={() => onRespond('deny', false)}
+            onClick={() => deny(false)}
+            disabled={submitting}
             className="rounded p-1 text-slate-400 hover:bg-slate-800 hover:text-slate-200"
             title="关闭（拒绝）"
             aria-label="关闭"
@@ -119,6 +129,7 @@ export function PermissionRequestDialog({
               type="text"
               value={reason}
               onChange={(e) => setReason(e.target.value)}
+              disabled={submitting}
               placeholder="例如：会覆盖现有策略文件"
               className="mt-1 w-full rounded border border-slate-700 bg-slate-800 px-2 py-1.5 text-xs text-slate-100 placeholder-slate-500 outline-none focus:border-amber-500"
               data-testid="permission-reason-input"
@@ -126,11 +137,14 @@ export function PermissionRequestDialog({
           </label>
         </div>
 
+        {error && <p role="alert" className="px-5 pb-2 text-xs text-red-400">{error}</p>}
+
         {/* Action buttons (opencode's 4-way gate) */}
         <div className="grid grid-cols-2 gap-2 border-t border-slate-800 p-3">
           <button
             type="button"
             onClick={() => onRespond('allow', false)}
+            disabled={submitting}
             data-testid="permission-allow-once"
             className="rounded-md border border-emerald-700/50 bg-emerald-900/20 px-3 py-2 text-xs text-emerald-200 transition-colors hover:bg-emerald-900/40"
           >
@@ -139,6 +153,7 @@ export function PermissionRequestDialog({
           <button
             type="button"
             onClick={() => onRespond('allow', true)}
+            disabled={submitting}
             data-testid="permission-allow-always"
             className="rounded-md border border-emerald-700/60 bg-emerald-700/30 px-3 py-2 text-xs text-emerald-100 transition-colors hover:bg-emerald-700/50"
           >
@@ -146,7 +161,8 @@ export function PermissionRequestDialog({
           </button>
           <button
             type="button"
-            onClick={() => onRespond('deny', false)}
+            onClick={() => deny(false)}
+            disabled={submitting}
             data-testid="permission-deny-once"
             className="rounded-md border border-red-700/50 bg-red-900/20 px-3 py-2 text-xs text-red-200 transition-colors hover:bg-red-900/40"
           >
@@ -154,7 +170,8 @@ export function PermissionRequestDialog({
           </button>
           <button
             type="button"
-            onClick={() => onRespond('deny', true)}
+            onClick={() => deny(true)}
+            disabled={submitting}
             data-testid="permission-deny-always"
             className="rounded-md border border-red-700/60 bg-red-700/30 px-3 py-2 text-xs text-red-100 transition-colors hover:bg-red-700/50"
           >

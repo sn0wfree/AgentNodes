@@ -4,6 +4,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { render, screen, fireEvent, waitFor } from '@testing-library/react'
 import { TraceViewer } from '../components/chat/TraceViewer'
+import { useAuthStore } from '../stores/auth'
 
 function mockFetch(events: unknown[]) {
   return vi.fn().mockResolvedValue({
@@ -15,6 +16,21 @@ function mockFetch(events: unknown[]) {
 describe('TraceViewer', () => {
   beforeEach(() => {
     vi.restoreAllMocks()
+    useAuthStore.setState({ token: null, user: null })
+  })
+
+  it('authenticates requests for the current session trace', async () => {
+    useAuthStore.setState({ token: 'test-token' })
+    const fetchMock = mockFetch([])
+    vi.stubGlobal('fetch', fetchMock)
+    render(<TraceViewer sessionId="s-1" />)
+    await screen.findByText('No trace events found')
+    expect(fetchMock).toHaveBeenCalledWith(
+      '/api/chat/session/s-1/trace?limit=200',
+      expect.objectContaining({
+        headers: expect.objectContaining({ Authorization: 'Bearer test-token' }),
+      }),
+    )
   })
 
   it('sends the types filter as the backend param name', async () => {

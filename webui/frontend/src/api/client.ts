@@ -87,7 +87,7 @@ class APIClient {
       headers,
     })
 
-    if (res.status === 401) {
+    if (res.status === 401 && path !== '/auth/login') {
       useAuthStore.getState().logout()
       window.location.href = '/login'
       throw new Error('Unauthorized')

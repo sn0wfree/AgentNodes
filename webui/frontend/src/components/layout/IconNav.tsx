@@ -40,21 +40,21 @@ export function IconNav() {
   const isAdmin = user?.role === 'admin'
 
   return (
-    <nav className="flex h-screen w-16 flex-col items-center gap-1 border-r border-slate-800 bg-slate-900/50 py-3">
+    <nav className="flex h-screen w-16 flex-shrink-0 flex-col items-center gap-1 border-r border-slate-800 bg-slate-900/50 py-3">
       {/* Brand / logo — doubles as the home (dashboard) entry */}
       <button
         onClick={() => navigate('/')}
-        title="Strategy Research"
-        className={`group relative mb-3 flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-primary-500 to-accent-400 transition-all hover:scale-105 ${
-          isHome ? 'shadow-glow ring-2 ring-primary-400/50' : 'shadow-soft'
+        title="AgentNodes · 首页"
+        className={`group relative mb-3 flex h-10 w-10 items-center justify-center rounded-xl bg-slate-800 transition-colors hover:bg-slate-700 ${
+          isHome ? 'ring-2 ring-sky-500' : ''
         }`}
       >
         {isHome && (
-          <span className="absolute -left-[9px] top-1/2 h-4 w-[3px] -translate-y-1/2 rounded-full bg-primary-500 shadow-glow" />
+          <span className="absolute -left-[9px] top-1/2 h-4 w-[3px] -translate-y-1/2 rounded-full bg-sky-500" />
         )}
-        <span className="font-sans text-base font-bold text-white">SR</span>
+        <span className="font-sans text-sm font-bold text-slate-100">AN</span>
         <span className="pointer-events-none absolute left-[52px] top-1/2 -translate-y-1/2 whitespace-nowrap rounded-md border border-slate-700 bg-slate-800 px-2 py-1 text-[11px] text-slate-200 opacity-0 shadow-lg transition-opacity group-hover:opacity-100">
-          {isHome ? 'Strategy Research · 首页' : 'Strategy Research'}
+          {isHome ? 'AgentNodes · 首页' : 'AgentNodes'}
         </span>
       </button>
 
@@ -66,14 +66,14 @@ export function IconNav() {
             to={item.to}
             end={item.end}
             onClick={() => {
-              if (item.toggleSidebar) toggleSidebar()
+              if (item.toggleSidebar && location.pathname === item.to) toggleSidebar()
             }}
             title={item.label}
             className={({ isActive }) =>
               `group relative flex h-10 w-10 items-center justify-center rounded-lg transition-colors
               ${
                 isActive
-                  ? 'bg-primary-600/30 text-primary-300'
+                  ? 'bg-slate-800 text-slate-100'
                   : 'text-slate-400 hover:bg-slate-800 hover:text-slate-200'
               }`
             }
@@ -81,7 +81,7 @@ export function IconNav() {
             {({ isActive }) => (
               <>
                 {isActive && (
-                  <span className="absolute -left-[9px] top-1/2 h-4 w-[3px] -translate-y-1/2 rounded-full bg-primary-500 shadow-glow" />
+                  <span className="absolute -left-[9px] top-1/2 h-4 w-[3px] -translate-y-1/2 rounded-full bg-sky-500" />
                 )}
                 <Icon className="h-5 w-5" />
               </>
@@ -107,7 +107,7 @@ export function IconNav() {
             `group relative mt-1 flex h-10 w-10 items-center justify-center rounded-lg transition-colors
             ${
               isActive
-                ? 'bg-primary-600/30 text-primary-300'
+                ? 'bg-slate-800 text-slate-100'
                 : 'text-slate-400 hover:bg-slate-800 hover:text-slate-200'
             }`
           }
@@ -115,7 +115,7 @@ export function IconNav() {
           {({ isActive }) => (
             <>
               {isActive && (
-                <span className="absolute -left-[9px] top-1/2 h-4 w-[3px] -translate-y-1/2 rounded-full bg-primary-500 shadow-glow" />
+                <span className="absolute -left-[9px] top-1/2 h-4 w-[3px] -translate-y-1/2 rounded-full bg-sky-500" />
               )}
               <ShieldCheck className="h-5 w-5" />
             </>

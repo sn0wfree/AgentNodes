@@ -292,10 +292,7 @@ describe('block-part handlers (file_edit / table / chart / image / html)', () =>
     })
   })
 
-  const parts = () =>
-    (useChatStore.getState().messages.get('mid-1')!.parts as Array<
-      Record<string, unknown>
-    >)
+  const parts = () => useChatStore.getState().messages.get('mid-1')!.parts
 
   it('file_edit attaches a file_edit part with defaults', () => {
     fileEdit({ message_id: 'mid-1', id: 'fe-1', file_path: 'a.py' }, ctx())
@@ -341,13 +338,13 @@ describe('block-part handlers (file_edit / table / chart / image / html)', () =>
     table({ message_id: 'mid-1', id: 'tb-1', headers: ['h1'] }, ctx())
     table({ message_id: 'mid-1', id: 'tb-1', headers: ['h2'] }, ctx())
     expect(parts()).toHaveLength(1)
-    expect(parts()[0]!.headers).toEqual(['h1'])
+    expect(parts()[0]).toMatchObject({ headers: ['h1'] })
   })
 
   it('falls back to a generated part id when the event omits one', () => {
     image({ message_id: 'mid-1', url: 'u.png' }, ctx())
     expect(parts()).toHaveLength(1)
-    expect(String(parts()[0]!.id)).toMatch(/^image_\d+$/)
+    expect(parts()[0]).toMatchObject({ id: expect.stringMatching(/^image_\d+$/) })
   })
 
   it('every block handler no-ops without message_id', () => {

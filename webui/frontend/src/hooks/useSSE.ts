@@ -54,6 +54,15 @@ export function useSSE(sessionId: string | null) {
   // Pending reconnect timer — cleared on unmount so a delayed connect()
   // cannot create an orphan EventSource after the component is gone.
   const reconnectTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
+  // Last-alive timestamp for the liveness watchdog (P0-5): refreshed by
+  // onopen, any dispatched event, and the named heartbeat. The backend
+  // pings every 15s, so >50s of silence while "connected" means the
+  // connection is a zombie (e.g. backend died behind a proxy that keeps
+  // the TCP half open) and the pill must flip to 已断开 honestly.
+  const lastAliveRef = useRef<number>(Date.now())
+  // 看门狗最后一次重连发起时刻（挂载时刻起算）—— disconnected 分支用
+  // ≥10s 间隔防打爆。
+  const lastReconnectRef = useRef<number>(Date.now())
 
   const addMessage = useChatStore((s) => s.addMessage)
   const updateMessage = useChatStore((s) => s.updateMessage)
@@ -72,6 +81,7 @@ export function useSSE(sessionId: string | null) {
 
   const handleEvent = useCallback(
     (e: MessageEvent) => {
+      lastAliveRef.current = Date.now()
       const event = e.type as SSEEventType
       let data: Record<string, unknown>
       try {
@@ -125,11 +135,12 @@ export function useSSE(sessionId: string | null) {
         setPendingPermission: (req) => {
           useChatStore.setState({ pendingPermission: req })
         },
-        clearPendingPermission: (_toolCallId) => {
-          // Single-slot today: the most-recent pending request is
-          // always the one the dialog shows. When the backend
-          // resolves it (allow/deny), we clear the slot.
-          useChatStore.setState({ pendingPermission: null })
+        clearPendingPermission: (toolCallId) => {
+          useChatStore.setState((state) =>
+            state.pendingPermission?.tool_call_id === toolCallId
+              ? { pendingPermission: null }
+              : {},
+          )
         },
       }
 
@@ -186,6 +197,7 @@ export function useSSE(sessionId: string | null) {
 
     es.onopen = () => {
       failedAttempts.current = 0
+      lastAliveRef.current = Date.now()
       useSSEStore.getState().setStatus('connected')
       if (isFirstConnect.current) {
         isFirstConnect.current = false
@@ -218,6 +230,8 @@ export function useSSE(sessionId: string | null) {
             )
             useSSEStore.getState().setStatus('disconnected')
             sourceRef.current?.close()
+            // 恢复交还给看门狗的 disconnected 分支（P0-5：代理半开时
+            // onerror 可能永远不来，且放弃后无人重连会把状态钉死在已断开）。
             return
           }
           console.warn('[SSE] EventSource CLOSED, reconnecting in 1s...')
@@ -243,6 +257,7 @@ export function useSSE(sessionId: string | null) {
     // marked as alive — defending against the browser prematurely
     // reporting onerror on idle streams.
     es.addEventListener('heartbeat', () => {
+      lastAliveRef.current = Date.now()
       useSSEStore.getState().setStatus('connected')
     })
 
@@ -251,7 +266,27 @@ export function useSSE(sessionId: string | null) {
 
   useEffect(() => {
     connect()
+    // Liveness watchdog（P0-5 双分支）：
+    //   ① zombie-connected：心跳每 15s 一跳，静默 >50s（3 跳 + 余量）＝
+    //      连接是僵尸（TCP 经代理半开，onerror 不会来）→ 杀掉僵尸、
+    //      立即重连，状态诚实翻转为已断开直到 onopen。
+    //   ② disconnected：>10s 未尝试即主动慢速重连 —— 后端复活后最多
+    //      ~15s 自动恢复，不再依赖「用户切会话/刷新」触发。
+    const watchdog = setInterval(() => {
+      const sse = useSSEStore.getState()
+      const now = Date.now()
+      if (sse.status === 'connected' && now - lastAliveRef.current > 50_000) {
+        sse.setStatus('disconnected')
+        lastReconnectRef.current = now
+        sourceRef.current?.close()
+        connect()
+      } else if (sse.status === 'disconnected' && now - lastReconnectRef.current > 10_000) {
+        lastReconnectRef.current = now
+        connect()
+      }
+    }, 5_000)
     return () => {
+      clearInterval(watchdog)
       if (reconnectTimer.current) {
         clearTimeout(reconnectTimer.current)
         reconnectTimer.current = null
