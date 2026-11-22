@@ -227,6 +227,21 @@ def _has_cost_samples(baseline: ReplayOutcome, candidate: ReplayOutcome) -> bool
     ) is not None
 
 
+def _two_sided_verdict(degradation: float, threshold: float) -> str:
+    """两侧判定单点（第四轮 C8）：``> +threshold`` → reject、
+    ``< -threshold`` → escalate、其余 → pass。
+
+    只拥有**判定**（严格不等式口径三站同源）；reason 字符串、事件
+    payload、ValidationResult 字段、divergence/trip_halt 等策略全部留在
+    各站点。单侧使用（如成本闸只关心 "exceeded"）取 ``== "reject"``。
+    """
+    if degradation > threshold:
+        return "reject"
+    if degradation < -threshold:
+        return "escalate"
+    return "pass"
+
+
 class GenomeVersionStore(Protocol):
     """genome_version 的读写接口（由 ConfigHub 实现或测试替身）。
 
@@ -441,7 +456,8 @@ class ValidationGate:
             )
 
         degradation = (baseline.metric - metric) / abs(baseline.metric)
-        if degradation > DEGRADATION_THRESHOLD:
+        verdict = _two_sided_verdict(degradation, DEGRADATION_THRESHOLD)
+        if verdict == "reject":
             return ValidationResult(
                 ok=False,
                 reason=(
@@ -456,7 +472,7 @@ class ValidationGate:
         # 方向相反（候选远好于基线）也需警惕：可能是奖励黑客信号。
         # 施工方案 §4.5 只给了"不劣于基线"的下界；这里对"暴涨"要求
         # 同样走 escalation，而不是直接通过。
-        if degradation < -DEGRADATION_THRESHOLD:
+        if verdict == "escalate":
             return ValidationResult(
                 ok=False,
                 reason=(
@@ -626,9 +642,12 @@ class ValidationGate:
             if base_tokens > 0:
                 tokens_degradation = (cand_tokens - base_tokens) / base_tokens
 
-        # 硬拒：任一维度退化超阈值（能力涨多少都不抵消）
+        # 硬拒：任一维度退化超阈值（能力涨多少都不抵消）。
+        # 单侧使用：只取 "reject"（成本变便宜很多属正常，不升级）。
         for name, deg in (("cost", cost_degradation), ("tokens", tokens_degradation)):
-            if deg is not None and deg > self.cost_degradation_threshold:
+            if deg is not None and _two_sided_verdict(
+                deg, self.cost_degradation_threshold,
+            ) == "reject":
                 reason = (
                     f"{name} degraded {deg:.1%} "
                     f"(threshold {self.cost_degradation_threshold:.0%}) — hard reject"
@@ -652,7 +671,9 @@ class ValidationGate:
         # 能力升但成本明显变贵 → escalate 人工审（复用「暴涨 escalate」先例）
         improved = metric_degradation < 0
         for name, deg in (("cost", cost_degradation), ("tokens", tokens_degradation)):
-            if deg is not None and improved and deg > self.cost_trade_escalation_threshold:
+            if deg is not None and improved and _two_sided_verdict(
+                deg, self.cost_trade_escalation_threshold,
+            ) == "reject":
                 reason = (
                     f"metric improved {(-metric_degradation):.1%} but {name} "
                     f"cost rose {deg:.1%} (trade escalation threshold "
@@ -827,9 +848,10 @@ class ValidationGate:
         degradation = (
             heldout_baseline - heldout_candidate
         ) / abs(heldout_baseline)
+        verdict = _two_sided_verdict(degradation, self.heldout_threshold)
 
         # 门 1：held-out 显著退化 → 拒（与 held-in 同阈值）
-        if degradation > self.heldout_threshold:
+        if verdict == "reject":
             # 分歧 kill-switch：held-in 确实改进 + held-out 退化
             improving = metric_degradation < -DIVERGENCE_HELDIN_IMPROVEMENT
             if improving:
@@ -874,7 +896,7 @@ class ValidationGate:
             )
 
         # 与 held-in 一致：held-out 上"暴涨"同样可疑（奖励黑客信号）。
-        if degradation < -self.heldout_threshold:
+        if verdict == "escalate":
             self._emit_heldout_gate({
                 "verdict": "escalated",
                 "kind": "implausible_jump",
