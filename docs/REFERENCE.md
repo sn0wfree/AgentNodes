@@ -1,7 +1,8 @@
 # AgentNodes 参考手册
 
 > 命令、工具、配置的完整清单。**README 只放框架主体，细节都在这里。**
-> 本文的数据在 2026-11-05 实测（`agentnodes --help` / `mcp list-tools` / `swarm list`）。
+> 本文的数据在 2026-11-05 实测（`agentnodes --help` / `mcp list-tools` / `swarm list`），
+> **2026-11-22 全面校对更新**（CLI / MCP / preset 位置 / 能力 kind 均为当日实测）。
 >
 > ⚠️ **「移除批次」列的含义**：业务功能正按
 > [`design/subtraction-roadmap-v2-20261105.md`](design/subtraction-roadmap-v2-20261105.md)
@@ -9,44 +10,38 @@
 
 ---
 
-## 1. CLI 顶层命令（18 个，2026-11-05 批次 4 后实测）
+## 1. CLI 顶层命令（16 个，2026-11-22 实测）
 
 `agentnodes <command> [args]`
 
-> 批次 4 已删除 `run` / `evaluate` / `list` / `engine` / `accept` 五个子命令；
-> `backtest` / `check` / `reproduce` 仍在命令表中，但其底层 `apps/backtest`
-> 已移除——**执行会报 `ModuleNotFoundError`**，属批次 4 的收尾未完成项。
+> 2026-11-22 实测（`agentnodes --help`）：业务命令 `backtest` / `check` /
+> `import` / `validate` / `preflight` 已随批次 4/5 **整体删除**（不再是
+> "底层已删待收尾"）；`reproduce` 保留但语义改为"复现实验"；
+> 新增 `config`（配置诊断与迁移）与 `rsi`（RSI 闭环驱动）。
 
 ### 1.1 框架本体
 
-| 命令 | 用途 | 移除批次 |
-|---|---|---|
-| `init` | 5 步 TTY 向导：provider → model → API key → timeout → (Tushare) | — |
-| `llm` | LLM 供应商快速切换（`list` / `use` / `show` / `add-key`） | — |
-| `compact` | compact 配置检查（`show` 打印当前生效值 + 派生值） | — |
-| `skills` | 技能管理（`list` / `show` / `search`） | — |
-| `swarm` | 多智能体协同（`list` / `inspect` / `run` / `cancel`） | — |
-| `mcp` | MCP 服务器（`serve` / `list-tools`） | — |
-| `serve` | 启动服务（默认 Web UI + API，`--api-only` 仅 API） | — |
-| `api` | HTTP API 服务器（`serve`） | — |
-| `webui` | Web UI 仪表盘（`serve`） | — |
-| `session` | 会话管理（`stats` / `list` / `show` / `search` / `delete`） | — |
-| `hangs` | 卡死防护事件报告（`--hours` / `--limit`） | — |
-| `schedule` | 定时研究（cron 池） | — |
-| `status` | 查看工作区状态 | 部分 |
-| `preflight` | 启动前环境检查 | 批次 5 |
+| 命令 | 用途 |
+|---|---|
+| `init` | 5 步 TTY 向导：provider → model → API key → timeout → (Tushare) |
+| `llm` | LLM 供应商快速切换（`list` / `use` / `show` / `add-key`） |
+| `compact` | compact 配置命令 |
+| `config` | 配置诊断与迁移（`audit-legacy` / `audit-legacy-engine` / `migrate`） |
+| `skills` | 技能管理（`list` / `show` / `search`） |
+| `swarm` | 多智能体协同（`list` / `inspect` / `run` / `cancel`） |
+| `mcp` | MCP 服务器（`serve` / `list-tools`） |
+| `serve` | 启动服务（默认 Web UI + API，`--api-only` 仅 API） |
+| `api` | HTTP API 服务器（`serve`） |
+| `webui` | Web UI 仪表盘（`serve`） |
+| `session` | 会话管理（`stats` / `list` / `show` / `search` / `delete`） |
+| `hangs` | 卡死防护事件报告（`--hours` / `--limit`） |
+| `schedule` | 定时研究（cron 池） |
+| `reproduce` | 复现实验（业务遗留，底层已删待收尾） |
+| `rsi` | RSI 闭环驱动（`run` / `status`） |
+| `status` | 查看工作区状态（部分收窄） |
 
-### 1.2 业务命令（减法进行中）
-
-| 命令 | 用途 | 状态 |
-|---|---|---|
-| `backtest` | `run` / `rerun` / `replay` 三态回测 | ⚠ 底层已删，待收尾 |
-| `check` | `factor` / `run` / `accept` 校验 | ⚠ 底层已删，待收尾 |
-| `reproduce` | 复现历史 run | ⚠ 底层已删，待收尾 |
-| `import` | 导入价格数据 | 批次 5 |
-| `validate` | 验证因子（IC/IR/6 维评分） | 批次 5 |
-
-**批次 4 已删**：`run` · `evaluate` · `list` · `engine` · `accept`
+**已删命令**：批次 4 `run` · `evaluate` · `list` · `engine` · `accept` ·
+`backtest` · `check`；批次 5 `import` · `validate` · `preflight`
 
 ### 1.3 调用矩阵
 
@@ -60,7 +55,7 @@ echo "" | agentnodes      → argparse help（无 TTY 不进 TUI）
 
 ---
 
-## 2. MCP 工具（17 个）
+## 2. MCP 工具（12 个，2026-11-22 `mcp list-tools` 实测）
 
 `agentnodes mcp serve --transport {stdio,sse} --port 8900`
 
@@ -78,18 +73,16 @@ echo "" | agentnodes      → argparse help（无 TTY 不进 TUI）
 | `websearch` | `query, max_results` | 网页搜索（MiniMax → DuckDuckGo 回退） | — |
 | `webfetch` | `url, max_chars` | 抓取网页 → Markdown | — |
 | `read_document` | `path, max_pages` | PDF 文本提取（需 PyMuPDF） | — |
-| `run_backtest` | `strategy, action, description, yaml_path, background, workspace` | 从 config.yaml 运行回测 | 批次 4 |
-| `compute_factor` | `expression, asset, factor_name, n_samples, workspace` | 计算因子表达式 | 批次 5 |
-| `get_market_data` | `codes, start_date, end_date, interval, source, max_rows` | 获取 OHLCV 行情 | 批次 5 |
-| `list_data_sources` | — | 列出数据源及可用性 | 批次 5 |
-| `search_symbol` | `query, market, limit` | 模糊搜索证券代码 | 批次 5 |
+
+> **批次 4/5 已删 5 个业务工具**：`run_backtest` · `compute_factor` ·
+> `get_market_data` · `list_data_sources` · `search_symbol`（17 − 5 = 12）。
 
 ---
 
 ## 3. Swarm preset（37 个）
 
 `agentnodes swarm run <name> --workspace <path> --task "<描述>"`
-定义在 `src/agentnodes/kernel/swarm/presets/*.yaml`（YAML DAG：节点 + 依赖 + 工具白名单）。
+定义在 `src/agentnodes/apps/swarm_presets/*.yaml`（YAML DAG：节点 + 依赖 + 工具白名单；37 个 2026-11-22 实测）。
 
 | 类别 | preset |
 |---|---|
@@ -108,19 +101,18 @@ echo "" | agentnodes      → argparse help（无 TTY 不进 TUI）
 
 ---
 
-## 4. 能力注册（22 kind，2026-11-05 实测）
+## 4. 能力注册（现行 4 kind，2026-11-22 实测）
 
 `src/agentnodes/apps/capabilities.py` 的 `CAPABILITIES` 表。kernel 通过
 `resolve(kind)` 取实现，不 import apps。
 
-| 域 | kind | 移除批次 |
-|---|---|---|
-| db | `db.get_connection` · `db.init_db` · `db.save_ohlcv_to_db` · `db.module` | 批次 5 |
-| factor | `factor.compute` · `factor.compute_error` · `factor.long_to_wide` | 批次 5 |
-| datasource | `datasource.registry` · `datasource.base` · `datasource.detect_market` | 批次 5 |
-| data | `data.readiness` · `data.clean` | 批次 5 |
-| evolution | `evolution.resolve_harness` · `evolution.holdout_sample` · `evolution.proposal` · `evolution.validation_gate` · `evolution.agent` | — |
-| evolution 工具 | `evolution.read_journal` · `evolution.read_scoreboard` · `evolution.read_validation` · `evolution.read_holdout` · `evolution.propose_genome_update` | — |
+| kind | 说明 |
+|---|---|
+| `goal.store` · `goal.models` · `goal.context` | goal 域服务（apps/goal 注册） |
+| `tool.goal` | goal 业务工具工厂（`apps/goal_tools.py`） |
+
+> evolution 域已随批次 8 下沉 `kernel/evolution/`（不再走能力注册）；
+> db / factor / datasource / data 域已随批次 5 移除。
 
 **已移除（不再注册）**：
 - 批次 2：`goal.store` / `goal.models` / `goal.context` / `goal.expression` /
@@ -239,13 +231,22 @@ echo "" | agentnodes      → argparse help（无 TTY 不进 TUI）
 ## 9. 架构门禁命令
 
 ```bash
+python scripts/batch_gate.cmd                        # 全量门禁（12 步，提交前必跑）
 python scripts/arch/check_dangling_imports.py        # 悬空 import（exit 1 = 有问题）
 python scripts/arch/check_dangling_imports.py --layers   # 附层方向矩阵
 python scripts/arch/check_path_literals.py           # 坏路径拼接
+python scripts/arch/check_capability_requires.py     # 能力 requires 双向校验
+python scripts/arch/check_framework_numbers.py       # 框架文档体量数字钉检查
 python scripts/arch/sync_architecture_diagram.py     # 架构图是否过时
 python scripts/arch/sync_architecture_diagram.py --write # 回写实测数字
 python scripts/arch/graph_layer_audit.py <graph.json>   # graphify 图的层矩阵（第二种量纲）
+
+# 全量测试（rules §2.1；内存不足降 -n 6）
+python -m pytest tests -q -p no:hypothesispytest -p no:hypothesis -n 12 --dist loadgroup
 ```
 
-工具选型规则（不可互换）：**上行违规只认 `test_layer_matrix`**；graphify 用于拓扑/热点/体量，
-两者只比方向与簇分布，不比绝对值。详见 [`guides/`](guides/) 与 `scripts/README.md`。
+工具选型规则（不可互换）：**上行违规只认 `test_layer_matrix`**；graphify 用于拓扑/热点/体量
+（`python312 -m graphify extract <scope>`；`calls`/`references` 边有同名误连前科，只信
+`imports_from`），两者只比方向与簇分布，不比绝对值。codegraph（npm
+`@colbymchenry/codegraph`，2026-11-22 实测）用于 AI 上下文 / 影响面分析
+（`explore` / `node` 调用轨迹），不用于层审计。详见 [`guides/`](guides/) 与 `scripts/README.md`。

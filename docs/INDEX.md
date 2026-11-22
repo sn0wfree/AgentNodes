@@ -22,7 +22,7 @@
 
 ---
 
-## 1. guides/ — 现行操作手册（13 份）
+## 1. guides/ — 现行操作手册（14 份）
 
 **判据**：现在照着做就是对的。内容与代码同步维护。
 
@@ -40,11 +40,12 @@
 | [`known-test-defects-20261104.md`](guides/known-test-defects-20261104.md) | 已知测试缺陷（与减法正交的既存问题） |
 | [`xfail-tests.md`](guides/xfail-tests.md) | xfail 清单与理由 |
 | [`legacy-sessiondb-tech-debt.md`](guides/legacy-sessiondb-tech-debt.md) | 历史 SessionDB 技术债 |
+| [`legacy-chat-api-migration.md`](guides/legacy-chat-api-migration.md) | legacy chat API 迁移对照表（旧出口 → 新入口） |
 | [`architecture-diagram-changelog.md`](guides/architecture-diagram-changelog.md) | 架构图版本史（v5.1 → 当前） |
 
 ---
 
-## 2. design/ — 仍生效的设计与契约（106 份）
+## 2. design/ — 仍生效的设计与契约（152 份，2026-11-22 补录）
 
 **判据**：文档里的决策仍在代码中执行。已被取代的移到 `archive/`。
 
@@ -150,6 +151,139 @@
 | [`adr/ADR-000-baseline-recount.md`](design/adr/ADR-000-baseline-recount.md) | 基线口径：每条 import 语句计 1 |
 | [`adr/ADR-002-l1-adapter-policy.md`](design/adr/ADR-002-l1-adapter-policy.md) | L1 适配器策略 |
 | [`adr/ADR-003-l3-l2-disposition.md`](design/adr/ADR-003-l3-l2-disposition.md) | L3→L2 处置（CapabilityRegistry 端口化） |
+
+### 2.9 架构收敛与复审执行记录（2026-11-06 → 11-22 · 94 份）
+
+**判据**：架构收敛四阶段（减法批次收口 → loop 统一 → L1 三前端一核心 → 隔离执行/L1/会话深 化四轮复审）的方案与执行记录。全部已实施并留痕；上行违规 0 由门禁持续钉住。主线入口：[`architecture-refactor-execution-roadmap-20261119.md`](design/architecture-refactor-execution-roadmap-20261119.md)。
+
+#### A. 主线与复审轮次
+
+| 文档 | 内容 |
+|---|---|
+| [`architecture-refactor-execution-roadmap-20261119.md`](design/architecture-refactor-execution-roadmap-20261119.md) | **架构收敛执行路线图（主线）**：WP 批次与验收 |
+| [`project-architecture-review-and-refactor-plan-20261118.md`](design/project-architecture-review-and-refactor-plan-20261118.md) | 架构评审与重构总计划 |
+| [`architecture-review-20261120-round2-dispositions.md`](design/architecture-review-20261120-round2-dispositions.md) | 第二轮复审候选处置记录（#6 冻结裁决） |
+| [`round4-c1-c2-c3-r014-20261121.md`](design/round4-c1-c2-c3-r014-20261121.md) | 第四轮 C1-C3 方案+执行记录（事件翻译/窄 port/构造归一） |
+| [`round4-c4-c8-r014-20261121.md`](design/round4-c4-c8-r014-20261121.md) | 第四轮 C4-C8 方案+执行记录（写回契约/ensure_sink/session_keys 等） |
+| [`review-144502-crosscheck-20261119.md`](design/review-144502-crosscheck-20261119.md) | 复审交叉核对 |
+| [`sequence6-audit-20261119.md`](design/sequence6-audit-20261119.md) | sequence6 审计 |
+| [`m13-workflow-registry-review-20261119.md`](design/m13-workflow-registry-review-20261119.md) | workflow registry 审查 |
+| [`pending-approvals-20261119.md`](design/pending-approvals-20261119.md) | 待批准清单（旧出口删除批，时间门槛约束） |
+| [`legacy-chat-api-compat-review-20261118.md`](design/legacy-chat-api-compat-review-20261118.md) | legacy chat 兼容面审查（先批审后批删） |
+
+#### B. 隔离执行链（B2.2 → B2.5 + 深化）
+
+| 文档 | 内容 |
+|---|---|
+| [`isolated-execution-b22-design-20261119.md`](design/isolated-execution-b22-design-20261119.md) | 隔离执行 B2 总设计（seam/通道/平台守卫） |
+| [`isolated-executor-deepening-r014-20261120.md`](design/isolated-executor-deepening-r014-20261120.md) | 隔离执行器深化（事件单源/编排下沉 IsolatedToolExecutor） |
+| [`isolated-executor-entry-convergence-r014-20261120.md`](design/isolated-executor-entry-convergence-r014-20261120.md) | 入口收敛（transient 复用 IsolationWorker） |
+| [`admission-module-extraction-r014-20261120.md`](design/admission-module-extraction-r014-20261120.md) | IsolationAdmission 深模块抽取（准入纯函数化） |
+| [`b23-context-crossing-r014-20261120.md`](design/b23-context-crossing-r014-20261120.md) | 上下文跨界 codec（ctx_v 白名单 + probe） |
+| [`b24-production-wiring-r014-20261120.md`](design/b24-production-wiring-r014-20261120.md) | 生产接线（per-call id / deadline/lease / E5 重注入） |
+| [`b25-tool-pilot-r014-20261120.md`](design/b25-tool-pilot-r014-20261120.md) | 真实工具试点 S5 + 准入 C1-C3 复核 |
+| [`ctx-parent-validation-r014-20261120.md`](design/ctx-parent-validation-r014-20261120.md) | 父侧 ctx 校验（validate_wire + 公开入口把关） |
+| [`declared-capability-single-source-r014-20261120.md`](design/declared-capability-single-source-r014-20261120.md) | E5 declared 单点解析（declared_capability） |
+| [`channel-read-contract-r014-20261120.md`](design/channel-read-contract-r014-20261120.md) | 通道读契约（ReadResult 三 kind + stderr_tail） |
+| [`executor-host-seam-r014-20261120.md`](design/executor-host-seam-r014-20261120.md) | _ExecHost 宿主适配器（4 能力面） |
+| [`wp8-evolution-migration-checklist-20261120.md`](design/wp8-evolution-migration-checklist-20261120.md) | WP-8 evolution 迁移核对清单 |
+
+#### C. L1 三前端一核心 + 会话生命周期
+
+| 文档 | 内容 |
+|---|---|
+| [`l1-three-frontends-one-core-design-20261119.md`](design/l1-three-frontends-one-core-design-20261119.md) | L1 三前端一核心总设计（M 系列） |
+| [`composition-root-convergence-20261119.md`](design/composition-root-convergence-20261119.md) | 组合根收敛（M12） |
+| [`chat-send-turn-baseline-3a0-20261119.md`](design/chat-send-turn-baseline-3a0-20261119.md) | send_turn 基线（3a.0 冻结） |
+| [`chat-send-turn-usecase-extraction-20261119.md`](design/chat-send-turn-usecase-extraction-20261119.md) | send_turn 用例抽取（3a.3） |
+| [`session-deletion-lifecycle-r014-20261120.md`](design/session-deletion-lifecycle-r014-20261120.md) | 删除生命周期归一（归档+投影失效单点） |
+| [`session-shim-test-surface-r014-20261120.md`](design/session-shim-test-surface-r014-20261120.md) | session 垫片测试面（kernel.session 直测） |
+| [`router-service-seam-r014-20261120.md`](design/router-service-seam-r014-20261120.md) | router 服务取用 seam（session_service_from） |
+| [`available-actions-single-policy-r014-20261120.md`](design/available-actions-single-policy-r014-20261120.md) | 可用动作矩阵单策略（含 goal lease 抑制） |
+
+#### D. goal / RSI 深化
+
+| 文档 | 内容 |
+|---|---|
+| [`goal-coverage-unification-r014-20261120.md`](design/goal-coverage-unification-r014-20261120.md) | 覆盖判定单源（all_criteria_covered/rows_for） |
+| [`goal-completion-deep-operation-r014-20261120.md`](design/goal-completion-deep-operation-r014-20261120.md) | 完成编排归一（CompletionContext 单参 + complete_goal） |
+| [`goal-hook-runner-interface-r014-20261120.md`](design/goal-hook-runner-interface-r014-20261120.md) | hook/runner 公开面 + from_snapshot |
+| [`consumer-injection-port-r014-20261120.md`](design/consumer-injection-port-r014-20261120.md) | 消费者注入口归一（删 run_cycle 第二 seam） |
+| [`strong-candidates-g1-s1-r014-20261120.md`](design/strong-candidates-g1-s1-r014-20261120.md) | G1 emit 显式 port + S1 归属校验深 helper |
+| [`gateway-timeout-and-strict-history-design-20261118.md`](design/gateway-timeout-and-strict-history-design-20261118.md) | Gateway 超时与严格历史（E5 契约） |
+| [`goal-gateway-session-lease-design-20261118.md`](design/goal-gateway-session-lease-design-20261118.md) | goal ↔ gateway 执行租约 |
+
+#### E. loop 统一与执行引擎（2026-11-07 → 11-13）
+
+| 文档 | 内容 |
+|---|---|
+| [`loop-unification-design-20261111.md`](design/loop-unification-design-20261111.md) | loop 统一总设计 |
+| [`loop-engine-inventory-20261111.md`](design/loop-engine-inventory-20261111.md) | 双引擎盘点 |
+| [`loop-engine-industry-survey-20261111.md`](design/loop-engine-industry-survey-20261111.md) | 引擎业界调研 |
+| [`lobehub-agent-loop-survey-20261112.md`](design/lobehub-agent-loop-survey-20261112.md) | LobeHub agent loop 调研 |
+| [`loop-final-design-20261112.md`](design/loop-final-design-20261112.md) | loop 终版设计 |
+| [`step-protocol-migration-20261112.md`](design/step-protocol-migration-20261112.md) | step 协议迁移 |
+| [`decider-crash-isolation-20261113.md`](design/decider-crash-isolation-20261113.md) | decider 崩溃隔离 |
+| [`ctx-hash-id-design-20261112.md`](design/ctx-hash-id-design-20261112.md) | ctx 指纹（U6） |
+| [`langgraph-implicit-dep-fix-20261113.md`](design/langgraph-implicit-dep-fix-20261113.md) | langgraph 隐式依赖修复 |
+| [`unified-loop-adoption-20261107.md`](design/unified-loop-adoption-20261107.md) | 统一 loop 采纳（B3） |
+| [`unified-loop-adoption-eval-20261107.md`](design/unified-loop-adoption-eval-20261107.md) | 采纳评估 |
+| [`v2-live-llm-e2e-20261109.md`](design/v2-live-llm-e2e-20261109.md) | v2 真 LLM E2E |
+| [`v3-path-convergence-decision-20261109.md`](design/v3-path-convergence-decision-20261109.md) | v3 路径收敛决策 |
+
+#### F. 减法批次与阶段收口（2026-11-05 → 11-09）
+
+| 文档 | 内容 |
+|---|---|
+| [`batch4-backtest-removal-design-20261105.md`](design/batch4-backtest-removal-design-20261105.md) | 批次 4（backtest 移除） |
+| [`batch4d-kernel-noun-removal-20261106.md`](design/batch4d-kernel-noun-removal-20261106.md) | 批次 4d（kernel 名词清理） |
+| [`batch5-data-domain-removal-design-20261105.md`](design/batch5-data-domain-removal-design-20261105.md) | 批次 5（数据域移除） |
+| [`batch6-permission-hardening-20261107.md`](design/batch6-permission-hardening-20261107.md) | 批次 6（permission 加固） |
+| [`batch7-capability-enable-20261107.md`](design/batch7-capability-enable-20261107.md) | 批次 7（capability enable + 技能归档） |
+| [`batch9-b1-protocol-unification-20261107.md`](design/batch9-b1-protocol-unification-20261107.md) | 批次 9（B1 协议统一 + 重命名） |
+| [`batch10-b2-deciders-20261107.md`](design/batch10-b2-deciders-20261107.md) | 批次 10（B2 deciders） |
+| [`batch11-b3-skeleton-shadow-20261108.md`](design/batch11-b3-skeleton-shadow-20261108.md) | 批次 11（B3 skeleton shadow） |
+| [`batch12-b3-stage2-subtraction-20261109.md`](design/batch12-b3-stage2-subtraction-20261109.md) | 批次 12（B3 stage2 减法） |
+| [`batch13-appendix-same-class-audit-20261109.md`](design/batch13-appendix-same-class-audit-20261109.md) | 批次 13（同类审计） |
+| [`batch13-b3-s3-mixin-dissolution-20261109.md`](design/batch13-b3-s3-mixin-dissolution-20261109.md) | 批次 13（B3-S3 mixin 解体） |
+| [`b1-status-and-b2-plan-20261107.md`](design/b1-status-and-b2-plan-20261107.md) | B1 状态与 B2 计划 |
+| [`goal-capability-merge-design-20261105.md`](design/goal-capability-merge-design-20261105.md) | goal capability 合并设计 |
+| [`phase1-closure-report-20261107.md`](design/phase1-closure-report-20261107.md) | Phase 1 收口报告 |
+| [`phase1-definition-of-done-20261107.md`](design/phase1-definition-of-done-20261107.md) | Phase 1 DoD |
+| [`phase1-completion-verification-plan-20261109.md`](design/phase1-completion-verification-plan-20261109.md) | Phase 1 完成验证计划 |
+| [`three-phase-roadmap-20261106.md`](design/three-phase-roadmap-20261106.md) | 三阶段路线图 |
+| [`progress-and-plan-20261106.md`](design/progress-and-plan-20261106.md) | 进度与计划 |
+| [`framework-review-20261106.md`](design/framework-review-20261106.md) | 框架评审（v1.1 后） |
+
+#### G. 配置 / 结构治理与专项调研（2026-11-05 → 11-17）
+
+| 文档 | 内容 |
+|---|---|
+| [`llm-config-dual-path-and-yaml-20261111.md`](design/llm-config-dual-path-and-yaml-20261111.md) | LLM 配置双路径 + YAML |
+| [`llm-config-construction-convergence-20261116.md`](design/llm-config-construction-convergence-20261116.md) | LLM 配置构造收敛 |
+| [`cli-an-prefix-20261111.md`](design/cli-an-prefix-20261111.md) | CLI `an` 前缀决策 |
+| [`settings-declaration-hygiene-20261111.md`](design/settings-declaration-hygiene-20261111.md) | settings 声明卫生 |
+| [`legacy-env-audit-command-20261110.md`](design/legacy-env-audit-command-20261110.md) | legacy 环境变量审计命令（E-2） |
+| [`param-naming-unification-20261109.md`](design/param-naming-unification-20261109.md) | 参数命名统一 |
+| [`data-dir-unification-20261109.md`](design/data-dir-unification-20261109.md) | 数据目录统一 |
+| [`test-suite-health-and-speedup-20261109.md`](design/test-suite-health-and-speedup-20261109.md) | 测试套件健康与提速 |
+| [`workflow-sqlite-lock-fix-20261114.md`](design/workflow-sqlite-lock-fix-20261114.md) | workflow SQLite 锁修复 |
+| [`u6-2-terminal-cleanup-design-20261114.md`](design/u6-2-terminal-cleanup-design-20261114.md) | U6.2 终端清理 |
+| [`prepare-algo-kernel-extract-20261114.md`](design/prepare-algo-kernel-extract-20261114.md) | algo kernel 抽取准备 |
+| [`agent-dir-structuring-plan-20261117.md`](design/agent-dir-structuring-plan-20261117.md) | agent 目录结构规划 |
+| [`builtin-tools-flatten-placement-survey-20261117.md`](design/builtin-tools-flatten-placement-survey-20261117.md) | builtin_tools 平铺选址调查 |
+| [`absolute-imports-migration-20261117.md`](design/absolute-imports-migration-20261117.md) | 绝对 import 迁移 |
+| [`arch-diagram-l3-clusters-v2-20261117.md`](design/arch-diagram-l3-clusters-v2-20261117.md) | L3 聚合架构图 v2 |
+| [`mvp-tier-revision-20261117.md`](design/mvp-tier-revision-20261117.md) | MVP 归层修订 |
+| [`service-coverage-plan-20261117.md`](design/service-coverage-plan-20261117.md) | SessionService 覆盖计划 |
+| [`foundation-structure-review-20261117.md`](design/foundation-structure-review-20261117.md) | foundation 结构评审 |
+| [`kernel-module-splitting-design-20261118.md`](design/kernel-module-splitting-design-20261118.md) | kernel 模块拆分评估（K5：validation_gate 不拆） |
+| [`logging-unified-hub-design-20261117.md`](design/logging-unified-hub-design-20261117.md) | 日志统一 hub |
+| [`asset-value-review-20261111.md`](design/asset-value-review-20261111.md) | 资产价值评审 |
+| [`layer-attribution-review-20261105.md`](design/layer-attribution-review-20261105.md) | 层归属评审 |
+| [`architecture-consistency-scan-20261105.md`](design/architecture-consistency-scan-20261105.md) | 架构一致性扫描 |
+| [`industry-survey-knowledge-base-20261106.md`](design/industry-survey-knowledge-base-20261106.md) | 业界调研知识库 |
+| [`ui-ua-reuse-assessment-20261122.md`](design/ui-ua-reuse-assessment-20261122.md) | U-A 复用评估（UI 轨道） |
 
 ---
 

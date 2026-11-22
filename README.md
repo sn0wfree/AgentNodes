@@ -19,6 +19,13 @@
 > `apps/builtin_tools` 包平铺为 `apps/goal_tools.py`（业务工具唯一幸存模块）；
 > MVP 归层修订：`kernel/session` 绿→红（承载 C8 历史持久化，红层主链路
 > `api→session` 29 次 import）。
+> **2026-11-20 → 11-22 架构收敛四轮复审**：21 个候选全部落地——隔离执行链
+> B2.2-B2.5（IsolatedToolExecutor / ctx codec / 生产接线默认关 / 真实工具试点）、
+> L1 三前端一核心（组合根 / 归属校验 / 删除生命周期单点）、goal 深化（覆盖单源 /
+> 完成编排归一 / hook 公开面）、会话 key 编解码单点（`session_keys`）；
+> 全量 8134 绿，上行违规 0（详见
+> [`docs/design/architecture-refactor-execution-roadmap-20261119.md`](docs/design/architecture-refactor-execution-roadmap-20261119.md)
+> 与 [`docs/INDEX.md`](docs/INDEX.md) §2.9）。
 
 ---
 
@@ -122,7 +129,7 @@ service = resolve("my.service")
 **[`docs/architecture-layered.html`](docs/architecture-layered.html)**；
 功能模块视角：[`docs/architecture-diagram.html`](docs/architecture-diagram.html)；
 L3 四领域聚合视图（草稿）：[`docs/architecture-layered-l3-clusters.html`](docs/architecture-layered-l3-clusters.html)。
-当前实测：**35 包 / 1978 生产符号 / 140 条包间依赖 / 0 上行违规**（2026-11-17）。
+当前实测：**465 文件 / 97,350 行**（L1 121 / L2 50 / L3 230 / L4 64），跨层边 442（L1→L2 76 · L1→L3 139 · L1→L4 71 · L2→L3 49 · L2→L4 14 · L3→L4 93），**上行违规 0**（2026-11-22，`sync_architecture_diagram.py` 实测）。
 
 ```
 ┌──────────────────────────────────────────────────────────┐
@@ -160,14 +167,13 @@ kernel 侧所有 `resolve()` 都是**惰性 + try/except**：kind 不存在时�
 
 | 面 | 数量 | 说明 |
 |---|---|---|
-| CLI 顶层命令 | 19 | 见 [`docs/REFERENCE.md`](docs/REFERENCE.md)；`backtest / check / reproduce / import / validate` 为业务遗留，底层已删待收尾 |
-| MCP 工具 | 17 | stdio + SSE 传输 |
-| Swarm preset | 37 | YAML DAG，编译为图执行 |
+| CLI 顶层命令 | 16 | 见 [`docs/REFERENCE.md`](docs/REFERENCE.md)；业务命令已随批次 4/5 删除（`reproduce` 保留待收尾） |
+| MCP 工具 | 12 | stdio + SSE 传输（2026-11-22 `mcp list-tools` 实测） |
+| Swarm preset | 37 | YAML DAG（`apps/swarm_presets/`），编译为图执行 |
 | 能力 kind | 4 | `goal.store` · `goal.models` · `goal.context` · `tool.goal` —— apps 注册，kernel 解析 |
-| 测试 | 6,600+ | `pytest tests --collect-only -q`（2026-11-17 实测） |
+| 测试 | 8,100+ | `pytest tests -q`（2026-11-22 实测 8134 passed） |
 
-> 上表为 2026-11-17 实测快照；逐条明细见 REFERENCE.md。业务裁剪（批次 4–6）已完成，
-> 框架本体的命令（`llm` / `compact` / `skills` / `swarm` / `mcp` / `serve` / `session`）不受影响。
+> 上表为 2026-11-22 实测快照；逐条明细见 REFERENCE.md。业务裁剪（批次 4–6）已完成。
 
 ---
 
