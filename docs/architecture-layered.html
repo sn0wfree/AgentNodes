@@ -135,7 +135,7 @@ footer code{background:var(--muted);padding:1px 5px;border-radius:4px;}
   <div class="arch-head">
     <div>
       <h2 class="arch-title">AgentNodes 分层架构</h2>
-      <p class="arch-sub">AST 实测 35 个包 / 1978 个生产符号 / 138 条包间依赖
+      <p class="arch-sub">AST 实测 37 个包 / 2095 个生产符号 / 156 条包间依赖
         · 方块宽度 ∝ 生产符号数 · 悬停查看职责与依赖</p>
     </div>
     <div class="arch-legend" id="an-legend"></div>
@@ -181,12 +181,12 @@ footer code{background:var(--muted);padding:1px 5px;border-radius:4px;}
     <b>MVP 三层怎么定的</b>：<b style="color:#ef4444">红</b>= 最小可对话（C1–C12：接一句话 → agent 调工具 → 流式回复，历史可存）；
     <b style="color:#f59e0b">黄</b>= 最小可干活（C13–C15：多节点工作流 + 产物契约 + 上下文注入）；
     <b style="color:#22c55e">绿</b>= 全能力（C16–C28：长程任务 + 自进化 + 评估 + 其它通道）。
-    判据是<b style="color:var(--fg)">运行时必要性</b>而非 import 闭包 —— 实测闭包会把 32/36 个包都算进红色
+    判据是<b style="color:var(--fg)">运行时必要性</b>而非 import 闭包 —— 实测闭包会把 33/37 个包都算进红色
     （<code>interfaces/api</code> 与 <code>kernel/agent</code> 传递 import 几乎全仓），无法区分层级。
-    <b style="color:var(--fg)">红层是「能力归属标注」，不是可裁剪部署单元</b>：红层包对非红层的实测 import 仍有 118 次
+    <b style="color:var(--fg)">红层是「能力归属标注」，不是可裁剪部署单元</b>：红层包对非红层的实测 import 仍有 139 次
     （最重的一条是 <code>interfaces/api</code> → <code>apps/goal</code> 14 次），所以别把红色读成「可删」。
     2026-11-17 修订：<code>kernel/session</code> 由绿改红 —— R-014 下沉后它是会话域真身（承载 C8 历史持久化，
-    红层主链路 <code>interfaces/api</code> → <code>kernel/session</code> 29 次 import）。判定依据见
+    红层主链路 <code>interfaces/api</code> → <code>kernel/session</code> 51 次 import）。判定依据见
     <code>docs/design/mvp-tier-revision-20261117.md</code>。
   </p>
 
@@ -207,11 +207,11 @@ footer code{background:var(--muted);padding:1px 5px;border-radius:4px;}
   "pkgs": [
    {
     "id": "interfaces/cli",
-    "files": 46,
-    "lines": 8912,
+    "files": 47,
+    "lines": 8918,
     "classes": 13,
-    "funcs": 277,
-    "n": 290,
+    "funcs": 273,
+    "n": 286,
     "label": "interfaces/cli",
     "sub": "CLI 命令",
     "role": "slash 命令族（goal / rsi / config / session）+ slash_router + onboard",
@@ -225,14 +225,14 @@ footer code{background:var(--muted);padding:1px 5px;border-radius:4px;}
    },
    {
     "id": "interfaces/api",
-    "files": 39,
-    "lines": 6828,
+    "files": 41,
+    "lines": 7333,
     "classes": 76,
-    "funcs": 175,
-    "n": 251,
+    "funcs": 189,
+    "n": 265,
     "label": "interfaces/api",
     "sub": "REST + SSE 入口",
-    "role": "FastAPI 路由装配：chat / workflow / goal / admin / permission / session 投影；SSE 事件分发",
+    "role": "FastAPI 路由装配：chat / workflow / goal / admin / permission / session 投影；SSE 事件分发 + 组合根 composition（删除生命周期 S2 / PermissionGateway C3）+ authz 归属校验（S1）",
     "tier": "A",
     "tierWhy": "交互接入 + 结果解析 + 流式回传（C1/C5/C6）",
     "caps": [
@@ -244,25 +244,9 @@ footer code{background:var(--muted);padding:1px 5px;border-radius:4px;}
     "layer": "L1"
    },
    {
-    "id": "interfaces",
-    "files": 6,
-    "lines": 1806,
-    "classes": 3,
-    "funcs": 54,
-    "n": 57,
-    "label": "interfaces",
-    "sub": "组装根",
-    "role": "gateway_wiring / rsi_wiring / tier0_snapshot：唯一允许知道 apps 的位置",
-    "tier": "C",
-    "tierWhy": "组装根（wiring）",
-    "caps": [],
-    "sessionRole": "",
-    "layer": "L1"
-   },
-   {
     "id": "interfaces/cli/tui",
     "files": 25,
-    "lines": 3949,
+    "lines": 3982,
     "classes": 26,
     "funcs": 21,
     "n": 47,
@@ -278,9 +262,25 @@ footer code{background:var(--muted);padding:1px 5px;border-radius:4px;}
     "layer": "L1"
    },
    {
+    "id": "interfaces",
+    "files": 6,
+    "lines": 1158,
+    "classes": 2,
+    "funcs": 28,
+    "n": 30,
+    "label": "interfaces",
+    "sub": "组装根",
+    "role": "gateway_wiring / rsi_wiring / tier0_snapshot：唯一允许知道 apps 的位置",
+    "tier": "C",
+    "tierWhy": "组装根（wiring）",
+    "caps": [],
+    "sessionRole": "",
+    "layer": "L1"
+   },
+   {
     "id": "interfaces/mcp",
     "files": 2,
-    "lines": 575,
+    "lines": 584,
     "classes": 2,
     "funcs": 4,
     "n": 6,
@@ -305,18 +305,52 @@ footer code{background:var(--muted);padding:1px 5px;border-radius:4px;}
   "pkgs": [
    {
     "id": "apps/goal",
-    "files": 18,
-    "lines": 5975,
-    "classes": 39,
-    "funcs": 39,
-    "n": 78,
+    "files": 19,
+    "lines": 6246,
+    "classes": 40,
+    "funcs": 44,
+    "n": 84,
     "label": "apps/goal",
     "sub": "长程任务",
-    "role": "判据 / 台账 / DAG 工作流 / journal / scoreboard（R1 恢复）",
+    "role": "判据 / 台账 / DAG 工作流 / journal / scoreboard（R1 恢复）+ hook↔runner 公开面（G3）",
     "tier": "C",
     "tierWhy": "长程任务（判据 / 台账 / DAG 工作流）",
     "caps": [
      "C16"
+    ],
+    "sessionRole": "",
+    "layer": "L2"
+   },
+   {
+    "id": "apps/chat",
+    "files": 9,
+    "lines": 1164,
+    "classes": 17,
+    "funcs": 21,
+    "n": 38,
+    "label": "apps/chat",
+    "sub": "发送回合用例",
+    "role": "send_turn 用例（3a.3 自 router 抽取：事件翻译 / 窄 port / answer_persister）+ 导出格式 / persona / shell 门禁",
+    "tier": "C",
+    "tierWhy": "send_turn 发送回合用例（3a.3 抽取）+ 导出格式 / persona / shell 门禁",
+    "caps": [],
+    "sessionRole": "",
+    "layer": "L2"
+   },
+   {
+    "id": "apps/evolution",
+    "files": 3,
+    "lines": 802,
+    "classes": 2,
+    "funcs": 28,
+    "n": 30,
+    "label": "apps/evolution",
+    "sub": "RSI 驱动",
+    "role": "cycle_driver：消费 kernel 进化引擎装配 RSI 闭环（G1：emit/seed 显式 port，删 _GwProxy）",
+    "tier": "C",
+    "tierWhy": "RSI 闭环驱动 app（cycle_driver：G1 emit/seed 显式 port）",
+    "caps": [
+     "C17"
     ],
     "sessionRole": "",
     "layer": "L2"
@@ -392,22 +426,6 @@ footer code{background:var(--muted);padding:1px 5px;border-radius:4px;}
     "layer": "L2"
    },
    {
-    "id": "apps/chat",
-    "files": 4,
-    "lines": 225,
-    "classes": 0,
-    "funcs": 7,
-    "n": 7,
-    "label": "apps/chat",
-    "sub": "产品策略",
-    "role": "会话侧业务策略",
-    "tier": "C",
-    "tierWhy": "产品策略（导出格式 / persona / shell 门禁）",
-    "caps": [],
-    "sessionRole": "",
-    "layer": "L2"
-   },
-   {
     "id": "apps/swarm_presets",
     "files": 1,
     "lines": 26,
@@ -435,14 +453,14 @@ footer code{background:var(--muted);padding:1px 5px;border-radius:4px;}
   "pkgs": [
    {
     "id": "kernel/agent",
-    "files": 106,
-    "lines": 22665,
-    "classes": 182,
-    "funcs": 249,
-    "n": 431,
+    "files": 114,
+    "lines": 22730,
+    "classes": 175,
+    "funcs": 277,
+    "n": 452,
     "label": "kernel/agent",
     "sub": "Agent 引擎",
-    "role": "LoopEngine / LoopSpec / loop_assembly / guardrails / deciders / 工具注册 / 压缩 / 遥测（最大包）",
+    "role": "LoopEngine / LoopSpec / loop_assembly / guardrails / deciders / 工具注册与隔离执行平台 / 压缩 / 遥测（最大包）",
     "tier": "A",
     "tierWhy": "人格设定 + 请求组装 + 工具闭环 + 停止条件（C2/C3/C9/C10/C12）",
     "caps": [
@@ -457,16 +475,16 @@ footer code{background:var(--muted);padding:1px 5px;border-radius:4px;}
    },
    {
     "id": "kernel/session",
-    "files": 15,
-    "lines": 6164,
-    "classes": 15,
-    "funcs": 74,
-    "n": 89,
+    "files": 20,
+    "lines": 8375,
+    "classes": 42,
+    "funcs": 78,
+    "n": 120,
     "label": "kernel/session",
     "sub": "会话域",
-    "role": "service / store / projector / db：R-014 批次 A–B3 下沉后的会话域真身（创建 / 存储 / 投影）",
+    "role": "service / store / projector / db / reader：会话域真身（创建 / 存储 / 投影 / 浏览）+ load_history / update_attempt_status 端口（C2）",
     "tier": "A",
-    "tierWhy": "会话域真身（service / store / projector / db）：承载 C8 历史持久化 + C3 的历史侧 + C7 会话标识 —— 红层主链路硬依赖（api→session 29 次 import）；R-014 下沉后由「只读浏览门面」改判红，判定依据见 docs/design/mvp-tier-revision-20261117.md",
+    "tierWhy": "会话域真身（service / store / projector / db / reader）：承载 C8 历史持久化 + C3 的历史侧 + C7 会话标识 —— 红层主链路硬依赖（api→session 51 次 import）；R-014 下沉后由「只读浏览门面」改判红，判定依据见 docs/design/mvp-tier-revision-20261117.md",
     "caps": [
      "C8"
     ],
@@ -475,11 +493,11 @@ footer code{background:var(--muted);padding:1px 5px;border-radius:4px;}
    },
    {
     "id": "kernel/workflow",
-    "files": 15,
-    "lines": 3488,
+    "files": 14,
+    "lines": 3337,
     "classes": 27,
-    "funcs": 48,
-    "n": 75,
+    "funcs": 44,
+    "n": 71,
     "label": "kernel/workflow",
     "sub": "工作流引擎",
     "role": "definition / graph_compiler / executor / node_types / contract（B1 产物契约）",
@@ -495,13 +513,13 @@ footer code{background:var(--muted);padding:1px 5px;border-radius:4px;}
    {
     "id": "kernel/evolution",
     "files": 12,
-    "lines": 3453,
+    "lines": 3480,
     "classes": 28,
-    "funcs": 34,
-    "n": 62,
+    "funcs": 35,
+    "n": 63,
     "label": "kernel/evolution",
     "sub": "自进化",
-    "role": "GEP-RSI：genome_proposals / validation_gate / holdout / isolated_replay / evolution_agent",
+    "role": "GEP-RSI：genome_proposals / validation_gate（三站判定单点）/ holdout / isolated_replay / evolution_agent",
     "tier": "C",
     "tierWhy": "自进化（提案 / 验证 / 冻结）",
     "caps": [
@@ -512,16 +530,16 @@ footer code{background:var(--muted);padding:1px 5px;border-radius:4px;}
    },
    {
     "id": "kernel/orchestration",
-    "files": 10,
-    "lines": 2541,
-    "classes": 27,
-    "funcs": 18,
-    "n": 45,
+    "files": 12,
+    "lines": 2859,
+    "classes": 28,
+    "funcs": 21,
+    "n": 49,
     "label": "kernel/orchestration",
     "sub": "编排",
-    "role": "genome_version / budget_gate / 判定层",
+    "role": "genome_version / budget_gate / session_keys（会话 key 编解码单点，C6）/ 判定层",
     "tier": "C",
-    "tierWhy": "genome_version / budget_gate",
+    "tierWhy": "genome_version / budget_gate / session_keys（会话 key 编解码单点，C6）",
     "caps": [
      "C22"
     ],
@@ -530,14 +548,14 @@ footer code{background:var(--muted);padding:1px 5px;border-radius:4px;}
    },
    {
     "id": "kernel/gateway",
-    "files": 9,
-    "lines": 2327,
-    "classes": 13,
-    "funcs": 30,
-    "n": 43,
+    "files": 10,
+    "lines": 2753,
+    "classes": 15,
+    "funcs": 31,
+    "n": 46,
     "label": "kernel/gateway",
     "sub": "会话网关",
-    "role": "session_controller / capacity：准入 + 容量闸 + 身份签发 + 驱动引擎",
+    "role": "session_controller / capacity / ensure_sink（C5 单点注册）：准入 + 容量闸 + 身份签发 + 驱动引擎",
     "tier": "A",
     "tierWhy": "会话标识（C7）",
     "caps": [
@@ -567,7 +585,7 @@ footer code{background:var(--muted);padding:1px 5px;border-radius:4px;}
    {
     "id": "kernel/runtimes",
     "files": 10,
-    "lines": 1649,
+    "lines": 1655,
     "classes": 11,
     "funcs": 9,
     "n": 20,
@@ -583,10 +601,10 @@ footer code{background:var(--muted);padding:1px 5px;border-radius:4px;}
    {
     "id": "kernel/swarm",
     "files": 6,
-    "lines": 1488,
+    "lines": 1558,
     "classes": 9,
-    "funcs": 7,
-    "n": 16,
+    "funcs": 10,
+    "n": 19,
     "label": "kernel/swarm",
     "sub": "Swarm",
     "role": "preset 加载 / 表达式求值 / 层图编译器",
@@ -618,11 +636,11 @@ footer code{background:var(--muted);padding:1px 5px;border-radius:4px;}
    },
    {
     "id": "kernel/memory",
-    "files": 3,
-    "lines": 604,
+    "files": 4,
+    "lines": 661,
     "classes": 3,
-    "funcs": 4,
-    "n": 7,
+    "funcs": 5,
+    "n": 8,
     "label": "kernel/memory",
     "sub": "记忆",
     "role": "持久化记忆",
@@ -635,9 +653,43 @@ footer code{background:var(--muted);padding:1px 5px;border-radius:4px;}
     "layer": "L3"
    },
    {
+    "id": "kernel",
+    "files": 3,
+    "lines": 263,
+    "classes": 1,
+    "funcs": 5,
+    "n": 6,
+    "label": "kernel",
+    "sub": "内核门面",
+    "role": "docstring 子带声明 + 顶层残留 dag / seq_generator（删除批冻结）",
+    "tier": "C",
+    "tierWhy": "内核门面（docstring 子带声明）+ 顶层残留 dag / seq_generator（删除批冻结）",
+    "caps": [],
+    "sessionRole": "",
+    "layer": "L3"
+   },
+   {
+    "id": "kernel/skills",
+    "files": 4,
+    "lines": 282,
+    "classes": 2,
+    "funcs": 4,
+    "n": 6,
+    "label": "kernel/skills",
+    "sub": "技能",
+    "role": "skill 模型与加载",
+    "tier": "C",
+    "tierWhy": "技能模型与加载",
+    "caps": [
+     "C25"
+    ],
+    "sessionRole": "",
+    "layer": "L3"
+   },
+   {
     "id": "kernel/events",
     "files": 2,
-    "lines": 465,
+    "lines": 474,
     "classes": 2,
     "funcs": 3,
     "n": 5,
@@ -645,7 +697,7 @@ footer code{background:var(--muted);padding:1px 5px;border-radius:4px;}
     "sub": "事件",
     "role": "event_v2 协议 / event_store",
     "tier": "A",
-    "tierWhy": "流式回传的��件源（C6）",
+    "tierWhy": "流式回传的事件源（C6）",
     "caps": [
      "C6",
      "C23"
@@ -668,40 +720,6 @@ footer code{background:var(--muted);padding:1px 5px;border-radius:4px;}
     "caps": [],
     "sessionRole": "",
     "layer": "L3"
-   },
-   {
-    "id": "kernel/skills",
-    "files": 4,
-    "lines": 238,
-    "classes": 2,
-    "funcs": 3,
-    "n": 5,
-    "label": "kernel/skills",
-    "sub": "技能",
-    "role": "skill 模型与加载",
-    "tier": "C",
-    "tierWhy": "技能模型与加载",
-    "caps": [
-     "C25"
-    ],
-    "sessionRole": "",
-    "layer": "L3"
-   },
-   {
-    "id": "kernel",
-    "files": 2,
-    "lines": 108,
-    "classes": 1,
-    "funcs": 1,
-    "n": 2,
-    "label": "kernel",
-    "sub": "内核门面",
-    "role": "子带声明",
-    "tier": "C",
-    "tierWhy": "内核门面",
-    "caps": [],
-    "sessionRole": "",
-    "layer": "L3"
    }
   ]
  },
@@ -713,36 +731,20 @@ footer code{background:var(--muted);padding:1px 5px;border-radius:4px;}
   "pkgs": [
    {
     "id": "foundation/llm",
-    "files": 24,
-    "lines": 5508,
-    "classes": 35,
-    "funcs": 95,
-    "n": 130,
+    "files": 25,
+    "lines": 5762,
+    "classes": 37,
+    "funcs": 96,
+    "n": 133,
     "label": "foundation/llm",
     "sub": "LLM 客户端",
-    "role": "openai_client / model_catalog / config（三路径链）/ 多供应商适配",
+    "role": "openai_client / model_catalog / config（三路径链）/ structured_output / 多供应商适配",
     "tier": "A",
     "tierWhy": "模型出站 + 结果解析（C4/C5）",
     "caps": [
      "C4",
      "C5"
     ],
-    "sessionRole": "",
-    "layer": "L4"
-   },
-   {
-    "id": "foundation",
-    "files": 10,
-    "lines": 2092,
-    "classes": 17,
-    "funcs": 44,
-    "n": 61,
-    "label": "foundation",
-    "sub": "基础原语",
-    "role": "paths / settings（ENV_TABLE 唯一入口）/ 错误类型 / git",
-    "tier": "A",
-    "tierWhy": "配置可达（api key / model / base url）",
-    "caps": [],
     "sessionRole": "",
     "layer": "L4"
    },
@@ -765,17 +767,33 @@ footer code{background:var(--muted);padding:1px 5px;border-radius:4px;}
     "layer": "L4"
    },
    {
+    "id": "foundation/config",
+    "files": 4,
+    "lines": 1408,
+    "classes": 4,
+    "funcs": 39,
+    "n": 43,
+    "label": "foundation/config",
+    "sub": "配置",
+    "role": "settings（ENV_TABLE 唯一 env 入口）/ paths（PROFILES 数据路径）/ config_loader —— foundation 归簇后配置真身",
+    "tier": "A",
+    "tierWhy": "配置可达（settings ENV_TABLE 唯一入口 / paths / config_loader）—— foundation 归簇（M9 系列）后配置真身在此",
+    "caps": [],
+    "sessionRole": "",
+    "layer": "L4"
+   },
+   {
     "id": "foundation/utils",
-    "files": 5,
-    "lines": 484,
-    "classes": 1,
-    "funcs": 21,
-    "n": 22,
+    "files": 7,
+    "lines": 666,
+    "classes": 2,
+    "funcs": 25,
+    "n": 27,
     "label": "foundation/utils",
     "sub": "工具函数",
-    "role": "通用工具",
+    "role": "通用工具 / git / registry（归簇收编）",
     "tier": "C",
-    "tierWhy": "通用工具函数",
+    "tierWhy": "通用工具 / git / registry（归簇收编）",
     "caps": [],
     "sessionRole": "",
     "layer": "L4"
@@ -792,6 +810,22 @@ footer code{background:var(--muted);padding:1px 5px;border-radius:4px;}
     "role": "日志 / trace / spans",
     "tier": "C",
     "tierWhy": "日志 / trace —— 出问题能查",
+    "caps": [],
+    "sessionRole": "",
+    "layer": "L4"
+   },
+   {
+    "id": "foundation",
+    "files": 4,
+    "lines": 296,
+    "classes": 10,
+    "funcs": 2,
+    "n": 12,
+    "label": "foundation",
+    "sub": "跨域契约",
+    "role": "errors / protocol / compact_config —— 配置域已拆 foundation/config（M9 系列）",
+    "tier": "C",
+    "tierWhy": "跨域契约（errors / protocol / compact_config）—— 配置域已拆 foundation/config",
     "caps": [],
     "sessionRole": "",
     "layer": "L4"
@@ -862,22 +896,17 @@ footer code{background:var(--muted);padding:1px 5px;border-radius:4px;}
  [
   "interfaces/api",
   "kernel/session",
-  29
+  51
  ],
  [
   "interfaces/cli",
   "apps/goal",
-  19
+  22
  ],
  [
   "interfaces/cli",
   "foundation/llm",
   18
- ],
- [
-  "interfaces/api",
-  "kernel/agent",
-  16
  ],
  [
   "interfaces/api",
@@ -895,19 +924,24 @@ footer code{background:var(--muted);padding:1px 5px;border-radius:4px;}
   13
  ],
  [
-  "interfaces",
-  "kernel/evolution",
-  13
- ],
- [
-  "kernel/session",
-  "kernel/agent",
+  "kernel/gateway",
+  "kernel/orchestration",
   13
  ],
  [
   "interfaces/api",
   "apps/scheduled_research",
   12
+ ],
+ [
+  "interfaces/cli",
+  "foundation/config",
+  11
+ ],
+ [
+  "kernel/agent",
+  "foundation/utils",
+  11
  ],
  [
   "kernel/agent",
@@ -921,22 +955,7 @@ footer code{background:var(--muted);padding:1px 5px;border-radius:4px;}
  ],
  [
   "interfaces/api",
-  "foundation/llm",
-  10
- ],
- [
-  "kernel/agent",
-  "foundation/utils",
-  10
- ],
- [
-  "kernel/agent",
-  "foundation",
-  10
- ],
- [
-  "kernel/gateway",
-  "kernel/orchestration",
+  "foundation/config",
   10
  ],
  [
@@ -945,28 +964,48 @@ footer code{background:var(--muted);padding:1px 5px;border-radius:4px;}
   9
  ],
  [
+  "interfaces/api",
   "foundation/llm",
-  "foundation",
+  9
+ ],
+ [
+  "kernel/session",
+  "foundation/storage",
+  9
+ ],
+ [
+  "kernel/session",
+  "kernel/agent",
   9
  ],
  [
   "interfaces/api",
-  "foundation",
-  9
- ],
- [
-  "interfaces/cli",
-  "foundation",
-  9
- ],
- [
-  "kernel/agent",
-  "foundation/observability",
+  "apps/chat",
   8
  ],
  [
+  "interfaces",
+  "kernel/evolution",
+  8
+ ],
+ [
+  "foundation/llm",
+  "foundation/config",
+  7
+ ],
+ [
+  "interfaces/api",
+  "kernel/agent",
+  7
+ ],
+ [
   "interfaces/api",
   "interfaces/cli",
+  7
+ ],
+ [
+  "kernel/agent",
+  "foundation/config",
   7
  ],
  [
@@ -975,13 +1014,18 @@ footer code{background:var(--muted);padding:1px 5px;border-radius:4px;}
   7
  ],
  [
+  "kernel/session",
+  "foundation/observability",
+  7
+ ],
+ [
   "kernel/workflow",
   "kernel/swarm",
   7
  ],
  [
-  "apps/goal",
-  "kernel/workflow",
+  "apps/chat",
+  "kernel/session",
   6
  ],
  [
@@ -990,13 +1034,8 @@ footer code{background:var(--muted);padding:1px 5px;border-radius:4px;}
   6
  ],
  [
-  "foundation/storage",
-  "foundation",
-  6
- ],
- [
   "interfaces/cli",
-  "kernel/session",
+  "apps/chat",
   6
  ],
  [
@@ -1010,6 +1049,21 @@ footer code{background:var(--muted);padding:1px 5px;border-radius:4px;}
   6
  ],
  [
+  "apps/evolution",
+  "kernel/evolution",
+  5
+ ],
+ [
+  "interfaces/cli",
+  "foundation/utils",
+  5
+ ],
+ [
+  "interfaces",
+  "kernel/orchestration",
+  5
+ ],
+ [
   "interfaces/mcp",
   "kernel/agent",
   5
@@ -1021,7 +1075,7 @@ footer code{background:var(--muted);padding:1px 5px;border-radius:4px;}
  ],
  [
   "kernel/agent",
-  "foundation/storage",
+  "foundation/observability",
   5
  ],
  [
@@ -1031,17 +1085,27 @@ footer code{background:var(--muted);padding:1px 5px;border-radius:4px;}
  ],
  [
   "kernel/session",
-  "foundation/storage",
-  5
- ],
- [
-  "kernel/session",
   "foundation/llm",
   5
  ],
  [
+  "kernel/session",
+  "kernel/events",
+  5
+ ],
+ [
+  "apps/goal",
+  "kernel",
+  4
+ ],
+ [
   "evals",
   "kernel/agent",
+  4
+ ],
+ [
+  "foundation/storage",
+  "foundation/config",
   4
  ],
  [
@@ -1055,8 +1119,8 @@ footer code{background:var(--muted);padding:1px 5px;border-radius:4px;}
   4
  ],
  [
-  "interfaces",
-  "kernel/orchestration",
+  "interfaces/cli/tui",
+  "kernel/session",
   4
  ],
  [
@@ -1075,13 +1139,23 @@ footer code{background:var(--muted);padding:1px 5px;border-radius:4px;}
   4
  ],
  [
+  "kernel/gateway",
+  "foundation/config",
+  4
+ ],
+ [
+  "kernel/gateway",
+  "foundation/llm",
+  4
+ ],
+ [
   "kernel/runtimes",
   "kernel/agent",
   4
  ],
  [
   "kernel/session",
-  "foundation",
+  "foundation/config",
   4
  ],
  [
@@ -1096,7 +1170,7 @@ footer code{background:var(--muted);padding:1px 5px;border-radius:4px;}
  ],
  [
   "apps/goal",
-  "foundation",
+  "foundation/config",
   3
  ],
  [
@@ -1121,7 +1195,7 @@ footer code{background:var(--muted);padding:1px 5px;border-radius:4px;}
  ],
  [
   "interfaces/api",
-  "apps/chat",
+  "kernel/orchestration",
   3
  ],
  [
@@ -1136,16 +1210,11 @@ footer code{background:var(--muted);padding:1px 5px;border-radius:4px;}
  ],
  [
   "interfaces/cli",
-  "foundation/utils",
+  "interfaces/api",
   3
  ],
  [
   "interfaces/cli",
-  "interfaces",
-  3
- ],
- [
-  "interfaces",
   "kernel/gateway",
   3
  ],
@@ -1171,28 +1240,33 @@ footer code{background:var(--muted);padding:1px 5px;border-radius:4px;}
  ],
  [
   "kernel/gateway",
-  "foundation",
-  3
- ],
- [
-  "kernel/gateway",
-  "foundation/llm",
-  3
- ],
- [
-  "kernel/gateway",
   "kernel/context",
   3
  ],
  [
   "kernel/session",
-  "foundation/observability",
+  "foundation",
   3
  ],
  [
-  "kernel/session",
-  "kernel/events",
+  "kernel/workflow",
+  "kernel",
   3
+ ],
+ [
+  "apps/chat",
+  "kernel/orchestration",
+  2
+ ],
+ [
+  "apps/goal",
+  "kernel/workflow",
+  2
+ ],
+ [
+  "foundation/llm",
+  "foundation",
+  2
  ],
  [
   "foundation/llm",
@@ -1206,6 +1280,11 @@ footer code{background:var(--muted);padding:1px 5px;border-radius:4px;}
  ],
  [
   "foundation/observability",
+  "foundation/config",
+  2
+ ],
+ [
+  "foundation/storage",
   "foundation",
   2
  ],
@@ -1217,16 +1296,6 @@ footer code{background:var(--muted);padding:1px 5px;border-radius:4px;}
  [
   "interfaces/api",
   "apps",
-  2
- ],
- [
-  "interfaces/api",
-  "kernel/orchestration",
-  2
- ],
- [
-  "interfaces/api",
-  "kernel/gateway",
   2
  ],
  [
@@ -1251,7 +1320,7 @@ footer code{background:var(--muted);padding:1px 5px;border-radius:4px;}
  ],
  [
   "interfaces/cli",
-  "interfaces/api",
+  "interfaces",
   2
  ],
  [
@@ -1266,27 +1335,12 @@ footer code{background:var(--muted);padding:1px 5px;border-radius:4px;}
  ],
  [
   "interfaces/cli/tui",
-  "kernel/session",
-  2
- ],
- [
-  "interfaces/cli/tui",
-  "kernel/agent",
-  2
- ],
- [
-  "interfaces/cli/tui",
   "apps/goal",
   2
  ],
  [
   "interfaces",
-  "foundation",
-  2
- ],
- [
-  "interfaces",
-  "foundation/storage",
+  "kernel/gateway",
   2
  ],
  [
@@ -1315,8 +1369,13 @@ footer code{background:var(--muted);padding:1px 5px;border-radius:4px;}
   2
  ],
  [
+  "interfaces",
+  "apps/evolution",
+  2
+ ],
+ [
   "kernel/agent",
-  "kernel/workflow",
+  "kernel/events",
   2
  ],
  [
@@ -1335,79 +1394,87 @@ footer code{background:var(--muted);padding:1px 5px;border-radius:4px;}
   2
  ],
  [
-  "kernel/orchestration",
-  "foundation",
-  2
+  "interfaces/api",
+  "kernel/gateway",
+  1
  ]
 ];
   var IO    = {
  "interfaces/api": {
   "i": 1,
-  "o": 17
+  "o": 18
  },
  "kernel/session": {
-  "i": 4,
-  "o": 6
+  "i": 5,
+  "o": 7
  },
  "interfaces/cli": {
   "i": 3,
-  "o": 19
+  "o": 20
  },
  "apps/goal": {
   "i": 4,
-  "o": 8
+  "o": 9
  },
  "foundation/llm": {
-  "i": 8,
-  "o": 3
- },
- "kernel/agent": {
-  "i": 17,
-  "o": 14
+  "i": 9,
+  "o": 4
  },
  "kernel/workflow": {
-  "i": 6,
-  "o": 4
+  "i": 4,
+  "o": 5
  },
  "interfaces/cli/tui": {
   "i": 1,
-  "o": 8
+  "o": 7
  },
- "interfaces": {
-  "i": 1,
-  "o": 10
+ "kernel/gateway": {
+  "i": 6,
+  "o": 7
  },
- "kernel/evolution": {
-  "i": 4,
-  "o": 4
+ "kernel/orchestration": {
+  "i": 7,
+  "o": 5
  },
  "apps/scheduled_research": {
   "i": 2,
+  "o": 1
+ },
+ "foundation/config": {
+  "i": 17,
+  "o": 0
+ },
+ "kernel/agent": {
+  "i": 14,
+  "o": 16
+ },
+ "foundation/utils": {
+  "i": 7,
   "o": 1
  },
  "apps": {
   "i": 5,
   "o": 3
  },
- "foundation/utils": {
-  "i": 6,
-  "o": 1
- },
- "foundation": {
-  "i": 17,
-  "o": 0
- },
- "kernel/gateway": {
-  "i": 4,
-  "o": 7
- },
- "kernel/orchestration": {
-  "i": 6,
-  "o": 4
- },
  "apps/agent_plugins": {
   "i": 0,
   "o": 2
+ },
+ "foundation/storage": {
+  "i": 14,
+  "o": 2
+ },
+ "apps/chat": {
+  "i": 2,
+  "o": 5
+ },
+ "interfaces": {
+  "i": 1,
+  "o": 10
+ },
+ "kernel/evolution": {
+  "i": 5,
+  "o": 4
  },
  "foundation/observability": {
   "i": 9,
@@ -1417,21 +1484,29 @@ footer code{background:var(--muted);padding:1px 5px;border-radius:4px;}
   "i": 4,
   "o": 4
  },
- "foundation/storage": {
-  "i": 13,
-  "o": 1
- },
  "kernel/permission": {
   "i": 2,
   "o": 1
  },
+ "apps/evolution": {
+  "i": 2,
+  "o": 5
+ },
  "interfaces/mcp": {
   "i": 1,
-  "o": 7
+  "o": 8
  },
  "kernel/runtimes": {
   "i": 3,
   "o": 3
+ },
+ "kernel/events": {
+  "i": 4,
+  "o": 1
+ },
+ "kernel": {
+  "i": 5,
+  "o": 0
  },
  "evals": {
   "i": 2,
@@ -1445,21 +1520,17 @@ footer code{background:var(--muted);padding:1px 5px;border-radius:4px;}
   "i": 2,
   "o": 0
  },
- "apps/chat": {
-  "i": 1,
-  "o": 1
- },
  "kernel/memory": {
   "i": 3,
-  "o": 1
+  "o": 0
  },
  "kernel/context": {
   "i": 2,
   "o": 1
  },
- "kernel/events": {
-  "i": 3,
-  "o": 1
+ "foundation": {
+  "i": 6,
+  "o": 0
  },
  "kernel/hooks": {
   "i": 1,
@@ -1468,10 +1539,10 @@ footer code{background:var(--muted);padding:1px 5px;border-radius:4px;}
 };
   var FLOW  = ["interfaces/api", "kernel/gateway", "kernel/agent", "foundation/llm"];
   var TIER_META  = {"A": {"label": "红 · 最小可对话", "desc": "C1–C12：接一句话 → agent 调工具 → 流式回复，历史可存"}, "B": {"label": "黄 · 最小可干活", "desc": "C13–C15：多节点工作流 + 产物契约 + 上下文注入"}, "C": {"label": "绿 · 全能力", "desc": "C16–C28：长程任务 + 自进化 + 评估 + 其它通道"}};
-  var TIER_STATS = {"A": {"pkgs": 9, "symbols": 1078, "caps": 12, "capList": ["C1", "C2", "C3", "C4", "C5", "C6", "C7", "C8", "C9", "C10", "C11", "C12"], "label": "红 · 最小可对话", "desc": "C1–C12：接一句话 → agent 调工具 → 流式回复，历史可存"}, "B": {"pkgs": 3, "symbols": 104, "caps": 3, "capList": ["C13", "C14", "C15"], "label": "黄 · 最小可干活", "desc": "C13–C15：多节点工作流 + 产物契约 + 上下文注入"}, "C": {"pkgs": 23, "symbols": 796, "caps": 13, "capList": ["C16", "C17", "C18", "C19", "C20", "C21", "C22", "C23", "C24", "C25", "C26", "C27", "C28"], "label": "绿 · 全能力", "desc": "C16–C28：长程任务 + 自进化 + 评估 + 其它通道"}};
-  var CAPS       = [{"id": "C1", "title": "交互接入", "desc": "HTTP 端点收一条消息（+ 可选 session_id）", "providers": ["interfaces/api"], "tier": "A"}, {"id": "C2", "title": "人格设定", "desc": "system prompt —— agent 的角色", "providers": ["kernel/agent"], "tier": "A"}, {"id": "C3", "title": "请求组装", "desc": "system + 历史 + 本轮消息", "providers": ["kernel/agent"], "tier": "A"}, {"id": "C4", "title": "模型出站", "desc": "兼容协议 + 认证 + 超时", "providers": ["foundation/llm"], "tier": "A"}, {"id": "C5", "title": "结果解析", "desc": "取文本 / 取增量", "providers": ["foundation/llm", "interfaces/api"], "tier": "A"}, {"id": "C6", "title": "流式回传", "desc": "SSE 逐 delta", "providers": ["interfaces/api", "kernel/events"], "tier": "A"}, {"id": "C7", "title": "会话标识", "desc": "多轮的载体", "providers": ["kernel/gateway"], "tier": "A"}, {"id": "C8", "title": "历史持久化", "desc": "会话落盘 + 取回（重启不丢）", "providers": ["kernel/session", "foundation/storage"], "tier": "A"}, {"id": "C9", "title": "工具定义与调用", "desc": "function calling 协议", "providers": ["kernel/agent", "apps"], "tier": "A"}, {"id": "C10", "title": "工具执行与回灌", "desc": "tool loop：请求→执行→回灌→再请求", "providers": ["kernel/agent"], "tier": "A"}, {"id": "C11", "title": "工具权限门", "desc": "哪些工具 / 哪些路径 / 要不要人确认", "providers": ["kernel/permission"], "tier": "A"}, {"id": "C12", "title": "停止条件", "desc": "最大轮数 / token 预算 / 时间预算", "providers": ["kernel/agent"], "tier": "A"}, {"id": "C13", "title": "多节点工作流", "desc": "DAG 编排", "providers": ["kernel/workflow"], "tier": "B"}, {"id": "C14", "title": "节点产物契约", "desc": "结构化校验", "providers": ["kernel/workflow"], "tier": "B"}, {"id": "C15", "title": "任务级上下文注入", "desc": "判据续跑 / workspace", "providers": ["kernel/context"], "tier": "B"}, {"id": "C16", "title": "长程任务", "desc": "判据 / 台账 / journal", "providers": ["apps/goal"], "tier": "C"}, {"id": "C17", "title": "自进化", "desc": "提案 → 验证 → 激活", "providers": ["kernel/evolution"], "tier": "C"}, {"id": "C18", "title": "评估基准与打分", "desc": "冻结基准 + scorecard", "providers": ["evals"], "tier": "C"}, {"id": "C19", "title": "Swarm 拓扑执行", "desc": "多 agent 拓扑", "providers": ["kernel/swarm", "apps/swarm_presets"], "tier": "C"}, {"id": "C20", "title": "量化插件", "desc": "角色 / 校验器 / 展示", "providers": ["apps/agent_plugins"], "tier": "C"}, {"id": "C21", "title": "定时研究", "desc": "cron 式调度", "providers": ["apps/scheduled_research"], "tier": "C"}, {"id": "C22", "title": "编排与预算闸", "desc": "genome_version / budget_gate", "providers": ["kernel/orchestration"], "tier": "C"}, {"id": "C23", "title": "事件溯源与轨迹", "desc": "append-only 事件 + 投影", "providers": ["kernel/events"], "tier": "C"}, {"id": "C24", "title": "记忆", "desc": "持久化记忆", "providers": ["kernel/memory"], "tier": "C"}, {"id": "C25", "title": "技能", "desc": "skill 模型与加载", "providers": ["kernel/skills"], "tier": "C"}, {"id": "C26", "title": "CLI 通道", "desc": "另一条交付面", "providers": ["interfaces/cli"], "tier": "C"}, {"id": "C27", "title": "TUI 通道", "desc": "终端界面", "providers": ["interfaces/cli/tui"], "tier": "C"}, {"id": "C28", "title": "MCP 通道", "desc": "Model Context Protocol", "providers": ["interfaces/mcp"], "tier": "C"}];
+  var TIER_STATS = {"A": {"pkgs": 9, "symbols": 1132, "caps": 12, "capList": ["C1", "C2", "C3", "C4", "C5", "C6", "C7", "C8", "C9", "C10", "C11", "C12"], "label": "红 · 最小可对话", "desc": "C1–C12：接一句话 → agent 调工具 → 流式回复，历史可存"}, "B": {"pkgs": 3, "symbols": 100, "caps": 3, "capList": ["C13", "C14", "C15"], "label": "黄 · 最小可干活", "desc": "C13–C15：多节点工作流 + 产物契约 + 上下文注入"}, "C": {"pkgs": 25, "symbols": 863, "caps": 13, "capList": ["C16", "C17", "C18", "C19", "C20", "C21", "C22", "C23", "C24", "C25", "C26", "C27", "C28"], "label": "绿 · 全能力", "desc": "C16–C28：长程任务 + 自进化 + 评估 + 其它通道"}};
+  var CAPS       = [{"id": "C1", "title": "交互接入", "desc": "HTTP 端点收一条消息（+ 可选 session_id）", "providers": ["interfaces/api"], "tier": "A"}, {"id": "C2", "title": "人格设定", "desc": "system prompt —— agent 的角色", "providers": ["kernel/agent"], "tier": "A"}, {"id": "C3", "title": "请求组装", "desc": "system + 历史 + 本轮消息", "providers": ["kernel/agent"], "tier": "A"}, {"id": "C4", "title": "模型出站", "desc": "兼容协议 + 认证 + 超时", "providers": ["foundation/llm"], "tier": "A"}, {"id": "C5", "title": "结果解析", "desc": "取文本 / 取增量", "providers": ["foundation/llm", "interfaces/api"], "tier": "A"}, {"id": "C6", "title": "流式回传", "desc": "SSE 逐 delta", "providers": ["interfaces/api", "kernel/events"], "tier": "A"}, {"id": "C7", "title": "会话标识", "desc": "多轮的载体", "providers": ["kernel/gateway"], "tier": "A"}, {"id": "C8", "title": "历史持久化", "desc": "会话落盘 + 取回（重启不丢）", "providers": ["kernel/session", "foundation/storage"], "tier": "A"}, {"id": "C9", "title": "工具定义与调用", "desc": "function calling 协议", "providers": ["kernel/agent", "apps"], "tier": "A"}, {"id": "C10", "title": "工具执行与回灌", "desc": "tool loop：请求→执行→回灌→再请求", "providers": ["kernel/agent"], "tier": "A"}, {"id": "C11", "title": "工具权限门", "desc": "哪些工具 / 哪些路径 / 要不要人确认", "providers": ["kernel/permission"], "tier": "A"}, {"id": "C12", "title": "停止条件", "desc": "最大轮数 / token 预算 / 时间预算", "providers": ["kernel/agent"], "tier": "A"}, {"id": "C13", "title": "多节点工作流", "desc": "DAG 编排", "providers": ["kernel/workflow"], "tier": "B"}, {"id": "C14", "title": "节点产物契约", "desc": "结构化校验", "providers": ["kernel/workflow"], "tier": "B"}, {"id": "C15", "title": "任务级上下文注入", "desc": "判据续跑 / workspace", "providers": ["kernel/context"], "tier": "B"}, {"id": "C16", "title": "长程任务", "desc": "判据 / 台账 / journal", "providers": ["apps/goal"], "tier": "C"}, {"id": "C17", "title": "自进化", "desc": "提案 → 验证 → 激活", "providers": ["kernel/evolution", "apps/evolution"], "tier": "C"}, {"id": "C18", "title": "评估基准与打分", "desc": "冻结基准 + scorecard", "providers": ["evals"], "tier": "C"}, {"id": "C19", "title": "Swarm 拓扑执行", "desc": "多 agent 拓扑", "providers": ["kernel/swarm", "apps/swarm_presets"], "tier": "C"}, {"id": "C20", "title": "量化插件", "desc": "角色 / 校验器 / 展示", "providers": ["apps/agent_plugins"], "tier": "C"}, {"id": "C21", "title": "定时研究", "desc": "cron 式调度", "providers": ["apps/scheduled_research"], "tier": "C"}, {"id": "C22", "title": "编排与预算闸", "desc": "genome_version / budget_gate", "providers": ["kernel/orchestration"], "tier": "C"}, {"id": "C23", "title": "事件溯源与轨迹", "desc": "append-only 事件 + 投影", "providers": ["kernel/events"], "tier": "C"}, {"id": "C24", "title": "记忆", "desc": "持久化记忆", "providers": ["kernel/memory"], "tier": "C"}, {"id": "C25", "title": "技能", "desc": "skill 模型与加载", "providers": ["kernel/skills"], "tier": "C"}, {"id": "C26", "title": "CLI 通道", "desc": "另一条交付面", "providers": ["interfaces/cli"], "tier": "C"}, {"id": "C27", "title": "TUI 通道", "desc": "终端界面", "providers": ["interfaces/cli/tui"], "tier": "C"}, {"id": "C28", "title": "MCP 通道", "desc": "Model Context Protocol", "providers": ["interfaces/mcp"], "tier": "C"}];
   var DEBTS      = [{"id": "D1", "title": "会话生命周期归属分裂：owner 在 L1 接口层，kernel 只能直查 DB", "detail": "会话的创建 / 存储 / 投影 / 归档 / 删除都在 interfaces/api/session/（L1 接口层）；kernel 侧只有 kernel/session/unified.py 一个「只读浏览门面」（列·搜·删），直连 SQLite 绕过服务层。", "evidence": "kernel/session 出边仅 1 条（→ kernel/agent/memory_manager.resolve_session_db_path，只为找 DB 路径）；入边 3 条（cli 6 次 / cli-tui 2 次 / mcp 2 次）—— web 侧零引用。", "related": "kernel/agent/projection_port.py:20 已记录同层「谁构造」问题", "direction": "<b>✅ 已处置（2026-11-17）</b>：选项 1 落地 —— 迁移方案 R-014 批次 A/B1/B2/B3 （31029770 → 4f673bbc）把会话词汇表/存储/投影/服务/DB 全部下沉 kernel/session（L3），interfaces/api/session 退化为 13 个 re-export 垫片 + web_session_state（前端 DTO）。K1 反向依赖归零（契约测试钉住）；web 通道 import 已翻转到真身（C1）；CLI/MCP/TUI 门面改名 reader 并改走共享连接生命周期（C2'/D1）。"}, {"id": "D2", "title": "「删除」在两条路径上语义相反：web 软删（archived=1）vs CLI 硬删（DELETE FROM）", "detail": "web 路由 web_session.py:302 把 archived 置 1，<b>保留</b> messages 与 event_log（让投影器继续 flush、SSE 不中断）；CLI 走 kernel/session/unified.py:168，<b>DELETE FROM messages + DELETE FROM sessions</b> 硬删。同一用户可见操作，两条通道结果不同。", "evidence": "web_session.py:313 `UPDATE sessions SET archived = 1`；kernel/session/unified.py:185-186 `DELETE FROM messages/sessions`", "related": "随 D1 一并处置（下沉时统一语义）", "direction": "<b>✅ 已解决（2026-11-17，E1 批次 6513f0c4）</b>：CLI/MCP/TUI 门面 reader.delete_session 改软删（archived=1，消息/event_log 保留），list/search 过滤 archived —— 与 web 完全一致；web 侧零改动。底层只有一份会话存储与一套删除语义。真硬删留待 CLI --purge（E2，未实施）。注：memory_manager.SQLiteStore.delete_session 是 /clear 路径（清消息保锚行，D7），不属于本债。"}, {"id": "D3", "title": "会话没有过期 / 淘汰机制，只增不减", "detail": "全仓搜「会话过期 / TTL / 上限 / 保留期」零命中；唯一的容量控制是 kernel/agent/cache.py 的<b>消息 LRU 缓存</b>（SessionCache，per-session），不是会话本身。会话只能靠手工删除（且两路径语义不同，见 D2）。", "evidence": "过期/淘汰/保留期/会话数上限 四组关键词全仓零命中；cache.py:444 只是消息追加触发 LRU", "related": "最小可对话能力集 C8「历史持久化」的隐含前提", "direction": "待定：最小可对话要不要带会话保留期？若要，需一并设计。"}];
-  var SESSION_LIFECYCLE = [{"stage": "创建", "owner": "SessionService", "loc": "kernel/session/service.py", "note": "create_session —— R-014 批次 B3 下沉（原 interfaces/api/session/service.py）"}, {"stage": "运行调度", "owner": "SessionController", "loc": "kernel/gateway/session_controller.py", "note": "准入 + 容量闸 + 身份签发 + 驱动引擎 —— <b>管 run 不管会话</b>"}, {"stage": "消息存储", "owner": "SessionStore", "loc": "kernel/session/store.py", "note": "SQLite 持久化 Session / Message / Attempt（连接/DDL 归同包 db.py）"}, {"stage": "状态投影", "owner": "Projector + projection_handlers", "loc": "kernel/session/projector.py · projection_handlers.py", "note": "从 event_log 派生状态（纯更新零 IO）"}, {"stage": "归档", "owner": "web_session 路由", "loc": "interfaces/api/routers/web_session.py:314", "note": "archived=1 软删，消息与 event_log 保留"}, {"stage": "删除", "owner": "<b>已统一（E1）</b>", "loc": "web_session.py:303（软）· kernel/session/reader.py:181（软）", "note": "web 与 CLI/MCP/TUI 同为 archived=1 软删 —— 见 D2（已解决）；真硬删待 --purge"}, {"stage": "过期 / 淘汰", "owner": "<b>无</b>", "loc": "—", "note": "全仓零命中；只有消息 LRU 缓存，不是会话 —— 见 D3（仍开放）"}, {"stage": "只读浏览", "owner": "kernel/session/reader.py", "loc": "kernel/session/reader.py", "note": "列/搜/取 —— CLI·MCP·TUI 用（← unified.py，C2' 改名；D1 起连接生命周期归 db 层）"}];
+  var SESSION_LIFECYCLE = [{"stage": "创建", "owner": "SessionService", "loc": "kernel/session/service.py", "note": "create_session —— R-014 批次 B3 下沉（原 interfaces/api/session/service.py）"}, {"stage": "运行调度", "owner": "SessionController", "loc": "kernel/gateway/session_controller.py", "note": "准入 + 容量闸 + 身份签发 + 驱动引擎 —— <b>管 run 不管会话</b>"}, {"stage": "消息存储", "owner": "SessionStore", "loc": "kernel/session/store.py", "note": "SQLite 持久化 Session / Message / Attempt（连接/DDL 归同包 db.py）"}, {"stage": "状态投影", "owner": "Projector + projection_handlers", "loc": "kernel/session/projector.py · projection_handlers.py", "note": "从 event_log 派生状态（纯更新零 IO）"}, {"stage": "归档", "owner": "组合根 delete_session_lifecycle（S2）", "loc": "interfaces/api/composition.py:210", "note": "archived=1 软删 + 投影失效单点 —— web_session.py:300 与 CLI session.py:119 均走此入口"}, {"stage": "删除", "owner": "<b>已统一（E1+S2）</b>", "loc": "web_session.py:300 · cli session.py:119 → composition 单点", "note": "web 与 CLI/MCP/TUI 同为 archived=1 软删（委托 L3 reader.delete_session）+ 投影失效；真硬删待 --purge"}, {"stage": "过期 / 淘汰", "owner": "<b>无</b>", "loc": "—", "note": "全仓零命中；只有消息 LRU 缓存，不是会话 —— 见 D3（仍开放）"}, {"stage": "只读浏览", "owner": "kernel/session/reader.py", "loc": "kernel/session/reader.py", "note": "列/搜/取 —— CLI·MCP·TUI 用（← unified.py，C2' 改名；D1 起连接生命周期归 db 层）"}];
   var TIER_COLOR = { A: '#ef4444', B: '#f59e0b', C: '#22c55e' };
   // 图例虚化开关：必须在任何 paint()/baseCls() 调用之前赋值
   // （上一版把 TIER_ON 放在首次使用点之后 -> 读到 undefined -> IIFE 抛错 -> 配色全丢）
@@ -1493,12 +1564,12 @@ footer code{background:var(--muted);padding:1px 5px;border-radius:4px;}
   function inEvalBand(id) { return layerKey(id) === EVAL_KEY; }
 
   var ISOLATED = {};
-  ["apps/algo", "kernel", "scripts", "apps/swarm_presets"].forEach(function (id) { ISOLATED[id] = 1; });
+  ["apps/algo", "scripts", "apps/swarm_presets"].forEach(function (id) { ISOLATED[id] = 1; });
 
   // ---- layout：层纵向堆叠，包在泳道内换行居中 ----
   var W = 1180, PADL = 132, PADR = 20, PADT = 8, PADB = 8, GAPY = 12, GAPX = 10, ROWH = 46;
   var PER_ROW = 5;
-  var MAXN = 431;
+  var MAXN = 452;
   function nodeW(p) { return 132 + Math.round(p.n * 118 / MAXN); }
 
   var pos = {}, ly = PADT, laneH = [];
@@ -1778,10 +1849,10 @@ footer code{background:var(--muted);padding:1px 5px;border-radius:4px;}
 
 <footer>
 本页由 AST 扫描实测生成（<code>tmp/probe/scan_arch.py</code> → <code>build_payload.py</code> → <code>gen_arch_html.py</code>）：
-35 个包 / 1978 个生产符号（顶层 class + func）/ 138 条包间依赖，绘制阈值 ≥2。<br>
+37 个包 / 2095 个生产符号（顶层 class + func）/ 156 条包间依赖，绘制阈值 ≥2。<br>
 分层口径与门禁一致（<code>scripts/arch/layer_matrix.py</code>）：L1 interfaces · L2 apps · L3 kernel · L4 foundation。
-跨层依赖 <b>89 条下行 / 0 条上行违规</b>，同层 42 条；另有 <b>7 条</b>属 evals 评估带跨层读取被测对象（设计内，不计违规）。<br>
-<b>零依赖包 4 个</b>：apps/algo · apps/swarm_presets · scripts —— 既无入边也无出边，是死代码候选（apps/algo 仍被 2 条测试直接引用）。<br>
+跨层依赖 <b>104 条下行 / 0 条上行违规</b>，同层 45 条；另有 <b>7 条</b>属 evals 评估带跨层读取被测对象（设计内，不计违规）。<br>
+<b>零依赖包 3 个</b>：apps/algo · scripts · apps/swarm_presets —— 既无入边也无出边，是死代码候选（apps/algo 仍被 2 条测试直接引用）。<br>
 本页零外部依赖（无 CDN / 无字体 / 无框架），随代码变化重新运行生成脚本即可。
 </footer>
 </div>

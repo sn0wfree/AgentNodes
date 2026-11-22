@@ -183,7 +183,7 @@ footer code{background:rgba(148,163,184,.10);padding:1px 6px;border-radius:5px;c
     <div>
       <h2 class="arch-title">AgentNodes 分层架构 · L3 聚合</h2>
       <p class="arch-sub">样式 v2 · Glassmorphism / 正交布线（原版见 <code>architecture-layered.html</code>，数据层已同步重跑、tier 判定同批修订）
-        · 数据 2026-11-18 复测（state 簇迁移 + Gateway 收敛 + foundation/config 拆分后，口径同 <code>tmp/probe/scan_arch.py</code>）：36 包 / 1985 符号 / 142 包间边 · L3 十五模块聚为四领域容器</p>
+        · 数据 2026-11-22 复测（apps/evolution 驱动 app + C1–C8 收敛批次后，口径同 <code>tmp/probe/scan_arch.py</code>）：37 包 / 2095 符号 / 156 包间边 · L3 十五模块聚为四领域容器</p>
     </div>
     <div class="bar" id="an-legend"></div>
   </div>
@@ -224,9 +224,9 @@ footer code{background:rgba(148,163,184,.10);padding:1px 6px;border-radius:5px;c
     <b>MVP 三层</b>（判定口径与 <code>docs/design/mvp-tier-revision-20261117.md</code> 一致）：
     <b style="color:var(--tierA)">红</b>= 最小可对话 C1–C12 ·
     <b style="color:var(--tierB)">黄</b>= 最小可干活 C13–C15 · <b style="color:var(--tierC)">绿</b>= 全能力 C16–C28。
-    <b>红层是「能力归属标注」，不是可裁剪部署单元</b>（红→非红实测 118 次 import）—— 别把红色读成「可删」。
+    <b>红层是「能力归属标注」，不是可裁剪部署单元</b>（红→非红实测 139 次 import）—— 别把红色读成「可删」。
     2026-11-17 修订：<code>kernel/session</code> 由绿改红 —— R-014 下沉后它是会话域真身，承载 C8 历史持久化，
-    红层主链路 <code>api→session</code> 44 次 import。2026-11-18 复测：36 包 / 1985 符号 / 142 包间边；主链路和 L3 聚合数据均以本次复测为准。<br>
+    红层主链路 <code>api→session</code> 51 次 import。2026-11-22 复测：37 包 / 2095 符号 / 156 包间边；主链路和 L3 聚合数据均以本次复测为准。<br>
     连线权重只计 <b>≥2 次</b>的 import（与原版图 <code>DRAW_MIN=2</code> 同口径），1 次的横切边未画。
   </p>
 
@@ -243,44 +243,45 @@ footer code{background:rgba(148,163,184,.10);padding:1px 6px;border-radius:5px;c
   var NS = 'http://www.w3.org/2000/svg';
   var REDUCED = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
-  // ═══════════ 数据（2026-11-18 复测：state 簇迁移 + gateway 收敛 + foundation/config 拆分后，口径同 tmp/probe/scan_arch.py）═══════════
+  // ═══════════ 数据（2026-11-22 复测：apps/evolution 驱动 app + C1–C8 收敛批次后，口径同 tmp/probe/scan_arch.py）═══════════
   var NODES = {
-    'interfaces/api':       {n:254, files:39, lines:7130, sub:'REST + SSE 入口', role:'FastAPI 路由装配：chat / workflow / goal / admin / permission / session 投影；SSE 事件分发', tier:'A', caps:['C1','C5','C6'], sessionRole:'HTTP 层：会话创建/删除路由 + SSE 流式'},
-    'interfaces/cli':       {n:290, files:46, lines:8912, sub:'CLI 命令', role:'slash 命令族（goal / rsi / config / session）+ slash_router + onboard', tier:'C', caps:['C26']},
-    'interfaces':           {n:57,  files:6,  lines:1806, sub:'组装根', role:'gateway_wiring / rsi_wiring / tier0_snapshot：唯一允许知道 apps 的位置', tier:'C', caps:[]},
-    'interfaces/cli/tui':   {n:47,  files:25, lines:3967, sub:'TUI', role:'Textual 终端界面：app / widgets / workers（DAG 视图、工作流 worker）', tier:'C', caps:['C27']},
-    'interfaces/mcp':       {n:6,   files:2,  lines:575,  sub:'MCP 服务', role:'Model Context Protocol 工具桥接', tier:'C', caps:['C28']},
-    'apps/goal':                {n:78, files:18, lines:5975, sub:'长程任务', role:'判据 / 台账 / DAG 工作流 / journal / scoreboard（R1 恢复）', tier:'C', caps:['C16']},
-    'apps/scheduled_research':  {n:21, files:6,  lines:1180, sub:'定时研究', role:'cron 式研究调度（批次 8 自 kernel 迁入）', tier:'C', caps:['C21']},
-    'apps/agent_plugins':       {n:19, files:5,  lines:708,  sub:'量化插件', role:'quant 角色定义 + 输出校验器 + 展示层 + 提示词', tier:'C', caps:['C20']},
-    'apps':                     {n:21, files:5,  lines:1214, sub:'能力注册', role:'capabilities.py：kind 注册 + requires 声明（ADR-003 端口化）+ goal_tools.py（业务工具工厂，批次 α 平铺）', tier:'C', caps:['C9']},
-    'apps/algo':                {n:10, files:2,  lines:326,  sub:'回测算法', role:'无前视调仓回测（2026-11-16 自 kernel/algo 迁入）', tier:'C', caps:[], iso:true},
-    'apps/chat':                {n:9,  files:5,  lines:350,  sub:'产品策略', role:'会话侧业务策略', tier:'C', caps:[]},
-    'apps/swarm_presets':       {n:1,  files:1,  lines:26,   sub:'拓扑 preset', role:'SwarmPreset YAML（37 个）', tier:'C', caps:['C19'], iso:true},
-    'kernel/agent':         {n:402, files:108, lines:20720, sub:'17 子包 · 点击详情', role:'loop / runtime / strategy / factory / tools / builtin_tools / capability / prompt / context / compact / policy / guards / validators / sandbox / plugins / signals / telemetry（state 已迁 kernel/session/state）', tier:'A', caps:['C2','C3','C9','C10','C12'], cl:'C1'},
-    'kernel/workflow':      {n:75,  files:15,  lines:3488,  sub:'工作流引擎', role:'definition / graph_compiler / executor / node_types / contract（B1 产物契约）', tier:'B', caps:['C13','C14'], cl:'C1'},
-    'kernel/orchestration': {n:45,  files:10,  lines:2663,  sub:'编排', role:'genome_version / budget_gate / 判定层', tier:'C', caps:['C22'], cl:'C1'},
-    'kernel/runtimes':      {n:20,  files:10,  lines:1649,  sub:'运行时', role:'执行器抽象与策略', tier:'B', caps:[], cl:'C1'},
-    'kernel/swarm':         {n:16,  files:6,   lines:1488,  sub:'Swarm', role:'preset 加载 / 表达式求值 / 层图编译器', tier:'C', caps:['C19'], cl:'C1'},
-    'kernel/session':       {n:119, files:20,  lines:8287,  sub:'会话域真身', role:'service / store / projector / db / <b>state/</b>（EventStore·cache·MemoryManager·projection_port，2026-11-18 迁入）：会话域真身（创建 / 存储 / 投影 / 状态）—— 承载 C8 历史持久化，红层主链路硬依赖（api→session 44 次 import）', tier:'A', caps:['C8'], sessionRole:'会话域真身：创建 / 存储 / 投影 / 状态 / 只读浏览', cl:'C2'},
-    'kernel/evolution':     {n:62,  files:12,  lines:3453,  sub:'自进化', role:'GEP-RSI：genome_proposals / validation_gate / holdout / isolated_replay / evolution_agent', tier:'C', caps:['C17'], cl:'C2'},
-    'kernel/context':       {n:9,   files:4,   lines:407,   sub:'上下文', role:'ContextHub 组装点 / protocol 协议面 / policy 仲裁（注入器实现在 agent/context）', tier:'B', caps:['C15'], cl:'C2'},
-    'kernel/memory':        {n:7,   files:3,   lines:606,   sub:'记忆', role:'持久化记忆', tier:'C', caps:['C24'], cl:'C2'},
-    'kernel/gateway':       {n:44,  files:9,   lines:2493,  sub:'会话网关', role:'session_controller / capacity / mailbox pause·resume：唯一聊天执行控制面（2026-11-18 收敛，/send_async 已切 Gateway）', tier:'A', caps:['C7'], sessionRole:'run 调度器：准入 + 容量闸 + 身份签发 + 驱动引擎（不是会话生命周期）', cl:'C3'},
-    'kernel/events':        {n:5,   files:2,   lines:465,   sub:'事件', role:'event_v2 协议 / 事件词表（EventStore 持久化在 kernel/session/state）', tier:'A', caps:['C6','C23'], sessionRole:'事件源（append-only），投影器的输入', cl:'C3'},
-    'kernel/hooks':         {n:5,   files:4,   lines:260,   sub:'钩子', role:'composite hook 组合', tier:'C', caps:[], cl:'C3'},
-    'kernel/permission':    {n:22,  files:5,   lines:1174,  sub:'权限', role:'规则引擎 / hard_deny / evaluator / schema（L0–L4）', tier:'A', caps:['C11'], cl:'C4'},
-    'kernel/skills':        {n:5,   files:4,   lines:238,  sub:'技能', role:'skill 模型与加载', tier:'C', caps:['C25'], cl:'C4'},
-    'kernel':               {n:2,   files:2,   lines:108,   sub:'内核门面', role:'子带声明', tier:'C', caps:[], cl:'C4'},
-    'foundation/llm':           {n:133, files:25, lines:5760, sub:'LLM 客户端', role:'openai_client / model_catalog / config（三路径链）/ 多供应商适配 / structured_output（tool_call 参数解析）', tier:'A', caps:['C4','C5']},
-    'foundation':               {n:12,  files:4,  lines:296,  sub:'共享契约', role:'errors（StrategyResearchError 异常根）/ compact_config / protocol 事件契约 —— 配置域已拆 <b>foundation/config/</b>', tier:'A', caps:[]},
-    'foundation/storage':       {n:46,  files:13, lines:2503, sub:'存储', role:'data_store / 持久化后端 —— C8 的 SQLite <b>底座</b>（连接 / DDL 归 kernel/session.db；<b>实现者是 kernel/session</b>）', tier:'A', caps:['C8']},
-    'foundation/utils':         {n:27,  files:7,  lines:666,  sub:'工具函数', role:'通用工具 / git 封装 / 泛型 Registry', tier:'C', caps:[]},
-    'foundation/observability': {n:19,  files:5,  lines:932,  sub:'可观测', role:'日志 / trace / spans', tier:'C', caps:[]},
-    'foundation/web':           {n:10,  files:6,  lines:637,  sub:'Web 基础', role:'静态资源 / web 工具', tier:'C', caps:[]},
-    'foundation/config':        {n:41,  files:4,  lines:1376, sub:'配置域', role:'settings（ENV_TABLE 唯一 env 入口，R-002）/ paths（PROFILES 数据路径，R-005）/ config_loader（通用四层加载）', tier:'A'},
+    'interfaces/api':       {n:265, files:41, lines:7333, sub:'REST + SSE 入口', role:'FastAPI 路由装配：chat / workflow / goal / admin / permission / session 投影；SSE 事件分发 + 组合根 composition（删除生命周期 S2 / PermissionGateway C3）+ authz 归属校验（S1）', tier:'A', caps:['C1','C5','C6'], sessionRole:'HTTP 层：会话创建/删除路由（删除/归档走组合根 S2 单点）+ SSE 流式'},
+    'interfaces/cli':       {n:286, files:47, lines:8918, sub:'CLI 命令', role:'slash 命令族（goal / rsi / config / session）+ slash_router + onboard', tier:'C', caps:['C26']},
+    'interfaces':           {n:30, files:6, lines:1158, sub:'组装根', role:'gateway_wiring / rsi_wiring / tier0_snapshot：唯一允许知道 apps 的位置', tier:'C', caps:[]},
+    'interfaces/cli/tui':   {n:47, files:25, lines:3982, sub:'TUI', role:'Textual 终端界面：app / widgets / workers（DAG 视图、工作流 worker）', tier:'C', caps:['C27']},
+    'interfaces/mcp':       {n:6, files:2, lines:584,  sub:'MCP 服务', role:'Model Context Protocol 工具桥接', tier:'C', caps:['C28']},
+    'apps/goal':                {n:84, files:19, lines:6246, sub:'长程任务', role:'判据 / 台账 / DAG 工作流 / journal / scoreboard（R1 恢复）+ hook↔runner 公开面（G3）', tier:'C', caps:['C16']},
+    'apps/scheduled_research':  {n:21, files:6, lines:1180, sub:'定时研究', role:'cron 式研究调度（批次 8 自 kernel 迁入）', tier:'C', caps:['C21']},
+    'apps/agent_plugins':       {n:19, files:5, lines:708,  sub:'量化插件', role:'quant 角色定义 + 输出校验器 + 展示层 + 提示词', tier:'C', caps:['C20']},
+    'apps':                     {n:21, files:5, lines:1214, sub:'能力注册', role:'capabilities.py：kind 注册 + requires 声明（ADR-003 端口化）+ goal_tools.py（业务工具工厂，批次 α 平铺）', tier:'C', caps:['C9']},
+    'apps/algo':                {n:10, files:2, lines:326,  sub:'回测算法', role:'无前视调仓回测（2026-11-16 自 kernel/algo 迁入）', tier:'C', caps:[], iso:true},
+    'apps/chat':                {n:38, files:9, lines:1164,  sub:'发送回合用例', role:'send_turn 用例（3a.3 自 router 抽取：事件翻译 / 窄 port / answer_persister）+ 导出格式 / persona / shell 门禁', tier:'C', caps:[]},
+'apps/evolution':            {n:30, files:3,  lines:802,  sub:'RSI 驱动', role:'cycle_driver：消费 kernel 进化引擎装配 RSI 闭环（G1：emit/seed 显式 port，删 _GwProxy）', tier:'C', caps:['C17']},
+    'apps/swarm_presets':       {n:1, files:1, lines:26,   sub:'拓扑 preset', role:'SwarmPreset YAML（37 个）', tier:'C', caps:['C19'], iso:true},
+    'kernel/agent':         {n:452, files:114, lines:22730, sub:'17 子包 · 点击详情', role:'loop / runtime / strategy / factory / tools / builtin_tools / capability / prompt / context / compact / policy / guards / validators / sandbox / plugins / signals / telemetry（state 已迁 kernel/session/state）', tier:'A', caps:['C2','C3','C9','C10','C12'], cl:'C1'},
+    'kernel/workflow':      {n:71, files:14, lines:3337,  sub:'工作流引擎', role:'definition / graph_compiler / executor / node_types / contract（B1 产物契约）', tier:'B', caps:['C13','C14'], cl:'C1'},
+    'kernel/orchestration': {n:49, files:12, lines:2859,  sub:'编排', role:'genome_version / budget_gate / session_keys（会话 key 编解码单点，C6）/ 判定层', tier:'C', caps:['C22'], cl:'C1'},
+    'kernel/runtimes':      {n:20, files:10, lines:1655,  sub:'运行时', role:'执行器抽象与策略', tier:'B', caps:[], cl:'C1'},
+    'kernel/swarm':         {n:19, files:6, lines:1558,  sub:'Swarm', role:'preset 加载 / 表达式求值 / 层图编译器', tier:'C', caps:['C19'], cl:'C1'},
+    'kernel/session':       {n:120, files:20, lines:8375,  sub:'会话域真身', role:'service / store / projector / db / <b>state/</b>（EventStore·cache·MemoryManager·projection_port，2026-11-18 迁入）：会话域真身（创建 / 存储 / 投影 / 状态）—— 承载 C8 历史持久化，红层主链路硬依赖（api→session 51 次 import）', tier:'A', caps:['C8'], sessionRole:'会话域真身：创建 / 存储 / 投影 / 状态 / 只读浏览', cl:'C2'},
+    'kernel/evolution':     {n:63, files:12, lines:3480,  sub:'自进化', role:'GEP-RSI：genome_proposals / validation_gate（三站判定单点）/ holdout / isolated_replay / evolution_agent', tier:'C', caps:['C17'], cl:'C2'},
+    'kernel/context':       {n:9, files:4, lines:407,   sub:'上下文', role:'ContextHub 组装点 / protocol 协议面 / policy 仲裁（注入器实现在 agent/context）', tier:'B', caps:['C15'], cl:'C2'},
+    'kernel/memory':        {n:8, files:4, lines:661,   sub:'记忆', role:'持久化记忆', tier:'C', caps:['C24'], cl:'C2'},
+    'kernel/gateway':       {n:46, files:10, lines:2753,  sub:'会话网关', role:'session_controller / capacity / mailbox pause·resume / ensure_sink（C5 sink 单点注册）：唯一聊天执行控制面（/send_async 已切 Gateway）', tier:'A', caps:['C7'], sessionRole:'run 调度器：准入 + 容量闸 + 身份签发 + 驱动引擎（不是会话生命周期）', cl:'C3'},
+    'kernel/events':        {n:5, files:2, lines:474,   sub:'事件', role:'event_v2 协议 / 事件词表（EventStore 持久化在 kernel/session/state）', tier:'A', caps:['C6','C23'], sessionRole:'事件源（append-only），投影器的输入', cl:'C3'},
+    'kernel/hooks':         {n:5, files:4, lines:260,   sub:'钩子', role:'composite hook 组合', tier:'C', caps:[], cl:'C3'},
+    'kernel/permission':    {n:22, files:5, lines:1174,  sub:'权限', role:'规则引擎 / hard_deny / evaluator / schema（L0–L4）', tier:'A', caps:['C11'], cl:'C4'},
+    'kernel/skills':        {n:6, files:4, lines:282,  sub:'技能', role:'skill 模型与加载', tier:'C', caps:['C25'], cl:'C4'},
+    'kernel':               {n:6, files:3, lines:263,   sub:'内核门面', role:'docstring 门面 + 顶层残留 dag / seq_generator（删除批冻结）', tier:'C', caps:[], cl:'C4'},
+    'foundation/llm':           {n:133, files:25, lines:5762, sub:'LLM 客户端', role:'openai_client / model_catalog / config（三路径链）/ 多供应商适配 / structured_output（tool_call 参数解析）', tier:'A', caps:['C4','C5']},
+    'foundation':               {n:12, files:4, lines:296,  sub:'共享契约', role:'errors（StrategyResearchError 异常根）/ compact_config / protocol 事件契约 —— 配置域已拆 <b>foundation/config/</b>', tier:'A', caps:[]},
+    'foundation/storage':       {n:46, files:13, lines:2503, sub:'存储', role:'data_store / 持久化后端 —— C8 的 SQLite <b>底座</b>（连接 / DDL 归 kernel/session.db；<b>实现者是 kernel/session</b>）', tier:'A', caps:['C8']},
+    'foundation/utils':         {n:27, files:7, lines:666,  sub:'工具函数', role:'通用工具 / git 封装 / 泛型 Registry', tier:'C', caps:[]},
+    'foundation/observability': {n:19, files:5, lines:932,  sub:'可观测', role:'日志 / trace / spans', tier:'C', caps:[]},
+    'foundation/web':           {n:10, files:6, lines:637,  sub:'Web 基础', role:'静态资源 / web 工具', tier:'C', caps:[]},
+    'foundation/config':        {n:43, files:4, lines:1408, sub:'配置域', role:'settings（ENV_TABLE 唯一 env 入口，R-002）/ paths（PROFILES 数据路径，R-005）/ config_loader（通用四层加载）', tier:'A'},
     'evals':   {n:44, files:6, lines:1237, sub:'冻结基准', role:'golden 任务集 + scorecard + 完整性指纹', tier:'C', caps:['C18']},
-    'scripts': {n:2,  files:1, lines:104,  sub:'脚本', role:'历史遗留单文件', tier:'C', caps:[], iso:true}
+    'scripts': {n:2, files:1, lines:104,  sub:'脚本', role:'历史遗留单文件', tier:'C', caps:[], iso:true}
   };
 
   var CLUSTERS = [
@@ -292,7 +293,7 @@ footer code{background:rgba(148,163,184,.10);padding:1px 6px;border-radius:5px;c
     {key:'C1', emoji:'🧠', name:'执行与编排引擎', en:'Execution & Orchestration', color:'#3B82F6',
      desc:'系统的 CPU：agent 工具闭环、workflow DAG 编排、orchestration 预算判定、swarm 拓扑、runtimes 执行器',
      rows:[['kernel/agent'],['kernel/workflow','kernel/orchestration'],['kernel/runtimes','kernel/swarm']],
-     intra:'域内省略 5 条：workflow→swarm 7 · workflow→agent 6 · swarm→agent 4 · runtimes→agent 4 · agent→workflow 2',
+     intra:'域内省略 4 条：workflow→swarm 7 · workflow→agent 6 · runtimes→agent 4 · swarm→agent 4',
      caps:['C2','C3','C9','C10','C12','C13','C14','C19','C22']},
     {key:'C2', emoji:'💾', name:'上下文与状态', en:'Context & State', color:'#06B6D4',
      desc:'内存与记忆：session 会话域真身（存储 / 投影 / 服务 —— 承载 C8 历史持久化，<b>红层必到</b>）、evolution 自进化、context 仲裁框架、memory 记忆',
@@ -314,50 +315,51 @@ footer code{background:rgba(148,163,184,.10);padding:1px 6px;border-radius:5px;c
     {title:'扩展与观测', modules:['plugins','signals','telemetry']}
   ];
   var AGENT_MODULES = {
-    builtin_tools:{files:12,symbols:52,lines:3147,role:'内置工具实现与注册'},
+    builtin_tools:{files:12,symbols:52,lines:3139,role:'内置工具实现与注册'},
     capability:{files:2,symbols:17,lines:531,role:'kernel 到 apps 能力注册端口'},
     compact:{files:5,symbols:28,lines:1444,role:'上下文压缩与运行时 compact'},
     context:{files:4,symbols:15,lines:876,role:'上下文组装、注入与 providers'},
-    factory:{files:5,symbols:17,lines:878,role:'Agent / chat loop 构造与装配'},
+    factory:{files:4,symbols:16,lines:833,role:'Agent / chat loop 构造与装配'},
     guards:{files:5,symbols:17,lines:648,role:'输入守卫、熔断与敏感信息处理'},
-    loop:{files:12,symbols:38,lines:4157,role:'AgentLoop、迭代执行与流生命周期'},
+    loop:{files:14,symbols:52,lines:4896,role:'AgentLoop、迭代执行、隔离执行编排与流生命周期'},
     plugins:{files:6,symbols:16,lines:1127,role:'插件定义、注册与执行分发'},
     policy:{files:4,symbols:19,lines:614,role:'模式、停止决策与 step adapters'},
     prompt:{files:3,symbols:29,lines:1124,role:'提示词构造与 schema 提取'},
     runtime:{files:6,symbols:14,lines:377,role:'ModelIO、StopPolicy 与运行时接缝'},
     sandbox:{files:4,symbols:8,lines:545,role:'受限代码/命令执行边界'},
     signals:{files:3,symbols:5,lines:285,role:'暂停、恢复与进度信号'},
-    strategy:{files:21,symbols:36,lines:1605,role:'ReAct 等可替换 loop 策略'},
+    strategy:{files:21,symbols:36,lines:1610,role:'ReAct 等可替换 loop 策略'},
     telemetry:{files:4,symbols:25,lines:1171,role:'执行轨迹、审计与遥测'},
-    tools:{files:8,symbols:54,lines:1797,role:'ToolRegistry、ToolContext 与 toolsets'},
+    tools:{files:13,symbols:91,lines:3116,role:'ToolRegistry、ToolContext、toolsets 与隔离执行平台（isolation / admission / ctx codec）'},
     validators:{files:2,symbols:7,lines:227,role:'输出声明与结果校验'}
   };
   var AGENT_EDGES = [
-    {from:'builtin_tools',to:'plugins',weight:5},
     {from:'builtin_tools',to:'tools',weight:13},
-    {from:'context',to:'builtin_tools',weight:2},
+    {from:'builtin_tools',to:'plugins',weight:5},
     {from:'context',to:'capability',weight:3},
+    {from:'context',to:'builtin_tools',weight:2},
     {from:'context',to:'loop',weight:2},
-    {from:'factory',to:'builtin_tools',weight:2},
     {from:'factory',to:'loop',weight:5},
     {from:'factory',to:'tools',weight:3},
-    {from:'loop',to:'capability',weight:2},
+    {from:'factory',to:'builtin_tools',weight:2},
+    {from:'loop',to:'runtime',weight:6},
+    {from:'loop',to:'tools',weight:5},
+    {from:'loop',to:'strategy',weight:5},
+    {from:'loop',to:'guards',weight:4},
     {from:'loop',to:'compact',weight:3},
     {from:'loop',to:'context',weight:3},
-    {from:'loop',to:'guards',weight:4},
-    {from:'loop',to:'policy',weight:2},
-    {from:'loop',to:'runtime',weight:6},
-    {from:'loop',to:'signals',weight:2},
-    {from:'loop',to:'strategy',weight:5},
     {from:'loop',to:'telemetry',weight:3},
-    {from:'loop',to:'tools',weight:2},
+    {from:'loop',to:'capability',weight:2},
+    {from:'loop',to:'policy',weight:2},
+    {from:'loop',to:'signals',weight:2},
     {from:'plugins',to:'tools',weight:3},
-    {from:'prompt',to:'factory',weight:2}
+    {from:'prompt',to:'factory',weight:2},
+    {from:'tools',to:'builtin_tools',weight:2}
   ];
 
   var LANES = [
     {key:'L1', name:'L1 interfaces · 交付界面', note:'渠道层 · 组装根', rows:[['interfaces/cli','interfaces/api','interfaces','interfaces/cli/tui','interfaces/mcp']]},
-    {key:'L2', name:'L2 apps · 业务能力', note:'业务插件', rows:[['apps/goal','apps/scheduled_research','apps/agent_plugins','apps'],['apps/algo','apps/chat','apps/swarm_presets']]},
+    {key:'L2', name:'L2 apps · 业务能力', note:'业务插件', rows:[['apps/goal','apps/scheduled_research','apps/agent_plugins','apps'],['apps/algo','apps/chat','apps/evolution','apps/swarm_presets']]},
     {key:'L3', name:'L3 kernel · 平台机制', note:'4 领域容器 · 可折叠'},
     {key:'L4', name:'L4 foundation · 基础原语', note:'零业务依赖', rows:[['foundation/llm','foundation/config','foundation','foundation/storage'],['foundation/utils','foundation/observability','foundation/web']]},
     {key:'EV', name:'evals · 旁挂评估带', note:'跨层读取被测对象', rows:[['evals','scripts']]}
@@ -365,27 +367,29 @@ footer code{background:rgba(148,163,184,.10);padding:1px 6px;border-radius:5px;c
 
   // 聚合边（跨层 10 + 跨容器 7）：id/cls/w/br 数据不变，rt 为正交布线锚点
   var EDGES = [
-    {id:'L1>C1', cls:'', w:46, br:'api→workflow 13 · api→agent 7 · mcp→agent 5 · mcp→swarm 5 · cli→swarm 4 · interfaces→orchestration 4 · api→orchestration 3 · interfaces→agent 3 · cli→agent 2'},
-    {id:'L1>C2', cls:'', w:71, br:'api→session 44 · interfaces→evolution 13 · cli→session 6 · tui→session 4 · mcp→session 2 · mcp→memory 2'},
+    {id:'L1>C1', cls:'', w:47, br:'api→workflow 13 · api→agent 7 · interfaces→orchestration 5 · mcp→agent 5 · mcp→swarm 5 · cli→swarm 4 · api→orchestration 3 · interfaces→agent 3 · cli→agent 2'},
+    {id:'L1>C2', cls:'', w:67, br:'api→session 51 · interfaces→evolution 8 · tui→session 4 · mcp→session 2 · mcp→memory 2'},
     {id:'L1>C4', cls:'', w:9,  br:'cli→skills 4 · api→permission 3 · mcp→skills 2'},
-    {id:'L1>C3', cls:'', w:5,  br:'interfaces→gateway 3 · api→gateway 2'},
-    {id:'L2>C1', cls:'', w:31, br:'agent_plugins→agent 9 · apps→agent 10（含 goal_tools 6，批次 α 后并入 apps）· goal→workflow 6 · goal→swarm 6'},
-    {id:'C1>L4', cls:'', w:35, br:'agent→utils 11 · agent→llm 11 · agent→config 5 · agent→web 4 · agent→obs 4'},
+    {id:'L1>C3', cls:'', w:5,  br:'cli→gateway 3 · interfaces→gateway 2'},
+    {id:'L1>L2', cls:'', w:2,  br:'interfaces→apps/evolution 2（rsi_wiring 引 cycle_driver，G1）'},
+    {id:'L2>C1', cls:'', w:29, br:'apps→agent 10 · agent_plugins→agent 9 · goal→swarm 6 · chat→orchestration 2 · goal→workflow 2'},
+    {id:'L2>C2', cls:'', w:5,  br:'apps/evolution→kernel/evolution 5（cycle_driver 驱动进化引擎，G1）'},
+    {id:'C1>L4', cls:'', w:38, br:'agent→utils 11 · agent→llm 11 · agent→config 7 · agent→obs 5 · agent→web 4'},
     {id:'C2>L4', cls:'', w:30, br:'session→storage 9 · session→obs 7 · session→llm 5 · session→config 4 · session→foundation 3 · evolution→storage 2'},
-    {id:'C3>L4', cls:'', w:9,  br:'gateway→llm 4 · gateway→config 3 · gateway→storage 2'},
+    {id:'C3>L4', cls:'', w:10, br:'gateway→config 4 · gateway→llm 4 · gateway→storage 2'},
     {id:'EV>C1', cls:'eval', w:4, br:'evals→agent 4'},
     {id:'C2>EV', cls:'eval', w:4, br:'evolution→evals 4（自进化读取冻结基准）'},
-    {id:'C3>C1', cls:'xcross', w:22, br:'gateway→orchestration 10 · gateway→agent 7 · gateway→runtimes 5'},
+    {id:'C3>C1', cls:'xcross', w:25, br:'gateway→orchestration 13 · gateway→agent 7 · gateway→runtimes 5'},
     {id:'C2>C1', cls:'xcross', w:9,  br:'session→agent 9'},
     {id:'C1>C2', cls:'xcross', w:6,  br:'agent→memory 3 · agent→context 3'},
-    {id:'C1>C4', cls:'xcross', w:9,  br:'agent→permission 6 · agent→skills 3'},
-    {id:'C1>C3', cls:'xcross', w:2,  br:'agent→hooks 2'},
+    {id:'C1>C4', cls:'xcross', w:12, br:'agent→permission 6 · agent→skills 3 · workflow→kernel 3'},
+    {id:'C1>C3', cls:'xcross', w:4,  br:'agent→events 2 · agent→hooks 2'},
     {id:'C3>C2', cls:'xcross', w:3,  br:'gateway→context 3'},
-    {id:'C2>C3', cls:'xcross', w:4,  br:'session→events 4'}
+    {id:'C2>C3', cls:'xcross', w:5,  br:'session→events 5'}
   ];
 
   var CHAIN = [
-    {from:'interfaces/api', to:'kernel/gateway', w:2},
+    {from:'interfaces/api', to:'kernel/gateway', w:1},
     {from:'kernel/gateway', to:'kernel/agent', w:7},
     {from:'kernel/agent', to:'foundation/llm', w:11}
   ];
@@ -400,7 +404,7 @@ footer code{background:rgba(148,163,184,.10);padding:1px 6px;border-radius:5px;c
 
   // ═══════════ 布局 ═══════════
   var W = 1180, PADL = 168, PADR = 18, GAPY = 16, ROWH = 48, NH = 36;
-  var MAXN = 432;
+  var MAXN = 452;
   function nodeW(n) { return 132 + Math.round(n * 118 / MAXN); }
   var AVAIL = W - PADL - PADR;                       // 994 → 卡宽取整后走廊更宽
   var CARD_GAP = 32;
@@ -503,9 +507,11 @@ footer code{background:rgba(148,163,184,.10);padding:1px 6px;border-radius:5px;c
     switch (id) {
       case 'L1>C1': { var y1 = yOn(K, 'C1', 84);  return [[160, L.L1.b], [160, y1], [COL_X[0], y1]]; }
       case 'L2>C1': { var y2 = yOn(K, 'C1', 126); return [[166, L.L2.b], [166, y2], [COL_X[0], y2]]; }
+      case 'L2>C2': return [[940, L.L2.b], [940, K.C2.y]];
       case 'L1>C2': return [[913, L.L1.b], [913, K.C2.y]];
       case 'L1>C4': return [[1046, L.L1.b], [1046, K.C4.y]];
       case 'L1>C3': { var y13 = yOn(K, 'C3', 50); return [[150, L.L1.b], [150, y13], [COL_X[0], y13]]; }
+      case 'L1>L2': return [[174, L.L1.b], [174, L.L2.y]];
       case 'C1>L4': return [[400, K.C1.y + K.C1.h], [400, L.L4.y]];
       case 'C2>L4': { var gb = L.L3.b + 12; return [[913, K.C2.y + K.C2.h], [913, gb], [1128, gb], [1128, L.L4.y]]; }
       case 'C3>L4': { var y3 = yOn(K, 'C3', 76); return [[XL, y3], [698, y3], [698, L.L4.y]]; }
@@ -801,21 +807,21 @@ footer code{background:rgba(148,163,184,.10);padding:1px 6px;border-radius:5px;c
     return c ? c.name : k;
   }
   var PKG_IO = {
-    'kernel/agent':         {i: ['L1 ×28', 'L2 ×25', 'C3(gateway) 7', 'C2(session) 13', 'evals 4', 'C1 域内 ×12'], o: ['L4 ×48', 'C4(permission 6 · skills 3)', 'C2(memory 3 · context 3)', 'C3(hooks) 2', 'C1 域内 ×12']},
-    'kernel/workflow':      {i: ['L1(api) 13', 'L2(goal) 6', 'C1(agent) 2'], o: ['C1 域内（agent 6 · swarm 7）']},
-    'kernel/orchestration': {i: ['L1 ×6', 'C3(gateway) 10'], o: ['L4(foundation) 2']},
-    'kernel/runtimes':      {i: ['C3(gateway) 5'], o: ['C1 域内（agent 4）']},
-    'kernel/swarm':         {i: ['L1 ×9', 'L2(goal) 6', 'C1(workflow) 7'], o: ['C1 域内（agent 4）']},
-    'kernel/session':       {i: ['L1 ×39'], o: ['C1(agent) 13', 'C3(events) 3', 'L4 ×17']},
-    'kernel/evolution':     {i: ['L1(interfaces) 13'], o: ['evals 4', 'L4(storage) 2']},
-    'kernel/context':       {i: ['C3(gateway) 3', 'C1(agent) 3'], o: []},
-    'kernel/memory':        {i: ['C1(agent) 3', 'L1(mcp) 2'], o: []},
-    'kernel/gateway':       {i: ['L1(api) 2（主链路①②）'], o: ['C1 ×22', 'C2(context) 3', 'L4 ×8']},
-    'kernel/events':        {i: ['C2(session) 3'], o: []},
-    'kernel/hooks':         {i: ['C1(agent) 2'], o: []},
-    'kernel/permission':    {i: ['C1(agent) 6', 'L1(api) 3'], o: []},
-    'kernel/skills':        {i: ['C1(agent) 3', 'L1 ×6'], o: []},
-    'kernel':               {i: [], o: []}
+    'kernel/agent':{i: ['L1 ×17', 'L2 ×19', 'C1 ×15', 'C2 ×10', 'C3(gateway) 7', 'evals(evals) 4'], o: ['C1(workflow) 1', 'C2 ×7', 'C3 ×4', 'C4 ×10', 'L4 ×40']},
+    'kernel/workflow':{i: ['L1(api) 13', 'L2 ×3', 'C1(agent) 1'], o: ['C1 ×14', 'C4(kernel) 3', 'L4(llm) 1']},
+    'kernel/orchestration':{i: ['L1 ×10', 'L2(chat) 2', 'C2(evolution) 1', 'C3(gateway) 13'], o: ['C1(agent) 1', 'C2(evolution) 1', 'L4 ×3']},
+    'kernel/runtimes':{i: ['C1 ×2', 'C3(gateway) 5'], o: ['C1(agent) 4', 'L4 ×2']},
+    'kernel/swarm':{i: ['L1 ×9', 'L2(goal) 6', 'C1(workflow) 7'], o: ['C1 ×5', 'C4(kernel) 1', 'L4(observability) 1']},
+    'kernel/session':{i: ['L1 ×57', 'L2 ×7'], o: ['C1(agent) 9', 'C3(events) 5', 'L4 ×28']},
+    'kernel/evolution':{i: ['L1(interfaces) 8', 'L2(evolution) 5', 'C1 ×2', 'evals(evals) 1'], o: ['C1 ×2', 'L4(storage) 2', 'evals(evals) 4']},
+    'kernel/context':{i: ['C1(agent) 3', 'C3(gateway) 3'], o: ['L4(utils) 1']},
+    'kernel/memory':{i: ['L1 ×3', 'C1(agent) 3'], o: []},
+    'kernel/gateway':{i: ['L1 ×7', 'L2 ×2'], o: ['C1 ×25', 'C2(context) 3', 'L4 ×10']},
+    'kernel/events':{i: ['L1(api) 1', 'L2(chat) 1', 'C1(agent) 2', 'C2(session) 5'], o: ['L4(foundation) 1']},
+    'kernel/hooks':{i: ['C1(agent) 2'], o: []},
+    'kernel/permission':{i: ['L1(api) 3', 'C1(agent) 6'], o: ['L4(config) 1']},
+    'kernel/skills':{i: ['L1 ×6', 'C1(agent) 3'], o: []},
+    'kernel':{i: ['L1(cli/tui) 1', 'L2(goal) 4', 'C1 ×5'], o: []}
   };
   function ioOf(id) {
     var io = PKG_IO[id];
@@ -1020,9 +1026,9 @@ footer code{background:rgba(148,163,184,.10);padding:1px 6px;border-radius:5px;c
 
 <footer>
 样式 v2（Glassmorphism / 正交圆角布线）· 与 <code>architecture-layered.html</code> 同源：数据层同口径，tier 判定同步（2026-11-17 修订 <code>kernel/session</code> 绿→红）。
-数据 2026-11-18 AST 复测：36 包 / 1985 符号 / 142 条包间依赖。<br>
-聚合规则：L3 十五包 → 4 容器（执行与编排 5 包 558 符号 · 上下文与状态 4 包 197 · 通信与基础设施 3 包 54 · 安全与扩展 3 包 29）。
-容器内连线省略（仅 C1 有 5 条域内边，≥2 次口径）；跨容器 7 条正交直连；跨层依赖按容器聚合 10 条（悬停看逐包明细）；
+数据 2026-11-22 AST 复测：37 包 / 2095 符号 / 156 条包间依赖。<br>
+聚合规则：L3 十五包 → 4 容器（执行与编排 5 包 611 符号 · 上下文与状态 4 包 200 · 通信与基础设施 3 包 56 · 安全与扩展 3 包 34）。
+容器内连线省略（仅 C1 有 4 条域内边，≥2 次口径）；跨容器 7 条正交直连；跨层依赖按容器聚合 12 条（悬停看逐包明细）；
 主链路 <code>api→gateway→agent→llm</code> 节点级流动虚线（①–④）。全图正交布线零交叉；穿越玻璃容器的线段以低亮度透出，作为深度线索。<br>
 布局取向：通信与基础设施左上、执行引擎居下 —— 主链路沿左列垂直贯穿（api ↓ gateway ↓ agent ↓ llm）。
 </footer>
