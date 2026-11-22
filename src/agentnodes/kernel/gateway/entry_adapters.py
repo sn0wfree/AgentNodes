@@ -10,6 +10,7 @@ mailbox）。旧路径（asyncio.Queue / 直接调 service）不再存在。
 """
 from __future__ import annotations
 
+from agentnodes.kernel.orchestration.session_keys import make_session_key
 from agentnodes.kernel.orchestration import (
     EntryPoint,
     QueueMode,
@@ -80,7 +81,7 @@ def api_chat_request(
     return WorkRequest(
         kind=WorkKind.CHAT,
         source=SourceKind.API_CHAT,
-        session_key=f"chat:{session_id}",
+        session_key=make_session_key("chat", session_id),
         payload=payload,
         queue_mode=queue_mode,
     )
@@ -88,7 +89,7 @@ def api_chat_request(
 
 def cli_request(session_key: str, text: str) -> WorkRequest:
     """CLI 请求：来源 CLI → 默认 followup（五行表）。"""
-    key = session_key if ":" in session_key else f"chat:{session_key}"
+    key = session_key if ":" in session_key else make_session_key("chat", session_key)
     return WorkRequest(
         kind=WorkKind.CHAT,
         source=SourceKind.CLI,
@@ -99,7 +100,7 @@ def cli_request(session_key: str, text: str) -> WorkRequest:
 
 def mcp_request(session_key: str, payload: dict) -> WorkRequest:
     """MCP 请求：来源 MCP → 默认 followup（保守排队）。"""
-    key = session_key if ":" in session_key else f"mcp:{session_key}"
+    key = session_key if ":" in session_key else make_session_key("mcp", session_key)
     return WorkRequest(
         kind=WorkKind.CHAT,
         source=SourceKind.MCP,
@@ -110,7 +111,7 @@ def mcp_request(session_key: str, payload: dict) -> WorkRequest:
 
 def scheduler_request(session_key: str, payload: dict) -> WorkRequest:
     """定时任务请求：来源 scheduler → 默认 interrupt。"""
-    key = session_key if ":" in session_key else f"automation:{session_key}"
+    key = session_key if ":" in session_key else make_session_key("automation", session_key)
     return WorkRequest(
         kind=WorkKind.AUTOMATION,
         source=SourceKind.SCHEDULER,

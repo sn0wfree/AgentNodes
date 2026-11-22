@@ -35,8 +35,13 @@ def _fence_domain(session_key: str) -> str:
 
     chat:{X} 与 automation:{X} 必须落到同一个串行域——session=串行域，
     turn 不分类型同一条队。study 侧（scheduler）直接持物理 id，与此对齐。
+
+    第四轮 C6：实现收 ``orchestration.session_keys.physical_session_id``
+    单点（同约定曾以三种拼法散在 controller / entry_point / gateway）。
     """
-    return session_key.split(":", 1)[1] if ":" in session_key else session_key
+    from agentnodes.kernel.orchestration.session_keys import physical_session_id
+
+    return physical_session_id(session_key)
 
 
 @dataclass(frozen=True)

@@ -10,6 +10,9 @@ import threading
 import uuid
 from typing import Callable, Iterable
 
+from agentnodes.kernel.orchestration.session_keys import (
+    physical_session_id,
+)
 from agentnodes.kernel.orchestration.contracts import (
     QueueMode,
     Receipt,
@@ -89,14 +92,10 @@ class EntryPoint:
                 return prior_receipt  # 等价重试：原回执原样返回
 
         mailbox = self._mailbox_for(request.session_key)
-        # R2.2/R3：steer 路由——fence 域 = 物理 session id（剥 kind 前缀，
-        # 与 session_controller._fence_domain 同一约定），chat 与 automation
-        # 的活跃 run 由此同域互斥。
-        physical = (
-            request.session_key.split(":", 1)[1]
-            if ":" in request.session_key
-            else request.session_key
-        )
+        # R2.2/R3：steer 路由——fence 域 = 物理 session id（剥 kind 前缀），
+        # chat 与 automation 的活跃 run 由此同域互斥。C6：剥离收
+        # ``session_keys.physical_session_id`` 单点。
+        physical = physical_session_id(request.session_key)
         if self._is_active is not None:
             active = bool(self._is_active(physical))
         else:

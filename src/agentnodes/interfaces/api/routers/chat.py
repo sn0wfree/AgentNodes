@@ -38,6 +38,7 @@ from agentnodes.kernel.session.models import (
     SessionId,
 )
 from agentnodes.kernel.orchestration import QueueMode, RejectReason
+from agentnodes.kernel.orchestration.session_keys import make_session_key
 from agentnodes.kernel.session.service import SessionService
 from agentnodes.interfaces.api.routers.slash_common import (
     _handle_clear_command,
@@ -275,7 +276,7 @@ async def send_async(body: ChatMessage, request: Request):
         persisted_attempt is not None
         and persisted_attempt.status == AttemptStatus.PENDING
     ) else "processing"
-    mailbox = gateway.entry.mailbox_for(f"chat:{body.session_id}")
+    mailbox = gateway.entry.mailbox_for(make_session_key("chat", body.session_id))
     queue_length = mailbox.peek_depth() if mailbox is not None else 0
     try:
         service.event_bus.emit(body.session_id, "message_received", {

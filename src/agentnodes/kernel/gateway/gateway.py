@@ -16,6 +16,10 @@ from typing import Any, Callable
 from agentnodes.kernel.gateway.fencing import SessionFence
 from agentnodes.kernel.gateway.session_controller import RunResult, SessionController
 from agentnodes.kernel.orchestration import EntryPoint
+from agentnodes.kernel.orchestration.session_keys import (
+    make_session_key,
+    physical_session_id,
+)
 from agentnodes.foundation.config import settings as _settings
 
 logger = logging.getLogger(__name__)
@@ -362,7 +366,7 @@ class Gateway:
         先暂停 mailbox 再发取消信号，确保取消收尾后消费者不会取走下一项。
         返回 True=发现活跃 run 或待处理工单；False=会话当前空闲。
         """
-        session_key = f"chat:{session_id}"
+        session_key = make_session_key("chat", session_id)
         mailbox = self.entry.mailbox_for(session_key)
         active_run_id = self.fence.active_run(session_id)
         has_pending = mailbox.has_pending() if mailbox is not None else False
@@ -380,11 +384,11 @@ class Gateway:
 
     def pause_session(self, session_id: str) -> bool:
         """暂停已有 chat mailbox；不会创建新 session 或 mailbox。"""
-        return self.entry.pause_session(f"chat:{session_id}")
+        return self.entry.pause_session(make_session_key("chat", session_id))
 
     def resume_session(self, session_id: str) -> bool:
         """恢复 chat mailbox 并唤醒 Gateway 消费者。"""
-        resumed = self.entry.resume_session(f"chat:{session_id}")
+        resumed = self.entry.resume_session(make_session_key("chat", session_id))
         if resumed:
             self._combined_sink("queue_resumed", {"session_id": session_id})
             self._consumer_wake.set()
@@ -392,7 +396,7 @@ class Gateway:
 
     def chat_session_state(self, session_id: str) -> dict[str, bool | str]:
         """Return live activity, pending-work, pause state, and lease holder."""
-        mailbox = self.entry.mailbox_for(f"chat:{session_id}")
+        mailbox = self.entry.mailbox_for(make_session_key("chat", session_id))
         return {
             "active": self.fence.active_run(session_id) is not None,
             "pending": mailbox.has_pending() if mailbox is not None else False,
@@ -405,11 +409,11 @@ class Gateway:
 
     def attempt_state(self, session_id: str, attempt_id: str) -> str | None:
         """Return ``running``/``queued`` for a live Gateway attempt, else None."""
-        active_session_id = self.entry.session_id_for(f"chat:{session_id}") or session_id
+        active_session_id = self.entry.session_id_for(make_session_key("chat", session_id)) or session_id
         with self._sink_lock:
             if self._active_attempts.get(active_session_id) == attempt_id:
                 return "running"
-        mailbox = self.entry.mailbox_for(f"chat:{session_id}")
+        mailbox = self.entry.mailbox_for(make_session_key("chat", session_id))
         if mailbox is None:
             mailbox = next(
                 (
@@ -454,8 +458,8 @@ class Gateway:
         active=False——诚实反映「恢复状态不恢复执行」。
         """
         session_id = self.entry.session_id_for(session_key) or ""
-        # fence 域 = 物理 session id（剥 kind 前缀，R3 约定）
-        domain = session_key.split(":", 1)[-1]
+        # fence 域 = 物理 session id（剥 kind 前缀，R3 约定；C6 单点）
+        domain = physical_session_id(session_key)
         run_id = str(self.fence.active_run(domain) or "")
         last = self._turn_results.get(session_id) if session_id else None
         return {
