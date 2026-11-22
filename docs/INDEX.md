@@ -45,7 +45,7 @@
 
 ---
 
-## 2. design/ — 仍生效的设计与契约（152 份，2026-11-22 补录）
+## 2. design/ — 仍生效的设计与契约（153 份，2026-11-22 补录）
 
 **判据**：文档里的决策仍在代码中执行。已被取代的移到 `archive/`。
 
@@ -152,7 +152,7 @@
 | [`adr/ADR-002-l1-adapter-policy.md`](design/adr/ADR-002-l1-adapter-policy.md) | L1 适配器策略 |
 | [`adr/ADR-003-l3-l2-disposition.md`](design/adr/ADR-003-l3-l2-disposition.md) | L3→L2 处置（CapabilityRegistry 端口化） |
 
-### 2.9 架构收敛与复审执行记录（2026-11-06 → 11-22 · 94 份）
+### 2.9 架构收敛与复审执行记录（2026-11-06 → 11-22 · 95 份）
 
 **判据**：架构收敛四阶段（减法批次收口 → loop 统一 → L1 三前端一核心 → 隔离执行/L1/会话深 化四轮复审）的方案与执行记录。全部已实施并留痕；上行违规 0 由门禁持续钉住。主线入口：[`architecture-refactor-execution-roadmap-20261119.md`](design/architecture-refactor-execution-roadmap-20261119.md)。
 
@@ -255,7 +255,7 @@
 | [`progress-and-plan-20261106.md`](design/progress-and-plan-20261106.md) | 进度与计划 |
 | [`framework-review-20261106.md`](design/framework-review-20261106.md) | 框架评审（v1.1 后） |
 
-#### G. 配置 / 结构治理与专项调研（2026-11-05 → 11-17）
+#### G. 配置 / 结构治理与专项调研（2026-11-05 → 11-22）
 
 | 文档 | 内容 |
 |---|---|
@@ -284,6 +284,7 @@
 | [`architecture-consistency-scan-20261105.md`](design/architecture-consistency-scan-20261105.md) | 架构一致性扫描 |
 | [`industry-survey-knowledge-base-20261106.md`](design/industry-survey-knowledge-base-20261106.md) | 业界调研知识库 |
 | [`ui-ua-reuse-assessment-20261122.md`](design/ui-ua-reuse-assessment-20261122.md) | U-A 复用评估（UI 轨道） |
+| [`ui-ua-frontend-execution-plan-20261122.md`](design/ui-ua-frontend-execution-plan-20261122.md) | U-A 前端实现分步计划（会话 MVP → 完整前端 + 验收清单） |
 
 ---
 
