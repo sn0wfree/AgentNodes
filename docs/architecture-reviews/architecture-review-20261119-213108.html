@@ -1,0 +1,245 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>AgentNodes 架构复审 · 2026-11-19 · 21:31</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script type="module">
+    import mermaid from "https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs";
+    mermaid.initialize({ startOnLoad: true, theme: "neutral", securityLevel: "loose" });
+  </script>
+  <style>
+    body { font-family: "Segoe UI", "Microsoft YaHei", system-ui, sans-serif; }
+    .deep { background: linear-gradient(135deg, #0f172a, #1e293b); }
+    .mermaid { min-height: 150px; }
+    .mono { font-family: Consolas, "Cascadia Code", monospace; }
+    @media print { .no-print { display:none } body { background:#fff } }
+  </style>
+</head>
+<body class="bg-stone-50 text-slate-900">
+<main class="max-w-6xl mx-auto px-6 py-10 space-y-10">
+  <header class="border-b border-stone-300 pb-6">
+    <div class="flex flex-wrap items-end justify-between gap-4">
+      <div>
+        <p class="text-xs uppercase tracking-[.2em] text-slate-500">AgentNodes · Architecture review</p>
+        <h1 class="mt-2 text-3xl font-semibold font-serif">全项目架构复审</h1>
+        <p class="mt-2 text-sm text-slate-600">2026-11-19 · 基线 HEAD <code>2e90e3d5</code> · 分支 <code>refactor/session-lifecycle-kernel</code> · 复审时间 21:31</p>
+      </div>
+      <div class="rounded-lg border border-slate-200 bg-white px-4 py-3 text-xs text-slate-600">
+        <div><span class="inline-block h-3 w-5 border border-slate-400 align-middle"></span> module</div>
+        <div class="mt-1"><span class="inline-block h-0 w-5 border-t-2 border-dashed border-violet-500 align-middle"></span> seam</div>
+        <div class="mt-1"><span class="inline-block h-3 w-5 bg-slate-800 align-middle"></span> deep implementation</div>
+        <div class="mt-1"><span class="inline-block h-0 w-5 border-t-2 border-red-600 align-middle"></span> unresolved placement / lifecycle</div>
+      </div>
+    </div>
+  </header>
+
+  <section class="grid gap-6 lg:grid-cols-[1.4fr_.8fr]">
+    <article class="rounded-xl border border-slate-200 bg-white p-5">
+      <h2 class="text-lg font-semibold">架构总览：四层稳定，继续按 seam 做小批深化</h2>
+      <p class="mt-1 text-sm text-slate-600">近期 chat、资源组装、示例、工具隔离都按子批推进。结构门禁仍通过；当前关注点是隔离执行 seam 的归属与 M13 终态状态保留，而不是全仓重排。</p>
+      <div class="mt-4 rounded-lg border border-slate-200 bg-stone-50 p-4">
+        <pre class="mermaid">
+flowchart LR
+  subgraph L1["L1 · interfaces"]
+    HTTP["HTTP / CLI / TUI / MCP"]
+    ROOT["composition roots"]
+  end
+  subgraph L2["L2 · apps"]
+    CHAT["chat use cases"]
+    GOAL["goal / evolution"]
+    ISO["isolation adapter · current"]
+  end
+  subgraph L3["L3 · kernel"]
+    GW["Gateway / session"]
+    LOOP["AgentLoop / BaseTool"]
+    WF["workflow / graph / swarm"]
+    STATE["events / state"]
+  end
+  subgraph L4["L4 · foundation"]
+    CFG["config / LLM"]
+    STORE["storage"]
+    OBS["observability"]
+  end
+  HTTP --> CHAT
+  ROOT --> GW
+  CHAT --> GW
+  GOAL --> WF
+  GW --> LOOP
+  WF --> LOOP
+  LOOP --> STATE
+  STATE --> STORE
+  LOOP -. future isolation use .-> ISO
+  classDef deep fill:#0f172a,color:#fff,stroke:#0f172a;
+  class GW,LOOP,WF,STATE deep;
+  classDef leak stroke:#dc2626,stroke-width:2px;
+  class ISO leak;
+        </pre>
+      </div>
+      <div class="mt-4 grid gap-3 sm:grid-cols-2">
+        <div class="rounded-lg border border-slate-200 p-3"><h3 class="text-sm font-semibold">L1 · interfaces</h3><p class="mt-1 text-xs text-slate-600">HTTP、CLI、TUI、MCP adapter 与组合根。账本直读仍按 ADR-002 允许。</p></div>
+        <div class="rounded-lg border border-slate-200 p-3"><h3 class="text-sm font-semibold">L2 · apps</h3><p class="mt-1 text-xs text-slate-600">chat、goal、evolution 等产品用例；当前 B2.2 隔离 adapter 被放在 apps/chat。</p></div>
+        <div class="rounded-lg border border-slate-200 p-3"><h3 class="text-sm font-semibold">L3 · kernel</h3><p class="mt-1 text-xs text-slate-600">AgentLoop、BaseTool、Workflow、Graph、Swarm 等运行机制；不能依赖 L2 apps。</p></div>
+        <div class="rounded-lg border border-slate-200 p-3"><h3 class="text-sm font-semibold">L4 · foundation</h3><p class="mt-1 text-xs text-slate-600">配置、存储原语、观测与通用底层能力。</p></div>
+      </div>
+    </article>
+    <aside class="space-y-4">
+      <div class="rounded-xl border border-emerald-200 bg-emerald-50 p-5">
+        <h2 class="font-semibold text-emerald-950">结构门禁 · 当前通过</h2>
+        <ul class="mt-3 space-y-2 text-sm text-emerald-950">
+          <li>跨层上行违规：<b>0</b></li>
+          <li>kernel 模块级 SCC：<b>0</b></li>
+          <li>已登记 lazy SCC：<b>1</b></li>
+          <li>语义归属门禁：<b>17/17</b></li>
+          <li>架构图数字同步：<b>通过</b></li>
+        </ul>
+      </div>
+      <div class="rounded-xl border border-slate-200 bg-white p-5">
+        <h2 class="font-semibold">当前实测规模</h2>
+        <p class="mt-2 text-sm text-slate-700">454 个 Python 文件 / 95,024 行。</p>
+        <p class="mt-2 text-xs leading-5 text-slate-600">L1 120 / 22,530 · L2 47 / 10,783 · L3 223 / 49,541 · L4 64 / 12,170。跨层边：L1→L2 64、L1→L3 143、L1→L4 67、L2→L3 38、L2→L4 11、L3→L4 90。</p>
+      </div>
+      <div class="rounded-xl border border-slate-200 bg-white p-5">
+        <h2 class="font-semibold">本次验证</h2>
+        <p class="mt-2 text-sm text-slate-700">架构门禁、数字与图同步通过；近期 M12 / Workflow / B2.2 相关测试 <b>63 passed</b>。</p>
+        <p class="mt-2 text-xs text-slate-500">最近记录的全量：7,859 passed / 106 skipped / 2 xfailed；来自 B2.2 3a 提交，不代表本次再次跑了全量。</p>
+      </div>
+    </aside>
+  </section>
+
+  <section class="grid gap-5 lg:grid-cols-3">
+    <article class="rounded-xl border border-emerald-200 bg-emerald-50 p-5">
+      <h2 class="font-semibold text-emerald-950">M12 · 生命周期闭环</h2>
+      <p class="mt-2 text-sm text-emerald-950">atexit 改为单注册无参 `close_all`；显式关闭后 registry 释放对象引用。上一轮 weakref 缺口已修复。</p>
+    </article>
+    <article class="rounded-xl border border-emerald-200 bg-emerald-50 p-5">
+      <h2 class="font-semibold text-emerald-950">M13 · 两 registry</h2>
+      <p class="mt-2 text-sm text-emerald-950">已确认 key、实体、消费者与授权职责互补，不应合并。终态 run 内存保留问题仍待单独裁决。</p>
+    </article>
+    <article class="rounded-xl border border-emerald-200 bg-emerald-50 p-5">
+      <h2 class="font-semibold text-emerald-950">4c · B2.2 子批 3a</h2>
+      <p class="mt-2 text-sm text-emerald-950">Windows worker adapter seam 已落地且未接生产；下一子批 IPC/审批代理/状态对齐仍需单独批准。</p>
+    </article>
+  </section>
+
+  <section id="candidates" class="space-y-7">
+    <div>
+      <p class="text-xs uppercase tracking-[.2em] text-slate-500">Deepening opportunities</p>
+      <h2 class="mt-1 text-2xl font-semibold font-serif">本轮候选</h2>
+      <p class="mt-2 max-w-3xl text-sm text-slate-600">先对齐隔离执行 module 的归属，再扩 IPC；M13 状态保留另行设计。两个议题彼此独立，不混批。</p>
+    </div>
+
+    <article id="isolation-placement" class="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
+      <div class="flex flex-wrap items-center gap-2">
+        <h3 class="text-xl font-semibold">1 · 对齐隔离执行 seam 的层级归属</h3>
+        <span class="rounded-full bg-emerald-100 px-3 py-1 text-xs font-semibold text-emerald-900">Strong</span>
+        <span class="rounded-full bg-violet-100 px-3 py-1 text-xs text-violet-900">ports &amp; adapters · B2.2 前置</span>
+      </div>
+      <p class="mt-3 text-xs text-slate-500">Files</p>
+      <p class="mono text-sm">docs/design/isolated-execution-b22-design-20261119.md · apps/chat/isolation.py · apps/chat/_isolation_win32.py · kernel/agent/tools/core.py</p>
+      <div class="mt-4 grid gap-4 lg:grid-cols-2">
+        <div class="rounded-lg border border-slate-200 p-3"><p class="mb-2 text-xs uppercase tracking-wider text-slate-500">Before · planned L3 seam implemented in L2</p><pre class="mermaid">
+flowchart LR
+  D["design target: kernel/agent/tools/isolation"] --> K["BaseTool / AgentLoop · L3"]
+  I["apps/chat/isolation · L2"] --> W["Win32 adapter"]
+  K -. forbidden upward import .-> I
+  classDef leak stroke:#dc2626,stroke-width:2px;
+  class I leak;
+        </pre></div>
+        <div class="rounded-lg border border-slate-200 p-3"><p class="mb-2 text-xs uppercase tracking-wider text-slate-500">After · legal ownership path defined</p><pre class="mermaid">
+flowchart LR
+  K["kernel tool execution · L3"] --> S["isolation seam · L3"]
+  S --> P["Windows adapter"]
+  S --> POSIX["POSIX explicit unsupported"]
+  T["platform behavior tests"] --> S
+  classDef deep fill:#0f172a,color:#fff,stroke:#0f172a;
+  class S deep;
+        </pre></div>
+      </div>
+      <div class="mt-4 grid gap-4 md:grid-cols-3 text-sm">
+        <p><b>Problem.</b> B2.2 方案目标写 `kernel/agent/tools/isolation.py`，实际提交新增 `apps/chat/isolation.py`；测试也只从 apps/chat import。通用 tool execution 属于 L3，之后 BaseTool 不能合法依赖 L2。</p>
+        <p><b>Solution.</b> 在 B2.2 3b 前用短 R-014 修订确认 owner：若这是通用隔离执行 seam，归 kernel；若坚持 apps owner，则必须明确由更高层注入 adapter、kernel 不直接 import apps，并证明真实调用链可运行。</p>
+        <p><b>Wins.</b> locality：平台机制与调用者同层；leverage：所有工具共用一个合法 seam；层级门禁继续约束依赖方向。</p>
+      </div>
+      <div class="mt-4 rounded-lg bg-amber-50 p-3 text-sm"><b>需要先决定的不是代码形状，而是所有权。</b> 本轮模块零生产接线，因此现在校准成本最低；不要先加 IPC，再在 B2.4 被 L3→L2 约束迫使搬迁。</div>
+      <div class="mt-3 rounded-lg bg-stone-100 p-3 text-sm"><b>验收。</b> 方案、实现和架构图位置一致；有一条合法的 kernel→隔离 seam 调用路径（或有明确注入 adapter 的测试）；POSIX 禁启用、Windows E1/E5 行为保持。</div>
+    </article>
+
+    <article id="workflow-retention" class="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
+      <div class="flex flex-wrap items-center gap-2">
+        <h3 class="text-xl font-semibold">2 · 为 Workflow 终态 run 定义有限保留策略</h3>
+        <span class="rounded-full bg-amber-100 px-3 py-1 text-xs font-semibold text-amber-900">Worth exploring</span>
+        <span class="rounded-full bg-slate-100 px-3 py-1 text-xs text-slate-700">in-process · M13 独立小批</span>
+      </div>
+      <p class="mt-3 text-xs text-slate-500">Files</p>
+      <p class="mono text-sm">kernel/workflow/executor.py::WorkflowRunRegistry · interfaces/api/routers/workflow.py · tests/test_workflow_approval_api.py</p>
+      <div class="mt-4 grid gap-4 lg:grid-cols-2">
+        <div class="rounded-lg border border-slate-200 p-3"><p class="mb-2 text-xs uppercase tracking-wider text-slate-500">Before · terminal objects remain indefinitely</p><pre class="mermaid">
+flowchart LR
+  R["WorkflowRunRegistry._runs"] --> RUN["WorkflowRunner"]
+  RUN --> STATE["completed / failed / cancelled"]
+  STATE -. no production prune call .-> R
+  API["approve endpoint"] -->|"expects 409 if terminal exists"| R
+  classDef leak stroke:#dc2626,stroke-width:2px;
+  class R,STATE leak;
+        </pre></div>
+        <div class="rounded-lg border border-slate-200 p-3"><p class="mb-2 text-xs uppercase tracking-wider text-slate-500">After · retention bounded, HTTP meaning stable</p><pre class="mermaid">
+flowchart LR
+  R["registry"] --> ACTIVE["active run"]
+  R --> TERM["terminal + retention metadata"]
+  TERM --> TTL["bounded expiry"]
+  API["approve / status adapter"] --> S["preserved 409 / 404 policy"]
+  TTL --> R
+  classDef deep fill:#0f172a,color:#fff,stroke:#0f172a;
+  class R,TTL deep;
+        </pre></div>
+      </div>
+      <div class="mt-4 grid gap-4 md:grid-cols-3 text-sm">
+        <p><b>Problem.</b> `WorkflowRunRegistry.prune()` 没有生产调用；终态 runner 会留在 `_runs`。直接 prune 已使 approve 对终态对象由 409 变 404。</p>
+        <p><b>Solution.</b> 不合并两个互补 registry；先裁决终态信息保留多久及 404/409 契约，再设计有限 TTL / 持久记录查询策略。</p>
+        <p><b>Wins.</b> locality：终态与生命周期规则可定位；leverage：status/approve 共用清晰语义；测试覆盖成功、过期与重复操作。</p>
+      </div>
+      <div class="mt-4 rounded-lg bg-amber-50 p-3 text-sm"><b>状态。</b> M13 审查已判两个 registry 互补。该候选只处理 kernel registry 的终态滞留，需独立 R-014；目前不预设 TTL 时长或把存在性判断改到持久层。</div>
+    </article>
+  </section>
+
+  <section id="roadmap" class="rounded-xl border border-slate-200 bg-white p-6">
+    <h2 class="text-xl font-semibold">建议下一步执行计划</h2>
+    <ol class="mt-4 list-decimal space-y-3 pl-5 text-sm text-slate-700">
+      <li><b>先修订 B2.2 3a 归属说明。</b> 写一个小范围 R-014：解释为何代码从目标 kernel 路径落在 apps/chat，确认最终 owner 和合法调用路径；只涉及模块归属/设计同步，不接生产。</li>
+      <li><b>若归 kernel：单独迁移 seam，再做 3b。</b> 保持 Windows adapter 延迟导入、POSIX 显式禁用和 E1/E5 行为；测试验证层级方向和平台语义。若选择 L1 注入，则测试必须真实穿过组合根到 kernel caller，不能只测注入 helper。</li>
+      <li><b>随后批准并执行 3b。</b> 添加 JSON Lines IPC、审批请求代理、结果/错误协议与 `actual_state` 对齐；保留零生产接线。验收 E2/E3、异常/退出/取消清理、超时结果拒收。</li>
+      <li><b>独立处理 M13 终态保留。</b> 先定 409/404 对用户的契约和保留期限，再以行为测试实现；不要合并 router goal registry 与 kernel definition registry。</li>
+      <li><b>再推进 3c / 3d。</b> 仅用临时工作区 `WriteFileTool` 做脚本级试点，shell 不纳入；Windows 真机验证，POSIX 在跨平台生产启用前验证。3d 后再单独批准 B2.3；B2.5 前不接生产路径。</li>
+      <li><b>删除按原裁决等待。</b> legacy chat/3a.4 至少经历一个完整正式版本周期并独立审批；seq_generator 单独退役批。OptionsPricingTool 与 hooks 保留。</li>
+    </ol>
+  </section>
+
+  <section id="top-recommendation" class="rounded-2xl bg-slate-900 p-7 text-white">
+    <p class="text-xs uppercase tracking-[.2em] text-slate-300">Top recommendation</p>
+    <h2 class="mt-2 text-2xl font-semibold">B2.2 继续前，先对齐隔离执行 seam 的层级所有权</h2>
+    <p class="mt-3 max-w-4xl text-sm leading-6 text-slate-200">这是尚未接生产、又会影响后续 L3 tool runtime 接线的早期架构选择。方案写 kernel，代码落 apps/chat；直接进入 IPC 子批会扩大实现后再搬迁的风险。先用一份小 R-014 修订决定 owner 与调用路径，再继续 3b。M13 终态保留则是另一项独立的状态语义任务。</p>
+    <a class="mt-4 inline-block text-sm text-sky-300 underline" href="#isolation-placement">跳到候选 1 →</a>
+  </section>
+
+  <section class="rounded-xl border border-slate-200 bg-white p-5">
+    <h2 class="text-lg font-semibold">本次不建议</h2>
+    <ul class="mt-3 grid gap-2 text-sm text-slate-700 md:grid-cols-2">
+      <li>不重开四层结构、M12 已完成的资源组装或 Chat 发送迁移。</li>
+      <li>不合并已经证明互补的 Workflow registry。</li>
+      <li>不把 B2.2 adapter 当作生产隔离能力；当前零生产接线。</li>
+      <li>不在 3b/3c 阶段连接 BaseTool 或 AgentLoop 执行路径。</li>
+      <li>不移除 legacy chat、fallback 或 3a.4 过渡面。</li>
+      <li>不触碰未提交计划、skill 安装和其它未跟踪文件。</li>
+    </ul>
+  </section>
+
+  <footer class="border-t border-stone-300 pt-4 text-xs leading-5 text-slate-500">
+    <p>方法：复核最新 Git 历史、L0/L1/L2 规则、ADR-000/002/003、M12 lifecycle、M13 registry 与 B2.2 方案/执行记录；按 improve-codebase-architecture 与 codebase-design 评估 module depth、seam、locality、leverage；按 ub-mode 采用根因核验、可验证小步与行为测试。根目录未发现 GLOSSARY.md。</p>
+    <p>验证：架构层方向、kernel SCC、语义归属 17 项、架构数字与图同步均通过；近期相关定向测试 63 passed。未运行全量测试；最近全量记录为 7,859 passed / 106 skipped / 2 xfailed（B2.2 3a 提交）。</p>
+    <p>工作区：HEAD <code>2e90e3d5</code>；用户现有未提交计划与未跟踪文件保持原状，本次未编辑仓库文件。</p>
+  </footer>
+</main>
+</body>
+</html>

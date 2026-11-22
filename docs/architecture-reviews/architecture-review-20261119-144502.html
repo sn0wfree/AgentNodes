@@ -1,0 +1,249 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>AgentNodes 架构复审 · 2026-11-19</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script type="module">
+    import mermaid from "https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs";
+    mermaid.initialize({ startOnLoad: true, theme: "neutral", securityLevel: "loose" });
+  </script>
+  <style>
+    body { font-family: "Segoe UI", "Microsoft YaHei", system-ui, sans-serif; }
+    .deep { background: linear-gradient(135deg, #0f172a, #1e293b); }
+    .mermaid { min-height: 150px; }
+    .mono { font-family: Consolas, "Cascadia Code", monospace; }
+    @media print { .no-print { display:none } body { background:#fff } }
+  </style>
+</head>
+<body class="bg-stone-50 text-slate-900">
+<main class="max-w-6xl mx-auto px-6 py-10 space-y-10">
+  <header class="border-b border-stone-300 pb-6">
+    <div class="flex flex-wrap items-end justify-between gap-4">
+      <div>
+        <p class="text-xs uppercase tracking-[.2em] text-slate-500">AgentNodes · Architecture review</p>
+        <h1 class="mt-2 text-3xl font-semibold font-serif">全项目架构复审</h1>
+        <p class="mt-2 text-sm text-slate-600">2026-11-19 · 基线 HEAD <code>2ee1533a</code> · 分支 <code>refactor/session-lifecycle-kernel</code> · 复审时间 14:45</p>
+      </div>
+      <div class="rounded-lg border border-slate-200 bg-white px-4 py-3 text-xs text-slate-600">
+        <div><span class="inline-block h-3 w-5 border border-slate-400 align-middle"></span> module</div>
+        <div class="mt-1"><span class="inline-block h-0 w-5 border-t-2 border-dashed border-violet-500 align-middle"></span> seam</div>
+        <div class="mt-1"><span class="inline-block h-3 w-5 bg-slate-800 align-middle"></span> deep implementation</div>
+        <div class="mt-1"><span class="inline-block h-0 w-5 border-t-2 border-red-600 align-middle"></span> duplicated / leaking responsibility</div>
+      </div>
+    </div>
+  </header>
+
+  <section class="grid gap-6 lg:grid-cols-[1.4fr_.8fr]">
+    <article class="rounded-xl border border-slate-200 bg-white p-5">
+      <h2 class="text-lg font-semibold">架构骨架：稳定，不需要推倒重来</h2>
+      <p class="mt-1 text-sm text-slate-600">四层依赖方向仍成立。近期最有证据的工作是收敛具体用例与资源生命周期，不是全仓搬目录或合并执行模型。</p>
+      <div class="mt-4 rounded-lg border border-slate-200 bg-stone-50 p-4">
+        <pre class="mermaid">
+flowchart LR
+  subgraph L1["L1 · interfaces"]
+    HTTP["HTTP / CLI / TUI / MCP"]
+    ROOT["composition roots"]
+  end
+  subgraph L2["L2 · apps"]
+    CHAT["chat use cases"]
+    GOAL["goal / evolution"]
+    PLUG["plugins / presets"]
+  end
+  subgraph L3["L3 · kernel"]
+    GW["Gateway / session control"]
+    LOOP["AgentLoop / tools"]
+    GRAPH["Graph / workflow / swarm"]
+    STATE["events / session state"]
+  end
+  subgraph L4["L4 · foundation"]
+    CFG["config / LLM"]
+    STORE["storage"]
+    OBS["observability / utilities"]
+  end
+  HTTP --> CHAT
+  ROOT --> GW
+  CHAT --> GW
+  GOAL --> GRAPH
+  GW --> GRAPH
+  GRAPH --> LOOP
+  LOOP --> STATE
+  STATE --> STORE
+  GW --> CFG
+  classDef deep fill:#0f172a,color:#fff,stroke:#0f172a;
+  class GW,LOOP,GRAPH,STATE deep;
+        </pre>
+      </div>
+      <div class="mt-4 grid gap-3 sm:grid-cols-2">
+        <div class="rounded-lg border border-slate-200 p-3"><h3 class="text-sm font-semibold">L1 · interfaces</h3><p class="mt-1 text-xs text-slate-600">传输适配与资源组装；账本读取不等于编排越界（ADR-002）。</p></div>
+        <div class="rounded-lg border border-slate-200 p-3"><h3 class="text-sm font-semibold">L2 · apps</h3><p class="mt-1 text-xs text-slate-600">产品用例与策略；chat 的 send_turn 已承接主要发送编排。</p></div>
+        <div class="rounded-lg border border-slate-200 p-3"><h3 class="text-sm font-semibold">L3 · kernel</h3><p class="mt-1 text-xs text-slate-600">Gateway、AgentLoop、Graph / workflow / swarm 与运行状态；不因名称相似而合并。</p></div>
+        <div class="rounded-lg border border-slate-200 p-3"><h3 class="text-sm font-semibold">L4 · foundation</h3><p class="mt-1 text-xs text-slate-600">配置、存储原语、观测与通用底层能力。</p></div>
+      </div>
+    </article>
+    <aside class="space-y-4">
+      <div class="rounded-xl border border-emerald-200 bg-emerald-50 p-5">
+        <h2 class="font-semibold text-emerald-950">结构门禁 · 当前全通过</h2>
+        <ul class="mt-3 space-y-2 text-sm text-emerald-950">
+          <li>跨层上行违规：<b>0</b></li>
+          <li>kernel 模块级 SCC：<b>0</b></li>
+          <li>已登记 lazy SCC：<b>1</b></li>
+          <li>语义归属门禁：<b>17/17</b></li>
+          <li>架构图数字同步：<b>通过</b></li>
+        </ul>
+      </div>
+      <div class="rounded-xl border border-slate-200 bg-white p-5">
+        <h2 class="font-semibold">当前实测规模</h2>
+        <p class="mt-2 text-sm text-slate-700">451 个 Python 文件 / 94,635 行。</p>
+        <p class="mt-2 text-xs leading-5 text-slate-600">L1 119 / 22,415 · L2 45 / 10,551 · L3 223 / 49,499 · L4 64 / 12,170。跨层边：L1→L2 64、L1→L3 143、L1→L4 67、L2→L3 38、L2→L4 11、L3→L4 90。</p>
+      </div>
+      <div class="rounded-xl border border-amber-300 bg-amber-50 p-5">
+        <h2 class="font-semibold text-amber-950">报告与记录的数字差异</h2>
+        <p class="mt-2 text-sm text-amber-950">send-turn 执行记录 §10.4 仍写 94,622 行、L1 22,402 行；当前架构脚本和图面均验证为 94,635 / 22,415。只更新本报告，原记录待后续校准。</p>
+      </div>
+    </aside>
+  </section>
+
+  <section class="rounded-xl border border-slate-200 bg-white p-5">
+    <h2 class="text-lg font-semibold">近期执行路径</h2>
+    <p class="mt-1 text-sm text-slate-600">3a.3b 已把 `/send` 的主要编排接入 apps；复审发现 `/send_async` 仍保留另一份路由侧编排。</p>
+    <div class="mt-4 rounded-lg border border-slate-200 bg-stone-50 p-4">
+      <pre class="mermaid">
+sequenceDiagram
+  participant I as HTTP adapter
+  participant A as apps/chat send_turn
+  participant R as /send_async route
+  participant G as Gateway
+  I->>A: /send
+  A->>G: prepare / submit / wait
+  I->>R: /send_async
+  R->>R: precheck / Attempt / event ordering
+  R->>G: legacy helper path
+      </pre>
+    </div>
+  </section>
+
+  <section id="candidates" class="space-y-7">
+    <div>
+      <p class="text-xs uppercase tracking-[.2em] text-slate-500">Deepening opportunities</p>
+      <h2 class="mt-1 text-2xl font-semibold font-serif">本轮值得推进的候选</h2>
+      <p class="mt-2 max-w-3xl text-sm text-slate-600">只提出有当前证据的局部深化，不提出新 interface 细节；每个候选仍按 R-014 分批验证。</p>
+    </div>
+
+    <article id="async-send" class="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
+      <div class="flex flex-wrap items-center gap-2">
+        <h3 class="text-xl font-semibold">1 · 统一 `/send_async` 与 send_turn 的编排路径</h3>
+        <span class="rounded-full bg-emerald-100 px-3 py-1 text-xs font-semibold text-emerald-900">Strong</span>
+        <span class="rounded-full bg-sky-100 px-3 py-1 text-xs text-sky-900">in-process · 迁移完整性</span>
+      </div>
+      <p class="mt-3 text-xs text-slate-500">Files</p>
+      <p class="mono text-sm">interfaces/api/routers/chat.py · apps/chat/send_turn.py · tests/test_chat_send_turn.py · tests/test_chat_control_contract.py</p>
+      <div class="mt-4 grid gap-4 lg:grid-cols-2">
+        <div class="rounded-lg border border-slate-200 p-3"><p class="mb-2 text-xs uppercase tracking-wider text-slate-500">Before · two send coordinators</p><pre class="mermaid">
+flowchart LR
+  S["/send"] --> A["apps/chat send_turn"]
+  Q["/send_async"] --> P["route precheck"]
+  P --> T["Attempt + event order"]
+  T --> H["_send_via_gateway"]
+  A --> G["Gateway"]
+  H --> G
+  classDef leak stroke:#dc2626,stroke-width:2px;
+  class P,T,H leak;
+        </pre></div>
+        <div class="rounded-lg border border-slate-200 p-3"><p class="mb-2 text-xs uppercase tracking-wider text-slate-500">After · one deep use-case module</p><pre class="mermaid">
+flowchart LR
+  S["/send adapter"] --> A["apps/chat send_turn"]
+  Q["/send_async adapter"] --> A
+  A --> G["Gateway"]
+  A --> E["Attempt / event lifecycle"]
+  classDef deep fill:#0f172a,color:#fff,stroke:#0f172a;
+  class A deep;
+        </pre></div>
+      </div>
+      <div class="mt-4 grid gap-4 md:grid-cols-3 text-sm">
+        <p><b>Problem.</b> 两个入口仍分别编排一次发送；`/send_async` 路由负责预检、Attempt 与事件顺序，再走旧 helper。</p>
+        <p><b>Solution.</b> 核对它是否属于已批准的 3a 目标；若是，单独完成该入口迁移并保持 HTTP 响应与 SSE 契约。</p>
+        <p><b>Wins.</b> locality：顺序约束集中；leverage：两入口复用一处实现；tests 穿过同一 seam。</p>
+      </div>
+      <div class="mt-4 rounded-lg bg-amber-50 p-3 text-sm"><b>风险与验收。</b> 不能只删重复代码。保住严格历史失败不半提交、Attempt 终态、事件顺序、响应形状与 STEER 行为；用路由契约网和 send_turn 用例共同验证。</div>
+      <div class="mt-3 rounded-lg bg-stone-100 p-3 text-sm"><b>Deletion test.</b> 直接删路由逻辑会丢失 `/send_async` 仍承担的行为；先把完整行为迁入，再删除旧路径，复杂度才真正消失。</div>
+    </article>
+
+    <article id="composition" class="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
+      <div class="flex flex-wrap items-center gap-2">
+        <h3 class="text-xl font-semibold">2 · 收敛 HTTP 资源组装与生命周期知识</h3>
+        <span class="rounded-full bg-amber-100 px-3 py-1 text-xs font-semibold text-amber-900">Worth exploring</span>
+        <span class="rounded-full bg-slate-100 px-3 py-1 text-xs text-slate-700">local-substitutable · M12 待批</span>
+      </div>
+      <p class="mt-3 text-xs text-slate-500">Files</p>
+      <p class="mono text-sm">interfaces/api/container.py · interfaces/api/dependencies.py · interfaces/api/app.py · interfaces/api/routers/chat.py</p>
+      <div class="mt-4 grid gap-4 lg:grid-cols-2">
+        <div class="rounded-lg border border-slate-200 p-3"><p class="mb-2 text-xs uppercase tracking-wider text-slate-500">Before · construction and close knowledge split</p><pre class="mermaid">
+flowchart LR
+  C["AppContainer"] --> R["request path"]
+  D["dependency fallback"] --> R
+  X["router cache"] --> R
+  C -. identity / close rules .- D
+  D -. identity / close rules .- X
+  classDef leak stroke:#dc2626,stroke-width:2px;
+  class C,D,X leak;
+        </pre></div>
+        <div class="rounded-lg border border-slate-200 p-3"><p class="mb-2 text-xs uppercase tracking-wider text-slate-500">After · one lifecycle owner, explicit adapters</p><pre class="mermaid">
+flowchart LR
+  CR["composition root"] --> RG["resource graph"]
+  F["FastAPI lifespan"] --> CR
+  D["dependency adapter"] --> CR
+  X["no-request adapter"] --> CR
+  classDef deep fill:#0f172a,color:#fff,stroke:#0f172a;
+  class CR deep;
+        </pre></div>
+      </div>
+      <div class="mt-4 grid gap-4 md:grid-cols-3 text-sm">
+        <p><b>Problem.</b> 生产 container、dependency fallback、router cache 各自承担部分身份与生命周期规则；router cache 缺少明确 close。</p>
+        <p><b>Solution.</b> 按已落库 M12 方案先统一资源所有权与 close 规则，保留真实存在的测试、脚本入口，不盲删 fallback。</p>
+        <p><b>Wins.</b> locality：构造与 close 可一处核验；leverage：多入口复用资源图；identity 与释放行为可定向测试。</p>
+      </div>
+      <div class="mt-4 rounded-lg bg-amber-50 p-3 text-sm"><b>待裁决。</b> M12 仍未批准：确认是否接受方案形态、子批 1–4 范围、router cache close 时机，以及 lifespan 是否同批补齐。不要把本报告当成代码变更授权。</div>
+    </article>
+  </section>
+
+  <section id="roadmap" class="rounded-xl border border-slate-200 bg-white p-6">
+    <h2 class="text-xl font-semibold">建议下一步：按风险与前置排序</h2>
+    <ol class="mt-4 list-decimal space-y-3 pl-5 text-sm text-slate-700">
+      <li><b>先澄清 send_async 的迁移边界</b>：现有 3a 记录称 send-turn 接线已完成，但代码走查发现 `/send_async` 仍有路由侧编排。先判断它是否有意保留；若非有意，写一个独立 R-014 子批方案，列出契约与回滚点。</li>
+      <li><b>随后裁决 M12</b>：四项问题是资源所有权方案的必要输入；批准后按子批独立提交，先不删除 fallback 或旧名。</li>
+      <li><b>低风险一致性清理</b>：examples 有 10 处失效 `agentnodes.core.*` import，`extension-points.md` 仍提及不存在的 hooks 文件。选择更新还是归档后再处理；不要与架构迁移混提。</li>
+      <li><b>独立退役批</b>：`seq_generator.py` 有既定退役证据但仍需 R-014、四触点同步和短公告；OptionsPricingTool 因注册、预设、UI、文档承诺而保留；kernel/hooks 因真实运行消费者与扩展承诺而保留。</li>
+      <li><b>高风险隔离生产化</b>：4c 已决定 B2.1→B2.5 分阶段，但尚未开始；POSIX 在跨平台生产启用前验证，首个试点限定临时工作区 `file_write`，shell 暂缓。</li>
+      <li><b>兼容删除暂缓</b>：旧聊天队列至少经过一个完整正式版本周期，之后仍需独立删除审批；不得与低风险文档修复或 M12 混批。</li>
+    </ol>
+  </section>
+
+  <section id="top-recommendation" class="rounded-2xl bg-slate-900 p-7 text-white">
+    <p class="text-xs uppercase tracking-[.2em] text-slate-300">Top recommendation</p>
+    <h2 class="mt-2 text-2xl font-semibold">先核对 `/send_async` 是否漏在 send-turn 迁移之外</h2>
+    <p class="mt-3 max-w-4xl text-sm leading-6 text-slate-200">这是当前新增的具体证据：同一文件的 `/send` 已调用 apps/chat 用例，而 `/send_async` 仍持有预检、Attempt 与事件顺序，并调用旧 helper。先闭合这个行为差异，再推进 M12，可以避免同时改变两个独立 seam，也能使架构复审中的“send-turn 已完成度”与实际代码对齐。</p>
+    <a class="mt-4 inline-block text-sm text-sky-300 underline" href="#async-send">跳到候选 1 →</a>
+  </section>
+
+  <section class="rounded-xl border border-slate-200 bg-white p-5">
+    <h2 class="text-lg font-semibold">本次不建议</h2>
+    <ul class="mt-3 grid gap-2 text-sm text-slate-700 md:grid-cols-2">
+      <li>不推翻四层依赖骨架；当前六个上行方向均为零。</li>
+      <li>不按行数拆 AgentLoop、GraphEngine、Workflow 或 Swarm。</li>
+      <li>不重开 ADR-003 的 CapabilityRegistry「不建」裁决；未达到其重开条件。</li>
+      <li>不删除 legacy 队列、fallback 或 3a.4 过渡面；各自等待兼容期与独立审批。</li>
+      <li>不把 4c 原型当作生产能力；跨平台与真实工具阶段尚未验证。</li>
+      <li>不触碰当前未提交计划、`.agents/`、`.minimax/`、`.zcode/skills/`、压缩包或 `skills-lock.json`。</li>
+    </ul>
+  </section>
+
+  <footer class="border-t border-stone-300 pt-4 text-xs leading-5 text-slate-500">
+    <p>方法：复核近期提交、M12 / 顺序⑥审计 / send-turn 执行记录、ADR-000/002/003、当前四层架构脚本，并针对近期发送路径做独立只读走查。根目录未发现 GLOSSARY.md，架构术语遵循 codebase-design skill。</p>
+    <p>验证：层方向门禁、kernel SCC、语义归属 17 项、framework 数字与架构图同步均通过。未运行全量测试；最近执行记录为 7,836 passed / 106 skipped / 2 xfailed / 0 failed（记录数字待校准）。</p>
+    <p>工作区：HEAD <code>2ee1533a</code>；已有用户修改与未跟踪文件保持原状，本次未编辑仓库文件。</p>
+  </footer>
+</main>
+</body>
+</html>

@@ -1,0 +1,348 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<title>Architecture review — AgentNodes (3a.3 send-turn deepening)</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<script type="module">
+  import mermaid from "https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs";
+  mermaid.initialize({ startOnLoad: true, theme: "neutral", securityLevel: "loose" });
+</script>
+<style>
+  .seam { stroke-dasharray: 4 4; }
+  .leak { stroke: #dc2626; }
+  .deep { background: linear-gradient(135deg, #0f172a, #1e293b); color: #f8fafc; }
+  .mod { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; }
+  .lbl { font-size: 10px; letter-spacing: .12em; text-transform: uppercase; }
+</style>
+</head>
+<body class="bg-stone-50 text-slate-900 font-sans">
+<main class="max-w-5xl mx-auto px-6 py-12 space-y-12">
+
+<header class="space-y-3">
+  <div class="flex items-baseline justify-between">
+    <h1 class="text-3xl font-serif font-semibold">AgentNodes — architecture review</h1>
+    <span class="text-sm text-slate-500">2026-11-19 · HEAD dde0fd8d</span>
+  </div>
+  <p class="text-sm text-slate-600">Scope: 3a.3 send-turn deepening and its seam neighbourhood. Vocabulary: module · interface · implementation · depth · seam · adapter · leverage · locality.</p>
+  <div class="flex flex-wrap gap-4 text-xs text-slate-500 pt-2">
+    <span><b class="text-slate-900">solid box</b> = module</span>
+    <span><b class="text-slate-900">dashed line</b> = seam</span>
+    <span><b class="text-red-600">red arrow</b> = leakage across seam</span>
+    <span><b class="text-slate-900">dark box</b> = deep module</span>
+  </div>
+</header>
+
+<section id="candidates" class="space-y-12">
+
+<!-- Candidate 1 -->
+<article class="space-y-5">
+  <div class="flex items-center gap-3">
+    <h2 class="text-xl font-serif font-semibold">1 · Collapse the router's send-turn pipeline into one deep module</h2>
+    <span class="px-2 py-1 rounded bg-emerald-100 text-emerald-800 text-xs font-semibold">Strong</span>
+    <span class="px-2 py-1 rounded bg-slate-200 text-slate-700 text-xs">in-process</span>
+  </div>
+  <div class="mod text-sm text-slate-600">interfaces/api/routers/chat.py :502-783 · :803-1048 · :457-499 · :255-388 · :1048-1073 → apps/chat/send_turn.py (new)</div>
+  <div class="grid md:grid-cols-2 gap-4">
+    <div class="rounded-lg border border-slate-200 bg-white p-4 space-y-3">
+      <div class="lbl text-slate-500">Before — shallow adapter, wide interface</div>
+      <div class="relative h-64">
+        <div class="absolute left-2 top-4 w-32 h-12 border-2 border-slate-400 rounded flex items-center justify-center text-xs mod">send_async</div>
+        <div class="absolute left-2 top-24 w-32 h-12 border-2 border-slate-400 rounded flex items-center justify-center text-xs mod">send_sync</div>
+        <div class="absolute left-44 top-4 w-40 h-56 border border-dashed border-red-500 rounded bg-red-50 p-2 text-xs mod">
+          chat.py adapter<br><br>
+          <span class="text-red-700">HTTPException</span><br>
+          history read<br>
+          submit<br>
+          bridge<br>
+          answer persister<br>
+          terminal map
+        </div>
+        <svg class="absolute inset-0 w-full h-full pointer-events-none">
+          <line x1="136" y1="40" x2="176" y2="40" class="leam" stroke="#dc2626" stroke-width="2"/>
+          <line x1="136" y1="120" x2="176" y2="120" stroke="#dc2626" stroke-width="2"/>
+        </svg>
+        <div class="absolute right-2 top-24 w-28 h-16 border border-slate-300 rounded p-2 text-[10px] mod">kernel gateway<br>+ mailbox</div>
+      </div>
+      <p class="text-xs text-red-700">14 keyword params; HTTP errors leak into the use case implementation.</p>
+    </div>
+    <div class="rounded-lg border border-slate-200 bg-white p-4 space-y-3">
+      <div class="lbl text-slate-500">After — one deep module behind a small interface</div>
+      <div class="relative h-64">
+        <div class="absolute left-2 top-16 w-24 h-12 border-2 border-slate-400 rounded flex items-center justify-center text-xs mod">router</div>
+        <div class="absolute left-40 top-8 w-48 h-48 deep rounded p-3 text-xs mod shadow-lg">
+          <div class="lbl text-slate-300 mb-2">send_turn module</div>
+          <div class="border border-slate-500 rounded px-2 py-1 mb-2">interface: send_turn(input, deps)</div>
+          <div class="text-slate-300 text-[10px] leading-5">history precheck · attempt begin<br>submit · bridge · terminal<br>answer persister · result</div>
+        </div>
+        <div class="absolute right-2 top-16 w-28 h-16 border border-slate-300 rounded p-2 text-[10px] mod">kernel gateway</div>
+        <svg class="absolute inset-0 w-full h-full pointer-events-none">
+          <line x1="104" y1="88" x2="160" y2="88" stroke="#0f172a" stroke-width="3"/>
+          <line x1="352" y1="88" x2="396" y2="88" stroke="#0f172a" stroke-width="3"/>
+        </svg>
+      </div>
+      <p class="text-xs text-emerald-700">Router shrinks to auth, field translation, error→HTTP mapping.</p>
+    </div>
+  </div>
+  <div class="grid md:grid-cols-3 gap-4 text-sm">
+    <div><div class="lbl text-slate-500">Problem</div><p>One adapter holds the whole use case; 14-param interface; HTTPException crosses the seam.</p></div>
+    <div><div class="lbl text-slate-500">Solution</div><p>One typed <span class="mod">send_turn(input, deps)</span> interface; bridge and persister become internal seams.</p></div>
+    <div><div class="lbl text-slate-500">Deletion test</div><p>Deleting it scatters complexity across two routes, bridge, persister and 41 tests — it earns its keep.</p></div>
+  </div>
+  <div class="lbl text-slate-500">Wins</div>
+  <ul class="list-disc pl-5 text-sm space-y-1">
+    <li>leverage: two call sites share one implementation</li>
+    <li>locality: attempt and terminal semantics in one module</li>
+    <li>interface shrinks; implementation absorbs the pipeline</li>
+  </ul>
+</article>
+
+<!-- Candidate 2 -->
+<article class="space-y-5">
+  <div class="flex items-center gap-3">
+    <h2 class="text-xl font-serif font-semibold">2 · Fold the message builder into its single caller</h2>
+    <span class="px-2 py-1 rounded bg-amber-100 text-amber-800 text-xs font-semibold">Worth exploring</span>
+    <span class="px-2 py-1 rounded bg-slate-200 text-slate-700 text-xs">in-process</span>
+  </div>
+  <div class="mod text-sm text-slate-600">apps/chat/messages.py :36-70 · :73-97 → chat.py:709-717 · tests/test_chat_messages.py:17-72</div>
+  <div class="grid md:grid-cols-2 gap-4">
+    <div class="rounded-lg border border-slate-200 bg-white p-4 space-y-2">
+      <div class="lbl text-slate-500">Before — shallow module, N=1</div>
+      <div class="flex items-center justify-center h-56 gap-3">
+        <div class="w-28 h-16 border border-slate-400 rounded flex items-center justify-center text-xs mod">caller</div>
+        <div class="w-28 h-16 border border-slate-400 rounded flex flex-col items-center justify-center text-[10px] mod p-1">build_message_received<br><span class="text-slate-500">**extra dict</span></div>
+        <div class="w-28 h-16 border border-slate-400 rounded flex items-center justify-center text-xs mod">record_user_message</div>
+      </div>
+      <p class="text-xs text-slate-600">Interface ≈ implementation: an arbitrary dict assembler with one production caller.</p>
+    </div>
+    <div class="rounded-lg border border-slate-200 bg-white p-4 space-y-2">
+      <div class="lbl text-slate-500">After — one behaviour, one seam</div>
+      <div class="flex items-center justify-center h-56 gap-4">
+        <div class="w-28 h-16 border border-slate-400 rounded flex items-center justify-center text-xs mod">caller</div>
+        <div class="w-44 h-24 deep rounded flex items-center justify-center text-xs mod">record_user_message<br><span class="text-slate-300 text-[10px]">payload built inside</span></div>
+      </div>
+      <p class="text-xs text-emerald-700">Delete one function and one patch surface; tests assert observable outcome.</p>
+    </div>
+  </div>
+  <div class="grid md:grid-cols-3 gap-4 text-sm">
+    <div><div class="lbl text-slate-500">Problem</div><p>Two functions where one behaviour exists; the four shapes live only in tests.</p></div>
+    <div><div class="lbl text-slate-500">Solution</div><p>Inline the builder into <span class="mod">record_user_message</span>; keep shape differences internal to callers.</p></div>
+    <div><div class="lbl text-slate-500">Deletion test</div><p>Deleting the builder concentrates complexity — it is not earning its keep.</p></div>
+  </div>
+  <div class="lbl text-slate-500">Wins</div>
+  <ul class="list-disc pl-5 text-sm space-y-1">
+    <li>interface shrinks; implementation absorbs the wrapper</li>
+    <li>one fewer patch surface in tests</li>
+  </ul>
+</article>
+
+<!-- Candidate 3 -->
+<article class="space-y-5">
+  <div class="flex items-center gap-3">
+    <h2 class="text-xl font-serif font-semibold">3 · Make event translation a behaviour, not two loose data constants</h2>
+    <span class="px-2 py-1 rounded bg-emerald-100 text-emerald-800 text-xs font-semibold">Strong</span>
+    <span class="px-2 py-1 rounded bg-slate-200 text-slate-700 text-xs">in-process</span>
+  </div>
+  <div class="mod text-sm text-slate-600">apps/chat/events.py :27-77 · chat.py:826-833 · :1017-1025 · :905-924 · kernel/session/service.py:836</div>
+  <div class="grid md:grid-cols-2 gap-4">
+    <div class="rounded-lg border border-slate-200 bg-white p-4">
+      <div class="lbl text-slate-500 mb-2">Before — fake seam, three sources of wire names</div>
+      <pre class="mermaid">
+flowchart LR
+  T[tests] -->|only consumer| F[translate_engine_event]
+  B[bridge] -->|imports raw data| M[ENGINE_TO_PRODUCT]
+  B --> S[STREAM_PASSTHROUGH_KINDS]
+  B -.reimplements.-> F
+  B -->|literal| A["attempt.started"]
+  K[kernel service] -->|literal| A
+  classDef leak stroke:#dc2626,stroke-width:2px;
+  class B,A,K leak
+      </pre>
+    </div>
+    <div class="rounded-lg border border-slate-200 bg-white p-4">
+      <div class="lbl text-slate-500 mb-2">After — one behaviour behind one seam</div>
+      <pre class="mermaid">
+flowchart LR
+  B[bridge] --> F[translate_engine_event]
+  F --> M[(ENGINE_TO_PRODUCT)]
+  F --> S[(STREAM_PASSTHROUGH_KINDS)]
+  F --> C[ChatEvent constants]
+  A[attempt.* wire names] --> C
+  classDef deep fill:#0f172a,stroke:#0f172a,color:#f8fafc;
+  class F deep
+      </pre>
+    </div>
+  </div>
+  <div class="grid md:grid-cols-3 gap-4 text-sm">
+    <div><div class="lbl text-slate-500">Problem</div><p>Translation is tested but unused in production; attempt.* literals repeat in three modules.</p></div>
+    <div><div class="lbl text-slate-500">Solution</div><p>Bridge calls the translation function; delete the raw data exports; wire names come from one place.</p></div>
+    <div><div class="lbl text-slate-500">Deletion test</div><p>Deleting the constants and function changes no production code — the depth was test-provided.</p></div>
+  </div>
+  <div class="rounded-lg bg-amber-50 border border-amber-200 p-3 text-sm">Warning: <span class="mod">events.py</span> claims single-source from kernel EventType while attempt.* names are hardcoded literals in the same module.</div>
+  <div class="lbl text-slate-500 pt-2">Wins</div>
+  <ul class="list-disc pl-5 text-sm space-y-1">
+    <li>interface is the test surface — tests and production cross the same seam</li>
+    <li>locality: wire names in one module</li>
+  </ul>
+</article>
+
+<!-- Candidate 4 -->
+<article class="space-y-5">
+  <div class="flex items-center gap-3">
+    <h2 class="text-xl font-serif font-semibold">4 · Give Attempt one home before creating it</h2>
+    <span class="px-2 py-1 rounded bg-emerald-100 text-emerald-800 text-xs font-semibold">Strong</span>
+    <span class="px-2 py-1 rounded bg-slate-200 text-slate-700 text-xs">in-process</span>
+  </div>
+  <div class="mod text-sm text-slate-600">chat.py:305-342 · :879-938 · kernel/gateway/gateway.py:95,259-274 · kernel/orchestration/mailbox.py:390-404 · kernel/session/service.py:655-887</div>
+  <div class="grid md:grid-cols-2 gap-4">
+    <div class="rounded-lg border border-slate-200 bg-white p-4">
+      <div class="lbl text-slate-500 mb-2">Before — half-committed attempt, five homes</div>
+      <pre class="mermaid">
+sequenceDiagram
+  participant R as router
+  participant S as store
+  participant E as event bus
+  participant G as gateway
+  R->>S: create_attempt
+  R->>E: attempt.created
+  R->>G: _send_via_gateway
+  G--xR: history read FAILS
+  R->>S: delete_attempt (finally)
+  Note over E: attempt.created already emitted
+      </pre>
+    </div>
+    <div class="rounded-lg border border-slate-200 bg-white p-4">
+      <div class="lbl text-slate-500 mb-2">After — precheck before begin; one state module</div>
+      <pre class="mermaid">
+sequenceDiagram
+  participant T as send_turn
+  participant S as store
+  participant E as event bus
+  T->>T: precheck history
+  T->>S: create_attempt
+  T->>E: attempt.created
+  T->>T: begin/mark_terminal inside one module
+  Note over T: no half-committed event
+      </pre>
+    </div>
+  </div>
+  <div class="grid md:grid-cols-3 gap-4 text-sm">
+    <div><div class="lbl text-slate-500">Problem</div><p>Attempt lifecycle spans five modules; history failure after emit leaves an orphan event.</p></div>
+    <div><div class="lbl text-slate-500">Solution</div><p>Precheck first; collect creation and state transitions into one internal module of send_turn.</p></div>
+    <div><div class="lbl text-slate-500">Deletion test</div><p>Remove it and complexity scatters across router, bridge, gateway sink, mailbox and store.</p></div>
+  </div>
+  <div class="lbl text-slate-500">Wins</div>
+  <ul class="list-disc pl-5 text-sm space-y-1">
+    <li>half-commit path disappears</li>
+    <li>locality: attempt state machine in one module</li>
+  </ul>
+</article>
+
+<!-- Candidate 5 -->
+<article class="space-y-5">
+  <div class="flex items-center gap-3">
+    <h2 class="text-xl font-serif font-semibold">5 · Move the test seam from router helpers to the use-case interface</h2>
+    <span class="px-2 py-1 rounded bg-amber-100 text-amber-800 text-xs font-semibold">Worth exploring</span>
+    <span class="px-2 py-1 rounded bg-slate-200 text-slate-700 text-xs">ports &amp; adapters</span>
+  </div>
+  <div class="mod text-sm text-slate-600">tests/test_chat_control_contract.py:128-133,203-206,254-257,582-583,647-655,996-998 · baseline :40-59</div>
+  <div class="grid md:grid-cols-2 gap-4">
+    <div class="rounded-lg border border-slate-200 bg-white p-4">
+      <div class="lbl text-slate-500 mb-2">Before — tests patch private router seams</div>
+      <pre class="mermaid">
+flowchart LR
+  Test -->|patch| G["chat_router._get_gateway"]
+  Test -->|patch| S["chat_router._get_session_service"]
+  Test -->|patch| P["chat_router._push_sse"]
+  Test -->|patch| W["chat_router._chat_wait_timeout"]
+  G --> R[router internals]
+  S --> R
+  P --> R
+  W --> R
+  classDef leak stroke:#dc2626,stroke-width:2px;
+  class G,S,P,W leak
+      </pre>
+    </div>
+    <div class="rounded-lg border border-slate-200 bg-white p-4">
+      <div class="lbl text-slate-500 mb-2">After — dependencies at the interface</div>
+      <pre class="mermaid">
+flowchart LR
+  Test -->|inject fakes| I["send_turn(input, deps)"]
+  Prod[composition root] -->|real adapters| I
+  I --> Result[typed result]
+  classDef deep fill:#0f172a,stroke:#0f172a,color:#f8fafc;
+  class I deep
+      </pre>
+    </div>
+  </div>
+  <div class="grid md:grid-cols-3 gap-4 text-sm">
+    <div><div class="lbl text-slate-500">Problem</div><p>17+16+17 patches bind tests to router private helpers; thread-based scenarios are brittle.</p></div>
+    <div><div class="lbl text-slate-500">Solution</div><p>Inject gateway/store/emit at the send_turn interface; transition patches close by 3a.4 per baseline.</p></div>
+    <div><div class="lbl text-slate-500">Deletion test</div><p>Removing the helper patch surfaces concentrates complexity in the composition root.</p></div>
+  </div>
+  <div class="rounded-lg bg-amber-50 border border-amber-200 p-3 text-sm">Tension with R-014 zero re-export: this candidate is the planned exit, not a new shim — the baseline explicitly limits transition patches to 3a.3 only.</div>
+  <div class="lbl text-slate-500 pt-2">Wins</div>
+  <ul class="list-disc pl-5 text-sm space-y-1">
+    <li>tests cross the use-case interface, not internals</li>
+    <li>leverage: one fake set serves many scenarios</li>
+  </ul>
+</article>
+
+<!-- Candidate 6 -->
+<article class="space-y-5">
+  <div class="flex items-center gap-3">
+    <h2 class="text-xl font-serif font-semibold">6 · Don't let apps/chat become one shallow module per function</h2>
+    <span class="px-2 py-1 rounded bg-amber-100 text-amber-800 text-xs font-semibold">Worth exploring</span>
+    <span class="px-2 py-1 rounded bg-slate-200 text-slate-700 text-xs">ports &amp; adapters</span>
+  </div>
+  <div class="mod text-sm text-slate-600">apps/chat/{messages,events,policy,attempts_query,export,personas}.py · kernel/gateway/entry_adapters.py:32-124 · design §3 :99-114</div>
+  <div class="grid md:grid-cols-2 gap-4">
+    <div class="rounded-lg border border-slate-200 bg-white p-4">
+      <div class="lbl text-slate-500 mb-2">Current — six one-function modules</div>
+      <div class="grid grid-cols-3 gap-2">
+        <div class="h-12 border border-slate-300 rounded flex items-center justify-center text-[10px] mod">messages</div>
+        <div class="h-12 border border-slate-300 rounded flex items-center justify-center text-[10px] mod">events</div>
+        <div class="h-12 border border-slate-300 rounded flex items-center justify-center text-[10px] mod">policy</div>
+        <div class="h-12 border border-slate-300 rounded flex items-center justify-center text-[10px] mod">attempts_query</div>
+        <div class="h-12 border border-slate-300 rounded flex items-center justify-center text-[10px] mod">export</div>
+        <div class="h-12 border border-slate-300 rounded flex items-center justify-center text-[10px] mod">personas</div>
+      </div>
+      <p class="text-xs text-slate-600 pt-3">Router remains the only production consumer for each — one adapter means a hypothetical seam.</p>
+    </div>
+    <div class="rounded-lg border border-slate-200 bg-white p-4">
+      <div class="lbl text-slate-500 mb-2">Preferred — send_turn deep, helpers internal</div>
+      <div class="relative h-48">
+        <div class="absolute inset-x-8 top-6 h-32 deep rounded p-4 text-xs mod">
+          <div class="lbl text-slate-300 mb-3">send_turn — one deep module</div>
+          <div class="space-y-1 text-slate-300 text-[10px]">
+            <div>messages · events · attempt transitions (internal seams)</div>
+            <div>policy · attempts_query stay as pure strategies</div>
+          </div>
+        </div>
+      </div>
+      <p class="text-xs text-emerald-700 pt-2">New seams only when a second real adapter appears (TUI/MCP).</p>
+    </div>
+  </div>
+  <div class="grid md:grid-cols-3 gap-4 text-sm">
+    <div><div class="lbl text-slate-500">Problem</div><p>Shallowness moves from router into apps; understanding one send still means jumping across modules.</p></div>
+    <div><div class="lbl text-slate-500">Solution</div><p>Keep send_turn as the sole deep module; demote fresh helpers to internal implementation.</p></div>
+    <div><div class="lbl text-slate-500">Deletion test</div><p>messages/events are half-earning: delete them and complexity returns to a couple of call sites.</p></div>
+  </div>
+  <div class="lbl text-slate-500">Wins</div>
+  <ul class="list-disc pl-5 text-sm space-y-1">
+    <li>locality: one module to understand a send</li>
+    <li>no speculative seams for hypothetical adapters</li>
+  </ul>
+</article>
+
+</section>
+
+<section id="top-recommendation" class="rounded-xl border-2 border-slate-900 bg-white p-8 space-y-4">
+  <div class="lbl text-slate-500">Top recommendation</div>
+  <h2 class="text-2xl font-serif font-semibold">Collapse the send-turn pipeline (candidate 1) — with candidates 3 and 4 in the same batch</h2>
+  <p class="text-slate-700">Candidate 1 is 3a.3 itself: two production call sites and 41 contract tests cross it. It delivers the most leverage and locality, and it is the prerequisite for closing the transition seams in 3a.4. Fold in the historical-precheck before attempt creation (candidate 4) and the attempt.* single-source fix (candidate 3); leave candidates 2/5/6 to the 3a.4 cleanup pass. See <a class="underline" href="#candidates">candidate 1 above</a>.</p>
+</section>
+
+</main>
+</body>
+</html>

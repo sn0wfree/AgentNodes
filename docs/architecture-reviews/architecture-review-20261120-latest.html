@@ -1,0 +1,130 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>AgentNodes 架构复审 · 2026-11-20</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script type="module">
+    import mermaid from "https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs";
+    mermaid.initialize({ startOnLoad: true, theme: "neutral", securityLevel: "loose" });
+  </script>
+  <style>
+    body { font-family: "Segoe UI", "Microsoft YaHei", system-ui, sans-serif; }
+    .mono { font-family: Consolas, "Cascadia Code", monospace; }
+    @media print { .no-print { display:none } body { background:#fff } }
+  </style>
+</head>
+<body class="bg-stone-50 text-slate-900">
+<main class="mx-auto max-w-6xl space-y-8 px-6 py-10">
+  <header class="border-b border-stone-300 pb-6">
+    <p class="text-xs uppercase tracking-[.2em] text-slate-500">AgentNodes · Architecture review</p>
+    <h1 class="mt-2 font-serif text-3xl font-semibold">架构复审 · 最新状态与执行顺序</h1>
+    <p class="mt-2 text-sm text-slate-600">2026-11-20 · 已知代码 ref <code>97700326</code>（I1）；I2 后续实施记录已核实，精确 HEAD 因 Git CLI 无法启动而未确认</p>
+    <p class="mt-4 max-w-4xl text-sm leading-6 text-slate-700">
+      本报告更新用户已批准的 8 项裁决及当前执行状态。B2.2–B2.5、S2 与隔离契约 I1–I3 均已收口。完整工作包、文件范围、验收和回滚要求见
+      <a class="text-sky-700 underline" href="../design/architecture-refactor-execution-roadmap-20261119.md">架构重构执行路线图</a>。
+      本报告不授权未批准的生产接线、兼容删除或扩大工具范围。
+    </p>
+  </header>
+
+  <section class="grid gap-5 lg:grid-cols-[1.2fr_.8fr]">
+    <article class="rounded-xl border border-slate-200 bg-white p-5">
+      <h2 class="text-lg font-semibold">当前结构判断</h2>
+      <p class="mt-2 text-sm leading-6 text-slate-700">四层方向维持 <code>interfaces → apps → kernel → foundation</code>。当前是分批深模块化与契约收敛，不是推翻分层或全面搬迁。B2.4 已有 guarded 生产接线，但开关默认关闭、allowlist 为空；B2.5 write 仍仅测试/脚本试点。</p>
+      <pre class="mermaid mt-4 rounded-lg bg-stone-50 p-4">
+flowchart LR
+  I["interfaces · 入口"] --> A["apps · 用例"]
+  A --> K["kernel · 执行机制"]
+  K --> F["foundation · 基础设施"]
+  K --> C["B2.3 context codec · done"]
+  C --> D["B2.4 deadline / E5 / lease · done"]
+  D --> P["B2.5 temporary workspace write · test pilot done"]
+  D -. "production flag off / allowlist empty" .-> G["guarded, dormant"]
+  P -. "shell excluded" .-> X["deferred"]
+  C --> I1["I1 · declared capability · done"]
+  C --> I2["I2 · ReadResult data/timeout/eof · done"]
+  C --> I3["I3 · parent ctx validation · done"]
+      </pre>
+    </article>
+    <aside class="space-y-4">
+      <div class="rounded-xl border border-amber-300 bg-amber-50 p-5">
+        <h2 class="font-semibold text-amber-950">验证状态 · 最近代码批全绿</h2>
+        <ul class="mt-3 space-y-2 text-sm text-amber-950">
+          <li><b>batch_gate：</b>最近代码提交记录 ALL GREEN；层间上行违规 0。</li>
+          <li><b>架构数字：</b>464 文件 / 97,025 行（L1 21,946；L3 51,333）；架构图同步与 framework 数字检查均通过。</li>
+          <li><b>全量 pytest：</b>I2 执行记录为 8,062 passed / 0 failed（-n 6），batch_gate ALL GREEN；本轮未重跑。</li>
+          <li><b>工作区：</b>Git CLI 未能启动；当前 HEAD 与未提交 diff 均未独立确认。</li>
+        </ul>
+      </div>
+      <div class="rounded-xl border border-slate-200 bg-white p-5">
+        <h2 class="font-semibold">当前 HEAD 已完成</h2>
+        <p class="mt-2 text-sm text-slate-700">B2.2–B2.5；IsolationAdmission / IsolatedToolExecutor；WP-8 与 RSI 接线深化；WP-9 M11a/b；G1、S1、goal 覆盖统一、S2 会话删除生命周期；I1–I3 隔离契约收口；M13 已知终态保留。</p>
+        <p class="mono mt-2 text-xs text-slate-500">S2: 61676773 · I1: 97700326 · I2/I3: execution records verified</p>
+      </div>
+    </aside>
+  </section>
+
+  <section class="rounded-xl border border-slate-200 bg-white p-5">
+    <h2 class="text-xl font-semibold">执行状态</h2>
+    <div class="mt-4 overflow-x-auto">
+      <table class="w-full min-w-[760px] border-collapse text-left text-sm">
+        <thead><tr class="border-b border-slate-300 text-slate-500"><th class="p-2">工作流</th><th class="p-2">已完成</th><th class="p-2">下一步 / 限制</th></tr></thead>
+        <tbody class="divide-y divide-slate-200">
+          <tr><td class="p-2">B2.2–B2.5 隔离执行</td><td class="p-2">3a–3d / 3a–3c / 4a–4d / 5a–5c 完成</td><td class="p-2">B2.4 开关默认关、allowlist 空；B2.5 write 仅测试/脚本试点，shell 未接。</td></tr>
+          <tr><td class="p-2">隔离契约 I1–I3</td><td class="p-2">I1 declared capability；I2 ReadResult 三态；I3 父侧 ctx 校验，均已实施</td><td class="p-2">I2 执行记录：全量 8,062 passed、batch_gate ALL GREEN；worker 侧拒收契约保持不变。</td></tr>
+          <tr><td class="p-2">WP-8 evolution</td><td class="p-2">3b.1/3b.2 完成；3b.3/3b.4 核对完成</td><td class="p-2">余下 wiring 结构收敛另案；RSI host/consumer 入口已另批收口。</td></tr>
+          <tr><td class="p-2">WP-9 应用归拢</td><td class="p-2">M3/M5/M7/M8；M9-1/2/3/4；M11a/b</td><td class="p-2">M6 尚待做；兼容删除仍按版本周期与独立审批。</td></tr>
+          <tr><td class="p-2">S2 会话删除</td><td class="p-2">Web/CLI 共用归档与投影失效；`61676773`</td><td class="p-2">已完成；测试覆盖两入口缓存失效。</td></tr>
+          <tr><td class="p-2">M13 registry</td><td class="p-2">保留已知终态；不自动 prune</td><td class="p-2">重启后 store 中已知 run 的 404/409 语义另行裁决。</td></tr>
+          <tr><td class="p-2">兼容/退役</td><td class="p-2">延迟条件已确认</td><td class="p-2">Chat 3a.4、Legacy Chat 均需完整正式版本周期后另批；`seq_generator` 单独提案。</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <section class="rounded-xl border border-sky-200 bg-sky-50 p-5">
+    <h2 class="text-xl font-semibold text-sky-950">隔离契约 I1–I3：已完成</h2>
+    <p class="mt-2 text-sm leading-6 text-sky-950">
+      I1 收敛 declared capability；I2 让 <code>IsolationChannel.read()</code> 显式返回 data/timeout/eof 并移除生产侧私有字段穿透；
+      I3 在父侧入口校验 wire ctx。I2 执行记录确认毒化、EOF、deadline、E5 语义未变。
+    </p>
+    <div class="mt-3 flex flex-wrap gap-4 text-sm">
+      <a class="text-sky-800 underline" href="../design/declared-capability-single-source-r014-20261120.md">查看 I1 R-014 →</a>
+      <a class="text-sky-800 underline" href="../design/channel-read-contract-r014-20261120.md">查看 I2 R-014 与执行记录 →</a>
+      <a class="text-sky-800 underline" href="../design/ctx-parent-validation-r014-20261120.md">查看 I3 R-014 与执行记录 →</a>
+    </div>
+  </section>
+
+  <section class="rounded-xl border border-emerald-200 bg-emerald-50 p-5">
+    <h2 class="text-xl font-semibold text-emerald-950">2026-11-20 已批准的 8 项裁决</h2>
+    <ol class="mt-4 grid gap-3 text-sm text-emerald-950 md:grid-cols-2">
+      <li><b>1 · Isolation seam：</b>通用隔离 worker/平台机制归 L3 `kernel/agent/tools/`；迁移已完成。</li>
+      <li><b>2 · B2.2 3d：</b>批准平台矩阵，已完成；Windows CI 不存在，POSIX 生产执行仍禁用。</li>
+      <li><b>3 · B2.3/B2.4/B2.5：</b>按阶段独立方案、验收和审批；批准流程不等于代码实施授权。</li>
+      <li><b>4 · 试点工具：</b>仅临时工作区 `file_write`；shell 延后。</li>
+      <li><b>5 · RSI：</b>新建 `apps/evolution`，不并入 `apps/goal`。</li>
+      <li><b>6 · 3c 杂项：</b>七项拆成小批；M3/M5/M7/M8、M9-1/2/3/4、M11a/b 已完成，M6 待做。</li>
+      <li><b>7 · Chat 3a.4：</b>删除延至下一版本，至少一个完整正式版本周期后另批。</li>
+      <li><b>8 · Legacy Chat：</b>至少一个完整正式版本周期后复核仓库外消费者，再走独立 R-014；当前未授权删除。</li>
+    </ol>
+  </section>
+
+  <section class="rounded-xl bg-slate-900 p-6 text-white">
+    <h2 class="text-xl font-semibold">建议的下一步</h2>
+    <ol class="mt-3 list-decimal space-y-2 pl-5 text-sm leading-6 text-slate-200">
+      <li>只读梳理 LLM 重试编排：比较普通请求与 stream 的 sync/async 路径，确认可共享的策略决策与必须保留的传输差异。</li>
+      <li>WP-8 wiring 结构收敛另写方案；安排 WP-9 M6，并保持文件 owner 清晰。</li>
+      <li>M13 重启/持久化终态语义另裁决；Chat/Legacy Chat/seq_generator 延迟删除继续受门槛约束。</li>
+      <li>后续源代码批次按 R-007 完成全量测试、batch_gate 和架构数字校验。</li>
+    </ol>
+    <p class="mt-4 text-xs text-slate-300">最近全量 pytest 执行记录：8,062 passed / 0 failed（I2）；batch_gate ALL GREEN。架构数字：L1 121/21,946 · L2 50/11,542 · L3 229/51,333 · L4 64/12,204。</p>
+  </section>
+
+  <footer class="border-t border-stone-300 pt-4 text-xs leading-5 text-slate-500">
+    <p>细节路线图：<a class="text-sky-700 underline" href="../design/architecture-refactor-execution-roadmap-20261119.md">architecture-refactor-execution-roadmap-20261119.md</a>。</p>
+    <p>本报告保留 2026-11-19 历史版不覆盖；该历史版可从 <a class="text-sky-700 underline" href="./architecture-review-20261119-latest.html">此处</a> 查看。</p>
+  </footer>
+</main>
+</body>
+</html>

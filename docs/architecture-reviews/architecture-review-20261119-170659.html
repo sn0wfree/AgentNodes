@@ -1,0 +1,241 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>AgentNodes 架构复审 · 2026-11-19 · 17:06</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script type="module">
+    import mermaid from "https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs";
+    mermaid.initialize({ startOnLoad: true, theme: "neutral", securityLevel: "loose" });
+  </script>
+  <style>
+    body { font-family: "Segoe UI", "Microsoft YaHei", system-ui, sans-serif; }
+    .deep { background: linear-gradient(135deg, #0f172a, #1e293b); }
+    .mermaid { min-height: 150px; }
+    .mono { font-family: Consolas, "Cascadia Code", monospace; }
+    @media print { .no-print { display:none } body { background:#fff } }
+  </style>
+</head>
+<body class="bg-stone-50 text-slate-900">
+<main class="max-w-6xl mx-auto px-6 py-10 space-y-10">
+  <header class="border-b border-stone-300 pb-6">
+    <div class="flex flex-wrap items-end justify-between gap-4">
+      <div>
+        <p class="text-xs uppercase tracking-[.2em] text-slate-500">AgentNodes · Architecture review</p>
+        <h1 class="mt-2 text-3xl font-semibold font-serif">全项目架构复审</h1>
+        <p class="mt-2 text-sm text-slate-600">2026-11-19 · 基线 HEAD <code>1a991dbc</code> · 分支 <code>refactor/session-lifecycle-kernel</code> · 复审时间 17:06</p>
+      </div>
+      <div class="rounded-lg border border-slate-200 bg-white px-4 py-3 text-xs text-slate-600">
+        <div><span class="inline-block h-3 w-5 border border-slate-400 align-middle"></span> module</div>
+        <div class="mt-1"><span class="inline-block h-0 w-5 border-t-2 border-dashed border-violet-500 align-middle"></span> seam</div>
+        <div class="mt-1"><span class="inline-block h-3 w-5 bg-slate-800 align-middle"></span> deep implementation</div>
+        <div class="mt-1"><span class="inline-block h-0 w-5 border-t-2 border-red-600 align-middle"></span> retained state / duplicate ownership</div>
+      </div>
+    </div>
+  </header>
+
+  <section class="grid gap-6 lg:grid-cols-[1.4fr_.8fr]">
+    <article class="rounded-xl border border-slate-200 bg-white p-5">
+      <h2 class="text-lg font-semibold">架构骨架：稳定，继续渐进深化</h2>
+      <p class="mt-1 text-sm text-slate-600">依赖仍按 interfaces → apps → kernel → foundation 单向流动。M12、示例路径和 4c B2.1 已推进；现在应补齐生命周期闭环，再扩大隔离执行面。</p>
+      <div class="mt-4 rounded-lg border border-slate-200 bg-stone-50 p-4">
+        <pre class="mermaid">
+flowchart LR
+  subgraph L1["L1 · interfaces"]
+    HTTP["HTTP / CLI / TUI / MCP"]
+    ROOT["composition roots"]
+  end
+  subgraph L2["L2 · apps"]
+    CHAT["chat use cases"]
+    GOAL["goal / evolution"]
+    PLUG["plugins / presets"]
+  end
+  subgraph L3["L3 · kernel"]
+    GW["Gateway / session control"]
+    LOOP["AgentLoop / tools"]
+    GRAPH["Graph / workflow / swarm"]
+    STATE["events / session state"]
+  end
+  subgraph L4["L4 · foundation"]
+    CFG["config / LLM"]
+    STORE["storage"]
+    OBS["observability / utilities"]
+  end
+  HTTP --> CHAT
+  ROOT --> GW
+  CHAT --> GW
+  GOAL --> GRAPH
+  GW --> GRAPH
+  GRAPH --> LOOP
+  LOOP --> STATE
+  STATE --> STORE
+  GW --> CFG
+  classDef deep fill:#0f172a,color:#fff,stroke:#0f172a;
+  class GW,LOOP,GRAPH,STATE deep;
+        </pre>
+      </div>
+      <div class="mt-4 grid gap-3 sm:grid-cols-2">
+        <div class="rounded-lg border border-slate-200 p-3"><h3 class="text-sm font-semibold">L1 · interfaces</h3><p class="mt-1 text-xs text-slate-600">HTTP/CLI/TUI/MCP 适配与组合根；账本直读不等于编排越界（ADR-002）。</p></div>
+        <div class="rounded-lg border border-slate-200 p-3"><h3 class="text-sm font-semibold">L2 · apps</h3><p class="mt-1 text-xs text-slate-600">产品用例与策略；chat 的 send_turn 已承接发送执行，send_async 历史重复预检已修。</p></div>
+        <div class="rounded-lg border border-slate-200 p-3"><h3 class="text-sm font-semibold">L3 · kernel</h3><p class="mt-1 text-xs text-slate-600">Gateway、AgentLoop、Graph / workflow / swarm 与运行状态；不因名称相似而合并。</p></div>
+        <div class="rounded-lg border border-slate-200 p-3"><h3 class="text-sm font-semibold">L4 · foundation</h3><p class="mt-1 text-xs text-slate-600">配置、存储原语、观测与通用底层能力。</p></div>
+      </div>
+    </article>
+    <aside class="space-y-4">
+      <div class="rounded-xl border border-emerald-200 bg-emerald-50 p-5">
+        <h2 class="font-semibold text-emerald-950">结构门禁 · 当前通过</h2>
+        <ul class="mt-3 space-y-2 text-sm text-emerald-950">
+          <li>跨层上行违规：<b>0</b></li>
+          <li>kernel 模块级 SCC：<b>0</b></li>
+          <li>已登记 lazy SCC：<b>1</b></li>
+          <li>语义归属门禁：<b>17/17</b></li>
+          <li>架构图数字同步：<b>通过</b></li>
+        </ul>
+      </div>
+      <div class="rounded-xl border border-slate-200 bg-white p-5">
+        <h2 class="font-semibold">当前实测规模</h2>
+        <p class="mt-2 text-sm text-slate-700">452 个 Python 文件 / 94,786 行。</p>
+        <p class="mt-2 text-xs leading-5 text-slate-600">L1 120 / 22,516 · L2 45 / 10,563 · L3 223 / 49,537 · L4 64 / 12,170。跨层边：L1→L2 64、L1→L3 143、L1→L4 67、L2→L3 38、L2→L4 11、L3→L4 90。</p>
+      </div>
+      <div class="rounded-xl border border-amber-300 bg-amber-50 p-5">
+        <h2 class="font-semibold text-amber-950">方法边界</h2>
+        <p class="mt-2 text-sm text-amber-950">未发现根目录 `GLOSSARY.md`。本次使用 codebase-design 术语与 ub-mode 的小步、行为测试、减法优先原则；Crapper / Dryer / Mutator 工具未安装，因此不报告其度量结果。</p>
+      </div>
+    </aside>
+  </section>
+
+  <section class="grid gap-5 lg:grid-cols-3">
+    <article class="rounded-xl border border-emerald-200 bg-emerald-50 p-5">
+      <h2 class="font-semibold text-emerald-950">Chat 3a · 关键路径收敛</h2>
+      <p class="mt-2 text-sm text-emerald-950">send_turn 已承接发送执行；`/send_async` 重复历史读取由 `2d560856` 修复。入口侧 Attempt 身份与 reload 行为有意保留，不建议重开这项契约。</p>
+    </article>
+    <article class="rounded-xl border border-emerald-200 bg-emerald-50 p-5">
+      <h2 class="font-semibold text-emerald-950">M12 · 子批 1–4 已完成</h2>
+      <p class="mt-2 text-sm text-emerald-950">构造、请求定位、router cache 登记与双关闭已收敛到 composition；fallback 保留，旧名删除延后。</p>
+    </article>
+    <article class="rounded-xl border border-emerald-200 bg-emerald-50 p-5">
+      <h2 class="font-semibold text-emerald-950">4c · B2.1 已完成</h2>
+      <p class="mt-2 text-sm text-emerald-950">工具准入声明已落地，不合规 isolatable 回落 unstoppable；未接生产隔离路径。下一阶段 B2.2 仍需独立推进与平台验证。</p>
+    </article>
+  </section>
+
+  <section id="candidates" class="space-y-7">
+    <div>
+      <p class="text-xs uppercase tracking-[.2em] text-slate-500">Deepening opportunities</p>
+      <h2 class="mt-1 text-2xl font-semibold font-serif">当前最值得核验的架构摩擦</h2>
+      <p class="mt-2 max-w-3xl text-sm text-slate-600">不全仓重排，不新增未经证实的抽象。先把最近落地的资源生命周期闭环钉牢，再复审 Workflow 状态所有权。</p>
+    </div>
+
+    <article id="m12-retention" class="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
+      <div class="flex flex-wrap items-center gap-2">
+        <h3 class="text-xl font-semibold">1 · 关闭后释放 composition 持有的资源图引用</h3>
+        <span class="rounded-full bg-emerald-100 px-3 py-1 text-xs font-semibold text-emerald-900">Strong</span>
+        <span class="rounded-full bg-sky-100 px-3 py-1 text-xs text-sky-900">in-process · M12 后续核验</span>
+      </div>
+      <p class="mt-3 text-xs text-slate-500">Files</p>
+      <p class="mono text-sm">interfaces/api/composition.py · interfaces/api/dependencies.py::reset_app_state · tests/test_api_composition.py</p>
+      <div class="mt-4 grid gap-4 lg:grid-cols-2">
+        <div class="rounded-lg border border-slate-200 p-3"><p class="mb-2 text-xs uppercase tracking-wider text-slate-500">Before · close does not release callback reference</p><pre class="mermaid">
+flowchart LR
+  R["register(container)"] --> REG["_REGISTRY"]
+  R --> EXIT["atexit callback(container)"]
+  C["close_all()"] --> REG
+  REG --> X["cleared"]
+  EXIT -. strong reference remains .- OBJ["closed resource graph"]
+  classDef leak stroke:#dc2626,stroke-width:2px;
+  class EXIT,OBJ leak;
+        </pre></div>
+        <div class="rounded-lg border border-slate-200 p-3"><p class="mb-2 text-xs uppercase tracking-wider text-slate-500">After · close and release share one lifecycle</p><pre class="mermaid">
+flowchart LR
+  R["registered resource graph"] --> L["one lifecycle owner"]
+  L --> C["close"]
+  L --> X["release retained reference"]
+  T["weak-reference regression test"] --> L
+  classDef deep fill:#0f172a,color:#fff,stroke:#0f172a;
+  class L deep;
+        </pre></div>
+      </div>
+      <div class="mt-4 grid gap-4 md:grid-cols-3 text-sm">
+        <p><b>Problem.</b> `register()` 为每个容器注册 `atexit` 回调；`close_all()` 只清 `_REGISTRY`。回调仍持有容器引用，测试 reset / 多次 app 构造后对象无法回收。</p>
+        <p><b>Evidence.</b> 只读 weakref 探针执行 `register → close_all → del → gc.collect` 后仍观察到对象存活；当前 31 个定向测试未覆盖该生命周期后置条件。</p>
+        <p><b>Wins.</b> locality：关闭与释放归同一生命周期；tests 覆盖用户可观察的资源回收；避免测试/长进程累积已关闭对象。</p>
+      </div>
+      <div class="mt-4 rounded-lg bg-stone-100 p-3 text-sm"><b>建议。</b> 先增加可重复的 weak-reference 行为测试，再以最小改动让 close/reset 释放回调持有；验证 close 恰一次、进程退出兜底仍有效。此处是 M12 后续修正，不需要重做 M12 的组合根形状。</div>
+    </article>
+
+    <article id="workflow-registry" class="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
+      <div class="flex flex-wrap items-center gap-2">
+        <h3 class="text-xl font-semibold">2 · 明确 Workflow 活跃运行状态的唯一所有者</h3>
+        <span class="rounded-full bg-amber-100 px-3 py-1 text-xs font-semibold text-amber-900">Worth exploring</span>
+        <span class="rounded-full bg-slate-100 px-3 py-1 text-xs text-slate-700">in-process · M13 独立审查</span>
+      </div>
+      <p class="mt-3 text-xs text-slate-500">Files</p>
+      <p class="mono text-sm">interfaces/api/routers/workflow.py::_active_runners · kernel/workflow/executor.py::WorkflowRunRegistry · tests/test_workflow_ownership.py</p>
+      <div class="mt-4 grid gap-4 lg:grid-cols-2">
+        <div class="rounded-lg border border-slate-200 p-3"><p class="mb-2 text-xs uppercase tracking-wider text-slate-500">Before · two records of active execution</p><pre class="mermaid">
+flowchart LR
+  API["router active map"] --> RUN["WorkflowRunner"]
+  K["kernel WorkflowRunRegistry"] --> RUN
+  API -. start / cleanup .- K
+  API --> AUTH["owner filtering"]
+  classDef leak stroke:#dc2626,stroke-width:2px;
+  class API,K leak;
+        </pre></div>
+        <div class="rounded-lg border border-slate-200 p-3"><p class="mb-2 text-xs uppercase tracking-wider text-slate-500">After · execution ownership explicit</p><pre class="mermaid">
+flowchart LR
+  O["one execution-state owner"] --> RUN["WorkflowRunner"]
+  API["HTTP adapter"] --> O
+  API --> AUTH["owner authorization"]
+  T["start / status / pause tests"] --> API
+  classDef deep fill:#0f172a,color:#fff,stroke:#0f172a;
+  class O deep;
+        </pre></div>
+      </div>
+      <div class="mt-4 grid gap-4 md:grid-cols-3 text-sm">
+        <p><b>Problem.</b> 路由与 kernel 都保存活跃 runner 相关状态，状态存储、结束清理与控制入口可能分叉。</p>
+        <p><b>Solution.</b> 先逐项核对注册、状态查询、pause/resume、TTL/清理与 owner 过滤；后决定是互补记录还是重复状态。</p>
+        <p><b>Wins.</b> locality：生命周期转移可定位；tests 穿过真实 HTTP 入口；owner 授权继续留在 interfaces。</p>
+      </div>
+      <div class="mt-4 rounded-lg bg-amber-50 p-3 text-sm"><b>约束。</b> 已有 M13 独立审查项；不要把 API owner 授权搬入 kernel，也不要在未证明状态重复前合并 registry。</div>
+    </article>
+  </section>
+
+  <section id="roadmap" class="rounded-xl border border-slate-200 bg-white p-6">
+    <h2 class="text-xl font-semibold">建议下一步：由低风险、可验证项开始</h2>
+    <ol class="mt-4 list-decimal space-y-3 pl-5 text-sm text-slate-700">
+      <li><b>先闭合 M12 生命周期引用释放。</b> 为 `close_all` / `unregister` 补弱引用回收与关闭次数行为测试；实施最小修正后，跑 M12/API 生命周期测试、batch_gate、架构图同步。</li>
+      <li><b>然后做 M13 只读审查。</b> 对照 router 与 kernel 两个 Workflow registry 的消费者、状态字段、终态清理、并发访问与 owner 过滤；出独立 R-014 方案，不和 4c 混提。</li>
+      <li><b>4c 继续分阶段。</b> B2.1 已完成且只有准入声明；B2.2 worker/IPC 是首次引入真实执行 seam，应先做方案和平台测试，再逐阶段批准。POSIX 验证在跨平台生产启用前完成，shell 暂缓。</li>
+      <li><b>删除继续等待前置。</b> 旧聊天队列 / 3a.4 需完整正式版本周期和独立审批；`seq_generator` 单独 R-014 删除批；OptionsPricingTool 与 hooks 保留。</li>
+      <li><b>避免全仓重构。</b> 四层方向门禁为零违规；本轮没有证据支持合并 AgentLoop、GraphEngine、Workflow、Swarm 或引入通用 registry/DI 框架。</li>
+    </ol>
+  </section>
+
+  <section id="top-recommendation" class="rounded-2xl bg-slate-900 p-7 text-white">
+    <p class="text-xs uppercase tracking-[.2em] text-slate-300">Top recommendation</p>
+    <h2 class="mt-2 text-2xl font-semibold">下一批先修 M12 的资源引用释放，再做 M13</h2>
+    <p class="mt-3 max-w-4xl text-sm leading-6 text-slate-200">这是当前唯一由本轮直接探针证实、且紧邻刚完成 M12 的生命周期缺口。先用 weak-reference 行为测试钉住，再修复，可避免在资源释放尚未闭环时进入更高风险的 Workflow 状态迁移或 B2.2 进程隔离。</p>
+    <a class="mt-4 inline-block text-sm text-sky-300 underline" href="#m12-retention">跳到候选 1 →</a>
+  </section>
+
+  <section class="rounded-xl border border-slate-200 bg-white p-5">
+    <h2 class="text-lg font-semibold">本次不建议</h2>
+    <ul class="mt-3 grid gap-2 text-sm text-slate-700 md:grid-cols-2">
+      <li>不重开已解决的 send_async 历史预检或 Attempt 行为矩阵。</li>
+      <li>不删除 legacy 队列、fallback 或 3a.4 过渡面。</li>
+      <li>不把 B2.1 声明准入误认为隔离执行已经生产化。</li>
+      <li>不把 HTTP owner 授权放入 kernel。</li>
+      <li>不安装额外质量工具或运行全量测试；本轮为只读架构复审。</li>
+      <li>不触碰现有未提交计划、skill 安装、压缩包或其他未跟踪文件。</li>
+    </ul>
+  </section>
+
+  <footer class="border-t border-stone-300 pt-4 text-xs leading-5 text-slate-500">
+    <p>方法：复核 L0/L1/L2 规则、ADR-000/002/003、近期提交与 M12 / 4c / 3a 记录；依照 improve-codebase-architecture 与 codebase-design 选择候选；依照 ub-mode 采用根因、可验证小步、行为测试和减法优先原则。根目录未发现 GLOSSARY.md。</p>
+    <p>实测：跨层方向、kernel SCC、语义归属 17 项、架构数字与图同步均通过；M12/API + B2.1 定向测试 31 passed；弱引用探针在 `close_all()` 后仍存活。未运行全量测试。M12 批次记录的全量结果是 7,844 passed / 106 skipped / 2 xfailed，早于 B2.1。</p>
+    <p>工作区：HEAD <code>1a991dbc</code>；用户现有未提交计划与未跟踪文件保持原状，本次未编辑仓库文件。</p>
+  </footer>
+</main>
+</body>
+</html>

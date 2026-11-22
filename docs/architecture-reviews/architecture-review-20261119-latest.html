@@ -1,0 +1,343 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>AgentNodes 架构复审 · 2026-11-19 · 最新路线图</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script type="module">
+    import mermaid from "https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs";
+    mermaid.initialize({ startOnLoad: true, theme: "neutral", securityLevel: "loose" });
+  </script>
+  <style>
+    body { font-family: "Segoe UI", "Microsoft YaHei", system-ui, sans-serif; }
+    .deep { background: linear-gradient(135deg, #0f172a, #1e293b); }
+    .mono { font-family: Consolas, "Cascadia Code", monospace; }
+    .mermaid { min-height: 150px; }
+    @media print { .no-print { display:none } body { background:#fff } }
+  </style>
+</head>
+<body class="bg-stone-50 text-slate-900">
+<main class="mx-auto max-w-7xl space-y-10 px-6 py-10">
+  <header class="border-b border-stone-300 pb-6">
+    <div class="flex flex-wrap items-end justify-between gap-5">
+      <div>
+        <p class="text-xs uppercase tracking-[.2em] text-slate-500">AgentNodes · Architecture review</p>
+        <h1 class="mt-2 font-serif text-3xl font-semibold">全项目架构复审与完整执行路线图</h1>
+        <p class="mt-2 text-sm text-slate-600">2026-11-19 · 代码基线 <code>89ef1fc4</code> · 最新路线图提交 <code>28ed818a</code> · <code>refactor/session-lifecycle-kernel</code></p>
+      </div>
+      <div class="rounded-lg border border-slate-200 bg-white px-4 py-3 text-xs text-slate-600">
+        <div><span class="inline-block h-3 w-5 border border-slate-400 align-middle"></span> module</div>
+        <div class="mt-1"><span class="inline-block h-0 w-5 border-t-2 border-dashed border-violet-500 align-middle"></span> seam</div>
+        <div class="mt-1"><span class="inline-block h-3 w-5 bg-slate-800 align-middle"></span> deep implementation</div>
+        <div class="mt-1"><span class="inline-block h-0 w-5 border-t-2 border-red-600 align-middle"></span> unresolved decision</div>
+      </div>
+    </div>
+    <p class="mt-5 max-w-4xl text-sm leading-6 text-slate-700">
+      本报告汇总截至当前 HEAD 的架构状态、四层门禁、剩余工作包依赖、验收与回滚要求。
+      完整可执行工作包说明见
+      <a class="text-sky-700 underline" href="../design/architecture-refactor-execution-roadmap-20261119.md">架构重构执行路线图</a>。
+      本报告和路线图只作规划，不授权未批准的代码实施、生产接线或删除。
+    </p>
+  </header>
+
+  <section class="grid gap-6 lg:grid-cols-[1.35fr_.8fr]">
+    <article class="rounded-xl border border-slate-200 bg-white p-5">
+      <h2 class="text-lg font-semibold">架构总览：四层保持，按独立 seam 深化</h2>
+      <p class="mt-2 text-sm text-slate-600">
+        当前证据不支持推翻分层或全面搬迁。重构焦点是完成隔离执行阶段门、处理 workflow 终态可见性，
+        以及分批下沉尚留在 interfaces 的产品用例；过渡接口和退役候选仍受单独审批约束。
+      </p>
+      <div class="mt-4 rounded-lg border border-slate-200 bg-stone-50 p-4">
+        <pre class="mermaid">
+flowchart LR
+  subgraph L1["L1 · interfaces"]
+    HTTP["HTTP / CLI / TUI / MCP"]
+    ROOT["composition roots"]
+    RSI["RSI entry / wiring"]
+  end
+  subgraph L2["L2 · apps"]
+    CHAT["chat use cases"]
+    GOAL["goal"]
+    EVO["evolution · planned"]
+    ISO["isolation implementation · current"]
+  end
+  subgraph L3["L3 · kernel"]
+    GW["Gateway / session"]
+    LOOP["AgentLoop / BaseTool"]
+    WF["workflow / graph / swarm"]
+    STATE["events / state"]
+    ISEAM["planned isolation seam"]
+  end
+  subgraph L4["L4 · foundation"]
+    CFG["config / LLM"]
+    STORE["storage"]
+    OBS["observability"]
+  end
+  HTTP --> CHAT
+  ROOT --> GW
+  CHAT --> GW
+  RSI -. future migration .-> EVO
+  GOAL --> WF
+  GW --> LOOP
+  WF --> LOOP
+  LOOP --> STATE
+  STATE --> STORE
+  LOOP -. future isolation use .-> ISEAM
+  ISEAM --> ISO
+  classDef deep fill:#0f172a,color:#fff,stroke:#0f172a;
+  class GW,LOOP,WF,STATE deep;
+  classDef unresolved stroke:#dc2626,stroke-width:2px;
+  class ISO,ISEAM unresolved;
+        </pre>
+      </div>
+      <div class="mt-4 grid gap-3 sm:grid-cols-2">
+        <div class="rounded-lg border border-slate-200 p-3"><h3 class="text-sm font-semibold">L1 · interfaces</h3><p class="mt-1 text-xs text-slate-600">传输入口、命令入口与组合根；保留入口兼容契约，逐步收薄转发/装配职责。</p></div>
+        <div class="rounded-lg border border-slate-200 p-3"><h3 class="text-sm font-semibold">L2 · apps</h3><p class="mt-1 text-xs text-slate-600">产品用例。Chat send_turn 已下沉；RSI/evolution 尚待批次 3b。</p></div>
+        <div class="rounded-lg border border-slate-200 p-3"><h3 class="text-sm font-semibold">L3 · kernel</h3><p class="mt-1 text-xs text-slate-600">AgentLoop、工具执行、Workflow、Graph、Swarm 等通用运行机制，不得向上依赖 L2。</p></div>
+        <div class="rounded-lg border border-slate-200 p-3"><h3 class="text-sm font-semibold">L4 · foundation</h3><p class="mt-1 text-xs text-slate-600">配置、存储、LLM 与观测底层能力；继续遵守 settings/path 等既有统一入口。</p></div>
+      </div>
+    </article>
+    <aside class="space-y-4">
+      <div class="rounded-xl border border-emerald-200 bg-emerald-50 p-5">
+        <h2 class="font-semibold text-emerald-950">结构门禁 · 当前通过</h2>
+        <ul class="mt-3 space-y-2 text-sm text-emerald-950">
+          <li>跨层上行违规：<b>0</b></li>
+          <li>kernel 模块级 SCC：<b>0</b></li>
+          <li>已登记 lazy SCC：<b>1</b></li>
+          <li>语义放置 / 能力 / 工具引用门禁：<b>全绿</b></li>
+          <li>batch_gate：<b>ALL GREEN</b></li>
+          <li>架构图与框架数字同步：<b>通过</b></li>
+        </ul>
+      </div>
+      <div class="rounded-xl border border-slate-200 bg-white p-5">
+        <h2 class="font-semibold">当前架构规模</h2>
+        <p class="mt-2 text-sm text-slate-700"><b>455</b> 个 Python 文件 / <b>95,562</b> 行。</p>
+        <p class="mt-2 text-xs leading-5 text-slate-600">L1 120 / 22,530 · L2 48 / 11,321 · L3 223 / 49,541 · L4 64 / 12,170。</p>
+        <p class="mt-2 text-xs leading-5 text-slate-600">跨层边：L1→L2 64、L1→L3 143、L1→L4 67、L2→L3 40、L2→L4 12、L3→L4 90。</p>
+      </div>
+      <div class="rounded-xl border border-slate-200 bg-white p-5">
+        <h2 class="font-semibold">测试证据</h2>
+        <p class="mt-2 text-sm text-slate-700">B2.2 3c 记录：隔离测试 <b>19 passed</b>；全量 <b>7,874 passed / 106 skipped / 2 xfailed</b>。</p>
+        <p class="mt-2 text-xs text-slate-500">本次独立复核运行 batch_gate 与架构数字/图同步检查并通过；报告未重新运行全量 pytest。</p>
+      </div>
+    </aside>
+  </section>
+
+  <section class="grid gap-5 lg:grid-cols-3">
+    <article class="rounded-xl border border-emerald-200 bg-emerald-50 p-5">
+      <h2 class="font-semibold text-emerald-950">M12 · 已闭环</h2>
+      <p class="mt-2 text-sm text-emerald-950">组合根生命周期/定位收敛已完成；显式关闭后释放 registry 引用，`atexit` 回调不再持有资源图对象。</p>
+    </article>
+    <article class="rounded-xl border border-amber-200 bg-amber-50 p-5">
+      <h2 class="font-semibold text-amber-950">M13 · 终态语义待定</h2>
+      <p class="mt-2 text-sm text-amber-950">两个 registry 职责互补，保留分立；终态 run 何时清理仍需保护已知 run 409 / unknown run 404 的区别。</p>
+    </article>
+    <article class="rounded-xl border border-sky-200 bg-sky-50 p-5">
+      <h2 class="font-semibold text-sky-950">4c · B2.2 3a–3c 已完成</h2>
+      <p class="mt-2 text-sm text-sky-950">平台 adapter、IPC/审批代理、超时确认/毒化拒收与 lease 顺序均已有独立批次；未接 AgentLoop 生产路径。下一步为 3d 平台矩阵。</p>
+    </article>
+  </section>
+
+  <section id="candidates" class="space-y-7">
+    <div>
+      <p class="text-xs uppercase tracking-[.2em] text-slate-500">Deepening opportunities</p>
+      <h2 class="mt-1 font-serif text-2xl font-semibold">当前关键设计候选</h2>
+      <p class="mt-2 max-w-4xl text-sm text-slate-600">先解决会影响后续执行路径的所有权和契约问题，再推进平台矩阵、状态保留与应用用例下沉。不可把架构候选当成已批准实施。</p>
+    </div>
+
+    <article id="isolation-placement" class="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
+      <div class="flex flex-wrap items-center gap-2">
+        <h3 class="text-xl font-semibold">1 · 隔离执行 seam 的层级所有权</h3>
+        <span class="rounded-full bg-emerald-100 px-3 py-1 text-xs font-semibold text-emerald-900">Strong</span>
+        <span class="rounded-full bg-violet-100 px-3 py-1 text-xs text-violet-900">B2.2 3d 前裁决</span>
+      </div>
+      <p class="mono mt-3 text-sm text-slate-600">docs/design/isolated-execution-b22-design-20261119.md · apps/chat/isolation.py · kernel/agent/tools</p>
+      <div class="mt-4 grid gap-4 lg:grid-cols-2">
+        <div class="rounded-lg border border-slate-200 p-3"><p class="mb-2 text-xs uppercase tracking-wider text-slate-500">Before · 设计与实现层级不一致</p><pre class="mermaid">
+flowchart LR
+  D["design: kernel/agent/tools/isolation · L3"] --> K["BaseTool / AgentLoop · L3"]
+  A["apps/chat/isolation · L2"]
+  K -. "cannot import upward" .-> A
+  classDef warn stroke:#dc2626,stroke-width:2px;
+  class A,D warn;
+        </pre></div>
+        <div class="rounded-lg border border-slate-200 p-3"><p class="mb-2 text-xs uppercase tracking-wider text-slate-500">After · 单一合法 seam</p><pre class="mermaid">
+flowchart LR
+  K["kernel tool execution · L3"] --> S["isolation seam · L3"]
+  S --> P["Windows adapter"]
+  S --> U["POSIX unsupported until verified"]
+  T["platform matrix tests"] --> S
+  classDef deep fill:#0f172a,color:#fff,stroke:#0f172a;
+  class S deep;
+        </pre></div>
+      </div>
+      <div class="mt-4 grid gap-4 text-sm md:grid-cols-3">
+        <p><b>问题。</b> B2.2 设计 §2 指定 L3 `kernel/agent/tools/isolation.py`，已实现代码位于 L2 `apps/chat/isolation.py`。后续 kernel 工具调用不得依赖 apps。</p>
+        <p><b>建议。</b> 默认让通用 worker/平台机制归 kernel；若保留 apps adapter，则由高层注入并以真实调用链测试，不能添加上行导入。</p>
+        <p><b>收益。</b> locality：平台机制与执行者共处合法 seam；leverage：经准入的工具复用一致的隔离行为；测试对准真实调用路径。</p>
+      </div>
+      <div class="mt-4 rounded-lg bg-amber-50 p-3 text-sm"><b>当前状态：</b>3a/3b/3c 已提交，未见生产接线。建议在 3d 或 B2.3 扩大前补层级归属裁决，避免后续接线后再搬迁。</div>
+    </article>
+
+    <article id="workflow-retention" class="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
+      <div class="flex flex-wrap items-center gap-2">
+        <h3 class="text-xl font-semibold">2 · Workflow 终态 run 保留语义</h3>
+        <span class="rounded-full bg-amber-100 px-3 py-1 text-xs font-semibold text-amber-900">Worth exploring</span>
+        <span class="rounded-full bg-slate-100 px-3 py-1 text-xs text-slate-700">M13 独立小批</span>
+      </div>
+      <p class="mono mt-3 text-sm text-slate-600">kernel/workflow/executor.py · interfaces/api/routers/workflow.py · tests/test_workflow_approval_api.py</p>
+      <div class="mt-4 grid gap-4 lg:grid-cols-2">
+        <div class="rounded-lg border border-slate-200 p-3"><p class="mb-2 text-xs uppercase tracking-wider text-slate-500">Before · 终态保留无清理契约</p><pre class="mermaid">
+flowchart LR
+  R["WorkflowRunRegistry"] --> T["terminal runner remains"]
+  API["approve"] -->|"known terminal: 409"| R
+  API -->|"unknown: 404"| R
+  classDef warn stroke:#dc2626,stroke-width:2px;
+  class T warn;
+        </pre></div>
+        <div class="rounded-lg border border-slate-200 p-3"><p class="mb-2 text-xs uppercase tracking-wider text-slate-500">After · bounded lifecycle, stable HTTP meaning</p><pre class="mermaid">
+flowchart LR
+  R["registry"] --> A["active run"]
+  R --> T["terminal + retention metadata"]
+  T --> E["defined expiry / cleanup"]
+  API["approve / status"] --> C["preserved 409 / 404 semantics"]
+  classDef deep fill:#0f172a,color:#fff,stroke:#0f172a;
+  class R,E deep;
+        </pre></div>
+      </div>
+      <div class="mt-4 grid gap-4 text-sm md:grid-cols-3">
+        <p><b>问题。</b> 过去的 eager prune 尝试把已知终态 approve 从 409 变成 404。两个 registry 不是重复所有者，不应合并。</p>
+        <p><b>建议。</b> 先定保留期限/触发点以及过期后如何识别已知终态；再单独增加清理策略和测试。</p>
+        <p><b>收益。</b> lifecycle 规则集中，status/approve 行为可测试；保留客户端依赖的错误语义。</p>
+      </div>
+      <div class="mt-4 rounded-lg bg-amber-50 p-3 text-sm"><b>默认：</b>未裁决前不接自动 prune；暂时保留已知终态记录，保证 known-terminal 与 unknown 的区别。</div>
+    </article>
+
+    <article id="evolution" class="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
+      <div class="flex flex-wrap items-center gap-2">
+        <h3 class="text-xl font-semibold">3 · RSI 下沉至 `apps/evolution`</h3>
+        <span class="rounded-full bg-amber-100 px-3 py-1 text-xs font-semibold text-amber-900">Worth exploring</span>
+        <span class="rounded-full bg-slate-100 px-3 py-1 text-xs text-slate-700">三前端一核心 · 3b</span>
+      </div>
+      <p class="mono mt-3 text-sm text-slate-600">interfaces/rsi_cli.py · interfaces/rsi_wiring.py · apps/evolution（待建）</p>
+      <div class="mt-4 grid gap-4 lg:grid-cols-2">
+        <div class="rounded-lg border border-slate-200 p-3"><p class="mb-2 text-xs uppercase tracking-wider text-slate-500">Before · 领域逻辑留在入口层</p><pre class="mermaid">
+flowchart LR
+  CLI["interfaces CLI"] --> R["RSI policy + run_once"]
+  W["rsi_wiring"] --> R
+  classDef warn stroke:#dc2626,stroke-width:2px;
+  class R warn;
+        </pre></div>
+        <div class="rounded-lg border border-slate-200 p-3"><p class="mb-2 text-xs uppercase tracking-wider text-slate-500">After · 应用模块集中规则</p><pre class="mermaid">
+flowchart LR
+  CLI["thin CLI"] --> APP["apps/evolution"]
+  W["wiring"] --> APP
+  APP --> K["kernel capabilities"]
+  classDef deep fill:#0f172a,color:#fff,stroke:#0f172a;
+  class APP deep;
+        </pre></div>
+      </div>
+      <div class="mt-4 grid gap-4 text-sm md:grid-cols-3">
+        <p><b>问题。</b> RSI 的策略/编排仍位于 interfaces，应用规则和入口装配的 locality 不清。</p>
+        <p><b>建议。</b> 建独立 `apps/evolution`；先迁预算/证据策略，再迁 `run_once`，最后精简 wiring。</p>
+        <p><b>收益。</b> 策略可通过小 interface 测试；CLI 保持薄入口；避免把不同领域并入 `apps/goal`。</p>
+      </div>
+    </article>
+  </section>
+
+  <section id="roadmap" class="rounded-xl border border-slate-200 bg-white p-6">
+    <div class="flex flex-wrap items-end justify-between gap-3">
+      <div>
+        <p class="text-xs uppercase tracking-[.2em] text-slate-500">Execution roadmap</p>
+        <h2 class="mt-1 text-2xl font-semibold">完整路线图与批次阶段门</h2>
+      </div>
+      <a class="text-sm text-sky-700 underline" href="../design/architecture-refactor-execution-roadmap-20261119.md">打开详细执行计划（含文件范围/回滚/分派）→</a>
+    </div>
+    <div class="mt-5 overflow-x-auto">
+      <table class="w-full min-w-[900px] border-collapse text-left text-sm">
+        <thead><tr class="border-b border-slate-300 text-slate-500"><th class="p-2">阶段</th><th class="p-2">工作包</th><th class="p-2">状态 / 依赖</th><th class="p-2">阶段门与回滚粒度</th></tr></thead>
+        <tbody class="divide-y divide-slate-200">
+          <tr><td class="p-2">WP-0</td><td class="p-2">重建基线</td><td class="p-2">完成：HEAD 89ef1fc4</td><td class="p-2">确认工作区归属、门禁和数据快照；只读。</td></tr>
+          <tr><td class="p-2">WP-1</td><td class="p-2">B2.2 3b IPC / worker</td><td class="p-2">完成：e161095d</td><td class="p-2">通道/审批/actual_state 测试；不接生产；独立提交。</td></tr>
+          <tr><td class="p-2">WP-2</td><td class="p-2">B2.2 3c 临时工作区 file_write 试点</td><td class="p-2">完成：89ef1fc4</td><td class="p-2">S1–S4：真实写入、确认终止、迟到拒收、lease 顺序；shell 不接。</td></tr>
+          <tr><td class="p-2">WP-3</td><td class="p-2">B2.2 3d 平台矩阵</td><td class="p-2">下一批，需单独批准；先裁决 seam 层级</td><td class="p-2">Windows 必过；POSIX 有理由 skip/unsupported；一批一回滚。</td></tr>
+          <tr><td class="p-2">WP-4</td><td class="p-2">B2.3 上下文跨界</td><td class="p-2">依赖 3d 验收及 R-014</td><td class="p-2">字段、序列化/错误和兼容测试；独立协议批。</td></tr>
+          <tr><td class="p-2">WP-5</td><td class="p-2">B2.4 deadline / E5 / 退出确认 / lease</td><td class="p-2">依赖 B2.3 和 seam 归属裁决</td><td class="p-2">时序测试；退出未确认不释放 lease；整体可关闭隔离 adapter。</td></tr>
+          <tr><td class="p-2">WP-6</td><td class="p-2">B2.5 真实工具试点</td><td class="p-2">依赖 B2.4；再审批</td><td class="p-2">仅临时目录 file_write；shell 延期；按工具关闭回滚。</td></tr>
+          <tr><td class="p-2">WP-7</td><td class="p-2">M13 Workflow 终态保留策略</td><td class="p-2">语义裁决待讨论；可与不冲突批次并行</td><td class="p-2">守住 known-terminal=409 / unknown=404；清理策略独立回滚。</td></tr>
+          <tr><td class="p-2">WP-8</td><td class="p-2">应用批 3b：`apps/evolution`</td><td class="p-2">待实施清单与 R-014</td><td class="p-2">策略 → run_once → wiring 分小批；RSI tests + layer gate。</td></tr>
+          <tr><td class="p-2">WP-9</td><td class="p-2">应用批 3c：M3/M5/M6/M7/M8/M9/M11</td><td class="p-2">七项独立清单</td><td class="p-2">M6/M9 和 M3/M11 按热区串行；小批独立测试/提交。</td></tr>
+          <tr><td class="p-2">WP-10</td><td class="p-2">Chat 3a.4 过渡面清理</td><td class="p-2">deprecated 已标；下版本另批审批</td><td class="p-2">R-015/R-016；迁移与删除分 commit；删除后全量回归。</td></tr>
+          <tr><td class="p-2">WP-11</td><td class="p-2">Legacy Chat 兼容出口退役</td><td class="p-2">完整正式版本周期后 + 独立批准</td><td class="p-2">外部消费者复核；R-015/R-016/R-020；独立提交。</td></tr>
+          <tr><td class="p-2">WP-12</td><td class="p-2">seq_generator 退役</td><td class="p-2">待公告/方案/批准；与 Chat 删除分开</td><td class="p-2">实现、测试锚点、layer matrix、图表四触点同步。</td></tr>
+          <tr><td class="p-2">WP-13</td><td class="p-2">最终架构复审与文档收口</td><td class="p-2">所有已批准批次完成后</td><td class="p-2">重新测量结构/语义/测试/图表；记录剩余 owner 与风险。</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="mt-5 rounded-lg bg-stone-100 p-4">
+      <p class="font-semibold">依赖顺序</p>
+      <pre class="mermaid mt-2">
+flowchart LR
+  W01["3a/3b/3c done"] --> W2["3d platform matrix"]
+  OWN["isolation ownership decision"] --> W2
+  W2 --> W3["B2.3 context"]
+  W3 --> W4["B2.4 deadline / E5 / lease"]
+  W4 --> W5["B2.5 file_write pilot"]
+  M13["M13 terminal policy"] -. independent .-> W2
+  EVO["apps/evolution"] -. independent after scoped .-> W3
+  MISC["3c seven small batches"] -. independent by file ownership .-> W3
+  CHAT["Chat compat cleanup"] --> FINAL["final architecture review"]
+  SEQ["seq_generator retirement"] --> FINAL
+  W5 --> FINAL
+      </pre>
+    </div>
+    <p class="mt-4 text-xs leading-5 text-slate-600">所有删除均需单独 R-014 批准，先满足 R-015/R-016；删除排在主体迁移末位，并依 R-020 独立提交、删除前后各跑全量 pytest 与 batch_gate。</p>
+  </section>
+
+  <section id="decisions" class="rounded-xl border border-amber-200 bg-amber-50 p-6">
+    <h2 class="text-xl font-semibold text-amber-950">需要讨论/批准的事项（推荐值不是批准）</h2>
+    <ol class="mt-4 grid gap-3 text-sm text-amber-950 md:grid-cols-2">
+      <li><b>1. Isolation seam 所有权。</b> 设计写 L3 `kernel/agent/tools/isolation.py`，实现位于 L2 `apps/chat`；推荐通用机制归 kernel，或提供可验证的高层注入，禁止上行依赖。</li>
+      <li><b>2. 是否批准 B2.2 3d。</b> Windows 必过，POSIX 只做有理由的 skip/unsupported；生产支持前需跨平台验证。</li>
+      <li><b>3. 隔离执行后续批次。</b> B2.3、B2.4、B2.5 各自 R-014、独立验收；首试点仅临时目录 file_write，shell 延期。</li>
+      <li><b>4. M13 终态期限。</b> 未决定前不做自动 prune；保留已知终态以稳定 approve 409 与未知 404 的差异。</li>
+      <li><b>5. RSI 归属。</b> 推荐新建 `apps/evolution`，按策略、run_once、wiring 分批，不并入 `apps/goal`。</li>
+      <li><b>6. 批 3c 七项归拢。</b> M3/M5/M7/M8 可分别派；M6/M9 与 M3/M11 需错开共享文件热区。</li>
+      <li><b>7. 兼容出口删除。</b> 3a.4 延至下一版本另批；Legacy Chat 至少一个完整正式版本周期后再审；不得预先删除。</li>
+      <li><b>8. seq_generator 退役。</b> 推荐独立公告和 R-014 批次，四类触点一并同步，不与 Chat 删除合并。</li>
+    </ol>
+  </section>
+
+  <section id="top-recommendation" class="rounded-2xl bg-slate-900 p-7 text-white">
+    <p class="text-xs uppercase tracking-[.2em] text-slate-300">Top recommendation</p>
+    <h2 class="mt-2 text-2xl font-semibold">先裁决隔离 seam 所有权，再批准 B2.2 3d</h2>
+    <p class="mt-3 max-w-5xl text-sm leading-6 text-slate-200">
+      3a/3b/3c 已完成且未接生产；下一执行阶段是平台矩阵。继续前先协调设计所指 L3 与实现所在 L2，
+      避免平台测试完成后才发现生产调用只能通过非法上行依赖。M13 终态策略可作为不冲突的独立小批讨论；
+      RSI 与七项应用归拢可先写各自实施清单，不必等待隔离链完成。
+    </p>
+    <a class="mt-4 inline-block text-sm text-sky-300 underline" href="#isolation-placement">查看首要裁决 →</a>
+  </section>
+
+  <section class="rounded-xl border border-slate-200 bg-white p-5">
+    <h2 class="text-lg font-semibold">历史复审归档</h2>
+    <p class="mt-2 text-sm text-slate-600">此前的六份 HTML 复审已从 Temp 原样移入本目录，以下列表保留其时间顺序：</p>
+    <ol class="mt-3 grid gap-2 text-sm md:grid-cols-2">
+      <li><a class="text-sky-700 underline" href="./architecture-review-20261119-103521.html">2026-11-19 · 10:35</a></li>
+      <li><a class="text-sky-700 underline" href="./architecture-review-20261119-111321.html">2026-11-19 · 11:13</a></li>
+      <li><a class="text-sky-700 underline" href="./architecture-review-20261119-144502.html">2026-11-19 · 14:45</a></li>
+      <li><a class="text-sky-700 underline" href="./architecture-review-20261119-161752.html">2026-11-19 · 16:17</a></li>
+      <li><a class="text-sky-700 underline" href="./architecture-review-20261119-170659.html">2026-11-19 · 17:06</a></li>
+      <li><a class="text-sky-700 underline" href="./architecture-review-20261119-213108.html">2026-11-19 · 21:31</a></li>
+    </ol>
+  </section>
+
+  <footer class="border-t border-stone-300 pt-4 text-xs leading-5 text-slate-500">
+    <p>证据：当前 HEAD 与近期提交记录、B2.2 设计/执行记录、三前端一核心方案、M12/M13 复审、兼容审查、顺序⑥审计和当前架构门禁。跨层词汇按 module / interface / depth / seam / adapter / leverage / locality 使用。</p>
+    <p>验证：`scripts\batch_gate.cmd` ALL GREEN；`check_dangling_imports.py --layers` 上行违规 0；框架数字与架构图一致。最近全量结果仅引用 B2.2 3c 执行记录，本报告未重新运行全量 pytest。</p>
+    <p>未授权事项：不接隔离生产路径、不增加 POSIX 生产支持、不删兼容代码/过渡面/seq_generator；所有实现和删除仍按工作包批准。</p>
+  </footer>
+</main>
+</body>
+</html>

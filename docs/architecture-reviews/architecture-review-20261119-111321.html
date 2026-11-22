@@ -1,0 +1,315 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>AgentNodes 架构复审 · 2026-11-19</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script type="module">
+    import mermaid from "https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs";
+    mermaid.initialize({ startOnLoad: true, theme: "neutral", securityLevel: "loose" });
+  </script>
+  <style>
+    body { font-family: "Segoe UI", "Microsoft YaHei", system-ui, sans-serif; }
+    .seam { border-style: dashed; }
+    .deep { background: linear-gradient(135deg, #0f172a, #1e293b); }
+    .mermaid { min-height: 170px; }
+    .mono { font-family: Consolas, "Cascadia Code", monospace; }
+    @media print { .no-print { display:none } body { background:#fff } }
+  </style>
+</head>
+<body class="bg-stone-50 text-slate-900">
+<main class="max-w-6xl mx-auto px-6 py-10 space-y-10">
+  <header class="border-b border-stone-300 pb-6">
+    <div class="flex flex-wrap items-end justify-between gap-4">
+      <div>
+        <p class="text-xs uppercase tracking-[.2em] text-slate-500">AgentNodes · Architecture review</p>
+        <h1 class="mt-2 text-3xl font-semibold font-serif">全项目架构复审</h1>
+        <p class="mt-2 text-sm text-slate-600">2026-11-19 · 基线 HEAD <code>8afb0640</code> · 分支 <code>refactor/session-lifecycle-kernel</code></p>
+      </div>
+      <div class="rounded-lg border border-slate-200 bg-white px-4 py-3 text-xs text-slate-600">
+        <div><span class="inline-block h-3 w-5 border border-slate-400 align-middle"></span> module</div>
+        <div class="mt-1"><span class="inline-block h-0 w-5 border-t-2 border-dashed border-violet-500 align-middle"></span> seam</div>
+        <div class="mt-1"><span class="inline-block h-3 w-5 bg-slate-800 align-middle"></span> deep implementation</div>
+      </div>
+    </div>
+  </header>
+
+  <section class="grid gap-6 lg:grid-cols-[1.4fr_.8fr]">
+    <article class="rounded-xl border border-slate-200 bg-white p-5">
+      <h2 class="text-lg font-semibold">当前架构骨架</h2>
+      <p class="mt-1 text-sm text-slate-600">四层方向仍成立；不要把不同执行模型仅因名称相似而合并。</p>
+      <div class="mt-4 rounded-lg border border-slate-200 bg-stone-50 p-4">
+        <pre class="mermaid">
+flowchart LR
+  subgraph L1["L1 · interfaces"]
+    HTTP["HTTP adapters"]
+    CLI["CLI / TUI"]
+    MCP["MCP"]
+    ROOT["composition roots"]
+  end
+  subgraph L2["L2 · apps"]
+    CHAT["chat"]
+    GOAL["goal / scheduled research"]
+    PLUG["agent plugins / presets"]
+  end
+  subgraph L3["L3 · kernel"]
+    GW["Gateway / session control"]
+    LOOP["AgentLoop / tools / context"]
+    GRAPH["Graph / workflow / swarm"]
+    STATE["events / session state"]
+  end
+  subgraph L4["L4 · foundation"]
+    CFG["config / LLM"]
+    STORE["storage"]
+    OBS["observability / utils / web"]
+  end
+  HTTP --> CHAT
+  CLI --> GOAL
+  MCP --> PLUG
+  ROOT --> GW
+  CHAT --> GW
+  GOAL --> GRAPH
+  GW --> GRAPH
+  GRAPH --> LOOP
+  LOOP --> STATE
+  STATE --> STORE
+  GW --> CFG
+  classDef deep fill:#0f172a,color:#fff,stroke:#0f172a;
+  class GW,LOOP,GRAPH,STATE deep;
+        </pre>
+      </div>
+      <div class="mt-4 grid gap-3 sm:grid-cols-2">
+        <div class="rounded-lg border border-slate-200 p-3"><h3 class="text-sm font-semibold">L1 · interfaces</h3><p class="mt-1 text-xs text-slate-600">HTTP/CLI/TUI/MCP 适配与生命周期组合根；账本直读在 ADR-002 中被允许，编排决策需收敛。</p></div>
+        <div class="rounded-lg border border-slate-200 p-3"><h3 class="text-sm font-semibold">L2 · apps</h3><p class="mt-1 text-xs text-slate-600">chat、goal、scheduled_research、agent_plugins、algo 与 swarm presets；拥有产品用例与策略。</p></div>
+        <div class="rounded-lg border border-slate-200 p-3"><h3 class="text-sm font-semibold">L3 · kernel</h3><p class="mt-1 text-xs text-slate-600">Gateway/session、AgentLoop、GraphEngine、workflow/swarm、权限、事件与状态投影等平台机制。</p></div>
+        <div class="rounded-lg border border-slate-200 p-3"><h3 class="text-sm font-semibold">L4 · foundation</h3><p class="mt-1 text-xs text-slate-600">配置与 LLM provider、存储原语、观测、ID、通用工具和 web fetch。</p></div>
+      </div>
+    </article>
+    <aside class="space-y-4">
+      <div class="rounded-xl border border-emerald-200 bg-emerald-50 p-5">
+        <h2 class="font-semibold text-emerald-950">结构检查 · 通过项</h2>
+        <ul class="mt-3 space-y-2 text-sm text-emerald-950">
+          <li>跨层上行依赖：<b>0</b></li>
+          <li>kernel 模块级 SCC：<b>0</b></li>
+          <li>已登记 lazy SCC：<b>1</b></li>
+          <li>语义归属门禁：<b>17/17</b></li>
+        </ul>
+      </div>
+      <div class="rounded-xl border border-amber-300 bg-amber-50 p-5">
+        <h2 class="font-semibold text-amber-950">架构图已漂移</h2>
+        <p class="mt-2 text-sm text-amber-950">官方同步检查失败。当前实测 451 个 Python 文件 / 94,622 行；L1→L3 为 143，图中旧值为 145。L1、L2 行数也不匹配。方向门禁仍通过，问题是图面事实陈旧，不是层级违规。</p>
+        <p class="mt-2 text-xs text-amber-900">只读命令：<code class="mono">scripts/arch/sync_architecture_diagram.py</code>（exit 1；未执行 --write）。</p>
+      </div>
+      <div class="rounded-xl border border-slate-200 bg-white p-5">
+        <h2 class="font-semibold">审视边界</h2>
+        <p class="mt-2 text-sm text-slate-600">根目录未找到 <code>GLOSSARY.md</code>；架构决策记录位于 <code>docs/design/adr/</code>。当前工作树有未提交变更；未覆盖、未重置，也未运行全量测试。</p>
+      </div>
+    </aside>
+  </section>
+
+  <section class="rounded-xl border border-slate-200 bg-white p-5">
+    <h2 class="text-lg font-semibold">主要运行旅程</h2>
+    <p class="mt-1 text-sm text-slate-600">不是所有请求都走同一条执行路径；下面表达共同骨架，goal/workflow 与 chat 的用例路径仍有各自语义。</p>
+    <div class="mt-4 rounded-lg border border-slate-200 bg-stone-50 p-4">
+      <pre class="mermaid">
+sequenceDiagram
+  participant I as interfaces adapter
+  participant A as apps use case
+  participant G as Gateway / controller
+  participant R as Graph / AgentLoop
+  participant E as event + session state
+  participant F as foundation storage
+  I->>A: translate request / domain choice
+  A->>G: submit work (where applicable)
+  G->>R: admit, execute, settle
+  R->>E: lifecycle and result events
+  E->>F: persist facts / projections
+  E-->>I: stream or query result
+      </pre>
+    </div>
+  </section>
+
+  <section id="candidates" class="space-y-7">
+    <div>
+      <p class="text-xs uppercase tracking-[.2em] text-slate-500">Deepening opportunities</p>
+      <h2 class="mt-1 text-2xl font-semibold font-serif">复杂度与复用候选</h2>
+      <p class="mt-2 max-w-3xl text-sm text-slate-600">候选都是局部 module 的深化，不是推翻四层骨架。按 deletion test 判断是否真能减少理解成本；不提出具体 interface。</p>
+    </div>
+
+    <article id="send-turn" class="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
+      <div class="flex flex-wrap items-center gap-2">
+        <h3 class="text-xl font-semibold">1 · 收尾 send-turn 深模块迁移</h3>
+        <span class="rounded-full bg-emerald-100 px-3 py-1 text-xs font-semibold text-emerald-900">Strong</span>
+        <span class="rounded-full bg-sky-100 px-3 py-1 text-xs text-sky-900">进行中 · 不另起重构</span>
+      </div>
+      <p class="mt-3 text-xs text-slate-500">Files</p>
+      <p class="mono text-sm">interfaces/api/routers/chat.py · apps/chat/send_turn.py · apps/chat/events.py · tests/test_w3_sse_seed.py</p>
+      <div class="mt-4 grid gap-4 lg:grid-cols-2">
+        <div class="rounded-lg border border-slate-200 p-3"><p class="mb-2 text-xs uppercase tracking-wider text-slate-500">Before · router owns turn coordination</p><pre class="mermaid">
+flowchart TB
+  R["HTTP router"] --> H["history read"]
+  R --> G["Gateway submit / wait"]
+  R --> B["event bridge + Attempt state"]
+  R --> P["answer persistence observer"]
+  B --> G
+  P --> G
+  classDef leak stroke:#dc2626,stroke-width:2px;
+  class B,P leak;
+        </pre></div>
+        <div class="rounded-lg border border-slate-200 p-3"><p class="mb-2 text-xs uppercase tracking-wider text-slate-500">After · one deep apps module</p><pre class="mermaid">
+flowchart TB
+  R["HTTP adapter"] -->|small interface| S["apps/chat send_turn"]
+  subgraph INTERNAL["private implementation / internal seam"]
+    H["history + attempt order"] --> G["submit / wait / receipt"]
+    G --> B["bridge lifecycle"]
+    B --> P["single answer persister"]
+  end
+  S --> H
+  S --> G
+  S --> B
+  S --> P
+  classDef deep fill:#0f172a,color:#fff,stroke:#0f172a;
+  class S deep;
+        </pre></div>
+      </div>
+      <div class="mt-4 grid gap-4 md:grid-cols-3 text-sm">
+        <p><b>Problem.</b> 发送流程曾把 history、Gateway、Attempt、事件桥与答案落库分散在 router 周边；当前迁移已新增深模块，但调用方切换仍在进行。</p>
+        <p><b>Solution.</b> 完成当前 3a.3b 接线与契约核验；把 bridge/persister 保持为 send_turn 的内部实现，不再扩展 router 知识面。</p>
+        <p><b>Benefits.</b> locality：流程故障集中；leverage：同一用例可被不同入口复用；tests 穿过一个 interface 验证顺序、终态与事件语义。</p>
+      </div>
+      <div class="mt-4 rounded-lg bg-stone-100 p-3 text-sm"><b>Deletion test.</b> 直接删 bridge/persister 会失去事件投递或恰一次落库，不能删；只有所有调用和 patch 锚迁移后，才可按既有 R-014/R-016/R-020 单独清理旧 helper。重点守住历史读取失败不产生半提交 Attempt、STEER 多等待方、单例观察器与 wire 零变化。</div>
+    </article>
+
+    <article id="composition" class="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
+      <div class="flex flex-wrap items-center gap-2">
+        <h3 class="text-xl font-semibold">2 · 收敛 HTTP 入口的资源装配知识</h3>
+        <span class="rounded-full bg-amber-100 px-3 py-1 text-xs font-semibold text-amber-900">Worth exploring</span>
+        <span class="rounded-full bg-slate-100 px-3 py-1 text-xs text-slate-700">local-substitutable</span>
+      </div>
+      <p class="mt-3 text-xs text-slate-500">Files</p>
+      <p class="mono text-sm">interfaces/api/container.py · interfaces/api/dependencies.py · interfaces/api/routers/*</p>
+      <div class="mt-4 grid gap-4 lg:grid-cols-2">
+        <div class="rounded-lg border border-slate-200 p-3"><p class="mb-2 text-xs uppercase tracking-wider text-slate-500">Before · parallel construction paths</p><pre class="mermaid">
+flowchart LR
+  C["container builds shared resources"] --> R["router"]
+  D["dependency fallback builds / caches"] --> R
+  C -. identity + lifecycle must match .- D
+  classDef leak stroke:#dc2626,stroke-width:2px;
+  class C,D leak;
+        </pre></div>
+        <div class="rounded-lg border border-slate-200 p-3"><p class="mb-2 text-xs uppercase tracking-wider text-slate-500">After · lifecycle rule is local</p><pre class="mermaid">
+flowchart LR
+  CR["composition root"] --> S["one resource graph"]
+  T["explicit test / script construction"] --> S
+  S --> R["thin request adapter"]
+  classDef deep fill:#0f172a,color:#fff,stroke:#0f172a;
+  class S deep;
+        </pre></div>
+      </div>
+      <div class="mt-4 grid gap-4 md:grid-cols-3 text-sm">
+        <p><b>Problem.</b> container 与 lazy fallback 都知道如何构造 stateful dependencies，Projector/Store 的共享身份和关闭责任容易漂移。</p>
+        <p><b>Solution.</b> 先厘清生产、测试、脚本三类入口，再把资源图的构造与生命周期规则集中；不引入新 DI framework，不盲删 fallback。</p>
+        <p><b>Benefits.</b> locality：所有权与 close 在一处可查；leverage：多个 router 共用同一组实例；测试能覆盖 identity 与关闭行为。</p>
+      </div>
+      <div class="mt-4 rounded-lg bg-stone-100 p-3 text-sm"><b>Deletion test.</b> 未证明所有非生产入口都创建 container 前，删除 fallback 会让脚本/测试失效；这是“先明确路径、再收敛”，不是无条件删回退。</div>
+    </article>
+
+    <article id="agent-loop" class="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
+      <div class="flex flex-wrap items-center gap-2">
+        <h3 class="text-xl font-semibold">3 · 先明确 AgentLoop 的状态局部性，再判断拆分</h3>
+        <span class="rounded-full bg-amber-100 px-3 py-1 text-xs font-semibold text-amber-900">Worth exploring</span>
+        <span class="rounded-full bg-slate-100 px-3 py-1 text-xs text-slate-700">in-process</span>
+      </div>
+      <p class="mt-3 text-xs text-slate-500">Files</p>
+      <p class="mono text-sm">kernel/agent/loop/core.py · kernel/agent/loop/engine.py · kernel/agent/loop/lifecycle.py · tests/test_agent_loop*.py</p>
+      <div class="mt-4 grid gap-4 lg:grid-cols-2">
+        <div class="rounded-lg border border-slate-200 p-3"><p class="mb-2 text-xs uppercase tracking-wider text-slate-500">Before · phases share mutable run state</p><pre class="mermaid">
+flowchart LR
+  PREP["prepare"] --> ITER["iteration"] --> LLM["LLM / tools"] --> END["ending"]
+  PREP -. shared .- STATE["loop state"]
+  ITER -. shared .- STATE
+  LLM -. shared .- STATE
+  END -. shared .- STATE
+  classDef leak stroke:#dc2626,stroke-width:2px;
+  class STATE leak;
+        </pre></div>
+        <div class="rounded-lg border border-slate-200 p-3"><p class="mb-2 text-xs uppercase tracking-wider text-slate-500">After · one lifecycle owner, internal phases</p><pre class="mermaid">
+flowchart TB
+  LOOP["AgentLoop · lifecycle owner"]
+  LOOP --> P["prepare"]
+  LOOP --> I["iterate"]
+  LOOP --> F["finalize"]
+  subgraph PRIVATE["internal implementation"]
+    P --> I --> F
+    I --> L["LLM / tools / hooks"]
+  end
+  classDef deep fill:#0f172a,color:#fff,stroke:#0f172a;
+  class LOOP deep;
+        </pre></div>
+      </div>
+      <div class="mt-4 grid gap-4 md:grid-cols-3 text-sm">
+        <p><b>Problem.</b> AgentLoop 横跨准备、循环、工具、事件与收尾；阶段共享可变 run state，按行数抽文件会把复杂度移到回调。</p>
+        <p><b>Solution.</b> 先为生命周期状态和阶段不变量建立局部性；只有存在真实 seam 与多个消费者/可替换 adapter 时才继续下沉。</p>
+        <p><b>Benefits.</b> locality：状态转换与失败收尾集中；tests 穿过真实执行路径；leverage：不让调用方了解内部 phase 细节。</p>
+      </div>
+      <div class="mt-4 rounded-lg bg-amber-50 p-3 text-sm"><b>约束.</b> 现有 K5 设计明确反对按 500 行阈值机械拆分。先保同步/异步 parity、hook 顺序、deadline 与事件契约；若没有独立行为和消费者，就保持现状。</div>
+    </article>
+
+    <article id="workflow-registry" class="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
+      <div class="flex flex-wrap items-center gap-2">
+        <h3 class="text-xl font-semibold">4 · 核对 Workflow runner 状态的唯一所有者</h3>
+        <span class="rounded-full bg-amber-100 px-3 py-1 text-xs font-semibold text-amber-900">Worth exploring</span>
+        <span class="rounded-full bg-slate-100 px-3 py-1 text-xs text-slate-700">in-process</span>
+      </div>
+      <p class="mt-3 text-xs text-slate-500">Files</p>
+      <p class="mono text-sm">interfaces/api/routers/workflow.py · kernel/workflow/executor.py · apps/goal/workflow.py</p>
+      <div class="mt-4 grid gap-4 lg:grid-cols-2">
+        <div class="rounded-lg border border-slate-200 p-3"><p class="mb-2 text-xs uppercase tracking-wider text-slate-500">Before · two runner registries</p><pre class="mermaid">
+flowchart LR
+  API["HTTP runner map\nowner / TTL / cleanup"] -->|start / status / control| RUN["WorkflowRunner"]
+  K["kernel registry\nrun_id → runner"] --> RUN
+  API -. overlapping lifecycle? .- K
+        </pre></div>
+        <div class="rounded-lg border border-slate-200 p-3"><p class="mb-2 text-xs uppercase tracking-wider text-slate-500">After · ownership is explicit</p><pre class="mermaid">
+flowchart LR
+  K["one execution-state owner"] --> RUN["WorkflowRunner"]
+  A["interface-side owner visibility"] -. scoped lookup .- K
+  classDef deep fill:#0f172a,color:#fff,stroke:#0f172a;
+  class K deep;
+        </pre></div>
+      </div>
+      <div class="mt-4 grid gap-4 md:grid-cols-3 text-sm">
+        <p><b>Problem.</b> router 的 active map 与 kernel registry 都保存 runner 相关状态；是否重复尚需核对同一 run 的注册、终态和清理路径。</p>
+        <p><b>Solution.</b> 先画出两个 registry 的消费者与生命周期；若确实存同一状态，再局部化 execution record 与 owner 可见性元数据。</p>
+        <p><b>Benefits.</b> locality：清理和终态由单一 owner 管理；tests 可验证 TTL、越权隐藏与控制操作的一致性。</p>
+      </div>
+      <div class="mt-4 rounded-lg bg-stone-100 p-3 text-sm"><b>Deletion test.</b> 不能直接删任一 registry：kernel runner 查询与接口 owner/TTL 信息各有责任。先证实重叠，再决定是否收敛。</div>
+    </article>
+  </section>
+
+  <section id="top-recommendation" class="rounded-2xl bg-slate-900 p-7 text-white">
+    <p class="text-xs uppercase tracking-[.2em] text-slate-300">Top recommendation</p>
+    <h2 class="mt-2 text-2xl font-semibold">优先完成候选 1：当前 send-turn 迁移，而不是启动全仓目录重排</h2>
+    <p class="mt-3 max-w-4xl text-sm leading-6 text-slate-200">它正处于真实变更窗口：HEAD 已包含 3a.3a 深模块，当前工作树显示 router 与契约测试仍有未提交改动。先把该批的行为契约、错误顺序、桥生命周期和单例落库验证闭环，再独立评估容器装配；这样每一步都能通过一个 interface 验证，避免并行改变多个 seam。</p>
+    <a class="mt-4 inline-block text-sm text-sky-300 underline" href="#send-turn">跳到候选 1 →</a>
+  </section>
+
+  <section class="rounded-xl border border-slate-200 bg-white p-5">
+    <h2 class="text-lg font-semibold">本次不建议做的事</h2>
+    <ul class="mt-3 grid gap-2 text-sm text-slate-700 md:grid-cols-2">
+      <li>不推翻已验证的四层依赖骨架；当前六个上行方向均为零。</li>
+      <li>不按文件行数拆 AgentLoop；先建立状态与生命周期证据。</li>
+      <li>不因抽象偏好新增 CapabilityRegistry；遵守 ADR-003 的“不建”决策与重开条件。</li>
+      <li>不删除 legacy 队列或兼容面；继续按 R-014/R-015/R-016/R-020 审批和审计。</li>
+      <li>不把 AgentLoop、GraphEngine、Workflow、Swarm 强行合并；先证明同一用例有重复实现。</li>
+      <li>不在本轮修改未提交文件；架构图 --write 也未执行。</li>
+    </ul>
+  </section>
+  <footer class="border-t border-stone-300 pt-4 text-xs leading-5 text-slate-500">
+    <p>方法：使用 improve-codebase-architecture 与 codebase-design skills；结合当前四层规则、docs/design/adr/ADR-000/002/003、近期提交、静态依赖门禁与独立只读代码走查。</p>
+    <p>脚本验证：layer imports（上行 0）、kernel SCC（模块级 0 / lazy SCC 已登记）、semantics placement（17/17）；architecture diagram sync 检查失败，原因是图面数字过时。未运行全量 tests。</p>
+  </footer>
+</main>
+</body>
+</html>
