@@ -177,3 +177,64 @@ class TestProviderMessageOrdering:
         legacy, skeleton = _run_engine_scenario(responses, "pure_text")
         assert legacy["success"] is True and skeleton["success"] is True
         assert skeleton["answer"] == "最终答案"
+
+
+class TestStrategyCtxCopyContract:
+    """C4 副本契约的直接单测（同步纯函数，无需 subprocess）。
+
+    docstring 写明的两个语义此前零直接覆盖：
+
+    - **副本隔离**：``ctx.messages`` 是输入列表的浅拷贝——步骤 append
+      不泄漏回调用方列表；删掉 ``list(messages)``（"优化"）会让本测试红，
+      这与 provider 校验回归互为两面（结构面 + 行为面）。
+    - **budget 快照**：``tokens_used`` / ``cost_usd`` 在建 ctx 时刻取值，
+      刻意陈旧——loop 字段事后变化不回传。
+    """
+
+    def _make_ctx(self, messages):
+        from types import SimpleNamespace
+
+        from agentnodes.kernel.agent.loop.core import _make_strategy_ctx
+
+        loop = SimpleNamespace(_budget_tokens=42, _budget_cost_usd=1.5)
+        result = SimpleNamespace(started_at=123.0)
+        return (
+            _make_strategy_ctx(loop, messages, None, result, 3, hook_ctx="h"),
+            loop,
+        )
+
+    def test_ctx_messages_is_a_copy_not_the_input_list(self):
+        messages = [{"role": "user", "content": "hi"}]
+        ctx, _ = self._make_ctx(messages)
+
+        assert ctx.messages == messages
+        assert ctx.messages is not messages, "必须是副本（crash 隔离语义）"
+
+        # 步骤视角：往 ctx append 不泄漏回调用方工作列表
+        ctx.messages.append({"role": "assistant", "content": "a"})
+        assert messages == [{"role": "user", "content": "hi"}]
+
+        # 调用方视角：建 ctx 后原列表继续变化不回传
+        ctx2, _ = self._make_ctx(messages)
+        messages.append({"role": "tool", "tool_call_id": "c1"})
+        assert ctx2.messages == [{"role": "user", "content": "hi"}]
+
+    def test_budget_snapshot_is_stale_by_design(self):
+        ctx, loop = self._make_ctx([{"role": "user"}])
+        assert ctx.tokens_used == 42
+        assert ctx.cost_usd == 1.5
+        assert ctx.t0 == 123.0
+
+        # 建_ctx 后记账字段变化不回传（快照语义——本轮 ctx 建于记账前）
+        loop._budget_tokens = 100
+        loop._budget_cost_usd = 9.9
+        assert ctx.tokens_used == 42
+        assert ctx.cost_usd == 1.5
+
+    def test_ctx_carries_iteration_and_hook_ctx_identity(self):
+        messages = [{"role": "user"}]
+        ctx, _ = self._make_ctx(messages)
+        assert ctx.task == ""
+        assert ctx.iteration == 3
+        assert ctx.hook_ctx == "h"
+        assert ctx.should_stop is False

@@ -188,6 +188,23 @@ def test_ensure_sink_idempotent():
     assert gw.ensure_sink("other", factory) is True
 
 
+def test_ensure_sink_and_add_sink_coexist():
+    """C5：ensure_sink 的一次性 sink 与 add_sink 的外部 sink 共存——
+    广播时两类都收到事件（persister 与桥互不挤占）。"""
+    from agentnodes.kernel.gateway.gateway import Gateway
+
+    gw = Gateway(client=object(), engine_factory=lambda: None)
+    seen = []
+    gw.add_sink(lambda kind, data: seen.append(("bridge", kind)))
+    gw.ensure_sink("answer_persister", lambda: (
+        lambda kind, data: seen.append(("persister", kind))
+    ))
+
+    gw._combined_sink("run.answer", {"run_id": "r1"})
+    assert ("bridge", "run.answer") in seen
+    assert ("persister", "run.answer") in seen
+
+
 @pytest.mark.asyncio
 async def test_prevalidated_history_skips_second_read():
     """重复 A 修复：调用方已预检并传入 history 时，send_turn 不再二次
