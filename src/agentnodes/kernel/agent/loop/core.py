@@ -151,6 +151,22 @@ def _make_strategy_ctx(
     ``hook_ctx`` is carried through so a step that wants AgentHookContext
     access (e.g. to read usage) gets the same instance the hook system
     uses — zero extra synchronisation.
+
+    **messages 副本与写回契约（第四轮 C4，回归：MiniMax 400）**：
+
+    - ``messages=list(messages)`` 是**浅拷贝**——步骤（LLMCall /
+      ToolExecution）往副本里 append；调用方**必须 rebind**
+      （``messages = <step>_ctx.messages`` 或 ``ctx.messages = ...``），
+      否则 assistant/tool 轮次丢在副本里，发给 provider 的序列缺
+      assistant 轮 → MiniMax 400（``engine_adapters`` :90-97 有原始记录）。
+    - 漏 rebind 的路径由 ``tests/test_loop_message_ordering.py`` 的
+      provider 校验 mock 回归钉住。
+    - 副本同时是 **crash 隔离**：步骤中途抛异常时副本丢弃，部分
+      append 不被工作列表采纳（刻意语义，勿"优化"掉拷贝）。
+
+    ``tokens_used`` / ``cost_usd`` 是**建 ctx 时刻的快照**（从
+    ``loop._budget_*`` 私有字段读）——刻意陈旧：记账发生在 LLM 步骤
+    之后，本轮 ctx 建于其前。
     """
     from agentnodes.kernel.agent.strategy.loop_context import LoopContext
 

@@ -28,6 +28,11 @@ class LoopContext:
     context: Optional[str] = None
     history: Optional[list[dict[str, Any]]] = None
 
+    # 工作消息列表——可能是引擎工作列表的**副本**（``_make_strategy_ctx``
+    # 的浅拷贝契约，第四轮 C4）：步骤可就地 append（LLMCall/ToolExecution），
+    # 但**采纳靠调用方 rebind**（``messages = <step>_ctx.messages``）；
+    # 副本同时承担 crash 隔离（步骤中途崩 → 副本丢弃，部分 append 不采纳）。
+    # 漏 rebind 的回归由 tests/test_loop_message_ordering.py 钉住。
     messages: list[dict[str, Any]] = field(default_factory=list)
     iteration: int = 0
     t0: float = 0.0
