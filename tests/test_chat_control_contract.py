@@ -973,6 +973,7 @@ def test_gateway_event_bridge_updates_attempt_without_persisting(monkeypatch):
             sink_holder.update({"sink": sink})
             or (lambda: unsubscribed.append(True))
         ),
+        ensure_sink=lambda key, factory: False,
     )
     sse = []
     monkeypatch.setattr(
@@ -1034,6 +1035,7 @@ async def test_answer_persister_persists_once_per_run_and_skips_unscoped(monkeyp
     sinks = []
     gateway = SimpleNamespace(
         add_sink=lambda sink: sinks.append(sink) or (lambda: None),
+        ensure_sink=lambda key, factory: False,
     )
     chat_router._install_answer_persister(gateway)
     chat_router._install_answer_persister(gateway)  # 旗标幂等：只装一次
@@ -1071,6 +1073,7 @@ async def test_gateway_receipt_path_does_not_run_inline_without_consumer(monkeyp
         entry=entry,
         consumer_running=Mock(return_value=False),
         add_sink=Mock(return_value=lambda: None),
+        ensure_sink=Mock(return_value=False),
         run_once=Mock(side_effect=AssertionError("receipt path must not run inline")),
     )
     service = SimpleNamespace(
@@ -1113,6 +1116,7 @@ async def test_gateway_queue_full_maps_to_429_with_current_size(monkeypatch):
         entry=entry,
         consumer_running=Mock(return_value=False),
         add_sink=Mock(return_value=lambda: None),
+        ensure_sink=Mock(return_value=False),
     )
     service = SimpleNamespace(
         store=SimpleNamespace(get_messages=Mock(return_value=[])),

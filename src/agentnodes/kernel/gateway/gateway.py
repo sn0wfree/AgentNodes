@@ -90,6 +90,8 @@ class Gateway:
         # R7：外部 sink 集合（替代原链式 _external_sink）+ 代际表。
         self._sinks: set[Callable[[str, dict], None]] = set()
         self._sink_lock = threading.Lock()
+        # C5：ensure_sink 的幂等键（一次性 sink 按 key 只装一次）。
+        self._sink_keys: set[str] = set()
         self._turn_gen: dict[str, int] = {}      # session_id -> 已入队轮数
         self._turn_done_gen: dict[str, int] = {} # session_id -> 已完成轮数
         self._active_attempts: dict[str, str] = {}  # session_id -> attempt_id
@@ -320,6 +322,21 @@ class Gateway:
                 self._sinks.discard(sink)
 
         return unsubscribe
+
+    def ensure_sink(self, key: str, factory: Callable[[], Callable[[str, dict], None]]) -> bool:
+        """按 key 幂等注册一次性 sink（第四轮 C5）。
+
+        「每个 Gateway 实例恰装一次」的不变量归本方法所有：同 key 首次
+        调用安装 ``factory()`` 产出的 sink 并返回 True；再次调用返回
+        False、不重复安装。替代此前 apps 侧把 ``_answer_persister_installed``
+        flag 动态走私到 Gateway 实例上的私有契约（该类从未声明此属性）。
+        """
+        with self._sink_lock:
+            if key in self._sink_keys:
+                return False
+            self._sink_keys.add(key)
+        self.add_sink(factory())
+        return True
 
     def install_sink(self, sink: Callable[[str, dict], None]) -> Callable[[], None]:
         """[兼容别名] 等价于 add_sink，返回注销函数。

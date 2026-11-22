@@ -63,11 +63,20 @@ class FakeGateway:
     def __init__(self, receipt=None):
         self.entry = FakeEntry(receipt or FakeReceipt())
         self._sinks = []
+        self._sink_keys = set()
         self._mailbox = FakeMailbox()
 
     def add_sink(self, sink):
         self._sinks.append(sink)
         return lambda: None
+
+    def ensure_sink(self, key, factory):
+        """C5：与 kernel Gateway 同契约的幂等注册（fake 侧镜像）。"""
+        if key in self._sink_keys:
+            return False
+        self._sink_keys.add(key)
+        self._sinks.append(factory())
+        return True
 
     def consumer_running(self):
         return False
@@ -157,6 +166,26 @@ async def test_answer_persister_installed_once():
     answer_sinks = [s for s in gw._sinks
                     if getattr(s, "__name__", "") == "_persist_answer"]
     assert len(answer_sinks) == 1
+
+
+def test_ensure_sink_idempotent():
+    """C5：ensure_sink 同 key 恰装一次（幂等键归 Gateway 所有）。"""
+    from agentnodes.kernel.gateway.gateway import Gateway
+
+    gw = Gateway(client=object(), engine_factory=lambda: None)
+    installed = []
+
+    def factory():
+        sink = lambda kind, data: installed.append((kind, data))
+        return sink
+
+    assert gw.ensure_sink("k", factory) is True
+    assert gw.ensure_sink("k", factory) is False  # 二次注册不重复安装
+    assert len(installed) == 0  # 未广播前不触发
+    gw._combined_sink("run.answer", {"run_id": "r1"})
+    assert len(installed) == 1, "同 key 恰一个 sink 实例收到事件"
+    # 不同 key 各自注册
+    assert gw.ensure_sink("other", factory) is True
 
 
 @pytest.mark.asyncio

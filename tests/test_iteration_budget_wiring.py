@@ -54,6 +54,7 @@ class TestGatewayTurnBudget(unittest.TestCase):
             entry=entry,
             consumer_running=MagicMock(return_value=False),
             add_sink=MagicMock(return_value=lambda: None),
+            ensure_sink=MagicMock(return_value=False),
         )
         service = SimpleNamespace(
             load_history=MagicMock(return_value=[]),

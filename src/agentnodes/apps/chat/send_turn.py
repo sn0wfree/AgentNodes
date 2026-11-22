@@ -198,9 +198,9 @@ def _install_answer_persister(gw: Any, deps: SendTurnDeps) -> None:
 
     批1-S2（A1+B2）修复搬迁：外部启动 run / 原桥超时场景天然覆盖；
     落库失败只记 warning，不阻断事件流与各等待方 SSE。
+    幂等键归 ``gw.ensure_sink``（第四轮 C5）——替代此前走私到 Gateway
+    实例上的 ``_answer_persister_installed`` 私有 flag。
     """
-    if getattr(gw, "_answer_persister_installed", False):
-        return
     seen_run_ids: set[str] = set()
 
     def _persist_answer(kind: str, data: dict) -> None:
@@ -221,8 +221,7 @@ def _install_answer_persister(gw: Any, deps: SendTurnDeps) -> None:
         except Exception:  # noqa: BLE001 —— 落库失败不吞事件流
             logger.warning("answer persister: assistant persist failed", exc_info=True)
 
-    gw.add_sink(_persist_answer)
-    gw._answer_persister_installed = True
+    gw.ensure_sink("answer_persister", lambda: _persist_answer)
 
 
 # ── 内部 seam 2：事件桥（引擎 → 产品 SSE + Attempt 生命周期）────────
