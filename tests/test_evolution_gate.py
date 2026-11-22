@@ -754,3 +754,41 @@ class TestNoNewLayerViolation:
 
         viol, _ = lm._collect()
         assert viol.get("L3>L2", 0) == 0
+
+
+class TestGatePortConformance:
+    """C7：gate 的 port 方法集 == 实际调用集（interface is the test surface）。
+
+    Protocol 里**没有**盲退 rollback()——那正是 `_rollback` docstring 称为
+    原 bug 的 cursor−1；gate 只允许 `rollback_to(锚)`。
+    """
+
+    def test_protocol_matches_gate_calls(self):
+        import inspect
+        import io
+
+        from agentnodes.kernel.evolution import validation_gate as vg
+
+        protocol_methods = {
+            name
+            for name, _ in inspect.getmembers(
+                vg.GenomeVersionStore, predicate=inspect.isfunction,
+            )
+            if not name.startswith("_")
+        }
+        assert protocol_methods == {
+            "current_version_id", "activate", "rollback_to",
+        }
+
+        # gate 源码对 genome 的调用面 == Protocol 方法集（无 rollback()）
+        text = io.open(vg.__file__, encoding="utf-8").read()
+        called = {
+            m.group(1)
+            for m in __import__("re").finditer(
+                r"self\.genome\.(\w+)\(", text,
+            )
+        }
+        assert called <= protocol_methods, (
+            f"gate 调用了 port 未声明的方法: {called - protocol_methods}"
+        )
+        assert "self.genome.rollback(" not in text, "gate 不得盲退 cursor−1"

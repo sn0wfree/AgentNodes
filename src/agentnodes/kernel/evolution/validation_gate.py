@@ -228,7 +228,12 @@ def _has_cost_samples(baseline: ReplayOutcome, candidate: ReplayOutcome) -> bool
 
 
 class GenomeVersionStore(Protocol):
-    """genome_version 的读写接口（由 ConfigHub 实现或测试替身）。"""
+    """genome_version 的读写接口（由 ConfigHub 实现或测试替身）。
+
+    方法集 = 本 gate 实际调用集（第四轮 C7 conformance 测试钉住）：
+    声明里**没有**盲退 ``rollback()``——那是实现侧自有方法（cursor−1），
+    gate 的回滚语义只允许 ``rollback_to(锚)``（F2 / C13，见 ``_rollback``）。
+    """
 
     def current_version_id(self) -> str: ...
 
@@ -236,8 +241,8 @@ class GenomeVersionStore(Protocol):
         """激活提案，返回新 version_id。"""
         ...
 
-    def rollback(self) -> str:
-        """回退到上一版本，返回回退后的 version_id。"""
+    def rollback_to(self, version_id: str) -> str:
+        """回滚到链上已知版本（本 gate 传**锚**），返回回退后的 version_id。"""
         ...
 
 
