@@ -417,4 +417,5 @@ TypeScript 检查，若 API schema 有变更还需核实类型生成差异，但
 | P0-1 | 2026-11-22 / 当前会话 | 已检查相关代码、设计、Git 状态；示意未跟踪 | 不适用，计划文档阶段 | 用户共享的静态示意；未作为真实联调证据 | 执行前重核归属和基线 |
 | P0-2 | 2026-11-22 / 当前会话 | 曾尝试隔离后端及最小探针 | Node 回环 `EACCES`；Python `socketpair()` 卡住 | 后端未就绪，真实交互未验收 | 等待策略排查；不绕过沙箱 |
 | P0-3/4 | 2026-11-22 / 当前会话 | 登录/工作台/会话及发送错误处理已有局部改动 | 最新 composer 21 项、类型检查和 lint 通过；lint 有既有警告 | 无真实后端/模型验收 | 全量测试与 P0-5 待当前版本重跑 |
+| P0-1 重核 + P0-3/4 验证 | 2026-11-22 / 主线会话 | 只读验证（未修改任何 webui 工作树文件）：受影响测试 / lint / tsc / 全量 / 隔离构建；构建产物仅落 `tmp/ui-build/p0-verify-20261122/`（gitignored，此前不存在的新目录）；`webui/static` 未动 | `npx vitest run composer+sessionStore+appShellPermission` 3 文件 48 测试全绿；`npm run lint`（oxlint）0 错误 / 25 条既有警告（study·workflow·catalog 等遗留区为主）；`npx tsc -b` 0 错误；全量 `npm test` **123 文件 / 1347 测试全绿**（19.6s）；`npx vite build --outDir` 4154 模块 6.37s（chunk>500kB 提示为信息级） | 不适用——P0-2 仍阻塞，无真实服务 | P0-2 沙箱 `EACCES` 待用户/管理员调整策略（不绕过）；解封后先跑最小回环探针再进 P0-5 实机门；webui 工作树改动未提交，归属 UI 会话，提交须另行确认 |
 | 后续 | 待填写 | 待填写 | 待填写 | 待填写 | 待填写 |
