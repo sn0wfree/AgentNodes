@@ -119,6 +119,10 @@ echo [12/12] kernel package SCC ^(module-level cycles^)
 call :step_kernel_scc
 if errorlevel 1 set "FAILED=1"
 
+echo [13/13] token hygiene ^(bare hex / off-scale font / bad gradient^)
+call :step_token_hygiene
+if errorlevel 1 set "FAILED=1"
+
 REM --- step 10/10: graphify symbolic audit (optional, second dimension) ------
 echo.
 echo [opt] graphify symbolic audit ^(optional^)
@@ -426,6 +430,24 @@ if errorlevel 1 (
     exit /b 1
 )
 echo   [OK] kernel SCC: no module-level cycles
+exit /b 0
+
+
+:step_token_hygiene
+REM Frontend token hygiene (P1-1 C batch): bare hex / off-scale font / bad gradient.
+REM Current violations are baselined; the gate fails only when the count grows.
+if not exist "scripts\arch\check_token_hygiene.py" (
+    echo   [SKIP] check_token_hygiene.py not present
+    exit /b 0
+)
+set "LOG=%TEMP%\batch_gate_step13.log"
+"%PROBE_PI%" scripts\arch\check_token_hygiene.py > "%LOG%" 2>&1
+if errorlevel 1 (
+    echo   [X] check_token_hygiene.py: hygiene violations above baseline
+    call :tail "%LOG%" 30
+    exit /b 1
+)
+echo   [OK] token hygiene: violations within baseline
 exit /b 0
 
 

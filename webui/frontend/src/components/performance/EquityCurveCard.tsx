@@ -129,7 +129,7 @@ export function EquityCurveCard({ curve, metrics }: Props) {
   }
 
   const up = stats.totalReturn >= 0
-  const color = up ? '#10b981' : '#ef4444'
+  const color = up ? 'var(--success)' : 'var(--danger)'
 
   return (
     <div className="rounded-lg border border-slate-800/50 bg-slate-900/30 p-3">

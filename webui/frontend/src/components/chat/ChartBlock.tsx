@@ -11,7 +11,7 @@ interface ChartBlockProps {
   chart: ChartPart
 }
 
-const COLORS = ['#3b82f6', '#10b981', '#8b5cf6', '#f59e0b', '#06b6d4', '#ec4899', '#f97316', '#14b8a6']
+const COLORS = ['var(--viz-1)', 'var(--viz-2)', 'var(--viz-3)', 'var(--viz-4)', 'var(--viz-5)', 'var(--viz-6)', 'var(--viz-7)', 'var(--viz-8)']
 
 export function ChartRenderer({ chart }: { chart: ChartPart }) {
   const { chart_type, data } = chart
@@ -41,7 +41,7 @@ export function ChartRenderer({ chart }: { chart: ChartPart }) {
             <Tooltip
               contentStyle={{ backgroundColor: 'var(--popover)', border: '1px solid var(--border)', borderRadius: 8, fontSize: 12 }}
             />
-            <Bar dataKey={yKey} fill="#3b82f6" radius={[4, 4, 0, 0]} />
+            <Bar dataKey={yKey} fill="var(--viz-1)" radius={[4, 4, 0, 0]} />
           </BarChart>
         </ResponsiveContainer>
       )
@@ -55,7 +55,7 @@ export function ChartRenderer({ chart }: { chart: ChartPart }) {
             <Tooltip
               contentStyle={{ backgroundColor: 'var(--popover)', border: '1px solid var(--border)', borderRadius: 8, fontSize: 12 }}
             />
-            <Line type="monotone" dataKey={yKey} stroke="#3b82f6" strokeWidth={2} dot={false} />
+            <Line type="monotone" dataKey={yKey} stroke="var(--viz-1)" strokeWidth={2} dot={false} />
           </LineChart>
         </ResponsiveContainer>
       )
@@ -92,7 +92,7 @@ export function ChartRenderer({ chart }: { chart: ChartPart }) {
             <Tooltip
               contentStyle={{ backgroundColor: 'var(--popover)', border: '1px solid var(--border)', borderRadius: 8, fontSize: 12 }}
             />
-            <Scatter dataKey={yKey} fill="#8b5cf6" />
+            <Scatter dataKey={yKey} fill="var(--viz-3)" />
           </ScatterChart>
         </ResponsiveContainer>
       )

@@ -18,10 +18,10 @@ interface Props {
 }
 
 const METRIC_COLORS: Record<string, string> = {
-  calmar: '#8b5cf6',
-  sharpe: '#06b6d4',
-  max_dd: '#ef4444',
-  sortino: '#10b981',
+  calmar: 'var(--viz-3)',
+  sharpe: 'var(--viz-5)',
+  max_dd: 'var(--viz-4)',
+  sortino: 'var(--viz-2)',
 }
 
 const METRIC_LABELS: Record<string, string> = {

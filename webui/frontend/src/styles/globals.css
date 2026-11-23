@@ -36,6 +36,9 @@
   --warning-foreground-bright: #fef08a;
   --warning-quaternary: rgba(250,204,21,0.06);
   --danger: #f87171;   --danger-fg: #f87171;   --danger-surface: rgba(248,113,113,0.10);
+  /* viz 系列色（C 批：图表系列色，豁免单强调，单点定义）*/
+  --viz-1: #3b82f6;  --viz-2: #10b981;  --viz-3: #8b5cf6;  --viz-4: #f59e0b;
+  --viz-5: #06b6d4;  --viz-6: #ec4899;  --viz-7: #f97316;  --viz-8: #14b8a6;
   color-scheme: dark;
   color: var(--foreground);
   background-color: var(--background);
@@ -72,6 +75,9 @@
   --warning-foreground-bright: #713f12;
   --warning-quaternary: rgba(202,138,4,0.06);
   --danger: #dc2626;   --danger-fg: #b91c1c;  --danger-surface: rgba(220,38,38,0.08);
+  /* viz 系列色（light 加深保证对比度）*/
+  --viz-1: #2563eb;  --viz-2: #047857;  --viz-3: #6d28d9;  --viz-4: #b45309;
+  --viz-5: #0e7490;  --viz-6: #be185d;  --viz-7: #c2410c;  --viz-8: #0f766e;
   color-scheme: light;
   color: var(--foreground);
   background-color: var(--background);

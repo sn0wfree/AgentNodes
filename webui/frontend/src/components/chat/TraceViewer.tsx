@@ -293,8 +293,8 @@ function TokenUsageChart({ events }: { events: TraceEvent[] }) {
           <AreaChart data={series} margin={{ top: 4, right: 8, left: 8, bottom: 0 }}>
             <defs>
               <linearGradient id="tokenFill" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="0%" stopColor="#3b82f6" stopOpacity={0.4} />
-                <stop offset="100%" stopColor="#3b82f6" stopOpacity={0} />
+                <stop offset="0%" stopColor="var(--viz-1)" stopOpacity={0.4} />
+                <stop offset="100%" stopColor="var(--viz-1)" stopOpacity={0} />
               </linearGradient>
             </defs>
             <XAxis dataKey="index" tick={{ fontSize: 9, fill: "#6b7280" }} tickLine={false} axisLine={false} />
@@ -303,7 +303,7 @@ function TokenUsageChart({ events }: { events: TraceEvent[] }) {
               contentStyle={{ background: "#111827", border: "1px solid #374151", fontSize: 10 }}
               labelFormatter={(l) => `LLM call #${l}`}
             />
-            <Area type="monotone" dataKey="total" stroke="#3b82f6" fill="url(#tokenFill)" strokeWidth={1.5} />
+            <Area type="monotone" dataKey="total" stroke="var(--viz-1)" fill="url(#tokenFill)" strokeWidth={1.5} />
           </AreaChart>
         </ResponsiveContainer>
       </div>

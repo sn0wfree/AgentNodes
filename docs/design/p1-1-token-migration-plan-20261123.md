@@ -161,6 +161,16 @@ A 批「覆盖面内零 diff」+ A-0 双主题基线 / A 批不做 Tailwind v4 �
 文本三级 / amber 机械映射 / 状态色按实际 9 token / 一批一确认 / 系统字体栈。
 授权从 A-0 开始逐批推进；每批独立提交（不 push），后批开工前仍需单独确认。
 
+## 附 H：C 卫生批执行结果（2026-11-23）
+
+**用户裁决**：① 字号保守——9/10/11px 不强制归位（tailwind 默认 text-xs=12px ≠ 刻度 xs=11px，强行归位会改 313 处视觉）；② identity 色白名单放行（agent/DAG 身份色按 B-2 裁决豁免）。
+
+**实施**：viz-1..8 令牌单点定义（globals.css 双主题：dark `#3b82f6/#10b981/#8b5cf6/#f59e0b/#06b6d4/#ec4899/#f97316/#14b8a6`，light 加深变体），ChartBlock 8 色板 / MetricsTrendChart / TraceViewer 面积图消费点改 `var(--viz-N)`，涨跌色改 `--success`/`--danger` 语义令牌；`scripts/arch/check_token_hygiene.py` + `tests/test_token_hygiene.py`（三条件判定 + 注入即红 R-019），注册 batch_gate 13/13；门违规 191→0（viz 收编 + 图表语义色白名单显式登记）；字号检测关闭（留独立后续批）。
+
+**验证**：前端 1357 测试 / tsc / lint；双主题 e2e 自证 82 passed；全量 8131+5 hygiene；gate 13/13 ALL GREEN。
+
+**遗留**：9/10/11px 统一真源留独立后续批（需解决 tailwind text-xs 与刻度冲突）；43 处图表语义色白名单登记，新增由门拦截。P1-1 五批（A-0/A/B/B-2/C）全部落地。
+
 ## 附 G：B-2 amber 机械映射批前置事实（2026-11-23）
 
 B 批只落地了 **3-token 状态组**（`--warning` / `-fg` / `-surface`，dark `#facc15` / light `#ca8a04`，globals.css L28/L55），U-A §2.3 的 **9-token 组尚缺 6 项**：`{role}Fill / FillHover / FillPressed / FillBright / ForegroundHover / ForegroundBright / Quaternary`。B-2 必须先补全 9-token 组（dark/light 各 9 项），再做 amber 类名映射——否则「机械映射到 --warning token 组」无处可指。

@@ -163,8 +163,8 @@ export function PanelRenderCard({ item, metrics, curve }: Props) {
               <LineChart data={curve.points} margin={{ top: 4, right: 4, bottom: 0, left: 0 }}>
                 <defs>
                   <linearGradient id="eqFill" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="0%" stopColor={stats.totalReturn >= 0 ? '#10b981' : '#ef4444'} stopOpacity={0.25} />
-                    <stop offset="100%" stopColor={stats.totalReturn >= 0 ? '#10b981' : '#ef4444'} stopOpacity={0} />
+                    <stop offset="0%" stopColor={stats.totalReturn >= 0 ? 'var(--success)' : 'var(--danger)'} stopOpacity={0.25} />
+                    <stop offset="100%" stopColor={stats.totalReturn >= 0 ? 'var(--success)' : 'var(--danger)'} stopOpacity={0} />
                   </linearGradient>
                 </defs>
                 <CartesianGrid strokeDasharray="3 3" stroke="#1e293b" vertical={false} />
@@ -190,7 +190,7 @@ export function PanelRenderCard({ item, metrics, curve }: Props) {
                     fontSize: 11,
                   }}
                   labelStyle={{ color: '#94a3b8' }}
-                  itemStyle={{ color: stats.totalReturn >= 0 ? '#10b981' : '#ef4444' }}
+                  itemStyle={{ color: stats.totalReturn >= 0 ? 'var(--success)' : 'var(--danger)' }}
                 />
                 <Area
                   type="monotone"
