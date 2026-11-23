@@ -20,11 +20,6 @@ vi.mock('../api/client', () => ({
   },
 }))
 
-// SSEStatus subscribes to the sse store; a stub keeps this test focused.
-vi.mock('../components/common/SSEStatus', () => ({
-  SSEStatus: () => <div data-testid="sse-status" />,
-}))
-
 import { api } from '../api/client'
 import { useSystemStore } from '../stores/system'
 import { useSessionStore } from '../stores/session'
@@ -67,8 +62,8 @@ describe('MonitorPage', () => {
     // The workspace path can appear in more than one place (status strip
     // plus an agent/run row), so assert presence rather than uniqueness.
     expect(screen.getAllByText('/ws/demo').length).toBeGreaterThan(0)
-    // PageShell also renders an SSEStatus, so allow more than one.
-    expect(screen.getAllByTestId('sse-status').length).toBeGreaterThan(0)
+    // Q10: 监控页无 useSSE 订阅，不得渲染假连接状态 pill。
+    expect(screen.queryByTestId('sse-status')).toBeNull()
   })
 
   it('counts only ACTIVE studies in the KPI (running/queued/monitoring)', async () => {

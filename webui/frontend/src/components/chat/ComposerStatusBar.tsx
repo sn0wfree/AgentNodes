@@ -12,6 +12,8 @@ import { useModeStore } from '../../stores/mode'
 import { useModelStore } from '../../stores/model'
 import { useThinkingPrefStore } from '../../stores/thinkingPref'
 import { useSystemStore } from '../../stores/system'
+import { useChatStore } from '../../stores/chat'
+import { tokenTone, toneFillClass } from '../../utils/tokenThresholds'
 
 interface ComposerStatusBarProps {
   sessionId: string | null
@@ -39,6 +41,10 @@ export function ComposerStatusBar({ sessionId }: ComposerStatusBarProps) {
   const thinkingMode = useThinkingPrefStore((s) => s.thinkingMode)
   const setThinkingMode = useThinkingPrefStore((s) => s.setThinkingMode)
   const modelInfo = useSystemStore((s) => s.modelInfo)
+  // P9：token 用量贴输入框，口径与右栏 TokenCard 同源（TOKEN_THRESHOLDS）。
+  const tokensUsed = useChatStore((s) =>
+    sessionId ? s.tokensUsed.get(sessionId) ?? 0 : 0
+  )
 
   const [modelOpen, setModelOpen] = useState(false)
   const [thinkingOpen, setThinkingOpen] = useState(false)
@@ -183,10 +189,23 @@ export function ComposerStatusBar({ sessionId }: ComposerStatusBarProps) {
         )}
       </div>
 
-      {/* Context usage (right-aligned) */}
+      {/* Context usage meter（P9：贴输入框，Q7 阈值与右栏一致） */}
       {modelInfo && (
-        <div className="ml-auto flex items-center gap-1.5 text-slate-500">
-          <span>{modelInfo.context_tokens ? `${Math.round(modelInfo.context_tokens / 1000)}K` : ''}</span>
+        <div className="ml-auto flex min-w-[92px] items-center gap-1.5" title="当前会话上下文用量">
+          <div className="h-1 min-w-[44px] flex-1 overflow-hidden rounded-full bg-slate-700/60">
+            <div
+              className={`h-full transition-all ${toneFillClass(tokenTone(tokensUsed / (modelInfo.context_tokens || 1) * 100))}`}
+              style={{
+                width: `${modelInfo.context_tokens ? Math.min(100, tokensUsed / modelInfo.context_tokens * 100) : 0}%`,
+              }}
+            />
+          </div>
+          <span className="font-mono text-[10px] text-slate-500">
+            {modelInfo.context_tokens ? `${Math.round(tokensUsed / modelInfo.context_tokens * 100)}%` : ''}
+          </span>
+          <span className="hidden text-slate-600 sm:inline">
+            {modelInfo.context_tokens ? `${Math.round(modelInfo.context_tokens / 1000)}K` : ''}
+          </span>
         </div>
       )}
     </div>

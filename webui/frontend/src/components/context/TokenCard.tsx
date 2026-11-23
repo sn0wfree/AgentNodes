@@ -3,6 +3,7 @@ import { BarChart3 } from 'lucide-react'
 import { useSessionStore } from '../../stores/session'
 import { useChatStore } from '../../stores/chat'
 import { useSystemStore } from '../../stores/system'
+import { tokenTone, toneFillClass } from '../../utils/tokenThresholds'
 
 /**
  * Right-panel card showing the active session's token usage against the
@@ -43,11 +44,7 @@ export function TokenCard() {
             </div>
             <div className="h-1 w-full overflow-hidden rounded-full bg-slate-800">
               <div
-                className={`h-full transition-all ${
-                  pct >= 80 ? 'bg-red-500'
-                    : pct >= 50 ? 'bg-amber-500'
-                      : 'bg-emerald-500'
-                }`}
+                className={`h-full transition-all ${toneFillClass(tokenTone(pct))}`}
                 style={{ width: `${pct}%` }}
               />
             </div>

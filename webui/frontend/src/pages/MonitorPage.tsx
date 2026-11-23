@@ -5,7 +5,6 @@ import {
   MessageSquare, Network, Sigma, Layers, ArrowRight, Cpu, FolderOpen,
 } from 'lucide-react'
 import { PageShell } from '../components/layout/PageShell'
-import { SSEStatus } from '../components/common/SSEStatus'
 import { api, type RunListItem, type StudySummary } from '../api/client'
 import { useSystemStore } from '../stores/system'
 import { useSessionStore } from '../stores/session'
@@ -194,7 +193,6 @@ export function MonitorPage() {
             <span className="text-red-400">加载异常: {error}</span>
           )}
         </div>
-        <SSEStatus />
       </div>
 
       {/* Quick entries */}
@@ -394,7 +392,8 @@ export function MonitorPage() {
                   ['模型', llm.model || '—'],
                   ['配置状态', llm.configured ? '已配置' : '未配置'],
                   ['Workspace', workspacePath || '—'],
-                  ['连接状态', <SSEStatus key="sse" />],
+                  // P10 假状态修复：监控页无 useSSE 订阅，移除 SSEStatus
+                  // 以免显示永久误导性「已断开」——连接状态只在 /chat 提供。
                 ].map(([k, v], i) => (
                   <tr key={String(k)} className={`border-b border-slate-800/50 last:border-b-0 ${i % 2 === 0 ? 'bg-slate-900/40' : 'bg-slate-900/20'}`}>
                     <td className="w-32 px-3 py-2.5 text-slate-500">{String(k)}</td>
