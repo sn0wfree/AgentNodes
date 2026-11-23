@@ -45,7 +45,7 @@
 
 ---
 
-## 2. design/ — 仍生效的设计与契约（153 份，2026-11-22 补录）
+## 2. design/ — 仍生效的设计与契约（154 份，2026-11-22 补录）
 
 **判据**：文档里的决策仍在代码中执行。已被取代的移到 `archive/`。
 
@@ -285,6 +285,7 @@
 | [`industry-survey-knowledge-base-20261106.md`](design/industry-survey-knowledge-base-20261106.md) | 业界调研知识库 |
 | [`ui-ua-reuse-assessment-20261122.md`](design/ui-ua-reuse-assessment-20261122.md) | U-A 复用评估（UI 轨道） |
 | [`ui-ua-frontend-execution-plan-20261122.md`](design/ui-ua-frontend-execution-plan-20261122.md) | U-A 前端实现分步计划（会话 MVP → 完整前端 + 验收清单） |
+| [`ux-side-panel-industry-survey-20261123.md`](design/ux-side-panel-industry-survey-20261123.md) | 侧边栏三栏设计业界调研（rail/会话栏/右面板 10 模式 + 映射建议） |
 
 ---
 
