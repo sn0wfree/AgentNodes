@@ -212,6 +212,139 @@ class TestAPIServe:
         assert kwargs["port"] == 8765
 
 
+class TestFrontendDevServe:
+    def test_runs_frontend_with_backend_proxy_and_stops_backend_on_failure(self, monkeypatch, capsys):
+        from agentnodes.interfaces.cli import _build_parser
+        from agentnodes.interfaces.cli.commands import merged
+
+        parser, _ = _build_parser()
+        args = parser.parse_args([
+            "serve", "--frontend-dev", "--port", "9876",
+            "--frontend-port", "5174", "--an-workspace", ".",
+        ])
+        backend = MagicMock()
+        backend.poll.return_value = None
+        frontend = MagicMock()
+        frontend.poll.return_value = 2
+        popen = MagicMock(side_effect=[backend, frontend])
+        monkeypatch.setattr(merged.subprocess, "Popen", popen)
+        monkeypatch.setattr(merged.shutil, "which", lambda name: "node")
+        monkeypatch.setattr(merged.Path, "is_file", lambda self: True)
+
+        assert merged.dispatch_serve(args) != 0
+
+        backend_args = popen.call_args_list[0].args[0]
+        frontend_call = popen.call_args_list[1]
+        assert backend_args[:4] == [merged.sys.executable, "-m", "agentnodes.interfaces.cli", "serve"]
+        assert "--frontend-dev" not in backend_args
+        assert frontend_call.kwargs["env"]["API_TARGET"] == "http://127.0.0.1:9876"
+        assert "--strictPort" in frontend_call.args[0]
+        assert "5174" in frontend_call.args[0]
+        backend.terminate.assert_called_once()
+        backend.wait.assert_called_once()
+        assert "退出" in capsys.readouterr().err
+
+    @pytest.mark.parametrize("conflict", ["--api-only", "--reload"])
+    def test_rejects_incompatible_flags(self, conflict, capsys):
+        from agentnodes.interfaces.cli import _build_parser
+        from agentnodes.interfaces.cli.commands.merged import dispatch_serve
+
+        parser, _ = _build_parser()
+        args = parser.parse_args(["serve", "--frontend-dev", conflict])
+        assert dispatch_serve(args) != 0
+        assert conflict in capsys.readouterr().err
+
+    def test_missing_node_is_reported_without_starting_backend(self, monkeypatch, capsys):
+        from agentnodes.interfaces.cli import _build_parser
+        from agentnodes.interfaces.cli.commands import merged
+
+        parser, _ = _build_parser()
+        args = parser.parse_args(["serve", "--frontend-dev"])
+        popen = MagicMock()
+        monkeypatch.setattr(merged.subprocess, "Popen", popen)
+        monkeypatch.setattr(merged.shutil, "which", lambda name: None)
+        monkeypatch.setattr(merged.Path, "is_file", lambda self: True)
+
+        assert merged.dispatch_serve(args) != 0
+        popen.assert_not_called()
+        assert "Node" in capsys.readouterr().err
+
+    def test_interrupt_stops_both_started_processes(self, monkeypatch):
+        from agentnodes.interfaces.cli import _build_parser
+        from agentnodes.interfaces.cli.commands import merged
+
+        parser, _ = _build_parser()
+        args = parser.parse_args(["serve", "--frontend-dev"])
+        backend, frontend = MagicMock(), MagicMock()
+        backend.poll.return_value = None
+        frontend.poll.return_value = None
+        monkeypatch.setattr(merged.subprocess, "Popen", MagicMock(side_effect=[backend, frontend]))
+        monkeypatch.setattr(merged.shutil, "which", lambda name: "node")
+        monkeypatch.setattr(merged.Path, "is_file", lambda self: True)
+        monkeypatch.setattr(merged.time, "sleep", MagicMock(side_effect=KeyboardInterrupt))
+
+        assert merged.dispatch_serve(args) == 0
+        backend.terminate.assert_called_once()
+        frontend.terminate.assert_called_once()
+
+    def test_interrupt_reaps_real_child_processes(self, monkeypatch):
+        import subprocess
+        import sys
+
+        from agentnodes.interfaces.cli import _build_parser
+        from agentnodes.interfaces.cli.commands import merged
+
+        parser, _ = _build_parser()
+        args = parser.parse_args(["serve", "--frontend-dev"])
+        original_popen = subprocess.Popen
+        children = []
+
+        def start_child(*args, **kwargs):
+            child = original_popen([sys.executable, "-c", "import time; time.sleep(15)"])
+            children.append(child)
+            return child
+
+        monkeypatch.setattr(merged.subprocess, "Popen", start_child)
+        monkeypatch.setattr(merged.shutil, "which", lambda name: "node")
+        monkeypatch.setattr(merged.Path, "is_file", lambda self: True)
+        monkeypatch.setattr(merged.time, "sleep", MagicMock(side_effect=KeyboardInterrupt))
+
+        try:
+            assert merged.dispatch_serve(args) == 0
+            assert len(children) == 2
+            assert all(child.poll() is not None for child in children)
+        finally:
+            for child in children:
+                if child.poll() is None:
+                    child.kill()
+                    child.wait()
+
+    def test_frontend_start_error_stops_backend(self, monkeypatch, capsys):
+        from agentnodes.interfaces.cli import _build_parser
+        from agentnodes.interfaces.cli.commands import merged
+
+        parser, _ = _build_parser()
+        args = parser.parse_args(["serve", "--frontend-dev"])
+        backend = MagicMock()
+        backend.poll.return_value = None
+        monkeypatch.setattr(merged.subprocess, "Popen", MagicMock(side_effect=[backend, OSError("spawn failed")]))
+        monkeypatch.setattr(merged.shutil, "which", lambda name: "node")
+        monkeypatch.setattr(merged.Path, "is_file", lambda self: True)
+
+        assert merged.dispatch_serve(args) != 0
+        backend.terminate.assert_called_once()
+        assert "spawn failed" in capsys.readouterr().err
+
+    def test_rejects_same_frontend_and_backend_port(self, capsys):
+        from agentnodes.interfaces.cli import _build_parser
+        from agentnodes.interfaces.cli.commands.merged import dispatch_serve
+
+        parser, _ = _build_parser()
+        args = parser.parse_args(["serve", "--frontend-dev", "--frontend-port", "8766"])
+        assert dispatch_serve(args) != 0
+        assert "相同端口" in capsys.readouterr().err
+
+
 # ────────────────────────── cmd_mcp_list_tools ──────────────────────────
 
 

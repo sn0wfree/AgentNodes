@@ -475,6 +475,14 @@ def _build_parser() -> tuple[argparse.ArgumentParser, dict[str, argparse.Argumen
     serve_parser.add_argument("--host", default="127.0.0.1", help="监听地址 (默认 127.0.0.1)")
     serve_parser.add_argument("--port", type=int, default=8766, help="监听端口 (默认 8766)")
     serve_parser.add_argument("--reload", action="store_true", help="热重载 (开发模式)")
+    serve_parser.add_argument(
+        "--frontend-dev", action="store_true",
+        help="由 Python 启动后端和 Vite 前端热更新服务（仅本机）",
+    )
+    serve_parser.add_argument(
+        "--frontend-port", type=int, default=5173,
+        help="前端开发服务端口 (默认 5173)",
+    )
     _platform_arg(serve_parser, "--an-workspace", "--workspace",
                   dest="workspace", short="-w", default=".", help_text="工作区路径")
     _platform_arg(serve_parser, "--an-goal-db", "--goal-db",

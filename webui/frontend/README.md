@@ -5,15 +5,29 @@
 需要 Python 3.10+、Node.js 22.12+ 和 npm。以下命令使用 PowerShell，在项目根目录执行：
 
 ```powershell
-python -m pip install -e ".[webui-api,llm]"
-python -m agentnodes.interfaces.cli serve --an-workspace .
+python -m agentnodes.interfaces.cli serve --frontend-dev --an-workspace .
 ```
 
-后端默认监听 `http://127.0.0.1:8766`，健康检查为 `/health`。保持该终端运行，在第二个终端启动前端：
+Python 将启动后端和 Vite；访问 `http://127.0.0.1:5173/chat`，修改前端源码后由 Vite
+热更新。后端默认监听 `127.0.0.1:8766`。按 Ctrl+C 停止本命令启动的进程。
+可用 `--port` 和 `--frontend-port` 分别修改端口，Vite 自动代理到指定的后端端口；
+端口占用会报错，不会自动切换。此模式仅绑定本机，不能与 `--api-only` 或后端
+`--reload` 同时使用；它不提供 Python 后端热重载。
+
+首次使用时需先安装后端和前端依赖；`npm ci` 会重建 `node_modules`，请确认没有其他
+进程正在使用该目录：
+
+```powershell
+python -m pip install -e ".[webui-api,llm]"
+Set-Location .\webui\frontend
+npm ci
+```
+
+也可以分别启动后端和前端，在项目根目录运行 `python -m agentnodes.interfaces.cli serve
+--an-workspace .`，然后在另一个终端运行：
 
 ```powershell
 Set-Location .\webui\frontend
-npm ci
 npm run dev
 ```
 
