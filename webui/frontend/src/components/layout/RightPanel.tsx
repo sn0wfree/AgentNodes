@@ -81,9 +81,12 @@ export function RightPanel() {
   return (
     <div className="flex h-full w-full flex-col gap-3 overflow-y-auto bg-slate-900 p-3">
       <TokenCard />
-      {/* 目标 & 进度 — 被动跟踪本 session goal 执行情况（仅 GoalTab） */}
-      <GoalCard goal={goalTabGoal} />
-      {/* 表现曲线 — 由 chat agent 决定显示什么 (show_chart / show_report) */}
+      {/* 目标 & 进度 — 被动跟踪本 session goal 执行情况（仅 GoalTab）。
+          P6 空态诚实：无活跃 goal 时不渲染卡片（业界调研
+          ux-side-panel-industry-survey-20261123 §3-P5/P6）。 */}
+      {goalTabGoal && <GoalCard goal={goalTabGoal} />}
+      {/* 表现曲线 — 由 chat agent 决定显示什么 (show_chart / show_report)；
+          PanelRenderCard 自身在无数据时返回 null */}
       <PanelRenderCard item={panelItem} metrics={metrics} curve={curve} />
       {/* Trace Timeline — agent trace events */}
       {currentSessionId && (

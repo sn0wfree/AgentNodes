@@ -57,14 +57,12 @@ describe('RightPanel (merged panel)', () => {
     setupStores()
   })
 
-  it('renders the three cards: token, goal & progress, performance', () => {
+  it('renders token + goal cards; performance card absent without data (P6)', () => {
     render(<RightPanel />)
     expect(screen.getByText('Token 使用情况')).toBeTruthy()
     expect(screen.getByText('目标 & 进度')).toBeTruthy()
-    // 表现曲线 must appear exactly once (no duplicate from inline
-    // EquityCurveCard in GoalCard anymore).
-    expect(screen.getByText('表现曲线')).toBeTruthy()
-    expect(screen.queryAllByText('表现曲线').length).toBe(1)
+    // P6 空态诚实：无 renderable/metrics/curve 时表现曲线卡不渲染
+    expect(screen.queryByText('表现曲线')).toBeNull()
   })
 
   it('token card shows usage percent and message count', () => {
@@ -80,9 +78,10 @@ describe('RightPanel (merged panel)', () => {
     expect(screen.getByText('计算 IC 序列')).toBeTruthy()
   })
 
-  it('shows empty state when no goal exists', () => {
+  it('hides the goal card entirely when no goal exists (P6)', () => {
     useGoalStore.setState({ currentGoal: null })
     render(<RightPanel />)
-    expect(screen.getByText('暂无活跃目标')).toBeTruthy()
+    expect(screen.queryByText('目标 & 进度')).toBeNull()
+    expect(screen.queryByText('暂无活跃目标')).toBeNull()
   })
 })

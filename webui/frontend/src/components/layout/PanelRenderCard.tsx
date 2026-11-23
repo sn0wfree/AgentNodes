@@ -94,6 +94,12 @@ export function PanelRenderCard({ item, metrics, curve }: Props) {
     [curve],
   )
 
+  // P6 空态诚实（业界调研 ux-side-panel-industry-survey-20261123）：
+  // 无 renderable / metrics / curve 时不渲染卡片 —— 右栏不摆空占位卡，
+  // run 产出后本卡自动出现。
+  const hasContent = Boolean(item) || Boolean(metrics) || (Boolean(curve) && (curve?.points.length ?? 0) > 0)
+  if (!hasContent) return null
+
   const title =
     item?.kind === 'chart'
       ? item.chart?.title || '图表'

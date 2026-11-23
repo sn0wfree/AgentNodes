@@ -115,4 +115,11 @@ describe('PanelRenderCard', () => {
     )
     expect(screen.getByText('+12.00%')).toBeTruthy()
   })
+
+  it('renders nothing when item/metrics/curve are all empty (P6 空态诚实)', () => {
+    const { container } = render(
+      <PanelRenderCard item={null} metrics={null} curve={null} />,
+    )
+    expect(container.textContent).toBe('')
+  })
 })
