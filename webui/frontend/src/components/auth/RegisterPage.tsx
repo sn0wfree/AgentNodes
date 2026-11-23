@@ -33,9 +33,9 @@ export function RegisterPage() {
 
   return (
     <div className="relative flex min-h-screen items-center justify-center bg-app">
-      <div className="aurora-backdrop">
+      <div>
         <div className="grid-layer" />
-        <div className="aurora-layer" />
+        <div />
         <div className="vignette-layer" />
         <div className="grain-layer" />
       </div>

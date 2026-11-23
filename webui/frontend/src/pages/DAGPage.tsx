@@ -24,9 +24,9 @@ export function DAGPage() {
 
   return (
     <div className="relative flex h-screen overflow-hidden bg-app">
-      <div className="aurora-backdrop">
+      <div>
         <div className="grid-layer" />
-        <div className="aurora-layer" />
+        <div />
         <div className="vignette-layer" />
         <div className="grain-layer" />
       </div>

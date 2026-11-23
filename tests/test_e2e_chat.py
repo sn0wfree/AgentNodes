@@ -8,10 +8,17 @@ Verifies:
 5. Streaming state clears after response completes
 """
 import asyncio
+import os
 
 import pytest
 # E2E 是 opt-in 车道：playwright 未安装时整个模块降级为 skip（而非
 # 收集错误——那会让 batch_gate 的 collect 锚点多出 5 个假错误）。
+# E2E 是 opt-in 车道（与 visual/catalog/persist 一致）：默认全量 pytest 里
+# skip，只在 AN_RUN_BROWSER_TESTS=1 时运行，避免真 LLM/浏览器状态污染主门禁。
+pytestmark = pytest.mark.skipif(
+    os.environ.get("AN_RUN_BROWSER_TESTS", "0") != "1",
+    reason="Browser E2E; set AN_RUN_BROWSER_TESTS=1 to run",
+)
 pytest.importorskip("playwright")
 from playwright.async_api import async_playwright
 
@@ -45,7 +52,7 @@ async def _login(page):
     await login_btn.click()
 
     # Wait for navigation to chat page
-    await page.wait_for_url("**/", timeout=10000)
+    await page.wait_for_url("**/chat", timeout=10000)
     await page.wait_for_load_state("networkidle")
     # Navigate into the chat page explicitly (login now lands on
     # the monitor home page)

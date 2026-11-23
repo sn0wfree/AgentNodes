@@ -69,7 +69,7 @@ function QuickEntry({
 }
 
 function ShimmerCard() {
-  return <div className="shimmer h-[74px] rounded-xl border border-slate-800/50" />
+  return <div className="h-[74px] rounded-xl border border-slate-800/50" />
 }
 
 export function MonitorPage() {

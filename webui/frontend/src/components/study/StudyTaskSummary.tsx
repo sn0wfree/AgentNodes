@@ -211,7 +211,7 @@ export function StudyTaskSummary({ studyId }: Props) {
               </div>
               <div className="mt-1 h-1.5 overflow-hidden rounded-full bg-slate-700/80">
                 <div
-                  className="h-full bg-gradient-to-r from-sky-500 via-primary-500 to-accent-400 transition-all duration-500"
+                  className="h-full bg-accent-500 transition-all duration-500"
                   style={{ width: `${Math.min(100, Math.max(0, progressPercent))}%` }}
                 />
               </div>

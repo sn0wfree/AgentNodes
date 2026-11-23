@@ -161,7 +161,7 @@ export function SessionSidebar() {
 
       {/* Search */}
       <div className="px-3 py-2">
-        <div className="glow-border relative rounded-md border border-slate-700 bg-slate-800">
+        <div className="relative rounded-md border border-slate-700 bg-slate-800">
           <Search className="absolute left-2 top-1/2 z-10 h-3.5 w-3.5 -translate-y-1/2 text-slate-500" />
           <input
             type="text"

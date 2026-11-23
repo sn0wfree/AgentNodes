@@ -432,7 +432,7 @@ export function AssistantMessage({
       {layout === 'bubble' && (
         <span className={`flex items-center gap-1.5 text-xs font-medium ${agentStyle.text}`}>
           {isStreaming && (
-            <span className={`h-1.5 w-1.5 animate-pulse rounded-full bg-${chatConfig.colors.streamingDot} shadow-glow`} />
+            <span className={`h-1.5 w-1.5 animate-pulse rounded-full bg-${chatConfig.colors.streamingDot}`} />
           )}
           {modelLabel}
           <VerifiabilityBadge cv={message.metadata?.claim_validation} />
@@ -443,7 +443,7 @@ export function AssistantMessage({
         <>
           <span className={`flex items-center gap-1.5 text-xs font-medium ${agentStyle.text}`}>
             {isStreaming && (
-              <span className={`h-1.5 w-1.5 animate-pulse rounded-full bg-${chatConfig.colors.streamingDot} shadow-glow`} />
+              <span className={`h-1.5 w-1.5 animate-pulse rounded-full bg-${chatConfig.colors.streamingDot}`} />
             )}
             {modelLabel}
             <VerifiabilityBadge cv={message.metadata?.claim_validation} />

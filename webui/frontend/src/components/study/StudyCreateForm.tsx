@@ -320,7 +320,7 @@ export function StudyCreateForm({ sessionId, workspacePath, onCreated, compact }
       <button
         type="submit"
         disabled={submitting || busy || !objective.trim() || !strategyName.trim()}
-        className="w-full cursor-pointer rounded-xl bg-gradient-to-r from-primary-600 to-accent-500 px-3 py-2 text-sm font-medium text-white shadow-glow transition-all hover:from-primary-500 hover:to-accent-400 active:scale-[0.98] disabled:opacity-50 disabled:shadow-none"
+        className="w-full cursor-pointer rounded-xl bg-accent-600 px-3 py-2 text-sm font-medium text-white transition-all hover:bg-accent-500 active:scale-[0.98] disabled:opacity-50 disabled:shadow-none"
       >
         {submitting ? '启动中…' : '启动 study'}
       </button>

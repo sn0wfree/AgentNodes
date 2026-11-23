@@ -126,8 +126,8 @@ export function StrategyLibraryPage() {
       )}
       {loading && strategies.length === 0 && (
         <div className="space-y-2.5">
-          <div className="shimmer h-[96px] rounded-xl border border-slate-800/50" />
-          <div className="shimmer h-[96px] rounded-xl border border-slate-800/50" />
+          <div className="h-[96px] rounded-xl border border-slate-800/50" />
+          <div className="h-[96px] rounded-xl border border-slate-800/50" />
         </div>
       )}
       {error && (

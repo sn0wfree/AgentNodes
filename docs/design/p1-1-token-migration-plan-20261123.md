@@ -161,6 +161,43 @@ A 批「覆盖面内零 diff」+ A-0 双主题基线 / A 批不做 Tailwind v4 �
 文本三级 / amber 机械映射 / 状态色按实际 9 token / 一批一确认 / 系统字体栈。
 授权从 A-0 开始逐批推进；每批独立提交（不 push），后批开工前仍需单独确认。
 
+## 附 F：B 转向批可执行清单（2026-11-23 两路调研回填）
+
+### F.1 双轨 primary 语义（执行取舍，不扩权）
+
+- **CSS `--primary`** = 中性反转：dark `#8b5cf6`→`#ffffff`、light `#ea580c`→`#171717`（示意主操作）；`--ua-action` 轨道已是示意值，保持。
+- **Tailwind `primary-*` 类名** = 品牌蓝：violet ramp(50-900) → sky ramp（500=`#0ea5e9` / 400=`#38bdf8` 对齐示意 brand）。
+- 同名不同层是现有架构（shim 只映射 CSS 变量、tailwind 类名独立），「把 primary-* 改名 brand-* 求单一真源」**超出已批准范围，本批不做**。
+
+### F.2 值层先行（第一步，先改值构建，观察自动传导）
+
+1. `tailwind.config.js`：primary ramp → sky-50..900（`f0f9ff/e0f2fe/bae6fd/7dd3fc/38bdf8/0ea5e9/0284c7/0369a1/075985/0c4a6e`）；accent ramp → blue-50..900（`eff6ff/dbeafe/bfdbfe/93c5fd/60a5fa/3b82f6/2563eb/1d4ed8/1e40af/1e3a8a`）。
+2. `globals.css` L1 值层：dark `--background #262626` / `--foreground #e5e5e5` / `--card rgba(255,255,255,.045)` / `--muted rgba(255,255,255,.07)` / `--muted-foreground #a3a3a3` / `--accent #38bdf8` / `--border rgba(255,255,255,.11)` / `--sidebar #1b1b1b`；light 对应 `#fafafa/#404040/#fff/rgba(23,23,23,.04)/#737373/#0ea5e9/rgba(23,23,23,.1)/#e9e9e7`。
+3. 重新声明 A 批删掉的语义状态色 9 令牌（附 B.10）：dark `--success #4ade80`/`--warning #facc15`/`--danger #f87171`（+`-fg`/`-surface`）；light `#16a34a`/`#ca8a04`/`#dc2626`（+对应 fg/surface）。
+4. alpha 表按 U-A §2.2 改值（附 B.1「示意为基础+可访问性裁决」）：bubble-user dark 18%/light 100% 但须双主题对比度实测；shadow/specular/scrim 互补对按 §2.2。
+
+### F.3 情绪层拆除（第二步）
+
+**删定义**：`--gradient-primary` `--gradient-aurora` `--gradient-input-ring` `--shadow-glow` 及 `.glow` `.hover-shadow-glow` `.glow-border` `.shimmer` `.aurora-backdrop` `.aurora-layer`（零消费类直接删，有消费类先改组件）。
+**Visual upgrade layer**（A 批后 L428–461）：4 条 `--gradient-primary` 改纯色（指向 `--accent` 品牌蓝或 `--ua-action`）、删 `--shadow-glow` 与 brightness filter。
+**glass 降可关层**：`.glass`（9 处）/ `.glass-elevated`（5 处）保留机制，加 `data-fx="off"` 时降级为纯 `--surface`；`.glass-strong` 零消费直接删。
+**shim 本体**（L354–426）对情绪层变量零引用 → 保持不动。
+
+### F.4 组件改写（第三步，~15 文件）
+
+- `shadow-glow` 3 处：AssistantMessage L435/446（streaming dot→纯色脉冲）、StudyCreateForm L323（CTA→specular 细边框）
+- `glow-border` 2 处：SessionSidebar L164 / FactorLibraryPage L52 → `:focus-visible` 统一蓝环（已全局兜底，删类名即可）
+- `shimmer` 3 页：MonitorPage L72/240/290 / StrategyLibraryPage L129/130 → 加载态用 Skeleton 现有组件替代
+- `aurora` 3 文件：RegisterPage L36/38 / PageShell L33/35 / DAGPage L27/29 → 删挂载层，背景回归纯色（细网格可选）
+- 装饰渐变 2 处：StudyCreateForm L323 / StudyTaskSummary L214 → 纯色品牌蓝
+- violet 直用类名 15 行（ThinkingBlock ×9 / TraceViewer L78-79 / ComposerStatusBar L23 / JsonActionCard L42 / TopBar L128 / agentStyles L40 / MonitorPage L217）→ 随 ramp 自动变蓝，无需逐个改（tailwind 类值已变）
+
+**dag-card selected shadow**（L641/664）引用 `--primary`（将变中性）→ L3 语义例外：保留机制，选中态若要蓝需重指向 `--accent`（本批按「值随 L1 自动变中性」执行，不额外造蓝）。
+
+### F.5 基线重录
+
+按附 E：tag `p1-1-baselines-v1` 已锚定；代码提交与基线提交分离；5 页巡检；5 张 DAG 孤儿基线标注不在 88 内。
+
 ## 附 E：B 转向批基线重录程序（2026-11-23 调研定稿）
 
 **前置锚点已落地**：lightweight tag `p1-1-baselines-v1` → `b1fee35b`（B 批前 88 基线永久可审计）。

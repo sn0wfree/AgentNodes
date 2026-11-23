@@ -49,7 +49,7 @@ export function FactorLibraryPage() {
                 </button>
               ))}
             </div>
-            <div className="glow-border relative ml-auto min-w-[200px] flex-1 sm:flex-none sm:w-80">
+            <div className="relative ml-auto min-w-[200px] flex-1 sm:flex-none sm:w-80">
               <Search className="absolute left-2.5 top-1/2 z-10 h-3.5 w-3.5 -translate-y-1/2 text-slate-500" />
               <input
                 value={query}
