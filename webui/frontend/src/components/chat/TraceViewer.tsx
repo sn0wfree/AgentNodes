@@ -4,7 +4,7 @@ Displays LLM requests, responses, tool calls, and compaction events
 as a scrollable timeline.  Fetches data from GET /api/chat/session/{id}/trace.
 */
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { Area, AreaChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 import { api } from "../../api/client";
 
@@ -31,6 +31,38 @@ function tryJson(value: string): string {
   } catch {
     return value;
   }
+}
+
+/**
+ * Q4 (grilling): 敏感字段默认折叠 —— system_prompt / tools_schema
+ * 可能含 API key 或用户数据，不再直接贴进 <pre>。显式按钮才展开，
+ * 按钮文案带凭据警示；读屏 aria-expanded 同步。
+ */
+function SensitiveRaw({ label, value, meta }: { label: string; value: string; meta?: string }) {
+  const [revealed, setRevealed] = useState(false);
+  return (
+    <div>
+      <div className="mb-0.5 flex items-center gap-2 text-[9px] uppercase tracking-wide text-blue-400">
+        <span>{label}</span>
+        {meta && <span className="normal-case tracking-normal text-gray-500">{meta}</span>}
+        <button
+          type="button"
+          onClick={() => setRevealed((v) => !v)}
+          aria-expanded={revealed}
+          className="ml-auto rounded border border-gray-700 px-1 py-0.5 text-[9px] normal-case tracking-normal text-gray-400 hover:bg-gray-800"
+        >
+          {revealed ? "隐藏原始" : "显示原始（可能含凭据）"}
+        </button>
+      </div>
+      {revealed ? (
+        <pre className="max-h-48 overflow-auto whitespace-pre-wrap break-all rounded bg-gray-900/60 p-2 text-gray-300">{value}</pre>
+      ) : (
+        <div className="rounded bg-gray-900/40 p-2 text-[9px] italic text-gray-600">
+          已折叠 · {value.length} 字符 · 点击上方按钮查看
+        </div>
+      )}
+    </div>
+  );
 }
 
 interface TraceViewerProps {
@@ -82,24 +114,18 @@ function LLMRequestDetails({ event }: { event: TraceEvent }) {
   return (
     <div className="mt-1 space-y-2 font-mono text-[10px] leading-relaxed">
       {systemPrompt && (
-        <div>
-          <div className="mb-0.5 text-[9px] uppercase tracking-wide text-blue-400">
-            System prompt ({event.system_prompt_len ?? systemPrompt.length} chars)
-          </div>
-          <pre className="max-h-48 overflow-auto whitespace-pre-wrap break-all rounded bg-gray-900/60 p-2 text-gray-300">
-            {systemPrompt}
-          </pre>
-        </div>
+        <SensitiveRaw
+          label="System prompt"
+          value={systemPrompt}
+          meta={`${event.system_prompt_len ?? systemPrompt.length} chars`}
+        />
       )}
       {toolsSchema && (
-        <div>
-          <div className="mb-0.5 text-[9px] uppercase tracking-wide text-violet-400">
-            Tools schema ({event.tools_count ?? 0} tools)
-          </div>
-          <pre className="max-h-48 overflow-auto whitespace-pre-wrap break-all rounded bg-gray-900/60 p-2 text-gray-300">
-            {tryJson(toolsSchema)}
-          </pre>
-        </div>
+        <SensitiveRaw
+          label="Tools schema"
+          value={tryJson(toolsSchema)}
+          meta={`${event.tools_count ?? 0} tools`}
+        />
       )}
       {historyMeta.length > 0 && (
         <div className="text-gray-500">
@@ -151,10 +177,24 @@ interface DiffSectionProps {
 
 /** A single section (system prompt / tools schema) of the envelope diff. */
 function DiffSection({ title, a, b }: DiffSectionProps) {
+  const [revealed, setRevealed] = useState(false); // Q4：diff 同样含原文，默认折叠
   const lines = diffLines(a, b);
   return (
     <div>
-      <div className="mb-0.5 text-[9px] uppercase tracking-wide text-gray-400">{title}</div>
+      <div className="mb-0.5 flex items-center gap-2 text-[9px] uppercase tracking-wide text-gray-400">
+        <span>{title}</span>
+        <button
+          type="button"
+          onClick={() => setRevealed((v) => !v)}
+          aria-expanded={revealed}
+          className="ml-auto rounded border border-gray-700 px-1 py-0.5 text-[9px] normal-case tracking-normal text-gray-400 hover:bg-gray-800"
+        >
+          {revealed ? "隐藏 diff" : "显示 diff（可能含凭据）"}
+        </button>
+      </div>
+      {!revealed ? (
+        <div className="rounded bg-gray-900/40 p-2 text-[9px] italic text-gray-600">已折叠 · 点击上方按钮查看差异</div>
+      ) : (
       <pre className="max-h-48 overflow-auto whitespace-pre-wrap break-all rounded bg-gray-900/60 p-2 font-mono text-[10px] leading-relaxed">
         {lines.map((l, i) => (
           <div
@@ -172,6 +212,7 @@ function DiffSection({ title, a, b }: DiffSectionProps) {
           </div>
         ))}
       </pre>
+      )}
     </div>
   );
 }
@@ -272,6 +313,7 @@ function TokenUsageChart({ events }: { events: TraceEvent[] }) {
 
 function EventCard({ event }: { event: TraceEvent }) {
   const [expanded, setExpanded] = useState(false);
+  const [rawRevealed, setRawRevealed] = useState(false); // Q4：原始 JSON 默认折叠
   const color = EVENT_COLORS[event.type] ?? "border-gray-500/40 bg-gray-950/20";
   const icon = EVENT_ICONS[event.type] ?? "•";
   const ts = event.time_created ?? event.ts;
@@ -336,87 +378,150 @@ function EventCard({ event }: { event: TraceEvent }) {
         event.type === "llm_request" ? (
           <LLMRequestDetails event={event} />
         ) : (
-          <pre className="mt-1 max-h-60 overflow-auto whitespace-pre-wrap break-all font-mono text-[10px] leading-relaxed text-gray-400">
-            {JSON.stringify(event, null, 2)}
-          </pre>
+          <div className="mt-1">
+            <button
+              type="button"
+              onClick={() => setRawRevealed((v) => !v)}
+              aria-expanded={rawRevealed}
+              className="rounded border border-gray-700 px-1 py-0.5 text-[9px] text-gray-400 hover:bg-gray-800"
+            >
+              {rawRevealed ? "隐藏原始" : "显示原始（可能含凭据）"}
+            </button>
+            {rawRevealed && (
+              <pre className="mt-1 max-h-60 overflow-auto whitespace-pre-wrap break-all font-mono text-[10px] leading-relaxed text-gray-400">
+                {JSON.stringify(event, null, 2)}
+              </pre>
+            )}
+          </div>
         )
       )}
     </div>
   );
 }
 
+/** Q8：类型多选组（11 类归并为 5 个语义组；空集 = 不过滤）。 */
+const TYPE_GROUPS = [
+  { label: "LLM", types: ["llm_request", "llm_response"] },
+  { label: "工具", types: ["tool_call", "tool_result", "tool_error", "tool_heartbeat"] },
+  { label: "循环", types: ["loop_start", "loop_end", "loop_final", "iter_start"] },
+  { label: "压缩", types: ["compression"] },
+  { label: "错误", types: ["error"] },
+];
+const PAGE_SIZE = 50; // Q9：最近 50 条 + 加载更早
+
 export function TraceViewer({ sessionId, onClose }: TraceViewerProps) {
   const [events, setEvents] = useState<TraceEvent[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [filter, setFilter] = useState<string>("");
+  const [selectedTypes, setSelectedTypes] = useState<string[]>([]);
+  const [iteration, setIteration] = useState<string>("");
   const [showDiff, setShowDiff] = useState(false);
+  const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
 
   const fetchTrace = useCallback(async () => {
     if (!sessionId) return;
     setLoading(true);
     setError(null);
     try {
-      const params = new URLSearchParams({ limit: "200" });
-      if (filter) params.set("types", filter);
+      const params = new URLSearchParams({ limit: "500" });
+      if (selectedTypes.length) params.set("types", selectedTypes.join(","));
       const data = await api.get<{ events: TraceEvent[] }>(
         `/chat/session/${encodeURIComponent(sessionId)}/trace?${params}`
       );
       setEvents(data.events ?? []);
+      setVisibleCount(PAGE_SIZE);
     } catch (e: unknown) {
       setError(e instanceof Error ? e.message : "Failed to load trace");
     } finally {
       setLoading(false);
     }
-  }, [sessionId, filter]);
+  }, [sessionId, selectedTypes]);
 
   useEffect(() => {
     fetchTrace();
   }, [fetchTrace]);
 
+  // Q8 迭代号下拉：从真实事件的 iteration 字段派生。
+  const iterations = useMemo(
+    () => Array.from(new Set(events.map((e) => e.iteration).filter((n): n is number => typeof n === "number"))).sort((a, b) => a - b),
+    [events]
+  );
+  const filtered = useMemo(
+    () => iteration ? events.filter((e) => String(e.iteration) === iteration) : events,
+    [events, iteration]
+  );
+  const visible = filtered.slice(Math.max(0, filtered.length - visibleCount));
+
   return (
     <div className="flex h-full flex-col">
-      {/* Header */}
-      <div className="flex items-center gap-2 border-b border-gray-800 px-3 py-2">
-        <span className="text-xs font-medium text-gray-300">Trace Timeline</span>
-        <select
-          value={filter}
-          onChange={(e) => setFilter(e.target.value)}
-          className="ml-auto rounded border border-gray-700 bg-gray-800 px-1.5 py-0.5 text-[10px] text-gray-300"
-        >
-          <option value="">All events</option>
-          <option value="llm_request,llm_response">LLM only</option>
-          <option value="tool_result,tool_error">Tools only</option>
-          <option value="loop_start,loop_end,iter_start">Loop lifecycle</option>
-          <option value="error">Errors only</option>
-        </select>
-        <button
-          type="button"
-          onClick={() => setShowDiff((v) => !v)}
-          className={`rounded border px-1.5 py-0.5 text-[10px] ${
-            showDiff
-              ? "border-blue-500 bg-blue-900/40 text-blue-200"
-              : "border-gray-700 text-gray-400 hover:bg-gray-800"
-          }`}
-        >
-          Diff
-        </button>
-        <button
-          type="button"
-          onClick={fetchTrace}
-          className="rounded border border-gray-700 px-1.5 py-0.5 text-[10px] text-gray-400 hover:bg-gray-800"
-        >
-          ↻
-        </button>
-        {onClose && (
+      {/* Header — Q8：类型多选 + 迭代号下拉（不做全文搜索） */}
+      <div className="border-b border-gray-800 px-3 py-2">
+        <div className="flex items-center gap-2">
+          <span className="text-xs font-medium text-gray-300">Trace Timeline</span>
+          <select
+            value={iteration}
+            onChange={(e) => { setIteration(e.target.value); setVisibleCount(PAGE_SIZE); }}
+            aria-label="按迭代号筛选"
+            className="ml-auto rounded border border-gray-700 bg-gray-800 px-1.5 py-0.5 text-[10px] text-gray-300"
+          >
+            <option value="">全部迭代</option>
+            {iterations.map((n) => (
+              <option key={n} value={n}>i{n}</option>
+            ))}
+          </select>
           <button
             type="button"
-            onClick={onClose}
+            onClick={() => setShowDiff((v) => !v)}
+            className={`rounded border px-1.5 py-0.5 text-[10px] ${
+              showDiff
+                ? "border-blue-500 bg-blue-900/40 text-blue-200"
+                : "border-gray-700 text-gray-400 hover:bg-gray-800"
+            }`}
+          >
+            Diff
+          </button>
+          <button
+            type="button"
+            onClick={fetchTrace}
             className="rounded border border-gray-700 px-1.5 py-0.5 text-[10px] text-gray-400 hover:bg-gray-800"
           >
-            ✕
+            ↻
           </button>
-        )}
+          {onClose && (
+            <button
+              type="button"
+              onClick={onClose}
+              className="rounded border border-gray-700 px-1.5 py-0.5 text-[10px] text-gray-400 hover:bg-gray-800"
+            >
+              ✕
+            </button>
+          )}
+        </div>
+        {/* 类型多选 chips：空集=全部；点击切换，服务端 types 过滤 */}
+        <div className="mt-1.5 flex flex-wrap gap-1" role="group" aria-label="事件类型筛选">
+          {TYPE_GROUPS.map((g) => {
+            const active = g.types.every((t) => selectedTypes.includes(t));
+            return (
+              <button
+                key={g.label}
+                type="button"
+                aria-pressed={active}
+                onClick={() => {
+                  setSelectedTypes((cur) => active
+                    ? cur.filter((t) => !g.types.includes(t))
+                    : Array.from(new Set([...cur, ...g.types])));
+                }}
+                className={`rounded px-1.5 py-0.5 text-[9px] ${
+                  active ? "bg-blue-900/50 text-blue-200" : "bg-gray-800/60 text-gray-500 hover:text-gray-300"
+                }`}
+              >
+                {g.label}
+              </button>
+            );
+          })}
+          {/* Q5：真实契约缺失但示意出现的字段——待接入灰字，不造数 */}
+          <span className="ml-auto text-[9px] text-gray-600" title="真实 trace 契约无此字段">成本 / 模型名：待接入</span>
+        </div>
       </div>
 
       {/* Content */}
@@ -427,23 +532,33 @@ export function TraceViewer({ sessionId, onClose }: TraceViewerProps) {
         {error && (
           <div className="py-4 text-center text-xs text-red-400">{error}</div>
         )}
-        {!loading && !error && events.length === 0 && (
+        {!loading && !error && filtered.length === 0 && (
           <div className="py-4 text-center text-xs text-gray-500">
-            No trace events found
+            {events.length === 0 ? "No trace events found" : "当前筛选无事件"}
           </div>
         )}
-        <TokenUsageChart events={events} />
-        {showDiff && <LLMRequestDiff events={events} />}
+        <TokenUsageChart events={filtered} />
+        {showDiff && <LLMRequestDiff events={filtered} />}
         <div className="space-y-1">
-          {events.map((event, i) => (
+          {visible.map((event, i) => (
             <EventCard key={`${event.time_created ?? event.ts}-${i}`} event={event} />
           ))}
         </div>
+        {/* Q9：最近 50 条 + 加载更早 */}
+        {filtered.length - visibleCount > 0 && (
+          <button
+            type="button"
+            onClick={() => setVisibleCount((c) => c + PAGE_SIZE)}
+            className="mt-2 w-full rounded border border-gray-700 py-1 text-[10px] text-gray-400 hover:bg-gray-800"
+          >
+            加载更早（剩余 {filtered.length - visibleCount} 条）
+          </button>
+        )}
       </div>
 
       {/* Footer */}
       <div className="border-t border-gray-800 px-3 py-1.5 text-center text-[9px] text-gray-600">
-        {events.length} events · session {sessionId.slice(0, 8)}
+        {visible.length}/{filtered.length} events · session {sessionId.slice(0, 8)}
       </div>
     </div>
   );

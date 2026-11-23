@@ -78,6 +78,16 @@ export function RightPanel() {
     timeline: [],
   } : null
 
+  // Q12（grilling）：展开 Trace 时接管整个右栏（一次一个焦点），
+  // 收起后恢复原卡片 —— 不是往窄栏里再塞一个 320px 的 h-80 面板。
+  if (showTrace && currentSessionId) {
+    return (
+      <div className="h-full w-full bg-slate-950">
+        <TraceViewer sessionId={currentSessionId} onClose={() => setShowTrace(false)} />
+      </div>
+    );
+  }
+
   return (
     <div className="flex h-full w-full flex-col gap-3 overflow-y-auto bg-slate-900 p-3">
       <TokenCard />
@@ -88,23 +98,16 @@ export function RightPanel() {
       {/* 表现曲线 — 由 chat agent 决定显示什么 (show_chart / show_report)；
           PanelRenderCard 自身在无数据时返回 null */}
       <PanelRenderCard item={panelItem} metrics={metrics} curve={curve} />
-      {/* Trace Timeline — agent trace events */}
+      {/* Trace 入口行 — 点击后 Trace 接管右栏（Q12） */}
       {currentSessionId && (
-        <div className="rounded-lg border border-gray-800 bg-slate-950">
-          <button
-            type="button"
-            onClick={() => setShowTrace(!showTrace)}
-            className="flex w-full items-center justify-between px-3 py-2 text-xs text-gray-400 hover:text-gray-200"
-          >
-            <span>Trace Timeline</span>
-            <span className="text-[10px] text-gray-600">{showTrace ? "▾" : "▸"}</span>
-          </button>
-          {showTrace && (
-            <div className="h-80 border-t border-gray-800">
-              <TraceViewer sessionId={currentSessionId} />
-            </div>
-          )}
-        </div>
+        <button
+          type="button"
+          onClick={() => setShowTrace(true)}
+          className="flex w-full items-center justify-between rounded-lg border border-gray-800 bg-slate-950 px-3 py-2 text-xs text-gray-400 hover:text-gray-200"
+        >
+          <span>Trace Timeline</span>
+          <span className="text-[10px] text-gray-600">▸</span>
+        </button>
       )}
     </div>
   )

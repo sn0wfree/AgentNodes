@@ -26,7 +26,7 @@ describe('TraceViewer', () => {
     render(<TraceViewer sessionId="s-1" />)
     await screen.findByText('No trace events found')
     expect(fetchMock).toHaveBeenCalledWith(
-      '/api/chat/session/s-1/trace?limit=200',
+      '/api/chat/session/s-1/trace?limit=500',
       expect.objectContaining({
         headers: expect.objectContaining({ Authorization: 'Bearer test-token' }),
       }),
@@ -64,9 +64,15 @@ describe('TraceViewer', () => {
 
     // Expand to reveal the reconstructed envelope.
     fireEvent.click(screen.getByText(/LLM Request — 1 tools/))
-    expect(screen.getByText('System prompt (120 chars)')).toBeTruthy()
+    // Q4：标签与 meta 分离；原文默认折叠，需点「显示原始」
+    expect(screen.getByText('System prompt')).toBeTruthy()
+    expect(screen.queryByText(bigPrompt)).toBeNull()
+    const revealBtns = screen.getAllByText(/显示原始/)
+    fireEvent.click(revealBtns[0]) // system prompt
     expect(screen.getByText(bigPrompt)).toBeTruthy()
-    expect(screen.getByText(/Tools schema \(1 tools\)/)).toBeTruthy()
+    fireEvent.click(screen.getAllByText(/显示原始/).at(-1)!) // tools schema
+
+    expect(screen.getByText('Tools schema')).toBeTruthy()
     expect(screen.getByText(/"name": "t1"/)).toBeTruthy()
   })
 
@@ -140,6 +146,9 @@ describe('TraceViewer', () => {
 
     fireEvent.click(screen.getByText('Diff'))
     expect(screen.getByText('Envelope diff')).toBeTruthy()
+    // Q4：diff 同样默认折叠，显式展开后才见原文
+    expect(screen.queryByText(/sys A/)).toBeNull()
+    screen.getAllByText(/显示 diff/).forEach((b) => fireEvent.click(b))
     expect(screen.getByText(/sys A/)).toBeTruthy()
     expect(screen.getByText(/sys B/)).toBeTruthy()
     expect(screen.getByText(/shared/)).toBeTruthy()
