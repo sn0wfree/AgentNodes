@@ -2,10 +2,6 @@ import { NavLink, useLocation, useNavigate } from 'react-router-dom'
 import {
   MessageSquare,
   Network,
-  Sigma,
-  Layers,
-  BookOpen,
-  Library,
   Settings,
   LogOut,
   ShieldCheck,
@@ -21,12 +17,15 @@ interface NavEntry {
   toggleSidebar?: boolean
 }
 
+/**
+ * MVP 导航精简（P0-5 用户裁决）：只保留主路径 Chat / 编排。
+ * Study · 因子库 · 策略库 · 知识库图标按 §8.1「不暴露假入口」原则移除
+ * —— 路由与页面保持可达（URL 直入），后端契约落地后再恢复图标；
+ * 恢复点：git show 887e3068:webui/frontend/src/components/layout/IconNav.tsx。
+ */
 const NAV_ITEMS: NavEntry[] = [
   { to: '/chat', label: 'Chat', icon: MessageSquare, toggleSidebar: true },
   { to: '/dag', label: '编排', icon: Network },
-  { to: '/study', label: 'Study', icon: BookOpen },
-  { to: '/factors', label: '因子库', icon: Sigma },
-  { to: '/strategies', label: '策略库', icon: Layers },
 ]
 
 export function IconNav() {
@@ -89,15 +88,6 @@ export function IconNav() {
           </NavLink>
         )
       })}
-
-      {/* 知识库 — placeholder, planned for a later release */}
-      <button
-        title="知识库 · 规划中"
-        disabled
-        className="flex h-10 w-10 cursor-not-allowed items-center justify-center rounded-lg text-slate-600 opacity-40"
-      >
-        <Library className="h-5 w-5" />
-      </button>
 
       {isAdmin && (
         <NavLink
