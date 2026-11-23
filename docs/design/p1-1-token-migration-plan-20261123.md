@@ -161,6 +161,12 @@ A 批「覆盖面内零 diff」+ A-0 双主题基线 / A 批不做 Tailwind v4 �
 文本三级 / amber 机械映射 / 状态色按实际 9 token / 一批一确认 / 系统字体栈。
 授权从 A-0 开始逐批推进；每批独立提交（不 push），后批开工前仍需单独确认。
 
+## 附 G：B-2 amber 机械映射批前置事实（2026-11-23）
+
+B 批只落地了 **3-token 状态组**（`--warning` / `-fg` / `-surface`，dark `#facc15` / light `#ca8a04`，globals.css L28/L55），U-A §2.3 的 **9-token 组尚缺 6 项**：`{role}Fill / FillHover / FillPressed / FillBright / ForegroundHover / ForegroundBright / Quaternary`。B-2 必须先补全 9-token 组（dark/light 各 9 项），再做 amber 类名映射——否则「机械映射到 --warning token 组」无处可指。
+
+映射纪律（工作台 §10.3）：144 命中实测全为 warning 语义 → 降为机械映射，不再逐处决策；装饰性 amber 若 agent 分类有不确定项，单独列出待裁决，不默认灰阶化。
+
 ## 附 F：B 转向批可执行清单（2026-11-23 两路调研回填）
 
 ### F.1 双轨 primary 语义（执行取舍，不扩权）

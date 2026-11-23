@@ -25,7 +25,16 @@
   --ease-smooth: cubic-bezier(0.4, 0, 0.2, 1);
   /* 状态色（示意 9 token 组）*/
   --success: #4ade80;  --success-fg: #4ade80;  --success-surface: rgba(74,222,128,0.10);
-  --warning: #facc15;  --warning-fg: #facc15;  --warning-surface: rgba(250,204,21,0.10);
+  /* warning 9-token 组（B-2）*/
+  --warning: #facc15;
+  --warning-fill: rgba(250,204,21,0.10);
+  --warning-fill-hover: rgba(250,204,21,0.16);
+  --warning-fill-pressed: rgba(250,204,21,0.22);
+  --warning-fill-bright: rgba(250,204,21,0.28);
+  --warning-foreground: #facc15;
+  --warning-foreground-hover: #fde047;
+  --warning-foreground-bright: #fef08a;
+  --warning-quaternary: rgba(250,204,21,0.06);
   --danger: #f87171;   --danger-fg: #f87171;   --danger-surface: rgba(248,113,113,0.10);
   color-scheme: dark;
   color: var(--foreground);
@@ -52,7 +61,16 @@
   --shadow-elevated: 0 8px 32px -8px rgba(0, 0, 0, 0.14);
   /* 状态色（示意 9 token 组）*/
   --success: #16a34a;  --success-fg: #15803d;  --success-surface: rgba(22,163,74,0.09);
-  --warning: #ca8a04;  --warning-fg: #a16207;  --warning-surface: rgba(202,138,4,0.10);
+  /* warning 9-token 组（B-2）*/
+  --warning: #ca8a04;
+  --warning-fill: rgba(202,138,4,0.10);
+  --warning-fill-hover: rgba(202,138,4,0.16);
+  --warning-fill-pressed: rgba(202,138,4,0.22);
+  --warning-fill-bright: rgba(202,138,4,0.28);
+  --warning-foreground: #a16207;
+  --warning-foreground-hover: #854d0e;
+  --warning-foreground-bright: #713f12;
+  --warning-quaternary: rgba(202,138,4,0.06);
   --danger: #dc2626;   --danger-fg: #b91c1c;  --danger-surface: rgba(220,38,38,0.08);
   color-scheme: light;
   color: var(--foreground);
