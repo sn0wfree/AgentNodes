@@ -155,6 +155,40 @@ class SessionService:
         )
         return {"id": session_id, "title": title or "新会话"}
 
+    def auto_title_and_emit(self, session_id: str, content: str) -> None:
+        """首条消息自动命名会话并 emit ``session_meta_updated``（单点）。
+
+        生产 Web 链路 ``POST /chat/send_async`` 与 legacy ``send_message`` 共用
+        本方法，避免两处实现漂移。``auto_title_session`` 的哨兵是
+        ``title == "新会话"`` —— 用户自定义标题或已自动命名过的会话不会重复改。
+        失败只 warning，不阻断发送（与既有 legacy 行为一致）。
+        """
+        try:
+            # 2026-11-16 批次 B3：原 `from ..routers.web_session import
+            # _get_db, auto_title_session`（L3→L1 上行违规）。B2 后 `_get_db`
+            # 住同包 `db.py`；`auto_title_session` 随簇下沉为本模块函数。
+            from agentnodes.kernel.session.db import _get_db
+
+            new_title = auto_title_session(session_id, content)
+            if new_title:
+                conn = _get_db()
+                row = conn.execute(
+                    "SELECT message_count, starred, tags_json, archived "
+                    "FROM sessions WHERE id = ?",
+                    (session_id,),
+                ).fetchone()
+                meta_update = {
+                    "session_id": session_id,
+                    "title": new_title,
+                    "message_count": row["message_count"] if row else 0,
+                    "starred": bool(row["starred"]) if row else False,
+                    "tags": json.loads(row["tags_json"]) if row and row["tags_json"] else [],
+                    "archived": bool(row["archived"]) if row else False,
+                }
+                self.event_bus.emit(session_id, "session_meta_updated", meta_update)
+        except Exception as exc:
+            logger.warning("auto_title_session failed: %s", exc)
+
     # ── Legacy chat entry point (compatibility only) ───────────────────
 
     async def send_message(
@@ -221,31 +255,7 @@ class SessionService:
         logger.info("[MSG] user_msg_id=%s", user_msg_id)
 
         # ── 2. Auto-title on first user message ───────────────────────
-        try:
-            # 2026-11-16 批次 B3：原 `from ..routers.web_session import
-            # _get_db, auto_title_session`（L3→L1 上行违规）。B2 后 `_get_db`
-            # 住同包 `db.py`；`auto_title_session` 随簇下沉为本模块函数。
-            from agentnodes.kernel.session.db import _get_db
-
-            new_title = auto_title_session(session_id, content)
-            if new_title:
-                conn = _get_db()
-                row = conn.execute(
-                    "SELECT message_count, starred, tags_json, archived "
-                    "FROM sessions WHERE id = ?",
-                    (session_id,),
-                ).fetchone()
-                meta_update = {
-                    "session_id": session_id,
-                    "title": new_title,
-                    "message_count": row["message_count"] if row else 0,
-                    "starred": bool(row["starred"]) if row else False,
-                    "tags": json.loads(row["tags_json"]) if row and row["tags_json"] else [],
-                    "archived": bool(row["archived"]) if row else False,
-                }
-                self.event_bus.emit(session_id, "session_meta_updated", meta_update)
-        except Exception as exc:
-            logger.warning("auto_title_session failed: %s", exc)
+        self.auto_title_and_emit(session_id, content)
 
         # ── 3. Queue length hard limit ────────────────────────────────
         queue = self._session_queues.get(session_id)

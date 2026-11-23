@@ -79,6 +79,7 @@ def test_send_async_prechecks_history_only_once(client, monkeypatch):
         return []
 
     service = SimpleNamespace(
+    auto_title_and_emit=lambda *_args, **_kwargs: None,
         store=SimpleNamespace(
             create_attempt=Mock(), delete_attempt=Mock(),
             get_attempt=Mock(return_value=SimpleNamespace(status="pending")),
@@ -635,6 +636,7 @@ async def test_gateway_sync_waiter_fails_if_its_request_is_summarized(monkeypatc
 def test_send_async_response_and_execution_options(client, monkeypatch):
     session_id = _new_session(client)
     service = SimpleNamespace(
+    auto_title_and_emit=lambda *_args, **_kwargs: None,
         store=SimpleNamespace(
             create_attempt=Mock(),
             delete_attempt=Mock(),
@@ -756,6 +758,7 @@ def test_gateway_chat_options_reuse_persona_plan_and_thinking_policy(monkeypatch
 def test_send_async_queue_full_preserves_429_detail(client, monkeypatch):
     session_id = _new_session(client)
     service = SimpleNamespace(
+    auto_title_and_emit=lambda *_args, **_kwargs: None,
         store=SimpleNamespace(
             create_attempt=Mock(), delete_attempt=Mock(),
             # 3a.3b：send_async 新增历史预检（决策 5），fake 补最小面

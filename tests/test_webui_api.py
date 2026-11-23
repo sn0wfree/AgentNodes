@@ -332,6 +332,31 @@ class TestAutoTitle:
         new_title = auto_title_session(sid, "any content")
         assert new_title is None
 
+    def test_send_async_wires_auto_title_without_blocking(self, client):
+        """send_async 调 auto_title_and_emit；Gateway 失败时仍返回非 500。"""
+        from agentnodes.interfaces.api.routers import chat as chat_router
+
+        res = client.post("/api/chat/session", json={"title": "新会话"})
+        sid = res.json()["id"]
+        calls = []
+
+        def fake_auto(session_id, content):
+            calls.append((session_id, content))
+
+        orig = chat_router._get_session_service
+        svc = orig()
+        svc.auto_title_and_emit = fake_auto
+        chat_router._get_session_service = lambda: svc
+        try:
+            # Gateway 未就绪时 send_async 可能返回 503/500 —— 只验证标题 seam 已调用
+            client.post("/api/chat/send_async", json={
+                "session_id": sid, "content": "帮我设计一个 alpha 策略",
+            })
+        finally:
+            chat_router._get_session_service = orig
+
+        assert calls == [(sid, "帮我设计一个 alpha 策略")]
+
     def test_auto_title_truncates_long(self, client):
         from agentnodes.interfaces.api.routers.web_session import auto_title_session
         res = client.post("/api/chat/session", json={"title": "新会话"})

@@ -43,7 +43,7 @@ describe('SessionTabs', () => {
 
   it('renders new-tab button when no sessions open', () => {
     render(<SessionTabs />)
-    expect(screen.getByTitle(/新建会话/)).toBeInTheDocument()
+    expect(screen.queryByTitle(/新建会话/)).toBeNull() // 加号已删，新建由侧栏承载
   })
 
   it('renders one tab per open session', () => {
@@ -86,13 +86,14 @@ describe('SessionTabs', () => {
     expect(switchSpy).toHaveBeenCalledWith('b')
   })
 
-  it('clicking + button creates new session', () => {
+  it('plus button is gone; new session belongs to the sidebar', () => {
     const createSpy = vi.fn().mockResolvedValue(makeSession('new'))
     useSessionStore.setState({ createNewSession: createSpy })
+    // 加号已移除，createSpy 不应被调用
 
     render(<SessionTabs />)
-    fireEvent.click(screen.getByTitle(/新建会话/))
-    expect(createSpy).toHaveBeenCalled()
+    expect(screen.queryByTitle(/新建会话/)).toBeNull()
+    expect(createSpy).not.toHaveBeenCalled()
   })
 
   it('close button calls closeSession', () => {

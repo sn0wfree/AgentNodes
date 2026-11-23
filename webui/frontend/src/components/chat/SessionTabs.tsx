@@ -1,7 +1,5 @@
 import { useMemo } from 'react'
-import {
-  Plus, X, Star,
-} from 'lucide-react'
+import { X, Star } from 'lucide-react'
 import { useSessionStore, type Session } from '../../stores/session'
 
 export function SessionTabs() {
@@ -10,7 +8,6 @@ export function SessionTabs() {
   const sessions = useSessionStore((s) => s.sessions)
   const switchSession = useSessionStore((s) => s.switchSession)
   const closeSession = useSessionStore((s) => s.closeSession)
-  const createNewSession = useSessionStore((s) => s.createNewSession)
 
   // Build open sessions in order; if metadata missing, skip
   const openSessions = useMemo(
@@ -54,14 +51,6 @@ export function SessionTabs() {
           </div>
         )
       })}
-
-      <button
-        onClick={() => void createNewSession('新会话')}
-        className="flex h-7 w-7 items-center justify-center rounded-md text-slate-500 hover:bg-slate-800 hover:text-slate-200 flex-shrink-0"
-        title="新建会话 (⌘T)"
-      >
-        <Plus className="h-3.5 w-3.5" />
-      </button>
 
       {/* Spacer pushes search button right */}
       <div className="flex-1" />

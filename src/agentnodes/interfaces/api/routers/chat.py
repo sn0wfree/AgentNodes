@@ -207,6 +207,11 @@ async def send_async(body: ChatMessage, request: Request):
 
     service = _get_session_service()
 
+    # 首次发送自动命名：复用 SessionService 单点（legacy send_message 同款），
+    # emit session_meta_updated → 前端 metaHandlers patch 标题（tab/侧栏同步）。
+    # 哨兵 title=="新会话" 保证仅首条生效；失败只 warning 不阻断发送。
+    service.auto_title_and_emit(body.session_id, body.content)
+
     # 3a.3b（决策 5）：先验证严格历史，再创建 Attempt/发 attempt.created——
     # 历史失败时零 Attempt 事件（消除原「先发事件后删行」半提交路径）。
     from agentnodes.apps.chat import send_turn as usecase
