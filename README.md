@@ -6,10 +6,10 @@
 > 本仓库从 QuantNodes 量化研究项目中剥离出 **agent 框架**部分独立开发，业务侧（回测、因子、行情、
 > 研究流水线）已按 [`docs/design/subtraction-roadmap-v2-20261105.md`](docs/design/subtraction-roadmap-v2-20261105.md)
 > 分批移除并归档到 `testcase/golden/`。
-> **RSI 自我进化已归位内核**（批次 8）：`apps/evolution/` → `kernel/evolution/`，
-> 因为 Tier 0/1/2 划分、±20% 退化阈值、holdout 只读语义都是**内核的策略约束**，
-> 不是业务可选项。当前 `apps/`（L2）是业务插件面：子包 `goal`（长程任务域）·
-> `chat`（产品策略）· `agent_plugins`（量化插件）· `scheduled_research` ·
+> **RSI 自我进化分层落位**：`kernel/evolution/` 承载内核约束与机制，
+> `apps/evolution/` 承载领域策略与驱动，`interfaces/rsi_wiring.py` 负责装配。
+> 当前 `apps/`（L2）是业务插件面：子包 `goal`（长程任务域）·
+> `chat`（产品策略）· `evolution` · `agent_plugins`（量化插件）· `scheduled_research` ·
 > `swarm_presets` · `algo`，平文件 `capabilities`（注册门面）· `goal_tools`
 > （业务工具工厂）· `data_store_registry` / `workspace_setup`（两个小件）。
 > **包名与环境变量已重命名**：`strategy_research` → `agentnodes`，
@@ -128,7 +128,8 @@ service = resolve("my.service")
 分层架构主图（各层体量 / 跨层边数 / 违规矩阵 / 能力清单，AST 实测生成）：
 **[`docs/architecture-layered.html`](docs/architecture-layered.html)**；
 功能模块视角：[`docs/architecture-diagram.html`](docs/architecture-diagram.html)；
-L3 四领域聚合视图（草稿）：[`docs/architecture-layered-l3-clusters.html`](docs/architecture-layered-l3-clusters.html)。
+L3 四领域聚合视图（草稿）：[`docs/architecture-layered-l3-clusters.html`](docs/architecture-layered-l3-clusters.html)；
+当前目录与调用路径见 [`docs/guides/code-map.md`](docs/guides/code-map.md)。
 当前实测：**465 文件 / 97,355 行**（L1 121 / L2 50 / L3 230 / L4 64），跨层边 442（L1→L2 76 · L1→L3 139 · L1→L4 71 · L2→L3 49 · L2→L4 14 · L3→L4 93），**上行违规 0**（2026-11-22，`sync_architecture_diagram.py` 实测）。
 
 ```
