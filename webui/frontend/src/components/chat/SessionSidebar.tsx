@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect, useMemo } from 'react'
 import {
-  Plus, Search, Star, Archive, Trash2, Edit3, X, MessageSquare, Tag,
+  Plus, Search, Star, Archive, Trash2, Pencil, X, MessageSquare, Tag,
 } from 'lucide-react'
 import { useSessionStore, type Session } from '../../stores/session'
 import { useLayoutStore } from '../../stores/layout'
@@ -27,23 +27,14 @@ export function SessionSidebar() {
   const updateSessionMeta = useSessionStore((s) => s.updateSessionMeta)
   const deleteSession = useSessionStore((s) => s.deleteSession)
   const setSidebarOpen = useLayoutStore((s) => s.setSidebarOpen)
+  const requestRename = useLayoutStore((s) => s.requestRename)
 
   const [search, setSearch] = useState('')
   const [filter, setFilter] = useState<Filter>('all')
-  const [editingId, setEditingId] = useState<string | null>(null)
-  const [editValue, setEditValue] = useState('')
   const [taggingId, setTaggingId] = useState<string | null>(null)
   const [tagInput, setTagInput] = useState('')
   const [pendingDelete, setPendingDelete] = useState<{ id: string; title: string } | null>(null)
-  const editRef = useRef<HTMLInputElement>(null)
   const tagRef = useRef<HTMLInputElement>(null)
-
-  useEffect(() => {
-    if (editingId && editRef.current) {
-      editRef.current.focus()
-      editRef.current.select()
-    }
-  }, [editingId])
 
   useEffect(() => {
     if (taggingId && tagRef.current) {
@@ -79,18 +70,10 @@ export function SessionSidebar() {
     if (useLayoutStore.getState().narrowViewport) setSidebarOpen(false)
   }
 
-  const handleStartEdit = (sess: Session) => {
-    setEditingId(sess.id)
-    setEditValue(sess.title)
-  }
-
-  const handleCommitEdit = async () => {
-    if (!editingId) return
-    const trimmed = editValue.trim()
-    if (trimmed && trimmed !== sessions.find((s) => s.id === editingId)?.title) {
-      await updateSessionMeta(editingId, { title: trimmed })
-    }
-    setEditingId(null)
+  // 重命名入口合并：切换到目标会话 + 置位信号，由 TopBar 统一进入编辑态。
+  const handleRequestRename = (sess: Session) => {
+    if (sess.id !== currentSessionId) void switchSession(sess.id)
+    requestRename(sess.id)
   }
 
   const handleToggleStar = async (id: string) => {
@@ -211,21 +194,15 @@ export function SessionSidebar() {
                     key={sess.id}
                     sess={sess}
                     isActive={currentSessionId === sess.id}
-                    editing={editingId === sess.id}
                     tagging={taggingId === sess.id}
-                    editValue={editValue}
                     tagInput={tagInput}
-                    editRef={editRef}
                     tagRef={tagRef}
                     onSelect={() => handleSelect(sess.id)}
-                    onEditChange={(v) => setEditValue(v)}
-                    onEditCommit={handleCommitEdit}
-                    onEditCancel={() => setEditingId(null)}
                     onTagChange={(v) => setTagInput(v)}
                     onTagCommit={handleCommitTags}
                     onTagCancel={() => setTaggingId(null)}
                     onToggleStar={() => void handleToggleStar(sess.id)}
-                    onStartEdit={() => handleStartEdit(sess)}
+                    onRequestRename={() => handleRequestRename(sess)}
                     onStartTag={() => handleStartTag(sess)}
                     onToggleArchive={() => void handleToggleArchive(sess.id)}
                     onDelete={() => handleDelete(sess)}
@@ -254,21 +231,15 @@ export function SessionSidebar() {
 interface SessionRowProps {
   sess: Session
   isActive: boolean
-  editing: boolean
   tagging: boolean
-  editValue: string
   tagInput: string
-  editRef: React.RefObject<HTMLInputElement | null>
   tagRef: React.RefObject<HTMLInputElement | null>
   onSelect: () => void
-  onEditChange: (v: string) => void
-  onEditCommit: () => void
-  onEditCancel: () => void
   onTagChange: (v: string) => void
   onTagCommit: () => void
   onTagCancel: () => void
   onToggleStar: () => void
-  onStartEdit: () => void
+  onRequestRename: () => void
   onStartTag: () => void
   onToggleArchive: () => void
   onDelete: () => void
@@ -277,21 +248,15 @@ interface SessionRowProps {
 function SessionRow({
   sess,
   isActive,
-  editing,
   tagging,
-  editValue,
   tagInput,
-  editRef,
   tagRef,
   onSelect,
-  onEditChange,
-  onEditCommit,
-  onEditCancel,
   onTagChange,
   onTagCommit,
   onTagCancel,
   onToggleStar,
-  onStartEdit,
+  onRequestRename,
   onStartTag,
   onToggleArchive,
   onDelete,
@@ -305,20 +270,7 @@ function SessionRow({
           : 'text-slate-300 hover:bg-slate-800'
       }`}
     >
-      {editing ? (
-        <input
-          ref={editRef}
-          value={editValue}
-          onChange={(e) => onEditChange(e.target.value)}
-          onBlur={onEditCommit}
-          onKeyDown={(e) => {
-            if (e.key === 'Enter') onEditCommit()
-            if (e.key === 'Escape') onEditCancel()
-          }}
-          className="w-full rounded border border-primary-500 bg-slate-800 px-1 py-0.5 text-sm text-slate-200 outline-none"
-          onClick={(e) => e.stopPropagation()}
-        />
-      ) : tagging ? (
+      {tagging ? (
         <input
           ref={tagRef}
           value={tagInput}
@@ -367,12 +319,12 @@ function SessionRow({
               <button
                 onClick={(e) => {
                   e.stopPropagation()
-                  onStartEdit()
+                  onRequestRename()
                 }}
                 className="rounded p-0.5 text-slate-400 hover:text-slate-200"
                 title="重命名"
               >
-                <Edit3 className="h-3 w-3" />
+                <Pencil className="h-3 w-3" />
               </button>
               <button
                 onClick={(e) => {

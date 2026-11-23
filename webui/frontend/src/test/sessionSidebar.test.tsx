@@ -120,34 +120,32 @@ describe('SessionSidebar', () => {
     useLayoutStore.getState().setNarrowViewport(false)
   })
 
-  it('inline rename commits through updateSessionMeta on Enter', async () => {
-    const updateSpy = vi.fn().mockResolvedValue(undefined)
-    useSessionStore.setState({ updateSessionMeta: updateSpy } as never)
-    seed([mkSession({ id: 'a', title: 'Alpha' })])
+  it('rename action switches to the session and requests rename via layout store', async () => {
+    const switchSpy = vi.fn().mockResolvedValue(undefined)
+    useSessionStore.setState({ switchSession: switchSpy } as never)
+    seed([
+      mkSession({ id: 'a', title: 'Alpha' }),
+      mkSession({ id: 'b', title: 'Beta' }),
+    ])
+    useSessionStore.setState({ currentSessionId: 'a' } as never)
     renderSidebar()
 
-    fireEvent.click(screen.getByTitle('重命名'))
-    const input = screen.getByDisplayValue('Alpha')
-    fireEvent.change(input, { target: { value: 'Renamed' } })
-    fireEvent.keyDown(input, { key: 'Enter' })
+    // 'Beta' 是非当前会话：点其重命名应触发切换 + 置位信号
+    // 两个会话各有一个「重命名」按钮；Beta 是第二个
+    const renameBtns = screen.getAllByTitle('重命名')
+    expect(renameBtns.length).toBe(2)
+    fireEvent.click(renameBtns[1])
 
-    await waitFor(() =>
-      expect(updateSpy).toHaveBeenCalledWith('a', { title: 'Renamed' })
-    )
+    expect(switchSpy).toHaveBeenCalledWith('b')
+    expect(useLayoutStore.getState().renameRequestId).toBe('b')
   })
 
-  it('inline rename can be cancelled with Escape (no store write)', () => {
-    const updateSpy = vi.fn().mockResolvedValue(undefined)
-    useSessionStore.setState({ updateSessionMeta: updateSpy } as never)
+  it('no inline rename input remains in the sidebar (single entry in TopBar)', () => {
     seed([mkSession({ id: 'a', title: 'Alpha' })])
     renderSidebar()
-
     fireEvent.click(screen.getByTitle('重命名'))
-    const input = screen.getByDisplayValue('Alpha')
-    fireEvent.change(input, { target: { value: 'Nope' } })
-    fireEvent.keyDown(input, { key: 'Escape' })
-
-    expect(updateSpy).not.toHaveBeenCalled()
+    // 侧栏不再有行内输入框；编辑态由顶栏接管
+    expect(screen.queryByDisplayValue('Alpha')).toBeNull()
     expect(screen.getByText('Alpha')).toBeInTheDocument()
   })
 

@@ -23,6 +23,8 @@ export function TopBar() {
   const toggleRightPanel = useLayoutStore((s) => s.toggleRightPanel)
   const density = useLayoutStore((s) => s.density)
   const setDensity = useLayoutStore((s) => s.setDensity)
+  const renameRequestId = useLayoutStore((s) => s.renameRequestId)
+  const clearRenameRequest = useLayoutStore((s) => s.clearRenameRequest)
   const theme = useThemeStore((s) => s.theme)
   const toggleTheme = useThemeStore((s) => s.toggleTheme)
   const thinkingCollapsed = useThinkingPrefStore((s) => s.collapsed)
@@ -44,6 +46,16 @@ export function TopBar() {
     setDraftTitle(currentSession.title)
     setEditing(true)
   }
+
+  // 重命名入口合并：侧栏 hover 置 renameRequestId 后，等 currentSessionId
+  // 切到目标会话再进入编辑态（条件满足即消费信号，清理后允许重复触发）。
+  useEffect(() => {
+    if (renameRequestId && renameRequestId === currentSessionId && currentSession) {
+      setDraftTitle(currentSession.title)
+      setEditing(true)
+      clearRenameRequest()
+    }
+  }, [renameRequestId, currentSessionId, currentSession, clearRenameRequest])
 
   const commit = async () => {
     const trimmed = draftTitle.trim()

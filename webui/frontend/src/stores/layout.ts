@@ -73,6 +73,10 @@ interface LayoutState {
   density: Density
   settingsOpen: boolean
   chatLayout: ChatLayout
+  /** 重命名入口合并：侧栏 hover → 切换会话 + 置位，顶栏消费后清理（不持久化）。 */
+  renameRequestId: string | null
+  requestRename: (id: string) => void
+  clearRenameRequest: () => void
   setNavWidth: (w: number) => void
   toggleSidebar: () => void
   setSidebarOpen: (open: boolean) => void
@@ -101,6 +105,9 @@ export const useLayoutStore = create<LayoutState>()((set) => {
     density,
     settingsOpen: false,
     chatLayout: loadInitialLayout(),
+    renameRequestId: null,
+    requestRename: (id) => set({ renameRequestId: id }),
+    clearRenameRequest: () => set({ renameRequestId: null }),
     setNavWidth: (w) => set({ navWidth: w }),
     toggleSidebar: () =>
       set((s) => {
