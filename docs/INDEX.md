@@ -45,7 +45,7 @@
 
 ---
 
-## 2. design/ — 仍生效的设计与契约（162 份，2026-11-23 补录）
+## 2. design/ — 仍生效的设计与契约（163 份，2026-11-23 补录）
 
 **判据**：文档里的决策仍在代码中执行。已被取代的移到 `archive/`。
 
@@ -293,6 +293,7 @@
 | [`remove-session-tabs-20261123.md`](design/remove-session-tabs-20261123.md) | 移除顶栏 SessionTabs 方案（未采纳，保留作反方论证记录） |
 | [`auto-title-and-remove-tab-plus-20261123.md`](design/auto-title-and-remove-tab-plus-20261123.md) | B+A 方案：首次发送自动标题（接回已有 auto_title_session + SSE patch）+ 删 tab 加号 |
 | [`trace-panel-and-dag-hide-20261123.md`](design/trace-panel-and-dag-hide-20261123.md) | Trace 独立入口+权限（403 已存在）+ DAG 前端5入口撤销/API24路由保留方案（R-014 待批准） |
+| [`sidebar-navigation-redesign-20261123.md`](design/sidebar-navigation-redesign-20261123.md) | 导航侧边框调整方案+实施——DAG 5入口撤销(路由/API保留)、Trace 独立入口(调研 ZCode/OpenClaw/OpenCode/Codex/Claude)、Agents 等 P1-P3 候选 |
 
 ---
 

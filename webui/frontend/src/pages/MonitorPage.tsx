@@ -2,7 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import {
   Activity, Bot, Target, ChartLine, HeartPulse, Zap,
-  MessageSquare, Network, Sigma, Layers, ArrowRight, Cpu, FolderOpen,
+  MessageSquare, Sigma, Layers, ArrowRight, Cpu, FolderOpen,
 } from 'lucide-react'
 import { PageShell } from '../components/layout/PageShell'
 import { api, type RunListItem, type StudySummary } from '../api/client'
@@ -205,11 +205,11 @@ export function MonitorPage() {
           desc="会话与消息"
         />
         <QuickEntry
-          to="/dag"
-          icon={<Network className="h-5 w-5" />}
+          to="/trace"
+          icon={<Activity className="h-5 w-5" />}
           iconCls="border border-sky-500/30 bg-sky-500/10 text-sky-400"
-          title="编排"
-          desc="DAG + Agent 监控"
+          title="Trace"
+          desc="历史运行回放"
         />
         <QuickEntry
           to="/factors"

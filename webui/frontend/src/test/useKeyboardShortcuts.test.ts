@@ -126,10 +126,10 @@ describe('useKeyboardShortcuts', () => {
 
   // ── T1.5 additions: remaining inline bindings + input guards ──
 
-  it('Cmd+W navigates to /dag', () => {
+  it('Cmd+W navigates to /trace', () => {
     renderHook(() => useKeyboardShortcuts())
     pressKey('w', { metaKey: true })
-    expect(mocks.navigate).toHaveBeenCalledWith('/dag')
+    expect(mocks.navigate).toHaveBeenCalledWith('/trace')
     expect(mocks.closeSession).not.toHaveBeenCalled()
   })
 

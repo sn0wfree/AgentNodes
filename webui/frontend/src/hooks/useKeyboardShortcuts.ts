@@ -32,7 +32,7 @@ export function useKeyboardShortcuts() {
     { key: 'p', meta: true, shift: true, action: togglePalette },
     // Panel toggles
     { key: 'b', meta: true, action: toggleRightPanel },
-    { key: 'w', meta: true, action: () => navigate('/dag') },
+    { key: 'w', meta: true, action: () => navigate('/trace') },
     // Tabs
     { key: '1', meta: true, action: () => openSessionIds[0] && void switchSession(openSessionIds[0]) },
     { key: '2', meta: true, action: () => openSessionIds[1] && void switchSession(openSessionIds[1]) },
@@ -45,7 +45,7 @@ export function useKeyboardShortcuts() {
     { key: '9', meta: true, action: () => openSessionIds[8] && void switchSession(openSessionIds[8]) },
     // New tab (⌘T) — jump into the chat workspace
     { key: 't', meta: true, action: () => { void createNewSession('新会话'); navigate('/chat'); toggleSidebar() } },
-    // Close current tab (⌘W also opens DAG — overlap, ignore ⌘W conflict)
+    // Close current tab (⌘W opens Trace — overlap, ignore ⌘W conflict)
     { key: 'w', meta: true, shift: true, action: () => currentSessionId && closeSession(currentSessionId) },
   ]
 

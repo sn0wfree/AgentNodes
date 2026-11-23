@@ -47,14 +47,14 @@ export function CommandPalette() {
   const commands: Command[] = useMemo(() => [
     // View
     {
-      id: 'view-dag',
-      label: '打开编排页',
-      description: '工作流设计（拖拽画布）· 运行 · 历史回看 · Agent 监控',
+      id: 'view-trace',
+      label: '打开 Trace',
+      description: '历史会话的事件时间线 · 工具调用 · 推理轨迹回放',
       category: 'view',
       icon: Workflow,
       shortcut: '⌘W',
-      action: () => { navigate('/dag'); setOpen(false) },
-      keywords: ['dag', 'workflow', '图', '编排', 'definition', '编辑', '拖拽', '审批', '模块化'],
+      action: () => { navigate('/trace'); setOpen(false) },
+      keywords: ['trace', '轨迹', '历史', '回放', '事件', '工具调用', 'reasoning'],
     },
     {
       id: 'view-toggle',

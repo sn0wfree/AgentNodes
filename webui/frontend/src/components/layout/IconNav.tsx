@@ -1,7 +1,7 @@
 import { NavLink, useLocation, useNavigate } from 'react-router-dom'
 import {
   MessageSquare,
-  Network,
+  Activity,
   Settings,
   LogOut,
 } from 'lucide-react'
@@ -17,14 +17,14 @@ interface NavEntry {
 }
 
 /**
- * MVP 导航精简（P0-5 用户裁决）：只保留主路径 Chat / 编排。
+ * 导航侧栏（2026-11-23）：Chat / Trace / 账户与设置；DAG 入口已撤销（路由/API 保留）。
  * Study · 因子库 · 策略库 · 知识库图标按 §8.1「不暴露假入口」原则移除
  * —— 路由与页面保持可达（URL 直入），后端契约落地后再恢复图标；
  * 恢复点：git show 887e3068:webui/frontend/src/components/layout/IconNav.tsx。
  */
 const NAV_ITEMS: NavEntry[] = [
   { to: '/chat', label: 'Chat', icon: MessageSquare, toggleSidebar: true },
-  { to: '/dag', label: '编排', icon: Network },
+  { to: '/trace', label: 'Trace', icon: Activity },
 ]
 
 export function IconNav() {

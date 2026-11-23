@@ -2,7 +2,7 @@
 // performance curve, goal & study.
 
 import { describe, it, expect, beforeEach, vi } from 'vitest'
-import { render, screen, fireEvent } from '@testing-library/react'
+import { render, screen } from '@testing-library/react'
 
 vi.mock('../api/client', async () => {
   return {
@@ -14,11 +14,6 @@ vi.mock('../api/client', async () => {
   }
 })
 
-vi.mock('../components/chat/TraceViewer', () => ({
-  TraceViewer: ({ onClose }: { onClose?: () => void }) => (
-    <div data-testid="trace-viewer"><button onClick={onClose}>关闭 Trace</button></div>
-  ),
-}))
 
 import { RightPanel } from '../components/layout/RightPanel'
 import { useLayoutStore } from '../stores/layout'
@@ -89,20 +84,5 @@ describe('RightPanel (merged panel)', () => {
     render(<RightPanel />)
     expect(screen.queryByText('目标 & 进度')).toBeNull()
     expect(screen.queryByText('暂无活跃目标')).toBeNull()
-  })
-
-  it('Q12: Trace 入口接管右栏，收起后恢复原卡片', () => {
-    render(<RightPanel />)
-    expect(screen.getByText('Token 使用情况')).toBeTruthy()
-    expect(screen.queryByTestId('trace-viewer')).toBeNull()
-
-    fireEvent.click(screen.getByText('Trace Timeline'))
-    expect(screen.getByTestId('trace-viewer')).toBeTruthy()
-    // 接管后原卡片不在 DOM（不是塞进同一列）
-    expect(screen.queryByText('Token 使用情况')).toBeNull()
-
-    fireEvent.click(screen.getByText('关闭 Trace'))
-    expect(screen.queryByTestId('trace-viewer')).toBeNull()
-    expect(screen.getByText('Token 使用情况')).toBeTruthy()
   })
 })

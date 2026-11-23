@@ -13,6 +13,7 @@ import { CatalogPage } from './catalog/CatalogPage'
 import { CatalogItem } from './catalog/CatalogItem'
 import { StudyPage } from './pages/StudyPage'
 import { AccountPage } from './pages/AccountPage'
+import { TracePage } from './pages/TracePage'
 
 function AuthGuard({ children }: { children: React.ReactNode }) {
   const token = useAuthStore((s) => s.token)
@@ -106,6 +107,14 @@ export default function App() {
           element={
             <AuthGuard>
               <AccountPage />
+            </AuthGuard>
+          }
+        />
+        <Route
+          path="/trace"
+          element={
+            <AuthGuard>
+              <TracePage />
             </AuthGuard>
           }
         />

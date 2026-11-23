@@ -50,7 +50,7 @@ describe('CommandPalette', () => {
       expect(screen.getAllByText(label).length).toBeGreaterThan(0)
     }
     for (const label of [
-      '打开编排页', '切换右主区可见性', '切换到纯聊天模式', '切换到监控模式',
+      '打开 Trace', '切换右主区可见性', '切换到纯聊天模式', '切换到监控模式',
       '切换到专注模式', '新建会话', '刷新当前会话', '搜索消息',
       '打开 Chat', '监控首页', '设置',
     ]) {
@@ -62,9 +62,9 @@ describe('CommandPalette', () => {
   it('filters by label substring', () => {
     openPalette()
     render(<MemoryRouter><CommandPalette /></MemoryRouter>)
-    fireEvent.change(searchBox(), { target: { value: '编排' } })
+    fireEvent.change(searchBox(), { target: { value: 'Trace' } })
 
-    expect(screen.getByText('打开编排页')).toBeInTheDocument()
+    expect(screen.getByText('打开 Trace')).toBeInTheDocument()
     expect(screen.queryByText('新建会话')).not.toBeInTheDocument()
     expect(screen.getByText('1 个命令')).toBeInTheDocument()
   })
@@ -105,9 +105,9 @@ describe('CommandPalette', () => {
   it('Enter runs the selected command', () => {
     openPalette()
     render(<MemoryRouter><CommandPalette /></MemoryRouter>)
-    // First command is 打开编排页 → navigate('/dag').
+    // First command is 打开 Trace → navigate('/dag').
     fireEvent.keyDown(searchBox(), { key: 'Enter' })
-    expect(navigateMock).toHaveBeenCalledWith('/dag')
+    expect(navigateMock).toHaveBeenCalledWith('/trace')
     expect(useCommandPaletteStore.getState().open).toBe(false)
   })
 
@@ -191,9 +191,9 @@ describe('CommandPalette', () => {
     const box = searchBox()
     fireEvent.keyDown(box, { key: 'ArrowDown' })
     fireEvent.keyDown(box, { key: 'ArrowDown' })
-    fireEvent.change(box, { target: { value: '编排' } })
+    fireEvent.change(box, { target: { value: 'Trace' } })
     // After the reset, Enter must hit the first (only) match.
     fireEvent.keyDown(box, { key: 'Enter' })
-    expect(navigateMock).toHaveBeenCalledWith('/dag')
+    expect(navigateMock).toHaveBeenCalledWith('/trace')
   })
 })

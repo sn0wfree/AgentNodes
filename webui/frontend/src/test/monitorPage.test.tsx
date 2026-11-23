@@ -168,7 +168,7 @@ expect(vi.mocked(useSSE)).not.toHaveBeenCalled()
     render(<MonitorPage />)
     await waitFor(() => expect(screen.getByText('Chat')).toBeInTheDocument())
     for (const [label, route] of [
-      ['Chat', '/chat'], ['编排', '/dag'], ['因子库', '/factors'], ['策略库', '/strategies'],
+      ['Chat', '/chat'], ['Trace', '/trace'], ['因子库', '/factors'], ['策略库', '/strategies'],
     ] as const) {
       navigateMock.mockReset()
       // The quick-entry button wraps a title div with the same text.
