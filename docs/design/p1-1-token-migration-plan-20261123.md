@@ -146,6 +146,14 @@
 | B.11 | 批次节奏 | A→B→B-2→C 连续 vs 一批一确认 | 一批一确认（符合本会话纪律） |
 | B.12 | 字体 | 保留 Geist vs 换系统栈 | 按 P1-1「系统字体优先，避免依赖未交付字体文件」换系统栈 |
 
+## 批准记录（2026-11-23）
+
+用户已**采纳全部建议**：确认执行中性化转向（B.3），附 B 其余 11 项按建议裁决——
+浅色气泡示意为基础+可访问性裁决 / glass 降可关层 / 保留双主题 / 纯色+细网格 /
+A 批「覆盖面内零 diff」+ A-0 双主题基线 / A 批不做 Tailwind v4 迁移与 shim 退役 /
+文本三级 / amber 机械映射 / 状态色按实际 9 token / 一批一确认 / 系统字体栈。
+授权从 A-0 开始逐批推进；每批独立提交（不 push），后批开工前仍需单独确认。
+
 ## 附 C：修订后的批次结构（含 A-0）
 
 | 批 | 性质 | 内容 | 验证门 |
@@ -157,3 +165,17 @@
 | **C 卫生** | 门禁 | viz 收编 ~60、散 hex ~49、9/10/11px→刻度、`test_token_hygiene.py` 门（三条件判定 + 注入即红） | hygiene 门 + 全绿 |
 
 **说明**：原骨架 §4 的 A/B 两批已按设计文档证据细化为 A-0 + A + B + B-2 + C 五批；A-0 是前置（无基线无法验「零 diff」）。
+
+### A-0 实测调查（2026-11-23）
+
+| 项 | 实测 |
+|---|---|
+| 基线文件 | `tests/baselines/*.png` **47 个**（均为默认主题 dark，与工作台文档 47 口径一致；U-A 方案写的 50 是旧数） |
+| 视觉测试 | `tests/test_webui_visual.py`（498 行）8 场景：login / message bubble / user bubble only / assistant markdown / command palette / empty chat / empty goal / empty agent |
+| catalog 测试 | `tests/test_webui_catalog.py`（215 行）3 场景：catalog index / story baseline / story not found |
+| 机制 | Playwright pixel diff（PIL ImageChops，阈值 10，差异 ≤0.5% 通过），`UPDATE_SNAPSHOTS=1` 重录基线 |
+| 车道 | **opt-in**：需 `AN_RUN_BROWSER_TESTS=1` + playwright + 真前端服务（默认全量 pytest 里 skip，不污染 collect 锚点） |
+
+**A-0 实施内容**：给 11 个场景×2 主题参数化（dark 沿用现有 47 基线名，light 新增 `*_light.png` 约 47 个 → 双主题基线约 94 张；设计文档预估 84，以实测 47×2=94 为准）；catalog 同步参数化；更新文档口径（50/47/84 → 实测 47→94）。
+**验收门**：双主题基线全绿 = light 盲区关闭；浏览器 e2e 车道单独跑（不改默认全量 pytest 行为）。
+**前置**：需要真实前端服务 + Playwright 可用；当前环境 vite 5173 在跑，浏览器通道可用——开跑前确认依赖。
