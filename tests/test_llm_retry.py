@@ -7,6 +7,7 @@ from __future__ import annotations
 
 import datetime
 import email.utils
+import json
 
 import httpx
 import pytest
@@ -15,6 +16,7 @@ from agentnodes.foundation.llm import (
     LLMConfig,
     LLMRateLimitError,
     LLMServerError,
+    LLMTimeoutError,
     OpenAICompatClient,
 )
 from agentnodes.foundation.llm import openai_client as oc_mod
@@ -75,6 +77,43 @@ def _json(obj) -> str:
 
 
 class TestChatRetry:
+    def test_loaded_config_drives_request_and_retry_budget(self, tmp_path):
+        config_path = tmp_path / "llm.json"
+        config_path.write_text(
+            json.dumps({"llm": {"model": "configured-model", "max_retries": 2}}),
+            encoding="utf-8",
+        )
+        cfg = LLMConfig.load(
+            env={"AGENTNODES_LLM_CONFIG": str(config_path), "OPENAI_API_KEY": "sk-test"},
+            load_dotenv=False,
+        )
+        requests = []
+
+        def handler(request):
+            requests.append((json.loads(request.content), request.headers["Authorization"]))
+            return httpx.Response(429, json={"error": {"message": "rate limit"}})
+
+        client = OpenAICompatClient(cfg, transport=httpx.MockTransport(handler))
+        with pytest.raises(LLMRateLimitError):
+            client.chat([{"role": "user", "content": "hi"}])
+
+        assert len(requests) == 2
+        assert all(body["model"] == "configured-model" for body, _ in requests)
+        assert all(authorization == "Bearer sk-test" for _, authorization in requests)
+
+    def test_timeout_exhaustion_reports_llm_timeout(self, fast_config):
+        requests = 0
+
+        def handler(request):
+            nonlocal requests
+            requests += 1
+            raise httpx.ReadTimeout("upstream timed out", request=request)
+
+        client = OpenAICompatClient(fast_config, transport=httpx.MockTransport(handler))
+        with pytest.raises(LLMTimeoutError, match="3 attempts"):
+            client.chat([{"role": "user", "content": "hi"}])
+        assert requests == 3
+
     def test_429_retries_then_succeeds(self, fast_config):
         call_count = 0
 
@@ -238,6 +277,29 @@ class TestRetryAfter:
 
 
 class TestStreamRetry:
+    @pytest.mark.parametrize("error_type", [httpx.ReadTimeout, httpx.RemoteProtocolError])
+    def test_read_failure_before_first_chunk_retries(self, fast_config, error_type):
+        requests = 0
+
+        class FailedBody(httpx.SyncByteStream):
+            def __iter__(self):
+                raise error_type("disconnected before first chunk")
+                yield b""
+
+        def handler(request):
+            nonlocal requests
+            requests += 1
+            if requests == 1:
+                return httpx.Response(200, stream=FailedBody())
+            return httpx.Response(200, content=b"".join(_sse_lines("recovered")))
+
+        client = OpenAICompatClient(fast_config, transport=httpx.MockTransport(handler))
+        chunks = list(client.stream([{"role": "user", "content": "hi"}]))
+
+        assert [chunk.delta_content for chunk in chunks] == ["recovered"]
+        assert chunks[-1].finish_reason == "stop"
+        assert requests == 2
+
     def test_429_retries_then_succeeds(self, fast_config):
         call_count = 0
 
@@ -411,6 +473,26 @@ class TestStreamMidStreamNoRetry:
         # Critical assertion: only ONE request was made (no retry after
         # first chunk yielded).
         assert transport.calls == 1
+
+    def test_timeout_after_first_chunk_preserves_partial_output_without_retry(self, fast_config):
+        requests = 0
+
+        class TimedOutBody(httpx.SyncByteStream):
+            def __iter__(self):
+                yield b'data: {"choices":[{"delta":{"content":"partial"},"finish_reason":null}]}\n\n'
+                raise httpx.ReadTimeout("stream timed out")
+
+        def handler(request):
+            nonlocal requests
+            requests += 1
+            return httpx.Response(200, stream=TimedOutBody())
+
+        client = OpenAICompatClient(fast_config, transport=httpx.MockTransport(handler))
+        chunks = client.stream([{"role": "user", "content": "hi"}])
+        assert next(chunks).delta_content == "partial"
+        with pytest.raises(LLMTimeoutError):
+            next(chunks)
+        assert requests == 1
 
     @pytest.mark.asyncio
     async def test_atransport_error_after_first_chunk_does_not_retry(self, fast_config):

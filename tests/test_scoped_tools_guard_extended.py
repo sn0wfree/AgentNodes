@@ -151,6 +151,18 @@ class TestRestrictedImmutability:
         # r2 should still not have tool_a
         assert "tool_a" not in r2.tool_names
 
+    def test_child_keeps_parent_guard_and_its_own_guard_stays_local(self):
+        parent = self._make_registry()
+        parent.guard(_ConditionalDeny())
+        child = parent.restricted(deny=["tool_c"])
+        child.guard(_DenyByName({"tool_b"}))
+
+        assert child.check_guards("tool_a", {"dangerous": True}) == "Dangerous params"
+        assert child.check_guards("tool_b", {}) == "Denied: tool_b"
+        assert parent.check_guards("tool_b", {}) is None
+        assert parent.get("tool_c") is not None
+        assert child.get("tool_c") is None
+
 
 # ── Multiple guards interaction ──────────────────────────────────
 

@@ -208,6 +208,30 @@ def test_broken_yaml_blocks_fallback(sandbox_home):
     assert C._load_bridge_dict(resolved) == {}  # 解析为空
 
 
+def test_public_load_does_not_skip_broken_high_priority_config(sandbox_home, caplog):
+    (sandbox_home["agentnodes"] / "config.yaml").write_text(
+        "llm: [bad: yaml", encoding="utf-8"
+    )
+    _write_json(sandbox_home["quantnodes"] / "llm.json", "fallback-must-not-win")
+
+    cfg = C.LLMConfig.load(env={}, load_dotenv=False)
+
+    assert cfg.model == "gpt-4o-mini"
+    assert "config.yaml" in caplog.text
+
+
+def test_public_load_explicit_file_overrides_existing_chain(sandbox_home, tmp_path):
+    _write_yaml(sandbox_home["agentnodes"] / "config.yaml", "chain-model")
+    explicit = tmp_path / "explicit.json"
+    _write_json(explicit, "explicit-model")
+
+    cfg = C.LLMConfig.load(
+        env={"AGENTNODES_LLM_CONFIG": str(explicit)}, load_dotenv=False
+    )
+
+    assert cfg.model == "explicit-model"
+
+
 def test_empty_yaml_file_is_explicit_empty_config(tmp_path):
     """空 YAML 文件 = 显式空配置（与 JSON 的 {} 同义），不是"没找到"。"""
     empty = tmp_path / "config.yaml"

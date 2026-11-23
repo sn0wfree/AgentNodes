@@ -154,6 +154,33 @@ class TestEventStorePublish:
 
 
 class TestEventStoreReplay:
+    def test_replay_filters_and_sequence_survive_reopen(self, tmp_path):
+        db_path = tmp_path / "replay.db"
+        store = EventStore(db_path=db_path)
+        try:
+            store.emit("s1", "text", {"value": "before"}, branch_id="experiment")
+            store.emit("s1", "text", {"value": "main"}, branch_id="main")
+            store.emit("s1", "other", {"value": "excluded"}, branch_id="experiment")
+            selected = store.emit("s1", "text", {"value": "selected"}, branch_id="experiment")
+            store.emit("s1", "text", {"value": "later"}, branch_id="experiment")
+            store.emit("s2", "text", {"value": "other session"}, branch_id="experiment")
+        finally:
+            store.close()
+
+        reopened = EventStore(db_path=db_path)
+        try:
+            events = reopened.replay(
+                "s1", from_seq=1, types=["text"], branch_id="experiment", limit=1
+            )
+            assert [(event.id, event.data["value"]) for event in events] == [
+                (selected.id, "selected")
+            ]
+            assert reopened.emit("s1", "text", {"value": "new-main"}).seq == 2
+            assert reopened.emit("s1", "text", {"value": "new-experiment"}, branch_id="experiment").seq == 5
+            assert [event.data["value"] for event in reopened.replay("s2")] == ["other session"]
+        finally:
+            reopened.close()
+
     def test_replay_empty_session(self, store):
         assert store.replay("nonexistent") == []
 

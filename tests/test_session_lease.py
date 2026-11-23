@@ -71,6 +71,18 @@ class TestNoPreemption:
 
 
 class TestTokenValidation:
+    def test_stale_token_cannot_release_a_reacquired_session(self):
+        lease = SessionExecutionLease()
+        old_token = lease.acquire("s1", "goal:g1")
+        assert old_token is not None
+        assert lease.release("s1", old_token) is True
+
+        new_token = lease.acquire("s1", "chat:r1")
+        assert new_token is not None
+        assert lease.release("s1", old_token) is False
+        assert lease.holder("s1") == "chat:r1"
+        assert lease.release("s1", new_token) is True
+
     def test_release_with_wrong_token_fails_and_keeps_lease(self):
         lease = SessionExecutionLease()
         lease.acquire("s1", "goal:g1")

@@ -234,6 +234,25 @@ class TestToSwarmPreset:
 
 
 class TestFileIO:
+    def test_invalid_update_does_not_replace_saved_workflow(self, tmp_path: pathlib.Path):
+        path = tmp_path / "workflow.json"
+        original = make_def(
+            [llm("research"), approval("gate"), llm("review")],
+            [{"source": "research", "target": "gate"}, {"source": "gate", "target": "review"}],
+        )
+        original.save(path)
+
+        invalid = make_def([llm("research"), llm("research")], [])
+        with pytest.raises(WorkflowDefinitionError, match="duplicate node id"):
+            invalid.save(path)
+
+        restored = WorkflowDefinition.load(path)
+        assert restored.validate() == []
+        segments = restored.segment_cut()
+        assert [segment.node_ids for segment in segments] == [["research"], ["review"]]
+        assert segments[1].approval_after == "gate"
+        assert segments[1].inputs == ["research"]
+
     def test_roundtrip(self, tmp_path: pathlib.Path):
         path = tmp_path / "demo.json"
         d = make_def(
