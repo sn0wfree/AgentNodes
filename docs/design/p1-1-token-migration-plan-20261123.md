@@ -161,6 +161,24 @@ A 批「覆盖面内零 diff」+ A-0 双主题基线 / A 批不做 Tailwind v4 �
 文本三级 / amber 机械映射 / 状态色按实际 9 token / 一批一确认 / 系统字体栈。
 授权从 A-0 开始逐批推进；每批独立提交（不 push），后批开工前仍需单独确认。
 
+## 附 E：B 转向批基线重录程序（2026-11-23 调研定稿）
+
+**前置锚点已落地**：lightweight tag `p1-1-baselines-v1` → `b1fee35b`（B 批前 88 基线永久可审计）。
+
+**重录机制事实**：`save_baseline()` 用 `actual.replace(baseline)` 原地覆盖、无备份；唯一触发是环境变量 `UPDATE_SNAPSHOTS=1`（源码 docstring 里的 `--update-snapshots` 是假选项，未注册）；必须同时带 `AN_RUN_BROWSER_TESTS=1`，且**两个测试文件都要显式指定**（install.sh / e2e.yml 只跑 visual，会漏 catalog）。基线缺失时是 skip 而非 fail——所以「重录全绿」不等于视觉正确，必须配人工对照。
+
+**执行步骤**（代码改完后）：
+1. 工作区对照副本：`copy tests/baselines\*.png tests\baselines_v1\`（不入 git，仅本地并排；全量审计靠 tag）
+2. 重新构建前端（conftest 依赖 webui/static）：`cd webui/frontend && npm run build`
+3. 重录：`set AN_RUN_BROWSER_TESTS=1 & set AGENTNODES_TEST_CHAT=1 & set UPDATE_SNAPSHOTS=1` →
+   `python -m pytest tests/test_webui_visual.py tests/test_webui_catalog.py -v --tb=short`
+4. 关闭重录（`UPDATE_SNAPSHOTS=0`）立刻自证对比：skip 数应为 0（除既有 empty 场景条件 skip）
+5. 5 高频页人工巡检（1440×900 / DSF1 / zh-CN / reduced-motion，dark+light）：
+   `/login`（login_page*）、`/chat`（message_bubble*/assistant_message*）、`/`（Monitor，无现役基线→tag 前手工截图）、`/dag`（节点态，注意 5 张 DAG 孤儿基线是 attic 遗留不在 88 内）、`/catalog/*`（catalog_badge-default / tool-call / dag-node-failed 等高信号 story）
+6. **代码提交与基线提交分离**：先提交前端代码（CSS/tailwind/组件/文档），再单独 commit `git add tests/baselines/*.png`（不加 3 个 JSON anchor、不加 baselines_v1/）；对照说明写入本节。
+
+**孤儿基线**：5 张 DAG PNG（dag_visualization / dag_all_pending / dag_mid_running / dag_has_failed / dag_all_completed）来自 attic 归档测试，无现役场景、无 light 版——B 批重录不会更新它们，在对照说明中标注「不在 88 有效基线内」，是否 `git rm` 另行裁决。
+
 ## 附 D：A 骨架批可执行清单（2026-11-23 实测回填）
 
 ### D.1 死变量 15 个（数量精确吻合，全部删除）
