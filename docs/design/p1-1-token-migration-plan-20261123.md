@@ -43,6 +43,13 @@
 
 ### A 骨架批（零视觉变化）
 
+**选择器级联约束**：现网 dark 定义于 `:root, [data-theme='dark']`（L6–49）、light 定义于 `[data-theme='light']`（L52–90），两者特异性相同（0,1,0），light 靠**定义顺序在后**覆盖 dark。A 批重排必须保持「dark 在前、light 在后」，否则基线主题注入（localStorage sr-theme + data-theme）失效，pixel diff 门必红。
+
+**硬约束（2026-11-23 实测）**：tailwind.config `borderRadius.xl=0.875rem(14px)` / `2xl=1.125rem(18px)`，
+与刻度表（xl=12 / 2xl=14）**不一致**——A 批只允许**新增**刻度 CSS 变量声明，
+**禁止改 tailwind 值或任何现有消费点**（值改写属 B 批，改动即破 pixel diff=0）。
+同理 `--radius: 0.625rem` 保留定义不动（即使零引用，等 A 批死变量清单裁决）。
+
 1. globals.css 按 L1/L2/L3 重排：L1 落示意语义值（名字+两主题值）；L2 值改指向 L1，视觉不变。
 2. 清除死变量 15 个（清单待回填）；dag/canvas 令牌收编 L3。
 3. 刻度表（§2.5 五张表）落地；alpha 表骨架落地。
@@ -153,6 +160,39 @@
 A 批「覆盖面内零 diff」+ A-0 双主题基线 / A 批不做 Tailwind v4 迁移与 shim 退役 /
 文本三级 / amber 机械映射 / 状态色按实际 9 token / 一批一确认 / 系统字体栈。
 授权从 A-0 开始逐批推进；每批独立提交（不 push），后批开工前仍需单独确认。
+
+## 附 D：A 骨架批可执行清单（2026-11-23 实测回填）
+
+### D.1 死变量 15 个（数量精确吻合，全部删除）
+
+`--card-foreground` `--popover-foreground` `--primary-foreground` `--secondary`
+`--secondary-foreground` `--accent-foreground` `--destructive` `--ring`
+`--sidebar-foreground` `--sidebar-border` `--success` `--warning`
+`--gradient-user-bubble` `--ease-expo`（仅 dark）`--radius`（仅 dark）
+— 各在 dark(L11/13/15/19/20/24/25/28/30/31/32/33/37/44/45) 与 light(L56/58/60/64/65/69/70/73/75/76/77/78/82) 定义处移除。
+
+**保留**：`--sidebar` `--ease-spring` 属「伪消费」（仅被零使用 shim 类引用），严格口径不算死变量，本批不动。
+**关键**：`--success`/`--warning` 虽零 `var()` 引用，但 tailwind `text-success-*` 类在组件中消费——不动 tailwind 配置，只删 CSS 变量声明，像素不变。
+
+### D.2 新增 L1 primitives 段（插在 light 块结束 L90 与 `html` L92 之间）
+
+因 dark 定义在 `:root, [data-theme='dark']`、light 在 `[data-theme='light']`，新段按同结构各声明两套：
+
+1. **alpha 表（先只填现值）**：`--alpha-shadow-soft`(dark 30% / light 8%)、`--alpha-shadow-elevated`(60%/14%)、`--alpha-bubble-user`(7%/7%)、`--alpha-border-subtle`(60%)、`--alpha-border-strong`(80%)、`--alpha-text-secondary`(92%)、`--alpha-text-tertiary`(78%)、`--alpha-scrim`(25%/6%)、`--alpha-grid-line`(6%)、`--alpha-glow`(15%)、`--alpha-shimmer`(12%)、`--alpha-selection`(30%)、`--alpha-specular-hint`(50%/35%) —— 共 13 项，值取自 110 行 rgba/color-mix 字面量。
+2. **specular 族占位（值不动）**：`--spec-1: #ffffff1f`(12%)、`--spec-2: #ffffff08`(3%)、`--spec-3: #ffffff05`(2%)、`--spec-4: #ffffff03`(1%)，两主题同值，只声明不引用。
+3. **五张刻度表（只声明不改消费点）**：
+   - 间距 `--space-0-25`…`--space-20`（40 档，1px→80px，4px 基数 + 0.25 细分，值照 U-A §2.5 L113）
+   - 圆角 `--radius-none/xs/sm/base/lg/xl/2xl/3xl/4xl/full`（0/2/4/6/8/12/14/16/18/9999px）
+   - 字号 `--font-size-xs/sm/base/lg/transcript`（11/12/13/14/15px）
+   - 行高 `--line-height-xs/sm/base/lg/transcript`（14/16/18/22/24px）
+   - 控件高 `--control-h-sm/md/lg/xl`（20/24/28/32px）
+
+### D.3 零视觉变化保证
+
+- 全部新变量**只声明无消费**；现有 110 行 rgba/color-mix、7 处 border-radius 字面值、9/10/11px 类名一个都不改
+- tailwind.config `borderRadius.xl=14px/2xl=18px` 不动（与刻度表 xl=12/2xl=14 不一致属已知，B 批裁决）
+- dark 在前 / light 在后的选择器顺序不变 → theme 注入有效
+- 验收：双主题 e2e 88 基线 pixel diff=0 + 5 高频页巡检
 
 ## 附 C：修订后的批次结构（含 A-0）
 

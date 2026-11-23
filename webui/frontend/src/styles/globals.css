@@ -8,41 +8,26 @@
   --background: #0a0a0f;
   --foreground: #e8e8ed;
   --card: #14141a;
-  --card-foreground: #e8e8ed;
   --popover: #1a1a22;
-  --popover-foreground: #e8e8ed;
   --primary: #8b5cf6;
-  --primary-foreground: #ffffff;
   --ua-action: #f3f4f6;
   --ua-action-foreground: #111827;
   --ua-action-hover: #d1d5db;
-  --secondary: #1e1e26;
-  --secondary-foreground: #c9c9d0;
   --muted: #1e1e26;
   --muted-foreground: #8b8b96;
   --accent: #a78bfa;
-  --accent-foreground: #ffffff;
-  --destructive: #ef4444;
   --border: #2a2a35;
   --input: #2a2a35;
-  --ring: #8b5cf6;
   --sidebar: #0e0e14;
-  --sidebar-foreground: #e8e8ed;
-  --sidebar-border: #2a2a35;
-  --success: #10b981;
-  --warning: #f59e0b;
   --gradient-primary: linear-gradient(135deg, #8b5cf6 0%, #a78bfa 100%);
   --gradient-aurora: linear-gradient(135deg, rgba(139, 92, 246, 0.18) 0%, rgba(167, 139, 250, 0.12) 25%, rgba(245, 158, 11, 0.1) 60%, rgba(251, 191, 36, 0.08) 100%);
   --gradient-glass: linear-gradient(180deg, rgba(255, 255, 255, 0.05) 0%, rgba(255, 255, 255, 0) 100%);
-  --gradient-user-bubble: linear-gradient(135deg, rgba(139, 92, 246, 0.12) 0%, rgba(167, 139, 250, 0.08) 100%);
   --gradient-input-ring: conic-gradient(from 0deg, #8b5cf6 0%, #a78bfa 25%, #f59e0b 50%, #a78bfa 75%, #8b5cf6 100%);
   --shadow-soft: 0 2px 12px -4px rgba(0, 0, 0, 0.3);
   --shadow-elevated: 0 8px 32px -8px rgba(0, 0, 0, 0.6);
   --shadow-glow: 0 0 24px -4px var(--primary);
   --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
   --ease-smooth: cubic-bezier(0.4, 0, 0.2, 1);
-  --ease-expo: cubic-bezier(0.16, 1, 0.3, 1);
-  --radius: 0.625rem;
   color-scheme: dark;
   color: var(--foreground);
   background-color: var(--background);
@@ -53,33 +38,20 @@
   --background: #fafaf7;
   --foreground: #1a1a1a;
   --card: #ffffff;
-  --card-foreground: #1a1a1a;
   --popover: #ffffff;
-  --popover-foreground: #1a1a1a;
   --primary: #ea580c;
-  --primary-foreground: #ffffff;
   --ua-action: #171717;
   --ua-action-foreground: #ffffff;
   --ua-action-hover: #404040;
-  --secondary: #f5f5f0;
-  --secondary-foreground: #334155;
   --muted: #f0f0eb;
   --muted-foreground: #6b6b6b;
   --accent: #fed7aa;
-  --accent-foreground: #1a1a1a;
-  --destructive: #dc2626;
   --border: #e5e5e0;
   --input: #e5e5e0;
-  --ring: #ea580c;
   --sidebar: #f5f5f0;
-  --sidebar-foreground: #1a1a1a;
-  --sidebar-border: #e5e5e0;
-  --success: #10b981;
-  --warning: #d97706;
   --gradient-primary: linear-gradient(135deg, #ea580c 0%, #f97316 100%);
   --gradient-aurora: linear-gradient(135deg, rgba(234, 88, 12, 0.1) 0%, rgba(249, 115, 22, 0.08) 50%, rgba(245, 158, 11, 0.08) 100%);
   --gradient-glass: linear-gradient(180deg, rgba(255, 255, 255, 0.8) 0%, rgba(255, 255, 255, 0.4) 100%);
-  --gradient-user-bubble: linear-gradient(135deg, rgba(234, 88, 12, 0.08) 0%, rgba(249, 115, 22, 0.04) 100%);
   --gradient-input-ring: conic-gradient(from 0deg, #ea580c 0%, #f97316 25%, #fbbf24 50%, #f97316 75%, #ea580c 100%);
   --shadow-soft: 0 2px 12px -4px rgba(0, 0, 0, 0.08);
   --shadow-elevated: 0 8px 32px -8px rgba(0, 0, 0, 0.14);
@@ -87,6 +59,58 @@
   color-scheme: light;
   color: var(--foreground);
   background-color: var(--background);
+}
+
+/* ── L1 primitives · scales & alpha（A 骨架：只声明不消费，零视觉变化）──
+   值取自现网 110 行 rgba/color-mix 字面量；B 转向批才把消费点指向这些变量。 */
+:root, [data-theme='dark'] {
+  /* alpha 表（现值）*/
+  --alpha-shadow-soft: 30%;
+  --alpha-shadow-elevated: 60%;
+  --alpha-bubble-user: 7%;
+  --alpha-border-subtle: 60%;
+  --alpha-border-strong: 80%;
+  --alpha-text-secondary: 92%;
+  --alpha-text-tertiary: 78%;
+  --alpha-scrim: 25%;
+  --alpha-grid-line: 6%;
+  --alpha-glow: 15%;
+  --alpha-shimmer: 12%;
+  --alpha-selection: 30%;
+  --alpha-specular-hint: 50%;
+  /* specular 族占位（值不动）*/
+  --spec-1: #ffffff1f;
+  --spec-2: #ffffff08;
+  --spec-3: #ffffff05;
+  --spec-4: #ffffff03;
+  /* 间距刻度（1px→80px，4px 基数 + 0.25 细分）*/
+  --space-0-25: 1px;   --space-0-5: 2px;   --space-0-75: 3px;  --space-1: 4px;
+  --space-1-25: 5px;   --space-1-5: 6px;   --space-1-75: 7px;  --space-2: 8px;
+  --space-2-25: 9px;   --space-2-5: 10px;  --space-2-75: 11px; --space-3: 12px;
+  --space-3-25: 13px;  --space-3-5: 14px;  --space-3-75: 15px; --space-4: 16px;
+  --space-4-5: 18px;   --space-5: 20px;    --space-5-5: 22px;  --space-6: 24px;
+  --space-7: 28px;     --space-8: 32px;    --space-9: 36px;    --space-10: 40px;
+  --space-11: 44px;    --space-12: 48px;   --space-14: 56px;   --space-15: 60px;
+  --space-16: 64px;    --space-18: 72px;   --space-20: 80px;
+  /* 圆角刻度 */
+  --radius-none: 0;    --radius-xs: 2px;   --radius-sm: 4px;   --radius-base: 6px;
+  --radius-lg: 8px;    --radius-xl: 12px;  --radius-2xl: 14px; --radius-3xl: 16px;
+  --radius-4xl: 18px;  --radius-full: 9999px;
+  /* 字号 / 行高 / 控件高刻度 */
+  --font-size-xs: 11px; --font-size-sm: 12px; --font-size-base: 13px;
+  --font-size-lg: 14px; --font-size-transcript: 15px;
+  --line-height-xs: 14px; --line-height-sm: 16px; --line-height-base: 18px;
+  --line-height-lg: 22px; --line-height-transcript: 24px;
+  --control-h-sm: 20px; --control-h-md: 24px; --control-h-lg: 28px; --control-h-xl: 32px;
+}
+
+[data-theme='light'] {
+  /* alpha 表（现值，与 dark 不同的项单列）*/
+  --alpha-shadow-soft: 8%;
+  --alpha-shadow-elevated: 14%;
+  --alpha-scrim: 6%;
+  --alpha-specular-hint: 35%;
+  /* specular 族与刻度两主题同值，继承 dark 定义，不重复声明 */
 }
 
 html {
