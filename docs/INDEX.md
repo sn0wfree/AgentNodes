@@ -45,7 +45,7 @@
 
 ---
 
-## 2. design/ — 仍生效的设计与契约（156 份，2026-11-22 补录）
+## 2. design/ — 仍生效的设计与契约（157 份，2026-11-23 补录）
 
 **判据**：文档里的决策仍在代码中执行。已被取代的移到 `archive/`。
 
@@ -288,6 +288,7 @@
 | [`ux-side-panel-industry-survey-20261123.md`](design/ux-side-panel-industry-survey-20261123.md) | 侧边栏三栏设计业界调研（rail/会话栏/右面板 10 模式 + 映射建议） |
 | [`p1-4-trace-field-mapping-20261123.md`](design/p1-4-trace-field-mapping-20261123.md) | P1-4 Trace 字段映射（示意字段→现有/可推导/缺失 + 脱敏/错误矩阵） |
 | [`p2-2-rsi-readonly-contract-20261123.md`](design/p2-2-rsi-readonly-contract-20261123.md) | P2-2 RSI 只读契约骨架（引擎真/UI 契约零，无端点不建 UI） |
+| [`p1-1-token-migration-plan-20261123.md`](design/p1-1-token-migration-plan-20261123.md) | P1-1 令牌迁移方案（示意29↔现网令牌映射/消费通道93:1/五批结构/设计内部12项未裁决策） |
 
 ---
 
