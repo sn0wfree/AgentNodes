@@ -1,10 +1,13 @@
 """Tests for SSE heartbeat behavior.
 
-The heartbeat mechanism prevents the browser's EventSource from
-reporting onerror on idle streams. The first yield of every
-event_generator must be a comment line so StreamingResponse flushes
-headers immediately, and subsequent heartbeats must be comment lines
-so they don't pollute the frontend's switch statement.
+The first yield of every event_generator must be a comment line so
+StreamingResponse flushes headers immediately. Subsequent heartbeats
+must be a **named** ``heartbeat`` event: comment lines are invisible
+to JavaScript, which left the frontend with no liveness signal (the
+status pill stayed 「已连接」 after backend death — P0-5 finding).
+Named events dispatch to ``addEventListener('heartbeat')`` without
+polluting the frontend's event-type switch (``heartbeat`` is not in
+EVENT_TYPES).
 """
 
 from __future__ import annotations
@@ -14,22 +17,22 @@ import pytest
 from agentnodes.interfaces.api.routers.chat import _heartbeat_sse
 
 
-def test_heartbeat_returns_comment_line():
-    """Heartbeat must be an SSE comment line (: prefix) so the browser
-    ignores it without triggering onerror or onmessage."""
+def test_heartbeat_is_named_event():
+    """Heartbeat must be a named ``heartbeat`` event so the browser
+    dispatches it to the frontend's liveness watcher."""
     out = _heartbeat_sse(1)
-    assert out == ": heartbeat\n\n"
-    assert out.startswith(":")
-    # Comment lines ARE NOT a named event — no `event:` or `data:` fields.
-    assert "event:" not in out
-    assert "data:" not in out
+    assert out == 'event: heartbeat\ndata: {"seq": 1}\n\n'
+    assert out.startswith("event: heartbeat\n")
+    # 仍不进入前端事件类型 switch：heartbeat 不在 EVENT_TYPES 里，
+    # 这里只钉线格式本身。
+    assert 'data: {"seq":' in out
 
 
-def test_heartbeat_count_argument_ignored():
-    """The count is a no-op for comment-line keep-alive; we keep it
-    in the signature so the call site doesn't change. Ensure the
-    output is stable regardless of count."""
-    assert _heartbeat_sse(0) == _heartbeat_sse(999) == ": heartbeat\n\n"
+def test_heartbeat_count_argument_in_seq():
+    """The count flows into the payload seq so drops/replays are
+    observable in principle."""
+    assert _heartbeat_sse(0) == 'event: heartbeat\ndata: {"seq": 0}\n\n'
+    assert _heartbeat_sse(999) == 'event: heartbeat\ndata: {"seq": 999}\n\n'
 
 
 @pytest.mark.asyncio

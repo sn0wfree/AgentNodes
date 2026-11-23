@@ -1105,15 +1105,20 @@ def _format_event_v2(event) -> str:
     return "\n".join(lines) + "\n\n"
 
 def _heartbeat_sse(count: int) -> str:
-    """SSE comment-line keep-alive (opencode style).
+    """SSE keep-alive as a NAMED ``heartbeat`` event.
 
-    Pure comment lines are ignored by the browser's EventSource
-    (no onerror, no onmessage) but they keep the TCP connection alive
-    and re-arm the browser's 3-minute idle timeout. See
-    opencode packages/server/src/handlers/event.ts:37 for the
-    reference implementation.
+    History: this used to be a pure comment line (opencode style) —
+    comments keep the TCP connection alive but are **invisible to
+    JavaScript** (no event is dispatched), so the frontend had no
+    liveness signal at all and the status pill stayed 「已连接」 after
+    the backend died behind a proxy that kept the TCP half open
+    (P0-5 finding). A named event dispatches to the frontend's
+    ``addEventListener('heartbeat')`` liveness watcher while still
+    bypassing the event-type switch (``heartbeat`` is not in
+    EVENT_TYPES). Reference: opencode
+    packages/server/src/handlers/event.ts:37 for the keep-alive intent.
     """
-    return ": heartbeat\n\n"
+    return 'event: heartbeat\ndata: {"seq": %d}\n\n' % count
 
 
 # P0 修复之二：时间制心跳间隔（秒）。与 test_sse_e2e 的 15s 等待、

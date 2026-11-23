@@ -95,12 +95,13 @@ class TestLifecycleData:
         assert by_stage["只读浏览"]["loc"] == "kernel/session/reader.py"
 
     def test_delete_stage_marked_unified(self, lifecycle):
-        """E1 后删除阶段 = web/CLI 同软删（D2 解决的呈现）。"""
+        """E1+S2 后删除阶段 = 组合根单点：web/CLI 两入口汇聚
+        composition.delete_session_lifecycle → reader 软删（D2 解决 + S2 归一的呈现）。"""
         stage = next(s for s in lifecycle if s["stage"] == "删除")
         assert "统一" in stage["owner"]
-        # 两个位置都指向软删实现
+        # web 入口 + 组合根单点都可见（CLI session.py 同走此单点）
         assert "web_session.py" in stage["loc"]
-        assert "kernel/session/reader.py" in stage["loc"]
+        assert "composition" in stage["loc"]
 
     def test_expiry_stage_still_absent(self, lifecycle):
         """D3 的呈现：过期/淘汰 owner = 无（不许在未实施前谎称有）。"""

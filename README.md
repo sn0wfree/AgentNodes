@@ -129,7 +129,7 @@ service = resolve("my.service")
 **[`docs/architecture-layered.html`](docs/architecture-layered.html)**；
 功能模块视角：[`docs/architecture-diagram.html`](docs/architecture-diagram.html)；
 L3 四领域聚合视图（草稿）：[`docs/architecture-layered-l3-clusters.html`](docs/architecture-layered-l3-clusters.html)。
-当前实测：**465 文件 / 97,350 行**（L1 121 / L2 50 / L3 230 / L4 64），跨层边 442（L1→L2 76 · L1→L3 139 · L1→L4 71 · L2→L3 49 · L2→L4 14 · L3→L4 93），**上行违规 0**（2026-11-22，`sync_architecture_diagram.py` 实测）。
+当前实测：**465 文件 / 97,355 行**（L1 121 / L2 50 / L3 230 / L4 64），跨层边 442（L1→L2 76 · L1→L3 139 · L1→L4 71 · L2→L3 49 · L2→L4 14 · L3→L4 93），**上行违规 0**（2026-11-22，`sync_architecture_diagram.py` 实测）。
 
 ```
 ┌──────────────────────────────────────────────────────────┐

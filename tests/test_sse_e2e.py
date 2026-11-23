@@ -222,9 +222,11 @@ class TestSSEReconnection:
             with requests.get(url, stream=True, timeout=25) as resp:
                 connected.set()
                 for line in resp.iter_lines(decode_unicode=True):
-                    # Heartbeat is an SSE comment line (": heartbeat"),
-                    # not a named event — see _heartbeat_sse in chat.py.
-                    if line and line.startswith(": heartbeat"):
+                    # Heartbeat is a NAMED event ("event: heartbeat") so the
+                    # browser dispatches it to JS liveness watcher — see
+                    # _heartbeat_sse in chat.py (P0-5: comment lines were
+                    # invisible to EventSource, leaving no liveness signal).
+                    if line and line.startswith("event: heartbeat"):
                         heartbeats.append(True)
                         return
 
