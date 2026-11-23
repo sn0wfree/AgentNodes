@@ -475,3 +475,26 @@ roleForeground / roleForegroundHover / roleForegroundBright
 
 > **待确认**：§11 全部为实证建议，未改变 §6 待决项的排序。6.1（转向确认）
 > 仍是总前置。新增一条待决见 §6.10。
+
+## §12 U-A 示意与现有前端复用评估（2026-11-22）
+
+用户希望以 [U-A 三视图示意](../../tmp/mockup/agentnodes-ui-mockup.html) 的设计语言
+实现前端，并标记不可直接复用的部分。可以采用中性主操作、蓝色品牌标记、语义状态色和
+双主题；示意是静态样稿，不能把其中的数据、交互和完成状态当作真实能力。示意采用墨色
+透明气泡，§2/§11.2 又提出浅色实心气泡：实施时以示意为视觉参考，同时验证双主题对比度，
+不把两者视为已一致。现有生产 UI 尚未整体切换到该设计语言。
+
+| 标记 | 对象 | 复用判断及缺口 |
+|---|---|---|
+| 复用逻辑，改样式 | [会话工作台](../../webui/frontend/src/components/layout/AppShell.tsx)、[会话侧栏](../../webui/frontend/src/components/chat/SessionSidebar.tsx)、[输入框](../../webui/frontend/src/components/chat/Composer.tsx)、消息及流式组件 | 保留会话管理、SSE、输入、工具调用和现有测试；按示意调整布局、密度、交互状态和响应式，不以静态 HTML 替换业务实现。 |
+| 复用基础，重做令牌 | [主题状态](../../webui/frontend/src/stores/theme.ts)、[全局样式](../../webui/frontend/src/styles/globals.css)、[Tailwind 配置](../../webui/frontend/tailwind.config.js) | 保留主题切换和语义变量机制；当前仍有紫橙、渐变、辉光、硬编码颜色和缺失字体资源，不能直接视为 U-A。需逐页面验证文本对比、焦点和暗/亮主题。 |
+| 复用部分逻辑，重做表面 | [审批对话框](../../webui/frontend/src/components/chat/PermissionRequestDialog.tsx)和 [AppShell 桥接](../../webui/frontend/src/components/layout/AppShell.tsx) | 已有四档按钮及提交接口；拒绝原因和失败回执已接入并有回归测试，仍需真实服务验证。示意中的侧栏审批队列和影响说明不能直接照搬。 |
+| 复用部分，需接线验证 | [TraceViewer](../../webui/frontend/src/components/chat/TraceViewer.tsx) | 已有事件列表、筛选和详情；认证请求已改用统一客户端并添加回归测试，仍需真实服务验收。示意的完整 span 指标、注入时序、checkpoint 回退尚不能按样稿假定可用。 |
+| 复用部分，需接线验证 | [上下文使用条](../../webui/frontend/src/components/chat/ContextUsageBar.tsx)、[任务面板](../../webui/frontend/src/components/chat/TodoPanel.tsx)、Agent 组件 | 可复用已有状态和展示逻辑；示意中的分段占比、进度及子代理详情须确认实际数据来源，不生成演示数值。 |
+| 不可直接复用 | RSI 进化视图 | 示意中的信号源、评分、轮次和证据流为样例；虽有 [evolution 应用代码](../../src/agentnodes/apps/evolution)，当前 API 未挂载相应视图接口。需定义可用数据契约；缺失处标记「待接入」，不展示假数据。 |
+| 保留功能，单独适配 | 登录、管理、[工作流](../../webui/frontend/src/pages/DAGPage.tsx)、[监控](../../webui/frontend/src/pages/MonitorPage.tsx)、Study、Run、因子及策略页面 | 不属于示意三视图的页面仍需统一外观并保留已有入口。Study/Run 后端路由已移除，其相关功能标记「后端不可用」，不因换肤假装已恢复。 |
+| 不可直接复用 | 示意中的回退、分叉、完整队列编辑/撤回及通用生成式画布 | 仅将其作为设计目标；对尚未核实具备完整后端契约的操作标记「待接入」，不伪造可执行按钮。 |
+
+建议按「双主题和响应式基线 → 语义令牌 → 会话工作台 → 审批与 Trace 接线 →
+其他页面统一 → RSI 待接入」推进。每批保留原业务能力，验证真实数据、空态/错误态、
+键盘操作和暗/亮主题；窄屏不能沿用示意图的固定三栏宽度。
