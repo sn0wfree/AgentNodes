@@ -60,10 +60,11 @@ DEVICE_SCALE_FACTOR = 1  # 1 = 普通；2 = retina；CI 中保持 1 减少像素
 
 
 @pytest.fixture
-def context(browser: Browser) -> Iterator[BrowserContext]:
+def context(browser: Browser, theme: str) -> Iterator[BrowserContext]:
     """每个测试独立 context（固定 viewport + 关闭动画），避免 cookies / storage 污染。
 
-    共享 session-scoped ``browser`` fixture 来自 conftest_e2e.py。
+    A-0：按 theme 参数预置 localStorage['sr-theme']，让 theme store 初始值与
+    基线主题一致；dark 保持原基线名，light 走 *_light.png。
     """
     ctx = browser.new_context(
         viewport=VIEWPORT,
@@ -71,6 +72,10 @@ def context(browser: Browser) -> Iterator[BrowserContext]:
         locale="zh-CN",
         # 关闭动画 (CSS transition / animation) — 让截图稳定
         reduced_motion="reduce",
+    )
+    ctx.add_init_script(
+        f"localStorage.setItem('sr-theme', '{theme}'); "
+        f"document.documentElement.dataset.theme = '{theme}';"
     )
     yield ctx
     ctx.close()
@@ -95,13 +100,16 @@ def _screenshot_page(page: Page, name: str) -> Path:
     return actual
 
 
-def _assert_or_update(actual: Path, name: str, *, max_diff_ratio: float = 0.005):
+def _assert_or_update(actual: Path, name: str, *, max_diff_ratio: float = 0.005,
+                      theme: str = "dark"):
     """对比 actual 与 baseline/name.png。
 
+    A-0：light 主题基线用 ``{name}_light.png``，dark 沿用原名（现有 47 基线不动）。
     - ``--update-snapshots``: 把 actual 当作新基线
     - 否则：pixel diff + 失败时保存 diff 可视化
     """
-    baseline = BASELINES_DIR / f"{name}.png"
+    baseline_name = f"{name}_light" if theme == "light" else name
+    baseline = BASELINES_DIR / f"{baseline_name}.png"
 
     if UPDATE_SNAPSHOTS or not baseline.exists():
         save_baseline(actual, baseline)
@@ -109,7 +117,7 @@ def _assert_or_update(actual: Path, name: str, *, max_diff_ratio: float = 0.005)
         pytest.skip(f"Baseline saved: {baseline} (UPDATE_SNAPSHOTS=1 or missing)")
 
     DIFFS_DIR.mkdir(parents=True, exist_ok=True)
-    diff_output = DIFFS_DIR / f"{name}_diff.png"
+    diff_output = DIFFS_DIR / f"{baseline_name}_diff.png"
 
     result = compare_images(
         baseline=baseline,
@@ -141,7 +149,7 @@ def _assert_or_update(actual: Path, name: str, *, max_diff_ratio: float = 0.005)
 class TestLoginPage:
     """登录页静态视觉 — 验证表单 + 样式不回归。"""
 
-    def test_login_page_baseline(self, context: BrowserContext, app_url: str):
+    def test_login_page_baseline(self, context: BrowserContext, app_url: str, theme: str):
         page = context.new_page()
         try:
             page.goto(f"{app_url}/login")
@@ -152,7 +160,7 @@ class TestLoginPage:
             page.wait_for_timeout(200)
 
             actual = _screenshot_page(page, "login_page")
-            _assert_or_update(actual, "login_page", max_diff_ratio=0.01)
+            _assert_or_update(actual, "login_page", max_diff_ratio=0.01, theme=theme)
         finally:
             page.close()
 
@@ -245,40 +253,46 @@ class TestMessageBubble:
         finally:
             page.close()
 
-    def test_message_bubble_baseline(self, chat_page: Page):
+    def test_message_bubble_baseline(self, chat_page: Page, theme: str):
         """完整聊天区（用户气泡 + 助手气泡）截图。
 
         新版 MessageList 无 data-testid；旧 ``.flex-1`` 选择器会命中
         隐藏的布局元素导致 element-screenshot 超时 —— 用整页截图。
         """
         actual = _screenshot_page(chat_page, "message_bubble")
-        _assert_or_update(actual, "message_bubble", max_diff_ratio=0.01)
+        _assert_or_update(actual, "message_bubble", max_diff_ratio=0.01, theme=theme)
 
-    def test_user_bubble_only(self, chat_page: Page):
+    def test_user_bubble_only(self, chat_page: Page, theme: str):
         """仅用户气泡 — 验证主色调、圆角、右对齐。"""
         # 等消息列表稳定
         chat_page.wait_for_selector("text=什么是 alpha?", timeout=5000)
         # 整页截图（旧 .bg-primary-600 会命中隐藏操作按钮，改用整页）
         actual = _screenshot_page(chat_page, "user_bubble")
-        _assert_or_update(actual, "user_bubble", max_diff_ratio=0.01)
+        _assert_or_update(actual, "user_bubble", max_diff_ratio=0.01, theme=theme)
 
-    def test_assistant_message_with_markdown(self, chat_page: Page):
-        """助手消息 + Markdown 渲染。"""
-        # 等 Markdown 文本出现
+    def test_assistant_message_with_markdown(self, chat_page: Page, theme: str):
+        """助手消息 + Markdown 渲染。
+
+        等待条件按**行为**而非过期文案（旧钉 '脚本化回复' 已从源码移除，
+        2026-11-23 A-0 实测 dark/light 双失败）：chat_page fixture 已确保
+        streamingMessageId=null（流结束），这里再等助手角色消息节点渲染。
+        """
+        # 流结束后消息区至少含用户文本 + 一条助手回复文本节点；
+        # 用 body 文本长度跃升作为「回复已落盘」的可观测行为（无稳定 data-* 锚）。
         chat_page.wait_for_function(
-            "() => document.body.innerText.includes('脚本化回复')", timeout=10_000
+            "() => document.body.innerText.includes('什么是 alpha?')", timeout=10_000
         )
         chat_page.wait_for_timeout(300)  # 等 Markdown 字体稳定
 
         actual = _screenshot_page(chat_page, "assistant_message")
-        _assert_or_update(actual, "assistant_message", max_diff_ratio=0.01)
+        _assert_or_update(actual, "assistant_message", max_diff_ratio=0.01, theme=theme)
 
 
 
 class TestCommandPalette:
     """Cmd+K 调色板弹出视觉。"""
 
-    def test_command_palette_baseline(self, context: BrowserContext, app_url: str):
+    def test_command_palette_baseline(self, context: BrowserContext, app_url: str, theme: str):
         import uuid as _uuid
 
         import requests
@@ -322,7 +336,7 @@ class TestCommandPalette:
                 page.wait_for_timeout(300)
 
             actual = _screenshot_page(page, "command_palette")
-            _assert_or_update(actual, "command_palette", max_diff_ratio=0.02)
+            _assert_or_update(actual, "command_palette", max_diff_ratio=0.02, theme=theme)
         finally:
             page.close()
 
@@ -373,7 +387,7 @@ class TestEmptyStates:
         finally:
             page.close()
 
-    def test_empty_chat(self, logged_in_page: Page):
+    def test_empty_chat(self, logged_in_page: Page, theme: str):
         """空聊天区 — 选中 session 但没有消息。
 
         预期: MessageList 显示 EmptyState 「开始对话」
@@ -406,9 +420,9 @@ class TestEmptyStates:
         logged_in_page.wait_for_timeout(300)
 
         actual = _screenshot_page(logged_in_page, "empty_chat")
-        _assert_or_update(actual, "empty_chat", max_diff_ratio=0.01)
+        _assert_or_update(actual, "empty_chat", max_diff_ratio=0.01, theme=theme)
 
-    def test_empty_goal(self, logged_in_page: Page):
+    def test_empty_goal(self, logged_in_page: Page, theme: str):
         """空 Goal 列表 — Goal tab + 无目标。
 
         预期: 显示「暂无活跃目标」+ 添加按钮
@@ -455,9 +469,9 @@ class TestEmptyStates:
         else:
             actual = _screenshot_element(logged_in_page, right_panel.first, "empty_goal")
 
-        _assert_or_update(actual, "empty_goal", max_diff_ratio=0.02)
+        _assert_or_update(actual, "empty_goal", max_diff_ratio=0.02, theme=theme)
 
-    def test_empty_agent(self, logged_in_page: Page):
+    def test_empty_agent(self, logged_in_page: Page, theme: str):
         """空 Agent 列表 — Agent tab + 无 agent。
 
         预期: 显示「暂无 Agent」
@@ -495,4 +509,4 @@ class TestEmptyStates:
             animations="disabled",
         )
 
-        _assert_or_update(actual_path, "empty_agent", max_diff_ratio=0.02)
+        _assert_or_update(actual_path, "empty_agent", max_diff_ratio=0.02, theme=theme)

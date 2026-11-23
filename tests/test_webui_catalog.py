@@ -51,13 +51,17 @@ DEVICE_SCALE_FACTOR = 1
 
 
 @pytest.fixture
-def context(browser) -> Iterator[BrowserContext]:
-    """独立 context，固定 viewport + 关动画。"""
+def context(browser, theme: str) -> Iterator[BrowserContext]:
+    """独立 context，固定 viewport + 关动画。A-0：按 theme 预置主题。"""
     ctx = browser.new_context(
         viewport=VIEWPORT,
         device_scale_factor=DEVICE_SCALE_FACTOR,
         locale="zh-CN",
         reduced_motion="reduce",
+    )
+    ctx.add_init_script(
+        f"localStorage.setItem('sr-theme', '{theme}'); "
+        f"document.documentElement.dataset.theme = '{theme}';"
     )
     yield ctx
     ctx.close()
@@ -84,16 +88,18 @@ def _screenshot_page(page: Page, name: str) -> Path:
     return actual
 
 
-def _assert_or_update(actual: Path, name: str, *, max_diff_ratio: float = 0.005):
-    """对比 actual 与 baseline/name.png。失败时保存 diff 可视化。"""
-    baseline = BASELINES_DIR / f"{name}.png"
+def _assert_or_update(actual: Path, name: str, *, max_diff_ratio: float = 0.005,
+                      theme: str = "dark"):
+    """对比 actual 与 baseline/name.png。A-0：light 用 *_light.png。"""
+    baseline_name = f"{name}_light" if theme == "light" else name
+    baseline = BASELINES_DIR / f"{baseline_name}.png"
 
     if UPDATE_SNAPSHOTS or not baseline.exists():
         save_baseline(actual, baseline)
         pytest.skip(f"Baseline saved: {baseline} (UPDATE_SNAPSHOTS=1 or missing)")
 
     DIFFS_DIR.mkdir(parents=True, exist_ok=True)
-    diff_output = DIFFS_DIR / f"{name}_diff.png"
+    diff_output = DIFFS_DIR / f"{baseline_name}_diff.png"
 
     result = compare_images(
         baseline=baseline,
@@ -124,7 +130,7 @@ def _assert_or_update(actual: Path, name: str, *, max_diff_ratio: float = 0.005)
 class TestCatalogIndex:
     """Catalog 首页（/catalog）— 故事卡片网格。"""
 
-    def test_catalog_index_baseline(self, context: BrowserContext, app_url: str):
+    def test_catalog_index_baseline(self, context: BrowserContext, app_url: str, theme: str):
         page = context.new_page()
         try:
             page.goto(f"{app_url}/catalog")
@@ -134,7 +140,7 @@ class TestCatalogIndex:
             page.wait_for_timeout(300)
 
             actual = _screenshot_page(page, "catalog_index")
-            _assert_or_update(actual, "catalog_index", max_diff_ratio=0.01)
+            _assert_or_update(actual, "catalog_index", max_diff_ratio=0.01, theme=theme)
         finally:
             page.close()
 
@@ -187,7 +193,7 @@ class TestCatalogStories:
 
     @pytest.mark.parametrize("story_name", STORY_NAMES)
     def test_story_baseline(
-        self, context: BrowserContext, app_url: str, story_name: str
+        self, context: BrowserContext, app_url: str, story_name: str, theme: str
     ):
         page = context.new_page()
         try:
@@ -198,11 +204,11 @@ class TestCatalogStories:
             page.wait_for_timeout(400)
 
             actual = _screenshot_stage(page, f"catalog_{story_name}")
-            _assert_or_update(actual, f"catalog_{story_name}", max_diff_ratio=0.01)
+            _assert_or_update(actual, f"catalog_{story_name}", max_diff_ratio=0.01, theme=theme)
         finally:
             page.close()
 
-    def test_story_not_found(self, context: BrowserContext, app_url: str):
+    def test_story_not_found(self, context: BrowserContext, app_url: str, theme: str):
         """不存在的 story → 显示 'not found' 页面。"""
         page = context.new_page()
         try:

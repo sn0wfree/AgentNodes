@@ -26,6 +26,18 @@ STATIC_DIR = REPO_ROOT / "webui" / "static"
 # ────────────────────────── Port allocation ──────────────────────────
 
 
+# ────────────────────────── Theme parameterization (A-0) ──────────────────────────
+
+
+@pytest.fixture(params=["dark", "light"], ids=["dark", "light"])
+def theme(request: pytest.FixtureRequest) -> str:
+    """A-0 双主题基线：每个视觉场景跑 dark + light 两套。
+
+    dark 沿用现有基线名（无后缀）；light 用 *_light.png。
+    """
+    return str(request.param)
+
+
 def _find_free_port() -> int:
     """Bind to port 0 → OS gives a free port, then close. Avoids races."""
     with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
