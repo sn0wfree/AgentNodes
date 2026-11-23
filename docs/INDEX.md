@@ -45,7 +45,7 @@
 
 ---
 
-## 2. design/ — 仍生效的设计与契约（160 份，2026-11-23 补录）
+## 2. design/ — 仍生效的设计与契约（161 份，2026-11-23 补录）
 
 **判据**：文档里的决策仍在代码中执行。已被取代的移到 `archive/`。
 
@@ -292,6 +292,7 @@
 | [`rename-entry-consolidation-20261123.md`](design/rename-entry-consolidation-20261123.md) | 重命名入口合并方案（顶栏/侧栏两实现合一，单一 TopBar 编辑 + 侧栏 hover 触发切换） |
 | [`remove-session-tabs-20261123.md`](design/remove-session-tabs-20261123.md) | 移除顶栏 SessionTabs 方案（未采纳，保留作反方论证记录） |
 | [`auto-title-and-remove-tab-plus-20261123.md`](design/auto-title-and-remove-tab-plus-20261123.md) | B+A 方案：首次发送自动标题（接回已有 auto_title_session + SSE patch）+ 删 tab 加号 |
+| [`trace-panel-and-dag-hide-20261123.md`](design/trace-panel-and-dag-hide-20261123.md) | Trace 独立入口+权限（403 已存在）+ DAG 前端5入口撤销/API24路由保留方案（R-014 待批准） |
 
 ---
 
