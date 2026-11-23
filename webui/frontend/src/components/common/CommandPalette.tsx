@@ -35,7 +35,6 @@ export function CommandPalette() {
   const navigate = useNavigate()
   const toggleRightPanel = useLayoutStore((s) => s.toggleRightPanel)
   const setWorkMode = useLayoutStore((s) => s.setWorkMode)
-  const setSettingsOpen = useLayoutStore((s) => s.setSettingsOpen)
   const toggleSidebar = useLayoutStore((s) => s.toggleSidebar)
   const createNewSession = useSessionStore((s) => s.createNewSession)
   const currentSessionId = useSessionStore((s) => s.currentSessionId)
@@ -160,10 +159,10 @@ export function CommandPalette() {
       description: '打开设置页面',
       category: 'navigation',
       icon: Settings,
-      action: () => { setOpen(false); setSettingsOpen(true) },
+      action: () => { setOpen(false); navigate('/account') },
       keywords: ['settings', '配置'],
     },
-  ], [toggleRightPanel, setWorkMode, setSettingsOpen, setOpen, createNewSession, currentSessionId, setSearchOpen, loadMessages, navigate])
+  ], [toggleRightPanel, setWorkMode, navigate, setOpen, createNewSession, currentSessionId, setSearchOpen, loadMessages, navigate])
 
   // Filter by query
   const filtered = useMemo(() => {

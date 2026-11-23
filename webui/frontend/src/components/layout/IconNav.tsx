@@ -4,7 +4,6 @@ import {
   Network,
   Settings,
   LogOut,
-  ShieldCheck,
 } from 'lucide-react'
 import { useLayoutStore } from '../../stores/layout'
 import { useAuthStore } from '../../stores/auth'
@@ -29,14 +28,11 @@ const NAV_ITEMS: NavEntry[] = [
 ]
 
 export function IconNav() {
-  const setSettingsOpen = useLayoutStore((s) => s.setSettingsOpen)
   const toggleSidebar = useLayoutStore((s) => s.toggleSidebar)
   const logout = useAuthStore((s) => s.logout)
-  const user = useAuthStore((s) => s.user)
   const navigate = useNavigate()
   const location = useLocation()
   const isHome = location.pathname === '/'
-  const isAdmin = user?.role === 'admin'
 
   return (
     <nav className="flex h-screen w-16 flex-shrink-0 flex-col items-center gap-1 border-r border-slate-800 bg-slate-900/50 py-3">
@@ -89,39 +85,28 @@ export function IconNav() {
         )
       })}
 
-      {isAdmin && (
-        <NavLink
-          to="/admin/users"
-          title="用户管理"
-          className={({ isActive }) =>
-            `group relative mt-1 flex h-10 w-10 items-center justify-center rounded-lg transition-colors
-            ${
-              isActive
-                ? 'bg-slate-800 text-slate-100'
-                : 'text-slate-400 hover:bg-slate-800 hover:text-slate-200'
-            }`
-          }
-        >
-          {({ isActive }) => (
-            <>
-              {isActive && (
-                <span className="absolute -left-[9px] top-1/2 h-4 w-[3px] -translate-y-1/2 rounded-full bg-sky-500" />
-              )}
-              <ShieldCheck className="h-5 w-5" />
-            </>
-          )}
-        </NavLink>
-      )}
-
       <div className="flex-1" />
 
-      <button
-        onClick={() => setSettingsOpen(true)}
-        title="设置"
-        className="flex h-10 w-10 items-center justify-center rounded-lg text-slate-400 transition-colors hover:bg-slate-800 hover:text-slate-200"
+      <NavLink
+        to="/account"
+        title="账户与设置"
+        className={({ isActive }) =>
+          `group relative flex h-10 w-10 items-center justify-center rounded-lg transition-colors ${
+            isActive
+              ? 'bg-slate-800 text-slate-100'
+              : 'text-slate-400 hover:bg-slate-800 hover:text-slate-200'
+          }`
+        }
       >
-        <Settings className="h-5 w-5" />
-      </button>
+        {({ isActive }) => (
+          <>
+            {isActive && (
+              <span className="absolute -left-[9px] top-1/2 h-4 w-[3px] -translate-y-1/2 rounded-full bg-sky-500" />
+            )}
+            <Settings className="h-5 w-5" />
+          </>
+        )}
+      </NavLink>
       <button
         onClick={() => {
           logout()

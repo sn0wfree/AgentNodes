@@ -2,7 +2,6 @@ import { Routes, Route, Navigate } from 'react-router-dom'
 import { useAuthStore } from './stores/auth'
 import { LoginPage } from './components/auth/LoginPage'
 import { RegisterPage } from './components/auth/RegisterPage'
-import { AdminGuard } from './components/auth/AdminGuard'
 import { StudyDetailPage } from './components/study/StudyDetailPage'
 import { RunDetailPage } from './components/run/RunDetailPage'
 import { AppShell } from './components/layout/AppShell'
@@ -12,9 +11,8 @@ import { FactorLibraryPage } from './pages/FactorLibraryPage'
 import { StrategyLibraryPage } from './pages/StrategyLibraryPage'
 import { CatalogPage } from './catalog/CatalogPage'
 import { CatalogItem } from './catalog/CatalogItem'
-import { SettingsModal } from './components/common/SettingsModal'
 import { StudyPage } from './pages/StudyPage'
-import { AdminUsersPage } from './pages/AdminUsersPage'
+import { AccountPage } from './pages/AccountPage'
 
 function AuthGuard({ children }: { children: React.ReactNode }) {
   const token = useAuthStore((s) => s.token)
@@ -102,12 +100,13 @@ export default function App() {
             </AuthGuard>
           }
         />
+        <Route path="/admin/users" element={<Navigate to="/account" replace />} />
         <Route
-          path="/admin/users"
+          path="/account"
           element={
-            <AdminGuard>
-              <AdminUsersPage />
-            </AdminGuard>
+            <AuthGuard>
+              <AccountPage />
+            </AuthGuard>
           }
         />
         <Route
@@ -127,7 +126,6 @@ export default function App() {
           }
         />
       </Routes>
-      <SettingsModal />
     </>
   )
 }

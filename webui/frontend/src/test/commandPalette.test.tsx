@@ -116,7 +116,7 @@ describe('CommandPalette', () => {
     render(<MemoryRouter><CommandPalette /></MemoryRouter>)
     fireEvent.change(searchBox(), { target: { value: '设置' } })
     fireEvent.keyDown(searchBox(), { key: 'Enter' })
-    expect(useLayoutStore.getState().settingsOpen).toBe(true)
+    expect(navigateMock).toHaveBeenCalledWith('/account')
   })
 
   it('clicking a command runs it and closes the palette', () => {

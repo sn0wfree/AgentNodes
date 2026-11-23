@@ -5,7 +5,7 @@ import { api } from '../api/client'
 import type { AdminUser } from '../api/client'
 import { useAuthStore } from '../stores/auth'
 
-export function AdminUsersPage() {
+export function AdminUsersPage({ embedded = false }: { embedded?: boolean }) {
   const myId = useAuthStore((s) => s.user?.id)
   const [users, setUsers] = useState<AdminUser[]>([])
   const [total, setTotal] = useState(0)
@@ -122,31 +122,8 @@ export function AdminUsersPage() {
     }
   }
 
-  return (
-    <PageShell
-      title="用户管理"
-      subtitle={`共 ${total} 个账号`}
-      icon={<ShieldCheck className="h-4 w-4" />}
-      actions={
-        <>
-          <button
-            onClick={load}
-            title="刷新"
-            className="flex items-center gap-1.5 rounded-lg border border-slate-700 bg-slate-800/50 px-2.5 py-1.5 text-xs text-slate-400 transition-colors hover:border-slate-600 hover:text-slate-300"
-          >
-            <RefreshCw className="h-3.5 w-3.5" />
-          </button>
-          <button
-            onClick={() => setShowCreate((v) => !v)}
-            className="flex items-center gap-1.5 rounded-lg bg-primary-600 px-2.5 py-1.5 text-xs font-medium text-white hover:bg-primary-700"
-          >
-            <UserPlus className="h-3.5 w-3.5" />
-            新建用户
-          </button>
-        </>
-      }
-    >
-      <div className="space-y-4">
+  const body = (
+    <div className="space-y-4">
         {notice && (
           <div className="rounded-lg border border-emerald-800 bg-emerald-900/30 px-3 py-2 text-sm text-emerald-300">
             {notice}
@@ -291,7 +268,30 @@ export function AdminUsersPage() {
             </div>
           </div>
         )}
-      </div>
+    </div>
+  )
+
+  if (embedded) return body
+  return (
+    <PageShell
+      title="用户管理"
+      subtitle={`共 ${total} 个账号`}
+      icon={<ShieldCheck className="h-4 w-4" />}
+      actions={
+        <>
+          <button onClick={load} title="刷新"
+            className="flex items-center gap-1.5 rounded-lg border border-slate-700 bg-slate-800/50 px-2.5 py-1.5 text-xs text-slate-400 transition-colors hover:border-slate-600 hover:text-slate-300">
+            <RefreshCw className="h-3.5 w-3.5" />
+          </button>
+          <button onClick={() => setShowCreate((v) => !v)}
+            className="flex items-center gap-1.5 rounded-lg bg-primary-600 px-2.5 py-1.5 text-xs font-medium text-white hover:bg-primary-700">
+            <UserPlus className="h-3.5 w-3.5" />
+            新建用户
+          </button>
+        </>
+      }
+    >
+      {body}
     </PageShell>
   )
 }
