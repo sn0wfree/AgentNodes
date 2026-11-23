@@ -55,4 +55,31 @@
 ## 5. 开放问题（需产品/后端确认）
 
 - llm_request envelope 是否稳定携带 model / token 计数？若否，P1-4 只显示 time + type + 脱敏 envelope
-- 时间单位：event_log 投影的 `time_created` 是秒，回退 trace.jsonl 的 `ts` 是否毫秒？统一换算的判据需实测钉住
+
+### 已自行查清（不再是开放问题）
+
+- **时间单位**：两条路径都是**秒**——event_log 投影用 `time_created`（秒，TraceProjection:93），回退 `trace.jsonl` 的 `ts = time.time()`（秒，TraceWriter:86）。统一按秒。
+- **评分字段实证**：ValidationResult 有 metric / cost / tokens / degradation / baseline_* / candidate_* + `_two_sided_verdict` 三站判定；GoldenEvalResult 有 metric / tasks_run / cost / tokens / duration_ms_mean（详见 P2-2 §2）。
+- **TraceEvent 无 model/token 字段**：仅 `[key: string]: unknown` 兜底——模型名与 token 显示「待接入」，除非实测 envelope 另有携带。
+
+## 6. 已决事项（2026-11-23 grilling 四轮，用户逐条确认）
+
+| 编号 | 决策 |
+|---|---|
+| Q1 | **完整 UI 本轮做**（不等 P1-1 令牌批） |
+| Q4 | 敏感字段（system_prompt / tools_schema / history_meta）：**默认折叠 + 显式「显示原始（可能含凭据）」按钮**；现状 TraceViewer 把原文直接贴进 `<pre>`，必须改 |
+| Q5 | 缺失字段（成本 / 模型名 / token）：**显示「待接入」灰字，不补零不造数** |
+| Q6 | Trace 落点：**右栏展开式，不升一级导航** |
+| Q8 | 筛选维度：**类型多选 + 迭代号下拉**（不做全文搜索——扫大字段有性能与脱敏风险） |
+| Q9 | 长 trace：**最近 50 条 + 「加载更早」**（后端 limit 已支持 100–500） |
+| Q12 | 展开时 **Trace 接管右栏**，收起后恢复原卡片（一次一个焦点） |
+| Q2 | P2-2 RSI 端点**本轮不推进**（骨架待负责人评审） |
+| Q3 | 实施顺序：**P9 token meter → MonitorPage 假 pill → P1-4 完整 UI → P2-2 待评审** |
+
+### 待开工（按 Q3 顺序）
+
+1. P9：token meter 迁输入框 + 阈值抽常量（Q11）
+2. MonitorPage：移除两处 SSEStatus（假状态）
+3. P1-4：右栏展开式 Trace UI（Q4/Q5/Q6/Q8/Q9/Q12 约束）
+
+> 以上为共识记录；**尚未开始实施**，待用户确认后开工。

@@ -47,4 +47,17 @@
 
 - 信号源定义、评分单位/方向/时间窗、证据字段的安全边界
 - 权限模型：谁能看 RSI 数据？（沿用会话归属还是独立 role）
-- 是否复用 `/api/system/*` 的既有模式，还是单开 `/api/evolution/read/*`
+- 是否复用 `/api/system/*` 的既有模式（现有 `/info` / `/llm` / `/model-info/refresh`），还是单开 `/api/evolution/read/*`
+
+### 已自行查清（不再是开放问题）
+
+- **评分字段实证**：`ValidationResult`（validation_gate.py:158-181）含 metric / cost / tokens / degradation / baseline_metric / candidate_metric / cost_degradation / tokens_degradation / heldout_degradation / escalated / `_two_sided_verdict` 三站判定（> +threshold reject、< -threshold escalate、其余 pass）；`GoldenEvalResult`（golden_eval.py:125-140）含 metric / tasks_run / cost / tokens / duration_ms_mean / skipped。§2 的字段列有实据，非猜测。
+
+## 6. 已决事项（2026-11-23 grilling）
+
+| 编号 | 决策 |
+|---|---|
+| Q2 | **本轮不新增后端端点**；契约骨架保持「待负责人评审」状态 |
+| Q3 | P2-2 排在所有 MVP 收尾项之后（P9 → 假 pill → P1-4 UI → P2-2 待评审） |
+
+> 无端点不建 UI、RSI 不进导航两条边界维持不变。
