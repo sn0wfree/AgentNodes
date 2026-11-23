@@ -155,7 +155,7 @@ function TodoRow({ todo }: { todo: TodoItem }) {
       >
         {checked && <Check className="h-3 w-3 text-white" strokeWidth={3} />}
         {inProgress && (
-          <span className="block h-1.5 w-1.5 animate-pulse rounded-full bg-amber-400" />
+          <span className="block h-1.5 w-1.5 animate-pulse rounded-full bg-warning" />
         )}
       </span>
       <span

@@ -21,7 +21,7 @@ export function SSEStatus() {
     },
     connecting: {
       icon: Loader2,
-      color: 'text-amber-400',
+      color: 'text-warning-fg',
       label: '连接中',
       pulse: true,
     },

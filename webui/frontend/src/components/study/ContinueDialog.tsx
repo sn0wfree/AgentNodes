@@ -44,7 +44,7 @@ const STATUS_LABELS: Record<string, string> = {
 
 const STATUS_COLORS: Record<string, string> = {
   interrupted: 'bg-orange-700 text-orange-100',
-  paused: 'bg-amber-700 text-amber-100',
+  paused: 'bg-warning text-warning-fg',
   error: 'bg-rose-700 text-rose-100',
   budget_limited: 'bg-orange-700 text-orange-100',
   early_stopped: 'bg-rose-800 text-rose-100',
@@ -142,7 +142,7 @@ export function ContinueDialog({ open, summary, onClose, onContinue }: ContinueD
               resumableOnly
                 ? 'cursor-not-allowed border-slate-800 bg-slate-800/30 opacity-40'
                 : mode === 'restart' && !useCustom
-                  ? 'cursor-pointer border-amber-500/50 bg-amber-900/20'
+                  ? 'cursor-pointer border-accent/50 bg-accent/10'
                   : 'cursor-pointer border-slate-700 bg-slate-800/50 hover:border-slate-600'
             }`}
           >
@@ -152,9 +152,9 @@ export function ContinueDialog({ open, summary, onClose, onContinue }: ContinueD
               disabled={resumableOnly}
               checked={mode === 'restart' && !useCustom}
               onChange={() => { setMode('restart'); setUseCustom(false) }}
-              className="accent-amber-500"
+              className="accent-accent"
             />
-            <RotateCcw className="h-3.5 w-3.5 text-amber-400" />
+            <RotateCcw className="h-3.5 w-3.5 text-accent-400" />
             <span className="text-xs text-slate-200">从头开始 (Round 1)</span>
           </label>
 

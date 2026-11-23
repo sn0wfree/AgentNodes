@@ -155,10 +155,10 @@ export function MonitorPage() {
         />
         <StatCard
           icon={<Zap className="h-4 w-4" />}
-          iconCls="border border-amber-500/30 bg-amber-500/10 text-amber-400"
+          iconCls="border-warning/30 bg-warning-fill text-warning-fg"
           value={String(runningAgents.length)}
           label="运行中 Agent"
-          valueCls="text-amber-400"
+          valueCls="text-warning-fg"
         />
         <StatCard
           icon={<ChartLine className="h-4 w-4" />}
@@ -221,7 +221,7 @@ export function MonitorPage() {
         <QuickEntry
           to="/strategies"
           icon={<Layers className="h-5 w-5" />}
-          iconCls="border border-amber-500/30 bg-amber-500/10 text-amber-400"
+          iconCls="border-slate-600/40 bg-slate-700/20 text-slate-300"
           title="策略库"
           desc="策略 + 研究记录"
         />
@@ -368,10 +368,10 @@ export function MonitorPage() {
                       {a.iterations_detail.length} 轮迭代 · {Math.round(a.context_tokens / 1000)}k tokens
                     </div>
                   </div>
-                  <span className={`text-[10px] ${a.status === 'running' ? 'text-amber-400' : a.status === 'completed' ? 'text-emerald-400' : 'text-slate-500'}`}>
+                  <span className={`text-[10px] ${a.status === 'running' ? 'text-warning-fg' : a.status === 'completed' ? 'text-emerald-400' : 'text-slate-500'}`}>
                     {statusLabel(a.status)}
                   </span>
-                  {a.status === 'running' && <Zap className="h-3.5 w-3.5 animate-pulse text-amber-400" />}
+                  {a.status === 'running' && <Zap className="h-3.5 w-3.5 animate-pulse text-warning-fg" />}
                 </div>
               ))}
             </div>

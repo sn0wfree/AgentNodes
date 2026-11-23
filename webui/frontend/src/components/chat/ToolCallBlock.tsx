@@ -69,7 +69,7 @@ const TOOL_ICONS: Record<string, typeof Code> = {
 
 const STATUS_CONFIG = {
   pending: { icon: Loader2, color: 'text-slate-400', bg: 'bg-slate-700/30' },
-  running: { icon: Loader2, color: 'text-amber-400', bg: 'bg-amber-500/5' },
+  running: { icon: Loader2, color: 'text-warning-fg', bg: 'bg-warning-fill' },
   done: { icon: CheckCircle, color: 'text-emerald-400', bg: 'bg-emerald-500/5' },
   error: { icon: XCircle, color: 'text-red-400', bg: 'bg-red-500/5' },
 } as const
@@ -223,7 +223,7 @@ export function ToolCallBlock({ toolCall, startTime, onRetry }: ToolCallBlockPro
     <div
       className={`my-1 border-l-2 rounded-r-md overflow-hidden transition-colors duration-300 ${
         toolCall.status === 'running'
-          ? 'border-amber-500/50 bg-amber-500/5'
+          ? 'border-warning/50 bg-warning-fill'
           : toolCall.status === 'error'
           ? 'border-red-500/40 bg-red-500/5'
           : toolCall.status === 'done'
@@ -262,7 +262,7 @@ export function ToolCallBlock({ toolCall, startTime, onRetry }: ToolCallBlockPro
           <span
             data-testid="dangerous-tool-badge"
             title="此工具会修改文件系统、运行 shell 命令或触发回测，请留意执行内容。"
-            className="inline-flex items-center gap-1 rounded border border-amber-700/50 bg-amber-900/20 px-1.5 py-0.5 text-[10px] font-normal text-amber-300"
+            className="inline-flex items-center gap-1 rounded border border-warning/50 bg-warning-fill px-1.5 py-0.5 text-[10px] font-normal text-warning-fg"
           >
             <AlertTriangle className="h-2.5 w-2.5" />
             <span>危险</span>
@@ -308,10 +308,10 @@ export function ToolCallBlock({ toolCall, startTime, onRetry }: ToolCallBlockPro
 
       {/* Progress steps (when available) */}
       {toolCall.status === 'running' && toolCall.progress && (
-        <div className="border-t border-amber-500/20 px-3 py-1.5 space-y-1">
+        <div className="border-t border-warning/20 px-3 py-1.5 space-y-1">
           {(toolCall.progress as string[]).map((step, idx) => (
-            <div key={idx} className="flex items-center gap-1.5 text-[11px] text-amber-300/80">
-              <span className="h-1 w-1 rounded-full bg-amber-400 animate-pulse" />
+            <div key={idx} className="flex items-center gap-1.5 text-[11px] text-warning-fg/80">
+              <span className="h-1 w-1 rounded-full bg-warning animate-pulse" />
               {step}
             </div>
           ))}

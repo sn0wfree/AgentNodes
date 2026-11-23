@@ -131,11 +131,11 @@ describe('RoundHistory', () => {
     )
     // keep → emerald dot, review → amber dot, discard → slate dot (+ badges)
     expect(container.querySelectorAll('.border-emerald-500').length).toBe(1)
-    expect(container.querySelectorAll('.border-amber-500').length).toBe(1)
+    expect(container.querySelectorAll('[class*="border-warning"]').length).toBe(2) // review badge + dot
     expect(container.querySelectorAll('.border-slate-600').length).toBe(2)
     // connectors inherit the verdict color of the round
     expect(container.querySelectorAll('[class*="bg-emerald-500/40"]').length).toBe(1)
-    expect(container.querySelectorAll('[class*="bg-amber-500/40"]').length).toBe(1)
+    expect(container.querySelectorAll('[class*="bg-warning/40"]').length).toBe(1)
     // last round has no connector below it
     expect(container.querySelectorAll('.flex-1.w-0\\.5').length).toBe(2)
   })

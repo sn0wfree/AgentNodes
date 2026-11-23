@@ -90,8 +90,8 @@ export function DAGPage() {
                     icon={<Zap className="h-4 w-4" />}
                     label="运行中"
                     value={String(runningCount)}
-                    color="text-amber-400"
-                    bg="border border-amber-500/30 bg-amber-500/10 text-amber-400"
+                    color="text-warning-fg"
+                    bg="border border-warning/30 bg-warning-fill text-warning-fg"
                   />
                   <SummaryStat
                     icon={<CheckCircle className="h-4 w-4" />}

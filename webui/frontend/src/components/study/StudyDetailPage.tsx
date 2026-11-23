@@ -242,7 +242,7 @@ export function StudyDetailPage() {
         <button
           onClick={() => onAction('pause')}
           disabled={busy}
-          className="inline-flex cursor-pointer items-center gap-1 rounded-lg bg-amber-600 px-2.5 py-1.5 text-xs text-white transition-all hover:bg-amber-500 active:scale-95 disabled:opacity-50"
+          className="inline-flex cursor-pointer items-center gap-1 rounded-lg bg-warning px-2.5 py-1.5 text-xs text-white transition-all hover:bg-warning-fill active:scale-95 disabled:opacity-50"
         >
           <Pause className="h-3.5 w-3.5" /> 暂停
         </button>
@@ -277,7 +277,7 @@ export function StudyDetailPage() {
             }
           }}
           disabled={busy}
-          className="inline-flex cursor-pointer items-center gap-1 rounded-lg border border-amber-600/40 bg-amber-700/20 px-2.5 py-1.5 text-xs text-amber-200 transition-all hover:bg-amber-700/40 hover:text-amber-50 active:scale-95 disabled:opacity-50"
+          className="inline-flex cursor-pointer items-center gap-1 rounded-lg border border-slate-600/40 bg-slate-700/20 px-2.5 py-1.5 text-xs text-slate-300 transition-all hover:bg-amber-700/40 hover:text-amber-50 active:scale-95 disabled:opacity-50"
         >
           <Archive className="h-3.5 w-3.5" /> 归档
         </button>
@@ -332,7 +332,7 @@ export function StudyDetailPage() {
         />
         <KpiCard
           icon={<Activity className="h-4 w-4" />}
-          iconCls="border border-amber-500/30 bg-amber-500/10 text-amber-400"
+          iconCls="border border-warning/30 bg-warning-fill text-warning-fg"
           value={STUDY_STATUS_LABELS[status] ?? status}
           label={isDrifting ? `漂移 ×${driftCount}（需检查）` : '执行状态'}
           valueCls={STUDY_STATUS_COLORS[status]?.split(' ').find((c: string) => c.startsWith('text-')) ?? 'text-slate-100'}

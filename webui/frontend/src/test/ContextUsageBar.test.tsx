@@ -110,7 +110,7 @@ describe('ContextUsageBar', () => {
     setup({ sessionId: 's1', tokensUsed: 60000, context: 100000, source: 'fetched' })
     render(<ContextUsageBar />)
     const bar = screen.getByTestId('context-progress-bar')
-    expect(bar.className).toContain('bg-amber-500')
+    expect(bar.className).toContain('bg-warning')
   })
 
   it('applies red color tier for >=80% usage', () => {

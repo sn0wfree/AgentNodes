@@ -13,6 +13,12 @@ vi.mock('react-router-dom', async () => {
   return { ...actual, useNavigate: () => navigateMock }
 })
 
+// H7：注入带 testid 的 stub，让「监控页无假状态 pill」断言真正可检测回归
+vi.mock('../components/common/SSEStatus', () => ({
+  SSEStatus: () => <div data-testid="sse-status" />,
+}))
+vi.mock('../hooks/useSSE', () => ({ useSSE: vi.fn() }))
+
 vi.mock('../api/client', () => ({
   api: {
     study: { list: vi.fn() },
@@ -21,6 +27,7 @@ vi.mock('../api/client', () => ({
 }))
 
 import { api } from '../api/client'
+import { useSSE } from '../hooks/useSSE'
 import { useSystemStore } from '../stores/system'
 import { useSessionStore } from '../stores/session'
 import { useAgentStore } from '../stores/agents'
@@ -64,6 +71,7 @@ describe('MonitorPage', () => {
     expect(screen.getAllByText('/ws/demo').length).toBeGreaterThan(0)
     // Q10: 监控页无 useSSE 订阅，不得渲染假连接状态 pill。
     expect(screen.queryByTestId('sse-status')).toBeNull()
+expect(vi.mocked(useSSE)).not.toHaveBeenCalled()
   })
 
   it('counts only ACTIVE studies in the KPI (running/queued/monitoring)', async () => {

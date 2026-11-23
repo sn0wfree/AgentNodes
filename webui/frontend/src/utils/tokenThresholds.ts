@@ -21,6 +21,6 @@ export function toneFillClass(tone: TokenTone): string {
   return tone === 'danger'
     ? 'bg-red-500'
     : tone === 'warn'
-      ? 'bg-amber-500'
+      ? 'bg-warning'
       : 'bg-emerald-500'
 }

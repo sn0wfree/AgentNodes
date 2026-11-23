@@ -97,8 +97,8 @@ export function InterruptApprovalCard({
   }
 
   return (
-    <div className="rounded-lg border border-amber-500/30 bg-amber-500/10 p-3">
-      <div className="mb-2 flex items-center gap-2 text-xs font-medium text-amber-400">
+    <div className="rounded-lg border border-warning/30 bg-warning-fill p-3">
+      <div className="mb-2 flex items-center gap-2 text-xs font-medium text-warning-fg">
         ⏳ 等待审批
       </div>
 

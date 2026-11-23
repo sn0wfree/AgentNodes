@@ -153,4 +153,19 @@ describe('TraceViewer', () => {
     expect(screen.getByText(/sys B/)).toBeTruthy()
     expect(screen.getByText(/shared/)).toBeTruthy()
   })
+
+  it('shows only the latest 50 events and loads older ones in 50-item pages (Q9)', async () => {
+    const events = Array.from({ length: 60 }, (_, i) => ({
+      type: 'heartbeat', time_created: i + 1, iteration: 1,
+    }))
+    vi.stubGlobal('fetch', mockFetch(events))
+    render(<TraceViewer sessionId="s-1" />)
+
+    expect(await screen.findByText(/50\/60 events/)).toBeTruthy()
+    const loadMore = screen.getByRole('button', { name: /加载更早（剩余 10 条）/ })
+    fireEvent.click(loadMore)
+    expect(screen.getByText(/60\/60 events/)).toBeTruthy()
+    expect(screen.queryByRole('button', { name: /加载更早/ })).toBeNull()
+  })
+
 })

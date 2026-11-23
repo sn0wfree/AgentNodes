@@ -218,7 +218,7 @@ export function SearchModal() {
                     </span>
                   </div>
                   <div
-                    className="mt-1 text-xs text-slate-400 line-clamp-2 [&_mark]:bg-amber-500/30 [&_mark]:text-amber-200 [&_mark]:rounded-sm [&_mark]:px-0.5"
+                    className="mt-1 text-xs text-slate-400 line-clamp-2 [&_mark]:bg-accent/30 [&_mark]:text-accent-100 [&_mark]:rounded-sm [&_mark]:px-0.5"
                     dangerouslySetInnerHTML={{ __html: safeSnippet(hit.snippet) }}
                   />
                 </div>

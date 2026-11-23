@@ -23,8 +23,8 @@ const TIER_CLASS: Record<Tier, { bar: string; text: string }> = {
     text: 'text-emerald-400',
   },
   amber: {
-    bar: 'bg-amber-500',
-    text: 'text-amber-400',
+    bar: 'bg-warning',
+    text: 'text-warning-fg',
   },
   red: {
     bar: 'bg-red-500',
@@ -136,7 +136,7 @@ export function ContextUsageBar() {
         </span>
         {isFallback && (
           <span
-            className="ml-1 inline-flex items-center text-amber-500"
+            className="ml-1 inline-flex items-center text-warning-fg"
             title={`来自 ${modelInfo?.source ?? 'fallback'} 数据，非最新`}
             data-testid="context-stale-hint"
           >

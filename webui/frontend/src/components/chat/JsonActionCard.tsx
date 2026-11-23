@@ -32,7 +32,7 @@ export interface JsonActionCardProps {
 
 const ACTION_STYLES: Record<string, { bg: string; text: string; label: string }> = {
   optimize_param:  { bg: 'bg-sky-900/30',    text: 'text-sky-300',     label: '参数优化' },
-  blocker:         { bg: 'bg-amber-900/30',   text: 'text-amber-300',   label: '阻塞' },
+  blocker:         { bg: 'bg-warning-fill',   text: 'text-warning-fg',   label: '阻塞' },
   keep:            { bg: 'bg-emerald-900/30', text: 'text-emerald-300', label: '保留' },
   discard:         { bg: 'bg-rose-900/30',    text: 'text-rose-300',    label: '丢弃' },
   report_progress: { bg: 'bg-indigo-900/30',  text: 'text-indigo-300',  label: '进度报告' },

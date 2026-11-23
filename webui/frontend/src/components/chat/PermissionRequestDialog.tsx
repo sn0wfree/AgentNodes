@@ -67,10 +67,10 @@ export function PermissionRequestDialog({
       aria-busy={submitting}
       className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm"
     >
-      <div className="w-full max-w-lg rounded-xl border border-amber-700/60 bg-slate-900 shadow-2xl">
+      <div className="w-full max-w-lg rounded-xl border border-warning/60 bg-slate-900 shadow-2xl">
         {/* Header */}
-        <div className="flex items-start gap-3 border-b border-amber-700/40 px-5 py-4">
-          <div className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-full bg-amber-500/10 text-amber-400">
+        <div className="flex items-start gap-3 border-b border-warning/40 px-5 py-4">
+          <div className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-full bg-warning-fill text-warning-fg">
             <Shield className="h-5 w-5" />
           </div>
           <div className="flex-1 min-w-0">
@@ -82,7 +82,7 @@ export function PermissionRequestDialog({
             </h2>
             <p className="mt-0.5 text-[11px] text-slate-400">
               工具:{' '}
-              <span className="font-mono text-amber-300">{request.tool_name}</span>
+              <span className="font-mono text-warning-fg">{request.tool_name}</span>
               {' · 规则匹配: '}
               <span className="font-mono text-slate-300">
                 {request.pattern || '*'}
@@ -131,7 +131,7 @@ export function PermissionRequestDialog({
               onChange={(e) => setReason(e.target.value)}
               disabled={submitting}
               placeholder="例如：会覆盖现有策略文件"
-              className="mt-1 w-full rounded border border-slate-700 bg-slate-800 px-2 py-1.5 text-xs text-slate-100 placeholder-slate-500 outline-none focus:border-amber-500"
+              className="mt-1 w-full rounded border border-slate-700 bg-slate-800 px-2 py-1.5 text-xs text-slate-100 placeholder-slate-500 outline-none focus:border-warning"
               data-testid="permission-reason-input"
             />
           </label>

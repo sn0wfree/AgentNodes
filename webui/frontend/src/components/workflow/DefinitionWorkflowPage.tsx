@@ -590,7 +590,7 @@ export function DefinitionWorkflowPage() {
         {run && runStatus === 'awaiting' && (
           <button
             onClick={() => setApprovalOpen(true)}
-            className="rounded bg-amber-600 px-2 py-1 text-xs text-white hover:bg-amber-500"
+            className="rounded bg-warning px-2 py-1 text-xs text-white hover:bg-warning"
           >
             待审批
           </button>
@@ -628,7 +628,7 @@ export function DefinitionWorkflowPage() {
               {viewingStatus === 'running' && (
                 <button
                   onClick={onPauseViewing}
-                  className="rounded bg-amber-600 px-2 py-0.5 text-[11px] text-white hover:bg-amber-500"
+                  className="rounded bg-warning px-2 py-0.5 text-[11px] text-white hover:bg-warning"
                 >
                   暂停
                 </button>
@@ -704,7 +704,7 @@ export function DefinitionWorkflowPage() {
                 className="wf-input w-full resize-none rounded border px-2 py-1.5 text-xs outline-none focus:border-primary-500"
               />
               {!sessionId && (
-                <p className="mt-1 text-[10px] text-amber-600">需要先打开一个会话</p>
+                <p className="mt-1 text-[10px] text-warning-fg">需要先打开一个会话</p>
               )}
             </div>
             <button

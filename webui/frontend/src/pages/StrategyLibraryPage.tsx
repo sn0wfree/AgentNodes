@@ -14,7 +14,7 @@ const STATUS_META: Record<string, { label: string; cls: string }> = {
   running: { label: '研究中', cls: 'border-emerald-500/30 bg-emerald-500/10 text-emerald-400' },
   queued: { label: '排队中', cls: 'border-sky-500/30 bg-sky-500/10 text-sky-400' },
   monitoring: { label: '监控中', cls: 'border-sky-500/30 bg-sky-500/10 text-sky-400' },
-  paused: { label: '已暂停', cls: 'border-amber-500/30 bg-amber-500/10 text-amber-400' },
+  paused: { label: '已暂停', cls: 'border-warning/30 bg-warning-fill text-warning-fg' },
   completed: { label: '已完成', cls: 'border-slate-600 bg-slate-800/40 text-slate-300' },
   failed: { label: '已失败', cls: 'border-red-500/30 bg-red-500/10 text-red-400' },
   cancelled: { label: '已取消', cls: 'border-slate-600 bg-slate-800/40 text-slate-400' },
@@ -120,7 +120,7 @@ export function StrategyLibraryPage() {
       icon={<Layers className="h-4 w-4" />}
     >
       {!workspacePath && (
-        <p className="mb-3 text-xs text-amber-400/80">
+        <p className="mb-3 text-xs text-warning-fg">
           未加载到 workspace 路径，请先在设置中确认系统信息
         </p>
       )}
@@ -152,14 +152,14 @@ export function StrategyLibraryPage() {
                   }}
                 >
                   <div className="flex items-center gap-2.5">
-                    <Folder className="h-4 w-4 text-amber-400" />
+                    <Folder className="h-4 w-4 text-slate-400" />
                     <span className="text-sm font-semibold text-slate-100">{s.name}</span>
                     {s.has_strategy_py ? (
                       <span className="inline-flex items-center gap-1 rounded-full border border-emerald-500/30 bg-emerald-500/10 px-2 py-0.5 text-[9px] text-emerald-400">
                         <CheckCircle2 className="h-2.5 w-2.5" /> strategy.py
                       </span>
                     ) : (
-                      <span className="inline-flex items-center gap-1 rounded-full border border-amber-500/30 bg-amber-500/10 px-2 py-0.5 text-[9px] text-amber-400">
+                      <span className="inline-flex items-center gap-1 rounded-full border border-warning/30 bg-warning-fill px-2 py-0.5 text-[9px] text-warning-fg">
                         <AlertTriangle className="h-2.5 w-2.5" /> 无 strategy.py
                       </span>
                     )}

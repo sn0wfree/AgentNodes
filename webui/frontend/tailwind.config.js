@@ -28,6 +28,10 @@ export default {
           800: '#1e40af',
           900: '#1e3a8a',
         },
+        // B-2：状态色语义入口，指向 globals.css 的 9-token 组（双主题自动适配）
+        warning: 'var(--warning)',
+        'warning-fill': 'var(--warning-fill)',
+        'warning-fg': 'var(--warning-foreground)',
       },
       fontFamily: {
         sans: ['system-ui', '-apple-system', '"Segoe UI"', 'sans-serif'],

@@ -38,7 +38,7 @@ export function SessionTabs() {
             title={sess.title}
           >
             {sess.starred && (
-              <Star className="h-3 w-3 fill-amber-400 text-amber-400 flex-shrink-0" />
+              <Star className="h-3 w-3 fill-slate-300 text-slate-300 flex-shrink-0" />
             )}
             <span className="max-w-[160px] truncate" title={sess.title}>{sess.title}</span>
             <button

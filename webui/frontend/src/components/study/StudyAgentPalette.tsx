@@ -111,7 +111,7 @@ export function StudyAgentPalette({ selected, onChange, required = [] }: Props) 
                     {a.category}
                   </span>
                   {isRequired && (
-                    <span className="rounded bg-amber-100 px-1 text-[10px] text-amber-700">
+                    <span className="rounded bg-slate-100 px-1 text-[10px] text-slate-700">
                       必选
                     </span>
                   )}

@@ -12,7 +12,7 @@ const METRIC_KEYS = ['calmar', 'sharpe', 'max_dd'] as const
 const VERDICT_DOT: Record<string, string> = {
   keep: 'bg-emerald-500',
   discard: 'bg-slate-600',
-  review: 'bg-amber-500',
+  review: 'bg-warning',
 }
 
 function fmt(v: number | null | undefined): string {
@@ -104,7 +104,7 @@ export function MetricsCompare({ rounds, onOpenRun }: Props) {
                           verdict === 'keep'
                             ? 'border-emerald-500/40 bg-emerald-500/10 text-emerald-400'
                             : verdict === 'review'
-                              ? 'border-amber-500/40 bg-amber-500/10 text-amber-400'
+                              ? 'border-warning/40 bg-warning-fill text-warning-fg'
                               : 'border-slate-700 bg-slate-800/70 text-slate-500'
                         }`}
                       >

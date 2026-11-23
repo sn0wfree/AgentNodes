@@ -1022,4 +1022,61 @@ describe('useSSE', () => {
       }).not.toThrow()
     })
   })
+
+  // ── P0-5 看门狗（H1/H7）：线上行为曾完全无测试 ──
+  describe('watchdog (zombie-connected + slow reconnect)', () => {
+    it('flips a silent connected stream to disconnected and reconnects after 50s', () => {
+      vi.useFakeTimers()
+      renderHook(() => useSSE('sess-1'))
+      const es = getCurrentES()
+      act(() => { es.onopen?.() })
+      const before = MockEventSource.instances.length
+
+      act(() => { vi.advanceTimersByTime(45_000) })
+      expect(useSSEStore.getState().status).toBe('connected')
+      expect(MockEventSource.instances.length).toBe(before)
+
+      act(() => { vi.advanceTimersByTime(10_000) }) // 55s > 50s，跨过 2 tick
+      // 翻转后立刻重连：status 从 disconnected 进 connecting（诚实反映"正在恢复"）
+      expect(useSSEStore.getState().status).toBe('connecting')
+      expect(MockEventSource.instances.length).toBe(before + 1)
+      expect(es.readyState).toBe(MockEventSource.CLOSED) // 僵尸源被关闭
+
+      // 下一 tick 不重复重连（status 已 disconnected 且 lastReconnectRef 刚更新）
+      act(() => { vi.advanceTimersByTime(5_000) })
+      expect(MockEventSource.instances.length).toBe(before + 1)
+      vi.useRealTimers()
+    })
+
+    it('onopen and named heartbeat refresh lastAlive so a healthy stream is not killed', () => {
+      vi.useFakeTimers()
+      renderHook(() => useSSE('sess-1'))
+      const es = getCurrentES()
+      act(() => { es.onopen?.() })
+      const before = MockEventSource.instances.length
+      // 每 20s 发一次具名 heartbeat → 看门狗不应误杀
+      for (let i = 0; i < 3; i++) {
+        act(() => { vi.advanceTimersByTime(20_000) })
+        act(() => { es.listeners.get('heartbeat')?.({ type: 'heartbeat', data: '{}' }) })
+      }
+      expect(useSSEStore.getState().status).toBe('connected')
+      expect(MockEventSource.instances.length).toBe(before)
+      vi.useRealTimers()
+    })
+
+    it('throttles disconnected reconnects to at most one per 10s window', () => {
+      vi.useFakeTimers()
+      renderHook(() => useSSE('sess-1'))
+      const es = getCurrentES()
+      act(() => { es.onerror?.({} as Event) })
+      expect(useSSEStore.getState().status).toBe('disconnected')
+      const before = MockEventSource.instances.length
+
+      act(() => { vi.advanceTimersByTime(9_000) })
+      expect(MockEventSource.instances.length).toBe(before)
+      act(() => { vi.advanceTimersByTime(6_000) }) // 15s，跨过 3 个 5s tick
+      expect(MockEventSource.instances.length).toBe(before + 1)
+      vi.useRealTimers()
+    })
+  })
 })

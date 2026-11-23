@@ -17,7 +17,7 @@ describe('tokenThresholds (P9 单点)', () => {
 
   it('maps tones to fill classes', () => {
     expect(toneFillClass('normal')).toBe('bg-emerald-500')
-    expect(toneFillClass('warn')).toBe('bg-amber-500')
+    expect(toneFillClass('warn')).toBe('bg-warning')
     expect(toneFillClass('danger')).toBe('bg-red-500')
   })
 })

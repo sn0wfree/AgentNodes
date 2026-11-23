@@ -16,7 +16,7 @@ export const STUDY_STATUS_LABELS: Record<string, string> = {
 export const STUDY_STATUS_COLORS: Record<string, string> = {
   queued: 'bg-slate-700 text-slate-200',
   running: 'bg-sky-700 text-sky-100',
-  paused: 'bg-amber-700 text-amber-100',
+  paused: 'bg-warning text-warning-fg',
   interrupted: 'bg-orange-700 text-orange-100',
   error: 'bg-rose-700 text-rose-100',
   complete: 'bg-emerald-700 text-emerald-100',

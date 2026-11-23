@@ -529,8 +529,8 @@ pre,
 [data-theme='light'] .badge-user { background: #d1fae5; color: #047857; }
 .badge-running { background: rgba(56, 189, 248, 0.16); color: #7dd3fc; }
 [data-theme='light'] .badge-running { background: #e0f2fe; color: #0369a1; }
-.badge-awaiting { background: rgba(245, 158, 11, 0.18); color: #fcd34d; }
-[data-theme='light'] .badge-awaiting { background: #fef3c7; color: #b45309; }
+.badge-awaiting { background: var(--warning-fill); color: var(--warning-fg); }
+[data-theme='light'] .badge-awaiting { background: var(--warning-fill); color: var(--warning-fg); }
 .badge-completed { background: rgba(16, 185, 129, 0.16); color: #34d399; }
 [data-theme='light'] .badge-completed { background: #d1fae5; color: #047857; }
 .badge-failed { background: rgba(239, 68, 68, 0.16); color: #f87171; }

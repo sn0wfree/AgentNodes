@@ -192,8 +192,8 @@ export function LLMSection({
               </>
             ) : (
               <>
-                <AlertCircle className="h-3 w-3 text-amber-400" />
-                <span className="text-amber-400">未配置</span>
+                <AlertCircle className="h-3 w-3 text-warning-fg" />
+                <span className="text-warning-fg">未配置</span>
               </>
             )}
           </div>

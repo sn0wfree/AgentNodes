@@ -16,7 +16,7 @@ interface AgentCardProps {
 
 const STATUS_CONFIG = {
   pending: { icon: Loader2, color: 'text-slate-400', bg: 'bg-slate-700/30', label: '等待中' },
-  running: { icon: Loader2, color: 'text-amber-400', bg: 'bg-amber-500/5', label: '执行中' },
+  running: { icon: Loader2, color: 'text-warning-fg', bg: 'bg-warning-fill', label: '执行中' },
   completed: { icon: CheckCircle, color: 'text-emerald-400', bg: 'bg-emerald-500/5', label: '完成' },
   failed: { icon: XCircle, color: 'text-red-400', bg: 'bg-red-500/5', label: '失败' },
 } as const
@@ -59,7 +59,7 @@ export function AgentCard({ agentPart, isStreaming }: AgentCardProps) {
     <div
       className={`my-1 border-l-2 rounded-r-md overflow-hidden transition-colors duration-300 ${
         agentPart.status === 'running'
-          ? 'border-amber-500/50 bg-amber-500/5'
+          ? 'border-warning/50 bg-warning-fill'
           : agentPart.status === 'failed'
           ? 'border-red-500/40 bg-red-500/5'
           : agentPart.status === 'completed'

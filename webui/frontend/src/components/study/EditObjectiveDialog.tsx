@@ -138,7 +138,7 @@ export function EditObjectiveDialog({
         </div>
 
         {/* Hint */}
-        <div className="rounded-lg border border-amber-600/30 bg-amber-900/20 px-3 py-2 text-[10px] leading-relaxed text-amber-300">
+        <div className="rounded-lg border border-warning/30 bg-warning-fill px-3 py-2 text-[10px] leading-relaxed text-warning-fg">
           ⚠ 新目标将从<strong>下一轮</strong>生效，历史目标会自动保留可在标题旁 ⓘ 查看。
         </div>
 
@@ -150,7 +150,7 @@ export function EditObjectiveDialog({
         )}
 
         {!goalId && (
-          <div className="rounded-lg border border-amber-600/30 bg-amber-900/20 px-3 py-2 text-[10px] leading-relaxed text-amber-300">
+          <div className="rounded-lg border border-warning/30 bg-warning-fill px-3 py-2 text-[10px] leading-relaxed text-warning-fg">
             ⚠ 此研究尚未关联 goal ledger，无法执行目标修改。
           </div>
         )}

@@ -49,13 +49,13 @@ export function AgentApprovalDialog({ studyId }: AgentApprovalDialogProps) {
       aria-label="Agent 循环检测"
       className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/70 px-4 backdrop-blur-sm"
     >
-      <div className="flex w-full max-w-md flex-col gap-4 rounded-2xl border border-amber-600/40 bg-slate-900 p-5 shadow-elevated">
+      <div className="flex w-full max-w-md flex-col gap-4 rounded-2xl border border-warning/40 bg-slate-900 p-5 shadow-elevated">
         <div className="flex items-center gap-2">
-          <AlertTriangle className="h-5 w-5 text-amber-400" />
+          <AlertTriangle className="h-5 w-5 text-warning-fg" />
           <h2 className="text-sm font-semibold text-slate-100">Agent 循环检测</h2>
         </div>
 
-        <div className="rounded-lg border border-amber-600/20 bg-amber-900/15 px-3 py-2 text-[11px] leading-relaxed text-amber-200">
+        <div className="rounded-lg border border-warning/20 bg-warning-fill px-3 py-2 text-[11px] leading-relaxed text-warning-fg">
           {active.message}
         </div>
 

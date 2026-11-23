@@ -21,7 +21,7 @@ export function QueuePauseBanner() {
     : 0
   return (
     <div
-      className="flex items-center justify-between gap-3 border-b border-amber-700/40 bg-amber-900/20 px-4 py-2 text-xs text-amber-200"
+      className="flex items-center justify-between gap-3 border-b border-warning/40 bg-warning-fill px-4 py-2 text-xs text-warning-fg"
       role="status"
       aria-live="polite"
     >
@@ -34,7 +34,7 @@ export function QueuePauseBanner() {
       <button
         type="button"
         onClick={handleResume}
-        className="inline-flex items-center gap-1.5 rounded-md border border-amber-600/60 bg-amber-700/30 px-2.5 py-1 text-amber-100 hover:bg-amber-700/50"
+        className="inline-flex items-center gap-1.5 rounded-md border border-warning/60 bg-warning-fill px-2.5 py-1 text-warning-fg hover:bg-warning/50"
         data-testid="queue-resume-btn"
       >
         <Play className="h-3 w-3" />

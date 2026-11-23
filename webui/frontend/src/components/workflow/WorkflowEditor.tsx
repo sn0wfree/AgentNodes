@@ -555,7 +555,7 @@ function WorkflowEditorInner({ nodes, edges, onSave, saving, saveRef, dagId }: W
               </div>
             ))}
             {selectedType === 'approval' && (
-              <p className="text-[10px] text-amber-400/80">审批节点是图切点：上游段完成后暂停等待确认，超时保持等待。</p>
+              <p className="text-[10px] text-warning-fg/80">审批节点是图切点：上游段完成后暂停等待确认，超时保持等待。</p>
             )}
             <button
               onClick={() => removeNode(selected.id)}

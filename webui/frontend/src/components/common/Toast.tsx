@@ -11,14 +11,14 @@ const ICONS = {
 const COLORS = {
   success: 'border-emerald-500/30 bg-emerald-950/50',
   error: 'border-red-500/30 bg-red-950/50',
-  warning: 'border-amber-500/30 bg-amber-950/50',
+  warning: 'border-warning/30 bg-warning-fill',
   info: 'border-blue-500/30 bg-blue-950/50',
 }
 
 const ICON_COLORS = {
   success: 'text-emerald-400',
   error: 'text-red-400',
-  warning: 'text-amber-400',
+  warning: 'text-warning-fg',
   info: 'text-blue-400',
 }
 

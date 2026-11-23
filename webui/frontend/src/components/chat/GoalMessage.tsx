@@ -110,7 +110,7 @@ export function GoalMessage({ message }: { message: Message }) {
                         c.status === 'covered'
                           ? 'bg-emerald-500'
                           : c.status === 'in_progress'
-                            ? 'bg-amber-500'
+                            ? 'bg-warning'
                             : 'bg-slate-600'
                       }`}
                     />

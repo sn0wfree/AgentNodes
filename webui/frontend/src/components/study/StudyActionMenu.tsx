@@ -20,10 +20,10 @@ const ICONS: Record<string, typeof Pause> = {
 }
 
 const ICON_CLS: Record<string, string> = {
-  pause: 'text-amber-400',
+  pause: 'text-warning-fg',
   continue: 'text-emerald-400',
   cancel: 'text-rose-400',
-  archive: 'text-amber-500',
+  archive: 'text-slate-400',
   unarchive: 'text-sky-400',
 }
 

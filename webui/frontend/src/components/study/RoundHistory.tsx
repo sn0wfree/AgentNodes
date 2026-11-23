@@ -35,10 +35,10 @@ const VERDICT_STYLES: Record<string, { badge: string; label: string; dot: string
     line: 'bg-slate-700/60',
   },
   review: {
-    badge: 'border-amber-500/40 bg-amber-500/10 text-amber-400',
+    badge: 'border-warning/40 bg-warning-fill text-warning-fg',
     label: '待复核',
-    dot: 'border-amber-500 bg-amber-500',
-    line: 'bg-amber-500/40',
+    dot: 'border-warning bg-warning',
+    line: 'bg-warning/40',
   },
 }
 
@@ -130,7 +130,7 @@ function RoundItem({
             <MetricValue label="S" value={round.metrics?.sharpe} />
             <MetricValue label="D" value={round.metrics?.max_dd} />
             {hasFailures && (
-              <AlertTriangle className="h-3 w-3 flex-shrink-0 text-amber-500" />
+              <AlertTriangle className="h-3 w-3 flex-shrink-0 text-warning-fg" />
             )}
           </button>
           {onOpenRun && (
@@ -151,8 +151,8 @@ function RoundItem({
             {hasFailures && (
               <div className="space-y-1.5">
                 {round.factor_failures!.map((f, i) => (
-                  <div key={i} className="rounded-lg border border-amber-900/30 bg-amber-950/20 px-2 py-1.5 text-[10px]">
-                    <div className="flex items-center gap-1.5 text-amber-400">
+                  <div key={i} className="rounded-lg border border-warning/30 bg-warning-fill px-2 py-1.5 text-[10px]">
+                    <div className="flex items-center gap-1.5 text-warning-fg">
                       <AlertTriangle className="h-3 w-3" />
                       <span className="font-mono">{f.factor_code}</span>
                     </div>

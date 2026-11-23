@@ -20,7 +20,7 @@ const STATUS_LABEL = {
 const STATUS_COLOR = {
   idle: 'text-slate-400',
   running: 'text-blue-400',
-  paused: 'text-amber-400',
+  paused: 'text-warning-fg',
   completed: 'text-emerald-400',
   failed: 'text-red-400',
 }

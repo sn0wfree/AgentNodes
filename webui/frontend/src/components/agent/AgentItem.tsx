@@ -15,7 +15,7 @@ interface AgentItemProps {
 
 const STATUS_CONFIG = {
   pending: { icon: Clock, color: 'text-slate-500', bg: 'bg-slate-500/10' },
-  running: { icon: Zap, color: 'text-amber-400', bg: 'bg-amber-500/10' },
+  running: { icon: Zap, color: 'text-warning-fg', bg: 'bg-warning-fill' },
   completed: { icon: CheckCircle, color: 'text-emerald-400', bg: 'bg-emerald-500/10' },
   failed: { icon: XCircle, color: 'text-red-400', bg: 'bg-red-500/10' },
   aborted: { icon: AlertCircle, color: 'text-orange-400', bg: 'bg-orange-500/10' },
@@ -29,7 +29,7 @@ function IterationRow({ iteration }: { iteration: IterationDetail }) {
       <div className="flex-1 truncate text-slate-400">
         {iteration.tool_calls.length > 0 ? (
           <span className="flex items-center gap-1">
-            <Zap className="h-3 w-3 text-amber-400" />
+            <Zap className="h-3 w-3 text-warning-fg" />
             {iteration.tool_calls.map((tc) => tc.name).join(', ')}
           </span>
         ) : iteration.thought ? (
@@ -85,7 +85,7 @@ export function AgentItem({ agent, onSelect, isSelected }: AgentItemProps) {
               {agent.name || agent.id.slice(0, 8)}
             </span>
             {isRunning && (
-              <span className="h-1.5 w-1.5 rounded-full bg-amber-400 animate-pulse" />
+              <span className="h-1.5 w-1.5 rounded-full bg-warning animate-pulse" />
             )}
           </div>
           <div className="flex items-center gap-2 text-[10px] text-slate-500">

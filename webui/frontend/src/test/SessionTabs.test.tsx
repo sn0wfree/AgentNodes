@@ -67,8 +67,8 @@ describe('SessionTabs', () => {
       currentSessionId: 'a',
     })
     const { container } = render(<SessionTabs />)
-    // lucide Star renders as svg with fill-amber-400
-    const starSvg = container.querySelector('svg.fill-amber-400')
+    // lucide Star renders as svg with fill-slate-300
+    const starSvg = container.querySelector('svg.fill-slate-300')
     expect(starSvg).toBeInTheDocument()
   })
 

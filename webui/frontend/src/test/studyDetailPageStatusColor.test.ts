@@ -21,7 +21,7 @@ function extractTextClass(status: string): string {
 describe('StudyDetailPage status color extraction (P1-5 regression)', () => {
   it('returns the actual text-* class for known statuses', () => {
     expect(extractTextClass('running')).toBe('text-sky-100')
-    expect(extractTextClass('paused')).toBe('text-amber-100')
+    expect(extractTextClass('paused')).toBe('text-warning-fg')
     expect(extractTextClass('error')).toBe('text-rose-100')
     expect(extractTextClass('complete')).toBe('text-emerald-100')
     expect(extractTextClass('monitoring')).toBe('text-indigo-100')

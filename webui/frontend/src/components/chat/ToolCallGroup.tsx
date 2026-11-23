@@ -53,8 +53,8 @@ export function ToolCallGroup({ toolCalls, startTimes, onRetry }: ToolCallGroupP
         </span>
         <span className="ml-auto flex items-center gap-2 text-[10px]">
           {running > 0 && (
-            <span className="flex items-center gap-1 text-amber-400">
-              <span className="h-1.5 w-1.5 rounded-full bg-amber-400 animate-pulse" />
+            <span className="flex items-center gap-1 text-warning-fg">
+              <span className="h-1.5 w-1.5 rounded-full bg-warning animate-pulse" />
               {running} running
             </span>
           )}

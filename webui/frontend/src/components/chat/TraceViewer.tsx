@@ -73,7 +73,7 @@ interface TraceViewerProps {
 const EVENT_COLORS: Record<string, string> = {
   llm_request: "border-blue-500/60 bg-blue-950/30",
   llm_response: "border-green-500/60 bg-green-950/30",
-  tool_result: "border-amber-500/60 bg-amber-950/30",
+  tool_result: "border-violet-500/60 bg-violet-950/30",
   tool_error: "border-red-500/60 bg-red-950/30",
   loop_start: "border-purple-500/60 bg-purple-950/30",
   loop_end: "border-purple-500/60 bg-purple-950/30",

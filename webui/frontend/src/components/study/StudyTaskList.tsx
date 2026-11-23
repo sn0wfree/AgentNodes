@@ -206,7 +206,7 @@ export function StudyTaskList({
               type="checkbox"
               checked={includeArchived}
               onChange={(e) => onToggleArchived(e.target.checked)}
-              className="h-3 w-3 cursor-pointer rounded border-slate-600 bg-slate-800 text-amber-500 focus:ring-amber-500"
+              className="h-3 w-3 cursor-pointer rounded border-slate-600 bg-slate-800 text-slate-400 focus:ring-slate-400"
             />
             <Archive className="h-3 w-3" />
             显示已归档
