@@ -45,7 +45,7 @@
 
 ---
 
-## 2. design/ — 仍生效的设计与契约（159 份，2026-11-23 补录）
+## 2. design/ — 仍生效的设计与契约（160 份，2026-11-23 补录）
 
 **判据**：文档里的决策仍在代码中执行。已被取代的移到 `archive/`。
 
@@ -290,7 +290,8 @@
 | [`p2-2-rsi-readonly-contract-20261123.md`](design/p2-2-rsi-readonly-contract-20261123.md) | P2-2 RSI 只读契约骨架（引擎真/UI 契约零，无端点不建 UI） |
 | [`p1-1-token-migration-plan-20261123.md`](design/p1-1-token-migration-plan-20261123.md) | P1-1 令牌迁移方案（示意29↔现网令牌映射/消费通道93:1/五批结构/设计内部12项未裁决策） |
 | [`rename-entry-consolidation-20261123.md`](design/rename-entry-consolidation-20261123.md) | 重命名入口合并方案（顶栏/侧栏两实现合一，单一 TopBar 编辑 + 侧栏 hover 触发切换） |
-| [`remove-session-tabs-20261123.md`](design/remove-session-tabs-20261123.md) | 移除顶栏 SessionTabs 方案（新建/切换全交侧栏，保留 openSessionIds 状态与 Cmd+1..9） |
+| [`remove-session-tabs-20261123.md`](design/remove-session-tabs-20261123.md) | 移除顶栏 SessionTabs 方案（未采纳，保留作反方论证记录） |
+| [`auto-title-and-remove-tab-plus-20261123.md`](design/auto-title-and-remove-tab-plus-20261123.md) | B+A 方案：首次发送自动标题（接回已有 auto_title_session + SSE patch）+ 删 tab 加号 |
 
 ---
 
