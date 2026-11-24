@@ -45,7 +45,7 @@
 
 ---
 
-## 2. design/ — 仍生效的设计与契约（167 份，2026-11-24 补录）
+## 2. design/ — 仍生效的设计与契约（168 份，2026-11-24 补录）
 
 **判据**：文档里的决策仍在代码中执行。已被取代的移到 `archive/`。
 
@@ -298,6 +298,7 @@
 | [`e2e-complete-build-and-repair-20261123.md`](design/e2e-complete-build-and-repair-20261123.md) | 完整 E2E 构建与问题修复方案（R-014 待批准/零代码）——E0 信任修复/E1 四 skip 转真断言/E2 路由 smoke/E3 业务流/E4 稳定性，14 路由覆盖差集与 6 孤儿基线清单 |
 | [`model-picker-key-gating-20261124.md`](design/model-picker-key-gating-20261124.md) | Chat 模型下拉按密钥状态置灰方案（R-014 已批准）——key_configured=false 的模型 disabled+标注「未配置密钥」，修清除密钥后仍可选中导致发送失败；数据后端已给、仅改展示层 |
 | [`color-audit-20261124.md`](design/color-audit-20261124.md) | 前端配色审查（手动操作+WCAG 量化，零代码）——暗色基本健康(7项边缘)、亮色系统性弱(53项低对比)；根因 emerald/violet/rose 语义色 60+ 处硬编码未令牌化；建议 B-3 语义令牌化 |
+| [`semantic-color-unification-20261124.md`](design/semantic-color-unification-20261124.md) | 语义色统一方案（R-014 待批准/零代码）——令牌已存在(success/danger/warning/viz)仅缺 Tailwind 映射+60+处组件接线；C1补令牌映射/C2高频替换/C3全量清扫+门禁/C4验收；目标单点可调、亮色低对比53→≤10 |
 
 ---
 
