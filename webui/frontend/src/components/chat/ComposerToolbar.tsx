@@ -1,25 +1,22 @@
 import { useEffect, useRef, useState } from 'react'
-import {
-  Bold,
-  Italic,
-  Code,
-  Code2,
-  List,
-  ListOrdered,
-  Link2,
-  Quote,
-  ChevronDown,
-  Bot,
-} from 'lucide-react'
+import { ChevronDown, Bot } from 'lucide-react'
 import { usePersonaStore } from '../../stores/personas'
 import type { ChatPersona } from '../../api/client'
 
 interface ComposerToolbarProps {
   sessionId: string | null
-  onApplyMarkdown: (prefix: string, suffix?: string) => void
 }
 
-export function ComposerToolbar({ sessionId, onApplyMarkdown }: ComposerToolbarProps) {
+/**
+ * Composer 工具行 —— 只含**角色（persona）选择器**。
+ *
+ * R-014 F3（composer-toolbar-p0p1-fix-20261124）：原实现的 8 个常驻
+ * Markdown 格式化按钮（粗体/斜体/行内代码/代码块/列表/引用/链接）已移除——
+ * 它们在窄屏下独占两行、把整行撑到 4 行，且与浏览器/编辑器的标准快捷键
+ * 重复。能力改由键盘提供（`Cmd/Ctrl+B/I/E`、`Cmd/Ctrl+Shift+7/8/.`），
+ * 变换逻辑在 `utils/markdownShortcuts.ts`。
+ */
+export function ComposerToolbar({ sessionId }: ComposerToolbarProps) {
   const personas = usePersonaStore((s) => s.personas)
   const loadPersonas = usePersonaStore((s) => s.loadPersonas)
   const getSessionPersona = usePersonaStore((s) => s.getSessionPersona)
@@ -46,14 +43,11 @@ export function ComposerToolbar({ sessionId, onApplyMarkdown }: ComposerToolbarP
     return () => document.removeEventListener('mousedown', onClick)
   }, [])
 
+  const isOrchestrator = sessionId?.startsWith('dag:') ?? false
+
   return (
     <div className="mb-2 flex flex-wrap items-center gap-1">
-      {/* Persona selector */}
       <div className="relative" ref={menuRef}>
-        {(() => {
-          const isOrchestrator = sessionId?.startsWith('dag:') ?? false
-          return (
-            <>
         <button
           type="button"
           onClick={() => !isOrchestrator && setOpen((o) => !o)}
@@ -99,78 +93,7 @@ export function ComposerToolbar({ sessionId, onApplyMarkdown }: ComposerToolbarP
             </ul>
           </div>
         )}
-            </>
-          )
-        })()}
       </div>
-
-      <div className="mx-1 h-4 w-px bg-slate-700/60" />
-
-      {/* Markdown quick actions */}
-      <button
-        type="button"
-        onClick={() => onApplyMarkdown('**', '**')}
-        className="rounded px-1.5 py-1 text-slate-400 transition-colors hover:bg-slate-700/40 hover:text-slate-200"
-        title="粗体"
-      >
-        <Bold className="h-3.5 w-3.5" />
-      </button>
-      <button
-        type="button"
-        onClick={() => onApplyMarkdown('_', '_')}
-        className="rounded px-1.5 py-1 text-slate-400 transition-colors hover:bg-slate-700/40 hover:text-slate-200"
-        title="斜体"
-      >
-        <Italic className="h-3.5 w-3.5" />
-      </button>
-      <button
-        type="button"
-        onClick={() => onApplyMarkdown('`', '`')}
-        className="rounded px-1.5 py-1 text-slate-400 transition-colors hover:bg-slate-700/40 hover:text-slate-200"
-        title="行内代码"
-      >
-        <Code className="h-3.5 w-3.5" />
-      </button>
-      <button
-        type="button"
-        onClick={() => onApplyMarkdown('```\n', '\n```')}
-        className="rounded px-1.5 py-1 text-slate-400 transition-colors hover:bg-slate-700/40 hover:text-slate-200"
-        title="代码块"
-      >
-        <Code2 className="h-3.5 w-3.5" />
-      </button>
-      <button
-        type="button"
-        onClick={() => onApplyMarkdown('- ')}
-        className="rounded px-1.5 py-1 text-slate-400 transition-colors hover:bg-slate-700/40 hover:text-slate-200"
-        title="无序列表"
-      >
-        <List className="h-3.5 w-3.5" />
-      </button>
-      <button
-        type="button"
-        onClick={() => onApplyMarkdown('1. ')}
-        className="rounded px-1.5 py-1 text-slate-400 transition-colors hover:bg-slate-700/40 hover:text-slate-200"
-        title="有序列表"
-      >
-        <ListOrdered className="h-3.5 w-3.5" />
-      </button>
-      <button
-        type="button"
-        onClick={() => onApplyMarkdown('> ')}
-        className="rounded px-1.5 py-1 text-slate-400 transition-colors hover:bg-slate-700/40 hover:text-slate-200"
-        title="引用"
-      >
-        <Quote className="h-3.5 w-3.5" />
-      </button>
-      <button
-        type="button"
-        onClick={() => onApplyMarkdown('[文本](', ')')}
-        className="rounded px-1.5 py-1 text-slate-400 transition-colors hover:bg-slate-700/40 hover:text-slate-200"
-        title="链接"
-      >
-        <Link2 className="h-3.5 w-3.5" />
-      </button>
     </div>
   )
 }

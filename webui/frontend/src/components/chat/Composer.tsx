@@ -9,6 +9,12 @@ import { useModelStore } from '../../stores/model'
 import { useThinkingPrefStore } from '../../stores/thinkingPref'
 import { api } from '../../api/client'
 import { uuid } from '../../utils/uuid'
+import {
+  wrapSelection,
+  applyLinePrefix,
+  type WrapKind,
+  type LinePrefixKind,
+} from '../../utils/markdownShortcuts'
 import { ComposerToolbar } from './ComposerToolbar'
 import { ComposerStatusBar } from './ComposerStatusBar'
 import { SlashCommandMenu } from './SlashCommandMenu'
@@ -203,7 +209,72 @@ export function Composer({ composeMessage, readOnly }: ComposerProps = {}) {
     cancelAttempt()
   }, [cancelAttempt])
 
+  const applyMarkdown = useCallback((kind: WrapKind) => {
+    const ta = textareaRef.current
+    if (!ta) return
+    const r = wrapSelection(text, ta.selectionStart, ta.selectionEnd, kind)
+    setText(r.text)
+    setSlashQuery(null)
+    // Restore focus + selection after state update
+    requestAnimationFrame(() => {
+      ta.focus()
+      ta.setSelectionRange(r.selectionStart, r.selectionEnd)
+    })
+  }, [text])
+
+  /** 行前缀型（列表 / 引用）——前缀落在整行行首，多行选中逐行加。 */
+  const applyLinePrefixTo = useCallback((kind: LinePrefixKind) => {
+    const ta = textareaRef.current
+    if (!ta) return
+    const r = applyLinePrefix(text, ta.selectionStart, ta.selectionEnd, kind)
+    setText(r.text)
+    setSlashQuery(null)
+    requestAnimationFrame(() => {
+      ta.focus()
+      ta.setSelectionRange(r.selectionStart, r.selectionEnd)
+    })
+  }, [text])
+
   const handleKeyDown = (e: React.KeyboardEvent) => {
+    // Markdown 快捷键（R-014 F3）：只在输入框内生效。
+    // 包裹型必须有选区才触发（无选区不插空标记，避免「****」噪音）；
+    // 行前缀型无选区也生效（给当前行加前缀是明确意图）。
+    // 注意 Cmd/Ctrl+B 在输入框内让位给「粗体」，输入框外仍是全局「切换右侧面板」。
+    const mod = e.metaKey || e.ctrlKey
+    if (mod && !e.altKey) {
+      const key = e.key.toLowerCase()
+      const hasSelection = textareaRef.current
+        ? textareaRef.current.selectionStart !== textareaRef.current.selectionEnd
+        : false
+      const wrapMap: Record<string, WrapKind> = {
+        b: 'bold',
+        i: 'italic',
+        e: 'code',
+      }
+      if (hasSelection && wrapMap[key]) {
+        e.preventDefault()
+        e.stopPropagation()
+        applyMarkdown(wrapMap[key])
+        return
+      }
+      if (e.shiftKey) {
+        // 行前缀型用 e.code（物理键位）判定：Shift+8 的 e.key 是 "*"、
+        // Shift+7 是 "&"（美式键盘），按 e.key 匹配会漏。
+        const lineMap: Record<string, LinePrefixKind> = {
+          Digit7: 'ol',
+          Digit8: 'ul',
+          Period: 'quote',
+        }
+        const lineKind = lineMap[e.code]
+        if (lineKind) {
+          e.preventDefault()
+          e.stopPropagation()
+          applyLinePrefixTo(lineKind)
+          return
+        }
+      }
+    }
+
     // Slash command menu navigation
     if (slashQuery !== null) {
       if (e.key === 'ArrowDown') {
@@ -256,28 +327,6 @@ export function Composer({ composeMessage, readOnly }: ComposerProps = {}) {
       }
     }
   }
-
-  const applyMarkdown = useCallback((prefix: string, suffix?: string) => {
-    const ta = textareaRef.current
-    if (!ta) return
-    const start = ta.selectionStart
-    const end = ta.selectionEnd
-    const sel = text.slice(start, end)
-    const before = text.slice(0, start)
-    const after = text.slice(end)
-    const wrapped = sel
-      ? `${prefix}${sel}${suffix ?? ''}`
-      : `${prefix}${suffix ?? ''}`
-    const next = `${before}${wrapped}${after}`
-    setText(next)
-    setSlashQuery(null)
-    // Restore focus + selection after state update
-    requestAnimationFrame(() => {
-      ta.focus()
-      const newCaret = before.length + prefix.length + sel.length
-      ta.setSelectionRange(newCaret, newCaret)
-    })
-  }, [text])
 
   const selectSlashCommand = useCallback((command: string, autoSend?: boolean) => {
     // Replace the partial `/xxx` token with the full command
@@ -381,8 +430,8 @@ export function Composer({ composeMessage, readOnly }: ComposerProps = {}) {
         )}
       </div>
 
-      {/* Toolbar: persona selector + markdown actions */}
-      <ComposerToolbar sessionId={currentSessionId} onApplyMarkdown={applyMarkdown} />
+      {/* Toolbar: persona selector (markdown 快捷键走键盘，不再有常驻按钮） */}
+      <ComposerToolbar sessionId={currentSessionId} />
 
       {/* Status bar: mode toggle, model selector, thinking, context */}
       <ComposerStatusBar sessionId={currentSessionId} />

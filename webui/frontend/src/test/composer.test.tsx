@@ -317,4 +317,85 @@ describe('Composer', () => {
     const body = vi.mocked(api.post).mock.calls[0]![1] as Record<string, unknown>
     expect(body.agent_id).toBeUndefined()
   })
+
+  // ── R-014 F3：Markdown 快捷键（8 个常驻按钮已移除，能力改由键盘提供）──
+  describe('markdown shortcuts', () => {
+    const select = (start: number, end: number) => {
+      const ta = textarea()
+      ta.focus()
+      ta.setSelectionRange(start, end)
+    }
+
+    it('Ctrl+B wraps the selection in bold', () => {
+      render(<Composer />)
+      fireEvent.change(textarea(), { target: { value: 'hello world' } })
+      select(6, 11)
+      fireEvent.keyDown(textarea(), { key: 'b', ctrlKey: true, metaKey: true })
+      expect(textarea().value).toBe('hello **world**')
+    })
+
+    it('Ctrl+I wraps the selection in italic', () => {
+      render(<Composer />)
+      fireEvent.change(textarea(), { target: { value: 'hello world' } })
+      select(6, 11)
+      fireEvent.keyDown(textarea(), { key: 'i', ctrlKey: true, metaKey: true })
+      expect(textarea().value).toBe('hello _world_')
+    })
+
+    it('Ctrl+E wraps the selection in inline code', () => {
+      render(<Composer />)
+      fireEvent.change(textarea(), { target: { value: 'hello world' } })
+      select(6, 11)
+      fireEvent.keyDown(textarea(), { key: 'e', ctrlKey: true, metaKey: true })
+      expect(textarea().value).toBe('hello `world`')
+    })
+
+    it('does not insert an empty marker pair when there is no selection', () => {
+      render(<Composer />)
+      fireEvent.change(textarea(), { target: { value: 'abc' } })
+      select(0, 0)
+      fireEvent.keyDown(textarea(), { key: 'b', ctrlKey: true, metaKey: true })
+      expect(textarea().value).toBe('abc')
+    })
+
+    it('Ctrl+Shift+8 prefixes the caret line with a bullet', () => {
+      render(<Composer />)
+      fireEvent.change(textarea(), { target: { value: 'abc def' } })
+      select(4, 4)
+      fireEvent.keyDown(textarea(), { key: '*', code: 'Digit8', ctrlKey: true, metaKey: true, shiftKey: true })
+      expect(textarea().value).toBe('- abc def')
+    })
+
+    it('Ctrl+Shift+8 prefixes every selected line', () => {
+      render(<Composer />)
+      fireEvent.change(textarea(), { target: { value: 'a\nb\nc' } })
+      select(0, 5)
+      fireEvent.keyDown(textarea(), { key: '*', code: 'Digit8', ctrlKey: true, metaKey: true, shiftKey: true })
+      expect(textarea().value).toBe('- a\n- b\n- c')
+    })
+
+    it('Ctrl+Shift+7 numbers an ordered list sequentially', () => {
+      render(<Composer />)
+      fireEvent.change(textarea(), { target: { value: 'a\nb\nc' } })
+      select(0, 5)
+      fireEvent.keyDown(textarea(), { key: '&', code: 'Digit7', ctrlKey: true, metaKey: true, shiftKey: true })
+      expect(textarea().value).toBe('1. a\n2. b\n3. c')
+    })
+
+    it('Ctrl+Shift+. prefixes the line with a quote marker', () => {
+      render(<Composer />)
+      fireEvent.change(textarea(), { target: { value: 'abc def' } })
+      select(4, 4)
+      fireEvent.keyDown(textarea(), { key: '>', code: 'Period', ctrlKey: true, metaKey: true, shiftKey: true })
+      expect(textarea().value).toBe('> abc def')
+    })
+
+    it('plain typing is unaffected by the shortcut keys', () => {
+      render(<Composer />)
+      fireEvent.change(textarea(), { target: { value: 'abc' } })
+      select(0, 3)
+      fireEvent.keyDown(textarea(), { key: 'b' })
+      expect(textarea().value).toBe('abc')
+    })
+  })
 })
