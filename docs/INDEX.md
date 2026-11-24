@@ -45,7 +45,7 @@
 
 ---
 
-## 2. design/ — 仍生效的设计与契约（170 份，2026-11-24 补录）
+## 2. design/ — 仍生效的设计与契约（171 份，2026-11-24 补录）
 
 **判据**：文档里的决策仍在代码中执行。已被取代的移到 `archive/`。
 
@@ -297,6 +297,7 @@
 | [`nav-rail-collapse-tooltip-20261123.md`](design/nav-rail-collapse-tooltip-20261123.md) | 图标栏两态折叠 + 统一 Tooltip 方案（R-014 待批准/零代码）——衔接侧栏改造，纯前端，键盘可达 |
 | [`e2e-complete-build-and-repair-20261123.md`](design/e2e-complete-build-and-repair-20261123.md) | 完整 E2E 构建与问题修复方案（R-014 待批准/零代码）——E0 信任修复/E1 四 skip 转真断言/E2 路由 smoke/E3 业务流/E4 稳定性，14 路由覆盖差集与 6 孤儿基线清单 |
 | [`model-picker-key-gating-20261124.md`](design/model-picker-key-gating-20261124.md) | Chat 模型下拉按密钥状态置灰方案（R-014 已批准）——key_configured=false 的模型 disabled+标注「未配置密钥」，修清除密钥后仍可选中导致发送失败；数据后端已给、仅改展示层 |
+| [`context-usage-agent-survey-20261124.md`](design/context-usage-agent-survey-20261124.md) | 各 agent 上下文用量实现调研（零代码）——结论：生产 chat 无任何 token 事件下发(翻译层丢弃)、DAG/swarm 后端根本没算；9 条路径口径对照 + 17 项缺口清单 + 9 条后端修复建议(P0-a 事件透传等)+ 4 个待决策点 |
 | [`color-audit-20261124.md`](design/color-audit-20261124.md) | 前端配色审查（手动操作+WCAG 量化，零代码）——暗色基本健康(7项边缘)、亮色系统性弱(53项低对比)；根因 emerald/violet/rose 语义色 60+ 处硬编码未令牌化；建议 B-3 语义令牌化 |
 | [`semantic-color-unification-20261124.md`](design/semantic-color-unification-20261124.md) | 语义色统一方案（R-014 待批准/零代码）——令牌已存在(success/danger/warning/viz)仅缺 Tailwind 映射+60+处组件接线；C1补令牌映射/C2高频替换/C3全量清扫+门禁/C4验收；目标单点可调、亮色低对比53→≤10 |
 | [`composer-toolbar-evaluation-20261124.md`](design/composer-toolbar-evaluation-20261124.md) | 输入框工具行评估（零代码）——6 类控件均真接后端契约；实测 4 个问题：Plan/Build 持久化失效(__srModeSession 零调用)、角色下拉混裸id+编排助手+顺序不稳、列表/引用行中插错、格式化无快捷键；业界对照：8 图标常驻过密(375 下 4 行)宜改选中浮出 |
