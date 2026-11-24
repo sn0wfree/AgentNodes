@@ -66,3 +66,32 @@ def test_real_repo_hygiene_baseline():
     hits = mod.find_violations(mod.SRC)
     # C 批收尾：viz 收编 + bad-gradient 修正 + 图表语义色白名单登记 → 真仓归零
     assert len(hits) == 0, f"hygiene 门应归零，实得 {len(hits)}: {hits[:5]}"
+
+
+def test_semantic_tokens_declared_in_both_themes():
+    """语义色统一 C1 契约：Tailwind 映射的每个 var(--x) 必须在 globals.css
+    的 dark(:root) 与 light([data-theme='light']) 两段都声明——保证「单点可调、
+    双主题自适应」，防止只加映射漏加某主题声明导致该主题色失效。"""
+    import re
+
+    tw = (ROOT / "webui" / "frontend" / "tailwind.config.js").read_text(encoding="utf-8")
+    css = (ROOT / "webui" / "frontend" / "src" / "styles" / "globals.css").read_text(encoding="utf-8")
+    # 只取 colors 段里 success/danger/thinking/info/warning 的 var() 映射
+    semantic = set(re.findall(r"'([\w-]+)':\s*'var\((--[\w-]+)\)'", tw))
+    semantic = {v for _k, v in semantic if any(
+        p in v for p in ("success", "danger", "thinking", "info", "warning")
+    )}
+    assert semantic, "tailwind.config.js 未映射任何语义色变量"
+
+    def block(start_marker: str, end_marker: str | None) -> str:
+        i = css.index(start_marker)
+        j = css.index(end_marker, i) if end_marker else len(css)
+        return css[i:j]
+
+    dark = block(":root,\n[data-theme='dark'] {", "/* ── Design tokens · light")
+    light = block("[data-theme='light'] {", "/* ── L1 primitives")
+
+    for var in sorted(semantic):
+        assert re.search(rf"{re.escape(var)}\s*:", dark), f"{var} 缺 dark 声明"
+        assert re.search(rf"{re.escape(var)}\s*:", light), f"{var} 缺 light 声明"
+

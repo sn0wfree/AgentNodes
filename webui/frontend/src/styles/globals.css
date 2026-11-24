@@ -36,6 +36,14 @@
   --warning-foreground-bright: #fef08a;
   --warning-quaternary: rgba(250,204,21,0.06);
   --danger: #f87171;   --danger-fg: #f87171;   --danger-surface: rgba(248,113,113,0.10);
+  /* 语义色扩展（语义色统一 C1）：fg-muted 次级文字 + thinking/info 组。
+     仅声明、零视觉变化；组件在 C2/C3 才从硬编码色阶切到这些令牌。 */
+  --success-fg-muted: rgba(74,222,128,0.7);
+  --danger-fg-muted: rgba(248,113,113,0.7);
+  --thinking: #c4b5fd; --thinking-fg: #c4b5fd;
+  --thinking-surface: rgba(139,92,246,0.10); --thinking-fg-muted: rgba(167,139,250,0.6);
+  --info: #38bdf8; --info-fg: #38bdf8;
+  --info-surface: rgba(56,189,248,0.10); --info-fg-muted: rgba(56,189,248,0.7);
   /* viz 系列色（C 批：图表系列色，豁免单强调，单点定义）*/
   --viz-1: #3b82f6;  --viz-2: #10b981;  --viz-3: #8b5cf6;  --viz-4: #f59e0b;
   --viz-5: #06b6d4;  --viz-6: #ec4899;  --viz-7: #f97316;  --viz-8: #14b8a6;
@@ -75,6 +83,13 @@
   --warning-foreground-bright: #713f12;
   --warning-quaternary: rgba(202,138,4,0.06);
   --danger: #dc2626;   --danger-fg: #b91c1c;  --danger-surface: rgba(220,38,38,0.08);
+  /* 语义色扩展（C1）：light 用加深色阶，fg ≥4.5:1（对比度审查 P0） */
+  --success-fg-muted: #15803d;
+  --danger-fg-muted: #b91c1c;
+  --thinking: #6d28d9; --thinking-fg: #5b21b6;
+  --thinking-surface: rgba(109,40,217,0.08); --thinking-fg-muted: #6d28d9;
+  --info: #0369a1; --info-fg: #075985;
+  --info-surface: rgba(3,105,161,0.08); --info-fg-muted: #0369a1;
   /* viz 系列色（light 加深保证对比度）*/
   --viz-1: #2563eb;  --viz-2: #047857;  --viz-3: #6d28d9;  --viz-4: #b45309;
   --viz-5: #0e7490;  --viz-6: #be185d;  --viz-7: #c2410c;  --viz-8: #0f766e;
