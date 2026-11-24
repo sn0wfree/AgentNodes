@@ -13,6 +13,8 @@ import { useModelStore } from '../../stores/model'
 import { useThinkingPrefStore } from '../../stores/thinkingPref'
 import { useSystemStore } from '../../stores/system'
 import { useChatStore } from '../../stores/chat'
+import { usePersonaStore } from '../../stores/personas'
+import type { ChatPersona } from '../../api/client'
 import { tokenTone, toneFillClass } from '../../utils/tokenThresholds'
 
 interface ComposerStatusBarProps {
@@ -45,11 +47,22 @@ export function ComposerStatusBar({ sessionId }: ComposerStatusBarProps) {
   const tokensUsed = useChatStore((s) =>
     sessionId ? s.tokensUsed.get(sessionId) ?? 0 : 0
   )
+  // 人设（persona）选择器 —— 与模式/模型/思考同一排（R-014 F4）。
+  const personas = usePersonaStore((s) => s.personas)
+  const loadPersonas = usePersonaStore((s) => s.loadPersonas)
+  const getSessionPersona = usePersonaStore((s) => s.getSessionPersona)
+  const setSessionPersona = usePersonaStore((s) => s.setSessionPersona)
 
   const [modelOpen, setModelOpen] = useState(false)
   const [thinkingOpen, setThinkingOpen] = useState(false)
+  const [personaOpen, setPersonaOpen] = useState(false)
   const modelRef = useRef<HTMLDivElement>(null)
   const thinkingRef = useRef<HTMLDivElement>(null)
+  const personaRef = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    void loadPersonas()
+  }, [loadPersonas])
 
   // Load provider catalog on mount
   useEffect(() => {
@@ -61,10 +74,16 @@ export function ComposerStatusBar({ sessionId }: ComposerStatusBarProps) {
     const onClick = (e: MouseEvent) => {
       if (modelRef.current && !modelRef.current.contains(e.target as Node)) setModelOpen(false)
       if (thinkingRef.current && !thinkingRef.current.contains(e.target as Node)) setThinkingOpen(false)
+      if (personaRef.current && !personaRef.current.contains(e.target as Node)) setPersonaOpen(false)
     }
     document.addEventListener('mousedown', onClick)
     return () => document.removeEventListener('mousedown', onClick)
   }, [])
+
+  const personaId = sessionId ? getSessionPersona(sessionId) : 'chat'
+  const selectedPersona: ChatPersona | undefined =
+    personas.find((p) => p.id === personaId) ?? personas.find((p) => p.id === 'chat')
+  const isOrchestrator = sessionId?.startsWith('dag:') ?? false
 
   const currentModel = sessionId ? sessionModels[sessionId] ?? null : null
   const modeCfg = MODE_CONFIG[mode]
@@ -79,6 +98,57 @@ export function ComposerStatusBar({ sessionId }: ComposerStatusBarProps) {
 
   return (
     <div className="mb-2 flex flex-wrap items-center gap-2 text-[11px]">
+      {/* Persona selector（人设）—— 与模式/模型/思考同一排（R-014 F4）*/}
+      <div className="relative" ref={personaRef}>
+        <button
+          type="button"
+          onClick={() => !isOrchestrator && setPersonaOpen((o) => !o)}
+          className="flex items-center gap-1.5 rounded-lg px-2 py-1 text-slate-400 transition-colors hover:bg-slate-700/40 hover:text-slate-200 disabled:opacity-40"
+          disabled={!sessionId}
+          title={isOrchestrator ? '编排会话固定使用编排助手人设' : '选择对话智能体'}
+        >
+          <Bot className="h-3 w-3 text-primary-400" />
+          <span className="max-w-[120px] truncate font-medium text-slate-300">
+            {selectedPersona?.name ?? (isOrchestrator ? '编排助手' : '通用助手')}
+          </span>
+          {!isOrchestrator && (
+            <ChevronDown className={`h-2.5 w-2.5 text-slate-500 transition-transform ${personaOpen ? 'rotate-180' : ''}`} />
+          )}
+        </button>
+        {personaOpen && (
+          <div className="glass absolute left-0 bottom-full z-50 mb-1 w-64 overflow-hidden rounded-xl border border-slate-700/60 shadow-2xl">
+            <ul className="max-h-64 overflow-y-auto py-1">
+              {personas.map((p) => (
+                <li key={p.id}>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (sessionId) setSessionPersona(sessionId, p.id)
+                      setPersonaOpen(false)
+                    }}
+                    className={`flex w-full items-start gap-2 px-3 py-2 text-left transition-colors ${
+                      p.id === personaId
+                        ? 'bg-slate-700/40 text-slate-100'
+                        : 'text-slate-300 hover:bg-slate-700/30'
+                    }`}
+                  >
+                    <span className="mt-0.5 text-primary-400">
+                      <Bot className="h-3.5 w-3.5" />
+                    </span>
+                    <span className="flex-1">
+                      <span className="block text-xs font-medium">{p.name}</span>
+                      <span className="block text-[11px] text-slate-500">{p.description}</span>
+                    </span>
+                  </button>
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
+      </div>
+
+      <div className="h-3 w-px bg-slate-700/60" />
+
       {/* Mode toggle */}
       <button
         type="button"

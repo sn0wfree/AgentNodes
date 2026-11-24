@@ -15,7 +15,6 @@ import {
   type WrapKind,
   type LinePrefixKind,
 } from '../../utils/markdownShortcuts'
-import { ComposerToolbar } from './ComposerToolbar'
 import { ComposerStatusBar } from './ComposerStatusBar'
 import { SlashCommandMenu } from './SlashCommandMenu'
 
@@ -430,10 +429,7 @@ export function Composer({ composeMessage, readOnly }: ComposerProps = {}) {
         )}
       </div>
 
-      {/* Toolbar: persona selector (markdown 快捷键走键盘，不再有常驻按钮） */}
-      <ComposerToolbar sessionId={currentSessionId} />
-
-      {/* Status bar: mode toggle, model selector, thinking, context */}
+      {/* Status bar: persona, mode toggle, model selector, thinking, context（R-014 F4 合并为一行）*/}
       <ComposerStatusBar sessionId={currentSessionId} />
 
       {/* Input area */}

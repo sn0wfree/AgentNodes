@@ -19,9 +19,7 @@ vi.mock('../contexts/ChatSessionContext', () => ({
 }))
 
 // Child surfaces that pull their own stores/charts are out of scope here.
-vi.mock('../components/chat/ComposerToolbar', () => ({
-  ComposerToolbar: () => <div data-testid="toolbar" />,
-}))
+// R-014 F4：ComposerToolbar 已并入 ComposerStatusBar（同排），组件删除。
 vi.mock('../components/chat/ComposerStatusBar', () => ({
   ComposerStatusBar: () => <div data-testid="statusbar" />,
 }))
