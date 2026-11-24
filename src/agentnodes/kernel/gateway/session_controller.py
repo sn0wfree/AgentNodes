@@ -632,6 +632,8 @@ class SessionController:
                 # 发它，不剥会把 system_prompt/tools_schema 逐调用落库。
                 on_event=make_loop_event_sink(sink),
             )
+            # R-014 H1：让 loop 能读到本轮注入的 context items（7 段归属用）
+            loop._context_source = self
             # attempt 级超时（顺序⑤ 缺口①，2026-11-18 裁决 3）：与旧队列
             # 路径同一 env（``AGENTNODES_CHAT_ATTEMPT_TIMEOUT``，默认 600，
             # 0 = 禁用）。**从实际执行开始计时**（loop.run/arun 入口），
@@ -789,6 +791,9 @@ class SessionController:
                 })
             if not bundle.items:
                 return messages
+            # R-014 H1：保存本轮注入的 items（kind/content），供
+            # `context.breakdown` 事件按 7 段归属估算（纯元数据，不改文本）。
+            self._last_context_items = list(bundle.items)
             prefix = "\n\n".join(item.content for item in bundle.items)
             return messages[:-1] + [
                 {**last, "content": prefix + "\n\n" + str(last.get("content") or "")},

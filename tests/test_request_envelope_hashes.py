@@ -40,8 +40,11 @@ class TestTraceLlmRequestHashes:
 
         loop._trace_llm_request(messages, iteration=1, tools=tools)
 
-        loop._emit.assert_called_once()
-        entry = loop._emit.call_args[0][1]
+        # R-014 H1：除 llm_request 外还会 emit 一次 context.breakdown（7 段构成）。
+        # 契约仍是「llm_request 恰好一次」，按 kind 过滤而非断言总调用数。
+        llm_calls = [c for c in loop._emit.call_args_list if c[0][0] == "llm_request"]
+        assert len(llm_calls) == 1
+        entry = llm_calls[0][0][1]
         assert "system_prompt_hash" in entry
         assert "tools_hash" in entry
         assert "history_hash" in entry

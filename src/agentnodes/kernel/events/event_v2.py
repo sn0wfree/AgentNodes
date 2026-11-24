@@ -130,6 +130,8 @@ class EventType:
     # LLM usage
     LLM_USAGE = "llm_usage"
     SESSION_TOTAL_TOKENS = "session_total_tokens"
+    # 上下文 7 段拆解（R-014 H1）：每次 LLM call 的上下文构成估算
+    CONTEXT_BREAKDOWN = "context.breakdown"
 
     # LLM request envelope (DSH request-envelope pattern): recorded once
     # per LLM call. Large fields (system_prompt, tools_schema) are

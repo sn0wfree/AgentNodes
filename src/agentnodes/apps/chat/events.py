@@ -63,6 +63,8 @@ STREAM_PASSTHROUGH_KINDS: frozenset[str] = frozenset({
     "text.started", "text.ended",
     "thinking_start", "thinking_end",
     "llm_usage", "session_total_tokens",
+    # R-014 H1：7 段上下文构成事件（圆环 + hover 明细的数据源）
+    "context.breakdown",
 })
 
 

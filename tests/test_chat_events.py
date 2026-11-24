@@ -40,6 +40,8 @@ class TestChatEventVocabulary:
             "thinking_start", "thinking_end",
             # R-014 C-1：token 用量事件透传（此前被 bridge 丢弃，前端只能估算）
             "llm_usage", "session_total_tokens",
+            # R-014 H1：7 段上下文构成事件（圆环 + hover 明细）
+            "context.breakdown",
         })
         for kind in STREAM_PASSTHROUGH_KINDS:
             assert translate_engine_event(kind) == kind

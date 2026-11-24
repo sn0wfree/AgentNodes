@@ -320,6 +320,26 @@ def trace_llm_request(
             "estimated_tokens": estimate_tokens(messages),
         }
 
+        # R-014 H1：7 段上下文构成估算（供前端圆环 + hover 明细）。
+        # context items 由 session_controller 在注入时挂到 loop._context_source。
+        # 注意：**必须在 llm_request emit 之前**——多个现有测试用
+        # `loop._emit.call_args`（最后一次调用）取 llm_request entry，
+        # 若 breakdown 后发会破坏该契约（wire 零变化）。
+        try:
+            from agentnodes.kernel.context.breakdown import estimate_context_breakdown
+
+            source = getattr(loop, "_context_source", None)
+            items = getattr(source, "_last_context_items", None) if source is not None else None
+            breakdown = estimate_context_breakdown(messages, tools or [], items)
+            _emit(loop, "context.breakdown", {
+                "session_id": entry["session_id"],
+                "iteration": iteration,
+                "segments": breakdown,
+                "total": sum(breakdown.values()),
+            })
+        except Exception:  # noqa: BLE001 — 拆解失败不阻断 LLM 调用
+            logger.debug("context.breakdown emit failed", exc_info=True)
+
         # Sink 1: event_log via the on_event forwarder. Best-effort.
         try:
             _emit(loop, "llm_request", dict(entry))

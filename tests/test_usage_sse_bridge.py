@@ -82,3 +82,28 @@ def test_session_total_tokens_reaches_publish_sse():
     payload = next(d for _, k, d in pushed if k == "session_total_tokens")
     assert payload["context_used"] == 450
     close()
+
+
+def test_context_breakdown_reaches_publish_sse():
+    """H1：7 段上下文构成事件同样过生产 bridge。"""
+    pushed: list = []
+    gw, close = _make_bridge(pushed)
+
+    segments = {k: 10 for k in (
+        "messages", "system_prompt", "meta_user_context", "skills",
+        "tool_prompt", "system_tool_schemas", "mcp_tool_schemas",
+    )}
+    gw.sinks[0]("context.breakdown", {
+        "event_correlation_id": "corr-1",
+        "session_id": "sess-1",
+        "iteration": 1,
+        "segments": segments,
+        "total": 70,
+    })
+
+    kinds = [k for _, k, _ in pushed]
+    assert "context.breakdown" in kinds, f"未过 bridge；实际: {kinds}"
+    payload = next(d for _, k, d in pushed if k == "context.breakdown")
+    assert payload["segments"]["mcp_tool_schemas"] == 10
+    assert payload["total"] == 70
+    close()
