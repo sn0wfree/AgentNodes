@@ -51,7 +51,7 @@ export function AccountSection({ username }: AccountSectionProps) {
   }
 
   return (
-    <Section icon={User} title="用户管理">
+    <Section icon={User} title="个人账号">
       <div className="space-y-3">
         <div className="flex items-center justify-between text-sm">
           <span className="text-slate-400">当前用户</span>

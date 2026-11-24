@@ -123,7 +123,7 @@ async def _wait_for_response(page, timeout_s=60):
     return False
 
 
-async def _wait_for_response_or_fail(page, timeout_s:60, *, what: str = "响应"):
+async def _wait_for_response_or_fail(page, timeout_s: int = 60, *, what: str = "响应"):
     """等待响应；超时**显式失败**（带可诊断信息）。
 
     用于「后续断言依赖这次响应已完成」的场景——超时时继续走会让断言在

@@ -77,7 +77,11 @@ jobs:
           npm install --legacy-peer-deps
 
       # 构建前端（可能从 cache 命中）
+      # E0 信任修复：显式 VITE_E2E=1，确保 main.tsx 暴露 window.__*Store hooks，
+      # 不再依赖 built_frontend fixture 的兜底重建（那会让 CI 与本地构建不一致）。
       - name: Build frontend
+        env:
+          VITE_E2E: "1"
         run: |
           cd webui/frontend
           npm run build
@@ -94,6 +98,7 @@ jobs:
           AN_RUN_BROWSER_TESTS: "1"
         run: |
           python -m pytest tests/test_webui_catalog.py tests/test_webui_visual.py \
+            tests/test_webui_routes_e2e.py \
             -v --tb=short \
             --color=yes
 
@@ -141,6 +146,8 @@ jobs:
           cache-dependency-path: pyproject.toml
 
       - name: Install deps
+        env:
+          VITE_E2E: "1"
         run: |
           python -m pip install -e ".[dev,api,webui-api]"
           cd webui/frontend && npm install --legacy-peer-deps && npm run build && cd ../..
@@ -148,8 +155,8 @@ jobs:
 
       - name: Update baselines
         run: |
-          UPDATE_SNAPSHOTS=1 AGENTNODES_TEST_CHAT=1 \
-            python -m pytest tests/test_webui_visual.py -v --tb=short
+          UPDATE_SNAPSHOTS=1 AGENTNODES_TEST_CHAT=1 AN_RUN_BROWSER_TESTS=1 \
+            python -m pytest tests/test_webui_visual.py tests/test_webui_catalog.py -v --tb=short
 
       - name: Commit updated baselines
         run: |

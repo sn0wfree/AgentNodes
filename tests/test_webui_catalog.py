@@ -7,8 +7,10 @@
 这是更细粒度的视觉回归：每个组件的状态/变体都有独立基线。
 
 CI 集成:
-- `./install.sh --record-baselines` 会重录所有 visual baselines (含 catalog)
+- `UPDATE_SNAPSHOTS=1 AN_RUN_BROWSER_TESTS=1 pytest tests/test_webui_catalog.py`
+  会重录所有 catalog baselines
 - 失败时 diff 图保存到 tests/diffs/
+- 基线缺失默认 fail；`ALLOW_BASELINE_BOOTSTRAP=1` 才允许首录
 """
 
 # pytest_plugins 必须顶部
@@ -42,6 +44,8 @@ BASELINES_DIR = TESTS_DIR / "baselines"
 ACTUALS_DIR = TESTS_DIR / "_actual"
 DIFFS_DIR = TESTS_DIR / "diffs"
 UPDATE_SNAPSHOTS = os.environ.get("UPDATE_SNAPSHOTS", "0") == "1"
+# E0 信任修复：基线缺失默认失败，只有显式 bootstrap 才允许首录。
+ALLOW_BASELINE_BOOTSTRAP = os.environ.get("ALLOW_BASELINE_BOOTSTRAP", "0") == "1"
 
 VIEWPORT = {"width": 1440, "height": 900}
 DEVICE_SCALE_FACTOR = 1
@@ -90,13 +94,26 @@ def _screenshot_page(page: Page, name: str) -> Path:
 
 def _assert_or_update(actual: Path, name: str, *, max_diff_ratio: float = 0.005,
                       theme: str = "dark"):
-    """对比 actual 与 baseline/name.png。A-0：light 用 *_light.png。"""
+    """对比 actual 与 baseline/name.png。A-0：light 用 *_light.png。
+
+    E0 信任修复：基线缺失默认 fail；显式 ALLOW_BASELINE_BOOTSTRAP=1 才首录。
+    """
     baseline_name = f"{name}_light" if theme == "light" else name
     baseline = BASELINES_DIR / f"{baseline_name}.png"
 
-    if UPDATE_SNAPSHOTS or not baseline.exists():
+    if UPDATE_SNAPSHOTS:
         save_baseline(actual, baseline)
-        pytest.skip(f"Baseline saved: {baseline} (UPDATE_SNAPSHOTS=1 or missing)")
+        pytest.skip(f"Baseline saved: {baseline} (UPDATE_SNAPSHOTS=1)")
+    if not baseline.exists():
+        if ALLOW_BASELINE_BOOTSTRAP:
+            save_baseline(actual, baseline)
+            pytest.skip(f"Baseline bootstrapped: {baseline} (ALLOW_BASELINE_BOOTSTRAP=1)")
+        raise AssertionError(
+            f"Visual baseline missing: {baseline}\n"
+            f"  actual: {actual}\n"
+            f"  Re-record with UPDATE_SNAPSHOTS=1, or set ALLOW_BASELINE_BOOTSTRAP=1 "
+            f"for intentional first capture."
+        )
 
     DIFFS_DIR.mkdir(parents=True, exist_ok=True)
     diff_output = DIFFS_DIR / f"{baseline_name}_diff.png"
@@ -186,6 +203,31 @@ STORY_NAMES = [
     "dag-node-completed",
     "dag-node-failed",
 ]
+
+
+def test_story_registry_in_sync():
+    """E4 契约：Python STORY_NAMES 必须与前端 stories.tsx 注册表一致。
+
+    防止新增/改名 story 后 Python 侧静默漏测（历史教训：曾漏 3 个 tool
+    event story 长达数月）。只做静态文本解析，不 import React 模块。
+    """
+    import re
+
+    stories_path = (
+        Path(__file__).resolve().parent.parent
+        / "webui" / "frontend" / "src" / "catalog" / "stories.tsx"
+    )
+    source = stories_path.read_text(encoding="utf-8")
+    # 只取 stories 数组顶层对象的 name（4 空格缩进的 `    name: 'xxx',`），
+    # 排除 JSX prop（如 <ToolCallBlock name='compute_alpha'>，缩进更深）。
+    registry = source.split("export function findStory")[0]
+    frontend_names = set(re.findall(r"^    name: '([^']+)',$", registry, re.MULTILINE))
+    assert frontend_names, "no story names parsed from stories.tsx"
+    assert set(STORY_NAMES) == frontend_names, (
+        f"STORY_NAMES drifted from stories.tsx:\n"
+        f"  missing in Python: {sorted(frontend_names - set(STORY_NAMES))}\n"
+        f"  stale in Python: {sorted(set(STORY_NAMES) - frontend_names)}"
+    )
 
 
 class TestCatalogStories:

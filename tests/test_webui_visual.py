@@ -1,21 +1,25 @@
 """Visual regression tests for Web UI — Playwright screenshot diffs.
 
 策略：
-1. ``--record-snapshots`` 模式：截图保存为基线
-2. 普通模式：截图后与基线 pixel diff（PIL ImageChops）
+1. ``UPDATE_SNAPSHOTS=1``：截图保存为新基线并跳过断言（重录模式）。
+2. 基线缺失：默认**失败**（防止"缺基线=假绿"）；确需首次录入时显式设置
+   ``ALLOW_BASELINE_BOOTSTRAP=1``。
+3. 普通模式：截图后与基线 pixel diff（PIL ImageChops）。
 
 场景：
 - test_login_page_baseline — 登录页静态视觉
 - test_message_bubble_baseline — 用户 + 助手消息气泡
-- test_dag_visualization_baseline — React Flow DAG 渲染
+- test_empty_chat — 空聊天区
+- test_command_palette — 命令面板
+- test_empty_goal / test_empty_agent — 右栏空态（E1 转为真实断言）
 
 阈值：
 - 像素差异阈值 = 10 (0-255)
 - 通过阈值 = 0.5% (允许 antialiasing / 字体子像素差异)
 
 运行：
-    pytest tests/test_webui_visual.py -v
-    pytest tests/test_webui_visual.py --update-snapshots      # 更新基线
+    AN_RUN_BROWSER_TESTS=1 pytest tests/test_webui_visual.py -v
+    UPDATE_SNAPSHOTS=1 AN_RUN_BROWSER_TESTS=1 pytest tests/test_webui_visual.py -v
 """
 
 # pytest_plugins 必须顶部
@@ -50,6 +54,8 @@ DIFFS_DIR = TESTS_DIR / "diffs"
 ACTUALS_DIR = TESTS_DIR / "_actual"  # 最近一次实际截图（debug 用）
 
 UPDATE_SNAPSHOTS = os.environ.get("UPDATE_SNAPSHOTS", "0") == "1"
+# E0 信任修复：基线缺失默认失败，只有显式 bootstrap 才允许首录。
+ALLOW_BASELINE_BOOTSTRAP = os.environ.get("ALLOW_BASELINE_BOOTSTRAP", "0") == "1"
 
 # 公共视觉参数（影响所有截图）
 VIEWPORT = {"width": 1440, "height": 900}
@@ -105,16 +111,26 @@ def _assert_or_update(actual: Path, name: str, *, max_diff_ratio: float = 0.005,
     """对比 actual 与 baseline/name.png。
 
     A-0：light 主题基线用 ``{name}_light.png``，dark 沿用原名（现有 47 基线不动）。
-    - ``--update-snapshots``: 把 actual 当作新基线
+    - ``UPDATE_SNAPSHOTS=1``: 把 actual 当作新基线并 skip 断言（重录）
+    - 基线缺失：默认 fail（E0 信任修复）；``ALLOW_BASELINE_BOOTSTRAP=1`` 才允许首录
     - 否则：pixel diff + 失败时保存 diff 可视化
     """
     baseline_name = f"{name}_light" if theme == "light" else name
     baseline = BASELINES_DIR / f"{baseline_name}.png"
 
-    if UPDATE_SNAPSHOTS or not baseline.exists():
+    if UPDATE_SNAPSHOTS:
         save_baseline(actual, baseline)
-        # 当更新基线时，不做断言（避免 CI 首次更新时失败）
-        pytest.skip(f"Baseline saved: {baseline} (UPDATE_SNAPSHOTS=1 or missing)")
+        pytest.skip(f"Baseline saved: {baseline} (UPDATE_SNAPSHOTS=1)")
+    if not baseline.exists():
+        if ALLOW_BASELINE_BOOTSTRAP:
+            save_baseline(actual, baseline)
+            pytest.skip(f"Baseline bootstrapped: {baseline} (ALLOW_BASELINE_BOOTSTRAP=1)")
+        raise AssertionError(
+            f"Visual baseline missing: {baseline}\n"
+            f"  actual: {actual}\n"
+            f"  Re-record with UPDATE_SNAPSHOTS=1, or set ALLOW_BASELINE_BOOTSTRAP=1 "
+            f"for intentional first capture."
+        )
 
     DIFFS_DIR.mkdir(parents=True, exist_ok=True)
     diff_output = DIFFS_DIR / f"{baseline_name}_diff.png"
@@ -342,12 +358,16 @@ class TestCommandPalette:
 
 
 class TestEmptyStates:
-    """空状态视觉 — 验证 EmptyState 组件在各个 panel 的渲染。
+    """空状态视觉 — 验证当前契约下的空态渲染。
 
     3 个场景:
     - empty_chat: 已登录 + currentSessionId 设置 + 消息列表为空
-    - empty_goal: Goal 标签 + 无活跃目标 → 显示「暂无活跃目标」
-    - empty_agent: Agent 标签 + 无 agent → 显示「暂无 Agent」
+    - empty_goal: 无活跃目标时 GoalCard 不渲染，右栏只剩 TokenCard（P5/P6 空态诚实）
+    - empty_agent: Monitor 页（/）Agent 概览在无 agent 时显示空态文案
+
+    E1（2026-11-24）：旧 empty_goal / empty_agent 依赖已退役的右栏
+    ``button[title='goal'/'agent']``，双主题长期 skip。按 0c0c1f0e 之后
+    的真实契约重写为行为断言，不再依赖旧 tab UI。
     """
 
     @pytest.fixture
@@ -423,90 +443,38 @@ class TestEmptyStates:
         _assert_or_update(actual, "empty_chat", max_diff_ratio=0.01, theme=theme)
 
     def test_empty_goal(self, logged_in_page: Page, theme: str):
-        """空 Goal 列表 — Goal tab + 无目标。
+        """无活跃目标 — 右栏不渲染 GoalCard（0c0c1f0e P6 空态诚实）。
 
-        预期: 显示「暂无活跃目标」+ 添加按钮
+        E1：不再依赖已退役的 ``button[title='goal']``；断言右栏存在、
+        TokenCard 在、GoalCard 的「目标 & 进度」头不在。
         """
-        # 默认 rightPanelTab='goal' — 但 layout store 默认是 'dag'
-        # 切换到 goal tab
         logged_in_page.wait_for_function(
-            "() => typeof window.__workflowStore !== 'undefined'", timeout=5000
+            "() => window.localStorage.getItem('sr-right-visible') !== 'false'",
+            timeout=5000,
         )
-        # 通过点击 IconNav 的 Goal 按钮切换
-        # title 属性: Workflow=undefined(默认), Target=goal, Bot=agent
-        goal_btn = logged_in_page.locator("button[title='goal']")
-        if goal_btn.count() > 0:
-            goal_btn.click()
-            logged_in_page.wait_for_timeout(500)
-
-        # 等 EmptyState「暂无活跃目标」出现
-        try:
-            logged_in_page.wait_for_selector("text=暂无活跃目标", timeout=5000)
-        except Exception:
-            pytest.skip("Goal EmptyState not found (right panel may be hidden)")
-            return
+        # 右栏容器存在（Title 由 TopBar 的「隐藏右侧面板」按钮标识）
+        right_toggle = logged_in_page.locator("button[title='隐藏右侧面板']")
+        assert right_toggle.count() >= 1, "right panel toggle not found"
+        # 无 goal：GoalCard 不应出现；TokenCard 应出现
+        logged_in_page.wait_for_selector("text=Token 使用情况", timeout=5000)
+        assert logged_in_page.locator("text=目标 & 进度").count() == 0, (
+            "GoalCard should not render when there is no active goal (P6)"
+        )
 
         logged_in_page.wait_for_timeout(300)
-
-        # 截整个右侧面板
-        right_panel = logged_in_page.locator("[class*='RightPanel'], aside, [role='complementary']")
-        if right_panel.count() == 0:
-            # fallback: 截图右侧 480px 区域
-            viewport = logged_in_page.viewport_size
-            actual = logged_in_page.screenshot(
-                path=str(ACTUALS_DIR / "empty_goal.png"),
-                clip={
-                    "x": viewport["width"] - 480,
-                    "y": 48,
-                    "width": 480,
-                    "height": viewport["height"] - 48,
-                },
-                animations="disabled",
-            )
-            ACTUALS_DIR.mkdir(parents=True, exist_ok=True)
-            (ACTUALS_DIR / "empty_goal.png").write_bytes(actual)
-            actual = ACTUALS_DIR / "empty_goal.png"
-        else:
-            actual = _screenshot_element(logged_in_page, right_panel.first, "empty_goal")
-
+        actual = _screenshot_page(logged_in_page, "empty_goal")
         _assert_or_update(actual, "empty_goal", max_diff_ratio=0.02, theme=theme)
 
-    def test_empty_agent(self, logged_in_page: Page, theme: str):
-        """空 Agent 列表 — Agent tab + 无 agent。
+    def test_empty_agent(self, logged_in_page: Page, app_url: str, theme: str):
+        """无 Agent — Monitor 页（/）Agent 概览显示空态文案。
 
-        预期: 显示「暂无 Agent」
+        E1：AgentList 未挂右栏；真实空态在 MonitorPage。跳转 / 后断言
+        「暂无 Agent」文案出现，整页截图（不再硬编码 480px clip）。
         """
-        # 切换到 agent tab
-        logged_in_page.wait_for_function(
-            "() => typeof window.__workflowStore !== 'undefined'", timeout=5000
-        )
-        agent_btn = logged_in_page.locator("button[title='agent']")
-        if agent_btn.count() > 0:
-            agent_btn.click()
-            logged_in_page.wait_for_timeout(500)
-
-        # 等 EmptyState「暂无 Agent」出现
-        try:
-            logged_in_page.wait_for_selector("text=暂无 Agent", timeout=5000)
-        except Exception:
-            pytest.skip("Agent EmptyState not found")
-            return
-
+        logged_in_page.goto(f"{app_url}/")
+        logged_in_page.wait_for_selector("text=Agent 概览", timeout=10_000)
+        logged_in_page.wait_for_selector("text=暂无 Agent", timeout=10_000)
         logged_in_page.wait_for_timeout(300)
 
-        # 截右侧面板
-        viewport = logged_in_page.viewport_size
-        actual_path = ACTUALS_DIR / "empty_agent.png"
-        ACTUALS_DIR.mkdir(parents=True, exist_ok=True)
-        logged_in_page.screenshot(
-            path=str(actual_path),
-            clip={
-                "x": viewport["width"] - 480,
-                "y": 48,
-                "width": 480,
-                "height": viewport["height"] - 48,
-            },
-            animations="disabled",
-        )
-
-        _assert_or_update(actual_path, "empty_agent", max_diff_ratio=0.02, theme=theme)
+        actual = _screenshot_page(logged_in_page, "empty_agent")
+        _assert_or_update(actual, "empty_agent", max_diff_ratio=0.02, theme=theme)
