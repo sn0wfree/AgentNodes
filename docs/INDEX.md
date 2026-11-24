@@ -45,7 +45,7 @@
 
 ---
 
-## 2. design/ — 仍生效的设计与契约（165 份，2026-11-23 补录）
+## 2. design/ — 仍生效的设计与契约（166 份，2026-11-24 补录）
 
 **判据**：文档里的决策仍在代码中执行。已被取代的移到 `archive/`。
 
@@ -296,6 +296,7 @@
 | [`sidebar-navigation-redesign-20261123.md`](design/sidebar-navigation-redesign-20261123.md) | 导航侧边框调整方案+实施——DAG 5入口撤销(路由/API保留)、Trace 独立入口(调研 ZCode/OpenClaw/OpenCode/Codex/Claude)、Agents 等 P1-P3 候选 |
 | [`nav-rail-collapse-tooltip-20261123.md`](design/nav-rail-collapse-tooltip-20261123.md) | 图标栏两态折叠 + 统一 Tooltip 方案（R-014 待批准/零代码）——衔接侧栏改造，纯前端，键盘可达 |
 | [`e2e-complete-build-and-repair-20261123.md`](design/e2e-complete-build-and-repair-20261123.md) | 完整 E2E 构建与问题修复方案（R-014 待批准/零代码）——E0 信任修复/E1 四 skip 转真断言/E2 路由 smoke/E3 业务流/E4 稳定性，14 路由覆盖差集与 6 孤儿基线清单 |
+| [`model-picker-key-gating-20261124.md`](design/model-picker-key-gating-20261124.md) | Chat 模型下拉按密钥状态置灰方案（R-014 已批准）——key_configured=false 的模型 disabled+标注「未配置密钥」，修清除密钥后仍可选中导致发送失败；数据后端已给、仅改展示层 |
 
 ---
 
