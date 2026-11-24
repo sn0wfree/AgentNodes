@@ -45,7 +45,7 @@
 
 ---
 
-## 2. design/ — 仍生效的设计与契约（173 份，2026-11-24 补录）
+## 2. design/ — 仍生效的设计与契约（174 份，2026-11-24 补录）
 
 **判据**：文档里的决策仍在代码中执行。已被取代的移到 `archive/`。
 
@@ -300,6 +300,7 @@
 | [`context-usage-agent-survey-20261124.md`](design/context-usage-agent-survey-20261124.md) | 各 agent 上下文用量实现调研（零代码）——结论：生产 chat 无任何 token 事件下发(翻译层丢弃)、DAG/swarm 后端根本没算；9 条路径口径对照 + 17 项缺口清单 + 9 条后端修复建议(P0-a 事件透传等)+ 4 个待决策点 |
 | [`composer-layout-industry-benchmark-20261124.md`](design/composer-layout-industry-benchmark-20261124.md) | 输入框布局对标调研（零代码）——ZCode 一手 bundle 源码直证：大圆角容器包住编辑器+工具条、左+更多/模式/后台、右用量/模型+推理档位/语音/圆形品牌蓝发送、排队消息编辑条、用量7段弹层、无常驻Markdown按钮；MimoCode/WorkBuddy 无公开布局资料(仅确认产品身份)；含 5 项建议(A 框内工具条/B 圆形发送按钮/C 分段用量依赖后端/D 编辑态/E 语音) |
 | [`composer-layout-abcd-20261124.md`](design/composer-layout-abcd-20261124.md) | 输入框布局对标改造方案——A 状态行并入输入框容器(rounded-2xl 大卡片)、B 圆形品牌色发送按钮（用户已批准实施）；C 7段分段用量、D 排队消息编辑态待后端契约调研后细化 |
+| [`composer-cd-subplan-20261124.md`](design/composer-cd-subplan-20261124.md) | C/D 子方案（待确认零代码）——C 分两步(C-1 实测值透传低风险/C-2 7段定义缺2段概念需决策)；D 分两步(D-1 Mailbox replace_pending/remove_pending+gateway封装+数据一致性/D-2 端点+事件+编辑条UI)；含4个决策点与建议顺序(C-1→D→C-2) |
 | [`color-audit-20261124.md`](design/color-audit-20261124.md) | 前端配色审查（手动操作+WCAG 量化，零代码）——暗色基本健康(7项边缘)、亮色系统性弱(53项低对比)；根因 emerald/violet/rose 语义色 60+ 处硬编码未令牌化；建议 B-3 语义令牌化 |
 | [`semantic-color-unification-20261124.md`](design/semantic-color-unification-20261124.md) | 语义色统一方案（R-014 待批准/零代码）——令牌已存在(success/danger/warning/viz)仅缺 Tailwind 映射+60+处组件接线；C1补令牌映射/C2高频替换/C3全量清扫+门禁/C4验收；目标单点可调、亮色低对比53→≤10 |
 | [`composer-toolbar-evaluation-20261124.md`](design/composer-toolbar-evaluation-20261124.md) | 输入框工具行评估（零代码）——6 类控件均真接后端契约；实测 4 个问题：Plan/Build 持久化失效(__srModeSession 零调用)、角色下拉混裸id+编排助手+顺序不稳、列表/引用行中插错、格式化无快捷键；业界对照：8 图标常驻过密(375 下 4 行)宜改选中浮出 |

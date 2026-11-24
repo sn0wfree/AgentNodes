@@ -1,0 +1,124 @@
+# 输入框对标改造 C/D 子方案（R-014 · 待确认 · 零代码）
+
+> 日期：2026-11-24
+> 状态：子方案。用户已表达「还需要做 c+d」，但两项均涉及**后端核心契约变更**且存在**定义缺失**，需确认关键决策后再动代码。
+> 依据：`composer-layout-industry-benchmark-20261124.md`（对标）、`context-usage-agent-survey-20261124.md`（用量调研）、C/D 后端契约只读调研（本文档 §1/§2）。
+
+---
+
+## C · 7 段分段上下文用量
+
+### C.1 调研结论（实事求是）
+
+| 能力 | 状态 |
+|---|---|
+| 7 段拆分数据 | ❌ **完全缺失** |
+| LLM usage 细粒度字段（cache_read/details） | ⚠️ 部分存在：`parser.py:212-219,320-326` 只保留数值型顶层键，嵌套 details 被丢弃 |
+| 单一总量 + 当前占用 `session_total_tokens.context_used` | ⚠️ 事件已定义但**生产 chat SSE bridge 未透传**（`apps/chat/events.py:51-61`、`chat.py:755-763`） |
+| 模型窗口/成本字段 `ModelInfo` | ✅ 已有（`foundation/llm/model_catalog.py:45-75`），但成本字段无人消费 |
+| 上下文按来源记账 `ContextBundle.accounting` | ⚠️ 按 provider 聚合，不按 7 段（`kernel/context/hub.py:140-149`） |
+
+**最关键的阻碍**：ZCode 的 7 段中，`meta_user_context` / `mcp_tool_schemas` 在 AgentNodes 后端**根本没有对应概念**（`kernel/context/protocol.py:35-37` 的 kind 列表、`kernel/agent/context/core.py:57-125` 的 system prompt 模板均无此分割）。这不是"透传缺失"，是**定义缺失**。
+
+### C.2 实施路径（分两步）
+
+**C-1 · 先修实测值透传（前置，收益最大）**
+1. `apps/chat/events.py:56-61` 的 `STREAM_PASSTHROUGH_KINDS` 加入 `llm_usage` / `session_total_tokens`（或 `chat.py:755-763` 加 mapping）。
+2. 注意生产 chat 走 Gateway 路径（`apps/chat/send_turn.py`），需要确认这两个事件确实到达 bridge；若 Gateway sink 未转发，还需在 `kernel/runtimes/nodes/agent_loop_node.py:119-129` 的 sink 处补。
+3. 前端 `hooks/sse/controlHandlers.ts:12-46` 的 handler 已注册**无需改协议**——透传后 `source` 自动从 `estimated` 切 `measured`，`~` 前缀消失。
+4. 验证：发一条真实消息，确认前端显示从 `~1.5K` 变成无 `~` 的实测值。
+
+**C-2 · 再定义 7 段（需产品决策）**
+1. **先定义段归属规则**（最关键）：
+   - `messages` = 历史对话
+   - `system_prompt` = 系统提示词
+   - `tool_prompt` / `system_tool_schemas` = 工具定义与 schema
+   - `skills` = `ContextItem.kind=skill`
+   - `meta_user_context` / `mcp_tool_schemas` = **AgentNodes 当前无对应概念**，需决定是"新增概念"还是"前端隐藏这两段"
+2. 在 `kernel/agent/telemetry/agent_telemetry.py:306-321`（已有 `system_prompt_len` / `tools_count` / `estimated_tokens` 长度指纹）扩展为按段估算，新增事件 `context.breakdown`（注册 `kernel/events/event_v2.py:130-141`）。
+3. bridge 放行新事件。
+4. 前端：SSE 事件类型（`hooks/sse/types.ts`）+ handler + store 字段 + 分段进度条 UI（基于 `components/chat/ContextUsageBar.tsx` 扩展，弹层形态参考 ZCode）。
+5. 可选：`parser.py:212-219,320-326` 保留 `details` 子字典，以支持 cache hit 展示。
+
+### C.3 验收
+
+- C-1 后：真实消息下发后前端显示实测值（无 `~`），且 `GET /api/chat/session/{id}/trace` 可见用量事件
+- C-2 后：用量弹层显示分段进度条（至少 5 段，或定义完整后的 7 段），各段之和 ≈ 总量
+- 全量：前端测试 / tsc / lint、后端全量、gate 13/13、双主题基线重录
+
+---
+
+## D · 排队消息编辑态
+
+### D.1 调研结论
+
+| 能力 | 状态 |
+|---|---|
+| per-session FIFO 队列 + steer 队 + 暂停/恢复 | ✅ 已存在（`kernel/orchestration/mailbox.py:73-99` 等） |
+| 排队状态可观测（status/queue_length/`/attempts`） | ✅ 已存在 |
+| 取消正在执行的 attempt（连带暂停整会话） | ✅ 已存在（`gateway.py:363-383`），**粒度是整会话** |
+| 按 attempt_id 编辑/替换排队消息 | ❌ 完全缺失（Mailbox 无 mutate-by-id API） |
+| 按 attempt_id 只取消某一条排队消息 | ❌ 完全缺失 |
+| `steerQueued`/`steerDrained` 协议 | ❌ 完全缺失（grep 零命中） |
+| `chat_available_actions` | ⚠️ 只有 cancel/resume/send（`kernel/session/service.py:57-87`），前端未消费 |
+
+### D.2 实施路径
+
+**D-1 · 后端最小能力**
+1. `mailbox.py:390-404`（`pending_attempt_ids()` 旁）新增：
+   - `replace_pending(attempt_id, new_request) -> bool`：扫描 `_queue` + `_steer`，替换 payload text/prompt，保留队列位置；发 `queue.edited` 事件
+   - `remove_pending(attempt_id) -> bool`：同样双队列扫描移除；发 `queue.cancelled` 事件
+2. `gateway.py:410-428` 旁新增薄封装：`edit_queued_attempt()` / `cancel_queued_attempt()`（**不要**走 `cancel_session`，那会暂停整个 mailbox）
+3. **数据一致性**：编辑时同步更新持久化的 `Attempt.prompt`（`chat.py:238`、`kernel/session/models.py:162` 附近）与已落库的用户消息（`chat.py:287-298`），否则刷新后仍是旧 prompt
+
+**D-2 · API + 事件 + 前端**
+1. 新端点 `POST /chat/queue/edit`、`POST /chat/queue/cancel`（`api/routers/chat.py:356-370` 附近），body `{session_id, attempt_id, content}`，复用 `enforce_session_owned`
+2. schema 加在 `api/schemas/chat.py:26-51`
+3. 事件注册 `kernel/events/event_v2.py` + bridge 放行（`apps/chat/events.py:56-61` 或 `chat.py` mapping）
+4. 前端：
+   - SSE 事件类型 + handler（`hooks/sse/types.ts`、`hooks/sse/queueHandlers.ts`、`hooks/sse/handlers.ts`）
+   - store action `editQueuedMessage` / `cancelQueuedMessage`（`stores/chat.ts:224-227,367-401`），同步更新 `messages` Map 中的用户消息与 assistant 占位
+   - API 方法（`api/client.ts:601-609` 旁）
+   - UI 编辑条：在 `AssistantMessage.tsx:53-79,463-465` 的 `QueuedIndicator` 附近挂"编辑/取消"，形态参考 ZCode 的 `v4-composer-edit-bar`（容器内顶部提示条 + 取消按钮）；可选择把编辑条放在 A 改造后的 composer 卡片顶部（更贴近 ZCode）
+
+### D.3 验收
+
+- 发送多条消息形成队列 → 排队项显示"编辑"入口 → 点编辑 → composer 顶部出现编辑条 + 取消 → 确认后该排队消息内容更新且位置不变 → 刷新页面内容仍是新的
+- 取消单条排队消息 → 只移除该条，其他排队项与正在执行的 attempt 不受影响
+- 全量：前端测试 / tsc / lint、后端全量、gate 13/13、双主题基线重录、实机双宽度
+
+---
+
+## 规模与风险评估
+
+| 项 | 涉及层 | 文件数（估） | 风险 |
+|---|---|---|---|
+| C-1 | L1 apps + 前端 | 2-3 | 低（只加事件直通） |
+| C-2 | L2 kernel + L1 + 前端 + 定义缺失 | 8-12 | **高**（7 段定义需产品决策） |
+| D-1 | L3 kernel（mailbox/gateway）+ 数据一致性 | 4-6 | **高**（队列数据一致性） |
+| D-2 | L1 API + 事件 + 前端全链路 | 8-10 | 中高 |
+
+## 需要用户决策的点
+
+1. **C-2 的 7 段定义**：`meta_user_context` / `mcp_tool_schemas` 无对应概念——
+   - 选项 A：前端只显示有数据的 5 段（messages/system_prompt/skills/tool_prompt/system_tool_schemas）
+   - 选项 B：后端新增这两个概念的归属规则（工作量显著增加）
+2. **C 是否分两步**：先做 C-1（实测值透传，低风险立竿见影），C-2 另案？
+3. **D 的编辑条位置**：挂在排队消息卡片上（`QueuedIndicator` 附近）还是 composer 卡片顶部（更贴近 ZCode）？
+4. **D 的取消粒度**：按 attempt_id 取消单条（推荐），还是沿用整会话取消？
+
+## 建议顺序
+
+1. **C-1 先行**（低风险、直接让现有 F4-b 的估算变实测）
+2. **D-1 + D-2**（完整编辑态，价值高但需仔细处理数据一致性）
+3. **C-2**（等 7 段定义决策后）
+
+## 不做
+
+- 不做 E（语音/worktree/CUA）
+- 不恢复 Markdown 按钮
+- 不 push
+
+## 回滚
+
+每步独立提交；C-1 回滚只需移除直通集合条目；D 回滚涉及新端点与事件，需整批 revert。
