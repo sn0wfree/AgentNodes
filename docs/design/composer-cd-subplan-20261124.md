@@ -122,3 +122,18 @@
 ## 回滚
 
 每步独立提交；C-1 回滚只需移除直通集合条目；D 回滚涉及新端点与事件，需整批 revert。
+
+## 10. 实施进展（2026-11-24）
+
+### C-1 已改动的代码
+
+- `apps/chat/events.py`：`STREAM_PASSTHROUGH_KINDS` 加入 `llm_usage` / `session_total_tokens`
+- `tests/test_chat_events.py`：同步直通集合 parity 断言
+- 验证：事件翻译测试 7/7 通过
+
+**实机验证受阻**：重启后端后发消息，`tokensUsed` 仍为空（`store: {tokensUsed:{}}`），后端日志无用量事件记录 → 说明事件在 Gateway 链路更上游就未产生或未到达 bridge，而非仅被过滤。**C-1 尚未达成目标**，需继续排查 Gateway sink 的事件流。
+
+### 用户新要求（本批插入）
+
+- **重试次数改配置文件、最大 10 次，否则显示失败**：已将 `~/.agentnodes/llm.json` 的 `max_retries` 从 2 改为 **10**（顶层 + minimax profile），备份 `llm.json.bak-retries-20261124-132532`。语义为「总尝试次数」（`foundation/llm/config.py:165`），由 `openai_client.py` 的 `_request_with_retry` 执行；10 次全失败后异常上抛，前端 `Composer.tsx:180-198` 已有「发送失败：…」toast。
+- **暂停运行服务**：已精确停止后端（PID 32160）与 Vite（PID 30896）。/services 处于停止状态，后续需按 `tmp/probe/start_backend_8766.py` 与 Vite 命令重启。

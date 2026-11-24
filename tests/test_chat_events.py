@@ -33,11 +33,13 @@ class TestChatEventVocabulary:
         assert translate_engine_event("tool_result") == "tool_result"
 
     def test_stream_passthrough_set_parity(self):
-        """流式直通 8 个事件与现网集合一致（3a.0 wire 冻结表）。"""
+        """流式直通集合（3a.0 wire 冻结表 + R-014 C-1 用量事件）。"""
         assert STREAM_PASSTHROUGH_KINDS == frozenset({
             "text_delta", "thinking_delta", "thinking_done", "stream.failed",
             "text.started", "text.ended",
             "thinking_start", "thinking_end",
+            # R-014 C-1：token 用量事件透传（此前被 bridge 丢弃，前端只能估算）
+            "llm_usage", "session_total_tokens",
         })
         for kind in STREAM_PASSTHROUGH_KINDS:
             assert translate_engine_event(kind) == kind

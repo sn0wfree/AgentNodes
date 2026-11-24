@@ -54,10 +54,15 @@ ENGINE_TO_PRODUCT: dict[str, str] = {
 }
 
 # 流式事件直通集合（AgentLoop 的 3-step / thinking / stream.failed 协议）。
+# R-014 C-1：加入 token 用量事件——此前生产 chat 算得出用量但在 bridge 被
+# 丢弃（前端 `tokensUsed` 恒 0，只能字符估算 + `~` 标记）。前端 handler
+# （`hooks/sse/controlHandlers.ts`）已注册 llmUsage / sessionTotalTokens，
+# 透传后 `source` 自动从 estimated 切 measured，前端无需改协议。
 STREAM_PASSTHROUGH_KINDS: frozenset[str] = frozenset({
     "text_delta", "thinking_delta", "thinking_done", "stream.failed",
     "text.started", "text.ended",
     "thinking_start", "thinking_end",
+    "llm_usage", "session_total_tokens",
 })
 
 
