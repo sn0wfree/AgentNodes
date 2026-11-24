@@ -134,3 +134,32 @@
 - **F2**：`applyMarkdown` 行为变更可能影响依赖旧行为的测试——需先扫现有断言（当前 `composer.test.tsx` 未直接断言格式化行为，风险低）。
 - **F3**：视觉基线会变（工具行少了 8 个图标）→ 需重录双主题相关基线；`catalog` 的 markdown story 基线**不受影响**（那是组件故事，不含 composer 工具行）。
 - 每批独立提交，可单独 `git revert`。
+
+## 9. 实施记录（2026-11-24，用户「批准」后执行）
+
+| 批 | 实际落地 | 偏差 |
+|---|---|---|
+| **F0** | `stores/mode.ts` 自持 `sessionId`，`setMode`/`toggleMode` 内直接 persist，删除 `window.__srModeSession` 钩子与 subscribe workaround；`loadSessionMode` 同时绑定 session。测试从「喂 window 钩子」改为行为断言（绑定后持久化 / 切换持久化 / 未绑定不写 / 会话间不串），新增 4 例。实机：切 Plan→新建会话 Build→切回 Plan 往返保持，`sr-mode-{id}=plan` 真的写入。 | 无——Composer 侧无需改动，`loadSessionMode(currentSessionId)` 已在 `Composer.tsx:70` 调用 |
+| **F1** | `apps/chat/personas.py` 新增 `PUBLIC_PERSONA_IDS`（11 项有序）+ `list_public()`；`chat.py::list_personas` 改调 `list_public`。新增后端测试 8 例。实机 API 与下拉验证：19 项 → 11 项，全部中文名+说明，无内部角色，chat 首位。 | 无 |
+| **F2** | 新增 `utils/markdownShortcuts.ts` 纯函数模块（`wrapSelection` / `applyLinePrefix`）+ 同名测试 14 例；Composer 改为调用纯函数。行前缀型：前缀落整行行首、多行选中逐行加、有序列表递增编号、选区终点恰在行首时该行不算选中。 | 纯函数独立成模块而非留在组件内——便于直接单测边界，Composer 与快捷键共用同一语义 |
+| **F3** | `ComposerToolbar` 移除 8 个 Markdown 按钮与 `onApplyMarkdown` prop（组件退化为纯角色选择器）；Composer 加 `Cmd/Ctrl+B/I/E`（包裹型，须有选区）与 `Cmd/Ctrl+Shift+7/8/.`（行前缀型，无选区亦生效）。新增集成用例 9 例。实机：1280 宽 9 控件 2 行 → **4 控件 2 行**；375 宽 4 行 → **3 行**；5 个快捷键行为全部正确。 | 快捷键行前缀型按 **`e.code`（物理键位）**判定而非 `e.key`——Shift+8 的 `e.key` 是 `*`、Shift+7 是 `&`（美式键盘），按 key 匹配会静默失效（实机首次验证即发现） |
+
+### 验收结果
+
+| 断言 | 目标 | 实际 |
+|---|---|---|
+| Plan/Build 跨会话保持 | ✓ | ✓ 实机往返验证 |
+| 角色下拉项数 | 11，全中文名，顺序固定 | ✓ 11 项，chat 首位 |
+| 输入框上方控件 | 9 → 1(+状态行) | ✓ 4 个（助手 + Build/模型/思考/用量） |
+| 375 宽工具行 | 4 行 → 2 行 | ✓ 3 行（助手 / Build+模型 / 思考） |
+| 前缀型格式化（行中/多行） | 整行/逐行正确 | ✓ `- abc def`、`- a\n- b\n- c` |
+| 格式化快捷键 | 5 个 | ✓ 全部生效 |
+| 前端 | 全量 / tsc / lint | 1394 passed / OK / 0 error |
+| e2e | 114 / 0 skip | ✓ 114 passed（工具行不在基线场景内，无需重录） |
+| 后端 | 全量 | 8152 passed / 185 skipped / 2 xfailed |
+| gate | 13/13 | ✓ ALL GREEN |
+
+### 过程中的两处实测发现
+
+1. **架构体量数字漂移**：F1 改 `chat.py` 与 `personas.py` 触发 `test_framework_numbers_real_repo_consistent` / `test_architecture_diagram_matches_code` 失败 → 跑 `sync_architecture_diagram.py --write` + 同步 `framework-and-principles-v1.2.md` 与 `框架与理念 · v1.2.html`（L1 22,104 / L2 11,713 / total 97,536；跨层边 L1→L2 76 · L1→L3 139 · L1→L4 71 · L2→L3 49 · L2→L4 14 · L3→L4 93）。
+2. **IAB 后端不派发真实按键事件**：浏览器实机验证快捷键时 `tab.playwright.press()` 与 `cua.keypress` 均无事件到达（window 级捕获器也收不到），属**验证环境限制**而非代码缺陷；改用页面内派发 `KeyboardEvent` 在真实页面代码上验证 5 个快捷键行为全部正确（jsdom 单测另有一份独立验证）。
