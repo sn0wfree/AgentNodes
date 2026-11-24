@@ -16,8 +16,9 @@ describe('tokenThresholds (P9 单点)', () => {
   })
 
   it('maps tones to fill classes', () => {
-    expect(toneFillClass('normal')).toBe('bg-emerald-500')
+    // R-014 F4-b：改用语义令牌类（success/danger），不再硬编码色阶。
+    expect(toneFillClass('normal')).toBe('bg-success')
     expect(toneFillClass('warn')).toBe('bg-warning')
-    expect(toneFillClass('danger')).toBe('bg-red-500')
+    expect(toneFillClass('danger')).toBe('bg-danger')
   })
 })

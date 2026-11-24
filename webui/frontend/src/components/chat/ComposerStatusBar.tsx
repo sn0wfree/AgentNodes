@@ -7,15 +7,17 @@ import {
   Brain,
   Zap,
   Bot,
+  AlertTriangle,
 } from 'lucide-react'
 import { useModeStore } from '../../stores/mode'
 import { useModelStore } from '../../stores/model'
 import { useThinkingPrefStore } from '../../stores/thinkingPref'
 import { useSystemStore } from '../../stores/system'
-import { useChatStore } from '../../stores/chat'
 import { usePersonaStore } from '../../stores/personas'
+import { useContextUsage } from '../../hooks/useContextUsage'
 import type { ChatPersona } from '../../api/client'
 import { tokenTone, toneFillClass } from '../../utils/tokenThresholds'
+import { formatTokens } from '../../utils/contextUsage'
 
 interface ComposerStatusBarProps {
   sessionId: string | null
@@ -43,10 +45,8 @@ export function ComposerStatusBar({ sessionId }: ComposerStatusBarProps) {
   const thinkingMode = useThinkingPrefStore((s) => s.thinkingMode)
   const setThinkingMode = useThinkingPrefStore((s) => s.setThinkingMode)
   const modelInfo = useSystemStore((s) => s.modelInfo)
-  // P9：token 用量贴输入框，口径与右栏 TokenCard 同源（TOKEN_THRESHOLDS）。
-  const tokensUsed = useChatStore((s) =>
-    sessionId ? s.tokensUsed.get(sessionId) ?? 0 : 0
-  )
+  // 上下文用量：统一口径（R-014 F4-b）——实测优先，无实测则用字符估算。
+  const usage = useContextUsage(sessionId)
   // 人设（persona）选择器 —— 与模式/模型/思考同一排（R-014 F4）。
   const personas = usePersonaStore((s) => s.personas)
   const loadPersonas = usePersonaStore((s) => s.loadPersonas)
@@ -95,6 +95,18 @@ export function ComposerStatusBar({ sessionId }: ComposerStatusBarProps) {
     : modelInfo?.model ?? 'default'
 
   const thinkingCfg = THINKING_OPTIONS.find((o) => o.value === thinkingMode) ?? THINKING_OPTIONS[2]
+
+  // hover 详情：把「已用 / 上限 / 剩余 / 输出上限 / 数据来源」摊开，
+  // 行内只保留紧凑的 估算值+上限+百分比。
+  const usageDetail = [
+    `上下文已用：${formatTokens(usage.usedTokens)} / ${formatTokens(usage.limitTokens)} (${usage.percent.toFixed(1)}%)`,
+    `剩余可用：${formatTokens(usage.remainingTokens)}`,
+    usage.outputLimitTokens > 0 ? `单次输出上限：${formatTokens(usage.outputLimitTokens)}` : null,
+    usage.source === 'measured' ? '数据来源：后端实测' : '数据来源：字符估算（非计费实测值）',
+    usage.isStale ? '模型信息来自内置/fallback 数据，非最新抓取' : null,
+  ]
+    .filter(Boolean)
+    .join('\n')
 
   return (
     <div className="mb-2 flex flex-wrap items-center gap-2 text-[11px]">
@@ -272,23 +284,39 @@ export function ComposerStatusBar({ sessionId }: ComposerStatusBarProps) {
         )}
       </div>
 
-      {/* Context usage meter（P9：贴输入框，Q7 阈值与右栏一致） */}
-      {modelInfo && (
-        <div className="ml-auto flex min-w-[92px] items-center gap-1.5" title="当前会话上下文用量">
+      {/* Context usage meter（R-014 F4-b：统一口径 + 细化显示）*/}
+      {usage.hasLimit && (
+        <div
+          className="ml-auto flex min-w-[110px] items-center gap-1.5"
+          title={usageDetail}
+          data-testid="composer-context-usage"
+        >
           <div className="h-1 min-w-[44px] flex-1 overflow-hidden rounded-full bg-slate-700/60">
             <div
-              className={`h-full transition-all ${toneFillClass(tokenTone(tokensUsed / (modelInfo.context_tokens || 1) * 100))}`}
-              style={{
-                width: `${modelInfo.context_tokens ? Math.min(100, tokensUsed / modelInfo.context_tokens * 100) : 0}%`,
-              }}
+              className={`h-full transition-all ${toneFillClass(tokenTone(usage.percent))}`}
+              style={{ width: `${usage.percent}%` }}
             />
           </div>
+          {/* 实测用绝对值；估算加 `~` 前缀标明不是真实计费值 */}
           <span className="font-mono text-[10px] text-slate-500">
-            {modelInfo.context_tokens ? `${Math.round(tokensUsed / modelInfo.context_tokens * 100)}%` : ''}
+            {usage.source === 'estimated' ? '~' : ''}
+            {formatTokens(usage.usedTokens)}
+            <span className="hidden sm:inline"> / {formatTokens(usage.limitTokens)}</span>
           </span>
-          <span className="hidden text-slate-600 sm:inline">
-            {modelInfo.context_tokens ? `${Math.round(modelInfo.context_tokens / 1000)}K` : ''}
+          <span className="font-mono text-[10px] text-slate-500">
+            {usage.percent > 0 && usage.percent < 1
+              ? usage.percent.toFixed(1)
+              : usage.percent.toFixed(0)}%
           </span>
+          {usage.isStale && (
+            <span
+              className="text-warning-fg"
+              title="模型信息来自内置/fallback 数据，非最新抓取"
+              data-testid="composer-context-stale"
+            >
+              <AlertTriangle className="h-3 w-3" />
+            </span>
+          )}
         </div>
       )}
     </div>

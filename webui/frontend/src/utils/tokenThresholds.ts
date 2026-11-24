@@ -16,11 +16,14 @@ export function tokenTone(pct: number): TokenTone {
   return 'normal'
 }
 
-/** 语义色带 → Tailwind 进度条填充类。 */
+/** 语义色带 → Tailwind 进度条填充类。
+ *  R-014 F4-b：改用语义令牌类（与 `semantic-color-unification` 的
+ *  success/danger 令牌一致），此前是硬编码 `bg-red-500`/`bg-emerald-500`
+ *  ——亮色主题下这两个实心亮色在浅底上对比度不足。 */
 export function toneFillClass(tone: TokenTone): string {
   return tone === 'danger'
-    ? 'bg-red-500'
+    ? 'bg-danger'
     : tone === 'warn'
       ? 'bg-warning'
-      : 'bg-emerald-500'
+      : 'bg-success'
 }

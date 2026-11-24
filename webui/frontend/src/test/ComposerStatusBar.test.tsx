@@ -57,9 +57,13 @@ describe('ComposerStatusBar', () => {
     expect(useThinkingPrefStore.getState().thinkingMode).toBe('off')
   })
 
-  it('renders context tokens', () => {
+  it('renders context usage with limit and percentage (R-014 F4-b)', () => {
     render(<ComposerStatusBar sessionId="s1" />)
-    expect(screen.getByText('128K')).toBeDefined()
+    const meter = screen.getByTestId('composer-context-usage')
+    expect(meter).toBeDefined()
+    // 上限来自 modelInfo.context_tokens（128000 → 128.0K）
+    expect(meter.textContent).toContain('128.0K')
+    expect(meter.textContent).toContain('%')
   })
 
   // ---- 模型下拉密钥门禁（model-picker-key-gating-20261124）----
