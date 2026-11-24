@@ -125,20 +125,33 @@ export function ComposerStatusBar({ sessionId }: ComposerStatusBarProps) {
                 p.models.map((m) => {
                   const fullModel = `${p.name}/${m}`
                   const isSelected = currentModel === fullModel
+                  // E1 密钥门禁：key_configured=false 的 provider 无密钥，选中
+                  // 后发送必然失败。置灰 + 标注，禁止选择（与设置页口径一致）。
+                  const available = p.key_configured
                   return (
                     <button
                       key={fullModel}
                       type="button"
+                      disabled={!available}
                       onClick={() => {
-                        if (sessionId) setSessionModel(sessionId, fullModel)
+                        if (!available || !sessionId) return
+                        setSessionModel(sessionId, fullModel)
                         setModelOpen(false)
                       }}
                       className={`flex w-full items-center gap-2 px-3 py-2 text-left transition-colors ${
-                        isSelected ? 'bg-slate-700/40 text-slate-100' : 'text-slate-300 hover:bg-slate-700/30'
+                        !available
+                          ? 'cursor-not-allowed text-slate-600 opacity-50'
+                          : isSelected
+                            ? 'bg-slate-700/40 text-slate-100'
+                            : 'text-slate-300 hover:bg-slate-700/30'
                       }`}
+                      title={available ? undefined : `未配置密钥（${p.key_var}）`}
                     >
                       <span className="text-xs font-medium">{p.label || p.name}</span>
                       <span className="text-[11px] text-slate-500">{m}</span>
+                      {!available && (
+                        <span className="ml-auto text-[10px] text-slate-600">未配置密钥</span>
+                      )}
                     </button>
                   )
                 })
