@@ -134,10 +134,30 @@ hover 弹层（w-72）：
 - **H2 视觉**：圆环 + 弹层会改变用量基线，需重录；窄屏弹层需避免溢出。
 - 每批独立提交，可单独 revert。
 
-## 6. 需要用户决策的点
+## 6. 用户决策（已定，2026-11-24）
 
-1. **H1 段数**：选项 A（5 段，只做有数据的）还是选项 B（7 段，后端新增 2 概念定义）？
-2. **圆环形态**：状态行小环（20px）够不够，还是要用更大的常驻环（会占空间）？
+1. **H1 段数**：**选项 B —— 做满 7 段**，后端新增 `meta_user_context` / `mcp_tool_schemas` 两个概念的归属规则
+2. **圆环形态**：**先用小环**（状态行 ~20px），样式后续再调
+
+## 7. H0 排障结论（2026-11-24 静态分析 + 单测）
+
+**bridge 层确认是通的**：新增 `tests/test_usage_sse_bridge.py`，直接驱动生产 `apps/chat/send_turn.py::_event_bridge`，断言 `llm_usage` / `session_total_tokens` 经 `translate_engine_event` 放行后被 `publish_sse` 推送——**2/2 通过**。C-1 对 `apps/chat/events.py` 直通集合的修改是有效的。
+
+**链路静态核对**：
+- `AgentLoop._emit("llm_usage")`（`loop/stream.py:102-103`）→ `on_event=make_loop_event_sink(sink)`（`session_controller.py:633`）
+- `sink` 在 `session_controller.py:550-554` 被包装为「自动加 event_correlation_id」→ AgentLoop 事件同样带 correlation
+- Gateway `_combined_sink`（`gateway.py:263-299`）广播所有外部 sink → `send_turn._event_bridge` 注册在 `gw.add_sink(bridge)`（`send_turn.py:385-387`）
+- bridge 的 correlation 过滤（`send_turn.py:352-355`）要求匹配本 turn 的 id → 包装后的 sink 满足
+- `translate_engine_event` 放行 → `publish_sse(out_kind, payload, session_id)`（`send_turn.py:381`）
+
+**结论**：从代码静态分析与单测看，**C-1 的事件链路是完整的**。此前实机 `tokensUsed` 为空，最可能的原因是：
+- (a) 实机时后端进程未真正加载到 C-1 改动（服务重启时序/缓存）
+- (b) MiniMax API 响应中 `chunk.usage` 未产出（`openai_client.py:540` 的 DIAG 日志可验证）
+- (c) 浏览器 SSE 连接/handler 状态问题
+
+**H0 不再盲改代码**；需在服务恢复后用 DIAG 日志做一次端到端确认（1 条消息即可）。若确认 (b)，则改 provider adapter 的 usage 解析；若 (a)/(c)，无需改代码。
+
+**已提交**：`tests/test_usage_sse_bridge.py`（H0 契约测试，随本批提交）。
 
 ## 7. 来源
 
