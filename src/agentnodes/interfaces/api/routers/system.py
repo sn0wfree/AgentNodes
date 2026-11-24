@@ -95,6 +95,17 @@ async def system_info():
     except (OSError, ValueError, RuntimeError) as exc:
         logger.debug("Failed to load model info: %s", exc)
 
+    # R-014：把重试上限作为统一配置暴露给前端（单一事实源 = llm.json 的
+    # max_retries）。前端 AppShell 的会话初始化重试与此共用同一数值；
+    # 服务不可达时前端走自己的默认兜底（见 AppShell FALLBACK_MAX_RETRIES）。
+    max_retries = 3  # LLMConfig 默认（foundation/llm/config.py:165）
+    try:
+        from agentnodes.foundation.llm.config import LLMConfig
+        max_retries = LLMConfig.load().max_retries
+    except (OSError, ValueError, RuntimeError):
+        pass
+    llm["max_retries"] = max_retries
+
     return {
         "workspace_path": workspace,
         "user_count": db.user_count(),

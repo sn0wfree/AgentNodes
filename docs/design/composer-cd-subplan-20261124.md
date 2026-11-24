@@ -147,3 +147,17 @@
 - `appShellPermission.test.tsx`：新增重试上限用例（假定时器推进 10 次，断言调用次数恰好 10、之后不再增加、显示手动重试按钮）
 - 验证：前端 1414 测试 / tsc OK / lint 0 error
 - 注意：服务仍处暂停状态，未做实机验证（UI 行为已被单测覆盖）
+
+### 用户反馈：不要写死，统一配置（本批完成）
+
+用户指出「修复不合理，为什么不能统一配置，而是写死的」。已按「统一到 /system/info + 前端默认兜底」重构：
+
+- **后端**：`api/routers/system.py` 的 `/system/info` 响应 `llm` 增加 `max_retries`（来自 `LLMConfig.load().max_retries`，即 `llm.json`）——**单一事实源**，LLM 调用重试与会话初始化重试共用此值
+- **前端**：
+  - `stores/system.ts`：`LLMInfo` 加 `max_retries: number`（初始 0 = 尚未加载）；`fetchSystemInfo()` 从响应该字段
+  - `AppShell.tsx`：删除硬编码 `MAX_INIT_RETRIES = 10`，改为模块级 `FALLBACK_MAX_RETRIES = 10`（**仅服务不可达/配置未加载时的兜底**）；每次失败时动态读 `useSystemStore.getState().llm.max_retries`，有配置用配置、无配置用兜底；错误态带 `maxRetries` 字段供 UI 显示真实上限
+- **测试**：
+  - 后端 `test_system_api.py` 新增用例验证 `/system/info` 下发 `max_retries=10`
+  - 前端 `appShellPermission.test.tsx` mock system store 可变，新增「从 store 读配置值（3 次）」用例 + 原「服务不可达走兜底（10 次）」用例；补齐 `AssistantMessage.test.tsx` / `systemStore.test.ts` 的 `LLMInfo` mock 字段
+- **验证**：前端 1415 测试 / tsc OK / lint 0 error；后端 8151 passed（架构数字随 system.py 行数漂移已同步 md+HTML：L1 22,115 / L2 11,718 / total 97,552）；gate 13/13 ALL GREEN
+- **设计取舍**：会话初始化失败时后端恰好不可达，`/system/info` 拿不到 → 必须保留前端兜底常量；但正常路径（LLM 调用失败、服务正常）完全由 llm.json 一处配置驱动，改配置不再需要改前端代码

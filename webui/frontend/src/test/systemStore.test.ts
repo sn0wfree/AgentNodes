@@ -21,7 +21,7 @@ describe('useSystemStore', () => {
     vi.clearAllMocks()
     useSystemStore.setState({
       workspacePath: '',
-      llm: { provider: '', model: '', configured: false },
+      llm: { provider: '', model: '', configured: false, max_retries: 3 },
       modelInfo: null,
     })
   })
@@ -36,7 +36,7 @@ describe('useSystemStore', () => {
   it('populates workspace, llm, and model info on fetchSystemInfo', async () => {
     mockGet.mockResolvedValueOnce({
       workspace_path: '/tmp/ws',
-      llm: { provider: 'openai', model: 'gpt-4', configured: true },
+      llm: { provider: 'openai', model: 'gpt-4', configured: true, max_retries: 3 },
       model_info: { provider: 'openai', model: 'gpt-4', models_dev_id: 'gpt-4' },
     } as never)
 

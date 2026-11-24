@@ -15,7 +15,7 @@ const baseMsg: Message = {
 
 function setProvider(provider: string, model = 'default') {
   useSystemStore.setState({
-    llm: { provider, model, configured: !!provider },
+    llm: { provider, model, configured: !!provider, max_retries: 3 },
   })
 }
 

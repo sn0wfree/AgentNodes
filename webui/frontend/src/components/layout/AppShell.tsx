@@ -4,6 +4,7 @@ import { useKeyboardShortcuts } from '../../hooks/useKeyboardShortcuts'
 import { useSSE } from '../../hooks/useSSE'
 import { useSessionStore } from '../../stores/session'
 import { useChatStore } from '../../stores/chat'
+import { useSystemStore } from '../../stores/system'
 import { useLayoutStore } from '../../stores/layout'
 import { IconNav } from './IconNav'
 import { TopBar } from './TopBar'
@@ -27,10 +28,11 @@ import { api } from '../../api/client'
  */
 let shellInitInFlight = false
 
-/** 会话初始化失败时的自动重试上限（与 LLM 调用的 max_retries 独立）。
- *  R-014：此前无限 1s 循环，服务停止时每秒弹一次「正在重试…」；
- *  超过此值后停止自动重试，UI 改为明确失败态 + 手动重新加载。 */
-const MAX_INIT_RETRIES = 10
+/** 会话初始化失败时的自动重试上限 —— **默认兜底**，仅用于后端不可达、
+ *  /system/info 尚未加载时（此时拿不到统一配置）。正常路径读
+ *  `useSystemStore.llm.max_retries`（来自 llm.json，经 /system/info 下发），
+ *  与 LLM 调用的重试上限共用单一事实源。 */
+const FALLBACK_MAX_RETRIES = 10
 
 export function AppShell() {
   useKeyboardShortcuts()
@@ -40,6 +42,7 @@ export function AppShell() {
     message: string
     retrying: boolean
     attempt: number
+    maxRetries: number
   } | null>(null)
 
   useLayoutEffect(() => {
@@ -131,14 +134,16 @@ export function AppShell() {
         if (!cancelled) {
           retryCount += 1
           const message = err instanceof Error && err.message ? err.message : '未知错误'
-          if (retryCount < MAX_INIT_RETRIES) {
-            // 仍在重试上限内：显示「正在重试」并 1s 后再试
-            setInitError({ message, retrying: true, attempt: retryCount })
+          // 每次失败时读取统一配置（/system/info 下发的 llm.max_retries）；
+          // 服务不可达 / 尚未加载时用默认兜底 —— 单一事实源为 llm.json。
+          const configured = useSystemStore.getState().llm.max_retries
+          const maxRetries = configured > 0 ? configured : FALLBACK_MAX_RETRIES
+          setInitError({ message, retrying: retryCount < maxRetries, attempt: retryCount, maxRetries })
+          if (retryCount < maxRetries) {
+            // 仍在重试上限内：1s 后再试
             retryTimer = setTimeout(init, 1000)
-          } else {
-            // 超限（默认 10 次）：停止自动重试，显示明确失败态 + 手动重试
-            setInitError({ message, retrying: false, attempt: retryCount })
           }
+          // 超限：不再调度自动重试，UI 显示明确失败态 + 手动重新加载
         }
       } finally {
         shellInitInFlight = false
@@ -213,7 +218,7 @@ export function AppShell() {
           <div>会话初始化失败：{initError.message}</div>
           {initError.retrying ? (
             <div className="mt-1 text-xs text-slate-400">
-              正在重试…（第 {initError.attempt}/{MAX_INIT_RETRIES} 次）
+              正在重试…（第 {initError.attempt}/{initError.maxRetries} 次）
             </div>
           ) : (
             <div className="mt-1 flex items-center gap-3 text-xs text-slate-400">

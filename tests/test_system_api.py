@@ -69,6 +69,29 @@ def test_info_includes_model_info_when_llm_configured(client):
     assert "source" in info
 
 
+def test_info_exposes_max_retries_from_llm_config(client):
+    """R-014：/system/info 下发统一重试上限（llm.json max_retries 单一事实源），
+    前端 AppShell 据此决定会话初始化重试次数（服务不可达时才走兜底）。"""
+    fake_llm = {
+        "configured": True,
+        "provider": "minimax",
+        "model": "minimax-M3",
+        "api_key_source": "env",
+    }
+    cfg = _make_llm_config(provider="minimax", model="minimax-M3", max_retries=10)
+    with patch(
+        "agentnodes.interfaces.cli.llm_config_check.check_llm_config",
+        return_value=fake_llm,
+    ), patch(
+        "agentnodes.foundation.llm.config.LLMConfig.load",
+        return_value=cfg,
+    ):
+        resp = client.get("/api/system/info")
+    assert resp.status_code == 200
+    body = resp.json()
+    assert body["llm"]["max_retries"] == 10
+
+
 def test_info_model_info_none_when_unconfigured(client):
     """When LLM is not configured, model_info is null."""
     fake_llm = {

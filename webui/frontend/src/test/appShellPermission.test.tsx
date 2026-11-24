@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { act, fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { MemoryRouter } from 'react-router-dom'
 
@@ -21,6 +21,20 @@ vi.mock('../stores/session', () => {
     sessions: [],
   }
   return { useSessionStore: Object.assign((selector: (value: typeof state) => unknown) => selector(state), { getState: () => state }) }
+})
+// R-014：system store 的 llm.max_retries（统一配置）。可变以便测试
+// 「从 store 读配置」与「服务不可达走兜底」两条路径。
+const systemMock = vi.hoisted(() => ({
+  llm: { provider: '', model: '', configured: false, max_retries: 0 },
+}))
+vi.mock('../stores/system', () => {
+  const getState = () => ({ llm: systemMock.llm })
+  return {
+    useSystemStore: Object.assign(
+      (selector: (v: { llm: typeof systemMock.llm }) => unknown) => selector(getState()),
+      { getState },
+    ),
+  }
 })
 vi.mock('../components/layout/IconNav', () => ({ IconNav: () => null }))
 vi.mock('../components/layout/TopBar', () => ({ TopBar: () => null }))
@@ -163,6 +177,7 @@ describe('AppShell init retry cap', () => {
     vi.useFakeTimers()
     mocks.loadSessions.mockReset()
     mocks.createNewSession.mockClear()
+    systemMock.llm.max_retries = 0 // 默认：服务不可达、走兜底 10
   })
 
   afterEach(() => {
@@ -187,5 +202,21 @@ describe('AppShell init retry cap', () => {
     // 超限后显示明确失败态（不再「正在重试」）
     expect(screen.getByText(/已重试 10 次仍未成功/)).toBeInTheDocument()
     expect(screen.getByRole('button', { name: '重新加载' })).toBeInTheDocument()
+  })
+
+  it('uses the unified max_retries from /system/info when available', async () => {
+    // 后端配置 max_retries=3 → 会话初始化重试也用 3（单一事实源）
+    systemMock.llm.max_retries = 3
+    mocks.loadSessions.mockRejectedValue(new Error('服务不可达'))
+    render(<MemoryRouter><AppShell /></MemoryRouter>)
+
+    for (let i = 0; i < 3; i++) {
+      await act(async () => { await vi.advanceTimersByTimeAsync(1000) })
+    }
+    const callsAtCap = mocks.loadSessions.mock.calls.length
+    await act(async () => { await vi.advanceTimersByTimeAsync(10_000) })
+    expect(mocks.loadSessions.mock.calls.length).toBe(callsAtCap)
+    expect(callsAtCap).toBe(3) // 不是兜底的 10
+    expect(screen.getByText(/已重试 3 次仍未成功/)).toBeInTheDocument()
   })
 })

@@ -5,6 +5,8 @@ export interface LLMInfo {
   provider: string
   model: string
   configured: boolean
+  /** 统一重试上限（来自后端 llm.json max_retries，经 /system/info 下发）。 */
+  max_retries: number
 }
 
 export interface ModelInfo {
@@ -41,6 +43,7 @@ const initialLLM: LLMInfo = {
   provider: '',
   model: '',
   configured: false,
+  max_retries: 0, // 0 = 尚未从后端加载（调用方据此走默认兜底）
 }
 
 export const useSystemStore = create<SystemState>((set) => ({
@@ -62,6 +65,7 @@ export const useSystemStore = create<SystemState>((set) => ({
             provider: llm.provider ?? '',
             model: llm.model ?? '',
             configured: !!llm.configured,
+            max_retries: Number.isFinite(llm.max_retries) ? llm.max_retries : 0,
           },
         })
       }
