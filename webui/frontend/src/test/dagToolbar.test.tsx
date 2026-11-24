@@ -70,10 +70,10 @@ describe('DAGToolbar', () => {
     const { rerender, container } = render(
       <DAGToolbar workflowName="wf" status="running" />
     )
-    expect(container.querySelector('.text-blue-400')).toBeTruthy()
+    expect(container.querySelector('.text-info-fg')).toBeTruthy()
     rerender(<DAGToolbar workflowName="wf" status="completed" />)
-    expect(container.querySelector('.text-emerald-400')).toBeTruthy()
+    expect(container.querySelector('.text-success-fg')).toBeTruthy()
     rerender(<DAGToolbar workflowName="wf" status="failed" />)
-    expect(container.querySelector('.text-red-400')).toBeTruthy()
+    expect(container.querySelector('.text-danger-fg')).toBeTruthy()
   })
 })

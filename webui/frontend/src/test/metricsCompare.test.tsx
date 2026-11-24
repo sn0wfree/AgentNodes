@@ -48,7 +48,7 @@ describe('MetricsCompare', () => {
         ]}
       />
     )
-    const bestCells = container.querySelectorAll('td.text-emerald-400')
+    const bestCells = container.querySelectorAll('td.text-success-fg')
     expect(bestCells.length).toBe(3) // sharpe R2, calmar R1, max_dd R1
   })
 
