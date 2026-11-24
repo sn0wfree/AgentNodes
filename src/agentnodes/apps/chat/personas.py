@@ -36,6 +36,29 @@ PERSONA_LABELS: dict[str, tuple[str, str]] = {
 #: 默认角色（未指定时使用）。
 DEFAULT_PERSONA = "chat"
 
+#: 面向用户的选择器清单（有序）。**只有**这些 id 允许出现在 Composer 的
+#: 角色下拉里；顺序即展示顺序（稳定，不随 registry 的发现顺序漂移）。
+#:
+#: 两条排除规则（F1 · composer-toolbar-p0p1-fix-20261124）：
+#: 1. ``workflow_orchestrator`` —— 固定绑定 ``dag:{name}`` 会话，由后端
+#:    自动指派（见 ``orchestrator-chat-design.md`` 裁决），不进通用选择器。
+#: 2. 未在本清单登记的角色（插件内部执行角色 planner / evaluator /
+#:    study_reviewer / study_collector 等）—— 它们由 workflow 节点显式
+#:    指定 role，不是「用户可选的聊天助手」，暴露出来只会给出裸 id。
+PUBLIC_PERSONA_IDS: tuple[str, ...] = (
+    "chat",
+    "researcher",
+    "strategist",
+    "factor_analyst",
+    "data_quality",
+    "portfolio_construction",
+    "risk_controller",
+    "attribution_analyst",
+    "anti_overfit_analyst",
+    "backtest_diagnostics",
+    "critic",
+)
+
 
 def describe(persona_id: str) -> dict[str, str]:
     """Return ``{"id", "name", "description"}`` for one persona.
@@ -56,4 +79,28 @@ def list_for(role_ids: list[str]) -> list[dict[str, str]]:
     return [describe(rid) for rid in role_ids]
 
 
-__all__ = ["DEFAULT_PERSONA", "PERSONA_LABELS", "describe", "list_for"]
+def list_public(role_ids: list[str]) -> list[dict[str, str]]:
+    """面向用户的选择器清单：过滤 + 固定顺序。
+
+    - 只保留 :data:`PUBLIC_PERSONA_IDS` 中**且已注册**的角色
+      （未注册的公开角色不出现——registry 仍是「角色是否存在」的事实源）；
+    - 按 :data:`PUBLIC_PERSONA_IDS` 的固定顺序输出，避免 registry 的
+      ``set()`` 合并顺序导致每次进程启动顺序不同；
+    - 内部执行角色与 ``workflow_orchestrator`` 一律排除。
+    """
+    registered = set(role_ids)
+    return [
+        describe(pid)
+        for pid in PUBLIC_PERSONA_IDS
+        if pid in registered
+    ]
+
+
+__all__ = [
+    "DEFAULT_PERSONA",
+    "PERSONA_LABELS",
+    "PUBLIC_PERSONA_IDS",
+    "describe",
+    "list_for",
+    "list_public",
+]

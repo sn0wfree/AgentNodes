@@ -1017,11 +1017,17 @@ async def list_personas(request: Request = None):
     2026-11-05：展示元数据（中文名 / 一句话说明）已下沉到
     ``apps/chat/personas.py``；角色清单本身仍来自 L3 的
     ``PromptBuilderFactory``——L1 只做拼接。
+
+    2026-11-24（F1）：改用 ``list_public``——只返回**面向用户**的角色
+    且顺序固定。此前直接返回 ``list_roles()`` 会把插件内部执行角色
+    （planner / evaluator / study_reviewer / study_collector）以裸 id 混入
+    下拉、把固定绑定的 ``workflow_orchestrator`` 也暴露出来，且 registry 的
+    ``set()`` 合并顺序导致每次启动顺序不同。
     """
-    from agentnodes.apps.chat.personas import list_for
+    from agentnodes.apps.chat.personas import list_public
     from agentnodes.kernel.agent.prompt.builder import PromptBuilderFactory
 
-    return {"personas": list_for(PromptBuilderFactory.list_roles())}
+    return {"personas": list_public(PromptBuilderFactory.list_roles())}
 
 
 async def _event_generator_v2(
