@@ -159,7 +159,46 @@ hover 弹层（w-72）：
 
 **已提交**：`tests/test_usage_sse_bridge.py`（H0 契约测试，随本批提交）。
 
-## 7. 来源
+## 8. 实施记录（2026-11-24）
+
+### H1 · 7 段数据（已完成）
+
+- **后端**（选项 B，做满 7 段）：
+  - 新建 `kernel/context/breakdown.py` —— 7 段归属规则的**单一事实源**，新增两个概念：
+    - `meta_user_context` = ContextBundle 非 skill 条目（goal/todo/memory/hypothesis/knowledge/artifact/tool_result/history）——"系统注入的用户上下文"，非用户手写
+    - `mcp_tool_schemas` = tool name 以 `mcp__` 开头或带 `mcp`/`server` 标记的工具说明+schema
+  - `kernel/events/event_v2.py` 注册 `context.breakdown` 事件
+  - `kernel/agent/telemetry/agent_telemetry.py` 在 `llm_request` 装配点 emit breakdown（**必须在 llm_request 之前**——多个测试以 `_emit.call_args`（最后一次）取 llm_request entry，wire 零变化）
+  - `kernel/gateway/session_controller.py` 在 context 注入时保存 items 到 `self._last_context_items` 并挂到 loop 上供 breakdown 读取
+  - `apps/chat/events.py` 直通集合加 `context.breakdown`
+  - 6 个纯函数单测 + bridge 契约测试
+- **前端消费**：
+  - `stores/chat.ts` 新增 `contextBreakdown: Map<string, Record<string,number>>` + action
+  - `hooks/sse/types.ts` 加事件类型 + ctx mutator；`controlHandlers.ts` 加 handler（解析 segments、过滤非数值）；`handlers.ts` 注册；`useSSE.ts` 接线
+  - 3 个 handler 单测 + handlers registry 契约同步
+- **验证**：后端全量 8159 passed（失败 3 例均已处理：架构数字同步 + `assert_called_once` 改按 kind 过滤）；前端 1426 passed
+
+### H2 · 圆环 UI（已完成）
+
+- 新建 `components/chat/ContextRing.tsx`（纯 SVG）：
+  - `buildArcs()` 按 value/total 映射为 `stroke-dasharray/dashoffset` 分段弧，颜色用 viz 令牌（dark/light 双主题已有）
+  - `ContextRing` 支持 size 参数（状态行 20px 小环 / 弹层 64px 大环）；无分段数据时单色环兜底
+  - `BreakdownList` 显示 7 段明细（label + 绝对值 + 百分比）
+- `ComposerStatusBar` 用量区：文本进度条 → 小圆环 + 估算/实测文本；hover 弹层（`glass` + `bottom-full` + `group-hover/usage`）显示大环 + 7 段明细 + 剩余可用 + 数据来源
+- **修复的真实 bug**：`useChatStore((s) => s.contextBreakdown.get(id) ?? {})` 每次渲染创建新对象 → zustand selector 认为状态变化 → **无限重渲染**（`Maximum update depth exceeded`，22 个无关测试连带失败）。改用模块级稳定常量 `EMPTY_SEGMENTS`
+- 8 个组件单测（buildArcs / 渲染分支 / BreakdownList）
+- e2e 114 passed（圆环未改变基线场景）
+
+### 全量验证
+
+前端 1426 passed / tsc OK / lint 0 error；后端 8159 passed / 185 skipped / 2 xfailed；gate 13/13 ALL GREEN；架构数字随新增文件同步（L3 231 文件 / 51,697 行，total 466 / 97,736）
+
+### 待实机确认（服务仍暂停）
+
+- 发一条真实消息后 `context.breakdown` 事件是否到达前端（H0 结论：bridge 层已单测确认通，但 MiniMax usage 解析未实机验证）
+- hover 小环弹层在双主题/窄屏下的视觉（当前基线未覆盖 hover 态）
+
+## 9. 来源
 
 - `context-usage-agent-survey-20261124.md`（用量全貌）、`composer-cd-subplan-20261124.md`（C-1/C-2 调研）、`composer-layout-industry-benchmark-20261124.md`（ZCode 用量弹层）
 - 代码：`apps/chat/events.py`、`api/routers/chat.py`、`kernel/gateway/session_controller.py`、`kernel/agent/loop/stream.py`、`kernel/agent/telemetry/agent_telemetry.py`、`foundation/utils/token_utils.py`、`webui/frontend/src/hooks/useContextUsage.ts`、`webui/frontend/src/components/chat/ComposerStatusBar.tsx`
