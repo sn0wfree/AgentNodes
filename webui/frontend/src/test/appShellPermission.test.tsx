@@ -156,3 +156,36 @@ describe('AppShell permission response', () => {
     expect(screen.getByTestId('permission-allow-once')).toBeEnabled()
   })
 })
+
+// R-014：会话初始化失败自动重试上限 10 次（此前无限循环）。
+describe('AppShell init retry cap', () => {
+  beforeEach(() => {
+    vi.useFakeTimers()
+    mocks.loadSessions.mockReset()
+    mocks.createNewSession.mockClear()
+  })
+
+  afterEach(() => {
+    vi.useRealTimers()
+  })
+
+  it('stops auto-retrying after 10 attempts and shows a manual reload', async () => {
+    mocks.loadSessions.mockRejectedValue(new Error('服务不可达'))
+    render(<MemoryRouter><AppShell /></MemoryRouter>)
+
+    // 首次失败后进入「正在重试」；每次推进 1s 触发下一次 init。
+    // 共 10 次尝试（首次 + 9 次定时重试），之后不再调度。
+    for (let i = 0; i < 10; i++) {
+      await act(async () => { await vi.advanceTimersByTimeAsync(1000) })
+    }
+    // 再推进 10s，调用次数不应继续增加
+    const callsAtCap = mocks.loadSessions.mock.calls.length
+    await act(async () => { await vi.advanceTimersByTimeAsync(10_000) })
+    expect(mocks.loadSessions.mock.calls.length).toBe(callsAtCap)
+    expect(callsAtCap).toBe(10)
+
+    // 超限后显示明确失败态（不再「正在重试」）
+    expect(screen.getByText(/已重试 10 次仍未成功/)).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: '重新加载' })).toBeInTheDocument()
+  })
+})

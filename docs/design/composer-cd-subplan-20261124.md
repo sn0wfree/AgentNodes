@@ -137,3 +137,13 @@
 
 - **重试次数改配置文件、最大 10 次，否则显示失败**：已将 `~/.agentnodes/llm.json` 的 `max_retries` 从 2 改为 **10**（顶层 + minimax profile），备份 `llm.json.bak-retries-20261124-132532`。语义为「总尝试次数」（`foundation/llm/config.py:165`），由 `openai_client.py` 的 `_request_with_retry` 执行；10 次全失败后异常上抛，前端 `Composer.tsx:180-198` 已有「发送失败：…」toast。
 - **暂停运行服务**：已精确停止后端（PID 32160）与 Vite（PID 30896）。/services 处于停止状态，后续需按 `tmp/probe/start_backend_8766.py` 与 Vite 命令重启。
+
+### 用户澄清：前端「重试失败」是会话初始化重试，不是 LLM max_retries
+
+用户观察到「前端每隔几秒显示重试失败」，经查是 `AppShell.tsx` 的**会话初始化重试**（`setTimeout(init, 1000)` **无限循环**），与 LLM 的 `max_retries` 无关。服务暂停时 `loadSessions()` 必失败 → 每秒弹一次「正在重试…」。
+
+**已修复**（R-014 同类纪律）：
+- `AppShell.tsx`：新增模块级 `MAX_INIT_RETRIES = 10`；失败计数 `retryCount`，`retryCount < 10` 时继续 1s 重试并显示「正在重试…（第 N/10 次）」；达到 10 次后**停止自动重试**，UI 改为「已重试 10 次仍未成功，请检查服务是否运行」+「重新加载」按钮（手动重试）
+- `appShellPermission.test.tsx`：新增重试上限用例（假定时器推进 10 次，断言调用次数恰好 10、之后不再增加、显示手动重试按钮）
+- 验证：前端 1414 测试 / tsc OK / lint 0 error
+- 注意：服务仍处暂停状态，未做实机验证（UI 行为已被单测覆盖）

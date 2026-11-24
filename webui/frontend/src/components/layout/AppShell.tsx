@@ -27,11 +27,20 @@ import { api } from '../../api/client'
  */
 let shellInitInFlight = false
 
+/** 会话初始化失败时的自动重试上限（与 LLM 调用的 max_retries 独立）。
+ *  R-014：此前无限 1s 循环，服务停止时每秒弹一次「正在重试…」；
+ *  超过此值后停止自动重试，UI 改为明确失败态 + 手动重新加载。 */
+const MAX_INIT_RETRIES = 10
+
 export function AppShell() {
   useKeyboardShortcuts()
   const currentSessionId = useSessionStore((s) => s.currentSessionId)
   const loadSessions = useSessionStore((s) => s.loadSessions)
-  const [initError, setInitError] = useState('')
+  const [initError, setInitError] = useState<{
+    message: string
+    retrying: boolean
+    attempt: number
+  } | null>(null)
 
   useLayoutEffect(() => {
     const media = window.matchMedia('(max-width: 767px)')
@@ -45,9 +54,13 @@ export function AppShell() {
   }, [])
 
   // Init: restore from persisted state or create fresh
+  // R-014：初始化失败自动重试上限 10 次（此前无限 1s 循环，服务停止时
+  // 每秒弹一次「正在重试…」）；超限后停止自动重试，UI 显示明确失败态
+  // 并提供手动重试按钮。与 LLM 的 max_retries 是两回事。
   useEffect(() => {
     let cancelled = false
     let retryTimer: ReturnType<typeof setTimeout> | undefined
+    let retryCount = 0
     const init = async () => {
       // Concurrent-init guard: a second mount (StrictMode / route
       // remount / retry overlap) must not run a parallel init.
@@ -112,12 +125,20 @@ export function AppShell() {
             await latest.createNewSession('新会话')
           }
         }
-        if (!cancelled) setInitError('')
+        if (!cancelled) setInitError(null)
       } catch (err) {
         console.error('AppShell init failed:', err)
         if (!cancelled) {
-          setInitError(err instanceof Error && err.message ? err.message : '未知错误')
-          retryTimer = setTimeout(init, 1000)
+          retryCount += 1
+          const message = err instanceof Error && err.message ? err.message : '未知错误'
+          if (retryCount < MAX_INIT_RETRIES) {
+            // 仍在重试上限内：显示「正在重试」并 1s 后再试
+            setInitError({ message, retrying: true, attempt: retryCount })
+            retryTimer = setTimeout(init, 1000)
+          } else {
+            // 超限（默认 10 次）：停止自动重试，显示明确失败态 + 手动重试
+            setInitError({ message, retrying: false, attempt: retryCount })
+          }
         }
       } finally {
         shellInitInFlight = false
@@ -189,7 +210,23 @@ export function AppShell() {
       </div>
       {initError && (
         <div role="alert" className="absolute bottom-4 left-4 z-30 rounded-lg border border-red-500/30 bg-surface px-4 py-3 text-sm text-slate-100 shadow-elevated">
-          会话初始化失败：{initError}。正在重试…
+          <div>会话初始化失败：{initError.message}</div>
+          {initError.retrying ? (
+            <div className="mt-1 text-xs text-slate-400">
+              正在重试…（第 {initError.attempt}/{MAX_INIT_RETRIES} 次）
+            </div>
+          ) : (
+            <div className="mt-1 flex items-center gap-3 text-xs text-slate-400">
+              <span>已重试 {initError.attempt} 次仍未成功，请检查服务是否运行。</span>
+              <button
+                type="button"
+                onClick={() => window.location.reload()}
+                className="rounded border border-slate-600 px-2 py-0.5 text-slate-200 hover:bg-slate-700"
+              >
+                重新加载
+              </button>
+            </div>
+          )}
         </div>
       )}
       <ToastManager />
