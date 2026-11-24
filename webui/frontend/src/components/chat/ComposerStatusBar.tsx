@@ -14,10 +14,15 @@ import { useModelStore } from '../../stores/model'
 import { useThinkingPrefStore } from '../../stores/thinkingPref'
 import { useSystemStore } from '../../stores/system'
 import { usePersonaStore } from '../../stores/personas'
+import { useChatStore } from '../../stores/chat'
 import { useContextUsage } from '../../hooks/useContextUsage'
+import { ContextRing, BreakdownList } from './ContextRing'
 import type { ChatPersona } from '../../api/client'
-import { tokenTone, toneFillClass } from '../../utils/tokenThresholds'
+import { tokenTone } from '../../utils/tokenThresholds'
 import { formatTokens } from '../../utils/contextUsage'
+
+/** 稳定空对象（避免 zustand selector 每次返回新引用导致无限重渲染）。 */
+const EMPTY_SEGMENTS: Record<string, number> = {}
 
 interface ComposerStatusBarProps {
   sessionId: string | null
@@ -47,6 +52,13 @@ export function ComposerStatusBar({ sessionId }: ComposerStatusBarProps) {
   const modelInfo = useSystemStore((s) => s.modelInfo)
   // 上下文用量：统一口径（R-014 F4-b）——实测优先，无实测则用字符估算。
   const usage = useContextUsage(sessionId)
+  // R-014 H1/H2：7 段构成（来自 context.breakdown SSE），供圆环 + hover 明细。
+  // 注意：`?? EMPTY_SEGMENTS` 必须用稳定常量——若用 `?? {}` 每次渲染新对象，
+  // zustand selector 会认为状态变化 → 无限重渲染（实测 Maximum update depth）。
+  const breakdown = useChatStore((s) =>
+    sessionId ? s.contextBreakdown.get(sessionId) ?? EMPTY_SEGMENTS : EMPTY_SEGMENTS,
+  )
+  const tone = tokenTone(usage.percent)
   // 人设（persona）选择器 —— 与模式/模型/思考同一排（R-014 F4）。
   const personas = usePersonaStore((s) => s.personas)
   const loadPersonas = usePersonaStore((s) => s.loadPersonas)
@@ -95,18 +107,6 @@ export function ComposerStatusBar({ sessionId }: ComposerStatusBarProps) {
     : modelInfo?.model ?? 'default'
 
   const thinkingCfg = THINKING_OPTIONS.find((o) => o.value === thinkingMode) ?? THINKING_OPTIONS[2]
-
-  // hover 详情：把「已用 / 上限 / 剩余 / 输出上限 / 数据来源」摊开，
-  // 行内只保留紧凑的 估算值+上限+百分比。
-  const usageDetail = [
-    `上下文已用：${formatTokens(usage.usedTokens)} / ${formatTokens(usage.limitTokens)} (${usage.percent.toFixed(1)}%)`,
-    `剩余可用：${formatTokens(usage.remainingTokens)}`,
-    usage.outputLimitTokens > 0 ? `单次输出上限：${formatTokens(usage.outputLimitTokens)}` : null,
-    usage.source === 'measured' ? '数据来源：后端实测' : '数据来源：字符估算（非计费实测值）',
-    usage.isStale ? '模型信息来自内置/fallback 数据，非最新抓取' : null,
-  ]
-    .filter(Boolean)
-    .join('\n')
 
   return (
     <div className="flex flex-wrap items-center gap-2 text-[11px]" data-testid="composer-status-bar">
@@ -284,24 +284,13 @@ export function ComposerStatusBar({ sessionId }: ComposerStatusBarProps) {
         )}
       </div>
 
-      {/* Context usage meter（R-014 F4-b：统一口径 + 细化显示）*/}
+      {/* Context usage ring（R-014 H2：小环 + hover 7 段明细弹层）*/}
       {usage.hasLimit && (
-        <div
-          className="ml-auto flex min-w-[110px] items-center gap-1.5"
-          title={usageDetail}
-          data-testid="composer-context-usage"
-        >
-          <div className="h-1 min-w-[44px] flex-1 overflow-hidden rounded-full bg-slate-700/60">
-            <div
-              className={`h-full transition-all ${toneFillClass(tokenTone(usage.percent))}`}
-              style={{ width: `${usage.percent}%` }}
-            />
-          </div>
-          {/* 实测用绝对值；估算加 `~` 前缀标明不是真实计费值 */}
+        <div className="group/usage relative ml-auto flex items-center gap-1.5" data-testid="composer-context-usage">
+          <ContextRing segments={breakdown} percent={usage.percent} tone={tone} size={20} />
           <span className="font-mono text-[10px] text-slate-500">
             {usage.source === 'estimated' ? '~' : ''}
-            {formatTokens(usage.usedTokens)}
-            <span className="hidden sm:inline"> / {formatTokens(usage.limitTokens)}</span>
+            {formatTokens(usage.usedTokens)} / {formatTokens(usage.limitTokens)}
           </span>
           <span className="font-mono text-[10px] text-slate-500">
             {usage.percent > 0 && usage.percent < 1
@@ -309,14 +298,26 @@ export function ComposerStatusBar({ sessionId }: ComposerStatusBarProps) {
               : usage.percent.toFixed(0)}%
           </span>
           {usage.isStale && (
-            <span
-              className="text-warning-fg"
-              title="模型信息来自内置/fallback 数据，非最新抓取"
-              data-testid="composer-context-stale"
-            >
+            <span className="text-warning-fg" title="模型信息来自内置/fallback 数据，非最新抓取" data-testid="composer-context-stale">
               <AlertTriangle className="h-3 w-3" />
             </span>
           )}
+          {/* hover 弹层：7 段明细（渐进式披露，对齐 ZCode 低调查看器 + 详情分层） */}
+          <div className="glass invisible absolute bottom-full right-0 z-50 mb-2 w-72 rounded-xl border border-slate-700/60 p-3 opacity-0 shadow-2xl transition-opacity group-hover/usage:visible group-hover/usage:opacity-100" data-testid="context-breakdown-popover">
+            <div className="mb-2 flex items-center justify-between text-[11px]">
+              <span className="font-medium text-slate-200">上下文用量</span>
+              <span className="font-mono text-slate-400">
+                {formatTokens(usage.usedTokens)} / {formatTokens(usage.limitTokens)} ({usage.percent.toFixed(1)}%)
+              </span>
+            </div>
+            <div className="mb-2 flex justify-center">
+              <ContextRing segments={breakdown} percent={usage.percent} tone={tone} size={64} />
+            </div>
+            <BreakdownList segments={breakdown} />
+            <div className="mt-2 border-t border-slate-700/60 pt-2 text-[10px] text-slate-500">
+              剩余可用 {formatTokens(usage.remainingTokens)} · {usage.source === 'measured' ? '后端实测' : '字符估算'}
+            </div>
+          </div>
         </div>
       )}
     </div>

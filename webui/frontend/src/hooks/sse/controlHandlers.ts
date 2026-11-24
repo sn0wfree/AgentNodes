@@ -46,6 +46,24 @@ export const llmUsage: SSEHandler = (data, ctx) => {
 }
 
 /**
+ * context.breakdown (R-014 H1): 7 段上下文构成估算。后端每次 LLM call
+ * 发一次（agent_telemetry），前端存到 per-session store，供圆环 + hover
+ * 明细使用。事件缺失时 UI 走本地估算兜底。
+ */
+export const contextBreakdown: SSEHandler = (data, ctx) => {
+  const { sessionId, setContextBreakdown } = ctx
+  if (!sessionId) return
+  const segments = data.segments
+  if (!segments || typeof segments !== 'object') return
+  const clean: Record<string, number> = {}
+  for (const [k, v] of Object.entries(segments)) {
+    if (typeof v === 'number' && Number.isFinite(v)) clean[k] = v
+  }
+  if (Object.keys(clean).length === 0) return
+  setContextBreakdown(sessionId, clean)
+}
+
+/**
  * compact: context compaction occurred. Increments the per-agent
  * compaction counter and surfaces a dismissible banner via
  * `setLastCompaction`.

@@ -13,6 +13,7 @@ import { messageReceived, attemptStarted, queuePaused, queueState } from './queu
 import {
   sessionTotalTokens,
   llmUsage,
+  contextBreakdown,
   compact,
   compactCount,
   agentDone,
@@ -114,6 +115,7 @@ export const HANDLERS: Partial<Record<SSEEventType, SSEHandler>> = {
   queue_state: queueState,
   session_total_tokens: sessionTotalTokens,
   llm_usage: llmUsage,
+  'context.breakdown': contextBreakdown,
   compact,
   compact_count: compactCount,
   agent_done: agentDone,

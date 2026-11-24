@@ -181,6 +181,12 @@ interface ChatState {
    */
   tokensUsed: Map<string, number>
   /**
+   * R-014 H1：per-session 7 段上下文构成（来自 context.breakdown SSE 事件）。
+   * 供圆环 + hover 明细使用；无数据时为空对象，UI 走估算兜底。
+   */
+  contextBreakdown: Map<string, Record<string, number>>
+  setContextBreakdown: (sessionId: string, segments: Record<string, number>) => void
+  /**
    * Per-session flag: true once `session_total_tokens` has been seen.
    * `session_total_tokens` is the backend-authoritative value; per-call
    * `llm_usage` deltas must NOT be applied on top of it (double
@@ -300,6 +306,7 @@ export const useChatStore = create<ChatState>()(
     askedUserSessions: new Map(),
     queueLengths: new Map(),
     tokensUsed: new Map(),
+    contextBreakdown: new Map(),
     totalTokensSeen: new Map(),
     lastCompaction: null,
     partTextAccumDelta: {},
@@ -410,6 +417,10 @@ export const useChatStore = create<ChatState>()(
     setTokensUsed: (sessionId, tokens) =>
       set((state) => {
         state.tokensUsed.set(sessionId, tokens)
+      }),
+    setContextBreakdown: (sessionId, segments) =>
+      set((state) => {
+        state.contextBreakdown.set(sessionId, segments)
       }),
     markTotalTokensSeen: (sessionId) =>
       set((state) => {

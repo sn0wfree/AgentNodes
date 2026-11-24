@@ -6,6 +6,7 @@ import { describe, it, expect, beforeEach, vi } from 'vitest'
 import {
   sessionTotalTokens,
   llmUsage,
+  contextBreakdown,
   compact,
   agentDone,
   errorEvent,
@@ -36,6 +37,7 @@ function ctx(overrides: Partial<SSEContext> = {}): SSEContext {
     setQueuePaused: () => {},
     setQueueLength: () => {},
     setTokensUsed: store.setTokensUsed,
+    setContextBreakdown: store.setContextBreakdown,
     markTotalTokensSeen: store.markTotalTokensSeen,
     setLastCompaction: store.setLastCompaction,
     accumulatePartText: store.accumulatePartText,
@@ -61,6 +63,7 @@ beforeEach(() => {
     streamingText: '',
     partTextAccumDelta: {},
     tokensUsed: new Map(),
+    contextBreakdown: new Map(),
     totalTokensSeen: new Map(),
     lastCompaction: null,
   })
@@ -197,5 +200,27 @@ describe('errorEvent', () => {
   it('does not push a toast when no error string is provided', () => {
     errorEvent({}, ctx())
     expect(toasts).toEqual([])
+  })
+})
+
+describe('contextBreakdown (R-014 H1)', () => {
+  it('stores the 7 segments per session', () => {
+    const segments = {
+      messages: 100, system_prompt: 50, meta_user_context: 30, skills: 10,
+      tool_prompt: 40, system_tool_schemas: 60, mcp_tool_schemas: 5,
+    }
+    contextBreakdown({ segments }, ctx())
+    expect(useChatStore.getState().contextBreakdown.get('sess-1')).toEqual(segments)
+  })
+
+  it('ignores malformed segments', () => {
+    contextBreakdown({ segments: { messages: 'bad', skills: 12 } }, ctx())
+    const stored = useChatStore.getState().contextBreakdown.get('sess-1')
+    expect(stored).toEqual({ skills: 12 })
+  })
+
+  it('does nothing without a session id', () => {
+    contextBreakdown({ segments: { skills: 12 } }, ctx({ sessionId: null }))
+    expect(useChatStore.getState().contextBreakdown.size).toBe(0)
   })
 })

@@ -41,6 +41,7 @@ import {
 import {
   sessionTotalTokens,
   llmUsage,
+  contextBreakdown,
   compact,
   compactCount,
   agentDone,
@@ -130,6 +131,7 @@ const EXPECTED: Record<string, unknown> = {
   queue_state: queueState,
   session_total_tokens: sessionTotalTokens,
   llm_usage: llmUsage,
+  'context.breakdown': contextBreakdown,
   compact,
   compact_count: compactCount,
   agent_done: agentDone,

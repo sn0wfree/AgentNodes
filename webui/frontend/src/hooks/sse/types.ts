@@ -44,6 +44,7 @@ export type SSEEventType =
   | 'queue_state'
   | 'llm_usage'
   | 'session_total_tokens'
+  | 'context.breakdown' // R-014 H1：7 段上下文构成
   | 'compact'
   | 'compact_count'
   | 'study_queued'
@@ -123,6 +124,7 @@ export const EVENT_TYPES: SSEEventType[] = [
   'compact',
   'compact_count',
   'llm_usage', 'session_total_tokens',
+  'context.breakdown', // R-014 H1
   'attempt.started', 'queue_paused', 'queue_state',
   // Study task system (StudyScheduler → EventStore → SSE)
   'study_queued', 'study_started', 'study_round',
@@ -180,6 +182,7 @@ export interface SSEContext {
   setQueuePaused: (sessionId: string, paused: boolean) => void
   setQueueLength: (sessionId: string, length: number) => void
   setTokensUsed: (sessionId: string, tokens: number) => void
+  setContextBreakdown: (sessionId: string, segments: Record<string, number>) => void
   markTotalTokensSeen: (sessionId: string) => void
   setActiveAttempt: (id: string | null) => void
   setAskedUser: (sessionId: string, asked: boolean) => void

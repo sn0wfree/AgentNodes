@@ -74,6 +74,7 @@ export function useSSE(sessionId: string | null) {
   const setQueuePaused = useChatStore((s) => s.setQueuePaused)
   const setQueueLength = useChatStore((s) => s.setQueueLength)
   const setTokensUsed = useChatStore((s) => s.setTokensUsed)
+  const setContextBreakdown = useChatStore((s) => s.setContextBreakdown)
   const markTotalTokensSeen = useChatStore((s) => s.markTotalTokensSeen)
   const updateAgent = useAgentStore((s) => s.updateAgent)
   const updateNodeStatus = useWorkflowStore((s) => s.updateNodeStatus)
@@ -105,6 +106,7 @@ export function useSSE(sessionId: string | null) {
         setQueuePaused,
         setQueueLength,
         setTokensUsed,
+        setContextBreakdown,
         markTotalTokensSeen,
         setActiveAttempt: (id) => useChatStore.getState().setActiveAttempt(id),
         setAskedUser: (sid, asked) => useChatStore.getState().setAskedUser(sid, asked),
@@ -165,6 +167,7 @@ export function useSSE(sessionId: string | null) {
       setQueuePaused,
       setQueueLength,
       setTokensUsed,
+      setContextBreakdown,
       markTotalTokensSeen,
       updateAgent,
       updateNodeStatus,
