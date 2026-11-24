@@ -66,6 +66,25 @@ describe('Composer', () => {
     expect(textarea()).toHaveValue('hello')
   })
 
+  // R-014 G0-A/B：容器结构 + 圆形发送按钮
+  it('renders the status bar inside the composer card (R-014 G0-A)', () => {
+    render(<Composer />)
+    const status = screen.getByTestId('statusbar')
+    expect(status).toBeInTheDocument()
+    // 状态行必须与 textarea 同处一个圆角卡片（各自父容器的祖先相同）
+    const card = status.closest('.rounded-2xl')
+    expect(card).not.toBeNull()
+    expect(card!.querySelector('textarea')).not.toBeNull()
+  })
+
+  it('uses a circular brand send button (R-014 G0-B)', () => {
+    render(<Composer />)
+    fireEvent.change(textarea(), { target: { value: 'hello' } })
+    const send = screen.getByTestId('composer-send')
+    expect(send.className).toContain('rounded-full')
+    expect(send.className).toContain('bg-sky-500')
+  })
+
   it('does not send an empty draft', async () => {
     render(<Composer />)
     fireEvent.keyDown(textarea(), { key: 'Enter' })

@@ -429,59 +429,65 @@ export function Composer({ composeMessage, readOnly }: ComposerProps = {}) {
         )}
       </div>
 
-      {/* Status bar: persona, mode toggle, model selector, thinking, context（R-014 F4 合并为一行）*/}
-      <ComposerStatusBar sessionId={currentSessionId} />
-
-      {/* Input area */}
-      <div className="glass rounded-xl flex items-end gap-2 px-4 py-3">
-        <textarea
-          ref={textareaRef}
-          value={text}
-          onChange={(e) => handleChange(e.target.value)}
-          onKeyDown={handleKeyDown}
-          onPaste={readOnly ? undefined : handlePaste}
-          placeholder={
-            isStreaming
-              ? '正在生成中... (Enter 停止)'
-              : currentSessionId
-                ? '输入消息... (Shift+Enter 换行)'
-                : '选择或创建会话'
-          }
-          disabled={!currentSessionId}
-          rows={1}
-          className="min-w-0 flex-1 resize-none bg-transparent text-sm text-slate-100 placeholder-slate-500 outline-none disabled:opacity-50"
-        />
-        <div className="flex items-center gap-1">
-          {!readOnly && (
-            <button
-              onClick={handleFileSelect}
-              disabled={isStreaming}
-              className="rounded-lg p-1.5 text-slate-400 hover:bg-slate-700/50 hover:text-slate-200 transition-colors disabled:opacity-30"
-              title="上传图片"
-            >
-              <ImageIcon className="h-4 w-4" />
-            </button>
-          )}
-          {isStreaming ? (
-            <button
-              onClick={handleCancel}
-              className="rounded-lg bg-red-600 p-1.5 text-white hover:bg-red-700 transition-colors"
-              title="停止生成"
-              aria-label="停止生成"
-            >
-              <Square className="h-4 w-4" />
-            </button>
-          ) : (
-            <button
-              onClick={handleSend}
-              disabled={sending || (!text.trim() && images.length === 0) || !currentSessionId}
-              className="ua-primary-action rounded-lg p-1.5 transition-colors disabled:opacity-30"
-              title="发送 (Enter)"
-            >
-              <Send className="h-4 w-4" />
-            </button>
-          )}
+      {/* Composer 卡片（R-014 G0-A）：对齐 ZCode data-composer-layout ——
+          一个大圆角容器包住「编辑器行 + 工具条行（状态行移入框内）」。
+          focus-within 时边框/底色高亮，与 ZCode 的 focus-within 语义一致。 */}
+      <div className="glass flex flex-col gap-2 rounded-2xl border-[0.5px] border-slate-700/60 bg-slate-900/40 px-4 py-3 transition-colors hover:border-slate-600 focus-within:border-sky-500/60">
+        {/* 编辑器行 */}
+        <div className="flex items-end gap-2">
+          <textarea
+            ref={textareaRef}
+            value={text}
+            onChange={(e) => handleChange(e.target.value)}
+            onKeyDown={handleKeyDown}
+            onPaste={readOnly ? undefined : handlePaste}
+            placeholder={
+              isStreaming
+                ? '正在生成中... (Enter 停止)'
+                : currentSessionId
+                  ? '输入消息... (Shift+Enter 换行)'
+                  : '选择或创建会话'
+            }
+            disabled={!currentSessionId}
+            rows={1}
+            className="min-w-0 flex-1 resize-none bg-transparent text-sm text-slate-100 placeholder-slate-500 outline-none disabled:opacity-50"
+          />
+          <div className="flex items-center gap-1">
+            {!readOnly && (
+              <button
+                onClick={handleFileSelect}
+                disabled={isStreaming}
+                className="rounded-lg p-1.5 text-slate-400 hover:bg-slate-700/50 hover:text-slate-200 transition-colors disabled:opacity-30"
+                title="上传图片"
+              >
+                <ImageIcon className="h-4 w-4" />
+              </button>
+            )}
+            {isStreaming ? (
+              <button
+                onClick={handleCancel}
+                className="rounded-full bg-red-600 p-2 text-white hover:bg-red-700 transition-colors"
+                title="停止生成"
+                aria-label="停止生成"
+              >
+                <Square className="h-4 w-4" />
+              </button>
+            ) : (
+              <button
+                onClick={handleSend}
+                disabled={sending || (!text.trim() && images.length === 0) || !currentSessionId}
+                className="rounded-full bg-sky-500 p-2 text-white transition-colors hover:bg-sky-400 disabled:opacity-30"
+                title="发送 (Enter)"
+                data-testid="composer-send"
+              >
+                <Send className="h-4 w-4" />
+              </button>
+            )}
+          </div>
         </div>
+
+        {/* 工具条行（框内底部）*/}
+        <ComposerStatusBar sessionId={currentSessionId} />
       </div>
     </div>
   )

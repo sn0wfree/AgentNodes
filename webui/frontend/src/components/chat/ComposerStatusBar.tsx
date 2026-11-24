@@ -109,7 +109,7 @@ export function ComposerStatusBar({ sessionId }: ComposerStatusBarProps) {
     .join('\n')
 
   return (
-    <div className="mb-2 flex flex-wrap items-center gap-2 text-[11px]">
+    <div className="flex flex-wrap items-center gap-2 text-[11px]" data-testid="composer-status-bar">
       {/* Persona selector（人设）—— 与模式/模型/思考同一排（R-014 F4）*/}
       <div className="relative" ref={personaRef}>
         <button
