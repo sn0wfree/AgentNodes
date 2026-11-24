@@ -89,18 +89,48 @@ describe('mode store', () => {
     expect(useModeStore.getState().mode).toBe('build')
   })
 
-  it('persists mode changes once a session id is registered', async () => {
+  it('persists mode changes once a session is bound', async () => {
     const { useModeStore } = await import('../stores/mode')
-    ;(window as unknown as { __srModeSession: (id: string) => void }).__srModeSession('sess-9')
+    useModeStore.getState().bindSession('sess-9')
     useModeStore.getState().setMode('plan')
     expect(localStorage.getItem('sr-mode-sess-9')).toBe('plan')
   })
 
-  it('does not persist before any session id is registered', async () => {
+  it('persists the toggle for the bound session', async () => {
+    const { useModeStore } = await import('../stores/mode')
+    useModeStore.getState().loadSessionMode('sess-toggle')
+    useModeStore.getState().toggleMode()
+    expect(useModeStore.getState().mode).toBe('plan')
+    expect(localStorage.getItem('sr-mode-sess-toggle')).toBe('plan')
+  })
+
+  it('does not persist before any session is bound', async () => {
     localStorage.clear()
     const { useModeStore } = await import('../stores/mode')
     useModeStore.getState().setMode('plan')
     expect(Object.keys(localStorage).filter((k) => k.startsWith('sr-mode-'))).toHaveLength(0)
+  })
+
+  it('loadSessionMode binds the session so later toggles land on it', async () => {
+    const { useModeStore } = await import('../stores/mode')
+    useModeStore.getState().loadSessionMode('sess-bound')
+    expect(useModeStore.getState().sessionId).toBe('sess-bound')
+    useModeStore.getState().toggleMode()
+    expect(localStorage.getItem('sr-mode-sess-bound')).toBe('plan')
+  })
+
+  it('does not leak the mode between sessions', async () => {
+    localStorage.clear()
+    const { useModeStore } = await import('../stores/mode')
+    useModeStore.getState().loadSessionMode('sess-a')
+    useModeStore.getState().toggleMode() // sess-a → plan
+    expect(localStorage.getItem('sr-mode-sess-a')).toBe('plan')
+    useModeStore.getState().loadSessionMode('sess-b')
+    expect(useModeStore.getState().mode).toBe('build') // sess-b 独立
+    useModeStore.getState().toggleMode() // sess-b → plan
+    expect(localStorage.getItem('sr-mode-sess-b')).toBe('plan')
+    useModeStore.getState().loadSessionMode('sess-a')
+    expect(useModeStore.getState().mode).toBe('plan') // 回到 sess-a 仍是 plan
   })
 })
 
