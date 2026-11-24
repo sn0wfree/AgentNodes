@@ -16,9 +16,9 @@ interface AgentItemProps {
 const STATUS_CONFIG = {
   pending: { icon: Clock, color: 'text-slate-500', bg: 'bg-slate-500/10' },
   running: { icon: Zap, color: 'text-warning-fg', bg: 'bg-warning-fill' },
-  completed: { icon: CheckCircle, color: 'text-emerald-400', bg: 'bg-emerald-500/10' },
-  failed: { icon: XCircle, color: 'text-red-400', bg: 'bg-red-500/10' },
-  aborted: { icon: AlertCircle, color: 'text-orange-400', bg: 'bg-orange-500/10' },
+  completed: { icon: CheckCircle, color: 'text-success-fg', bg: 'bg-success-surface' },
+  failed: { icon: XCircle, color: 'text-danger-fg', bg: 'bg-danger-surface' },
+  aborted: { icon: AlertCircle, color: 'text-warning-fg', bg: 'bg-warning-fill' },
 } as const
 
 

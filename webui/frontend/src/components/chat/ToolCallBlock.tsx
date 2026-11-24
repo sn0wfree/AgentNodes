@@ -70,8 +70,8 @@ const TOOL_ICONS: Record<string, typeof Code> = {
 const STATUS_CONFIG = {
   pending: { icon: Loader2, color: 'text-slate-400', bg: 'bg-slate-700/30' },
   running: { icon: Loader2, color: 'text-warning-fg', bg: 'bg-warning-fill' },
-  done: { icon: CheckCircle, color: 'text-emerald-400', bg: 'bg-emerald-500/5' },
-  error: { icon: XCircle, color: 'text-red-400', bg: 'bg-red-500/5' },
+  done: { icon: CheckCircle, color: 'text-success-fg', bg: 'bg-success-surface' },
+  error: { icon: XCircle, color: 'text-danger-fg', bg: 'bg-danger-surface' },
 } as const
 
 /** Extract a brief, single-line preview from JSON args. */
@@ -225,9 +225,9 @@ export function ToolCallBlock({ toolCall, startTime, onRetry }: ToolCallBlockPro
         toolCall.status === 'running'
           ? 'border-warning/50 bg-warning-fill'
           : toolCall.status === 'error'
-          ? 'border-red-500/40 bg-red-500/5'
+          ? 'border-danger/40 bg-danger-surface'
           : toolCall.status === 'done'
-          ? 'border-emerald-500/30 bg-emerald-500/5'
+          ? 'border-success/30 bg-success-surface'
           : 'border-slate-700 bg-slate-800/30'
       }`}
     >
@@ -274,7 +274,7 @@ export function ToolCallBlock({ toolCall, startTime, onRetry }: ToolCallBlockPro
           </span>
         )}
         {resultSummary && (
-          <span className="text-emerald-400/70 truncate text-[11px] max-w-[200px]">
+          <span className="text-success-fg-muted truncate text-[11px] max-w-[200px]">
             → {resultSummary}
           </span>
         )}
@@ -289,7 +289,7 @@ export function ToolCallBlock({ toolCall, startTime, onRetry }: ToolCallBlockPro
             <button
               type="button"
               onClick={handleRetry}
-              className="opacity-0 group-hover:opacity-100 transition-opacity text-red-400 hover:text-red-300"
+              className="opacity-0 group-hover:opacity-100 transition-opacity text-danger-fg hover:text-danger"
               title="重试"
             >
               <RefreshCw className="h-3 w-3" />

@@ -20,8 +20,8 @@ interface ComposerStatusBarProps {
 }
 
 const MODE_CONFIG = {
-  plan: { icon: Search, label: 'Plan', color: 'text-violet-400', bg: 'bg-violet-500/10', border: 'border-violet-500/30' },
-  build: { icon: Hammer, label: 'Build', color: 'text-emerald-400', bg: 'bg-emerald-500/10', border: 'border-emerald-500/30' },
+  plan: { icon: Search, label: 'Plan', color: 'text-thinking-fg', bg: 'bg-thinking-surface', border: 'border-thinking-fg-muted' },
+  build: { icon: Hammer, label: 'Build', color: 'text-success-fg', bg: 'bg-success-surface', border: 'border-success-fg-muted' },
 } as const
 
 const THINKING_OPTIONS = [

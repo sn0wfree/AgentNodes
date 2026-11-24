@@ -91,19 +91,19 @@ describe('ContextUsageBar', () => {
     setup({ sessionId: 's1', tokensUsed: 90000, context: 100000, source: 'fetched' })
     rerender(<ContextUsageBar />)
     expect(screen.getByTestId('context-usage-text').textContent).toMatch(/90\.0%/)
-    expect(screen.getByTestId('context-progress-bar').className).toContain('bg-red-500')
+    expect(screen.getByTestId('context-progress-bar').className).toContain('bg-danger')
     // compaction shrank context → 30% green
     setup({ sessionId: 's1', tokensUsed: 30000, context: 100000, source: 'fetched' })
     rerender(<ContextUsageBar />)
     expect(screen.getByTestId('context-usage-text').textContent).toMatch(/30\.0%/)
-    expect(screen.getByTestId('context-progress-bar').className).toContain('bg-emerald-500')
+    expect(screen.getByTestId('context-progress-bar').className).toContain('bg-success')
   })
 
   it('applies green color tier for low usage', () => {
     setup({ sessionId: 's1', tokensUsed: 1000, context: 100000, source: 'fetched' })
     render(<ContextUsageBar />)
     const bar = screen.getByTestId('context-progress-bar')
-    expect(bar.className).toContain('bg-emerald-500')
+    expect(bar.className).toContain('bg-success')
   })
 
   it('applies amber color tier for 50-80% usage', () => {
@@ -117,7 +117,7 @@ describe('ContextUsageBar', () => {
     setup({ sessionId: 's1', tokensUsed: 85000, context: 100000, source: 'fetched' })
     render(<ContextUsageBar />)
     const bar = screen.getByTestId('context-progress-bar')
-    expect(bar.className).toContain('bg-red-500')
+    expect(bar.className).toContain('bg-danger')
   })
 
   it('shows stale hint when source is fallback', () => {

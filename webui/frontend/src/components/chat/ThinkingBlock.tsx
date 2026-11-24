@@ -80,26 +80,26 @@ export function ThinkingBlock({
             setIsExpanded((v) => !v)
           }
         }}
-        className="flex w-full cursor-pointer items-center gap-1.5 px-2 py-1 text-left text-[11px] text-violet-300/70 hover:bg-violet-950/20 transition-colors"
+        className="flex w-full cursor-pointer items-center gap-1.5 px-2 py-1 text-left text-[11px] text-thinking-fg hover:bg-thinking-surface transition-colors"
       >
         <ChevronRight
-          className={`h-3 w-3 text-violet-400/70 transition-transform duration-200 ${
+          className={`h-3 w-3 text-thinking-fg-muted transition-transform duration-200 ${
             isExpanded ? 'rotate-90' : ''
           }`}
         />
-        <Sparkles className="h-3 w-3 text-violet-400/70" />
+        <Sparkles className="h-3 w-3 text-thinking-fg-muted" />
         <span className="font-medium">{label}</span>
         {streaming && (
           <span className="thinking-dots ml-0.5">
             <span /><span /><span />
           </span>
         )}
-        <span className="ml-auto flex items-center gap-2 text-[10px] text-violet-400/50">
+        <span className="ml-auto flex items-center gap-2 text-[10px] text-thinking-fg-muted">
           {text.length > 50 && <span>{text.length} 字</span>}
           <button
             type="button"
             onClick={handleCopy}
-            className="cursor-pointer hover:text-violet-300"
+            className="cursor-pointer hover:text-thinking-fg"
             title="复制"
           >
             {copied ? <Check className="h-3 w-3" /> : <Copy className="h-3 w-3" />}
@@ -109,8 +109,8 @@ export function ThinkingBlock({
 
       {/* Expanded content */}
       {isExpanded && (
-        <div className="border-t border-violet-500/20 px-3 py-2 max-h-72 overflow-y-auto">
-          <div className="text-[11px] leading-relaxed text-violet-200/60">
+        <div className="border-t border-thinking-surface px-3 py-2 max-h-72 overflow-y-auto">
+          <div className="text-[11px] leading-relaxed text-thinking-fg-muted">
             <MarkdownRenderer content={text} />
           </div>
         </div>

@@ -58,8 +58,8 @@ export function ToolCallGroup({ toolCalls, startTimes, onRetry }: ToolCallGroupP
               {running} running
             </span>
           )}
-          {done > 0 && <span className="text-emerald-400">{done} done</span>}
-          {error > 0 && <span className="text-red-400">{error} failed</span>}
+          {done > 0 && <span className="text-success-fg">{done} done</span>}
+          {error > 0 && <span className="text-danger-fg">{error} failed</span>}
         </span>
       </div>
 

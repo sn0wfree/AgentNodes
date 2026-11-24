@@ -27,15 +27,15 @@ export function statusLabel(status: string): string {
 
 const BADGE_CLASSES: Record<string, string> = {
   pending: 'bg-slate-500/20 text-slate-400',
-  running: 'bg-blue-500/20 text-blue-400',
-  completed: 'bg-emerald-500/20 text-emerald-400',
-  done: 'bg-emerald-500/20 text-emerald-400',
-  success: 'bg-emerald-500/20 text-emerald-400',
-  failed: 'bg-red-500/20 text-red-400',
-  error: 'bg-red-500/20 text-red-400',
+  running: 'bg-info-surface text-info-fg',
+  completed: 'bg-success-surface text-success-fg',
+  done: 'bg-success-surface text-success-fg',
+  success: 'bg-success-surface text-success-fg',
+  failed: 'bg-danger-surface text-danger-fg',
+  error: 'bg-danger-surface text-danger-fg',
   skipped: 'bg-slate-600/20 text-slate-500',
-  aborted: 'bg-orange-500/20 text-orange-400',
-  active: 'bg-emerald-900/50 text-emerald-300',
+  aborted: 'bg-warning-fill text-warning-fg',
+  active: 'bg-success-surface text-success-fg',
 }
 
 /** Tailwind pill classes for a status key. */

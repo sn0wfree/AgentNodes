@@ -15,7 +15,7 @@ export function SSEStatus() {
   const config = {
     connected: {
       icon: Wifi,
-      color: 'text-emerald-400',
+      color: 'text-success-fg',
       label: '已连接',
       pulse: false,
     },
@@ -27,7 +27,7 @@ export function SSEStatus() {
     },
     disconnected: {
       icon: WifiOff,
-      color: 'text-red-400',
+      color: 'text-danger-fg',
       label: '已断开',
       pulse: false,
     },

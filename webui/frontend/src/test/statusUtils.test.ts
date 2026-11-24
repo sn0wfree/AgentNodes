@@ -26,20 +26,21 @@ describe('statusLabel', () => {
 })
 
 describe('statusBadgeClass', () => {
-  it('returns the matching Tailwind pill for known statuses', () => {
+  it('returns the matching semantic pill for known statuses', () => {
+    // 语义色统一 C2：断言语义令牌类而非 Tailwind 色阶（单点可调）。
     expect(statusBadgeClass('pending')).toMatch(/slate/)
-    expect(statusBadgeClass('running')).toMatch(/blue/)
-    expect(statusBadgeClass('completed')).toMatch(/emerald/)
-    expect(statusBadgeClass('failed')).toMatch(/red/)
-    expect(statusBadgeClass('aborted')).toMatch(/orange/)
-    expect(statusBadgeClass('active')).toMatch(/emerald/)
+    expect(statusBadgeClass('running')).toMatch(/info/)
+    expect(statusBadgeClass('completed')).toMatch(/success/)
+    expect(statusBadgeClass('failed')).toMatch(/danger/)
+    expect(statusBadgeClass('aborted')).toMatch(/warning/)
+    expect(statusBadgeClass('active')).toMatch(/success/)
   })
 
   it('falls back to a neutral slate class for unknown statuses', () => {
     expect(statusBadgeClass('weird-key')).toMatch(/slate/)
   })
 
-  it('treats "done" and "success" the same as "completed" (emerald)', () => {
+  it('treats "done" and "success" the same as "completed" (success token)', () => {
     expect(statusBadgeClass('done')).toBe(statusBadgeClass('completed'))
     expect(statusBadgeClass('success')).toBe(statusBadgeClass('completed'))
   })

@@ -19,16 +19,16 @@ function tierFor(pct: number): Tier {
 
 const TIER_CLASS: Record<Tier, { bar: string; text: string }> = {
   green: {
-    bar: 'bg-emerald-500',
-    text: 'text-emerald-400',
+    bar: 'bg-success',
+    text: 'text-success-fg',
   },
   amber: {
     bar: 'bg-warning',
     text: 'text-warning-fg',
   },
   red: {
-    bar: 'bg-red-500',
-    text: 'text-red-400',
+    bar: 'bg-danger',
+    text: 'text-danger-fg',
   },
 }
 
