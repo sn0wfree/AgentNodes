@@ -23,7 +23,7 @@ function formatTime(iso: string): string {
 
 const VERDICT_STYLES: Record<string, { badge: string; label: string; dot: string; line: string }> = {
   keep: {
-    badge: 'border-emerald-500/40 bg-emerald-500/10 text-emerald-400',
+    badge: 'border-emerald-500/40 bg-emerald-500/10 text-success-fg',
     label: '保留',
     dot: 'border-emerald-500 bg-emerald-500',
     line: 'bg-emerald-500/40',
@@ -163,7 +163,7 @@ function RoundItem({
                       </p>
                     )}
                     {f.suggested_fix && (
-                      <p className="text-sky-400 ml-4">建议: {f.suggested_fix}</p>
+                      <p className="text-info-fg ml-4">建议: {f.suggested_fix}</p>
                     )}
                   </div>
                 ))}

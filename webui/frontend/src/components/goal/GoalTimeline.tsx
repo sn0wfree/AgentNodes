@@ -15,9 +15,9 @@ interface GoalTimelineProps {
 }
 
 const EVENT_ICON = {
-  evidence: <FileText className="h-3 w-3 text-emerald-400" />,
-  iteration: <Zap className="h-3 w-3 text-amber-400" />,
-  message: <MessageSquare className="h-3 w-3 text-blue-400" />,
+  evidence: <FileText className="h-3 w-3 text-success-fg" />,
+  iteration: <Zap className="h-3 w-3 text-warning-fg" />,
+  message: <MessageSquare className="h-3 w-3 text-info-fg" />,
   system: <Clock className="h-3 w-3 text-slate-400" />,
 }
 

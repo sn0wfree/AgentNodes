@@ -70,9 +70,9 @@ function HistoryCard({
       )}
       {(c != null || s != null || d != null) && (
         <div className="mt-1.5 flex items-center gap-2 font-mono text-[9px] tabular-nums text-slate-500">
-          {s != null && <span className="text-sky-400/80">S {s}</span>}
+          {s != null && <span className="text-info-fg">S {s}</span>}
           {c != null && <span className="text-primary-400/80">C {c}</span>}
-          {d != null && <span className="text-rose-400/70">DD {d}</span>}
+          {d != null && <span className="text-danger-fg">DD {d}</span>}
         </div>
       )}
       <div className="mt-2 flex flex-wrap items-center gap-2">
@@ -90,7 +90,7 @@ function HistoryCard({
           <span
             className={`inline-flex items-center rounded-full border px-1.5 py-0.5 text-[9px] font-medium ${
               study.last_verdict === 'keep'
-                ? 'border-emerald-500/40 bg-emerald-500/10 text-emerald-400'
+                ? 'border-emerald-500/40 bg-emerald-500/10 text-success-fg'
                 : 'border-slate-700 bg-slate-800/70 text-slate-500'
             }`}
           >

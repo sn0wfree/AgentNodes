@@ -4,7 +4,9 @@
 2. off-scale-font：text-[9px]/[10px] 与 fontSize:9/10（用户裁决：9/10px 白名单放行，
    仅检查「不在白名单的新增」，11px→text-xs 已在刻度内不报）；
 3. bad-gradient：多色且非 mask 且非单色垫片的装饰渐变（U-A §2 三条件判定，
-   禁止一刀切误伤 200+ 处 mask/垫片合法用法）。
+   禁止一刀切误伤 200+ 处 mask/垫片合法用法）；
+4. semantic-fg-hardcode（语义色统一 C3）：色阶语义前景色 text-{色}-{300/400}，
+   基线 0、新增即红；应改用语义令牌类，保证双主题对比度与单点可调。
 
 **为什么需要它**：B/B-2 已把 violet→sky/blue、amber→warning token；C 批把 viz 色、
 散 hex 收敛到单点定义。没有门禁，新代码会自然写回裸 hex 和任意字号，令牌体系逐步失效。
@@ -62,6 +64,29 @@ FONT_ALLOWLIST = {
 # 9/10px 不在刻度表、11px 在刻度内但 tailwind text-xs=12px≠刻度 xs=11px，
 # 强行归位会改 313 处视觉。字号统一真源留作独立后续批，本门只管 bare-hex + 坏渐变。
 FONT_OFF_SCALE = None  # type: ignore[assignment]
+
+# 语义色统一（C3）新增门禁：禁止新增色阶语义前景色（text-{色}-{300/400}）。
+# 这些亮色码为暗底设计，亮色主题对比度 1.4–2.6:1；应改用语义令牌类
+# （text-success-fg / text-danger-fg / text-info-fg / text-thinking-fg / text-warning-fg）。
+# 基线 0（C2/C3 已全清非豁免前景硬编码），新增即红。
+SEMANTIC_FG = re.compile(
+    r"\b(?:text|hover:text)-(?:emerald|green|red|rose|sky|blue|violet|purple|orange|amber)"
+    r"-(?:300|400)(?:/\d+)?\b"
+)
+DEEP_BG_LINE = re.compile(
+    r"bg-(?:slate|zinc|neutral|emerald|red|rose|sky|blue|violet|purple|orange|amber|green|yellow)-(?:8\d\d|9\d\d)"
+)
+SEMANTIC_FG_ALLOWLIST = {
+    # 身份色 / viz 图表色 / 深底垫片（bg-*-9xx 配浅字是合法设计）
+    "stores/agents.ts", "components/workflow/nodeTypes.ts", "components/workflow/DAGNode.tsx",
+    "components/study/agentStyles.ts", "components/workflow/DefinitionWorkflowPage.tsx",
+    "components/chat/ChartBlock.tsx", "components/chat/TraceViewer.tsx",
+    "components/layout/PanelRenderCard.tsx", "components/performance/EquityCurveCard.tsx",
+    "components/run/RunDetailPage.tsx", "components/study/MetricsTrendChart.tsx",
+    "components/workflow/WorkflowDAG.tsx", "components/workflow/WorkflowEditor.tsx",
+    "pages/MonitorPage.tsx", "components/agent/AgentItem.tsx",
+    "components/chat/MarkdownRenderer.tsx", "catalog/stories.tsx",
+}
 # 字号基线：当前白名单外若有 9/10px 也先锁定（C 批不改，新增才红）
 BASELINE_OFF_SCALE_FILES = {
     "components/study/RoundDetailDrawer.tsx", "components/study/ContinueDialog.tsx",
@@ -124,6 +149,10 @@ def find_violations(src_root: Path) -> list[tuple[str, int, str]]:
             is_decl = bool(re.match(r"\s*--[\w-]+\s*:", line))
             if _is_bad_gradient(line) and not is_decl:
                 hits.append((rel, i, "bad-gradient"))
+            # 语义色统一 C3：色阶语义前景色新增即红（基线 0）。
+            if (rel not in SEMANTIC_FG_ALLOWLIST and SEMANTIC_FG.search(line)
+                    and not DEEP_BG_LINE.search(line)):
+                hits.append((rel, i, "semantic-fg-hardcode"))
     return hits
 
 
@@ -136,7 +165,8 @@ def selftest() -> int:
             ":root { --viz-1: #3b82f6; }\n", encoding="utf-8")
         (root / "Bad.tsx").write_text(
             "<div style={{ color: '#deadbeef' }} className='text-[9px]' />\n"
-            "<div style={{ background: 'linear-gradient(90deg, #ff0000, #0000ff)' }} />\n",
+            "<div style={{ background: 'linear-gradient(90deg, #ff0000, #0000ff)' }} />\n"
+            "<span className='text-emerald-400'>success</span>\n",
             encoding="utf-8")
         (root / "Clean.tsx").write_text(
             "<div style={{ color: 'var(--viz-1)' }} className='text-xs' />\n"
@@ -144,7 +174,7 @@ def selftest() -> int:
             encoding="utf-8")
         hits = find_violations(root)
         kinds = {k for _, _, k in hits}
-        expected = {"bare-hex", "bad-gradient"}
+        expected = {"bare-hex", "bad-gradient", "semantic-fg-hardcode"}
         if FONT_OFF_SCALE is not None:
             expected.add("off-scale-font")
         if not expected <= kinds:
@@ -153,7 +183,7 @@ def selftest() -> int:
         if any(f == "Clean.tsx" for f, _, _ in hits):
             print(f"[X] selftest 失败：合法用法被误报 {hits}")
             return 1
-        print("[OK] selftest：三类违规全抓，合法用法零误报")
+        print("[OK] selftest：四类违规全抓，合法用法零误报")
         return 0
 
 

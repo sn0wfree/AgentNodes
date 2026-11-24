@@ -240,7 +240,7 @@ export function StudyCreateForm({ sessionId, workspacePath, onCreated, compact }
                   onClick={() =>
                     setMetrics((prev) => prev.filter((_, idx) => idx !== i))
                   }
-                  className="cursor-pointer text-slate-500 transition-colors hover:text-rose-400"
+                  className="cursor-pointer text-slate-500 transition-colors hover:text-danger-fg"
                   aria-label="Remove metric"
                 >
                   <X className="h-4 w-4" />

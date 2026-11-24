@@ -137,7 +137,7 @@ export function PermissionRequestDialog({
           </label>
         </div>
 
-        {error && <p role="alert" className="px-5 pb-2 text-xs text-red-400">{error}</p>}
+        {error && <p role="alert" className="px-5 pb-2 text-xs text-danger-fg">{error}</p>}
 
         {/* Action buttons (opencode's 4-way gate) */}
         <div className="grid grid-cols-2 gap-2 border-t border-slate-800 p-3">

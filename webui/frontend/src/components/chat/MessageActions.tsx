@@ -127,7 +127,7 @@ export function MessageActions({ message, alwaysVisible = false }: MessageAction
       </button>
       <button
         onClick={() => setVoteFor('up')}
-        className={`${alwaysVisible ? visibleBtn : btn} ${vote === 'up' ? 'text-emerald-400 hover:text-emerald-300' : ''}`}
+        className={`${alwaysVisible ? visibleBtn : btn} ${vote === 'up' ? 'text-success-fg hover:text-success-fg' : ''}`}
         title="有帮助"
         aria-label="有帮助"
       >
@@ -135,7 +135,7 @@ export function MessageActions({ message, alwaysVisible = false }: MessageAction
       </button>
       <button
         onClick={() => setVoteFor('down')}
-        className={`${alwaysVisible ? visibleBtn : btn} ${vote === 'down' ? 'text-red-400 hover:text-red-300' : ''}`}
+        className={`${alwaysVisible ? visibleBtn : btn} ${vote === 'down' ? 'text-danger-fg hover:text-danger-fg' : ''}`}
         title="不准确"
         aria-label="不准确"
       >

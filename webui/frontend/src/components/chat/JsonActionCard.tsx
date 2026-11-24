@@ -89,8 +89,8 @@ function pickHypothesis(json: Record<string, unknown>): string | undefined {
 function renderValue(v: unknown, hints?: FieldHints | null): React.ReactNode {
   if (typeof v === 'boolean') {
     return v
-      ? <span className="text-emerald-400 font-medium">✓</span>
-      : <span className="text-rose-400 font-medium">✗</span>
+      ? <span className="text-success-fg font-medium">✓</span>
+      : <span className="text-danger-fg font-medium">✗</span>
   }
   if (typeof v === 'number') {
     // Schema format hint: percentage (0.25 → "25.0%")

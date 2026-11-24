@@ -53,7 +53,7 @@ export function GoalMessage({ message }: { message: Message }) {
           <div
             className={`mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-full ${
               isComplete
-                ? 'bg-emerald-500/10 text-emerald-400'
+                ? 'bg-emerald-500/10 text-success-fg'
                 : 'bg-primary-500/10 text-primary-400'
             }`}
           >
@@ -65,7 +65,7 @@ export function GoalMessage({ message }: { message: Message }) {
           </div>
           <div className="min-w-0 flex-1">
             <div className="mb-1 flex items-center gap-2 text-xs">
-              <span className={`font-medium ${isComplete ? 'text-emerald-400' : 'text-slate-300'}`}>
+              <span className={`font-medium ${isComplete ? 'text-success-fg' : 'text-slate-300'}`}>
                 {label}
               </span>
               <span className="text-slate-600">{formatTime(message.created_at)}</span>
@@ -132,7 +132,7 @@ export function GoalMessage({ message }: { message: Message }) {
               </div>
             )}
             {recap && (
-              <div className="rounded bg-emerald-500/5 p-2 text-emerald-300">
+              <div className="rounded bg-emerald-500/5 p-2 text-success-fg">
                 <span className="mb-1 block text-[10px] uppercase tracking-wider text-emerald-500/70">
                   总结
                 </span>

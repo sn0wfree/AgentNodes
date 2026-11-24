@@ -30,7 +30,7 @@ export function DAGProgressBar({
         </span>
         <span className="font-mono">{Math.round(progress)}%</span>
         {error !== undefined && error > 0 && (
-          <span className="font-mono text-rose-400" title="失败的节点">
+          <span className="font-mono text-danger-fg" title="失败的节点">
             ⚠ {error}
           </span>
         )}

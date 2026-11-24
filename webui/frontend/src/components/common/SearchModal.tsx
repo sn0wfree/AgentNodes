@@ -265,7 +265,7 @@ function RoleIcon({ role }: { role: SearchHit['role'] }) {
   }
   if (role === 'assistant') {
     return (
-      <div className="flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-full bg-emerald-600/20 text-emerald-400">
+      <div className="flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-full bg-emerald-600/20 text-success-fg">
         <Bot className="h-3 w-3" />
       </div>
     )

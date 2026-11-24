@@ -11,12 +11,12 @@ interface StrategyCardData extends StrategyListItem {
 }
 
 const STATUS_META: Record<string, { label: string; cls: string }> = {
-  running: { label: '研究中', cls: 'border-emerald-500/30 bg-emerald-500/10 text-emerald-400' },
-  queued: { label: '排队中', cls: 'border-sky-500/30 bg-sky-500/10 text-sky-400' },
-  monitoring: { label: '监控中', cls: 'border-sky-500/30 bg-sky-500/10 text-sky-400' },
+  running: { label: '研究中', cls: 'border-emerald-500/30 bg-emerald-500/10 text-success-fg' },
+  queued: { label: '排队中', cls: 'border-sky-500/30 bg-sky-500/10 text-info-fg' },
+  monitoring: { label: '监控中', cls: 'border-sky-500/30 bg-sky-500/10 text-info-fg' },
   paused: { label: '已暂停', cls: 'border-warning/30 bg-warning-fill text-warning-fg' },
   completed: { label: '已完成', cls: 'border-slate-600 bg-slate-800/40 text-slate-300' },
-  failed: { label: '已失败', cls: 'border-red-500/30 bg-red-500/10 text-red-400' },
+  failed: { label: '已失败', cls: 'border-red-500/30 bg-red-500/10 text-danger-fg' },
   cancelled: { label: '已取消', cls: 'border-slate-600 bg-slate-800/40 text-slate-400' },
 }
 
@@ -34,9 +34,9 @@ function fmtMetric(metrics: Record<string, number | string> | null | undefined, 
 
 function MetricBox({ label, value, tone }: { label: string; value: string; tone: 'pos' | 'neg' | 'neutral' }) {
   const color =
-    tone === 'pos' ? 'text-emerald-400'
-    : tone === 'neg' ? 'text-red-400'
-    : 'text-sky-400'
+    tone === 'pos' ? 'text-success-fg'
+    : tone === 'neg' ? 'text-danger-fg'
+    : 'text-info-fg'
   return (
     <div className="min-w-[92px] flex-1 rounded-md border border-slate-800 bg-slate-950/60 px-3 py-2 text-center">
       <div className={`font-mono text-sm font-semibold ${value === '—' ? 'text-slate-600' : color}`}>{value}</div>
@@ -131,7 +131,7 @@ export function StrategyLibraryPage() {
         </div>
       )}
       {error && (
-        <div className="rounded-lg border border-red-500/30 bg-red-500/10 px-4 py-3 text-xs text-red-400">
+        <div className="rounded-lg border border-red-500/30 bg-red-500/10 px-4 py-3 text-xs text-danger-fg">
           {error}
         </div>
       )}
@@ -155,7 +155,7 @@ export function StrategyLibraryPage() {
                     <Folder className="h-4 w-4 text-slate-400" />
                     <span className="text-sm font-semibold text-slate-100">{s.name}</span>
                     {s.has_strategy_py ? (
-                      <span className="inline-flex items-center gap-1 rounded-full border border-emerald-500/30 bg-emerald-500/10 px-2 py-0.5 text-[9px] text-emerald-400">
+                      <span className="inline-flex items-center gap-1 rounded-full border border-emerald-500/30 bg-emerald-500/10 px-2 py-0.5 text-[9px] text-success-fg">
                         <CheckCircle2 className="h-2.5 w-2.5" /> strategy.py
                       </span>
                     ) : (
@@ -164,7 +164,7 @@ export function StrategyLibraryPage() {
                       </span>
                     )}
                     {s.has_config_yaml ? (
-                      <span className="inline-flex items-center gap-1 rounded-full border border-emerald-500/30 bg-emerald-500/10 px-2 py-0.5 text-[9px] text-emerald-400">
+                      <span className="inline-flex items-center gap-1 rounded-full border border-emerald-500/30 bg-emerald-500/10 px-2 py-0.5 text-[9px] text-success-fg">
                         <CheckCircle2 className="h-2.5 w-2.5" /> config.yaml
                       </span>
                     ) : (

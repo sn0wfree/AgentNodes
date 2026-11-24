@@ -16,7 +16,7 @@ interface CriteriaListProps {
 const STATUS_ICON = {
   pending: <Circle className="h-3.5 w-3.5 text-slate-500" />,
   in_progress: <Clock className="h-3.5 w-3.5 text-warning-fg animate-pulse" />,
-  completed: <CheckCircle className="h-3.5 w-3.5 text-emerald-400" />,
+  completed: <CheckCircle className="h-3.5 w-3.5 text-success-fg" />,
 }
 
 export function CriteriaList({ criteria, totalCriteria }: CriteriaListProps) {

@@ -108,7 +108,7 @@ export function StrategyNameInput({
       </div>
       <div className="flex items-center gap-2 mt-1">
         {error ? (
-          <span className="text-[10px] text-rose-400">{error}</span>
+          <span className="text-[10px] text-danger-fg">{error}</span>
         ) : (
           <span className="text-[10px] text-slate-500">
             由研究目标自动生成 · 可手动修改 · {charCount} 字符

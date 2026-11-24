@@ -184,8 +184,8 @@ export function LLMSection({
           <div className="flex items-center gap-2 text-xs">
             {systemInfo.llm.configured ? (
               <>
-                <Check className="h-3 w-3 text-green-400" />
-                <span className="text-green-400">
+                <Check className="h-3 w-3 text-success-fg" />
+                <span className="text-success-fg">
                   当前: {llmConfig.active_profile || llmConfig.provider || systemInfo.llm.provider} /{' '}
                   {llmConfig.model || systemInfo.llm.model}
                 </span>
@@ -199,9 +199,9 @@ export function LLMSection({
           </div>
         )}
 
-        {llmError && <p className="text-xs text-red-400">{llmError}</p>}
-        {sysError && <p className="text-xs text-red-400">⚠ {sysError}</p>}
-        {llmMsg && <p className="text-xs text-green-400">{llmMsg}</p>}
+        {llmError && <p className="text-xs text-danger-fg">{llmError}</p>}
+        {sysError && <p className="text-xs text-danger-fg">⚠ {sysError}</p>}
+        {llmMsg && <p className="text-xs text-success-fg">{llmMsg}</p>}
 
         <button
           onClick={handleSave}

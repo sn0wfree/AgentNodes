@@ -163,7 +163,7 @@ export function RoundDetailDrawer({ studyId, round, onClose, onAdopted }: Props)
           {/* Verdict + error */}
           <Section title="结论">
             <div className="flex items-center gap-2">
-              <span className="rounded-full border border-emerald-500/40 bg-emerald-500/10 px-2 py-0.5 text-[11px] font-medium text-emerald-400">
+              <span className="rounded-full border border-emerald-500/40 bg-emerald-500/10 px-2 py-0.5 text-[11px] font-medium text-success-fg">
                 {round.verdict}
               </span>
               {verdict.reason && (
@@ -190,7 +190,7 @@ export function RoundDetailDrawer({ studyId, round, onClose, onAdopted }: Props)
                     key={i}
                     className="flex items-start gap-1.5 rounded-lg border border-slate-800 bg-slate-950/60 px-2.5 py-1.5 text-[11px] text-slate-300"
                   >
-                    <GitCompare className="mt-0.5 h-3 w-3 flex-shrink-0 text-sky-400" />
+                    <GitCompare className="mt-0.5 h-3 w-3 flex-shrink-0 text-info-fg" />
                     <span>{String(c.what ?? c.factor ?? c.param ?? JSON.stringify(c))}</span>
                   </div>
                 ))}
@@ -259,7 +259,7 @@ export function RoundDetailDrawer({ studyId, round, onClose, onAdopted }: Props)
                 ))}
               </div>
             ) : diffFailed ? (
-              <p className="text-[11px] text-rose-400/80">加载 diff 失败</p>
+              <p className="text-[11px] text-danger-fg">加载 diff 失败</p>
             ) : (
               <p className="text-[11px] text-slate-500">加载 diff...</p>
             )}

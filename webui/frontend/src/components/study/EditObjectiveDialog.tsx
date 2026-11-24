@@ -103,7 +103,7 @@ export function EditObjectiveDialog({
             <span>新目标</span>
             <span
               className={`font-mono normal-case ${
-                lengthOk ? 'text-slate-600' : 'text-rose-400'
+                lengthOk ? 'text-slate-600' : 'text-danger-fg'
               }`}
             >
               {trimmed.length} / 2000
@@ -117,7 +117,7 @@ export function EditObjectiveDialog({
             className="w-full rounded-lg border border-slate-700 bg-slate-950 px-2.5 py-2 text-xs leading-relaxed text-slate-200 outline-none transition-shadow focus:border-primary-500 focus:ring-2 focus:ring-primary-500/40"
           />
           {!lengthOk && trimmed.length > 0 && (
-            <p className="mt-1 text-[10px] text-rose-400">
+            <p className="mt-1 text-[10px] text-danger-fg">
               目标长度需在 10–2000 字之间
             </p>
           )}

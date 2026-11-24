@@ -19,10 +19,10 @@ const STATUS_LABEL = {
 
 const STATUS_COLOR = {
   idle: 'text-slate-400',
-  running: 'text-blue-400',
+  running: 'text-info-fg',
   paused: 'text-warning-fg',
-  completed: 'text-emerald-400',
-  failed: 'text-red-400',
+  completed: 'text-success-fg',
+  failed: 'text-danger-fg',
 }
 
 export function DAGToolbar({

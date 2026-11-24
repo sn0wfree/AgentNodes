@@ -89,8 +89,8 @@ export function FileEditBlock({ fileEdit }: FileEditBlockProps) {
         <FileEdit className="h-3.5 w-3.5 text-primary-400" />
         <span className="font-mono text-slate-300">{fileEdit.file_path}</span>
         <span className="ml-auto flex items-center gap-2 text-[10px]">
-          <span className="text-emerald-400">+{added}</span>
-          <span className="text-red-400">-{removed}</span>
+          <span className="text-success-fg">+{added}</span>
+          <span className="text-danger-fg">-{removed}</span>
           <button
             onClick={(e) => { e.stopPropagation(); handleCopy() }}
             className="text-slate-500 hover:text-slate-300"

@@ -77,7 +77,7 @@ export function StudyChatComposer({
       {/* Status hint */}
       {hint && (
         <div className={`mt-2 flex items-center gap-1.5 text-[10px] ${
-          hint.type === 'ok' ? 'text-emerald-400' : 'text-rose-400'
+          hint.type === 'ok' ? 'text-success-fg' : 'text-danger-fg'
         }`}>
           {hint.type === 'ok' ? <Check className="h-3 w-3" /> : <span className="h-3 w-3">✗</span>}
           {hint.msg}

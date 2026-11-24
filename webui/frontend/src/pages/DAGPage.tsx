@@ -83,8 +83,8 @@ export function DAGPage() {
                     icon={<Bot className="h-4 w-4" />}
                     label="Agent 总数"
                     value={String(agentList.length)}
-                    color="text-sky-400"
-                    bg="border border-sky-500/30 bg-sky-500/10 text-sky-400"
+                    color="text-info-fg"
+                    bg="border border-sky-500/30 bg-sky-500/10 text-info-fg"
                   />
                   <SummaryStat
                     icon={<Zap className="h-4 w-4" />}
@@ -97,8 +97,8 @@ export function DAGPage() {
                     icon={<CheckCircle className="h-4 w-4" />}
                     label="已完成"
                     value={String(completedCount)}
-                    color="text-emerald-400"
-                    bg="border border-emerald-500/30 bg-emerald-500/10 text-emerald-400"
+                    color="text-success-fg"
+                    bg="border border-emerald-500/30 bg-emerald-500/10 text-success-fg"
                   />
                   <SummaryStat
                     icon={<Clock className="h-4 w-4" />}

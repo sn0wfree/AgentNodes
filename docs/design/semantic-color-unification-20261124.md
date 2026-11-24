@@ -86,3 +86,14 @@ Tailwind 现状（`tailwind.config.js:31-34`）：**只映射了 warning 三个�
 ## 7. 回滚
 
 每批独立提交；`git revert` 即可。令牌新增批无视觉变化，回滚零风险；组件替换批回滚后恢复原硬编码色（含原对比度问题）。
+
+## 8. 实施记录（2026-11-24，用户「开始实施」后执行）
+
+| 批 | 实际落地 | 偏差 |
+|---|---|---|
+| C1 | `globals.css` 新增 thinking/info 双主题令牌 + success/danger `fg-muted` 次级色（light 用加深色阶）；`tailwind.config.js` 全量映射 success/danger/thinking/info（各 4 类）；新增 `test_semantic_tokens_declared_in_both_themes` 双向声明契约。零视觉变化，tsc/build/契约测试 6/6/token hygiene 0 违规。 | 无 |
+| C2 | SSEStatus / ThinkingBlock / ToolCallGroup / ToolCallBlock / ContextUsageBar / AgentItem / ComposerStatusBar / utils/status 共 8 文件硬编码→语义类；同步 2 个测试断言。受影响 56 测试通过。 | 无 |
+| C3 | 批量替换 38 文件 / 91 行前景硬编码（emerald/red/rose/sky/blue/violet/purple/orange→success/danger/info/thinking/warning）；`check_token_hygiene.py` 新增第 4 类 `semantic-fg-hardcode` 门禁（基线 0、新增即红）+ 身份/viz/深底垫片 allowlist；同步 2 个测试断言。 | 保留 176 行深底垫片（bg-*-9xx 配浅字，合法设计）与身份/viz 色，未强行令牌化 |
+| C4 | 前端 1368 测试 / tsc OK / lint 0 error；重建前端（VITE_E2E=1）+ 6 张目录基线重录（assistant-message、tool-call-done、tool-call-error × 双主题）；e2e 114 passed / 0 skipped；后端 8143 passed（1 例 gateway timeout flaky，单跑通过）；gate 13/13 ALL GREEN；亮色对比度复测 **53 → 14（降幅 74%）**，语义色低对比项（1.4–1.9）全部消除。 | 剩余 14 项均为次级文字（muted-foreground / slate），属方案边界外（P1 令牌调值），未纳入本批 |
+
+**验收标准达成**：语义色 Tailwind 类入口 warning→全量；硬编码语义前景 60+→0（allowlist 外）；最差对比度 1.42→消除；单点可调（改 globals.css 两处）；门禁防回退（第 4 类检测）均达成。次级文字 14 项留作后续令牌调值批。

@@ -191,7 +191,7 @@ export function StudyTaskSummary({ studyId }: Props) {
                 <span
                   className={`rounded-full border px-1.5 py-0.5 text-[9px] font-medium ${
                     summary!.last_verdict === 'keep'
-                      ? 'border-emerald-500/40 bg-emerald-500/10 text-emerald-400'
+                      ? 'border-emerald-500/40 bg-emerald-500/10 text-success-fg'
                       : 'border-slate-700 bg-slate-800/70 text-slate-500'
                   }`}
                 >

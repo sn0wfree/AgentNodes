@@ -65,7 +65,7 @@ export function LoginPage() {
             />
           </div>
           {error && (
-            <p role="alert" className="text-sm text-red-400">{error}</p>
+            <p role="alert" className="text-sm text-danger-fg">{error}</p>
           )}
           <button
             type="submit"

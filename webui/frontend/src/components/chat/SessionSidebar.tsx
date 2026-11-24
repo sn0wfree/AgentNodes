@@ -351,7 +351,7 @@ function SessionRow({
                   e.stopPropagation()
                   onDelete()
                 }}
-                className="rounded p-0.5 text-slate-400 hover:text-red-400"
+                className="rounded p-0.5 text-slate-400 hover:text-danger-fg"
                 title="删除"
               >
                 <Trash2 className="h-3 w-3" />

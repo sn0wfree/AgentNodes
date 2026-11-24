@@ -63,7 +63,7 @@ export function InterruptApprovalCard({
   if (status === 'approved') {
     return (
       <div className="rounded-lg border border-emerald-500/30 bg-emerald-500/10 p-3">
-        <div className="flex items-center gap-2 text-xs text-emerald-400">
+        <div className="flex items-center gap-2 text-xs text-success-fg">
           <Check className="h-4 w-4" />
           <span>已批准</span>
         </div>
@@ -74,7 +74,7 @@ export function InterruptApprovalCard({
   if (status === 'rejected') {
     return (
       <div className="rounded-lg border border-rose-500/30 bg-rose-500/10 p-3">
-        <div className="flex items-center gap-2 text-xs text-rose-400">
+        <div className="flex items-center gap-2 text-xs text-danger-fg">
           <X className="h-4 w-4" />
           <span>已拒绝</span>
         </div>
@@ -85,10 +85,10 @@ export function InterruptApprovalCard({
   if (status === 'error') {
     return (
       <div className="rounded-lg border border-rose-500/30 bg-rose-500/10 p-3">
-        <div className="text-xs text-rose-400">操作失败，请重试</div>
+        <div className="text-xs text-danger-fg">操作失败，请重试</div>
         <button
           onClick={() => setStatus('pending')}
-          className="mt-1 text-[10px] text-rose-300 hover:text-rose-200"
+          className="mt-1 text-[10px] text-danger-fg hover:text-rose-200"
         >
           重试
         </button>

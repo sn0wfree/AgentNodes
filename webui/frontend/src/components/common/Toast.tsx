@@ -16,10 +16,10 @@ const COLORS = {
 }
 
 const ICON_COLORS = {
-  success: 'text-emerald-400',
-  error: 'text-red-400',
+  success: 'text-success-fg',
+  error: 'text-danger-fg',
   warning: 'text-warning-fg',
-  info: 'text-blue-400',
+  info: 'text-info-fg',
 }
 
 export function ToastManager() {

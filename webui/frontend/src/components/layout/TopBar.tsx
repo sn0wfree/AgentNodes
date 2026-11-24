@@ -137,7 +137,7 @@ export function TopBar() {
           className={`flex items-center gap-1.5 rounded-lg border px-1.5 sm:px-2.5 py-1.5 text-xs transition-colors ${
             thinkingCollapsed
               ? 'border-slate-700 bg-slate-800/50 text-slate-400 hover:border-slate-600 hover:text-slate-300'
-              : 'border-violet-500/50 bg-violet-500/10 text-violet-300 hover:bg-violet-500/20'
+              : 'border-violet-500/50 bg-violet-500/10 text-thinking-fg hover:bg-violet-500/20'
           }`}
         >
           <Sparkles className="h-3.5 w-3.5" />

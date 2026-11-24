@@ -133,7 +133,7 @@ export function ContinueDialog({ open, summary, onClose, onContinue }: ContinueD
               onChange={() => { setMode('resume'); setUseCustom(false) }}
               className="accent-emerald-500"
             />
-            <Play className="h-3.5 w-3.5 text-emerald-400" />
+            <Play className="h-3.5 w-3.5 text-success-fg" />
             <span className="text-xs text-slate-200">从当前轮次继续 (Round {currentRound})</span>
           </label>
 

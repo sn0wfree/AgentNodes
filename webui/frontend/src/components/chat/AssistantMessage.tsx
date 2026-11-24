@@ -103,7 +103,7 @@ function VerifiabilityBadge({ cv }: { cv?: ClaimValidation }) {
     <span
       className={`inline-flex h-3.5 w-3.5 items-center justify-center rounded-full text-[8px] font-bold leading-none ${
         red
-          ? 'bg-red-500/20 text-red-400 ring-1 ring-red-500/40'
+          ? 'bg-red-500/20 text-danger-fg ring-1 ring-red-500/40'
           : 'bg-warning-fill text-warning-fg ring-1 ring-warning/40'
       }`}
       title={cv.detail}

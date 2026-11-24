@@ -325,10 +325,10 @@ export function StudyDetailPage() {
       <div className="grid grid-cols-2 gap-3 lg:grid-cols-3 xl:grid-cols-5">
         <KpiCard
           icon={<RotateCcw className="h-4 w-4" />}
-          iconCls="border border-sky-500/30 bg-sky-500/10 text-sky-400"
+          iconCls="border border-sky-500/30 bg-sky-500/10 text-info-fg"
           value={`${clampRound(summary.current_round)}/${summary.max_rounds ?? 5}`}
           label="当前轮次 / 最大轮数"
-          valueCls="text-sky-400"
+          valueCls="text-info-fg"
         />
         <KpiCard
           icon={<Activity className="h-4 w-4" />}
@@ -339,10 +339,10 @@ export function StudyDetailPage() {
         />
         <KpiCard
           icon={<BarChart3 className="h-4 w-4" />}
-          iconCls="border border-emerald-500/30 bg-emerald-500/10 text-emerald-400"
+          iconCls="border border-emerald-500/30 bg-emerald-500/10 text-success-fg"
           value={lastVerdict}
           label="最近 round 结论"
-          valueCls="text-emerald-400"
+          valueCls="text-success-fg"
         />
         <KpiCard
           icon={<Target className="h-4 w-4" />}
@@ -353,10 +353,10 @@ export function StudyDetailPage() {
         />
         <KpiCard
           icon={<BarChart3 className="h-4 w-4" />}
-          iconCls="border border-emerald-500/30 bg-emerald-500/10 text-emerald-400"
+          iconCls="border border-emerald-500/30 bg-emerald-500/10 text-success-fg"
           value={bestCalmarDisplay}
           label="最佳 Calmar（历史轮次）"
-          valueCls="text-emerald-400"
+          valueCls="text-success-fg"
         />
       </div>
 

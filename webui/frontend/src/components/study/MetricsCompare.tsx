@@ -85,7 +85,7 @@ export function MetricsCompare({ rounds, onOpenRun }: Props) {
                         key={k}
                         className={`py-1.5 pr-2 text-right font-mono tabular-nums ${
                           isBest
-                            ? 'font-semibold text-emerald-400'
+                            ? 'font-semibold text-success-fg'
                             : v == null
                               ? 'text-slate-600'
                               : 'text-slate-300'
@@ -102,7 +102,7 @@ export function MetricsCompare({ rounds, onOpenRun }: Props) {
                       <span
                         className={`inline-flex items-center gap-1 rounded-full border px-1.5 py-0.5 text-[9px] font-medium ${
                           verdict === 'keep'
-                            ? 'border-emerald-500/40 bg-emerald-500/10 text-emerald-400'
+                            ? 'border-emerald-500/40 bg-emerald-500/10 text-success-fg'
                             : verdict === 'review'
                               ? 'border-warning/40 bg-warning-fill text-warning-fg'
                               : 'border-slate-700 bg-slate-800/70 text-slate-500'

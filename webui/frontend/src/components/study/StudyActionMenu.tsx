@@ -21,10 +21,10 @@ const ICONS: Record<string, typeof Pause> = {
 
 const ICON_CLS: Record<string, string> = {
   pause: 'text-warning-fg',
-  continue: 'text-emerald-400',
-  cancel: 'text-rose-400',
+  continue: 'text-success-fg',
+  cancel: 'text-danger-fg',
   archive: 'text-slate-400',
-  unarchive: 'text-sky-400',
+  unarchive: 'text-info-fg',
 }
 
 export function StudyActionMenu({ study, onAction, onRefresh }: StudyActionMenuProps) {
@@ -127,7 +127,7 @@ export function StudyActionMenu({ study, onAction, onRefresh }: StudyActionMenuP
                     }}
                     role="menuitem"
                     className={`flex w-full cursor-pointer items-center gap-2 px-3 py-1.5 text-left text-[11px] transition-colors hover:bg-slate-800 ${
-                      a.destructive ? 'text-rose-300 hover:text-rose-200' : 'text-slate-200 hover:text-slate-50'
+                      a.destructive ? 'text-danger-fg hover:text-rose-200' : 'text-slate-200 hover:text-slate-50'
                     }`}
                   >
                     {Icon && <Icon className={`h-3.5 w-3.5 ${ICON_CLS[a.name] ?? ''}`} />}

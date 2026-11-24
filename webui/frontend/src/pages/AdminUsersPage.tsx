@@ -189,7 +189,7 @@ export function AdminUsersPage({ embedded = false }: { embedded?: boolean }) {
                       </span>
                     </td>
                     <td className="px-4 py-2.5">
-                      <span className={`text-xs ${u.is_active ? 'text-emerald-400' : 'text-red-400'}`}>
+                      <span className={`text-xs ${u.is_active ? 'text-success-fg' : 'text-danger-fg'}`}>
                         {u.is_active ? '启用' : '禁用'}
                       </span>
                     </td>

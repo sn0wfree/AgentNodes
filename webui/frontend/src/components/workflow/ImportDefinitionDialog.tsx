@@ -61,7 +61,7 @@ export function ImportDefinitionDialog({
         <Dialog.Overlay className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm" />
         <Dialog.Content className="fixed left-1/2 top-1/2 z-50 w-[520px] max-w-[92vw] -translate-x-1/2 -translate-y-1/2 rounded-xl border border-slate-700 bg-slate-900 p-5 shadow-2xl">
           <Dialog.Title className="flex items-center gap-2 text-sm font-medium text-slate-100">
-            <FileJson className="h-4 w-4 text-sky-400" /> 导入工作流定义 (JSON)
+            <FileJson className="h-4 w-4 text-info-fg" /> 导入工作流定义 (JSON)
           </Dialog.Title>
           <Dialog.Description className="mt-1 text-[11px] text-slate-400">
             粘贴 definition JSON（可来自导出的 workspace/workflows/*.json 或 git 版本化文件）。
