@@ -118,15 +118,15 @@ Trace、工作流、设置与管理、监控，以及具备真实数据契约的
 | 批次 | 交付 | 前置 | 状态 / 门 |
 |---|---|---|---|
 | P0-1 | 基线、文件归属、设计与隔离路径 | 无 | 已部分完成；每次执行前重核 |
-| P0-2 | 运行环境和真实联调通道 | P0-1；沙箱策略由用户/管理员处理 | **阻塞**；不能绕过拒绝 |
-| P0-3 | 登录、会话骨架与数据状态 | P0-1；实机验收依赖 P0-2 | 部分实现，待验证 |
-| P0-4 | 发送、SSE、停止与草稿 | P0-1、P0-3；实机验收依赖 P0-2 | 部分实现，待验证 |
-| P0-5 | MVP 双主题/响应式、真实链路、文档和放行 | P0-2/3/4 | 待执行；未通过不得称 MVP 完成 |
-| P1-1 | 全局令牌、公共组件和共享页面壳 | P0-5 | 待执行；先限定影响范围 |
-| P1-2 | 会话高级操作与消息能力 | P1-1 | 待执行；按真实能力分片 |
-| P1-3 | 审批及运行任务面板 | P1-1；审批/任务契约核实 | 待执行 |
-| P1-4 | Trace 完整视图 | P1-1；字段、权限及真实事件核实 | 待执行 |
-| P1-5 | DAG、监控、设置、认证及管理页面 | P1-1 | 待执行；按页面验收 |
+| P0-2 | 运行环境和真实联调通道 | P0-1；沙箱策略由用户/管理员处理 | 已解锁（2026-11-22 三探针 PASS + 隔离后端 8766 真联调）；后端为非驻留进程，复验需按 `tmp/probe/p0_relaunch_backend.py` 重启 |
+| P0-3 | 登录、会话骨架与数据状态 | P0-1；实机验收依赖 P0-2 | 已实现并经实机验证（admin 登录、刷新恢复、新建/切换） |
+| P0-4 | 发送、SSE、停止与草稿 | P0-1、P0-3；实机验收依赖 P0-2 | 已实现并经实机验证（真实发送/流式回复/宕机错误态）；SSE 看门狗后续补强 |
+| P0-5 | MVP 双主题/响应式、真实链路、文档和放行 | P0-2/3/4 | 首轮实机矩阵 + 修复批已完成（887e3068 等）；焦点环真实键盘复验待补，完成标记暂不宣告 |
+| P1-1 | 全局令牌、公共组件和共享页面壳 | P0-5 | A-0/A/B/B-2/C 五批已落地（e1632b98、2dd2cb38 等 + gate 13/13）；字号统一与 `primary-*`→`brand-*` 改名留独立批 |
+| P1-2 | 会话高级操作与消息能力 | P1-1 | 部分已落地（时间三组桶、搜索、星标/标签/归档/删除、单入口重命名）；长列表虚拟化与无障碍待分片 |
+| P1-3 | 审批及运行任务面板 | P1-1；审批/任务契约核实 | P9 token meter 已落地（be33d4c2）；四档审批卡与竞态处理待契约 |
+| P1-4 | Trace 完整视图 | P1-1；字段、权限及真实事件核实 | 完整 UI 与独立页 `/trace` 已落地（Q1/Q4/Q5/Q6/Q8/Q9/Q12）；真实长历史与游标验证待补 |
+| P1-5 | DAG、监控、设置、认证及管理页面 | P1-1 | 账户与设置合并已落地（8e8df1eb）；DAG/监控等页面迁移待逐页验收 |
 | P2-1 | Study / Run / 策略 / 因子逐域契约与页面 | P1-1；业务负责人确认后端归属 | 暂缓；不可用态可先设计 |
 | P2-2 | RSI 进化视图 | P1-1；真实数据、评分及权限契约 | 暂缓 |
 | P2-3 | 事件投影、回退/分叉、Gen-UI | P1-1；产品、安全和后端契约 | 暂缓；逐能力独立审批 |
@@ -431,4 +431,5 @@ TypeScript 检查，若 API schema 有变更还需核实类型生成差异，但
 | B+A：自动标题 + 删 tab 加号 | 2026-11-23 / 主线会话 | 方案 `fc60ee03`（R-014 已批准）：**B**——调研发现 `auto_title_session`+SSE meta patch 已完整实现但生产 `send_async` 未接线；抽 `SessionService.auto_title_and_emit` 单点（legacy send_message 复用），send_async 接线调用，前端零改动；3 个契约测试 fake 补方法；**A**——删 SessionTabs 末尾加号 + 2 条测试反向断言（保留 tab 条与 Cmd+T） | 后端全量 **8140 passed**；前端 125 文件/1360 测试/tsc/lint；双主题 e2e 自证 82 passed（88 基线重录）；gate 13/13；新增 API 接线测试 4 条 | 实机端到端（重启后端加载新代码后）：建「新会话」→ 发「帮我设计一个 alpha 动量策略」→ `GET /session/{id}` title 已自动变为该文本 ✓ | 3 个历史「新会话」不会自动改（哨兵只对发送时生效，用户可手动重命名）；后端进程需重启才加载新代码（Python 无热更新，已记录） |
 | 用户管理与设置合并 | 2026-11-23 / 主线会话 | 方案 `4a18452c`（R-014 已批准）：反方论证「设置塞进 admin-only 页」会造成权限倒退，采用升级为统一 `/account` 页——5 个设置分区全员可见 + 用户管理表格仅 admin 渲染（前端 isAdmin + 后端 require_admin 双层）；新建 `AccountPage.tsx`、AdminUsersPage 加 embedded prop、删 SettingsModal 全局弹窗、IconNav 两入口合一、CommandPalette 改跳 /account、`/admin/users` 重定向；AccountSection 标题「用户管理」→「个人账号」消除重名 | 前端 **126 文件/1363 测试全绿**（+3 AccountPage 权限用例）/tsc/lint；后端 8140 passed；gate 13/13；双主题基线重录（含 command_palette 单独重录） | 新增 `accountPage.test.tsx`：普通用户看 5 分区无用户管理表格、admin 看表格；实机待验证 | 后端 API 零改动；`settingsOpen` 状态保留（零消费，测试钉住，退役另案）；旧 /admin/users 重定向 |
 | 导航侧边框调整 | 2026-11-23 / 主线会话 | 方案 `sidebar-navigation-redesign-20261123.md`（用户「开始实施」批准）：调研 ZCode(本地逆向)/OpenClaw/OpenCode/Codex/Claude Code/Windsurf——**无一款把 DAG 做成一级侧栏图标**（Claude 降为 `/workflows` 命令、ZCode 画布内），印证撤销决策；实施 N1（DAG 5入口撤销：IconNav/MonitorPage/CommandPalette/Cmd+W）+ N2（Trace 独立页 `/trace` + 会话选择器 + RightPanel 退役 Q12 接管）；DAG `/dag` 路由+24 API 全保留(URL 直入)，CommandPalette 保留 Trace 命令；Cmd+W 改跳 /trace | 前端 **127 文件/1365 测试全绿**/tsc/lint；后端 8140；gate 13/13；双主题基线自证 82 passed（重录）；新增 `test_sidebar_navigation.py` 3 项（入口无 DAG/Trace 在/API 挂载）+ tracePage 3 项 | 实机：导航为 首页·Chat·Trace·账户与设置·登出，点 Trace → /trace 页(H1=Trace) ✓ | Agents/Files/Automation 入口列 P1-P3 候选（需后端契约确认），本批不做；旧假入口不恢复 |
-| 后续 | 待填写 | 待填写 | 待填写 | 待填写 | 待填写 |
+| 文档状态回填 | 2026-11-23 / 当前会话 | §4 批次表状态列按 §12 执行记录回填：P0-2 已解锁、P0-3/4 已实机验证、P1-1 五批、P1-4 完整 UI + 独立页、P1-5 账户合并等；避免把已落地项重复排期。零代码。 | 不适用（纯文档） | 不适用 | 焦点环真实键盘复验、字号统一/token 改名、Agents 入口后端契约等遗留见各批次行 |
+| 完整 E2E 构建与修复 | 2026-11-24 / 主线会话（用户「批准」） | 方案 `e2e-complete-build-and-repair-20261123.md` E0-E4：E0 信任修复（缺基线 fail + 显式 bootstrap、假选项 docstring 清除、CI 主车道/update job 补 catalog+routes+VITE_E2E）；E1 四空态 skip 转正（改为当前契约断言 + 整页截图，重录 4 基线含新增 empty_agent_light）；E2 新增 routes smoke 27 用例（未登录重定向/页壳/重定向/权限），过程中修复 AccountSection 标题回归；E3 comprehensive 6 测试探测为陈旧 opt-in 未纳 CI（修其注解语法错误）；E4 catalog story 同步契约测试。 | e2e 114 passed/0 skipped；前端 1365/tsc/lint 0 error；后端 8143；gate 13/13 | CI e2e.yml 主车道现含 3 文件（catalog/visual/routes） | 5 张 DAG 孤儿基线待单独裁决删除；comprehensive 完整重写属独立批；焦点环真实键盘复验仍为已知限制 |
