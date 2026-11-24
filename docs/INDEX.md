@@ -45,7 +45,7 @@
 
 ---
 
-## 2. design/ — 仍生效的设计与契约（169 份，2026-11-24 补录）
+## 2. design/ — 仍生效的设计与契约（170 份，2026-11-24 补录）
 
 **判据**：文档里的决策仍在代码中执行。已被取代的移到 `archive/`。
 
@@ -300,6 +300,7 @@
 | [`color-audit-20261124.md`](design/color-audit-20261124.md) | 前端配色审查（手动操作+WCAG 量化，零代码）——暗色基本健康(7项边缘)、亮色系统性弱(53项低对比)；根因 emerald/violet/rose 语义色 60+ 处硬编码未令牌化；建议 B-3 语义令牌化 |
 | [`semantic-color-unification-20261124.md`](design/semantic-color-unification-20261124.md) | 语义色统一方案（R-014 待批准/零代码）——令牌已存在(success/danger/warning/viz)仅缺 Tailwind 映射+60+处组件接线；C1补令牌映射/C2高频替换/C3全量清扫+门禁/C4验收；目标单点可调、亮色低对比53→≤10 |
 | [`composer-toolbar-evaluation-20261124.md`](design/composer-toolbar-evaluation-20261124.md) | 输入框工具行评估（零代码）——6 类控件均真接后端契约；实测 4 个问题：Plan/Build 持久化失效(__srModeSession 零调用)、角色下拉混裸id+编排助手+顺序不稳、列表/引用行中插错、格式化无快捷键；业界对照：8 图标常驻过密(375 下 4 行)宜改选中浮出 |
+| [`composer-toolbar-p0p1-fix-20261124.md`](design/composer-toolbar-p0p1-fix-20261124.md) | 输入框工具行 P0→P1 修复方案（R-014 待批准/零代码）——F0 mode 持久化(store 自持 sessionId 删 window 钩子)/F1 personas 过滤(11 项固定序,排除内部角色+编排助手)/F2 applyMarkdown 行首多行语义/F3 删 8 图标+补 Cmd+B/I/E 快捷键；含去图标的能力取舍说明；375 宽 4 行→2 行 |
 
 ---
 
