@@ -344,6 +344,7 @@ class EventStore:
         session_id: str,
         *,
         keepalive_after: float | None = None,
+        last_event_id: str = "",
     ) -> AsyncIterator[EventV2 | None]:
         """Async iterator: yield cache replay + live events as they arrive.
 
@@ -356,30 +357,29 @@ class EventStore:
         CancelledError 注入生成器帧，直接杀死整条流（2026-10-31 教训）。
         取消 `queue.get()` 本身是安全的（无副作用，队列不损）。
         """
-        # 1. Replay cache first
-        cached = self._cache.get(session_id)
-        if cached is not None:
-            for ev in cached:
-                yield ev
-
-        # 2. Then replay any non-cached SQLite tail (cross-process writes)
-        try:
-            tail = self._replay(session_id)
-            last_cache_seq = cached[-1].seq if cached else 0
-            for ev in tail:
-                if ev.seq > last_cache_seq:
-                    yield ev
-        except Exception:
-            # Degraded: continue with live events only, but never
-            # silently — a corrupted DB read must be distinguishable
-            # from a genuinely empty tail.
-            logger.exception("subscribe: tail replay failed for %s", session_id)
-
-        # 3. Subscribe to live events
         queue: asyncio.Queue = asyncio.Queue(maxsize=1000)
         with self._live_lock:
             self._live_queues.setdefault(session_id, []).append(queue)
         try:
+            cached = list(self._cache.get(session_id) or ())
+            try:
+                replay = self._replay(session_id)
+            except ProtocolVersionError:
+                raise
+            except Exception:
+                logger.exception("subscribe: tail replay failed for %s", session_id)
+                replay = cached
+            seen = {event.id for event in replay}
+            replay.extend(event for event in cached if event.id not in seen)
+            replay_ids = {event.id for event in replay}
+            if last_event_id:
+                cursor = next((i for i, event in enumerate(replay) if event.id == last_event_id), None)
+                if cursor is None:
+                    logger.warning("subscribe: cursor not found for session %s; replaying history", session_id)
+                else:
+                    replay = replay[cursor + 1:]
+            for event in replay:
+                yield event
             while True:
                 if keepalive_after is not None:
                     try:
@@ -391,9 +391,11 @@ class EventStore:
                         continue
                 else:
                     event = await queue.get()
+                if event.id in replay_ids:
+                    continue
                 yield event
         except asyncio.CancelledError:
-            pass
+            raise
         finally:
             with self._live_lock:
                 queues = self._live_queues.get(session_id, [])

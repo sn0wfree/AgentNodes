@@ -27,6 +27,64 @@ def _parse_sse_frame(frame: str) -> tuple[str, dict]:
     return event_name, json.loads(data_line)
 
 
+def _ready(awaitable):
+    with pytest.raises(StopIteration) as finished:
+        awaitable.send(None)
+    return finished.value.value
+
+
+def test_run_events_resume_across_pages(tmp_path, monkeypatch):
+    from starlette.requests import Request
+
+    from agentnodes.interfaces.api.routers import workflow
+    from agentnodes.kernel.workflow.store import WorkflowStore
+
+    store = WorkflowStore(tmp_path / "workflow.db")
+    for i in range(505):
+        store.append_event("run", "node_completed", {"number": i + 1})
+    monkeypatch.setattr(store, "get_run", lambda _: {"status": "completed"})
+    monkeypatch.setattr(workflow, "_get_run_store", lambda: store)
+
+    async def allow(*_args):
+        return None
+
+    monkeypatch.setattr(workflow, "_require_run_access", allow)
+    request = Request({
+        "type": "http", "method": "GET", "path": "/",
+        "query_string": b"Last-Event-ID=2",
+        "headers": [(b"last-event-id", b"1")],
+    })
+    response = _ready(workflow.run_events("run", request))
+    stream = response.body_iterator
+    frames = [_ready(stream.__anext__()) for _ in range(505)]
+    assert frames[0].startswith("id: 2\n")
+    assert _parse_sse_frame(frames[0]) == ("node_completed", {"number": 2})
+    assert frames[-2].startswith("id: 505\n")
+    assert _parse_sse_frame(frames[-1]) == ("run_terminal", {"status": "completed"})
+    _ready(stream.aclose())
+
+
+@pytest.mark.parametrize("cursor", ["-1", "x", "9223372036854775808", "9" * 100])
+def test_run_events_rejects_invalid_cursor(cursor, monkeypatch):
+    from fastapi import HTTPException
+    from starlette.requests import Request
+
+    from agentnodes.interfaces.api.routers import workflow
+
+    async def allow(*_args):
+        return None
+
+    monkeypatch.setattr(workflow, "_require_run_access", allow)
+    monkeypatch.setattr(workflow, "_get_run_store", lambda: None)
+    request = Request({
+        "type": "http", "method": "GET", "path": "/",
+        "query_string": b"", "headers": [(b"last-event-id", cursor.encode())],
+    })
+    with pytest.raises(HTTPException) as error:
+        _ready(workflow.run_events("run", request))
+    assert error.value.status_code == 400
+
+
 class _StubRunner:
     """Minimal runner with the surface workflow_event_stream touches."""
 

@@ -1041,9 +1041,7 @@ async def _event_generator_v2(
     superset of the old ring buffer (persistent across restarts, not
     limited to 5 minutes / 10k events).
 
-    ``last_id`` accepts both forms the frontend may echo back: the legacy
-    ``evt_<n>`` string (ignored — EventSource just replays what the event
-    store has) and the EventV2 UUID (used for Last-Event-ID recovery).
+    Unknown cursors fall back to replay, with a warning from EventStore.
     """
     logger.info("[SSE] generator (v2) started session=%s", session_id)
     yield ": connected\n\n"
@@ -1057,7 +1055,6 @@ async def _event_generator_v2(
     # test_sse_e2e 首次完整运行暴露（docs/known-bug-sse-send-deadlock）。
     store = _get_session_service().event_bus
     event_count = 0
-    emitted_id = ""
     try:
         # P0 修复之二（2026-10-31）：心跳改为**时间制**——SSE 保活语义
         # 要求「15s 无活动必须发心跳」。超时逻辑在 subscribe 内部的
@@ -1065,22 +1062,14 @@ async def _event_generator_v2(
         # 端点层对 __anext__ 套 wait_for 会杀死整条流。
         async for event in store.subscribe(
             session_id, keepalive_after=_SSE_HEARTBEAT_INTERVAL_S,
+            last_event_id=last_id,
         ):
             if event is None:  # keepalive tick → 心跳 comment 帧
                 event_count += 1
                 yield _heartbeat_sse(event_count)
                 continue
 
-            # Last-Event-ID recovery: skip everything up to and including
-            # the id the client already saw.
-            if last_id and event.id != last_id and not emitted_id:
-                continue
-            if last_id and event.id == last_id:
-                emitted_id = last_id
-                continue
-
             yield _format_event_v2(event)
-            emitted_id = event.id
             event_count += 1
     except asyncio.CancelledError:
         logger.info("[SSE] client disconnected session=%s events=%d",

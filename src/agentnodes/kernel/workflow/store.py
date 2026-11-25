@@ -380,6 +380,13 @@ class WorkflowStore:
         ).fetchall()
         return cast(list[dict[str, Any]], [_row_to_dict(r) for r in rows])
 
+    def list_events_after(self, run_id: str, seq: int, limit: int = 500) -> list[dict[str, Any]]:
+        rows = self._ensure_conn().execute(
+            "SELECT * FROM run_events WHERE run_id = ? AND seq > ? ORDER BY seq LIMIT ?",
+            (run_id, seq, limit),
+        ).fetchall()
+        return cast(list[dict[str, Any]], [_row_to_dict(r) for r in rows])
+
 
 def _row_to_dict(row: sqlite3.Row | None) -> dict[str, Any] | None:
     if row is None:

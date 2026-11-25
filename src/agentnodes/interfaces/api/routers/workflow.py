@@ -706,17 +706,23 @@ async def run_events(run_id: str, request: Request):
     """SSE event history (polling-based, works after process restart)."""
     await _require_run_access(run_id, request)
     store = _get_run_store()
+    cursor = request.headers.get("Last-Event-ID") or request.query_params.get("Last-Event-ID") or "0"
+    if not cursor.isascii() or not cursor.isdecimal() or len(cursor) > 19:
+        raise HTTPException(status_code=400, detail="Invalid Last-Event-ID")
+    initial_seq = int(cursor)
+    if initial_seq > 2**63 - 1:
+        raise HTTPException(status_code=400, detail="Invalid Last-Event-ID")
 
     async def _stream():
         import asyncio as _asyncio
-        last_seq = 0
+        last_seq = initial_seq
         while True:
-            events = store.list_events(run_id, limit=500)
-            for event in reversed(events):
-                if event["seq"] <= last_seq:
-                    continue
+            events = store.list_events_after(run_id, last_seq, limit=500)
+            for event in events:
                 last_seq = event["seq"]
-                yield f"event: {event['event_type']}\ndata: {json.dumps(event['data'], ensure_ascii=False, default=str)}\n\n"
+                yield f"id: {last_seq}\nevent: {event['event_type']}\ndata: {event['data']}\n\n"
+            if len(events) == 500:
+                continue
             record = store.get_run(run_id)
             if record and record["status"] in ("completed", "failed", "cancelled"):
                 yield f"event: run_terminal\ndata: {json.dumps({'status': record['status']}, ensure_ascii=False)}\n\n"
