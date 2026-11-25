@@ -1,5 +1,5 @@
 import { useState, useRef, useCallback, useEffect, useLayoutEffect } from 'react'
-import { Send, Image as ImageIcon, X, Square } from 'lucide-react'
+import { Send, Image as ImageIcon, X, Square, AlertTriangle } from 'lucide-react'
 import { useChatStore } from '../../stores/chat'
 import { useChatSessionId } from '../../contexts/ChatSessionContext'
 import { usePersonaStore } from '../../stores/personas'
@@ -17,6 +17,14 @@ import {
 } from '../../utils/markdownShortcuts'
 import { ComposerStatusBar } from './ComposerStatusBar'
 import { SlashCommandMenu } from './SlashCommandMenu'
+import { ContextRing, BreakdownList } from './ContextRing'
+import { useContextUsage } from '../../hooks/useContextUsage'
+import { useSystemStore } from '../../stores/system'
+import { tokenTone } from '../../utils/tokenThresholds'
+import { formatTokens } from '../../utils/contextUsage'
+
+/** 稳定空对象：避免 zustand selector 每次返回新引用导致无限重渲染。 */
+const EMPTY_SEGMENTS: Record<string, number> = {}
 
 export interface ComposerProps {
   /** Transform the user-typed text before it is sent to the server.
@@ -47,6 +55,12 @@ export function Composer({ composeMessage, readOnly }: ComposerProps = {}) {
   const fileInputRef = useRef<HTMLInputElement>(null)
   const currentSessionId = useChatSessionId()
   const activeSessionRef = useRef(currentSessionId)
+  // 设计定稿 2026-11-25：用量环移到卡片右上角（hover 向上弹明细）。
+  const usage = useContextUsage(currentSessionId)
+  const modelInfo = useSystemStore((s) => s.modelInfo)
+  const breakdown = useChatStore((s) =>
+    currentSessionId ? s.contextBreakdown.get(currentSessionId) ?? EMPTY_SEGMENTS : EMPTY_SEGMENTS,
+  )
   const addMessage = useChatStore((s) => s.addMessage)
   const streamingMessageId = useChatStore((s) => s.streamingMessageId)
   const setActiveAttempt = useChatStore((s) => s.setActiveAttempt)
@@ -432,9 +446,41 @@ export function Composer({ composeMessage, readOnly }: ComposerProps = {}) {
       {/* Composer 卡片（R-014 G0-A）：对齐 ZCode data-composer-layout ——
           一个大圆角容器包住「编辑器行 + 工具条行（状态行移入框内）」。
           focus-within 时边框/底色高亮，与 ZCode 的 focus-within 语义一致。 */}
-      <div className="glass flex flex-col gap-2 rounded-2xl border-[0.5px] border-slate-700/60 bg-slate-900/40 px-4 py-3 transition-colors hover:border-slate-600 focus-within:border-sky-500/60">
-        {/* 编辑器行 */}
-        <div className="flex items-end gap-2">
+      <div
+        className="glass relative flex flex-col gap-2 rounded-2xl border-[0.5px] border-slate-700/60 bg-slate-900/40 px-4 py-3 transition-colors hover:border-slate-600 focus-within:border-sky-500/60"
+        data-composer-leading-content
+      >
+        {/* 上下文用量环：卡片右上角绝对定位（hover 向上弹七段明细） */}
+        {usage.hasLimit && modelInfo && (
+          <div className="group/usage absolute right-4 top-3 z-10" data-testid="composer-context-ring-wrap">
+            <div aria-hidden="true" data-testid="composer-context-ring" className="relative">
+              <ContextRing segments={EMPTY_SEGMENTS} percent={usage.percent} tone={tokenTone(usage.percent)} size={20} />
+              {usage.isStale && (
+                <span
+                  className="absolute -right-1 -top-1 text-warning-fg"
+                  title="模型信息来自内置/fallback 数据，非最新抓取"
+                  data-testid="composer-context-stale"
+                >
+                  <AlertTriangle className="h-2.5 w-2.5" />
+                </span>
+              )}
+            </div>
+            <div className="glass invisible absolute bottom-full right-0 z-50 mb-2 w-72 rounded-xl border border-slate-700/60 p-3 opacity-0 shadow-2xl transition-opacity group-hover/usage:visible group-hover/usage:opacity-100" data-testid="context-breakdown-popover">
+              <div className="mb-2 flex items-center justify-between text-[11px]">
+                <span className="font-medium text-slate-200">上下文用量</span>
+                <span className="font-mono text-slate-400">
+                  {formatTokens(usage.usedTokens)} / {formatTokens(usage.limitTokens)} ({usage.percent.toFixed(1)}%)
+                </span>
+              </div>
+              <BreakdownList segments={breakdown} />
+              <div className="mt-2 border-t border-slate-700/60 pt-2 text-[10px] text-slate-500">
+                剩余可用 {formatTokens(usage.remainingTokens)} · {usage.source === 'measured' ? '后端实测' : '后端估算'}
+              </div>
+            </div>
+          </div>
+        )}
+        {/* 编辑器行（textarea 与发送按钮同行；发送另绝对定位右下角，行尾占位避免遮挡） */}
+        <div className="flex items-end gap-2" data-composer-trailing-actions>
           <textarea
             ref={textareaRef}
             value={text}
@@ -450,9 +496,10 @@ export function Composer({ composeMessage, readOnly }: ComposerProps = {}) {
             }
             disabled={!currentSessionId}
             rows={1}
-            className="min-w-0 flex-1 resize-none bg-transparent text-sm text-slate-100 placeholder-slate-500 outline-none disabled:opacity-50"
+            className="min-w-0 flex-1 resize-none bg-transparent pr-10 text-sm text-slate-100 placeholder-slate-500 outline-none disabled:opacity-50"
           />
-          <div className="flex items-center gap-1">
+          {/* 上传 + 发送/停止：发送绝对定位卡片右下角（设计定稿 2026-11-25），上传保持行内 */}
+          <div className="flex items-center gap-1 pb-0.5">
             {!readOnly && (
               <button
                 onClick={handleFileSelect}
@@ -466,7 +513,7 @@ export function Composer({ composeMessage, readOnly }: ComposerProps = {}) {
             {isStreaming ? (
               <button
                 onClick={handleCancel}
-                className="rounded-full bg-red-600 p-2 text-white hover:bg-red-700 transition-colors"
+                className="absolute bottom-3 right-4 rounded-full bg-red-600 p-2 text-white hover:bg-red-700 transition-colors"
                 title="停止生成"
                 aria-label="停止生成"
               >
@@ -476,7 +523,7 @@ export function Composer({ composeMessage, readOnly }: ComposerProps = {}) {
               <button
                 onClick={handleSend}
                 disabled={sending || (!text.trim() && images.length === 0) || !currentSessionId}
-                className="rounded-full bg-sky-500 p-2 text-white transition-colors hover:bg-sky-400 disabled:opacity-30"
+                className="absolute bottom-3 right-4 rounded-full bg-sky-500 p-2 text-white transition-colors hover:bg-sky-400 disabled:opacity-30"
                 title="发送 (Enter)"
                 data-testid="composer-send"
               >

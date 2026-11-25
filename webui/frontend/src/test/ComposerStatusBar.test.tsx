@@ -57,13 +57,28 @@ describe('ComposerStatusBar', () => {
     expect(useThinkingPrefStore.getState().thinkingMode).toBe('off')
   })
 
-  it('renders context usage with limit and percentage (R-014 F4-b)', () => {
-    render(<ComposerStatusBar sessionId="s1" />)
-    const meter = screen.getByTestId('composer-context-usage')
-    expect(meter).toBeDefined()
-    // 上限来自 modelInfo.context_tokens（128000 → 128.0K）
-    expect(meter.textContent).toContain('128.0K')
-    expect(meter.textContent).toContain('%')
+  // ---- 设计定稿 2026-11-25：左右分组 + 用量环移出状态栏 ----
+  it('splits into left (persona/mode) and right (model/thinking) groups', () => {
+    const { container } = render(<ComposerStatusBar sessionId="s1" />)
+    // 状态栏自身不再渲染用量环（环移到卡片右上角，Composer 级验证）
+    expect(screen.queryByTestId('composer-context-usage')).toBeNull()
+    expect(screen.queryByTestId('context-breakdown-popover')).toBeNull()
+    // 结构：存在左组（min-w-0）与右组（ml-auto）；组内按钮总数 = persona+mode+model+thinking
+    const bar = container.querySelector('[data-testid="composer-status-bar"]')!
+    const left = bar.firstElementChild as HTMLElement
+    const right = bar.lastElementChild as HTMLElement
+    expect(left.className).toContain('min-w-0')
+    expect(right.className).toContain('ml-auto')
+    expect(left.querySelectorAll('button').length).toBe(2) // persona + mode
+    expect(right.querySelectorAll('button').length).toBe(2) // model + thinking
+  })
+
+  it('defaults to full collapse mode when width is not measurable (jsdom)', () => {
+    const { container } = render(<ComposerStatusBar sessionId="s1" />)
+    const bar = container.querySelector('[data-testid="composer-status-bar"]')!
+    expect(bar.getAttribute('data-collapse')).toBe('full')
+    // full 档：思考与模型 chevron 可见
+    expect(screen.getByText('Auto')).toBeDefined()
   })
 
   // ---- 模型下拉密钥门禁（model-picker-key-gating-20261124）----
