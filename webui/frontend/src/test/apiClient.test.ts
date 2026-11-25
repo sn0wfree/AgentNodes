@@ -47,6 +47,15 @@ describe('APIClient', () => {
   // ──────────── auth header ────────────
 
   describe('Authorization header', () => {
+    it('adds authentication and cursor to an SSE URL with existing query parameters', () => {
+      useAuthStore.setState({ token: 'jwt-123' })
+      const source = api.sse('/goal/workflow/events?goal_id=g1', '7')
+      const url = new URL(source.url, 'http://localhost')
+      expect(url.searchParams.get('goal_id')).toBe('g1')
+      expect(url.searchParams.get('token')).toBe('jwt-123')
+      expect(url.searchParams.get('Last-Event-ID')).toBe('7')
+    })
+
     it('attaches Bearer token when present', async () => {
       useAuthStore.setState({
         token: 'jwt-123',

@@ -148,7 +148,7 @@ class APIClient {
     const params = new URLSearchParams()
     if (token) params.set('token', token)
     if (lastEventId) params.set('Last-Event-ID', lastEventId)
-    const qs = params.toString() ? `?${params}` : ''
+    const qs = params.toString() ? `${path.includes('?') ? '&' : '?'}${params}` : ''
     return new EventSource(`${API_BASE}${path}${qs}`)
   }
 

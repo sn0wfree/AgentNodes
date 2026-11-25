@@ -305,7 +305,7 @@ export function DefinitionWorkflowPage() {
 
   const connectRunSSE = (runId: string) => {
     closeSSE()
-    const source = new EventSource(`/api/goal/workflow/run/${encodeURIComponent(runId)}/events`)
+    const source = api.sse(`/goal/workflow/run/${encodeURIComponent(runId)}/events`)
     sseRef.current = source
 
     const refresh = () => {
@@ -432,7 +432,7 @@ export function DefinitionWorkflowPage() {
 
   const connectViewingSSE = (gid: string) => {
     viewingSseRef.current?.close()
-    const source = new EventSource(`/api/goal/workflow/events?goal_id=${encodeURIComponent(gid)}`)
+    const source = api.sse(`/goal/workflow/events?goal_id=${encodeURIComponent(gid)}`)
     viewingSseRef.current = source
 
     const applyProgress = (data: Record<string, any>) => {
@@ -478,7 +478,6 @@ export function DefinitionWorkflowPage() {
         })
       } catch { /* ignore */ }
     })
-    source.onerror = () => source.close()
   }
 
   const onPauseViewing = async () => {

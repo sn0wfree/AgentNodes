@@ -45,6 +45,7 @@ export function useSSE(sessionId: string | null) {
   const sourceRef = useRef<EventSource | null>(null)
   const isFirstConnect = useRef(true)
   const prevSessionId = useRef<string | null>(null)
+  const lastEventId = useRef('')
   // Consecutive rejected connections (e.g. 403 — session not owned by
   // this user) cap the reconnect loop; the browser reports CLOSED for
   // non-2xx responses and we would otherwise retry forever, hammering
@@ -148,6 +149,7 @@ export function useSSE(sessionId: string | null) {
 
       const handler = HANDLERS[event]
       if (handler) handler(data, ctx)
+      if (e.lastEventId) lastEventId.current = e.lastEventId
 
       // C3: store trace_id from any SSE event for log correlation
       const tid = data?.trace_id as string | undefined
@@ -176,7 +178,11 @@ export function useSSE(sessionId: string | null) {
   )
 
   const connect = useCallback(() => {
-    if (!sessionId) return
+    if (!sessionId) {
+      prevSessionId.current = null
+      lastEventId.current = ''
+      return
+    }
     if (sourceRef.current) {
       sourceRef.current.close()
     }
@@ -184,6 +190,7 @@ export function useSSE(sessionId: string | null) {
     if (prevSessionId.current !== sessionId) {
       isFirstConnect.current = true
       failedAttempts.current = 0
+      lastEventId.current = ''
       prevSessionId.current = sessionId
     }
 
@@ -196,6 +203,7 @@ export function useSSE(sessionId: string | null) {
 
     const params = new URLSearchParams({ session_id: sessionId })
     if (parsedToken) params.set('token', parsedToken)
+    if (lastEventId.current) params.set('Last-Event-ID', lastEventId.current)
     const es = new EventSource(`/api/chat/events?${params}`)
 
     es.onopen = () => {
@@ -204,7 +212,7 @@ export function useSSE(sessionId: string | null) {
       useSSEStore.getState().setStatus('connected')
       if (isFirstConnect.current) {
         isFirstConnect.current = false
-      } else {
+      } else if (!lastEventId.current) {
         // Reconnect: clean stale streaming state that may be stuck
         const chat = useChatStore.getState()
         if (chat.streamingMessageId) {
@@ -216,6 +224,7 @@ export function useSSE(sessionId: string | null) {
     }
 
     es.onerror = (e) => {
+      if (e instanceof MessageEvent) return
       // Let the browser's native EventSource reconnect automatically —
       // it sends the Last-Event-ID header so missed events are replayed.
       const target = e.currentTarget as EventSource | null

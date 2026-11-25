@@ -39,6 +39,12 @@ class MockEventSource {
     const fn = this.listeners.get(type)
     if (fn) fn({ type, data: JSON.stringify(data) })
   }
+
+  emitMessage(type: string, data: unknown, lastEventId = '') {
+    const event = new MessageEvent(type, { data: JSON.stringify(data), lastEventId })
+    if (type === 'error') this.onerror?.(event)
+    this.listeners.get(type)?.(event)
+  }
 }
 
 ;(globalThis as any).EventSource = MockEventSource
@@ -165,6 +171,75 @@ describe('useSSE', () => {
       unmount()
 
       expect(closeSpy).toHaveBeenCalled()
+    })
+
+    it('does not reconnect for a business error on an open stream', () => {
+      vi.useFakeTimers()
+      try {
+        const { unmount } = renderHook(() => useSSE('sess-1'))
+        const es = getCurrentES()
+        act(() => {
+          es.readyState = MockEventSource.OPEN
+          es.onopen?.()
+          es.emitMessage('error', { error: 'rate limited' }, 'event-1')
+        })
+        expect(useToastStore.getState().toasts.some((toast) => toast.message === 'rate limited')).toBe(true)
+        act(() => { vi.advanceTimersByTime(15_000) })
+        expect(useSSEStore.getState().status).toBe('connected')
+        expect(MockEventSource.instances).toHaveLength(1)
+        unmount()
+      } finally {
+        vi.useRealTimers()
+      }
+    })
+
+    it('resumes a manually replaced stream with the last processed event ID', () => {
+      vi.useFakeTimers()
+      try {
+        const { unmount } = renderHook(() => useSSE('sess-1'))
+        const es = getCurrentES()
+        act(() => {
+          es.readyState = MockEventSource.OPEN
+          es.onopen?.()
+          es.emitMessage('queue_state', { session_id: 'sess-1' }, 'event-42')
+          es.readyState = MockEventSource.CLOSED
+          es.onerror?.({ currentTarget: es })
+          vi.advanceTimersByTime(1000)
+        })
+        expect(getCurrentES().url).toContain('Last-Event-ID=event-42')
+        unmount()
+      } finally {
+        vi.useRealTimers()
+      }
+    })
+
+    it('preserves active streaming state when resuming from a cursor', () => {
+      renderHook(() => useSSE('sess-1'))
+      const es = getCurrentES()
+      act(() => {
+        es.onopen?.()
+        useChatStore.getState().setStreamingMessage('msg-1')
+        useChatStore.getState().setActiveAttempt('attempt-1')
+        es.emitMessage('queue_state', { session_id: 'sess-1' }, 'event-42')
+        es.onopen?.()
+      })
+      expect(useChatStore.getState().streamingMessageId).toBe('msg-1')
+      expect(useChatStore.getState().activeAttemptId).toBe('attempt-1')
+    })
+
+    it('does not carry a cursor across deselection or session changes', () => {
+      const { rerender } = renderHook(
+        ({ sessionId }: { sessionId: string | null }) => useSSE(sessionId),
+        { initialProps: { sessionId: 'sess-1' as string | null } },
+      )
+      act(() => {
+        getCurrentES().emitMessage('queue_state', { session_id: 'sess-1' }, 'event-42')
+      })
+      rerender({ sessionId: null })
+      rerender({ sessionId: 'sess-1' })
+      expect(getCurrentES().url).not.toContain('Last-Event-ID')
+      rerender({ sessionId: 'sess-2' })
+      expect(getCurrentES().url).not.toContain('Last-Event-ID')
     })
 
     it('does not reconnect a rejected stream after switching sessions', () => {

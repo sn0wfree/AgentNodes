@@ -27,6 +27,7 @@ const waitFor: typeof rtlWaitFor = ((cb: () => unknown, opts?: { timeout?: numbe
 vi.mock('../api/client', async () => {
   return {
     api: {
+      sse: vi.fn((path: string) => new EventSource(`/api${path}`)),
       definitions: {
         list: vi.fn(async () => ({
           status: 'ok',
@@ -280,6 +281,7 @@ beforeEach(() => {
   vi.mocked(api.goal.list).mockClear()
   vi.mocked(api.workflow.graph).mockClear()
   vi.mocked(api.workflow.status).mockClear()
+  vi.mocked(api.sse).mockClear()
 })
 
 // Zustand stores are module-level singletons: RTL cleanup() unmounts the
@@ -433,11 +435,32 @@ describe('DefinitionWorkflowPage (Dify-style info bar)', () => {
     expect(args[0]).toBe('sess-1')
     expect(args[1]).toBe('plan_execute_auto')
     expect(args[2]).toBe('研究动量')
+    await waitFor(() => expect(api.sse).toHaveBeenCalledWith('/goal/workflow/run/wf_test1/events'))
     await waitFor(() => expect(screen.getByText('wf_test1')).toBeTruthy())
   })
 })
 
 describe('Run history playback', () => {
+  it('uses the authenticated SSE client and keeps a running playback stream open on errors', async () => {
+    vi.mocked(api.workflow.status).mockResolvedValueOnce({
+      status: 'ok', goal_id: 'g-hist', workflow_name: 'plan_execute_auto',
+      progress: { status: 'running' },
+    })
+    render(<MemoryRouter><DefinitionWorkflowPage /></MemoryRouter>)
+    await waitFor(() => expect(within(screen.getByTitle('切换工作流定义')).getByText('my_flow')).toBeInTheDocument())
+    fireEvent.change(screen.getByTitle('切换工作流定义'), { target: { value: 'my_flow' } })
+    await waitFor(() => expect(screen.getByText('保存')).toBeTruthy())
+    fireEvent.click(screen.getByText('运行'))
+    await waitFor(() => expect(screen.getByText('启动运行')).toBeTruthy())
+    fireEvent.click(screen.getByText(/运行记录/))
+    await waitFor(() => expect(screen.getByText('历史目标')).toBeTruthy())
+    fireEvent.click(screen.getByText('历史目标'))
+    await waitFor(() => expect(api.sse).toHaveBeenCalledWith('/goal/workflow/events?goal_id=g-hist'))
+    const source = vi.mocked(api.sse).mock.results[0].value
+    source.onerror?.(new Event('error'))
+    expect(source.readyState).not.toBe(MockEventSource.CLOSED)
+  })
+
   it('lists goals and opens a read-only playback view, then returns to editor', async () => {
     render(<MemoryRouter><DefinitionWorkflowPage /></MemoryRouter>)
     await waitFor(() => expect(screen.getByText('选择或新建工作流')).toBeTruthy())
