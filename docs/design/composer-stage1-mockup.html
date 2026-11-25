@@ -1,0 +1,407 @@
+<!doctype html>
+<html lang="zh-CN" data-zcode-design>
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Composer 阶段 1 · 交互布局实验台</title>
+<style>
+  /* ── 可调 token（设计面板可直接编辑） ── */
+  :root {
+    --bg: #262626;
+    --fg: #e5e5e5;
+    --muted: #a3a3a3;
+    --card-bg: rgba(0,0,0,.28);
+    --border: rgba(255,255,255,.11);
+    --accent: #38bdf8;
+    --brand: #0ea5e9;
+    --viz: #8b5cf6;
+    --gap: 3px;            /* 状态栏项间距（2026-11-25 用户定稿） */
+    --card-pad-x: 16px;    /* 卡片水平内边距 */
+    --card-pad-y: 12px;    /* 卡片垂直内边距 */
+    --pill-h: 36px;        /* 状态胶囊高度（2026-11-25 用户定稿） */
+    --radius: 20px;        /* 卡片圆角（2026-11-25 用户定稿） */
+    --bp1: 520px;          /* 断点 1（仅示意标注，交互区用 JS 阈值） */
+    --bp2: 360px;          /* 断点 2 */
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; padding: 28px 32px 48px; background: var(--bg); color: var(--fg);
+    font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+    font-size: 13px; line-height: 1.5;
+  }
+  h1 { font-size: 20px; margin: 0 0 6px; }
+  .lead { color: var(--muted); margin: 0 0 24px; max-width: 900px; }
+  .panel {
+    border: 1px solid var(--border); border-radius: 14px; padding: 18px 20px;
+    background: rgba(0,0,0,.15); margin-bottom: 24px;
+  }
+  .panel h2 { font-size: 14px; margin: 0 0 12px; }
+  .panel h2 small { color: var(--muted); font-weight: 400; margin-left: 8px; font-size: 11px; }
+  code { font-family: ui-monospace, monospace; background: rgba(255,255,255,.06); padding: 1px 5px; border-radius: 4px; }
+
+  /* ── 交互实验台 ── */
+  .lab { display: grid; grid-template-columns: 220px minmax(0, 1fr); gap: 22px; align-items: start; }
+  .lab > * { min-width: 0; }
+  .controls { display: flex; flex-direction: column; gap: 12px; }
+  .ctl label { display: flex; justify-content: space-between; font-size: 11px; color: var(--muted); margin-bottom: 4px; }
+  .ctl label b { color: var(--fg); font: 11px ui-monospace, monospace; }
+  input[type=range] { width: 100%; accent-color: var(--accent); }
+  .toggle { display: flex; align-items: center; gap: 7px; font-size: 11px; color: var(--muted); }
+  .toggle input { accent-color: var(--accent); }
+  .note { font-size: 10px; color: var(--muted); margin-top: 6px; line-height: 1.6; }
+  .stage { min-height: 220px; display: flex; align-items: flex-start; justify-content: center; }
+  .stage > div { max-width: 100%; } /* 钳制实验台卡片：窄视口下不越出面板 */
+
+  /* ── Composer 卡片 ── */
+  .composer {
+    position: relative;
+    width: var(--lab-w, 630px); max-width: 100%;
+    background: var(--card-bg); border: .5px solid var(--border);
+    border-radius: var(--radius); padding: var(--card-pad-y) var(--card-pad-x);
+    display: flex; flex-direction: column; gap: 8px; transition: width .12s ease;
+  }
+  /* 圆环 = 上下文占用进度环（右上角，hover 弹 7 段明细） */
+  .ring-btn {
+    position: absolute; top: var(--card-pad-y); right: var(--card-pad-x);
+    width: 16px; height: 16px; padding: 0; border: 0; background: transparent;
+    cursor: default; z-index: 6;
+  }
+  .ring-btn svg { display: block; transform: rotate(0); }
+  .tip {
+    display: none; position: absolute; bottom: calc(100% + 10px); right: 0;
+    width: 200px; z-index: 7; text-align: left;
+    background: #2a2a2a; border: 1px solid var(--border); border-radius: 10px;
+    padding: 10px; box-shadow: 0 10px 30px -8px rgba(0,0,0,.6);
+    font-size: 10px; color: var(--muted);
+  }
+  .ring-btn:hover .tip, .ring-btn:focus-visible .tip { display: block; }
+  .tip-head { font-size: 11px; color: var(--fg); margin-bottom: 7px; }
+  .tip-head b { font-family: ui-monospace, monospace; color: var(--muted); font-weight: 400; margin-left: 4px; }
+  .tip-list { list-style: none; margin: 0; padding: 0; }
+  .tip-list li { display: flex; align-items: center; gap: 5px; padding: 2px 0; }
+  .tip-list i { width: 8px; height: 8px; border-radius: 2px; flex: none; }
+  .tip-list span { margin-left: auto; font-family: ui-monospace, monospace; }
+  .tip-foot { border-top: 1px solid var(--border); margin-top: 7px; padding-top: 7px; }
+  .composer.focus { border-color: rgba(56,189,248,.6); }
+  .editor { display: flex; align-items: flex-end; gap: 8px; }
+  .fake-input {
+    min-width: 0; flex: 1; height: 20px; color: var(--muted); font-size: 12px;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    /* 右下角发送按钮绝对定位后，输入文本预留右侧空间避免遮挡 */
+    padding-right: 40px;
+  }
+  .send {
+    /* 严格钉在卡片右下角 */
+    position: absolute; bottom: var(--card-pad-y); right: var(--card-pad-x);
+    width: 28px; height: 28px; border-radius: 999px;
+    background: var(--brand); display: flex; align-items: center; justify-content: center;
+    color: #fff; z-index: 3;
+  }
+  .send:hover { filter: brightness(1.1); }
+
+  .status {
+    display: flex; flex-wrap: nowrap; align-items: center; gap: var(--gap);
+    /* 预留发送按钮空间，窄档下按钮不压住状态项（overflow 放开：pill 菜单需弹出卡片外） */
+    padding-right: 36px;
+  }
+  /* 左右分组：左 = persona + 模式；右 = 模型 + 思考（贴近右下角发送按钮） */
+  .status .left { display: flex; align-items: center; gap: var(--gap); min-width: 0; }
+  .status .right { display: flex; align-items: center; gap: var(--gap); margin-left: auto; flex: none; }
+  .right .menu { left: auto; right: 0; } /* 右组菜单向左展开，不越出卡片右缘 */
+  .status.wrapped { flex-wrap: wrap; }
+  .pill {
+    display: inline-flex; align-items: center; gap: 4px; height: var(--pill-h);
+    border-radius: 8px; padding: 0 7px; font-size: 11px;
+    background: rgba(255,255,255,.04); white-space: nowrap; flex: none;
+  }
+  button.pill { border: 0; font: inherit; color: inherit; cursor: pointer; }
+  button.pill:hover { background: rgba(255,255,255,.1); }
+  button.pill.ghost:hover { background: rgba(255,255,255,.06); }
+  button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+  .pill.ghost { background: transparent; color: var(--muted); }
+  /* pill + 下拉菜单的包装（菜单 absolute 于 wrap，可弹出卡片外） */
+  .pill-wrap { position: relative; display: flex; flex: none; }
+  .menu {
+    display: none; position: absolute; bottom: calc(100% + 8px); left: 0;
+    width: 190px; z-index: 8; background: #2a2a2a;
+    border: 1px solid var(--border); border-radius: 10px; padding: 6px;
+    box-shadow: 0 10px 30px -8px rgba(0,0,0,.6);
+  }
+  .pill-wrap.open .menu { display: block; }
+  .menu .opt {
+    display: block; width: 100%; text-align: left; padding: 5px 7px;
+    border: 0; border-radius: 6px; font: inherit; font-size: 11px;
+    color: inherit; background: transparent; cursor: pointer;
+  }
+  .menu .opt:hover { background: rgba(255,255,255,.07); }
+  .menu .opt.sel { background: rgba(56,189,248,.14); color: var(--accent); }
+  .sep { width: 1px; height: 12px; background: var(--border); flex: none; }
+  /* 单色线性图标（1.6–1.8px 描边、currentColor、无 emoji） */
+  .ico { width: 13px; height: 13px; flex: none; stroke: currentColor; fill: none; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round; }
+  .send .ico { width: 14px; height: 14px; stroke: #fff; stroke-width: 1.8; }
+
+  /* ── 折叠规则（按宽度自动） ── */
+  .hidden-mode .thinking { display: none !important; }
+  .short-mode .model-full { display: none !important; }
+  .short-mode .model-short { display: inline-flex !important; }
+  .icon-mode .persona-name, .icon-mode .mode-name, .icon-mode .sep,
+  .icon-mode .model-short, .icon-mode .model-full { display: none !important; }
+  .icon-mode .persona-icon, .icon-mode .mode-icon, .icon-mode .model-icon { display: inline-flex !important; }
+  .model-icon { display: none; }
+  .persona-icon, .mode-icon { display: none; }
+  .model-short { display: none; }
+  .readout { font: 10px ui-monospace, monospace; color: var(--muted); margin-top: 8px; }
+  .readout b { color: #4ade80; }
+
+  /* ── 三档静态对照 ── */
+  .case-head { display: flex; align-items: baseline; gap: 10px; margin-bottom: 12px; }
+  .case-head b { font-size: 14px; }
+  .case-head span { color: var(--muted); font-size: 11px; }
+  .row { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 20px; }
+  .row > div { min-width: 0; }
+  .tag { font-size: 10px; letter-spacing: .08em; color: var(--muted); margin-bottom: 6px; text-transform: uppercase; }
+  .tag.after { color: #4ade80; }
+  .case-1280 .composer { width: 630px; max-width: 100%; }
+  .case-768 .composer { width: 272px; }
+  .case-375 .composer { width: 279px; }
+  .case-768 .after .thinking { display: none; }
+  .case-768 .after .model-full { display: none; }
+  .case-768 .after .model-short { display: inline-flex; }
+  .case-375 .after .persona-name, .case-375 .after .mode-name,
+  .case-375 .after .sep, .case-375 .after .model-short { display: none; }
+  .case-375 .after .persona-icon, .case-375 .after .mode-icon,
+  .case-375 .after .model-icon { display: inline-flex; }
+  .h-note { font: 10px ui-monospace, monospace; color: var(--muted); margin-top: 8px; }
+  .warn { color: #facc15; }
+  .good { color: #4ade80; }
+
+  @media (max-width: 860px) {
+    .row { grid-template-columns: 1fr; gap: 14px; }
+    .case-1280 .composer { width: 100%; }
+    .case-768 .composer, .case-375 .composer { width: min(100%, 320px); }
+    .lab { grid-template-columns: minmax(0, 1fr); }
+  }
+</style>
+</head>
+<body data-zcode-design>
+  <h1>Composer 阶段 1 · 交互布局实验台</h1>
+  <p class="lead">
+    左侧调参，右侧实时反映折叠效果；也可在 ZCode 设计面板直接编辑 <code>:root</code> 的
+    <code>--gap / --card-pad-* / --pill-h / --radius</code> 变量（本页已标记 <code>data-zcode-design</code>）。
+    下方保留三档静态对照作为验收基线。
+  </p>
+
+  <section class="panel" data-zcode-design>
+    <h2>交互实验 <small>拖动滑块改变卡片宽度与间距，观察状态栏折叠</small></h2>
+    <div class="lab">
+      <div class="controls">
+        <div class="ctl">
+          <label>卡片宽度 <b id="w-val">630px</b></label>
+          <input type="range" id="w" min="240" max="760" step="1" value="630" />
+        </div>
+        <div class="ctl">
+          <label>状态栏间距 --gap <b id="g-val">3px</b></label>
+          <input type="range" id="g" min="0" max="14" step="1" value="3" />
+        </div>
+        <div class="ctl">
+          <label>胶囊高度 --pill-h <b id="h-val">36px</b></label>
+          <input type="range" id="h" min="18" max="36" step="1" value="36" />
+        </div>
+        <div class="ctl">
+          <label>卡片圆角 --radius <b id="r-val">20px</b></label>
+          <input type="range" id="r" min="4" max="28" step="1" value="20" />
+        </div>
+        <label class="toggle"><input type="checkbox" id="wrap" /> 允许状态栏换行（对照现状）</label>
+        <label class="toggle"><input type="checkbox" id="auto" checked /> 按宽度自动折叠</label>
+        <p class="note">
+          自动折叠规则：<br>
+          &gt; 520px 全展开<br>
+          ≤ 520px 隐藏思考 + 模型短名<br>
+          ≤ 360px 仅图标<br>
+          圆环（右上角）与发送（右下角）始终保留。
+        </p>
+      </div>
+      <div class="stage">
+        <div>
+          <div class="composer focus" id="lab-card">
+            <!-- 圆环：上下文占用进度环（弧长含 4% 最小可见弧）+ hover 七段明细 -->
+            <div class="ring-btn" role="img" aria-label="上下文用量 0.2%">
+              <svg viewBox="0 0 16 16" width="16" height="16">
+                <circle cx="8" cy="8" r="6.5" fill="none" stroke="rgba(255,255,255,.12)" stroke-width="2"/>
+                <circle cx="8" cy="8" r="6.5" fill="none" stroke="var(--accent)" stroke-width="2"
+                        stroke-linecap="round" stroke-dasharray="1.64 39.2" transform="rotate(-90 8 8)"/>
+              </svg>
+              <div class="tip">
+                <div class="tip-head">上下文用量 <b>2.4K / 1.0M (0.2%)</b></div>
+                <ul class="tip-list">
+                  <li><i style="background:#8b5cf6"></i>系统提示 <span>2,374 (100%)</span></li>
+                  <li><i style="background:#3b82f6"></i>历史消息 <span>2 (0%)</span></li>
+                  <li><i style="background:#14b8a6"></i>用户上下文 <span>0 (0%)</span></li>
+                  <li><i style="background:#10b981"></i>技能 <span>0 (0%)</span></li>
+                  <li><i style="background:#f59e0b"></i>工具说明 <span>0 (0%)</span></li>
+                  <li><i style="background:#ec4899"></i>工具 Schema <span>0 (0%)</span></li>
+                  <li><i style="background:#f97316"></i>MCP Schema <span>0 (0%)</span></li>
+                </ul>
+                <div class="tip-foot">数据来源：后端估算</div>
+              </div>
+            </div>
+            <div class="editor">
+              <div class="fake-input">输入消息... (Shift+Enter 换行)</div>
+              <div class="send"><svg class="ico" viewBox="0 0 16 16"><path d="M8 13V3M8 3 4 7M8 3l4 4"/></svg></div>
+            </div>
+            <div class="status" id="lab-status">
+              <div class="left">
+                <div class="pill-wrap" id="pw-persona">
+                  <button class="pill persona-name" data-menu="pw-persona"><svg class="ico" viewBox="0 0 16 16"><circle cx="8" cy="5.5" r="2.5"/><path d="M3 13c0-2.8 2.2-4.5 5-4.5s5 1.7 5 4.5"/></svg><span id="label-persona">研究员</span></button>
+                  <button class="pill persona-icon icon" data-menu="pw-persona" aria-label="助手"><svg class="ico" viewBox="0 0 16 16"><circle cx="8" cy="5.5" r="2.5"/><path d="M3 13c0-2.8 2.2-4.5 5-4.5s5 1.7 5 4.5"/></svg></button>
+                  <div class="menu">
+                    <button class="opt" data-group="persona" data-label="通用助手">通用助手</button>
+                    <button class="opt sel" data-group="persona" data-label="研究员">研究员</button>
+                    <button class="opt" data-group="persona" data-label="策略师">策略师</button>
+                    <button class="opt" data-group="persona" data-label="因子分析师">因子分析师</button>
+                  </div>
+                </div>
+                <i class="sep"></i>
+                <div class="pill-wrap" id="pw-mode">
+                  <button class="pill mode-name" data-menu="pw-mode"><svg class="ico" viewBox="0 0 16 16"><path d="M2 6h12M2 10h12M6 3v10M11 3v10"/></svg><span id="label-mode">Build</span></button>
+                  <button class="pill mode-icon icon" data-menu="pw-mode" aria-label="模式"><svg class="ico" viewBox="0 0 16 16"><path d="M2 6h12M2 10h12M6 3v10M11 3v10"/></svg></button>
+                  <div class="menu">
+                    <button class="opt sel" data-group="mode" data-label="Build">Build（完整工具）</button>
+                    <button class="opt" data-group="mode" data-label="Chat">Chat（只读问答）</button>
+                  </div>
+                </div>
+              </div>
+              <div class="right">
+                <div class="pill-wrap" id="pw-model">
+                  <button class="pill model-full" data-menu="pw-model"><span id="label-model-full">MiniMax-M3.1-Flash</span></button>
+                  <button class="pill model-short" data-menu="pw-model"><span id="label-model-short">MiniMax</span></button>
+                  <button class="pill model-icon icon" data-menu="pw-model" aria-label="模型"><svg class="ico" viewBox="0 0 16 16"><path d="M3 3h10M3 8h10M3 13h10M8 3v10"/></svg></button>
+                  <div class="menu">
+                    <button class="opt sel" data-group="model" data-full="MiniMax-M3.1-Flash" data-short="MiniMax">MiniMax-M3.1-Flash</button>
+                    <button class="opt" data-group="model" data-full="MiniMax-M3" data-short="M3">MiniMax-M3</button>
+                  </div>
+                </div>
+                <i class="sep"></i>
+                <div class="pill-wrap" id="pw-thinking">
+                  <button class="pill ghost thinking" data-menu="pw-thinking"><svg class="ico" viewBox="0 0 16 16"><circle cx="8" cy="8" r="2"/><path d="M8 1.5v2M8 12.5v2M1.5 8h2M12.5 8h2M3.4 3.4l1.4 1.4M11.2 11.2l1.4 1.4M12.6 3.4l-1.4 1.4M4.8 11.2l-1.4 1.4"/></svg><span id="label-thinking">Auto</span></button>
+                  <div class="menu">
+                    <button class="opt sel" data-group="thinking" data-label="Auto">Auto</button>
+                    <button class="opt" data-group="thinking" data-label="High">High</button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="readout" id="readout"></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="panel" data-zcode-design>
+    <h2>三档静态对照 <small>基于阶段 0 实测：27px → 92px 状态栏膨胀</small></h2>
+
+    <div class="case case-1280" style="margin-bottom:22px">
+      <div class="case-head"><b>1280 × 720</b><span>卡片 630px · 基线状态栏 27px</span></div>
+      <div class="row">
+        <div><div class="tag">Before</div>
+          <div class="composer focus"><div class="editor"><div class="fake-input">输入消息…</div></div>
+            <div class="status wrapped"><span class="pill"><svg class="ico" viewBox="0 0 16 16"><circle cx="8" cy="5.5" r="2.5"/><path d="M3 13c0-2.8 2.2-4.5 5-4.5s5 1.7 5 4.5"/></svg>研究员</span><i class="sep"></i><span class="pill"><svg class="ico" viewBox="0 0 16 16"><path d="M2 6h12M2 10h12M6 3v10M11 3v10"/></svg>Build</span><i class="sep"></i><span class="pill">MiniMax-M3.1-Flash</span><i class="sep"></i><span class="pill ghost"><svg class="ico" viewBox="0 0 16 16"><circle cx="8" cy="8" r="2"/><path d="M8 1.5v2M8 12.5v2M1.5 8h2M12.5 8h2M3.4 3.4l1.4 1.4M11.2 11.2l1.4 1.4M12.6 3.4l-1.4 1.4M4.8 11.2l-1.4 1.4"/></svg>Auto</span></div></div>
+          <div class="h-note warn">状态栏 27px · 输入 524px</div></div>
+        <div><div class="tag after">After</div>
+          <div class="composer focus"><div class="editor"><div class="fake-input">输入消息…</div></div>
+            <div class="status"><div class="left"><span class="pill"><svg class="ico" viewBox="0 0 16 16"><circle cx="8" cy="5.5" r="2.5"/><path d="M3 13c0-2.8 2.2-4.5 5-4.5s5 1.7 5 4.5"/></svg>研究员</span><i class="sep"></i><span class="pill"><svg class="ico" viewBox="0 0 16 16"><path d="M2 6h12M2 10h12M6 3v10M11 3v10"/></svg>Build</span></div><div class="right"><span class="pill">MiniMax-M3.1-Flash</span><i class="sep"></i><span class="pill ghost"><svg class="ico" viewBox="0 0 16 16"><circle cx="8" cy="8" r="2"/><path d="M8 1.5v2M8 12.5v2M1.5 8h2M12.5 8h2M3.4 3.4l1.4 1.4M11.2 11.2l1.4 1.4M12.6 3.4l-1.4 1.4M4.8 11.2l-1.4 1.4"/></svg>Auto</span></div></div></div>
+          <div class="h-note good">状态栏 27px · 输入 524px（不变）</div></div>
+      </div>
+    </div>
+
+    <div class="case case-768" style="margin-bottom:22px">
+      <div class="case-head"><b>768 × 900</b><span>卡片 272px · 基线状态栏 92px</span></div>
+      <div class="row">
+        <div><div class="tag">Before</div>
+          <div class="composer focus"><div class="editor"><div class="fake-input">输入消息…</div></div>
+            <div class="status wrapped"><span class="pill"><svg class="ico" viewBox="0 0 16 16"><circle cx="8" cy="5.5" r="2.5"/><path d="M3 13c0-2.8 2.2-4.5 5-4.5s5 1.7 5 4.5"/></svg>研究员</span><i class="sep"></i><span class="pill"><svg class="ico" viewBox="0 0 16 16"><path d="M2 6h12M2 10h12M6 3v10M11 3v10"/></svg>Build</span><i class="sep"></i><span class="pill">MiniMax-M3.1-Flash</span><i class="sep"></i><span class="pill ghost"><svg class="ico" viewBox="0 0 16 16"><circle cx="8" cy="8" r="2"/><path d="M8 1.5v2M8 12.5v2M1.5 8h2M12.5 8h2M3.4 3.4l1.4 1.4M11.2 11.2l1.4 1.4M12.6 3.4l-1.4 1.4M4.8 11.2l-1.4 1.4"/></svg>Auto</span></div></div>
+          <div class="h-note warn">状态栏 92px · 输入 166px</div></div>
+        <div><div class="tag after">After · 断点 1</div>
+          <div class="composer focus"><div class="editor"><div class="fake-input">输入消息…</div></div>
+            <div class="status"><div class="left"><span class="pill"><svg class="ico" viewBox="0 0 16 16"><circle cx="8" cy="5.5" r="2.5"/><path d="M3 13c0-2.8 2.2-4.5 5-4.5s5 1.7 5 4.5"/></svg>研究员</span><i class="sep"></i><span class="pill"><svg class="ico" viewBox="0 0 16 16"><path d="M2 6h12M2 10h12M6 3v10M11 3v10"/></svg>Build</span></div><div class="right"><span class="pill">MiniMax</span></div></div></div>
+          <div class="h-note good">状态栏 27px · 输入 200px+</div></div>
+      </div>
+    </div>
+
+    <div class="case case-375">
+      <div class="case-head"><b>375 × 812</b><span>卡片 279px · 基线状态栏 92px</span></div>
+      <div class="row">
+        <div><div class="tag">Before</div>
+          <div class="composer focus"><div class="editor"><div class="fake-input">输入消息…</div></div>
+            <div class="status wrapped"><span class="pill"><svg class="ico" viewBox="0 0 16 16"><circle cx="8" cy="5.5" r="2.5"/><path d="M3 13c0-2.8 2.2-4.5 5-4.5s5 1.7 5 4.5"/></svg>研究员</span><i class="sep"></i><span class="pill"><svg class="ico" viewBox="0 0 16 16"><path d="M2 6h12M2 10h12M6 3v10M11 3v10"/></svg>Build</span><i class="sep"></i><span class="pill">MiniMax-M3.1-Flash</span><i class="sep"></i><span class="pill ghost"><svg class="ico" viewBox="0 0 16 16"><circle cx="8" cy="8" r="2"/><path d="M8 1.5v2M8 12.5v2M1.5 8h2M12.5 8h2M3.4 3.4l1.4 1.4M11.2 11.2l1.4 1.4M12.6 3.4l-1.4 1.4M4.8 11.2l-1.4 1.4"/></svg>Auto</span></div></div>
+          <div class="h-note warn">状态栏 92px · 输入 173px</div></div>
+        <div><div class="tag after">After · 断点 2</div>
+          <div class="composer focus"><div class="editor"><div class="fake-input">输入消息…</div></div>
+            <div class="status"><div class="left"><span class="pill icon"><svg class="ico" viewBox="0 0 16 16"><circle cx="8" cy="5.5" r="2.5"/><path d="M3 13c0-2.8 2.2-4.5 5-4.5s5 1.7 5 4.5"/></svg></span><span class="pill icon"><svg class="ico" viewBox="0 0 16 16"><path d="M2 6h12M2 10h12M6 3v10M11 3v10"/></svg></span></div><div class="right"><span class="pill icon"><svg class="ico" viewBox="0 0 16 16"><path d="M3 3h10M3 8h10M3 13h10M8 3v10"/></svg></span></div></div></div>
+          <div class="h-note good">状态栏 27px · 输入 200px+</div></div>
+      </div>
+    </div>
+  </section>
+
+<script>
+  const $ = (id) => document.getElementById(id);
+  const card = $('lab-card'), status = $('lab-status'), readout = $('readout');
+  function apply() {
+    const w = +$('w').value;
+    card.style.setProperty('--lab-w', w + 'px');
+    document.documentElement.style.setProperty('--gap', $('g').value + 'px');
+    document.documentElement.style.setProperty('--pill-h', $('h').value + 'px');
+    document.documentElement.style.setProperty('--radius', $('r').value + 'px');
+    $('w-val').textContent = w + 'px';
+    $('g-val').textContent = $('g').value + 'px';
+    $('h-val').textContent = $('h').value + 'px';
+    $('r-val').textContent = $('r').value + 'px';
+
+    status.classList.toggle('wrapped', $('wrap').checked);
+    // 折叠按卡片实测宽度判断（滑块值可能与真实渲染宽不一致，如窄视口压缩）——对齐 ZCode 测量哲学
+    const realW = Math.round(card.getBoundingClientRect().width) || w;
+    const mode = $('auto').checked ? (realW <= 360 ? 'icon' : realW <= 520 ? 'short' : 'full') : 'full';
+    status.classList.toggle('hidden-mode', mode === 'short' || mode === 'icon');
+    status.classList.toggle('short-mode', mode === 'short');
+    status.classList.toggle('icon-mode', mode === 'icon');
+
+    const barH = Math.round(status.getBoundingClientRect().height);
+    const label = mode === 'icon' ? '仅图标' : mode === 'short' ? '短名' : '全展开';
+    readout.innerHTML = `宽度 <b>${w}px</b> · 折叠 <b>${label}</b> · 状态栏高 <b>${barH}px</b>`;
+  }
+  ['w','g','h','r','wrap','auto'].forEach(id => $(id).addEventListener('input', apply));
+  window.addEventListener('resize', apply); // 视口变化时折叠跟随卡片实测宽度
+  apply();
+
+  // ── 状态栏 pill 菜单：点 pill 开合，点选项组内单选并同步 pill 文字 ──
+  document.querySelectorAll('[data-menu]').forEach(btn => {
+    btn.addEventListener('click', e => {
+      e.stopPropagation();
+      const wrap = document.getElementById(btn.dataset.menu);
+      const was = wrap.classList.contains('open');
+      document.querySelectorAll('.pill-wrap.open').forEach(w => w.classList.remove('open'));
+      if (!was) wrap.classList.add('open');
+    });
+  });
+  document.addEventListener('click', () => {
+    document.querySelectorAll('.pill-wrap.open').forEach(w => w.classList.remove('open'));
+  });
+  document.querySelectorAll('.menu .opt').forEach(opt => {
+    opt.addEventListener('click', e => {
+      e.stopPropagation();
+      const g = opt.dataset.group;
+      opt.parentElement.querySelectorAll('.opt').forEach(x => x.classList.remove('sel'));
+      opt.classList.add('sel');
+      if (g === 'model') {
+        $('label-model-full').textContent = opt.dataset.full;
+        $('label-model-short').textContent = opt.dataset.short;
+      } else {
+        $('label-' + g).textContent = opt.dataset.label;
+      }
+      opt.closest('.pill-wrap').classList.remove('open');
+    });
+  });
+</script>
+</body>
+</html>
