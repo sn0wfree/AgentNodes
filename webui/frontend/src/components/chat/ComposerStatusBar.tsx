@@ -287,16 +287,9 @@ export function ComposerStatusBar({ sessionId }: ComposerStatusBarProps) {
       {/* Context usage ring（R-014 H2：小环 + hover 7 段明细弹层）*/}
       {usage.hasLimit && (
         <div className="group/usage relative ml-auto flex items-center gap-1.5" data-testid="composer-context-usage">
-          <ContextRing segments={breakdown} percent={usage.percent} tone={tone} size={20} />
-          <span className="font-mono text-[10px] text-slate-500">
-            {usage.source === 'estimated' ? '~' : ''}
-            {formatTokens(usage.usedTokens)} / {formatTokens(usage.limitTokens)}
-          </span>
-          <span className="font-mono text-[10px] text-slate-500">
-            {usage.percent > 0 && usage.percent < 1
-              ? usage.percent.toFixed(1)
-              : usage.percent.toFixed(0)}%
-          </span>
+          {/* 小环 = 占用比例进度环（弧长 = used/limit）。对齐 ZCode 触发区：
+              环旁不放文字，绝对数值与精确比例只在 hover 弹层。 */}
+          <ContextRing segments={EMPTY_SEGMENTS} percent={usage.percent} tone={tone} size={20} />
           {usage.isStale && (
             <span className="text-warning-fg" title="模型信息来自内置/fallback 数据，非最新抓取" data-testid="composer-context-stale">
               <AlertTriangle className="h-3 w-3" />
@@ -310,12 +303,10 @@ export function ComposerStatusBar({ sessionId }: ComposerStatusBarProps) {
                 {formatTokens(usage.usedTokens)} / {formatTokens(usage.limitTokens)} ({usage.percent.toFixed(1)}%)
               </span>
             </div>
-            <div className="mb-2 flex justify-center">
-              <ContextRing segments={breakdown} percent={usage.percent} tone={tone} size={64} />
-            </div>
+            {/* 对齐 ZCode：弹层不放圆环，只有分段进度条 + 文字 */}
             <BreakdownList segments={breakdown} />
             <div className="mt-2 border-t border-slate-700/60 pt-2 text-[10px] text-slate-500">
-              剩余可用 {formatTokens(usage.remainingTokens)} · {usage.source === 'measured' ? '后端实测' : '字符估算'}
+              剩余可用 {formatTokens(usage.remainingTokens)} · {usage.source === 'measured' ? '后端实测' : '后端估算'}
             </div>
           </div>
         </div>

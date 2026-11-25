@@ -73,7 +73,10 @@ export function ContextRing({ segments, percent, tone, size = 20 }: ContextRingP
   const radius = (size - stroke) / 2
   const circumference = 2 * Math.PI * radius
   const arcs = useMemo(() => buildArcs(segments, circumference), [segments, circumference])
-  const filled = Math.min(100, Math.max(0, percent)) / 100 * circumference
+  // 低占用时真实弧长不足 1px、视觉上不可见；非零占用给一个最小可见弧长
+  // （4% 圆周 + round 端点 ≈ 5px），仅影响视觉下限，精确比例仍在 hover 明细。
+  const rawFilled = Math.min(100, Math.max(0, percent)) / 100 * circumference
+  const filled = rawFilled > 0 ? Math.max(rawFilled, circumference * 0.04) : 0
   const toneColor = tone === 'danger' ? 'var(--danger-fg)'
     : tone === 'warn' ? 'var(--warning-fg)' : 'var(--success-fg)'
 
@@ -84,8 +87,7 @@ export function ContextRing({ segments, percent, tone, size = 20 }: ContextRingP
       viewBox={`0 0 ${size} ${size}`}
       className="shrink-0 -rotate-90"
       data-testid="context-ring"
-      aria-label={`上下文用量 ${percent.toFixed(0)}%`}
-      role="img"
+      aria-hidden="true"
     >
       {/* 底环 */}
       <circle
@@ -122,6 +124,7 @@ export function ContextRing({ segments, percent, tone, size = 20 }: ContextRingP
           stroke={toneColor}
           strokeWidth={stroke}
           strokeDasharray={`${filled} ${circumference - filled}`}
+          strokeLinecap="round"
           data-testid="context-ring-single"
         />
       )}

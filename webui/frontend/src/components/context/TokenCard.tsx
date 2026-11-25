@@ -32,7 +32,7 @@ export function TokenCard() {
     `上下文已用：${formatTokens(usage.usedTokens)} / ${formatTokens(usage.limitTokens)} (${usage.percent.toFixed(1)}%)`,
     `剩余可用：${formatTokens(usage.remainingTokens)}`,
     usage.outputLimitTokens > 0 ? `单次输出上限：${formatTokens(usage.outputLimitTokens)}` : null,
-    usage.source === 'measured' ? '数据来源：后端实测' : '数据来源：字符估算（非计费实测值）',
+    usage.source === 'measured' ? '数据来源：后端实测' : '数据来源：后端估算（非计费实测值）',
   ]
     .filter(Boolean)
     .join('\n')

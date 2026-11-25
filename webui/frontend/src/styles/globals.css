@@ -9,6 +9,7 @@
   --foreground: #e5e5e5;
   --card: rgba(255,255,255,0.045);
   --popover: rgba(255,255,255,0.045);
+  --surface: rgba(255,255,255,0.045); /* .glass 背景——缺失会让弹层完全透明 */
   --primary: #ffffff;
   --ua-action: #f3f4f6;
   --ua-action-foreground: #111827;
@@ -58,6 +59,7 @@
   --foreground: #404040;
   --card: #ffffff;
   --popover: #ffffff;
+  --surface: #ffffff; /* .glass 背景 */
   --primary: #171717;
   --ua-action: #171717;
   --ua-action-foreground: #ffffff;

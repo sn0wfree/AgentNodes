@@ -23,6 +23,23 @@ export const CHARS_PER_TOKEN = 3.5
 
 export type UsageSource = 'measured' | 'estimated'
 
+/** 两源交叉校验的结论：两源都存在时按相对差异判定是否一致。 */
+export type UsageReconciliation =
+  | 'no-data'        // 两源都没有
+  | 'measured-only'  // 只有 LLM API 实测
+  | 'breakdown-only' // 只有后端 7 段估算
+  | 'consistent'     // 两源一致（相对差异 ≤ 阈值）→ 采用实测
+  | 'divergent'      // 两源不一致 → 采用 breakdown（与明细同源）
+
+export interface UsageReconciliationInfo {
+  /** 判定结论 */
+  kind: UsageReconciliation
+  /** 相对差异 |measured - breakdown| / max(两者)，无双源时为 null */
+  relativeGap: number | null
+  /** 是否采用 LLM API 实测值作为 usedTokens */
+  usedMeasured: boolean
+}
+
 export interface ContextUsageInfo {
   /** 当前上下文已用 token（实测或估算） */
   usedTokens: number
@@ -40,6 +57,8 @@ export interface ContextUsageInfo {
   isStale: boolean
   /** 是否有有效的上下文上限 */
   hasLimit: boolean
+  /** 双源交叉校验结果（调试/诊断用，不影响既有 measured/estimated 二分） */
+  reconciliation: UsageReconciliationInfo
 }
 
 /** token 数的紧凑展示：1234 → 1.2K，1_234_567 → 1.2M。 */
@@ -86,18 +105,75 @@ export function estimateTokensFromMessages(
   return Math.round(chars / CHARS_PER_TOKEN)
 }
 
-/** 组装最终口径：实测优先，无实测则用估算。 */
+/** 双源一致性阈值：相对差异 ≤ 15% 视为一致（估算 chars/3.0 与实测
+ *  prompt_tokens 的正常偏差范围）。 */
+export const RECONCILE_GAP_THRESHOLD = 0.15
+
+/**
+ * 交叉校验 LLM 实测（context_used）与后端 7 段估算（breakdown.total）。
+ *
+ * - 两源一致 → 采用实测（更准）
+ * - 两源分歧 → 采用 breakdown（与 hover 明细同源，避免展示矛盾）
+ * - 单源 → 用该源；无源 → 0
+ */
+export function reconcileUsage(
+  measuredTokens: number,
+  breakdownTotal: number,
+  threshold = RECONCILE_GAP_THRESHOLD,
+): UsageReconciliationInfo {
+  const m = Number.isFinite(measuredTokens) && measuredTokens > 0 ? measuredTokens : 0
+  const b = Number.isFinite(breakdownTotal) && breakdownTotal > 0 ? breakdownTotal : 0
+  if (m > 0 && b > 0) {
+    const relativeGap = Math.abs(m - b) / Math.max(m, b)
+    const consistent = relativeGap <= threshold
+    return {
+      kind: consistent ? 'consistent' : 'divergent',
+      relativeGap,
+      usedMeasured: consistent,
+    }
+  }
+  if (m > 0) return { kind: 'measured-only', relativeGap: null, usedMeasured: true }
+  if (b > 0) return { kind: 'breakdown-only', relativeGap: null, usedMeasured: false }
+  return { kind: 'no-data', relativeGap: null, usedMeasured: false }
+}
+
+/** 组装最终口径：双源交叉校验后决定 usedTokens。 */
 export function buildContextUsage(params: {
   measuredTokens: number
   estimatedTokens: number
   limitTokens: number
   outputLimitTokens?: number
   isStale?: boolean
+  /** context.breakdown 各段之和；传入时启用双源校验 */
+  breakdownTotal?: number
 }): ContextUsageInfo {
   const { measuredTokens, estimatedTokens, limitTokens } = params
-  const useMeasured = measuredTokens > 0
-  const usedTokens = useMeasured ? measuredTokens : estimatedTokens
-  const source: UsageSource = useMeasured ? 'measured' : 'estimated'
+  const reconciliation = params.breakdownTotal !== undefined
+    ? reconcileUsage(measuredTokens, params.breakdownTotal)
+    : (() => {
+        const useMeasured = measuredTokens > 0
+        return {
+          kind: (useMeasured ? 'measured-only' : 'no-data') as UsageReconciliation,
+          relativeGap: null,
+          usedMeasured: useMeasured,
+        }
+      })()
+
+  let usedTokens: number
+  if (reconciliation.kind === 'divergent') {
+    // 分歧 → 用 breakdown（与明细同源）
+    usedTokens = params.breakdownTotal ?? estimatedTokens
+  } else if (reconciliation.usedMeasured) {
+    // 一致 / 仅实测 → 用 API 实测
+    usedTokens = measuredTokens
+  } else if (params.breakdownTotal !== undefined && params.breakdownTotal > 0) {
+    // 仅 breakdown → 用后端估算
+    usedTokens = params.breakdownTotal
+  } else {
+    // 无双源 → 旧行为（estimatedTokens，通常为 0）
+    usedTokens = estimatedTokens
+  }
+  const source: UsageSource = reconciliation.usedMeasured ? 'measured' : 'estimated'
   const hasLimit = limitTokens > 0
   const percent = hasLimit ? Math.min(100, (usedTokens / limitTokens) * 100) : 0
   return {
@@ -109,5 +185,6 @@ export function buildContextUsage(params: {
     source,
     isStale: params.isStale ?? false,
     hasLimit,
+    reconciliation,
   }
 }
