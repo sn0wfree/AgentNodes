@@ -58,9 +58,7 @@ export function AccountPage() {
         <LLMSection systemInfo={systemInfo} llmConfig={llmConfig} setLlmConfig={setLlmConfig}
           apiKeyInput={apiKeyInput} setApiKeyInput={setApiKeyInput} sysError={sysError}
           onSystemInfoReloaded={reloadSystemInfo} />
-        <Section icon={SettingsIcon} title="个人账号">
-          <AccountSection username={user?.username || ''} />
-        </Section>
+        <AccountSection username={user?.username || ''} />
         <WorkspaceSection systemInfo={systemInfo} />
         <ChatLayoutSection chatLayout={chatLayout} setChatLayout={setChatLayout} />
         <AppearanceSection />

@@ -21,7 +21,9 @@ vi.mock('../components/layout/PageShell', () => ({
   PageShell: ({ title, children }: any) => <div><h1>{title}</h1>{children}</div>,
 }))
 vi.mock('../components/settings/LLMSection', () => ({ LLMSection: () => <div>LLM 配置</div> }))
-vi.mock('../components/settings/AccountSection', () => ({ AccountSection: () => <div>个人账号</div> }))
+// Mirror the real section heading so the wrapper regression (double 个人账号
+// heading from AccountPage + AccountSection) is caught by the count assertion.
+vi.mock('../components/settings/AccountSection', () => ({ AccountSection: () => <h3>个人账号</h3> }))
 vi.mock('../components/settings/WorkspaceSection', () => ({ WorkspaceSection: () => <div>工作区</div> }))
 vi.mock('../components/settings/ChatLayoutSection', () => ({ ChatLayoutSection: () => <div>聊天布局</div> }))
 vi.mock('../components/settings/AppearanceSection', () => ({ AppearanceSection: () => <div>外观</div> }))
@@ -43,6 +45,9 @@ describe('AccountPage', () => {
     for (const label of ['LLM 配置', '个人账号', '工作区', '聊天布局', '外观']) {
       expect(screen.getAllByText(label).length).toBeGreaterThan(0)
     }
+    // AccountSection owns the heading; AccountPage must not wrap it in a
+    // second Section with the same title (account-merge regression).
+    expect(screen.getAllByRole('heading', { name: '个人账号' }).length).toBe(1)
   })
 
   it('hides the user-management section from non-admin users', async () => {
