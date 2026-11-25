@@ -79,7 +79,29 @@ describe('SessionSidebar', () => {
     // Tag text does not narrow the list.
     expect(screen.queryByText('Alpha')).not.toBeInTheDocument()
     expect(screen.queryByText('Beta')).not.toBeInTheDocument()
-    expect(screen.getByText('暂无会话')).toBeInTheDocument()
+    expect(screen.getByText('没有匹配「量化」的会话')).toBeInTheDocument()
+  })
+
+  it('offers to clear the search when no title matches', () => {
+    seed([mkSession({ id: 'a', title: 'Alpha' })])
+    renderSidebar()
+    fireEvent.change(screen.getByPlaceholderText('搜索会话...'), {
+      target: { value: 'nomatch' },
+    })
+    fireEvent.click(screen.getByRole('button', { name: '清除搜索' }))
+    expect(screen.getByText('Alpha')).toBeInTheDocument()
+  })
+
+  it('explains an empty starred filter and offers to show all', () => {
+    seed([mkSession({ id: 'a', title: 'Alpha' })])
+    renderSidebar()
+    // Filter tabs live before the session list; scope by the exact tab text.
+    const starredTab = screen.getAllByRole('button', { name: '星标' })
+      .find((b) => b.textContent?.trim() === '星标')!
+    fireEvent.click(starredTab)
+    expect(screen.getByText('暂无星标会话')).toBeInTheDocument()
+    fireEvent.click(screen.getByRole('button', { name: '查看全部' }))
+    expect(screen.getByText('Alpha')).toBeInTheDocument()
   })
 
   it('selects a session on click', () => {

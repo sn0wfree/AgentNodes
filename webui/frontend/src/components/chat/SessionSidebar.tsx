@@ -178,7 +178,29 @@ export function SessionSidebar() {
         {filtered.length === 0 ? (
           <div className="flex flex-col items-center py-8 text-slate-500">
             <MessageSquare className="mb-2 h-8 w-8" />
-            <span className="text-sm">暂无会话</span>
+            {search.trim() ? (
+              <>
+                <span className="text-sm">没有匹配「{search.trim()}」的会话</span>
+                <button
+                  onClick={() => setSearch('')}
+                  className="mt-2 rounded px-2 py-1 text-xs text-slate-400 hover:bg-slate-800 hover:text-slate-200"
+                >
+                  清除搜索
+                </button>
+              </>
+            ) : filter !== 'all' ? (
+              <>
+                <span className="text-sm">{filter === 'starred' ? '暂无星标会话' : '暂无归档会话'}</span>
+                <button
+                  onClick={() => setFilter('all')}
+                  className="mt-2 rounded px-2 py-1 text-xs text-slate-400 hover:bg-slate-800 hover:text-slate-200"
+                >
+                  查看全部
+                </button>
+              </>
+            ) : (
+              <span className="text-sm">暂无会话</span>
+            )}
           </div>
         ) : (
           SESSION_GROUP_LABELS.map(({ key, label }) => {
