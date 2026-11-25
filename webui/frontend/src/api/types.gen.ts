@@ -15,7 +15,7 @@ export interface paths {
         put?: never;
         /**
          * Register
-         * @description Register a new user (opt-in via SR_ALLOW_REGISTRATION=1).
+         * @description Register a new user (opt-in via AGENTNODES_API_ALLOW_REGISTRATION=1).
          */
         post: operations["register_api_auth_register_post"];
         delete?: never;
@@ -1818,7 +1818,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-        "/api/run/start": {
+    "/api/run/start": {
         parameters: {
             query?: never;
             header?: never;
@@ -2165,7 +2165,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-        "/webui/workflows": {
+    "/webui/workflows": {
         parameters: {
             query?: never;
             header?: never;
@@ -6142,38 +6142,6 @@ export interface operations {
             };
         };
     };
-    memory_search_api_memory_search_get: {
-        parameters: {
-            query?: {
-                q?: string;
-                limit?: number;
-            };
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": unknown;
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
     run_start_api_run_start_post: {
         parameters: {
             query?: never;
@@ -6627,37 +6595,6 @@ export interface operations {
                 };
                 content: {
                     "text/html": string;
-                };
-            };
-        };
-    };
-    memory_search_htmx_webui_memory_search_get: {
-        parameters: {
-            query?: {
-                q?: string;
-            };
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "text/html": string;
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
                 };
             };
         };
