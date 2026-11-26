@@ -244,3 +244,30 @@ codemod 曾把 `!bg-slate-900/95` 误迁为 `!bg-background/95`——Tailwind �
 | 端到端 | `tests/test_system_theme_api.py` | 26 | 角色映射生效 / 默认零回归 / overrides 优先 / 未知族忽略 / **10 种畸形配置参数化**（空、根非对象、类型错误等，均回退不 500）/ 旧扁平格式兼容 / roles+overrides 组合 / 双主题独立 |
 
 另新增 `webui/frontend/public/theme.example.json` —— **仓库内**的示例配置（含用法说明），用户照抄即可；契约测试校验其结构与解析器一致，防止示例与实现脱节。
+
+### 9.9 批 9 · 覆盖率补强
+
+先用覆盖率数据定位盲区（而非凭感觉加测试），再针对缺口补写：
+
+| 模块 | 语句 前→后 | 分支 前→后 | 函数 前→后 |
+|---|---|---|---|
+| `utils/themeConfig.ts` | 83.7 → **100** | 85.7 → 88.9 | 50 → **100** |
+| `stores/session.ts` | 87.9 → **92.6** | 69.7 → 75.3 | 88.9 → 94.4 |
+| `hooks/useComposerCollapse.ts` | 93.8 → **97.9** | 53.3 → 71.4 | 66.7 → **100** |
+
+新增用例（40 例）：
+
+- `tests/test_theme_config_load.py`（21 例）—— 直接测 `_load_theme()` 的文件级边界：文件缺失/是目录（OSError）/非 UTF-8/非法 JSON/根非对象/theme 非字典/主题值非字典/roles 类型错/overrides 类型错/非字符串键值/扁平与两层混用/返回值是副本（不改污染内置默认）/默认路径在用户目录。
+- `webui/frontend/src/test/themeConfigLoad.test.ts`（5 例）—— `loadThemeConfig` 此前**函数覆盖 0%**：拉取成功注入、拉取失败静默降级、响应畸形不崩、空配置不建节点、槽变量原样注入。
+- `webui/frontend/src/test/useComposerCollapseUnits.test.ts`（8 例）—— 宽度→档位映射（full/short/icon）、resize 重测、rAF 缺失降级、ResizeObserver 缺失不崩、零宽保持 full、ref 未挂载不注册监听。
+  *测法要点*：jsdom 无布局（`offsetParent` 恒 null）→ hook 回退自身宽度（`useComposerCollapse.ts:25`）；`useLayoutEffect` 依赖 `[]` 只跑一次 → 必须在挂载前让 ref 拿到真实元素，故用 `render` + 真实 DOM 而非 `renderHook`。
+- `webui/frontend/src/test/sessionStoreBranches.test.ts`（6 例）—— `deleteSession` 本地清理/失败抛错/删完最后一片新建会话；`runSearch` 失败清空、过期响应丢弃（竞态）、`isSearching` 复位。
+
+**变异测试验证断言有效性**（4 项全部被捕获，非恒真断言）：
+
+| 变异 | 结果 |
+|---|---|
+| `collapseModeForWidth` 阈值改错 | ✓ 测试失败 |
+| `injectThemeStyle` 去掉 `typeof v === 'string'` 过滤 | ✓ 测试失败 |
+| `loadThemeConfig` 去掉异常兜底 | ✓ 测试失败 |
+| `_apply_role_families` 改为空操作（后端） | ✓ 测试失败 |
