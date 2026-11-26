@@ -27,7 +27,7 @@ export function NavPopover({
           side={side}
           align={align}
           sideOffset={8}
-          className="z-50 rounded-lg border border-strong bg-slate-900 shadow-2xl"
+          className="z-50 rounded-lg border border-strong bg-background shadow-2xl"
         >
           {children}
         </Popover.Content>

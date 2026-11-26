@@ -132,7 +132,7 @@ export function RoundDetailDrawer({ studyId, round, onClose, onAdopted }: Props)
   return (
     <div className="fixed inset-0 z-50 flex justify-end">
       <div className="absolute inset-0 bg-black/60" onClick={onClose} />
-      <div className="relative flex h-full w-full max-w-lg flex-col border-l border-strong bg-slate-900 shadow-2xl">
+      <div className="relative flex h-full w-full max-w-lg flex-col border-l border-strong bg-background shadow-2xl">
         {/* Header */}
         <div className="flex items-center justify-between border-b border-subtle px-4 py-3">
           <div className="flex items-center gap-2">
@@ -163,7 +163,7 @@ export function RoundDetailDrawer({ studyId, round, onClose, onAdopted }: Props)
           {/* Verdict + error */}
           <Section title="结论">
             <div className="flex items-center gap-2">
-              <span className="rounded-full border border-emerald-500/40 bg-emerald-500/10 px-2 py-0.5 text-[11px] font-medium text-success-fg">
+              <span className="rounded-full border border-success-fg/40 bg-success-surface px-2 py-0.5 text-[11px] font-medium text-success-fg">
                 {round.verdict}
               </span>
               {verdict.reason && (
@@ -247,9 +247,9 @@ export function RoundDetailDrawer({ studyId, round, onClose, onAdopted }: Props)
                     key={i}
                     className={
                       d.kind === 'add'
-                        ? 'bg-emerald-950/40 text-emerald-400 px-2'
+                        ? 'bg-emerald-950/40 text-success-fg px-2'
                         : d.kind === 'del'
-                          ? 'bg-rose-950/40 text-rose-400 px-2'
+                          ? 'bg-rose-950/40 text-danger-fg px-2'
                           : 'px-2 text-muted'
                     }
                   >
@@ -317,7 +317,7 @@ export function RoundDetailDrawer({ studyId, round, onClose, onAdopted }: Props)
           {/* Adopt */}
           <Section title="采用本轮策略">
             {adopted ? (
-              <div className="flex items-center gap-2 rounded-lg border border-emerald-700/40 bg-emerald-950/30 px-2.5 py-2 text-[11px] text-emerald-400">
+              <div className="flex items-center gap-2 rounded-lg border border-emerald-700/40 bg-emerald-950/30 px-2.5 py-2 text-[11px] text-success-fg">
                 <Check className="h-3.5 w-3.5 flex-shrink-0" />
                 {adopted.note}
               </div>

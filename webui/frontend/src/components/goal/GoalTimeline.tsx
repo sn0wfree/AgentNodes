@@ -22,7 +22,7 @@ const EVENT_ICON = {
 }
 
 const EVENT_DOT = {
-  evidence: 'bg-emerald-500',
+  evidence: 'bg-success',
   iteration: 'bg-amber-500',
   message: 'bg-blue-500',
   system: 'bg-slate-500',

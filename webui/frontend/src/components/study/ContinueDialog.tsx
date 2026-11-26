@@ -95,7 +95,7 @@ export function ContinueDialog({ open, summary, onClose, onContinue }: ContinueD
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60">
-      <div className="w-96 rounded-xl border border-strong bg-slate-900 p-5 shadow-2xl">
+      <div className="w-96 rounded-xl border border-strong bg-background p-5 shadow-2xl">
         {/* Header */}
         <div className="mb-4 flex items-center justify-between">
           <h3 className="text-sm font-semibold text-foreground">继续研究</h3>
@@ -122,7 +122,7 @@ export function ContinueDialog({ open, summary, onClose, onContinue }: ContinueD
           <label
             className={`flex cursor-pointer items-center gap-2 rounded-lg border p-2.5 transition-colors ${
               mode === 'resume' && !useCustom
-                ? 'border-emerald-500/50 bg-emerald-900/20'
+                ? 'border-success-fg/50 bg-emerald-900/20'
                 : 'border-strong bg-surface hover:border'
             }`}
           >
@@ -163,7 +163,7 @@ export function ContinueDialog({ open, summary, onClose, onContinue }: ContinueD
               resumableOnly
                 ? 'cursor-not-allowed border-subtle bg-surface-raised/30 opacity-40'
                 : useCustom
-                  ? 'border-sky-500/50 bg-sky-900/20'
+                  ? 'border-info-fg/50 bg-sky-900/20'
                   : 'cursor-pointer border-strong bg-surface hover:border'
             }`}
           >
@@ -187,7 +187,7 @@ export function ContinueDialog({ open, summary, onClose, onContinue }: ContinueD
               }}
               onFocus={() => setUseCustom(true)}
               placeholder="轮次"
-              className="w-16 rounded border border bg-surface-raised px-2 py-0.5 text-xs text-foreground outline-none focus:border-sky-500 disabled:opacity-50"
+              className="w-16 rounded border border bg-surface-raised px-2 py-0.5 text-xs text-foreground outline-none focus:border-info-fg disabled:opacity-50"
             />
           </label>
         </div>
@@ -202,7 +202,7 @@ export function ContinueDialog({ open, summary, onClose, onContinue }: ContinueD
           </button>
           <button
             onClick={handleSubmit}
-            className="rounded-lg bg-emerald-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-emerald-500"
+            className="rounded-lg bg-emerald-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-success"
           >
             继续执行
           </button>

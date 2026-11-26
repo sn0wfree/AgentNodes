@@ -62,7 +62,7 @@ export function InterruptApprovalCard({
 
   if (status === 'approved') {
     return (
-      <div className="rounded-lg border border-emerald-500/30 bg-emerald-500/10 p-3">
+      <div className="rounded-lg border border-success-fg-muted bg-success-surface p-3">
         <div className="flex items-center gap-2 text-xs text-success-fg">
           <Check className="h-4 w-4" />
           <span>已批准</span>
@@ -117,7 +117,7 @@ export function InterruptApprovalCard({
         <button
           onClick={handleApprove}
           disabled={loading}
-          className="flex items-center gap-1 rounded-md bg-emerald-600 px-3 py-1.5 text-xs font-medium text-white transition-colors hover:bg-emerald-500 disabled:opacity-50"
+          className="flex items-center gap-1 rounded-md bg-emerald-600 px-3 py-1.5 text-xs font-medium text-white transition-colors hover:bg-success disabled:opacity-50"
         >
           {loading ? <Loader2 className="h-3 w-3 animate-spin" /> : <Check className="h-3 w-3" />}
           批准

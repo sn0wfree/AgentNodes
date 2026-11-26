@@ -8,9 +8,9 @@ interface BadgeProps {
 
 const VARIANT_CLASSES = {
   default: 'bg-surface-raised text-foreground',
-  success: 'bg-emerald-900/50 text-emerald-300',
+  success: 'bg-emerald-900/50 text-success-fg',
   warning: 'bg-warning-fill text-warning-fg',
-  error: 'bg-red-900/50 text-red-300',
+  error: 'bg-red-900/50 text-danger-fg',
   info: 'bg-blue-900/50 text-blue-300',
 }
 

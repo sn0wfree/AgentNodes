@@ -59,10 +59,10 @@ export function GoalTab({ goal }: GoalTabProps) {
           <span
             className={`inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-medium
               ${goal.status === 'active'
-                ? 'bg-emerald-900/50 text-emerald-300'
+                ? 'bg-emerald-900/50 text-success-fg'
                 : goal.status === 'completed'
                 ? 'bg-blue-900/50 text-blue-300'
-                : 'bg-red-900/50 text-red-300'
+                : 'bg-red-900/50 text-danger-fg'
               }
             `}
           >

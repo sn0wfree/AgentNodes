@@ -310,7 +310,7 @@ function SessionRow({
         <>
           <div className="flex items-center gap-1.5">
             {sess.starred && (
-              <Star className="h-3 w-3 flex-shrink-0 fill-yellow-400 text-yellow-400" />
+              <Star className="h-3 w-3 flex-shrink-0 fill-yellow-400 text-warning-fg" />
             )}
             <span className="flex-1 truncate text-sm">{sess.title}</span>
             {/* B4 D2: message_count was removed from this row. It is
@@ -333,7 +333,7 @@ function SessionRow({
                   e.stopPropagation()
                   onToggleStar()
                 }}
-                className="rounded p-0.5 text-muted hover:text-yellow-400"
+                className="rounded p-0.5 text-muted hover:text-warning-fg"
                 title={sess.starred ? '取消星标' : '星标'}
               >
                 <Star className={`h-3 w-3 ${sess.starred ? 'fill-yellow-400' : ''}`} />

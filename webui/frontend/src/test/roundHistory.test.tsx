@@ -130,13 +130,14 @@ describe('RoundHistory', () => {
         currentRound={3}
       />
     )
-    // keep → emerald dot, review → amber dot, discard → slate dot (+ badges)
-    expect(container.querySelectorAll('.border-emerald-500').length).toBe(1)
+    // keep → success dot, review → warning dot, discard → slate dot (+ badges)
+    // 配色统一 §8 第2步：emerald-500 → success-fg 语义类
+    expect(container.querySelectorAll('.border-success-fg').length).toBe(1)
     expect(container.querySelectorAll('[class*="border-warning"]').length).toBe(2) // review badge + dot
     // discard → slate dot：配色统一阶段 2 后为 border-strong（语义类）
     expect(container.querySelectorAll('.border-strong').length).toBe(2)
     // connectors inherit the verdict color of the round
-    expect(container.querySelectorAll('[class*="bg-emerald-500/40"]').length).toBe(1)
+    expect(container.querySelectorAll('[class*="bg-success/40"]').length).toBe(1)
     expect(container.querySelectorAll('[class*="bg-warning/40"]').length).toBe(1)
     // last round has no connector below it
     expect(container.querySelectorAll('.flex-1.w-0\\.5').length).toBe(2)

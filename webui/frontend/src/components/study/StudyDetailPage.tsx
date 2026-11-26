@@ -251,7 +251,7 @@ export function StudyDetailPage() {
         <button
           onClick={() => setContinueDialogOpen(true)}
           disabled={busy}
-          className="inline-flex cursor-pointer items-center gap-1 rounded-lg bg-emerald-600 px-2.5 py-1.5 text-xs text-white transition-all hover:bg-emerald-500 active:scale-95 disabled:opacity-50"
+          className="inline-flex cursor-pointer items-center gap-1 rounded-lg bg-emerald-600 px-2.5 py-1.5 text-xs text-white transition-all hover:bg-success active:scale-95 disabled:opacity-50"
         >
           <Play className="h-3.5 w-3.5" /> 继续
         </button>
@@ -325,7 +325,7 @@ export function StudyDetailPage() {
       <div className="grid grid-cols-2 gap-3 lg:grid-cols-3 xl:grid-cols-5">
         <KpiCard
           icon={<RotateCcw className="h-4 w-4" />}
-          iconCls="border border-sky-500/30 bg-sky-500/10 text-info-fg"
+          iconCls="border border-info-fg/30 bg-info-surface text-info-fg"
           value={`${clampRound(summary.current_round)}/${summary.max_rounds ?? 5}`}
           label="当前轮次 / 最大轮数"
           valueCls="text-info-fg"
@@ -339,7 +339,7 @@ export function StudyDetailPage() {
         />
         <KpiCard
           icon={<BarChart3 className="h-4 w-4" />}
-          iconCls="border border-emerald-500/30 bg-emerald-500/10 text-success-fg"
+          iconCls="border border-success-fg-muted bg-success-surface text-success-fg"
           value={lastVerdict}
           label="最近 round 结论"
           valueCls="text-success-fg"
@@ -353,7 +353,7 @@ export function StudyDetailPage() {
         />
         <KpiCard
           icon={<BarChart3 className="h-4 w-4" />}
-          iconCls="border border-emerald-500/30 bg-emerald-500/10 text-success-fg"
+          iconCls="border border-success-fg-muted bg-success-surface text-success-fg"
           value={bestCalmarDisplay}
           label="最佳 Calmar（历史轮次）"
           valueCls="text-success-fg"

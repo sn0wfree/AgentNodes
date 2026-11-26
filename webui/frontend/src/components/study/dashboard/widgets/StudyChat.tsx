@@ -187,7 +187,7 @@ function RoundNavRail({
                 className={`group relative rounded-full transition-all duration-200 ${
                   isActive
                     ? 'h-2.5 w-2.5 bg-primary-400 shadow-[0_0_8px_rgba(99,179,237,0.5)]'
-                    : 'h-1.5 w-1.5 bg-slate-600 hover:bg-slate-400'
+                    : 'h-1.5 w-1.5 bg-surface-raised hover:bg-slate-400'
                 }`}
               >
                 <div className="pointer-events-none absolute right-full top-1/2 mr-2 hidden -translate-y-1/2 whitespace-nowrap rounded-md border border-strong bg-surface-raised/95 px-2 py-1 text-[10px] text-foreground shadow-lg backdrop-blur group-hover:block">

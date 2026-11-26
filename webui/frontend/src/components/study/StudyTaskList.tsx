@@ -90,7 +90,7 @@ function HistoryCard({
           <span
             className={`inline-flex items-center rounded-full border px-1.5 py-0.5 text-[9px] font-medium ${
               study.last_verdict === 'keep'
-                ? 'border-emerald-500/40 bg-emerald-500/10 text-success-fg'
+                ? 'border-success-fg/40 bg-success-surface text-success-fg'
                 : 'border-strong bg-surface-raised/70 text-muted'
             }`}
           >

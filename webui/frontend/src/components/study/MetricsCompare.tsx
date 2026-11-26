@@ -10,8 +10,8 @@ interface Props {
 const METRIC_KEYS = ['calmar', 'sharpe', 'max_dd'] as const
 
 const VERDICT_DOT: Record<string, string> = {
-  keep: 'bg-emerald-500',
-  discard: 'bg-slate-600',
+  keep: 'bg-success',
+  discard: 'bg-surface-raised',
   review: 'bg-warning',
 }
 
@@ -102,7 +102,7 @@ export function MetricsCompare({ rounds, onOpenRun }: Props) {
                       <span
                         className={`inline-flex items-center gap-1 rounded-full border px-1.5 py-0.5 text-[9px] font-medium ${
                           verdict === 'keep'
-                            ? 'border-emerald-500/40 bg-emerald-500/10 text-success-fg'
+                            ? 'border-success-fg/40 bg-success-surface text-success-fg'
                             : verdict === 'review'
                               ? 'border-warning/40 bg-warning-fill text-warning-fg'
                               : 'border-strong bg-surface-raised/70 text-muted'

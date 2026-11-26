@@ -38,7 +38,7 @@ export function TokenCard() {
     .join('\n')
 
   return (
-    <div className="rounded-lg border border-subtle bg-slate-900/30 p-3">
+    <div className="rounded-lg border border-subtle bg-background/30 p-3">
       <div className="mb-2 flex items-center gap-1.5 text-[10px] font-medium uppercase tracking-wider text-muted">
         <BarChart3 className="h-3 w-3" />
         <span>Token 使用情况</span>

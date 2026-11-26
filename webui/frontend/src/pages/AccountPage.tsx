@@ -51,7 +51,7 @@ export function AccountPage() {
     <PageShell title="账户与设置" subtitle="个人信息、模型与环境偏好" icon={<SettingsIcon className="h-4 w-4" />}>
       <div className="max-w-3xl space-y-6">
         {sysError && (
-          <div className="rounded-lg border border-red-800 bg-red-900/30 px-3 py-2 text-sm text-red-300">
+          <div className="rounded-lg border border-red-800 bg-red-900/30 px-3 py-2 text-sm text-danger-fg">
             {sysError}
           </div>
         )}

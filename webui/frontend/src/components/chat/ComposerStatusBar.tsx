@@ -133,7 +133,7 @@ export function ComposerStatusBar({ sessionId }: ComposerStatusBarProps) {
             )}
           </button>
           {personaOpen && (
-            <div className="glass absolute left-0 bottom-full z-50 mb-1 w-64 overflow-hidden rounded-xl border border-subtle !bg-slate-900/95 shadow-2xl">
+            <div className="glass absolute left-0 bottom-full z-50 mb-1 w-64 overflow-hidden rounded-xl border border-subtle !bg-background/95 shadow-2xl">
               <ul className="max-h-64 overflow-y-auto py-1">
                 {personas.map((p) => (
                   <li key={p.id}>
@@ -198,7 +198,7 @@ export function ComposerStatusBar({ sessionId }: ComposerStatusBarProps) {
             )}
           </button>
           {modelOpen && (
-            <div className="glass absolute right-0 bottom-full z-50 mb-1 w-72 overflow-hidden rounded-xl border border-subtle !bg-slate-900/95 shadow-2xl">
+            <div className="glass absolute right-0 bottom-full z-50 mb-1 w-72 overflow-hidden rounded-xl border border-subtle !bg-background/95 shadow-2xl">
               <div className="max-h-64 overflow-y-auto py-1">
               {/* Default option */}
               <button
@@ -264,7 +264,7 @@ export function ComposerStatusBar({ sessionId }: ComposerStatusBarProps) {
                 <ChevronDown className={`h-2.5 w-2.5 text-muted transition-transform ${thinkingOpen ? 'rotate-180' : ''}`} />
               </button>
               {thinkingOpen && (
-                <div className="glass absolute right-0 bottom-full z-50 mb-1 w-36 overflow-hidden rounded-xl border border-subtle !bg-slate-900/95 shadow-2xl">
+                <div className="glass absolute right-0 bottom-full z-50 mb-1 w-36 overflow-hidden rounded-xl border border-subtle !bg-background/95 shadow-2xl">
                   <ul className="py-1">
                     {THINKING_OPTIONS.map((opt) => (
                       <li key={opt.value}>

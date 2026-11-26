@@ -58,7 +58,7 @@ export function DAGToolbar({
         {status === 'running' && (
           <button
             onClick={onPause}
-            className="flex items-center gap-1.5 rounded-lg bg-surface-raised px-3 py-1.5 text-xs text-foreground hover:bg-slate-600 transition-colors"
+            className="flex items-center gap-1.5 rounded-lg bg-surface-raised px-3 py-1.5 text-xs text-foreground hover:bg-surface-raised transition-colors"
           >
             <Pause className="h-3.5 w-3.5" />
             暂停
@@ -76,7 +76,7 @@ export function DAGToolbar({
         {(status === 'completed' || status === 'failed') && (
           <button
             onClick={onReset}
-            className="flex items-center gap-1.5 rounded-lg bg-surface-raised px-3 py-1.5 text-xs text-foreground hover:bg-slate-600 transition-colors"
+            className="flex items-center gap-1.5 rounded-lg bg-surface-raised px-3 py-1.5 text-xs text-foreground hover:bg-surface-raised transition-colors"
           >
             <RotateCcw className="h-3.5 w-3.5" />
             重置

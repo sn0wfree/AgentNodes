@@ -103,7 +103,7 @@ export function StudyActionMenu({ study, onAction, onRefresh }: StudyActionMenuP
       {open && (
         <div
           role="menu"
-          className="absolute right-0 top-full z-30 mt-1 min-w-[10rem] rounded-lg border border-strong bg-slate-900/95 py-1 shadow-elevated backdrop-blur"
+          className="absolute right-0 top-full z-30 mt-1 min-w-[10rem] rounded-lg border border-strong bg-background/95 py-1 shadow-elevated backdrop-blur"
         >
           {loading ? (
             <div className="px-3 py-2 text-[10px] text-muted">加载中...</div>

@@ -84,7 +84,7 @@ export function DAGPage() {
                     label="Agent 总数"
                     value={String(agentList.length)}
                     color="text-info-fg"
-                    bg="border border-sky-500/30 bg-sky-500/10 text-info-fg"
+                    bg="border border-info-fg/30 bg-info-surface text-info-fg"
                   />
                   <SummaryStat
                     icon={<Zap className="h-4 w-4" />}
@@ -98,7 +98,7 @@ export function DAGPage() {
                     label="已完成"
                     value={String(completedCount)}
                     color="text-success-fg"
-                    bg="border border-emerald-500/30 bg-emerald-500/10 text-success-fg"
+                    bg="border border-success-fg-muted bg-success-surface text-success-fg"
                   />
                   <SummaryStat
                     icon={<Clock className="h-4 w-4" />}

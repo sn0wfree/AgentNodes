@@ -67,7 +67,7 @@ export function PermissionRequestDialog({
       aria-busy={submitting}
       className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm"
     >
-      <div className="w-full max-w-lg rounded-xl border border-warning/60 bg-slate-900 shadow-2xl">
+      <div className="w-full max-w-lg rounded-xl border border-warning/60 bg-background shadow-2xl">
         {/* Header */}
         <div className="flex items-start gap-3 border-b border-warning/40 px-5 py-4">
           <div className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-full bg-warning-fill text-warning-fg">

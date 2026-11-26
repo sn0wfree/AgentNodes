@@ -21,7 +21,7 @@ const DEFAULT_METRICS: MetricTarget[] = [
 ]
 
 const INPUT_CLS = (compact?: boolean) =>
-  `w-full rounded-lg border border-strong bg-slate-900 px-2.5 py-1.5 ${
+  `w-full rounded-lg border border-strong bg-background px-2.5 py-1.5 ${
     compact ? 'text-xs' : 'text-sm'
   } text-foreground outline-none transition-shadow focus:border-primary-500 focus:ring-2 focus:ring-primary-500/40`
 
@@ -209,13 +209,13 @@ export function StudyCreateForm({ sessionId, workspacePath, onCreated, compact }
           {metrics.map((m, i) => (
             <div key={i} className={`flex items-center gap-2 ${compact ? 'text-xs' : 'text-sm'}`}>
               <input
-                className={`w-28 rounded-lg border border-strong bg-slate-900 px-2 py-1 text-foreground outline-none focus:border-primary-500 focus:ring-2 focus:ring-primary-500/40 ${compact ? 'text-xs' : ''}`}
+                className={`w-28 rounded-lg border border-strong bg-background px-2 py-1 text-foreground outline-none focus:border-primary-500 focus:ring-2 focus:ring-primary-500/40 ${compact ? 'text-xs' : ''}`}
                 value={m.name}
                 onChange={(e) => updateMetric(i, { name: e.target.value })}
                 placeholder="metric"
               />
               <select
-                className="cursor-pointer rounded-lg border border-strong bg-slate-900 px-2 py-1 text-foreground outline-none focus:border-primary-500"
+                className="cursor-pointer rounded-lg border border-strong bg-background px-2 py-1 text-foreground outline-none focus:border-primary-500"
                 value={m.op}
                 onChange={(e) =>
                   updateMetric(i, { op: e.target.value as MetricTarget['op'] })
@@ -230,7 +230,7 @@ export function StudyCreateForm({ sessionId, workspacePath, onCreated, compact }
               <input
                 type="number"
                 step="0.01"
-                className={`w-24 rounded-lg border border-strong bg-slate-900 px-2 py-1 text-foreground outline-none focus:border-primary-500 focus:ring-2 focus:ring-primary-500/40 ${compact ? 'text-xs' : ''}`}
+                className={`w-24 rounded-lg border border-strong bg-background px-2 py-1 text-foreground outline-none focus:border-primary-500 focus:ring-2 focus:ring-primary-500/40 ${compact ? 'text-xs' : ''}`}
                 value={m.value}
                 onChange={(e) => updateMetric(i, { value: Number(e.target.value) })}
               />
@@ -394,7 +394,7 @@ function AdvancedParams({
       <div>
         <label className={`mb-1 block ${compact ? 'text-[9px]' : 'text-[10px]'} text-muted`}>Behavior (CI)</label>
         <select
-          className={`w-full cursor-pointer rounded-lg border border-strong bg-slate-900 px-2 py-1.5 ${compact ? 'text-xs' : 'text-sm'} text-foreground outline-none focus:border-primary-500`}
+          className={`w-full cursor-pointer rounded-lg border border-strong bg-background px-2 py-1.5 ${compact ? 'text-xs' : 'text-sm'} text-foreground outline-none focus:border-primary-500`}
           value={behavior}
           onChange={(e) => setBehavior(e.target.value)}
         >
@@ -407,7 +407,7 @@ function AdvancedParams({
       <div>
         <label className={`mb-1 block ${compact ? 'text-[9px]' : 'text-[10px]'} text-muted`}>执行引擎</label>
         <select
-          className={`w-full cursor-pointer rounded-lg border border-strong bg-slate-900 px-2 py-1.5 ${compact ? 'text-xs' : 'text-sm'} text-foreground outline-none focus:border-primary-500`}
+          className={`w-full cursor-pointer rounded-lg border border-strong bg-background px-2 py-1.5 ${compact ? 'text-xs' : 'text-sm'} text-foreground outline-none focus:border-primary-500`}
           value={engine}
           onChange={(e) => setEngine(e.target.value as 'phases' | 'dag' | 'langgraph')}
         >

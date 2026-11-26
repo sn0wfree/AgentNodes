@@ -214,7 +214,7 @@ export function AppShell() {
         </div>
       </div>
       {initError && (
-        <div role="alert" className="absolute bottom-4 left-4 z-30 rounded-lg border border-red-500/30 bg-surface px-4 py-3 text-sm text-foreground shadow-elevated">
+        <div role="alert" className="absolute bottom-4 left-4 z-30 rounded-lg border border-danger-fg-muted bg-surface px-4 py-3 text-sm text-foreground shadow-elevated">
           <div>会话初始化失败：{initError.message}</div>
           {initError.retrying ? (
             <div className="mt-1 text-xs text-muted">

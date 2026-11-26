@@ -5,7 +5,7 @@ import { TodoPanel } from '../chat/TodoPanel'
 
 export function MainSplit() {
   return (
-    <div className="relative flex flex-1 flex-col overflow-hidden bg-slate-900">
+    <div className="relative flex flex-1 flex-col overflow-hidden bg-background">
       <SessionTabs />
       {/* Messages */}
       <div className="flex-1 overflow-hidden">

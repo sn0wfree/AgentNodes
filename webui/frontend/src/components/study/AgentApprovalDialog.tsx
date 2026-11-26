@@ -49,7 +49,7 @@ export function AgentApprovalDialog({ studyId }: AgentApprovalDialogProps) {
       aria-label="Agent 循环检测"
       className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/70 px-4 backdrop-blur-sm"
     >
-      <div className="flex w-full max-w-md flex-col gap-4 rounded-2xl border border-warning/40 bg-slate-900 p-5 shadow-elevated">
+      <div className="flex w-full max-w-md flex-col gap-4 rounded-2xl border border-warning/40 bg-background p-5 shadow-elevated">
         <div className="flex items-center gap-2">
           <AlertTriangle className="h-5 w-5 text-warning-fg" />
           <h2 className="text-sm font-semibold text-foreground">Agent 循环检测</h2>
@@ -86,7 +86,7 @@ export function AgentApprovalDialog({ studyId }: AgentApprovalDialogProps) {
           <button
             type="button"
             onClick={() => void respond('approved')}
-            className="inline-flex items-center gap-1 rounded-lg bg-emerald-600 px-3 py-1.5 text-xs text-white transition-colors hover:bg-emerald-500 active:scale-95"
+            className="inline-flex items-center gap-1 rounded-lg bg-emerald-600 px-3 py-1.5 text-xs text-white transition-colors hover:bg-success active:scale-95"
           >
             <Check className="h-3.5 w-3.5" />
             批准继续

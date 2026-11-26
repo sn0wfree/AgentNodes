@@ -92,7 +92,7 @@ export function StudyTaskSummary({ studyId }: Props) {
 
   if (!studyId) {
     return (
-      <div className="flex h-full flex-col items-center justify-center rounded-xl border border-dashed border-subtle bg-slate-900/30 p-6">
+      <div className="flex h-full flex-col items-center justify-center rounded-xl border border-dashed border-subtle bg-background/30 p-6">
         <EmptyState
           icon={<Target className="h-8 w-8" />}
           title="选择任务查看摘要"
@@ -191,7 +191,7 @@ export function StudyTaskSummary({ studyId }: Props) {
                 <span
                   className={`rounded-full border px-1.5 py-0.5 text-[9px] font-medium ${
                     summary!.last_verdict === 'keep'
-                      ? 'border-emerald-500/40 bg-emerald-500/10 text-success-fg'
+                      ? 'border-success-fg/40 bg-success-surface text-success-fg'
                       : 'border-strong bg-surface-raised/70 text-muted'
                   }`}
                 >

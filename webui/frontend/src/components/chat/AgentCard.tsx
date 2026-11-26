@@ -17,8 +17,8 @@ interface AgentCardProps {
 const STATUS_CONFIG = {
   pending: { icon: Loader2, color: 'text-muted', bg: 'bg-surface', label: '等待中' },
   running: { icon: Loader2, color: 'text-warning-fg', bg: 'bg-warning-fill', label: '执行中' },
-  completed: { icon: CheckCircle, color: 'text-success-fg', bg: 'bg-emerald-500/5', label: '完成' },
-  failed: { icon: XCircle, color: 'text-danger-fg', bg: 'bg-red-500/5', label: '失败' },
+  completed: { icon: CheckCircle, color: 'text-success-fg', bg: 'bg-success/5', label: '完成' },
+  failed: { icon: XCircle, color: 'text-danger-fg', bg: 'bg-danger/5', label: '失败' },
 } as const
 
 export function AgentCard({ agentPart, isStreaming }: AgentCardProps) {
@@ -61,9 +61,9 @@ export function AgentCard({ agentPart, isStreaming }: AgentCardProps) {
         agentPart.status === 'running'
           ? 'border-warning/50 bg-warning-fill'
           : agentPart.status === 'failed'
-          ? 'border-red-500/40 bg-red-500/5'
+          ? 'border-danger-fg/40 bg-danger/5'
           : agentPart.status === 'completed'
-          ? 'border-emerald-500/30 bg-emerald-500/5'
+          ? 'border-success-fg-muted bg-success/5'
           : 'border-strong bg-surface-raised/30'
       }`}
     >
@@ -137,7 +137,7 @@ export function AgentCard({ agentPart, isStreaming }: AgentCardProps) {
 
           {/* Error */}
           {agentPart.error && (
-            <div className="px-2 py-1 text-xs text-danger-fg bg-red-500/5 rounded">
+            <div className="px-2 py-1 text-xs text-danger-fg bg-danger/5 rounded">
               {agentPart.error}
             </div>
           )}

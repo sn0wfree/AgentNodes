@@ -101,7 +101,7 @@ export function LLMSection({
                 base_url: p?.base_url || '',
               })
             }}
-            className="w-full rounded-lg border border-strong bg-slate-900 px-3 py-2 text-sm text-foreground outline-none focus:border-primary-500"
+            className="w-full rounded-lg border border-strong bg-background px-3 py-2 text-sm text-foreground outline-none focus:border-primary-500"
           >
             <option value="">选择 Provider</option>
             {providers.map((p) => (
@@ -120,7 +120,7 @@ export function LLMSection({
             <select
               value={llmConfig.model}
               onChange={(e) => setLlmConfig({ ...llmConfig, model: e.target.value })}
-              className="w-full rounded-lg border border-strong bg-slate-900 px-3 py-2 text-sm text-foreground outline-none focus:border-primary-500"
+              className="w-full rounded-lg border border-strong bg-background px-3 py-2 text-sm text-foreground outline-none focus:border-primary-500"
             >
               <option value="">选择 Model</option>
               {currentModels.map((m) => (
@@ -135,7 +135,7 @@ export function LLMSection({
               placeholder="输入模型名称，如 qwen2.5、llama3、mistral"
               value={llmConfig.model}
               onChange={(e) => setLlmConfig({ ...llmConfig, model: e.target.value })}
-              className="w-full rounded-lg border border-strong bg-slate-900 px-3 py-2 text-sm text-foreground outline-none focus:border-primary-500"
+              className="w-full rounded-lg border border-strong bg-background px-3 py-2 text-sm text-foreground outline-none focus:border-primary-500"
             />
           )}
         </div>
@@ -153,7 +153,7 @@ export function LLMSection({
               }
               value={apiKeyInput}
               onChange={(e) => setApiKeyInput(e.target.value)}
-              className="w-full rounded-lg border border-strong bg-slate-900 px-3 py-2 pr-10 text-sm text-foreground outline-none focus:border-primary-500"
+              className="w-full rounded-lg border border-strong bg-background px-3 py-2 pr-10 text-sm text-foreground outline-none focus:border-primary-500"
             />
             <button
               type="button"
@@ -175,7 +175,7 @@ export function LLMSection({
             placeholder={llmConfig.provider === 'custom' ? '如 http://localhost:11434/v1' : '留空使用默认'}
             value={llmConfig.base_url}
             onChange={(e) => setLlmConfig({ ...llmConfig, base_url: e.target.value })}
-            className="w-full rounded-lg border border-strong bg-slate-900 px-3 py-2 text-sm text-foreground outline-none focus:border-primary-500"
+            className="w-full rounded-lg border border-strong bg-background px-3 py-2 text-sm text-foreground outline-none focus:border-primary-500"
           />
         </div>
 

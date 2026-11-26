@@ -32,7 +32,7 @@ export function TodoPanel() {
       data-testid="todo-panel"
     >
       <div
-        className="overflow-hidden rounded-xl border border-subtle bg-slate-900/95 shadow-lg backdrop-blur"
+        className="overflow-hidden rounded-xl border border-subtle bg-background/95 shadow-lg backdrop-blur"
         data-component="session-todo-dock"
       >
         {/* Header row */}
@@ -146,7 +146,7 @@ function TodoRow({ todo }: { todo: TodoItem }) {
       <span
         className={`mt-0.5 inline-flex h-4 w-4 flex-shrink-0 items-center justify-center rounded border ${
           checked
-            ? 'border-slate-500 bg-slate-600'
+            ? 'border-slate-500 bg-surface-raised'
             : inProgress
               ? 'border-slate-500 bg-surface-raised'
               : 'border bg-transparent'

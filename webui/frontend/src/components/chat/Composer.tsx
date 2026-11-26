@@ -447,7 +447,7 @@ export function Composer({ composeMessage, readOnly }: ComposerProps = {}) {
           一个大圆角容器包住「编辑器行 + 工具条行（状态行移入框内）」。
           focus-within 时边框/底色高亮，与 ZCode 的 focus-within 语义一致。 */}
       <div
-        className="glass relative flex flex-col gap-2 rounded-2xl border-[0.5px] border-subtle bg-surface px-4 py-3 transition-colors hover:border focus-within:border-sky-500/60"
+        className="glass relative flex flex-col gap-2 rounded-2xl border-[0.5px] border-subtle bg-surface px-4 py-3 transition-colors hover:border focus-within:border-info-fg/60"
         data-composer-leading-content
       >
         {/* 上下文用量环：卡片右上角绝对定位（hover 向上弹七段明细） */}
@@ -465,7 +465,7 @@ export function Composer({ composeMessage, readOnly }: ComposerProps = {}) {
                 </span>
               )}
             </div>
-            <div className="glass invisible absolute bottom-full right-0 z-50 mb-2 w-72 rounded-xl border border-subtle !bg-slate-900/95 p-3 opacity-0 shadow-2xl transition-opacity group-hover/usage:visible group-hover/usage:opacity-100" data-testid="context-breakdown-popover">
+            <div className="glass invisible absolute bottom-full right-0 z-50 mb-2 w-72 rounded-xl border border-subtle !bg-background/95 p-3 opacity-0 shadow-2xl transition-opacity group-hover/usage:visible group-hover/usage:opacity-100" data-testid="context-breakdown-popover">
               <div className="mb-2 flex items-center justify-between text-[11px]">
                 <span className="font-medium text-foreground">上下文用量</span>
                 <span className="font-mono text-muted">

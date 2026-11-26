@@ -41,7 +41,7 @@ export function FactorLibraryPage() {
                   className={`rounded-md border px-3 py-1.5 text-xs transition-colors ${
                     zoo === z.id
                       ? 'border-primary-500/50 bg-primary-500/10 text-primary-300'
-                      : 'border-strong bg-slate-900 text-muted hover:border-strong hover:text-foreground'
+                      : 'border-strong bg-background text-muted hover:border-strong hover:text-foreground'
                   }`}
                 >
                   {z.label}
@@ -55,7 +55,7 @@ export function FactorLibraryPage() {
                 value={query}
                 onChange={(e) => setQuery(e.target.value)}
                 placeholder="搜索 id / 名称 / 公式 / 主题…"
-                className="relative z-10 w-full rounded-lg border border-strong bg-slate-900 py-1.5 pl-8 pr-8 text-xs text-foreground outline-none placeholder:text-muted"
+                className="relative z-10 w-full rounded-lg border border-strong bg-background py-1.5 pl-8 pr-8 text-xs text-foreground outline-none placeholder:text-muted"
               />
               {query && (
                 <button

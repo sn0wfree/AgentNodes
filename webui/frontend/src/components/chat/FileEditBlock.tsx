@@ -49,8 +49,8 @@ function computeDiff(oldContent: string, newContent: string): DiffLine[] {
 }
 
 const LINE_STYLES = {
-  add: 'bg-emerald-950/40 text-emerald-300 border-l-2 border-emerald-500',
-  remove: 'bg-red-950/40 text-red-300 border-l-2 border-red-500',
+  add: 'bg-emerald-950/40 text-success-fg border-l-2 border-success-fg',
+  remove: 'bg-red-950/40 text-danger-fg border-l-2 border-danger-fg',
   context: 'text-muted',
 }
 

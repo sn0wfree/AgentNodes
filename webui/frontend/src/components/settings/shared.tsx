@@ -41,7 +41,7 @@ export function PasswordInput({
         placeholder={placeholder}
         value={value}
         onChange={(e) => onChange(e.target.value)}
-        className="w-full rounded-lg border border-strong bg-slate-900 px-3 py-2 pr-10 text-sm text-foreground outline-none focus:border-primary-500"
+        className="w-full rounded-lg border border-strong bg-background px-3 py-2 pr-10 text-sm text-foreground outline-none focus:border-primary-500"
       />
       <button
         type="button"
@@ -69,7 +69,7 @@ export function ThemeBtn({
       onClick={onClick}
       aria-pressed={active}
       className={`rounded-lg px-4 py-1.5 text-sm transition-colors ${
-        active ? 'bg-primary-600 text-white' : 'bg-surface-raised text-secondary hover:bg-slate-600'
+        active ? 'bg-primary-600 text-white' : 'bg-surface-raised text-secondary hover:bg-surface-raised'
       }`}
     >
       {label}
@@ -95,7 +95,7 @@ export function SizeBtn({
       disabled={disabled}
       aria-pressed={active}
       className={`rounded-lg px-4 py-1.5 text-sm transition-colors ${
-        active ? 'bg-primary-600 text-white' : 'bg-surface-raised text-secondary hover:bg-slate-600'
+        active ? 'bg-primary-600 text-white' : 'bg-surface-raised text-secondary hover:bg-surface-raised'
       } ${disabled ? 'cursor-not-allowed opacity-50' : ''}`}
     >
       {label}
@@ -120,7 +120,7 @@ export function LayoutOption({
       className={`rounded-lg border p-3 text-left transition-colors ${
         active
           ? 'border-primary-500 bg-primary-600/10'
-          : 'border-strong bg-slate-900/50 hover:bg-surface'
+          : 'border-strong bg-background/50 hover:bg-surface'
       }`}
     >
       <div className="flex items-center justify-between">

@@ -76,7 +76,7 @@ export function RightPanel() {
   } : null
 
   return (
-    <div className="flex h-full w-full flex-col gap-3 overflow-y-auto bg-slate-900 p-3">
+    <div className="flex h-full w-full flex-col gap-3 overflow-y-auto bg-background p-3">
       <TokenCard />
       {/* 目标 & 进度 — 被动跟踪本 session goal 执行情况（仅 GoalTab）。
           P6 空态诚实：无活跃 goal 时不渲染卡片（业界调研

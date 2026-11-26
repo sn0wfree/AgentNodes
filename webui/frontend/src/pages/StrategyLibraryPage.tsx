@@ -11,12 +11,12 @@ interface StrategyCardData extends StrategyListItem {
 }
 
 const STATUS_META: Record<string, { label: string; cls: string }> = {
-  running: { label: '研究中', cls: 'border-emerald-500/30 bg-emerald-500/10 text-success-fg' },
-  queued: { label: '排队中', cls: 'border-sky-500/30 bg-sky-500/10 text-info-fg' },
-  monitoring: { label: '监控中', cls: 'border-sky-500/30 bg-sky-500/10 text-info-fg' },
+  running: { label: '研究中', cls: 'border-success-fg-muted bg-success-surface text-success-fg' },
+  queued: { label: '排队中', cls: 'border-info-fg/30 bg-info-surface text-info-fg' },
+  monitoring: { label: '监控中', cls: 'border-info-fg/30 bg-info-surface text-info-fg' },
   paused: { label: '已暂停', cls: 'border-warning/30 bg-warning-fill text-warning-fg' },
   completed: { label: '已完成', cls: 'border-strong bg-surface text-secondary' },
-  failed: { label: '已失败', cls: 'border-red-500/30 bg-red-500/10 text-danger-fg' },
+  failed: { label: '已失败', cls: 'border-danger-fg-muted bg-danger-surface text-danger-fg' },
   cancelled: { label: '已取消', cls: 'border-strong bg-surface text-muted' },
 }
 
@@ -131,7 +131,7 @@ export function StrategyLibraryPage() {
         </div>
       )}
       {error && (
-        <div className="rounded-lg border border-red-500/30 bg-red-500/10 px-4 py-3 text-xs text-danger-fg">
+        <div className="rounded-lg border border-danger-fg-muted bg-danger-surface px-4 py-3 text-xs text-danger-fg">
           {error}
         </div>
       )}
@@ -155,7 +155,7 @@ export function StrategyLibraryPage() {
                     <Folder className="h-4 w-4 text-muted" />
                     <span className="text-sm font-semibold text-foreground">{s.name}</span>
                     {s.has_strategy_py ? (
-                      <span className="inline-flex items-center gap-1 rounded-full border border-emerald-500/30 bg-emerald-500/10 px-2 py-0.5 text-[9px] text-success-fg">
+                      <span className="inline-flex items-center gap-1 rounded-full border border-success-fg-muted bg-success-surface px-2 py-0.5 text-[9px] text-success-fg">
                         <CheckCircle2 className="h-2.5 w-2.5" /> strategy.py
                       </span>
                     ) : (
@@ -164,7 +164,7 @@ export function StrategyLibraryPage() {
                       </span>
                     )}
                     {s.has_config_yaml ? (
-                      <span className="inline-flex items-center gap-1 rounded-full border border-emerald-500/30 bg-emerald-500/10 px-2 py-0.5 text-[9px] text-success-fg">
+                      <span className="inline-flex items-center gap-1 rounded-full border border-success-fg-muted bg-success-surface px-2 py-0.5 text-[9px] text-success-fg">
                         <CheckCircle2 className="h-2.5 w-2.5" /> config.yaml
                       </span>
                     ) : (

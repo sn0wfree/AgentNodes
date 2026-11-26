@@ -9,8 +9,8 @@ const ICONS = {
 }
 
 const COLORS = {
-  success: 'border-emerald-500/30 bg-emerald-950/50',
-  error: 'border-red-500/30 bg-red-950/50',
+  success: 'border-success-fg-muted bg-emerald-950/50',
+  error: 'border-danger-fg-muted bg-red-950/50',
   warning: 'border-warning/30 bg-warning-fill',
   info: 'border-blue-500/30 bg-blue-950/50',
 }

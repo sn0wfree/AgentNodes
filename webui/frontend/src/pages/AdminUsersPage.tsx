@@ -125,12 +125,12 @@ export function AdminUsersPage({ embedded = false }: { embedded?: boolean }) {
   const body = (
     <div className="space-y-4">
         {notice && (
-          <div className="rounded-lg border border-emerald-800 bg-emerald-900/30 px-3 py-2 text-sm text-emerald-300">
+          <div className="rounded-lg border border-emerald-800 bg-emerald-900/30 px-3 py-2 text-sm text-success-fg">
             {notice}
           </div>
         )}
         {error && (
-          <div className="rounded-lg border border-red-800 bg-red-900/30 px-3 py-2 text-sm text-red-300">
+          <div className="rounded-lg border border-red-800 bg-red-900/30 px-3 py-2 text-sm text-danger-fg">
             {error}
           </div>
         )}

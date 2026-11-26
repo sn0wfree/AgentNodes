@@ -92,8 +92,8 @@ export function StrategyNameInput({
           placeholder="输入研究目标后自动生成"
           className={`flex-1 rounded border px-2 py-1 text-sm font-mono ${
             error
-              ? 'border-rose-500 bg-slate-900'
-              : 'border-strong bg-slate-900'
+              ? 'border-rose-500 bg-background'
+              : 'border-strong bg-background'
           }`}
         />
         <button

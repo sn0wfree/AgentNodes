@@ -23,10 +23,10 @@ function formatTime(iso: string): string {
 
 const VERDICT_STYLES: Record<string, { badge: string; label: string; dot: string; line: string }> = {
   keep: {
-    badge: 'border-emerald-500/40 bg-emerald-500/10 text-success-fg',
+    badge: 'border-success-fg/40 bg-success-surface text-success-fg',
     label: '保留',
-    dot: 'border-emerald-500 bg-emerald-500',
-    line: 'bg-emerald-500/40',
+    dot: 'border-success-fg bg-success',
+    line: 'bg-success/40',
   },
   discard: {
     badge: 'border-strong bg-surface-raised/70 text-muted',

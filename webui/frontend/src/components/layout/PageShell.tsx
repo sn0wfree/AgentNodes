@@ -69,7 +69,7 @@ export function PageShell({
           </header>
 
           {stickyBar && (
-            <div className="sticky top-12 z-10 flex-shrink-0 border-b border-subtle bg-slate-900/70 backdrop-blur">
+            <div className="sticky top-12 z-10 flex-shrink-0 border-b border-subtle bg-background/70 backdrop-blur">
               {stickyBar}
             </div>
           )}

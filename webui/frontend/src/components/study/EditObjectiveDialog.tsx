@@ -68,7 +68,7 @@ export function EditObjectiveDialog({
       onClick={onClose}
     >
       <div
-        className="flex w-full max-w-xl flex-col gap-4 rounded-2xl border border-strong bg-slate-900 p-5 shadow-elevated"
+        className="flex w-full max-w-xl flex-col gap-4 rounded-2xl border border-strong bg-background p-5 shadow-elevated"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}

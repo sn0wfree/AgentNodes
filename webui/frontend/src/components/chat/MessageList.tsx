@@ -223,7 +223,7 @@ export function MessageList({ separatorKey, scrollKey }: MessageListProps = {}) 
                 {daySeparator}
               <div className="px-4 py-3 transition-all">
                 <div className="flex gap-3">
-                  <div className="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-red-500/10 text-danger-fg">
+                  <div className="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-danger-surface text-danger-fg">
                     ⚠
                   </div>
                   <div className="min-w-0 flex-1">
@@ -231,7 +231,7 @@ export function MessageList({ separatorKey, scrollKey }: MessageListProps = {}) 
                       <span className="font-medium text-danger-fg">请求失败</span>
                       <span className="text-muted">{formatTime(message.created_at)}</span>
                     </div>
-                    <div className="rounded-lg border border-red-500/30 bg-red-500/10 px-3 py-2 text-sm text-danger-fg">
+                    <div className="rounded-lg border border-danger-fg-muted bg-danger-surface px-3 py-2 text-sm text-danger-fg">
                       {message.parts?.map((part, i) => (
                         <span key={i}>{part.type === 'text' ? part.text : ''}</span>
                       ))}
@@ -240,7 +240,7 @@ export function MessageList({ separatorKey, scrollKey }: MessageListProps = {}) 
                           <summary className="cursor-pointer text-xs text-danger-fg hover:text-danger-fg">
                             查看详情
                           </summary>
-                          <pre className="mt-2 overflow-x-auto whitespace-pre-wrap break-all rounded bg-red-500/10 p-2 text-xs text-danger-fg">
+                          <pre className="mt-2 overflow-x-auto whitespace-pre-wrap break-all rounded bg-danger-surface p-2 text-xs text-danger-fg">
                             {message.metadata.details}
                           </pre>
                         </details>

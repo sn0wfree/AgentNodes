@@ -53,7 +53,7 @@ export function GoalMessage({ message }: { message: Message }) {
           <div
             className={`mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-full ${
               isComplete
-                ? 'bg-emerald-500/10 text-success-fg'
+                ? 'bg-success-surface text-success-fg'
                 : 'bg-primary-500/10 text-primary-400'
             }`}
           >
@@ -80,7 +80,7 @@ export function GoalMessage({ message }: { message: Message }) {
               <div className="h-1 flex-1 overflow-hidden rounded-full bg-surface-raised">
                 <div
                   className={`h-full rounded-full transition-all ${
-                    isComplete ? 'bg-emerald-500' : 'bg-primary-500'
+                    isComplete ? 'bg-success' : 'bg-primary-500'
                   }`}
                   style={{ width: `${Math.min(100, Math.max(0, progress))}%` }}
                 />
@@ -108,10 +108,10 @@ export function GoalMessage({ message }: { message: Message }) {
                     <span
                       className={`inline-block h-1.5 w-1.5 shrink-0 rounded-full ${
                         c.status === 'covered'
-                          ? 'bg-emerald-500'
+                          ? 'bg-success'
                           : c.status === 'in_progress'
                             ? 'bg-warning'
-                            : 'bg-slate-600'
+                            : 'bg-surface-raised'
                       }`}
                     />
                     <span className="text-muted">{c.text}</span>
@@ -124,7 +124,7 @@ export function GoalMessage({ message }: { message: Message }) {
               </div>
             )}
             {evidenceText && (
-              <div className="mb-2 rounded bg-slate-900/50 p-2 text-muted">
+              <div className="mb-2 rounded bg-background/50 p-2 text-muted">
                 <span className="mb-1 block text-[10px] uppercase tracking-wider text-muted">
                   证据全文
                 </span>
@@ -132,7 +132,7 @@ export function GoalMessage({ message }: { message: Message }) {
               </div>
             )}
             {recap && (
-              <div className="rounded bg-emerald-500/5 p-2 text-success-fg">
+              <div className="rounded bg-success/5 p-2 text-success-fg">
                 <span className="mb-1 block text-[10px] uppercase tracking-wider text-emerald-500/70">
                   总结
                 </span>

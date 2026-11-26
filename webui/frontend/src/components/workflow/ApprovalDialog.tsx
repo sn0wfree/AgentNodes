@@ -27,7 +27,7 @@ export function ApprovalDialog({
     <Dialog.Root open={open} onOpenChange={(v) => !v && !busy && onClose()}>
       <Dialog.Portal>
         <Dialog.Overlay className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm" />
-        <Dialog.Content className="fixed left-1/2 top-1/2 z-50 w-[480px] max-w-[92vw] -translate-x-1/2 -translate-y-1/2 rounded-xl border border-strong bg-slate-900 p-5 shadow-2xl">
+        <Dialog.Content className="fixed left-1/2 top-1/2 z-50 w-[480px] max-w-[92vw] -translate-x-1/2 -translate-y-1/2 rounded-xl border border-strong bg-background p-5 shadow-2xl">
           <Dialog.Title className="text-sm font-medium text-foreground">
             工作流等待人工确认
           </Dialog.Title>
@@ -64,7 +64,7 @@ export function ApprovalDialog({
             <button
               onClick={() => onApprove(edits.trim() || undefined)}
               disabled={busy}
-              className="inline-flex items-center gap-1 rounded bg-emerald-600 px-3 py-1.5 text-xs text-white hover:bg-emerald-500 disabled:opacity-50"
+              className="inline-flex items-center gap-1 rounded bg-emerald-600 px-3 py-1.5 text-xs text-white hover:bg-success disabled:opacity-50"
             >
               {busy ? <Loader2 className="h-3 w-3 animate-spin" /> : <Check className="h-3 w-3" />}
               批准执行

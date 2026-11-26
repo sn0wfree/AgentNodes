@@ -77,7 +77,7 @@ export function AccountSection({ username }: AccountSectionProps) {
             placeholder="确认新密码"
             value={confirmPassword}
             onChange={(e) => setConfirmPassword(e.target.value)}
-            className="w-full rounded-lg border border-strong bg-slate-900 px-3 py-2 text-sm text-foreground outline-none focus:border-primary-500"
+            className="w-full rounded-lg border border-strong bg-background px-3 py-2 text-sm text-foreground outline-none focus:border-primary-500"
           />
           {pwError && <p className="text-xs text-danger-fg">{pwError}</p>}
           {pwMsg && <p className="text-xs text-success-fg">{pwMsg}</p>}

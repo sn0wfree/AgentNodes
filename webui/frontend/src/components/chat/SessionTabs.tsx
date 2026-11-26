@@ -27,7 +27,7 @@ export function SessionTabs() {
             key={sess.id}
             className={`group relative flex h-7 items-center gap-1.5 rounded-t-md border-b-2 px-2.5 text-xs transition-colors cursor-pointer flex-shrink-0
               ${isActive
-                ? 'border-sky-500 bg-surface-raised text-foreground'
+                ? 'border-info-fg bg-surface-raised text-foreground'
                 : 'border-transparent text-muted hover:bg-surface hover:text-foreground'
               }
             `}

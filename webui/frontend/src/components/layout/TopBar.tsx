@@ -92,7 +92,7 @@ export function TopBar() {
                     cancel()
                   }
                 }}
-                className="w-48 rounded border border-primary-500 bg-slate-900 px-1.5 py-0.5 text-xs text-foreground outline-none"
+                className="w-48 rounded border border-primary-500 bg-background px-1.5 py-0.5 text-xs text-foreground outline-none"
                 maxLength={80}
               />
             ) : (
@@ -137,7 +137,7 @@ export function TopBar() {
           className={`flex items-center gap-1.5 rounded-lg border px-1.5 sm:px-2.5 py-1.5 text-xs transition-colors ${
             thinkingCollapsed
               ? 'border-strong bg-surface text-muted hover:border-strong hover:text-secondary'
-              : 'border-violet-500/50 bg-violet-500/10 text-thinking-fg hover:bg-violet-500/20'
+              : 'border-violet-500/50 bg-thinking-surface text-thinking-fg hover:bg-violet-500/20'
           }`}
         >
           <Sparkles className="h-3.5 w-3.5" />
