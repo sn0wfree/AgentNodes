@@ -11,6 +11,7 @@
   --popover: rgba(255,255,255,0.045);
   --surface: rgba(255,255,255,0.045); /* .glass 背景——缺失会让弹层完全透明 */
   --surface-raised: rgba(255,255,255,0.07); /* 浮起表面（原 bg-slate-800/700 用途） */
+  --surface-solid: #0f172a; /* 浮窗实底（覆盖 .glass 半透明，保证文字可读；theme.json 可调） */
   --primary: #ffffff;
   /* primary 数字阶梯（配色统一阶段 1）：185 处 primary-NNN 引用的兼容基座。
      dark = 原 sky 色板（视觉零回归）；light 主题可按需加深（见 light 块）。 */
@@ -78,6 +79,7 @@
   --popover: #ffffff;
   --surface: #ffffff; /* .glass 背景 */
   --surface-raised: #f5f5f4; /* 浮起表面（浅色暖纸系） */
+  --surface-solid: #ffffff; /* 浮窗实底（浅色主题白底） */
   --primary: #171717;
   /* light 阶梯：阶段 1 与 dark 同值（视觉零回归）；阶段 3 配置外置时可整体加深 */
   --primary-50: #f0f9ff;
