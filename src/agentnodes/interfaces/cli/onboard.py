@@ -149,7 +149,7 @@ PROVIDERS: Final[tuple[Provider, ...]] = (
     Provider(
         "minimax", "MiniMax", "minimax provider",
         "MiniMax-M3", "sk-",
-        ("MiniMax-M3", "MiniMax-Text-01"),
+        ("MiniMax-M3",),
         _DEFAULT_BASE_URLS["minimax"], True,
     ),
     Provider(
