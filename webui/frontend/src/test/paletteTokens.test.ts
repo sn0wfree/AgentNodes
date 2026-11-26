@@ -8,9 +8,13 @@ import { resolve } from 'node:path'
 
 const cssPath = resolve(__dirname, '../../src/styles/globals.css')
 const twPath = resolve(__dirname, '../../tailwind.config.js')
+const composerPath = resolve(__dirname, '../../src/components/chat/Composer.tsx')
+const statusBarPath = resolve(__dirname, '../../src/components/chat/ComposerStatusBar.tsx')
 
 const css = readFileSync(cssPath, 'utf-8')
 const tw = readFileSync(twPath, 'utf-8')
+const composer = readFileSync(composerPath, 'utf-8')
+const statusBar = readFileSync(statusBarPath, 'utf-8')
 
 // 从 CSS 抽取指定主题块的变量名集合
 function varsOf(themeBlock: string): Set<string> {
@@ -74,5 +78,30 @@ describe('semantic color tokens (stage 1 of palette unification)', () => {
         expect(vars.has(`--primary-${shade}`), `${theme} --primary-${shade}`).toBe(true)
       }
     }
+  })
+})
+
+// 浮窗实底契约（回归防线）：codemod 曾把 !bg-slate-900/95 误迁为
+// !bg-background/95——Tailwind 对 CSS 变量色不支持 /95 透明度修饰符，
+// 类不生成 → .glass 的 4.5% 白透出 → 浮窗文字看不清。
+describe('popover solid background (regression guard)', () => {
+  it('defines --surface-solid in both dark and light themes', () => {
+    for (const theme of ['dark', 'light'] as const) {
+      expect(varsOf(theme).has('--surface-solid'), `${theme} --surface-solid`).toBe(true)
+    }
+  })
+
+  it('uses the solid-token utility on all 4 popovers', () => {
+    const solid = '!bg-[var(--surface-solid)]'
+    const count = (s: string) => s.split(solid).length - 1
+    // 7 段明细浮窗 + persona / 模型 / 思考三个下拉菜单
+    expect(count(composer)).toBe(1)
+    expect(count(statusBar)).toBe(3)
+  })
+
+  it('does not reintroduce variable-color opacity modifiers on popovers', () => {
+    // !bg-background/95 这类写法无效（变量色 + /alpha）；一旦出现即回归
+    expect(composer).not.toContain('!bg-background/')
+    expect(statusBar).not.toContain('!bg-background/')
   })
 })
