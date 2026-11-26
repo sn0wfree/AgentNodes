@@ -119,3 +119,45 @@ C1-C4 + 配色统一阶段 1-3 已完成（theme.json 注入链路已通），�
 | C4 | 前端 1368 测试 / tsc OK / lint 0 error；重建前端（VITE_E2E=1）+ 6 张目录基线重录（assistant-message、tool-call-done、tool-call-error × 双主题）；e2e 114 passed / 0 skipped；后端 8143 passed（1 例 gateway timeout flaky，单跑通过）；gate 13/13 ALL GREEN；亮色对比度复测 **53 → 14（降幅 74%）**，语义色低对比项（1.4–1.9）全部消除。 | 剩余 14 项均为次级文字（muted-foreground / slate），属方案边界外（P1 令牌调值），未纳入本批 |
 
 **验收标准达成**：语义色 Tailwind 类入口 warning→全量；硬编码语义前景 60+→0（allowlist 外）；最差对比度 1.42→消除；单点可调（改 globals.css 两处）；门禁防回退（第 4 类检测）均达成。次级文字 14 项留作后续令牌调值批。
+
+---
+
+## 9. 全量配色配置化专项（2026-11-26 · 用户裁决「彻底纳入」）
+
+### 9.1 触发与目标
+
+用户要求「所有配色风格都由配置文件决定」。核查结论：链路 `theme.json → GET /api/system/theme → scoped CSS 变量` 已通（后端从 globals.css 自动提取颜色变量），但仍有 6 类旁路——globals.css 选择器内约 58 处颜色字面量、Tailwind `accent` 硬编码阶梯、约 46 处 `sky-*` / 24 处 `blue-*` 原生色阶类、约 74 处 TSX 内联 hex/rgba、13 处 SVG fill/stroke、后端提取器 2 个盲区（gradient/多值 shadow 不导出；按首次 `[data-theme='light']` 切分使后续 dark 块误归 light）。
+
+用户裁决：**viz 图表色 / agent 身份色全部纳入配置**；实现后**创建示例 `~/.agentnodes/theme.json`**。目标：`theme.json` 能控制前端每个颜色细节；删除该文件回退内置默认。
+
+### 9.2 变量命名体系（新增）
+
+| 组 | 变量 | 用途 |
+|---|---|---|
+| 全局 | `--focus-ring`、`--shadow-sm-color` | 焦点环、轻阴影色 |
+| React Flow chrome | `--rf-control-{shadow,border}`、`--rf-button-{bg,border,fg,hover-bg,hover-fg}`、`--rf-minimap-{border,bg}`、`--rf-handle-{border,ring}` | 画布控件/缩略图/连接点（双主题） |
+| 徽章 | `--badge-{builtin,user,running,completed,failed,neutral}-{bg,fg}` | 状态/来源徽章（双主题） |
+| 工作流卡片 | `--dark-mode-card-{bg,border,hover-bg,hover-border}`、`--wf-card-{title,sub,plus}-fg`、`--wf-minimap-bg` | light 覆盖令牌化 |
+| 色阶 | `--accent-NN`、`--sky-NN`、`--blue-NN` 及预混 `--sky-NN-aNN` | Tailwind 阶梯（原值 1:1 迁移） |
+| viz/身份 | `--viz-{axis,grid,tooltip-bg,tooltip-border,up,down,fallback}`、`--agent-1..5`、`--node-*`、`--glow-stream-color`、`--code-bg` | 图表 chrome / agent 身份色 |
+
+### 9.3 批次表
+
+| 批 | 内容 | 提交范围 |
+|---|---|---|
+| 0 | 本文档（方案先行） | 仅 docs |
+| 1 | 后端提取器：逐块状态机替代单次切分；颜色判定改为「值中包含颜色」；契约测试复用后端谓词 | system.py + test_system_theme_api.py |
+| 2 | globals.css 字面量令牌化（只提纯颜色值，消费点 `Npx solid var(--x)`）；新增「变量声明外无颜色字面量」契约 | globals.css + paletteTokens.test.ts |
+| 3 | Tailwind accent/sky/blue 阶梯指 CSS 变量；alpha 修饰符改预混 token；发送按钮改 `bg-primary` | tailwind.config.js + CSS + 用到的组件 |
+| 4 | viz/身份色纳入：图表轴/tooltip/fallback、`AGENT_COLORS`、`NODE_PALETTE`、SVG fill/stroke、发光阴影、代码块底色 | 图表 10 文件 + 身份色文件 |
+| 5 | hygiene 白名单收紧至 0 基线；生成示例 theme.json；全量验证 | scripts/arch + tests + 用户目录配置 |
+
+### 9.4 alpha 修饰符约束（历史回归防线）
+
+codemod 曾把 `!bg-slate-900/95` 误迁为 `!bg-background/95`——Tailwind 对 CSS 变量色不支持 `/NN` 透明度修饰符，类不生成导致浮窗透明（已由 `--surface-solid` 修复并加回归测试）。本专项涉及大量 `bg-sky-500/10`、`ring-sky-500/40` 等带 alpha 用法：一律改为预混 token 任意值 `bg-[var(--sky-500-a10)]`，不得直接写 `var()` + `/NN`。批 3 需构建后 grep 产物确认类生成。
+
+### 9.5 验证与回滚
+
+每批：git status 碰撞检查 → 受影响测试 → 全量 pytest（`-p no:hypothesispytest -p no:hypothesis -n 12 --dist loadgroup`）→ 前端 vitest/tsc/lint → `scripts\batch_gate.cmd` → 原值迁移应零像素 diff（有变化则显式重录基线并记录原因）→ 路径限定中文 commit、不 push。后端改动需重启服务后真机验证（当前进程为旧代码）。
+
+回滚：每批独立 commit，`git revert <sha>` 即可；示例 theme.json 删除即回退内置默认。
