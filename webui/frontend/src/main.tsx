@@ -4,10 +4,15 @@ import { BrowserRouter } from 'react-router-dom'
 import App from './App'
 import './styles/globals.css'
 import { useThemeStore } from './stores/theme'
+import { loadThemeConfig } from './utils/themeConfig'
 
 // Apply the persisted theme before first paint (store applies on import,
 // this guards against later module-order changes).
 void useThemeStore.getState().theme
+
+// 配色统一阶段 3：从 ~/.agentnodes/theme.json 加载主题覆盖并注入 CSS 变量。
+// 失败静默（保留 globals.css 默认），不阻塞首屏渲染。
+void loadThemeConfig()
 
 // E2E test hook: expose stores on window when running against a TEST_MODE
 // backend. Lets Playwright inject session state without going through the

@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import json
 import logging
 import os
 from pathlib import Path
@@ -23,6 +24,7 @@ router = APIRouter()
 _QUANTNODES_DIR = _paths.data_dir()
 _LLM_JSON_PATH = _paths.llm_json_path()
 _DOTENV_PATH = _paths.dotenv_path()
+_THEME_JSON_PATH = _QUANTNODES_DIR / "theme.json"
 
 
 class LLMConfigUpdate(BaseModel):
@@ -30,6 +32,68 @@ class LLMConfigUpdate(BaseModel):
     model: Optional[str] = None
     api_key: Optional[str] = None
     base_url: Optional[str] = None
+
+
+# 配色统一阶段 3：内置默认主题（前端 globals.css 的 dark/light 变量镜像）。
+# theme.json 缺失或非法时回退到这里；只需改配置文件即可换肤，无需改代码。
+_BUILTIN_THEME: dict[str, dict[str, str]] = {
+    "dark": {
+        "--background": "#262626",
+        "--foreground": "#e5e5e5",
+        "--surface": "rgba(255,255,255,0.045)",
+        "--surface-raised": "rgba(255,255,255,0.07)",
+        "--primary": "#ffffff",
+        "--muted-foreground": "#a3a3a3",
+        "--text-secondary": "#cbd5e1",
+        "--accent": "#38bdf8",
+        "--border": "rgba(255,255,255,0.11)",
+        "--border-strong": "rgba(255,255,255,0.18)",
+        "--border-subtle": "rgba(255,255,255,0.06)",
+        "--primary-400": "#38bdf8",
+        "--primary-500": "#0ea5e9",
+    },
+    "light": {
+        "--background": "#fafafa",
+        "--foreground": "#404040",
+        "--surface": "#ffffff",
+        "--surface-raised": "#f5f5f4",
+        "--primary": "#171717",
+        "--muted-foreground": "#737373",
+        "--text-secondary": "#525252",
+        "--accent": "#0ea5e9",
+        "--border": "rgba(23,23,23,0.10)",
+        "--border-strong": "rgba(23,23,23,0.20)",
+        "--border-subtle": "rgba(23,23,23,0.05)",
+        "--primary-400": "#38bdf8",
+        "--primary-500": "#0ea5e9",
+    },
+}
+
+
+def _load_theme() -> dict[str, dict[str, str]]:
+    """读取 theme.json（{"theme":{"dark":{...},"light":{...}}}）；缺失/非法回退内置。"""
+    result = {k: dict(v) for k, v in _BUILTIN_THEME.items()}
+    try:
+        raw = json.loads(_THEME_JSON_PATH.read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return result
+    candidate = raw.get("theme") if isinstance(raw, dict) else None
+    if not isinstance(candidate, dict):
+        return result
+    for mode in ("dark", "light"):
+        values = candidate.get(mode)
+        if isinstance(values, dict):
+            # 只接受字符串值，避免注入非法 CSS
+            for key, val in values.items():
+                if isinstance(key, str) and key.startswith("--") and isinstance(val, str):
+                    result[mode][key] = val
+    return result
+
+
+@router.get("/theme")
+def get_theme():
+    """配色配置（阶段 3）：前端启动时注入 CSS 变量，实现不改代码换肤。"""
+    return _load_theme()
 
 
 def _read_dotenv() -> dict[str, str]:
