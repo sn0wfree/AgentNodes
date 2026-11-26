@@ -137,16 +137,16 @@ export function AdminUsersPage({ embedded = false }: { embedded?: boolean }) {
 
         {showCreate && (
           <div className="glass-elevated space-y-3 rounded-xl p-4">
-            <h3 className="text-sm font-semibold text-slate-100">新建用户</h3>
+            <h3 className="text-sm font-semibold text-foreground">新建用户</h3>
             <div className="grid grid-cols-1 gap-3 md:grid-cols-5">
               <input value={nU} onChange={(e) => setNU(e.target.value)} placeholder="用户名"
-                className="rounded-lg border border-slate-700 bg-slate-800 px-3 py-2 text-sm text-slate-100 outline-none focus:border-primary-500" />
+                className="rounded-lg border border-strong bg-surface-raised px-3 py-2 text-sm text-foreground outline-none focus:border-primary-500" />
               <input value={nP} onChange={(e) => setNP(e.target.value)} type="password" placeholder="密码"
-                className="rounded-lg border border-slate-700 bg-slate-800 px-3 py-2 text-sm text-slate-100 outline-none focus:border-primary-500" />
+                className="rounded-lg border border-strong bg-surface-raised px-3 py-2 text-sm text-foreground outline-none focus:border-primary-500" />
               <input value={nD} onChange={(e) => setND(e.target.value)} placeholder="显示名（可选）"
-                className="rounded-lg border border-slate-700 bg-slate-800 px-3 py-2 text-sm text-slate-100 outline-none focus:border-primary-500" />
+                className="rounded-lg border border-strong bg-surface-raised px-3 py-2 text-sm text-foreground outline-none focus:border-primary-500" />
               <select value={nR} onChange={(e) => setNR(e.target.value)}
-                className="rounded-lg border border-slate-700 bg-slate-800 px-3 py-2 text-sm text-slate-100 outline-none focus:border-primary-500">
+                className="rounded-lg border border-strong bg-surface-raised px-3 py-2 text-sm text-foreground outline-none focus:border-primary-500">
                 <option value="user">user</option>
                 <option value="admin">admin</option>
               </select>
@@ -160,7 +160,7 @@ export function AdminUsersPage({ embedded = false }: { embedded?: boolean }) {
 
         <div className="glass-elevated overflow-hidden rounded-xl">
           <table className="w-full text-left text-sm">
-            <thead className="border-b border-slate-800 bg-slate-900/60 text-xs uppercase tracking-wide text-slate-500">
+            <thead className="border-b border-subtle bg-surface-raised text-xs uppercase tracking-wide text-muted">
               <tr>
                 <th className="px-4 py-2.5">用户</th>
                 <th className="px-4 py-2.5">角色</th>
@@ -170,21 +170,21 @@ export function AdminUsersPage({ embedded = false }: { embedded?: boolean }) {
             </thead>
             <tbody>
               {loading && (
-                <tr><td colSpan={4} className="px-4 py-8 text-center text-slate-500">加载中…</td></tr>
+                <tr><td colSpan={4} className="px-4 py-8 text-center text-muted">加载中…</td></tr>
               )}
               {!loading && users.length === 0 && (
-                <tr><td colSpan={4} className="px-4 py-8 text-center text-slate-500">暂无用户</td></tr>
+                <tr><td colSpan={4} className="px-4 py-8 text-center text-muted">暂无用户</td></tr>
               )}
               {users.map((u) => {
                 const isSelf = u.id === myId
                 return (
-                  <tr key={u.id} className="border-b border-slate-800/60 last:border-0 hover:bg-slate-800/30">
+                  <tr key={u.id} className="border-b border-subtle/60 last:border-0 hover:bg-surface-raised/30">
                     <td className="px-4 py-2.5">
-                      <div className="font-medium text-slate-100">{u.display_name || u.username}</div>
-                      <div className="font-mono text-xs text-slate-500">@{u.username}{isSelf && '（当前账号）'}</div>
+                      <div className="font-medium text-foreground">{u.display_name || u.username}</div>
+                      <div className="font-mono text-xs text-muted">@{u.username}{isSelf && '（当前账号）'}</div>
                     </td>
                     <td className="px-4 py-2.5">
-                      <span className={`rounded px-2 py-0.5 text-xs font-medium ${u.role === 'admin' ? 'bg-primary-600/20 text-primary-300' : 'bg-slate-700/40 text-slate-400'}`}>
+                      <span className={`rounded px-2 py-0.5 text-xs font-medium ${u.role === 'admin' ? 'bg-primary-600/20 text-primary-300' : 'bg-surface text-muted'}`}>
                         {u.role}
                       </span>
                     </td>
@@ -196,25 +196,25 @@ export function AdminUsersPage({ embedded = false }: { embedded?: boolean }) {
                     <td className="px-4 py-2.5">
                       <div className="flex items-center justify-end gap-2">
                         <button onClick={() => viewData(u)} title="查看数据"
-                          className="rounded-md px-2 py-1 text-xs text-slate-400 hover:bg-slate-800 hover:text-slate-200">
+                          className="rounded-md px-2 py-1 text-xs text-muted hover:bg-surface-raised hover:text-foreground">
                           数据
                         </button>
                         {!isSelf && (
                           <button onClick={() => toggleRole(u)} disabled={isSelf}
                             title={u.role === 'admin' ? '降级为普通用户' : '提升为管理员'}
-                            className="rounded-md px-2 py-1 text-xs text-slate-400 hover:bg-slate-800 hover:text-slate-200">
+                            className="rounded-md px-2 py-1 text-xs text-muted hover:bg-surface-raised hover:text-foreground">
                             {u.role === 'admin' ? '降级' : '提升'}
                           </button>
                         )}
                         <button onClick={() => { setResetFor(u); setNewPw('') }} disabled={isSelf}
                           title="重置密码"
-                          className="rounded-md px-2 py-1 text-xs text-slate-400 hover:bg-slate-800 hover:text-slate-200">
+                          className="rounded-md px-2 py-1 text-xs text-muted hover:bg-surface-raised hover:text-foreground">
                           <KeyRound className="h-3.5 w-3.5" />
                         </button>
                         {!isSelf && (
                           <button onClick={() => toggleActive(u)}
                             title={u.is_active ? '禁用' : '启用'}
-                            className={`rounded-md px-2 py-1 text-xs hover:bg-slate-800 ${u.is_active ? 'text-slate-400 hover:text-red-300' : 'text-emerald-400'}`}>
+                            className={`rounded-md px-2 py-1 text-xs hover:bg-surface-raised ${u.is_active ? 'text-muted hover:text-red-300' : 'text-emerald-400'}`}>
                             {u.is_active ? <Ban className="h-3.5 w-3.5" /> : <CircleCheck className="h-3.5 w-3.5" />}
                           </button>
                         )}
@@ -229,18 +229,18 @@ export function AdminUsersPage({ embedded = false }: { embedded?: boolean }) {
 
         {resetFor && (
           <div className="glass-elevated rounded-xl p-4">
-            <h3 className="mb-3 text-sm font-semibold text-slate-100">
+            <h3 className="mb-3 text-sm font-semibold text-foreground">
               重置 {resetFor.username} 的密码
             </h3>
             <div className="flex gap-3">
               <input value={newPw} onChange={(e) => setNewPw(e.target.value)} type="password" placeholder="新密码"
-                className="flex-1 rounded-lg border border-slate-700 bg-slate-800 px-3 py-2 text-sm text-slate-100 outline-none focus:border-primary-500" />
+                className="flex-1 rounded-lg border border-strong bg-surface-raised px-3 py-2 text-sm text-foreground outline-none focus:border-primary-500" />
               <button onClick={handleReset}
                 className="rounded-lg bg-primary-600 px-4 py-2 text-sm font-medium text-white hover:bg-primary-700">
                 确认
               </button>
               <button onClick={() => setResetFor(null)}
-                className="rounded-lg border border-slate-700 px-4 py-2 text-sm text-slate-400 hover:bg-slate-800">
+                className="rounded-lg border border-strong px-4 py-2 text-sm text-muted hover:bg-surface-raised">
                 取消
               </button>
             </div>
@@ -249,20 +249,20 @@ export function AdminUsersPage({ embedded = false }: { embedded?: boolean }) {
 
         {dataFor && (
           <div className="glass-elevated rounded-xl p-4">
-            <h3 className="mb-3 text-sm font-semibold text-slate-100">
+            <h3 className="mb-3 text-sm font-semibold text-foreground">
               {dataFor.username} 数据概览
             </h3>
             <div className="flex gap-6 text-sm">
               <div>
-                <div className="text-xs text-slate-500">会话 (sessions)</div>
-                <div className="text-lg font-semibold text-slate-100">{dataCounts.sessions ?? '—'}</div>
+                <div className="text-xs text-muted">会话 (sessions)</div>
+                <div className="text-lg font-semibold text-foreground">{dataCounts.sessions ?? '—'}</div>
               </div>
               <div>
-                <div className="text-xs text-slate-500">研究 (studies)</div>
-                <div className="text-lg font-semibold text-slate-100">{dataCounts.studies ?? '—'}</div>
+                <div className="text-xs text-muted">研究 (studies)</div>
+                <div className="text-lg font-semibold text-foreground">{dataCounts.studies ?? '—'}</div>
               </div>
               <button onClick={() => setDataFor(null)}
-                className="ml-auto self-end rounded-lg border border-slate-700 px-3 py-1.5 text-xs text-slate-400 hover:bg-slate-800">
+                className="ml-auto self-end rounded-lg border border-strong px-3 py-1.5 text-xs text-muted hover:bg-surface-raised">
                 关闭
               </button>
             </div>
@@ -280,7 +280,7 @@ export function AdminUsersPage({ embedded = false }: { embedded?: boolean }) {
       actions={
         <>
           <button onClick={load} title="刷新"
-            className="flex items-center gap-1.5 rounded-lg border border-slate-700 bg-slate-800/50 px-2.5 py-1.5 text-xs text-slate-400 transition-colors hover:border-slate-600 hover:text-slate-300">
+            className="flex items-center gap-1.5 rounded-lg border border-strong bg-surface px-2.5 py-1.5 text-xs text-muted transition-colors hover:border-strong hover:text-secondary">
             <RefreshCw className="h-3.5 w-3.5" />
           </button>
           <button onClick={() => setShowCreate((v) => !v)}

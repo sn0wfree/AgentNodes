@@ -67,7 +67,7 @@ export function AccountPage() {
             <AdminUsersPage embedded />
           </Section>
         )}
-        <button onClick={() => navigate('/chat')} className="text-xs text-slate-500 hover:text-slate-300">
+        <button onClick={() => navigate('/chat')} className="text-xs text-muted hover:text-secondary">
           ← 返回会话
         </button>
       </div>

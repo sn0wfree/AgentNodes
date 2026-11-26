@@ -34,18 +34,18 @@ export function DAGPage() {
       <div className="relative z-10 flex h-full w-full overflow-hidden">
         <IconNav />
         <div className="flex flex-1 flex-col overflow-hidden">
-          <header className="glass flex h-12 flex-shrink-0 items-center justify-between border-b border-slate-800 px-4">
+          <header className="glass flex h-12 flex-shrink-0 items-center justify-between border-b border-subtle px-4">
             <div className="flex min-w-0 items-center gap-2.5">
               <span className="text-primary-400"><Network className="h-4 w-4" /></span>
-              <h1 className="truncate text-sm font-semibold tracking-tight text-slate-100">编排</h1>
-              <span className="hidden truncate font-mono text-[10px] text-slate-500 md:inline">
+              <h1 className="truncate text-sm font-semibold tracking-tight text-foreground">编排</h1>
+              <span className="hidden truncate font-mono text-[10px] text-muted md:inline">
                 工作流设计 · 运行 · 历史 · Agent 监控
               </span>
             </div>
             <button
               onClick={toggleTheme}
               title={theme === 'dark' ? '切换到浅色模式' : '切换到深色模式'}
-              className="flex items-center gap-1.5 rounded-lg border border-slate-700 bg-slate-800/50 px-2.5 py-1.5 text-xs text-slate-400 transition-colors hover:border-slate-600 hover:text-slate-300"
+              className="flex items-center gap-1.5 rounded-lg border border-strong bg-surface px-2.5 py-1.5 text-xs text-muted transition-colors hover:border-strong hover:text-secondary"
             >
               {theme === 'dark' ? <Sun className="h-3.5 w-3.5" /> : <Moon className="h-3.5 w-3.5" />}
             </button>
@@ -56,7 +56,7 @@ export function DAGPage() {
               <Tabs.Trigger
                 value="edit"
                 className="flex items-center gap-2 border-b-2 border-transparent px-5 py-2.5 wf-text-sub text-sm transition-colors
-                  data-[state=active]:border-primary-500 data-[state=active]:text-slate-100"
+                  data-[state=active]:border-primary-500 data-[state=active]:text-foreground"
               >
                 <PenTool className="h-4 w-4" />
                 编排
@@ -64,7 +64,7 @@ export function DAGPage() {
               <Tabs.Trigger
                 value="agent"
                 className="flex items-center gap-2 border-b-2 border-transparent px-5 py-2.5 wf-text-sub text-sm transition-colors
-                  data-[state=active]:border-primary-500 data-[state=active]:text-slate-100"
+                  data-[state=active]:border-primary-500 data-[state=active]:text-foreground"
               >
                 <Bot className="h-4 w-4" />
                 Agent 监控
@@ -104,14 +104,14 @@ export function DAGPage() {
                     icon={<Clock className="h-4 w-4" />}
                     label="待启动"
                     value={String(pendingCount)}
-                    color="text-slate-400"
-                    bg="border border-slate-700 bg-slate-500/10 text-slate-400"
+                    color="text-muted"
+                    bg="border border-strong bg-slate-500/10 text-muted"
                   />
                 </div>
 
                 {agentList.length === 0 ? (
-                  <div className="mt-8 rounded-xl border border-dashed border-slate-800 px-4 py-12 text-center">
-                    <Bot className="mx-auto h-10 w-10 text-slate-600" />
+                  <div className="mt-8 rounded-xl border border-dashed border-subtle px-4 py-12 text-center">
+                    <Bot className="mx-auto h-10 w-10 text-muted" />
                     <p className="wf-text-sub mt-3 text-sm">暂无 Agent</p>
                     <p className="wf-text-sub mt-1 text-xs">
                       Agent 会在聊天或编排任务执行时自动创建
@@ -147,7 +147,7 @@ function SummaryStat({
   bg: string
 }) {
   return (
-    <div className="wf-panel flex items-center gap-3 rounded-xl border px-4 py-3 shadow-soft transition-colors hover:border-slate-700">
+    <div className="wf-panel flex items-center gap-3 rounded-xl border px-4 py-3 shadow-soft transition-colors hover:border-strong">
       <div className={`flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-lg ${bg}`}>
         {icon}
       </div>

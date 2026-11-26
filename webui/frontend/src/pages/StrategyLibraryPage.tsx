@@ -15,9 +15,9 @@ const STATUS_META: Record<string, { label: string; cls: string }> = {
   queued: { label: '排队中', cls: 'border-sky-500/30 bg-sky-500/10 text-info-fg' },
   monitoring: { label: '监控中', cls: 'border-sky-500/30 bg-sky-500/10 text-info-fg' },
   paused: { label: '已暂停', cls: 'border-warning/30 bg-warning-fill text-warning-fg' },
-  completed: { label: '已完成', cls: 'border-slate-600 bg-slate-800/40 text-slate-300' },
+  completed: { label: '已完成', cls: 'border-strong bg-surface text-secondary' },
   failed: { label: '已失败', cls: 'border-red-500/30 bg-red-500/10 text-danger-fg' },
-  cancelled: { label: '已取消', cls: 'border-slate-600 bg-slate-800/40 text-slate-400' },
+  cancelled: { label: '已取消', cls: 'border-strong bg-surface text-muted' },
 }
 
 function fmtMetric(metrics: Record<string, number | string> | null | undefined, key: string): string {
@@ -38,9 +38,9 @@ function MetricBox({ label, value, tone }: { label: string; value: string; tone:
     : tone === 'neg' ? 'text-danger-fg'
     : 'text-info-fg'
   return (
-    <div className="min-w-[92px] flex-1 rounded-md border border-slate-800 bg-slate-950/60 px-3 py-2 text-center">
-      <div className={`font-mono text-sm font-semibold ${value === '—' ? 'text-slate-600' : color}`}>{value}</div>
-      <div className="mt-0.5 text-[9px] text-slate-500">{label}</div>
+    <div className="min-w-[92px] flex-1 rounded-md border border-subtle bg-slate-950/60 px-3 py-2 text-center">
+      <div className={`font-mono text-sm font-semibold ${value === '—' ? 'text-muted' : color}`}>{value}</div>
+      <div className="mt-0.5 text-[9px] text-muted">{label}</div>
     </div>
   )
 }
@@ -126,8 +126,8 @@ export function StrategyLibraryPage() {
       )}
       {loading && strategies.length === 0 && (
         <div className="space-y-2.5">
-          <div className="h-[96px] rounded-xl border border-slate-800/50" />
-          <div className="h-[96px] rounded-xl border border-slate-800/50" />
+          <div className="h-[96px] rounded-xl border border-subtle" />
+          <div className="h-[96px] rounded-xl border border-subtle" />
         </div>
       )}
       {error && (
@@ -145,15 +145,15 @@ export function StrategyLibraryPage() {
               return (
                 <div
                   key={s.name}
-                  className="cursor-pointer rounded-lg border border-slate-800 bg-slate-900/60 px-4 py-3.5 transition-all hover:-translate-y-px hover:border-slate-700 hover:shadow-lg hover:shadow-black/40"
+                  className="cursor-pointer rounded-lg border border-subtle bg-surface-raised px-4 py-3.5 transition-all hover:-translate-y-px hover:border-strong hover:shadow-lg hover:shadow-black/40"
                   onClick={() => {
                     const run = s.runs[0]
                     if (run) navigate(`/run/${s.name}/${run.name}`)
                   }}
                 >
                   <div className="flex items-center gap-2.5">
-                    <Folder className="h-4 w-4 text-slate-400" />
-                    <span className="text-sm font-semibold text-slate-100">{s.name}</span>
+                    <Folder className="h-4 w-4 text-muted" />
+                    <span className="text-sm font-semibold text-foreground">{s.name}</span>
                     {s.has_strategy_py ? (
                       <span className="inline-flex items-center gap-1 rounded-full border border-emerald-500/30 bg-emerald-500/10 px-2 py-0.5 text-[9px] text-success-fg">
                         <CheckCircle2 className="h-2.5 w-2.5" /> strategy.py
@@ -168,11 +168,11 @@ export function StrategyLibraryPage() {
                         <CheckCircle2 className="h-2.5 w-2.5" /> config.yaml
                       </span>
                     ) : (
-                      <span className="inline-flex items-center gap-1 rounded-full border border-slate-700 px-2 py-0.5 text-[9px] text-slate-400">
+                      <span className="inline-flex items-center gap-1 rounded-full border border-strong px-2 py-0.5 text-[9px] text-muted">
                         <CircleDashed className="h-2.5 w-2.5" /> 无 config.yaml
                       </span>
                     )}
-                    <span className="rounded-full border border-slate-700 px-2 py-0.5 font-mono text-[9px] text-slate-400">
+                    <span className="rounded-full border border-strong px-2 py-0.5 font-mono text-[9px] text-muted">
                       run ×{s.runs.length}
                     </span>
                     <div className="flex-1" />
@@ -186,7 +186,7 @@ export function StrategyLibraryPage() {
                     <MetricBox label="夏普" value={fmtMetric(metrics, 'sharpe')} tone="neutral" />
                     <MetricBox label="卡玛" value={fmtMetric(metrics, 'calmar')} tone={Number((metrics?.calmar ?? 0)) >= 0 ? 'pos' : 'neg'} />
                     <MetricBox label="最大回撤" value={fmtMetric(metrics, 'max_drawdown')} tone="neg" />
-                    {latest && <span className="ml-1 self-center font-mono text-[9px] text-slate-600">{latest.name}</span>}
+                    {latest && <span className="ml-1 self-center font-mono text-[9px] text-muted">{latest.name}</span>}
                   </div>
 
                   {studyForStrategy.length > 0 && (
@@ -209,22 +209,22 @@ export function StrategyLibraryPage() {
               )
             })}
             {!loading && strategies.length === 0 && (
-              <div className="py-20 text-center text-sm text-slate-500">暂无策略</div>
+              <div className="py-20 text-center text-sm text-muted">暂无策略</div>
             )}
           </div>
 
           {/* Study history */}
           {studies.length > 0 && (
             <>
-              <h2 className="mb-2.5 mt-7 flex items-center gap-2 text-xs font-semibold text-slate-500">
+              <h2 className="mb-2.5 mt-7 flex items-center gap-2 text-xs font-semibold text-muted">
                 <FileText className="h-3.5 w-3.5" />
                 研究记录
-                <span className="font-mono font-normal text-slate-600">/api/study/list</span>
+                <span className="font-mono font-normal text-muted">/api/study/list</span>
               </h2>
-              <div className="overflow-hidden rounded-lg border border-slate-800">
+              <div className="overflow-hidden rounded-lg border border-subtle">
                 <table className="w-full text-xs">
                   <thead>
-                    <tr className="border-b border-slate-800 bg-slate-900/80 text-left text-[10px] text-slate-500">
+                    <tr className="border-b border-subtle bg-surface-raised text-left text-[10px] text-muted">
                       <th className="px-3 py-2.5 font-medium">目标</th>
                       <th className="px-3 py-2.5 font-medium">策略</th>
                       <th className="px-3 py-2.5 font-medium">状态</th>
@@ -238,10 +238,10 @@ export function StrategyLibraryPage() {
                       return (
                         <tr
                           key={st.study_id}
-                          className="cursor-pointer border-b border-slate-800/50 transition-colors last:border-b-0 hover:bg-slate-800/30"
+                          className="cursor-pointer border-b border-subtle transition-colors last:border-b-0 hover:bg-surface-raised/30"
                           onClick={() => navigate(`/study/${st.study_id}`)}
                         >
-                          <td className="px-3 py-2.5 text-slate-300">{st.objective || '—'}</td>
+                          <td className="px-3 py-2.5 text-secondary">{st.objective || '—'}</td>
                           <td className="px-3 py-2.5 font-mono text-primary-300">{st.strategy_name || '—'}</td>
                           <td className="px-3 py-2.5">
                             <span className={`inline-flex items-center gap-1.5 rounded-full border px-2 py-0.5 text-[9px] ${meta.cls}`}>
@@ -249,8 +249,8 @@ export function StrategyLibraryPage() {
                               {meta.label}
                             </span>
                           </td>
-                          <td className="px-3 py-2.5 font-mono text-slate-400">{st.current_round ?? 0}</td>
-                          <td className="px-3 py-2.5 text-slate-400">{st.last_verdict ?? '—'}</td>
+                          <td className="px-3 py-2.5 font-mono text-muted">{st.current_round ?? 0}</td>
+                          <td className="px-3 py-2.5 text-muted">{st.last_verdict ?? '—'}</td>
                         </tr>
                       )
                     })}

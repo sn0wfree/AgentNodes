@@ -18,7 +18,7 @@ function StatCard({
   iconCls,
   value,
   label,
-  valueCls = 'text-slate-100',
+  valueCls = 'text-foreground',
 }: {
   icon: React.ReactNode
   iconCls: string
@@ -27,11 +27,11 @@ function StatCard({
   valueCls?: string
 }) {
   return (
-    <div className="flex items-center gap-3 rounded-xl border border-slate-800 bg-slate-900/60 px-4 py-3.5 shadow-soft transition-colors hover:border-slate-700">
+    <div className="flex items-center gap-3 rounded-xl border border-subtle bg-surface-raised px-4 py-3.5 shadow-soft transition-colors hover:border-strong">
       <div className={`flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-lg ${iconCls}`}>{icon}</div>
       <div className="min-w-0">
         <div className={`font-mono text-xl font-bold tabular-nums ${valueCls}`}>{value}</div>
-        <div className="text-[10px] text-slate-500">{label}</div>
+        <div className="text-[10px] text-muted">{label}</div>
       </div>
     </div>
   )
@@ -54,22 +54,22 @@ function QuickEntry({
   return (
     <button
       onClick={() => navigate(to)}
-      className="group flex items-center gap-3 rounded-xl border border-slate-800 bg-slate-900/60 px-4 py-3.5 text-left shadow-soft transition-all hover:-translate-y-0.5 hover:border-primary-500/40 hover:shadow-elevated"
+      className="group flex items-center gap-3 rounded-xl border border-subtle bg-surface-raised px-4 py-3.5 text-left shadow-soft transition-all hover:-translate-y-0.5 hover:border-primary-500/40 hover:shadow-elevated"
     >
       <div className={`flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-xl ${iconCls}`}>
         {icon}
       </div>
       <div className="min-w-0 flex-1">
-        <div className="text-sm font-semibold text-slate-100">{title}</div>
-        <div className="truncate text-[10px] text-slate-500">{desc}</div>
+        <div className="text-sm font-semibold text-foreground">{title}</div>
+        <div className="truncate text-[10px] text-muted">{desc}</div>
       </div>
-      <ArrowRight className="h-4 w-4 flex-shrink-0 text-slate-600 transition-colors group-hover:text-primary-400" />
+      <ArrowRight className="h-4 w-4 flex-shrink-0 text-muted transition-colors group-hover:text-primary-400" />
     </button>
   )
 }
 
 function ShimmerCard() {
-  return <div className="h-[74px] rounded-xl border border-slate-800/50" />
+  return <div className="h-[74px] rounded-xl border border-subtle" />
 }
 
 export function MonitorPage() {
@@ -177,16 +177,16 @@ export function MonitorPage() {
       </div>
 
       {/* Status strip */}
-      <div className="mt-3 flex flex-wrap items-center justify-between gap-2 rounded-xl border border-slate-800 bg-slate-900/60 px-4 py-2.5">
-        <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-[10px] text-slate-500">
+      <div className="mt-3 flex flex-wrap items-center justify-between gap-2 rounded-xl border border-subtle bg-surface-raised px-4 py-2.5">
+        <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-[10px] text-muted">
           <span className="inline-flex items-center gap-1.5">
-            <Cpu className="h-3 w-3 text-slate-600" />
-            LLM: <span className="font-mono text-slate-300">{llm.provider || '—'} / {llm.model || '—'}</span>
+            <Cpu className="h-3 w-3 text-muted" />
+            LLM: <span className="font-mono text-secondary">{llm.provider || '—'} / {llm.model || '—'}</span>
           </span>
           {workspacePath && (
             <span className="inline-flex items-center gap-1.5">
-              <FolderOpen className="h-3 w-3 text-slate-600" />
-              <span className="font-mono text-slate-300">{workspacePath}</span>
+              <FolderOpen className="h-3 w-3 text-muted" />
+              <span className="font-mono text-secondary">{workspacePath}</span>
             </span>
           )}
           {error && (
@@ -221,7 +221,7 @@ export function MonitorPage() {
         <QuickEntry
           to="/strategies"
           icon={<Layers className="h-5 w-5" />}
-          iconCls="border-slate-600/40 bg-slate-700/20 text-slate-300"
+          iconCls="border-strong/40 bg-surface-raised/20 text-secondary"
           title="策略库"
           desc="策略 + 研究记录"
         />
@@ -231,7 +231,7 @@ export function MonitorPage() {
       <div className="mt-6 grid gap-4 lg:grid-cols-2">
         {/* Active studies */}
         <section>
-          <h2 className="mb-2.5 flex items-center gap-2 text-xs font-semibold text-slate-500">
+          <h2 className="mb-2.5 flex items-center gap-2 text-xs font-semibold text-muted">
             <Activity className="h-3.5 w-3.5 text-red-400" />
             进行中的研究
           </h2>
@@ -244,11 +244,11 @@ export function MonitorPage() {
               研究数据加载失败：{error || studyError}
             </div>
           ) : !sessionId ? (
-            <div className="rounded-xl border border-dashed border-slate-800 px-4 py-8 text-center text-xs text-slate-600">
+            <div className="rounded-xl border border-dashed border-subtle px-4 py-8 text-center text-xs text-muted">
               请选择会话以查看研究
             </div>
           ) : activeStudies.length === 0 ? (
-            <div className="rounded-xl border border-dashed border-slate-800 px-4 py-8 text-center text-xs text-slate-600">
+            <div className="rounded-xl border border-dashed border-subtle px-4 py-8 text-center text-xs text-muted">
               暂无进行中的研究 —— 去 <span className="cursor-pointer text-primary-400 hover:underline" onClick={() => navigate('/chat')}>Chat</span> 发起一个吧
             </div>
           ) : (
@@ -256,15 +256,15 @@ export function MonitorPage() {
               {activeStudies.map((s) => (
                 <div
                   key={s.study_id}
-                  className="flex cursor-pointer items-center gap-3 rounded-xl border border-slate-800 bg-slate-900/60 px-4 py-3 shadow-soft transition-all hover:translate-x-0.5 hover:border-slate-700 hover:shadow-elevated"
+                  className="flex cursor-pointer items-center gap-3 rounded-xl border border-subtle bg-surface-raised px-4 py-3 shadow-soft transition-all hover:translate-x-0.5 hover:border-strong hover:shadow-elevated"
                   onClick={() => navigate(`/study/${s.study_id}`)}
                 >
                   <div className="min-w-0 flex-1">
-                    <div className="truncate text-xs font-medium text-slate-200">
+                    <div className="truncate text-xs font-medium text-foreground">
                       {s.objective || '未命名研究'}
                       <span className="ml-1.5 font-mono text-[10px] text-primary-300">{s.strategy_name}</span>
                     </div>
-                    <div className="mt-0.5 font-mono text-[10px] text-slate-500">
+                    <div className="mt-0.5 font-mono text-[10px] text-muted">
                       轮次 {s.current_round ?? 0} · {s.updated_at ? new Date(s.updated_at).toLocaleTimeString() : '—'}
                     </div>
                   </div>
@@ -280,10 +280,10 @@ export function MonitorPage() {
 
         {/* Recent runs */}
         <section>
-          <h2 className="mb-2.5 flex items-center gap-2 text-xs font-semibold text-slate-500">
+          <h2 className="mb-2.5 flex items-center gap-2 text-xs font-semibold text-muted">
             <ChartLine className="h-3.5 w-3.5" />
             最近回测运行
-            <span className="ml-auto font-mono font-normal text-slate-600">/api/run/list</span>
+            <span className="ml-auto font-mono font-normal text-muted">/api/run/list</span>
           </h2>
           {loading ? (
             <div className="space-y-2">
@@ -294,14 +294,14 @@ export function MonitorPage() {
               运行数据加载失败：{error || runError}
             </div>
           ) : runs.length === 0 ? (
-            <div className="rounded-xl border border-dashed border-slate-800 px-4 py-8 text-center text-xs text-slate-600">
+            <div className="rounded-xl border border-dashed border-subtle px-4 py-8 text-center text-xs text-muted">
               暂无运行记录
             </div>
           ) : (
-            <div className="overflow-hidden rounded-xl border border-slate-800">
+            <div className="overflow-hidden rounded-xl border border-subtle">
               <table className="w-full text-xs">
                 <thead>
-                  <tr className="border-b border-slate-800 bg-slate-900/80 text-left text-[10px] text-slate-500">
+                  <tr className="border-b border-subtle bg-surface-raised text-left text-[10px] text-muted">
                     <th className="px-3 py-2.5 font-medium">Run</th>
                     <th className="px-3 py-2.5 font-medium">总收益</th>
                     <th className="px-3 py-2.5 font-medium">夏普</th>
@@ -316,7 +316,7 @@ export function MonitorPage() {
                     return (
                       <tr
                         key={r.name}
-                        className="cursor-pointer border-b border-slate-800/50 transition-colors last:border-b-0 hover:bg-slate-800/30"
+                        className="cursor-pointer border-b border-subtle transition-colors last:border-b-0 hover:bg-surface-raised/30"
                         onClick={() => navigate(`/run/*/${r.name}`)}
                       >
                         <td className="px-3 py-2.5 font-mono text-primary-300">{r.name}</td>
@@ -344,31 +344,31 @@ export function MonitorPage() {
       <div className="mt-6 grid gap-4 lg:grid-cols-2">
         {/* Agent overview */}
         <section>
-          <h2 className="mb-2.5 flex items-center gap-2 text-xs font-semibold text-slate-500">
+          <h2 className="mb-2.5 flex items-center gap-2 text-xs font-semibold text-muted">
             <Bot className="h-3.5 w-3.5" />
             Agent 概览
-            <span className="ml-auto font-normal text-slate-600">SSE 实时</span>
+            <span className="ml-auto font-normal text-muted">SSE 实时</span>
           </h2>
           {agentList.length === 0 ? (
-            <div className="rounded-xl border border-dashed border-slate-800 px-4 py-8 text-center text-xs text-slate-600">
+            <div className="rounded-xl border border-dashed border-subtle px-4 py-8 text-center text-xs text-muted">
               暂无 Agent —— 运行编排任务后实时展示
             </div>
           ) : (
             <div className="space-y-2">
               {agentList.slice(0, 8).map((a) => (
-                <div key={a.id} className="flex items-center gap-3 rounded-xl border border-slate-800 bg-slate-900/60 px-4 py-2.5 shadow-soft">
+                <div key={a.id} className="flex items-center gap-3 rounded-xl border border-subtle bg-surface-raised px-4 py-2.5 shadow-soft">
                   <div className="relative flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full" style={{ backgroundColor: a.color || '#8b5cf6' }}>
                     <Bot className="h-4 w-4 text-white" />
                   </div>
                   <div className="min-w-0 flex-1">
-                    <div className="truncate text-xs font-medium text-slate-200">
+                    <div className="truncate text-xs font-medium text-foreground">
                       {a.name || a.id.slice(0, 8)}
                     </div>
-                    <div className="font-mono text-[10px] text-slate-500">
+                    <div className="font-mono text-[10px] text-muted">
                       {a.iterations_detail.length} 轮迭代 · {Math.round(a.context_tokens / 1000)}k tokens
                     </div>
                   </div>
-                  <span className={`text-[10px] ${a.status === 'running' ? 'text-warning-fg' : a.status === 'completed' ? 'text-emerald-400' : 'text-slate-500'}`}>
+                  <span className={`text-[10px] ${a.status === 'running' ? 'text-warning-fg' : a.status === 'completed' ? 'text-emerald-400' : 'text-muted'}`}>
                     {statusLabel(a.status)}
                   </span>
                   {a.status === 'running' && <Zap className="h-3.5 w-3.5 animate-pulse text-warning-fg" />}
@@ -380,11 +380,11 @@ export function MonitorPage() {
 
         {/* System info */}
         <section>
-          <h2 className="mb-2.5 flex items-center gap-2 text-xs font-semibold text-slate-500">
+          <h2 className="mb-2.5 flex items-center gap-2 text-xs font-semibold text-muted">
             <Cpu className="h-3.5 w-3.5" />
             系统信息
           </h2>
-          <div className="overflow-hidden rounded-xl border border-slate-800">
+          <div className="overflow-hidden rounded-xl border border-subtle">
             <table className="w-full text-xs">
               <tbody>
                 {[
@@ -395,9 +395,9 @@ export function MonitorPage() {
                   // P10 假状态修复：监控页无 useSSE 订阅，移除 SSEStatus
                   // 以免显示永久误导性「已断开」——连接状态只在 /chat 提供。
                 ].map(([k, v], i) => (
-                  <tr key={String(k)} className={`border-b border-slate-800/50 last:border-b-0 ${i % 2 === 0 ? 'bg-slate-900/40' : 'bg-slate-900/20'}`}>
-                    <td className="w-32 px-3 py-2.5 text-slate-500">{String(k)}</td>
-                    <td className="px-3 py-2.5 text-slate-300">{v as React.ReactNode}</td>
+                  <tr key={String(k)} className={`border-b border-subtle last:border-b-0 ${i % 2 === 0 ? 'bg-surface' : 'bg-slate-900/20'}`}>
+                    <td className="w-32 px-3 py-2.5 text-muted">{String(k)}</td>
+                    <td className="px-3 py-2.5 text-secondary">{v as React.ReactNode}</td>
                   </tr>
                 ))}
               </tbody>

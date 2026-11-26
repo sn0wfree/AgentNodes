@@ -19,27 +19,27 @@ export function TracePage() {
     <PageShell title="Trace" subtitle="历史运行回放 · 事件时间线" icon={<ScrollText className="h-4 w-4" />}>
       <div className="space-y-3">
         <div className="flex items-center gap-2">
-          <label htmlFor="trace-session" className="text-xs text-slate-400">会话</label>
+          <label htmlFor="trace-session" className="text-xs text-muted">会话</label>
           <select
             id="trace-session"
             value={selectedId}
             onChange={(e) => setSelectedId(e.target.value)}
-            className="max-w-md rounded-lg border border-slate-700 bg-slate-800 px-2 py-1 text-xs text-slate-200 outline-none focus:border-primary-500"
+            className="max-w-md rounded-lg border border-strong bg-surface-raised px-2 py-1 text-xs text-foreground outline-none focus:border-primary-500"
           >
             {sessions.length === 0 && <option value="">（暂无会话）</option>}
             {sessions.map((s) => (
               <option key={s.id} value={s.id}>{s.title}</option>
             ))}
           </select>
-          <button onClick={() => navigate('/chat')} className="ml-auto text-xs text-slate-500 hover:text-slate-300">
+          <button onClick={() => navigate('/chat')} className="ml-auto text-xs text-muted hover:text-secondary">
             ← 返回会话
           </button>
         </div>
-        <div className="h-[calc(100vh-220px)] min-h-[420px] rounded-lg border border-slate-800 bg-slate-950">
+        <div className="h-[calc(100vh-220px)] min-h-[420px] rounded-lg border border-subtle bg-slate-950">
           {selectedId ? (
             <TraceViewer sessionId={selectedId} onClose={() => navigate('/chat')} />
           ) : (
-            <div className="flex h-full items-center justify-center text-sm text-slate-500">
+            <div className="flex h-full items-center justify-center text-sm text-muted">
               选择一条会话以查看其 Trace
             </div>
           )}
