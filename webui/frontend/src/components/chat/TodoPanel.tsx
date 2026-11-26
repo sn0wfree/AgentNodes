@@ -32,7 +32,7 @@ export function TodoPanel() {
       data-testid="todo-panel"
     >
       <div
-        className="overflow-hidden rounded-xl border border-slate-700/60 bg-slate-900/95 shadow-lg backdrop-blur"
+        className="overflow-hidden rounded-xl border border-subtle bg-slate-900/95 shadow-lg backdrop-blur"
         data-component="session-todo-dock"
       >
         {/* Header row */}
@@ -46,16 +46,16 @@ export function TodoPanel() {
             e.preventDefault()
             toggleExpanded()
           }}
-          className="flex h-[42px] cursor-pointer items-center gap-2 overflow-visible pl-4 pr-2 select-none hover:bg-slate-800/40"
+          className="flex h-[42px] cursor-pointer items-center gap-2 overflow-visible pl-4 pr-2 select-none hover:bg-surface"
           data-action="session-todo-toggle"
           data-collapsed={expanded ? 'false' : 'true'}
         >
-          <span className="shrink-0 text-[13px] font-normal leading-5 tracking-[-0.04px] text-slate-400">
+          <span className="shrink-0 text-[13px] font-normal leading-5 tracking-[-0.04px] text-muted">
             已完成 {done} 个任务（共 {total} 个）
           </span>
           {preview && (
             <div
-              className="ml-1 min-w-0 flex-1 truncate text-[13px] font-normal leading-5 tracking-[-0.04px] text-slate-500"
+              className="ml-1 min-w-0 flex-1 truncate text-[13px] font-normal leading-5 tracking-[-0.04px] text-muted"
               data-slot="session-todo-preview"
             >
               {preview}
@@ -71,7 +71,7 @@ export function TodoPanel() {
               e.stopPropagation()
               toggleExpanded()
             }}
-            className="ml-auto flex h-7 w-7 items-center justify-center rounded text-slate-500 hover:bg-slate-800 hover:text-slate-300"
+            className="ml-auto flex h-7 w-7 items-center justify-center rounded text-muted hover:bg-surface-raised hover:text-secondary"
           >
             <ChevronDown
               className={`h-4 w-4 transition-transform duration-300 ${
@@ -132,10 +132,10 @@ function TodoRow({ todo }: { todo: TodoItem }) {
   const checked = todo.status === 'completed' || todo.status === 'cancelled'
   const inProgress = todo.status === 'in_progress'
   const labelClass = checked
-    ? 'text-slate-500 line-through'
+    ? 'text-muted line-through'
     : inProgress
-      ? 'text-slate-200'
-      : 'text-slate-200/90'
+      ? 'text-foreground'
+      : 'text-foreground/90'
 
   return (
     <label
@@ -148,8 +148,8 @@ function TodoRow({ todo }: { todo: TodoItem }) {
           checked
             ? 'border-slate-500 bg-slate-600'
             : inProgress
-              ? 'border-slate-500 bg-slate-700'
-              : 'border-slate-600 bg-transparent'
+              ? 'border-slate-500 bg-surface-raised'
+              : 'border bg-transparent'
         }`}
         aria-hidden="true"
       >

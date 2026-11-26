@@ -116,14 +116,14 @@ export function SessionSidebar() {
   }
 
   return (
-    <div className="flex h-full w-64 flex-col border-r border-slate-800 bg-slate-900/80">
+    <div className="flex h-full w-64 flex-col border-r border-subtle bg-surface-raised">
       {/* Header */}
-      <div className="flex items-center justify-between border-b border-slate-800 px-3 py-2">
-        <span className="text-sm font-medium text-slate-300">会话</span>
+      <div className="flex items-center justify-between border-b border-subtle px-3 py-2">
+        <span className="text-sm font-medium text-secondary">会话</span>
         <div className="flex gap-1">
           <button
             onClick={() => setSidebarOpen(false)}
-            className="rounded p-1 text-slate-400 hover:bg-slate-800 hover:text-slate-200"
+            className="rounded p-1 text-muted hover:bg-surface-raised hover:text-foreground"
             title="收起侧边栏"
           >
             <X className="h-4 w-4" />
@@ -144,14 +144,14 @@ export function SessionSidebar() {
 
       {/* Search */}
       <div className="px-3 py-2">
-        <div className="relative rounded-md border border-slate-700 bg-slate-800">
-          <Search className="absolute left-2 top-1/2 z-10 h-3.5 w-3.5 -translate-y-1/2 text-slate-500" />
+        <div className="relative rounded-md border border-strong bg-surface-raised">
+          <Search className="absolute left-2 top-1/2 z-10 h-3.5 w-3.5 -translate-y-1/2 text-muted" />
           <input
             type="text"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             placeholder="搜索会话..."
-            className="relative z-10 w-full rounded-md bg-transparent py-1.5 pl-8 pr-2 text-sm text-slate-200 placeholder-slate-500 outline-none focus:border-primary-500"
+            className="relative z-10 w-full rounded-md bg-transparent py-1.5 pl-8 pr-2 text-sm text-foreground placeholder-slate-500 outline-none focus:border-primary-500"
           />
         </div>
       </div>
@@ -164,8 +164,8 @@ export function SessionSidebar() {
             onClick={() => setFilter(f)}
             className={`rounded px-2 py-0.5 text-xs transition-colors ${
               filter === f
-                ? 'bg-slate-800 text-slate-100'
-                : 'text-slate-400 hover:bg-slate-800 hover:text-slate-200'
+                ? 'bg-surface-raised text-foreground'
+                : 'text-muted hover:bg-surface-raised hover:text-foreground'
             }`}
           >
             {f === 'all' ? '全部' : f === 'starred' ? '星标' : '归档'}
@@ -176,14 +176,14 @@ export function SessionSidebar() {
       {/* Session list */}
       <div className="flex-1 overflow-y-auto px-2">
         {filtered.length === 0 ? (
-          <div className="flex flex-col items-center py-8 text-slate-500">
+          <div className="flex flex-col items-center py-8 text-muted">
             <MessageSquare className="mb-2 h-8 w-8" />
             {search.trim() ? (
               <>
                 <span className="text-sm">没有匹配「{search.trim()}」的会话</span>
                 <button
                   onClick={() => setSearch('')}
-                  className="mt-2 rounded px-2 py-1 text-xs text-slate-400 hover:bg-slate-800 hover:text-slate-200"
+                  className="mt-2 rounded px-2 py-1 text-xs text-muted hover:bg-surface-raised hover:text-foreground"
                 >
                   清除搜索
                 </button>
@@ -193,7 +193,7 @@ export function SessionSidebar() {
                 <span className="text-sm">{filter === 'starred' ? '暂无星标会话' : '暂无归档会话'}</span>
                 <button
                   onClick={() => setFilter('all')}
-                  className="mt-2 rounded px-2 py-1 text-xs text-slate-400 hover:bg-slate-800 hover:text-slate-200"
+                  className="mt-2 rounded px-2 py-1 text-xs text-muted hover:bg-surface-raised hover:text-foreground"
                 >
                   查看全部
                 </button>
@@ -208,7 +208,7 @@ export function SessionSidebar() {
             if (items.length === 0) return null
             return (
               <div key={key} className="mb-1">
-                <div className="px-2 pb-1 pt-2.5 text-[10px] font-medium uppercase tracking-wider text-slate-500">
+                <div className="px-2 pb-1 pt-2.5 text-[10px] font-medium uppercase tracking-wider text-muted">
                   {label}
                 </div>
                 {items.map((sess) => (
@@ -288,8 +288,8 @@ function SessionRow({
       onClick={onSelect}
       className={`group mb-1 cursor-pointer rounded-md px-2 py-1.5 transition-colors ${
         isActive
-          ? 'bg-slate-800 text-slate-100'
-          : 'text-slate-300 hover:bg-slate-800'
+          ? 'bg-surface-raised text-foreground'
+          : 'text-secondary hover:bg-surface-raised'
       }`}
     >
       {tagging ? (
@@ -304,7 +304,7 @@ function SessionRow({
           }}
           onClick={(e) => e.stopPropagation()}
           placeholder="tag1, tag2"
-          className="w-full rounded border border-primary-500 bg-slate-800 px-1 py-0.5 text-sm text-slate-200 outline-none"
+          className="w-full rounded border border-primary-500 bg-surface-raised px-1 py-0.5 text-sm text-foreground outline-none"
         />
       ) : (
         <>
@@ -323,7 +323,7 @@ function SessionRow({
                 message list is already loaded. */}
           </div>
           <div className="flex items-center justify-between">
-            <span className="text-xs text-slate-500">
+            <span className="text-xs text-muted">
               {formatTime(sess.updated_at)}
             </span>
             {/* Action buttons (visible on hover) */}
@@ -333,7 +333,7 @@ function SessionRow({
                   e.stopPropagation()
                   onToggleStar()
                 }}
-                className="rounded p-0.5 text-slate-400 hover:text-yellow-400"
+                className="rounded p-0.5 text-muted hover:text-yellow-400"
                 title={sess.starred ? '取消星标' : '星标'}
               >
                 <Star className={`h-3 w-3 ${sess.starred ? 'fill-yellow-400' : ''}`} />
@@ -343,7 +343,7 @@ function SessionRow({
                   e.stopPropagation()
                   onRequestRename()
                 }}
-                className="rounded p-0.5 text-slate-400 hover:text-slate-200"
+                className="rounded p-0.5 text-muted hover:text-foreground"
                 title="重命名"
               >
                 <Pencil className="h-3 w-3" />
@@ -353,7 +353,7 @@ function SessionRow({
                   e.stopPropagation()
                   onStartTag()
                 }}
-                className="rounded p-0.5 text-slate-400 hover:text-slate-200"
+                className="rounded p-0.5 text-muted hover:text-foreground"
                 title="编辑标签"
               >
                 <Tag className="h-3 w-3" />
@@ -363,7 +363,7 @@ function SessionRow({
                   e.stopPropagation()
                   onToggleArchive()
                 }}
-                className="rounded p-0.5 text-slate-400 hover:text-slate-200"
+                className="rounded p-0.5 text-muted hover:text-foreground"
                 title={sess.archived ? '取消归档' : '归档'}
               >
                 <Archive className="h-3 w-3" />
@@ -373,7 +373,7 @@ function SessionRow({
                   e.stopPropagation()
                   onDelete()
                 }}
-                className="rounded p-0.5 text-slate-400 hover:text-danger-fg"
+                className="rounded p-0.5 text-muted hover:text-danger-fg"
                 title="删除"
               >
                 <Trash2 className="h-3 w-3" />

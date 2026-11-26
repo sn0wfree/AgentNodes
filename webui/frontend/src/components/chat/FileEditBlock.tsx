@@ -51,7 +51,7 @@ function computeDiff(oldContent: string, newContent: string): DiffLine[] {
 const LINE_STYLES = {
   add: 'bg-emerald-950/40 text-emerald-300 border-l-2 border-emerald-500',
   remove: 'bg-red-950/40 text-red-300 border-l-2 border-red-500',
-  context: 'text-slate-400',
+  context: 'text-muted',
 }
 
 export function FileEditBlock({ fileEdit }: FileEditBlockProps) {
@@ -75,25 +75,25 @@ export function FileEditBlock({ fileEdit }: FileEditBlockProps) {
   }
 
   return (
-    <div className="my-2 rounded-lg border border-slate-700/50 overflow-hidden">
+    <div className="my-2 rounded-lg border border-subtle overflow-hidden">
       {/* Header */}
       <button
         onClick={() => setExpanded(!expanded)}
-        className="flex w-full items-center gap-2 bg-slate-800/50 px-3 py-2 text-left text-xs hover:bg-slate-800/80 transition-colors"
+        className="flex w-full items-center gap-2 bg-surface px-3 py-2 text-left text-xs hover:bg-surface-raised/80 transition-colors"
       >
         {expanded ? (
-          <ChevronDown className="h-3 w-3 text-slate-500" />
+          <ChevronDown className="h-3 w-3 text-muted" />
         ) : (
-          <ChevronRight className="h-3 w-3 text-slate-500" />
+          <ChevronRight className="h-3 w-3 text-muted" />
         )}
         <FileEdit className="h-3.5 w-3.5 text-primary-400" />
-        <span className="font-mono text-slate-300">{fileEdit.file_path}</span>
+        <span className="font-mono text-secondary">{fileEdit.file_path}</span>
         <span className="ml-auto flex items-center gap-2 text-[10px]">
           <span className="text-success-fg">+{added}</span>
           <span className="text-danger-fg">-{removed}</span>
           <button
             onClick={(e) => { e.stopPropagation(); handleCopy() }}
-            className="text-slate-500 hover:text-slate-300"
+            className="text-muted hover:text-secondary"
           >
             {copied ? <Check className="h-3 w-3" /> : <Copy className="h-3 w-3" />}
           </button>
@@ -106,7 +106,7 @@ export function FileEditBlock({ fileEdit }: FileEditBlockProps) {
           <pre className="text-xs font-mono">
             {diffLines.map((line, i) => (
               <div key={i} className={`px-3 py-0.5 ${LINE_STYLES[line.type]}`}>
-                <span className="inline-block w-8 text-right text-slate-600 select-none mr-2">
+                <span className="inline-block w-8 text-right text-muted select-none mr-2">
                   {line.lineNum}
                 </span>
                 {line.content}

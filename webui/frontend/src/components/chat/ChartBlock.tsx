@@ -18,7 +18,7 @@ export function ChartRenderer({ chart }: { chart: ChartPart }) {
 
   if (!data || data.length === 0) {
     return (
-      <div className="flex h-48 items-center justify-center text-xs text-slate-500">
+      <div className="flex h-48 items-center justify-center text-xs text-muted">
         无数据
       </div>
     )
@@ -98,7 +98,7 @@ export function ChartRenderer({ chart }: { chart: ChartPart }) {
       )
     default:
       return (
-        <div className="flex h-48 items-center justify-center text-xs text-slate-500">
+        <div className="flex h-48 items-center justify-center text-xs text-muted">
           不支持的图表类型: {chart_type}
         </div>
       )
@@ -109,22 +109,22 @@ export function ChartBlock({ chart }: ChartBlockProps) {
   const [expanded, setExpanded] = useState(true)
 
   return (
-    <div className="my-2 rounded-lg border border-slate-700/50 overflow-hidden">
+    <div className="my-2 rounded-lg border border-subtle overflow-hidden">
       {/* Header */}
       <button
         onClick={() => setExpanded(!expanded)}
-        className="flex w-full items-center gap-2 bg-slate-800/50 px-3 py-2 text-left text-xs hover:bg-slate-800/80 transition-colors"
+        className="flex w-full items-center gap-2 bg-surface px-3 py-2 text-left text-xs hover:bg-surface-raised/80 transition-colors"
       >
         {expanded ? (
-          <ChevronDown className="h-3 w-3 text-slate-500" />
+          <ChevronDown className="h-3 w-3 text-muted" />
         ) : (
-          <ChevronRight className="h-3 w-3 text-slate-500" />
+          <ChevronRight className="h-3 w-3 text-muted" />
         )}
         <BarChart3 className="h-3.5 w-3.5 text-primary-400" />
-        <span className="text-slate-300">
+        <span className="text-secondary">
           {chart.title || `${chart.chart_type} 图表`}
         </span>
-        <span className="text-[10px] text-slate-600 ml-auto">
+        <span className="text-[10px] text-muted ml-auto">
           {chart.data.length} 数据点
         </span>
       </button>

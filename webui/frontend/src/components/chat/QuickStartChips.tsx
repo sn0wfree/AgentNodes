@@ -40,7 +40,7 @@ export function QuickStartChips() {
           key={s.label}
           type="button"
           onClick={() => void send(s.prompt)}
-          className="rounded-full border border-slate-700/70 bg-slate-800/40 px-3 py-1.5 text-xs text-slate-300 transition-colors hover:border-primary-500/60 hover:bg-slate-800 hover:text-slate-100"
+          className="rounded-full border border-strong/70 bg-surface px-3 py-1.5 text-xs text-secondary transition-colors hover:border-primary-500/60 hover:bg-surface-raised hover:text-foreground"
         >
           {s.label}
         </button>

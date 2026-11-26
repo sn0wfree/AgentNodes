@@ -45,10 +45,10 @@ export function GoalMessage({ message }: { message: Message }) {
 
   return (
     <div className="px-4 py-3">
-      <div className="rounded-lg border border-slate-700/50 bg-slate-800/30">
+      <div className="rounded-lg border border-subtle bg-surface-raised/30">
         <button
           onClick={() => setExpanded(!expanded)}
-          className="flex w-full items-start gap-2 px-3 py-2.5 text-left transition-colors hover:bg-slate-800/40"
+          className="flex w-full items-start gap-2 px-3 py-2.5 text-left transition-colors hover:bg-surface"
         >
           <div
             className={`mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-full ${
@@ -65,19 +65,19 @@ export function GoalMessage({ message }: { message: Message }) {
           </div>
           <div className="min-w-0 flex-1">
             <div className="mb-1 flex items-center gap-2 text-xs">
-              <span className={`font-medium ${isComplete ? 'text-success-fg' : 'text-slate-300'}`}>
+              <span className={`font-medium ${isComplete ? 'text-success-fg' : 'text-secondary'}`}>
                 {label}
               </span>
-              <span className="text-slate-600">{formatTime(message.created_at)}</span>
+              <span className="text-muted">{formatTime(message.created_at)}</span>
               {evidenceCount > 0 && (
-                <span className="ml-auto text-[10px] text-slate-500">
+                <span className="ml-auto text-[10px] text-muted">
                   {evidenceCount} 条证据
                 </span>
               )}
             </div>
-            <div className="text-sm leading-relaxed text-slate-300">{preview}</div>
+            <div className="text-sm leading-relaxed text-secondary">{preview}</div>
             <div className="mt-2 flex items-center gap-2">
-              <div className="h-1 flex-1 overflow-hidden rounded-full bg-slate-800">
+              <div className="h-1 flex-1 overflow-hidden rounded-full bg-surface-raised">
                 <div
                   className={`h-full rounded-full transition-all ${
                     isComplete ? 'bg-emerald-500' : 'bg-primary-500'
@@ -85,8 +85,8 @@ export function GoalMessage({ message }: { message: Message }) {
                   style={{ width: `${Math.min(100, Math.max(0, progress))}%` }}
                 />
               </div>
-              <span className="font-mono text-[10px] text-slate-500">{progress}%</span>
-              <span className="text-slate-600">
+              <span className="font-mono text-[10px] text-muted">{progress}%</span>
+              <span className="text-muted">
                 {expanded ? <ChevronDown className="h-3.5 w-3.5" /> : <ChevronRight className="h-3.5 w-3.5" />}
               </span>
             </div>
@@ -94,11 +94,11 @@ export function GoalMessage({ message }: { message: Message }) {
         </button>
 
         {expanded && (
-          <div className="border-t border-slate-800 px-3 py-2.5 text-xs">
+          <div className="border-t border-subtle px-3 py-2.5 text-xs">
             {objective && (
               <div className="mb-2">
-                <span className="text-slate-500">目标: </span>
-                <span className="text-slate-300">{objective}</span>
+                <span className="text-muted">目标: </span>
+                <span className="text-secondary">{objective}</span>
               </div>
             )}
             {criteria.length > 0 && (
@@ -114,8 +114,8 @@ export function GoalMessage({ message }: { message: Message }) {
                             : 'bg-slate-600'
                       }`}
                     />
-                    <span className="text-slate-400">{c.text}</span>
-                    <span className="ml-auto text-slate-600">
+                    <span className="text-muted">{c.text}</span>
+                    <span className="ml-auto text-muted">
                       {STATUS_LABELS[c.status] || c.status}
                       {c.evidence_count > 0 ? ` · ${c.evidence_count}` : ''}
                     </span>
@@ -124,8 +124,8 @@ export function GoalMessage({ message }: { message: Message }) {
               </div>
             )}
             {evidenceText && (
-              <div className="mb-2 rounded bg-slate-900/50 p-2 text-slate-400">
-                <span className="mb-1 block text-[10px] uppercase tracking-wider text-slate-600">
+              <div className="mb-2 rounded bg-slate-900/50 p-2 text-muted">
+                <span className="mb-1 block text-[10px] uppercase tracking-wider text-muted">
                   证据全文
                 </span>
                 <span className="whitespace-pre-wrap break-words">{evidenceText}</span>

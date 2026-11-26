@@ -61,9 +61,9 @@ export function ContextUsageBar() {
   if (limit <= 0) return null
 
   return (
-    <div className="flex items-center gap-2 border-b border-slate-700/50 bg-slate-800/40 px-4 py-1.5 text-[11px]">
+    <div className="flex items-center gap-2 border-b border-subtle bg-surface px-4 py-1.5 text-[11px]">
       <div className="flex-1">
-        <div className="h-1.5 w-full overflow-hidden rounded-full bg-slate-700/60">
+        <div className="h-1.5 w-full overflow-hidden rounded-full bg-surface-raised">
           <div
             className={`h-full transition-all duration-300 ${barClass}`}
             style={{ width: `${pct}%` }}

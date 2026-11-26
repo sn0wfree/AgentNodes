@@ -67,7 +67,7 @@ function QueuedIndicator({
   const len = queueLength ?? pos
   return (
     <div
-      className="inline-flex items-center gap-2 rounded-md border border-slate-700/60 bg-slate-800/40 px-3 py-2 text-xs text-slate-400 animate-pulse"
+      className="inline-flex items-center gap-2 rounded-md border border-subtle bg-surface px-3 py-2 text-xs text-muted animate-pulse"
       aria-label={`消息排队中，第 ${pos} 位，共 ${len} 条`}
     >
       <span className="h-1.5 w-1.5 rounded-full bg-slate-400" />
@@ -415,7 +415,7 @@ export function AssistantMessage({
   // token usage (from metadata.tokens_used when the backend has pushed it).
   const toolCount = (message.parts ?? []).filter((p) => p.type === 'tool_call').length
   const statusChips = isStreaming ? (
-    <span className="flex items-center gap-1.5 text-[11px] text-slate-500">
+    <span className="flex items-center gap-1.5 text-[11px] text-muted">
       {toolCount > 0 && <span>· {toolCount} 工具</span>}
       {typeof message.metadata?.tokens_used === 'number' && (
         <span>· {message.metadata.tokens_used} tokens</span>
@@ -453,13 +453,13 @@ export function AssistantMessage({
         </>
       )}
       {message.agent_id && (
-        <span className="text-xs text-slate-600">{message.agent_id}</span>
+        <span className="text-xs text-muted">{message.agent_id}</span>
       )}
     </div>
   )
 
   const body = (
-    <div className="text-sm text-slate-200 space-y-3">
+    <div className="text-sm text-foreground space-y-3">
       {isQueued ? (
         <QueuedIndicator
           queuePosition={message.metadata?.queue_position}
@@ -505,7 +505,7 @@ export function AssistantMessage({
 
   if (layout === 'flat') {
     return (
-      <div className="group relative px-4 py-3 border-b border-slate-800/40 last:border-b-0">
+      <div className="group relative px-4 py-3 border-b border-subtle/40 last:border-b-0">
         <div className="absolute right-2 top-2">{actions}</div>
         {headerLine}
         {body}

@@ -136,7 +136,7 @@ export function ContextRing({ segments, percent, tone, size = 20 }: ContextRingP
 export function BreakdownList({ segments }: { segments: Record<string, number> }) {
   const total = RING_SEGMENT_META.reduce((sum, m) => sum + (segments[m.key] || 0), 0)
   if (total <= 0) {
-    return <div className="text-[10px] text-slate-500">分段数据待接入（当前显示估算总量）</div>
+    return <div className="text-[10px] text-muted">分段数据待接入（当前显示估算总量）</div>
   }
   return (
     <ul className="space-y-1">
@@ -146,8 +146,8 @@ export function BreakdownList({ segments }: { segments: Record<string, number> }
         return (
           <li key={m.key} className="flex items-center gap-2 text-[10px]" data-testid={`breakdown-row-${m.key}`}>
             <span className="h-2 w-2 shrink-0 rounded-sm" style={{ background: `var(${m.colorVar})` }} />
-            <span className="flex-1 text-slate-300">{m.label}</span>
-            <span className="font-mono text-slate-400">{value.toLocaleString()} ({pct.toFixed(0)}%)</span>
+            <span className="flex-1 text-secondary">{m.label}</span>
+            <span className="font-mono text-muted">{value.toLocaleString()} ({pct.toFixed(0)}%)</span>
           </li>
         )
       })}

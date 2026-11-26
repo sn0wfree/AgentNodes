@@ -408,7 +408,7 @@ export function Composer({ composeMessage, readOnly }: ComposerProps = {}) {
   }, [])
 
   return (
-    <div className="border-t border-slate-800 bg-slate-900/80 p-4">
+    <div className="border-t border-subtle bg-surface-raised p-4">
       {/* Hidden file input reused for image attachments */}
       {!readOnly && (
         <input
@@ -427,7 +427,7 @@ export function Composer({ composeMessage, readOnly }: ComposerProps = {}) {
               <img src={src} alt="" className="h-full w-full rounded-lg object-cover" />
               <button
                 onClick={() => setImages((prev) => prev.filter((_, j) => j !== i))}
-                className="absolute -right-1.5 -top-1.5 rounded-full bg-slate-700 p-0.5 text-slate-300 hover:text-white"
+                className="absolute -right-1.5 -top-1.5 rounded-full bg-surface-raised p-0.5 text-secondary hover:text-white"
               >
                 <X className="h-3 w-3" />
               </button>
@@ -447,7 +447,7 @@ export function Composer({ composeMessage, readOnly }: ComposerProps = {}) {
           一个大圆角容器包住「编辑器行 + 工具条行（状态行移入框内）」。
           focus-within 时边框/底色高亮，与 ZCode 的 focus-within 语义一致。 */}
       <div
-        className="glass relative flex flex-col gap-2 rounded-2xl border-[0.5px] border-slate-700/60 bg-slate-900/40 px-4 py-3 transition-colors hover:border-slate-600 focus-within:border-sky-500/60"
+        className="glass relative flex flex-col gap-2 rounded-2xl border-[0.5px] border-subtle bg-surface px-4 py-3 transition-colors hover:border focus-within:border-sky-500/60"
         data-composer-leading-content
       >
         {/* 上下文用量环：卡片右上角绝对定位（hover 向上弹七段明细） */}
@@ -465,15 +465,15 @@ export function Composer({ composeMessage, readOnly }: ComposerProps = {}) {
                 </span>
               )}
             </div>
-            <div className="glass invisible absolute bottom-full right-0 z-50 mb-2 w-72 rounded-xl border border-slate-700/60 !bg-slate-900/95 p-3 opacity-0 shadow-2xl transition-opacity group-hover/usage:visible group-hover/usage:opacity-100" data-testid="context-breakdown-popover">
+            <div className="glass invisible absolute bottom-full right-0 z-50 mb-2 w-72 rounded-xl border border-subtle !bg-slate-900/95 p-3 opacity-0 shadow-2xl transition-opacity group-hover/usage:visible group-hover/usage:opacity-100" data-testid="context-breakdown-popover">
               <div className="mb-2 flex items-center justify-between text-[11px]">
-                <span className="font-medium text-slate-200">上下文用量</span>
-                <span className="font-mono text-slate-400">
+                <span className="font-medium text-foreground">上下文用量</span>
+                <span className="font-mono text-muted">
                   {formatTokens(usage.usedTokens)} / {formatTokens(usage.limitTokens)} ({usage.percent.toFixed(1)}%)
                 </span>
               </div>
               <BreakdownList segments={breakdown} />
-              <div className="mt-2 border-t border-slate-700/60 pt-2 text-[10px] text-slate-500">
+              <div className="mt-2 border-t border-subtle pt-2 text-[10px] text-muted">
                 剩余可用 {formatTokens(usage.remainingTokens)} · {usage.source === 'measured' ? '后端实测' : '后端估算'}
               </div>
             </div>
@@ -486,7 +486,7 @@ export function Composer({ composeMessage, readOnly }: ComposerProps = {}) {
             <button
               onClick={handleFileSelect}
               disabled={isStreaming}
-              className="shrink-0 rounded-lg p-1.5 text-slate-400 hover:bg-slate-700/50 hover:text-slate-200 transition-colors disabled:opacity-30"
+              className="shrink-0 rounded-lg p-1.5 text-muted hover:bg-surface hover:text-foreground transition-colors disabled:opacity-30"
               title="上传图片"
             >
               <ImageIcon className="h-4 w-4" />
@@ -507,7 +507,7 @@ export function Composer({ composeMessage, readOnly }: ComposerProps = {}) {
             }
             disabled={!currentSessionId}
             rows={1}
-            className="min-w-0 flex-1 resize-none bg-transparent pr-10 text-sm text-slate-100 placeholder-slate-500 outline-none disabled:opacity-50"
+            className="min-w-0 flex-1 resize-none bg-transparent pr-10 text-sm text-foreground placeholder-slate-500 outline-none disabled:opacity-50"
           />
           {/* 发送/停止绝对定位卡片右下角（trailing），不占 DOM 行空间 */}
           <div className="flex items-center gap-1">

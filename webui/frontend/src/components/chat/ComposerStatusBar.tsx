@@ -118,22 +118,22 @@ export function ComposerStatusBar({ sessionId }: ComposerStatusBarProps) {
           <button
             type="button"
             onClick={() => !isOrchestrator && setPersonaOpen((o) => !o)}
-            className="flex items-center gap-1.5 rounded-lg px-2 py-1 text-slate-400 transition-colors hover:bg-slate-700/40 hover:text-slate-200 disabled:opacity-40"
+            className="flex items-center gap-1.5 rounded-lg px-2 py-1 text-muted transition-colors hover:bg-surface hover:text-foreground disabled:opacity-40"
             disabled={!sessionId}
             title={isOrchestrator ? '编排会话固定使用编排助手人设' : '选择对话智能体'}
           >
             <Bot className="h-3 w-3 text-primary-400" />
             {showLabels && (
-              <span className="max-w-[120px] truncate font-medium text-slate-300">
+              <span className="max-w-[120px] truncate font-medium text-secondary">
                 {personaName}
               </span>
             )}
             {!isOrchestrator && showChevrons && (
-              <ChevronDown className={`h-2.5 w-2.5 text-slate-500 transition-transform ${personaOpen ? 'rotate-180' : ''}`} />
+              <ChevronDown className={`h-2.5 w-2.5 text-muted transition-transform ${personaOpen ? 'rotate-180' : ''}`} />
             )}
           </button>
           {personaOpen && (
-            <div className="glass absolute left-0 bottom-full z-50 mb-1 w-64 overflow-hidden rounded-xl border border-slate-700/60 !bg-slate-900/95 shadow-2xl">
+            <div className="glass absolute left-0 bottom-full z-50 mb-1 w-64 overflow-hidden rounded-xl border border-subtle !bg-slate-900/95 shadow-2xl">
               <ul className="max-h-64 overflow-y-auto py-1">
                 {personas.map((p) => (
                   <li key={p.id}>
@@ -145,8 +145,8 @@ export function ComposerStatusBar({ sessionId }: ComposerStatusBarProps) {
                       }}
                       className={`flex w-full items-start gap-2 px-3 py-2 text-left transition-colors ${
                         p.id === personaId
-                          ? 'bg-slate-700/40 text-slate-100'
-                          : 'text-slate-300 hover:bg-slate-700/30'
+                          ? 'bg-surface text-foreground'
+                          : 'text-secondary hover:bg-surface'
                       }`}
                     >
                       <span className="mt-0.5 text-primary-400">
@@ -154,7 +154,7 @@ export function ComposerStatusBar({ sessionId }: ComposerStatusBarProps) {
                       </span>
                       <span className="flex-1">
                         <span className="block text-xs font-medium">{p.name}</span>
-                        <span className="block text-[11px] text-slate-500">{p.description}</span>
+                        <span className="block text-[11px] text-muted">{p.description}</span>
                       </span>
                     </button>
                   </li>
@@ -164,7 +164,7 @@ export function ComposerStatusBar({ sessionId }: ComposerStatusBarProps) {
           )}
         </div>
 
-        <div className="h-3 w-px bg-slate-700/60" />
+        <div className="h-3 w-px bg-surface-raised" />
 
         {/* Mode toggle */}
         <button
@@ -184,7 +184,7 @@ export function ComposerStatusBar({ sessionId }: ComposerStatusBarProps) {
           <button
             type="button"
             onClick={() => setModelOpen((o) => !o)}
-            className="flex items-center gap-1.5 rounded-lg px-2 py-1 text-slate-400 transition-colors hover:bg-slate-700/40 hover:text-slate-200"
+            className="flex items-center gap-1.5 rounded-lg px-2 py-1 text-muted transition-colors hover:bg-surface hover:text-foreground"
             title="选择模型"
           >
             <Bot className="h-3 w-3" />
@@ -194,11 +194,11 @@ export function ComposerStatusBar({ sessionId }: ComposerStatusBarProps) {
               </span>
             )}
             {showChevrons && (
-              <ChevronDown className={`h-2.5 w-2.5 text-slate-500 transition-transform ${modelOpen ? 'rotate-180' : ''}`} />
+              <ChevronDown className={`h-2.5 w-2.5 text-muted transition-transform ${modelOpen ? 'rotate-180' : ''}`} />
             )}
           </button>
           {modelOpen && (
-            <div className="glass absolute right-0 bottom-full z-50 mb-1 w-72 overflow-hidden rounded-xl border border-slate-700/60 !bg-slate-900/95 shadow-2xl">
+            <div className="glass absolute right-0 bottom-full z-50 mb-1 w-72 overflow-hidden rounded-xl border border-subtle !bg-slate-900/95 shadow-2xl">
               <div className="max-h-64 overflow-y-auto py-1">
               {/* Default option */}
               <button
@@ -208,10 +208,10 @@ export function ComposerStatusBar({ sessionId }: ComposerStatusBarProps) {
                   setModelOpen(false)
                 }}
                 className={`flex w-full items-center gap-2 px-3 py-2 text-left transition-colors ${
-                  !currentModel ? 'bg-slate-700/40 text-slate-100' : 'text-slate-300 hover:bg-slate-700/30'
+                  !currentModel ? 'bg-surface text-foreground' : 'text-secondary hover:bg-surface'
                 }`}
               >
-                <Bot className="h-3.5 w-3.5 text-slate-500" />
+                <Bot className="h-3.5 w-3.5 text-muted" />
                 <span className="text-xs">Default ({modelInfo?.model ?? 'auto'})</span>
               </button>
               {/* 2026-11-26 定稿：未配置密钥的 provider 整体不显示（下拉只保留
@@ -233,12 +233,12 @@ export function ComposerStatusBar({ sessionId }: ComposerStatusBarProps) {
                         }}
                         className={`flex w-full items-center gap-2 px-3 py-2 text-left transition-colors ${
                           isSelected
-                            ? 'bg-slate-700/40 text-slate-100'
-                            : 'text-slate-300 hover:bg-slate-700/30'
+                            ? 'bg-surface text-foreground'
+                            : 'text-secondary hover:bg-surface'
                         }`}
                       >
                         <span className="text-xs font-medium">{p.label || p.name}</span>
-                        <span className="text-[11px] text-slate-500">{m}</span>
+                        <span className="text-[11px] text-muted">{m}</span>
                       </button>
                     )
                   })
@@ -250,21 +250,21 @@ export function ComposerStatusBar({ sessionId }: ComposerStatusBarProps) {
 
         {showChevrons && (
           <>
-            <div className="h-3 w-px bg-slate-700/60" />
+            <div className="h-3 w-px bg-surface-raised" />
             {/* Thinking selector（定稿：短名/图标档隐藏思考） */}
             <div className="relative" ref={thinkingRef}>
               <button
                 type="button"
                 onClick={() => setThinkingOpen((o) => !o)}
-                className="flex items-center gap-1.5 rounded-lg px-2 py-1 text-slate-400 transition-colors hover:bg-slate-700/40 hover:text-slate-200"
+                className="flex items-center gap-1.5 rounded-lg px-2 py-1 text-muted transition-colors hover:bg-surface hover:text-foreground"
                 title="思考模式"
               >
                 {thinkingCfg.icon ? <thinkingCfg.icon className="h-3 w-3" /> : <Zap className="h-3 w-3" />}
                 <span>{thinkingCfg.label}</span>
-                <ChevronDown className={`h-2.5 w-2.5 text-slate-500 transition-transform ${thinkingOpen ? 'rotate-180' : ''}`} />
+                <ChevronDown className={`h-2.5 w-2.5 text-muted transition-transform ${thinkingOpen ? 'rotate-180' : ''}`} />
               </button>
               {thinkingOpen && (
-                <div className="glass absolute right-0 bottom-full z-50 mb-1 w-36 overflow-hidden rounded-xl border border-slate-700/60 !bg-slate-900/95 shadow-2xl">
+                <div className="glass absolute right-0 bottom-full z-50 mb-1 w-36 overflow-hidden rounded-xl border border-subtle !bg-slate-900/95 shadow-2xl">
                   <ul className="py-1">
                     {THINKING_OPTIONS.map((opt) => (
                       <li key={opt.value}>
@@ -276,8 +276,8 @@ export function ComposerStatusBar({ sessionId }: ComposerStatusBarProps) {
                           }}
                           className={`flex w-full items-center gap-2 px-3 py-1.5 text-left transition-colors ${
                             thinkingMode === opt.value
-                              ? 'bg-slate-700/40 text-slate-100'
-                              : 'text-slate-300 hover:bg-slate-700/30'
+                              ? 'bg-surface text-foreground'
+                              : 'text-secondary hover:bg-surface'
                           }`}
                         >
                           {opt.icon ? <opt.icon className="h-3 w-3" /> : <Zap className="h-3 w-3" />}

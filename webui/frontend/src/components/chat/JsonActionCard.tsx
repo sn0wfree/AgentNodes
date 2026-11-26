@@ -42,7 +42,7 @@ const ACTION_STYLES: Record<string, { bg: string; text: string; label: string }>
   overfit:         { bg: 'bg-violet-900/30',  text: 'text-violet-300',  label: '过拟合检查' },
 }
 
-const GENERIC_STYLE = { bg: 'bg-slate-800/60', text: 'text-slate-300', label: 'JSON 输出' }
+const GENERIC_STYLE = { bg: 'bg-surface', text: 'text-secondary', label: 'JSON 输出' }
 
 /** Fields used as "hypothesis"-equivalent (highlighted above the field list). */
 const HYPOTHESIS_LIKE = ['hypothesis', 'interpretation', 'summary', 'description', 'reason', 'message']
@@ -96,50 +96,50 @@ function renderValue(v: unknown, hints?: FieldHints | null): React.ReactNode {
     // Schema format hint: percentage (0.25 → "25.0%")
     if (hints?.format === 'percentage') {
       return (
-        <span className="font-mono text-slate-200">
+        <span className="font-mono text-foreground">
           {(v * 100).toFixed(1)}%
         </span>
       )
     }
-    return <span className="font-mono text-slate-200">{String(v)}</span>
+    return <span className="font-mono text-foreground">{String(v)}</span>
   }
   if (typeof v === 'string') {
     // Schema enum mapping: display label takes precedence over raw value
     if (hints?.enum_values && v in hints.enum_values) {
-      return <span className="text-slate-200">{hints.enum_values[v]}</span>
+      return <span className="text-foreground">{hints.enum_values[v]}</span>
     }
     const s = v
     if (s.length <= 80) {
-      return <span className="text-slate-200">{s}</span>
+      return <span className="text-foreground">{s}</span>
     }
     // Long string: show inline, full text on hover
     return (
-      <span className="text-slate-200" title={s}>
+      <span className="text-foreground" title={s}>
         {s.slice(0, 200)}
         {s.length > 200 ? '…' : ''}
       </span>
     )
   }
   if (Array.isArray(v)) {
-    if (v.length === 0) return <span className="text-slate-500">[]</span>
+    if (v.length === 0) return <span className="text-muted">[]</span>
     // For small string arrays, join; otherwise render as compact list
     const allStrings = v.every((x) => typeof x === 'string')
     if (allStrings && v.length <= 4) {
       const totalLen = v.reduce((s, x) => s + (x as string).length, 0)
       if (totalLen <= 200) {
-        return <span className="text-slate-200">{(v as string[]).join(' · ')}</span>
+        return <span className="text-foreground">{(v as string[]).join(' · ')}</span>
       }
     }
     return (
-      <span className="text-slate-300 font-mono text-[11px]">
+      <span className="text-secondary font-mono text-[11px]">
         [{v.length} 项]
       </span>
     )
   }
   if (v && typeof v === 'object') {
-    return <span className="text-slate-400 font-mono">{'{…}'}</span>
+    return <span className="text-muted font-mono">{'{…}'}</span>
   }
-  return <span className="text-slate-500">{String(v ?? 'null')}</span>
+  return <span className="text-muted">{String(v ?? 'null')}</span>
 }
 
 export function JsonActionCard({ action, hypothesis, fullJson, agentId }: JsonActionCardProps) {
@@ -147,7 +147,7 @@ export function JsonActionCard({ action, hypothesis, fullJson, agentId }: JsonAc
   const isActionMode = !!action && action in ACTION_STYLES
   const style = isActionMode
     ? ACTION_STYLES[action!]
-    : (action ? { bg: 'bg-slate-700/40', text: 'text-slate-300', label: action } : GENERIC_STYLE)
+    : (action ? { bg: 'bg-surface', text: 'text-secondary', label: action } : GENERIC_STYLE)
   const hyp = hypothesis ?? (isActionMode ? undefined : pickHypothesis(fullJson))
 
   // ── Field selection ─────────────────────────────────────────────
@@ -188,32 +188,32 @@ export function JsonActionCard({ action, hypothesis, fullJson, agentId }: JsonAc
   }
 
   return (
-    <div className="my-1 rounded border border-slate-700/50 bg-slate-900/40 text-[12px] leading-relaxed overflow-hidden">
+    <div className="my-1 rounded border border-subtle bg-surface text-[12px] leading-relaxed overflow-hidden">
       {/* Header — badge */}
-      <div className="flex items-center gap-2 px-3 py-2 border-b border-slate-700/30">
+      <div className="flex items-center gap-2 px-3 py-2 border-b border-strong/30">
         <span
           className={`inline-block rounded px-2 py-0.5 font-mono font-medium text-[11px] ${style.bg} ${style.text}`}
         >
           {action ?? 'json'}
         </span>
         {style.label && (
-          <span className="text-[11px] text-slate-500">{style.label}</span>
+          <span className="text-[11px] text-muted">{style.label}</span>
         )}
       </div>
 
       {/* Hypothesis / highlighted field */}
       {hyp && (
-        <div className="px-3 py-2 text-slate-200 whitespace-pre-wrap">
+        <div className="px-3 py-2 text-foreground whitespace-pre-wrap">
           {hyp}
         </div>
       )}
 
       {/* Core decision/status fields — always visible */}
       {keyEntries.length > 0 && (
-        <div className="px-3 py-2 border-t border-slate-700/30 space-y-1.5">
+        <div className="px-3 py-2 border-t border-strong/30 space-y-1.5">
           {keyEntries.map(([k, v, h]) => (
             <div key={k} className="flex items-baseline gap-2 leading-relaxed">
-              <span className="shrink-0 text-[11px] text-slate-500 min-w-20 text-right">
+              <span className="shrink-0 text-[11px] text-muted min-w-20 text-right">
                 {labelFor(k, h)}:
               </span>
               <div className="min-w-0 flex-1 break-words" title={h?.description ?? undefined}>
@@ -226,18 +226,18 @@ export function JsonActionCard({ action, hypothesis, fullJson, agentId }: JsonAc
 
       {/* Other fields — collapsible */}
       {extraFields.length > 0 && (
-        <div className="border-t border-slate-700/30">
+        <div className="border-t border-strong/30">
           <button
             type="button"
             onClick={() => setExpanded(!expanded)}
-            className="w-full flex items-center justify-between px-3 py-1.5 text-[11px] text-slate-500 hover:text-slate-300 transition-colors"
+            className="w-full flex items-center justify-between px-3 py-1.5 text-[11px] text-muted hover:text-secondary transition-colors"
           >
               <span>其他字段 ({extraFields.length})</span>
               <span className="text-[10px]">{expanded ? '▼' : '▶'}</span>
             </button>
             {expanded && (
               <div className="px-3 pb-2">
-                <pre className="text-[11px] text-slate-400 font-mono whitespace-pre-wrap break-words">
+                <pre className="text-[11px] text-muted font-mono whitespace-pre-wrap break-words">
                   {JSON.stringify(
                     Object.fromEntries(extraFields.map((k) => [k, fullJson[k]])),
                     null,

@@ -76,15 +76,15 @@ export function PermissionRequestDialog({
           <div className="flex-1 min-w-0">
             <h2
               id="permission-title"
-              className="text-sm font-semibold text-slate-100"
+              className="text-sm font-semibold text-foreground"
             >
               允许{label}吗？
             </h2>
-            <p className="mt-0.5 text-[11px] text-slate-400">
+            <p className="mt-0.5 text-[11px] text-muted">
               工具:{' '}
               <span className="font-mono text-warning-fg">{request.tool_name}</span>
               {' · 规则匹配: '}
-              <span className="font-mono text-slate-300">
+              <span className="font-mono text-secondary">
                 {request.pattern || '*'}
               </span>
             </p>
@@ -93,7 +93,7 @@ export function PermissionRequestDialog({
             type="button"
             onClick={() => deny(false)}
             disabled={submitting}
-            className="rounded p-1 text-slate-400 hover:bg-slate-800 hover:text-slate-200"
+            className="rounded p-1 text-muted hover:bg-surface-raised hover:text-foreground"
             title="关闭（拒绝）"
             aria-label="关闭"
           >
@@ -104,14 +104,14 @@ export function PermissionRequestDialog({
         {/* Args preview */}
         <div className="max-h-48 overflow-y-auto px-5 py-3">
           {argEntries.length === 0 ? (
-            <p className="text-[11px] text-slate-500">（无可显示参数）</p>
+            <p className="text-[11px] text-muted">（无可显示参数）</p>
           ) : (
             <table className="w-full text-[11px]">
               <tbody>
                 {argEntries.map(([k, v]) => (
-                  <tr key={k} className="border-b border-slate-800/60 last:border-0">
-                    <td className="py-1 pr-3 align-top font-mono text-slate-400">{k}</td>
-                    <td className="py-1 font-mono text-slate-200 break-all">
+                  <tr key={k} className="border-b border-subtle/60 last:border-0">
+                    <td className="py-1 pr-3 align-top font-mono text-muted">{k}</td>
+                    <td className="py-1 font-mono text-foreground break-all">
                       {formatValue(v)}
                     </td>
                   </tr>
@@ -122,8 +122,8 @@ export function PermissionRequestDialog({
         </div>
 
         {/* Optional reason (for reject) */}
-        <div className="border-t border-slate-800 px-5 py-3">
-          <label className="text-[11px] text-slate-400">
+        <div className="border-t border-subtle px-5 py-3">
+          <label className="text-[11px] text-muted">
             拒绝原因（可选）
             <input
               type="text"
@@ -131,7 +131,7 @@ export function PermissionRequestDialog({
               onChange={(e) => setReason(e.target.value)}
               disabled={submitting}
               placeholder="例如：会覆盖现有策略文件"
-              className="mt-1 w-full rounded border border-slate-700 bg-slate-800 px-2 py-1.5 text-xs text-slate-100 placeholder-slate-500 outline-none focus:border-warning"
+              className="mt-1 w-full rounded border border-strong bg-surface-raised px-2 py-1.5 text-xs text-foreground placeholder-slate-500 outline-none focus:border-warning"
               data-testid="permission-reason-input"
             />
           </label>
@@ -140,7 +140,7 @@ export function PermissionRequestDialog({
         {error && <p role="alert" className="px-5 pb-2 text-xs text-danger-fg">{error}</p>}
 
         {/* Action buttons (opencode's 4-way gate) */}
-        <div className="grid grid-cols-2 gap-2 border-t border-slate-800 p-3">
+        <div className="grid grid-cols-2 gap-2 border-t border-subtle p-3">
           <button
             type="button"
             onClick={() => onRespond('allow', false)}

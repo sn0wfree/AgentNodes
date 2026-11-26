@@ -102,7 +102,7 @@ export function MessageActions({ message, alwaysVisible = false }: MessageAction
   )
 
   const btn =
-    'flex h-6 w-6 items-center justify-center rounded-md border border-slate-700 bg-slate-800/80 text-slate-400 opacity-0 shadow-lg backdrop-blur transition-all hover:text-slate-100 group-hover:opacity-100'
+    'flex h-6 w-6 items-center justify-center rounded-md border border-strong bg-surface-raised/80 text-muted opacity-0 shadow-lg backdrop-blur transition-all hover:text-foreground group-hover:opacity-100'
   const visibleBtn = btn.replace(' opacity-0', '')
 
   return (

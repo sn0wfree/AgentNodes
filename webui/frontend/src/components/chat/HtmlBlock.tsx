@@ -16,18 +16,18 @@ export function HtmlBlock({ htmlPart }: HtmlBlockProps) {
   const title = htmlPart.title || 'HTML 报告'
 
   return (
-    <div className="my-2 overflow-hidden rounded-lg border border-slate-700/50">
+    <div className="my-2 overflow-hidden rounded-lg border border-subtle">
       <button
         onClick={() => setExpanded(!expanded)}
-        className="flex w-full items-center gap-2 bg-slate-800/50 px-3 py-2 text-left text-xs transition-colors hover:bg-slate-800/80"
+        className="flex w-full items-center gap-2 bg-surface px-3 py-2 text-left text-xs transition-colors hover:bg-surface-raised/80"
       >
         {expanded ? (
-          <ChevronDown className="h-3 w-3 text-slate-500" />
+          <ChevronDown className="h-3 w-3 text-muted" />
         ) : (
-          <ChevronRight className="h-3 w-3 text-slate-500" />
+          <ChevronRight className="h-3 w-3 text-muted" />
         )}
         <FileCode2 className="h-3.5 w-3.5 text-primary-400" />
-        <span className="text-slate-300">{title}</span>
+        <span className="text-secondary">{title}</span>
       </button>
       {expanded && (
         <div className="p-2">
@@ -35,7 +35,7 @@ export function HtmlBlock({ htmlPart }: HtmlBlockProps) {
             title={title}
             sandbox=""
             srcDoc={htmlPart.content}
-            className="h-[320px] w-full rounded border border-slate-800 bg-white"
+            className="h-[320px] w-full rounded border border-subtle bg-white"
           />
         </div>
       )}

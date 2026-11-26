@@ -178,7 +178,7 @@ export function MessageList({ separatorKey, scrollKey }: MessageListProps = {}) 
                 <div className="flex justify-center py-2">
                   <button
                     onClick={() => currentSessionId && loadMoreMessages(currentSessionId)}
-                    className="rounded-full border border-slate-700 px-3 py-1 text-xs text-slate-400 transition-colors hover:border-slate-500 hover:text-slate-200"
+                    className="rounded-full border border-strong px-3 py-1 text-xs text-muted transition-colors hover:border-slate-500 hover:text-foreground"
                   >
                     ↑ 加载更早消息
                   </button>
@@ -202,9 +202,9 @@ export function MessageList({ separatorKey, scrollKey }: MessageListProps = {}) 
             (prev && !isSeparator(prev) && dayLabel((prev as Message).created_at) !== dayLabel(message.created_at))
           const daySeparator = showDay ? (
             <div className="flex items-center gap-3 px-4 pt-3">
-              <div className="h-px flex-1 bg-slate-800/60" />
-              <span className="text-[11px] text-slate-500">{dayLabel(message.created_at)}</span>
-              <div className="h-px flex-1 bg-slate-800/60" />
+              <div className="h-px flex-1 bg-surface" />
+              <span className="text-[11px] text-muted">{dayLabel(message.created_at)}</span>
+              <div className="h-px flex-1 bg-surface" />
             </div>
           ) : null
 
@@ -229,7 +229,7 @@ export function MessageList({ separatorKey, scrollKey }: MessageListProps = {}) 
                   <div className="min-w-0 flex-1">
                     <div className="mb-1 flex items-center gap-2 text-xs">
                       <span className="font-medium text-danger-fg">请求失败</span>
-                      <span className="text-slate-500">{formatTime(message.created_at)}</span>
+                      <span className="text-muted">{formatTime(message.created_at)}</span>
                     </div>
                     <div className="rounded-lg border border-red-500/30 bg-red-500/10 px-3 py-2 text-sm text-danger-fg">
                       {message.parts?.map((part, i) => (
@@ -259,12 +259,12 @@ export function MessageList({ separatorKey, scrollKey }: MessageListProps = {}) 
               <>
                 {daySeparator}
               <div className="px-4 py-3 transition-all">
-                <div className="rounded-lg border border-slate-700/50 bg-slate-800/30 px-3 py-2.5">
+                <div className="rounded-lg border border-subtle bg-surface-raised/30 px-3 py-2.5">
                   <div className="mb-1 flex items-center gap-2 text-xs">
-                    <span className="font-medium text-slate-400">📋 历史摘要</span>
-                    <span className="text-slate-600">{formatTime(message.created_at)}</span>
+                    <span className="font-medium text-muted">📋 历史摘要</span>
+                    <span className="text-muted">{formatTime(message.created_at)}</span>
                   </div>
-                  <div className="text-sm text-slate-400 leading-relaxed">
+                  <div className="text-sm text-muted leading-relaxed">
                     {message.parts?.map((part, i) => (
                       <span key={i}>{part.type === 'text' ? part.text : ''}</span>
                     ))}
@@ -338,7 +338,7 @@ export function MessageList({ separatorKey, scrollKey }: MessageListProps = {}) 
               align: 'end',
             })
           }
-          className="absolute bottom-3 right-3 z-20 flex h-8 w-8 items-center justify-center rounded-full border border-slate-700 bg-slate-800/90 text-slate-300 shadow-lg backdrop-blur transition-all hover:border-primary-500 hover:bg-slate-700 hover:text-primary-300 active:scale-95"
+          className="absolute bottom-3 right-3 z-20 flex h-8 w-8 items-center justify-center rounded-full border border-strong bg-surface-raised/90 text-secondary shadow-lg backdrop-blur transition-all hover:border-primary-500 hover:bg-surface-raised hover:text-primary-300 active:scale-95"
           title={getMessageListConfig().labels.scrollToBottom}
           aria-label={getMessageListConfig().labels.scrollToBottom}
         >

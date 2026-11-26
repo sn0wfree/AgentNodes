@@ -28,7 +28,7 @@ export function ToolCallGroup({ toolCalls, startTimes, onRetry }: ToolCallGroupP
   const error = toolCalls.filter((tc) => tc.status === 'error').length
 
   return (
-    <div className="my-1 border-l-2 border-slate-700 bg-slate-800/20 rounded-r-md overflow-hidden transition-colors duration-300">
+    <div className="my-1 border-l-2 border-strong bg-surface-raised/20 rounded-r-md overflow-hidden transition-colors duration-300">
       {/* Single-line summary chip */}
       <div
         role="button"
@@ -40,15 +40,15 @@ export function ToolCallGroup({ toolCalls, startTimes, onRetry }: ToolCallGroupP
             setExpanded((v) => !v)
           }
         }}
-        className="flex w-full cursor-pointer items-center gap-2 px-2 py-1.5 text-left text-[12px] hover:bg-slate-800/40 transition-colors"
+        className="flex w-full cursor-pointer items-center gap-2 px-2 py-1.5 text-left text-[12px] hover:bg-surface transition-colors"
       >
         <ChevronRight
-          className={`h-3 w-3 text-slate-500 transition-transform duration-200 ${
+          className={`h-3 w-3 text-muted transition-transform duration-200 ${
             expanded ? 'rotate-90' : ''
           }`}
         />
-        <Wrench className="h-3.5 w-3.5 text-slate-400" />
-        <span className="font-medium text-slate-300">
+        <Wrench className="h-3.5 w-3.5 text-muted" />
+        <span className="font-medium text-secondary">
           {toolCalls.length} tool calls
         </span>
         <span className="ml-auto flex items-center gap-2 text-[10px]">
@@ -65,7 +65,7 @@ export function ToolCallGroup({ toolCalls, startTimes, onRetry }: ToolCallGroupP
 
       {/* Expanded: list of individual tool calls */}
       {expanded && (
-        <div className="border-t border-slate-700/40 px-2 py-1.5 space-y-1">
+        <div className="border-t border-strong/40 px-2 py-1.5 space-y-1">
           {toolCalls.map((tc) => (
             <ToolCallBlock
               key={tc.id}

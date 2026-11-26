@@ -19,7 +19,7 @@ export function SessionTabs() {
   )
 
   return (
-    <div className="flex h-10 items-center gap-1 border-b border-slate-800 bg-slate-900/40 px-2 overflow-x-auto flex-shrink-0">
+    <div className="flex h-10 items-center gap-1 border-b border-subtle bg-surface px-2 overflow-x-auto flex-shrink-0">
       {openSessions.map((sess) => {
         const isActive = sess.id === currentSessionId
         return (
@@ -27,15 +27,15 @@ export function SessionTabs() {
             key={sess.id}
             className={`group relative flex h-7 items-center gap-1.5 rounded-t-md border-b-2 px-2.5 text-xs transition-colors cursor-pointer flex-shrink-0
               ${isActive
-                ? 'border-sky-500 bg-slate-800 text-slate-100'
-                : 'border-transparent text-slate-400 hover:bg-slate-800/50 hover:text-slate-200'
+                ? 'border-sky-500 bg-surface-raised text-foreground'
+                : 'border-transparent text-muted hover:bg-surface hover:text-foreground'
               }
             `}
             onClick={() => void switchSession(sess.id)}
             title={sess.title}
           >
             {sess.starred && (
-              <Star className="h-3 w-3 fill-slate-300 text-slate-300 flex-shrink-0" />
+              <Star className="h-3 w-3 fill-slate-300 text-secondary flex-shrink-0" />
             )}
             <span className="max-w-[160px] truncate" title={sess.title}>{sess.title}</span>
             <button
@@ -43,7 +43,7 @@ export function SessionTabs() {
                 e.stopPropagation()
                 closeSession(sess.id)
               }}
-              className="flex h-4 w-4 items-center justify-center rounded text-slate-500 hover:bg-slate-700 hover:text-slate-200 opacity-0 group-hover:opacity-100 transition-opacity"
+              className="flex h-4 w-4 items-center justify-center rounded text-muted hover:bg-surface-raised hover:text-foreground opacity-0 group-hover:opacity-100 transition-opacity"
               title="关闭（保留历史）"
             >
               <X className="h-3 w-3" />

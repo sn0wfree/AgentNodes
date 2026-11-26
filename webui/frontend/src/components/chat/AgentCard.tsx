@@ -15,7 +15,7 @@ interface AgentCardProps {
 }
 
 const STATUS_CONFIG = {
-  pending: { icon: Loader2, color: 'text-slate-400', bg: 'bg-slate-700/30', label: '等待中' },
+  pending: { icon: Loader2, color: 'text-muted', bg: 'bg-surface', label: '等待中' },
   running: { icon: Loader2, color: 'text-warning-fg', bg: 'bg-warning-fill', label: '执行中' },
   completed: { icon: CheckCircle, color: 'text-success-fg', bg: 'bg-emerald-500/5', label: '完成' },
   failed: { icon: XCircle, color: 'text-danger-fg', bg: 'bg-red-500/5', label: '失败' },
@@ -64,7 +64,7 @@ export function AgentCard({ agentPart, isStreaming }: AgentCardProps) {
           ? 'border-red-500/40 bg-red-500/5'
           : agentPart.status === 'completed'
           ? 'border-emerald-500/30 bg-emerald-500/5'
-          : 'border-slate-700 bg-slate-800/30'
+          : 'border-strong bg-surface-raised/30'
       }`}
     >
       {/* Summary line (always visible) */}
@@ -81,7 +81,7 @@ export function AgentCard({ agentPart, isStreaming }: AgentCardProps) {
         className="group flex w-full cursor-pointer items-center gap-2 px-2 py-1.5 text-left text-[12px] hover:bg-white/[0.03] transition-colors"
       >
         <ChevronRight
-          className={`h-3 w-3 text-slate-500 transition-transform duration-200 ${
+          className={`h-3 w-3 text-muted transition-transform duration-200 ${
             expanded ? 'rotate-90' : ''
           }`}
         />
@@ -91,22 +91,22 @@ export function AgentCard({ agentPart, isStreaming }: AgentCardProps) {
           }`}
         />
         <Bot className="h-3.5 w-3.5 text-primary-400" />
-        <span className="font-medium text-slate-200">
+        <span className="font-medium text-foreground">
           {agentPart.name}
         </span>
-        <span className="text-slate-500 text-[11px]">{config.label}</span>
+        <span className="text-muted text-[11px]">{config.label}</span>
         {toolCount > 0 && (
-          <span className="text-slate-500 text-[11px]">
+          <span className="text-muted text-[11px]">
             · {doneCount}/{toolCount} 工具
             {errorCount > 0 && <span className="text-danger-fg"> ({errorCount} 失败)</span>}
           </span>
         )}
         {agentPart.tokensUsed !== undefined && agentPart.tokensUsed > 0 && (
-          <span className="text-slate-500 text-[11px]">
+          <span className="text-muted text-[11px]">
             · {agentPart.tokensUsed.toLocaleString()} tokens
           </span>
         )}
-        <span className="ml-auto flex items-center gap-2 text-[10px] text-slate-500">
+        <span className="ml-auto flex items-center gap-2 text-[10px] text-muted">
           {duration !== null && (
             <span className="flex items-center gap-0.5 font-mono">
               <Clock className="h-2.5 w-2.5" />
@@ -118,7 +118,7 @@ export function AgentCard({ agentPart, isStreaming }: AgentCardProps) {
 
       {/* Expanded content */}
       {expanded && (
-        <div className="border-t border-slate-700/40 px-2 py-1.5 space-y-1">
+        <div className="border-t border-strong/40 px-2 py-1.5 space-y-1">
           {/* Tool calls */}
           {agentPart.toolCalls.map((tc) => (
             <ToolCallBlock key={tc.id} toolCall={tc} />

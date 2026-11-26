@@ -54,7 +54,7 @@ export function SlashCommandMenu({ query, onSelect }: SlashCommandMenuProps) {
 
   if (filtered.length === 0) {
     return (
-      <div className="glass absolute bottom-full left-0 z-50 mb-2 w-72 rounded-xl border border-slate-700/60 p-3 text-sm text-slate-400 shadow-xl">
+      <div className="glass absolute bottom-full left-0 z-50 mb-2 w-72 rounded-xl border border-subtle p-3 text-sm text-muted shadow-xl">
         无匹配命令
       </div>
     )
@@ -68,22 +68,22 @@ export function SlashCommandMenu({ query, onSelect }: SlashCommandMenuProps) {
         onClick={() => onSelect(cmd.command, cmd.autoSend)}
         className={`flex w-full items-center gap-3 px-3 py-2 text-left transition-colors ${
           i === activeIndex
-            ? 'bg-slate-700/40 text-slate-100'
-            : 'text-slate-300 hover:bg-slate-700/30'
+            ? 'bg-surface text-foreground'
+            : 'text-secondary hover:bg-surface'
         }`}
       >
         <span className="text-primary-400">{cmd.icon}</span>
         <span className="flex-1">
           <span className="block text-sm font-medium">
             <span className="text-primary-400">{cmd.command}</span>
-            <span className="ml-2 text-slate-400">{cmd.label}</span>
+            <span className="ml-2 text-muted">{cmd.label}</span>
           </span>
-          <span className="block text-xs text-slate-500">
+          <span className="block text-xs text-muted">
             {cmd.description}
           </span>
         </span>
         {cmd.autoSend && (
-          <span className="shrink-0 rounded bg-slate-700/60 px-1.5 py-0.5 text-[10px] uppercase tracking-wide text-slate-400">
+          <span className="shrink-0 rounded bg-surface-raised px-1.5 py-0.5 text-[10px] uppercase tracking-wide text-muted">
             直发
           </span>
         )}
@@ -92,7 +92,7 @@ export function SlashCommandMenu({ query, onSelect }: SlashCommandMenuProps) {
   )
 
   return (
-    <div className="glass absolute bottom-full left-0 z-50 mb-2 w-80 overflow-hidden rounded-xl border border-slate-700/60 shadow-2xl">
+    <div className="glass absolute bottom-full left-0 z-50 mb-2 w-80 overflow-hidden rounded-xl border border-subtle shadow-2xl">
       <ul ref={listRef} className="max-h-72 overflow-y-auto py-1">
         {filtered.map((cmd, i) => renderRow(cmd, i))}
       </ul>

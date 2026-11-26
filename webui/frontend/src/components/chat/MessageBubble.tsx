@@ -88,7 +88,7 @@ export function MessageBubble({ message, layout, hideCodeTail }: MessageBubblePr
   const editBtn = (
     <button
       onClick={startEdit}
-      className="flex h-6 w-6 items-center justify-center rounded-md border border-slate-700 bg-slate-800/80 text-slate-400 opacity-0 shadow-lg backdrop-blur transition-all hover:text-slate-100 focus:opacity-100 group-hover:opacity-100"
+      className="flex h-6 w-6 items-center justify-center rounded-md border border-strong bg-surface-raised/80 text-muted opacity-0 shadow-lg backdrop-blur transition-all hover:text-foreground focus:opacity-100 group-hover:opacity-100"
       title="编辑"
       aria-label="编辑消息"
     >
@@ -103,7 +103,7 @@ export function MessageBubble({ message, layout, hideCodeTail }: MessageBubblePr
         value={draft}
         onChange={(e) => setDraft(e.target.value)}
         rows={2}
-        className="w-full resize-none rounded-lg border border-slate-700 bg-slate-800/60 px-3 py-2 text-sm text-slate-100 outline-none focus:border-primary-500"
+        className="w-full resize-none rounded-lg border border-strong bg-surface px-3 py-2 text-sm text-foreground outline-none focus:border-primary-500"
       />
       <div className="flex items-center gap-1">
         <button
@@ -116,7 +116,7 @@ export function MessageBubble({ message, layout, hideCodeTail }: MessageBubblePr
         </button>
         <button
           onClick={() => setEditing(false)}
-          className="flex items-center gap-1 rounded-md px-2 py-1 text-xs text-slate-400 transition-colors hover:bg-slate-700/40"
+          className="flex items-center gap-1 rounded-md px-2 py-1 text-xs text-muted transition-colors hover:bg-surface"
         >
           <X className="h-3 w-3" />
           取消
@@ -133,12 +133,12 @@ export function MessageBubble({ message, layout, hideCodeTail }: MessageBubblePr
       <div id={`msg-${message.id}`} className="group relative px-4 py-3 transition-all">
         <div className="mb-1 flex items-center gap-2 text-xs">
           <span className="font-medium text-primary-400">You</span>
-          <span className="text-slate-600">{formatTime(message.created_at)}</span>
+          <span className="text-muted">{formatTime(message.created_at)}</span>
         </div>
         {editing ? (
           editingArea
         ) : (
-          <div className="pr-8 text-sm text-slate-200 leading-relaxed">
+          <div className="pr-8 text-sm text-foreground leading-relaxed">
             {parts.map((part, i) => (
               <PartContent key={i} part={part} hideCodeTail={hideCodeTail} />
             ))}
@@ -153,7 +153,7 @@ export function MessageBubble({ message, layout, hideCodeTail }: MessageBubblePr
     <div id={`msg-${message.id}`} className="group flex justify-end px-4 py-2 transition-all">
       <div className="relative max-w-[70%]">
         {editing ? (
-          <div className="rounded-2xl border border-slate-700 bg-slate-800/60 p-3">{editingArea}</div>
+          <div className="rounded-2xl border border-strong bg-surface p-3">{editingArea}</div>
         ) : (
           <div className="user-message-bubble rounded-2xl rounded-br-md px-4 py-2.5 text-sm">
             {parts.map((part, i) => (

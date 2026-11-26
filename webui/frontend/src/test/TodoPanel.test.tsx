@@ -80,7 +80,8 @@ describe('TodoPanel (opencode-style bottom dock)', () => {
     render(<TodoPanel />)
     const completed = screen.getByText('回测验证')
     expect(completed.className).toMatch(/line-through/)
-    expect(completed.className).toMatch(/text-slate-500/)
+    // 配色统一阶段 2：text-slate-500 → 语义类 text-muted（paletteTokens 契约）
+    expect(completed.className).toMatch(/text-muted/)
   })
 
   it('renders the in_progress row with a pulse-dot indicator (data-in-progress)', () => {
