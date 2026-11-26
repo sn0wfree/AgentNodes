@@ -47,12 +47,17 @@ _COLOR_IN_VALUE = re.compile(
     r"\b(?:transparent|white|black|currentColor)\b"
 )
 _VAR_ONLY = re.compile(r"^var\(--[\w-]+\)$")
+# §9 批 3：Tailwind RGB 通道变量（`14 165 233`）需可被 theme.json 覆盖，
+# 否则 sky/blue/accent 色阶无法经配置换色。只接受 3 个 0-255 整数。
+_RGB_CHANNELS = re.compile(r"^\d{1,3}\s+\d{1,3}\s+\d{1,3}$")
 
 
-def _is_color_value(value: str) -> bool:
+def _is_color_value(value: str, name: str = "") -> bool:
     """值是颜色（或颜色别名变量）才纳入主题；多值 shadow/gradient 也算。"""
     stripped = value.strip()
-    return bool(_VAR_ONLY.match(stripped) or _COLOR_IN_VALUE.search(stripped))
+    if _RGB_CHANNELS.match(stripped) and all(int(n) <= 255 for n in stripped.split()):
+        return True
+    return bool(_VAR_ONLY.match(stripped) or _COLOR_IN_VALUE.search(stripped) or name.endswith("-rgb"))
 
 
 def _iter_theme_declarations(css: str):
@@ -103,7 +108,7 @@ def _extract_css_colors() -> dict[str, dict[str, str]]:
         return {"dark": {}, "light": {}}
     result: dict[str, dict[str, str]] = {"dark": {}, "light": {}}
     for mode, name, value in _iter_theme_declarations(css):
-        if _is_color_value(value):
+        if _is_color_value(value, name):
             result[mode][name] = value
     return result
 

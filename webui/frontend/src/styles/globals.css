@@ -66,6 +66,30 @@
   /* viz 系列色（C 批：图表系列色，豁免单强调，单点定义）*/
   --viz-1: #3b82f6;  --viz-2: #10b981;  --viz-3: #8b5cf6;  --viz-4: #f59e0b;
   --viz-5: #06b6d4;  --viz-6: #ec4899;  --viz-7: #f97316;  --viz-8: #14b8a6;
+  /* §9 批 3：Tailwind sky/blue/accent 色阶 RGB 通道（theme.json 可调；rgb(var(--x) / <alpha-value>) 原生支持 /NN 修饰符） */
+  --sky-50-rgb: 240 249 255;
+  --sky-100-rgb: 224 242 254;
+  --sky-200-rgb: 186 230 253;
+  --sky-300-rgb: 125 211 252;
+  --sky-400-rgb: 56 189 248;
+  --sky-500-rgb: 14 165 233;
+  --sky-600-rgb: 2 132 199;
+  --sky-700-rgb: 3 105 161;
+  --sky-800-rgb: 7 89 133;
+  --sky-900-rgb: 12 74 110;
+  --sky-950-rgb: 8 47 73;
+  --blue-50-rgb: 239 246 255;
+  --blue-100-rgb: 219 234 254;
+  --blue-200-rgb: 191 219 254;
+  --blue-300-rgb: 147 197 253;
+  --blue-400-rgb: 96 165 250;
+  --blue-500-rgb: 59 130 246;
+  --blue-600-rgb: 37 99 235;
+  --blue-700-rgb: 29 78 216;
+  --blue-800-rgb: 30 64 175;
+  --blue-900-rgb: 30 58 138;
+  --blue-950-rgb: 23 37 84;
+  --accent-rgb: var(--sky-400-rgb); /* accent DEFAULT = sky-400 */
 
   /* §9 批 2：React Flow / 徽章 / 卡片 chrome（dark 原值） */
   --focus-ring: #3b82f6;
@@ -154,6 +178,30 @@
   /* viz 系列色（light 加深保证对比度）*/
   --viz-1: #2563eb;  --viz-2: #047857;  --viz-3: #6d28d9;  --viz-4: #b45309;
   --viz-5: #0e7490;  --viz-6: #be185d;  --viz-7: #c2410c;  --viz-8: #0f766e;
+  /* §9 批 3：Tailwind sky/blue/accent 色阶 RGB 通道（theme.json 可调；rgb(var(--x) / <alpha-value>) 原生支持 /NN 修饰符） */
+  --sky-50-rgb: 240 249 255;
+  --sky-100-rgb: 224 242 254;
+  --sky-200-rgb: 186 230 253;
+  --sky-300-rgb: 125 211 252;
+  --sky-400-rgb: 56 189 248;
+  --sky-500-rgb: 14 165 233;
+  --sky-600-rgb: 2 132 199;
+  --sky-700-rgb: 3 105 161;
+  --sky-800-rgb: 7 89 133;
+  --sky-900-rgb: 12 74 110;
+  --sky-950-rgb: 8 47 73;
+  --blue-50-rgb: 239 246 255;
+  --blue-100-rgb: 219 234 254;
+  --blue-200-rgb: 191 219 254;
+  --blue-300-rgb: 147 197 253;
+  --blue-400-rgb: 96 165 250;
+  --blue-500-rgb: 59 130 246;
+  --blue-600-rgb: 37 99 235;
+  --blue-700-rgb: 29 78 216;
+  --blue-800-rgb: 30 64 175;
+  --blue-900-rgb: 30 58 138;
+  --blue-950-rgb: 23 37 84;
+  --accent-rgb: var(--sky-400-rgb); /* accent DEFAULT = sky-400 */
 
   /* §9 批 2：React Flow / 徽章 / 卡片 chrome（light 原值） */
   --rf-control-shadow: rgba(0, 0, 0, 0.08);

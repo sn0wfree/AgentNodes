@@ -79,6 +79,31 @@ describe('semantic color tokens (stage 1 of palette unification)', () => {
       }
     }
   })
+
+  it('§9 批 3: accent/sky/blue ladders map to RGB-channel variables with alpha support', () => {
+    // 用 rgb(var(--x-rgb) / <alpha-value>) 才能原生支持 bg-sky-500/10 等 /NN 类，
+    // 且整条通道值可由 theme.json 覆盖（历史 !bg-background/95 回归防线）。
+    for (const family of ['accent', 'sky', 'blue']) {
+      for (const shade of [50, 100, 200, 300, 400, 500, 600, 700, 800, 900, 950]) {
+        expect(tw, `${family}-${shade}`).toMatch(
+          new RegExp(`${shade}:\\s*['"]rgb\\(var\\(--${family === 'accent' ? 'sky' : family}-${shade}-rgb\\) / <alpha-value>\\)['"]`),
+        )
+      }
+    }
+    expect(tw).toMatch(/DEFAULT:\s*'rgb\(var\(--accent-rgb\) \/ <alpha-value>\)'/)
+  })
+
+  it('§9 批 3: defines RGB-channel variables in both themes', () => {
+    for (const theme of ['dark', 'light'] as const) {
+      const vars = varsOf(theme)
+      for (const family of ['sky', 'blue']) {
+        for (const shade of [50, 100, 200, 300, 400, 500, 600, 700, 800, 900, 950]) {
+          expect(vars.has(`--${family}-${shade}-rgb`), `${theme} --${family}-${shade}-rgb`).toBe(true)
+        }
+      }
+      expect(vars.has('--accent-rgb'), `${theme} --accent-rgb`).toBe(true)
+    }
+  })
 })
 
 // 浮窗实底契约（回归防线）：codemod 曾把 !bg-slate-900/95 误迁为

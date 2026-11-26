@@ -90,7 +90,7 @@ def test_builtin_theme_covers_all_css_color_variables(client, isolated):
 
     expected: dict[str, set[str]] = {"dark": set(), "light": set()}
     for mode, name, value in _iter_theme_declarations(css):
-        if _is_color_value(value):
+        if _is_color_value(value, name):
             expected[mode].add(name)
 
     for mode in ("dark", "light"):
