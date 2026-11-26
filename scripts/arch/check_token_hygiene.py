@@ -36,24 +36,10 @@ SRC = ROOT / "webui" / "frontend" / "src"
 GLOBALS = SRC / "styles" / "globals.css"
 
 HEX = re.compile(r"#[0-9a-fA-F]{3,8}\b")
-# 身份色/豁免文件（B-2 裁决 + C 批用户裁决）
-ALLOWLIST_FILES = {
-    "stores/agents.ts",
-    "components/workflow/nodeTypes.ts",
-    "components/workflow/DAGNode.tsx",
-    "components/study/agentStyles.ts",
-    "components/workflow/DefinitionWorkflowPage.tsx",
-    "components/chat/ChartBlock.tsx",  # viz 单点定义已收编（C 批）
-}
-# 图表语义色白名单（C 批收尾）：涨跌色/轴色等 chart config 字面量，
-# 归 viz/语义令牌后续批次；当前 43 处锁定，新增即红（门基线 191→43）。
-CHART_COLOR_FILES = {
-    "components/chat/TraceViewer.tsx", "components/layout/PanelRenderCard.tsx",
-    "components/performance/EquityCurveCard.tsx", "components/run/RunDetailPage.tsx",
-    "components/study/MetricsTrendChart.tsx", "components/workflow/WorkflowDAG.tsx",
-    "components/workflow/WorkflowEditor.tsx", "pages/MonitorPage.tsx",
-    "components/agent/AgentItem.tsx", "components/chat/MarkdownRenderer.tsx",
-}
+# §9 批 5：身份色/viz 图表色已全部迁移为 CSS 变量（theme.json 可调），
+# 原 B-2/C 批豁免文件白名单整体移除——门禁现在真正对裸 hex 零容忍。
+ALLOWLIST_FILES: set[str] = set()
+CHART_COLOR_FILES: set[str] = set()
 # 9/10px 白名单：这些文件当前保留任意小字号（保守策略），不计新增违规
 FONT_ALLOWLIST = {
     "components/chat/TraceViewer.tsx", "pages/StrategyLibraryPage.tsx",
@@ -187,9 +173,9 @@ def selftest() -> int:
         return 0
 
 
-# C 批开工基线：门锁定现状，真仓不超过基线即 OK（逐步收编降到 0）；
-# 「新增违规必红」由 tests/test_token_hygiene.py 的注入测试 + --selftest 保证（R-019）。
-BASELINE_VIOLATIONS = 191
+# §9 批 5：全部迁移完成，基线归零——任何裸 hex / 坏渐变 / 语义前景硬编码
+# 都会让门禁变红（tests/test_token_hygiene.py 的注入测试 + --selftest 保证 R-019）。
+BASELINE_VIOLATIONS = 0
 
 
 def main(argv: list[str]) -> int:
