@@ -52,25 +52,25 @@ export function AgentApprovalDialog({ studyId }: AgentApprovalDialogProps) {
       <div className="flex w-full max-w-md flex-col gap-4 rounded-2xl border border-warning/40 bg-slate-900 p-5 shadow-elevated">
         <div className="flex items-center gap-2">
           <AlertTriangle className="h-5 w-5 text-warning-fg" />
-          <h2 className="text-sm font-semibold text-slate-100">Agent 循环检测</h2>
+          <h2 className="text-sm font-semibold text-foreground">Agent 循环检测</h2>
         </div>
 
         <div className="rounded-lg border border-warning/20 bg-warning-fill px-3 py-2 text-[11px] leading-relaxed text-warning-fg">
           {active.message}
         </div>
 
-        <dl className="grid grid-cols-2 gap-x-3 gap-y-1 text-[11px] text-slate-400">
-          <dt className="text-slate-500">Role</dt>
-          <dd className="font-mono text-slate-200">{active.role ?? '(unknown)'}</dd>
-          <dt className="text-slate-500">Iteration</dt>
-          <dd className="font-mono text-slate-200">{active.iteration}</dd>
-          <dt className="text-slate-500">Tool hash</dt>
-          <dd className="truncate font-mono text-slate-200">{active.tool_hash || '-'}</dd>
-          <dt className="text-slate-500">Window</dt>
-          <dd className="font-mono text-slate-200">{active.window} 次</dd>
+        <dl className="grid grid-cols-2 gap-x-3 gap-y-1 text-[11px] text-muted">
+          <dt className="text-muted">Role</dt>
+          <dd className="font-mono text-foreground">{active.role ?? '(unknown)'}</dd>
+          <dt className="text-muted">Iteration</dt>
+          <dd className="font-mono text-foreground">{active.iteration}</dd>
+          <dt className="text-muted">Tool hash</dt>
+          <dd className="truncate font-mono text-foreground">{active.tool_hash || '-'}</dd>
+          <dt className="text-muted">Window</dt>
+          <dd className="font-mono text-foreground">{active.window} 次</dd>
         </dl>
 
-        <p className="text-[10px] text-slate-500">
+        <p className="text-[10px] text-muted">
           ⏱ {timeoutMin} 分钟内无响应将默认 {active.on_timeout === 'reject' ? '中止该 Agent' : '继续循环'}。
         </p>
 

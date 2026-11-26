@@ -29,10 +29,10 @@ const VERDICT_STYLES: Record<string, { badge: string; label: string; dot: string
     line: 'bg-emerald-500/40',
   },
   discard: {
-    badge: 'border-slate-600 bg-slate-800/70 text-slate-400',
+    badge: 'border-strong bg-surface-raised/70 text-muted',
     label: '弃用',
-    dot: 'border-slate-600 bg-slate-700',
-    line: 'bg-slate-700/60',
+    dot: 'border-strong bg-surface-raised',
+    line: 'bg-surface-raised',
   },
   review: {
     badge: 'border-warning/40 bg-warning-fill text-warning-fg',
@@ -46,8 +46,8 @@ function MetricValue({ label, value }: { label: string; value?: number | null })
   const display = value != null ? value.toFixed(2) : '—'
   return (
     <span className="font-mono text-[10px] tabular-nums">
-      <span className="text-slate-600">{label}:</span>{' '}
-      <span className="text-slate-300">{display}</span>
+      <span className="text-muted">{label}:</span>{' '}
+      <span className="text-secondary">{display}</span>
     </span>
   )
 }
@@ -69,10 +69,10 @@ function RoundItem({
   const hasFailures = round.factor_failures && round.factor_failures.length > 0
   const verdict = round.verdict ?? '—'
   const verdictStyle = VERDICT_STYLES[verdict] ?? {
-    badge: 'border-slate-700 bg-slate-800 text-slate-400',
+    badge: 'border-strong bg-surface-raised text-muted',
     label: verdict,
-    dot: 'border-slate-700 bg-slate-800',
-    line: 'bg-slate-700/60',
+    dot: 'border-strong bg-surface-raised',
+    line: 'bg-surface-raised',
   }
 
   return (
@@ -91,8 +91,8 @@ function RoundItem({
       {/* Round content */}
       <div className="min-w-0 flex-1 pb-3">
         <div
-          className={`flex items-center gap-1 rounded-lg transition-colors hover:bg-slate-800/30 ${
-            isCurrent ? 'bg-slate-800/50 ring-1 ring-slate-700' : ''
+          className={`flex items-center gap-1 rounded-lg transition-colors hover:bg-surface-raised/30 ${
+            isCurrent ? 'bg-surface ring-1 ring-slate-700' : ''
           }`}
         >
           <button
@@ -102,21 +102,21 @@ function RoundItem({
             className="flex min-w-0 flex-1 cursor-pointer items-center gap-1.5 py-1.5 pl-1.5 pr-1 text-left"
           >
             {expanded ? (
-              <ChevronDown className="h-3 w-3 flex-shrink-0 text-slate-500" />
+              <ChevronDown className="h-3 w-3 flex-shrink-0 text-muted" />
             ) : (
-              <ChevronRight className="h-3 w-3 flex-shrink-0 text-slate-500" />
+              <ChevronRight className="h-3 w-3 flex-shrink-0 text-muted" />
             )}
             <span
               className={`w-6 flex-shrink-0 font-mono text-[10px] ${
-                isCurrent ? 'text-primary-400' : 'text-slate-400'
+                isCurrent ? 'text-primary-400' : 'text-muted'
               }`}
             >
               R{round.round_num}
             </span>
-            <span className="w-10 flex-shrink-0 text-[10px] text-slate-600">
+            <span className="w-10 flex-shrink-0 text-[10px] text-muted">
               {formatTime(round.created_at)}
             </span>
-            <span className="min-w-0 flex-1 truncate font-mono text-[10px] text-slate-400">
+            <span className="min-w-0 flex-1 truncate font-mono text-[10px] text-muted">
               {round.run_name}
             </span>
             <span
@@ -138,7 +138,7 @@ function RoundItem({
               type="button"
               title="查看回测产物"
               onClick={() => onOpenRun(round.run_name)}
-              className="mr-1 flex-shrink-0 cursor-pointer rounded-lg p-1.5 text-slate-500 transition-colors hover:bg-slate-800 hover:text-sky-400"
+              className="mr-1 flex-shrink-0 cursor-pointer rounded-lg p-1.5 text-muted transition-colors hover:bg-surface-raised hover:text-sky-400"
             >
               <ExternalLink className="h-3 w-3" />
             </button>
@@ -146,7 +146,7 @@ function RoundItem({
         </div>
 
         {expanded && (
-          <div className="ml-3 mt-1 space-y-2 border-l-2 border-slate-700 pl-2.5">
+          <div className="ml-3 mt-1 space-y-2 border-l-2 border-strong pl-2.5">
             {/* Factor failures */}
             {hasFailures && (
               <div className="space-y-1.5">
@@ -156,9 +156,9 @@ function RoundItem({
                       <AlertTriangle className="h-3 w-3" />
                       <span className="font-mono">{f.factor_code}</span>
                     </div>
-                    <p className="text-slate-500 ml-4">{f.error}</p>
+                    <p className="text-muted ml-4">{f.error}</p>
                     {f.available_columns && (
-                      <p className="text-slate-600 ml-4">
+                      <p className="text-muted ml-4">
                         可用列: [{f.available_columns.join(', ')}]
                       </p>
                     )}
@@ -181,19 +181,19 @@ export function RoundHistory({ rounds, currentRound, onOpenRun, studyId }: Props
 
   if (rounds.length === 0) {
     return (
-      <div className="rounded-xl border border-slate-800 bg-slate-900/60 p-3.5 shadow-soft">
-        <div className="text-[10px] font-medium uppercase tracking-wider text-slate-500 mb-1">
+      <div className="rounded-xl border border-subtle bg-surface-raised p-3.5 shadow-soft">
+        <div className="text-[10px] font-medium uppercase tracking-wider text-muted mb-1">
           Round 历史
         </div>
-        <p className="text-xs text-slate-500">暂无历史记录</p>
+        <p className="text-xs text-muted">暂无历史记录</p>
       </div>
     )
   }
 
   return (
     <>
-      <div className="rounded-xl border border-slate-800 bg-slate-900/60 p-3.5 shadow-soft transition-colors hover:border-slate-700">
-        <div className="mb-2 text-[10px] font-medium uppercase tracking-wider text-slate-500">
+      <div className="rounded-xl border border-subtle bg-surface-raised p-3.5 shadow-soft transition-colors hover:border-strong">
+        <div className="mb-2 text-[10px] font-medium uppercase tracking-wider text-muted">
           Round 历史 · 时间线
         </div>
         <div className="space-y-0">

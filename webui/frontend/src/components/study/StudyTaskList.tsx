@@ -49,17 +49,17 @@ function HistoryCard({
       className={`group relative w-full cursor-pointer rounded-xl border p-3 text-left shadow-soft transition-all duration-200 active:scale-[0.99] ${
         selected
           ? 'border-primary-500/60 bg-primary-500/5 ring-1 ring-primary-500/30'
-          : 'border-slate-800 bg-slate-900/60 hover:translate-x-0.5 hover:border-slate-700 hover:bg-slate-900/80 hover:shadow-elevated'
+          : 'border-subtle bg-surface-raised hover:translate-x-0.5 hover:border-strong hover:bg-surface-raised hover:shadow-elevated'
       }`}
     >
       <div className="flex items-center justify-between gap-2">
-        <span className={`min-w-0 truncate text-xs font-medium ${selected ? 'text-primary-300' : 'text-slate-200'}`}>
+        <span className={`min-w-0 truncate text-xs font-medium ${selected ? 'text-primary-300' : 'text-foreground'}`}>
           {study.objective || '未命名研究'}
         </span>
         <div className="flex items-center gap-1">
           <StudyActionMenu study={study} onAction={onAction} />
           <ArrowRight
-            className={`h-3 w-3 flex-shrink-0 ${selected ? 'text-primary-400' : 'text-slate-600'}`}
+            className={`h-3 w-3 flex-shrink-0 ${selected ? 'text-primary-400' : 'text-muted'}`}
           />
         </div>
       </div>
@@ -69,7 +69,7 @@ function HistoryCard({
         </span>
       )}
       {(c != null || s != null || d != null) && (
-        <div className="mt-1.5 flex items-center gap-2 font-mono text-[9px] tabular-nums text-slate-500">
+        <div className="mt-1.5 flex items-center gap-2 font-mono text-[9px] tabular-nums text-muted">
           {s != null && <span className="text-info-fg">S {s}</span>}
           {c != null && <span className="text-primary-400/80">C {c}</span>}
           {d != null && <span className="text-danger-fg">DD {d}</span>}
@@ -78,7 +78,7 @@ function HistoryCard({
       <div className="mt-2 flex flex-wrap items-center gap-2">
         <span
           className={`inline-flex items-center gap-1.5 rounded-full border px-2 py-0.5 text-[9px] font-medium ${
-            STUDY_STATUS_COLORS[status] ?? 'border-slate-700 bg-slate-800 text-slate-300'
+            STUDY_STATUS_COLORS[status] ?? 'border-strong bg-surface-raised text-secondary'
           }`}
         >
           {isActive && (
@@ -91,15 +91,15 @@ function HistoryCard({
             className={`inline-flex items-center rounded-full border px-1.5 py-0.5 text-[9px] font-medium ${
               study.last_verdict === 'keep'
                 ? 'border-emerald-500/40 bg-emerald-500/10 text-success-fg'
-                : 'border-slate-700 bg-slate-800/70 text-slate-500'
+                : 'border-strong bg-surface-raised/70 text-muted'
             }`}
           >
             {study.last_verdict}
             {study.last_verdict === 'keep' && ' ✓'}
           </span>
         )}
-        <span className="text-[10px] text-slate-500">Round {clampRound(study.current_round)}</span>
-        <span className="inline-flex items-center gap-0.5 text-[10px] text-slate-600">
+        <span className="text-[10px] text-muted">Round {clampRound(study.current_round)}</span>
+        <span className="inline-flex items-center gap-0.5 text-[10px] text-muted">
           <Clock className="h-2.5 w-2.5" />
           {formatDateTime(study.updated_at ?? study.created_at)}
         </span>
@@ -170,11 +170,11 @@ export function StudyTaskList({
     <div className="flex h-full min-h-0 flex-col gap-2.5">
       {/* Header + filters */}
       <div className="flex flex-wrap items-center gap-2">
-        <h2 className="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wider text-slate-500">
+        <h2 className="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wider text-muted">
           <ListChecks className="h-3.5 w-3.5 text-primary-400" />
           任务列表
         </h2>
-        <span className="font-mono text-[10px] text-slate-600">{studies.length}</span>
+        <span className="font-mono text-[10px] text-muted">{studies.length}</span>
         <div className="ml-auto flex items-center gap-1">
           {FILTERS.map((f) => (
             <button
@@ -184,7 +184,7 @@ export function StudyTaskList({
               className={`cursor-pointer rounded-full border px-2 py-0.5 text-[9px] font-medium transition-colors ${
                 filter === f.key
                   ? 'border-primary-500/50 bg-primary-500/15 text-primary-300'
-                  : 'border-slate-700 bg-slate-800/40 text-slate-500 hover:border-slate-600 hover:text-slate-300'
+                  : 'border-strong bg-surface text-muted hover:border hover:text-secondary'
               }`}
             >
               {f.label}
@@ -195,18 +195,18 @@ export function StudyTaskList({
             onClick={onRefresh}
             disabled={loading}
             title="刷新"
-            className="ml-1 cursor-pointer rounded-lg p-1.5 text-slate-500 transition-colors hover:bg-slate-800 hover:text-slate-300 active:scale-95 disabled:opacity-50"
+            className="ml-1 cursor-pointer rounded-lg p-1.5 text-muted transition-colors hover:bg-surface-raised hover:text-secondary active:scale-95 disabled:opacity-50"
           >
             <RefreshCw className={`h-3.5 w-3.5 ${loading ? 'animate-spin' : ''}`} />
           </button>
         </div>
         {onToggleArchived && (
-          <label className="flex cursor-pointer items-center gap-1.5 text-[10px] text-slate-500">
+          <label className="flex cursor-pointer items-center gap-1.5 text-[10px] text-muted">
             <input
               type="checkbox"
               checked={includeArchived}
               onChange={(e) => onToggleArchived(e.target.checked)}
-              className="h-3 w-3 cursor-pointer rounded border-slate-600 bg-slate-800 text-slate-400 focus:ring-slate-400"
+              className="h-3 w-3 cursor-pointer rounded border bg-surface-raised text-muted focus:ring-slate-400"
             />
             <Archive className="h-3 w-3" />
             显示已归档
@@ -217,17 +217,17 @@ export function StudyTaskList({
       {/* List */}
       {loading && sorted.length === 0 ? (
         <div className="space-y-2">
-          <div className="animate-pulse rounded-xl border border-slate-800/50 bg-slate-900/40 p-3">
-            <div className="h-3 w-2/3 rounded bg-slate-800/70" />
-            <div className="mt-2 h-2.5 w-1/2 rounded bg-slate-800/50" />
+          <div className="animate-pulse rounded-xl border border-subtle bg-surface p-3">
+            <div className="h-3 w-2/3 rounded bg-surface-raised/70" />
+            <div className="mt-2 h-2.5 w-1/2 rounded bg-surface" />
           </div>
-          <div className="animate-pulse rounded-xl border border-slate-800/50 bg-slate-900/40 p-3">
-            <div className="h-3 w-2/3 rounded bg-slate-800/70" />
-            <div className="mt-2 h-2.5 w-1/2 rounded bg-slate-800/50" />
+          <div className="animate-pulse rounded-xl border border-subtle bg-surface p-3">
+            <div className="h-3 w-2/3 rounded bg-surface-raised/70" />
+            <div className="mt-2 h-2.5 w-1/2 rounded bg-surface" />
           </div>
         </div>
       ) : sorted.length === 0 ? (
-        <div className="rounded-xl border border-dashed border-slate-800 px-4 py-10 text-center text-xs text-slate-600">
+        <div className="rounded-xl border border-dashed border-subtle px-4 py-10 text-center text-xs text-muted">
           {filter === 'all' ? '暂无研究任务 —— 在左侧创建一个吧' : '该状态下暂无任务'}
         </div>
       ) : (

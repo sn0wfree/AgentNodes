@@ -28,12 +28,12 @@ export function MetricsCompare({ rounds, onOpenRun }: Props) {
   const withMetrics = rounds.filter((r) => r.metrics != null)
   if (withMetrics.length === 0) {
     return (
-      <div className="rounded-xl border border-slate-800 bg-slate-900/60 p-3.5 shadow-soft">
-        <div className="mb-1 flex items-center gap-1.5 text-[10px] font-medium uppercase tracking-wider text-slate-500">
+      <div className="rounded-xl border border-subtle bg-surface-raised p-3.5 shadow-soft">
+        <div className="mb-1 flex items-center gap-1.5 text-[10px] font-medium uppercase tracking-wider text-muted">
           <BarChart3 className="h-3 w-3" />
           指标对比
         </div>
-        <p className="text-xs text-slate-500">暂无带指标的轮次</p>
+        <p className="text-xs text-muted">暂无带指标的轮次</p>
       </div>
     )
   }
@@ -49,8 +49,8 @@ export function MetricsCompare({ rounds, onOpenRun }: Props) {
   const sorted = [...withMetrics].sort((a, b) => a.round_num - b.round_num)
 
   return (
-    <div className="rounded-xl border border-slate-800 bg-slate-900/60 p-3.5 shadow-soft transition-colors hover:border-slate-700">
-      <div className="mb-2 flex items-center gap-1.5 text-[10px] font-medium uppercase tracking-wider text-slate-500">
+    <div className="rounded-xl border border-subtle bg-surface-raised p-3.5 shadow-soft transition-colors hover:border-strong">
+      <div className="mb-2 flex items-center gap-1.5 text-[10px] font-medium uppercase tracking-wider text-muted">
         <BarChart3 className="h-3 w-3 text-primary-400" />
         指标对比
       </div>
@@ -58,7 +58,7 @@ export function MetricsCompare({ rounds, onOpenRun }: Props) {
       <div className="overflow-x-auto">
         <table className="w-full text-[10px]">
           <thead>
-            <tr className="text-left text-slate-600">
+            <tr className="text-left text-muted">
               <th className="pb-1 pr-2 font-medium">轮次</th>
               {METRIC_KEYS.map((k) => (
                 <th key={k} className="pb-1 pr-2 text-right font-medium">
@@ -73,8 +73,8 @@ export function MetricsCompare({ rounds, onOpenRun }: Props) {
             {sorted.map((r) => {
               const verdict = r.verdict ?? null
               return (
-                <tr key={r.round_num} className="group transition-colors hover:bg-slate-800/30">
-                  <td className="py-1.5 pr-2 font-mono text-slate-400">
+                <tr key={r.round_num} className="group transition-colors hover:bg-surface-raised/30">
+                  <td className="py-1.5 pr-2 font-mono text-muted">
                     R{r.round_num}
                   </td>
                   {METRIC_KEYS.map((k) => {
@@ -87,8 +87,8 @@ export function MetricsCompare({ rounds, onOpenRun }: Props) {
                           isBest
                             ? 'font-semibold text-success-fg'
                             : v == null
-                              ? 'text-slate-600'
-                              : 'text-slate-300'
+                              ? 'text-muted'
+                              : 'text-secondary'
                         }`}
                         title={isBest ? '本轮最佳' : undefined}
                       >
@@ -105,14 +105,14 @@ export function MetricsCompare({ rounds, onOpenRun }: Props) {
                             ? 'border-emerald-500/40 bg-emerald-500/10 text-success-fg'
                             : verdict === 'review'
                               ? 'border-warning/40 bg-warning-fill text-warning-fg'
-                              : 'border-slate-700 bg-slate-800/70 text-slate-500'
+                              : 'border-strong bg-surface-raised/70 text-muted'
                         }`}
                       >
                         <span className={`h-1 w-1 rounded-full ${VERDICT_DOT[verdict] ?? 'bg-slate-500'}`} />
                         {verdict}
                       </span>
                     ) : (
-                      <span className="text-slate-600">—</span>
+                      <span className="text-muted">—</span>
                     )}
                   </td>
                   {onOpenRun && (
@@ -121,7 +121,7 @@ export function MetricsCompare({ rounds, onOpenRun }: Props) {
                         type="button"
                         title="查看回测产物"
                         onClick={() => onOpenRun(r.run_name)}
-                        className="cursor-pointer rounded p-1 text-slate-600 opacity-0 transition-all group-hover:opacity-100 hover:bg-slate-800 hover:text-sky-400"
+                        className="cursor-pointer rounded p-1 text-muted opacity-0 transition-all group-hover:opacity-100 hover:bg-surface-raised hover:text-sky-400"
                       >
                         <ExternalLink className="h-3 w-3" />
                       </button>
@@ -133,7 +133,7 @@ export function MetricsCompare({ rounds, onOpenRun }: Props) {
           </tbody>
         </table>
       </div>
-      <p className="mt-1.5 text-[9px] text-slate-600">◆ 该列最优值</p>
+      <p className="mt-1.5 text-[9px] text-muted">◆ 该列最优值</p>
     </div>
   )
 }

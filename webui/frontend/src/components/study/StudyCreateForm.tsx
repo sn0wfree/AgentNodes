@@ -21,9 +21,9 @@ const DEFAULT_METRICS: MetricTarget[] = [
 ]
 
 const INPUT_CLS = (compact?: boolean) =>
-  `w-full rounded-lg border border-slate-700 bg-slate-900 px-2.5 py-1.5 ${
+  `w-full rounded-lg border border-strong bg-slate-900 px-2.5 py-1.5 ${
     compact ? 'text-xs' : 'text-sm'
-  } text-slate-200 outline-none transition-shadow focus:border-primary-500 focus:ring-2 focus:ring-primary-500/40`
+  } text-foreground outline-none transition-shadow focus:border-primary-500 focus:ring-2 focus:ring-primary-500/40`
 
 function Section({
   icon,
@@ -37,8 +37,8 @@ function Section({
   compact?: boolean
 }) {
   return (
-    <div className={`rounded-xl border border-slate-800 bg-slate-900/60 ${compact ? 'p-2.5' : 'p-3.5'} shadow-soft`}>
-      <div className={`mb-2.5 flex items-center gap-1.5 ${compact ? 'text-[9px]' : 'text-[10px]'} font-medium uppercase tracking-wider text-slate-500`}>
+    <div className={`rounded-xl border border-subtle bg-surface-raised ${compact ? 'p-2.5' : 'p-3.5'} shadow-soft`}>
+      <div className={`mb-2.5 flex items-center gap-1.5 ${compact ? 'text-[9px]' : 'text-[10px]'} font-medium uppercase tracking-wider text-muted`}>
         {icon}
         {title}
       </div>
@@ -154,7 +154,7 @@ export function StudyCreateForm({ sessionId, workspacePath, onCreated, compact }
   }
 
   return (
-    <form onSubmit={onSubmit} className={`space-y-3 text-slate-100 ${compact ? 'text-xs' : ''}`}>
+    <form onSubmit={onSubmit} className={`space-y-3 text-foreground ${compact ? 'text-xs' : ''}`}>
       <Section icon={<Target className="h-3 w-3 text-primary-400" />} title="研究目标" compact={compact}>
         <textarea
           rows={compact ? 2 : 3}
@@ -177,7 +177,7 @@ export function StudyCreateForm({ sessionId, workspacePath, onCreated, compact }
       <button
         type="button"
         onClick={() => setShowAICompose(!showAICompose)}
-        className="flex items-center gap-1 text-[10px] font-medium uppercase tracking-wider text-slate-400 hover:text-slate-200"
+        className="flex items-center gap-1 text-[10px] font-medium uppercase tracking-wider text-muted hover:text-foreground"
       >
         {showAICompose ? <ChevronDown className="h-3 w-3" /> : <ChevronRight className="h-3 w-3" />}
         <Sparkles className="h-3 w-3 text-sky-500" />
@@ -209,13 +209,13 @@ export function StudyCreateForm({ sessionId, workspacePath, onCreated, compact }
           {metrics.map((m, i) => (
             <div key={i} className={`flex items-center gap-2 ${compact ? 'text-xs' : 'text-sm'}`}>
               <input
-                className={`w-28 rounded-lg border border-slate-700 bg-slate-900 px-2 py-1 text-slate-200 outline-none focus:border-primary-500 focus:ring-2 focus:ring-primary-500/40 ${compact ? 'text-xs' : ''}`}
+                className={`w-28 rounded-lg border border-strong bg-slate-900 px-2 py-1 text-foreground outline-none focus:border-primary-500 focus:ring-2 focus:ring-primary-500/40 ${compact ? 'text-xs' : ''}`}
                 value={m.name}
                 onChange={(e) => updateMetric(i, { name: e.target.value })}
                 placeholder="metric"
               />
               <select
-                className="cursor-pointer rounded-lg border border-slate-700 bg-slate-900 px-2 py-1 text-slate-200 outline-none focus:border-primary-500"
+                className="cursor-pointer rounded-lg border border-strong bg-slate-900 px-2 py-1 text-foreground outline-none focus:border-primary-500"
                 value={m.op}
                 onChange={(e) =>
                   updateMetric(i, { op: e.target.value as MetricTarget['op'] })
@@ -230,7 +230,7 @@ export function StudyCreateForm({ sessionId, workspacePath, onCreated, compact }
               <input
                 type="number"
                 step="0.01"
-                className={`w-24 rounded-lg border border-slate-700 bg-slate-900 px-2 py-1 text-slate-200 outline-none focus:border-primary-500 focus:ring-2 focus:ring-primary-500/40 ${compact ? 'text-xs' : ''}`}
+                className={`w-24 rounded-lg border border-strong bg-slate-900 px-2 py-1 text-foreground outline-none focus:border-primary-500 focus:ring-2 focus:ring-primary-500/40 ${compact ? 'text-xs' : ''}`}
                 value={m.value}
                 onChange={(e) => updateMetric(i, { value: Number(e.target.value) })}
               />
@@ -240,7 +240,7 @@ export function StudyCreateForm({ sessionId, workspacePath, onCreated, compact }
                   onClick={() =>
                     setMetrics((prev) => prev.filter((_, idx) => idx !== i))
                   }
-                  className="cursor-pointer text-slate-500 transition-colors hover:text-danger-fg"
+                  className="cursor-pointer text-muted transition-colors hover:text-danger-fg"
                   aria-label="Remove metric"
                 >
                   <X className="h-4 w-4" />
@@ -254,7 +254,7 @@ export function StudyCreateForm({ sessionId, workspacePath, onCreated, compact }
           onClick={() =>
             setMetrics((prev) => [...prev, { name: '', op: '>=', value: 0 }])
           }
-          className="mt-1.5 inline-flex cursor-pointer items-center gap-1 text-xs text-slate-400 transition-colors hover:text-slate-200"
+          className="mt-1.5 inline-flex cursor-pointer items-center gap-1 text-xs text-muted transition-colors hover:text-foreground"
         >
           <Plus className="h-3 w-3" /> 添加指标
         </button>
@@ -262,11 +262,11 @@ export function StudyCreateForm({ sessionId, workspacePath, onCreated, compact }
 
       {/* Advanced params - collapsible in compact mode, always shown otherwise */}
       {compact ? (
-        <div className="rounded-xl border border-slate-800 bg-slate-900/60 shadow-soft">
+        <div className="rounded-xl border border-subtle bg-surface-raised shadow-soft">
           <button
             type="button"
             onClick={() => setShowAdvanced(!showAdvanced)}
-            className="flex w-full items-center gap-2 p-2.5 text-left text-[10px] font-medium uppercase tracking-wider text-slate-500 transition-colors hover:text-slate-400"
+            className="flex w-full items-center gap-2 p-2.5 text-left text-[10px] font-medium uppercase tracking-wider text-muted transition-colors hover:text-muted"
           >
             <SlidersHorizontal className="h-3 w-3 text-primary-400" />
             高级参数
@@ -277,7 +277,7 @@ export function StudyCreateForm({ sessionId, workspacePath, onCreated, compact }
             )}
           </button>
           {showAdvanced && (
-            <div className="border-t border-slate-800 px-2.5 pb-2.5 pt-2">
+            <div className="border-t border-subtle px-2.5 pb-2.5 pt-2">
               <AdvancedParams
                 budgetTurn={budgetTurn}
                 setBudgetTurn={setBudgetTurn}
@@ -353,7 +353,7 @@ function AdvancedParams({
   return (
     <div className={`grid ${compact ? 'grid-cols-1 gap-2' : 'grid-cols-2 gap-2.5'}`}>
       <div>
-        <label className={`mb-1 block ${compact ? 'text-[9px]' : 'text-[10px]'} text-slate-500`}>轮数预算 (turns)</label>
+        <label className={`mb-1 block ${compact ? 'text-[9px]' : 'text-[10px]'} text-muted`}>轮数预算 (turns)</label>
         <input
           type="number"
           min={1}
@@ -366,7 +366,7 @@ function AdvancedParams({
         />
       </div>
       <div>
-        <label className={`mb-1 block ${compact ? 'text-[9px]' : 'text-[10px]'} text-slate-500`}>最大轮数</label>
+        <label className={`mb-1 block ${compact ? 'text-[9px]' : 'text-[10px]'} text-muted`}>最大轮数</label>
         <input
           type="number"
           min={1}
@@ -379,7 +379,7 @@ function AdvancedParams({
         />
       </div>
       <div>
-        <label className={`mb-1 block ${compact ? 'text-[9px]' : 'text-[10px]'} text-slate-500`}>监控间隔（秒，0=不监控）</label>
+        <label className={`mb-1 block ${compact ? 'text-[9px]' : 'text-[10px]'} text-muted`}>监控间隔（秒，0=不监控）</label>
         <input
           type="number"
           min={0}
@@ -392,9 +392,9 @@ function AdvancedParams({
         />
       </div>
       <div>
-        <label className={`mb-1 block ${compact ? 'text-[9px]' : 'text-[10px]'} text-slate-500`}>Behavior (CI)</label>
+        <label className={`mb-1 block ${compact ? 'text-[9px]' : 'text-[10px]'} text-muted`}>Behavior (CI)</label>
         <select
-          className={`w-full cursor-pointer rounded-lg border border-slate-700 bg-slate-900 px-2 py-1.5 ${compact ? 'text-xs' : 'text-sm'} text-slate-200 outline-none focus:border-primary-500`}
+          className={`w-full cursor-pointer rounded-lg border border-strong bg-slate-900 px-2 py-1.5 ${compact ? 'text-xs' : 'text-sm'} text-foreground outline-none focus:border-primary-500`}
           value={behavior}
           onChange={(e) => setBehavior(e.target.value)}
         >
@@ -405,9 +405,9 @@ function AdvancedParams({
         </select>
       </div>
       <div>
-        <label className={`mb-1 block ${compact ? 'text-[9px]' : 'text-[10px]'} text-slate-500`}>执行引擎</label>
+        <label className={`mb-1 block ${compact ? 'text-[9px]' : 'text-[10px]'} text-muted`}>执行引擎</label>
         <select
-          className={`w-full cursor-pointer rounded-lg border border-slate-700 bg-slate-900 px-2 py-1.5 ${compact ? 'text-xs' : 'text-sm'} text-slate-200 outline-none focus:border-primary-500`}
+          className={`w-full cursor-pointer rounded-lg border border-strong bg-slate-900 px-2 py-1.5 ${compact ? 'text-xs' : 'text-sm'} text-foreground outline-none focus:border-primary-500`}
           value={engine}
           onChange={(e) => setEngine(e.target.value as 'phases' | 'dag' | 'langgraph')}
         >

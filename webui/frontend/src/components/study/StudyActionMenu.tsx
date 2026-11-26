@@ -23,7 +23,7 @@ const ICON_CLS: Record<string, string> = {
   pause: 'text-warning-fg',
   continue: 'text-success-fg',
   cancel: 'text-danger-fg',
-  archive: 'text-slate-400',
+  archive: 'text-muted',
   unarchive: 'text-info-fg',
 }
 
@@ -96,19 +96,19 @@ export function StudyActionMenu({ study, onAction, onRefresh }: StudyActionMenuP
         }}
         title="操作"
         aria-label="操作"
-        className="inline-flex cursor-pointer items-center justify-center rounded-lg p-1 text-slate-500 transition-colors hover:bg-slate-800 hover:text-slate-300 active:scale-95"
+        className="inline-flex cursor-pointer items-center justify-center rounded-lg p-1 text-muted transition-colors hover:bg-surface-raised hover:text-secondary active:scale-95"
       >
         <MoreVertical className="h-3.5 w-3.5" />
       </button>
       {open && (
         <div
           role="menu"
-          className="absolute right-0 top-full z-30 mt-1 min-w-[10rem] rounded-lg border border-slate-700 bg-slate-900/95 py-1 shadow-elevated backdrop-blur"
+          className="absolute right-0 top-full z-30 mt-1 min-w-[10rem] rounded-lg border border-strong bg-slate-900/95 py-1 shadow-elevated backdrop-blur"
         >
           {loading ? (
-            <div className="px-3 py-2 text-[10px] text-slate-500">加载中...</div>
+            <div className="px-3 py-2 text-[10px] text-muted">加载中...</div>
           ) : actions.length === 0 ? (
-            <div className="px-3 py-2 text-[10px] text-slate-500">暂无可用操作</div>
+            <div className="px-3 py-2 text-[10px] text-muted">暂无可用操作</div>
           ) : (
             actions
               // 中-1: actions needing an argument UI (replace_objective's
@@ -126,8 +126,8 @@ export function StudyActionMenu({ study, onAction, onRefresh }: StudyActionMenuP
                       handleClick(a.name)
                     }}
                     role="menuitem"
-                    className={`flex w-full cursor-pointer items-center gap-2 px-3 py-1.5 text-left text-[11px] transition-colors hover:bg-slate-800 ${
-                      a.destructive ? 'text-danger-fg hover:text-rose-200' : 'text-slate-200 hover:text-slate-50'
+                    className={`flex w-full cursor-pointer items-center gap-2 px-3 py-1.5 text-left text-[11px] transition-colors hover:bg-surface-raised ${
+                      a.destructive ? 'text-danger-fg hover:text-rose-200' : 'text-foreground hover:text-slate-50'
                     }`}
                   >
                     {Icon && <Icon className={`h-3.5 w-3.5 ${ICON_CLS[a.name] ?? ''}`} />}

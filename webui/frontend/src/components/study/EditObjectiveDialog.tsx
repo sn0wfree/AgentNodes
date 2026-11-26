@@ -68,19 +68,19 @@ export function EditObjectiveDialog({
       onClick={onClose}
     >
       <div
-        className="flex w-full max-w-xl flex-col gap-4 rounded-2xl border border-slate-700 bg-slate-900 p-5 shadow-elevated"
+        className="flex w-full max-w-xl flex-col gap-4 rounded-2xl border border-strong bg-slate-900 p-5 shadow-elevated"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
         <div className="flex items-center justify-between">
-          <h2 className="flex items-center gap-2 text-sm font-semibold text-slate-100">
+          <h2 className="flex items-center gap-2 text-sm font-semibold text-foreground">
             <Edit3 className="h-4 w-4 text-primary-400" />
             修改研究目标
           </h2>
           <button
             type="button"
             onClick={onClose}
-            className="rounded-lg p-1 text-slate-500 transition-colors hover:bg-slate-800 hover:text-slate-300"
+            className="rounded-lg p-1 text-muted transition-colors hover:bg-surface-raised hover:text-secondary"
             title="关闭"
           >
             <X className="h-4 w-4" />
@@ -89,21 +89,21 @@ export function EditObjectiveDialog({
 
         {/* Current objective (read-only) */}
         <div>
-          <label className="mb-1 block text-[10px] font-medium uppercase tracking-wider text-slate-500">
+          <label className="mb-1 block text-[10px] font-medium uppercase tracking-wider text-muted">
             当前目标
           </label>
-          <div className="rounded-lg border border-slate-800 bg-slate-950/50 px-2.5 py-2 text-xs leading-relaxed text-slate-400">
+          <div className="rounded-lg border border-subtle bg-slate-950/50 px-2.5 py-2 text-xs leading-relaxed text-muted">
             {currentObjective}
           </div>
         </div>
 
         {/* New objective */}
         <div>
-          <label className="mb-1 flex items-center justify-between text-[10px] font-medium uppercase tracking-wider text-slate-500">
+          <label className="mb-1 flex items-center justify-between text-[10px] font-medium uppercase tracking-wider text-muted">
             <span>新目标</span>
             <span
               className={`font-mono normal-case ${
-                lengthOk ? 'text-slate-600' : 'text-danger-fg'
+                lengthOk ? 'text-muted' : 'text-danger-fg'
               }`}
             >
               {trimmed.length} / 2000
@@ -114,7 +114,7 @@ export function EditObjectiveDialog({
             onChange={(e) => setText(e.target.value)}
             rows={4}
             placeholder="例：低估值反转因子选股 + 限制 top_n ≤ 30"
-            className="w-full rounded-lg border border-slate-700 bg-slate-950 px-2.5 py-2 text-xs leading-relaxed text-slate-200 outline-none transition-shadow focus:border-primary-500 focus:ring-2 focus:ring-primary-500/40"
+            className="w-full rounded-lg border border-strong bg-slate-950 px-2.5 py-2 text-xs leading-relaxed text-foreground outline-none transition-shadow focus:border-primary-500 focus:ring-2 focus:ring-primary-500/40"
           />
           {!lengthOk && trimmed.length > 0 && (
             <p className="mt-1 text-[10px] text-danger-fg">
@@ -125,7 +125,7 @@ export function EditObjectiveDialog({
 
         {/* Reason */}
         <div>
-          <label className="mb-1 block text-[10px] font-medium uppercase tracking-wider text-slate-500">
+          <label className="mb-1 block text-[10px] font-medium uppercase tracking-wider text-muted">
             修改原因（可选 · 会记入审计日志）
           </label>
           <input
@@ -133,7 +133,7 @@ export function EditObjectiveDialog({
             onChange={(e) => setReason(e.target.value)}
             maxLength={512}
             placeholder="例：最近回测显示动量失效，反转更稳"
-            className="w-full rounded-lg border border-slate-700 bg-slate-950 px-2.5 py-1.5 text-xs text-slate-200 outline-none transition-shadow focus:border-primary-500 focus:ring-2 focus:ring-primary-500/40"
+            className="w-full rounded-lg border border-strong bg-slate-950 px-2.5 py-1.5 text-xs text-foreground outline-none transition-shadow focus:border-primary-500 focus:ring-2 focus:ring-primary-500/40"
           />
         </div>
 
@@ -161,7 +161,7 @@ export function EditObjectiveDialog({
             type="button"
             onClick={onClose}
             disabled={submitting}
-            className="rounded-lg border border-slate-700 bg-slate-800/60 px-3 py-1.5 text-xs text-slate-300 transition-colors hover:bg-slate-800 disabled:opacity-50"
+            className="rounded-lg border border-strong bg-surface px-3 py-1.5 text-xs text-secondary transition-colors hover:bg-surface-raised disabled:opacity-50"
           >
             取消
           </button>

@@ -47,7 +47,7 @@ export function StudyChatComposer({
   }, [directiveText, sending, studyId, clearHint])
 
   return (
-    <div className="border-t border-slate-800 p-3">
+    <div className="border-t border-subtle p-3">
       <div className="flex items-end gap-2">
         <textarea
           ref={taRef}
@@ -61,7 +61,7 @@ export function StudyChatComposer({
             }
           }}
           placeholder="输入研究指令（下轮 researcher 生效）..."
-          className="flex-1 resize-none rounded-lg border border-slate-700 bg-slate-950 px-3 py-2 text-xs text-slate-200 outline-none transition-shadow placeholder:text-slate-600 focus:border-primary-500 focus:ring-2 focus:ring-primary-500/40"
+          className="flex-1 resize-none rounded-lg border border-strong bg-slate-950 px-3 py-2 text-xs text-foreground outline-none transition-shadow placeholder:text-muted focus:border-primary-500 focus:ring-2 focus:ring-primary-500/40"
         />
         <button
           type="button"
@@ -84,7 +84,7 @@ export function StudyChatComposer({
         </div>
       )}
 
-      <div className="mt-1.5 text-[10px] text-slate-600">
+      <div className="mt-1.5 text-[10px] text-muted">
         Cmd/Ctrl+Enter 提交 · 指令将在下一轮 researcher 中生效
       </div>
     </div>

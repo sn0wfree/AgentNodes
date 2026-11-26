@@ -60,7 +60,7 @@ export function MetricsTrendChart({ rounds, metricTargets }: Props) {
 
   if (rounds.length === 0) {
     return (
-      <div className="flex items-center justify-center py-8 text-xs text-slate-500">
+      <div className="flex items-center justify-center py-8 text-xs text-muted">
         暂无轮次数据
       </div>
     )
@@ -68,7 +68,7 @@ export function MetricsTrendChart({ rounds, metricTargets }: Props) {
 
   return (
     <div className="space-y-2">
-      <div className="text-[10px] font-medium uppercase tracking-wider text-slate-500">
+      <div className="text-[10px] font-medium uppercase tracking-wider text-muted">
         指标趋势
       </div>
       <div className="h-48">

@@ -103,13 +103,13 @@ export function InterruptApprovalCard({
       </div>
 
       {message && (
-        <div className="mb-2 text-[11px] text-slate-300">{message}</div>
+        <div className="mb-2 text-[11px] text-secondary">{message}</div>
       )}
 
       {hypothesis && (
-        <div className="mb-3 rounded-md bg-slate-800/50 p-2">
-          <div className="mb-1 text-[10px] text-slate-500">假设</div>
-          <div className="text-[11px] leading-relaxed text-slate-300">{hypothesis}</div>
+        <div className="mb-3 rounded-md bg-surface p-2">
+          <div className="mb-1 text-[10px] text-muted">假设</div>
+          <div className="text-[11px] leading-relaxed text-secondary">{hypothesis}</div>
         </div>
       )}
 

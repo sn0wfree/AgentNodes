@@ -58,7 +58,8 @@ describe('RoundHistory', () => {
     const { container } = render(
       <RoundHistory rounds={[round(), round({ round_num: 2, run_name: 'run_0002' })]} currentRound={2} />
     )
-    const currentRow = container.querySelector('.bg-slate-800\\/50')
+    // 配色统一阶段 2：bg-slate-800/50 → bg-surface（语义类）
+    const currentRow = container.querySelector('.bg-surface')
     expect(currentRow).toBeInTheDocument()
   })
 
@@ -132,7 +133,8 @@ describe('RoundHistory', () => {
     // keep → emerald dot, review → amber dot, discard → slate dot (+ badges)
     expect(container.querySelectorAll('.border-emerald-500').length).toBe(1)
     expect(container.querySelectorAll('[class*="border-warning"]').length).toBe(2) // review badge + dot
-    expect(container.querySelectorAll('.border-slate-600').length).toBe(2)
+    // discard → slate dot：配色统一阶段 2 后为 border-strong（语义类）
+    expect(container.querySelectorAll('.border-strong').length).toBe(2)
     // connectors inherit the verdict color of the round
     expect(container.querySelectorAll('[class*="bg-emerald-500/40"]').length).toBe(1)
     expect(container.querySelectorAll('[class*="bg-warning/40"]').length).toBe(1)

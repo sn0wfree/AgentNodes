@@ -174,7 +174,7 @@ function RoundNavRail({
       className="pointer-events-none absolute inset-y-0 right-1 z-10 flex items-center"
       aria-label="轮次导航"
     >
-      <div className="pointer-events-auto flex flex-col items-center gap-0 rounded-full bg-slate-900/40 px-1 py-2 backdrop-blur-sm">
+      <div className="pointer-events-auto flex flex-col items-center gap-0 rounded-full bg-surface px-1 py-2 backdrop-blur-sm">
         {sorted.map((r, i) => {
           const isActive = r.round_num === selectedRound
           return (
@@ -190,15 +190,15 @@ function RoundNavRail({
                     : 'h-1.5 w-1.5 bg-slate-600 hover:bg-slate-400'
                 }`}
               >
-                <div className="pointer-events-none absolute right-full top-1/2 mr-2 hidden -translate-y-1/2 whitespace-nowrap rounded-md border border-slate-700 bg-slate-800/95 px-2 py-1 text-[10px] text-slate-200 shadow-lg backdrop-blur group-hover:block">
-                  <div className="font-medium text-slate-100">Round {r.round_num}</div>
-                  <div className="text-slate-400">
+                <div className="pointer-events-none absolute right-full top-1/2 mr-2 hidden -translate-y-1/2 whitespace-nowrap rounded-md border border-strong bg-surface-raised/95 px-2 py-1 text-[10px] text-foreground shadow-lg backdrop-blur group-hover:block">
+                  <div className="font-medium text-foreground">Round {r.round_num}</div>
+                  <div className="text-muted">
                     {r.verdict ?? '—'} · {r.run_name.slice(0, 24)}
                   </div>
                 </div>
               </button>
               {i < sorted.length - 1 && (
-                <div className="my-0.5 h-3 w-px bg-slate-700" />
+                <div className="my-0.5 h-3 w-px bg-surface-raised" />
               )}
             </div>
           )
@@ -402,9 +402,9 @@ export function StudyChat({ studyId, summary }: WidgetProps) {
     <ChatSessionProvider sessionId={providerSessionId}>
       <div className="flex h-full flex-col">
         {/* Header */}
-        <div className="flex items-center gap-3 border-b border-slate-800 px-3 py-2">
-          <div className="flex items-center gap-2 text-xs text-slate-500">
-            <span className="font-mono text-slate-300">
+        <div className="flex items-center gap-3 border-b border-subtle px-3 py-2">
+          <div className="flex items-center gap-2 text-xs text-muted">
+            <span className="font-mono text-secondary">
               Round {selectedRound}
               {loading && <Loader2 className="ml-1 inline h-3 w-3 animate-spin" />}
             </span>
@@ -435,7 +435,7 @@ export function StudyChat({ studyId, summary }: WidgetProps) {
           {/* HITL Approval Card — driven by the study_paused SSE event
               (real DB interrupt_id; see studyHandlers.studyPaused). */}
           {hitlInterrupt && hitlInterrupt.study_id === studyId && (
-            <div className="flex-shrink-0 border-t border-slate-800 p-3">
+            <div className="flex-shrink-0 border-t border-subtle p-3">
               <InterruptApprovalCard
                 studyId={studyId}
                 interruptId={hitlInterrupt.interrupt_id}

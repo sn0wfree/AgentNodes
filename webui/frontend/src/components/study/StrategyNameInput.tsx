@@ -81,7 +81,7 @@ export function StrategyNameInput({
 
   return (
     <div>
-      <label className="block text-xs font-medium text-slate-300 mb-1">
+      <label className="block text-xs font-medium text-secondary mb-1">
         策略名称
       </label>
       <div className="flex gap-2">
@@ -93,14 +93,14 @@ export function StrategyNameInput({
           className={`flex-1 rounded border px-2 py-1 text-sm font-mono ${
             error
               ? 'border-rose-500 bg-slate-900'
-              : 'border-slate-700 bg-slate-900'
+              : 'border-strong bg-slate-900'
           }`}
         />
         <button
           type="button"
           onClick={handleRegenerate}
           disabled={!parts}
-          className="inline-flex items-center gap-1 rounded border border-slate-700 bg-slate-800 px-2 py-1 text-xs text-slate-400 hover:border-slate-500 hover:text-slate-200 disabled:opacity-50"
+          className="inline-flex items-center gap-1 rounded border border-strong bg-surface-raised px-2 py-1 text-xs text-muted hover:border-slate-500 hover:text-foreground disabled:opacity-50"
           title="重新生成"
         >
           <RefreshCw className="h-3 w-3" />
@@ -110,7 +110,7 @@ export function StrategyNameInput({
         {error ? (
           <span className="text-[10px] text-danger-fg">{error}</span>
         ) : (
-          <span className="text-[10px] text-slate-500">
+          <span className="text-[10px] text-muted">
             由研究目标自动生成 · 可手动修改 · {charCount} 字符
           </span>
         )}

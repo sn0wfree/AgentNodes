@@ -26,7 +26,7 @@ function fmtSize(bytes: number): string {
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
   return (
     <div className="mb-3">
-      <div className="mb-1 text-[10px] font-medium uppercase tracking-wider text-slate-500">
+      <div className="mb-1 text-[10px] font-medium uppercase tracking-wider text-muted">
         {title}
       </div>
       {children}
@@ -132,22 +132,22 @@ export function RoundDetailDrawer({ studyId, round, onClose, onAdopted }: Props)
   return (
     <div className="fixed inset-0 z-50 flex justify-end">
       <div className="absolute inset-0 bg-black/60" onClick={onClose} />
-      <div className="relative flex h-full w-full max-w-lg flex-col border-l border-slate-700 bg-slate-900 shadow-2xl">
+      <div className="relative flex h-full w-full max-w-lg flex-col border-l border-strong bg-slate-900 shadow-2xl">
         {/* Header */}
-        <div className="flex items-center justify-between border-b border-slate-800 px-4 py-3">
+        <div className="flex items-center justify-between border-b border-subtle px-4 py-3">
           <div className="flex items-center gap-2">
             <FileText className="h-4 w-4 text-primary-400" />
-            <span className="text-sm font-semibold text-slate-100">
+            <span className="text-sm font-semibold text-foreground">
               R{round.round_num} 详情
             </span>
-            <span className="rounded-full border border-slate-700 bg-slate-800 px-1.5 py-0.5 font-mono text-[10px] text-slate-400">
+            <span className="rounded-full border border-strong bg-surface-raised px-1.5 py-0.5 font-mono text-[10px] text-muted">
               {round.run_name}
             </span>
           </div>
           <button
             type="button"
             onClick={onClose}
-            className="cursor-pointer rounded-lg p-1.5 text-slate-500 transition-colors hover:bg-slate-800 hover:text-slate-200"
+            className="cursor-pointer rounded-lg p-1.5 text-muted transition-colors hover:bg-surface-raised hover:text-foreground"
           >
             <X className="h-4 w-4" />
           </button>
@@ -167,7 +167,7 @@ export function RoundDetailDrawer({ studyId, round, onClose, onAdopted }: Props)
                 {round.verdict}
               </span>
               {verdict.reason && (
-                <span className="text-[11px] text-slate-400">{verdict.reason}</span>
+                <span className="text-[11px] text-muted">{verdict.reason}</span>
               )}
             </div>
           </Section>
@@ -175,7 +175,7 @@ export function RoundDetailDrawer({ studyId, round, onClose, onAdopted }: Props)
           {/* Hypothesis */}
           {hypothesis.text && (
             <Section title="假设">
-              <p className="rounded-lg border border-slate-800 bg-slate-950/60 px-2.5 py-1.5 text-[11px] text-slate-300">
+              <p className="rounded-lg border border-subtle bg-slate-950/60 px-2.5 py-1.5 text-[11px] text-secondary">
                 {hypothesis.text}
               </p>
             </Section>
@@ -188,7 +188,7 @@ export function RoundDetailDrawer({ studyId, round, onClose, onAdopted }: Props)
                 {changes.map((c: Record<string, unknown>, i: number) => (
                   <div
                     key={i}
-                    className="flex items-start gap-1.5 rounded-lg border border-slate-800 bg-slate-950/60 px-2.5 py-1.5 text-[11px] text-slate-300"
+                    className="flex items-start gap-1.5 rounded-lg border border-subtle bg-slate-950/60 px-2.5 py-1.5 text-[11px] text-secondary"
                   >
                     <GitCompare className="mt-0.5 h-3 w-3 flex-shrink-0 text-info-fg" />
                     <span>{String(c.what ?? c.factor ?? c.param ?? JSON.stringify(c))}</span>
@@ -208,7 +208,7 @@ export function RoundDetailDrawer({ studyId, round, onClose, onAdopted }: Props)
                   </div>
                 )}
                 {(next.open_questions ?? []).map((q: string, i: number) => (
-                  <div key={i} className="text-[11px] text-slate-500">
+                  <div key={i} className="text-[11px] text-muted">
                     ? {q}
                   </div>
                 ))}
@@ -222,7 +222,7 @@ export function RoundDetailDrawer({ studyId, round, onClose, onAdopted }: Props)
               <select
                 value={diffAgainst}
                 onChange={(e) => setDiffAgainst(Number(e.target.value))}
-                className="rounded-lg border border-slate-700 bg-slate-950 px-2 py-1 text-[11px] text-slate-300 outline-none"
+                className="rounded-lg border border-strong bg-slate-950 px-2 py-1 text-[11px] text-secondary outline-none"
               >
                 <option value={0}>vs baseline</option>
                 {Array.from({ length: Math.max(0, round.round_num - 1) }, (_, i) => {
@@ -235,13 +235,13 @@ export function RoundDetailDrawer({ studyId, round, onClose, onAdopted }: Props)
                 })}
               </select>
               {diff?.stats && (
-                <span className="text-[10px] text-slate-500">
+                <span className="text-[10px] text-muted">
                   +{diff.stats.adds} / -{diff.stats.dels} / {diff.stats.context} ctx
                 </span>
               )}
             </div>
             {diff ? (
-              <div className="max-h-48 overflow-y-auto rounded-lg border border-slate-800 bg-slate-950/80 font-mono text-[10px] leading-relaxed">
+              <div className="max-h-48 overflow-y-auto rounded-lg border border-subtle bg-slate-950/80 font-mono text-[10px] leading-relaxed">
                 {(diff.diff ?? []).map((d, i) => (
                   <div
                     key={i}
@@ -250,7 +250,7 @@ export function RoundDetailDrawer({ studyId, round, onClose, onAdopted }: Props)
                         ? 'bg-emerald-950/40 text-emerald-400 px-2'
                         : d.kind === 'del'
                           ? 'bg-rose-950/40 text-rose-400 px-2'
-                          : 'px-2 text-slate-500'
+                          : 'px-2 text-muted'
                     }
                   >
                     {d.kind === 'add' ? '+ ' : d.kind === 'del' ? '- ' : '  '}
@@ -261,14 +261,14 @@ export function RoundDetailDrawer({ studyId, round, onClose, onAdopted }: Props)
             ) : diffFailed ? (
               <p className="text-[11px] text-danger-fg">加载 diff 失败</p>
             ) : (
-              <p className="text-[11px] text-slate-500">加载 diff...</p>
+              <p className="text-[11px] text-muted">加载 diff...</p>
             )}
           </Section>
 
           {/* Summary markdown */}
           {summaryMd?.summary_md && (
             <Section title="Summary.md">
-              <pre className="max-h-40 overflow-y-auto whitespace-pre-wrap rounded-lg border border-slate-800 bg-slate-950/60 px-2.5 py-1.5 text-[10px] leading-relaxed text-slate-400">
+              <pre className="max-h-40 overflow-y-auto whitespace-pre-wrap rounded-lg border border-subtle bg-slate-950/60 px-2.5 py-1.5 text-[10px] leading-relaxed text-muted">
                 {summaryMd.summary_md}
               </pre>
             </Section>
@@ -283,10 +283,10 @@ export function RoundDetailDrawer({ studyId, round, onClose, onAdopted }: Props)
                     key={a.path}
                     className="flex items-center justify-between gap-2 rounded-lg bg-slate-950/60 px-2 py-1 text-[10px]"
                   >
-                    <span className="min-w-0 truncate font-mono text-slate-400" title={a.path}>
+                    <span className="min-w-0 truncate font-mono text-muted" title={a.path}>
                       {a.path}
                     </span>
-                    <span className="flex-shrink-0 font-mono text-slate-600">{fmtSize(a.size)}</span>
+                    <span className="flex-shrink-0 font-mono text-muted">{fmtSize(a.size)}</span>
                   </div>
                 ))}
               </div>
@@ -308,7 +308,7 @@ export function RoundDetailDrawer({ studyId, round, onClose, onAdopted }: Props)
               )}
               丢弃 R{round.round_num} 并从上一轮重跑
             </button>
-            <div className="mt-1 flex items-start gap-1 text-[10px] text-slate-500">
+            <div className="mt-1 flex items-start gap-1 text-[10px] text-muted">
               <AlertTriangle className="mt-0.5 h-3 w-3 flex-shrink-0" />
               破坏性：删除本轮产物 + DB 记录；study 运行中不可用
             </div>
@@ -336,7 +336,7 @@ export function RoundDetailDrawer({ studyId, round, onClose, onAdopted }: Props)
                 将 R{round.round_num} 的策略设为下一轮起点
               </button>
             )}
-            <div className="mt-1 flex items-start gap-1 text-[10px] text-slate-500">
+            <div className="mt-1 flex items-start gap-1 text-[10px] text-muted">
               <AlertTriangle className="mt-0.5 h-3 w-3 flex-shrink-0" />
               非破坏性：只复制到本 study 的 baseline，不影响共享策略目录
             </div>

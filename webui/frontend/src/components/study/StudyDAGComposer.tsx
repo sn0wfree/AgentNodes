@@ -109,7 +109,7 @@ export function StudyDAGComposer({ objective, onGraphReady }: Props) {
         <Sparkles className="h-4 w-4 text-sky-500" />
         <span className="text-sm font-medium text-slate-800">AI 自动编排</span>
       </div>
-      <p className="text-xs text-slate-600">
+      <p className="text-xs text-muted">
         基于研究目标自动选择合适的 agent 流水线，生成 DAG 写入 graph.json
       </p>
       <div className="flex items-center gap-2">
@@ -127,14 +127,14 @@ export function StudyDAGComposer({ objective, onGraphReady }: Props) {
           AI 推荐
         </button>
         {selected.size > 0 && (
-          <span className="text-xs text-slate-600">
+          <span className="text-xs text-muted">
             已选 {selected.size} 个 agent
           </span>
         )}
       </div>
       {error && <p className="text-xs text-rose-500">{error}</p>}
       {reasoning && (
-        <p className="rounded bg-white px-2 py-1.5 text-xs text-slate-600">
+        <p className="rounded bg-white px-2 py-1.5 text-xs text-muted">
           {reasoning}
         </p>
       )}

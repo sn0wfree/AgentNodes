@@ -49,7 +49,7 @@ const STATUS_COLORS: Record<string, string> = {
   budget_limited: 'bg-orange-700 text-orange-100',
   early_stopped: 'bg-rose-800 text-rose-100',
   needs_refresh: 'bg-rose-800 text-rose-100',
-  cancelled: 'bg-slate-700 text-slate-300',
+  cancelled: 'bg-surface-raised text-secondary',
   complete: 'bg-emerald-700 text-emerald-100',
 }
 
@@ -95,27 +95,27 @@ export function ContinueDialog({ open, summary, onClose, onContinue }: ContinueD
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60">
-      <div className="w-96 rounded-xl border border-slate-700 bg-slate-900 p-5 shadow-2xl">
+      <div className="w-96 rounded-xl border border-strong bg-slate-900 p-5 shadow-2xl">
         {/* Header */}
         <div className="mb-4 flex items-center justify-between">
-          <h3 className="text-sm font-semibold text-slate-100">继续研究</h3>
-          <button onClick={onClose} className="text-slate-500 hover:text-slate-300">
+          <h3 className="text-sm font-semibold text-foreground">继续研究</h3>
+          <button onClick={onClose} className="text-muted hover:text-secondary">
             <X className="h-4 w-4" />
           </button>
         </div>
 
         {/* Status + round info */}
         <div className="mb-4 flex items-center gap-2 text-xs">
-          <span className={`rounded-full px-2 py-0.5 font-medium ${STATUS_COLORS[status] ?? 'bg-slate-700 text-slate-300'}`}>
+          <span className={`rounded-full px-2 py-0.5 font-medium ${STATUS_COLORS[status] ?? 'bg-surface-raised text-secondary'}`}>
             {STATUS_LABELS[status] ?? status}
           </span>
-          <span className="text-slate-400">当前轮次: Round {currentRound}</span>
+          <span className="text-muted">当前轮次: Round {currentRound}</span>
         </div>
 
         {/* Mode selection */}
         <div className="space-y-2">
           {resumableOnly && (
-            <p className="rounded border border-slate-700 bg-slate-800/60 px-2 py-1.5 text-[11px] text-slate-400">
+            <p className="rounded border border-strong bg-surface px-2 py-1.5 text-[11px] text-muted">
               已暂停/已中断的研究只能从当前轮次（Round {currentRound}）恢复。
             </p>
           )}
@@ -123,7 +123,7 @@ export function ContinueDialog({ open, summary, onClose, onContinue }: ContinueD
             className={`flex cursor-pointer items-center gap-2 rounded-lg border p-2.5 transition-colors ${
               mode === 'resume' && !useCustom
                 ? 'border-emerald-500/50 bg-emerald-900/20'
-                : 'border-slate-700 bg-slate-800/50 hover:border-slate-600'
+                : 'border-strong bg-surface hover:border'
             }`}
           >
             <input
@@ -134,16 +134,16 @@ export function ContinueDialog({ open, summary, onClose, onContinue }: ContinueD
               className="accent-emerald-500"
             />
             <Play className="h-3.5 w-3.5 text-success-fg" />
-            <span className="text-xs text-slate-200">从当前轮次继续 (Round {currentRound})</span>
+            <span className="text-xs text-foreground">从当前轮次继续 (Round {currentRound})</span>
           </label>
 
           <label
             className={`flex items-center gap-2 rounded-lg border p-2.5 transition-colors ${
               resumableOnly
-                ? 'cursor-not-allowed border-slate-800 bg-slate-800/30 opacity-40'
+                ? 'cursor-not-allowed border-subtle bg-surface-raised/30 opacity-40'
                 : mode === 'restart' && !useCustom
                   ? 'cursor-pointer border-accent/50 bg-accent/10'
-                  : 'cursor-pointer border-slate-700 bg-slate-800/50 hover:border-slate-600'
+                  : 'cursor-pointer border-strong bg-surface hover:border'
             }`}
           >
             <input
@@ -155,16 +155,16 @@ export function ContinueDialog({ open, summary, onClose, onContinue }: ContinueD
               className="accent-accent"
             />
             <RotateCcw className="h-3.5 w-3.5 text-accent-400" />
-            <span className="text-xs text-slate-200">从头开始 (Round 1)</span>
+            <span className="text-xs text-foreground">从头开始 (Round 1)</span>
           </label>
 
           <label
             className={`flex items-center gap-2 rounded-lg border p-2.5 transition-colors ${
               resumableOnly
-                ? 'cursor-not-allowed border-slate-800 bg-slate-800/30 opacity-40'
+                ? 'cursor-not-allowed border-subtle bg-surface-raised/30 opacity-40'
                 : useCustom
                   ? 'border-sky-500/50 bg-sky-900/20'
-                  : 'cursor-pointer border-slate-700 bg-slate-800/50 hover:border-slate-600'
+                  : 'cursor-pointer border-strong bg-surface hover:border'
             }`}
           >
             <input
@@ -175,7 +175,7 @@ export function ContinueDialog({ open, summary, onClose, onContinue }: ContinueD
               onChange={() => setUseCustom(true)}
               className="accent-sky-500"
             />
-            <span className="text-xs text-slate-200">从指定轮次开始:</span>
+            <span className="text-xs text-foreground">从指定轮次开始:</span>
             <input
               type="number"
               min={1}
@@ -187,7 +187,7 @@ export function ContinueDialog({ open, summary, onClose, onContinue }: ContinueD
               }}
               onFocus={() => setUseCustom(true)}
               placeholder="轮次"
-              className="w-16 rounded border border-slate-600 bg-slate-800 px-2 py-0.5 text-xs text-slate-200 outline-none focus:border-sky-500 disabled:opacity-50"
+              className="w-16 rounded border border bg-surface-raised px-2 py-0.5 text-xs text-foreground outline-none focus:border-sky-500 disabled:opacity-50"
             />
           </label>
         </div>
@@ -196,7 +196,7 @@ export function ContinueDialog({ open, summary, onClose, onContinue }: ContinueD
         <div className="mt-4 flex justify-end gap-2">
           <button
             onClick={onClose}
-            className="rounded-lg border border-slate-700 px-3 py-1.5 text-xs text-slate-400 hover:border-slate-600 hover:text-slate-200"
+            className="rounded-lg border border-strong px-3 py-1.5 text-xs text-muted hover:border hover:text-foreground"
           >
             取消
           </button>

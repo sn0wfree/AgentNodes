@@ -55,7 +55,7 @@ export function StudyAgentPalette({ selected, onChange, required = [] }: Props) 
   }
 
   if (loading) {
-    return <div className="text-xs text-slate-500">加载 agent catalog…</div>
+    return <div className="text-xs text-muted">加载 agent catalog…</div>
   }
   if (error) {
     return <div className="text-xs text-rose-500">agent 加载失败: {error}</div>
@@ -78,7 +78,7 @@ export function StudyAgentPalette({ selected, onChange, required = [] }: Props) 
           <button
             type="button"
             onClick={clearOptional}
-            className="text-xs text-slate-500 hover:underline"
+            className="text-xs text-muted hover:underline"
           >
             仅必选
           </button>
@@ -107,7 +107,7 @@ export function StudyAgentPalette({ selected, onChange, required = [] }: Props) 
               <div className="min-w-0 flex-1">
                 <div className="flex items-center gap-1.5">
                   <span className="font-medium text-slate-800">{a.name}</span>
-                  <span className="rounded bg-slate-100 px-1 text-[10px] text-slate-600">
+                  <span className="rounded bg-slate-100 px-1 text-[10px] text-muted">
                     {a.category}
                   </span>
                   {isRequired && (
@@ -116,9 +116,9 @@ export function StudyAgentPalette({ selected, onChange, required = [] }: Props) 
                     </span>
                   )}
                 </div>
-                <p className="mt-0.5 line-clamp-2 text-slate-600">{a.description}</p>
+                <p className="mt-0.5 line-clamp-2 text-muted">{a.description}</p>
                 {a.keywords.length > 0 && (
-                  <p className="mt-0.5 text-[10px] text-slate-400">
+                  <p className="mt-0.5 text-[10px] text-muted">
                     {a.keywords.join(' · ')}
                   </p>
                 )}

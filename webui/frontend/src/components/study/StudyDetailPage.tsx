@@ -36,7 +36,7 @@ function KpiCard({
   iconCls,
   value,
   label,
-  valueCls = 'text-slate-100',
+  valueCls = 'text-foreground',
 }: {
   icon: React.ReactNode
   iconCls: string
@@ -45,13 +45,13 @@ function KpiCard({
   valueCls?: string
 }) {
   return (
-    <div className="flex items-center gap-3 rounded-xl border border-slate-800 bg-slate-900/60 px-4 py-3.5 shadow-soft transition-colors hover:border-slate-700">
+    <div className="flex items-center gap-3 rounded-xl border border-subtle bg-surface-raised px-4 py-3.5 shadow-soft transition-colors hover:border-strong">
       <div className={`flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-lg ${iconCls}`}>
         {icon}
       </div>
       <div className="min-w-0">
         <div className={`font-mono text-xl font-bold tabular-nums ${valueCls}`}>{value}</div>
-        <div className="text-[10px] text-slate-500">{label}</div>
+        <div className="text-[10px] text-muted">{label}</div>
       </div>
     </div>
   )
@@ -181,9 +181,9 @@ export function StudyDetailPage() {
 
   if (loading) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-app text-slate-400">
+      <div className="flex min-h-screen items-center justify-center bg-app text-muted">
         <div className="flex items-center gap-2">
-          <div className="h-4 w-4 animate-spin rounded-full border-2 border-slate-600 border-t-primary-500" />
+          <div className="h-4 w-4 animate-spin rounded-full border-2 border border-t-primary-500" />
           加载中...
         </div>
       </div>
@@ -233,7 +233,7 @@ export function StudyDetailPage() {
     <div className="flex items-center gap-1.5">
       <button
         onClick={() => navigate(-1)}
-        className="inline-flex cursor-pointer items-center gap-1 rounded-lg border border-slate-700 bg-slate-800/50 px-2 py-1.5 text-xs text-slate-400 transition-colors hover:border-slate-600 hover:text-slate-200 active:scale-95"
+        className="inline-flex cursor-pointer items-center gap-1 rounded-lg border border-strong bg-surface px-2 py-1.5 text-xs text-muted transition-colors hover:border hover:text-foreground active:scale-95"
         title="返回"
       >
         <ArrowLeft className="h-3.5 w-3.5" /> 返回
@@ -277,7 +277,7 @@ export function StudyDetailPage() {
             }
           }}
           disabled={busy}
-          className="inline-flex cursor-pointer items-center gap-1 rounded-lg border border-slate-600/40 bg-slate-700/20 px-2.5 py-1.5 text-xs text-slate-300 transition-all hover:bg-amber-700/40 hover:text-amber-50 active:scale-95 disabled:opacity-50"
+          className="inline-flex cursor-pointer items-center gap-1 rounded-lg border border/40 bg-surface-raised/20 px-2.5 py-1.5 text-xs text-secondary transition-all hover:bg-amber-700/40 hover:text-amber-50 active:scale-95 disabled:opacity-50"
         >
           <Archive className="h-3.5 w-3.5" /> 归档
         </button>
@@ -335,7 +335,7 @@ export function StudyDetailPage() {
           iconCls="border border-warning/30 bg-warning-fill text-warning-fg"
           value={STUDY_STATUS_LABELS[status] ?? status}
           label={isDrifting ? `漂移 ×${driftCount}（需检查）` : '执行状态'}
-          valueCls={STUDY_STATUS_COLORS[status]?.split(' ').find((c: string) => c.startsWith('text-')) ?? 'text-slate-100'}
+          valueCls={STUDY_STATUS_COLORS[status]?.split(' ').find((c: string) => c.startsWith('text-')) ?? 'text-foreground'}
         />
         <KpiCard
           icon={<BarChart3 className="h-4 w-4" />}
@@ -363,7 +363,7 @@ export function StudyDetailPage() {
       {/* Metric targets */}
       {metricTargets.length > 0 && (
         <div className="mt-3 flex flex-wrap items-center gap-1.5">
-          <span className="text-[10px] font-medium uppercase tracking-wider text-slate-500">
+          <span className="text-[10px] font-medium uppercase tracking-wider text-muted">
             验收线:
           </span>
           {metricTargets.map((t, i) => (
@@ -380,15 +380,15 @@ export function StudyDetailPage() {
       {/* Main content: left StudyChat + right panel */}
       <div className="mt-4 flex min-h-0 flex-1 gap-4" style={{ height: 'calc(100vh - 280px)' }}>
         {/* Left: StudyChat */}
-        <div className="min-h-0 min-w-0 flex-1 overflow-hidden rounded-xl border border-slate-800 bg-slate-900/40">
+        <div className="min-h-0 min-w-0 flex-1 overflow-hidden rounded-xl border border-subtle bg-surface">
           <StudyChat studyId={studyId} summary={summary} />
         </div>
 
         {/* Right panel */}
         <div className="flex w-80 flex-shrink-0 flex-col gap-3">
           {/* MetricsCompare */}
-          <div className="min-h-0 flex-shrink-0 rounded-xl border border-slate-800 bg-slate-900/40 p-3">
-            <div className="mb-2 flex items-center gap-1.5 text-[10px] font-medium uppercase tracking-wider text-slate-500">
+          <div className="min-h-0 flex-shrink-0 rounded-xl border border-subtle bg-surface p-3">
+            <div className="mb-2 flex items-center gap-1.5 text-[10px] font-medium uppercase tracking-wider text-muted">
               <BarChart3 className="h-3 w-3" /> 指标对比
             </div>
             <div className="max-h-52 overflow-y-auto">
@@ -397,8 +397,8 @@ export function StudyDetailPage() {
           </div>
 
           {/* Metrics trend chart */}
-          <div className="flex min-h-0 flex-1 flex-col rounded-xl border border-slate-800 bg-slate-900/40 p-3">
-            <div className="mb-2 flex items-center gap-1.5 text-[10px] font-medium uppercase tracking-wider text-slate-500">
+          <div className="flex min-h-0 flex-1 flex-col rounded-xl border border-subtle bg-surface p-3">
+            <div className="mb-2 flex items-center gap-1.5 text-[10px] font-medium uppercase tracking-wider text-muted">
               <LineChart className="h-3 w-3" /> 指标趋势
             </div>
             <div className="min-h-0 flex-1">
@@ -410,10 +410,10 @@ export function StudyDetailPage() {
           </div>
 
           {/* RoundHistory — collapsible */}
-          <div className="min-h-0 flex-shrink-0 rounded-xl border border-slate-800 bg-slate-900/40">
+          <div className="min-h-0 flex-shrink-0 rounded-xl border border-subtle bg-surface">
             <button
               onClick={() => setRoundHistoryOpen((v) => !v)}
-              className="flex w-full items-center gap-2 px-3 py-2 text-left text-[10px] font-medium uppercase tracking-wider text-slate-500 transition-colors hover:bg-slate-800/40"
+              className="flex w-full items-center gap-2 px-3 py-2 text-left text-[10px] font-medium uppercase tracking-wider text-muted transition-colors hover:bg-surface"
             >
               {roundHistoryOpen ? (
                 <ChevronDown className="h-3 w-3" />
@@ -421,10 +421,10 @@ export function StudyDetailPage() {
                 <ChevronRight className="h-3 w-3" />
               )}
               <RotateCcw className="h-3 w-3" /> 轮次历史
-              <span className="ml-auto text-slate-600">{summary.recent_rounds?.length ?? 0} 轮</span>
+              <span className="ml-auto text-muted">{summary.recent_rounds?.length ?? 0} 轮</span>
             </button>
             {roundHistoryOpen && (
-              <div className="max-h-60 overflow-y-auto border-t border-slate-800 px-3 py-2">
+              <div className="max-h-60 overflow-y-auto border-t border-subtle px-3 py-2">
                 <RoundHistory
                   rounds={summary.recent_rounds ?? []}
                   currentRound={summary.current_round}

@@ -15,11 +15,11 @@ interface Props {
 function MetaRow({ icon, label, value, title }: { icon: React.ReactNode; label: string; value: string; title?: string }) {
   return (
     <div className="flex items-center gap-2 text-[10px]">
-      <span className="flex w-14 flex-shrink-0 items-center gap-1 text-slate-600">
+      <span className="flex w-14 flex-shrink-0 items-center gap-1 text-muted">
         {icon}
         {label}
       </span>
-      <span className="min-w-0 truncate font-mono text-slate-300" title={title ?? value}>
+      <span className="min-w-0 truncate font-mono text-secondary" title={title ?? value}>
         {value}
       </span>
     </div>
@@ -92,7 +92,7 @@ export function StudyTaskSummary({ studyId }: Props) {
 
   if (!studyId) {
     return (
-      <div className="flex h-full flex-col items-center justify-center rounded-xl border border-dashed border-slate-800 bg-slate-900/30 p-6">
+      <div className="flex h-full flex-col items-center justify-center rounded-xl border border-dashed border-subtle bg-slate-900/30 p-6">
         <EmptyState
           icon={<Target className="h-8 w-8" />}
           title="选择任务查看摘要"
@@ -110,7 +110,7 @@ export function StudyTaskSummary({ studyId }: Props) {
     <div className="flex h-full min-h-0 flex-col gap-2.5">
       {/* Header with fixed button - always visible */}
       <div className="flex items-center justify-between">
-        <h2 className="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wider text-slate-500">
+        <h2 className="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wider text-muted">
           <Target className="h-3.5 w-3.5 text-primary-400" />
           任务摘要
         </h2>
@@ -146,21 +146,21 @@ export function StudyTaskSummary({ studyId }: Props) {
 
       {loading && !summary ? (
         <div className="animate-pulse space-y-2">
-          <div className="h-3 w-3/4 rounded bg-slate-800/70" />
-          <div className="h-2.5 w-1/2 rounded bg-slate-800/50" />
-          <div className="h-20 rounded-lg bg-slate-800/40" />
+          <div className="h-3 w-3/4 rounded bg-surface-raised/70" />
+          <div className="h-2.5 w-1/2 rounded bg-surface" />
+          <div className="h-20 rounded-lg bg-surface" />
         </div>
       ) : error ? (
         <div className="rounded-xl border border-rose-800 bg-rose-950/50 p-3 text-xs text-rose-300">
           {error}
         </div>
       ) : !summary ? (
-        <div className="rounded-xl border border-slate-800 bg-slate-900/40 p-3 text-xs text-slate-500">
+        <div className="rounded-xl border border-subtle bg-surface p-3 text-xs text-muted">
           加载中…
         </div>
       ) : (
         <div
-          className="flex flex-1 cursor-pointer flex-col gap-2.5 rounded-xl border border-slate-800 bg-slate-900/60 p-3.5 shadow-soft transition-all hover:border-primary-500/40 hover:bg-slate-900/80 hover:shadow-elevated"
+          className="flex flex-1 cursor-pointer flex-col gap-2.5 rounded-xl border border-subtle bg-surface-raised p-3.5 shadow-soft transition-all hover:border-primary-500/40 hover:bg-surface-raised hover:shadow-elevated"
           onClick={() => summary && navigate(`/study/${summary.study_id}`)}
           role="button"
           tabIndex={0}
@@ -173,13 +173,13 @@ export function StudyTaskSummary({ studyId }: Props) {
         >
           {/* Objective + badges */}
           <div>
-            <p className="line-clamp-2 text-xs font-medium leading-relaxed text-slate-200">
+            <p className="line-clamp-2 text-xs font-medium leading-relaxed text-foreground">
               {summary!.objective || '未命名研究'}
             </p>
             <div className="mt-2 flex flex-wrap items-center gap-2">
               <span
                 className={`inline-flex items-center gap-1.5 rounded-full border px-2 py-0.5 text-[9px] font-medium ${
-                  STUDY_STATUS_COLORS[status] ?? 'border-slate-700 bg-slate-800 text-slate-300'
+                  STUDY_STATUS_COLORS[status] ?? 'border-strong bg-surface-raised text-secondary'
                 }`}
               >
                 {ACTIVE_PULSE.has(status) && (
@@ -192,7 +192,7 @@ export function StudyTaskSummary({ studyId }: Props) {
                   className={`rounded-full border px-1.5 py-0.5 text-[9px] font-medium ${
                     summary!.last_verdict === 'keep'
                       ? 'border-emerald-500/40 bg-emerald-500/10 text-success-fg'
-                      : 'border-slate-700 bg-slate-800/70 text-slate-500'
+                      : 'border-strong bg-surface-raised/70 text-muted'
                   }`}
                 >
                   {summary!.last_verdict}
@@ -203,19 +203,19 @@ export function StudyTaskSummary({ studyId }: Props) {
 
             {/* Progress */}
             <div className="mt-3">
-              <div className="flex items-center justify-between text-[10px] text-slate-500">
+              <div className="flex items-center justify-between text-[10px] text-muted">
                 <span>目标进度</span>
-                <span className="font-mono tabular-nums text-slate-400">
+                <span className="font-mono tabular-nums text-muted">
                   {progressPercent}% · {evidenceCount} 证据
                 </span>
               </div>
-              <div className="mt-1 h-1.5 overflow-hidden rounded-full bg-slate-700/80">
+              <div className="mt-1 h-1.5 overflow-hidden rounded-full bg-surface-raised/80">
                 <div
                   className="h-full bg-accent-500 transition-all duration-500"
                   style={{ width: `${Math.min(100, Math.max(0, progressPercent))}%` }}
                 />
               </div>
-              <p className="mt-1.5 text-[10px] text-slate-500">
+              <p className="mt-1.5 text-[10px] text-muted">
                 Round {clampRound(summary!.current_round)}/{summary!.max_rounds ?? 5}
               </p>
             </div>
@@ -242,7 +242,7 @@ export function StudyTaskSummary({ studyId }: Props) {
           </div>
 
           {/* Click hint */}
-          <div className="mt-auto flex items-center justify-center gap-1 border-t border-slate-800/60 pt-2 text-[10px] text-slate-500">
+          <div className="mt-auto flex items-center justify-center gap-1 border-t border-subtle/60 pt-2 text-[10px] text-muted">
             <span>点击查看详情</span>
             <ArrowRight className="h-3 w-3" />
           </div>
