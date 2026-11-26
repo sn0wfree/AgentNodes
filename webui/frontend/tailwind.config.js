@@ -4,17 +4,22 @@ export default {
   theme: {
     extend: {
       colors: {
+        // 配色统一（2026-11-26 阶段 1）：primary 数字阶梯指向 CSS 变量
+        // （--primary-50..950，globals.css 双主题定义），不再是写死的 sky 色板。
+        // DEFAULT = --primary（dark 白 / light 深灰）。
         primary: {
-          50: '#f0f9ff',
-          100: '#e0f2fe',
-          200: '#bae6fd',
-          300: '#7dd3fc',
-          400: '#38bdf8',
-          500: '#0ea5e9',
-          600: '#0284c7',
-          700: '#0369a1',
-          800: '#075985',
-          900: '#0c4a6e',
+          DEFAULT: 'var(--primary)',
+          50: 'var(--primary-50)',
+          100: 'var(--primary-100)',
+          200: 'var(--primary-200)',
+          300: 'var(--primary-300)',
+          400: 'var(--primary-400)',
+          500: 'var(--primary-500)',
+          600: 'var(--primary-600)',
+          700: 'var(--primary-700)',
+          800: 'var(--primary-800)',
+          900: 'var(--primary-900)',
+          950: 'var(--primary-950)',
         },
         accent: {
           50: '#eff6ff',
@@ -28,6 +33,13 @@ export default {
           800: '#1e40af',
           900: '#1e3a8a',
         },
+        // 中性色语义入口（阶段 1）：surface/text/border 指向 CSS 变量，
+        // 组件迁移（阶段 2）后调色只改 globals.css 两处（dark/light）。
+        surface: 'var(--surface)',
+        'surface-raised': 'var(--surface-raised)',
+        'text-secondary': 'var(--text-secondary)',
+        'border-strong': 'var(--border-strong)',
+        'border-subtle': 'var(--border-subtle)',
         // B-2：状态色语义入口，指向 globals.css 的 9-token 组（双主题自动适配）
         warning: 'var(--warning)',
         'warning-fill': 'var(--warning-fill)',

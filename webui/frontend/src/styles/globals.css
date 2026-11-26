@@ -10,14 +10,31 @@
   --card: rgba(255,255,255,0.045);
   --popover: rgba(255,255,255,0.045);
   --surface: rgba(255,255,255,0.045); /* .glass 背景——缺失会让弹层完全透明 */
+  --surface-raised: rgba(255,255,255,0.07); /* 浮起表面（原 bg-slate-800/700 用途） */
   --primary: #ffffff;
+  /* primary 数字阶梯（配色统一阶段 1）：185 处 primary-NNN 引用的兼容基座。
+     dark = 原 sky 色板（视觉零回归）；light 主题可按需加深（见 light 块）。 */
+  --primary-50: #f0f9ff;
+  --primary-100: #e0f2fe;
+  --primary-200: #bae6fd;
+  --primary-300: #7dd3fc;
+  --primary-400: #38bdf8;
+  --primary-500: #0ea5e9;
+  --primary-600: #0284c7;
+  --primary-700: #0369a1;
+  --primary-800: #075985;
+  --primary-900: #0c4a6e;
+  --primary-950: #082f49;
   --ua-action: #f3f4f6;
   --ua-action-foreground: #111827;
   --ua-action-hover: #d1d5db;
   --muted: rgba(255,255,255,0.07);
   --muted-foreground: #a3a3a3;
+  --text-secondary: #cbd5e1; /* 次级文字（原 text-slate-300/200 用途） */
   --accent: #38bdf8;
   --border: rgba(255,255,255,0.11);
+  --border-strong: rgba(255,255,255,0.18); /* 强边框（原 border-slate-700 用途） */
+  --border-subtle: rgba(255,255,255,0.06); /* 弱边框（原 border-slate-800/50 用途） */
   --input: rgba(255,255,255,0.11);
   --sidebar: #1b1b1b;
   --shadow-soft: 0 2px 12px -4px rgba(0, 0, 0, 0.3);
@@ -60,14 +77,30 @@
   --card: #ffffff;
   --popover: #ffffff;
   --surface: #ffffff; /* .glass 背景 */
+  --surface-raised: #f5f5f4; /* 浮起表面（浅色暖纸系） */
   --primary: #171717;
+  /* light 阶梯：阶段 1 与 dark 同值（视觉零回归）；阶段 3 配置外置时可整体加深 */
+  --primary-50: #f0f9ff;
+  --primary-100: #e0f2fe;
+  --primary-200: #bae6fd;
+  --primary-300: #7dd3fc;
+  --primary-400: #38bdf8;
+  --primary-500: #0ea5e9;
+  --primary-600: #0284c7;
+  --primary-700: #0369a1;
+  --primary-800: #075985;
+  --primary-900: #0c4a6e;
+  --primary-950: #082f49;
   --ua-action: #171717;
   --ua-action-foreground: #ffffff;
   --ua-action-hover: #404040;
   --muted: rgba(23,23,23,0.04);
   --muted-foreground: #737373;
+  --text-secondary: #525252; /* 次级文字（原 text-slate-300/200 用途） */
   --accent: #0ea5e9;
   --border: rgba(23,23,23,0.10);
+  --border-strong: rgba(23,23,23,0.20); /* 强边框 */
+  --border-subtle: rgba(23,23,23,0.05); /* 弱边框 */
   --input: rgba(23,23,23,0.10);
   --sidebar: #e9e9e7;
   --shadow-soft: 0 2px 12px -4px rgba(0, 0, 0, 0.08);
