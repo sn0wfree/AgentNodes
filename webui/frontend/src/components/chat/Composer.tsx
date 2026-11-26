@@ -452,7 +452,7 @@ export function Composer({ composeMessage, readOnly }: ComposerProps = {}) {
       >
         {/* 上下文用量环：卡片右上角绝对定位（hover 向上弹七段明细） */}
         {usage.hasLimit && modelInfo && (
-          <div className="group/usage absolute right-4 top-3 z-10" data-testid="composer-context-ring-wrap">
+          <div className="group/usage absolute right-4 top-2 z-10" data-testid="composer-context-ring-wrap">
             <div aria-hidden="true" data-testid="composer-context-ring" className="relative">
               <ContextRing segments={EMPTY_SEGMENTS} percent={usage.percent} tone={tokenTone(usage.percent)} size={20} />
               {usage.isStale && (
@@ -479,8 +479,19 @@ export function Composer({ composeMessage, readOnly }: ComposerProps = {}) {
             </div>
           </div>
         )}
-        {/* 编辑器行（textarea 与发送按钮同行；发送另绝对定位右下角，行尾占位避免遮挡） */}
+        {/* 编辑器行：上传按钮在 textarea 左侧同一行（普通 flex 流，不 absolute），
+            发送按钮绝对定位卡片右下角。状态栏在下一行，三者互不重叠。 */}
         <div className="flex items-end gap-2" data-composer-trailing-actions>
+          {!readOnly && (
+            <button
+              onClick={handleFileSelect}
+              disabled={isStreaming}
+              className="shrink-0 rounded-lg p-1.5 text-slate-400 hover:bg-slate-700/50 hover:text-slate-200 transition-colors disabled:opacity-30"
+              title="上传图片"
+            >
+              <ImageIcon className="h-4 w-4" />
+            </button>
+          )}
           <textarea
             ref={textareaRef}
             value={text}
@@ -498,18 +509,8 @@ export function Composer({ composeMessage, readOnly }: ComposerProps = {}) {
             rows={1}
             className="min-w-0 flex-1 resize-none bg-transparent pr-10 text-sm text-slate-100 placeholder-slate-500 outline-none disabled:opacity-50"
           />
-          {/* 上传 + 发送/停止：发送绝对定位卡片右下角（设计定稿 2026-11-25），上传保持行内 */}
-          <div className="flex items-center gap-1 pb-0.5">
-            {!readOnly && (
-              <button
-                onClick={handleFileSelect}
-                disabled={isStreaming}
-                className="rounded-lg p-1.5 text-slate-400 hover:bg-slate-700/50 hover:text-slate-200 transition-colors disabled:opacity-30"
-                title="上传图片"
-              >
-                <ImageIcon className="h-4 w-4" />
-              </button>
-            )}
+          {/* 发送/停止绝对定位卡片右下角（trailing），不占 DOM 行空间 */}
+          <div className="flex items-center gap-1">
             {isStreaming ? (
               <button
                 onClick={handleCancel}
