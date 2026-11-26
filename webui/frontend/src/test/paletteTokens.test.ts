@@ -84,6 +84,32 @@ describe('semantic color tokens (stage 1 of palette unification)', () => {
     }
   })
 
+  it('§9 深评估: Tailwind 原生色族改指 RGB 通道变量（theme.json 可控）', () => {
+    // 323 处 text-/bg-/border-emerald|rose|sky|violet|... 此前走 Tailwind 内置
+    // 硬编码色板 → 不受 theme.json 控制。改为 rgb(var(--fam-NN-rgb) / <alpha-value>)，
+    // 组件零改动，且 /NN 透明度修饰符原生可用。
+    const families = ['emerald', 'red', 'rose', 'violet', 'purple', 'amber', 'orange',
+      'yellow', 'lime', 'green', 'teal', 'cyan', 'sky', 'indigo', 'fuchsia', 'pink']
+    for (const fam of families) {
+      expect(tw, `${fam} 族未映射`).toMatch(
+        new RegExp(`${fam}:\\s*\\{[\\s\\S]*?\\d+:\\s*'rgb\\(var\\(--${fam}-\\d+-rgb\\) / <alpha-value>\\)'`),
+      )
+    }
+  })
+
+  it('§9 深评估: 色族通道变量在双主题都声明', () => {
+    for (const theme of ['dark', 'light'] as const) {
+      const vars = varsOf(theme)
+      for (const [fam, shade] of [
+        ['emerald', 400], ['emerald', 500], ['rose', 700], ['sky', 500],
+        ['violet', 300], ['violet', 500], ['amber', 500], ['indigo', 400],
+        ['cyan', 900], ['red', 500],
+      ]) {
+        expect(vars.has(`--${fam}-${shade}-rgb`), `${theme} --${fam}-${shade}-rgb`).toBe(true)
+      }
+    }
+  })
+
   it('§9 批 3: accent/sky/blue ladders map to RGB-channel variables with alpha support', () => {
     // 用 rgb(var(--x-rgb) / <alpha-value>) 才能原生支持 bg-sky-500/10 等 /NN 类，
     // 且整条通道值可由 theme.json 覆盖（历史 !bg-background/95 回归防线）。

@@ -1,9 +1,245 @@
 /** @type {import('tailwindcss').Config} */
 export default {
   content: ['./index.html', './src/**/*.{js,ts,jsx,tsx}'],
+  // §9 深评估：chat-ui-config.json 的颜色以 `bg-${value}` / `text-${value}`
+  // 动态拼接，Tailwind 扫描器看不到 → 类只因「别处恰好有字面量用到」才生成。
+  // 一旦那些字面量被删，配置指定的颜色会静默失效（无任何报错）。
+  // 这里显式 safelist 配置驱动的类名，保证配置永远生效。
+  safelist: [
+    // assistant.colors.streamingDot / userBubble.colors.label
+    'bg-primary-500', 'text-primary-400',
+    // assistant.colors.timestamp / messageList.colors.*
+    'text-slate-600', 'text-slate-400', 'bg-slate-700/60', 'bg-slate-800',
+    // assistant.colors.flatLabel
+    'text-emerald-400',
+  ],
   theme: {
     extend: {
       colors: {
+        // §9 深评估：emerald 族改指 RGB 通道变量（theme.json 可调，值=默认色板）
+        emerald: {
+          50: 'rgb(var(--emerald-50-rgb) / <alpha-value>)',
+          100: 'rgb(var(--emerald-100-rgb) / <alpha-value>)',
+          200: 'rgb(var(--emerald-200-rgb) / <alpha-value>)',
+          300: 'rgb(var(--emerald-300-rgb) / <alpha-value>)',
+          400: 'rgb(var(--emerald-400-rgb) / <alpha-value>)',
+          500: 'rgb(var(--emerald-500-rgb) / <alpha-value>)',
+          600: 'rgb(var(--emerald-600-rgb) / <alpha-value>)',
+          700: 'rgb(var(--emerald-700-rgb) / <alpha-value>)',
+          800: 'rgb(var(--emerald-800-rgb) / <alpha-value>)',
+          900: 'rgb(var(--emerald-900-rgb) / <alpha-value>)',
+          950: 'rgb(var(--emerald-950-rgb) / <alpha-value>)',
+        },
+        // §9 深评估：red 族改指 RGB 通道变量（theme.json 可调，值=默认色板）
+        red: {
+          50: 'rgb(var(--red-50-rgb) / <alpha-value>)',
+          100: 'rgb(var(--red-100-rgb) / <alpha-value>)',
+          200: 'rgb(var(--red-200-rgb) / <alpha-value>)',
+          300: 'rgb(var(--red-300-rgb) / <alpha-value>)',
+          400: 'rgb(var(--red-400-rgb) / <alpha-value>)',
+          500: 'rgb(var(--red-500-rgb) / <alpha-value>)',
+          600: 'rgb(var(--red-600-rgb) / <alpha-value>)',
+          700: 'rgb(var(--red-700-rgb) / <alpha-value>)',
+          800: 'rgb(var(--red-800-rgb) / <alpha-value>)',
+          900: 'rgb(var(--red-900-rgb) / <alpha-value>)',
+          950: 'rgb(var(--red-950-rgb) / <alpha-value>)',
+        },
+        // §9 深评估：rose 族改指 RGB 通道变量（theme.json 可调，值=默认色板）
+        rose: {
+          50: 'rgb(var(--rose-50-rgb) / <alpha-value>)',
+          100: 'rgb(var(--rose-100-rgb) / <alpha-value>)',
+          200: 'rgb(var(--rose-200-rgb) / <alpha-value>)',
+          300: 'rgb(var(--rose-300-rgb) / <alpha-value>)',
+          400: 'rgb(var(--rose-400-rgb) / <alpha-value>)',
+          500: 'rgb(var(--rose-500-rgb) / <alpha-value>)',
+          600: 'rgb(var(--rose-600-rgb) / <alpha-value>)',
+          700: 'rgb(var(--rose-700-rgb) / <alpha-value>)',
+          800: 'rgb(var(--rose-800-rgb) / <alpha-value>)',
+          900: 'rgb(var(--rose-900-rgb) / <alpha-value>)',
+          950: 'rgb(var(--rose-950-rgb) / <alpha-value>)',
+        },
+        // §9 深评估：violet 族改指 RGB 通道变量（theme.json 可调，值=默认色板）
+        violet: {
+          50: 'rgb(var(--violet-50-rgb) / <alpha-value>)',
+          100: 'rgb(var(--violet-100-rgb) / <alpha-value>)',
+          200: 'rgb(var(--violet-200-rgb) / <alpha-value>)',
+          300: 'rgb(var(--violet-300-rgb) / <alpha-value>)',
+          400: 'rgb(var(--violet-400-rgb) / <alpha-value>)',
+          500: 'rgb(var(--violet-500-rgb) / <alpha-value>)',
+          600: 'rgb(var(--violet-600-rgb) / <alpha-value>)',
+          700: 'rgb(var(--violet-700-rgb) / <alpha-value>)',
+          800: 'rgb(var(--violet-800-rgb) / <alpha-value>)',
+          900: 'rgb(var(--violet-900-rgb) / <alpha-value>)',
+          950: 'rgb(var(--violet-950-rgb) / <alpha-value>)',
+        },
+        // §9 深评估：purple 族改指 RGB 通道变量（theme.json 可调，值=默认色板）
+        purple: {
+          50: 'rgb(var(--purple-50-rgb) / <alpha-value>)',
+          100: 'rgb(var(--purple-100-rgb) / <alpha-value>)',
+          200: 'rgb(var(--purple-200-rgb) / <alpha-value>)',
+          300: 'rgb(var(--purple-300-rgb) / <alpha-value>)',
+          400: 'rgb(var(--purple-400-rgb) / <alpha-value>)',
+          500: 'rgb(var(--purple-500-rgb) / <alpha-value>)',
+          600: 'rgb(var(--purple-600-rgb) / <alpha-value>)',
+          700: 'rgb(var(--purple-700-rgb) / <alpha-value>)',
+          800: 'rgb(var(--purple-800-rgb) / <alpha-value>)',
+          900: 'rgb(var(--purple-900-rgb) / <alpha-value>)',
+          950: 'rgb(var(--purple-950-rgb) / <alpha-value>)',
+        },
+        // §9 深评估：amber 族改指 RGB 通道变量（theme.json 可调，值=默认色板）
+        amber: {
+          50: 'rgb(var(--amber-50-rgb) / <alpha-value>)',
+          100: 'rgb(var(--amber-100-rgb) / <alpha-value>)',
+          200: 'rgb(var(--amber-200-rgb) / <alpha-value>)',
+          300: 'rgb(var(--amber-300-rgb) / <alpha-value>)',
+          400: 'rgb(var(--amber-400-rgb) / <alpha-value>)',
+          500: 'rgb(var(--amber-500-rgb) / <alpha-value>)',
+          600: 'rgb(var(--amber-600-rgb) / <alpha-value>)',
+          700: 'rgb(var(--amber-700-rgb) / <alpha-value>)',
+          800: 'rgb(var(--amber-800-rgb) / <alpha-value>)',
+          900: 'rgb(var(--amber-900-rgb) / <alpha-value>)',
+          950: 'rgb(var(--amber-950-rgb) / <alpha-value>)',
+        },
+        // §9 深评估：orange 族改指 RGB 通道变量（theme.json 可调，值=默认色板）
+        orange: {
+          50: 'rgb(var(--orange-50-rgb) / <alpha-value>)',
+          100: 'rgb(var(--orange-100-rgb) / <alpha-value>)',
+          200: 'rgb(var(--orange-200-rgb) / <alpha-value>)',
+          300: 'rgb(var(--orange-300-rgb) / <alpha-value>)',
+          400: 'rgb(var(--orange-400-rgb) / <alpha-value>)',
+          500: 'rgb(var(--orange-500-rgb) / <alpha-value>)',
+          600: 'rgb(var(--orange-600-rgb) / <alpha-value>)',
+          700: 'rgb(var(--orange-700-rgb) / <alpha-value>)',
+          800: 'rgb(var(--orange-800-rgb) / <alpha-value>)',
+          900: 'rgb(var(--orange-900-rgb) / <alpha-value>)',
+          950: 'rgb(var(--orange-950-rgb) / <alpha-value>)',
+        },
+        // §9 深评估：yellow 族改指 RGB 通道变量（theme.json 可调，值=默认色板）
+        yellow: {
+          50: 'rgb(var(--yellow-50-rgb) / <alpha-value>)',
+          100: 'rgb(var(--yellow-100-rgb) / <alpha-value>)',
+          200: 'rgb(var(--yellow-200-rgb) / <alpha-value>)',
+          300: 'rgb(var(--yellow-300-rgb) / <alpha-value>)',
+          400: 'rgb(var(--yellow-400-rgb) / <alpha-value>)',
+          500: 'rgb(var(--yellow-500-rgb) / <alpha-value>)',
+          600: 'rgb(var(--yellow-600-rgb) / <alpha-value>)',
+          700: 'rgb(var(--yellow-700-rgb) / <alpha-value>)',
+          800: 'rgb(var(--yellow-800-rgb) / <alpha-value>)',
+          900: 'rgb(var(--yellow-900-rgb) / <alpha-value>)',
+          950: 'rgb(var(--yellow-950-rgb) / <alpha-value>)',
+        },
+        // §9 深评估：lime 族改指 RGB 通道变量（theme.json 可调，值=默认色板）
+        lime: {
+          50: 'rgb(var(--lime-50-rgb) / <alpha-value>)',
+          100: 'rgb(var(--lime-100-rgb) / <alpha-value>)',
+          200: 'rgb(var(--lime-200-rgb) / <alpha-value>)',
+          300: 'rgb(var(--lime-300-rgb) / <alpha-value>)',
+          400: 'rgb(var(--lime-400-rgb) / <alpha-value>)',
+          500: 'rgb(var(--lime-500-rgb) / <alpha-value>)',
+          600: 'rgb(var(--lime-600-rgb) / <alpha-value>)',
+          700: 'rgb(var(--lime-700-rgb) / <alpha-value>)',
+          800: 'rgb(var(--lime-800-rgb) / <alpha-value>)',
+          900: 'rgb(var(--lime-900-rgb) / <alpha-value>)',
+          950: 'rgb(var(--lime-950-rgb) / <alpha-value>)',
+        },
+        // §9 深评估：green 族改指 RGB 通道变量（theme.json 可调，值=默认色板）
+        green: {
+          50: 'rgb(var(--green-50-rgb) / <alpha-value>)',
+          100: 'rgb(var(--green-100-rgb) / <alpha-value>)',
+          200: 'rgb(var(--green-200-rgb) / <alpha-value>)',
+          300: 'rgb(var(--green-300-rgb) / <alpha-value>)',
+          400: 'rgb(var(--green-400-rgb) / <alpha-value>)',
+          500: 'rgb(var(--green-500-rgb) / <alpha-value>)',
+          600: 'rgb(var(--green-600-rgb) / <alpha-value>)',
+          700: 'rgb(var(--green-700-rgb) / <alpha-value>)',
+          800: 'rgb(var(--green-800-rgb) / <alpha-value>)',
+          900: 'rgb(var(--green-900-rgb) / <alpha-value>)',
+          950: 'rgb(var(--green-950-rgb) / <alpha-value>)',
+        },
+        // §9 深评估：teal 族改指 RGB 通道变量（theme.json 可调，值=默认色板）
+        teal: {
+          50: 'rgb(var(--teal-50-rgb) / <alpha-value>)',
+          100: 'rgb(var(--teal-100-rgb) / <alpha-value>)',
+          200: 'rgb(var(--teal-200-rgb) / <alpha-value>)',
+          300: 'rgb(var(--teal-300-rgb) / <alpha-value>)',
+          400: 'rgb(var(--teal-400-rgb) / <alpha-value>)',
+          500: 'rgb(var(--teal-500-rgb) / <alpha-value>)',
+          600: 'rgb(var(--teal-600-rgb) / <alpha-value>)',
+          700: 'rgb(var(--teal-700-rgb) / <alpha-value>)',
+          800: 'rgb(var(--teal-800-rgb) / <alpha-value>)',
+          900: 'rgb(var(--teal-900-rgb) / <alpha-value>)',
+          950: 'rgb(var(--teal-950-rgb) / <alpha-value>)',
+        },
+        // §9 深评估：cyan 族改指 RGB 通道变量（theme.json 可调，值=默认色板）
+        cyan: {
+          50: 'rgb(var(--cyan-50-rgb) / <alpha-value>)',
+          100: 'rgb(var(--cyan-100-rgb) / <alpha-value>)',
+          200: 'rgb(var(--cyan-200-rgb) / <alpha-value>)',
+          300: 'rgb(var(--cyan-300-rgb) / <alpha-value>)',
+          400: 'rgb(var(--cyan-400-rgb) / <alpha-value>)',
+          500: 'rgb(var(--cyan-500-rgb) / <alpha-value>)',
+          600: 'rgb(var(--cyan-600-rgb) / <alpha-value>)',
+          700: 'rgb(var(--cyan-700-rgb) / <alpha-value>)',
+          800: 'rgb(var(--cyan-800-rgb) / <alpha-value>)',
+          900: 'rgb(var(--cyan-900-rgb) / <alpha-value>)',
+          950: 'rgb(var(--cyan-950-rgb) / <alpha-value>)',
+        },
+        // §9 深评估：sky 族改指 RGB 通道变量（theme.json 可调，值=默认色板）
+        sky: {
+          50: 'rgb(var(--sky-50-rgb) / <alpha-value>)',
+          100: 'rgb(var(--sky-100-rgb) / <alpha-value>)',
+          200: 'rgb(var(--sky-200-rgb) / <alpha-value>)',
+          300: 'rgb(var(--sky-300-rgb) / <alpha-value>)',
+          400: 'rgb(var(--sky-400-rgb) / <alpha-value>)',
+          500: 'rgb(var(--sky-500-rgb) / <alpha-value>)',
+          600: 'rgb(var(--sky-600-rgb) / <alpha-value>)',
+          700: 'rgb(var(--sky-700-rgb) / <alpha-value>)',
+          800: 'rgb(var(--sky-800-rgb) / <alpha-value>)',
+          900: 'rgb(var(--sky-900-rgb) / <alpha-value>)',
+          950: 'rgb(var(--sky-950-rgb) / <alpha-value>)',
+        },
+        // §9 深评估：indigo 族改指 RGB 通道变量（theme.json 可调，值=默认色板）
+        indigo: {
+          50: 'rgb(var(--indigo-50-rgb) / <alpha-value>)',
+          100: 'rgb(var(--indigo-100-rgb) / <alpha-value>)',
+          200: 'rgb(var(--indigo-200-rgb) / <alpha-value>)',
+          300: 'rgb(var(--indigo-300-rgb) / <alpha-value>)',
+          400: 'rgb(var(--indigo-400-rgb) / <alpha-value>)',
+          500: 'rgb(var(--indigo-500-rgb) / <alpha-value>)',
+          600: 'rgb(var(--indigo-600-rgb) / <alpha-value>)',
+          700: 'rgb(var(--indigo-700-rgb) / <alpha-value>)',
+          800: 'rgb(var(--indigo-800-rgb) / <alpha-value>)',
+          900: 'rgb(var(--indigo-900-rgb) / <alpha-value>)',
+          950: 'rgb(var(--indigo-950-rgb) / <alpha-value>)',
+        },
+        // §9 深评估：fuchsia 族改指 RGB 通道变量（theme.json 可调，值=默认色板）
+        fuchsia: {
+          50: 'rgb(var(--fuchsia-50-rgb) / <alpha-value>)',
+          100: 'rgb(var(--fuchsia-100-rgb) / <alpha-value>)',
+          200: 'rgb(var(--fuchsia-200-rgb) / <alpha-value>)',
+          300: 'rgb(var(--fuchsia-300-rgb) / <alpha-value>)',
+          400: 'rgb(var(--fuchsia-400-rgb) / <alpha-value>)',
+          500: 'rgb(var(--fuchsia-500-rgb) / <alpha-value>)',
+          600: 'rgb(var(--fuchsia-600-rgb) / <alpha-value>)',
+          700: 'rgb(var(--fuchsia-700-rgb) / <alpha-value>)',
+          800: 'rgb(var(--fuchsia-800-rgb) / <alpha-value>)',
+          900: 'rgb(var(--fuchsia-900-rgb) / <alpha-value>)',
+          950: 'rgb(var(--fuchsia-950-rgb) / <alpha-value>)',
+        },
+        // §9 深评估：pink 族改指 RGB 通道变量（theme.json 可调，值=默认色板）
+        pink: {
+          50: 'rgb(var(--pink-50-rgb) / <alpha-value>)',
+          100: 'rgb(var(--pink-100-rgb) / <alpha-value>)',
+          200: 'rgb(var(--pink-200-rgb) / <alpha-value>)',
+          300: 'rgb(var(--pink-300-rgb) / <alpha-value>)',
+          400: 'rgb(var(--pink-400-rgb) / <alpha-value>)',
+          500: 'rgb(var(--pink-500-rgb) / <alpha-value>)',
+          600: 'rgb(var(--pink-600-rgb) / <alpha-value>)',
+          700: 'rgb(var(--pink-700-rgb) / <alpha-value>)',
+          800: 'rgb(var(--pink-800-rgb) / <alpha-value>)',
+          900: 'rgb(var(--pink-900-rgb) / <alpha-value>)',
+          950: 'rgb(var(--pink-950-rgb) / <alpha-value>)',
+        },
         // 配色统一（2026-11-26 阶段 1）：primary 数字阶梯指向 CSS 变量
         // （--primary-50..950，globals.css 双主题定义），不再是写死的 sky 色板。
         // DEFAULT = --primary（dark 白 / light 深灰）。
