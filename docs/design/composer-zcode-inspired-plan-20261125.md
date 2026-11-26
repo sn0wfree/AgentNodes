@@ -173,3 +173,24 @@ mockup：`docs/design/composer-stage1-mockup.html`（可交互），截图 `gui-
 1. 是否先执行阶段 0 取证（推荐）？
 2. 阶段 1 的折叠顺序：persona → 思考 → 模型文字 → 模型图标，是否符合产品预期？
 3. 阶段 3 的 @ 提及是否要做（需先确认后端插件 API 现状）？
+
+## 七、视觉对齐批次实施记录（2026-11-26 · 用户批 A/B/D/E/F）
+
+**依据**：ZCode 桌面版 `app.asar` 源码级调研（composer React+Tailwind 真实数值）+ 当前界面 DOM 实测，
+发现 3 个实现缺陷（环传 `EMPTY_SEGMENTS` 分段从未生效 / 底环 `var(--muted)` 深色不可见 /
+发送钮 `bg-sky-500` 绕过语义令牌）。用户裁决：做 A/B/D/E/F，不做 C（环保留右上角，不移工具栏）。
+
+| 项 | 改动 | 文件 |
+|---|---|---|
+| A 分段环修复 | `segments={EMPTY_SEGMENTS}` → `segments={breakdown}`（环按 7 段 viz 令牌着色） | Composer.tsx |
+| B 环对齐 ZCode | 描边 3→4（≈ZCode 4/24 比例）；底环 `var(--muted)` → `currentColor`+`strokeOpacity 0.25`；svg 文字色随 tone（normal=secondary / warn / danger）→ 深色可见、紧张变警示色 | ContextRing.tsx |
+| D 发送钮令牌化 | `bg-sky-500 hover:bg-sky-400` → `bg-accent-500 hover:bg-accent-400`（accent-500=sky-500 同值，零视觉变化，theme.json 可调） | Composer.tsx |
+| E 外壳质感 | `.composer-shell`：squircle 渐进增强（`@supports corner-shape` → 24px，回退 18px）；`.shadow-composer`（`--shadow-composer-soft`：亮色柔投影 `0 1px 3px+0 6px 18px rgba(0,0,0,.05)`，暗色 `0 0 #0000` 无阴影——ZCode 同款分工）；focus-within 边框 `info-fg/60`→`border-accent`（=brand）+ 背景升 `surface-raised` | Composer.tsx + globals.css |
+| F 芯片统一 | 模式芯片去边框/去填充（原绿框高饱和抢层级），改与 persona/模型/思考同款中性形态，仅图标保留语义色 | ComposerStatusBar.tsx |
+
+**B 未做 title**：环已有 hover 七段明细弹层（含数值/来源），原生 title 会与之双重量显示，故不加。
+
+**验证**：前端 1511 passed（新增 2 契约：分段弧真实渲染 + 底环 currentColor/0.25/stroke4）/
+后端 8265 / tsc clean / lint 0 error / gate ALL GREEN / build 成功。
+真机双主题截图：环清晰可辨（紫色分段=系统提示，与弹层图例对应）、Build 芯片统一、
+squircle 24px 生效（实测 computed radius 24px）、暗色无阴影亮色柔投影。

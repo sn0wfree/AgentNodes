@@ -77,12 +77,13 @@ describe('Composer', () => {
     expect(card!.querySelector('textarea')).not.toBeNull()
   })
 
-  it('uses a circular brand send button (R-014 G0-B)', () => {
+  it('uses a circular brand send button (R-014 G0-B; §9 D 语义令牌化)', () => {
     render(<Composer />)
     fireEvent.change(textarea(), { target: { value: 'hello' } })
     const send = screen.getByTestId('composer-send')
     expect(send.className).toContain('rounded-full')
-    expect(send.className).toContain('bg-sky-500')
+    // §9 批 D：固定 sky-500 → accent 令牌（= sky 色板，theme.json 可调）
+    expect(send.className).toContain('bg-accent-500')
   })
 
   it('does not send an empty draft', async () => {

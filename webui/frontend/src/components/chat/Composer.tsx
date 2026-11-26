@@ -445,16 +445,19 @@ export function Composer({ composeMessage, readOnly }: ComposerProps = {}) {
 
       {/* Composer 卡片（R-014 G0-A）：对齐 ZCode data-composer-layout ——
           一个大圆角容器包住「编辑器行 + 工具条行（状态行移入框内）」。
-          focus-within 时边框/底色高亮，与 ZCode 的 focus-within 语义一致。 */}
+          §9 视觉对齐：focus 边框换 accent(brand)、背景微升 surface-raised、
+          亮色主题带柔和投影（shadow-composer，dark 无阴影），squircle 渐进增强。 */}
       <div
-        className="glass relative flex flex-col gap-2 rounded-2xl border-[0.5px] border-subtle bg-surface px-4 py-3 transition-colors hover:border focus-within:border-info-fg/60"
+        className="glass composer-shell relative flex flex-col gap-2 rounded-2xl border-[0.5px] border-subtle bg-surface px-4 py-3 shadow-composer transition-colors hover:border focus-within:border-accent focus-within:bg-surface-raised"
         data-composer-leading-content
       >
         {/* 上下文用量环：卡片右上角绝对定位（hover 向上弹七段明细） */}
         {usage.hasLimit && modelInfo && (
           <div className="group/usage absolute right-4 top-2 z-10" data-testid="composer-context-ring-wrap">
             <div aria-hidden="true" data-testid="composer-context-ring" className="relative">
-              <ContextRing segments={EMPTY_SEGMENTS} percent={usage.percent} tone={tokenTone(usage.percent)} size={20} />
+              {/* §9 批 A：传真实 7 段 breakdown —— 此前误传 EMPTY_SEGMENTS，
+                  分段环从未生效，永远只画单色弧 */}
+              <ContextRing segments={breakdown} percent={usage.percent} tone={tokenTone(usage.percent)} size={20} />
               {usage.isStale && (
                 <span
                   className="absolute -right-1 -top-1 text-warning-fg"
@@ -524,7 +527,7 @@ export function Composer({ composeMessage, readOnly }: ComposerProps = {}) {
               <button
                 onClick={handleSend}
                 disabled={sending || (!text.trim() && images.length === 0) || !currentSessionId}
-                className="absolute bottom-3 right-4 rounded-full bg-sky-500 p-2 text-white transition-colors hover:bg-sky-400 disabled:opacity-30"
+                className="absolute bottom-3 right-4 rounded-full bg-accent-500 p-2 text-white transition-colors hover:bg-accent-400 disabled:opacity-30"
                 title="发送 (Enter)"
                 data-testid="composer-send"
               >

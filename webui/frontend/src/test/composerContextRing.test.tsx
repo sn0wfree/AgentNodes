@@ -51,6 +51,30 @@ describe('Composer · context usage ring at card top-right (design 2026-11-25)',
     expect(popover.textContent).toContain('系统提示')
   })
 
+  // §9 批 A 回归防线：环必须消费真实 7 段 breakdown（此前误传 EMPTY_SEGMENTS，
+  // 分段环从未生效，永远只画单色弧）
+  it('draws per-segment arcs from the real context.breakdown data (§9 A)', () => {
+    useChatStore.setState({
+      contextBreakdown: new Map([['sess-1', { system_prompt: 2374, messages: 2 }]]),
+    } as never)
+    render(<Composer />)
+    expect(screen.getByTestId('context-ring-seg-system_prompt')).toBeDefined()
+    expect(screen.getByTestId('context-ring-seg-messages')).toBeDefined()
+  })
+
+  // §9 批 B 回归防线：底环走 currentColor/0.25（原 var(--muted) 深色下不可见）
+  it('uses a low-opacity currentColor track and thicker stroke (§9 B, ZCode alignment)', () => {
+    render(<Composer />)
+    const ring = screen.getByTestId('composer-context-ring')
+    const circles = ring.querySelectorAll('circle')
+    expect(circles.length).toBeGreaterThanOrEqual(2)
+    const track = circles[0]
+    expect(track.getAttribute('stroke')).toBe('currentColor')
+    expect(track.getAttribute('stroke-opacity')).toBe('0.25')
+    // 描边加粗 3 → 4（对齐 ZCode 4/24 比例）
+    expect(track.getAttribute('stroke-width')).toBe('4')
+  })
+
   it('renders ring only when the model exposes a context limit', () => {
     useSystemStore.setState({ modelInfo: null } as any)
     render(<Composer />)

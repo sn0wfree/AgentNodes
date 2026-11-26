@@ -166,15 +166,19 @@ export function ComposerStatusBar({ sessionId }: ComposerStatusBarProps) {
 
         <div className="h-3 w-px bg-surface-raised" />
 
-        {/* Mode toggle */}
+        {/* Mode toggle —— §9 视觉对齐 ZCode：模式芯片与其它芯片同款中性形态
+            （无边框/无底色填充），仅图标保留语义色，避免高饱和徽章抢过模型名/发送钮 */}
         <button
           type="button"
           onClick={toggleMode}
-          className={`flex items-center gap-1.5 rounded-lg px-2.5 py-1 font-medium transition-all ${modeCfg.bg} ${modeCfg.color} border ${modeCfg.border} hover:brightness-110`}
+          className="flex items-center gap-1.5 rounded-lg px-2 py-1 text-muted transition-colors hover:bg-surface hover:text-foreground"
           title={mode === 'plan' ? 'Plan 模式: 只读分析' : 'Build 模式: 完整工具'}
         >
-          <ModeIcon className="h-3 w-3" />
+          <ModeIcon className={`h-3 w-3 ${modeCfg.color}`} />
           {showLabels && <span>{modeCfg.label}</span>}
+          {showChevrons && (
+            <ChevronDown className="h-2.5 w-2.5 text-muted transition-transform" />
+          )}
         </button>
       </div>
 

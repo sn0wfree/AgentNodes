@@ -100,7 +100,7 @@ describe('useSessionStore — deleteSession 分支', () => {
     })
     mockedApi.delete.mockResolvedValueOnce({})
     const createSpy = vi.spyOn(useSessionStore.getState(), 'createNewSession')
-      .mockResolvedValue(undefined)
+      .mockResolvedValue(undefined as unknown as Session)
 
     await useSessionStore.getState().deleteSession('only')
 

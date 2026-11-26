@@ -46,6 +46,7 @@
   --sidebar: #1b1b1b;
   --shadow-soft: 0 2px 12px -4px rgba(0, 0, 0, 0.3);
   --shadow-elevated: 0 8px 32px -8px rgba(0, 0, 0, 0.6);
+  --shadow-composer-soft: 0 0 #0000; /* composer 卡片：暗色无投影（ZCode 同款） */
   --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
   --ease-smooth: cubic-bezier(0.4, 0, 0.2, 1);
   /* 状态色（示意 9 token 组）*/
@@ -458,6 +459,7 @@
   --sidebar: #e9e9e7;
   --shadow-soft: 0 2px 12px -4px rgba(0, 0, 0, 0.08);
   --shadow-elevated: 0 8px 32px -8px rgba(0, 0, 0, 0.14);
+  --shadow-composer-soft: 0 1px 3px rgba(0, 0, 0, 0.05), 0 6px 18px rgba(0, 0, 0, 0.05); /* composer 柔投影（ZCode 亮色同款） */
   /* 状态色（示意 9 token 组）*/
   --success: #16a34a;  --success-fg: #15803d;  --success-surface: rgba(22,163,74,0.09);
   /* warning 9-token 组（B-2）*/
@@ -1130,6 +1132,19 @@ pre,
 .shadow-sm { box-shadow: 0 1px 3px var(--shadow-sm-color); }
 .shadow-md { box-shadow: var(--shadow-soft); }
 .shadow-lg { box-shadow: var(--shadow-elevated); }
+
+/* §9 视觉对齐 ZCode：composer 柔和投影（亮色可见，暗色无阴影——ZCode 同款分工）。
+   值在 --shadow-composer-soft 双主题声明，theme.json 可调。 */
+.shadow-composer { box-shadow: var(--shadow-composer-soft); }
+
+/* §9 视觉对齐 ZCode：squircle（超椭圆圆角）渐进增强——
+   支持的浏览器上输入胶囊更饱满；不支持时回退 rounded-2xl(18px)。 */
+@supports (corner-shape: squircle) {
+  .composer-shell {
+    corner-shape: squircle;
+    border-radius: 24px;
+  }
+}
 
 /* Text selection in brand color */
 ::selection {

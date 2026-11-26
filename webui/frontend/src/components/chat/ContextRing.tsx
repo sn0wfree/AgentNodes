@@ -69,7 +69,8 @@ export function buildArcs(segments: Record<string, number>, circumference: numbe
 }
 
 export function ContextRing({ segments, percent, tone, size = 20 }: ContextRingProps) {
-  const stroke = 3
+  // §9 视觉对齐 ZCode：stroke/直径 ≈ 1/5（ZCode 4/24），环带更清晰
+  const stroke = 4
   const radius = (size - stroke) / 2
   const circumference = 2 * Math.PI * radius
   const arcs = useMemo(() => buildArcs(segments, circumference), [segments, circumference])
@@ -79,23 +80,28 @@ export function ContextRing({ segments, percent, tone, size = 20 }: ContextRingP
   const filled = rawFilled > 0 ? Math.max(rawFilled, circumference * 0.04) : 0
   const toneColor = tone === 'danger' ? 'var(--danger-fg)'
     : tone === 'warn' ? 'var(--warning-fg)' : 'var(--success-fg)'
+  // 底环走 currentColor/0.25（ZCode 同款）；常规占用文字用中性次级色，
+  // 配额紧张时随 tone 升为警示色 → 环的状态一眼可辨（修复深色下不可见）
+  const trackColor = tone === 'danger' ? 'text-danger-fg'
+    : tone === 'warn' ? 'text-warning-fg' : 'text-secondary'
 
   return (
     <svg
       width={size}
       height={size}
       viewBox={`0 0 ${size} ${size}`}
-      className="shrink-0 -rotate-90"
+      className={`shrink-0 -rotate-90 ${trackColor}`}
       data-testid="context-ring"
       aria-hidden="true"
     >
-      {/* 底环 */}
+      {/* 底环：currentColor + 0.25 透明度（深浅主题都可辨，替代原 var(--muted)） */}
       <circle
         cx={size / 2}
         cy={size / 2}
         r={radius}
         fill="none"
-        stroke="var(--muted)"
+        stroke="currentColor"
+        strokeOpacity={0.25}
         strokeWidth={stroke}
       />
       {arcs.length > 0 ? (
