@@ -5,6 +5,7 @@ from __future__ import annotations
 import json
 import logging
 import os
+import re
 from pathlib import Path
 from typing import Optional
 
@@ -34,40 +35,43 @@ class LLMConfigUpdate(BaseModel):
     base_url: Optional[str] = None
 
 
-# 配色统一阶段 3：内置默认主题（前端 globals.css 的 dark/light 变量镜像）。
-# theme.json 缺失或非法时回退到这里；只需改配置文件即可换肤，无需改代码。
-_BUILTIN_THEME: dict[str, dict[str, str]] = {
-    "dark": {
-        "--background": "#262626",
-        "--foreground": "#e5e5e5",
-        "--surface": "rgba(255,255,255,0.045)",
-        "--surface-raised": "rgba(255,255,255,0.07)",
-        "--primary": "#ffffff",
-        "--muted-foreground": "#a3a3a3",
-        "--text-secondary": "#cbd5e1",
-        "--accent": "#38bdf8",
-        "--border": "rgba(255,255,255,0.11)",
-        "--border-strong": "rgba(255,255,255,0.18)",
-        "--border-subtle": "rgba(255,255,255,0.06)",
-        "--primary-400": "#38bdf8",
-        "--primary-500": "#0ea5e9",
-    },
-    "light": {
-        "--background": "#fafafa",
-        "--foreground": "#404040",
-        "--surface": "#ffffff",
-        "--surface-raised": "#f5f5f4",
-        "--primary": "#171717",
-        "--muted-foreground": "#737373",
-        "--text-secondary": "#525252",
-        "--accent": "#0ea5e9",
-        "--border": "rgba(23,23,23,0.10)",
-        "--border-strong": "rgba(23,23,23,0.20)",
-        "--border-subtle": "rgba(23,23,23,0.05)",
-        "--primary-400": "#38bdf8",
-        "--primary-500": "#0ea5e9",
-    },
-}
+# 配色统一阶段 3 §8 第 1 步：内置默认主题从前端 globals.css **自动提取**
+# 全部颜色变量（此前手写 13 项，漏掉 success/danger/warning/viz/primary 阶梯等
+# 54 项）。theme.json 缺失/非法时回退到这里；改 CSS 变量后无需改后端代码。
+# 只提取颜色值（hex/rgb(a)/hsl(a)/color-mix/具名色），排除 space/radius/font/alpha
+# 等非颜色 token（它们大多无消费者，不属配色控制范围）。
+_COLOR_VALUE = re.compile(
+    r"^(?:#[0-9a-fA-F]{3,8}|rgba?\(|hsla?\(|color-mix\(|transparent|white|black|currentColor)\b"
+    r"|^(?:var\(--[\w-]+\))$"
+)
+_CSS_VAR_DECL = re.compile(r"(--[\w-]+)\s*:\s*([^;]+);")
+
+
+def _extract_css_colors() -> dict[str, dict[str, str]]:
+    """从 globals.css 解析 dark(:root) / light([data-theme]) 的颜色变量。"""
+    # routers/system.py → parents[5] = 仓库根（src/agentnodes/interfaces/api/routers）
+    css_path = Path(__file__).resolve().parents[5] / "webui" / "frontend" / "src" / "styles" / "globals.css"
+    try:
+        css = css_path.read_text(encoding="utf-8")
+    except OSError:
+        return {"dark": {}, "light": {}}
+    light_at = css.find("[data-theme='light']")
+    segments = {
+        "dark": css[:light_at] if light_at >= 0 else css,
+        "light": css[light_at:] if light_at >= 0 else "",
+    }
+    result: dict[str, dict[str, str]] = {}
+    for mode, seg in segments.items():
+        values: dict[str, str] = {}
+        for m in _CSS_VAR_DECL.finditer(seg):
+            name, value = m.group(1), m.group(2).strip()
+            if name.startswith("--") and _COLOR_VALUE.match(value):
+                values[name] = value
+        result[mode] = values
+    return result
+
+
+_BUILTIN_THEME: dict[str, dict[str, str]] = _extract_css_colors()
 
 
 def _load_theme() -> dict[str, dict[str, str]]:

@@ -69,3 +69,33 @@ def test_theme_partial_config_does_not_break(client, isolated):
     body = resp.json()
     assert body["dark"]["--accent"] == "#00ff00"
     assert body["light"].get("--background")
+
+
+def test_builtin_theme_covers_all_css_color_variables(client, isolated):
+    """§8 第 1 步契约：内置默认必须从 globals.css 提取全部颜色变量
+    （排除 space/radius/font/alpha 等非颜色 token），防手写 13 项的覆盖缺口。"""
+    import re
+
+    resp = client.get("/api/system/theme")
+    body = resp.json()
+
+    css_path = Path(__file__).resolve().parents[1] / "webui/frontend/src/styles/globals.css"
+    css = css_path.read_text(encoding="utf-8")
+
+    def color_vars_of(block: str) -> set[str]:
+        # dark = :root 块（到 light 前）；light = [data-theme='light'] 块
+        if block == "dark":
+            seg = css[: css.index("[data-theme='light']")]
+        else:
+            seg = css[css.index("[data-theme='light']") :]
+        out = set()
+        for m in re.finditer(r"(--[\w-]+)\s*:\s*([^;]+);", seg):
+            name, value = m.group(1), m.group(2).strip()
+            # 颜色值判定：hex / rgb(a) / hsl / color-mix / var(颜色) / 具名颜色
+            if re.match(r"#|rgba?\(|hsla?\(|color-mix\(|transparent|white|black", value):
+                out.add(name)
+        return out
+
+    for mode in ("dark", "light"):
+        missing = color_vars_of(mode) - set(body[mode])
+        assert not missing, f"{mode} 内置默认缺少 CSS 颜色变量: {sorted(missing)}"
