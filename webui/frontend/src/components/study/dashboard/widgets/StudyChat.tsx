@@ -186,7 +186,7 @@ function RoundNavRail({
                 aria-label={`跳转到 Round ${r.round_num}`}
                 className={`group relative rounded-full transition-all duration-200 ${
                   isActive
-                    ? 'h-2.5 w-2.5 bg-primary-400 shadow-[0_0_8px_rgba(99,179,237,0.5)]'
+                    ? 'h-2.5 w-2.5 bg-primary-400 shadow-[0_0_8px_rgb(var(--glow-stream-color)/0.5)]'
                     : 'h-1.5 w-1.5 bg-surface-raised hover:bg-slate-400'
                 }`}
               >

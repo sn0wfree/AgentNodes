@@ -74,24 +74,24 @@ export function MetricsTrendChart({ rounds, metricTargets }: Props) {
       <div className="h-48">
         <ResponsiveContainer width="100%" height="100%">
           <LineChart data={chartData} margin={{ top: 5, right: 5, left: -20, bottom: 5 }}>
-            <CartesianGrid strokeDasharray="3 3" stroke="#1e293b" />
+            <CartesianGrid strokeDasharray="3 3" stroke="var(--viz-axis-line)" />
             <XAxis
               dataKey="round"
-              tick={{ fontSize: 10, fill: '#94a3b8' }}
-              stroke="#334155"
+              tick={{ fontSize: 10, fill: 'var(--viz-axis)' }}
+              stroke="var(--viz-grid)"
             />
             <YAxis
-              tick={{ fontSize: 10, fill: '#94a3b8' }}
-              stroke="#334155"
+              tick={{ fontSize: 10, fill: 'var(--viz-axis)' }}
+              stroke="var(--viz-grid)"
             />
             <Tooltip
               contentStyle={{
-                backgroundColor: '#1e293b',
-                border: '1px solid #334155',
+                backgroundColor: 'var(--viz-tooltip-bg)',
+                border: '1px solid var(--viz-tooltip-border)',
                 borderRadius: '8px',
                 fontSize: '11px',
               }}
-              labelStyle={{ color: '#94a3b8' }}
+              labelStyle={{ color: 'var(--viz-tooltip-label)' }}
             />
             <Legend
               wrapperStyle={{ fontSize: '10px' }}
@@ -102,9 +102,9 @@ export function MetricsTrendChart({ rounds, metricTargets }: Props) {
                 key={name}
                 type="monotone"
                 dataKey={name}
-                stroke={METRIC_COLORS[name] ?? '#64748b'}
+                stroke={METRIC_COLORS[name] ?? 'var(--viz-series-fallback)'}
                 strokeWidth={2}
-                dot={{ r: 3, fill: METRIC_COLORS[name] ?? '#64748b' }}
+                dot={{ r: 3, fill: METRIC_COLORS[name] ?? 'var(--viz-series-fallback)' }}
                 activeDot={{ r: 5 }}
                 name={METRIC_LABELS[name] ?? name}
               />
@@ -115,14 +115,14 @@ export function MetricsTrendChart({ rounds, metricTargets }: Props) {
               <ReferenceLine
                 key={`${t.name}-${t.value}`}
                 y={t.value}
-                stroke={METRIC_COLORS[t.name] ?? '#64748b'}
+                stroke={METRIC_COLORS[t.name] ?? 'var(--viz-series-fallback)'}
                 strokeDasharray="5 5"
                 strokeOpacity={0.4}
                 label={{
                   value: `${METRIC_LABELS[t.name] ?? t.name} ${OP_SYMBOLS[t.op] ?? t.op} ${t.value}`,
                   position: t.op === '<=' || t.op === '<' ? 'insideBottomRight' : 'insideTopRight',
                   fontSize: 9,
-                  fill: METRIC_COLORS[t.name] ?? '#94a3b8',
+                  fill: METRIC_COLORS[t.name] ?? 'var(--viz-axis)',
                 }}
               />
             ))}

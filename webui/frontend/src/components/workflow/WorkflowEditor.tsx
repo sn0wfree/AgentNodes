@@ -410,7 +410,7 @@ function WorkflowEditorInner({ nodes, edges, onSave, saving, saveRef, dagId }: W
               className="group flex items-center gap-2.5 rounded-lg border border-subtle bg-slate-900 px-2.5 py-2 text-left transition-colors hover:border-slate-500 hover:bg-surface-raised dark-mode-card"
               title={`${p.desc}\n点击添加，或拖拽到画布指定位置`}
             >
-              <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg" style={{ backgroundColor: `${p.color}22`, color: p.color, boxShadow: `inset 0 0 0 1px ${p.color}44` }}>
+              <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg" style={{ backgroundColor: 'var(--wf-node-1-soft)', color: p.color, boxShadow: 'inset 0 0 0 1px var(--wf-node-1-soft)' }}>
                 <Icon className="h-4 w-4" />
               </span>
               <span className="min-w-0">
@@ -481,7 +481,7 @@ function WorkflowEditorInner({ nodes, edges, onSave, saving, saveRef, dagId }: W
           <Controls />
           <MiniMap pannable zoomable className="!bg-slate-900 wf-minimap" nodeColor={(n) => {
             const d = n.data as DAGNodeData
-            return d.agentColor ?? '#475569'
+            return d.agentColor ?? 'var(--viz-series-fallback)'
           }} />
         </ReactFlow>
         <div className="absolute bottom-4 left-3 z-10 flex gap-1.5">

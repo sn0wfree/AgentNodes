@@ -91,6 +91,19 @@
   --blue-950-rgb: 23 37 84;
   --accent-rgb: var(--sky-400-rgb); /* accent DEFAULT = sky-400 */
 
+
+  /* §9 批 4：viz chrome + agent/node 身份色（dark 原值，theme.json 可调） */
+  --viz-grid: #334155; --viz-axis: #94a3b8; --viz-axis-line: #1e293b;
+  --viz-tooltip-bg: #0f172a; --viz-tooltip-border: #334155; --viz-tooltip-label: #94a3b8;
+  --viz-baseline: #334155; --viz-series-fallback: #64748b;
+  --agent-1: #3b82f6; --agent-2: #10b981; --agent-3: #8b5cf6; --agent-4: #f59e0b; --agent-5: #06b6d4;
+  --agent-1-soft: rgba(59,130,246,0.4); --agent-2-soft: rgba(16,185,129,0.4);
+  --wf-node-1: #38bdf8; --wf-node-2: #a78bfa; --wf-node-3: #34d399;
+  --wf-node-4: #fbbf24; --wf-node-5: #f472b6; --wf-node-6: #fb923c;
+  --wf-node-1-rgb: 56 189 248;
+  --wf-node-1-soft: rgba(56,189,248,0.13); --wf-node-2-soft: rgba(167,139,250,0.13);
+  --glow-stream-color: 99 102 241; --code-bg: #282c34;
+
   /* §9 批 2：React Flow / 徽章 / 卡片 chrome（dark 原值） */
   --focus-ring: #3b82f6;
   --shadow-sm-color: rgba(0, 0, 0, 0.25);
@@ -121,6 +134,17 @@
 
 /* ── Design tokens · light (warm paper, primary flips to orange) ── */
 [data-theme='light'] {
+  /* §9 批 4：viz chrome + agent/node 身份色（light 原值，theme.json 可调） */
+  --viz-grid: #e3e3db; --viz-axis: #64748b; --viz-axis-line: #e3e3db;
+  --viz-tooltip-bg: #ffffff; --viz-tooltip-border: #e3e3db; --viz-tooltip-label: #475569;
+  --viz-baseline: #cbd5e1; --viz-series-fallback: #94a3b8;
+  --agent-1: #2563eb; --agent-2: #047857; --agent-3: #6d28d9; --agent-4: #b45309; --agent-5: #0e7490;
+  --agent-1-soft: rgba(37,99,235,0.4); --agent-2-soft: rgba(4,120,87,0.4);
+  --wf-node-1: #0369a1; --wf-node-2: #6d28d9; --wf-node-3: #047857;
+  --wf-node-4: #b45309; --wf-node-5: #be185d; --wf-node-6: #c2410c;
+  --wf-node-1-rgb: 3 105 161;
+  --wf-node-1-soft: rgba(3,105,161,0.13); --wf-node-2-soft: rgba(109,40,217,0.13);
+  --glow-stream-color: 99 102 241; --code-bg: #282c34;
   --background: #fafafa;
   --foreground: #404040;
   --card: #ffffff;

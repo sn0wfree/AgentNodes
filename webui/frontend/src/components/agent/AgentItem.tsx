@@ -69,7 +69,7 @@ export function AgentItem({ agent, onSelect, isSelected }: AgentItemProps) {
         <div className="relative">
           <div
             className="h-7 w-7 rounded-full flex items-center justify-center"
-            style={{ backgroundColor: agent.color || '#3b82f6' }}
+            style={{ backgroundColor: agent.color || 'var(--agent-1)' }}
           >
             <Bot className="h-3.5 w-3.5 text-white" />
           </div>

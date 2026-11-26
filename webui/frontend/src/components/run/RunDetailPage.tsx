@@ -101,8 +101,8 @@ export function RunDetailPage() {
 
   const m = metrics?.metrics ?? {}
   const points = computeDrawdowns(equity?.equity ?? [])
-  const chartColor = '#38bdf8'
-  const ddColor = '#f87171'
+  const chartColor = 'var(--viz-1)'
+  const ddColor = 'var(--danger)'
   const baseline = typeof points[0]?.equity === 'number' ? points[0].equity : undefined
 
   const METRIC_CARDS: Array<{ label: string; key: string; color: string }> = [
@@ -168,11 +168,11 @@ export function RunDetailPage() {
                   <CartesianGrid stroke="var(--border)" strokeDasharray="3 3" />
                   <XAxis
                     dataKey="idx"
-                    stroke="#475569"
+                    stroke="var(--viz-axis)"
                     fontSize={10}
                     tickFormatter={(v: number) => (points.length > 1 ? Math.round((v / (points.length - 1)) * 100) + '%' : '')}
                   />
-                  <YAxis stroke="#475569" fontSize={10} domain={['auto', 'auto']} width={52} />
+                  <YAxis stroke="var(--viz-axis)" fontSize={10} domain={['auto', 'auto']} width={52} />
                   <Tooltip
                     contentStyle={{
                       background: 'var(--popover)', border: '1px solid var(--border)',
@@ -185,7 +185,7 @@ export function RunDetailPage() {
                     type="monotone" dataKey="equity" stroke={chartColor}
                     strokeWidth={1.5} dot={false}
                   />
-                  <ReferenceLine y={baseline} stroke="#334155" strokeDasharray="4 4" />
+                  <ReferenceLine y={baseline} stroke="var(--viz-baseline)" strokeDasharray="4 4" />
                 </LineChart>
               </ResponsiveContainer>
             </div>
@@ -204,11 +204,11 @@ export function RunDetailPage() {
                   <CartesianGrid stroke="var(--border)" strokeDasharray="3 3" />
                   <XAxis
                     dataKey="idx"
-                    stroke="#475569"
+                    stroke="var(--viz-axis)"
                     fontSize={10}
                     tickFormatter={(v: number) => (points.length > 1 ? Math.round((v / (points.length - 1)) * 100) + '%' : '')}
                   />
-                  <YAxis stroke="#475569" fontSize={10} tickFormatter={(v: number) => (v * 100).toFixed(0) + '%'} width={52} />
+                  <YAxis stroke="var(--viz-axis)" fontSize={10} tickFormatter={(v: number) => (v * 100).toFixed(0) + '%'} width={52} />
                   <Tooltip
                     contentStyle={{
                       background: 'var(--popover)', border: '1px solid var(--border)',

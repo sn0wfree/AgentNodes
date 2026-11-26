@@ -60,12 +60,12 @@ export const DAGNode = memo(function DAGNode({ data, selected }: NodeProps) {
   // Light theme needs darker variants of the type colors to keep
   // ≥4.5:1 contrast on white cards; dark theme keeps the originals.
   const LIGHT_AGENT_COLORS: Record<string, string> = {
-    llm_agent: '#0369a1',
-    planner: '#6d28d9',
-    evaluator: '#047857',
-    approval: '#b45309',
-    python: '#be185d',
-    tool: '#c2410c',
+    llm_agent: 'var(--wf-node-1)',
+    planner: 'var(--wf-node-2)',
+    evaluator: 'var(--wf-node-3)',
+    approval: 'var(--wf-node-4)',
+    python: 'var(--wf-node-5)',
+    tool: 'var(--wf-node-6)',
   }
   const titleColor =
     theme === 'light' && nodeData.type && LIGHT_AGENT_COLORS[nodeData.type]
@@ -82,7 +82,7 @@ export const DAGNode = memo(function DAGNode({ data, selected }: NodeProps) {
       {nodeData.agentColor && (
         <div
           className="absolute left-0 top-2 bottom-2 w-1 rounded-full"
-          style={{ backgroundColor: nodeData.agentColor, boxShadow: `0 0 8px ${nodeData.agentColor}66` }}
+          style={{ backgroundColor: nodeData.agentColor, boxShadow: '0 0 8px var(--wf-node-1-soft)' }}
         />
       )}
 

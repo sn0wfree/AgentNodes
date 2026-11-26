@@ -297,10 +297,10 @@ function TokenUsageChart({ events }: { events: TraceEvent[] }) {
                 <stop offset="100%" stopColor="var(--viz-1)" stopOpacity={0} />
               </linearGradient>
             </defs>
-            <XAxis dataKey="index" tick={{ fontSize: 9, fill: "#6b7280" }} tickLine={false} axisLine={false} />
-            <YAxis tick={{ fontSize: 9, fill: "#6b7280" }} tickLine={false} axisLine={false} width={40} />
+            <XAxis dataKey="index" tick={{ fontSize: 9, fill: "var(--viz-axis)" }} tickLine={false} axisLine={false} />
+            <YAxis tick={{ fontSize: 9, fill: "var(--viz-axis)" }} tickLine={false} axisLine={false} width={40} />
             <Tooltip
-              contentStyle={{ background: "#111827", border: "1px solid #374151", fontSize: 10 }}
+              contentStyle={{ background: "var(--viz-tooltip-bg)", border: "1px solid var(--viz-tooltip-border)", fontSize: 10 }}
               labelFormatter={(l) => `LLM call #${l}`}
             />
             <Area type="monotone" dataKey="total" stroke="var(--viz-1)" fill="url(#tokenFill)" strokeWidth={1.5} />

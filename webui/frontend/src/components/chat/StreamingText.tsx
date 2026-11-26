@@ -125,7 +125,7 @@ export function StreamingText({ text, isDone, partId }: StreamingTextProps) {
         isStreaming
           ? {
               boxShadow:
-                '0 0 24px -4px rgba(99, 102, 241, 0.12), 0 0 8px -2px rgba(99, 102, 241, 0.06)',
+                '0 0 24px -4px rgb(var(--glow-stream-color) / 0.12), 0 0 8px -2px rgb(var(--glow-stream-color) / 0.06)',
             }
           : undefined
       }

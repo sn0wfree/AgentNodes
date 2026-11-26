@@ -165,3 +165,32 @@ describe('globals.css all colors come from variable declarations', () => {
     }
   })
 })
+
+// §9 批 4：viz chrome 与 agent/node 身份色必须双主题声明，
+// 且组件不得再写死图表轴/tooltip/身份色字面量。
+describe('viz and identity colors come from theme variables', () => {
+  it('declares viz chrome and identity tokens in both themes', () => {
+    const required = [
+      '--viz-grid', '--viz-axis', '--viz-axis-line', '--viz-tooltip-bg',
+      '--viz-tooltip-border', '--viz-tooltip-label', '--viz-baseline',
+      '--viz-series-fallback', '--glow-stream-color', '--code-bg',
+      '--agent-1', '--agent-2', '--agent-3', '--agent-4', '--agent-5',
+      '--wf-node-1', '--wf-node-2', '--wf-node-3', '--wf-node-4', '--wf-node-5', '--wf-node-6',
+    ]
+    for (const theme of ['dark', 'light'] as const) {
+      const vars = varsOf(theme)
+      for (const token of required) {
+        expect(vars.has(token), `${theme} ${token}`).toBe(true)
+      }
+    }
+  })
+
+  it('uses token references instead of hardcoded hex in migrated color files', () => {
+    const agentsStore = readFileSync(resolve(__dirname, '../../src/stores/agents.ts'), 'utf-8')
+    const nodeTypes = readFileSync(resolve(__dirname, '../../src/components/workflow/nodeTypes.ts'), 'utf-8')
+    expect(agentsStore).toContain("'var(--agent-1)'")
+    expect(agentsStore).not.toMatch(/'#[0-9a-fA-F]{6}'/)
+    expect(nodeTypes).toContain("'var(--wf-node-1)'")
+    expect(nodeTypes).not.toMatch(/'#[0-9a-fA-F]{6}'/)
+  })
+})

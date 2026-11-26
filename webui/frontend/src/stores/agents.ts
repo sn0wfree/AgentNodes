@@ -40,7 +40,9 @@ interface AgentState {
   addAgent: (agent: Agent) => void
 }
 
-const AGENT_COLORS = ['#3b82f6', '#10b981', '#8b5cf6', '#f59e0b', '#06b6d4']
+const AGENT_COLORS = [
+  'var(--agent-1)', 'var(--agent-2)', 'var(--agent-3)', 'var(--agent-4)', 'var(--agent-5)',
+]
 
 export const useAgentStore = create<AgentState>()((set) => ({
   agents: new Map(),

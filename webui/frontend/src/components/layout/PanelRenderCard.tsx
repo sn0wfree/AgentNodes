@@ -167,16 +167,16 @@ export function PanelRenderCard({ item, metrics, curve }: Props) {
                     <stop offset="100%" stopColor={stats.totalReturn >= 0 ? 'var(--success)' : 'var(--danger)'} stopOpacity={0} />
                   </linearGradient>
                 </defs>
-                <CartesianGrid strokeDasharray="3 3" stroke="#1e293b" vertical={false} />
+                <CartesianGrid strokeDasharray="3 3" stroke="var(--viz-axis-line)" vertical={false} />
                 <XAxis
                   dataKey="label"
-                  tick={{ fontSize: 9, fill: '#64748b' }}
+                  tick={{ fontSize: 9, fill: 'var(--viz-axis)' }}
                   tickLine={false}
-                  axisLine={{ stroke: '#1e293b' }}
+                  axisLine={{ stroke: 'var(--viz-axis-line)' }}
                   minTickGap={24}
                 />
                 <YAxis
-                  tick={{ fontSize: 9, fill: '#64748b' }}
+                  tick={{ fontSize: 9, fill: 'var(--viz-axis)' }}
                   tickLine={false}
                   axisLine={false}
                   width={44}
@@ -184,12 +184,12 @@ export function PanelRenderCard({ item, metrics, curve }: Props) {
                 />
                 <Tooltip
                   contentStyle={{
-                    backgroundColor: '#0f172a',
-                    border: '1px solid #334155',
+                    backgroundColor: 'var(--viz-tooltip-bg)',
+                    border: '1px solid var(--viz-tooltip-border)',
                     borderRadius: 8,
                     fontSize: 11,
                   }}
-                  labelStyle={{ color: '#94a3b8' }}
+                  labelStyle={{ color: 'var(--viz-tooltip-label)' }}
                   itemStyle={{ color: stats.totalReturn >= 0 ? 'var(--success)' : 'var(--danger)' }}
                 />
                 <Area
@@ -202,7 +202,7 @@ export function PanelRenderCard({ item, metrics, curve }: Props) {
                 <Line
                   type="monotone"
                   dataKey="value"
-                  stroke={stats.totalReturn >= 0 ? '#10b981' : '#ef4444'}
+                  stroke={stats.totalReturn >= 0 ? 'var(--success)' : 'var(--danger)'}
                   strokeWidth={2}
                   dot={false}
                   isAnimationActive={false}

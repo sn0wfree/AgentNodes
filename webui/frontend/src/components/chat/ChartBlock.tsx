@@ -35,9 +35,9 @@ export function ChartRenderer({ chart }: { chart: ChartPart }) {
       return (
         <ResponsiveContainer width="100%" height={220}>
           <BarChart data={data}>
-            <CartesianGrid strokeDasharray="3 3" stroke="#334155" />
-            <XAxis dataKey={xKey} tick={{ fontSize: 11, fill: '#94a3b8' }} />
-            <YAxis tick={{ fontSize: 11, fill: '#94a3b8' }} />
+            <CartesianGrid strokeDasharray="3 3" stroke="var(--viz-grid)" />
+            <XAxis dataKey={xKey} tick={{ fontSize: 11, fill: 'var(--viz-axis)' }} />
+            <YAxis tick={{ fontSize: 11, fill: 'var(--viz-axis)' }} />
             <Tooltip
               contentStyle={{ backgroundColor: 'var(--popover)', border: '1px solid var(--border)', borderRadius: 8, fontSize: 12 }}
             />
@@ -49,9 +49,9 @@ export function ChartRenderer({ chart }: { chart: ChartPart }) {
       return (
         <ResponsiveContainer width="100%" height={220}>
           <LineChart data={data}>
-            <CartesianGrid strokeDasharray="3 3" stroke="#334155" />
-            <XAxis dataKey={xKey} tick={{ fontSize: 11, fill: '#94a3b8' }} />
-            <YAxis tick={{ fontSize: 11, fill: '#94a3b8' }} />
+            <CartesianGrid strokeDasharray="3 3" stroke="var(--viz-grid)" />
+            <XAxis dataKey={xKey} tick={{ fontSize: 11, fill: 'var(--viz-axis)' }} />
+            <YAxis tick={{ fontSize: 11, fill: 'var(--viz-axis)' }} />
             <Tooltip
               contentStyle={{ backgroundColor: 'var(--popover)', border: '1px solid var(--border)', borderRadius: 8, fontSize: 12 }}
             />
@@ -86,9 +86,9 @@ export function ChartRenderer({ chart }: { chart: ChartPart }) {
       return (
         <ResponsiveContainer width="100%" height={220}>
           <ScatterChart data={data}>
-            <CartesianGrid strokeDasharray="3 3" stroke="#334155" />
-            <XAxis dataKey={xKey} tick={{ fontSize: 11, fill: '#94a3b8' }} />
-            <YAxis tick={{ fontSize: 11, fill: '#94a3b8' }} />
+            <CartesianGrid strokeDasharray="3 3" stroke="var(--viz-grid)" />
+            <XAxis dataKey={xKey} tick={{ fontSize: 11, fill: 'var(--viz-axis)' }} />
+            <YAxis tick={{ fontSize: 11, fill: 'var(--viz-axis)' }} />
             <Tooltip
               contentStyle={{ backgroundColor: 'var(--popover)', border: '1px solid var(--border)', borderRadius: 8, fontSize: 12 }}
             />

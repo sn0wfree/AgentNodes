@@ -62,10 +62,10 @@ function formatTime(iso: string): string {
 // node types — map id patterns to the palette type colors so playback
 // nodes aren't flat grey.
 const LEGACY_AGENT_COLOR_HINTS: Array<[RegExp, string]> = [
-  [/planner|plan/i, '#a78bfa'],
-  [/evaluat|risk|controller|check|audit|decide|quality|review/i, '#34d399'],
-  [/backtest|report|data|market|scan|stress|benchmark|factor|attribution/i, '#fb923c'],
-  [/researcher|analyst|strategist|writer|construction|scanner|regime/i, '#38bdf8'],
+  [/planner|plan/i, 'var(--wf-node-2)'],
+  [/evaluat|risk|controller|check|audit|decide|quality|review/i, 'var(--wf-node-3)'],
+  [/backtest|report|data|market|scan|stress|benchmark|factor|attribution/i, 'var(--wf-node-6)'],
+  [/researcher|analyst|strategist|writer|construction|scanner|regime/i, 'var(--wf-node-1)'],
 ]
 
 function legacyAgentColor(id: string): string | undefined {

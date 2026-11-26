@@ -56,7 +56,7 @@ function CodeBlock({
         </button>
       </div>
       {streaming ? (
-        <pre className="m-0 overflow-x-auto bg-[#282c34] p-4 text-[0.8125rem] leading-relaxed font-mono text-foreground">
+        <pre className="m-0 overflow-x-auto bg-[var(--code-bg)] p-4 text-[0.8125rem] leading-relaxed font-mono text-foreground">
           {children}
         </pre>
       ) : (

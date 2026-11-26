@@ -130,7 +130,7 @@ export function WorkflowDAG({
               markerHeight="7"
               orient="auto-start-reverse"
             >
-              <path d="M 0 0 L 10 5 L 0 10 z" fill="#64748b" />
+              <path d="M 0 0 L 10 5 L 0 10 z" fill="var(--marker-fill)" />
             </marker>
           </defs>
           <Background variant={BackgroundVariant.Dots} gap={26} size={1.2} color="var(--canvas-dot)" />
@@ -139,9 +139,9 @@ export function WorkflowDAG({
           <MiniMap
             nodeColor={(n) => {
               const d = n.data as unknown as DAGNodeData
-              return d.agentColor || '#475569'
+              return d.agentColor || 'var(--viz-series-fallback)'
             }}
-            maskColor="rgba(0, 0, 0, 0.7)"
+            maskColor="rgb(0 0 0 / 0.7)"
             className="wf-minimap"
           />
         </ReactFlow>

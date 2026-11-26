@@ -357,7 +357,7 @@ export function MonitorPage() {
             <div className="space-y-2">
               {agentList.slice(0, 8).map((a) => (
                 <div key={a.id} className="flex items-center gap-3 rounded-xl border border-subtle bg-surface-raised px-4 py-2.5 shadow-soft">
-                  <div className="relative flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full" style={{ backgroundColor: a.color || '#8b5cf6' }}>
+                  <div className="relative flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full" style={{ backgroundColor: a.color || 'var(--agent-3)' }}>
                     <Bot className="h-4 w-4 text-white" />
                   </div>
                   <div className="min-w-0 flex-1">
