@@ -200,51 +200,45 @@ export function ComposerStatusBar({ sessionId }: ComposerStatusBarProps) {
           {modelOpen && (
             <div className="glass absolute right-0 bottom-full z-50 mb-1 w-72 overflow-hidden rounded-xl border border-slate-700/60 shadow-2xl">
               <div className="max-h-64 overflow-y-auto py-1">
-                {/* Default option */}
-                <button
-                  type="button"
-                  onClick={() => {
-                    if (sessionId) clearSessionModel(sessionId)
-                    setModelOpen(false)
-                  }}
-                  className={`flex w-full items-center gap-2 px-3 py-2 text-left transition-colors ${
-                    !currentModel ? 'bg-slate-700/40 text-slate-100' : 'text-slate-300 hover:bg-slate-700/30'
-                  }`}
-                >
-                  <Bot className="h-3.5 w-3.5 text-slate-500" />
-                  <span className="text-xs">Default ({modelInfo?.model ?? 'auto'})</span>
-                </button>
-                {providers.map((p) =>
+              {/* Default option */}
+              <button
+                type="button"
+                onClick={() => {
+                  if (sessionId) clearSessionModel(sessionId)
+                  setModelOpen(false)
+                }}
+                className={`flex w-full items-center gap-2 px-3 py-2 text-left transition-colors ${
+                  !currentModel ? 'bg-slate-700/40 text-slate-100' : 'text-slate-300 hover:bg-slate-700/30'
+                }`}
+              >
+                <Bot className="h-3.5 w-3.5 text-slate-500" />
+                <span className="text-xs">Default ({modelInfo?.model ?? 'auto'})</span>
+              </button>
+              {/* 2026-11-26 定稿：未配置密钥的 provider 整体不显示（下拉只保留
+                  可用选择；配置密钥走账户与设置页）。E1 密钥门禁由此前移。 */}
+              {providers
+                .filter((p) => p.key_configured)
+                .map((p) =>
                   p.models.map((m) => {
                     const fullModel = `${p.name}/${m}`
                     const isSelected = currentModel === fullModel
-                    // E1 密钥门禁：key_configured=false 的 provider 无密钥，选中
-                    // 后发送必然失败。置灰 + 标注，禁止选择（与设置页口径一致）。
-                    const available = p.key_configured
                     return (
                       <button
                         key={fullModel}
                         type="button"
-                        disabled={!available}
                         onClick={() => {
-                          if (!available || !sessionId) return
+                          if (!sessionId) return
                           setSessionModel(sessionId, fullModel)
                           setModelOpen(false)
                         }}
                         className={`flex w-full items-center gap-2 px-3 py-2 text-left transition-colors ${
-                          !available
-                            ? 'cursor-not-allowed text-slate-600 opacity-50'
-                            : isSelected
-                              ? 'bg-slate-700/40 text-slate-100'
-                              : 'text-slate-300 hover:bg-slate-700/30'
+                          isSelected
+                            ? 'bg-slate-700/40 text-slate-100'
+                            : 'text-slate-300 hover:bg-slate-700/30'
                         }`}
-                        title={available ? undefined : `未配置密钥（${p.key_var}）`}
                       >
                         <span className="text-xs font-medium">{p.label || p.name}</span>
                         <span className="text-[11px] text-slate-500">{m}</span>
-                        {!available && (
-                          <span className="ml-auto text-[10px] text-slate-600">未配置密钥</span>
-                        )}
                       </button>
                     )
                   })

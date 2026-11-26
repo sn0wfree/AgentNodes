@@ -81,29 +81,33 @@ describe('ComposerStatusBar', () => {
     expect(screen.getByText('Auto')).toBeDefined()
   })
 
-  // ---- 模型下拉密钥门禁（model-picker-key-gating-20261124）----
+  // ---- 模型下拉密钥门禁（2026-11-26 定稿：无密钥 provider 直接不显示，
+  // ---- 不再渲染禁用项——下拉只保留可用的选择，减少信息噪音）----
   const mkProvider = (over: Record<string, unknown> = {}) => ({
     name: 'deepseek', label: 'deepseek', model: 'deepseek-chat',
     models: ['deepseek-chat'], base_url: '', key_var: 'DEEPSEEK_API_KEY',
     key_configured: false, ...over,
   })
 
-  it('disables and annotates models from providers without a key', () => {
+  it('hides models from providers without a configured key', () => {
     useModelStore.setState({ providers: [mkProvider()] })
     render(<ComposerStatusBar sessionId="s1" />)
     fireEvent.click(screen.getByTitle('选择模型'))
-    const option = screen.getByText('deepseek-chat').closest('button')!
-    expect(option.hasAttribute('disabled')).toBe(true)
-    expect(screen.getByText('未配置密钥')).toBeDefined()
-    expect(screen.getByTitle('未配置密钥（DEEPSEEK_API_KEY）')).toBeDefined()
+    expect(screen.queryByText('deepseek-chat')).toBeNull()
+    expect(screen.queryByText('未配置密钥')).toBeNull()
   })
 
-  it('does not select a disabled no-key model on click', () => {
-    useModelStore.setState({ providers: [mkProvider()] })
+  it('still lists models from providers with a key', () => {
+    useModelStore.setState({
+      providers: [
+        mkProvider(),
+        mkProvider({ name: 'minimax', label: 'MiniMax', models: ['MiniMax-M3'], key_configured: true }),
+      ],
+    })
     render(<ComposerStatusBar sessionId="s1" />)
     fireEvent.click(screen.getByTitle('选择模型'))
-    fireEvent.click(screen.getByText('deepseek-chat'))
-    expect(useModelStore.getState().sessionModels['s1']).toBeUndefined()
+    expect(screen.queryByText('deepseek-chat')).toBeNull()
+    expect(screen.getByText('MiniMax-M3')).toBeDefined()
   })
 
   it('allows selecting a model from a provider with a key', () => {
