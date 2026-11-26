@@ -465,7 +465,7 @@ export function Composer({ composeMessage, readOnly }: ComposerProps = {}) {
                 </span>
               )}
             </div>
-            <div className="glass invisible absolute bottom-full right-0 z-50 mb-2 w-72 rounded-xl border border-slate-700/60 p-3 opacity-0 shadow-2xl transition-opacity group-hover/usage:visible group-hover/usage:opacity-100" data-testid="context-breakdown-popover">
+            <div className="glass invisible absolute bottom-full right-0 z-50 mb-2 w-72 rounded-xl border border-slate-700/60 !bg-slate-900/95 p-3 opacity-0 shadow-2xl transition-opacity group-hover/usage:visible group-hover/usage:opacity-100" data-testid="context-breakdown-popover">
               <div className="mb-2 flex items-center justify-between text-[11px]">
                 <span className="font-medium text-slate-200">上下文用量</span>
                 <span className="font-mono text-slate-400">
