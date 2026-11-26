@@ -40,10 +40,10 @@ export function ToastManager() {
             `}
           >
             <Icon className={`h-4 w-4 flex-shrink-0 ${ICON_COLORS[toast.type]}`} />
-            <span className="text-sm text-slate-200">{toast.message}</span>
+            <span className="text-sm text-foreground">{toast.message}</span>
             <button
               onClick={() => removeToast(toast.id)}
-              className="ml-2 text-slate-400 hover:text-slate-200"
+              className="ml-2 text-muted hover:text-foreground"
             >
               <X className="h-3 w-3" />
             </button>

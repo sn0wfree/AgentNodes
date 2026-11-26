@@ -15,8 +15,8 @@ interface GoalCardProps {
  */
 export function GoalCard({ goal }: GoalCardProps) {
   return (
-    <div className="rounded-lg border border-slate-800/50 bg-slate-900/30 p-3">
-      <div className="mb-2 flex items-center gap-1.5 text-[10px] font-medium uppercase tracking-wider text-slate-500">
+    <div className="rounded-lg border border-subtle bg-slate-900/30 p-3">
+      <div className="mb-2 flex items-center gap-1.5 text-[10px] font-medium uppercase tracking-wider text-muted">
         <Target className="h-3 w-3" />
         <span>目标 &amp; 进度</span>
       </div>

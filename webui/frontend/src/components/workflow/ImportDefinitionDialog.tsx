@@ -59,11 +59,11 @@ export function ImportDefinitionDialog({
     <Dialog.Root open={open} onOpenChange={(v) => !v && !busy && onClose()}>
       <Dialog.Portal>
         <Dialog.Overlay className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm" />
-        <Dialog.Content className="fixed left-1/2 top-1/2 z-50 w-[520px] max-w-[92vw] -translate-x-1/2 -translate-y-1/2 rounded-xl border border-slate-700 bg-slate-900 p-5 shadow-2xl">
-          <Dialog.Title className="flex items-center gap-2 text-sm font-medium text-slate-100">
+        <Dialog.Content className="fixed left-1/2 top-1/2 z-50 w-[520px] max-w-[92vw] -translate-x-1/2 -translate-y-1/2 rounded-xl border border-strong bg-slate-900 p-5 shadow-2xl">
+          <Dialog.Title className="flex items-center gap-2 text-sm font-medium text-foreground">
             <FileJson className="h-4 w-4 text-info-fg" /> 导入工作流定义 (JSON)
           </Dialog.Title>
-          <Dialog.Description className="mt-1 text-[11px] text-slate-400">
+          <Dialog.Description className="mt-1 text-[11px] text-muted">
             粘贴 definition JSON（可来自导出的 workspace/workflows/*.json 或 git 版本化文件）。
           </Dialog.Description>
 
@@ -80,7 +80,7 @@ export function ImportDefinitionDialog({
   ],
   "edges": [{"source": "p", "target": "e"}]
 }'
-            className="mt-3 w-full rounded border border-slate-700 bg-slate-950 px-3 py-2 font-mono text-[11px] text-slate-200 outline-none focus:border-primary-500"
+            className="mt-3 w-full rounded border border-strong bg-slate-950 px-3 py-2 font-mono text-[11px] text-foreground outline-none focus:border-primary-500"
           />
 
           {error && (
@@ -93,14 +93,14 @@ export function ImportDefinitionDialog({
             <button
               onClick={onClose}
               disabled={busy}
-              className="rounded px-3 py-1.5 text-xs text-slate-400 hover:bg-slate-800"
+              className="rounded px-3 py-1.5 text-xs text-muted hover:bg-surface-raised"
             >
               取消
             </button>
             <button
               onClick={handleImport}
               disabled={busy || !text.trim()}
-              className="inline-flex items-center gap-1 rounded border border-slate-600 bg-slate-800 px-3 py-1.5 text-xs text-slate-200 hover:bg-slate-700 disabled:opacity-50"
+              className="inline-flex items-center gap-1 rounded border border-strong bg-surface-raised px-3 py-1.5 text-xs text-foreground hover:bg-surface-raised disabled:opacity-50"
             >
               {busy ? <Loader2 className="h-3 w-3 animate-spin" /> : <Pencil className="h-3 w-3" />}
               导入到画布（不保存）

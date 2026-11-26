@@ -38,8 +38,8 @@ export function TokenCard() {
     .join('\n')
 
   return (
-    <div className="rounded-lg border border-slate-800/50 bg-slate-900/30 p-3">
-      <div className="mb-2 flex items-center gap-1.5 text-[10px] font-medium uppercase tracking-wider text-slate-500">
+    <div className="rounded-lg border border-subtle bg-slate-900/30 p-3">
+      <div className="mb-2 flex items-center gap-1.5 text-[10px] font-medium uppercase tracking-wider text-muted">
         <BarChart3 className="h-3 w-3" />
         <span>Token 使用情况</span>
         {usage.isStale && (
@@ -55,7 +55,7 @@ export function TokenCard() {
       <div className="space-y-2">
         {usage.hasLimit && (
           <div title={detail} data-testid="token-card-context">
-            <div className="mb-1 flex justify-between text-[10px] text-slate-400">
+            <div className="mb-1 flex justify-between text-[10px] text-muted">
               <span>上下文</span>
               <span className="font-mono">
                 {usage.source === 'estimated' ? '~' : ''}
@@ -63,7 +63,7 @@ export function TokenCard() {
                 <span className="ml-1">({usage.percent.toFixed(1)}%)</span>
               </span>
             </div>
-            <div className="h-1 w-full overflow-hidden rounded-full bg-slate-800">
+            <div className="h-1 w-full overflow-hidden rounded-full bg-surface-raised">
               <div
                 className={`h-full transition-all ${toneFillClass(tokenTone(usage.percent))}`}
                 style={{ width: `${usage.percent}%` }}
@@ -71,7 +71,7 @@ export function TokenCard() {
             </div>
           </div>
         )}
-        <div className="flex justify-between text-[10px] text-slate-400">
+        <div className="flex justify-between text-[10px] text-muted">
           <span>消息</span>
           <span className="font-mono">{messageCount}</span>
         </div>

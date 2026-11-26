@@ -88,7 +88,7 @@ export function LLMSection({
       <div className="space-y-3">
         {/* Provider */}
         <div>
-          <label className="mb-1 block text-xs text-slate-400">Provider</label>
+          <label className="mb-1 block text-xs text-muted">Provider</label>
           <select
             value={llmConfig.provider}
             onChange={(e) => {
@@ -101,7 +101,7 @@ export function LLMSection({
                 base_url: p?.base_url || '',
               })
             }}
-            className="w-full rounded-lg border border-slate-700 bg-slate-900 px-3 py-2 text-sm text-slate-100 outline-none focus:border-primary-500"
+            className="w-full rounded-lg border border-strong bg-slate-900 px-3 py-2 text-sm text-foreground outline-none focus:border-primary-500"
           >
             <option value="">选择 Provider</option>
             {providers.map((p) => (
@@ -115,12 +115,12 @@ export function LLMSection({
 
         {/* Model */}
         <div>
-          <label className="mb-1 block text-xs text-slate-400">Model</label>
+          <label className="mb-1 block text-xs text-muted">Model</label>
           {currentModels.length > 0 ? (
             <select
               value={llmConfig.model}
               onChange={(e) => setLlmConfig({ ...llmConfig, model: e.target.value })}
-              className="w-full rounded-lg border border-slate-700 bg-slate-900 px-3 py-2 text-sm text-slate-100 outline-none focus:border-primary-500"
+              className="w-full rounded-lg border border-strong bg-slate-900 px-3 py-2 text-sm text-foreground outline-none focus:border-primary-500"
             >
               <option value="">选择 Model</option>
               {currentModels.map((m) => (
@@ -135,14 +135,14 @@ export function LLMSection({
               placeholder="输入模型名称，如 qwen2.5、llama3、mistral"
               value={llmConfig.model}
               onChange={(e) => setLlmConfig({ ...llmConfig, model: e.target.value })}
-              className="w-full rounded-lg border border-slate-700 bg-slate-900 px-3 py-2 text-sm text-slate-100 outline-none focus:border-primary-500"
+              className="w-full rounded-lg border border-strong bg-slate-900 px-3 py-2 text-sm text-foreground outline-none focus:border-primary-500"
             />
           )}
         </div>
 
         {/* API Key */}
         <div>
-          <label className="mb-1 block text-xs text-slate-400">API Key</label>
+          <label className="mb-1 block text-xs text-muted">API Key</label>
           <div className="relative">
             <input
               type={showApiKey ? 'text' : 'password'}
@@ -153,12 +153,12 @@ export function LLMSection({
               }
               value={apiKeyInput}
               onChange={(e) => setApiKeyInput(e.target.value)}
-              className="w-full rounded-lg border border-slate-700 bg-slate-900 px-3 py-2 pr-10 text-sm text-slate-100 outline-none focus:border-primary-500"
+              className="w-full rounded-lg border border-strong bg-slate-900 px-3 py-2 pr-10 text-sm text-foreground outline-none focus:border-primary-500"
             />
             <button
               type="button"
               onClick={() => setShowApiKey(!showApiKey)}
-              className="absolute right-2 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-200"
+              className="absolute right-2 top-1/2 -translate-y-1/2 text-muted hover:text-foreground"
             >
               {showApiKey ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
             </button>
@@ -167,7 +167,7 @@ export function LLMSection({
 
         {/* Base URL */}
         <div>
-          <label className="mb-1 block text-xs text-slate-400">
+          <label className="mb-1 block text-xs text-muted">
             Base URL {llmConfig.provider === 'custom' ? '(必填)' : '(可选，留空使用默认)'}
           </label>
           <input
@@ -175,7 +175,7 @@ export function LLMSection({
             placeholder={llmConfig.provider === 'custom' ? '如 http://localhost:11434/v1' : '留空使用默认'}
             value={llmConfig.base_url}
             onChange={(e) => setLlmConfig({ ...llmConfig, base_url: e.target.value })}
-            className="w-full rounded-lg border border-slate-700 bg-slate-900 px-3 py-2 text-sm text-slate-100 outline-none focus:border-primary-500"
+            className="w-full rounded-lg border border-strong bg-slate-900 px-3 py-2 text-sm text-foreground outline-none focus:border-primary-500"
           />
         </div>
 

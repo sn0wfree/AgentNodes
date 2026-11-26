@@ -35,20 +35,20 @@ export function IconNav() {
   const isHome = location.pathname === '/'
 
   return (
-    <nav className="flex h-screen w-16 flex-shrink-0 flex-col items-center gap-1 border-r border-slate-800 bg-slate-900/50 py-3">
+    <nav className="flex h-screen w-16 flex-shrink-0 flex-col items-center gap-1 border-r border-subtle bg-slate-900/50 py-3">
       {/* Brand / logo — doubles as the home (dashboard) entry */}
       <button
         onClick={() => navigate('/')}
         title="AgentNodes · 首页"
-        className={`group relative mb-3 flex h-10 w-10 items-center justify-center rounded-xl bg-slate-800 transition-colors hover:bg-slate-700 ${
+        className={`group relative mb-3 flex h-10 w-10 items-center justify-center rounded-xl bg-surface-raised transition-colors hover:bg-surface-raised ${
           isHome ? 'ring-2 ring-sky-500' : ''
         }`}
       >
         {isHome && (
           <span className="absolute -left-[9px] top-1/2 h-4 w-[3px] -translate-y-1/2 rounded-full bg-sky-500" />
         )}
-        <span className="font-sans text-sm font-bold text-slate-100">AN</span>
-        <span className="pointer-events-none absolute left-[52px] top-1/2 -translate-y-1/2 whitespace-nowrap rounded-md border border-slate-700 bg-slate-800 px-2 py-1 text-[11px] text-slate-200 opacity-0 shadow-lg transition-opacity group-hover:opacity-100">
+        <span className="font-sans text-sm font-bold text-foreground">AN</span>
+        <span className="pointer-events-none absolute left-[52px] top-1/2 -translate-y-1/2 whitespace-nowrap rounded-md border border-strong bg-surface-raised px-2 py-1 text-[11px] text-foreground opacity-0 shadow-lg transition-opacity group-hover:opacity-100">
           {isHome ? 'AgentNodes · 首页' : 'AgentNodes'}
         </span>
       </button>
@@ -68,8 +68,8 @@ export function IconNav() {
               `group relative flex h-10 w-10 items-center justify-center rounded-lg transition-colors
               ${
                 isActive
-                  ? 'bg-slate-800 text-slate-100'
-                  : 'text-slate-400 hover:bg-slate-800 hover:text-slate-200'
+                  ? 'bg-surface-raised text-foreground'
+                  : 'text-muted hover:bg-surface-raised hover:text-foreground'
               }`
             }
           >
@@ -93,8 +93,8 @@ export function IconNav() {
         className={({ isActive }) =>
           `group relative flex h-10 w-10 items-center justify-center rounded-lg transition-colors ${
             isActive
-              ? 'bg-slate-800 text-slate-100'
-              : 'text-slate-400 hover:bg-slate-800 hover:text-slate-200'
+              ? 'bg-surface-raised text-foreground'
+              : 'text-muted hover:bg-surface-raised hover:text-foreground'
           }`
         }
       >
@@ -113,7 +113,7 @@ export function IconNav() {
           navigate('/login')
         }}
         title="登出"
-        className="flex h-10 w-10 items-center justify-center rounded-lg text-slate-400 transition-colors hover:bg-slate-800 hover:text-slate-200"
+        className="flex h-10 w-10 items-center justify-center rounded-lg text-muted transition-colors hover:bg-surface-raised hover:text-foreground"
       >
         <LogOut className="h-5 w-5" />
       </button>

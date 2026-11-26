@@ -19,7 +19,7 @@ export function DAGNodeDetail({ node, onClose }: DAGNodeDetailProps) {
   return (
     <div className="wf-panel-solid absolute right-0 top-0 bottom-0 w-[360px] border-l z-20 flex flex-col shadow-2xl">
       {/* Header */}
-      <div className="flex items-center justify-between border-b border-slate-800 px-4 py-3">
+      <div className="flex items-center justify-between border-b border-subtle px-4 py-3">
         <div className="flex items-center gap-2">
           {node.agentColor && (
             <div
@@ -31,7 +31,7 @@ export function DAGNodeDetail({ node, onClose }: DAGNodeDetailProps) {
         </div>
         <button
           onClick={onClose}
-          className="rounded-lg p-1 text-slate-400 hover:bg-slate-800 hover:text-slate-200"
+          className="rounded-lg p-1 text-muted hover:bg-surface-raised hover:text-foreground"
         >
           <X className="h-4 w-4" />
         </button>
@@ -92,7 +92,7 @@ function DetailSection({
   return (
     <div>
       <div className="flex items-center gap-1.5 mb-1.5">
-        <span className="text-slate-500">{icon}</span>
+        <span className="text-muted">{icon}</span>
         <span className="wf-text-sub text-[10px] uppercase tracking-wider">{title}</span>
       </div>
       {children}

@@ -15,7 +15,7 @@ export interface DAGNodeData {
 const STATUS_CONFIG = {
   pending: {
     icon: Clock,
-    borderColor: 'border-slate-600/70',
+    borderColor: 'border-strong/70',
     iconColor: 'dag-status-pending',
     dotColor: 'dag-status-pending',
     label: '等待中',
@@ -43,7 +43,7 @@ const STATUS_CONFIG = {
   },
   skipped: {
     icon: AlertCircle,
-    borderColor: 'border-slate-600/50',
+    borderColor: 'border-strong/50',
     iconColor: 'dag-status-skipped',
     dotColor: 'dag-status-skipped',
     label: '已跳过',
@@ -128,12 +128,12 @@ export const DAGNode = memo(function DAGNode({ data, selected }: NodeProps) {
       <Handle
         type="target"
         position={Position.Left}
-        className="!w-2 !h-2 !bg-slate-600 !border-2 !border-slate-800"
+        className="!w-2 !h-2 !bg-slate-600 !border-2 !border-subtle"
       />
       <Handle
         type="source"
         position={Position.Right}
-        className="!w-2 !h-2 !bg-slate-600 !border-2 !border-slate-800"
+        className="!w-2 !h-2 !bg-slate-600 !border-2 !border-subtle"
       />
     </div>
   )

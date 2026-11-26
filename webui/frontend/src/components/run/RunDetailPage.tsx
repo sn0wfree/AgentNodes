@@ -75,9 +75,9 @@ export function RunDetailPage() {
 
   if (loading || !workspacePath) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-slate-950 text-slate-400">
+      <div className="flex min-h-screen items-center justify-center bg-slate-950 text-muted">
         <div className="flex items-center gap-2">
-          <div className="h-4 w-4 animate-spin rounded-full border-2 border-slate-600 border-t-sky-500" />
+          <div className="h-4 w-4 animate-spin rounded-full border-2 border-strong border-t-sky-500" />
           加载中...
         </div>
       </div>
@@ -113,18 +113,18 @@ export function RunDetailPage() {
   ]
 
   return (
-    <div className="min-h-screen bg-slate-950 text-slate-100">
-      <header className="flex items-center gap-3 border-b border-slate-800 bg-slate-900/80 px-4 py-2.5">
+    <div className="min-h-screen bg-slate-950 text-foreground">
+      <header className="flex items-center gap-3 border-b border-subtle bg-surface-raised px-4 py-2.5">
         <button
           onClick={() => navigate(-1)}
-          className="inline-flex items-center gap-1 rounded px-2 py-1 text-sm text-slate-400 hover:bg-slate-800 hover:text-slate-200 transition-colors"
+          className="inline-flex items-center gap-1 rounded px-2 py-1 text-sm text-muted hover:bg-surface-raised hover:text-foreground transition-colors"
         >
           <ArrowLeft className="h-4 w-4" /> 返回
         </button>
-        <LineChartIcon className="h-4 w-4 text-slate-500" />
+        <LineChartIcon className="h-4 w-4 text-muted" />
         <div className="min-w-0">
-          <h1 className="truncate text-sm font-medium text-slate-200">{runName}</h1>
-          <p className="truncate text-[10px] text-slate-500">{strategyName}</p>
+          <h1 className="truncate text-sm font-medium text-foreground">{runName}</h1>
+          <p className="truncate text-[10px] text-muted">{strategyName}</p>
         </div>
         {m.status && (
           <span
@@ -147,8 +147,8 @@ export function RunDetailPage() {
         {/* Metric cards */}
         <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
           {METRIC_CARDS.map((c) => (
-            <div key={c.key} className="rounded border border-slate-700 bg-slate-900 p-3">
-              <div className="text-[10px] uppercase text-slate-500">{c.label}</div>
+            <div key={c.key} className="rounded border border-strong bg-slate-900 p-3">
+              <div className="text-[10px] uppercase text-muted">{c.label}</div>
               <div className={`mt-1 font-mono text-lg ${c.color}`}>
                 {fmt(m[c.key])}
               </div>
@@ -157,10 +157,10 @@ export function RunDetailPage() {
         </div>
 
         {/* Equity curve */}
-        <div className="rounded border border-slate-700 bg-slate-900 p-3">
-          <div className="mb-2 text-[10px] uppercase text-slate-500">净值曲线</div>
+        <div className="rounded border border-strong bg-slate-900 p-3">
+          <div className="mb-2 text-[10px] uppercase text-muted">净值曲线</div>
           {points.length === 0 ? (
-            <p className="py-8 text-center text-xs text-slate-500">无净值数据</p>
+            <p className="py-8 text-center text-xs text-muted">无净值数据</p>
           ) : (
             <div className="h-64">
               <ResponsiveContainer width="100%" height="100%">
@@ -193,10 +193,10 @@ export function RunDetailPage() {
         </div>
 
         {/* Drawdown */}
-        <div className="rounded border border-slate-700 bg-slate-900 p-3">
-          <div className="mb-2 text-[10px] uppercase text-slate-500">回撤</div>
+        <div className="rounded border border-strong bg-slate-900 p-3">
+          <div className="mb-2 text-[10px] uppercase text-muted">回撤</div>
           {points.length === 0 ? (
-            <p className="py-8 text-center text-xs text-slate-500">无回撤数据</p>
+            <p className="py-8 text-center text-xs text-muted">无回撤数据</p>
           ) : (
             <div className="h-40">
               <ResponsiveContainer width="100%" height="100%">

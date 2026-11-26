@@ -14,7 +14,7 @@ interface CriteriaListProps {
 }
 
 const STATUS_ICON = {
-  pending: <Circle className="h-3.5 w-3.5 text-slate-500" />,
+  pending: <Circle className="h-3.5 w-3.5 text-muted" />,
   in_progress: <Clock className="h-3.5 w-3.5 text-warning-fg animate-pulse" />,
   completed: <CheckCircle className="h-3.5 w-3.5 text-success-fg" />,
 }
@@ -28,12 +28,12 @@ export function CriteriaList({ criteria, totalCriteria }: CriteriaListProps) {
       {/* Progress bar */}
       <div>
         <div className="flex items-center justify-between text-xs mb-1.5">
-          <span className="text-slate-400">完成进度</span>
-          <span className="text-slate-300 font-mono">
+          <span className="text-muted">完成进度</span>
+          <span className="text-secondary font-mono">
             {completed}/{totalCriteria} ({Math.round(progress)}%)
           </span>
         </div>
-        <div className="h-1.5 rounded-full bg-slate-800 overflow-hidden">
+        <div className="h-1.5 rounded-full bg-surface-raised overflow-hidden">
           <div
             className="h-full rounded-full bg-primary-500 transition-all duration-500"
             style={{ width: `${progress}%` }}
@@ -46,12 +46,12 @@ export function CriteriaList({ criteria, totalCriteria }: CriteriaListProps) {
         {criteria.map((c) => (
           <div
             key={c.id}
-            className="flex items-start gap-2 rounded-lg px-2.5 py-2 text-xs hover:bg-slate-800/30 transition-colors"
+            className="flex items-start gap-2 rounded-lg px-2.5 py-2 text-xs hover:bg-surface-raised/30 transition-colors"
           >
             {STATUS_ICON[c.status]}
             <div className="flex-1 min-w-0">
-              <p className="text-slate-300 leading-relaxed">{c.description}</p>
-              <div className="flex items-center gap-2 mt-1 text-[10px] text-slate-600">
+              <p className="text-secondary leading-relaxed">{c.description}</p>
+              <div className="flex items-center gap-2 mt-1 text-[10px] text-muted">
                 {c.evidence_count > 0 && (
                   <span className="flex items-center gap-0.5">
                     <Target className="h-2.5 w-2.5" />

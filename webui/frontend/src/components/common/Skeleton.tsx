@@ -10,7 +10,7 @@ interface SkeletonProps {
 // so skeletons were never hooked up. Use when adding per-tab lazy
 // loading, or remove with that plan.
 export function Skeleton({ className = '', variant = 'rect' }: SkeletonProps) {
-  const base = 'animate-pulse bg-slate-700/50'
+  const base = 'animate-pulse bg-surface'
   const variantClass = {
     rect: 'rounded-lg',
     circle: 'rounded-full',

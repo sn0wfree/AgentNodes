@@ -54,8 +54,8 @@ export function AccountSection({ username }: AccountSectionProps) {
     <Section icon={User} title="个人账号">
       <div className="space-y-3">
         <div className="flex items-center justify-between text-sm">
-          <span className="text-slate-400">当前用户</span>
-          <span className="text-slate-200">{username || '—'}</span>
+          <span className="text-muted">当前用户</span>
+          <span className="text-foreground">{username || '—'}</span>
         </div>
         <div className="space-y-2">
           <PasswordInput
@@ -77,7 +77,7 @@ export function AccountSection({ username }: AccountSectionProps) {
             placeholder="确认新密码"
             value={confirmPassword}
             onChange={(e) => setConfirmPassword(e.target.value)}
-            className="w-full rounded-lg border border-slate-700 bg-slate-900 px-3 py-2 text-sm text-slate-100 outline-none focus:border-primary-500"
+            className="w-full rounded-lg border border-strong bg-slate-900 px-3 py-2 text-sm text-foreground outline-none focus:border-primary-500"
           />
           {pwError && <p className="text-xs text-danger-fg">{pwError}</p>}
           {pwMsg && <p className="text-xs text-success-fg">{pwMsg}</p>}

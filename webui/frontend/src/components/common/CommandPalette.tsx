@@ -223,7 +223,7 @@ export function CommandPalette() {
       <Dialog.Portal>
         <Dialog.Overlay className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm" />
         <Dialog.Content
-          className="fixed left-1/2 top-[20%] z-50 w-full max-w-xl -translate-x-1/2 rounded-xl bg-slate-900 border border-slate-700 shadow-2xl"
+          className="fixed left-1/2 top-[20%] z-50 w-full max-w-xl -translate-x-1/2 rounded-xl bg-slate-900 border border-strong shadow-2xl"
         >
           <Dialog.Title className="sr-only">Command Palette</Dialog.Title>
           <Dialog.Description className="sr-only">
@@ -231,17 +231,17 @@ export function CommandPalette() {
           </Dialog.Description>
 
           {/* Search input */}
-          <div className="flex items-center gap-3 border-b border-slate-700 px-4 py-3">
-            <Search className="h-4 w-4 text-slate-400" />
+          <div className="flex items-center gap-3 border-b border-strong px-4 py-3">
+            <Search className="h-4 w-4 text-muted" />
             <input
               autoFocus
               value={query}
               onChange={(e) => setQuery(e.target.value)}
               onKeyDown={handleKeyDown}
               placeholder="搜索命令、视图、操作..."
-              className="flex-1 bg-transparent text-sm text-slate-100 placeholder-slate-500 outline-none"
+              className="flex-1 bg-transparent text-sm text-foreground placeholder-slate-500 outline-none"
             />
-            <kbd className="rounded border border-slate-700 px-1.5 py-0.5 text-[10px] text-slate-500">
+            <kbd className="rounded border border-strong px-1.5 py-0.5 text-[10px] text-muted">
               ESC
             </kbd>
           </div>
@@ -249,13 +249,13 @@ export function CommandPalette() {
           {/* Results */}
           <div className="max-h-80 overflow-y-auto p-2">
             {filtered.length === 0 ? (
-              <div className="py-8 text-center text-sm text-slate-500">
+              <div className="py-8 text-center text-sm text-muted">
                 未找到匹配命令
               </div>
             ) : (
               Object.entries(grouped).map(([category, cmds]) => (
                 <div key={category} className="mb-1">
-                  <div className="px-2 py-1 text-[10px] uppercase tracking-wider text-slate-500">
+                  <div className="px-2 py-1 text-[10px] uppercase tracking-wider text-muted">
                     {CATEGORY_LABEL[category as keyof typeof CATEGORY_LABEL] || category}
                   </div>
                   {cmds.map((cmd) => {
@@ -268,20 +268,20 @@ export function CommandPalette() {
                         onClick={() => cmd.action()}
                         onMouseEnter={() => setSelectedIdx(globalIdx)}
                         className={`flex w-full items-center gap-3 rounded-lg px-2.5 py-2 text-left text-sm transition-colors
-                          ${isSelected ? 'bg-primary-600/20 text-primary-100' : 'text-slate-300 hover:bg-slate-800'}
+                          ${isSelected ? 'bg-primary-600/20 text-primary-100' : 'text-secondary hover:bg-surface-raised'}
                         `}
                       >
                         {Icon && <Icon className="h-4 w-4 flex-shrink-0" />}
                         <div className="flex-1 min-w-0">
                           <div className="truncate">{cmd.label}</div>
                           {cmd.description && (
-                            <div className="truncate text-xs text-slate-500">
+                            <div className="truncate text-xs text-muted">
                               {cmd.description}
                             </div>
                           )}
                         </div>
                         {cmd.shortcut && (
-                          <kbd className="rounded border border-slate-700 px-1.5 py-0.5 text-[10px] text-slate-500">
+                          <kbd className="rounded border border-strong px-1.5 py-0.5 text-[10px] text-muted">
                             {cmd.shortcut}
                           </kbd>
                         )}
@@ -297,15 +297,15 @@ export function CommandPalette() {
           </div>
 
           {/* Footer hint */}
-          <div className="flex items-center justify-between border-t border-slate-700 px-4 py-2 text-[10px] text-slate-500">
+          <div className="flex items-center justify-between border-t border-strong px-4 py-2 text-[10px] text-muted">
             <div className="flex items-center gap-3">
               <span className="flex items-center gap-1">
-                <kbd className="rounded border border-slate-700 px-1 py-0.5">↑</kbd>
-                <kbd className="rounded border border-slate-700 px-1 py-0.5">↓</kbd>
+                <kbd className="rounded border border-strong px-1 py-0.5">↑</kbd>
+                <kbd className="rounded border border-strong px-1 py-0.5">↓</kbd>
                 导航
               </span>
               <span className="flex items-center gap-1">
-                <kbd className="rounded border border-slate-700 px-1 py-0.5">↵</kbd>
+                <kbd className="rounded border border-strong px-1 py-0.5">↵</kbd>
                 执行
               </span>
             </div>

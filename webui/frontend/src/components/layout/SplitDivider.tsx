@@ -69,7 +69,7 @@ export function SplitDivider({ onDrag, hitWidth = 10 }: Props) {
     >
       <div
         className={`h-full w-px transition-colors ${
-          dragging ? 'bg-primary-500' : 'bg-slate-700 group-hover:bg-primary-500'
+          dragging ? 'bg-primary-500' : 'bg-surface-raised group-hover:bg-primary-500'
         }`}
       />
     </div>

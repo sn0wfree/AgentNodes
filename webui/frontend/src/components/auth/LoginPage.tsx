@@ -31,36 +31,36 @@ export function LoginPage() {
 
   return (
     <div className="flex min-h-screen items-center justify-center bg-app px-4 py-8">
-      <div className="w-full max-w-sm rounded-2xl border border-slate-800 bg-surface p-6 shadow-soft sm:p-8">
+      <div className="w-full max-w-sm rounded-2xl border border-subtle bg-surface p-6 shadow-soft sm:p-8">
         <div className="mb-8">
-          <div className="mb-5 inline-flex h-10 w-10 items-center justify-center rounded-xl bg-slate-800 text-sm font-bold text-slate-100">
+          <div className="mb-5 inline-flex h-10 w-10 items-center justify-center rounded-xl bg-surface-raised text-sm font-bold text-foreground">
             AN
           </div>
-          <h1 className="text-xl font-semibold text-slate-100">AgentNodes</h1>
-          <p className="mt-1 text-sm text-slate-400">登录以进入会话工作台</p>
+          <h1 className="text-xl font-semibold text-foreground">AgentNodes</h1>
+          <p className="mt-1 text-sm text-muted">登录以进入会话工作台</p>
         </div>
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
-            <label htmlFor="login-username" className="mb-1 block text-sm text-slate-400">用户名</label>
+            <label htmlFor="login-username" className="mb-1 block text-sm text-muted">用户名</label>
             <input
               id="login-username"
               type="text"
               autoComplete="username"
               value={username}
               onChange={(e) => setUsername(e.target.value)}
-              className="w-full rounded-lg border border-slate-700 bg-slate-900 px-3 py-2 text-sm text-slate-100 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-500"
+              className="w-full rounded-lg border border-strong bg-slate-900 px-3 py-2 text-sm text-foreground focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-500"
               required
             />
           </div>
           <div>
-            <label htmlFor="login-password" className="mb-1 block text-sm text-slate-400">密码</label>
+            <label htmlFor="login-password" className="mb-1 block text-sm text-muted">密码</label>
             <input
               id="login-password"
               type="password"
               autoComplete="current-password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              className="w-full rounded-lg border border-slate-700 bg-slate-900 px-3 py-2 text-sm text-slate-100 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-500"
+              className="w-full rounded-lg border border-strong bg-slate-900 px-3 py-2 text-sm text-foreground focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-500"
               required
             />
           </div>
@@ -75,7 +75,7 @@ export function LoginPage() {
             {loading ? '登录中...' : '登录'}
           </button>
         </form>
-        <p className="mt-4 text-center text-sm text-slate-500">
+        <p className="mt-4 text-center text-sm text-muted">
           没有账号？{' '}
           <Link to="/register" className="text-sky-500 hover:underline">
             注册

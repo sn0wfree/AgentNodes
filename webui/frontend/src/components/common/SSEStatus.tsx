@@ -44,7 +44,7 @@ export function SSEStatus() {
       {llm.configured && llm.provider && (
         // 窄屏隐藏模型 chip：长 provider/model 串是顶栏 768/320 重叠的
         // 主挤压源（P0-5 实机矩阵发现）；模型身份仍在 composer 状态条可见。
-        <div className="hidden items-center gap-1 text-slate-400 border-l border-slate-700 pl-2 lg:flex">
+        <div className="hidden items-center gap-1 text-muted border-l border-strong pl-2 lg:flex">
           <Cpu className="h-3 w-3" />
           <span className="font-mono">
             {llm.provider}/{llm.model || 'default'}

@@ -40,14 +40,14 @@ export function PageShell({
       <div className="relative z-10 flex h-full w-full overflow-hidden">
         <IconNav />
         <div className="flex flex-1 flex-col overflow-hidden">
-          <header className="glass sticky top-0 z-20 flex h-12 flex-shrink-0 items-center justify-between border-b border-slate-800 px-4">
+          <header className="glass sticky top-0 z-20 flex h-12 flex-shrink-0 items-center justify-between border-b border-subtle px-4">
             <div className="flex min-w-0 items-center gap-2.5">
               <span className="text-primary-400">{icon}</span>
-              <h1 className="truncate text-sm font-semibold tracking-tight text-slate-100">
+              <h1 className="truncate text-sm font-semibold tracking-tight text-foreground">
                 {title}
               </h1>
               {subtitle && (
-                <span className="hidden truncate font-mono text-[10px] text-slate-500 md:inline">
+                <span className="hidden truncate font-mono text-[10px] text-muted md:inline">
                   {subtitle}
                 </span>
               )}
@@ -56,7 +56,7 @@ export function PageShell({
               <button
                 onClick={toggleTheme}
                 title={theme === 'dark' ? '切换到浅色模式' : '切换到深色模式'}
-                className="flex items-center gap-1.5 rounded-lg border border-slate-700 bg-slate-800/50 px-2.5 py-1.5 text-xs text-slate-400 transition-colors hover:border-slate-600 hover:text-slate-300"
+                className="flex items-center gap-1.5 rounded-lg border border-strong bg-surface px-2.5 py-1.5 text-xs text-muted transition-colors hover:border-strong hover:text-secondary"
               >
                 {theme === 'dark' ? (
                   <Sun className="h-3.5 w-3.5" />
@@ -69,7 +69,7 @@ export function PageShell({
           </header>
 
           {stickyBar && (
-            <div className="sticky top-12 z-10 flex-shrink-0 border-b border-slate-800 bg-slate-900/70 backdrop-blur">
+            <div className="sticky top-12 z-10 flex-shrink-0 border-b border-subtle bg-slate-900/70 backdrop-blur">
               {stickyBar}
             </div>
           )}

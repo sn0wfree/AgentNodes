@@ -20,7 +20,7 @@ export function ImageLightbox({ src, alt, open, onOpenChange }: ImageLightboxPro
             className="max-h-[90vh] max-w-[90vw] rounded-lg object-contain"
           />
           <Dialog.Close asChild>
-            <button className="absolute -right-3 -top-3 rounded-full bg-slate-800 p-2 text-slate-300 hover:text-white">
+            <button className="absolute -right-3 -top-3 rounded-full bg-surface-raised p-2 text-secondary hover:text-white">
               <X className="h-4 w-4" />
             </button>
           </Dialog.Close>

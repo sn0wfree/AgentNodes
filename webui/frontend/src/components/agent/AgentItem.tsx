@@ -14,7 +14,7 @@ interface AgentItemProps {
 }
 
 const STATUS_CONFIG = {
-  pending: { icon: Clock, color: 'text-slate-500', bg: 'bg-slate-500/10' },
+  pending: { icon: Clock, color: 'text-muted', bg: 'bg-slate-500/10' },
   running: { icon: Zap, color: 'text-warning-fg', bg: 'bg-warning-fill' },
   completed: { icon: CheckCircle, color: 'text-success-fg', bg: 'bg-success-surface' },
   failed: { icon: XCircle, color: 'text-danger-fg', bg: 'bg-danger-surface' },
@@ -25,8 +25,8 @@ const STATUS_CONFIG = {
 function IterationRow({ iteration }: { iteration: IterationDetail }) {
   return (
     <div className="flex items-center gap-2 py-1 text-[11px]">
-      <span className="w-5 text-right text-slate-500">#{iteration.iteration}</span>
-      <div className="flex-1 truncate text-slate-400">
+      <span className="w-5 text-right text-muted">#{iteration.iteration}</span>
+      <div className="flex-1 truncate text-muted">
         {iteration.tool_calls.length > 0 ? (
           <span className="flex items-center gap-1">
             <Zap className="h-3 w-3 text-warning-fg" />
@@ -35,10 +35,10 @@ function IterationRow({ iteration }: { iteration: IterationDetail }) {
         ) : iteration.thought ? (
           <span className="italic">思考中...</span>
         ) : (
-          <span className="text-slate-600">-</span>
+          <span className="text-muted">-</span>
         )}
       </div>
-      <span className="text-slate-600">{formatTime(iteration.timestamp)}</span>
+      <span className="text-muted">{formatTime(iteration.timestamp)}</span>
     </div>
   )
 }
@@ -54,7 +54,7 @@ export function AgentItem({ agent, onSelect, isSelected }: AgentItemProps) {
       className={`rounded-lg border transition-colors ${
         isSelected
           ? 'border-primary-500/50 bg-primary-500/5'
-          : 'border-slate-700/50 hover:border-slate-600'
+          : 'border-subtle hover:border-strong'
       }`}
     >
       {/* Main row */}
@@ -81,14 +81,14 @@ export function AgentItem({ agent, onSelect, isSelected }: AgentItemProps) {
         {/* Name + status */}
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2">
-            <span className="text-xs font-medium text-slate-200 truncate">
+            <span className="text-xs font-medium text-foreground truncate">
               {agent.name || agent.id.slice(0, 8)}
             </span>
             {isRunning && (
               <span className="h-1.5 w-1.5 rounded-full bg-warning animate-pulse" />
             )}
           </div>
-          <div className="flex items-center gap-2 text-[10px] text-slate-500">
+          <div className="flex items-center gap-2 text-[10px] text-muted">
             <span className={config.color}>{statusLabel(agent.status)}</span>
             {agent.tool_calls_count > 0 && (
               <span>{agent.tool_calls_count} 次调用</span>
@@ -101,17 +101,17 @@ export function AgentItem({ agent, onSelect, isSelected }: AgentItemProps) {
 
         {/* Expand arrow */}
         {expanded ? (
-          <ChevronDown className="h-3.5 w-3.5 text-slate-500" />
+          <ChevronDown className="h-3.5 w-3.5 text-muted" />
         ) : (
-          <ChevronRight className="h-3.5 w-3.5 text-slate-500" />
+          <ChevronRight className="h-3.5 w-3.5 text-muted" />
         )}
       </button>
 
       {/* Expanded: iteration history */}
       {expanded && (
-        <div className="border-t border-slate-700/50 px-3 py-2 space-y-0.5">
+        <div className="border-t border-subtle px-3 py-2 space-y-0.5">
           {agent.iterations_detail.length === 0 ? (
-            <div className="text-[11px] text-slate-600 italic py-1">暂无迭代记录</div>
+            <div className="text-[11px] text-muted italic py-1">暂无迭代记录</div>
           ) : (
             agent.iterations_detail.map((iter) => (
               <IterationRow key={iter.iteration} iteration={iter} />
@@ -119,7 +119,7 @@ export function AgentItem({ agent, onSelect, isSelected }: AgentItemProps) {
           )}
 
           {/* Metrics footer */}
-          <div className="flex items-center gap-3 pt-1.5 mt-1 border-t border-slate-700/30 text-[10px] text-slate-600">
+          <div className="flex items-center gap-3 pt-1.5 mt-1 border-t border-strong/30 text-[10px] text-muted">
             {agent.context_tokens > 0 && (
               <span>上下文: {Math.round(agent.context_tokens / 1000)}K</span>
             )}

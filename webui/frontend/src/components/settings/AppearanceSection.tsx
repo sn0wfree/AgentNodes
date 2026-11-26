@@ -27,7 +27,7 @@ export function AppearanceSection() {
     <Section icon={Palette} title="外观设置">
       <div className="space-y-3 text-sm">
         <div>
-          <p className="mb-2 text-slate-400">主题</p>
+          <p className="mb-2 text-muted">主题</p>
           <div className="flex gap-2">
             {themeOptions.map((opt) => (
               <ThemeBtn
@@ -40,9 +40,9 @@ export function AppearanceSection() {
           </div>
         </div>
         <div>
-          <p className="mb-2 text-slate-400">
+          <p className="mb-2 text-muted">
             字体大小
-            <span className="ml-2 text-xs text-slate-500">即将支持</span>
+            <span className="ml-2 text-xs text-muted">即将支持</span>
           </p>
           <div className="flex gap-2">
             <SizeBtn label="小" disabled />

@@ -72,11 +72,11 @@ export function TopBar() {
   const cancel = () => setEditing(false)
 
   return (
-    <header className="glass flex h-12 items-center justify-between gap-1 overflow-x-auto border-b border-slate-800 px-2 sm:px-4">
+    <header className="glass flex h-12 items-center justify-between gap-1 overflow-x-auto border-b border-subtle px-2 sm:px-4">
       <div className="flex items-center gap-3 min-w-0">
         {currentSession && (
           <div className="flex items-center gap-1 min-w-0">
-            <span className="text-xs text-slate-500 flex-shrink-0">/</span>
+            <span className="text-xs text-muted flex-shrink-0">/</span>
             {editing ? (
               <input
                 ref={inputRef}
@@ -92,20 +92,20 @@ export function TopBar() {
                     cancel()
                   }
                 }}
-                className="w-48 rounded border border-primary-500 bg-slate-900 px-1.5 py-0.5 text-xs text-slate-100 outline-none"
+                className="w-48 rounded border border-primary-500 bg-slate-900 px-1.5 py-0.5 text-xs text-foreground outline-none"
                 maxLength={80}
               />
             ) : (
               <>
                 <span
-                  className="truncate text-xs text-slate-300 max-w-[240px]"
+                  className="truncate text-xs text-secondary max-w-[240px]"
                   title={currentSession.title}
                 >
                   {currentSession.title}
                 </span>
                 <button
                   onClick={startEdit}
-                  className="flex h-5 w-5 items-center justify-center rounded text-slate-500 hover:bg-slate-800 hover:text-slate-300 flex-shrink-0"
+                  className="flex h-5 w-5 items-center justify-center rounded text-muted hover:bg-surface-raised hover:text-secondary flex-shrink-0"
                   title="重命名"
                 >
                   <Pencil className="h-3 w-3" />
@@ -114,7 +114,7 @@ export function TopBar() {
             )}
           </div>
         )}
-        <div className="ml-2 border-l border-slate-700 pl-2 min-w-0 overflow-hidden">
+        <div className="ml-2 border-l border-strong pl-2 min-w-0 overflow-hidden">
           <SSEStatus />
         </div>
       </div>
@@ -126,7 +126,7 @@ export function TopBar() {
             setDensity(next)
           }}
           title={`布局密度：${DENSITY_LABEL[density]}（点击切换）`}
-          className="flex items-center gap-1.5 rounded-lg border border-slate-700 bg-slate-800/50 px-1.5 sm:px-2.5 py-1.5 text-xs text-slate-400 transition-colors hover:border-slate-600 hover:text-slate-300"
+          className="flex items-center gap-1.5 rounded-lg border border-strong bg-surface px-1.5 sm:px-2.5 py-1.5 text-xs text-muted transition-colors hover:border-strong hover:text-secondary"
         >
           <Columns2 className="h-3.5 w-3.5" />
           <span className="hidden sm:inline">{DENSITY_LABEL[density]}</span>
@@ -136,7 +136,7 @@ export function TopBar() {
           title={thinkingCollapsed ? '展开思考过程' : '折叠思考过程'}
           className={`flex items-center gap-1.5 rounded-lg border px-1.5 sm:px-2.5 py-1.5 text-xs transition-colors ${
             thinkingCollapsed
-              ? 'border-slate-700 bg-slate-800/50 text-slate-400 hover:border-slate-600 hover:text-slate-300'
+              ? 'border-strong bg-surface text-muted hover:border-strong hover:text-secondary'
               : 'border-violet-500/50 bg-violet-500/10 text-thinking-fg hover:bg-violet-500/20'
           }`}
         >
@@ -146,7 +146,7 @@ export function TopBar() {
         <button
           onClick={toggleTheme}
           title={theme === 'dark' ? '切换到浅色模式' : '切换到深色模式'}
-          className="flex items-center gap-1.5 rounded-lg border border-slate-700 bg-slate-800/50 px-1.5 sm:px-2.5 py-1.5 text-xs text-slate-400 transition-colors hover:border-slate-600 hover:text-slate-300"
+          className="flex items-center gap-1.5 rounded-lg border border-strong bg-surface px-1.5 sm:px-2.5 py-1.5 text-xs text-muted transition-colors hover:border-strong hover:text-secondary"
         >
           {theme === 'dark' ? (
             <Sun className="h-3.5 w-3.5" />
@@ -157,7 +157,7 @@ export function TopBar() {
         <button
           onClick={toggleRightPanel}
           title={rightPanelVisible ? '隐藏右侧面板' : '显示右侧面板'}
-          className="flex items-center gap-1.5 rounded-lg border border-slate-700 bg-slate-800/50 px-1.5 sm:px-2.5 py-1.5 text-xs text-slate-400 hover:border-slate-600 hover:text-slate-300"
+          className="flex items-center gap-1.5 rounded-lg border border-strong bg-surface px-1.5 sm:px-2.5 py-1.5 text-xs text-muted hover:border-strong hover:text-secondary"
         >
           {rightPanelVisible ? (
             <PanelRightClose className="h-3.5 w-3.5" />
@@ -168,11 +168,11 @@ export function TopBar() {
         <button
           onClick={() => setSearchOpen(true)}
           aria-label="搜索消息"
-          className="flex items-center gap-2 rounded-lg border border-slate-700 bg-slate-800/50 px-1.5 sm:px-3 py-1.5 text-xs text-slate-400 hover:border-slate-600 hover:text-slate-300"
+          className="flex items-center gap-2 rounded-lg border border-strong bg-surface px-1.5 sm:px-3 py-1.5 text-xs text-muted hover:border-strong hover:text-secondary"
         >
           <Search className="h-3 w-3" />
           <span className="hidden sm:inline">搜索消息</span>
-          <kbd className="ml-2 hidden sm:inline rounded border border-slate-600 px-1.5 py-0.5 text-[10px] text-slate-500">
+          <kbd className="ml-2 hidden sm:inline rounded border border-strong px-1.5 py-0.5 text-[10px] text-muted">
             <Command className="inline h-2.5 w-2.5" /> K
           </kbd>
         </button>

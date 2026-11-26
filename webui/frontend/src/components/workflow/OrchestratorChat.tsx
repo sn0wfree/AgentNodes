@@ -105,11 +105,11 @@ export function OrchestratorChat({ dagId, getSnapshot, onApplyDag }: Orchestrato
         <button
           onClick={() => setCollapsed(false)}
           title="展开编排助手"
-          className="rounded-lg p-2 text-slate-400 transition-colors hover:bg-slate-800 hover:text-slate-200"
+          className="rounded-lg p-2 text-muted transition-colors hover:bg-surface-raised hover:text-foreground"
         >
           <MessageSquareText className="h-4 w-4" />
         </button>
-        <span className="mt-1 [writing-mode:vertical-rl] text-[10px] text-slate-500">编排助手</span>
+        <span className="mt-1 [writing-mode:vertical-rl] text-[10px] text-muted">编排助手</span>
       </aside>
     )
   }
@@ -123,7 +123,7 @@ export function OrchestratorChat({ dagId, getSnapshot, onApplyDag }: Orchestrato
         <button
           onClick={() => setCollapsed(true)}
           title="折叠"
-          className="ml-auto rounded p-1 text-slate-500 hover:bg-slate-800 hover:text-slate-300"
+          className="ml-auto rounded p-1 text-muted hover:bg-surface-raised hover:text-secondary"
         >
           <Minus className="h-3.5 w-3.5" />
         </button>

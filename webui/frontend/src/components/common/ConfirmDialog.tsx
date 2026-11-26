@@ -26,16 +26,16 @@ export function ConfirmDialog({
     <Dialog.Root open={open} onOpenChange={onOpenChange}>
       <Dialog.Portal>
         <Dialog.Overlay className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm" />
-        <Dialog.Content className="fixed left-1/2 top-1/2 z-50 w-full max-w-md -translate-x-1/2 -translate-y-1/2 rounded-xl bg-slate-800 p-6 shadow-2xl">
-          <Dialog.Title className="text-lg font-semibold text-slate-100">
+        <Dialog.Content className="fixed left-1/2 top-1/2 z-50 w-full max-w-md -translate-x-1/2 -translate-y-1/2 rounded-xl bg-surface-raised p-6 shadow-2xl">
+          <Dialog.Title className="text-lg font-semibold text-foreground">
             {title}
           </Dialog.Title>
-          <Dialog.Description className="mt-2 text-sm text-slate-400">
+          <Dialog.Description className="mt-2 text-sm text-muted">
             {description}
           </Dialog.Description>
           <div className="mt-6 flex justify-end gap-3">
             <Dialog.Close asChild>
-              <button className="rounded-lg px-4 py-2 text-sm text-slate-300 hover:bg-slate-700">
+              <button className="rounded-lg px-4 py-2 text-sm text-secondary hover:bg-surface-raised">
                 {cancelLabel}
               </button>
             </Dialog.Close>
@@ -49,7 +49,7 @@ export function ConfirmDialog({
             </button>
           </div>
           <Dialog.Close asChild>
-            <button className="absolute right-4 top-4 text-slate-400 hover:text-slate-200">
+            <button className="absolute right-4 top-4 text-muted hover:text-foreground">
               <X className="h-4 w-4" />
             </button>
           </Dialog.Close>

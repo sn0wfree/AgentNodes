@@ -51,9 +51,9 @@ export function GoalTab({ goal }: GoalTabProps) {
     <div className="space-y-6">
       {/* Goal header */}
       <div>
-        <h3 className="text-sm font-semibold text-slate-100 mb-1">{goal.title}</h3>
+        <h3 className="text-sm font-semibold text-foreground mb-1">{goal.title}</h3>
         {goal.description && (
-          <p className="text-xs text-slate-400 leading-relaxed">{goal.description}</p>
+          <p className="text-xs text-muted leading-relaxed">{goal.description}</p>
         )}
         <div className="flex items-center gap-2 mt-2">
           <span
@@ -73,13 +73,13 @@ export function GoalTab({ goal }: GoalTabProps) {
 
       {/* Criteria */}
       <div>
-        <h4 className="text-xs font-medium text-slate-400 mb-2">研究标准</h4>
+        <h4 className="text-xs font-medium text-muted mb-2">研究标准</h4>
         <CriteriaList criteria={goal.criteria} totalCriteria={totalCriteria} />
       </div>
 
       {/* Timeline */}
       <div>
-        <h4 className="text-xs font-medium text-slate-400 mb-2">活动时间线</h4>
+        <h4 className="text-xs font-medium text-muted mb-2">活动时间线</h4>
         <GoalTimeline events={goal.timeline} />
       </div>
     </div>

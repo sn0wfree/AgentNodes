@@ -112,12 +112,12 @@ export function SearchModal() {
       onClick={() => setOpen(false)}
     >
       <div
-        className="w-full max-w-2xl rounded-xl border border-slate-700 bg-slate-800 shadow-2xl"
+        className="w-full max-w-2xl rounded-xl border border-strong bg-surface-raised shadow-2xl"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Search input */}
-        <div className="flex items-center gap-3 border-b border-slate-700 px-4 py-3">
-          <Search className="h-4 w-4 text-slate-400" />
+        <div className="flex items-center gap-3 border-b border-strong px-4 py-3">
+          <Search className="h-4 w-4 text-muted" />
           <input
             ref={inputRef}
             value={query}
@@ -126,17 +126,17 @@ export function SearchModal() {
             }}
             onKeyDown={handleKeyDown}
             placeholder="搜索消息内容（支持中文/英文）..."
-            className="flex-1 bg-transparent text-sm text-slate-100 placeholder-slate-500 outline-none"
+            className="flex-1 bg-transparent text-sm text-foreground placeholder-slate-500 outline-none"
           />
           {query.trim() && isSearching && (
             <Loader2
               data-testid="search-spinner"
-              className="h-3.5 w-3.5 animate-spin text-slate-400"
+              className="h-3.5 w-3.5 animate-spin text-muted"
             />
           )}
           <button
             onClick={() => setOpen(false)}
-            className="flex h-6 w-6 items-center justify-center rounded text-slate-400 hover:bg-slate-700 hover:text-slate-200"
+            className="flex h-6 w-6 items-center justify-center rounded text-muted hover:bg-surface-raised hover:text-foreground"
           >
             <X className="h-3.5 w-3.5" />
           </button>
@@ -146,8 +146,8 @@ export function SearchModal() {
             once there are hits — hiding them keeps the empty state
             visually quiet. */}
         {filteredResults.length > 0 && (
-          <div className="flex items-center gap-2 border-b border-slate-800 px-4 py-2 text-[10px]">
-            <span className="text-slate-500">角色:</span>
+          <div className="flex items-center gap-2 border-b border-subtle px-4 py-2 text-[10px]">
+            <span className="text-muted">角色:</span>
             {([null, 'user', 'assistant', 'tool'] as const).map((r) => {
               const active = roleFilter === r
               const label =
@@ -161,7 +161,7 @@ export function SearchModal() {
                   className={`rounded px-2 py-0.5 transition-colors ${
                     active
                       ? 'bg-primary-600/30 text-primary-200'
-                      : 'text-slate-400 hover:bg-slate-700/50 hover:text-slate-200'
+                      : 'text-muted hover:bg-surface hover:text-foreground'
                   }`}
                 >
                   {label}
@@ -174,19 +174,19 @@ export function SearchModal() {
         {/* Results */}
         <div className="max-h-[60vh] overflow-y-auto p-2">
           {!query.trim() ? (
-            <div className="py-12 text-center text-sm text-slate-500">
+            <div className="py-12 text-center text-sm text-muted">
               输入关键词搜索所有会话的消息
             </div>
           ) : isSearching && filteredResults.length === 0 ? (
             <div
               data-testid="search-loading"
-              className="flex items-center justify-center gap-2 py-12 text-sm text-slate-500"
+              className="flex items-center justify-center gap-2 py-12 text-sm text-muted"
             >
               <Loader2 className="h-3.5 w-3.5 animate-spin" />
               <span>搜索中…</span>
             </div>
           ) : filteredResults.length === 0 ? (
-            <div className="py-12 text-center text-sm text-slate-500">
+            <div className="py-12 text-center text-sm text-muted">
               {roleFilter && results.length > 0
                 ? `没有匹配 "${roleFilter}" 角色的结果（共 ${results.length} 条已隐藏）`
                 : '未找到匹配结果'}
@@ -198,17 +198,17 @@ export function SearchModal() {
                 onClick={() => void handleSelect(hit)}
                 onMouseEnter={() => setSelectedIdx(idx)}
                 className={`flex w-full items-start gap-3 rounded-lg px-3 py-2.5 text-left transition-colors
-                  ${idx === selectedIdx ? 'bg-primary-600/20' : 'hover:bg-slate-700/50'}
+                  ${idx === selectedIdx ? 'bg-primary-600/20' : 'hover:bg-surface'}
                 `}
               >
                 <RoleIcon role={hit.role} />
                 <div className="min-w-0 flex-1">
                   <div className="flex items-center gap-2 text-xs">
-                    <span className="font-medium text-slate-200 truncate">
+                    <span className="font-medium text-foreground truncate">
                       {hit.session_title}
                     </span>
-                    <span className="text-slate-500">·</span>
-                    <span className="text-slate-500 text-[10px]">
+                    <span className="text-muted">·</span>
+                    <span className="text-muted text-[10px]">
                       {new Date(hit.created_at * 1000).toLocaleString('zh-CN', {
                         month: '2-digit',
                         day: '2-digit',
@@ -218,7 +218,7 @@ export function SearchModal() {
                     </span>
                   </div>
                   <div
-                    className="mt-1 text-xs text-slate-400 line-clamp-2 [&_mark]:bg-accent/30 [&_mark]:text-accent-100 [&_mark]:rounded-sm [&_mark]:px-0.5"
+                    className="mt-1 text-xs text-muted line-clamp-2 [&_mark]:bg-accent/30 [&_mark]:text-accent-100 [&_mark]:rounded-sm [&_mark]:px-0.5"
                     dangerouslySetInnerHTML={{ __html: safeSnippet(hit.snippet) }}
                   />
                 </div>
@@ -228,19 +228,19 @@ export function SearchModal() {
         </div>
 
         {/* Footer */}
-        <div className="flex items-center justify-between border-t border-slate-700 px-4 py-2 text-[10px] text-slate-500">
+        <div className="flex items-center justify-between border-t border-strong px-4 py-2 text-[10px] text-muted">
           <div className="flex items-center gap-3">
             <span className="flex items-center gap-1">
-              <kbd className="rounded border border-slate-700 px-1 py-0.5">↑</kbd>
-              <kbd className="rounded border border-slate-700 px-1 py-0.5">↓</kbd>
+              <kbd className="rounded border border-strong px-1 py-0.5">↑</kbd>
+              <kbd className="rounded border border-strong px-1 py-0.5">↓</kbd>
               导航
             </span>
             <span className="flex items-center gap-1">
-              <kbd className="rounded border border-slate-700 px-1 py-0.5">↵</kbd>
+              <kbd className="rounded border border-strong px-1 py-0.5">↵</kbd>
               打开
             </span>
             <span className="flex items-center gap-1">
-              <kbd className="rounded border border-slate-700 px-1 py-0.5">ESC</kbd>
+              <kbd className="rounded border border-strong px-1 py-0.5">ESC</kbd>
               关闭
             </span>
           </div>
@@ -271,7 +271,7 @@ function RoleIcon({ role }: { role: SearchHit['role'] }) {
     )
   }
   return (
-    <div className="flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-full bg-slate-700 text-slate-400">
+    <div className="flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-full bg-surface-raised text-muted">
       <FileText className="h-3 w-3" />
     </div>
   )

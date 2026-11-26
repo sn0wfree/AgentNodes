@@ -27,20 +27,20 @@ export function ApprovalDialog({
     <Dialog.Root open={open} onOpenChange={(v) => !v && !busy && onClose()}>
       <Dialog.Portal>
         <Dialog.Overlay className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm" />
-        <Dialog.Content className="fixed left-1/2 top-1/2 z-50 w-[480px] max-w-[92vw] -translate-x-1/2 -translate-y-1/2 rounded-xl border border-slate-700 bg-slate-900 p-5 shadow-2xl">
-          <Dialog.Title className="text-sm font-medium text-slate-100">
+        <Dialog.Content className="fixed left-1/2 top-1/2 z-50 w-[480px] max-w-[92vw] -translate-x-1/2 -translate-y-1/2 rounded-xl border border-strong bg-slate-900 p-5 shadow-2xl">
+          <Dialog.Title className="text-sm font-medium text-foreground">
             工作流等待人工确认
           </Dialog.Title>
-          <Dialog.Description className="mt-1 text-[11px] text-slate-400">
-            run: <span className="text-slate-300">{runId}</span> — 计划已生成，执行已暂停。
+          <Dialog.Description className="mt-1 text-[11px] text-muted">
+            run: <span className="text-secondary">{runId}</span> — 计划已生成，执行已暂停。
           </Dialog.Description>
 
-          <div className="mt-3 max-h-40 overflow-y-auto rounded border border-slate-800 bg-slate-950 p-2.5 text-[11px] leading-relaxed text-slate-300">
+          <div className="mt-3 max-h-40 overflow-y-auto rounded border border-subtle bg-slate-950 p-2.5 text-[11px] leading-relaxed text-secondary">
             {planPreview || '（无计划摘要）'}
           </div>
 
           <div className="mt-3">
-            <label className="mb-1 block text-[10px] text-slate-400">
+            <label className="mb-1 block text-[10px] text-muted">
               编辑意见（可选，拒绝时作为重规划依据）
             </label>
             <textarea
@@ -48,7 +48,7 @@ export function ApprovalDialog({
               onChange={(e) => setEdits(e.target.value)}
               rows={2}
               placeholder="例：换一个方向，先验证数据覆盖再回测"
-              className="w-full rounded border border-slate-700 bg-slate-950 px-2 py-1 text-xs text-slate-200 outline-none focus:border-primary-500"
+              className="w-full rounded border border-strong bg-slate-950 px-2 py-1 text-xs text-foreground outline-none focus:border-primary-500"
             />
           </div>
 

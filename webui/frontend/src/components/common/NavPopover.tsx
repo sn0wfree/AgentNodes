@@ -27,7 +27,7 @@ export function NavPopover({
           side={side}
           align={align}
           sideOffset={8}
-          className="z-50 rounded-lg border border-slate-700 bg-slate-900 shadow-2xl"
+          className="z-50 rounded-lg border border-strong bg-slate-900 shadow-2xl"
         >
           {children}
         </Popover.Content>
@@ -49,14 +49,14 @@ export function PopoverItem({ icon, label, description, active, onClick }: Popov
     <button
       onClick={onClick}
       className={`flex w-full items-center gap-2.5 px-3 py-2 text-left text-xs transition-colors
-        ${active ? 'bg-primary-600/20 text-primary-100' : 'text-slate-300 hover:bg-slate-800'}
+        ${active ? 'bg-primary-600/20 text-primary-100' : 'text-secondary hover:bg-surface-raised'}
       `}
     >
       {icon && <span className="flex-shrink-0">{icon}</span>}
       <div className="flex-1 min-w-0">
         <div className="truncate font-medium">{label}</div>
         {description && (
-          <div className="truncate text-[10px] text-slate-500">{description}</div>
+          <div className="truncate text-[10px] text-muted">{description}</div>
         )}
       </div>
     </button>

@@ -214,19 +214,19 @@ export function AppShell() {
         </div>
       </div>
       {initError && (
-        <div role="alert" className="absolute bottom-4 left-4 z-30 rounded-lg border border-red-500/30 bg-surface px-4 py-3 text-sm text-slate-100 shadow-elevated">
+        <div role="alert" className="absolute bottom-4 left-4 z-30 rounded-lg border border-red-500/30 bg-surface px-4 py-3 text-sm text-foreground shadow-elevated">
           <div>会话初始化失败：{initError.message}</div>
           {initError.retrying ? (
-            <div className="mt-1 text-xs text-slate-400">
+            <div className="mt-1 text-xs text-muted">
               正在重试…（第 {initError.attempt}/{initError.maxRetries} 次）
             </div>
           ) : (
-            <div className="mt-1 flex items-center gap-3 text-xs text-slate-400">
+            <div className="mt-1 flex items-center gap-3 text-xs text-muted">
               <span>已重试 {initError.attempt} 次仍未成功，请检查服务是否运行。</span>
               <button
                 type="button"
                 onClick={() => window.location.reload()}
-                className="rounded border border-slate-600 px-2 py-0.5 text-slate-200 hover:bg-slate-700"
+                className="rounded border border-strong px-2 py-0.5 text-foreground hover:bg-surface-raised"
               >
                 重新加载
               </button>

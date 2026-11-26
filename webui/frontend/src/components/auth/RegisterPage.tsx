@@ -40,40 +40,40 @@ export function RegisterPage() {
         <div className="grain-layer" />
       </div>
       <div className="glass-elevated relative z-10 w-full max-w-sm rounded-2xl p-8">
-        <h1 className="mb-6 text-center text-xl font-semibold text-slate-100">
+        <h1 className="mb-6 text-center text-xl font-semibold text-foreground">
           创建账号
         </h1>
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
-            <label htmlFor="reg-username" className="mb-1 block text-sm text-slate-400">用户名</label>
+            <label htmlFor="reg-username" className="mb-1 block text-sm text-muted">用户名</label>
             <input
               id="reg-username"
               type="text"
               value={username}
               onChange={(e) => setUsername(e.target.value)}
-              className="w-full rounded-lg border border-slate-700 bg-slate-800 px-3 py-2 text-sm text-slate-100 outline-none focus:border-primary-500"
+              className="w-full rounded-lg border border-strong bg-surface-raised px-3 py-2 text-sm text-foreground outline-none focus:border-primary-500"
               required
             />
           </div>
           <div>
-            <label htmlFor="reg-display" className="mb-1 block text-sm text-slate-400">显示名称</label>
+            <label htmlFor="reg-display" className="mb-1 block text-sm text-muted">显示名称</label>
             <input
               id="reg-display"
               type="text"
               value={displayName}
               onChange={(e) => setDisplayName(e.target.value)}
-              className="w-full rounded-lg border border-slate-700 bg-slate-800 px-3 py-2 text-sm text-slate-100 outline-none focus:border-primary-500"
+              className="w-full rounded-lg border border-strong bg-surface-raised px-3 py-2 text-sm text-foreground outline-none focus:border-primary-500"
               placeholder="可选"
             />
           </div>
           <div>
-            <label htmlFor="reg-password" className="mb-1 block text-sm text-slate-400">密码</label>
+            <label htmlFor="reg-password" className="mb-1 block text-sm text-muted">密码</label>
             <input
               id="reg-password"
               type="password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              className="w-full rounded-lg border border-slate-700 bg-slate-800 px-3 py-2 text-sm text-slate-100 outline-none focus:border-primary-500"
+              className="w-full rounded-lg border border-strong bg-surface-raised px-3 py-2 text-sm text-foreground outline-none focus:border-primary-500"
               required
             />
           </div>
@@ -88,7 +88,7 @@ export function RegisterPage() {
             {loading ? '注册中...' : '注册'}
           </button>
         </form>
-        <p className="mt-4 text-center text-sm text-slate-500">
+        <p className="mt-4 text-center text-sm text-muted">
           已有账号？{' '}
           <Link to="/login" className="text-primary-400 hover:underline">
             登录

@@ -42,10 +42,10 @@ function Stat({
   const Icon = tone === 'up' ? TrendingUp : tone === 'down' ? TrendingDown : null
   const color = tone === 'up' ? 'text-emerald-400'
     : tone === 'down' ? 'text-red-400'
-    : 'text-slate-200'
+    : 'text-foreground'
   return (
-    <div className="rounded border border-slate-800/50 bg-slate-900/40 px-2 py-1.5">
-      <div className="text-[9px] text-slate-500">{label}</div>
+    <div className="rounded border border-subtle bg-surface px-2 py-1.5">
+      <div className="text-[9px] text-muted">{label}</div>
       <div className={`flex items-center gap-1 font-mono text-xs ${color}`}>
         {Icon && <Icon className="h-3 w-3" />}
         {value}
@@ -76,12 +76,12 @@ export function EquityCurveCard({ curve, metrics }: Props) {
     )
     if (!hasMetrics) {
       return (
-        <div className="rounded-lg border border-slate-800/50 bg-slate-900/30 p-3">
-          <div className="mb-2 flex items-center gap-1.5 text-[10px] font-medium uppercase tracking-wider text-slate-500">
+        <div className="rounded-lg border border-subtle bg-slate-900/30 p-3">
+          <div className="mb-2 flex items-center gap-1.5 text-[10px] font-medium uppercase tracking-wider text-muted">
             <LineChartIcon className="h-3 w-3" />
             <span>表现曲线</span>
           </div>
-          <p className="py-6 text-center text-[11px] text-slate-500">
+          <p className="py-6 text-center text-[11px] text-muted">
             暂无回测净值数据
           </p>
         </div>
@@ -93,12 +93,12 @@ export function EquityCurveCard({ curve, metrics }: Props) {
       ? `${metrics.strategy}${metrics.run ? ` · ${metrics.run}` : ''}`
       : metrics?.run ?? '最近回测'
     return (
-      <div className="rounded-lg border border-slate-800/50 bg-slate-900/30 p-3">
-        <div className="mb-2 flex items-center gap-1.5 text-[10px] font-medium uppercase tracking-wider text-slate-500">
+      <div className="rounded-lg border border-subtle bg-slate-900/30 p-3">
+        <div className="mb-2 flex items-center gap-1.5 text-[10px] font-medium uppercase tracking-wider text-muted">
           <LineChartIcon className="h-3 w-3" />
           <span className="truncate">{subtitle}</span>
         </div>
-        <p className="mb-2 text-[10px] text-slate-500">
+        <p className="mb-2 text-[10px] text-muted">
           暂无曲线数据，以下为最近一次回测的关键指标
         </p>
         <div className="grid grid-cols-3 gap-2">
@@ -132,9 +132,9 @@ export function EquityCurveCard({ curve, metrics }: Props) {
   const color = up ? 'var(--success)' : 'var(--danger)'
 
   return (
-    <div className="rounded-lg border border-slate-800/50 bg-slate-900/30 p-3">
+    <div className="rounded-lg border border-subtle bg-slate-900/30 p-3">
       {/* Header */}
-      <div className="mb-2 flex items-center gap-1.5 text-[10px] font-medium uppercase tracking-wider text-slate-500">
+      <div className="mb-2 flex items-center gap-1.5 text-[10px] font-medium uppercase tracking-wider text-muted">
         <LineChartIcon className="h-3 w-3" />
         <span className="truncate">{curve.title}</span>
       </div>

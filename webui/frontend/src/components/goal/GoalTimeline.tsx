@@ -18,7 +18,7 @@ const EVENT_ICON = {
   evidence: <FileText className="h-3 w-3 text-success-fg" />,
   iteration: <Zap className="h-3 w-3 text-warning-fg" />,
   message: <MessageSquare className="h-3 w-3 text-info-fg" />,
-  system: <Clock className="h-3 w-3 text-slate-400" />,
+  system: <Clock className="h-3 w-3 text-muted" />,
 }
 
 const EVENT_DOT = {
@@ -34,7 +34,7 @@ export function GoalTimeline({ events }: GoalTimelineProps) {
 
   if (sorted.length === 0) {
     return (
-      <div className="text-xs text-slate-600 italic py-4 text-center">
+      <div className="text-xs text-muted italic py-4 text-center">
         暂无活动记录
       </div>
     )
@@ -43,7 +43,7 @@ export function GoalTimeline({ events }: GoalTimelineProps) {
   return (
     <div className="relative">
       {/* Vertical line */}
-      <div className="absolute left-[11px] top-2 bottom-2 w-px bg-slate-700/50" />
+      <div className="absolute left-[11px] top-2 bottom-2 w-px bg-surface" />
 
       <div className="space-y-3">
         {sorted.map((event) => (
@@ -55,16 +55,16 @@ export function GoalTimeline({ events }: GoalTimelineProps) {
             <div className="flex-1 min-w-0">
               <div className="flex items-center gap-1.5 mb-0.5">
                 {EVENT_ICON[event.type]}
-                <span className="text-[10px] text-slate-500">
+                <span className="text-[10px] text-muted">
                   {formatTimestamp(event.timestamp)}
                 </span>
                 {event.agent_id && (
-                  <span className="text-[10px] text-slate-600">
+                  <span className="text-[10px] text-muted">
                     · {event.agent_id.slice(0, 6)}
                   </span>
                 )}
               </div>
-              <p className="text-xs text-slate-300 leading-relaxed line-clamp-2">
+              <p className="text-xs text-secondary leading-relaxed line-clamp-2">
                 {event.content}
               </p>
             </div>

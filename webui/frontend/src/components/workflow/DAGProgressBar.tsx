@@ -16,7 +16,7 @@ export function DAGProgressBar({
   return (
     <div className="wf-panel flex items-center gap-3 border-t px-4 py-2">
       {/* Progress bar */}
-      <div className="flex-1 h-1.5 rounded-full bg-slate-800 overflow-hidden">
+      <div className="flex-1 h-1.5 rounded-full bg-surface-raised overflow-hidden">
         <div
           className="h-full rounded-full bg-primary-500 transition-all duration-300"
           style={{ width: `${Math.min(100, progress)}%` }}

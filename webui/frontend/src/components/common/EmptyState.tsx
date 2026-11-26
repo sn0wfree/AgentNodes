@@ -11,12 +11,12 @@ interface EmptyStateProps {
 export function EmptyState({ icon, title, description, action }: EmptyStateProps) {
   return (
     <div className="flex flex-col items-center justify-center py-12 text-center">
-      <div className="mb-4 text-slate-500">
+      <div className="mb-4 text-muted">
         {icon || <Inbox className="h-12 w-12" />}
       </div>
-      <h3 className="text-lg font-medium text-slate-200">{title}</h3>
+      <h3 className="text-lg font-medium text-foreground">{title}</h3>
       {description && (
-        <p className="mt-1 text-sm text-slate-400">{description}</p>
+        <p className="mt-1 text-sm text-muted">{description}</p>
       )}
       {action && <div className="mt-4">{action}</div>}
     </div>

@@ -48,10 +48,10 @@ function Stat({
   const Icon = tone === 'up' ? TrendingUp : tone === 'down' ? TrendingDown : null
   const color = tone === 'up' ? 'text-emerald-400'
     : tone === 'down' ? 'text-red-400'
-    : 'text-slate-200'
+    : 'text-foreground'
   return (
-    <div className="rounded border border-slate-800/50 bg-slate-900/40 px-2 py-1.5">
-      <div className="text-[9px] text-slate-500">{label}</div>
+    <div className="rounded border border-subtle bg-surface px-2 py-1.5">
+      <div className="text-[9px] text-muted">{label}</div>
       <div className={`flex items-center gap-1 font-mono text-xs ${color}`}>
         {Icon && <Icon className="h-3 w-3" />}
         {value}
@@ -116,15 +116,15 @@ export function PanelRenderCard({ item, metrics, curve }: Props) {
         : LineChartIcon
 
   return (
-    <div className="rounded-lg border border-slate-800/50 bg-slate-900/30 p-3">
-      <div className="mb-2 flex items-center gap-1.5 text-[10px] font-medium uppercase tracking-wider text-slate-500">
+    <div className="rounded-lg border border-subtle bg-slate-900/30 p-3">
+      <div className="mb-2 flex items-center gap-1.5 text-[10px] font-medium uppercase tracking-wider text-muted">
         <HeaderIcon className="h-3 w-3" />
         <span>表现曲线</span>
       </div>
 
       {item?.kind === 'chart' ? (
         <div>
-          {title && <div className="mb-2 text-xs text-slate-400">{title}</div>}
+          {title && <div className="mb-2 text-xs text-muted">{title}</div>}
           <ChartRenderer
             chart={{
               type: 'chart',
@@ -136,18 +136,18 @@ export function PanelRenderCard({ item, metrics, curve }: Props) {
         </div>
       ) : item?.kind === 'html' ? (
         <div>
-          {title && <div className="mb-2 text-xs text-slate-400">{title}</div>}
+          {title && <div className="mb-2 text-xs text-muted">{title}</div>}
           <iframe
             title={title}
             sandbox=""
             srcDoc={item.html!.content}
-            className="h-[260px] w-full rounded border border-slate-800 bg-white"
+            className="h-[260px] w-full rounded border border-subtle bg-white"
           />
         </div>
       ) : stats && curve ? (
         <div>
           {curve.title && (
-            <div className="mb-2 text-xs text-slate-400">{curve.title}</div>
+            <div className="mb-2 text-xs text-muted">{curve.title}</div>
           )}
           <div className="mb-2 grid grid-cols-3 gap-2">
             <Stat label="最新" value={fmt(stats.latest)} />
@@ -222,10 +222,10 @@ export function PanelRenderCard({ item, metrics, curve }: Props) {
               ? `${metrics.strategy}${metrics.run ? ` · ${metrics.run}` : ''}`
               : metrics?.run ?? '最近回测'
             return (
-              <div className="mb-2 text-[10px] text-slate-500">{subtitle}</div>
+              <div className="mb-2 text-[10px] text-muted">{subtitle}</div>
             )
           })()}
-          <p className="mb-2 text-[10px] text-slate-500">
+          <p className="mb-2 text-[10px] text-muted">
             暂无曲线数据，以下为最近一次回测的关键指标
           </p>
           <div className="grid grid-cols-3 gap-2">
@@ -253,7 +253,7 @@ export function PanelRenderCard({ item, metrics, curve }: Props) {
           </div>
         </div>
       ) : (
-        <p className="py-6 text-center text-[11px] text-slate-500">
+        <p className="py-6 text-center text-[11px] text-muted">
           暂无回测净值数据
         </p>
       )}

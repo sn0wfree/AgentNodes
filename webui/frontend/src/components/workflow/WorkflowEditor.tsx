@@ -407,17 +407,17 @@ function WorkflowEditorInner({ nodes, edges, onSave, saving, saveRef, dagId }: W
               }}
               onDragEnd={() => { dragTypeRef.current = null }}
               onClick={() => addNode(p.type)}
-              className="group flex items-center gap-2.5 rounded-lg border border-slate-700/60 bg-slate-900 px-2.5 py-2 text-left transition-colors hover:border-slate-500 hover:bg-slate-800 dark-mode-card"
+              className="group flex items-center gap-2.5 rounded-lg border border-subtle bg-slate-900 px-2.5 py-2 text-left transition-colors hover:border-slate-500 hover:bg-surface-raised dark-mode-card"
               title={`${p.desc}\n点击添加，或拖拽到画布指定位置`}
             >
               <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg" style={{ backgroundColor: `${p.color}22`, color: p.color, boxShadow: `inset 0 0 0 1px ${p.color}44` }}>
                 <Icon className="h-4 w-4" />
               </span>
               <span className="min-w-0">
-                <span className="block text-[13px] font-medium leading-tight text-slate-100 wf-card-title">{p.label}</span>
-                <span className="mt-0.5 block truncate font-mono text-[11px] leading-tight text-slate-400 wf-card-sub">{p.type}</span>
+                <span className="block text-[13px] font-medium leading-tight text-foreground wf-card-title">{p.label}</span>
+                <span className="mt-0.5 block truncate font-mono text-[11px] leading-tight text-muted wf-card-sub">{p.type}</span>
               </span>
-              <Plus className="ml-auto h-3.5 w-3.5 shrink-0 text-slate-500 group-hover:text-slate-300 wf-card-plus" />
+              <Plus className="ml-auto h-3.5 w-3.5 shrink-0 text-muted group-hover:text-secondary wf-card-plus" />
             </button>
           )
         })}
@@ -431,7 +431,7 @@ function WorkflowEditorInner({ nodes, edges, onSave, saving, saveRef, dagId }: W
         {rfNodes.length === 0 && (
           <div className="pointer-events-none absolute inset-0 z-10 flex items-center justify-center">
             <div className="wf-panel rounded-2xl border border-dashed px-9 py-8 text-center backdrop-blur-sm">
-              <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-xl border border-slate-600 bg-slate-800/90 shadow-lg">
+              <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-xl border border-strong bg-surface-raised/90 shadow-lg">
                 <Plus className="h-5 w-5 text-primary-400" />
               </div>
               <div className="wf-text-main text-sm font-medium">空画布</div>
@@ -489,7 +489,7 @@ function WorkflowEditorInner({ nodes, edges, onSave, saving, saveRef, dagId }: W
             onClick={undo}
             disabled={!canUndo}
             title="撤销 (Ctrl+Z)"
-            className="wf-panel wf-text-sub inline-flex items-center gap-1 rounded-lg border px-2.5 py-1.5 text-[10px] shadow-md backdrop-blur-sm hover:bg-slate-800 hover:text-slate-200 disabled:opacity-40"
+            className="wf-panel wf-text-sub inline-flex items-center gap-1 rounded-lg border px-2.5 py-1.5 text-[10px] shadow-md backdrop-blur-sm hover:bg-surface-raised hover:text-foreground disabled:opacity-40"
           >
             <Undo2 className="h-3 w-3" /> 撤销
           </button>
@@ -497,7 +497,7 @@ function WorkflowEditorInner({ nodes, edges, onSave, saving, saveRef, dagId }: W
             onClick={redo}
             disabled={!canRedo}
             title="重做 (Ctrl+Shift+Z)"
-            className="wf-panel wf-text-sub inline-flex items-center gap-1 rounded-lg border px-2.5 py-1.5 text-[10px] shadow-md backdrop-blur-sm hover:bg-slate-800 hover:text-slate-200 disabled:opacity-40"
+            className="wf-panel wf-text-sub inline-flex items-center gap-1 rounded-lg border px-2.5 py-1.5 text-[10px] shadow-md backdrop-blur-sm hover:bg-surface-raised hover:text-foreground disabled:opacity-40"
           >
             <Redo2 className="h-3 w-3" /> 重做
           </button>
@@ -505,7 +505,7 @@ function WorkflowEditorInner({ nodes, edges, onSave, saving, saveRef, dagId }: W
             onClick={autoLayout}
             disabled={rfNodes.length === 0}
             title="dagre 自动布局"
-            className="wf-panel wf-text-sub inline-flex items-center gap-1 rounded-lg border px-2.5 py-1.5 text-[10px] shadow-md backdrop-blur-sm hover:bg-slate-800 hover:text-slate-200 disabled:opacity-40"
+            className="wf-panel wf-text-sub inline-flex items-center gap-1 rounded-lg border px-2.5 py-1.5 text-[10px] shadow-md backdrop-blur-sm hover:bg-surface-raised hover:text-foreground disabled:opacity-40"
           >
             <LayoutGrid className="h-3 w-3" /> 自动布局
           </button>
