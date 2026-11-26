@@ -87,6 +87,28 @@ Tailwind 现状（`tailwind.config.js:31-34`）：**只映射了 warning 三个�
 
 每批独立提交；`git revert` 即可。令牌新增批无视觉变化，回滚零风险；组件替换批回滚后恢复原硬编码色（含原对比度问题）。
 
+## 8. 后续：theme.json 完整控制配色（2026-11-26 · 计划先行）
+
+C1-C4 + 配色统一阶段 1-3 已完成（theme.json 注入链路已通），但审计发现覆盖不全：
+- 内置默认只含 13 个变量；`globals.css` dark 有 67 个、light 有 157 个（含大量无消费者的 space/radius/font 死 token）
+- 剩余 686 处色阶硬编码（79 文件），其中 slate/gray 中性 ~280 处可迁语义类；emerald/red/rose/sky 等业务语义色需映射到 success/danger/warning/info 组；viz 图表色与 identity 品牌色按 C 批 allowlist 保持豁免
+
+目标：**theme.json 能完整控制前端页面配色的每个细节**。分两步：
+
+**第 1 步 · 内置默认全量提取（低风险）**
+- `_BUILTIN_THEME` 不再手写 13 项，改为从 `globals.css` 自动提取全部**颜色类变量**（dark/light 各自解析；排除 space/radius/font/alpha 等非颜色 token）
+- 提取逻辑放后端单模块，进程内缓存；测试断言：内置默认覆盖所有 `globals.css` 颜色变量（防漂移）
+- theme.json 部分覆盖语义不变；用户可写任意已声明变量覆盖
+- 验证：后端全量 + 架构门禁 + 真机覆盖测试
+
+**第 2 步 · 剩余硬编码迁移（按风险分批）**
+- 批 2a：slate/gray 中性色 ~280 处 → `text-muted`/`text-secondary`/`bg-surface`/`border-*` 等（复用阶段 2 codemod 映射表）
+- 批 2b：业务语义色（emerald→success / red→danger / sky→info / violet→thinking / rose→danger）→ 由 theme.json 的状态色组控制；viz/identity 白名单文件不动
+- 每批全量测试 + tsc/build + token hygiene 门禁；硬编码总数目标降到 ~200（仅剩白名单合法用法）
+
+**验收**：theme.json 写入任一 CSS 颜色变量 → 接口返回 + 前端渲染生效；状态色组改动 → 全站成功/危险/警告/思考/信息色同步变化。
+**不做**：非颜色 token（space/radius/font-size）纳入主题控制——它们 0 消费者且属独立设计刻度体系；不改 viz/identity 视觉。
+
 ## 8. 实施记录（2026-11-24，用户「开始实施」后执行）
 
 | 批 | 实际落地 | 偏差 |
