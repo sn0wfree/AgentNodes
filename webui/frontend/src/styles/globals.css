@@ -326,32 +326,82 @@
   --wf-card-title-fg: var(--foreground); --wf-card-sub-fg: var(--muted-foreground);
   --wf-card-plus-fg: var(--muted-foreground); --wf-minimap-bg: transparent;
   --wf-minimap-mask: rgba(0, 0, 0, 0.7); /* MiniMap 遮罩（§9 配置化，原值 1:1） */
-  /* §9 批 6：语义槽——主色族 → 角色槽 → 材质。theme.json 的 roles 改这里。 */
-  /* success：主色族 emerald */
-  --success-50-rgb: var(--emerald-50-rgb); --success-100-rgb: var(--emerald-100-rgb); --success-200-rgb: var(--emerald-200-rgb);
-  --success-300-rgb: var(--emerald-300-rgb); --success-400-rgb: var(--emerald-400-rgb); --success-500-rgb: var(--emerald-500-rgb);
-  --success-600-rgb: var(--emerald-600-rgb); --success-700-rgb: var(--emerald-700-rgb); --success-800-rgb: var(--emerald-800-rgb);
-  --success-900-rgb: var(--emerald-900-rgb); --success-950-rgb: var(--emerald-950-rgb);
-  /* danger：主色族 rose */
-  --danger-50-rgb: var(--rose-50-rgb); --danger-100-rgb: var(--rose-100-rgb); --danger-200-rgb: var(--rose-200-rgb);
-  --danger-300-rgb: var(--rose-300-rgb); --danger-400-rgb: var(--rose-400-rgb); --danger-500-rgb: var(--rose-500-rgb);
-  --danger-600-rgb: var(--rose-600-rgb); --danger-700-rgb: var(--rose-700-rgb); --danger-800-rgb: var(--rose-800-rgb);
-  --danger-900-rgb: var(--rose-900-rgb); --danger-950-rgb: var(--rose-950-rgb);
-  /* info：主色族 sky */
-  --info-50-rgb: var(--sky-50-rgb); --info-100-rgb: var(--sky-100-rgb); --info-200-rgb: var(--sky-200-rgb);
-  --info-300-rgb: var(--sky-300-rgb); --info-400-rgb: var(--sky-400-rgb); --info-500-rgb: var(--sky-500-rgb);
-  --info-600-rgb: var(--sky-600-rgb); --info-700-rgb: var(--sky-700-rgb); --info-800-rgb: var(--sky-800-rgb);
-  --info-900-rgb: var(--sky-900-rgb); --info-950-rgb: var(--sky-950-rgb);
-  /* thinking：主色族 indigo */
-  --thinking-50-rgb: var(--indigo-50-rgb); --thinking-100-rgb: var(--indigo-100-rgb); --thinking-200-rgb: var(--indigo-200-rgb);
-  --thinking-300-rgb: var(--indigo-300-rgb); --thinking-400-rgb: var(--indigo-400-rgb); --thinking-500-rgb: var(--indigo-500-rgb);
-  --thinking-600-rgb: var(--indigo-600-rgb); --thinking-700-rgb: var(--indigo-700-rgb); --thinking-800-rgb: var(--indigo-800-rgb);
-  --thinking-900-rgb: var(--indigo-900-rgb); --thinking-950-rgb: var(--indigo-950-rgb);
-  /* warning：主色族 orange */
-  --warning-50-rgb: var(--orange-50-rgb); --warning-100-rgb: var(--orange-100-rgb); --warning-200-rgb: var(--orange-200-rgb);
-  --warning-300-rgb: var(--orange-300-rgb); --warning-400-rgb: var(--orange-400-rgb); --warning-500-rgb: var(--orange-500-rgb);
-  --warning-600-rgb: var(--orange-600-rgb); --warning-700-rgb: var(--orange-700-rgb); --warning-800-rgb: var(--orange-800-rgb);
-  --warning-900-rgb: var(--orange-900-rgb); --warning-950-rgb: var(--orange-950-rgb);
+  /* §9 批 7：语义槽（角色+族）。theme.json 的 roles 改这里，组件零改动。 */
+  /* success / emerald */
+  --success-emerald-50-rgb: var(--emerald-50-rgb); --success-emerald-100-rgb: var(--emerald-100-rgb); --success-emerald-200-rgb: var(--emerald-200-rgb);
+  --success-emerald-300-rgb: var(--emerald-300-rgb); --success-emerald-400-rgb: var(--emerald-400-rgb); --success-emerald-500-rgb: var(--emerald-500-rgb);
+  --success-emerald-600-rgb: var(--emerald-600-rgb); --success-emerald-700-rgb: var(--emerald-700-rgb); --success-emerald-800-rgb: var(--emerald-800-rgb);
+  --success-emerald-900-rgb: var(--emerald-900-rgb); --success-emerald-950-rgb: var(--emerald-950-rgb);
+  /* success / green */
+  --success-green-50-rgb: var(--green-50-rgb); --success-green-100-rgb: var(--green-100-rgb); --success-green-200-rgb: var(--green-200-rgb);
+  --success-green-300-rgb: var(--green-300-rgb); --success-green-400-rgb: var(--green-400-rgb); --success-green-500-rgb: var(--green-500-rgb);
+  --success-green-600-rgb: var(--green-600-rgb); --success-green-700-rgb: var(--green-700-rgb); --success-green-800-rgb: var(--green-800-rgb);
+  --success-green-900-rgb: var(--green-900-rgb); --success-green-950-rgb: var(--green-950-rgb);
+  /* danger / rose */
+  --danger-rose-50-rgb: var(--rose-50-rgb); --danger-rose-100-rgb: var(--rose-100-rgb); --danger-rose-200-rgb: var(--rose-200-rgb);
+  --danger-rose-300-rgb: var(--rose-300-rgb); --danger-rose-400-rgb: var(--rose-400-rgb); --danger-rose-500-rgb: var(--rose-500-rgb);
+  --danger-rose-600-rgb: var(--rose-600-rgb); --danger-rose-700-rgb: var(--rose-700-rgb); --danger-rose-800-rgb: var(--rose-800-rgb);
+  --danger-rose-900-rgb: var(--rose-900-rgb); --danger-rose-950-rgb: var(--rose-950-rgb);
+  /* danger / red */
+  --danger-red-50-rgb: var(--red-50-rgb); --danger-red-100-rgb: var(--red-100-rgb); --danger-red-200-rgb: var(--red-200-rgb);
+  --danger-red-300-rgb: var(--red-300-rgb); --danger-red-400-rgb: var(--red-400-rgb); --danger-red-500-rgb: var(--red-500-rgb);
+  --danger-red-600-rgb: var(--red-600-rgb); --danger-red-700-rgb: var(--red-700-rgb); --danger-red-800-rgb: var(--red-800-rgb);
+  --danger-red-900-rgb: var(--red-900-rgb); --danger-red-950-rgb: var(--red-950-rgb);
+  /* danger / pink */
+  --danger-pink-50-rgb: var(--pink-50-rgb); --danger-pink-100-rgb: var(--pink-100-rgb); --danger-pink-200-rgb: var(--pink-200-rgb);
+  --danger-pink-300-rgb: var(--pink-300-rgb); --danger-pink-400-rgb: var(--pink-400-rgb); --danger-pink-500-rgb: var(--pink-500-rgb);
+  --danger-pink-600-rgb: var(--pink-600-rgb); --danger-pink-700-rgb: var(--pink-700-rgb); --danger-pink-800-rgb: var(--pink-800-rgb);
+  --danger-pink-900-rgb: var(--pink-900-rgb); --danger-pink-950-rgb: var(--pink-950-rgb);
+  /* info / sky */
+  --info-sky-50-rgb: var(--sky-50-rgb); --info-sky-100-rgb: var(--sky-100-rgb); --info-sky-200-rgb: var(--sky-200-rgb);
+  --info-sky-300-rgb: var(--sky-300-rgb); --info-sky-400-rgb: var(--sky-400-rgb); --info-sky-500-rgb: var(--sky-500-rgb);
+  --info-sky-600-rgb: var(--sky-600-rgb); --info-sky-700-rgb: var(--sky-700-rgb); --info-sky-800-rgb: var(--sky-800-rgb);
+  --info-sky-900-rgb: var(--sky-900-rgb); --info-sky-950-rgb: var(--sky-950-rgb);
+  /* info / cyan */
+  --info-cyan-50-rgb: var(--cyan-50-rgb); --info-cyan-100-rgb: var(--cyan-100-rgb); --info-cyan-200-rgb: var(--cyan-200-rgb);
+  --info-cyan-300-rgb: var(--cyan-300-rgb); --info-cyan-400-rgb: var(--cyan-400-rgb); --info-cyan-500-rgb: var(--cyan-500-rgb);
+  --info-cyan-600-rgb: var(--cyan-600-rgb); --info-cyan-700-rgb: var(--cyan-700-rgb); --info-cyan-800-rgb: var(--cyan-800-rgb);
+  --info-cyan-900-rgb: var(--cyan-900-rgb); --info-cyan-950-rgb: var(--cyan-950-rgb);
+  /* info / teal */
+  --info-teal-50-rgb: var(--teal-50-rgb); --info-teal-100-rgb: var(--teal-100-rgb); --info-teal-200-rgb: var(--teal-200-rgb);
+  --info-teal-300-rgb: var(--teal-300-rgb); --info-teal-400-rgb: var(--teal-400-rgb); --info-teal-500-rgb: var(--teal-500-rgb);
+  --info-teal-600-rgb: var(--teal-600-rgb); --info-teal-700-rgb: var(--teal-700-rgb); --info-teal-800-rgb: var(--teal-800-rgb);
+  --info-teal-900-rgb: var(--teal-900-rgb); --info-teal-950-rgb: var(--teal-950-rgb);
+  /* thinking / indigo */
+  --thinking-indigo-50-rgb: var(--indigo-50-rgb); --thinking-indigo-100-rgb: var(--indigo-100-rgb); --thinking-indigo-200-rgb: var(--indigo-200-rgb);
+  --thinking-indigo-300-rgb: var(--indigo-300-rgb); --thinking-indigo-400-rgb: var(--indigo-400-rgb); --thinking-indigo-500-rgb: var(--indigo-500-rgb);
+  --thinking-indigo-600-rgb: var(--indigo-600-rgb); --thinking-indigo-700-rgb: var(--indigo-700-rgb); --thinking-indigo-800-rgb: var(--indigo-800-rgb);
+  --thinking-indigo-900-rgb: var(--indigo-900-rgb); --thinking-indigo-950-rgb: var(--indigo-950-rgb);
+  /* thinking / violet */
+  --thinking-violet-50-rgb: var(--violet-50-rgb); --thinking-violet-100-rgb: var(--violet-100-rgb); --thinking-violet-200-rgb: var(--violet-200-rgb);
+  --thinking-violet-300-rgb: var(--violet-300-rgb); --thinking-violet-400-rgb: var(--violet-400-rgb); --thinking-violet-500-rgb: var(--violet-500-rgb);
+  --thinking-violet-600-rgb: var(--violet-600-rgb); --thinking-violet-700-rgb: var(--violet-700-rgb); --thinking-violet-800-rgb: var(--violet-800-rgb);
+  --thinking-violet-900-rgb: var(--violet-900-rgb); --thinking-violet-950-rgb: var(--violet-950-rgb);
+  /* thinking / purple */
+  --thinking-purple-50-rgb: var(--purple-50-rgb); --thinking-purple-100-rgb: var(--purple-100-rgb); --thinking-purple-200-rgb: var(--purple-200-rgb);
+  --thinking-purple-300-rgb: var(--purple-300-rgb); --thinking-purple-400-rgb: var(--purple-400-rgb); --thinking-purple-500-rgb: var(--purple-500-rgb);
+  --thinking-purple-600-rgb: var(--purple-600-rgb); --thinking-purple-700-rgb: var(--purple-700-rgb); --thinking-purple-800-rgb: var(--purple-800-rgb);
+  --thinking-purple-900-rgb: var(--purple-900-rgb); --thinking-purple-950-rgb: var(--purple-950-rgb);
+  /* thinking / fuchsia */
+  --thinking-fuchsia-50-rgb: var(--fuchsia-50-rgb); --thinking-fuchsia-100-rgb: var(--fuchsia-100-rgb); --thinking-fuchsia-200-rgb: var(--fuchsia-200-rgb);
+  --thinking-fuchsia-300-rgb: var(--fuchsia-300-rgb); --thinking-fuchsia-400-rgb: var(--fuchsia-400-rgb); --thinking-fuchsia-500-rgb: var(--fuchsia-500-rgb);
+  --thinking-fuchsia-600-rgb: var(--fuchsia-600-rgb); --thinking-fuchsia-700-rgb: var(--fuchsia-700-rgb); --thinking-fuchsia-800-rgb: var(--fuchsia-800-rgb);
+  --thinking-fuchsia-900-rgb: var(--fuchsia-900-rgb); --thinking-fuchsia-950-rgb: var(--fuchsia-950-rgb);
+  /* warning / orange */
+  --warning-orange-50-rgb: var(--orange-50-rgb); --warning-orange-100-rgb: var(--orange-100-rgb); --warning-orange-200-rgb: var(--orange-200-rgb);
+  --warning-orange-300-rgb: var(--orange-300-rgb); --warning-orange-400-rgb: var(--orange-400-rgb); --warning-orange-500-rgb: var(--orange-500-rgb);
+  --warning-orange-600-rgb: var(--orange-600-rgb); --warning-orange-700-rgb: var(--orange-700-rgb); --warning-orange-800-rgb: var(--orange-800-rgb);
+  --warning-orange-900-rgb: var(--orange-900-rgb); --warning-orange-950-rgb: var(--orange-950-rgb);
+  /* warning / amber */
+  --warning-amber-50-rgb: var(--amber-50-rgb); --warning-amber-100-rgb: var(--amber-100-rgb); --warning-amber-200-rgb: var(--amber-200-rgb);
+  --warning-amber-300-rgb: var(--amber-300-rgb); --warning-amber-400-rgb: var(--amber-400-rgb); --warning-amber-500-rgb: var(--amber-500-rgb);
+  --warning-amber-600-rgb: var(--amber-600-rgb); --warning-amber-700-rgb: var(--amber-700-rgb); --warning-amber-800-rgb: var(--amber-800-rgb);
+  --warning-amber-900-rgb: var(--amber-900-rgb); --warning-amber-950-rgb: var(--amber-950-rgb);
+  /* warning / yellow */
+  --warning-yellow-50-rgb: var(--yellow-50-rgb); --warning-yellow-100-rgb: var(--yellow-100-rgb); --warning-yellow-200-rgb: var(--yellow-200-rgb);
+  --warning-yellow-300-rgb: var(--yellow-300-rgb); --warning-yellow-400-rgb: var(--yellow-400-rgb); --warning-yellow-500-rgb: var(--yellow-500-rgb);
+  --warning-yellow-600-rgb: var(--yellow-600-rgb); --warning-yellow-700-rgb: var(--yellow-700-rgb); --warning-yellow-800-rgb: var(--yellow-800-rgb);
+  --warning-yellow-900-rgb: var(--yellow-900-rgb); --warning-yellow-950-rgb: var(--yellow-950-rgb);
   color-scheme: dark;
   color: var(--foreground);
   background-color: var(--background);
@@ -671,32 +721,82 @@
   --wf-card-title-fg: #1a1a1a; --wf-card-sub-fg: #64748b;
   --wf-card-plus-fg: #94a3b8; --wf-minimap-bg: #ffffff;
   --wf-minimap-mask: rgba(0, 0, 0, 0.7); /* MiniMap 遮罩（§9 配置化，原值 1:1） */
-  /* §9 批 6：语义槽——主色族 → 角色槽 → 材质。theme.json 的 roles 改这里。 */
-  /* success：主色族 emerald */
-  --success-50-rgb: var(--emerald-50-rgb); --success-100-rgb: var(--emerald-100-rgb); --success-200-rgb: var(--emerald-200-rgb);
-  --success-300-rgb: var(--emerald-300-rgb); --success-400-rgb: var(--emerald-400-rgb); --success-500-rgb: var(--emerald-500-rgb);
-  --success-600-rgb: var(--emerald-600-rgb); --success-700-rgb: var(--emerald-700-rgb); --success-800-rgb: var(--emerald-800-rgb);
-  --success-900-rgb: var(--emerald-900-rgb); --success-950-rgb: var(--emerald-950-rgb);
-  /* danger：主色族 rose */
-  --danger-50-rgb: var(--rose-50-rgb); --danger-100-rgb: var(--rose-100-rgb); --danger-200-rgb: var(--rose-200-rgb);
-  --danger-300-rgb: var(--rose-300-rgb); --danger-400-rgb: var(--rose-400-rgb); --danger-500-rgb: var(--rose-500-rgb);
-  --danger-600-rgb: var(--rose-600-rgb); --danger-700-rgb: var(--rose-700-rgb); --danger-800-rgb: var(--rose-800-rgb);
-  --danger-900-rgb: var(--rose-900-rgb); --danger-950-rgb: var(--rose-950-rgb);
-  /* info：主色族 sky */
-  --info-50-rgb: var(--sky-50-rgb); --info-100-rgb: var(--sky-100-rgb); --info-200-rgb: var(--sky-200-rgb);
-  --info-300-rgb: var(--sky-300-rgb); --info-400-rgb: var(--sky-400-rgb); --info-500-rgb: var(--sky-500-rgb);
-  --info-600-rgb: var(--sky-600-rgb); --info-700-rgb: var(--sky-700-rgb); --info-800-rgb: var(--sky-800-rgb);
-  --info-900-rgb: var(--sky-900-rgb); --info-950-rgb: var(--sky-950-rgb);
-  /* thinking：主色族 indigo */
-  --thinking-50-rgb: var(--indigo-50-rgb); --thinking-100-rgb: var(--indigo-100-rgb); --thinking-200-rgb: var(--indigo-200-rgb);
-  --thinking-300-rgb: var(--indigo-300-rgb); --thinking-400-rgb: var(--indigo-400-rgb); --thinking-500-rgb: var(--indigo-500-rgb);
-  --thinking-600-rgb: var(--indigo-600-rgb); --thinking-700-rgb: var(--indigo-700-rgb); --thinking-800-rgb: var(--indigo-800-rgb);
-  --thinking-900-rgb: var(--indigo-900-rgb); --thinking-950-rgb: var(--indigo-950-rgb);
-  /* warning：主色族 orange */
-  --warning-50-rgb: var(--orange-50-rgb); --warning-100-rgb: var(--orange-100-rgb); --warning-200-rgb: var(--orange-200-rgb);
-  --warning-300-rgb: var(--orange-300-rgb); --warning-400-rgb: var(--orange-400-rgb); --warning-500-rgb: var(--orange-500-rgb);
-  --warning-600-rgb: var(--orange-600-rgb); --warning-700-rgb: var(--orange-700-rgb); --warning-800-rgb: var(--orange-800-rgb);
-  --warning-900-rgb: var(--orange-900-rgb); --warning-950-rgb: var(--orange-950-rgb);
+  /* §9 批 7：语义槽（角色+族）。theme.json 的 roles 改这里，组件零改动。 */
+  /* success / emerald */
+  --success-emerald-50-rgb: var(--emerald-50-rgb); --success-emerald-100-rgb: var(--emerald-100-rgb); --success-emerald-200-rgb: var(--emerald-200-rgb);
+  --success-emerald-300-rgb: var(--emerald-300-rgb); --success-emerald-400-rgb: var(--emerald-400-rgb); --success-emerald-500-rgb: var(--emerald-500-rgb);
+  --success-emerald-600-rgb: var(--emerald-600-rgb); --success-emerald-700-rgb: var(--emerald-700-rgb); --success-emerald-800-rgb: var(--emerald-800-rgb);
+  --success-emerald-900-rgb: var(--emerald-900-rgb); --success-emerald-950-rgb: var(--emerald-950-rgb);
+  /* success / green */
+  --success-green-50-rgb: var(--green-50-rgb); --success-green-100-rgb: var(--green-100-rgb); --success-green-200-rgb: var(--green-200-rgb);
+  --success-green-300-rgb: var(--green-300-rgb); --success-green-400-rgb: var(--green-400-rgb); --success-green-500-rgb: var(--green-500-rgb);
+  --success-green-600-rgb: var(--green-600-rgb); --success-green-700-rgb: var(--green-700-rgb); --success-green-800-rgb: var(--green-800-rgb);
+  --success-green-900-rgb: var(--green-900-rgb); --success-green-950-rgb: var(--green-950-rgb);
+  /* danger / rose */
+  --danger-rose-50-rgb: var(--rose-50-rgb); --danger-rose-100-rgb: var(--rose-100-rgb); --danger-rose-200-rgb: var(--rose-200-rgb);
+  --danger-rose-300-rgb: var(--rose-300-rgb); --danger-rose-400-rgb: var(--rose-400-rgb); --danger-rose-500-rgb: var(--rose-500-rgb);
+  --danger-rose-600-rgb: var(--rose-600-rgb); --danger-rose-700-rgb: var(--rose-700-rgb); --danger-rose-800-rgb: var(--rose-800-rgb);
+  --danger-rose-900-rgb: var(--rose-900-rgb); --danger-rose-950-rgb: var(--rose-950-rgb);
+  /* danger / red */
+  --danger-red-50-rgb: var(--red-50-rgb); --danger-red-100-rgb: var(--red-100-rgb); --danger-red-200-rgb: var(--red-200-rgb);
+  --danger-red-300-rgb: var(--red-300-rgb); --danger-red-400-rgb: var(--red-400-rgb); --danger-red-500-rgb: var(--red-500-rgb);
+  --danger-red-600-rgb: var(--red-600-rgb); --danger-red-700-rgb: var(--red-700-rgb); --danger-red-800-rgb: var(--red-800-rgb);
+  --danger-red-900-rgb: var(--red-900-rgb); --danger-red-950-rgb: var(--red-950-rgb);
+  /* danger / pink */
+  --danger-pink-50-rgb: var(--pink-50-rgb); --danger-pink-100-rgb: var(--pink-100-rgb); --danger-pink-200-rgb: var(--pink-200-rgb);
+  --danger-pink-300-rgb: var(--pink-300-rgb); --danger-pink-400-rgb: var(--pink-400-rgb); --danger-pink-500-rgb: var(--pink-500-rgb);
+  --danger-pink-600-rgb: var(--pink-600-rgb); --danger-pink-700-rgb: var(--pink-700-rgb); --danger-pink-800-rgb: var(--pink-800-rgb);
+  --danger-pink-900-rgb: var(--pink-900-rgb); --danger-pink-950-rgb: var(--pink-950-rgb);
+  /* info / sky */
+  --info-sky-50-rgb: var(--sky-50-rgb); --info-sky-100-rgb: var(--sky-100-rgb); --info-sky-200-rgb: var(--sky-200-rgb);
+  --info-sky-300-rgb: var(--sky-300-rgb); --info-sky-400-rgb: var(--sky-400-rgb); --info-sky-500-rgb: var(--sky-500-rgb);
+  --info-sky-600-rgb: var(--sky-600-rgb); --info-sky-700-rgb: var(--sky-700-rgb); --info-sky-800-rgb: var(--sky-800-rgb);
+  --info-sky-900-rgb: var(--sky-900-rgb); --info-sky-950-rgb: var(--sky-950-rgb);
+  /* info / cyan */
+  --info-cyan-50-rgb: var(--cyan-50-rgb); --info-cyan-100-rgb: var(--cyan-100-rgb); --info-cyan-200-rgb: var(--cyan-200-rgb);
+  --info-cyan-300-rgb: var(--cyan-300-rgb); --info-cyan-400-rgb: var(--cyan-400-rgb); --info-cyan-500-rgb: var(--cyan-500-rgb);
+  --info-cyan-600-rgb: var(--cyan-600-rgb); --info-cyan-700-rgb: var(--cyan-700-rgb); --info-cyan-800-rgb: var(--cyan-800-rgb);
+  --info-cyan-900-rgb: var(--cyan-900-rgb); --info-cyan-950-rgb: var(--cyan-950-rgb);
+  /* info / teal */
+  --info-teal-50-rgb: var(--teal-50-rgb); --info-teal-100-rgb: var(--teal-100-rgb); --info-teal-200-rgb: var(--teal-200-rgb);
+  --info-teal-300-rgb: var(--teal-300-rgb); --info-teal-400-rgb: var(--teal-400-rgb); --info-teal-500-rgb: var(--teal-500-rgb);
+  --info-teal-600-rgb: var(--teal-600-rgb); --info-teal-700-rgb: var(--teal-700-rgb); --info-teal-800-rgb: var(--teal-800-rgb);
+  --info-teal-900-rgb: var(--teal-900-rgb); --info-teal-950-rgb: var(--teal-950-rgb);
+  /* thinking / indigo */
+  --thinking-indigo-50-rgb: var(--indigo-50-rgb); --thinking-indigo-100-rgb: var(--indigo-100-rgb); --thinking-indigo-200-rgb: var(--indigo-200-rgb);
+  --thinking-indigo-300-rgb: var(--indigo-300-rgb); --thinking-indigo-400-rgb: var(--indigo-400-rgb); --thinking-indigo-500-rgb: var(--indigo-500-rgb);
+  --thinking-indigo-600-rgb: var(--indigo-600-rgb); --thinking-indigo-700-rgb: var(--indigo-700-rgb); --thinking-indigo-800-rgb: var(--indigo-800-rgb);
+  --thinking-indigo-900-rgb: var(--indigo-900-rgb); --thinking-indigo-950-rgb: var(--indigo-950-rgb);
+  /* thinking / violet */
+  --thinking-violet-50-rgb: var(--violet-50-rgb); --thinking-violet-100-rgb: var(--violet-100-rgb); --thinking-violet-200-rgb: var(--violet-200-rgb);
+  --thinking-violet-300-rgb: var(--violet-300-rgb); --thinking-violet-400-rgb: var(--violet-400-rgb); --thinking-violet-500-rgb: var(--violet-500-rgb);
+  --thinking-violet-600-rgb: var(--violet-600-rgb); --thinking-violet-700-rgb: var(--violet-700-rgb); --thinking-violet-800-rgb: var(--violet-800-rgb);
+  --thinking-violet-900-rgb: var(--violet-900-rgb); --thinking-violet-950-rgb: var(--violet-950-rgb);
+  /* thinking / purple */
+  --thinking-purple-50-rgb: var(--purple-50-rgb); --thinking-purple-100-rgb: var(--purple-100-rgb); --thinking-purple-200-rgb: var(--purple-200-rgb);
+  --thinking-purple-300-rgb: var(--purple-300-rgb); --thinking-purple-400-rgb: var(--purple-400-rgb); --thinking-purple-500-rgb: var(--purple-500-rgb);
+  --thinking-purple-600-rgb: var(--purple-600-rgb); --thinking-purple-700-rgb: var(--purple-700-rgb); --thinking-purple-800-rgb: var(--purple-800-rgb);
+  --thinking-purple-900-rgb: var(--purple-900-rgb); --thinking-purple-950-rgb: var(--purple-950-rgb);
+  /* thinking / fuchsia */
+  --thinking-fuchsia-50-rgb: var(--fuchsia-50-rgb); --thinking-fuchsia-100-rgb: var(--fuchsia-100-rgb); --thinking-fuchsia-200-rgb: var(--fuchsia-200-rgb);
+  --thinking-fuchsia-300-rgb: var(--fuchsia-300-rgb); --thinking-fuchsia-400-rgb: var(--fuchsia-400-rgb); --thinking-fuchsia-500-rgb: var(--fuchsia-500-rgb);
+  --thinking-fuchsia-600-rgb: var(--fuchsia-600-rgb); --thinking-fuchsia-700-rgb: var(--fuchsia-700-rgb); --thinking-fuchsia-800-rgb: var(--fuchsia-800-rgb);
+  --thinking-fuchsia-900-rgb: var(--fuchsia-900-rgb); --thinking-fuchsia-950-rgb: var(--fuchsia-950-rgb);
+  /* warning / orange */
+  --warning-orange-50-rgb: var(--orange-50-rgb); --warning-orange-100-rgb: var(--orange-100-rgb); --warning-orange-200-rgb: var(--orange-200-rgb);
+  --warning-orange-300-rgb: var(--orange-300-rgb); --warning-orange-400-rgb: var(--orange-400-rgb); --warning-orange-500-rgb: var(--orange-500-rgb);
+  --warning-orange-600-rgb: var(--orange-600-rgb); --warning-orange-700-rgb: var(--orange-700-rgb); --warning-orange-800-rgb: var(--orange-800-rgb);
+  --warning-orange-900-rgb: var(--orange-900-rgb); --warning-orange-950-rgb: var(--orange-950-rgb);
+  /* warning / amber */
+  --warning-amber-50-rgb: var(--amber-50-rgb); --warning-amber-100-rgb: var(--amber-100-rgb); --warning-amber-200-rgb: var(--amber-200-rgb);
+  --warning-amber-300-rgb: var(--amber-300-rgb); --warning-amber-400-rgb: var(--amber-400-rgb); --warning-amber-500-rgb: var(--amber-500-rgb);
+  --warning-amber-600-rgb: var(--amber-600-rgb); --warning-amber-700-rgb: var(--amber-700-rgb); --warning-amber-800-rgb: var(--amber-800-rgb);
+  --warning-amber-900-rgb: var(--amber-900-rgb); --warning-amber-950-rgb: var(--amber-950-rgb);
+  /* warning / yellow */
+  --warning-yellow-50-rgb: var(--yellow-50-rgb); --warning-yellow-100-rgb: var(--yellow-100-rgb); --warning-yellow-200-rgb: var(--yellow-200-rgb);
+  --warning-yellow-300-rgb: var(--yellow-300-rgb); --warning-yellow-400-rgb: var(--yellow-400-rgb); --warning-yellow-500-rgb: var(--yellow-500-rgb);
+  --warning-yellow-600-rgb: var(--yellow-600-rgb); --warning-yellow-700-rgb: var(--yellow-700-rgb); --warning-yellow-800-rgb: var(--yellow-800-rgb);
+  --warning-yellow-900-rgb: var(--yellow-900-rgb); --warning-yellow-950-rgb: var(--yellow-950-rgb);
   color-scheme: light;
   color: var(--foreground);
   background-color: var(--background);

@@ -62,15 +62,21 @@ _PALETTE_FAMILIES = (
 )
 _MATERIAL_VAR = re.compile(r"^--(?:" + "|".join(_PALETTE_FAMILIES) + r")-\d+-rgb$")
 
-# §9 批 6：语义角色 → 主色族（该角色在全站用量最大的那一族）。
-# 配置文件写 roles.success="green" 时，主色族 emerald 的材质整体换成 green 的，
-# 全站 emerald-* 用法随之变绿，组件零改动。
-_ROLE_FAMILY: dict[str, str] = {
-    "success": "emerald",
-    "danger": "rose",
-    "info": "sky",
-    "thinking": "indigo",
-    "warning": "orange",
+# §9 批 7：语义角色 → 该角色下的色族（槽命名用：--<role>-<family>-<shade>-rgb）。
+# 配置文件按「色族」独立控制（保留 red 错误红 / rose 玫瑰红 的色相区分）：
+#   "roles": {"emerald": "green"}  → emerald 族改用 green 色相
+#   "roles": {"rose": "amber", "red": "amber"} → danger 系统一琥珀（两族各自指定）
+# 未出现在 roles 里的族保持自身材质（视觉零回归）。
+_ROLE_FAMILIES: dict[str, tuple[str, ...]] = {
+    "success": ("emerald", "green"),
+    "danger": ("rose", "red", "pink"),
+    "info": ("sky", "cyan", "teal"),
+    "thinking": ("indigo", "violet", "purple", "fuchsia"),
+    "warning": ("orange", "amber", "yellow"),
+}
+#: 色族 → 语义角色（槽名用）
+_FAMILY_ROLE: dict[str, str] = {
+    fam: role for role, fams in _ROLE_FAMILIES.items() for fam in fams
 }
 
 
@@ -80,26 +86,28 @@ def _is_material_var(name: str) -> bool:
 
 
 def _apply_role_families(values: dict[str, str], roles: dict[str, str]) -> None:
-    """把「角色 → 色族」参数展开成具体材质值。
+    """把「色族 → 色族」参数展开成槽变量的重定向。
 
-    roles.success="green" → 把 emerald 各档材质换成 green 同档的材质；
-    其余色族保持自身材质（避免一个角色把同族其它色相也一起改掉）。
+    roles={"emerald": "green"} 表示 emerald 族改用 green 的色相：
+
+        --success-emerald-400-rgb: var(--green-400-rgb)
+
+    材质 `--emerald-400-rgb` 是 Tailwind 默认色板（代码级常量，不动）；
+    槽 → 材质是单向引用（材质为叶子），因此不存在循环引用。
     """
-    for role, family in roles.items():
-        canonical = _ROLE_FAMILY.get(role)
-        if not canonical or not isinstance(family, str) or family == canonical:
+    for from_fam, to_fam in roles.items():
+        role = _FAMILY_ROLE.get(from_fam)
+        if not role or not isinstance(to_fam, str):
             continue
-        if family not in _PALETTE_FAMILIES:
-            logger.warning("theme roles: 未知色族 %r（角色 %s），已忽略", family, role)
+        if to_fam not in _PALETTE_FAMILIES:
+            logger.warning("theme roles: 未知色族 %r（源 %s），已忽略", to_fam, from_fam)
             continue
-        prefix, suffix = f"--{canonical}-", "-rgb"
+        prefix, suffix = f"--{role}-{from_fam}-", "-rgb"
         for name in list(values):
             if not (name.startswith(prefix) and name.endswith(suffix)):
                 continue
             shade = name[len(prefix): -len(suffix)]
-            src = f"--{family}-{shade}{suffix}"
-            if src in values:
-                values[name] = values[src]
+            values[name] = f"var(--{to_fam}-{shade}{suffix})"
 
 
 def _is_color_value(value: str, name: str = "") -> bool:
@@ -169,17 +177,22 @@ _BUILTIN_THEME: dict[str, dict[str, str]] = _extract_css_colors()
 def _load_theme() -> dict[str, dict[str, str]]:
     """读取 theme.json；缺失/非法回退内置。
 
-    §9 批 6 起支持两层结构（每主题）：
+    §9 批 7 起支持两层结构（每主题）：
 
     ```json
     {"theme": {
        "dark": {
-         "roles":    {"success": "green"},          // 参数：角色用哪个色相
-         "overrides": {"--success-400-rgb": "52 211 153"}  // 精确覆盖
+         "roles":    {"emerald": "green"},           // 参数：某色族改用哪个色相
+         "overrides": {"--success-emerald-400-rgb": "74 222 128"}  // 精确覆盖
        },
        "light": {...}
     }}
     ```
+
+    `roles` 按色族独立控制（保留 red 错误红 / rose 玫瑰红 的色相区分）：
+      {"emerald": "green"}              → emerald 族改用 green 色相
+      {"rose": "amber", "red": "amber"} → danger 系两族各自统一到琥珀
+    未列出的族保持自身材质（视觉零回归）。
 
     旧的扁平写法（直接 `"--var": "value"`）仍兼容。
     """
@@ -195,7 +208,7 @@ def _load_theme() -> dict[str, dict[str, str]]:
         values = candidate.get(mode)
         if not isinstance(values, dict):
             continue
-        # 第一层：角色 → 色相（参数，展开为具体材质）
+        # 第一层：色族 → 色相（参数，展开为槽重定向）
         roles = values.get("roles")
         if isinstance(roles, dict):
             _apply_role_families(result[mode], roles)

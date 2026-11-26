@@ -123,61 +123,83 @@ def test_gradient_and_shadow_variables_are_exported(client, isolated):
 
 
 def test_role_mapping_switches_hue_without_component_changes(client, isolated):
-    """§9 批 6：配置只存「角色→色相」参数，改一个词即可整体换色相。
+    """§9 批 7：配置只存「色族→色相」参数，改一个词即可整体换色相。
 
     这是「参数存在配置文件里，而不是把全部色值存下来」的契约：
-    theme.json 写 roles.success="green"，emerald 主色族的材质应整体换成
-    green 的同档材质；其它角色不受影响。
+    theme.json 写 roles={"emerald": "green"}，emerald 族的语义槽应改指
+    green 的材质；其它色族（含同属 success 的 green、danger 的 red）不受影响。
     """
     isolated.write_text(json.dumps({
         "theme": {
-            "dark": {"roles": {"success": "green"}},
-            "light": {"roles": {"success": "green"}},
+            "dark": {"roles": {"emerald": "green"}},
+            "light": {"roles": {"emerald": "green"}},
         }
     }), encoding="utf-8")
     body = client.get("/api/system/theme").json()
     for mode in ("dark", "light"):
-        # emerald 主色族跟随 green
-        assert body[mode]["--emerald-400-rgb"] == body[mode]["--green-400-rgb"]
-        assert body[mode]["--emerald-500-rgb"] == body[mode]["--green-500-rgb"]
-        # 语义槽仍指向 emerald（由 CSS 的 var() 链路解析）
-        assert body[mode]["--success-400-rgb"] == "var(--emerald-400-rgb)"
+        # emerald 槽改指 green 材质
+        assert body[mode]["--success-emerald-400-rgb"] == "var(--green-400-rgb)"
+        assert body[mode]["--success-emerald-500-rgb"] == "var(--green-500-rgb)"
+        # 材质本身不动（代码级常量）
+        assert body[mode]["--emerald-400-rgb"] == "52 211 153"
+        assert body[mode]["--green-400-rgb"] == "74 222 128"
+        # 同角色的其它族不受影响（green 自身槽保持）
+        assert body[mode]["--success-green-400-rgb"] == "var(--green-400-rgb)"
         # 其它角色不受影响
-        assert body[mode]["--sky-400-rgb"] == "56 189 248"
+        assert body[mode]["--danger-red-400-rgb"] == "var(--red-400-rgb)"
+        assert body[mode]["--info-sky-400-rgb"] == "var(--sky-400-rgb)"
+
+
+def test_role_mapping_can_unify_multiple_families(client, isolated):
+    """§9 批 7：两族各自指定同一目标 → 该语义系统一色相（red/rose 各自指定）。"""
+    isolated.write_text(json.dumps({
+        "theme": {"dark": {"roles": {"rose": "amber", "red": "amber"}}}
+    }), encoding="utf-8")
+    body = client.get("/api/system/theme").json()
+    assert body["dark"]["--danger-rose-400-rgb"] == "var(--amber-400-rgb)"
+    assert body["dark"]["--danger-red-400-rgb"] == "var(--amber-400-rgb)"
+    # 未列出的族保持自身
+    assert body["dark"]["--danger-pink-400-rgb"] == "var(--pink-400-rgb)"
 
 
 def test_role_mapping_default_keeps_builtin_palette(client, isolated):
-    """§9 批 6：未配置 roles 时，内置默认色板必须保持原值（视觉零回归）。"""
+    """§9 批 7：未配置 roles 时，内置默认色板必须保持原值（视觉零回归）。"""
     body = client.get("/api/system/theme").json()
     assert body["dark"]["--emerald-400-rgb"] == "52 211 153"
     assert body["dark"]["--rose-400-rgb"] == "251 113 133"
     assert body["dark"]["--sky-400-rgb"] == "56 189 248"
+    # 槽默认指向自身材质
+    assert body["dark"]["--success-emerald-400-rgb"] == "var(--emerald-400-rgb)"
+    assert body["dark"]["--danger-red-400-rgb"] == "var(--red-400-rgb)"
 
 
 def test_overrides_layer_applies_after_roles(client, isolated):
-    """§9 批 6：精确覆盖（overrides）优先级高于角色映射。"""
+    """§9 批 7：精确覆盖（overrides）优先级高于色族映射。"""
     isolated.write_text(json.dumps({
         "theme": {
             "dark": {
-                "roles": {"success": "green"},
-                "overrides": {"--emerald-400-rgb": "1 2 3"},
+                "roles": {"emerald": "green"},
+                "overrides": {"--success-emerald-400-rgb": "1 2 3"},
             }
         }
     }), encoding="utf-8")
     body = client.get("/api/system/theme").json()
-    assert body["dark"]["--emerald-400-rgb"] == "1 2 3"
-    # 未被覆盖的档位仍跟随角色映射
-    assert body["dark"]["--emerald-500-rgb"] == body["dark"]["--green-500-rgb"]
+    assert body["dark"]["--success-emerald-400-rgb"] == "1 2 3"
+    # 未被覆盖的档位仍跟随色族映射
+    assert body["dark"]["--success-emerald-500-rgb"] == "var(--green-500-rgb)"
 
 
 def test_unknown_role_family_is_ignored(client, isolated):
-    """§9 批 6：未知色族名不应破坏主题（防御非法配置）。"""
+    """§9 批 7：未知色族名不应破坏主题（防御非法配置）。"""
     isolated.write_text(json.dumps({
-        "theme": {"dark": {"roles": {"success": "chartreuse"}}}
+        "theme": {"dark": {"roles": {"emerald": "chartreuse"}}}
     }), encoding="utf-8")
     resp = client.get("/api/system/theme")
     assert resp.status_code == 200
-    assert resp.json()["dark"]["--emerald-400-rgb"] == "52 211 153"
+    body = resp.json()
+    # 未知目标 → 槽保持自身材质
+    assert body["dark"]["--success-emerald-400-rgb"] == "var(--emerald-400-rgb)"
+    assert body["dark"]["--emerald-400-rgb"] == "52 211 153"
 
 
 def test_theme_can_override_gradient_and_shadow_keys(client, isolated):

@@ -20,6 +20,18 @@ const statusBar = readFileSync(statusBarPath, 'utf-8')
 const chatUiConfig = JSON.parse(readFileSync(chatUiConfigPath, 'utf-8'))
 const assistantMessage = readFileSync(assistantMessagePath, 'utf-8')
 
+// §9 批 7：语义角色 → 色族（槽命名用：--<role>-<family>-<shade>-rgb）。
+// 配置按色族独立控制，保留 red 错误红 / rose 玫瑰红 的色相区分。
+const ROLE_FAMILIES: Record<string, string[]> = {
+  success: ['emerald', 'green'],
+  danger: ['rose', 'red', 'pink'],
+  info: ['sky', 'cyan', 'teal'],
+  thinking: ['indigo', 'violet', 'purple', 'fuchsia'],
+  warning: ['orange', 'amber', 'yellow'],
+}
+const ALL_FAMILIES = Object.values(ROLE_FAMILIES).flat()
+const SHADES = [50, 100, 200, 300, 400, 500, 600, 700, 800, 900, 950]
+
 // 从 CSS 抽取指定主题块的变量名集合
 function varsOf(themeBlock: string): Set<string> {
   const start = css.indexOf(`[data-theme='${themeBlock}']`)
@@ -86,17 +98,16 @@ describe('semantic color tokens (stage 1 of palette unification)', () => {
 
   it('§9 深评估: Tailwind 原生色族改指 RGB 通道变量（theme.json 可控）', () => {
     // 323 处 text-/bg-/border-emerald|rose|sky|violet|... 此前走 Tailwind 内置
-    // 硬编码色板 → 不受 theme.json 控制。改为 rgb(var(--fam-NN-rgb) / <alpha-value>)，
+    // 硬编码色板 → 不受 theme.json 控制。改为 rgb(var(--x-NN-rgb) / <alpha-value>)，
     // 组件零改动，且 /NN 透明度修饰符原生可用。
-    const canonical: Record<string, string> = {
-      emerald: 'success', rose: 'danger', sky: 'info',
-      indigo: 'thinking', orange: 'warning',
-    }
+    // §9 批 7 起：每个色族指向自己的「角色+族」语义槽。
     const families = ['emerald', 'red', 'rose', 'violet', 'purple', 'amber', 'orange',
       'yellow', 'lime', 'green', 'teal', 'cyan', 'sky', 'indigo', 'fuchsia', 'pink']
     for (const fam of families) {
-      // §9 批 6 起，主色族指向语义槽（--success-NN-rgb 等），其余族指向自身材质。
-      const target = canonical[fam] ?? fam
+      // §9 批 7 起：角色族指向自己的「角色+族」语义槽；
+      // 未归入角色的族（lime/blue）仍指向自身材质。
+      const slot = ALL_FAMILIES.includes(fam)
+      const target = slot ? `[a-z]+-${fam}` : fam
       expect(tw, `${fam} 族未映射`).toMatch(
         new RegExp(`${fam}:\\s*\\{[\\s\\S]*?\\d+:\\s*'rgb\\(var\\(--${target}-\\d+-rgb\\) / <alpha-value>\\)'`),
       )
@@ -222,46 +233,43 @@ describe('viz and identity colors come from theme variables', () => {
   })
 })
 
-// §9 批 6：语义槽层——主色族 → 角色槽 → 材质。
-// theme.json 只需写 roles.{role}="green" 这类参数即可整体换色相，
-// 因此 Tailwind 主色族必须指向语义槽（而非自身材质）。
+// §9 批 7：语义槽层——「角色+族」二级槽。
+// theme.json 按色族独立控制（roles={"emerald": "green"}），
+// 因此每个色族都要有自己的槽，Tailwind 每族指向自己的槽。
 describe('semantic role slots drive palette families', () => {
-  it('defines role slots in both themes pointing at their canonical family', () => {
-    const canonical: Record<string, string> = {
-      success: 'emerald', danger: 'rose', info: 'sky',
-      thinking: 'indigo', warning: 'orange',
-    }
+  it('defines a per-family slot in both themes pointing at its own material', () => {
     for (const theme of ['dark', 'light'] as const) {
       const vars = varsOf(theme)
-      for (const [role, family] of Object.entries(canonical)) {
-        for (const shade of [50, 100, 200, 300, 400, 500, 600, 700, 800, 900, 950]) {
-          const slot = `--${role}-${shade}-rgb`
-          expect(vars.has(slot), `${theme} ${slot}`).toBe(true)
+      for (const [role, families] of Object.entries(ROLE_FAMILIES)) {
+        for (const family of families) {
+          for (const shade of SHADES) {
+            const slot = `--${role}-${family}-${shade}-rgb`
+            expect(vars.has(slot), `${theme} ${slot}`).toBe(true)
+          }
+          // 槽默认指向自身材质（未配置 roles 时视觉零回归）
+          expect(css, `${theme} --${role}-${family}-400-rgb 应指向 --${family}-400-rgb`)
+            .toMatch(new RegExp(`--${role}-${family}-400-rgb:\\s*var\\(--${family}-400-rgb\\)`))
         }
-        // 槽默认指向主色族材质
-        expect(css, `${theme} --${role}-400-rgb 应指向 --${family}-400-rgb`)
-          .toMatch(new RegExp(`--${role}-400-rgb:\\s*var\\(--${family}-400-rgb\\)`))
       }
     }
   })
 
-  it('binds canonical palette families to role slots in tailwind config', () => {
-    for (const [family, role] of Object.entries({
-      emerald: 'success', rose: 'danger', sky: 'info',
-      indigo: 'thinking', orange: 'warning',
-    })) {
-      expect(tw, `${family} 族应指向 --${role}-* 语义槽`).toMatch(
-        new RegExp(`${family}:\\s*\\{[\\s\\S]*?400:\\s*'rgb\\(var\\(--${role}-400-rgb\\) / <alpha-value>\\)'`),
-      )
+  it('binds every palette family to its own role slot in tailwind config', () => {
+    for (const [role, families] of Object.entries(ROLE_FAMILIES)) {
+      for (const family of families) {
+        expect(tw, `${family} 族应指向 --${role}-${family}-* 语义槽`).toMatch(
+          new RegExp(`${family}:\\s*\\{[\\s\\S]*?400:\\s*'rgb\\(var\\(--${role}-${family}-400-rgb\\) / <alpha-value>\\)'`),
+        )
+      }
     }
   })
 
-  it('keeps non-canonical families on their own material (no hue collision)', () => {
-    // green/red/cyan 等同角色的其它族必须仍指向自身材质，
-    // 否则 roles.success=green 会让 emerald 与 green 撞成同一色。
-    for (const family of ['green', 'red', 'cyan', 'teal', 'violet', 'purple', 'pink', 'amber', 'yellow']) {
-      expect(tw, `${family} 应保持自身材质`).toMatch(
-        new RegExp(`${family}:\\s*\\{[\\s\\S]*?400:\\s*'rgb\\(var\\(--${family}-400-rgb\\) / <alpha-value>\\)'`),
+  it('keeps every family on a distinct slot (no hue collision by default)', () => {
+    // 每族有独立槽 → 默认时各族保持自身色相（red 错误红 ≠ rose 玫瑰红），
+    // roles 里逐族指定时才改色相，不会互相撞色。
+    for (const family of ALL_FAMILIES) {
+      expect(tw, `${family} 应绑定独立槽`).toMatch(
+        new RegExp(`${family}:\\s*\\{[\\s\\S]*?400:\\s*'rgb\\(var\\(--[a-z]+-${family}-400-rgb\\) / <alpha-value>\\)'`),
       )
     }
   })

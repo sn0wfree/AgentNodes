@@ -192,3 +192,43 @@ codemod 曾把 `!bg-slate-900/95` 误迁为 `!bg-background/95`——Tailwind �
 **效果**：改 `roles.success` 为 `"green"` → 后端把 emerald 各档材质换成 green 同档材质 → Tailwind `emerald.*` 类（经语义槽）整体变绿，**组件零改动**。实测：`text-emerald-400` 元素计算色由 `rgb(52,211,153)` → `rgb(74,222,128)`。
 
 **契约测试**：后端 4 例（角色映射生效 / 默认保持原值 / overrides 优先 / 未知色族忽略）+ 前端 3 例（槽双主题声明且指向主色族 / 主色族绑槽 / 非主色族保持自身材质）。
+
+### 9.7 批 7 · 梳理复核与「按色族独立」修正
+
+**梳理结论**：批 6 的结构三方一致（槽默认族 = Tailwind 绑定族 = 用量最大族），但**角色跟随率仅 70%**——改 `roles.danger` 时，同属 danger 的 `red`（47 处）/ `pink`（3 处）不跟随；thinking 仅 50%、warning 仅 46%。原因：批 6 只给主族建槽。
+
+**方案选择**：初版拟「同角色所有族统一色相」，但核查发现现有视觉中 `red`（错误红）与 `rose`（玫瑰红）色相本就不同（另有 violet/indigo、cyan/sky、amber/orange 等 9 组），统一会丢失这层区分 —— **用户裁决：按色族独立控制**。
+
+**最终结构**（槽 = 角色+族+档，每主题 165 个）：
+
+| 层 | 示例 | 说明 |
+|---|---|---|
+| 材质 | `--emerald-400-rgb: 52 211 153` | Tailwind 默认色板，代码级常量，**不导出到配置** |
+| 槽 | `--success-emerald-400-rgb: var(--emerald-400-rgb)` | 每族独立槽，默认指向自身材质 |
+| 配置 | `"roles": {"emerald": "green"}` | **色族 → 目标色族**（参数） |
+
+配置文件（每主题 16 项）：
+
+```json
+{"theme": {
+  "dark": {
+    "roles": {"emerald": "emerald", "green": "green", "rose": "rose",
+              "red": "red", "pink": "pink", "sky": "sky", "cyan": "cyan",
+              "teal": "teal", "indigo": "indigo", "violet": "violet",
+              "purple": "purple", "fuchsia": "fuchsia", "orange": "orange",
+              "amber": "amber", "yellow": "yellow"},
+    "overrides": {}
+  },
+  "light": {...}
+}}
+```
+
+**语义**：
+- `{"emerald": "green"}` → emerald 族改用 green 色相（该族全部档位），**其它族不受影响**
+- `{"rose": "amber", "red": "amber"}` → danger 系两族各自统一到琥珀（可逐族指定）
+- 未列出的族保持自身材质 → 视觉零回归
+- 槽 → 材质单向引用（材质为叶子）→ 无循环引用风险
+
+**实测**：改 `roles.emerald = "green"` → 监控页 `text-emerald-400` 计算色 `rgb(52,211,153)` → `rgb(74,222,128)`，同页 `text-red-400` 保持 `rgb(248,113,113)` 不变。
+
+**契约测试**：后端 5 例 + 前端 3 例（每族独立槽双主题声明 / Tailwind 每族绑自己槽 / 每族槽互不相同防撞色）。
