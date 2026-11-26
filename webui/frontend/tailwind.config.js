@@ -16,21 +16,22 @@ export default {
   theme: {
     extend: {
       colors: {
-        // §9 深评估：emerald 族改指 RGB 通道变量（theme.json 可调，值=默认色板）
+        // §9 批 6：emerald 是 success 角色的主色族 → 指向语义槽
+        // （theme.json 改 roles.success 即可整体换色相，组件零改动）
         emerald: {
-          50: 'rgb(var(--emerald-50-rgb) / <alpha-value>)',
-          100: 'rgb(var(--emerald-100-rgb) / <alpha-value>)',
-          200: 'rgb(var(--emerald-200-rgb) / <alpha-value>)',
-          300: 'rgb(var(--emerald-300-rgb) / <alpha-value>)',
-          400: 'rgb(var(--emerald-400-rgb) / <alpha-value>)',
-          500: 'rgb(var(--emerald-500-rgb) / <alpha-value>)',
-          600: 'rgb(var(--emerald-600-rgb) / <alpha-value>)',
-          700: 'rgb(var(--emerald-700-rgb) / <alpha-value>)',
-          800: 'rgb(var(--emerald-800-rgb) / <alpha-value>)',
-          900: 'rgb(var(--emerald-900-rgb) / <alpha-value>)',
-          950: 'rgb(var(--emerald-950-rgb) / <alpha-value>)',
+          50: 'rgb(var(--success-50-rgb) / <alpha-value>)',
+          100: 'rgb(var(--success-100-rgb) / <alpha-value>)',
+          200: 'rgb(var(--success-200-rgb) / <alpha-value>)',
+          300: 'rgb(var(--success-300-rgb) / <alpha-value>)',
+          400: 'rgb(var(--success-400-rgb) / <alpha-value>)',
+          500: 'rgb(var(--success-500-rgb) / <alpha-value>)',
+          600: 'rgb(var(--success-600-rgb) / <alpha-value>)',
+          700: 'rgb(var(--success-700-rgb) / <alpha-value>)',
+          800: 'rgb(var(--success-800-rgb) / <alpha-value>)',
+          900: 'rgb(var(--success-900-rgb) / <alpha-value>)',
+          950: 'rgb(var(--success-950-rgb) / <alpha-value>)',
         },
-        // §9 深评估：red 族改指 RGB 通道变量（theme.json 可调，值=默认色板）
+        // §9 深评估：red 族改指 RGB 通道变量（值=默认色板）
         red: {
           50: 'rgb(var(--red-50-rgb) / <alpha-value>)',
           100: 'rgb(var(--red-100-rgb) / <alpha-value>)',
@@ -44,21 +45,22 @@ export default {
           900: 'rgb(var(--red-900-rgb) / <alpha-value>)',
           950: 'rgb(var(--red-950-rgb) / <alpha-value>)',
         },
-        // §9 深评估：rose 族改指 RGB 通道变量（theme.json 可调，值=默认色板）
+        // §9 批 6：rose 是 danger 角色的主色族 → 指向语义槽
+        // （theme.json 改 roles.danger 即可整体换色相，组件零改动）
         rose: {
-          50: 'rgb(var(--rose-50-rgb) / <alpha-value>)',
-          100: 'rgb(var(--rose-100-rgb) / <alpha-value>)',
-          200: 'rgb(var(--rose-200-rgb) / <alpha-value>)',
-          300: 'rgb(var(--rose-300-rgb) / <alpha-value>)',
-          400: 'rgb(var(--rose-400-rgb) / <alpha-value>)',
-          500: 'rgb(var(--rose-500-rgb) / <alpha-value>)',
-          600: 'rgb(var(--rose-600-rgb) / <alpha-value>)',
-          700: 'rgb(var(--rose-700-rgb) / <alpha-value>)',
-          800: 'rgb(var(--rose-800-rgb) / <alpha-value>)',
-          900: 'rgb(var(--rose-900-rgb) / <alpha-value>)',
-          950: 'rgb(var(--rose-950-rgb) / <alpha-value>)',
+          50: 'rgb(var(--danger-50-rgb) / <alpha-value>)',
+          100: 'rgb(var(--danger-100-rgb) / <alpha-value>)',
+          200: 'rgb(var(--danger-200-rgb) / <alpha-value>)',
+          300: 'rgb(var(--danger-300-rgb) / <alpha-value>)',
+          400: 'rgb(var(--danger-400-rgb) / <alpha-value>)',
+          500: 'rgb(var(--danger-500-rgb) / <alpha-value>)',
+          600: 'rgb(var(--danger-600-rgb) / <alpha-value>)',
+          700: 'rgb(var(--danger-700-rgb) / <alpha-value>)',
+          800: 'rgb(var(--danger-800-rgb) / <alpha-value>)',
+          900: 'rgb(var(--danger-900-rgb) / <alpha-value>)',
+          950: 'rgb(var(--danger-950-rgb) / <alpha-value>)',
         },
-        // §9 深评估：violet 族改指 RGB 通道变量（theme.json 可调，值=默认色板）
+        // §9 深评估：violet 族改指 RGB 通道变量（值=默认色板）
         violet: {
           50: 'rgb(var(--violet-50-rgb) / <alpha-value>)',
           100: 'rgb(var(--violet-100-rgb) / <alpha-value>)',
@@ -72,7 +74,7 @@ export default {
           900: 'rgb(var(--violet-900-rgb) / <alpha-value>)',
           950: 'rgb(var(--violet-950-rgb) / <alpha-value>)',
         },
-        // §9 深评估：purple 族改指 RGB 通道变量（theme.json 可调，值=默认色板）
+        // §9 深评估：purple 族改指 RGB 通道变量（值=默认色板）
         purple: {
           50: 'rgb(var(--purple-50-rgb) / <alpha-value>)',
           100: 'rgb(var(--purple-100-rgb) / <alpha-value>)',
@@ -86,7 +88,7 @@ export default {
           900: 'rgb(var(--purple-900-rgb) / <alpha-value>)',
           950: 'rgb(var(--purple-950-rgb) / <alpha-value>)',
         },
-        // §9 深评估：amber 族改指 RGB 通道变量（theme.json 可调，值=默认色板）
+        // §9 深评估：amber 族改指 RGB 通道变量（值=默认色板）
         amber: {
           50: 'rgb(var(--amber-50-rgb) / <alpha-value>)',
           100: 'rgb(var(--amber-100-rgb) / <alpha-value>)',
@@ -100,21 +102,22 @@ export default {
           900: 'rgb(var(--amber-900-rgb) / <alpha-value>)',
           950: 'rgb(var(--amber-950-rgb) / <alpha-value>)',
         },
-        // §9 深评估：orange 族改指 RGB 通道变量（theme.json 可调，值=默认色板）
+        // §9 批 6：orange 是 warning 角色的主色族 → 指向语义槽
+        // （theme.json 改 roles.warning 即可整体换色相，组件零改动）
         orange: {
-          50: 'rgb(var(--orange-50-rgb) / <alpha-value>)',
-          100: 'rgb(var(--orange-100-rgb) / <alpha-value>)',
-          200: 'rgb(var(--orange-200-rgb) / <alpha-value>)',
-          300: 'rgb(var(--orange-300-rgb) / <alpha-value>)',
-          400: 'rgb(var(--orange-400-rgb) / <alpha-value>)',
-          500: 'rgb(var(--orange-500-rgb) / <alpha-value>)',
-          600: 'rgb(var(--orange-600-rgb) / <alpha-value>)',
-          700: 'rgb(var(--orange-700-rgb) / <alpha-value>)',
-          800: 'rgb(var(--orange-800-rgb) / <alpha-value>)',
-          900: 'rgb(var(--orange-900-rgb) / <alpha-value>)',
-          950: 'rgb(var(--orange-950-rgb) / <alpha-value>)',
+          50: 'rgb(var(--warning-50-rgb) / <alpha-value>)',
+          100: 'rgb(var(--warning-100-rgb) / <alpha-value>)',
+          200: 'rgb(var(--warning-200-rgb) / <alpha-value>)',
+          300: 'rgb(var(--warning-300-rgb) / <alpha-value>)',
+          400: 'rgb(var(--warning-400-rgb) / <alpha-value>)',
+          500: 'rgb(var(--warning-500-rgb) / <alpha-value>)',
+          600: 'rgb(var(--warning-600-rgb) / <alpha-value>)',
+          700: 'rgb(var(--warning-700-rgb) / <alpha-value>)',
+          800: 'rgb(var(--warning-800-rgb) / <alpha-value>)',
+          900: 'rgb(var(--warning-900-rgb) / <alpha-value>)',
+          950: 'rgb(var(--warning-950-rgb) / <alpha-value>)',
         },
-        // §9 深评估：yellow 族改指 RGB 通道变量（theme.json 可调，值=默认色板）
+        // §9 深评估：yellow 族改指 RGB 通道变量（值=默认色板）
         yellow: {
           50: 'rgb(var(--yellow-50-rgb) / <alpha-value>)',
           100: 'rgb(var(--yellow-100-rgb) / <alpha-value>)',
@@ -128,7 +131,7 @@ export default {
           900: 'rgb(var(--yellow-900-rgb) / <alpha-value>)',
           950: 'rgb(var(--yellow-950-rgb) / <alpha-value>)',
         },
-        // §9 深评估：lime 族改指 RGB 通道变量（theme.json 可调，值=默认色板）
+        // §9 深评估：lime 族改指 RGB 通道变量（值=默认色板）
         lime: {
           50: 'rgb(var(--lime-50-rgb) / <alpha-value>)',
           100: 'rgb(var(--lime-100-rgb) / <alpha-value>)',
@@ -142,7 +145,7 @@ export default {
           900: 'rgb(var(--lime-900-rgb) / <alpha-value>)',
           950: 'rgb(var(--lime-950-rgb) / <alpha-value>)',
         },
-        // §9 深评估：green 族改指 RGB 通道变量（theme.json 可调，值=默认色板）
+        // §9 深评估：green 族改指 RGB 通道变量（值=默认色板）
         green: {
           50: 'rgb(var(--green-50-rgb) / <alpha-value>)',
           100: 'rgb(var(--green-100-rgb) / <alpha-value>)',
@@ -156,7 +159,7 @@ export default {
           900: 'rgb(var(--green-900-rgb) / <alpha-value>)',
           950: 'rgb(var(--green-950-rgb) / <alpha-value>)',
         },
-        // §9 深评估：teal 族改指 RGB 通道变量（theme.json 可调，值=默认色板）
+        // §9 深评估：teal 族改指 RGB 通道变量（值=默认色板）
         teal: {
           50: 'rgb(var(--teal-50-rgb) / <alpha-value>)',
           100: 'rgb(var(--teal-100-rgb) / <alpha-value>)',
@@ -170,7 +173,7 @@ export default {
           900: 'rgb(var(--teal-900-rgb) / <alpha-value>)',
           950: 'rgb(var(--teal-950-rgb) / <alpha-value>)',
         },
-        // §9 深评估：cyan 族改指 RGB 通道变量（theme.json 可调，值=默认色板）
+        // §9 深评估：cyan 族改指 RGB 通道变量（值=默认色板）
         cyan: {
           50: 'rgb(var(--cyan-50-rgb) / <alpha-value>)',
           100: 'rgb(var(--cyan-100-rgb) / <alpha-value>)',
@@ -184,35 +187,37 @@ export default {
           900: 'rgb(var(--cyan-900-rgb) / <alpha-value>)',
           950: 'rgb(var(--cyan-950-rgb) / <alpha-value>)',
         },
-        // §9 深评估：sky 族改指 RGB 通道变量（theme.json 可调，值=默认色板）
+        // §9 批 6：sky 是 info 角色的主色族 → 指向语义槽
+        // （theme.json 改 roles.info 即可整体换色相，组件零改动）
         sky: {
-          50: 'rgb(var(--sky-50-rgb) / <alpha-value>)',
-          100: 'rgb(var(--sky-100-rgb) / <alpha-value>)',
-          200: 'rgb(var(--sky-200-rgb) / <alpha-value>)',
-          300: 'rgb(var(--sky-300-rgb) / <alpha-value>)',
-          400: 'rgb(var(--sky-400-rgb) / <alpha-value>)',
-          500: 'rgb(var(--sky-500-rgb) / <alpha-value>)',
-          600: 'rgb(var(--sky-600-rgb) / <alpha-value>)',
-          700: 'rgb(var(--sky-700-rgb) / <alpha-value>)',
-          800: 'rgb(var(--sky-800-rgb) / <alpha-value>)',
-          900: 'rgb(var(--sky-900-rgb) / <alpha-value>)',
-          950: 'rgb(var(--sky-950-rgb) / <alpha-value>)',
+          50: 'rgb(var(--info-50-rgb) / <alpha-value>)',
+          100: 'rgb(var(--info-100-rgb) / <alpha-value>)',
+          200: 'rgb(var(--info-200-rgb) / <alpha-value>)',
+          300: 'rgb(var(--info-300-rgb) / <alpha-value>)',
+          400: 'rgb(var(--info-400-rgb) / <alpha-value>)',
+          500: 'rgb(var(--info-500-rgb) / <alpha-value>)',
+          600: 'rgb(var(--info-600-rgb) / <alpha-value>)',
+          700: 'rgb(var(--info-700-rgb) / <alpha-value>)',
+          800: 'rgb(var(--info-800-rgb) / <alpha-value>)',
+          900: 'rgb(var(--info-900-rgb) / <alpha-value>)',
+          950: 'rgb(var(--info-950-rgb) / <alpha-value>)',
         },
-        // §9 深评估：indigo 族改指 RGB 通道变量（theme.json 可调，值=默认色板）
+        // §9 批 6：indigo 是 thinking 角色的主色族 → 指向语义槽
+        // （theme.json 改 roles.thinking 即可整体换色相，组件零改动）
         indigo: {
-          50: 'rgb(var(--indigo-50-rgb) / <alpha-value>)',
-          100: 'rgb(var(--indigo-100-rgb) / <alpha-value>)',
-          200: 'rgb(var(--indigo-200-rgb) / <alpha-value>)',
-          300: 'rgb(var(--indigo-300-rgb) / <alpha-value>)',
-          400: 'rgb(var(--indigo-400-rgb) / <alpha-value>)',
-          500: 'rgb(var(--indigo-500-rgb) / <alpha-value>)',
-          600: 'rgb(var(--indigo-600-rgb) / <alpha-value>)',
-          700: 'rgb(var(--indigo-700-rgb) / <alpha-value>)',
-          800: 'rgb(var(--indigo-800-rgb) / <alpha-value>)',
-          900: 'rgb(var(--indigo-900-rgb) / <alpha-value>)',
-          950: 'rgb(var(--indigo-950-rgb) / <alpha-value>)',
+          50: 'rgb(var(--thinking-50-rgb) / <alpha-value>)',
+          100: 'rgb(var(--thinking-100-rgb) / <alpha-value>)',
+          200: 'rgb(var(--thinking-200-rgb) / <alpha-value>)',
+          300: 'rgb(var(--thinking-300-rgb) / <alpha-value>)',
+          400: 'rgb(var(--thinking-400-rgb) / <alpha-value>)',
+          500: 'rgb(var(--thinking-500-rgb) / <alpha-value>)',
+          600: 'rgb(var(--thinking-600-rgb) / <alpha-value>)',
+          700: 'rgb(var(--thinking-700-rgb) / <alpha-value>)',
+          800: 'rgb(var(--thinking-800-rgb) / <alpha-value>)',
+          900: 'rgb(var(--thinking-900-rgb) / <alpha-value>)',
+          950: 'rgb(var(--thinking-950-rgb) / <alpha-value>)',
         },
-        // §9 深评估：fuchsia 族改指 RGB 通道变量（theme.json 可调，值=默认色板）
+        // §9 深评估：fuchsia 族改指 RGB 通道变量（值=默认色板）
         fuchsia: {
           50: 'rgb(var(--fuchsia-50-rgb) / <alpha-value>)',
           100: 'rgb(var(--fuchsia-100-rgb) / <alpha-value>)',
@@ -226,7 +231,7 @@ export default {
           900: 'rgb(var(--fuchsia-900-rgb) / <alpha-value>)',
           950: 'rgb(var(--fuchsia-950-rgb) / <alpha-value>)',
         },
-        // §9 深评估：pink 族改指 RGB 通道变量（theme.json 可调，值=默认色板）
+        // §9 深评估：pink 族改指 RGB 通道变量（值=默认色板）
         pink: {
           50: 'rgb(var(--pink-50-rgb) / <alpha-value>)',
           100: 'rgb(var(--pink-100-rgb) / <alpha-value>)',

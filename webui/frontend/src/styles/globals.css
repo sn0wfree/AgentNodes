@@ -326,6 +326,32 @@
   --wf-card-title-fg: var(--foreground); --wf-card-sub-fg: var(--muted-foreground);
   --wf-card-plus-fg: var(--muted-foreground); --wf-minimap-bg: transparent;
   --wf-minimap-mask: rgba(0, 0, 0, 0.7); /* MiniMap 遮罩（§9 配置化，原值 1:1） */
+  /* §9 批 6：语义槽——主色族 → 角色槽 → 材质。theme.json 的 roles 改这里。 */
+  /* success：主色族 emerald */
+  --success-50-rgb: var(--emerald-50-rgb); --success-100-rgb: var(--emerald-100-rgb); --success-200-rgb: var(--emerald-200-rgb);
+  --success-300-rgb: var(--emerald-300-rgb); --success-400-rgb: var(--emerald-400-rgb); --success-500-rgb: var(--emerald-500-rgb);
+  --success-600-rgb: var(--emerald-600-rgb); --success-700-rgb: var(--emerald-700-rgb); --success-800-rgb: var(--emerald-800-rgb);
+  --success-900-rgb: var(--emerald-900-rgb); --success-950-rgb: var(--emerald-950-rgb);
+  /* danger：主色族 rose */
+  --danger-50-rgb: var(--rose-50-rgb); --danger-100-rgb: var(--rose-100-rgb); --danger-200-rgb: var(--rose-200-rgb);
+  --danger-300-rgb: var(--rose-300-rgb); --danger-400-rgb: var(--rose-400-rgb); --danger-500-rgb: var(--rose-500-rgb);
+  --danger-600-rgb: var(--rose-600-rgb); --danger-700-rgb: var(--rose-700-rgb); --danger-800-rgb: var(--rose-800-rgb);
+  --danger-900-rgb: var(--rose-900-rgb); --danger-950-rgb: var(--rose-950-rgb);
+  /* info：主色族 sky */
+  --info-50-rgb: var(--sky-50-rgb); --info-100-rgb: var(--sky-100-rgb); --info-200-rgb: var(--sky-200-rgb);
+  --info-300-rgb: var(--sky-300-rgb); --info-400-rgb: var(--sky-400-rgb); --info-500-rgb: var(--sky-500-rgb);
+  --info-600-rgb: var(--sky-600-rgb); --info-700-rgb: var(--sky-700-rgb); --info-800-rgb: var(--sky-800-rgb);
+  --info-900-rgb: var(--sky-900-rgb); --info-950-rgb: var(--sky-950-rgb);
+  /* thinking：主色族 indigo */
+  --thinking-50-rgb: var(--indigo-50-rgb); --thinking-100-rgb: var(--indigo-100-rgb); --thinking-200-rgb: var(--indigo-200-rgb);
+  --thinking-300-rgb: var(--indigo-300-rgb); --thinking-400-rgb: var(--indigo-400-rgb); --thinking-500-rgb: var(--indigo-500-rgb);
+  --thinking-600-rgb: var(--indigo-600-rgb); --thinking-700-rgb: var(--indigo-700-rgb); --thinking-800-rgb: var(--indigo-800-rgb);
+  --thinking-900-rgb: var(--indigo-900-rgb); --thinking-950-rgb: var(--indigo-950-rgb);
+  /* warning：主色族 orange */
+  --warning-50-rgb: var(--orange-50-rgb); --warning-100-rgb: var(--orange-100-rgb); --warning-200-rgb: var(--orange-200-rgb);
+  --warning-300-rgb: var(--orange-300-rgb); --warning-400-rgb: var(--orange-400-rgb); --warning-500-rgb: var(--orange-500-rgb);
+  --warning-600-rgb: var(--orange-600-rgb); --warning-700-rgb: var(--orange-700-rgb); --warning-800-rgb: var(--orange-800-rgb);
+  --warning-900-rgb: var(--orange-900-rgb); --warning-950-rgb: var(--orange-950-rgb);
   color-scheme: dark;
   color: var(--foreground);
   background-color: var(--background);
@@ -645,6 +671,32 @@
   --wf-card-title-fg: #1a1a1a; --wf-card-sub-fg: #64748b;
   --wf-card-plus-fg: #94a3b8; --wf-minimap-bg: #ffffff;
   --wf-minimap-mask: rgba(0, 0, 0, 0.7); /* MiniMap 遮罩（§9 配置化，原值 1:1） */
+  /* §9 批 6：语义槽——主色族 → 角色槽 → 材质。theme.json 的 roles 改这里。 */
+  /* success：主色族 emerald */
+  --success-50-rgb: var(--emerald-50-rgb); --success-100-rgb: var(--emerald-100-rgb); --success-200-rgb: var(--emerald-200-rgb);
+  --success-300-rgb: var(--emerald-300-rgb); --success-400-rgb: var(--emerald-400-rgb); --success-500-rgb: var(--emerald-500-rgb);
+  --success-600-rgb: var(--emerald-600-rgb); --success-700-rgb: var(--emerald-700-rgb); --success-800-rgb: var(--emerald-800-rgb);
+  --success-900-rgb: var(--emerald-900-rgb); --success-950-rgb: var(--emerald-950-rgb);
+  /* danger：主色族 rose */
+  --danger-50-rgb: var(--rose-50-rgb); --danger-100-rgb: var(--rose-100-rgb); --danger-200-rgb: var(--rose-200-rgb);
+  --danger-300-rgb: var(--rose-300-rgb); --danger-400-rgb: var(--rose-400-rgb); --danger-500-rgb: var(--rose-500-rgb);
+  --danger-600-rgb: var(--rose-600-rgb); --danger-700-rgb: var(--rose-700-rgb); --danger-800-rgb: var(--rose-800-rgb);
+  --danger-900-rgb: var(--rose-900-rgb); --danger-950-rgb: var(--rose-950-rgb);
+  /* info：主色族 sky */
+  --info-50-rgb: var(--sky-50-rgb); --info-100-rgb: var(--sky-100-rgb); --info-200-rgb: var(--sky-200-rgb);
+  --info-300-rgb: var(--sky-300-rgb); --info-400-rgb: var(--sky-400-rgb); --info-500-rgb: var(--sky-500-rgb);
+  --info-600-rgb: var(--sky-600-rgb); --info-700-rgb: var(--sky-700-rgb); --info-800-rgb: var(--sky-800-rgb);
+  --info-900-rgb: var(--sky-900-rgb); --info-950-rgb: var(--sky-950-rgb);
+  /* thinking：主色族 indigo */
+  --thinking-50-rgb: var(--indigo-50-rgb); --thinking-100-rgb: var(--indigo-100-rgb); --thinking-200-rgb: var(--indigo-200-rgb);
+  --thinking-300-rgb: var(--indigo-300-rgb); --thinking-400-rgb: var(--indigo-400-rgb); --thinking-500-rgb: var(--indigo-500-rgb);
+  --thinking-600-rgb: var(--indigo-600-rgb); --thinking-700-rgb: var(--indigo-700-rgb); --thinking-800-rgb: var(--indigo-800-rgb);
+  --thinking-900-rgb: var(--indigo-900-rgb); --thinking-950-rgb: var(--indigo-950-rgb);
+  /* warning：主色族 orange */
+  --warning-50-rgb: var(--orange-50-rgb); --warning-100-rgb: var(--orange-100-rgb); --warning-200-rgb: var(--orange-200-rgb);
+  --warning-300-rgb: var(--orange-300-rgb); --warning-400-rgb: var(--orange-400-rgb); --warning-500-rgb: var(--orange-500-rgb);
+  --warning-600-rgb: var(--orange-600-rgb); --warning-700-rgb: var(--orange-700-rgb); --warning-800-rgb: var(--orange-800-rgb);
+  --warning-900-rgb: var(--orange-900-rgb); --warning-950-rgb: var(--orange-950-rgb);
   color-scheme: light;
   color: var(--foreground);
   background-color: var(--background);

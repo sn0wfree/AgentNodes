@@ -161,3 +161,34 @@ codemod 曾把 `!bg-slate-900/95` 误迁为 `!bg-background/95`——Tailwind �
 每批：git status 碰撞检查 → 受影响测试 → 全量 pytest（`-p no:hypothesispytest -p no:hypothesis -n 12 --dist loadgroup`）→ 前端 vitest/tsc/lint → `scripts\batch_gate.cmd` → 原值迁移应零像素 diff（有变化则显式重录基线并记录原因）→ 路径限定中文 commit、不 push。后端改动需重启服务后真机验证（当前进程为旧代码）。
 
 回滚：每批独立 commit，`git revert <sha>` 即可；示例 theme.json 删除即回退内置默认。
+
+### 9.6 批 6 · 配置文件参数化（角色映射 + 精确覆盖）
+
+**问题**：批 5 完成后 `theme.json` 有 691 项（dark 348 + light 343），其中 **378 项（55%）是 Tailwind 默认色板材料**（`--emerald-400-rgb` 之类）。这些是代码级常量，不是用户要配的设计决策——配置文件应存「参数」，不该是色值清单。且 176 个色阶里实际只用到 86 个。
+
+**三层结构**：
+
+| 层 | 内容 | 归属 |
+|---|---|---|
+| 材质层 | `--emerald-400-rgb: 52 211 153` × 176 | **CSS 代码**（Tailwind 默认色板，原值，视觉零回归） |
+| 语义槽层 | `--success-400-rgb: var(--emerald-400-rgb)` × 55 | CSS 默认值；主色族 → 角色槽 |
+| 配置层 | `roles: {success: "green"}` + `overrides: {...}` | **theme.json（参数）** |
+
+**主色族**（每角色全站用量最大者）：success→emerald(74)、danger→rose(77)、info→sky(45)、thinking→violet(14)、warning→amber(10)。只有主色族指向语义槽，同角色的其它族（green/red/cyan/…）仍指向自身材质——否则 `roles.success=green` 会让 emerald 与 green 撞成同一色。
+
+**配置文件结构**（每主题）：
+```json
+{"theme": {
+  "dark": {
+    "roles":    {"success": "emerald", "danger": "rose", "info": "sky",
+                 "thinking": "violet", "warning": "amber"},
+    "overrides": {"--success-400-rgb": "52 211 153"}
+  },
+  "light": {...}
+}}
+```
+`roles` = 角色→色相（参数，后端展开为具体材质）；`overrides` = 精确覆盖（优先级高于 roles）。旧的扁平写法（`"--var": "value"`）仍兼容。
+
+**效果**：改 `roles.success` 为 `"green"` → 后端把 emerald 各档材质换成 green 同档材质 → Tailwind `emerald.*` 类（经语义槽）整体变绿，**组件零改动**。实测：`text-emerald-400` 元素计算色由 `rgb(52,211,153)` → `rgb(74,222,128)`。
+
+**契约测试**：后端 4 例（角色映射生效 / 默认保持原值 / overrides 优先 / 未知色族忽略）+ 前端 3 例（槽双主题声明且指向主色族 / 主色族绑槽 / 非主色族保持自身材质）。

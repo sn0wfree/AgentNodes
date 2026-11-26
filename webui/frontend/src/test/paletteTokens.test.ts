@@ -88,11 +88,17 @@ describe('semantic color tokens (stage 1 of palette unification)', () => {
     // 323 处 text-/bg-/border-emerald|rose|sky|violet|... 此前走 Tailwind 内置
     // 硬编码色板 → 不受 theme.json 控制。改为 rgb(var(--fam-NN-rgb) / <alpha-value>)，
     // 组件零改动，且 /NN 透明度修饰符原生可用。
+    const canonical: Record<string, string> = {
+      emerald: 'success', rose: 'danger', sky: 'info',
+      indigo: 'thinking', orange: 'warning',
+    }
     const families = ['emerald', 'red', 'rose', 'violet', 'purple', 'amber', 'orange',
       'yellow', 'lime', 'green', 'teal', 'cyan', 'sky', 'indigo', 'fuchsia', 'pink']
     for (const fam of families) {
+      // §9 批 6 起，主色族指向语义槽（--success-NN-rgb 等），其余族指向自身材质。
+      const target = canonical[fam] ?? fam
       expect(tw, `${fam} 族未映射`).toMatch(
-        new RegExp(`${fam}:\\s*\\{[\\s\\S]*?\\d+:\\s*'rgb\\(var\\(--${fam}-\\d+-rgb\\) / <alpha-value>\\)'`),
+        new RegExp(`${fam}:\\s*\\{[\\s\\S]*?\\d+:\\s*'rgb\\(var\\(--${target}-\\d+-rgb\\) / <alpha-value>\\)'`),
       )
     }
   })
@@ -214,7 +220,54 @@ describe('viz and identity colors come from theme variables', () => {
       }
     }
   })
+})
 
+// §9 批 6：语义槽层——主色族 → 角色槽 → 材质。
+// theme.json 只需写 roles.{role}="green" 这类参数即可整体换色相，
+// 因此 Tailwind 主色族必须指向语义槽（而非自身材质）。
+describe('semantic role slots drive palette families', () => {
+  it('defines role slots in both themes pointing at their canonical family', () => {
+    const canonical: Record<string, string> = {
+      success: 'emerald', danger: 'rose', info: 'sky',
+      thinking: 'indigo', warning: 'orange',
+    }
+    for (const theme of ['dark', 'light'] as const) {
+      const vars = varsOf(theme)
+      for (const [role, family] of Object.entries(canonical)) {
+        for (const shade of [50, 100, 200, 300, 400, 500, 600, 700, 800, 900, 950]) {
+          const slot = `--${role}-${shade}-rgb`
+          expect(vars.has(slot), `${theme} ${slot}`).toBe(true)
+        }
+        // 槽默认指向主色族材质
+        expect(css, `${theme} --${role}-400-rgb 应指向 --${family}-400-rgb`)
+          .toMatch(new RegExp(`--${role}-400-rgb:\\s*var\\(--${family}-400-rgb\\)`))
+      }
+    }
+  })
+
+  it('binds canonical palette families to role slots in tailwind config', () => {
+    for (const [family, role] of Object.entries({
+      emerald: 'success', rose: 'danger', sky: 'info',
+      indigo: 'thinking', orange: 'warning',
+    })) {
+      expect(tw, `${family} 族应指向 --${role}-* 语义槽`).toMatch(
+        new RegExp(`${family}:\\s*\\{[\\s\\S]*?400:\\s*'rgb\\(var\\(--${role}-400-rgb\\) / <alpha-value>\\)'`),
+      )
+    }
+  })
+
+  it('keeps non-canonical families on their own material (no hue collision)', () => {
+    // green/red/cyan 等同角色的其它族必须仍指向自身材质，
+    // 否则 roles.success=green 会让 emerald 与 green 撞成同一色。
+    for (const family of ['green', 'red', 'cyan', 'teal', 'violet', 'purple', 'pink', 'amber', 'yellow']) {
+      expect(tw, `${family} 应保持自身材质`).toMatch(
+        new RegExp(`${family}:\\s*\\{[\\s\\S]*?400:\\s*'rgb\\(var\\(--${family}-400-rgb\\) / <alpha-value>\\)'`),
+      )
+    }
+  })
+})
+
+describe('migrated color files use token references', () => {
   it('uses token references instead of hardcoded hex in migrated color files', () => {
     const agentsStore = readFileSync(resolve(__dirname, '../../src/stores/agents.ts'), 'utf-8')
     const nodeTypes = readFileSync(resolve(__dirname, '../../src/components/workflow/nodeTypes.ts'), 'utf-8')

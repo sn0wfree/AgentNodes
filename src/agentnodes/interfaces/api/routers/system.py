@@ -51,6 +51,56 @@ _VAR_ONLY = re.compile(r"^var\(--[\w-]+\)$")
 # 否则 sky/blue/accent 色阶无法经配置换色。只接受 3 个 0-255 整数。
 _RGB_CHANNELS = re.compile(r"^\d{1,3}\s+\d{1,3}\s+\d{1,3}$")
 
+# §9 批 6：Tailwind 调色板「材料」变量（`--emerald-400-rgb`）。
+# 这些是代码级常量（Tailwind 默认色板），**不导出到 theme.json**——
+# 否则配置文件会退化成 1800 行色值清单，而不是"参数表"。
+# 用户要改某族色相 → 改 roles 映射；要改某一档精确值 → 在 theme.dark
+# 里显式覆盖该变量（仍被接受）。
+_PALETTE_FAMILIES = (
+    "emerald", "red", "rose", "violet", "purple", "amber", "orange", "yellow",
+    "lime", "green", "teal", "cyan", "sky", "indigo", "fuchsia", "pink", "blue",
+)
+_MATERIAL_VAR = re.compile(r"^--(?:" + "|".join(_PALETTE_FAMILIES) + r")-\d+-rgb$")
+
+# §9 批 6：语义角色 → 主色族（该角色在全站用量最大的那一族）。
+# 配置文件写 roles.success="green" 时，主色族 emerald 的材质整体换成 green 的，
+# 全站 emerald-* 用法随之变绿，组件零改动。
+_ROLE_FAMILY: dict[str, str] = {
+    "success": "emerald",
+    "danger": "rose",
+    "info": "sky",
+    "thinking": "indigo",
+    "warning": "orange",
+}
+
+
+def _is_material_var(name: str) -> bool:
+    """色板材料变量（代码级常量）。"""
+    return bool(_MATERIAL_VAR.match(name))
+
+
+def _apply_role_families(values: dict[str, str], roles: dict[str, str]) -> None:
+    """把「角色 → 色族」参数展开成具体材质值。
+
+    roles.success="green" → 把 emerald 各档材质换成 green 同档的材质；
+    其余色族保持自身材质（避免一个角色把同族其它色相也一起改掉）。
+    """
+    for role, family in roles.items():
+        canonical = _ROLE_FAMILY.get(role)
+        if not canonical or not isinstance(family, str) or family == canonical:
+            continue
+        if family not in _PALETTE_FAMILIES:
+            logger.warning("theme roles: 未知色族 %r（角色 %s），已忽略", family, role)
+            continue
+        prefix, suffix = f"--{canonical}-", "-rgb"
+        for name in list(values):
+            if not (name.startswith(prefix) and name.endswith(suffix)):
+                continue
+            shade = name[len(prefix): -len(suffix)]
+            src = f"--{family}-{shade}{suffix}"
+            if src in values:
+                values[name] = values[src]
+
 
 def _is_color_value(value: str, name: str = "") -> bool:
     """值是颜色（或颜色别名变量）才纳入主题；多值 shadow/gradient 也算。"""
@@ -117,7 +167,22 @@ _BUILTIN_THEME: dict[str, dict[str, str]] = _extract_css_colors()
 
 
 def _load_theme() -> dict[str, dict[str, str]]:
-    """读取 theme.json（{"theme":{"dark":{...},"light":{...}}}）；缺失/非法回退内置。"""
+    """读取 theme.json；缺失/非法回退内置。
+
+    §9 批 6 起支持两层结构（每主题）：
+
+    ```json
+    {"theme": {
+       "dark": {
+         "roles":    {"success": "green"},          // 参数：角色用哪个色相
+         "overrides": {"--success-400-rgb": "52 211 153"}  // 精确覆盖
+       },
+       "light": {...}
+    }}
+    ```
+
+    旧的扁平写法（直接 `"--var": "value"`）仍兼容。
+    """
     result = {k: dict(v) for k, v in _BUILTIN_THEME.items()}
     try:
         raw = json.loads(_THEME_JSON_PATH.read_text(encoding="utf-8"))
@@ -128,9 +193,19 @@ def _load_theme() -> dict[str, dict[str, str]]:
         return result
     for mode in ("dark", "light"):
         values = candidate.get(mode)
-        if isinstance(values, dict):
-            # 只接受字符串值，避免注入非法 CSS
-            for key, val in values.items():
+        if not isinstance(values, dict):
+            continue
+        # 第一层：角色 → 色相（参数，展开为具体材质）
+        roles = values.get("roles")
+        if isinstance(roles, dict):
+            _apply_role_families(result[mode], roles)
+        # 第二层：精确覆盖（含材料变量，用户想逐档微调时用）
+        overrides = values.get("overrides")
+        sources = [overrides] if isinstance(overrides, dict) else []
+        sources.append(values)  # 兼容扁平写法
+        for src in sources:
+            for key, val in src.items():
+                # 只接受字符串值，避免注入非法 CSS
                 if isinstance(key, str) and key.startswith("--") and isinstance(val, str):
                     result[mode][key] = val
     return result
