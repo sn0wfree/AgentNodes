@@ -72,9 +72,15 @@ def test_theme_partial_config_does_not_break(client, isolated):
 
 
 def test_builtin_theme_covers_all_css_color_variables(client, isolated):
-    """§8 第 1 步契约：内置默认必须从 globals.css 提取全部颜色变量
-    （排除 space/radius/font/alpha 等非颜色 token），防手写 13 项的覆盖缺口。"""
-    import re
+    """§8 第 1 步 / §9 批 1 契约：内置默认必须从 globals.css 提取全部颜色变量。
+
+    判定谓词复用后端 `_is_color_value` + `_iter_theme_declarations`（单一事实源），
+    避免「测试正则与后端正则漂移」导致的假绿/假红。
+    """
+    from agentnodes.interfaces.api.routers.system import (
+        _is_color_value,
+        _iter_theme_declarations,
+    )
 
     resp = client.get("/api/system/theme")
     body = resp.json()
@@ -82,20 +88,50 @@ def test_builtin_theme_covers_all_css_color_variables(client, isolated):
     css_path = Path(__file__).resolve().parents[1] / "webui/frontend/src/styles/globals.css"
     css = css_path.read_text(encoding="utf-8")
 
-    def color_vars_of(block: str) -> set[str]:
-        # dark = :root 块（到 light 前）；light = [data-theme='light'] 块
-        if block == "dark":
-            seg = css[: css.index("[data-theme='light']")]
-        else:
-            seg = css[css.index("[data-theme='light']") :]
-        out = set()
-        for m in re.finditer(r"(--[\w-]+)\s*:\s*([^;]+);", seg):
-            name, value = m.group(1), m.group(2).strip()
-            # 颜色值判定：hex / rgb(a) / hsl / color-mix / var(颜色) / 具名颜色
-            if re.match(r"#|rgba?\(|hsla?\(|color-mix\(|transparent|white|black", value):
-                out.add(name)
-        return out
+    expected: dict[str, set[str]] = {"dark": set(), "light": set()}
+    for mode, name, value in _iter_theme_declarations(css):
+        if _is_color_value(value):
+            expected[mode].add(name)
 
     for mode in ("dark", "light"):
-        missing = color_vars_of(mode) - set(body[mode])
+        missing = expected[mode] - set(body[mode])
         assert not missing, f"{mode} 内置默认缺少 CSS 颜色变量: {sorted(missing)}"
+
+
+def test_later_dark_blocks_are_not_misclassified_as_light(client, isolated):
+    """§9 批 1：workflow/DAG 段的 dark 令牌必须取 dark 值（旧单次切分 bug）。
+
+    这些键在 dark/light 都有声明，不能靠「是否出现」判断归属，必须按值判断：
+    dark 块 L551 用 #0a0a12 系渐变，light 块 L561 用 #f6f6f0 系。
+    """
+    body = client.get("/api/system/theme").json()
+    assert "0a0a12" in body["dark"]["--canvas-bg"].lower()
+    assert "f6f6f0" in body["light"]["--canvas-bg"].lower()
+    # dark 的 edge-stroke 是深灰 #475569，light 是浅灰 #cbd5e1
+    assert body["dark"]["--edge-stroke"].lower() == "#475569"
+    assert body["light"]["--edge-stroke"].lower() == "#cbd5e1"
+
+
+def test_gradient_and_shadow_variables_are_exported(client, isolated):
+    """§9 批 1：gradient / 多值 shadow 变量也必须可被 theme.json 覆盖。"""
+    body = client.get("/api/system/theme").json()
+    for mode in ("dark", "light"):
+        for key in ("--canvas-bg", "--dag-card-shadow"):
+            assert key in body[mode], f"{mode} 缺少 {key}"
+            assert "gradient" in body[mode]["--canvas-bg"]
+            assert "rgba(" in body[mode]["--dag-card-shadow"]
+
+
+def test_theme_can_override_gradient_and_shadow_keys(client, isolated):
+    """theme.json 覆盖 gradient/shadow 键后 API 必须返回配置值。"""
+    gradient = "linear-gradient(45deg, #010203, #040506)"
+    shadow = "0 0 0 2px #123456"
+    isolated.write_text(json.dumps({
+        "theme": {
+            "dark": {"--canvas-bg": gradient, "--dag-card-shadow": shadow},
+            "light": {},
+        }
+    }), encoding="utf-8")
+    body = client.get("/api/system/theme").json()
+    assert body["dark"]["--canvas-bg"] == gradient
+    assert body["dark"]["--dag-card-shadow"] == shadow

@@ -36,38 +36,75 @@ class LLMConfigUpdate(BaseModel):
 
 
 # 配色统一阶段 3 §8 第 1 步：内置默认主题从前端 globals.css **自动提取**
-# 全部颜色变量（此前手写 13 项，漏掉 success/danger/warning/viz/primary 阶梯等
-# 54 项）。theme.json 缺失/非法时回退到这里；改 CSS 变量后无需改后端代码。
-# 只提取颜色值（hex/rgb(a)/hsl(a)/color-mix/具名色），排除 space/radius/font/alpha
-# 等非颜色 token（它们大多无消费者，不属配色控制范围）。
-_COLOR_VALUE = re.compile(
-    r"^(?:#[0-9a-fA-F]{3,8}|rgba?\(|hsla?\(|color-mix\(|transparent|white|black|currentColor)\b"
-    r"|^(?:var\(--[\w-]+\))$"
-)
+# 全部颜色变量。theme.json 缺失/非法时回退到这里；改 CSS 变量后无需改后端代码。
+# 判定从「值必须以颜色开头」改为「值中包含颜色字面量」：这样多值 box-shadow
+# （`0 4px 14px rgba(...)`）与 linear-gradient 也能导出（§9 批 1）。
+# 排除 space/radius/font/easing 等非颜色 token（它们不属配色控制范围）。
+_CSS_COMMENT = re.compile(r"/\*.*?\*/", re.S)
 _CSS_VAR_DECL = re.compile(r"(--[\w-]+)\s*:\s*([^;]+);")
+_COLOR_IN_VALUE = re.compile(
+    r"#[0-9a-fA-F]{3,8}\b|rgba?\(|hsla?\(|color-mix\(|linear-gradient\(|radial-gradient\(|"
+    r"\b(?:transparent|white|black|currentColor)\b"
+)
+_VAR_ONLY = re.compile(r"^var\(--[\w-]+\)$")
+
+
+def _is_color_value(value: str) -> bool:
+    """值是颜色（或颜色别名变量）才纳入主题；多值 shadow/gradient 也算。"""
+    stripped = value.strip()
+    return bool(_VAR_ONLY.match(stripped) or _COLOR_IN_VALUE.search(stripped))
+
+
+def _iter_theme_declarations(css: str):
+    """逐块遍历 CSS 变量声明，产出 (mode, 变量名, 值)。
+
+    globals.css 里 dark/light 块交替出现（:root / 主 light 块 / workflow
+    canvas / DAG card），旧版「按首个 [data-theme='light'] 一刀切」会把
+    后续 dark 块误归 light。这里用花括号状态机按每个块的选择器判 mode。
+    """
+    css = _CSS_COMMENT.sub("", css)
+    depth = 0
+    mode: str | None = None
+    block: list[str] = []
+    for line in css.splitlines():
+        opens, closes = line.count("{"), line.count("}")
+        if depth == 0 and opens:
+            if "[data-theme='light']" in line or '[data-theme="light"]' in line:
+                mode = "light"
+            elif (
+                ":root" in line
+                or "[data-theme='dark']" in line
+                or '[data-theme="dark"]' in line
+            ):
+                mode = "dark"
+            else:
+                mode = None
+            block = []
+        if mode:
+            block.append(line)
+        depth += opens - closes
+        if depth <= 0:
+            if mode:
+                # 整个块一起匹配：多值 shadow / gradient 声明跨行，逐行会漏。
+                for m in _CSS_VAR_DECL.finditer("\n".join(block)):
+                    yield mode, m.group(1), m.group(2).strip()
+            depth = 0
+            mode = None
+            block = []
 
 
 def _extract_css_colors() -> dict[str, dict[str, str]]:
-    """从 globals.css 解析 dark(:root) / light([data-theme]) 的颜色变量。"""
+    """从 globals.css 提取 dark/light 双主题颜色变量（按块归属，非按首次切分）。"""
     # routers/system.py → parents[5] = 仓库根（src/agentnodes/interfaces/api/routers）
     css_path = Path(__file__).resolve().parents[5] / "webui" / "frontend" / "src" / "styles" / "globals.css"
     try:
         css = css_path.read_text(encoding="utf-8")
     except OSError:
         return {"dark": {}, "light": {}}
-    light_at = css.find("[data-theme='light']")
-    segments = {
-        "dark": css[:light_at] if light_at >= 0 else css,
-        "light": css[light_at:] if light_at >= 0 else "",
-    }
-    result: dict[str, dict[str, str]] = {}
-    for mode, seg in segments.items():
-        values: dict[str, str] = {}
-        for m in _CSS_VAR_DECL.finditer(seg):
-            name, value = m.group(1), m.group(2).strip()
-            if name.startswith("--") and _COLOR_VALUE.match(value):
-                values[name] = value
-        result[mode] = values
+    result: dict[str, dict[str, str]] = {"dark": {}, "light": {}}
+    for mode, name, value in _iter_theme_declarations(css):
+        if _is_color_value(value):
+            result[mode][name] = value
     return result
 
 
