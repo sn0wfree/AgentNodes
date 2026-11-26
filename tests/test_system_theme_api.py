@@ -215,3 +215,66 @@ def test_theme_can_override_gradient_and_shadow_keys(client, isolated):
     body = client.get("/api/system/theme").json()
     assert body["dark"]["--canvas-bg"] == gradient
     assert body["dark"]["--dag-card-shadow"] == shadow
+
+
+# ── 配置文件形态解析（用户可能写出各种形状，都不能炸服务） ──────────
+
+@pytest.mark.parametrize(
+    "payload",
+    [
+        pytest.param({}, id="空对象"),
+        pytest.param({"theme": {}}, id="theme 为空"),
+        pytest.param({"theme": {"dark": {}}}, id="只有 dark"),
+        pytest.param({"theme": {"dark": "not-a-dict"}}, id="dark 不是字典"),
+        pytest.param({"theme": {"dark": {"roles": "not-a-dict"}}}, id="roles 不是字典"),
+        pytest.param({"theme": {"dark": {"overrides": []}}}, id="overrides 是列表"),
+        pytest.param({"theme": {"dark": {"roles": {"emerald": 42}}}}, id="roles 值是数字"),
+        pytest.param({"theme": {"dark": {"overrides": {"--x": 42}}}}, id="overrides 值是数字"),
+        pytest.param({"theme": {"dark": {"unknown-key": "x"}}}, id="未知顶层键"),
+        pytest.param([1, 2, 3], id="根不是对象"),
+    ],
+)
+def test_malformed_config_never_breaks_the_endpoint(client, isolated, payload):
+    """任何畸形配置都应回退内置默认，而不是 500。"""
+    isolated.write_text(json.dumps(payload), encoding="utf-8")
+    resp = client.get("/api/system/theme")
+    assert resp.status_code == 200
+    body = resp.json()
+    assert body["dark"].get("--emerald-400-rgb") == "52 211 153"
+
+
+def test_flat_legacy_format_still_works(client, isolated):
+    """旧写法（直接 "--var": "value"）保持兼容。"""
+    isolated.write_text(json.dumps({
+        "theme": {"dark": {"--surface-solid": "#123456"}, "light": {}}
+    }), encoding="utf-8")
+    body = client.get("/api/system/theme").json()
+    assert body["dark"]["--surface-solid"] == "#123456"
+
+
+def test_roles_and_overrides_combine(client, isolated):
+    """roles 与 overrides 同时存在：overrides 优先级更高。"""
+    isolated.write_text(json.dumps({
+        "theme": {
+            "dark": {
+                "roles": {"emerald": "green"},
+                "overrides": {"--success-emerald-400-rgb": "9 9 9"},
+            }
+        }
+    }), encoding="utf-8")
+    body = client.get("/api/system/theme").json()
+    assert body["dark"]["--success-emerald-400-rgb"] == "9 9 9"
+    assert body["dark"]["--success-emerald-500-rgb"] == "var(--green-500-rgb)"
+
+
+def test_roles_apply_per_theme_independently(client, isolated):
+    """roles 按主题独立生效（dark 改 emerald，light 不改）。"""
+    isolated.write_text(json.dumps({
+        "theme": {
+            "dark": {"roles": {"emerald": "green"}},
+            "light": {"roles": {"emerald": "emerald"}},
+        }
+    }), encoding="utf-8")
+    body = client.get("/api/system/theme").json()
+    assert body["dark"]["--success-emerald-400-rgb"] == "var(--green-400-rgb)"
+    assert body["light"]["--success-emerald-400-rgb"] == "var(--emerald-400-rgb)"

@@ -232,3 +232,15 @@ codemod 曾把 `!bg-slate-900/95` 误迁为 `!bg-background/95`——Tailwind �
 **实测**：改 `roles.emerald = "green"` → 监控页 `text-emerald-400` 计算色 `rgb(52,211,153)` → `rgb(74,222,128)`，同页 `text-red-400` 保持 `rgb(248,113,113)` 不变。
 
 **契约测试**：后端 5 例 + 前端 3 例（每族独立槽双主题声明 / Tailwind 每族绑自己槽 / 每族槽互不相同防撞色）。
+
+### 9.8 单元测试（§9 批 8）
+
+配置链路分三层，各自单测锁定：
+
+| 层 | 文件 | 用例数 | 覆盖 |
+|---|---|---|---|
+| 纯函数（后端） | `tests/test_theme_config_units.py` | 41 | `_is_color_value` 颜色判定（含多值 shadow / RGB 通道 / 越界拒绝）、`_iter_theme_declarations` 块归属（多行值 / 注释 / 非主题块排除）、`_apply_role_families` 展开（默认不变 / 只改指定族 / 多族统一 / 跨角色 / 未知族 / 非字符串 / 材质不动）、族↔角色映射不变量（无重叠 / 属色板子集） |
+| 注入（前端） | `webui/frontend/src/test/themeConfigUnits.test.ts` | 9 | `injectThemeStyle` 双主题作用域隔离、槽变量 `var()` 原样注入、材料值注入、非 `--` 键过滤、非字符串值过滤、重复注入复用节点、节点被移除后重建、空主题不注入 |
+| 端到端 | `tests/test_system_theme_api.py` | 26 | 角色映射生效 / 默认零回归 / overrides 优先 / 未知族忽略 / **10 种畸形配置参数化**（空、根非对象、类型错误等，均回退不 500）/ 旧扁平格式兼容 / roles+overrides 组合 / 双主题独立 |
+
+另新增 `webui/frontend/public/theme.example.json` —— **仓库内**的示例配置（含用法说明），用户照抄即可；契约测试校验其结构与解析器一致，防止示例与实现脱节。

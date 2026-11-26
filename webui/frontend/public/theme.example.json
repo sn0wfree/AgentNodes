@@ -1,0 +1,49 @@
+{
+  "_comment": "示例配色配置。复制到 ~/.agentnodes/theme.json 后生效（改这个文件不用改代码）。",
+  "_usage": {
+    "roles": "色族 → 目标色族。键=要改的色族，值=改用哪个色族的色相。值=自身表示不改。例：emerald→green 则全站 emerald 用法变绿（组件零改动）。",
+    "overrides": "精确到具体 CSS 变量的覆盖（材质或语义槽）。需要逐档微调深浅时用。键必须以 -- 开头，值是合法 CSS 颜色值。"
+  },
+  "theme": {
+    "dark": {
+      "roles": {
+        "emerald": "emerald",
+        "green": "green",
+        "rose": "rose",
+        "red": "red",
+        "pink": "pink",
+        "sky": "sky",
+        "cyan": "cyan",
+        "teal": "teal",
+        "indigo": "indigo",
+        "violet": "violet",
+        "purple": "purple",
+        "fuchsia": "fuchsia",
+        "orange": "orange",
+        "amber": "amber",
+        "yellow": "yellow"
+      },
+      "overrides": {}
+    },
+    "light": {
+      "roles": {
+        "emerald": "emerald",
+        "green": "green",
+        "rose": "rose",
+        "red": "red",
+        "pink": "pink",
+        "sky": "sky",
+        "cyan": "cyan",
+        "teal": "teal",
+        "indigo": "indigo",
+        "violet": "violet",
+        "purple": "purple",
+        "fuchsia": "fuchsia",
+        "orange": "orange",
+        "amber": "amber",
+        "yellow": "yellow"
+      },
+      "overrides": {}
+    }
+  }
+}
