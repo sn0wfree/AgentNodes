@@ -121,7 +121,7 @@ export function MetricsCompare({ rounds, onOpenRun }: Props) {
                         type="button"
                         title="查看回测产物"
                         onClick={() => onOpenRun(r.run_name)}
-                        className="cursor-pointer rounded p-1 text-muted opacity-0 transition-all group-hover:opacity-100 hover:bg-surface-raised hover:text-sky-400"
+                        className="cursor-pointer rounded p-1 text-muted opacity-0 transition-all group-hover:opacity-100 hover:bg-surface-raised hover:text-info-fg"
                       >
                         <ExternalLink className="h-3 w-3" />
                       </button>

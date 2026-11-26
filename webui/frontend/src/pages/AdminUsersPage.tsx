@@ -214,7 +214,7 @@ export function AdminUsersPage({ embedded = false }: { embedded?: boolean }) {
                         {!isSelf && (
                           <button onClick={() => toggleActive(u)}
                             title={u.is_active ? '禁用' : '启用'}
-                            className={`rounded-md px-2 py-1 text-xs hover:bg-surface-raised ${u.is_active ? 'text-muted hover:text-red-300' : 'text-emerald-400'}`}>
+                            className={`rounded-md px-2 py-1 text-xs hover:bg-surface-raised ${u.is_active ? 'text-muted hover:text-danger-fg' : 'text-success-fg'}`}>
                             {u.is_active ? <Ban className="h-3.5 w-3.5" /> : <CircleCheck className="h-3.5 w-3.5" />}
                           </button>
                         )}

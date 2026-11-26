@@ -138,7 +138,7 @@ function RoundItem({
               type="button"
               title="查看回测产物"
               onClick={() => onOpenRun(round.run_name)}
-              className="mr-1 flex-shrink-0 cursor-pointer rounded-lg p-1.5 text-muted transition-colors hover:bg-surface-raised hover:text-sky-400"
+              className="mr-1 flex-shrink-0 cursor-pointer rounded-lg p-1.5 text-muted transition-colors hover:bg-surface-raised hover:text-info-fg"
             >
               <ExternalLink className="h-3 w-3" />
             </button>
