@@ -155,7 +155,7 @@ describe('globals.css all colors come from variable declarations', () => {
       '--rf-button-fg', '--rf-minimap-border', '--rf-handle-border',
       '--badge-builtin-bg', '--badge-builtin-fg', '--badge-user-bg',
       '--badge-failed-bg', '--badge-neutral-fg', '--dark-mode-card-bg',
-      '--wf-card-title-fg', '--wf-minimap-bg',
+      '--wf-card-title-fg', '--wf-minimap-bg', '--wf-minimap-mask',
     ]
     for (const theme of ['dark', 'light'] as const) {
       const vars = varsOf(theme)

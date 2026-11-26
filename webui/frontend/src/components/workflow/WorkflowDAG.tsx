@@ -141,7 +141,7 @@ export function WorkflowDAG({
               const d = n.data as unknown as DAGNodeData
               return d.agentColor || 'var(--viz-series-fallback)'
             }}
-            maskColor="rgb(0 0 0 / 0.7)"
+            maskColor="var(--wf-minimap-mask)"
             className="wf-minimap"
           />
         </ReactFlow>
