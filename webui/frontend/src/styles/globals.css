@@ -33,6 +33,12 @@
   --muted-foreground: #a3a3a3;
   --text-secondary: #cbd5e1; /* 次级文字（原 text-slate-300/200 用途） */
   --accent: #38bdf8;
+  /* accent 数字阶梯（§9 复评修复）：chat-ui-config.json 以 var(--accent-400)
+     形式拼装头像渐变，此前该变量不存在 → 整条 background 声明失效、
+     头像透明。值与 Tailwind accent 阶梯（= sky 阶梯）保持一致。 */
+  --accent-50: #f0f9ff; --accent-100: #e0f2fe; --accent-200: #bae6fd; --accent-300: #7dd3fc;
+  --accent-400: #38bdf8; --accent-500: #0ea5e9; --accent-600: #0284c7; --accent-700: #0369a1;
+  --accent-800: #075985; --accent-900: #0c4a6e; --accent-950: #082f49;
   --border: rgba(255,255,255,0.11);
   --border-strong: rgba(255,255,255,0.18); /* 强边框（原 border-slate-700 用途） */
   --border-subtle: rgba(255,255,255,0.06); /* 弱边框（原 border-slate-800/50 用途） */
@@ -173,6 +179,10 @@
   --muted-foreground: #737373;
   --text-secondary: #525252; /* 次级文字（原 text-slate-300/200 用途） */
   --accent: #0ea5e9;
+  /* accent 数字阶梯（§9 复评修复）：同 dark 块，值与 Tailwind accent 阶梯一致 */
+  --accent-50: #f0f9ff; --accent-100: #e0f2fe; --accent-200: #bae6fd; --accent-300: #7dd3fc;
+  --accent-400: #38bdf8; --accent-500: #0ea5e9; --accent-600: #0284c7; --accent-700: #0369a1;
+  --accent-800: #075985; --accent-900: #0c4a6e; --accent-950: #082f49;
   --border: rgba(23,23,23,0.10);
   --border-strong: rgba(23,23,23,0.20); /* 强边框 */
   --border-subtle: rgba(23,23,23,0.05); /* 弱边框 */

@@ -10,11 +10,15 @@ const cssPath = resolve(__dirname, '../../src/styles/globals.css')
 const twPath = resolve(__dirname, '../../tailwind.config.js')
 const composerPath = resolve(__dirname, '../../src/components/chat/Composer.tsx')
 const statusBarPath = resolve(__dirname, '../../src/components/chat/ComposerStatusBar.tsx')
+const chatUiConfigPath = resolve(__dirname, '../../public/chat-ui-config.json')
+const assistantMessagePath = resolve(__dirname, '../../src/components/chat/AssistantMessage.tsx')
 
 const css = readFileSync(cssPath, 'utf-8')
 const tw = readFileSync(twPath, 'utf-8')
 const composer = readFileSync(composerPath, 'utf-8')
 const statusBar = readFileSync(statusBarPath, 'utf-8')
+const chatUiConfig = JSON.parse(readFileSync(chatUiConfigPath, 'utf-8'))
+const assistantMessage = readFileSync(assistantMessagePath, 'utf-8')
 
 // 从 CSS 抽取指定主题块的变量名集合
 function varsOf(themeBlock: string): Set<string> {
@@ -192,5 +196,33 @@ describe('viz and identity colors come from theme variables', () => {
     expect(agentsStore).not.toMatch(/'#[0-9a-fA-F]{6}'/)
     expect(nodeTypes).toContain("'var(--wf-node-1)'")
     expect(nodeTypes).not.toMatch(/'#[0-9a-fA-F]{6}'/)
+  })
+})
+
+// §9 复评修复：chat-ui-config.json 以 `var(--${name})` 动态拼装头像渐变。
+// 变量名不在 globals.css 声明时，整条 background 声明失效（头像透明），
+// 而且不会报任何错——只能靠契约测试兜住。
+describe('config-driven CSS variable references resolve', () => {
+  it('every gradient stop in chat-ui-config.json maps to a declared CSS variable', () => {
+    const declared = new Set([...css.matchAll(/(--[\w-]+)\s*:/g)].map((m) => m[1]))
+    const stops = [
+      ...chatUiConfig.assistant.avatar.gradient,
+      ...chatUiConfig.userBubble.colors.gradient,
+    ]
+    expect(stops.length).toBeGreaterThan(0)
+    for (const stop of stops) {
+      expect(declared.has(`--${stop}`), `chat-ui-config 渐变色 ${stop} → var(--${stop}) 未在 globals.css 声明`).toBe(true)
+    }
+  })
+
+  it('declares --accent-400 in both themes (avatar gradient stop)', () => {
+    for (const theme of ['dark', 'light'] as const) {
+      expect(varsOf(theme).has('--accent-400'), `${theme} --accent-400`).toBe(true)
+    }
+  })
+
+  it('avatar gradient is assembled from the config (not hardcoded)', () => {
+    expect(assistantMessage).toContain('var(--${chatConfig.avatar.gradient[0]})')
+    expect(assistantMessage).toContain('var(--${chatConfig.avatar.gradient[1]})')
   })
 })
