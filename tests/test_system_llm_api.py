@@ -139,6 +139,21 @@ class TestGetLLM:
         assert nv["key_configured"] is True
         assert providers["minimax"]["key_configured"] is False
 
+    def test_catalog_models_include_configured_model_first(self, client, isolated):
+        """模型选择 fix（2026-11-26）：当前配置的 model 必须在候选列表里，
+        否则下拉看不到正在用的模型（如 MiniMax-M3.1-Flash），误以为选择被忽略。"""
+        llm_json, _ = isolated
+        # PROFILE_JSON 的 minimax model = "minimax-M3"（不在 onboarding 建议列表）
+        llm_json.write_text(json.dumps(PROFILE_JSON))
+        resp = client.get("/api/system/llm")
+        assert resp.status_code == 200
+        providers = {p["name"]: p for p in resp.json()["providers"]}
+        mm = providers["minimax"]
+        assert mm["model"] == "minimax-M3"
+        assert "minimax-M3" in mm["models"]
+        # 配置模型置顶
+        assert mm["models"][0] == "minimax-M3"
+
     def test_legacy_config_without_profiles(self, client, isolated):
         llm_json, _ = isolated
         llm_json.write_text(json.dumps(LEGACY_JSON))

@@ -339,12 +339,20 @@ def _provider_catalog() -> list[dict]:
         defaults = get_provider_defaults(name)
         profile = profiles.get(name) or {}
         key_var = _key_var_for(name)
+        # 当前配置的 model 必须出现在候选列表首位（模型选择 fix
+        # 2026-11-26）：此前 models 只含 onboarding 建议列表，用户配置的
+        # model（如 MiniMax-M3.1-Flash）不在其中——下拉里看不到正在用的
+        # 模型，误以为"模型选择被忽略"。
+        models = list(suggested) if suggested else \
+            ([defaults["model"]] if defaults.get("model") else [])
+        current_model = profile.get("model") or defaults.get("model")
+        if current_model and current_model not in models:
+            models = [current_model, *models]
         catalog.append({
             "name": name,
             "label": label,
-            "model": profile.get("model") or defaults.get("model") or "",
-            "models": list(suggested) if suggested else
-                      ([defaults["model"]] if defaults.get("model") else []),
+            "model": current_model or "",
+            "models": models,
             "base_url": profile.get("base_url") or defaults.get("base_url") or "",
             "key_var": key_var,
             "key_configured": bool(

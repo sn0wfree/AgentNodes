@@ -574,11 +574,26 @@ class SessionController:
             config = getattr(self._client, "config", None) or LLMConfig(api_key="")
             turn_client = self._client
             if self._turn_model:
+                # R5：per-turn 模型覆盖必须走 ModelHub 解析（2026-11-26 修复）。
+                # 前端传 "provider/model" 复合串；旧实现裸 replace(config.model)
+                # 把复合串整个塞给 LLM API 的 model 字段（非法名），且绕过
+                # provider 校验。现拆分后交 ModelHub——未知 provider 拒绝，
+                # 不静默降级。
                 if not dataclasses.is_dataclass(config):
                     raise RuntimeError(
                         "Gateway client does not support per-request model overrides"
                     )
-                config = dataclasses.replace(config, model=self._turn_model)
+                from agentnodes.foundation.llm import model_hub
+
+                provider, sep, model = self._turn_model.partition("/")
+                if not sep:
+                    # 纯模型名（无 provider 前缀）：provider 沿用现有配置
+                    provider = None
+                    model = self._turn_model
+                binding = model_hub.resolve(
+                    provider=provider or None, model=model or None,
+                )
+                config = binding.config
                 from agentnodes.foundation.llm.openai_client import OpenAICompatClient
 
                 turn_client = OpenAICompatClient(

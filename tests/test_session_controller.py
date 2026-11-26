@@ -256,6 +256,7 @@ def test_system_prompt_injected():
 def test_per_turn_model_persona_and_tool_limits_reach_agent_loop(monkeypatch):
     from types import SimpleNamespace
 
+    import agentnodes.foundation.llm.config as llm_config
     import agentnodes.foundation.llm.openai_client as openai_client
     import agentnodes.kernel.agent.loop.core as loop_core
     import agentnodes.kernel.runtimes.nodes.agent_loop_node as loop_node
@@ -273,6 +274,11 @@ def test_per_turn_model_persona_and_tool_limits_reach_agent_loop(monkeypatch):
             captured.update(kwargs)
             self.client = None
 
+    # ModelHub.resolve 内部 LLMConfig.load()——隔离成确定配置，不读真实环境
+    monkeypatch.setattr(
+        llm_config.LLMConfig, "load",
+        classmethod(lambda cls, env=None: cls(api_key="test", provider="minimax", model="base")),
+    )
     monkeypatch.setattr(openai_client, "OpenAICompatClient", ConfiguredClient)
     monkeypatch.setattr(loop_core, "AgentLoop", StubLoop)
     monkeypatch.setattr(loop_node, "make_agent_loop_node", lambda _loop: lambda s: s)
@@ -293,6 +299,76 @@ def test_per_turn_model_persona_and_tool_limits_reach_agent_loop(monkeypatch):
     assert captured["config"].model == "model-override"
     assert captured["system_prompt"] == "persona prompt"
     assert captured["allowed_tools"] == ["read_file"]
+
+
+def test_per_turn_model_with_provider_prefix_splits_and_validates(monkeypatch):
+    """模型选择 fix（2026-11-26）：前端传 "provider/model" 复合串——
+    旧实现裸 replace(config.model) 把复合串整个塞给 LLM API（非法名）。
+    新实现拆分后走 ModelHub：provider 校验 + model 为纯名。"""
+    from types import SimpleNamespace
+
+    import agentnodes.foundation.llm.config as llm_config
+    import agentnodes.foundation.llm.openai_client as openai_client
+    import agentnodes.kernel.agent.loop.core as loop_core
+    import agentnodes.kernel.runtimes.nodes.agent_loop_node as loop_node
+    from agentnodes.foundation.llm.config import LLMConfig
+
+    captured = {}
+
+    class ConfiguredClient:
+        def __init__(self, config, transport=None):
+            self.config = config
+            self.transport = transport
+
+    class StubLoop:
+        def __init__(self, **kwargs):
+            captured.update(kwargs)
+            self.client = None
+
+    monkeypatch.setattr(
+        llm_config.LLMConfig, "load",
+        classmethod(lambda cls, env=None: cls(api_key="test", provider="minimax", model="base")),
+    )
+    monkeypatch.setattr(openai_client, "OpenAICompatClient", ConfiguredClient)
+    monkeypatch.setattr(loop_core, "AgentLoop", StubLoop)
+    monkeypatch.setattr(loop_node, "make_agent_loop_node", lambda _loop: lambda s: s)
+    monkeypatch.setattr(loop_node, "make_loop_event_sink", lambda sink: sink)
+    monkeypatch.setattr(loop_node, "wrap_async_capable_client", lambda client: client)
+
+    client = SimpleNamespace(config=LLMConfig(api_key="test", model="base"))
+    controller, _, _, _ = make_controller(client=client)
+    controller._registry = object()
+    controller._current_session_id = "session-1"
+    controller._turn_model = "minimax/MiniMax-M3"
+
+    controller._build_engine()
+
+    # 拆分后：provider=minimax（校验通过）、model=纯名（不带前缀）
+    assert captured["config"].model == "MiniMax-M3"
+    assert captured["config"].provider == "minimax"
+
+
+def test_per_turn_model_unknown_provider_rejected(monkeypatch):
+    """R5 拒绝语义：未知 provider 的 per-turn 覆盖必须拒绝，不静默降级。"""
+    import pytest
+    from types import SimpleNamespace
+
+    import agentnodes.foundation.llm.config as llm_config
+    from agentnodes.foundation.llm.config import LLMConfig
+    from agentnodes.foundation.llm.model_hub import ModelHubError
+
+    monkeypatch.setattr(
+        llm_config.LLMConfig, "load",
+        classmethod(lambda cls, env=None: cls(api_key="test", provider="minimax", model="base")),
+    )
+    client = SimpleNamespace(config=LLMConfig(api_key="test", model="base"))
+    controller, _, _, _ = make_controller(client=client)
+    controller._registry = object()
+    controller._current_session_id = "session-1"
+    controller._turn_model = "bogus-provider/whatever"
+
+    with pytest.raises(ModelHubError):
+        controller._build_engine()
 
 
 def test_no_system_prompt_added_when_none():
