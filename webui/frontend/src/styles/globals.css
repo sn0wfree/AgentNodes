@@ -66,6 +66,30 @@
   /* viz 系列色（C 批：图表系列色，豁免单强调，单点定义）*/
   --viz-1: #3b82f6;  --viz-2: #10b981;  --viz-3: #8b5cf6;  --viz-4: #f59e0b;
   --viz-5: #06b6d4;  --viz-6: #ec4899;  --viz-7: #f97316;  --viz-8: #14b8a6;
+
+  /* §9 批 2：React Flow / 徽章 / 卡片 chrome（dark 原值） */
+  --focus-ring: #3b82f6;
+  --shadow-sm-color: rgba(0, 0, 0, 0.25);
+  --rf-control-shadow: rgba(0, 0, 0, 0.35);
+  --rf-control-border: rgba(51, 65, 85, 0.6);
+  --rf-button-bg: rgba(15, 23, 42, 0.85);
+  --rf-button-border: rgba(51, 65, 85, 0.5);
+  --rf-button-fg: #94a3b8;
+  --rf-button-hover-bg: rgba(30, 41, 59, 0.95);
+  --rf-button-hover-fg: #e2e8f0;
+  --rf-minimap-border: rgba(51, 65, 85, 0.5);
+  --rf-handle-border: #0f172a;
+  --rf-handle-ring: rgba(100, 116, 139, 0.4);
+  --badge-builtin-bg: rgba(56, 189, 248, 0.16); --badge-builtin-fg: #38bdf8;
+  --badge-user-bg: rgba(16, 185, 129, 0.16); --badge-user-fg: #34d399;
+  --badge-running-bg: rgba(56, 189, 248, 0.16); --badge-running-fg: #7dd3fc;
+  --badge-completed-bg: rgba(16, 185, 129, 0.16); --badge-completed-fg: #34d399;
+  --badge-failed-bg: rgba(239, 68, 68, 0.16); --badge-failed-fg: #f87171;
+  --badge-neutral-bg: rgba(100, 116, 139, 0.16); --badge-neutral-fg: #94a3b8;
+  --dark-mode-card-bg: var(--card); --dark-mode-card-border: var(--border);
+  --dark-mode-card-hover-bg: var(--surface-raised); --dark-mode-card-hover-border: var(--border-strong);
+  --wf-card-title-fg: var(--foreground); --wf-card-sub-fg: var(--muted-foreground);
+  --wf-card-plus-fg: var(--muted-foreground); --wf-minimap-bg: transparent;
   color-scheme: dark;
   color: var(--foreground);
   background-color: var(--background);
@@ -130,6 +154,29 @@
   /* viz 系列色（light 加深保证对比度）*/
   --viz-1: #2563eb;  --viz-2: #047857;  --viz-3: #6d28d9;  --viz-4: #b45309;
   --viz-5: #0e7490;  --viz-6: #be185d;  --viz-7: #c2410c;  --viz-8: #0f766e;
+
+  /* §9 批 2：React Flow / 徽章 / 卡片 chrome（light 原值） */
+  --rf-control-shadow: rgba(0, 0, 0, 0.08);
+  --rf-control-border: rgba(212, 212, 204, 0.9);
+  --rf-button-bg: #ffffff;
+  --rf-button-border: #e5e5e0;
+  --rf-button-fg: #475569;
+  --rf-button-hover-bg: #f5f5f0;
+  --rf-button-hover-fg: #1a1a1a;
+  --rf-minimap-border: rgba(212, 212, 204, 0.9);
+  --rf-minimap-bg: #ffffff;
+  --rf-handle-border: #ffffff;
+  --rf-handle-ring: rgba(148, 163, 184, 0.5);
+  --badge-builtin-bg: #ede9fe; --badge-builtin-fg: #6d28d9;
+  --badge-user-bg: #d1fae5; --badge-user-fg: #047857;
+  --badge-running-bg: #e0f2fe; --badge-running-fg: #0369a1;
+  --badge-completed-bg: #d1fae5; --badge-completed-fg: #047857;
+  --badge-failed-bg: #fee2e2; --badge-failed-fg: #b91c1c;
+  --badge-neutral-bg: #eef1f5; --badge-neutral-fg: #475569;
+  --dark-mode-card-bg: #ffffff; --dark-mode-card-border: rgba(212, 212, 204, 0.9);
+  --dark-mode-card-hover-bg: #f5f5f0; --dark-mode-card-hover-border: rgba(163, 163, 155, 0.9);
+  --wf-card-title-fg: #1a1a1a; --wf-card-sub-fg: #64748b;
+  --wf-card-plus-fg: #94a3b8; --wf-minimap-bg: #ffffff;
   color-scheme: light;
   color: var(--foreground);
   background-color: var(--background);
@@ -339,7 +386,7 @@ pre,
   background-color: var(--ua-action-hover);
 }
 .ua-primary-action:focus-visible {
-  outline: 2px solid #3b82f6;
+  outline: 2px solid var(--focus-ring);
   outline-offset: 2px;
 }
 
@@ -347,7 +394,7 @@ pre,
    P0-5 实机矩阵发现 Tab 落到 tabIndex 卡片时 outline:none —— 统一在此兜底。
    !important：压过 Tailwind 的 focus:outline-none / outline-none 工具类。 */
 :focus-visible {
-  outline: 2px solid #3b82f6 !important;
+  outline: 2px solid var(--focus-ring) !important;
   outline-offset: 1px;
 }
 
@@ -460,7 +507,7 @@ pre,
 }
 
 /* Shadow ladder */
-.shadow-sm { box-shadow: 0 1px 3px rgba(0, 0, 0, 0.25); }
+.shadow-sm { box-shadow: 0 1px 3px var(--shadow-sm-color); }
 .shadow-md { box-shadow: var(--shadow-soft); }
 .shadow-lg { box-shadow: var(--shadow-elevated); }
 
@@ -510,23 +557,23 @@ pre,
 .react-flow__controls {
   border-radius: 10px;
   overflow: hidden;
-  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.35);
-  border: 1px solid rgba(51, 65, 85, 0.6);
+  box-shadow: 0 4px 14px var(--rf-control-shadow);
+  border: 1px solid var(--rf-control-border);
 }
 .react-flow__controls button {
-  background: rgba(15, 23, 42, 0.85);
-  border-bottom: 1px solid rgba(51, 65, 85, 0.5);
-  color: #94a3b8;
+  background: var(--rf-button-bg);
+  border-bottom: 1px solid var(--rf-button-border);
+  color: var(--rf-button-fg);
 }
 .react-flow__controls button:hover {
-  background: rgba(30, 41, 59, 0.95);
-  color: #e2e8f0;
+  background: var(--rf-button-hover-bg);
+  color: var(--rf-button-hover-fg);
 }
 .react-flow__minimap {
   border-radius: 12px;
   overflow: hidden;
-  border: 1px solid rgba(51, 65, 85, 0.5);
-  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.35);
+  border: 1px solid var(--rf-minimap-border);
+  box-shadow: 0 4px 14px var(--rf-control-shadow);
 }
 .react-flow__edge-path {
   transition: stroke 160ms ease, stroke-width 160ms ease;
@@ -535,8 +582,8 @@ pre,
   width: 9px !important;
   height: 9px !important;
   border-radius: 3px !important;
-  border: 2px solid #0f172a !important;
-  box-shadow: 0 0 0 1px rgba(100, 116, 139, 0.4);
+  border: 2px solid var(--rf-handle-border) !important;
+  box-shadow: 0 0 0 1px var(--rf-handle-ring);
   transition: box-shadow 160ms ease, background 160ms ease;
 }
 .react-flow__handle:hover {
@@ -581,58 +628,58 @@ pre,
 .wf-input::placeholder { color: var(--muted-foreground); }
 
 /* Status / source badges (theme-aware) */
-.badge-builtin { background: rgba(56, 189, 248, 0.16); color: #38bdf8; }
-[data-theme='light'] .badge-builtin { background: #ede9fe; color: #6d28d9; }
-.badge-user { background: rgba(16, 185, 129, 0.16); color: #34d399; }
-[data-theme='light'] .badge-user { background: #d1fae5; color: #047857; }
-.badge-running { background: rgba(56, 189, 248, 0.16); color: #7dd3fc; }
-[data-theme='light'] .badge-running { background: #e0f2fe; color: #0369a1; }
+.badge-builtin { background: var(--badge-builtin-bg); color: var(--badge-builtin-fg); }
+[data-theme='light'] .badge-builtin { background: var(--badge-builtin-bg); color: var(--badge-builtin-fg); }
+.badge-user { background: var(--badge-user-bg); color: var(--badge-user-fg); }
+[data-theme='light'] .badge-user { background: var(--badge-user-bg); color: var(--badge-user-fg); }
+.badge-running { background: var(--badge-running-bg); color: var(--badge-running-fg); }
+[data-theme='light'] .badge-running { background: var(--badge-running-bg); color: var(--badge-running-fg); }
 .badge-awaiting { background: var(--warning-fill); color: var(--warning-fg); }
 [data-theme='light'] .badge-awaiting { background: var(--warning-fill); color: var(--warning-fg); }
-.badge-completed { background: rgba(16, 185, 129, 0.16); color: #34d399; }
-[data-theme='light'] .badge-completed { background: #d1fae5; color: #047857; }
-.badge-failed { background: rgba(239, 68, 68, 0.16); color: #f87171; }
-[data-theme='light'] .badge-failed { background: #fee2e2; color: #b91c1c; }
-.badge-neutral { background: rgba(100, 116, 139, 0.16); color: #94a3b8; }
-[data-theme='light'] .badge-neutral { background: #eef1f5; color: #475569; }
+.badge-completed { background: var(--badge-completed-bg); color: var(--badge-completed-fg); }
+[data-theme='light'] .badge-completed { background: var(--badge-completed-bg); color: var(--badge-completed-fg); }
+.badge-failed { background: var(--badge-failed-bg); color: var(--badge-failed-fg); }
+[data-theme='light'] .badge-failed { background: var(--badge-failed-bg); color: var(--badge-failed-fg); }
+.badge-neutral { background: var(--badge-neutral-bg); color: var(--badge-neutral-fg); }
+[data-theme='light'] .badge-neutral { background: var(--badge-neutral-bg); color: var(--badge-neutral-fg); }
 
 
 /* Light-theme React Flow chrome */
 [data-theme='light'] .react-flow__controls {
-  border-color: rgba(212, 212, 204, 0.9);
-  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.08);
+  border-color: var(--rf-control-border);
+  box-shadow: 0 4px 14px var(--rf-control-shadow);
 }
 [data-theme='light'] .react-flow__controls button {
-  background: #ffffff;
-  border-bottom-color: #e5e5e0;
-  color: #475569;
+  background: var(--rf-button-bg);
+  border-bottom-color: var(--rf-button-border);
+  color: var(--rf-button-fg);
 }
 [data-theme='light'] .react-flow__controls button:hover {
-  background: #f5f5f0;
-  color: #1a1a1a;
+  background: var(--rf-button-hover-bg);
+  color: var(--rf-button-hover-fg);
 }
 [data-theme='light'] .react-flow__minimap {
-  background: #ffffff;
-  border-color: rgba(212, 212, 204, 0.9);
+  background: var(--rf-minimap-bg);
+  border-color: var(--rf-minimap-border);
 }
 [data-theme='light'] .react-flow__handle {
-  border-color: #ffffff;
-  box-shadow: 0 0 0 1px rgba(148, 163, 184, 0.5);
+  border-color: var(--rf-handle-border);
+  box-shadow: 0 0 0 1px var(--rf-handle-ring);
 }
 
 /* Light-theme palette cards (dark defaults are hard-coded in JSX) */
 [data-theme='light'] .dark-mode-card {
-  background: #ffffff;
-  border-color: rgba(212, 212, 204, 0.9);
+  background: var(--dark-mode-card-bg);
+  border-color: var(--dark-mode-card-border);
 }
 [data-theme='light'] .dark-mode-card:hover {
-  background: #f5f5f0;
-  border-color: rgba(163, 163, 155, 0.9);
+  background: var(--dark-mode-card-hover-bg);
+  border-color: var(--dark-mode-card-hover-border);
 }
-[data-theme='light'] .wf-card-title { color: #1a1a1a; }
-[data-theme='light'] .wf-card-sub { color: #64748b; }
-[data-theme='light'] .wf-card-plus { color: #94a3b8; }
-[data-theme='light'] .wf-minimap { background: #ffffff; }
+[data-theme='light'] .wf-card-title { color: var(--wf-card-title-fg); }
+[data-theme='light'] .wf-card-sub { color: var(--wf-card-sub-fg); }
+[data-theme='light'] .wf-card-plus { color: var(--wf-card-plus-fg); }
+[data-theme='light'] .wf-minimap { background: var(--wf-minimap-bg); }
 
 /* ── DAG node card tokens (single source of truth, both themes) ── */
 :root,

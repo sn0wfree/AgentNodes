@@ -105,3 +105,38 @@ describe('popover solid background (regression guard)', () => {
     expect(statusBar).not.toContain('!bg-background/')
   })
 })
+
+// §9 批 2 契约：globals.css 的颜色只允许写在变量声明值域内；
+// 选择器里直接写 hex/rgb(a)/hsl(a) 会让 theme.json 无法覆盖该细节。
+describe('globals.css all colors come from variable declarations', () => {
+  it('has no color literals outside variable declarations', () => {
+    // 先去掉 CSS 注释与所有 `--var: ...;` 声明（含跨行值），再扫描剩余消费点。
+    const withoutDecls = css
+      .replace(/\/\*[\s\S]*?\*\//g, '')
+      .replace(/--[\w-]+\s*:\s*[^;]+;/g, '')
+    const colorRe = /#[0-9a-fA-F]{3,8}\b|rgba?\([^)]*\)|hsla?\([^)]*\)/g
+    const offenders: string[] = []
+    for (const line of withoutDecls.split('\n')) {
+      const trimmed = line.trim()
+      if (trimmed.startsWith('//')) continue
+      for (const m of line.matchAll(colorRe)) offenders.push(`${trimmed}: ${m[0]}`)
+    }
+    expect(offenders, `globals.css 变量声明外仍有颜色字面量: ${offenders.join(' | ')}`).toEqual([])
+  })
+
+  it('declares chrome and badge tokens in both themes', () => {
+    const required = [
+      '--rf-control-shadow', '--rf-control-border', '--rf-button-bg',
+      '--rf-button-fg', '--rf-minimap-border', '--rf-handle-border',
+      '--badge-builtin-bg', '--badge-builtin-fg', '--badge-user-bg',
+      '--badge-failed-bg', '--badge-neutral-fg', '--dark-mode-card-bg',
+      '--wf-card-title-fg', '--wf-minimap-bg',
+    ]
+    for (const theme of ['dark', 'light'] as const) {
+      const vars = varsOf(theme)
+      for (const token of required) {
+        expect(vars.has(token), `${theme} ${token}`).toBe(true)
+      }
+    }
+  })
+})
