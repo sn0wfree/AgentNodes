@@ -10,6 +10,7 @@ function ctx(sessionId = 's-handler-test') {
     sessionId,
     messageId: 'm-1',
     updateMessage: () => {},
+    applyTextDelta: () => {},
     state: useChatStore.getState(),
   } as never
 }

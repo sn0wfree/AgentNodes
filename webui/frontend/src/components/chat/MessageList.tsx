@@ -90,9 +90,15 @@ export function MessageList({ separatorKey, scrollKey }: MessageListProps = {}) 
   const virtuosoRef = useRef<VirtuosoHandle>(null)
   const [atBottom, setAtBottom] = useState(true)
 
-  const rawMessages = Array.from(messages.values())
-    .filter((m) => !currentSessionId || m.session_id === currentSessionId)
-    .sort((a, b) => a.created_at - b.created_at)
+  // P0-1: messages is a stable Map reference between updates (Zustand/immer
+  // only replaces it on an actual message mutation), so useMemo here avoids
+  // re-filtering/re-sorting on every unrelated render (e.g. atBottom change).
+  const rawMessages = useMemo(
+    () => Array.from(messages.values())
+      .filter((m) => !currentSessionId || m.session_id === currentSessionId)
+      .sort((a, b) => a.created_at - b.created_at),
+    [messages, currentSessionId],
+  )
 
   const messageList: ListItem[] = useMemo(
     () => separatorKey ? injectSeparators(rawMessages, separatorKey) : rawMessages,

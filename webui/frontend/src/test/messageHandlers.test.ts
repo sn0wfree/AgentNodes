@@ -30,6 +30,7 @@ function ctx(overrides: Partial<SSEContext> = {}): SSEContext {
     },
     addMessage: store.addMessage,
     updateMessage: store.updateMessage,
+    applyTextDelta: store.applyTextDelta,
     setStreamingMessage: () => {},
     setStreamingText: () => {},
     appendStreamingText: () => {},

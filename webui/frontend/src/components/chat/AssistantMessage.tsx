@@ -323,7 +323,6 @@ export function AssistantMessage({
   const provider = useSystemStore((s) => s.llm.provider)
   const readPartText = useReadPartText()
   const currentSessionId = useChatSessionId()
-  const messages = useChatStore((s) => s.messages)
   const addToast = useToastStore((s) => s.addToast)
 
   /**
@@ -338,8 +337,10 @@ export function AssistantMessage({
     async (tc: ToolCallPart) => {
       const sessionId = currentSessionId
       if (!sessionId) return
-      // Find the user message immediately preceding this assistant message.
-      const sorted = Array.from(messages.values()).sort(
+      // P0-1: read the messages Map lazily on click instead of subscribing to
+      // it — a full-Map subscription re-renders every mounted message on any
+      // streaming delta just to keep this retry handler warm.
+      const sorted = Array.from(useChatStore.getState().messages.values()).sort(
         (a, b) => a.created_at - b.created_at,
       )
       let prevUser: Message | null = null
@@ -366,7 +367,7 @@ export function AssistantMessage({
         addToast('error', `重试失败：${err?.message ?? '未知错误'}`)
       }
     },
-    [currentSessionId, messages, message.id, addToast],
+    [currentSessionId, message.id, addToast],
   )
 
   // Group consecutive tool_call parts into a single ToolCallGroup

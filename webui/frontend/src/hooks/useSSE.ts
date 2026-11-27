@@ -81,6 +81,7 @@ export function useSSE(sessionId: string | null) {
   const setTokensUsed = useChatStore((s) => s.setTokensUsed)
   const setContextBreakdown = useChatStore((s) => s.setContextBreakdown)
   const markTotalTokensSeen = useChatStore((s) => s.markTotalTokensSeen)
+  const applyTextDelta = useChatStore((s) => s.applyTextDelta)
   const updateAgent = useAgentStore((s) => s.updateAgent)
   const updateNodeStatus = useWorkflowStore((s) => s.updateNodeStatus)
   const addToast = useToastStore((s) => s.addToast)
@@ -105,6 +106,7 @@ export function useSSE(sessionId: string | null) {
         sessionId,
         addMessage,
         updateMessage,
+        applyTextDelta,
         setStreamingMessage,
         setStreamingText,
         appendStreamingText,
@@ -171,6 +173,7 @@ export function useSSE(sessionId: string | null) {
       sessionId,
       addMessage,
       updateMessage,
+      applyTextDelta,
       setStreamingMessage,
       setStreamingText,
       appendStreamingText,

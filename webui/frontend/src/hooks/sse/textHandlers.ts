@@ -32,39 +32,24 @@ export const textStarted: SSEHandler = (data, { updateMessage }) => {
 }
 
 export const textDelta: SSEHandler = (data, ctx) => {
-  const { updateMessage, appendStreamingText, accumulatePartText } = ctx
+  const { applyTextDelta } = ctx
   const text = (data.text || data.delta) as string
   const textId = data.text_id as string | undefined
   const messageId = data.message_id as string | undefined
-  if (text && messageId) {
-    if (!textId) {
-      // Protocol error: drop the chunk. Protects against future
-      // regressions where backend forgets to emit text.started first.
-      console.warn('[useSSE] text_delta without text_id, dropping chunk')
-    } else {
-      // 1) Persistent update (canonical text after stream ends)
-      updateMessage(messageId, (msg) => {
-        for (let i = msg.parts.length - 1; i >= 0; i--) {
-          const p = msg.parts[i]
-          if (p && p.type === 'text' && (p as TextPart).id === textId) {
-            ;(p as TextPart).text += text
-            ;(p as TextPart).isStreaming = true
-            return
-          }
-        }
-        // Orphan: text.started hasn't arrived yet (replay / late
-        // join). Push a new part with this id to keep the chunk.
-        msg.parts.push({ type: 'text', id: textId, text, isStreaming: true })
-      })
-      // 2) Per-part preview buffer (first-byte visibility; cleared on
-      //    text.ended). Modeled on opencode's part_text_accum_delta.
-      accumulatePartText(textId, text)
-    }
+  if (!text) return
+  if (!textId) {
+    // Protocol error: drop the canonical part (no id to route to), but
+    // keep the legacy global stream updated — callers may still use it
+    // for the streaming highlight (existing hard-break contract).
+    console.warn('[useSSE] text_delta without text_id, dropping chunk')
+    ctx.appendStreamingText(text)
+    return
   }
-  // 3) Legacy global streaming text (kept for back-compat with any
-  //    consumer that still subscribes to it; AssistantMessage no
-  //    longer relies on it because each part carries its own state).
-  appendStreamingText(text || '')
+  if (!messageId) return
+  // P0-1: one store write per SSE chunk (canonical part text + preview
+  // buffer + legacy global stream). Previously this was three separate
+  // set() calls, each notifying every messages/partTextAccum subscriber.
+  applyTextDelta(messageId, textId, text)
 }
 
 export const textEnded: SSEHandler = (data, ctx) => {

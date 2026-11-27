@@ -176,6 +176,8 @@ export interface SSEContext {
   // Chat store mutators
   addMessage: (m: Message) => void
   updateMessage: (id: string, updater: (m: Message) => void) => void
+  /** P0-1: single atomic write for text_delta (part text + preview buffer + legacy stream). */
+  applyTextDelta: (messageId: string, textId: string, text: string) => void
   setStreamingMessage: (id: string | null) => void
   setStreamingText: (s: string) => void
   appendStreamingText: (s: string) => void

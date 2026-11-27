@@ -29,6 +29,7 @@ function ctx(overrides: Partial<SSEContext> = {}): SSEContext {
     setMessages: store.setMessages,
     addMessage: store.addMessage,
     updateMessage: store.updateMessage,
+    applyTextDelta: store.applyTextDelta,
     setStreamingMessage: store.setStreamingMessage,
     setStreamingText: store.setStreamingText,
     appendStreamingText: store.appendStreamingText,
@@ -111,6 +112,23 @@ describe('textHandlers — text protocol', () => {
     expect((msg.parts[0] as { text: string }).text).toBe('hi there')
     // Preview buffer holds the latest delta.
     expect(useChatStore.getState().partTextAccumDelta['t-1']).toBe('hi there')
+  })
+
+  it('P0-1: text.delta performs exactly one store notification per chunk', () => {
+    seedAssistant('m1')
+    const c = ctx()
+    textStarted({ text_id: 't-1', message_id: 'm1' }, c)
+    let notifications = 0
+    const unsub = useChatStore.subscribe(() => { notifications += 1 })
+    try {
+      textDelta({ text_id: 't-1', message_id: 'm1', delta: 'x' }, c)
+      expect(notifications).toBe(1)
+      expect(getMessage('m1').parts[0]).toMatchObject({ text: 'x' })
+      expect(useChatStore.getState().partTextAccumDelta['t-1']).toBe('x')
+      expect(useChatStore.getState().streamingText).toBe('x')
+    } finally {
+      unsub()
+    }
   })
 
   it('text.delta without text_id is dropped silently (protocol error guard)', () => {

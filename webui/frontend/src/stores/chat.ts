@@ -223,6 +223,10 @@ interface ChatState {
   addMessage: (message: Message) => void
   removeMessage: (id: string) => void
   updateMessage: (id: string, updater: (msg: Message) => void) => void
+  /** P0-1: atomic text-delta write — canonical part text, per-part preview
+   * buffer and legacy global stream in a single immer set(), so one SSE
+   * chunk triggers one store notification instead of three. */
+  applyTextDelta: (messageId: string, textId: string, text: string) => void
   setStreamingMessage: (id: string | null) => void
   setStreamingText: (text: string) => void
   appendStreamingText: (delta: string) => void
@@ -357,6 +361,33 @@ export const useChatStore = create<ChatState>()(
       set((state) => {
         const msg = state.messages.get(id)
         if (msg) updater(msg)
+      }),
+    applyTextDelta: (messageId, textId, text) =>
+      set((state) => {
+        // 1) Canonical part text (findLast by id).
+        const msg = state.messages.get(messageId)
+        if (msg) {
+          let found = false
+          for (let i = msg.parts.length - 1; i >= 0; i--) {
+            const p = msg.parts[i]
+            if (p && p.type === 'text' && p.id === textId) {
+              p.text += text
+              p.isStreaming = true
+              found = true
+              break
+            }
+          }
+          if (!found) {
+            msg.parts.push({ type: 'text', id: textId, text, isStreaming: true })
+          }
+        }
+        // 2) Per-part preview buffer with chunk-boundary space recovery.
+        const prev = state.partTextAccumDelta[textId] ?? ''
+        state.partTextAccumDelta[textId] = shouldInsertSpaceBetween(prev, text)
+          ? prev + ' ' + text
+          : prev + text
+        // 3) Legacy global streaming text (back-compat).
+        state.streamingText += text
       }),
     setStreamingMessage: (id) => set({ streamingMessageId: id }),
     setStreamingText: (text) => set({ streamingText: text }),
