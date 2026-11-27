@@ -177,7 +177,7 @@ export function BreakdownList({ segments }: { segments: Record<string, number> }
   const aggregated = aggregateBreakdown(segments, groups)
   const total = groups.reduce((sum, m) => sum + (aggregated[m.key] || 0), 0)
   if (total <= 0) {
-    return <div className="text-[10px] text-muted">分段数据待接入（当前显示估算总量）</div>
+    return <div className="text-[10px] text-muted">暂无上下文用量数据</div>
   }
   return (
     <ul className="space-y-1">

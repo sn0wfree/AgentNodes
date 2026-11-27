@@ -13,7 +13,7 @@ ZCode/我方对比已完成，视觉骨架已接近；差距集中在交互深�
 | P0-1 | 渲染链全量重渲染：`rawMessages` 每次渲染新建后 sort → `useMemo` 必然失效；组件订阅整个 messages Map；每个 `text_delta` 触发 3 次 store 写入 | `webui/frontend/src/components/chat/MessageList.tsx:83,93-100`；`webui/frontend/src/hooks/sse/textHandlers.ts:34-68`；`AssistantMessage.tsx:326` |
 | P0-2 | SSE 回放仅部分幂等：`error` toast 已按 key 去重，但 `text_delta` / `thinking_delta` 无条件追加；后端每条 SSE 带 `id: {event.id}`，前端只把它当游标 | `webui/frontend/src/hooks/useSSE.ts:133-138,162`；`src/agentnodes/interfaces/api/routers/chat.py:1093-1094` |
 | P0-3 | `chat-ui-config.json` 半接线：多个 getter 无调用点；`visibility.*` 与 `studyChat` 全库无消费；部分文案硬编码双事实源 | `webui/frontend/src/components/chat/chatUiConfig.ts:182,193,197,205`；`config:21-24,43-45,67-74,96-99,117-122,134-137,152-165`；`MessageList.tsx:183,231,241,264`；`MessageBubble.tsx:91,115,121,135`；`ThinkingBlock.tsx:51-63` |
-| P0-4 | 上下文明细断链：`BreakdownList` 显示“分段数据待接入”，但 `useContextUsage` 已可从 `contextBreakdown` 取 10 细段 | `ContextRing.tsx:175-199`；`useContextUsage.ts:31-57` |
+| P0-4 | ~~上下文明细断链~~ **实施前核查推翻**：`Composer.tsx:61-62,480` 的 hover 明细已接真实 `contextBreakdown`；真实缺口只是空态文案“分段数据待接入”误导 | `Composer.tsx:61-62,480`；`ContextRing.tsx:175-199`；`useContextUsage.ts:31-57` |
 
 ## 2. 批次与验证
 
@@ -47,12 +47,12 @@ ZCode/我方对比已完成，视觉骨架已接近；差距集中在交互深�
 - `visibility.*` 字段逐项接线：能接的接（如 `showQuickStartChips` / `showCompactBanner` / `showContextBar` / `showDaySeparators` / `showVerifiabilityBadge` / `showStreamingStatus` / `showCopy` / `showCharCount` / `allowEdit` / `showThemeToggle`）；`studyChat` 段若当前无页面消费则保留配置但在文档标注“待页面接入”，不强行造行为。
 - 新增测试：修改配置后对应文案/可见性在组件渲染中生效（至少覆盖 loadMore、thinking label、userBubble label、危险工具集合）。
 
-### 批 4 · 上下文明细断链（P0-4）
-文件：`Composer.tsx`、`ContextRing.tsx`、相关测试。
+### 批 4 · 上下文明细空态文案（P0-4，范围已按事实修正）
+文件：`ContextRing.tsx`、相关测试、方案文档（上表）。
 
-- `Composer` 的 hover 明细从 `EMPTY_SEGMENTS` 改为传入真实 `contextBreakdown`（按 sessionId 从 store 读取），复用已有 `aggregateBreakdown`；保留常态单色小环（用户裁决）。
-- 明细空态从“分段数据待接入”改为“暂无上下文用量数据”，避免误导。
-- 新增测试：明细弹层展示不低于 1 行聚合数据（有 breakdown 时）；无数据时显示新文案。
+- **实施前核查推翻了原假设**：`Composer.tsx:61-62,480` 的 hover 明细已从 store 读取真实 `contextBreakdown` 并传给 `BreakdownList`，无需再接线；常态单色小环保持用户裁决不变。
+- 实际修复：空态文案从“分段数据待接入（当前显示估算总量）”改为“暂无上下文用量数据”，避免暗示存在断链。
+- 新增测试：明细弹层用真实后端细段聚合渲染（messages=36 / tool_traffic=120）；无数据时显示新文案。
 
 ## 3. 不属于本专项
 

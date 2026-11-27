@@ -145,8 +145,22 @@ describe('BreakdownList', () => {
     expect(screen.queryByTestId('breakdown-row-other')).toBeNull()
   })
 
+  it('P0-4: renders aggregated real backend segments (Composer hover detail)', () => {
+    render(<BreakdownList segments={{
+      system_prompt: 100, user_text: 20, assistant_text: 16,
+      tool_calls: 30, tool_results: 90,
+    }} />)
+    // 10 细段 → messages = user_text + assistant_text = 36
+    const messages = screen.getByTestId('breakdown-row-messages')
+    expect(messages.textContent).toContain('36')
+    // tool_traffic = tool_calls + tool_results = 120
+    const tools = screen.getByTestId('breakdown-row-tool_traffic')
+    expect(tools.textContent).toContain('120')
+    expect(screen.queryByText(/暂无上下文用量数据/)).toBeNull()
+  })
+
   it('shows a placeholder without data', () => {
     render(<BreakdownList segments={{}} />)
-    expect(screen.getByText(/分段数据待接入/)).toBeTruthy()
+    expect(screen.getByText(/暂无上下文用量数据/)).toBeTruthy()
   })
 })
