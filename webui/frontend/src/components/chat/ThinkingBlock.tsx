@@ -4,6 +4,7 @@ import { MarkdownRenderer } from './MarkdownRenderer'
 import { formatDuration } from '../../utils/time'
 import { useCopyToClipboard } from '../../hooks/useCopyToClipboard'
 import { useThinkingPrefStore } from '../../stores/thinkingPref'
+import { getThinkingConfig } from './chatUiConfig'
 
 interface ThinkingBlockProps {
   text: string
@@ -25,6 +26,7 @@ export function ThinkingBlock({
   const [isExpanded, setIsExpanded] = useState(!collapsed)
   const [copied, copy] = useCopyToClipboard()
   const [tickMs, setTickMs] = useState(0)
+  const config = getThinkingConfig()
 
   // Sync expanded state with collapsed prop. While streaming, reasoning is
   // always shown expanded (opencode behavior); when sealed, respect the
@@ -52,12 +54,11 @@ export function ThinkingBlock({
   if (streaming) {
     const elapsed =
       startTime !== undefined ? tickMs || Date.now() - startTime : 0
-    label =
-      elapsed > 0
-        ? `Thinking for ${formatDuration(elapsed)}`
-        : 'Thinking…'
+    label = elapsed > 0
+      ? config.labels.streamingFormat.replace('{duration}', formatDuration(elapsed))
+      : 'Thinking…'
   } else if (startTime !== undefined && endTime !== undefined) {
-    label = `Thought for ${formatDuration(endTime - startTime)}`
+    label = config.labels.doneFormat.replace('{duration}', formatDuration(endTime - startTime))
   } else {
     label = 'Thought'
   }
@@ -95,21 +96,25 @@ export function ThinkingBlock({
           </span>
         )}
         <span className="ml-auto flex items-center gap-2 text-[10px] text-thinking-fg-muted">
-          {text.length > 50 && <span>{text.length} 字</span>}
-          <button
-            type="button"
-            onClick={handleCopy}
-            className="cursor-pointer hover:text-thinking-fg"
-            title="复制"
-          >
-            {copied ? <Check className="h-3 w-3" /> : <Copy className="h-3 w-3" />}
-          </button>
+          {config.visibility.showCharCount && text.length > config.sizing.charThreshold && (
+            <span>{text.length}{config.labels.charCountSuffix}</span>
+          )}
+          {config.visibility.showCopy && (
+            <button
+              type="button"
+              onClick={handleCopy}
+              className="cursor-pointer hover:text-thinking-fg"
+              title="复制"
+            >
+              {copied ? <Check className="h-3 w-3" /> : <Copy className="h-3 w-3" />}
+            </button>
+          )}
         </span>
       </div>
 
       {/* Expanded content */}
       {isExpanded && (
-        <div className="border-t border-thinking-surface px-3 py-2 max-h-72 overflow-y-auto">
+        <div className="border-t border-thinking-surface px-3 py-2 overflow-y-auto" style={{ maxHeight: config.sizing.maxHeight }}>
           <div className="text-[11px] leading-relaxed text-thinking-fg-muted">
             <MarkdownRenderer content={text} />
           </div>

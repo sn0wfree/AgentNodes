@@ -89,6 +89,8 @@ export function MessageList({ separatorKey, scrollKey }: MessageListProps = {}) 
   const currentSessionId = useChatSessionId()
   const virtuosoRef = useRef<VirtuosoHandle>(null)
   const [atBottom, setAtBottom] = useState(true)
+  // P0-3: single config source for all labels/visibility in this component.
+  const config = getMessageListConfig()
 
   // P0-1: messages is a stable Map reference between updates (Zustand/immer
   // only replaces it on an actual message mutation), so useMemo here avoids
@@ -144,11 +146,10 @@ export function MessageList({ separatorKey, scrollKey }: MessageListProps = {}) 
   }, [messageList.length])
 
   const banner = isQueuePaused ? <QueuePauseBanner /> : null
-  const compactBanner = <CompactBanner />
-  const usageBar = <ContextUsageBar />
+  const compactBanner = config.visibility.showCompactBanner ? <CompactBanner /> : null
+  const usageBar = config.visibility.showContextBar ? <ContextUsageBar /> : null
 
   if (messageList.length === 0) {
-    const config = getMessageListConfig()
     return (
       <div className="flex h-full flex-col">
         {banner}
@@ -161,9 +162,11 @@ export function MessageList({ separatorKey, scrollKey }: MessageListProps = {}) 
             description={config.labels.emptyDescription}
           />
         </div>
-        <div className="flex flex-col items-center pb-6">
-          <QuickStartChips />
-        </div>
+        {config.visibility.showQuickStartChips && (
+          <div className="flex flex-col items-center pb-6">
+            <QuickStartChips />
+          </div>
+        )}
       </div>
     )
   }
@@ -186,7 +189,7 @@ export function MessageList({ separatorKey, scrollKey }: MessageListProps = {}) 
                     onClick={() => currentSessionId && loadMoreMessages(currentSessionId)}
                     className="rounded-full border border-strong px-3 py-1 text-xs text-muted transition-colors hover:border-slate-500 hover:text-foreground"
                   >
-                    ↑ 加载更早消息
+                    {config.labels.loadMore}
                   </button>
                 </div>
               )
@@ -204,8 +207,9 @@ export function MessageList({ separatorKey, scrollKey }: MessageListProps = {}) 
           // changes from the previous message.
           const prev = _index > 0 ? messageList[_index - 1] : null
           const showDay =
-            _index === 0 ||
-            (prev && !isSeparator(prev) && dayLabel((prev as Message).created_at) !== dayLabel(message.created_at))
+            config.visibility.showDaySeparators &&
+            (_index === 0 ||
+              (prev && !isSeparator(prev) && dayLabel((prev as Message).created_at) !== dayLabel(message.created_at)))
           const daySeparator = showDay ? (
             <div className="flex items-center gap-3 px-4 pt-3">
               <div className="h-px flex-1 bg-surface" />
@@ -234,7 +238,7 @@ export function MessageList({ separatorKey, scrollKey }: MessageListProps = {}) 
                   </div>
                   <div className="min-w-0 flex-1">
                     <div className="mb-1 flex items-center gap-2 text-xs">
-                      <span className="font-medium text-danger-fg">请求失败</span>
+                      <span className="font-medium text-danger-fg">{config.labels.errorLabel}</span>
                       <span className="text-muted">{formatTime(message.created_at)}</span>
                     </div>
                     <div className="rounded-lg border border-danger-fg-muted bg-danger-surface px-3 py-2 text-sm text-danger-fg">
@@ -244,7 +248,7 @@ export function MessageList({ separatorKey, scrollKey }: MessageListProps = {}) 
                       {message.metadata?.details && (
                         <details className="mt-2">
                           <summary className="cursor-pointer text-xs text-danger-fg hover:text-danger-fg">
-                            查看详情
+                          {config.labels.errorDetail}
                           </summary>
                           <pre className="mt-2 overflow-x-auto whitespace-pre-wrap break-all rounded bg-danger-surface p-2 text-xs text-danger-fg">
                             {message.metadata.details}
@@ -267,7 +271,7 @@ export function MessageList({ separatorKey, scrollKey }: MessageListProps = {}) 
               <div className="px-4 py-3 transition-all">
                 <div className="rounded-lg border border-subtle bg-surface-raised/30 px-3 py-2.5">
                   <div className="mb-1 flex items-center gap-2 text-xs">
-                    <span className="font-medium text-muted">📋 历史摘要</span>
+                    <span className="font-medium text-muted">{config.labels.compactionLabel}</span>
                     <span className="text-muted">{formatTime(message.created_at)}</span>
                   </div>
                   <div className="text-sm text-muted leading-relaxed">
@@ -345,8 +349,8 @@ export function MessageList({ separatorKey, scrollKey }: MessageListProps = {}) 
             })
           }
           className="absolute bottom-3 right-3 z-20 flex h-8 w-8 items-center justify-center rounded-full border border-strong bg-surface-raised/90 text-secondary shadow-lg backdrop-blur transition-all hover:border-primary-500 hover:bg-surface-raised hover:text-primary-300 active:scale-95"
-          title={getMessageListConfig().labels.scrollToBottom}
-          aria-label={getMessageListConfig().labels.scrollToBottom}
+          title={config.labels.scrollToBottom}
+          aria-label={config.labels.scrollToBottom}
         >
           <ChevronDown className="h-4 w-4" />
         </button>

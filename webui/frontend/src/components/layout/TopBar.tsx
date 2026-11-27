@@ -5,6 +5,7 @@ import { useLayoutStore, type Density } from '../../stores/layout'
 import { useThemeStore } from '../../stores/theme'
 import { useThinkingPrefStore } from '../../stores/thinkingPref'
 import { SSEStatus } from '../common/SSEStatus'
+import { getPageShellConfig } from '../chat/chatUiConfig'
 
 const DENSITY_CYCLE: Density[] = ['compact', 'comfortable', 'spacious']
 const DENSITY_LABEL: Record<Density, string> = {
@@ -29,6 +30,7 @@ export function TopBar() {
   const toggleTheme = useThemeStore((s) => s.toggleTheme)
   const thinkingCollapsed = useThinkingPrefStore((s) => s.collapsed)
   const setThinkingCollapsed = useThinkingPrefStore((s) => s.setCollapsed)
+  const pageShellConfig = getPageShellConfig()
 
   const [editing, setEditing] = useState(false)
   const [draftTitle, setDraftTitle] = useState('')
@@ -145,7 +147,7 @@ export function TopBar() {
         </button>
         <button
           onClick={toggleTheme}
-          title={theme === 'dark' ? '切换到浅色模式' : '切换到深色模式'}
+          title={theme === 'dark' ? pageShellConfig.labels.themeLightLabel : pageShellConfig.labels.themeDarkLabel}
           className="flex items-center gap-1.5 rounded-lg border border-strong bg-surface px-1.5 sm:px-2.5 py-1.5 text-xs text-muted transition-colors hover:border-strong hover:text-secondary"
         >
           {theme === 'dark' ? (

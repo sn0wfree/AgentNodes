@@ -190,6 +190,10 @@ export function getAssistantConfig(): AssistantConfig {
   return chatUiConfig.assistant
 }
 
+export function getUserBubbleConfig(): UserBubbleConfig {
+  return chatUiConfig.userBubble
+}
+
 export function getToolCallConfig(): ToolCallConfig {
   return chatUiConfig.toolCall
 }

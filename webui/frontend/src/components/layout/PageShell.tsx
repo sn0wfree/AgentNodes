@@ -1,6 +1,7 @@
 import { Moon, Sun } from 'lucide-react'
 import { IconNav } from './IconNav'
 import { useThemeStore } from '../../stores/theme'
+import { getPageShellConfig } from '../chat/chatUiConfig'
 
 interface PageShellProps {
   title: string
@@ -27,6 +28,7 @@ export function PageShell({
 }: PageShellProps) {
   const theme = useThemeStore((s) => s.theme)
   const toggleTheme = useThemeStore((s) => s.toggleTheme)
+  const pageShellConfig = getPageShellConfig()
 
   return (
     <div className="relative flex h-screen overflow-hidden bg-app">
@@ -53,17 +55,19 @@ export function PageShell({
               )}
             </div>
             <div className="flex flex-shrink-0 items-center gap-2">
-              <button
-                onClick={toggleTheme}
-                title={theme === 'dark' ? '切换到浅色模式' : '切换到深色模式'}
-                className="flex items-center gap-1.5 rounded-lg border border-strong bg-surface px-2.5 py-1.5 text-xs text-muted transition-colors hover:border-strong hover:text-secondary"
-              >
-                {theme === 'dark' ? (
-                  <Sun className="h-3.5 w-3.5" />
-                ) : (
-                  <Moon className="h-3.5 w-3.5" />
-                )}
-              </button>
+              {pageShellConfig.visibility.showThemeToggle && (
+                <button
+                  onClick={toggleTheme}
+                  title={theme === 'dark' ? pageShellConfig.labels.themeLightLabel : pageShellConfig.labels.themeDarkLabel}
+                  className="flex items-center gap-1.5 rounded-lg border border-strong bg-surface px-2.5 py-1.5 text-xs text-muted transition-colors hover:border-strong hover:text-secondary"
+                >
+                  {theme === 'dark' ? (
+                    <Sun className="h-3.5 w-3.5" />
+                  ) : (
+                    <Moon className="h-3.5 w-3.5" />
+                  )}
+                </button>
+              )}
               {actions}
             </div>
           </header>

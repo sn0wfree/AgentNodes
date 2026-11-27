@@ -6,6 +6,7 @@ import { useChatSessionId } from '../../contexts/ChatSessionContext'
 import { useToastStore } from '../../stores/toast'
 import { api } from '../../api/client'
 import { formatTime } from '../../utils/time'
+import { getUserBubbleConfig } from './chatUiConfig'
 
 interface MessageBubbleProps {
   message: Message
@@ -56,6 +57,9 @@ export function MessageBubble({ message, layout, hideCodeTail }: MessageBubblePr
   const textareaRef = useRef<HTMLTextAreaElement>(null)
   const currentSessionId = useChatSessionId()
   const addToast = useToastStore((s) => s.addToast)
+  const config = getUserBubbleConfig()
+
+  const allowEdit = config.visibility.allowEdit
 
   const startEdit = () => {
     setDraft(textOf(message.parts))
@@ -89,8 +93,8 @@ export function MessageBubble({ message, layout, hideCodeTail }: MessageBubblePr
     <button
       onClick={startEdit}
       className="flex h-6 w-6 items-center justify-center rounded-md border border-strong bg-surface-raised/80 text-muted opacity-0 shadow-lg backdrop-blur transition-all hover:text-foreground focus:opacity-100 group-hover:opacity-100"
-      title="编辑"
-      aria-label="编辑消息"
+      title={config.labels.editLabel}
+      aria-label={config.labels.editLabel}
     >
       <Pencil className="h-3 w-3" />
     </button>
@@ -112,14 +116,14 @@ export function MessageBubble({ message, layout, hideCodeTail }: MessageBubblePr
           className="flex items-center gap-1 rounded-md bg-primary-600 px-2 py-1 text-xs text-white transition-colors hover:bg-primary-500 disabled:opacity-40"
         >
           <Check className="h-3 w-3" />
-          重发
+          {config.labels.resendLabel}
         </button>
         <button
           onClick={() => setEditing(false)}
           className="flex items-center gap-1 rounded-md px-2 py-1 text-xs text-muted transition-colors hover:bg-surface"
         >
           <X className="h-3 w-3" />
-          取消
+          {config.labels.cancelLabel}
         </button>
       </div>
     </div>
@@ -132,7 +136,7 @@ export function MessageBubble({ message, layout, hideCodeTail }: MessageBubblePr
     return (
       <div id={`msg-${message.id}`} className="group relative px-4 py-3 transition-all">
         <div className="mb-1 flex items-center gap-2 text-xs">
-          <span className="font-medium text-primary-400">You</span>
+          <span className="font-medium text-primary-400">{config.labels.userLabel}</span>
           <span className="text-muted">{formatTime(message.created_at)}</span>
         </div>
         {editing ? (
@@ -144,7 +148,7 @@ export function MessageBubble({ message, layout, hideCodeTail }: MessageBubblePr
             ))}
           </div>
         )}
-        <div className="absolute right-2 top-2">{editing ? null : editBtn}</div>
+        <div className="absolute right-2 top-2">{editing || !allowEdit ? null : editBtn}</div>
       </div>
     )
   }
@@ -161,7 +165,7 @@ export function MessageBubble({ message, layout, hideCodeTail }: MessageBubblePr
             ))}
           </div>
         )}
-        <div className="absolute -left-8 top-1.5">{editing ? null : editBtn}</div>
+        <div className="absolute -left-8 top-1.5">{editing || !allowEdit ? null : editBtn}</div>
       </div>
     </div>
   )

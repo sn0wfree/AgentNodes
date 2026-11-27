@@ -11,6 +11,7 @@ import type { ToolCallPart } from '../../stores/chat'
 import { MarkdownRenderer } from './MarkdownRenderer'
 import { formatDuration } from '../../utils/time'
 import { useCopyToClipboard } from '../../hooks/useCopyToClipboard'
+import { getToolCallConfig } from './chatUiConfig'
 
 interface ToolCallBlockProps {
   toolCall: ToolCallPart
@@ -25,15 +26,19 @@ interface ToolCallBlockProps {
  * destructive actions at a glance. A future iteration will hook a
  * per-tool confirmation dialog; today the block only *labels* these
  * tools so the chat history makes the action obvious in retrospect.
+ *
+ * P0-3: the authoritative list lives in chat-ui-config.json
+ * (`toolCall.dangerousTools`); this constant is only a code fallback
+ * when the config field is missing/malformed.
  */
-const DANGEROUS_TOOLS = new Set([
+const FALLBACK_DANGEROUS_TOOLS = [
   'write_file',
   'edit',
   'delete_file',
   'run_command',
   'run_backtest',
   'import_data',
-])
+]
 
 // Tool-specific icon mapping
 const TOOL_ICONS: Record<string, typeof Code> = {
@@ -189,6 +194,12 @@ export function ToolCallBlock({ toolCall, startTime, onRetry }: ToolCallBlockPro
   const [expanded, setExpanded] = useState(false)
   const [copied, copy] = useCopyToClipboard()
   const [tickMs, setTickMs] = useState(0)
+  const uiConfig = getToolCallConfig()
+  const dangerousTools = new Set(
+    Array.isArray(uiConfig.dangerousTools) && uiConfig.dangerousTools.length > 0
+      ? uiConfig.dangerousTools
+      : FALLBACK_DANGEROUS_TOOLS,
+  )
 
   useEffect(() => {
     if (toolCall.status !== 'running' || !startTime) return
@@ -258,34 +269,34 @@ export function ToolCallBlock({ toolCall, startTime, onRetry }: ToolCallBlockPro
         <span className="font-mono font-medium text-foreground">
           {toolCall.name}
         </span>
-        {DANGEROUS_TOOLS.has(toolCall.name) && (
+        {uiConfig.visibility.showDangerousBadge && dangerousTools.has(toolCall.name) && (
           <span
             data-testid="dangerous-tool-badge"
-            title="此工具会修改文件系统、运行 shell 命令或触发回测，请留意执行内容。"
+            title={uiConfig.labels.dangerousTooltip}
             className="inline-flex items-center gap-1 rounded border border-warning/50 bg-warning-fill px-1.5 py-0.5 text-[10px] font-normal text-warning-fg"
           >
             <AlertTriangle className="h-2.5 w-2.5" />
-            <span>危险</span>
+            <span>{uiConfig.labels.dangerousBadge}</span>
           </span>
         )}
-        {argsPreview && (
+        {uiConfig.visibility.showArgsPreview && argsPreview && (
           <span className="text-muted truncate font-mono text-[11px] max-w-[260px]">
             {argsPreview}
           </span>
         )}
-        {resultSummary && (
+        {uiConfig.visibility.showResultSummary && resultSummary && (
           <span className="text-success-fg-muted truncate text-[11px] max-w-[200px]">
             → {resultSummary}
           </span>
         )}
         <span className="ml-auto flex items-center gap-2 text-[10px] text-muted">
-          {duration !== null && (
+          {uiConfig.visibility.showDuration && duration !== null && (
             <span className="flex items-center gap-0.5 font-mono">
               <Clock className="h-2.5 w-2.5" />
               {formatDuration(duration)}
             </span>
           )}
-          {toolCall.status === 'error' && onRetry && (
+          {uiConfig.visibility.showRetry && toolCall.status === 'error' && onRetry && (
             <button
               type="button"
               onClick={handleRetry}
@@ -295,14 +306,16 @@ export function ToolCallBlock({ toolCall, startTime, onRetry }: ToolCallBlockPro
               <RefreshCw className="h-3 w-3" />
             </button>
           )}
-          <button
-            type="button"
-            onClick={handleCopyAll}
-            className="opacity-0 group-hover:opacity-100 transition-opacity hover:text-secondary"
-            title="复制 args + result"
-          >
-            {copied ? <Check className="h-3 w-3" /> : <Copy className="h-3 w-3" />}
-          </button>
+          {uiConfig.visibility.showCopy && (
+            <button
+              type="button"
+              onClick={handleCopyAll}
+              className="opacity-0 group-hover:opacity-100 transition-opacity hover:text-secondary"
+              title="复制 args + result"
+            >
+              {copied ? <Check className="h-3 w-3" /> : <Copy className="h-3 w-3" />}
+            </button>
+          )}
         </span>
       </div>
 

@@ -432,11 +432,13 @@ export function AssistantMessage({
     <div className="mb-1.5 flex items-center gap-2">
       {layout === 'bubble' && (
         <span className={`flex items-center gap-1.5 text-xs font-medium ${agentStyle.text}`}>
-          {isStreaming && (
+          {isStreaming && chatConfig.visibility.showStreamingStatus && (
             <span className={`h-1.5 w-1.5 animate-pulse rounded-full bg-${chatConfig.colors.streamingDot}`} />
           )}
           {modelLabel}
-          <VerifiabilityBadge cv={message.metadata?.claim_validation} />
+          {chatConfig.visibility.showVerifiabilityBadge && (
+            <VerifiabilityBadge cv={message.metadata?.claim_validation} />
+          )}
           {statusChips}
         </span>
       )}

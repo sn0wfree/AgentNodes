@@ -62,6 +62,7 @@ describe('getCategoryStyle', () => {
 import {
   getChatConfig,
   getAssistantConfig,
+  getUserBubbleConfig,
   getToolCallConfig,
   getThinkingConfig,
   getMessageListConfig,
@@ -119,9 +120,31 @@ describe('config round-trip correctness', () => {
   it('all get* functions return the same object identity as getChatConfig', () => {
     const full = getChatConfig()
     expect(getAssistantConfig()).toBe(full.assistant)
+    expect(getUserBubbleConfig()).toBe(full.userBubble)
     expect(getToolCallConfig()).toBe(full.toolCall)
     expect(getThinkingConfig()).toBe(full.thinking)
     expect(getMessageListConfig()).toBe(full.messageList)
     expect(getPageShellConfig()).toBe(full.pageShell)
+  })
+})
+
+describe('P0-3 config wiring contracts', () => {
+  it('getMessageListConfig exposes labels consumed by MessageList', () => {
+    const ml = getMessageListConfig()
+    for (const key of ['loadMore', 'errorLabel', 'errorDetail', 'compactionLabel', 'scrollToBottom'] as const) {
+      expect(typeof ml.labels[key]).toBe('string')
+      expect(ml.labels[key].length).toBeGreaterThan(0)
+    }
+    for (const key of ['showQuickStartChips', 'showCompactBanner', 'showContextBar', 'showDaySeparators'] as const) {
+      expect(typeof ml.visibility[key]).toBe('boolean')
+    }
+  })
+
+  it('userBubble / thinking / toolCall / pageShell getters expose wired fields', () => {
+    expect(getUserBubbleConfig().labels.userLabel).toBeTruthy()
+    expect(getUserBubbleConfig().visibility.allowEdit).toBe(true)
+    expect(getThinkingConfig().labels.streamingFormat).toContain('{duration}')
+    expect(getToolCallConfig().dangerousTools.length).toBeGreaterThan(0)
+    expect(getPageShellConfig().labels.themeLightLabel).toBeTruthy()
   })
 })
