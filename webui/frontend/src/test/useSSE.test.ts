@@ -509,6 +509,69 @@ describe('useSSE', () => {
       expect(useChatStore.getState().streamingMessageId).toBeNull()
     })
 
+    // §9 复核批：SSE 断线重连会从头回放历史事件。历史 error 若在每次
+    // 切回时重新弹 toast，用户会看到一个早已过时（可能已成功重试多轮）
+    // 的错误反复出现。按 message_id/attempt_id 去重——同一错误只提示一次。
+    it('dedupes replayed error events by message_id (historical error not re-toasted)', () => {
+      const err = 'LLMRateLimitError: rate limited (429) ... (2056)'
+
+      act(() => {
+        es.emit('error', { message_id: '85dfb024', error: err })
+      })
+      expect(useToastStore.getState().toasts.length).toBe(1)
+
+      // 模拟 SSE 重连回放：同一 message_id 的 error 再次投递
+      act(() => {
+        es.emit('error', { message_id: '85dfb024', error: err })
+      })
+      expect(useToastStore.getState().toasts.length).toBe(1) // 不重复弹
+    })
+
+    it('deduplicates historical error by attempt_id when message_id is absent', () => {
+      act(() => {
+        es.emit('error', { attempt_id: 'att-1', error: 'boom' })
+        es.emit('error', { attempt_id: 'att-1', error: 'boom' })
+      })
+      expect(useToastStore.getState().toasts.length).toBe(1)
+    })
+
+    it('fallback dedupe key is the error text when no id is provided', () => {
+      act(() => {
+        es.emit('error', { error: 'same error text' })
+        es.emit('error', { error: 'same error text' })
+      })
+      expect(useToastStore.getState().toasts.length).toBe(1)
+    })
+
+    it('a different error (new message_id) still shows a toast', () => {
+      act(() => {
+        es.emit('error', { message_id: 'old-1', error: 'old failure' })
+        es.emit('error', { message_id: 'new-2', error: 'new failure' })
+      })
+      const toasts = useToastStore.getState().toasts
+      expect(toasts.length).toBe(2)
+      expect(toasts.map((t) => t.message)).toEqual(['old failure', 'new failure'])
+    })
+
+    it('clears dedupe keys when switching sessions (new session can re-see same id)', () => {
+      const { rerender } = renderHook(
+        ({ sessionId }: { sessionId: string }) => useSSE(sessionId),
+        { initialProps: { sessionId: 'sess-1' } },
+      )
+      // sess-1 里提示过 msg-1
+      act(() => {
+        getCurrentES().emit('error', { message_id: 'msg-1', error: 'boom' })
+      })
+      const n1 = useToastStore.getState().toasts.length
+
+      // 切到 sess-2 → 去重集合应清空
+      act(() => { rerender({ sessionId: 'sess-2' }) })
+      act(() => {
+        getCurrentES().emit('error', { message_id: 'msg-1', error: 'boom' })
+      })
+      expect(useToastStore.getState().toasts.length).toBe(n1 + 1)
+    })
+
     it('agent_status updates agent state', () => {
       useAgentStore.setState({
         agents: new Map([['a-1', {
