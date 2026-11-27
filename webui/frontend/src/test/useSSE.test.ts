@@ -373,6 +373,43 @@ describe('useSSE', () => {
       expect(textParts[0].text).toBe('foo bar')
     })
 
+    it('P0-2: replayed text_delta with the same SSE id is applied once', () => {
+      seedMessage('msg-1')
+      act(() => {
+        es.emitMessage('text.started', { text_id: 't1', message_id: 'msg-1' }, 'e-1')
+        es.emitMessage('text_delta', { text_id: 't1', message_id: 'msg-1', text: 'once' }, 'e-2')
+        // Reconnect replay: same event id, same payload.
+        es.emitMessage('text_delta', { text_id: 't1', message_id: 'msg-1', text: 'once' }, 'e-2')
+      })
+      const msg = useChatStore.getState().messages.get('msg-1')!
+      const part = msg.parts.find((p) => p.type === 'text') as any
+      expect(part.text).toBe('once')
+    })
+
+    it('P0-2: distinct SSE ids still append distinct deltas', () => {
+      seedMessage('msg-1')
+      act(() => {
+        es.emitMessage('text.started', { text_id: 't1', message_id: 'msg-1' }, 'e-1')
+        es.emitMessage('text_delta', { text_id: 't1', message_id: 'msg-1', text: 'a' }, 'e-2')
+        es.emitMessage('text_delta', { text_id: 't1', message_id: 'msg-1', text: 'b' }, 'e-3')
+      })
+      const msg = useChatStore.getState().messages.get('msg-1')!
+      const part = msg.parts.find((p) => p.type === 'text') as any
+      expect(part.text).toBe('ab')
+    })
+
+    it('P0-2: event ids without id set bypass dedupe (legacy frames)', () => {
+      seedMessage('msg-1')
+      act(() => {
+        es.emit('text.started', { text_id: 't1', message_id: 'msg-1' })
+        es.emit('text_delta', { text_id: 't1', message_id: 'msg-1', text: 'x' })
+        es.emit('text_delta', { text_id: 't1', message_id: 'msg-1', text: 'y' })
+      })
+      const msg = useChatStore.getState().messages.get('msg-1')!
+      const part = msg.parts.find((p) => p.type === 'text') as any
+      expect(part.text).toBe('xy')
+    })
+
     it('text_delta without text_id is dropped (hard-break)', () => {
       seedMessage('msg-1')
       useChatStore.getState().setStreamingMessage('msg-1')

@@ -50,6 +50,13 @@ export function useSSE(sessionId: string | null) {
   // SSE 断线重连会回放历史事件，历史 error 不该在每次切回时重新弹 toast。
   // 按 session 隔离——切换会话时清空，新会话里的新错误仍会提示。
   const seenErrorKeys = useRef<Set<string>>(new Set())
+  // P0-2: event-level idempotency. Backend emits `id: <event.id>` on every
+  // SSE frame (chat.py::_format_event_v2); on reconnect the server replays
+  // from Last-Event-ID, which can re-deliver already-applied events.
+  // Mark-before-dispatch so handlers can't double-apply a re-entrant event.
+  // Bounded to avoid unbounded growth in long-running sessions.
+  const seenEventIds = useRef<Set<string>>(new Set())
+  const MAX_SEEN_EVENT_IDS = 5000
   // Consecutive rejected connections (e.g. 403 — session not owned by
   // this user) cap the reconnect loop; the browser reports CLOSED for
   // non-2xx responses and we would otherwise retry forever, hammering
@@ -95,6 +102,18 @@ export function useSSE(sessionId: string | null) {
         data = JSON.parse(e.data)
       } catch {
         return
+      }
+
+      // P0-2: drop replayed events by SSE id. Events without an id
+      // (heartbeat / legacy frames) bypass dedupe and keep prior behavior.
+      const eventId = e.lastEventId
+      if (eventId) {
+        if (seenEventIds.current.has(eventId)) return
+        seenEventIds.current.add(eventId)
+        if (seenEventIds.current.size > MAX_SEEN_EVENT_IDS) {
+          const oldest = seenEventIds.current.values().next().value
+          if (oldest !== undefined) seenEventIds.current.delete(oldest)
+        }
       }
 
       // Pull read-through state snapshots at dispatch time so handlers
@@ -161,7 +180,7 @@ export function useSSE(sessionId: string | null) {
 
       const handler = HANDLERS[event]
       if (handler) handler(data, ctx)
-      if (e.lastEventId) lastEventId.current = e.lastEventId
+      if (eventId) lastEventId.current = eventId
 
       // C3: store trace_id from any SSE event for log correlation
       const tid = data?.trace_id as string | undefined
@@ -194,6 +213,7 @@ export function useSSE(sessionId: string | null) {
     if (!sessionId) {
       prevSessionId.current = null
       lastEventId.current = ''
+      seenEventIds.current.clear()
       return
     }
     if (sourceRef.current) {
@@ -207,6 +227,9 @@ export function useSSE(sessionId: string | null) {
       // §9 复核：清空已提示错误键，让新会话的错误能正常提示；
       // 但同一会话内的历史错误在回放时不会重复弹出。
       seenErrorKeys.current.clear()
+      // P0-2: event ids are session-scoped (EventStore per session) — drop
+      // the old session's ids so a reused id can't suppress new events.
+      seenEventIds.current.clear()
       prevSessionId.current = sessionId
     }
 
