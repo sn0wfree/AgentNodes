@@ -474,6 +474,29 @@ describe('useSSE', () => {
       expect(part.text).toBe('xy')
     })
 
+    it('P0-2: the seen-id set is FIFO-bounded — the oldest id is evicted and reusable', () => {
+      seedMessage('msg-1')
+      act(() => {
+        es.emitMessage('text.started', { text_id: 't1', message_id: 'msg-1' }, 'cap-seed')
+        // Fill the cap (5000): 'cap-seed' is the oldest entry and gets evicted.
+        for (let i = 0; i < 5000; i++) {
+          es.emitMessage('text_delta', { text_id: 't1', message_id: 'msg-1', text: '' }, `cap-${i}`)
+        }
+        es.emitMessage('text_delta', { text_id: 't1', message_id: 'msg-1', text: 'A' }, 'cap-fresh')
+        // The evicted oldest id is processed again (not dropped as a dup).
+        es.emitMessage('text_delta', { text_id: 't1', message_id: 'msg-1', text: 'B' }, 'cap-seed')
+        // A recent id inside the window still dedupes.
+        es.emitMessage('text_delta', { text_id: 't1', message_id: 'msg-1', text: 'A' }, 'cap-fresh')
+        es.emitMessage('text_delta', { text_id: 't1', message_id: 'msg-1', text: 'C' }, 'cap-4999')
+      })
+      const msg = useChatStore.getState().messages.get('msg-1')!
+      const part = msg.parts.find((p) => p.type === 'text') as any
+      // A(evicted seed replay) + B + C(4999 evicted? no — 4999 is the newest, still seen → dropped)
+      // 'cap-0'..'cap-4999' fill the window; 'cap-seed' evicted → replayed;
+      // 'cap-fresh' still resident → second A dropped; 'cap-4999' still resident → C dropped.
+      expect(part.text).toBe('AB')
+    })
+
     it('text_delta without text_id is dropped (hard-break)', () => {
       seedMessage('msg-1')
       useChatStore.getState().setStreamingMessage('msg-1')

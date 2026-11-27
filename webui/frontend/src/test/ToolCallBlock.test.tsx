@@ -150,4 +150,25 @@ describe('ToolCallBlock — P0-3 config wiring', () => {
     const { queryByTitle } = render(<ToolCallBlock toolCall={baseTc} />)
     expect(queryByTitle('复制 args + result')).toBeNull()
   })
+
+  it('renders progress steps while running with progress data', () => {
+    const running: ToolCallPart = {
+      ...baseTc,
+      status: 'running',
+      progress: ['step one', 'step two'] as never,
+    }
+    const { getByText } = render(<ToolCallBlock toolCall={running} />)
+    expect(getByText('step one')).toBeTruthy()
+    expect(getByText('step two')).toBeTruthy()
+  })
+
+  it('hides progress steps for non-running status even with progress data', () => {
+    const done: ToolCallPart = {
+      ...baseTc,
+      status: 'done',
+      progress: ['stale step'] as never,
+    }
+    const { queryByText } = render(<ToolCallBlock toolCall={done} />)
+    expect(queryByText('stale step')).toBeNull()
+  })
 })

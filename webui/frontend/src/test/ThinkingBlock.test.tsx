@@ -128,4 +128,12 @@ describe('ThinkingBlock — P0-3 config wiring', () => {
     expect(screen.getByText(/思考了 2\.5s/)).toBeTruthy()
     expect(screen.queryByText(/Thought for/)).toBeNull()
   })
+
+  it('sizing.maxHeight drives the expanded content scroll cap', () => {
+    chatUiConfig.thinking.sizing.maxHeight = 120
+    const { container } = render(<ThinkingBlock text="long body" collapsed={false} />)
+    const body = container.querySelector('[style*="max-height"]') as HTMLElement | null
+    expect(body).toBeTruthy()
+    expect(body!.style.maxHeight).toBe('120px')
+  })
 })

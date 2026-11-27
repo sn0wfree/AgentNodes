@@ -59,6 +59,23 @@ describe('aggregateBreakdown（配置驱动聚合）', () => {
     const agg = aggregateBreakdown(fine, GROUPS)
     expect(agg.other).toBe(0)
   })
+
+  it('P0-4: multiple unconfigured segments all sum into 其他', () => {
+    const fine = {
+      system_prompt: 100, user_text: 20, assistant_text: 16,
+      reasoning: 3000, cache_read: 250, future_segment: 7,
+    }
+    const agg = aggregateBreakdown(fine, GROUPS)
+    expect(agg.other).toBe(3257)
+    const displayed = Object.values(agg).reduce((a, b) => a + b, 0)
+    const backendTotal = Object.values(fine).reduce((a, b) => a + b, 0)
+    expect(displayed).toBe(backendTotal)
+  })
+
+  it('P0-4: zero-value unconfigured segments do not summon the 其他 row', () => {
+    const agg = aggregateBreakdown({ system_prompt: 100, reasoning: 0 }, GROUPS)
+    expect(agg.other).toBe(0)
+  })
 })
 
 describe('buildArcs', () => {
