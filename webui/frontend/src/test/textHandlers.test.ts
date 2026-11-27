@@ -50,6 +50,7 @@ function ctx(overrides: Partial<SSEContext> = {}): SSEContext {
     updateAgent: () => {},
     setLastCompaction: () => {},
     addToast: () => {},
+    addErrorToastOnce: (_key: string, _msg: string) => true,
     ...overrides,
   } as SSEContext
 }

@@ -226,6 +226,30 @@ describe('fetchSessionAttempts — 过时失败不重复显示', () => {
     expect(msg?.metadata?.status).toBe('error')
   })
 
+  it('does not rewrite an existing message even when the failure is the latest round', async () => {
+    // §9 复核：attempt 记录早于消息落库约 0.1s；但无论时间如何，
+    // 只要消息已存在（DB 里失败轮必有一条空 assistant 消息），
+    // `!has(mid)` 守卫都会跳过 —— attempts 路径从不产生错误气泡。
+    // 错误提示走 SSE 实时路径（messageHandlers），不是这里。
+    useChatStore.getState().setMessages([makeMessage('asm-fail', 'assistant', 1000)])
+    mockedApi.get.mockResolvedValueOnce({
+      attempts: [
+        {
+          attempt_id: 'att-fail',
+          message_id: 'asm-fail',
+          status: 'failed',
+          prompt: 'hi',
+          error: 'boom',
+          created_at: new Date(999 * 1000).toISOString(), // 比消息早 1s
+        },
+      ],
+    })
+
+    await useChatStore.getState().fetchSessionAttempts('sess-1')
+
+    expect(useChatStore.getState().messages.get('asm-fail')?.metadata?.status).toBeUndefined()
+  })
+
   it('suppresses a stale failed attempt when later messages exist', async () => {
     // 失败之后又有更晚的消息 → 已过时 → 不再显示
     useChatStore.getState().setMessages([

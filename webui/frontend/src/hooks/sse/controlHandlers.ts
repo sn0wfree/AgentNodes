@@ -156,10 +156,22 @@ export const agentDone: SSEHandler = (data, ctx) => {
   }
 }
 
-/** error: backend surfaced a fatal error — toast + clear streaming. */
+/** error: backend surfaced a fatal error — toast + clear streaming.
+ *
+ * §9 复核：SSE 断线重连会回放历史事件；历史 error 若在每次切回时
+ * 重新弹 toast，用户会看到一个早已过时（可能已成功重试多轮）的错误
+ * 反复出现。用 addErrorToastOnce 按 message_id/attempt_id 去重——
+ * 同一错误只提示一次，新错误仍正常提示。
+ */
 export const errorEvent: SSEHandler = (data, ctx) => {
   const error = data.error as string
-  if (error) ctx.addToast('error', error)
+  if (error) {
+    // 优先用 message_id / attempt_id 作为稳定去重键；无 id 时退化为错误摘要
+    const mid = data.message_id as string | undefined
+    const aid = data.attempt_id as string | undefined
+    const key = mid || aid || error.slice(0, 120)
+    ctx.addErrorToastOnce(key, error)
+  }
   clearAllStreamingParts(ctx)
   ctx.setStreamingMessage(null)
   ctx.setActiveAttempt(null)

@@ -47,6 +47,7 @@ function ctx(overrides: Partial<SSEContext> = {}): SSEContext {
     setGoal: () => {},
     updateGoal: () => {},
     addToast: () => {},
+    addErrorToastOnce: (_key: string, _msg: string) => true,
     patchSessionMeta: () => {},
     ...overrides,
   } as SSEContext

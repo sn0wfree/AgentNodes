@@ -48,6 +48,7 @@ function ctx(overrides: Partial<SSEContext> = {}): SSEContext {
     setGoal: () => {},
     updateGoal: () => {},
     addToast: (...args: [string, string]) => toasts.push(args),
+    addErrorToastOnce: (_key: string, msg: string) => { toasts.push(['error', msg]); return true },
     patchSessionMeta: () => {},
     ...overrides,
   } as SSEContext
@@ -200,6 +201,25 @@ describe('errorEvent', () => {
   it('does not push a toast when no error string is provided', () => {
     errorEvent({}, ctx())
     expect(toasts).toEqual([])
+  })
+
+  it('dedupes historical error events by message_id (§9: SSE replay must not re-toast)', () => {
+    // 用真实去重逻辑（Set）而非透传 mock，验证同一 message_id 的回放不重复提示
+    const seen = new Set<string>()
+    const once = (_key: string, msg: string) => {
+      if (seen.has(_key)) return false
+      seen.add(_key)
+      toasts.push(['error', msg])
+      return true
+    }
+    const c = ctx({ addErrorToastOnce: once })
+
+    errorEvent({ message_id: '85dfb024', error: 'rate limited (429)' }, c)
+    errorEvent({ message_id: '85dfb024', error: 'rate limited (429)' }, c) // 回放
+    const rateLimitedToasts = toasts.filter(
+      (t) => Array.isArray(t) && typeof t[1] === 'string' && t[1].includes('rate limited'),
+    )
+    expect(rateLimitedToasts.length).toBe(1)
   })
 })
 

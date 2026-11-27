@@ -46,6 +46,10 @@ export function useSSE(sessionId: string | null) {
   const isFirstConnect = useRef(true)
   const prevSessionId = useRef<string | null>(null)
   const lastEventId = useRef('')
+  // §9 复核：已提示过的错误键（message_id / attempt_id + 错误摘要）。
+  // SSE 断线重连会回放历史事件，历史 error 不该在每次切回时重新弹 toast。
+  // 按 session 隔离——切换会话时清空，新会话里的新错误仍会提示。
+  const seenErrorKeys = useRef<Set<string>>(new Set())
   // Consecutive rejected connections (e.g. 403 — session not owned by
   // this user) cap the reconnect loop; the browser reports CLOSED for
   // non-2xx responses and we would otherwise retry forever, hammering
@@ -126,6 +130,12 @@ export function useSSE(sessionId: string | null) {
         setExecutionProgress: (p) => useWorkflowStore.getState().setExecutionProgress(p),
         setGoal: (g) => useGoalStore.getState().setGoal(g),
         addToast,
+        addErrorToastOnce: (key, msg) => {
+          if (seenErrorKeys.current.has(key)) return false
+          seenErrorKeys.current.add(key)
+          addToast('error', msg)
+          return true
+        },
         patchSessionMeta: (sid, patch) =>
           useSessionStore.setState((state) => ({
             sessions: state.sessions.map((sess) =>
@@ -191,6 +201,9 @@ export function useSSE(sessionId: string | null) {
       isFirstConnect.current = true
       failedAttempts.current = 0
       lastEventId.current = ''
+      // §9 复核：清空已提示错误键，让新会话的错误能正常提示；
+      // 但同一会话内的历史错误在回放时不会重复弹出。
+      seenErrorKeys.current.clear()
       prevSessionId.current = sessionId
     }
 

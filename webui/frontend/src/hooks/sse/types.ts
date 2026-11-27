@@ -211,6 +211,10 @@ export interface SSEContext {
   setGoal: (g: Goal | null) => void
   // Toast store
   addToast: (kind: 'error' | 'info' | 'success', msg: string) => void
+  /** §9 复核：同一错误（按 message_id/attempt_id 去重）不重复弹 toast。
+   *  SSE 断线重连会回放历史事件；历史 error 不应在每次切回时重新弹出。
+   *  返回 true 表示「本次确实新增提示」，false 表示已提示过。 */
+  addErrorToastOnce: (key: string, msg: string) => boolean
   // Session store meta update (auth-side session list patching)
   patchSessionMeta: (session_id: string, patch: Record<string, unknown>) => void
   // Tier 1 A1: permission handshake. The store holds the most recent

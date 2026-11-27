@@ -484,9 +484,13 @@ export const useChatStore = create<ChatState>()(
         set((state) => {
           // §9 复核修复（过时错误反复重现）：
           // failed attempt 只在「它是本 session 最新一轮」时才显示错误气泡。
-          // 判定：该失败对应的消息之后是否还有更晚的消息 —— 若用户已继续对话，
-          // 说明这次失败早已过时，不该在每次切回会话时重新弹出。
-          // （该失败在 DB 里本来就没有 error 消息，纯前端合成产物。）
+          // 若用户已继续对话（后面有更晚的消息），这次失败早已过时，不该在
+          // 每次切回会话时重新弹出。
+          //
+          // 比较基准用「该失败所对应消息自身的时间」而不是 attempt.created_at：
+          // attempt 记录比消息落库早约 0.1s（先记 attempt，后 flush 消息），
+          // 若用 attempt 时间比较，会把「失败即最新一轮」误判为过时而不显示 ——
+          // 那样真正该弹的错误就丢了。
           const newestAt = state.messages.size
             ? Math.max(...[...state.messages.values()].map((m) => m.created_at ?? 0))
             : 0
@@ -513,7 +517,9 @@ export const useChatStore = create<ChatState>()(
             } else if (a.status === 'failed' && a.error) {
               // C1: show failed attempt as an error message bubble —
               // 但仅限**最新**失败；更早的失败已被后续对话覆盖（过时）。
-              const isLatest = createdAt >= newestAt
+              const failedMsg = state.messages.get(mid)
+              const failedAt = failedMsg?.created_at ?? createdAt
+              const isLatest = failedAt >= newestAt
               if (isLatest && !state.messages.has(mid)) {
                 state.messages.set(mid, {
                   id: mid,
