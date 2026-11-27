@@ -51,28 +51,19 @@ describe('Composer · context usage ring at card top-right (design 2026-11-25)',
     expect(popover.textContent).toContain('系统提示')
   })
 
-  // §9 批 A 回归防线：环必须消费真实 7 段 breakdown（此前误传 EMPTY_SEGMENTS，
-  // 分段环从未生效，永远只画单色弧）
-  it('draws per-segment arcs from the real context.breakdown data (§9 A)', () => {
+  // 2026-11-27 回退契约：小环保持单色 tone（不用 7 段 viz 分色）。
+  // 20px 下 7 段读不出用量状态且 system_prompt 恒主导 → 环恒紫、丢失
+  // 绿/黄/红状态语义（真机评估结论）；分段明细只在 hover 弹层呈现。
+  it('keeps the small ring single-tone (no segment arcs at 20px; reverted §9 A)', () => {
     useChatStore.setState({
       contextBreakdown: new Map([['sess-1', { system_prompt: 2374, messages: 2 }]]),
     } as never)
     render(<Composer />)
-    expect(screen.getByTestId('context-ring-seg-system_prompt')).toBeDefined()
-    expect(screen.getByTestId('context-ring-seg-messages')).toBeDefined()
-  })
-
-  // §9 批 B 回归防线：底环走 currentColor/0.25（原 var(--muted) 深色下不可见）
-  it('uses a low-opacity currentColor track and thicker stroke (§9 B, ZCode alignment)', () => {
-    render(<Composer />)
     const ring = screen.getByTestId('composer-context-ring')
-    const circles = ring.querySelectorAll('circle')
-    expect(circles.length).toBeGreaterThanOrEqual(2)
-    const track = circles[0]
-    expect(track.getAttribute('stroke')).toBe('currentColor')
-    expect(track.getAttribute('stroke-opacity')).toBe('0.25')
-    // 描边加粗 3 → 4（对齐 ZCode 4/24 比例）
-    expect(track.getAttribute('stroke-width')).toBe('4')
+    // 有分段数据也不画分段弧
+    expect(ring.querySelector('[data-testid^="context-ring-seg-"]')).toBeNull()
+    // 单色 tone 弧在场
+    expect(ring.querySelector('[data-testid="context-ring-single"]')).not.toBeNull()
   })
 
   it('renders ring only when the model exposes a context limit', () => {

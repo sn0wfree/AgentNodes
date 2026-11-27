@@ -455,9 +455,11 @@ export function Composer({ composeMessage, readOnly }: ComposerProps = {}) {
         {usage.hasLimit && modelInfo && (
           <div className="group/usage absolute right-4 top-2 z-10" data-testid="composer-context-ring-wrap">
             <div aria-hidden="true" data-testid="composer-context-ring" className="relative">
-              {/* §9 批 A：传真实 7 段 breakdown —— 此前误传 EMPTY_SEGMENTS，
-                  分段环从未生效，永远只画单色弧 */}
-              <ContextRing segments={breakdown} percent={usage.percent} tone={tokenTone(usage.percent)} size={20} />
+              {/* 2026-11-27 回退：分段环（segments=breakdown）经真机评估退回——
+                  20px 下 7 段 viz 色读不出"用量状态"，且 system_prompt 恒占主导
+                  → 环恒为紫色，丢失原单色 tone（绿/黄/红）的状态语义。
+                  ZCode 同场景即单色 tone 环，分段只在 hover 面板呈现。 */}
+              <ContextRing segments={EMPTY_SEGMENTS} percent={usage.percent} tone={tokenTone(usage.percent)} size={20} />
               {usage.isStale && (
                 <span
                   className="absolute -right-1 -top-1 text-warning-fg"
