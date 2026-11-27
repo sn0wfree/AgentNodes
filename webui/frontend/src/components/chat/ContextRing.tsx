@@ -1,11 +1,17 @@
 import { useMemo } from 'react'
 import type { TokenTone } from '../../utils/tokenThresholds'
+import {
+  getContextUsageConfig,
+  type ContextUsageGroup,
+} from './chatUiConfig'
 
 /**
  * 上下文用量环（R-014 H2）—— SVG 分段圆环。
  *
- * 7 段数据来自 `context.breakdown` SSE 事件（后端按 7 类归属估算）。
- * 常态为小环（状态行内 ~20px），hover 时父级弹层展示分段明细。
+ * 后端 `context.breakdown` SSE 事件携带**细粒度段**（§9 复核批：10 段，
+ * 见 kernel/context/breakdown.py）；展示行由 chat-ui-config.json 的
+ * ``contextUsage.groups`` **配置聚合**（改分组/改名只改配置）。
+ * 常态为小环（~20px，单色 tone），hover 时父级弹层展示聚合明细。
  * 分段颜色复用 viz 令牌（`--viz-1..8`，dark/light 双主题已有值）。
  */
 export interface RingSegment {
@@ -14,15 +20,24 @@ export interface RingSegment {
   value: number
 }
 
-export const RING_SEGMENT_META: { key: string; label: string; colorVar: string }[] = [
-  { key: 'messages', label: '历史消息', colorVar: '--viz-1' },
-  { key: 'system_prompt', label: '系统提示', colorVar: '--viz-3' },
-  { key: 'meta_user_context', label: '用户上下文', colorVar: '--viz-5' },
-  { key: 'skills', label: '技能', colorVar: '--viz-2' },
-  { key: 'tool_prompt', label: '工具说明', colorVar: '--viz-4' },
-  { key: 'system_tool_schemas', label: '工具 Schema', colorVar: '--viz-6' },
-  { key: 'mcp_tool_schemas', label: 'MCP Schema', colorVar: '--viz-7' },
-]
+/** 细粒度段 → 展示行聚合（配置驱动；source 引用后端段 key）。 */
+export function aggregateBreakdown(
+  segments: Record<string, number>,
+  groups: ContextUsageGroup[],
+): Record<string, number> {
+  const out: Record<string, number> = {}
+  for (const g of groups) {
+    let sum = 0
+    for (const src of g.source) sum += segments[src] || 0
+    out[g.key] = sum
+  }
+  return out
+}
+
+/** 展示行元数据（配置驱动），供 buildArcs / BreakdownList 使用。 */
+export function breakdownGroups(): ContextUsageGroup[] {
+  return getContextUsageConfig().groups
+}
 
 interface ContextRingProps {
   /** 各段 token 数（key → value）；无数据时显示单色环 */
@@ -45,12 +60,13 @@ interface Arc {
   dashOffset: number
 }
 
-/** 组装分段弧：每段按 value/total 占比映射为圆周长的一部分。 */
+/** 组装分段弧：每段按 value/total 占比映射为圆周长的一部分（聚合展示行）。 */
 export function buildArcs(segments: Record<string, number>, circumference: number): Arc[] {
-  const total = RING_SEGMENT_META.reduce((sum, m) => sum + (segments[m.key] || 0), 0)
+  const meta = breakdownGroups()
+  const total = meta.reduce((sum, m) => sum + (segments[m.key] || 0), 0)
   if (total <= 0) return []
   let offset = 0
-  return RING_SEGMENT_META.map((m) => {
+  return meta.map((m) => {
     const value = segments[m.key] || 0
     const ratio = value / total
     const len = ratio * circumference
@@ -132,16 +148,19 @@ export function ContextRing({ segments, percent, tone, size = 20 }: ContextRingP
   )
 }
 
-/** 7 段明细列表（hover 弹层内使用）；无数据显示占位提示。 */
+/** 分段明细列表（hover 弹层内使用）：细粒度段按配置聚合成展示行；
+ *  无数据显示占位提示。 */
 export function BreakdownList({ segments }: { segments: Record<string, number> }) {
-  const total = RING_SEGMENT_META.reduce((sum, m) => sum + (segments[m.key] || 0), 0)
+  const groups = breakdownGroups()
+  const aggregated = aggregateBreakdown(segments, groups)
+  const total = groups.reduce((sum, m) => sum + (aggregated[m.key] || 0), 0)
   if (total <= 0) {
     return <div className="text-[10px] text-muted">分段数据待接入（当前显示估算总量）</div>
   }
   return (
     <ul className="space-y-1">
-      {RING_SEGMENT_META.map((m) => {
-        const value = segments[m.key] || 0
+      {groups.map((m) => {
+        const value = aggregated[m.key] || 0
         const pct = (value / total) * 100
         return (
           <li key={m.key} className="flex items-center gap-2 text-[10px]" data-testid={`breakdown-row-${m.key}`}>

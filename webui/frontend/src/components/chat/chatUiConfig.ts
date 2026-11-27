@@ -146,6 +146,20 @@ export interface PageShellConfig {
   }
 }
 
+/** §9 复核批：上下文分段聚合行（后端细拆 → 前端配置聚合）。 */
+export interface ContextUsageGroup {
+  /** 聚合后的展示 key（如 messages / tool_traffic） */
+  key: string
+  label: string
+  colorVar: string
+  /** 聚合哪些后端细粒度段 */
+  source: string[]
+}
+
+export interface ContextUsageConfig {
+  groups: ContextUsageGroup[]
+}
+
 export interface ChatUiConfig {
   assistant: AssistantConfig
   userBubble: UserBubbleConfig
@@ -153,6 +167,7 @@ export interface ChatUiConfig {
   thinking: ThinkingConfig
   messageList: MessageListConfig
   pageShell: PageShellConfig
+  contextUsage?: ContextUsageConfig
 }
 
 // ── 导出配置 ───────────────────────────────────────────────────
@@ -190,3 +205,23 @@ export function getMessageListConfig(): MessageListConfig {
 export function getPageShellConfig(): PageShellConfig {
   return chatUiConfig.pageShell
 }
+
+/** 上下文分段聚合配置（§9 复核批：后端细拆 10 段 → 前端配置聚合）。
+ *  JSON 缺 contextUsage 段或配置非法时回退代码内默认，保证弹层永远可渲染。 */
+export function getContextUsageConfig(): ContextUsageConfig {
+  const groups = chatUiConfig.contextUsage?.groups
+  if (Array.isArray(groups) && groups.length > 0) return { groups }
+  return { groups: DEFAULT_CONTEXT_USAGE_GROUPS }
+}
+
+/** 代码内兜底分组（与 chat-ui-config.json 的 contextUsage.groups 保持一致）。 */
+export const DEFAULT_CONTEXT_USAGE_GROUPS: ContextUsageGroup[] = [
+  { key: 'messages', label: '历史消息', colorVar: '--viz-1', source: ['user_text', 'assistant_text'] },
+  { key: 'tool_traffic', label: '工具流量', colorVar: '--viz-8', source: ['tool_calls', 'tool_results'] },
+  { key: 'system_prompt', label: '系统提示', colorVar: '--viz-3', source: ['system_prompt'] },
+  { key: 'meta_user_context', label: '用户上下文', colorVar: '--viz-5', source: ['meta_user_context'] },
+  { key: 'skills', label: '技能', colorVar: '--viz-2', source: ['skills'] },
+  { key: 'tool_prompt', label: '工具说明', colorVar: '--viz-4', source: ['tool_prompt'] },
+  { key: 'system_tool_schemas', label: '工具 Schema', colorVar: '--viz-6', source: ['system_tool_schemas'] },
+  { key: 'mcp_tool_schemas', label: 'MCP Schema', colorVar: '--viz-7', source: ['mcp_tool_schemas'] },
+]

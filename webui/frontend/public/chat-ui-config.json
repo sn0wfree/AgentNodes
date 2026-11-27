@@ -135,6 +135,19 @@
       "showThemeToggle": true
     }
   },
+  "contextUsage": {
+    "_comment": "§9 复核批：后端细拆 10 个细粒度段（system_prompt/user_text/assistant_text/tool_calls/tool_results/meta_user_context/skills/tool_prompt/system_tool_schemas/mcp_tool_schemas），这里配置聚合成展示行。改分组/改名只改此文件，不用改代码。source 引用后端段 key，可多个聚合为一行。",
+    "groups": [
+      { "key": "messages", "label": "历史消息", "colorVar": "--viz-1", "source": ["user_text", "assistant_text"] },
+      { "key": "tool_traffic", "label": "工具流量", "colorVar": "--viz-8", "source": ["tool_calls", "tool_results"] },
+      { "key": "system_prompt", "label": "系统提示", "colorVar": "--viz-3", "source": ["system_prompt"] },
+      { "key": "meta_user_context", "label": "用户上下文", "colorVar": "--viz-5", "source": ["meta_user_context"] },
+      { "key": "skills", "label": "技能", "colorVar": "--viz-2", "source": ["skills"] },
+      { "key": "tool_prompt", "label": "工具说明", "colorVar": "--viz-4", "source": ["tool_prompt"] },
+      { "key": "system_tool_schemas", "label": "工具 Schema", "colorVar": "--viz-6", "source": ["system_tool_schemas"] },
+      { "key": "mcp_tool_schemas", "label": "MCP Schema", "colorVar": "--viz-7", "source": ["mcp_tool_schemas"] }
+    ]
+  },
   "studyChat": {
     "defaultViewMode": "card",
     "card": {

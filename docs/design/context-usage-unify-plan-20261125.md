@@ -192,3 +192,43 @@ AgentNodes 的 SSE handler 已正确处理，跳过。
 
 **仍未处理（本次未批）**：「历史消息」段混入 tool_call/tool_result 流量（段名误导）、
 当前轮缺位（emit 在 LLM 调用前）、迭代间归属口径漂移。
+
+## 2026-11-27 · 细拆 + 配置聚合（用户裁决「后端细拆、前端配置聚合」）
+
+**问题**（承接上文「仍未处理」三项）：「历史消息」按位置切片 `messages[1:-1]`，
+混入 tool_calls 参数与工具返回值；当前轮 user 手写文本不计入任何段；
+迭代 ≥2 时末条是 tool_result 导致口径漂移。
+
+**架构**（用户裁决）：
+
+```
+后端（单一事实源）：细拆 10 个正交细粒度段，之和 ≈ 请求总量
+  system_prompt / user_text / assistant_text / tool_calls / tool_results
+  / meta_user_context / skills / tool_prompt / system_tool_schemas / mcp_tool_schemas
+
+前端（chat-ui-config.json → contextUsage.groups）：细段聚合为展示行
+  历史消息 = user_text + assistant_text
+  工具流量 = tool_calls + tool_results（新增行，viz-8）
+  其余 6 行 1:1 映射
+```
+
+**归属改为角色驱动**（修复缺位与漂移）：
+
+- 逐条按 role 归段，位置无关 → 迭代间口径一致
+- 末条 user（**含当前轮**）计入 user_text，但**扣除注入前缀**——
+  前缀长度 = `len("\n\n".join(items)) + 2`（与 session_controller 拼接精确一致），
+  前缀已按 items 记入 meta/skills，不重复计数
+- tool 角色 +100 字符开销保留在 tool_results 内
+
+**改动文件**：`kernel/context/breakdown.py`（BREAKDOWN_KEYS 7→10 + 角色归属）、
+`chat-ui-config.json`（contextUsage.groups）、`chatUiConfig.ts`（类型 + getter + 代码内兜底）、
+`ContextRing.tsx`（RING_SEGMENT_META → `breakdownGroups()`/`aggregateBreakdown()` 配置驱动）。
+
+**验证**：后端 17 例 breakdown 测试（新增当前轮计入/工具流量独立/注入前缀扣除/位置无关
+4 组契约）、前端 ContextRing 12 例（新增聚合 2 例 + 工具流量行 1 例）；
+全量前端 **1514 passed** / 后端 **8274 passed** / tsc clean / gate ALL GREEN。
+**真机**（发"你好"后）：历史消息 638（纯对话）、工具流量 1,346、系统提示 3,734、
+工具说明 654、工具 Schema 1,466 —— 弹层 8 行，总和与状态栏一致。
+
+**未来扩展**：改分组/改名/换色 → 只改 chat-ui-config.json 的 contextUsage.groups；
+后端新增细段（如 reasoning）→ 前端不配则该段不显示（总数仍准），配一行即显示。
