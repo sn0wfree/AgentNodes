@@ -482,6 +482,14 @@ export const useChatStore = create<ChatState>()(
         if (seq !== loadMessagesSeq) return // stale response (session switched)
         const attempts = data.attempts ?? []
         set((state) => {
+          // §9 复核修复（过时错误反复重现）：
+          // failed attempt 只在「它是本 session 最新一轮」时才显示错误气泡。
+          // 判定：该失败对应的消息之后是否还有更晚的消息 —— 若用户已继续对话，
+          // 说明这次失败早已过时，不该在每次切回会话时重新弹出。
+          // （该失败在 DB 里本来就没有 error 消息，纯前端合成产物。）
+          const newestAt = state.messages.size
+            ? Math.max(...[...state.messages.values()].map((m) => m.created_at ?? 0))
+            : 0
           attempts.forEach((a, i) => {
             const mid = a.message_id
             if (!mid) return
@@ -503,8 +511,10 @@ export const useChatStore = create<ChatState>()(
               state.activeAttemptId = a.attempt_id
               state.streamingMessageId = mid
             } else if (a.status === 'failed' && a.error) {
-              // C1: show failed attempt as an error message bubble
-              if (!state.messages.has(mid)) {
+              // C1: show failed attempt as an error message bubble —
+              // 但仅限**最新**失败；更早的失败已被后续对话覆盖（过时）。
+              const isLatest = createdAt >= newestAt
+              if (isLatest && !state.messages.has(mid)) {
                 state.messages.set(mid, {
                   id: mid,
                   session_id: sessionId,
