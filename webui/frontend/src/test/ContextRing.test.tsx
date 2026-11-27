@@ -25,6 +25,40 @@ describe('aggregateBreakdown（配置驱动聚合）', () => {
     const agg = aggregateBreakdown({}, GROUPS)
     expect(Object.values(agg).every((v) => v === 0)).toBe(true)
   })
+
+  it('routes unconfigured backend segments to 其他 (§9: 不配则显示其他类别)', () => {
+    // 后端新增细段 reasoning（前端未配置）→ 归入「其他」
+    const fine = {
+      system_prompt: 100, user_text: 20, assistant_text: 16,
+      tool_calls: 30, tool_results: 90, tool_prompt: 40,
+      system_tool_schemas: 60, reasoning: 3000,
+    }
+    const agg = aggregateBreakdown(fine, GROUPS)
+    expect(agg.other).toBe(3000)
+  })
+
+  it('keeps displayed total equal to backend total when a segment is unconfigured', () => {
+    // 核心契约：未配置的段不能消失，否则占比失真
+    const fine = {
+      system_prompt: 100, user_text: 20, assistant_text: 16,
+      tool_calls: 30, tool_results: 90, tool_prompt: 40,
+      system_tool_schemas: 60, reasoning: 3000,
+    }
+    const agg = aggregateBreakdown(fine, GROUPS)
+    const displayed = Object.values(agg).reduce((a, b) => a + b, 0)
+    const backendTotal = Object.values(fine).reduce((a, b) => a + b, 0)
+    expect(displayed).toBe(backendTotal)
+  })
+
+  it('其他 row is 0 when every backend segment is configured', () => {
+    const fine = {
+      system_prompt: 100, user_text: 20, assistant_text: 16,
+      tool_calls: 30, tool_results: 90, meta_user_context: 5,
+      skills: 5, tool_prompt: 40, system_tool_schemas: 60, mcp_tool_schemas: 7,
+    }
+    const agg = aggregateBreakdown(fine, GROUPS)
+    expect(agg.other).toBe(0)
+  })
 })
 
 describe('buildArcs', () => {
@@ -97,6 +131,18 @@ describe('BreakdownList', () => {
     const row = screen.getByTestId('breakdown-row-tool_traffic')
     expect(row.textContent).toContain('工具流量')
     expect(row.textContent).toContain('120')
+  })
+
+  it('shows 其他 row for backend segments the config does not cover', () => {
+    render(<BreakdownList segments={{ reasoning: 3000, user_text: 20 }} />)
+    const other = screen.getByTestId('breakdown-row-other')
+    expect(other.textContent).toContain('其他')
+    expect(other.textContent).toContain('3,000')
+  })
+
+  it('hides the 其他 row when there is nothing unconfigured', () => {
+    render(<BreakdownList segments={{ user_text: 20, system_prompt: 100 }} />)
+    expect(screen.queryByTestId('breakdown-row-other')).toBeNull()
   })
 
   it('shows a placeholder without data', () => {

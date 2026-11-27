@@ -20,19 +20,41 @@ export interface RingSegment {
   value: number
 }
 
-/** 细粒度段 → 展示行聚合（配置驱动；source 引用后端段 key）。 */
+/** 细粒度段 → 展示行聚合（配置驱动；source 引用后端段 key）。
+ *
+ * **兜底**：后端新增细段而前端未配置时，该段不会被任何 group 引用 →
+ *  归入「其他」分组，保证展示合计 == 后端总量（占比不失真）。
+ */
 export function aggregateBreakdown(
   segments: Record<string, number>,
   groups: ContextUsageGroup[],
 ): Record<string, number> {
   const out: Record<string, number> = {}
+  const covered = new Set<string>()
   for (const g of groups) {
     let sum = 0
-    for (const src of g.source) sum += segments[src] || 0
+    for (const src of g.source) {
+      sum += segments[src] || 0
+      covered.add(src)
+    }
     out[g.key] = sum
+  }
+  // 未被任何 group 引用、但有值的段 → 「其他」
+  let other = 0
+  for (const [k, v] of Object.entries(segments)) {
+    if (!covered.has(k) && v) other += v
+  }
+  if (other > 0) {
+    const fallback = groups.find((g) => g.key === OTHER_GROUP_KEY)
+    if (fallback) {
+      out[fallback.key] = (out[fallback.key] || 0) + other
+    }
   }
   return out
 }
+
+/** 「其他」分组 key（未配置的细段落这里）。 */
+export const OTHER_GROUP_KEY = 'other'
 
 /** 展示行元数据（配置驱动），供 buildArcs / BreakdownList 使用。 */
 export function breakdownGroups(): ContextUsageGroup[] {
@@ -161,6 +183,8 @@ export function BreakdownList({ segments }: { segments: Record<string, number> }
     <ul className="space-y-1">
       {groups.map((m) => {
         const value = aggregated[m.key] || 0
+        // 「其他」兜底行仅在真有未配置段时显示（常态不占位、不噪音）
+        if (m.key === OTHER_GROUP_KEY && value === 0) return null
         const pct = (value / total) * 100
         return (
           <li key={m.key} className="flex items-center gap-2 text-[10px]" data-testid={`breakdown-row-${m.key}`}>

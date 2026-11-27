@@ -224,4 +224,7 @@ export const DEFAULT_CONTEXT_USAGE_GROUPS: ContextUsageGroup[] = [
   { key: 'tool_prompt', label: '工具说明', colorVar: '--viz-4', source: ['tool_prompt'] },
   { key: 'system_tool_schemas', label: '工具 Schema', colorVar: '--viz-6', source: ['system_tool_schemas'] },
   { key: 'mcp_tool_schemas', label: 'MCP Schema', colorVar: '--viz-7', source: ['mcp_tool_schemas'] },
+  // 「其他」兜底行：后端新增细段而前端未配置时，未被引用的段归到这里，
+  // 保证展示合计 == 后端总量（占比不失真）。
+  { key: 'other', label: '其他', colorVar: '--viz-8', source: [] },
 ]

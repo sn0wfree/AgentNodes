@@ -145,7 +145,8 @@
       { "key": "skills", "label": "技能", "colorVar": "--viz-2", "source": ["skills"] },
       { "key": "tool_prompt", "label": "工具说明", "colorVar": "--viz-4", "source": ["tool_prompt"] },
       { "key": "system_tool_schemas", "label": "工具 Schema", "colorVar": "--viz-6", "source": ["system_tool_schemas"] },
-      { "key": "mcp_tool_schemas", "label": "MCP Schema", "colorVar": "--viz-7", "source": ["mcp_tool_schemas"] }
+      { "key": "mcp_tool_schemas", "label": "MCP Schema", "colorVar": "--viz-7", "source": ["mcp_tool_schemas"] },
+      { "key": "other", "label": "其他", "colorVar": "--viz-8", "source": [] }
     ]
   },
   "studyChat": {
