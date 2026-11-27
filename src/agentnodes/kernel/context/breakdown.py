@@ -19,9 +19,9 @@ mcp_tool_schemas）。AgentNodes 此前没有任何分段记账，且
 | system_tool_schemas | tools 的参数 schema（非 MCP） |
 | mcp_tool_schemas | 来自 MCP 的 tools schema（name 前缀 ``mcp__`` 或 meta.mcp） |
 
-**为什么是估算**：provider 的 usage 只给总量，不给分段。分段用统一
-的 ``estimate_tokens``（chars/3.0）估算，**各段之和 ≈ 总量**，用于
-呈现构成，不用于计费。
+**为什么是估算**：provider 的 usage 只给总量，不给分段。分段用
+``estimate_tokens_cjk``（CJK 1 token/字，其它 3 字符/token）估算，
+**各段之和 ≈ 总量**，用于呈现构成，不用于计费。中文段不再被 chars/3 低估。
 
 **纯函数**：不依赖 AgentLoop / DB / 事件总线，便于单测。
 """
@@ -29,7 +29,8 @@ from __future__ import annotations
 
 from typing import Any
 
-from agentnodes.foundation.utils.token_utils import estimate_tokens
+import json as _json
+import unicodedata as _unicodedata
 
 #: 7 段的 key 与展示顺序（前端按此顺序着色）。
 BREAKDOWN_KEYS: tuple[str, ...] = (
@@ -44,6 +45,52 @@ BREAKDOWN_KEYS: tuple[str, ...] = (
 
 #: MCP 工具识别前缀（新增概念的归属规则）。
 MCP_TOOL_PREFIX = "mcp__"
+
+
+def _is_cjk(ch: str) -> bool:
+    """中日韩表意文字（CJK Unified Ideographs 及扩展 A/B）。
+
+    这些字符在常见 tokenizer（含 MiniMax / GPT 系）里通常 1 字 ≈ 1 token，
+    而英文/数字约 3-4 字符 ≈ 1 token。统一 chars/3 会把中文严重低估。
+    """
+    cp = ord(ch)
+    return (
+        0x4E00 <= cp <= 0x9FFF    # CJK Unified Ideographs
+        or 0x3400 <= cp <= 0x4DBF  # Extension A
+        or 0x20000 <= cp <= 0x2A6DF  # Extension B
+    )
+
+
+def estimate_tokens_cjk(messages: list[dict[str, Any]]) -> int:
+    """7 段专用估算：CJK 1 token/字，非 CJK 3 字符/token。
+
+    **不替换公共 `estimate_tokens`**——compact / context builder / loop metrics
+    等既有消费者依赖 chars/3 的旧口径与阈值，改公共函数会破坏它们。
+    这里只用于 breakdown 的分段展示，让中文段占比可信。
+    """
+    total = 0.0
+    for msg in messages:
+        content = msg.get("content") or ""
+        if isinstance(content, str):
+            for ch in content:
+                total += 1.0 if _is_cjk(ch) else 1.0 / 3.0
+        for tc in msg.get("tool_calls") or []:
+            if isinstance(tc, dict):
+                fn = tc.get("function") or {}
+                blob = _json.dumps(fn.get("arguments", ""), ensure_ascii=False)
+                for ch in blob:
+                    total += 1.0 if _is_cjk(ch) else 1.0 / 3.0
+        if msg.get("role") == "tool":
+            total += 100 / 3.0  # 与公共函数一致的 tool role 固定开销
+    return max(1, int(total))
+
+
+def estimate_tokens_text_cjk(text: str) -> int:
+    """纯文本版 CJK 感知估算（用于 tools 的 description / schema blob）。"""
+    if not text:
+        return 1
+    total = sum(1.0 if _is_cjk(ch) else 1.0 / 3.0 for ch in text)
+    return max(1, int(total))
 
 
 def _tool_is_mcp(tool: Any) -> bool:
@@ -83,26 +130,26 @@ def estimate_context_breakdown(
 
     # system_prompt：首条 system
     if messages[0].get("role") == "system":
-        result["system_prompt"] = estimate_tokens(
+        result["system_prompt"] = estimate_tokens_cjk(
             [{"role": "system", "content": str(messages[0].get("content") or "")}]
         )
 
     # messages：system 之后、末条 user 之前的历史
     history = messages[1:-1] if len(messages) > 1 else []
     if history:
-        result["messages"] = estimate_tokens(history)
+        result["messages"] = estimate_tokens_cjk(history)
 
     # meta_user_context + skills：从 ContextBundle.items 归属
     for item in context_items or []:
         kind = str(getattr(item, "kind", "") or "")
         content = str(getattr(item, "content", "") or "")
         if kind == "skill":
-            result["skills"] += estimate_tokens([{"role": "user", "content": content}])
+            result["skills"] += estimate_tokens_cjk([{"role": "user", "content": content}])
         else:
             # 其余注入项（goal/todo/memory/hypothesis/knowledge/artifact/
             # tool_result/history）统一归为「用户上下文注入」——这是新增的
             # meta_user_context 概念：不是用户手写文本，而是系统注入的上下文。
-            result["meta_user_context"] += estimate_tokens(
+            result["meta_user_context"] += estimate_tokens_cjk(
                 [{"role": "user", "content": content}]
             )
 
@@ -114,7 +161,7 @@ def estimate_context_breakdown(
             # 末条 user 超过阈值长度时视作含注入前缀；避免把普通长消息全算进来
             content = str(last.get("content") or "")
             if len(content) > 2000:
-                result["meta_user_context"] = estimate_tokens(
+                result["meta_user_context"] = estimate_tokens_cjk(
                     [{"role": "user", "content": content[:2000]}]
                 )
 
@@ -128,24 +175,23 @@ def estimate_context_breakdown(
         desc = str(fn.get("description") or "")
         if desc:
             if _tool_is_mcp(tool):
-                result["mcp_tool_schemas"] += estimate_tokens(
+                result["mcp_tool_schemas"] += estimate_tokens_cjk(
                     [{"role": "user", "content": desc}]
                 )
             else:
-                result["tool_prompt"] += estimate_tokens(
+                result["tool_prompt"] += estimate_tokens_cjk(
                     [{"role": "user", "content": desc}]
                 )
         # schema：去掉 description 后的结构化部分
         schema = {k: v for k, v in fn.items() if k not in ("description", "name")}
         if schema:
-            import json
-            blob = json.dumps(schema, ensure_ascii=False)
+            blob = _json.dumps(schema, ensure_ascii=False)
             if _tool_is_mcp(tool):
-                result["mcp_tool_schemas"] += estimate_tokens(
+                result["mcp_tool_schemas"] += estimate_tokens_cjk(
                     [{"role": "user", "content": blob}]
                 )
             else:
-                result["system_tool_schemas"] += estimate_tokens(
+                result["system_tool_schemas"] += estimate_tokens_cjk(
                     [{"role": "user", "content": blob}]
                 )
 

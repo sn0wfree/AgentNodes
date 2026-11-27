@@ -1554,8 +1554,13 @@ class AgentLoop(
         """
         try:
             if self._stream_mode:
+                # §9 复核修复：此前硬编码 tools=None → 流式路径的
+                # context.breakdown 工具段（tool_prompt / system_tool_schemas /
+                # mcp_tool_schemas）恒为 0，与"模型能调用工具"自相矛盾。
+                # _effective_tools 是纯读取，提前调用无副作用。
+                tools = self._effective_tools(iteration)
                 # Trace LLM request envelope before streaming
-                self._trace_llm_request(messages, iteration, tools=None)
+                self._trace_llm_request(messages, iteration, tools=tools)
                 if async_mode:
                     return await self._with_iteration_timeout(
                         self._astream_chat(messages, iteration), iteration, result,

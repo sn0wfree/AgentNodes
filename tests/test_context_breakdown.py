@@ -6,6 +6,8 @@ from agentnodes.kernel.context.breakdown import (
     BREAKDOWN_KEYS,
     MCP_TOOL_PREFIX,
     estimate_context_breakdown,
+    estimate_tokens_cjk,
+    estimate_tokens_text_cjk,
 )
 
 
@@ -92,3 +94,50 @@ def test_segments_sum_is_reasonable():
     total = sum(r.values())
     assert total > 0
     assert all(v >= 0 for v in r.values())
+
+
+# ── CJK 感知估算（§9 复核修复 3）─────────────────────────────────
+
+def test_cjk_estimator_counts_ideographs_as_one_token_each():
+    # 4 个汉字 = 4 token（旧 chars/3 只估 1）
+    assert estimate_tokens_text_cjk("你好世界") == 4
+    # 纯 ASCII：3 字符 ≈ 1 token
+    assert estimate_tokens_text_cjk("abcdefghijkl") == 4
+
+
+def test_cjk_estimator_handles_mixed_text():
+    # "你好"=2 token + "hello"(5 chars≈1.67) + "世界"=2 token ≈ 5
+    got = estimate_tokens_text_cjk("你好hello世界")
+    assert got == 5, got
+
+
+def test_public_estimate_tokens_unchanged():
+    """公共函数不能被 CJK 改动污染 —— compact/loop 仍用 chars/3。"""
+    from agentnodes.foundation.utils.token_utils import estimate_tokens, CHARS_PER_TOKEN
+
+    msgs = [{"role": "user", "content": "你好世界"}]  # 4 字符
+    assert estimate_tokens(msgs) == max(1, int(4 / CHARS_PER_TOKEN)) == 1
+
+
+def test_breakdown_uses_cjk_for_chinese_history():
+    """中文历史不再被 chars/3 低估：4 轮中文对话 ≈ 字数级 token。"""
+    msgs = [
+        {"role": "system", "content": "规则" * 50},
+        {"role": "user", "content": "上一轮" * 10},       # 30 汉字 = 30 token
+        {"role": "assistant", "content": "回答" * 15},     # 30 汉字 = 30 token
+        {"role": "user", "content": "当前问题"},
+    ]
+    r = estimate_context_breakdown(msgs, [])
+    # history = 60 汉字 ≈ 60 token（旧 chars/3 只估 20）
+    assert r["messages"] == 60, r["messages"]
+
+
+def test_breakdown_tools_work_with_cjk_description():
+    tools = [{
+        "name": "search",
+        "description": "搜索网页" * 25,  # 100 汉字 = 100 token
+        "parameters": {"type": "object", "properties": {"q": {"type": "string"}}},
+    }]
+    r = estimate_context_breakdown([{"role": "user", "content": "hi"}], tools)
+    assert r["tool_prompt"] == 100, r["tool_prompt"]
+    assert r["system_tool_schemas"] > 0

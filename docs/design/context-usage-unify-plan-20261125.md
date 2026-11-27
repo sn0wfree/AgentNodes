@@ -161,3 +161,34 @@ AgentNodes 的 SSE handler 已正确处理，跳过。
   来源「后端估算」；hover 明细 历史消息 2 + 系统提示 2,374 = 2,376，与状态栏同源。
 
 未做（按裁决不需要）：后端改动、store 拆字段、BreakdownList 改展示。
+
+## 2026-11-27 · 7 段归属复核修复（用户质疑「聊了三轮，历史消息只有 7」）
+
+**诊断（有证据）**：
+
+1. **流式 tools 硬编码 None（真 bug）**：`loop/core.py` 的 `_get_response` 流式分支
+   曾 `self._trace_llm_request(messages, iteration, tools=None)`，导致
+   `context.breakdown` 的工具三段（tool_prompt / system_tool_schemas /
+   mcp_tool_schemas）**恒为 0** —— 与「模型确实能调用工具」自相矛盾。
+   非流式分支传的是真实 tools。
+2. **中文被 chars/3 低估 ~3 倍**：旧 `estimate_tokens` 按 chars/3.0；
+   中文 1 字符 ≈ 1 token。3 轮中文对话（23 字符）被估成 **7**，正是用户看到的值。
+   系统提示（英文为主）2,374 较准 → 段间占比失真。
+
+**修复**：
+
+| 项 | 改动 | 文件 |
+|---|---|---|
+| 1 | 流式分支 `_effective_tools(iteration)` 提前调用并传给 trace（纯读取无副作用） | loop/core.py |
+| 3 | `breakdown.py` 新增 CJK 感知估算 `estimate_tokens_cjk` / `estimate_tokens_text_cjk`（CJK 1 token/字，其它 3 字符/token），7 段的 9 处调用全部改用它。**公共 `estimate_tokens` 不动**（compact / context builder / loop metrics 依赖旧口径与阈值） | context/breakdown.py |
+
+**验证**：
+
+- 新增单测：CJK 估算 6 例（中文 4 字=4 token / 混合文本 / 公共函数不变 / 中文历史 60 字=60 token / 中文工具描述=100 token）+ stream tools 2 例（trace 收到真实 tools / breakdown 工具段 >0）。
+- 全量后端 **8272 passed**、gate ALL GREEN。
+- **真机决定性验证**（MiniMax 流式调用后）：历史消息 7 → **36**、工具说明 0 → **654**、
+  工具 Schema 0 → **1,466**、系统提示 2,374 → 3,734（中文系统提示同步重估），
+  7 段占比首次与真实请求构成一致。
+
+**仍未处理（本次未批）**：「历史消息」段混入 tool_call/tool_result 流量（段名误导）、
+当前轮缺位（emit 在 LLM 调用前）、迭代间归属口径漂移。
