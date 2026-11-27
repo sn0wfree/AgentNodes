@@ -266,6 +266,32 @@ describe('useSSE', () => {
       }
     })
 
+    it('P0-2: switching sessions clears the seen event-id set (same id processes again)', () => {
+      const { rerender, unmount } = renderHook(
+        ({ sessionId }: { sessionId: string | null }) => useSSE(sessionId),
+        { initialProps: { sessionId: 'sess-1' as string | null } },
+      )
+      // Mark id 'dup-id' as seen in sess-1.
+      let es = getCurrentES()
+      act(() => {
+        es.readyState = MockEventSource.OPEN
+        es.onopen?.()
+        es.emitMessage('queue_state', { session_id: 'sess-1', queue_length: 5 }, 'dup-id')
+      })
+      expect(useChatStore.getState().queueLengths.get('sess-1')).toBe(5)
+
+      // Switch session in-place: the dedupe set must reset.
+      rerender({ sessionId: 'sess-2' })
+      es = getCurrentES()
+      act(() => {
+        es.readyState = MockEventSource.OPEN
+        es.onopen?.()
+        es.emitMessage('queue_state', { session_id: 'sess-2', queue_length: 9 }, 'dup-id')
+      })
+      expect(useChatStore.getState().queueLengths.get('sess-2')).toBe(9)
+      unmount()
+    })
+
     it('onerror sets status disconnected but does not create new EventSource (native reconnect)', () => {
       vi.useFakeTimers()
       renderHook(() => useSSE('sess-1'))
@@ -396,6 +422,44 @@ describe('useSSE', () => {
       const msg = useChatStore.getState().messages.get('msg-1')!
       const part = msg.parts.find((p) => p.type === 'text') as any
       expect(part.text).toBe('ab')
+    })
+
+    it('P0-2: cursor still advances on a deduped replay, then to the newest id', () => {
+      vi.useFakeTimers()
+      try {
+        // First connection: process e-10, drop, and reconnect with the cursor.
+        let hook = renderHook(({ sid }: { sid: string | null }) => useSSE(sid), {
+          initialProps: { sid: 'sess-1' },
+        })
+        let es = getCurrentES()
+        act(() => {
+          es.readyState = MockEventSource.OPEN
+          es.onopen?.()
+          es.emitMessage('queue_state', { session_id: 'sess-1', queue_length: 5 }, 'e-10')
+          es.readyState = MockEventSource.CLOSED
+          es.onerror?.({ currentTarget: es })
+          vi.advanceTimersByTime(1000)
+        })
+        expect(getCurrentES().url).toContain('Last-Event-ID=e-10')
+
+        // Reconnect replays e-10 (already seen) then delivers e-11.
+        es = getCurrentES()
+        act(() => {
+          es.readyState = MockEventSource.OPEN
+          es.onopen?.()
+          es.emitMessage('queue_state', { session_id: 'sess-1', queue_length: 5 }, 'e-10')
+          es.emitMessage('queue_state', { session_id: 'sess-1', queue_length: 9 }, 'e-11')
+          es.readyState = MockEventSource.CLOSED
+          es.onerror?.({ currentTarget: es })
+          vi.advanceTimersByTime(1000)
+        })
+        // The dup must not regress the cursor; e-11 must advance it.
+        expect(getCurrentES().url).toContain('Last-Event-ID=e-11')
+        expect(useChatStore.getState().queueLengths.get('sess-1')).toBe(9)
+        hook.unmount()
+      } finally {
+        vi.useRealTimers()
+      }
     })
 
     it('P0-2: event ids without id set bypass dedupe (legacy frames)', () => {

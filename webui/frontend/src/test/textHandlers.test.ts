@@ -162,6 +162,63 @@ describe('textHandlers — text protocol', () => {
   })
 })
 
+describe('applyTextDelta (P0-1 atomic store action)', () => {
+  it('creates an orphan part when text.started has not arrived (replay / late join)', () => {
+    seedAssistant('m1')
+    useChatStore.getState().applyTextDelta('m1', 't-late', 'late chunk')
+    const msg = getMessage('m1')
+    expect(msg.parts).toEqual([
+      { type: 'text', id: 't-late', text: 'late chunk', isStreaming: true },
+    ])
+    expect(useChatStore.getState().partTextAccumDelta['t-late']).toBe('late chunk')
+    expect(useChatStore.getState().streamingText).toBe('late chunk')
+  })
+
+  it('keeps the persisted part text raw while the preview buffer recovers spaces', () => {
+    // Contract: chunk-boundary space recovery (shouldInsertSpaceBetween)
+    // applies ONLY to partTextAccumDelta; the persisted part.text stays
+    // exactly as the backend emitted it.
+    seedAssistant('m1')
+    const store = useChatStore.getState()
+    store.applyTextDelta('m1', 't-1', 'Hi')
+    store.applyTextDelta('m1', 't-1', 'there')
+    expect((getMessage('m1').parts[0] as { text: string }).text).toBe('Hithere')
+    expect(useChatStore.getState().partTextAccumDelta['t-1']).toBe('Hi there')
+    // CJK / punctuation boundaries never trigger the insert.
+    store.applyTextDelta('m1', 't-1', '。')
+    expect(useChatStore.getState().partTextAccumDelta['t-1']).toBe('Hi there。')
+  })
+
+  it('updates preview buffer + legacy stream even when the message is unknown', () => {
+    useChatStore.getState().applyTextDelta('missing-msg', 't-x', 'ghost')
+    expect(useChatStore.getState().messages.has('missing-msg')).toBe(false)
+    expect(useChatStore.getState().partTextAccumDelta['t-x']).toBe('ghost')
+    expect(useChatStore.getState().streamingText).toBe('ghost')
+  })
+
+  it('routes by text_id: interleaved ids do not cross-contaminate parts', () => {
+    seedAssistant('m1')
+    const store = useChatStore.getState()
+    store.applyTextDelta('m1', 't-a', 'A1')
+    store.applyTextDelta('m1', 't-b', 'B1')
+    store.applyTextDelta('m1', 't-a', 'A2')
+    const parts = getMessage('m1').parts as Array<{ id: string; text: string }>
+    expect(parts).toHaveLength(2)
+    expect(parts.find((p) => p.id === 't-a')!.text).toBe('A1A2')
+    expect(parts.find((p) => p.id === 't-b')!.text).toBe('B1')
+  })
+
+  it('text.ended clears the preview buffer entry created by applyTextDelta', () => {
+    seedAssistant('m1')
+    const c = ctx()
+    useChatStore.getState().applyTextDelta('m1', 't-1', 'draft')
+    expect(useChatStore.getState().partTextAccumDelta['t-1']).toBe('draft')
+    textEnded({ text_id: 't-1', message_id: 'm1', text: 'FINAL' }, c)
+    expect(useChatStore.getState().partTextAccumDelta['t-1']).toBeUndefined()
+    expect((getMessage('m1').parts[0] as { text: string }).text).toBe('FINAL')
+  })
+})
+
 describe('textHandlers — thinking protocol', () => {
   it('thinking_start pushes a fresh collapsed streaming thinking part', () => {
     seedAssistant('m1')

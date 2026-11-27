@@ -65,6 +65,7 @@ vi.mock('../components/chat/QuickStartChips', () => ({
 import { MessageList } from '../components/chat/MessageList'
 import { useChatStore, type Message } from '../stores/chat'
 import { useLayoutStore } from '../stores/layout'
+import { chatUiConfig } from '../components/chat/chatUiConfig'
 
 const msg = (over: Partial<Message> & { id: string }): Message =>
   ({
@@ -105,6 +106,41 @@ describe('MessageList', () => {
     render(<MessageList />)
     expect(screen.getByTestId('compact-banner')).toBeInTheDocument()
     expect(screen.getByTestId('usage-bar')).toBeInTheDocument()
+  })
+
+  // ── P0-3: messageList.visibility flags are consumed by MessageList ──
+
+  it('P0-3: showQuickStartChips=false hides quick-start chips in the empty state', () => {
+    const orig = chatUiConfig.messageList.visibility.showQuickStartChips
+    chatUiConfig.messageList.visibility.showQuickStartChips = false
+    try {
+      render(<MessageList />)
+      expect(screen.queryByTestId('quick-start')).not.toBeInTheDocument()
+    } finally {
+      chatUiConfig.messageList.visibility.showQuickStartChips = orig
+    }
+  })
+
+  it('P0-3: showContextBar=false hides the usage bar', () => {
+    const orig = chatUiConfig.messageList.visibility.showContextBar
+    chatUiConfig.messageList.visibility.showContextBar = false
+    try {
+      render(<MessageList />)
+      expect(screen.queryByTestId('usage-bar')).not.toBeInTheDocument()
+    } finally {
+      chatUiConfig.messageList.visibility.showContextBar = orig
+    }
+  })
+
+  it('P0-3: showCompactBanner=false hides the compact banner', () => {
+    const orig = chatUiConfig.messageList.visibility.showCompactBanner
+    chatUiConfig.messageList.visibility.showCompactBanner = false
+    try {
+      render(<MessageList />)
+      expect(screen.queryByTestId('compact-banner')).not.toBeInTheDocument()
+    } finally {
+      chatUiConfig.messageList.visibility.showCompactBanner = orig
+    }
   })
 
   it('renders user messages through MessageBubble', () => {

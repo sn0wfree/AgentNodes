@@ -1,6 +1,7 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest'
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { render, screen, fireEvent } from '@testing-library/react'
 import { ThinkingBlock } from '../components/chat/ThinkingBlock'
+import { chatUiConfig } from '../components/chat/chatUiConfig'
 import { useThinkingPrefStore } from '../stores/thinkingPref'
 
 // Mock navigator.clipboard
@@ -82,5 +83,49 @@ describe('ThinkingBlock', () => {
     useThinkingPrefStore.setState({ enabled: true })
     rerender(<ThinkingBlock text="should appear" collapsed={false} />)
     expect(screen.getByText('should appear')).toBeTruthy()
+  })
+})
+
+// ── P0-3: thinking config drives labels / copy / char-count ──
+// The config is a shared singleton; mutations are restored per test.
+
+const thinkingBackup = JSON.parse(JSON.stringify(chatUiConfig.thinking))
+afterEach(() => {
+  // Fresh clone each time: a direct re-assign would alias the backup to the
+  // singleton after the first restore, letting mutations leak across tests.
+  chatUiConfig.thinking = JSON.parse(JSON.stringify(thinkingBackup))
+})
+
+describe('ThinkingBlock — P0-3 config wiring', () => {
+  it('showCopy=false hides the copy button', () => {
+    chatUiConfig.thinking.visibility.showCopy = false
+    const { queryByTitle } = render(<ThinkingBlock text="no copy here" collapsed={false} />)
+    expect(queryByTitle('复制')).toBeNull()
+  })
+
+  it('showCharCount=false hides the character count even for long text', () => {
+    chatUiConfig.thinking.visibility.showCharCount = false
+    const { container } = render(<ThinkingBlock text={'x'.repeat(80)} collapsed />)
+    expect(container.textContent).not.toContain('字')
+  })
+
+  it('sizing.charThreshold drives when the char count appears', () => {
+    chatUiConfig.thinking.sizing.charThreshold = 5
+    render(<ThinkingBlock text="abcdef" collapsed />)
+    expect(screen.getByText(/6字|6 字/)).toBeTruthy()
+  })
+
+  it('labels.streamingFormat drives the streaming header', () => {
+    chatUiConfig.thinking.labels.streamingFormat = '思考中 {duration}'
+    render(<ThinkingBlock text="live" streaming startTime={Date.now() - 4000} />)
+    expect(screen.getByText(/思考中 4/)).toBeTruthy()
+    expect(screen.queryByText(/Thinking for/)).toBeNull()
+  })
+
+  it('labels.doneFormat drives the sealed header', () => {
+    chatUiConfig.thinking.labels.doneFormat = '思考了 {duration}'
+    render(<ThinkingBlock text="t" startTime={1000} endTime={3500} />)
+    expect(screen.getByText(/思考了 2\.5s/)).toBeTruthy()
+    expect(screen.queryByText(/Thought for/)).toBeNull()
   })
 })
